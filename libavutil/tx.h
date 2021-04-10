@@ -55,7 +55,8 @@ enum AVTXType {
      * Stride must be a non-zero multiple of sizeof(float).
      *
      * NOTE: the inverse transform is half-length, meaning the output will not
-     * contain redundant data. This is what most codecs work with.
+     * contain redundant data. This is what most codecs work with. To do a full
+     * inverse transform, set the AV_TX_FULL_IMDCT flag on init.
      */
     AV_TX_FLOAT_MDCT = 1,
 
@@ -116,6 +117,14 @@ enum AVTXFlags {
      * May be slower with certain transform types.
      */
     AV_TX_UNALIGNED = 1ULL << 1,
+
+    /**
+     * Performs a full inverse MDCT rather than leaving out samples that can be
+     * derived through symmetry. Requires an output array of 'len' floats,
+     * rather than the usual 'len/2' floats.
+     * Ignored for all transforms but inverse MDCTs.
+     */
+    AV_TX_FULL_IMDCT = 1ULL << 2,
 };
 
 /**

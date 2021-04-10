@@ -875,6 +875,24 @@ static void naive_mdct(AVTXContext *s, void *_dst, void *_src,
     }
 }
 
+static void full_imdct_wrapper_fn(AVTXContext *s, void *_dst, void *_src,
+                                  ptrdiff_t stride)
+{
+    int len = s->m*s->n*4;
+    int len2 = len >> 1;
+    int len4 = len >> 2;
+    FFTSample *dst = _dst;
+
+    s->top_tx(s, dst + len4, _src, stride);
+
+    stride /= sizeof(*dst);
+
+    for (int i = 0; i < len4; i++) {
+        dst[            i*stride] = -dst[(len2 - i - 1)*stride];
+        dst[(len - i - 1)*stride] =  dst[(len2 + i + 0)*stride];
+    }
+}
+
 static int gen_mdct_exptab(AVTXContext *s, int len4, double scale)
 {
     const double theta = (scale < 0 ? len4 : 0) + 1.0/8.0;
@@ -942,6 +960,10 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
         if (is_mdct) {
             s->scale = *((SCALE_TYPE *)scale);
             *tx = inv ? naive_imdct : naive_mdct;
+            if (inv && (flags & AV_TX_FULL_IMDCT)) {
+                s->top_tx = *tx;
+                *tx = full_imdct_wrapper_fn;
+            }
         }
         return 0;
     }
@@ -990,8 +1012,13 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
             init_cos_tabs(i);
     }
 
-    if (is_mdct)
+    if (is_mdct) {
+        if (inv && (flags & AV_TX_FULL_IMDCT)) {
+            s->top_tx = *tx;
+            *tx = full_imdct_wrapper_fn;
+        }
         return gen_mdct_exptab(s, n*m, *((SCALE_TYPE *)scale));
+    }
 
     return 0;
 }

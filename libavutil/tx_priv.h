@@ -121,6 +121,10 @@ struct AVTXContext {
     int        *pfatab; /* Input/Output mapping for compound transforms */
     int        *revtab; /* Input mapping for power of two transforms */
     int   *inplace_idx; /* Required indices to revtab for in-place transforms */
+
+    av_tx_fn    top_tx; /* Used for computing transforms derived from other
+                         * transforms, like full-length iMDCTs and RDFTs.
+                         * NOTE: Do NOT use this to mix assembly with C code. */
 };
 
 /* Checks if type is an MDCT */
