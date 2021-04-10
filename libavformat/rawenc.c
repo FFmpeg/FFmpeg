@@ -399,19 +399,6 @@ AVOutputFormat ff_mjpeg_muxer = {
 };
 #endif
 
-#if CONFIG_SINGLEJPEG_MUXER
-AVOutputFormat ff_singlejpeg_muxer = {
-    .name              = "singlejpeg",
-    .long_name         = NULL_IF_CONFIG_SMALL("JPEG single image"),
-    .mime_type         = "image/jpeg",
-    .audio_codec       = AV_CODEC_ID_NONE,
-    .video_codec       = AV_CODEC_ID_MJPEG,
-    .init              = force_one_stream,
-    .write_packet      = ff_raw_write_packet,
-    .flags             = AVFMT_NOTIMESTAMPS,
-};
-#endif
-
 #if CONFIG_MLP_MUXER
 AVOutputFormat ff_mlp_muxer = {
     .name              = "mlp",
