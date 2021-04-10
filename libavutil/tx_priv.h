@@ -20,9 +20,7 @@
 #define AVUTIL_TX_PRIV_H
 
 #include "tx.h"
-#include <stddef.h>
 #include "thread.h"
-#include "mem.h"
 #include "mem_internal.h"
 #include "avassert.h"
 #include "attributes.h"
@@ -48,12 +46,14 @@ typedef void FFTComplex;
 
 #if defined(TX_FLOAT) || defined(TX_DOUBLE)
 
-#define CMUL(dre, dim, are, aim, bre, bim) do {                                \
+#define CMUL(dre, dim, are, aim, bre, bim)                                     \
+    do {                                                                       \
         (dre) = (are) * (bre) - (aim) * (bim);                                 \
         (dim) = (are) * (bim) + (aim) * (bre);                                 \
     } while (0)
 
-#define SMUL(dre, dim, are, aim, bre, bim) do {                                \
+#define SMUL(dre, dim, are, aim, bre, bim)                                     \
+    do {                                                                       \
         (dre) = (are) * (bre) - (aim) * (bim);                                 \
         (dim) = (are) * (bim) - (aim) * (bre);                                 \
     } while (0)
@@ -66,7 +66,8 @@ typedef void FFTComplex;
 #elif defined(TX_INT32)
 
 /* Properly rounds the result */
-#define CMUL(dre, dim, are, aim, bre, bim) do {                                \
+#define CMUL(dre, dim, are, aim, bre, bim)                                     \
+    do {                                                                       \
         int64_t accu;                                                          \
         (accu)  = (int64_t)(bre) * (are);                                      \
         (accu) -= (int64_t)(bim) * (aim);                                      \
@@ -76,7 +77,8 @@ typedef void FFTComplex;
         (dim)   = (int)(((accu) + 0x40000000) >> 31);                          \
     } while (0)
 
-#define SMUL(dre, dim, are, aim, bre, bim) do {                                \
+#define SMUL(dre, dim, are, aim, bre, bim)                                     \
+    do {                                                                       \
         int64_t accu;                                                          \
         (accu)  = (int64_t)(bre) * (are);                                      \
         (accu) -= (int64_t)(bim) * (aim);                                      \
@@ -93,7 +95,8 @@ typedef void FFTComplex;
 
 #endif
 
-#define BF(x, y, a, b) do {                                                    \
+#define BF(x, y, a, b)                                                         \
+    do {                                                                       \
         x = (a) - (b);                                                         \
         y = (a) + (b);                                                         \
     } while (0)
@@ -101,7 +104,7 @@ typedef void FFTComplex;
 #define CMUL3(c, a, b)                                                         \
     CMUL((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
 
-#define COSTABLE(size) \
+#define COSTABLE(size)                                                         \
     DECLARE_ALIGNED(32, FFTSample, TX_NAME(ff_cos_##size))[size/2]
 
 /* Used by asm, reorder with care */
@@ -114,35 +117,35 @@ struct AVTXContext {
     double scale;       /* Scale */
 
     FFTComplex *exptab; /* MDCT exptab */
-    FFTComplex *tmp;    /* Temporary buffer needed for all compound transforms */
+    FFTComplex    *tmp; /* Temporary buffer needed for all compound transforms */
     int        *pfatab; /* Input/Output mapping for compound transforms */
     int        *revtab; /* Input mapping for power of two transforms */
     int   *inplace_idx; /* Required indices to revtab for in-place transforms */
 };
 
-/* Shared functions */
+/* Checks if type is an MDCT */
 int ff_tx_type_is_mdct(enum AVTXType type);
+
+/*
+ * Generates the PFA permutation table into AVTXContext->pfatab. The end table
+ * is appended to the start table.
+ */
 int ff_tx_gen_compound_mapping(AVTXContext *s);
+
+/*
+ * Generates a standard-ish (slightly modified) Split-Radix revtab into
+ * AVTXContext->revtab
+ */
 int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
+
+/*
+ * Generates an index into AVTXContext->inplace_idx that if followed in the
+ * specific order,  allows the revtab to be done in-place. AVTXContext->revtab
+ * must already exist.
+ */
 int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
 
-/* Also used by SIMD init */
-static inline int split_radix_permutation(int i, int n, int inverse)
-{
-    int m;
-    if (n <= 2)
-        return i & 1;
-    m = n >> 1;
-    if (!(i & m))
-        return split_radix_permutation(i, m, inverse)*2;
-    m >>= 1;
-    if (inverse == !(i & m))
-        return split_radix_permutation(i, m, inverse)*4 + 1;
-    else
-        return split_radix_permutation(i, m, inverse)*4 - 1;
-}
-
-/* Templated functions */
+/* Templated init functions */
 int ff_tx_init_mdct_fft_float(AVTXContext *s, av_tx_fn *tx,
                               enum AVTXType type, int inv, int len,
                               const void *scale, uint64_t flags);

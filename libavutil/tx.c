@@ -30,7 +30,7 @@ int ff_tx_type_is_mdct(enum AVTXType type)
     }
 }
 
-/* Calculates the modular multiplicative inverse, not fast, replace */
+/* Calculates the modular multiplicative inverse */
 static av_always_inline int mulinv(int n, int m)
 {
     n = n % m;
@@ -91,6 +91,17 @@ int ff_tx_gen_compound_mapping(AVTXContext *s)
     return 0;
 }
 
+static inline int split_radix_permutation(int i, int m, int inverse)
+{
+    m >>= 1;
+    if (m <= 1)
+        return i & 1;
+    if (!(i & m))
+        return (split_radix_permutation(i, m, inverse) << 1);
+    m >>= 1;
+    return (split_radix_permutation(i, m, inverse) << 2) + 1 - 2*(!(i & m) ^ inverse);
+}
+
 int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)
 {
     const int m = s->m, inv = s->inv;
@@ -117,6 +128,7 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
     if (!(s->inplace_idx = av_malloc(s->m*sizeof(*s->inplace_idx))))
         return AVERROR(ENOMEM);
 
+    /* The first coefficient is always already in-place */
     for (int src = 1; src < s->m; src++) {
         int dst = s->revtab[src];
         int found = 0;
@@ -124,6 +136,9 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
         if (dst <= src)
             continue;
 
+        /* This just checks if a closed loop has been encountered before,
+         * and if so, skips it, since to fully permute a loop we must only
+         * enter it once. */
         do {
             for (int j = 0; j < nb_inplace_idx; j++) {
                 if (dst == s->inplace_idx[j]) {

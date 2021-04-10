@@ -49,9 +49,11 @@ enum AVTXType {
      * float. Length is the frame size, not the window size (which is 2x frame)
      * For forward transforms, the stride specifies the spacing between each
      * sample in the output array in bytes. The input must be a flat array.
+     *
      * For inverse transforms, the stride specifies the spacing between each
      * sample in the input array in bytes. The output will be a flat array.
      * Stride must be a non-zero multiple of sizeof(float).
+     *
      * NOTE: the inverse transform is half-length, meaning the output will not
      * contain redundant data. This is what most codecs work with.
      */
