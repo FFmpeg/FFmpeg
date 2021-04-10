@@ -32,7 +32,6 @@
 
 typedef struct MviDemuxContext {
     unsigned int (*get_int)(AVIOContext *);
-    uint32_t audio_data_size;
     uint64_t audio_size_counter;
     uint64_t audio_frame_size;
     int audio_size_left;
@@ -46,6 +45,7 @@ static int read_header(AVFormatContext *s)
     AVStream *ast, *vst;
     unsigned int version, frames_count, msecs_per_frame, player_version;
     int ret;
+    int audio_data_size;
 
     ast = avformat_new_stream(s, NULL);
     if (!ast)
@@ -67,13 +67,13 @@ static int read_header(AVFormatContext *s)
     vst->codecpar->height       = avio_rl16(pb);
     avio_r8(pb);
     ast->codecpar->sample_rate  = avio_rl16(pb);
-    mvi->audio_data_size     = avio_rl32(pb);
+    audio_data_size             = avio_rl32(pb);
     avio_r8(pb);
     player_version           = avio_rl32(pb);
     avio_rl16(pb);
     avio_r8(pb);
 
-    if (frames_count == 0 || mvi->audio_data_size == 0)
+    if (frames_count == 0 || audio_data_size <= 0)
         return AVERROR_INVALIDDATA;
 
     if (version != 7 || player_version > 213) {
@@ -96,16 +96,16 @@ static int read_header(AVFormatContext *s)
 
     mvi->get_int = (vst->codecpar->width * (int64_t)vst->codecpar->height < (1 << 16)) ? avio_rl16 : avio_rl24;
 
-    mvi->audio_frame_size   = ((uint64_t)mvi->audio_data_size << MVI_FRAC_BITS) / frames_count;
+    mvi->audio_frame_size   = ((uint64_t)audio_data_size << MVI_FRAC_BITS) / frames_count;
     if (mvi->audio_frame_size <= 1 << MVI_FRAC_BITS - 1) {
         av_log(s, AV_LOG_ERROR,
-               "Invalid audio_data_size (%"PRIu32") or frames_count (%u)\n",
-               mvi->audio_data_size, frames_count);
+               "Invalid audio_data_size (%d) or frames_count (%u)\n",
+               audio_data_size, frames_count);
         return AVERROR_INVALIDDATA;
     }
 
     mvi->audio_size_counter = (ast->codecpar->sample_rate * 830 / mvi->audio_frame_size - 1) * mvi->audio_frame_size;
-    mvi->audio_size_left    = mvi->audio_data_size;
+    mvi->audio_size_left    = audio_data_size;
 
     return 0;
 }
