@@ -30,9 +30,26 @@ FATE_COVER_ART-$(CONFIG_WV_DEMUXER) += fate-cover-art-wv
 fate-cover-art-wv: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/luckynight_cover.wv -an -c:v copy -f rawvideo
 fate-cover-art-wv: REF = 45333c983c45af54449dff10af144317
 
+# Tests writing id3v2 tags (some with non-ASCII characters) and apics.
+FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL FLAC_DEMUXER MJPEG_DECODER \
+                                    FLAC_DECODER SCALE_FILTER PNG_ENCODER    \
+                                    BMP_ENCODER PCM_S16BE_ENCODER AIFF_MUXER \
+                                    AIFF_DEMUXER BMP_DECODER PNG_DECODER     \
+                                    FRAMECRC_MUXER PIPE_PROTOCOL)            \
+                       += fate-cover-art-aiff-id3v2-remux
+fate-cover-art-aiff-id3v2-remux: CMD = transcode flac $(TARGET_SAMPLES)/cover_art/cover_art.flac aiff "-map 0 -map 0:v -map 0:v -map 0:v -c:a pcm_s16be -c:v:0 copy -filter:v:1 scale -c:v:1 png -filter:v:2 scale -c:v:2 bmp -c:v:3 copy -write_id3v2 1 -metadata:g unknown_key=unknown_value -metadata compilation=foo -metadata:s:v:0 title=first -metadata:s:v:1 title=second -metadata:s:v:1 comment=Illustration -metadata:s:v:2 title=third -metadata:s:v:2 comment=Conductor -metadata:s:v:3 title=fourth -metadata:s:v:3 comment=Composer" "-map 0 -c copy -t 0.1" "" "-show_entries format_tags:stream_tags:stream_disposition=attached_pic:stream=index,codec_name"
+
+FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL MP3_DEMUXER MJPEG_DECODER \
+                                    SCALE_FILTER PNG_ENCODER BMP_ENCODER    \
+                                    MP3_MUXER BMP_DECODER PNG_DECODER       \
+                                    FRAMECRC_MUXER PIPE_PROTOCOL)           \
+                       += fate-cover-art-mp3-id3v2-remux
+fate-cover-art-mp3-id3v2-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/exif/embedded_small.mp3 mp3 "-map 0 -map 0:v -map 0:v -c:a copy -filter:v:0 scale -filter:v:2 scale -c:v:0 bmp -c:v:1 copy -c:v:2 png -metadata:s:v:0 comment=Band/Orchestra" "-map 0 -c copy -t 0.1" "" "-show_entries stream_tags:stream_disposition=attached_pic:stream=index,codec_name"
+
 FCA_TEMP-$(call ALLYES, RAWVIDEO_MUXER FILE_PROTOCOL) = $(FATE_COVER_ART-yes)
 FATE_COVER_ART = $(FCA_TEMP-yes)
-
 $(FATE_COVER_ART): CMP = oneline
+
 FATE_SAMPLES_AVCONV += $(FATE_COVER_ART)
-fate-cover-art: $(FATE_COVER_ART)
+FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_COVER_ART_REMUX-yes)
+fate-cover-art: $(FATE_COVER_ART) $(FATE_COVER_ART_REMUX-yes)

@@ -1,0 +1,55 @@
+c1b55a9a92226cd72d3f53ccd830d127 *tests/data/fate/cover-art-mp3-id3v2-remux.mp3
+399346 tests/data/fate/cover-art-mp3-id3v2-remux.mp3
+#tb 0: 1/14112000
+#media_type 0: audio
+#codec_id 0: mp3
+#sample_rate 0: 44100
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+#tb 1: 1/90000
+#media_type 1: video
+#codec_id 1: png
+#dimensions 1: 263x263
+#sar 1: 1/1
+#tb 2: 1/90000
+#media_type 2: video
+#codec_id 2: bmp
+#dimensions 2: 263x263
+#sar 2: 0/1
+#tb 3: 1/90000
+#media_type 3: video
+#codec_id 3: mjpeg
+#dimensions 3: 263x263
+#sar 3: 96/96
+0,    -353590,    -353590,   368640,      417, 0x15848290, S=1,       10, 0x034e0055
+1,          0,          0,        0,   165671, 0x7c1c8070
+2,          0,          0,        0,   208350, 0x291b44d1
+3,          0,          0,        0,    15760, 0x71d5c418
+0,      15050,      15050,   368640,      418, 0x46f684a4
+0,     383690,     383690,   368640,      418, 0x46f684a4
+0,     752330,     752330,   368640,      418, 0x46f684a4
+0,    1120970,    1120970,   368640,      418, 0x46f684a4
+[STREAM]
+index=0
+codec_name=mp3
+DISPOSITION:attached_pic=0
+TAG:encoder=Lavf
+[/STREAM]
+[STREAM]
+index=1
+codec_name=png
+DISPOSITION:attached_pic=1
+TAG:comment=Other
+[/STREAM]
+[STREAM]
+index=2
+codec_name=bmp
+DISPOSITION:attached_pic=1
+TAG:comment=Band/Orchestra
+[/STREAM]
+[STREAM]
+index=3
+codec_name=mjpeg
+DISPOSITION:attached_pic=1
+TAG:comment=Other
+[/STREAM]
