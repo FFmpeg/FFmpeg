@@ -1,0 +1,18 @@
+3e99254aa892a9578ce31da17b012a44 *tests/data/fate/id3v2-priv-remux.mp3
+8542 tests/data/fate/id3v2-priv-remux.mp3
+#tb 0: 1/14112000
+#media_type 0: audio
+#codec_id 0: mp3
+#sample_rate 0: 48000
+#channel_layout 0: 4
+#channel_layout_name 0: mono
+0,    -155528,    -155528,   338688,      192, 0x3774510e, S=1,       10, 0x00bc0013
+0,     183160,     183160,   338688,      192, 0x856c5b02
+0,     521848,     521848,   338688,      192, 0xb86e557f
+0,     860536,     860536,   338688,      192, 0x3b6c5cb7
+0,    1199224,    1199224,   338688,      192, 0xe1bc5c76
+[FORMAT]
+TAG:title=id3v2-test
+TAG:id3v2_priv.testowner2=\x00\x01\x02
+TAG:id3v2_priv.testowner=testdata
+[/FORMAT]
