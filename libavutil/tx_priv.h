@@ -199,4 +199,6 @@ typedef struct CosTabsInitOnce {
     AVOnce control;
 } CosTabsInitOnce;
 
+void ff_tx_init_float_x86(AVTXContext *s, av_tx_fn *tx);
+
 #endif /* AVUTIL_TX_PRIV_H */
