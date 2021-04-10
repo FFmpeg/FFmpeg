@@ -464,6 +464,18 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     return err;
 }
 
+int ff_h264_update_thread_context_for_user(AVCodecContext *dst,
+                                           const AVCodecContext *src)
+{
+    H264Context *h = dst->priv_data;
+    const H264Context *h1 = src->priv_data;
+
+    h->is_avc = h1->is_avc;
+    h->nal_length_size = h1->nal_length_size;
+
+    return 0;
+}
+
 static int h264_frame_start(H264Context *h)
 {
     H264Picture *pic;

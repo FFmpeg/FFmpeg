@@ -849,6 +849,8 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal);
 int ff_h264_execute_decode_slices(H264Context *h);
 int ff_h264_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src);
+int ff_h264_update_thread_context_for_user(AVCodecContext *dst,
+                                           const AVCodecContext *src);
 
 void ff_h264_flush_change(H264Context *h);
 
