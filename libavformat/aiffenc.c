@@ -210,9 +210,6 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == aiff->audio_stream_idx)
         avio_write(pb, pkt->data, pkt->size);
     else {
-        if (s->streams[pkt->stream_index]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
-            return 0;
-
         /* warn only once for each stream */
         if (s->streams[pkt->stream_index]->nb_frames == 1) {
             av_log(s, AV_LOG_WARNING, "Got more than one picture in stream %d,"
