@@ -2714,7 +2714,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         const AVOption *opt = NULL;
         while (opt = av_opt_next(dec_ctx->priv_data,opt)) {
             uint8_t *str;
-            if (opt->flags) continue;
+            if (!(opt->flags & AV_OPT_FLAG_EXPORT)) continue;
             if (av_opt_get(dec_ctx->priv_data, opt->name, 0, &str) >= 0) {
                 print_str(opt->name, str);
                 av_free(str);
