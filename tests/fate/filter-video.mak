@@ -847,16 +847,16 @@ fate-filter-meta-4560-rotate0: CMD = framecrc -auto_conversion_filters -flags +b
 
 REFCMP_DEPS = FFMPEG LAVFI_INDEV TESTSRC2_FILTER AVGBLUR_FILTER METADATA_FILTER
 
-FATE_FILTER_SAMPLES-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-rgb
+FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-rgb
 fate-filter-refcmp-psnr-rgb: CMD = refcmp_metadata psnr rgb24 0.002
 
-FATE_FILTER_SAMPLES-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-yuv
+FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-yuv
 fate-filter-refcmp-psnr-yuv: CMD = refcmp_metadata psnr yuv422p 0.0015
 
-FATE_FILTER_SAMPLES-$(call ALLYES, $(REFCMP_DEPS) SSIM_FILTER) += fate-filter-refcmp-ssim-rgb
+FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) SSIM_FILTER) += fate-filter-refcmp-ssim-rgb
 fate-filter-refcmp-ssim-rgb: CMD = refcmp_metadata ssim rgb24 0.015
 
-FATE_FILTER_SAMPLES-$(call ALLYES, $(REFCMP_DEPS) SSIM_FILTER) += fate-filter-refcmp-ssim-yuv
+FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) SSIM_FILTER) += fate-filter-refcmp-ssim-yuv
 fate-filter-refcmp-ssim-yuv: CMD = refcmp_metadata ssim yuv422p 0.015
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
