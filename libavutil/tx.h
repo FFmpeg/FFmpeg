@@ -95,7 +95,7 @@ enum AVTXType {
  * @param stride the input or output stride in bytes
  *
  * The out and in arrays must be aligned to the maximum required by the CPU
- * architecture.
+ * architecture unless the AV_TX_UNALIGNED flag was set in av_tx_init().
  * The stride must follow the constraints the transform type has specified.
  */
 typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
@@ -110,6 +110,12 @@ enum AVTXFlags {
      * transform types.
      */
     AV_TX_INPLACE = 1ULL << 0,
+
+    /**
+     * Relaxes alignment requirement for the in and out arrays of av_tx_fn().
+     * May be slower with certain transform types.
+     */
+    AV_TX_UNALIGNED = 1ULL << 1,
 };
 
 /**
