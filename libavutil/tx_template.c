@@ -1,6 +1,8 @@
 /*
- * Copyright (c) 2019 Lynne <dev@lynne.ee>
+ * Copyright (c) Lynne
+ *
  * Power of two FFT:
+ * Copyright (c) Lynne
  * Copyright (c) 2008 Loren Merritt
  * Copyright (c) 2002 Fabrice Bellard
  * Partly based on libdjbfft by D. J. Bernstein
@@ -65,10 +67,11 @@ static av_always_inline void init_cos_tabs_idx(int index)
     int m = 1 << index;
     double freq = 2*M_PI/m;
     FFTSample *tab = cos_tabs[index];
-    for(int i = 0; i <= m/4; i++)
-        tab[i] = RESCALE(cos(i*freq));
-    for(int i = 1; i < m/4; i++)
-        tab[m/2 - i] = tab[i];
+
+    for (int i = 0; i < m/4; i++)
+        *tab++ = RESCALE(cos(i*freq));
+
+    *tab = 0;
 }
 
 #define INIT_FF_COS_TABS_FUNC(index, size)                                     \
@@ -214,76 +217,60 @@ static av_always_inline void fft15(FFTComplex *out, FFTComplex *in,
     fft5_m3(out, tmp + 10, stride);
 }
 
-#define BUTTERFLIES(a0,a1,a2,a3) {\
-    BF(t3, t5, t5, t1);\
-    BF(a2.re, a0.re, a0.re, t5);\
-    BF(a3.im, a1.im, a1.im, t3);\
-    BF(t4, t6, t2, t6);\
-    BF(a3.re, a1.re, a1.re, t4);\
-    BF(a2.im, a0.im, a0.im, t6);\
-}
+#define BUTTERFLIES(a0,a1,a2,a3)               \
+    do {                                       \
+        r0=a0.re;                              \
+        i0=a0.im;                              \
+        r1=a1.re;                              \
+        i1=a1.im;                              \
+        BF(t3, t5, t5, t1);                    \
+        BF(a2.re, a0.re, r0, t5);              \
+        BF(a3.im, a1.im, i1, t3);              \
+        BF(t4, t6, t2, t6);                    \
+        BF(a3.re, a1.re, r1, t4);              \
+        BF(a2.im, a0.im, i0, t6);              \
+    } while (0)
 
-// force loading all the inputs before storing any.
-// this is slightly slower for small data, but avoids store->load aliasing
-// for addresses separated by large powers of 2.
-#define BUTTERFLIES_BIG(a0,a1,a2,a3) {\
-    FFTSample r0=a0.re, i0=a0.im, r1=a1.re, i1=a1.im;\
-    BF(t3, t5, t5, t1);\
-    BF(a2.re, a0.re, r0, t5);\
-    BF(a3.im, a1.im, i1, t3);\
-    BF(t4, t6, t2, t6);\
-    BF(a3.re, a1.re, r1, t4);\
-    BF(a2.im, a0.im, i0, t6);\
-}
-
-#define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
-    CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
-    CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
-    BUTTERFLIES(a0,a1,a2,a3)\
-}
-
-#define TRANSFORM_ZERO(a0,a1,a2,a3) {\
-    t1 = a2.re;\
-    t2 = a2.im;\
-    t5 = a3.re;\
-    t6 = a3.im;\
-    BUTTERFLIES(a0,a1,a2,a3)\
-}
+#define TRANSFORM(a0,a1,a2,a3,wre,wim)         \
+    do {                                       \
+        CMUL(t1, t2, a2.re, a2.im, wre, -wim); \
+        CMUL(t5, t6, a3.re, a3.im, wre,  wim); \
+        BUTTERFLIES(a0, a1, a2, a3);           \
+    } while (0)
 
 /* z[0...8n-1], w[1...2n-1] */
-#define PASS(name)\
-static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
-{\
-    FFTSample t1, t2, t3, t4, t5, t6;\
-    int o1 = 2*n;\
-    int o2 = 4*n;\
-    int o3 = 6*n;\
-    const FFTSample *wim = wre+o1;\
-    n--;\
-\
-    TRANSFORM_ZERO(z[0],z[o1],z[o2],z[o3]);\
-    TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
-    do {\
-        z += 2;\
-        wre += 2;\
-        wim -= 2;\
-        TRANSFORM(z[0],z[o1],z[o2],z[o3],wre[0],wim[0]);\
-        TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
-    } while(--n);\
+static void split_radix_combine(FFTComplex *z, const FFTSample *cos, int n)
+{
+    int o1 = 2*n;
+    int o2 = 4*n;
+    int o3 = 6*n;
+    const FFTSample *wim = cos + o1 - 7;
+    FFTSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
+
+    for (int i = 0; i < n; i += 4) {
+        TRANSFORM(z[0], z[o1 + 0], z[o2 + 0], z[o3 + 0], cos[0], wim[7]);
+        TRANSFORM(z[2], z[o1 + 2], z[o2 + 2], z[o3 + 2], cos[2], wim[5]);
+        TRANSFORM(z[4], z[o1 + 4], z[o2 + 4], z[o3 + 4], cos[4], wim[3]);
+        TRANSFORM(z[6], z[o1 + 6], z[o2 + 6], z[o3 + 6], cos[6], wim[1]);
+
+        TRANSFORM(z[1], z[o1 + 1], z[o2 + 1], z[o3 + 1], cos[1], wim[6]);
+        TRANSFORM(z[3], z[o1 + 3], z[o2 + 3], z[o3 + 3], cos[3], wim[4]);
+        TRANSFORM(z[5], z[o1 + 5], z[o2 + 5], z[o3 + 5], cos[5], wim[2]);
+        TRANSFORM(z[7], z[o1 + 7], z[o2 + 7], z[o3 + 7], cos[7], wim[0]);
+
+        z   += 2*4;
+        cos += 2*4;
+        wim -= 2*4;
+    }
 }
 
-PASS(pass)
-#undef BUTTERFLIES
-#define BUTTERFLIES BUTTERFLIES_BIG
-PASS(pass_big)
-
-#define DECL_FFT(n,n2,n4)\
-static void fft##n(FFTComplex *z)\
-{\
-    fft##n2(z);\
-    fft##n4(z+n4*2);\
-    fft##n4(z+n4*3);\
-    pass(z,TX_NAME(ff_cos_##n),n4/2);\
+#define DECL_FFT(n, n2, n4)                            \
+static void fft##n(FFTComplex *z)                      \
+{                                                      \
+    fft##n2(z);                                        \
+    fft##n4(z + n4*2);                                 \
+    fft##n4(z + n4*3);                                 \
+    split_radix_combine(z, TX_NAME(ff_cos_##n), n4/2); \
 }
 
 static void fft2(FFTComplex *z)
@@ -310,7 +297,7 @@ static void fft4(FFTComplex *z)
 
 static void fft8(FFTComplex *z)
 {
-    FFTSample t1, t2, t3, t4, t5, t6;
+    FFTSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
 
     fft4(z);
 
@@ -319,24 +306,30 @@ static void fft8(FFTComplex *z)
     BF(t5, z[7].re, z[6].re, -z[7].re);
     BF(t6, z[7].im, z[6].im, -z[7].im);
 
-    BUTTERFLIES(z[0],z[2],z[4],z[6]);
-    TRANSFORM(z[1],z[3],z[5],z[7],RESCALE(M_SQRT1_2),RESCALE(M_SQRT1_2));
+    BUTTERFLIES(z[0], z[2], z[4], z[6]);
+    TRANSFORM(z[1], z[3], z[5], z[7], RESCALE(M_SQRT1_2), RESCALE(M_SQRT1_2));
 }
 
 static void fft16(FFTComplex *z)
 {
-    FFTSample t1, t2, t3, t4, t5, t6;
+    FFTSample t1, t2, t3, t4, t5, t6, r0, i0, r1, i1;
     FFTSample cos_16_1 = TX_NAME(ff_cos_16)[1];
+    FFTSample cos_16_2 = TX_NAME(ff_cos_16)[2];
     FFTSample cos_16_3 = TX_NAME(ff_cos_16)[3];
 
-    fft8(z);
-    fft4(z+8);
-    fft4(z+12);
+    fft8(z +  0);
+    fft4(z +  8);
+    fft4(z + 12);
 
-    TRANSFORM_ZERO(z[0],z[4],z[8],z[12]);
-    TRANSFORM(z[2],z[6],z[10],z[14],RESCALE(M_SQRT1_2),RESCALE(M_SQRT1_2));
-    TRANSFORM(z[1],z[5],z[9],z[13],cos_16_1,cos_16_3);
-    TRANSFORM(z[3],z[7],z[11],z[15],cos_16_3,cos_16_1);
+    t1 = z[ 8].re;
+    t2 = z[ 8].im;
+    t5 = z[12].re;
+    t6 = z[12].im;
+    BUTTERFLIES(z[0], z[4], z[8], z[12]);
+
+    TRANSFORM(z[ 2], z[ 6], z[10], z[14], cos_16_2, cos_16_2);
+    TRANSFORM(z[ 1], z[ 5], z[ 9], z[13], cos_16_1, cos_16_3);
+    TRANSFORM(z[ 3], z[ 7], z[11], z[15], cos_16_3, cos_16_1);
 }
 
 DECL_FFT(32,16,8)
@@ -344,7 +337,6 @@ DECL_FFT(64,32,16)
 DECL_FFT(128,64,32)
 DECL_FFT(256,128,64)
 DECL_FFT(512,256,128)
-#define pass pass_big
 DECL_FFT(1024,512,256)
 DECL_FFT(2048,1024,512)
 DECL_FFT(4096,2048,1024)
@@ -386,8 +378,8 @@ DECL_COMP_FFT(3)
 DECL_COMP_FFT(5)
 DECL_COMP_FFT(15)
 
-static void monolithic_fft(AVTXContext *s, void *_out, void *_in,
-                           ptrdiff_t stride)
+static void split_radix_fft(AVTXContext *s, void *_out, void *_in,
+                            ptrdiff_t stride)
 {
     FFTComplex *in = _in;
     FFTComplex *out = _out;
@@ -730,7 +722,7 @@ int TX_NAME(ff_tx_init_mdct_fft)(AVTXContext *s, av_tx_fn *tx,
                   n == 5 ? inv ? compound_imdct_5xM  : compound_mdct_5xM :
                            inv ? compound_imdct_15xM : compound_mdct_15xM;
     } else { /* Direct transform case */
-        *tx = monolithic_fft;
+        *tx = split_radix_fft;
         if (is_mdct)
             *tx = inv ? monolithic_imdct : monolithic_mdct;
     }

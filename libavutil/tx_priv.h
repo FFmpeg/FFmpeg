@@ -105,7 +105,7 @@ typedef void FFTComplex;
     CMUL((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
 
 #define COSTABLE(size)                                                         \
-    DECLARE_ALIGNED(32, FFTSample, TX_NAME(ff_cos_##size))[size/2]
+    DECLARE_ALIGNED(32, FFTSample, TX_NAME(ff_cos_##size))[size/4 + 1]
 
 /* Used by asm, reorder with care */
 struct AVTXContext {
