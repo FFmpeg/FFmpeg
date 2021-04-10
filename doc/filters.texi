@@ -1947,7 +1947,7 @@ by this filter if this option is disabled. By default is enabled.
 This filter supports the following commands:
 @table @option
 @item weights
-@item sum
+@item normalize
 Syntax is same as option with same name.
 @end table
 
