@@ -172,7 +172,7 @@ static int webp_write_trailer(AVFormatContext *s)
     WebpContext *w = s->priv_data;
 
     if (w->using_webp_anim_encoder) {
-        if ((w->frame_count > 1) && w->loop) {  // Write loop count.
+        if (w->loop) {  // Write loop count.
             avio_seek(s->pb, 42, SEEK_SET);
             avio_wl16(s->pb, w->loop);
         }
