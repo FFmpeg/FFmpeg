@@ -4078,18 +4078,18 @@ static void fov_from_dfov(int format, float d_fov, float w, float h, float *h_fo
         break;
     case DUAL_FISHEYE:
         {
-            const float d = 0.5f * hypotf(w * 0.5f, h);
+            const float d = hypotf(w * 0.5f, h);
 
-            *h_fov = d / w * 2.f * d_fov;
-            *v_fov = d / h * d_fov;
+            *h_fov = 0.5f * w / d * d_fov;
+            *v_fov =        h / d * d_fov;
         }
         break;
     case FISHEYE:
         {
-            const float d = 0.5f * hypotf(w, h);
+            const float d = hypotf(w, h);
 
-            *h_fov = d / w * d_fov;
-            *v_fov = d / h * d_fov;
+            *h_fov = w / d * d_fov;
+            *v_fov = h / d * d_fov;
         }
         break;
     case FLAT:
