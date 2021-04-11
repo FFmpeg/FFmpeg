@@ -346,6 +346,8 @@ static int overlay_cuda_config_output(AVFilterLink *outlink)
     // initialize
 
     ctx->hw_device_ctx = av_buffer_ref(frames_ctx->device_ref);
+    if (!ctx->hw_device_ctx)
+        return AVERROR(ENOMEM);
     ctx->hwctx = ((AVHWDeviceContext*)ctx->hw_device_ctx->data)->hwctx;
 
     cuda_ctx = ctx->hwctx->cuda_ctx;
@@ -354,6 +356,8 @@ static int overlay_cuda_config_output(AVFilterLink *outlink)
     ctx->cu_stream = ctx->hwctx->stream;
 
     outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
+    if (!outlink->hw_frames_ctx)
+        return AVERROR(ENOMEM);
 
     // load functions
 
