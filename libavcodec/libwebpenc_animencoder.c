@@ -102,10 +102,9 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             goto end;
         }
 
-        pkt->pts = pkt->dts = frame->pts;
         s->prev_frame_pts = frame->pts;  // Save for next frame.
         ret = 0;
-        *got_packet = 1;
+        *got_packet = 0;
 
 end:
         WebPPictureFree(pic);
