@@ -32,7 +32,7 @@
 typedef struct LibWebPAnimContext {
     LibWebPContextCommon cc;
     WebPAnimEncoder *enc;     // the main AnimEncoder object
-    int64_t prev_frame_pts;   // pts of the previously encoded frame.
+    int64_t first_frame_pts;  // pts of the first encoded frame.
     int done;                 // If true, we have assembled the bitstream already
 } LibWebPAnimContext;
 
@@ -48,7 +48,7 @@ static av_cold int libwebp_anim_encode_init(AVCodecContext *avctx)
         s->enc = WebPAnimEncoderNew(avctx->width, avctx->height, &enc_options);
         if (!s->enc)
             return AVERROR(EINVAL);
-        s->prev_frame_pts = -1;
+        s->first_frame_pts = AV_NOPTS_VALUE;
         s->done = 0;
     }
     return ret;
@@ -73,7 +73,7 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 memcpy(pkt->data, assembled_data.bytes, assembled_data.size);
                 s->done = 1;
                 pkt->flags |= AV_PKT_FLAG_KEY;
-                pkt->pts = pkt->dts = s->prev_frame_pts + 1;
+                pkt->pts = pkt->dts = s->first_frame_pts;
                 *got_packet = 1;
                 return 0;
             } else {
@@ -102,7 +102,8 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             goto end;
         }
 
-        s->prev_frame_pts = frame->pts;  // Save for next frame.
+        if (!avctx->frame_number)
+            s->first_frame_pts = frame->pts;
         ret = 0;
         *got_packet = 0;
 
