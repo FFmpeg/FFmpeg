@@ -433,6 +433,7 @@ AVOutputFormat ff_mp2_muxer = {
     .extensions        = "mp2,m2a,mpa",
     .audio_codec       = AV_CODEC_ID_MP2,
     .video_codec       = AV_CODEC_ID_NONE,
+    .init              = force_one_stream,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
