@@ -2,7 +2,8 @@
  * Loongson SIMD optimized h264chroma
  *
  * Copyright (c) 2018 Loongson Technology Corporation Limited
- * Copyright (c) 2018 Shiyou Yin <yinshiyou-hf@loongson.cn>
+ * Contributed by Shiyou Yin <yinshiyou-hf@loongson.cn>
+ *                Gu Xiwei(guxiwei-hf@loongson.cn)
  *
  * This file is part of FFmpeg.
  *
@@ -26,18 +27,18 @@
 
 #include "libavutil/attributes.h"
 #include "libavcodec/cabac.h"
-#include "libavutil/mips/asmdefs.h"
+#include "libavutil/mips/mmiutils.h"
 #include "config.h"
 
 #define get_cabac_inline get_cabac_inline_mips
 static av_always_inline int get_cabac_inline_mips(CABACContext *c,
-                                             uint8_t * const state){
+                                                  uint8_t * const state){
     mips_reg tmp0, tmp1, tmp2, bit;
 
     __asm__ volatile (
         "lbu          %[bit],        0(%[state])                   \n\t"
         "and          %[tmp0],       %[c_range],     0xC0          \n\t"
-        PTR_ADDU     "%[tmp0],       %[tmp0],        %[tmp0]       \n\t"
+        PTR_SLL      "%[tmp0],       %[tmp0],        0x01          \n\t"
         PTR_ADDU     "%[tmp0],       %[tmp0],        %[tables]     \n\t"
         PTR_ADDU     "%[tmp0],       %[tmp0],        %[bit]        \n\t"
         /* tmp1: RangeLPS */
@@ -45,18 +46,11 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
 
         PTR_SUBU     "%[c_range],    %[c_range],     %[tmp1]       \n\t"
         PTR_SLL      "%[tmp0],       %[c_range],     0x11          \n\t"
-        PTR_SUBU     "%[tmp0],       %[tmp0],        %[c_low]      \n\t"
-
-        /* tmp2: lps_mask */
-        PTR_SRA      "%[tmp2],       %[tmp0],        0x1F          \n\t"
-        /* If tmp0 < 0, lps_mask ==  0xffffffff*/
-        /* If tmp0 >= 0, lps_mask ==  0x00000000*/
+        "slt          %[tmp2],       %[tmp0],        %[c_low]      \n\t"
         "beqz         %[tmp2],       1f                            \n\t"
-        PTR_SLL      "%[tmp0],       %[c_range],     0x11          \n\t"
+        "move         %[c_range],    %[tmp1]                       \n\t"
+        "not          %[bit],        %[bit]                        \n\t"
         PTR_SUBU     "%[c_low],      %[c_low],       %[tmp0]       \n\t"
-        PTR_SUBU     "%[tmp0],       %[tmp1],        %[c_range]    \n\t"
-        PTR_ADDU     "%[c_range],    %[c_range],     %[tmp0]       \n\t"
-        "xor          %[bit],        %[bit],         %[tmp2]       \n\t"
 
         "1:                                                        \n\t"
         /* tmp1: *state */
@@ -71,23 +65,21 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
         PTR_SLL      "%[c_range],    %[c_range],     %[tmp2]       \n\t"
         PTR_SLL      "%[c_low],      %[c_low],       %[tmp2]       \n\t"
 
-        "and          %[tmp0],       %[c_low],       %[cabac_mask] \n\t"
-        "bnez         %[tmp0],       1f                            \n\t"
-        PTR_ADDIU    "%[tmp0],       %[c_low],       -0x01         \n\t"
+        "and          %[tmp1],       %[c_low],       %[cabac_mask] \n\t"
+        "bnez         %[tmp1],       1f                            \n\t"
+        PTR_ADDIU    "%[tmp0],       %[c_low],       -0X01         \n\t"
         "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"
         PTR_SRA      "%[tmp0],       %[tmp0],        0x0f          \n\t"
         PTR_ADDU     "%[tmp0],       %[tmp0],        %[tables]     \n\t"
+        /* tmp2: ff_h264_norm_shift[x >> (CABAC_BITS - 1)] */
         "lbu          %[tmp2],       %[norm_off](%[tmp0])          \n\t"
-#if CABAC_BITS == 16
-        "lbu          %[tmp0],       0(%[c_bytestream])            \n\t"
-        "lbu          %[tmp1],       1(%[c_bytestream])            \n\t"
-        PTR_SLL      "%[tmp0],       %[tmp0],        0x09          \n\t"
-        PTR_SLL      "%[tmp1],       %[tmp1],        0x01          \n\t"
-        PTR_ADDU     "%[tmp0],       %[tmp0],        %[tmp1]       \n\t"
+#if HAVE_BIGENDIAN
+        "lhu          %[tmp0],       0(%[c_bytestream])            \n\t"
 #else
-        "lbu          %[tmp0],       0(%[c_bytestream])            \n\t"
-        PTR_SLL      "%[tmp0],       %[tmp0],        0x01          \n\t"
+        "lhu          %[tmp0],       0(%[c_bytestream])            \n\t"
+        "wsbh         %[tmp0],       %[tmp0]                       \n\t"
 #endif
+        PTR_SLL      "%[tmp0],       %[tmp0],        0x01          \n\t"
         PTR_SUBU     "%[tmp0],       %[tmp0],        %[cabac_mask] \n\t"
 
         "li           %[tmp1],       0x07                          \n\t"
@@ -95,10 +87,13 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
         PTR_SLL      "%[tmp0],       %[tmp0],        %[tmp1]       \n\t"
         PTR_ADDU     "%[c_low],      %[c_low],       %[tmp0]       \n\t"
 
-#if !UNCHECKED_BITSTREAM_READER
-        "bge          %[c_bytestream], %[c_bytestream_end], 1f     \n\t"
+#if UNCHECKED_BITSTREAM_READER
+        PTR_ADDIU    "%[c_bytestream], %[c_bytestream],     0x02                 \n\t"
+#else
+        "slt          %[tmp0],         %[c_bytestream],     %[c_bytestream_end]  \n\t"
+        PTR_ADDIU    "%[tmp2],         %[c_bytestream],     0x02                 \n\t"
+        "movn         %[c_bytestream], %[tmp2],             %[tmp0]              \n\t"
 #endif
-        PTR_ADDIU    "%[c_bytestream], %[c_bytestream],     0X02   \n\t"
         "1:                                                        \n\t"
     : [bit]"=&r"(bit), [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [tmp2]"=&r"(tmp2),
       [c_range]"+&r"(c->range), [c_low]"+&r"(c->low),
@@ -117,4 +112,93 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
     return bit;
 }
 
+#define get_cabac_bypass get_cabac_bypass_mips
+static av_always_inline int get_cabac_bypass_mips(CABACContext *c)
+{
+    mips_reg tmp0, tmp1;
+    int res = 0;
+    __asm__ volatile(
+        PTR_SLL    "%[c_low],        %[c_low],        0x01                \n\t"
+        "and        %[tmp0],         %[c_low],        %[cabac_mask]       \n\t"
+        "bnez       %[tmp0],         1f                                   \n\t"
+#if HAVE_BIGENDIAN
+        "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
+#else
+        "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
+        "wsbh       %[tmp1],         %[tmp1]                              \n\t"
+#endif
+        PTR_SLL    "%[tmp1],         %[tmp1],         0x01                \n\t"
+        PTR_SUBU   "%[tmp1],         %[tmp1],         %[cabac_mask]       \n\t"
+        PTR_ADDU   "%[c_low],        %[c_low],        %[tmp1]             \n\t"
+#if UNCHECKED_BITSTREAM_READER
+        PTR_ADDIU  "%[c_bytestream], %[c_bytestream], 0x02                \n\t"
+#else
+        "slt        %[tmp0],         %[c_bytestream], %[c_bytestream_end] \n\t"
+        PTR_ADDIU  "%[tmp1],         %[c_bytestream], 0x02                \n\t"
+        "movn       %[c_bytestream], %[tmp1],         %[tmp0]             \n\t"
+#endif
+        "1:                                                               \n\t"
+        PTR_SLL    "%[tmp1],         %[c_range],      0x11                \n\t"
+        "slt        %[tmp0],         %[c_low],        %[tmp1]             \n\t"
+        PTR_SUBU   "%[tmp1],         %[c_low],        %[tmp1]             \n\t"
+        "movz       %[res],          %[one],          %[tmp0]             \n\t"
+        "movz       %[c_low],        %[tmp1],         %[tmp0]             \n\t"
+        : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [res]"+&r"(res),
+          [c_range]"+&r"(c->range), [c_low]"+&r"(c->low),
+          [c_bytestream]"+&r"(c->bytestream)
+        : [cabac_mask]"r"(CABAC_MASK),
+#if !UNCHECKED_BITSTREAM_READER
+          [c_bytestream_end]"r"(c->bytestream_end),
+#endif
+          [one]"r"(0x01)
+        : "memory"
+    );
+    return res;
+}
+
+#define get_cabac_bypass_sign get_cabac_bypass_sign_mips
+static av_always_inline int get_cabac_bypass_sign_mips(CABACContext *c, int val)
+{
+    mips_reg tmp0, tmp1;
+    int res = val;
+    __asm__ volatile(
+        PTR_SLL    "%[c_low],        %[c_low],        0x01                \n\t"
+        "and        %[tmp0],         %[c_low],        %[cabac_mask]       \n\t"
+        "bnez       %[tmp0],         1f                                   \n\t"
+#if HAVE_BIGENDIAN
+        "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
+#else
+        "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
+        "wsbh       %[tmp1],         %[tmp1]                              \n\t"
+#endif
+        PTR_SLL    "%[tmp1],         %[tmp1],         0x01                \n\t"
+        PTR_SUBU   "%[tmp1],         %[tmp1],         %[cabac_mask]       \n\t"
+        PTR_ADDU   "%[c_low],        %[c_low],        %[tmp1]             \n\t"
+#if UNCHECKED_BITSTREAM_READER
+        PTR_ADDIU  "%[c_bytestream], %[c_bytestream], 0x02                \n\t"
+#else
+        "slt        %[tmp0],         %[c_bytestream], %[c_bytestream_end] \n\t"
+        PTR_ADDIU  "%[tmp1],         %[c_bytestream], 0x02                \n\t"
+        "movn       %[c_bytestream], %[tmp1],         %[tmp0]             \n\t"
+#endif
+        "1:                                                               \n\t"
+        PTR_SLL    "%[tmp1],         %[c_range],      0x11                \n\t"
+        "slt        %[tmp0],         %[c_low],        %[tmp1]             \n\t"
+        PTR_SUBU   "%[tmp1],         %[c_low],        %[tmp1]             \n\t"
+        "movz       %[c_low],        %[tmp1],         %[tmp0]             \n\t"
+        PTR_SUBU   "%[tmp1],         %[zero],         %[res]              \n\t"
+        "movn       %[res],          %[tmp1],         %[tmp0]             \n\t"
+        : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [res]"+&r"(res),
+          [c_range]"+&r"(c->range), [c_low]"+&r"(c->low),
+          [c_bytestream]"+&r"(c->bytestream)
+        : [cabac_mask]"r"(CABAC_MASK),
+#if !UNCHECKED_BITSTREAM_READER
+          [c_bytestream_end]"r"(c->bytestream_end),
+#endif
+          [zero]"r"(0x0)
+        : "memory"
+    );
+
+    return res;
+}
 #endif /* AVCODEC_MIPS_CABAC_H */
