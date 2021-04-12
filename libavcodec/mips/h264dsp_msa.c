@@ -1284,284 +1284,160 @@ static void avc_loopfilter_cb_or_cr_intra_edge_ver_msa(uint8_t *data_cb_or_cr,
     }
 }
 
-static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
-                                                   uint8_t bs0, uint8_t bs1,
-                                                   uint8_t bs2, uint8_t bs3,
-                                                   uint8_t tc0, uint8_t tc1,
-                                                   uint8_t tc2, uint8_t tc3,
-                                                   uint8_t alpha_in,
-                                                   uint8_t beta_in,
-                                                   ptrdiff_t img_width)
+static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t* pPix, uint32_t iStride,
+                                                   uint8_t iAlpha, uint8_t iBeta,
+                                                   uint8_t* pTc)
 {
-    v16u8 tmp_vec, bs = { 0 };
+    v16u8 p0, p1, p2, q0, q1, q2;
+    v16i8 iTc, negiTc, negTc, flags, f;
+    v8i16 p0_l, p0_r, p1_l, p1_r, p2_l, p2_r, q0_l, q0_r, q1_l, q1_r, q2_l, q2_r;
+    v8i16 tc_l, tc_r, negTc_l, negTc_r;
+    v8i16 iTc_l, iTc_r, negiTc_l, negiTc_r;
+    // Use for temporary variable
+    v8i16 t0, t1, t2, t3;
+    v16u8 alpha, beta;
+    v16u8 bDetaP0Q0, bDetaP1P0, bDetaQ1Q0, bDetaP2P0, bDetaQ2Q0;
+    v16i8 const_1_b = __msa_ldi_b(1);
+    v8i16 const_1_h = __msa_ldi_h(1);
+    v8i16 const_4_h = __msa_ldi_h(4);
+    v8i16 const_not_255_h = __msa_ldi_h(~255);
+    v16i8 zero = { 0 };
+    v16i8 tc = { pTc[0  >> 2], pTc[1  >> 2], pTc[2  >> 2], pTc[3  >> 2],
+                 pTc[4  >> 2], pTc[5  >> 2], pTc[6  >> 2], pTc[7  >> 2],
+                 pTc[8  >> 2], pTc[9  >> 2], pTc[10 >> 2], pTc[11 >> 2],
+                 pTc[12 >> 2], pTc[13 >> 2], pTc[14 >> 2], pTc[15 >> 2] };
+    negTc = zero - tc;
+    iTc = tc;
 
-    tmp_vec = (v16u8) __msa_fill_b(bs0);
-    bs = (v16u8) __msa_insve_w((v4i32) bs, 0, (v4i32) tmp_vec);
-    tmp_vec = (v16u8) __msa_fill_b(bs1);
-    bs = (v16u8) __msa_insve_w((v4i32) bs, 1, (v4i32) tmp_vec);
-    tmp_vec = (v16u8) __msa_fill_b(bs2);
-    bs = (v16u8) __msa_insve_w((v4i32) bs, 2, (v4i32) tmp_vec);
-    tmp_vec = (v16u8) __msa_fill_b(bs3);
-    bs = (v16u8) __msa_insve_w((v4i32) bs, 3, (v4i32) tmp_vec);
+    // Load data from pPix
+    LD_SH8(pPix - 3, iStride, t0, t1, t2, t3, q1_l, q1_r, q2_l, q2_r);
+    LD_SH8(pPix + 8 * iStride - 3, iStride, p0_l, p0_r, p1_l, p1_r,
+           p2_l, p2_r, q0_l, q0_r);
+    TRANSPOSE16x8_UB_UB(t0, t1, t2, t3, q1_l, q1_r, q2_l, q2_r,
+                        p0_l, p0_r, p1_l, p1_r, p2_l, p2_r, q0_l, q0_r,
+                        p2, p1, p0, q0, q1, q2, alpha, beta);
 
-    if (!__msa_test_bz_v(bs)) {
-        uint8_t *src = data - 4;
-        v16u8 p3_org, p2_org, p1_org, p0_org, q0_org, q1_org, q2_org, q3_org;
-        v16u8 p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
-        v16u8 is_less_than, is_less_than_beta, is_less_than_alpha;
-        v16u8 is_bs_greater_than0;
-        v16u8 tc = { 0 };
-        v16i8 zero = { 0 };
+    alpha = (v16u8)__msa_fill_b(iAlpha);
+    beta  = (v16u8)__msa_fill_b(iBeta);
 
-        tmp_vec = (v16u8) __msa_fill_b(tc0);
-        tc = (v16u8) __msa_insve_w((v4i32) tc, 0, (v4i32) tmp_vec);
-        tmp_vec = (v16u8) __msa_fill_b(tc1);
-        tc = (v16u8) __msa_insve_w((v4i32) tc, 1, (v4i32) tmp_vec);
-        tmp_vec = (v16u8) __msa_fill_b(tc2);
-        tc = (v16u8) __msa_insve_w((v4i32) tc, 2, (v4i32) tmp_vec);
-        tmp_vec = (v16u8) __msa_fill_b(tc3);
-        tc = (v16u8) __msa_insve_w((v4i32) tc, 3, (v4i32) tmp_vec);
+    bDetaP0Q0 = __msa_asub_u_b(p0, q0);
+    bDetaP1P0 = __msa_asub_u_b(p1, p0);
+    bDetaQ1Q0 = __msa_asub_u_b(q1, q0);
+    bDetaP2P0 = __msa_asub_u_b(p2, p0);
+    bDetaQ2Q0 = __msa_asub_u_b(q2, q0);
+    bDetaP0Q0 = (v16u8)__msa_clt_u_b(bDetaP0Q0, alpha);
+    bDetaP1P0 = (v16u8)__msa_clt_u_b(bDetaP1P0, beta);
+    bDetaQ1Q0 = (v16u8)__msa_clt_u_b(bDetaQ1Q0, beta);
+    bDetaP2P0 = (v16u8)__msa_clt_u_b(bDetaP2P0, beta);
+    bDetaQ2Q0 = (v16u8)__msa_clt_u_b(bDetaQ2Q0, beta);
 
-        is_bs_greater_than0 = (zero < bs);
+    // Unsigned extend p0, p1, p2, q0, q1, q2 from 8 bits to 16 bits
+    ILVRL_B2_SH(zero, p0, p0_r, p0_l);
+    ILVRL_B2_SH(zero, p1, p1_r, p1_l);
+    ILVRL_B2_SH(zero, p2, p2_r, p2_l);
+    ILVRL_B2_SH(zero, q0, q0_r, q0_l);
+    ILVRL_B2_SH(zero, q1, q1_r, q1_l);
+    ILVRL_B2_SH(zero, q2, q2_r, q2_l);
+    // Signed extend tc, negTc from 8 bits to 16 bits
+    flags = __msa_clt_s_b(tc, zero);
+    ILVRL_B2(v8i16, flags, tc, tc_r, tc_l);
+    flags = __msa_clt_s_b(negTc, zero);
+    ILVRL_B2(v8i16, flags, negTc, negTc_r, negTc_l);
 
-        {
-            v16u8 row0, row1, row2, row3, row4, row5, row6, row7;
-            v16u8 row8, row9, row10, row11, row12, row13, row14, row15;
+    f = (v16i8)bDetaP0Q0 & (v16i8)bDetaP1P0 & (v16i8)bDetaQ1Q0;
+    flags = f & (v16i8)bDetaP2P0;
+    flags = __msa_ceq_b(flags, zero);
+    iTc += ((~flags) & const_1_b);
+    flags = f & (v16i8)bDetaQ2Q0;
+    flags = __msa_ceq_b(flags, zero);
+    iTc += ((~flags) & const_1_b);
+    negiTc = zero - iTc;
+    // Signed extend iTc, negiTc from 8 bits to 16 bits
+    flags = __msa_clt_s_b(iTc, zero);
+    ILVRL_B2(v8i16, flags, iTc, iTc_r, iTc_l);
+    flags = __msa_clt_s_b(negiTc, zero);
+    ILVRL_B2(v8i16, flags, negiTc, negiTc_r, negiTc_l);
 
-            LD_UB8(src, img_width,
-                   row0, row1, row2, row3, row4, row5, row6, row7);
-            src += (8 * img_width);
-            LD_UB8(src, img_width,
-                   row8, row9, row10, row11, row12, row13, row14, row15);
+    // Calculate the left part
+    // p1
+    t0 = (p2_l + ((p0_l + q0_l + const_1_h) >> 1) - (p1_l << 1)) >> 1;
+    t0 = __msa_max_s_h(negTc_l, t0);
+    t0 = __msa_min_s_h(tc_l, t0);
+    t1 = p1_l + t0;
+    // q1
+    t0 = (q2_l + ((p0_l + q0_l + const_1_h) >> 1) - (q1_l << 1)) >> 1;
+    t0 = __msa_max_s_h(negTc_l, t0);
+    t0 = __msa_min_s_h(tc_l, t0);
+    t2 = q1_l + t0;
+    // iDeta
+    t0 = (((q0_l - p0_l) << 2) + (p1_l - q1_l) + const_4_h) >> 3;
+    t0 = __msa_max_s_h(negiTc_l, t0);
+    t0 = __msa_min_s_h(iTc_l, t0);
+    p1_l = t1;
+    q1_l = t2;
+    // p0
+    t1 = p0_l + t0;
+    t2 = t1 & const_not_255_h;
+    t3 = __msa_cle_s_h((v8i16)zero, t1);
+    flags = (v16i8)__msa_ceq_h(t2, (v8i16)zero);
+    p0_l = (t1 & (v8i16)flags) + (t3 & (v8i16)(~flags));
+    // q0
+    t1 = q0_l - t0;
+    t2 = t1 & const_not_255_h;
+    t3 = __msa_cle_s_h((v8i16)zero, t1);
+    flags = (v16i8)__msa_ceq_h(t2, (v8i16)zero);
+    q0_l = (t1 & (v8i16)flags) + (t3 & (v8i16)(~flags));
 
-            TRANSPOSE16x8_UB_UB(row0, row1, row2, row3, row4, row5, row6, row7,
-                                row8, row9, row10, row11,
-                                row12, row13, row14, row15,
-                                p3_org, p2_org, p1_org, p0_org,
-                                q0_org, q1_org, q2_org, q3_org);
-        }
+    // Calculate the right part
+    // p1
+    t0 = (p2_r + ((p0_r + q0_r + const_1_h) >> 1) - (p1_r << 1)) >> 1;
+    t0 = __msa_max_s_h(negTc_r, t0);
+    t0 = __msa_min_s_h(tc_r, t0);
+    t1 = p1_r + t0;
+    // q1
+    t0 = (q2_r + ((p0_r + q0_r + const_1_h) >> 1) - (q1_r << 1)) >> 1;
+    t0 = __msa_max_s_h(negTc_r, t0);
+    t0 = __msa_min_s_h(tc_r, t0);
+    t2 = q1_r + t0;
+    // iDeta
+    t0 = (((q0_r - p0_r) << 2) + (p1_r - q1_r) + const_4_h) >> 3;
+    t0 = __msa_max_s_h(negiTc_r, t0);
+    t0 = __msa_min_s_h(iTc_r, t0);
+    p1_r = t1;
+    q1_r = t2;
+    // p0
+    t1 = p0_r + t0;
+    t2 = t1 & const_not_255_h;
+    t3 = __msa_cle_s_h((v8i16)zero, t1);
+    flags = (v16i8)__msa_ceq_h(t2, (v8i16)zero);
+    p0_r = (t1 & (v8i16)flags) + (t3 & (v8i16)(~flags));
+    // q0
+    t1 = q0_r - t0;
+    t2 = t1 & const_not_255_h;
+    t3 = __msa_cle_s_h((v8i16)zero, t1);
+    flags = (v16i8)__msa_ceq_h(t2, (v8i16)zero);
+    q0_r = (t1 & (v8i16)flags) + (t3 & (v8i16)(~flags));
 
-        p0_asub_q0 = __msa_asub_u_b(p0_org, q0_org);
-        p1_asub_p0 = __msa_asub_u_b(p1_org, p0_org);
-        q1_asub_q0 = __msa_asub_u_b(q1_org, q0_org);
+    // Combined left and right
+    PCKEV_B4(v8i16, p1_l, p1_r, p0_l, p0_r, q0_l, q0_r, q1_l, q1_r,
+             t0, t1, t2, t3);
+    flags = (v16i8)__msa_cle_s_b(zero, tc);
+    flags &= f;
+    p0 = (v16u8)(((v16i8)t1 & flags) + (p0 & (~flags)));
+    q0 = (v16u8)(((v16i8)t2 & flags) + (q0 & (~flags)));
+    // Using t1, t2 as temporary flags
+    t1 = (v8i16)(flags & (~(__msa_ceq_b((v16i8)bDetaP2P0, zero))));
+    p1 = (v16u8)(t0 & t1) + (p1 & (v16u8)(~t1));
+    t2 = (v8i16)(flags & (~(__msa_ceq_b((v16i8)bDetaQ2Q0, zero))));
+    q1 = (v16u8)(t3 & t2) + (q1 & (v16u8)(~t2));
 
-        alpha = (v16u8) __msa_fill_b(alpha_in);
-        beta = (v16u8) __msa_fill_b(beta_in);
-
-        is_less_than_alpha = (p0_asub_q0 < alpha);
-        is_less_than_beta = (p1_asub_p0 < beta);
-        is_less_than = is_less_than_beta & is_less_than_alpha;
-        is_less_than_beta = (q1_asub_q0 < beta);
-        is_less_than = is_less_than_beta & is_less_than;
-        is_less_than = is_less_than & is_bs_greater_than0;
-
-        if (!__msa_test_bz_v(is_less_than)) {
-            v16i8 negate_tc, sign_negate_tc;
-            v16u8 p0, q0, p2_asub_p0, q2_asub_q0;
-            v8i16 tc_r, tc_l, negate_tc_r, i16_negatetc_l;
-            v8i16 p1_org_r, p0_org_r, q0_org_r, q1_org_r;
-            v8i16 p1_org_l, p0_org_l, q0_org_l, q1_org_l;
-            v8i16 p0_r, q0_r, p0_l, q0_l;
-
-            negate_tc = zero - (v16i8) tc;
-            sign_negate_tc = __msa_clti_s_b(negate_tc, 0);
-
-            ILVRL_B2_SH(sign_negate_tc, negate_tc, negate_tc_r, i16_negatetc_l);
-
-            UNPCK_UB_SH(tc, tc_r, tc_l);
-            UNPCK_UB_SH(p1_org, p1_org_r, p1_org_l);
-            UNPCK_UB_SH(p0_org, p0_org_r, p0_org_l);
-            UNPCK_UB_SH(q0_org, q0_org_r, q0_org_l);
-
-            p2_asub_p0 = __msa_asub_u_b(p2_org, p0_org);
-            is_less_than_beta = (p2_asub_p0 < beta);
-            is_less_than_beta = is_less_than_beta & is_less_than;
-
-            if (!__msa_test_bz_v(is_less_than_beta)) {
-                v16u8 p1;
-                v8i16 p1_r = { 0 };
-                v8i16 p1_l = { 0 };
-                v8i16 p2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) p2_org);
-                v8i16 p2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) p2_org);
-
-                AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, p1_org_r, p2_org_r,
-                                 negate_tc_r, tc_r, p1_r);
-                AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, p1_org_l, p2_org_l,
-                                 i16_negatetc_l, tc_l, p1_l);
-
-                p1 = (v16u8) __msa_pckev_b((v16i8) p1_l, (v16i8) p1_r);
-                p1_org = __msa_bmnz_v(p1_org, p1, is_less_than_beta);
-
-                is_less_than_beta = __msa_andi_b(is_less_than_beta, 1);
-                tc = tc + is_less_than_beta;
-            }
-
-            q2_asub_q0 = __msa_asub_u_b(q2_org, q0_org);
-            is_less_than_beta = (q2_asub_q0 < beta);
-            is_less_than_beta = is_less_than_beta & is_less_than;
-
-            q1_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q1_org);
-            q1_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q1_org);
-
-            if (!__msa_test_bz_v(is_less_than_beta)) {
-                v16u8 q1;
-                v8i16 q1_r = { 0 };
-                v8i16 q1_l = { 0 };
-                v8i16 q2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q2_org);
-                v8i16 q2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q2_org);
-
-                AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, q1_org_r, q2_org_r,
-                                 negate_tc_r, tc_r, q1_r);
-                AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, q1_org_l, q2_org_l,
-                                 i16_negatetc_l, tc_l, q1_l);
-
-                q1 = (v16u8) __msa_pckev_b((v16i8) q1_l, (v16i8) q1_r);
-                q1_org = __msa_bmnz_v(q1_org, q1, is_less_than_beta);
-
-                is_less_than_beta = __msa_andi_b(is_less_than_beta, 1);
-                tc = tc + is_less_than_beta;
-            }
-
-            {
-                v8i16 threshold_r, negate_thresh_r;
-                v8i16 threshold_l, negate_thresh_l;
-                v16i8 negate_thresh, sign_negate_thresh;
-
-                negate_thresh = zero - (v16i8) tc;
-                sign_negate_thresh = __msa_clti_s_b(negate_thresh, 0);
-
-                ILVR_B2_SH(zero, tc, sign_negate_thresh, negate_thresh,
-                           threshold_r, negate_thresh_r);
-
-                AVC_LPF_P0Q0(q0_org_r, p0_org_r, p1_org_r, q1_org_r,
-                             negate_thresh_r, threshold_r, p0_r, q0_r);
-
-                threshold_l = (v8i16) __msa_ilvl_b(zero, (v16i8) tc);
-                negate_thresh_l = (v8i16) __msa_ilvl_b(sign_negate_thresh,
-                                                       negate_thresh);
-
-                AVC_LPF_P0Q0(q0_org_l, p0_org_l, p1_org_l, q1_org_l,
-                             negate_thresh_l, threshold_l, p0_l, q0_l);
-            }
-
-            PCKEV_B2_UB(p0_l, p0_r, q0_l, q0_r, p0, q0);
-
-            p0_org = __msa_bmnz_v(p0_org, p0, is_less_than);
-            q0_org = __msa_bmnz_v(q0_org, q0, is_less_than);
-
-        {
-            v16i8 tp0, tp1, tp2, tp3;
-            v8i16 tmp2, tmp5;
-            v4i32 tmp3, tmp4, tmp6, tmp7;
-            uint32_t out0, out2;
-            uint16_t out1, out3;
-
-            src = data - 3;
-
-            ILVRL_B2_SB(p1_org, p2_org, tp0, tp2);
-            ILVRL_B2_SB(q0_org, p0_org, tp1, tp3);
-            ILVRL_B2_SH(q2_org, q1_org, tmp2, tmp5);
-
-            ILVRL_H2_SW(tp1, tp0, tmp3, tmp4);
-            ILVRL_H2_SW(tp3, tp2, tmp6, tmp7);
-
-            out0 = __msa_copy_u_w(tmp3, 0);
-            out1 = __msa_copy_u_h(tmp2, 0);
-            out2 = __msa_copy_u_w(tmp3, 1);
-            out3 = __msa_copy_u_h(tmp2, 1);
-
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp3, 2);
-            out1 = __msa_copy_u_h(tmp2, 2);
-            out2 = __msa_copy_u_w(tmp3, 3);
-            out3 = __msa_copy_u_h(tmp2, 3);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp4, 0);
-            out1 = __msa_copy_u_h(tmp2, 4);
-            out2 = __msa_copy_u_w(tmp4, 1);
-            out3 = __msa_copy_u_h(tmp2, 5);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp4, 2);
-            out1 = __msa_copy_u_h(tmp2, 6);
-            out2 = __msa_copy_u_w(tmp4, 3);
-            out3 = __msa_copy_u_h(tmp2, 7);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp6, 0);
-            out1 = __msa_copy_u_h(tmp5, 0);
-            out2 = __msa_copy_u_w(tmp6, 1);
-            out3 = __msa_copy_u_h(tmp5, 1);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp6, 2);
-            out1 = __msa_copy_u_h(tmp5, 2);
-            out2 = __msa_copy_u_w(tmp6, 3);
-            out3 = __msa_copy_u_h(tmp5, 3);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp7, 0);
-            out1 = __msa_copy_u_h(tmp5, 4);
-            out2 = __msa_copy_u_w(tmp7, 1);
-            out3 = __msa_copy_u_h(tmp5, 5);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-
-            out0 = __msa_copy_u_w(tmp7, 2);
-            out1 = __msa_copy_u_h(tmp5, 6);
-            out2 = __msa_copy_u_w(tmp7, 3);
-            out3 = __msa_copy_u_h(tmp5, 7);
-
-            src += img_width;
-            SW(out0, src);
-            SH(out1, (src + 4));
-            src += img_width;
-            SW(out2, src);
-            SH(out3, (src + 4));
-        }
-        }
-    }
+    ILVRL_B2_SH(p0, p1, t0, t1);
+    ILVRL_B2_SH(q1, q0, t2, t3);
+    ILVRL_H2_UB(t2, t0, p1, p0);
+    ILVRL_H2_UB(t3, t1, q0, q1);
+    // Store data to pPix
+    ST_W8(p1, p0, 0, 1, 2, 3, 0, 1, 2, 3, pPix - 2, iStride);
+    ST_W8(q0, q1, 0, 1, 2, 3, 0, 1, 2, 3, pPix + 8 * iStride - 2, iStride);
 }
 
 static void avc_loopfilter_luma_inter_edge_hor_msa(uint8_t *data,
@@ -2180,23 +2056,24 @@ static void avc_h_loop_filter_chroma422_mbaff_msa(uint8_t *src,
 void ff_h264_h_lpf_luma_inter_msa(uint8_t *data, ptrdiff_t img_width,
                                   int alpha, int beta, int8_t *tc)
 {
-    uint8_t bs0 = 1;
-    uint8_t bs1 = 1;
-    uint8_t bs2 = 1;
-    uint8_t bs3 = 1;
-
-    if (tc[0] < 0)
-        bs0 = 0;
-    if (tc[1] < 0)
-        bs1 = 0;
-    if (tc[2] < 0)
-        bs2 = 0;
-    if (tc[3] < 0)
-        bs3 = 0;
-
-    avc_loopfilter_luma_inter_edge_ver_msa(data, bs0, bs1, bs2, bs3,
-                                           tc[0], tc[1], tc[2], tc[3],
-                                           alpha, beta, img_width);
+//    uint8_t bs0 = 1;
+//    uint8_t bs1 = 1;
+//    uint8_t bs2 = 1;
+//    uint8_t bs3 = 1;
+//
+//    if (tc[0] < 0)
+//        bs0 = 0;
+//    if (tc[1] < 0)
+//        bs1 = 0;
+//    if (tc[2] < 0)
+//        bs2 = 0;
+//    if (tc[3] < 0)
+//        bs3 = 0;
+//
+//    avc_loopfilter_luma_inter_edge_ver_msa(data, bs0, bs1, bs2, bs3,
+//                                           tc[0], tc[1], tc[2], tc[3],
+//                                           alpha, beta, img_width);
+    avc_loopfilter_luma_inter_edge_ver_msa(data, img_width, alpha, beta, tc);
 }
 
 void ff_h264_v_lpf_luma_inter_msa(uint8_t *data, ptrdiff_t img_width,
