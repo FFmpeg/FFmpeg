@@ -1,0 +1,66 @@
+4a68428e97f0af8d222a91404ae0839c *tests/data/fate/id3v2-chapters.aiff
+2458466 tests/data/fate/id3v2-chapters.aiff
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 48000
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+0,          0,          0,     1024,     4096, 0xc5b6547b
+0,       1024,       1024,     1024,     4096, 0x0f27633e
+0,       2048,       2048,     1024,     4096, 0x6c66e3dc
+[CHAPTER]
+id=0
+time_base=1/1000
+start=3104
+start_time=3.104000
+end=4720
+end_time=4.720000
+TAG:title=01
+TAG:description=foo
+TAG:date=2021
+TAG:copyright=none
+[/CHAPTER]
+[CHAPTER]
+id=1
+time_base=1/1000
+start=4720
+start_time=4.720000
+end=6286
+end_time=6.286000
+TAG:title=02
+TAG:genre=nonsense
+[/CHAPTER]
+[CHAPTER]
+id=2
+time_base=1/1000
+start=6286
+start_time=6.286000
+end=6542
+end_time=6.542000
+TAG:title=03
+[/CHAPTER]
+[CHAPTER]
+id=3
+time_base=1/1000
+start=6542
+start_time=6.542000
+end=8261
+end_time=8.261000
+TAG:title=04
+[/CHAPTER]
+[CHAPTER]
+id=4
+time_base=1/1000
+start=8261
+start_time=8.261000
+end=12801
+end_time=12.801000
+TAG:title=05
+[/CHAPTER]
+[FORMAT]
+TAG:encoded_by=ZOOM Handy Recorder H4n
+TAG:date=2020-08-28
+TAG:coding_history=A=PCM,F=48000,W=16,M=stereo,T=ZOOM Handy Recorder H4n
+TAG:time_reference=2350992000
+[/FORMAT]
