@@ -81,8 +81,8 @@ function ff_pred16x16_dc_neon, export=1
 .L_pred16x16_dc_end:
         mov             w3,  #8
 6:      st1             {v0.16b}, [x0], x1
-        st1             {v0.16b}, [x0], x1
         subs            w3,  w3,  #1
+        st1             {v0.16b}, [x0], x1
         b.ne            6b
         ret
 endfunc
@@ -91,8 +91,8 @@ function ff_pred16x16_hor_neon, export=1
         sub             x2,  x0,  #1
         mov             w3,  #16
 1:      ld1r            {v0.16b}, [x2], x1
-        st1             {v0.16b}, [x0], x1
         subs            w3,  w3,  #1
+        st1             {v0.16b}, [x0], x1
         b.ne            1b
         ret
 endfunc
@@ -102,9 +102,9 @@ function ff_pred16x16_vert_neon, export=1
         add             x1,  x1,  x1
         ld1             {v0.16b}, [x2], x1
         mov             w3,  #8
-1:      st1             {v0.16b}, [x0], x1
+1:      subs            w3,  w3,  #1
+        st1             {v0.16b}, [x0], x1
         st1             {v0.16b}, [x2], x1
-        subs            w3,  w3,  #1
         b.ne            1b
         ret
 endfunc
@@ -158,8 +158,8 @@ function ff_pred16x16_plane_neon, export=1
         add             v1.8h,  v1.8h,  v2.8h
         sqshrun2        v0.16b, v1.8h,  #5
         add             v1.8h,  v1.8h,  v3.8h
-        st1             {v0.16b}, [x0], x1
         subs            w3,  w3,  #1
+        st1             {v0.16b}, [x0], x1
         b.ne            1b
         ret
 endfunc
@@ -175,8 +175,8 @@ function ff_pred8x8_hor_neon, export=1
         sub             x2,  x0,  #1
         mov             w3,  #8
 1:      ld1r            {v0.8b},  [x2], x1
-        st1             {v0.8b},  [x0], x1
         subs            w3,  w3,  #1
+        st1             {v0.8b},  [x0], x1
         b.ne            1b
         ret
 endfunc
@@ -186,9 +186,9 @@ function ff_pred8x8_vert_neon, export=1
         lsl             x1,  x1,  #1
         ld1             {v0.8b},  [x2], x1
         mov             w3,  #4
-1:      st1             {v0.8b},  [x0], x1
+1:      subs            w3,  w3,  #1
+        st1             {v0.8b},  [x0], x1
         st1             {v0.8b},  [x2], x1
-        subs            w3,  w3,  #1
         b.ne            1b
         ret
 endfunc
@@ -232,9 +232,9 @@ function ff_pred8x8_plane_neon, export=1
         mov             w3,  #8
 1:
         sqshrun         v0.8b,  v1.8h,  #5
+        subs            w3,  w3,  #1
         add             v1.8h,  v1.8h,  v2.8h
         st1             {v0.8b},  [x0], x1
-        subs            w3,  w3,  #1
         b.ne            1b
         ret
 endfunc
@@ -290,9 +290,9 @@ function ff_pred8x8_dc_neon, export=1
 .L_pred8x8_dc_end:
         mov             w3,  #4
         add             x2,  x0,  x1,  lsl #2
-6:      st1             {v0.8b},  [x0], x1
+6:      subs            w3,  w3,  #1
+        st1             {v0.8b},  [x0], x1
         st1             {v1.8b},  [x2], x1
-        subs            w3,  w3,  #1
         b.ne            6b
         ret
 endfunc
