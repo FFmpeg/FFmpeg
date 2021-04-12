@@ -450,7 +450,6 @@ Optimization options (experts only):
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
-  --disable-msa2           disable MSA2 optimizations
   --disable-mipsfpu        disable floating point MIPS optimizations
   --disable-mmi            disable Loongson SIMD optimizations
   --disable-fast-unaligned consider unaligned accesses slow
@@ -2053,7 +2052,6 @@ ARCH_EXT_LIST_MIPS="
     mipsdsp
     mipsdspr2
     msa
-    msa2
 "
 
 ARCH_EXT_LIST_LOONGSON="
@@ -2592,7 +2590,6 @@ mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mmi_deps_any="loongson2 loongson3"
 msa_deps="mipsfpu"
-msa2_deps="msa"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -5932,9 +5929,8 @@ elif enabled mips; then
     enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
     enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
 
-    # MSA and MSA2 can be detected at runtime so we supply extra flags here
+    # MSA can be detected at runtime so we supply extra flags here
     enabled mipsfpu && enabled msa && check_inline_asm msa '"addvi.b $w0, $w1, 1"' '-mmsa' && append MSAFLAGS '-mmsa'
-    enabled msa && enabled msa2 && check_inline_asm msa2 '"nxbits.any.b $w0, $w0"' '-mmsa2' && append MSAFLAGS '-mmsa2'
 
     # loongson2 have no switch cflag so we can only probe toolchain ability
     enabled loongson2 && check_inline_asm loongson2 '"dmult.g $8, $9, $10"' && disable loongson3
@@ -7363,7 +7359,6 @@ if enabled mips; then
     echo "MIPS DSP R1 enabled       ${mipsdsp-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"
-    echo "MIPS MSA2 enabled         ${msa2-no}"
     echo "LOONGSON MMI enabled      ${mmi-no}"
 fi
 if enabled ppc; then

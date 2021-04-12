@@ -25,10 +25,6 @@
 #include <msa.h>
 #include <config.h>
 
-#if HAVE_MSA2
-#include <msa2.h>
-#endif
-
 #define ALIGNMENT           16
 #define ALLOC_ALIGNED(align) __attribute__ ((aligned((align) << 1)))
 
@@ -1119,15 +1115,6 @@
                  unsigned absolute diff values, even-odd pairs are added
                  together to generate 8 halfword results.
 */
-#if HAVE_MSA2
-#define SAD_UB2_UH(in0, in1, ref0, ref1)                                 \
-( {                                                                      \
-    v8u16 sad_m = { 0 };                                                 \
-    sad_m += __builtin_msa2_sad_adj2_u_w2x_b((v16u8) in0, (v16u8) ref0); \
-    sad_m += __builtin_msa2_sad_adj2_u_w2x_b((v16u8) in1, (v16u8) ref1); \
-    sad_m;                                                               \
-} )
-#else
 #define SAD_UB2_UH(in0, in1, ref0, ref1)                        \
 ( {                                                             \
     v16u8 diff0_m, diff1_m;                                     \
@@ -1141,7 +1128,6 @@
                                                                 \
     sad_m;                                                      \
 } )
-#endif // #if HAVE_MSA2
 
 /* Description : Insert specified word elements from input vectors to 1
                  destination vector
@@ -2183,12 +2169,6 @@
                  extracted and interleaved with same vector 'in0' to generate
                  4 word elements keeping sign intact
 */
-#if HAVE_MSA2
-#define UNPCK_R_SH_SW(in, out)                           \
-{                                                        \
-    out = (v4i32) __builtin_msa2_w2x_lo_s_h((v8i16) in); \
-}
-#else
 #define UNPCK_R_SH_SW(in, out)                       \
 {                                                    \
     v8i16 sign_m;                                    \
@@ -2196,7 +2176,6 @@
     sign_m = __msa_clti_s_h((v8i16) in, 0);          \
     out = (v4i32) __msa_ilvr_h(sign_m, (v8i16) in);  \
 }
-#endif // #if HAVE_MSA2
 
 /* Description : Sign extend byte elements from input vector and return
                  halfword results in pair of vectors
@@ -2209,13 +2188,6 @@
                  Then interleaved left with same vector 'in0' to
                  generate 8 signed halfword elements in 'out1'
 */
-#if HAVE_MSA2
-#define UNPCK_SB_SH(in, out0, out1)                       \
-{                                                         \
-    out0 = (v4i32) __builtin_msa2_w2x_lo_s_b((v16i8) in); \
-    out1 = (v4i32) __builtin_msa2_w2x_hi_s_b((v16i8) in); \
-}
-#else
 #define UNPCK_SB_SH(in, out0, out1)                  \
 {                                                    \
     v16i8 tmp_m;                                     \
@@ -2223,7 +2195,6 @@
     tmp_m = __msa_clti_s_b((v16i8) in, 0);           \
     ILVRL_B2_SH(tmp_m, in, out0, out1);              \
 }
-#endif // #if HAVE_MSA2
 
 /* Description : Zero extend unsigned byte elements to halfword elements
    Arguments   : Inputs  - in           (1 input unsigned byte vector)
@@ -2250,13 +2221,6 @@
                  Then interleaved left with same vector 'in0' to
                  generate 4 signed word elements in 'out1'
 */
-#if HAVE_MSA2
-#define UNPCK_SH_SW(in, out0, out1)                       \
-{                                                         \
-    out0 = (v4i32) __builtin_msa2_w2x_lo_s_h((v8i16) in); \
-    out1 = (v4i32) __builtin_msa2_w2x_hi_s_h((v8i16) in); \
-}
-#else
 #define UNPCK_SH_SW(in, out0, out1)                  \
 {                                                    \
     v8i16 tmp_m;                                     \
@@ -2264,7 +2228,6 @@
     tmp_m = __msa_clti_s_h((v8i16) in, 0);           \
     ILVRL_H2_SW(tmp_m, in, out0, out1);              \
 }
-#endif // #if HAVE_MSA2
 
 /* Description : Swap two variables
    Arguments   : Inputs  - in0, in1
