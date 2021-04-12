@@ -29,7 +29,15 @@ av_cold void ff_h264chroma_init_mips(H264ChromaContext *c, int bit_depth)
     int cpu_flags = av_get_cpu_flags();
     int high_bit_depth = bit_depth > 8;
 
-    /* MMI apears to be faster than MSA here */
+    if (have_mmi(cpu_flags)) {
+        if (!high_bit_depth) {
+            c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_mmi;
+            c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_mmi;
+            c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_mmi;
+            c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmi;
+        }
+    }
+
     if (have_msa(cpu_flags)) {
         if (!high_bit_depth) {
             c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_msa;
@@ -39,15 +47,6 @@ av_cold void ff_h264chroma_init_mips(H264ChromaContext *c, int bit_depth)
             c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_msa;
             c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_msa;
             c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_msa;
-        }
-    }
-
-    if (have_mmi(cpu_flags)) {
-        if (!high_bit_depth) {
-            c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_mmi;
-            c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_mmi;
-            c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_mmi;
-            c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmi;
         }
     }
 }
