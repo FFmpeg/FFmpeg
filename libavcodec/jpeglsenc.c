@@ -429,14 +429,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (ctx->pix_fmt != AV_PIX_FMT_GRAY8  &&
-        ctx->pix_fmt != AV_PIX_FMT_GRAY16 &&
-        ctx->pix_fmt != AV_PIX_FMT_RGB24  &&
-        ctx->pix_fmt != AV_PIX_FMT_BGR24) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Only grayscale and RGB24/BGR24 images are supported\n");
-        return -1;
-    }
     return 0;
 }
 
