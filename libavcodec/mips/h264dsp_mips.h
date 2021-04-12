@@ -319,6 +319,10 @@ void ff_vp8_pred8x8_129_dc_8_msa(uint8_t *src, ptrdiff_t stride);
 void ff_vp8_pred16x16_127_dc_8_msa(uint8_t *src, ptrdiff_t stride);
 void ff_vp8_pred16x16_129_dc_8_msa(uint8_t *src, ptrdiff_t stride);
 
+void ff_h264_loop_filter_strength_msa(int16_t bS[2][4][4], uint8_t nnz[40],
+        int8_t ref[2][40], int16_t mv[2][40][2], int bidir, int edges,
+        int step, int mask_mv0, int mask_mv1, int field);
+
 void ff_h264_add_pixels4_8_mmi(uint8_t *_dst, int16_t *_src, int stride);
 void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct8_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
