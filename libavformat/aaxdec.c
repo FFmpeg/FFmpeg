@@ -117,6 +117,7 @@ static int aax_read_header(AVFormatContext *s)
     int64_t column_offset = 0;
     int ret, extradata_size;
     char *codec;
+    int64_t ret64;
 
     avio_skip(pb, 4);
     a->table_size      = avio_rb32(pb) + 8LL;
@@ -218,7 +219,10 @@ static int aax_read_header(AVFormatContext *s)
         }
     }
 
-    avio_seek(pb, a->strings_offset, SEEK_SET);
+    ret = ret64 = avio_seek(pb, a->strings_offset, SEEK_SET);
+    if (ret64 < 0)
+        goto fail;
+
     ret = avio_read(pb, a->string_table, a->strings_size);
     if (ret != a->strings_size) {
         if (ret < 0)
@@ -249,7 +253,10 @@ static int aax_read_header(AVFormatContext *s)
                 goto fail;
             }
 
-            avio_seek(pb, data_offset, SEEK_SET);
+            ret = ret64 = avio_seek(pb, data_offset, SEEK_SET);
+            if (ret64 < 0)
+                goto fail;
+
             if (type == COLUMN_TYPE_VLDATA) {
                 int64_t start, size;
 
@@ -281,8 +288,8 @@ static int aax_read_header(AVFormatContext *s)
     codec = a->string_table + a->name_offset;
     if (!strcmp(codec, "AAX")) {
         par->codec_id = AV_CODEC_ID_ADPCM_ADX;
-        avio_seek(pb, a->segments[0].start, SEEK_SET);
-        if (avio_rb16(pb) != 0x8000) {
+        ret64 = avio_seek(pb, a->segments[0].start, SEEK_SET);
+        if (ret64 < 0 || avio_rb16(pb) != 0x8000) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
