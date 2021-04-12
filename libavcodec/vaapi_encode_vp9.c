@@ -31,6 +31,7 @@
 
 #define VP9_MAX_QUANT 255
 
+#define VP9_MAX_TILE_WIDTH 4096
 
 typedef struct VAAPIEncodeVP9Picture {
     int slot;
@@ -82,9 +83,16 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     VAAPIEncodeVP9Picture          *hpic = pic->priv_data;
     VAEncPictureParameterBufferVP9 *vpic = pic->codec_picture_params;
     int i;
+    int num_tile_columns;
 
     vpic->reconstructed_frame = pic->recon_surface;
     vpic->coded_buf = pic->output_buffer;
+
+    // Maximum width of a tile in units of superblocks is MAX_TILE_WIDTH_B64(64)
+    // So the number of tile columns is related to the width of the picture.
+    // We set the minimum possible number for num_tile_columns as default value.
+    num_tile_columns = (vpic->frame_width_src + VP9_MAX_TILE_WIDTH - 1) / VP9_MAX_TILE_WIDTH;
+    vpic->log2_tile_columns = num_tile_columns == 1 ? 0 : av_log2(num_tile_columns - 1) + 1;
 
     switch (pic->type) {
     case PICTURE_TYPE_IDR:
