@@ -50,7 +50,7 @@ static const uint64_t dsf_channel_layout[] = {
 
 static void read_id3(AVFormatContext *s, uint64_t id3pos)
 {
-    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+    ID3v2ExtraMeta *id3v2_extra_meta;
     if (avio_seek(s->pb, id3pos, SEEK_SET) < 0)
         return;
 

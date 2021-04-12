@@ -413,7 +413,7 @@ static int oma_read_header(AVFormatContext *s)
     uint8_t buf[EA3_HEADER_SIZE];
     uint8_t *edata;
     AVStream *st;
-    ID3v2ExtraMeta *extra_meta = NULL;
+    ID3v2ExtraMeta *extra_meta;
     OMAContext *oc = s->priv_data;
 
     ff_id3v2_read(s, ID3v2_EA3_MAGIC, &extra_meta, 0);

@@ -255,7 +255,7 @@ fail:
 
 static int get_id3_tag(AVFormatContext *s, int len)
 {
-    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+    ID3v2ExtraMeta *id3v2_extra_meta;
 
     ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, len);
     if (id3v2_extra_meta) {

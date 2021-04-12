@@ -443,12 +443,24 @@ static void read_comment(AVFormatContext *s, AVIOContext *pb, int taglen,
         av_dict_set(metadata, key, (const char *) dst, dict_flags);
 }
 
+typedef struct ExtraMetaList {
+    ID3v2ExtraMeta *head, *tail;
+} ExtraMetaList;
+
+static void list_append(ID3v2ExtraMeta *new_elem, ExtraMetaList *list)
+{
+    if (list->tail)
+        list->tail->next = new_elem;
+    else
+        list->head = new_elem;
+    list->tail = new_elem;
+}
+
 /**
  * Parse GEOB tag into a ID3v2ExtraMetaGEOB struct.
  */
 static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen,
-                         const char *tag, ID3v2ExtraMeta **extra_meta,
-                         int isv34)
+                         const char *tag, ExtraMetaList *extra_meta, int isv34)
 {
     ID3v2ExtraMetaGEOB *geob_data = NULL;
     ID3v2ExtraMeta *new_extra     = NULL;
@@ -505,8 +517,7 @@ static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen,
 
     /* add data to the list */
     new_extra->tag  = "GEOB";
-    new_extra->next = *extra_meta;
-    *extra_meta     = new_extra;
+    list_append(new_extra, extra_meta);
 
     return;
 
@@ -580,8 +591,7 @@ static void rstrip_spaces(char *buf)
 }
 
 static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
-                      const char *tag, ID3v2ExtraMeta **extra_meta,
-                      int isv34)
+                      const char *tag, ExtraMetaList *extra_meta, int isv34)
 {
     int enc, pic_type;
     char mimetype[64] = {0};
@@ -654,12 +664,11 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
     memset(apic->buf->data + taglen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     new_extra->tag  = "APIC";
-    new_extra->next = *extra_meta;
-    *extra_meta     = new_extra;
 
     // The description must be unique, and some ID3v2 tag writers add spaces
     // to write several APIC entries with the same description.
     rstrip_spaces(apic->description);
+    list_append(new_extra, extra_meta);
 
     return;
 
@@ -677,7 +686,8 @@ static void free_chapter(void *obj)
     av_dict_free(&chap->meta);
 }
 
-static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, const char *ttag, ID3v2ExtraMeta **extra_meta, int isv34)
+static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len,
+                         const char *ttag, ExtraMetaList *extra_meta, int isv34)
 {
     int taglen;
     char tag[5];
@@ -721,8 +731,7 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, const cha
     ff_metadata_conv(&chap->meta, NULL, ff_id3v2_4_metadata_conv);
 
     new_extra->tag  = "CHAP";
-    new_extra->next = *extra_meta;
-    *extra_meta     = new_extra;
+    list_append(new_extra, extra_meta);
 
     return;
 
@@ -739,7 +748,7 @@ static void free_priv(void *obj)
 }
 
 static void read_priv(AVFormatContext *s, AVIOContext *pb, int taglen,
-                      const char *tag, ID3v2ExtraMeta **extra_meta, int isv34)
+                      const char *tag, ExtraMetaList *extra_meta, int isv34)
 {
     ID3v2ExtraMeta *meta;
     ID3v2ExtraMetaPRIV *priv;
@@ -763,8 +772,7 @@ static void read_priv(AVFormatContext *s, AVIOContext *pb, int taglen,
         goto fail;
 
     meta->tag   = "PRIV";
-    meta->next  = *extra_meta;
-    *extra_meta = meta;
+    list_append(meta, extra_meta);
 
     return;
 
@@ -777,7 +785,7 @@ typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
     void (*read)(AVFormatContext *s, AVIOContext *pb, int taglen,
-                 const char *tag, ID3v2ExtraMeta **extra_meta,
+                 const char *tag, ExtraMetaList *extra_meta,
                  int isv34);
     void (*free)(void *obj);
 } ID3v2EMFunc;
@@ -811,7 +819,7 @@ static const ID3v2EMFunc *get_extra_meta_func(const char *tag, int isv34)
 
 static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
                         AVFormatContext *s, int len, uint8_t version,
-                        uint8_t flags, ID3v2ExtraMeta **extra_meta)
+                        uint8_t flags, ExtraMetaList *extra_meta)
 {
     int isv34, unsync;
     unsigned tlen;
@@ -1063,12 +1071,16 @@ error:
 
 static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
                                 AVFormatContext *s, const char *magic,
-                                ID3v2ExtraMeta **extra_meta, int64_t max_search_size)
+                                ID3v2ExtraMeta **extra_metap, int64_t max_search_size)
 {
     int len, ret;
     uint8_t buf[ID3v2_HEADER_SIZE];
+    ExtraMetaList extra_meta = { NULL };
     int found_header;
     int64_t start, off;
+
+    if (extra_metap)
+        *extra_metap = NULL;
 
     if (max_search_size && max_search_size < ID3v2_HEADER_SIZE)
         return;
@@ -1096,7 +1108,8 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
                   ((buf[7] & 0x7f) << 14) |
                   ((buf[8] & 0x7f) << 7) |
                    (buf[9] & 0x7f);
-            id3v2_parse(pb, metadata, s, len, buf[3], buf[5], extra_meta);
+            id3v2_parse(pb, metadata, s, len, buf[3], buf[5],
+                        extra_metap ? &extra_meta : NULL);
         } else {
             avio_seek(pb, off, SEEK_SET);
         }
@@ -1105,6 +1118,8 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
     ff_metadata_conv(metadata, NULL, id3v2_2_metadata_conv);
     ff_metadata_conv(metadata, NULL, ff_id3v2_4_metadata_conv);
     merge_date(metadata);
+    if (extra_metap)
+        *extra_metap = extra_meta.head;
 }
 
 void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata,
@@ -1166,55 +1181,29 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
     return 0;
 }
 
-int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta *extra_meta)
+int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta *cur)
 {
-    int ret = 0;
-    ID3v2ExtraMeta *cur;
     AVRational time_base = {1, 1000};
-    ID3v2ExtraMetaCHAP **chapters = NULL;
-    int num_chapters = 0;
-    int i;
+    int ret;
 
-    // since extra_meta is a linked list where elements are prepended,
-    // we need to reverse the order of chapters
-    for (cur = extra_meta; cur; cur = cur->next) {
-        ID3v2ExtraMetaCHAP *chap;
-
-        if (strcmp(cur->tag, "CHAP"))
-            continue;
-        chap = &cur->data.chap;
-
-        if ((ret = av_dynarray_add_nofree(&chapters, &num_chapters, chap)) < 0)
-            goto end;
-    }
-
-    for (i = 0; i < (num_chapters / 2); i++) {
-        ID3v2ExtraMetaCHAP *right;
-        int right_index;
-
-        right_index = (num_chapters - 1) - i;
-        right = chapters[right_index];
-
-        chapters[right_index] = chapters[i];
-        chapters[i] = right;
-    }
-
-    for (i = 0; i < num_chapters; i++) {
+    for (unsigned i = 0; cur; cur = cur->next) {
         ID3v2ExtraMetaCHAP *chap;
         AVChapter *chapter;
 
-        chap = chapters[i];
-        chapter = avpriv_new_chapter(s, i, time_base, chap->start, chap->end, chap->element_id);
+        if (strcmp(cur->tag, "CHAP"))
+            continue;
+
+        chap = &cur->data.chap;
+        chapter = avpriv_new_chapter(s, i++, time_base, chap->start,
+                                     chap->end, chap->element_id);
         if (!chapter)
             continue;
 
         if ((ret = av_dict_copy(&chapter->metadata, chap->meta, 0)) < 0)
-            goto end;
+            return ret;
     }
 
-end:
-    av_freep(&chapters);
-    return ret;
+    return 0;
 }
 
 int ff_id3v2_parse_priv_dict(AVDictionary **metadata, ID3v2ExtraMeta *extra_meta)

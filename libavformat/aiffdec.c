@@ -212,7 +212,7 @@ static int aiff_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream * st;
     AIFFInputContext *aiff = s->priv_data;
-    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+    ID3v2ExtraMeta *id3v2_extra_meta;
 
     /* check FORM header */
     filesize = get_tag(pb, &tag);

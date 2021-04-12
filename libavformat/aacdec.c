@@ -136,7 +136,7 @@ static int handle_id3(AVFormatContext *s, AVPacket *pkt)
 {
     AVDictionary *metadata = NULL;
     AVIOContext ioctx;
-    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+    ID3v2ExtraMeta *id3v2_extra_meta;
     int ret;
 
     ret = av_append_packet(s->pb, pkt, ff_id3v2_tag_len(pkt->data) - pkt->size);

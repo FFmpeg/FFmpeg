@@ -111,7 +111,7 @@ int ff_id3v2_tag_len(const uint8_t *buf);
  * Read an ID3v2 tag into specified dictionary and retrieve supported extra metadata.
  *
  * @param metadata Parsed metadata is stored here
- * @param extra_meta If not NULL, extra metadata is parsed into a list of
+ * @param[out] extra_meta If not NULL, extra metadata is parsed into a list of
  * ID3v2ExtraMeta structs and *extra_meta points to the head of the list
  */
 void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata, const char *magic, ID3v2ExtraMeta **extra_meta);
@@ -121,7 +121,7 @@ void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata, const char *ma
  *
  * Data is read from and stored to AVFormatContext.
  *
- * @param extra_meta If not NULL, extra metadata is parsed into a list of
+ * @param[out] extra_meta If not NULL, extra metadata is parsed into a list of
  * ID3v2ExtraMeta structs and *extra_meta points to the head of the list
  * @param[opt] max_search_search restrict ID3 magic number search (bytes from start)
  */

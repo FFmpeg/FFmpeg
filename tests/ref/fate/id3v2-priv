@@ -1,5 +1,5 @@
 [FORMAT]
 TAG:title=id3v2-test
-TAG:id3v2_priv.testowner=testdata
 TAG:id3v2_priv.testowner2=\x00\x01\x02
+TAG:id3v2_priv.testowner=testdata
 [/FORMAT]

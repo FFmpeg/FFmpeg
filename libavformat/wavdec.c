@@ -549,7 +549,7 @@ static int wav_read_header(AVFormatContext *s)
             break;
         case MKTAG('I', 'D', '3', ' '):
         case MKTAG('i', 'd', '3', ' '): {
-            ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+            ID3v2ExtraMeta *id3v2_extra_meta;
             ff_id3v2_read_dict(pb, &s->internal->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
             if (id3v2_extra_meta) {
                 ff_id3v2_parse_apic(s, id3v2_extra_meta);
