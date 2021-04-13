@@ -80,8 +80,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     /* copy palette */
-    if (priv->pix_desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        ((priv->pix_desc->flags & FF_PSEUDOPAL) && out->data[1] && in->data[1]))
+    if (priv->pix_desc->flags & AV_PIX_FMT_FLAG_PAL)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
     for (c = 0; c < priv->pix_desc->nb_components; c++) {

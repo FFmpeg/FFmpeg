@@ -102,8 +102,7 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(buffer_size_t size),
             goto fail;
     }
 
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & FF_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
         pool->pools[1] = av_buffer_pool_init(AVPALETTE_SIZE, alloc);
         if (!pool->pools[1])
             goto fail;
@@ -226,8 +225,7 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
             frame->data[i] = frame->buf[i]->data;
         }
 
-        if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-            desc->flags & FF_PSEUDOPAL) {
+        if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
             enum AVPixelFormat format =
                 pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
 

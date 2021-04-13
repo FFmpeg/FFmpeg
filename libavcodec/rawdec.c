@@ -93,19 +93,13 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (desc->flags & (AV_PIX_FMT_FLAG_PAL | FF_PSEUDOPAL)) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
         context->palette = av_buffer_alloc(AVPALETTE_SIZE);
         if (!context->palette)
             return AVERROR(ENOMEM);
-#if FF_API_PSEUDOPAL
-        if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
-            avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
-#endif
-        else {
-            memset(context->palette->data, 0, AVPALETTE_SIZE);
-            if (avctx->bits_per_coded_sample == 1)
-                memset(context->palette->data, 0xff, 4);
-        }
+        memset(context->palette->data, 0, AVPALETTE_SIZE);
+        if (avctx->bits_per_coded_sample == 1)
+            memset(context->palette->data, 0xff, 4);
     }
 
     if ((avctx->extradata_size >= 9 &&
@@ -416,8 +410,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         frame->linesize[1] = FFALIGN(frame->linesize[1], linesize_align);
     }
 
-    if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) ||
-        (desc->flags & FF_PSEUDOPAL)) {
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) {
         frame->buf[1]  = av_buffer_ref(context->palette);
         if (!frame->buf[1]) {
             av_buffer_unref(&frame->buf[0]);

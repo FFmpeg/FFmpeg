@@ -952,8 +952,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                          (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
 
             }
-            if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-                desc->flags & FF_PSEUDOPAL) {
+            if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
                 dst[1] = p->data[1];
                 src[1] = f->last_picture.f->data[1];
             }

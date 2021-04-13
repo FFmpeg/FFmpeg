@@ -62,7 +62,7 @@ yuv422p         planes: 3, linesizes:  64  32  32   0, plane_sizes:  3072  1536 
 yuv444p         planes: 3, linesizes:  64  64  64   0, plane_sizes:  3072  3072  3072     0, plane_offsets:  3072  3072     0, total_size: 9216
 yuv410p         planes: 3, linesizes:  64  16  16   0, plane_sizes:  3072   192   192     0, plane_offsets:  3072   192     0, total_size: 3456
 yuv411p         planes: 3, linesizes:  64  16  16   0, plane_sizes:  3072   768   768     0, plane_offsets:  3072   768     0, total_size: 4608
-gray            planes: 2, linesizes:  64   0   0   0, plane_sizes:  3072  1024     0     0, plane_offsets:  3072     0     0, total_size: 4096
+gray            planes: 1, linesizes:  64   0   0   0, plane_sizes:  3072     0     0     0, plane_offsets:     0     0     0, total_size: 3072
 monow           planes: 1, linesizes:   8   0   0   0, plane_sizes:   384     0     0     0, plane_offsets:     0     0     0, total_size: 384
 monob           planes: 1, linesizes:   8   0   0   0, plane_sizes:   384     0     0     0, plane_offsets:     0     0     0, total_size: 384
 pal8            planes: 2, linesizes:  64   0   0   0, plane_sizes:  3072  1024     0     0, plane_offsets:  3072     0     0, total_size: 4096
@@ -71,12 +71,12 @@ yuvj422p        planes: 3, linesizes:  64  32  32   0, plane_sizes:  3072  1536 
 yuvj444p        planes: 3, linesizes:  64  64  64   0, plane_sizes:  3072  3072  3072     0, plane_offsets:  3072  3072     0, total_size: 9216
 uyvy422         planes: 1, linesizes: 128   0   0   0, plane_sizes:  6144     0     0     0, plane_offsets:     0     0     0, total_size: 6144
 uyyvyy411       planes: 1, linesizes:  96   0   0   0, plane_sizes:  4608     0     0     0, plane_offsets:     0     0     0, total_size: 4608
-bgr8            planes: 2, linesizes:  64   0   0   0, plane_sizes:  3072  1024     0     0, plane_offsets:  3072     0     0, total_size: 4096
+bgr8            planes: 1, linesizes:  64   0   0   0, plane_sizes:  3072     0     0     0, plane_offsets:     0     0     0, total_size: 3072
 bgr4            planes: 1, linesizes:  32   0   0   0, plane_sizes:  1536     0     0     0, plane_offsets:     0     0     0, total_size: 1536
-bgr4_byte       planes: 2, linesizes:  64   0   0   0, plane_sizes:  3072  1024     0     0, plane_offsets:  3072     0     0, total_size: 4096
-rgb8            planes: 2, linesizes:  64   0   0   0, plane_sizes:  3072  1024     0     0, plane_offsets:  3072     0     0, total_size: 4096
+bgr4_byte       planes: 1, linesizes:  64   0   0   0, plane_sizes:  3072     0     0     0, plane_offsets:     0     0     0, total_size: 3072
+rgb8            planes: 1, linesizes:  64   0   0   0, plane_sizes:  3072     0     0     0, plane_offsets:     0     0     0, total_size: 3072
 rgb4            planes: 1, linesizes:  32   0   0   0, plane_sizes:  1536     0     0     0, plane_offsets:     0     0     0, total_size: 1536
-rgb4_byte       planes: 2, linesizes:  64   0   0   0, plane_sizes:  3072  1024     0     0, plane_offsets:  3072     0     0, total_size: 4096
+rgb4_byte       planes: 1, linesizes:  64   0   0   0, plane_sizes:  3072     0     0     0, plane_offsets:     0     0     0, total_size: 3072
 nv12            planes: 2, linesizes:  64  64   0   0, plane_sizes:  3072  1536     0     0, plane_offsets:  3072     0     0, total_size: 4608
 nv21            planes: 2, linesizes:  64  64   0   0, plane_sizes:  3072  1536     0     0, plane_offsets:  3072     0     0, total_size: 4608
 argb            planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288

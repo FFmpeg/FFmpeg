@@ -341,7 +341,6 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .comp = {
             { 0, 1, 0, 0, 8 },        /* Y */
         },
-        .flags = FF_PSEUDOPAL,
         .alias = "gray8,y8",
     },
     [AV_PIX_FMT_MONOWHITE] = {
@@ -446,7 +445,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 0, 3, 3 },        /* G */
             { 0, 1, 0, 6, 2 },        /* B */
         },
-        .flags = AV_PIX_FMT_FLAG_RGB | FF_PSEUDOPAL,
+        .flags = AV_PIX_FMT_FLAG_RGB,
     },
     [AV_PIX_FMT_BGR4] = {
         .name = "bgr4",
@@ -470,7 +469,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 0, 1, 2 },        /* G */
             { 0, 1, 0, 3, 1 },        /* B */
         },
-        .flags = AV_PIX_FMT_FLAG_RGB | FF_PSEUDOPAL,
+        .flags = AV_PIX_FMT_FLAG_RGB,
     },
     [AV_PIX_FMT_RGB8] = {
         .name = "rgb8",
@@ -482,7 +481,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 0, 3, 3 },        /* G */
             { 0, 1, 0, 0, 3 },        /* B */
         },
-        .flags = AV_PIX_FMT_FLAG_RGB | FF_PSEUDOPAL,
+        .flags = AV_PIX_FMT_FLAG_RGB,
     },
     [AV_PIX_FMT_RGB4] = {
         .name = "rgb4",
@@ -506,7 +505,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 1, 0, 1, 2 },        /* G */
             { 0, 1, 0, 0, 1 },        /* B */
         },
-        .flags = AV_PIX_FMT_FLAG_RGB | FF_PSEUDOPAL,
+        .flags = AV_PIX_FMT_FLAG_RGB,
     },
     [AV_PIX_FMT_NV12] = {
         .name = "nv12",
