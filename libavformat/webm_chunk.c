@@ -93,14 +93,8 @@ static int webm_chunk_init(AVFormatContext *s)
     if (!(st = avformat_new_stream(oc, NULL)))
         return AVERROR(ENOMEM);
 
-    if ((ret = avcodec_parameters_copy(st->codecpar, ost->codecpar)) < 0 ||
-        (ret = av_dict_copy(&st->metadata, ost->metadata, 0))        < 0)
+    if ((ret = ff_stream_encode_params_copy(st, ost)) < 0)
         return ret;
-
-    st->sample_aspect_ratio = ost->sample_aspect_ratio;
-    st->disposition         = ost->disposition;
-    avpriv_set_pts_info(st, ost->pts_wrap_bits, ost->time_base.num,
-                                                ost->time_base.den);
 
     if (wc->http_method)
         if ((ret = av_dict_set(&dict, "method", wc->http_method, 0)) < 0)
