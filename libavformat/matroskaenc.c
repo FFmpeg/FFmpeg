@@ -1671,11 +1671,7 @@ static int mkv_write_chapters(AVFormatContext *s)
         int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         const AVDictionaryEntry *t;
-#if FF_API_CHAPTER_ID_INT
-        uint64_t uid = create_new_ids ? i + 1ULL : (uint32_t)c->id;
-#else
         uint64_t uid = create_new_ids ? i + 1ULL : c->id;
-#endif
         if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",

@@ -58,9 +58,6 @@
 #ifndef FF_API_LAVF_AVCTX
 #define FF_API_LAVF_AVCTX               (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
-#ifndef FF_API_CHAPTER_ID_INT
-#define FF_API_CHAPTER_ID_INT           (LIBAVFORMAT_VERSION_MAJOR < 59)
-#endif
 #ifndef FF_API_LAVF_PRIV_OPT
 #define FF_API_LAVF_PRIV_OPT            (LIBAVFORMAT_VERSION_MAJOR < 60)
 #endif
