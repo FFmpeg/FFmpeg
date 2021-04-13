@@ -1276,7 +1276,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_BITEXACT         0x0400
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
 #if FF_API_LAVF_PRIV_OPT
-#define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (deprecated, will do nothing once av_demuxer_open() is removed)
+#define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (deprecated, does nothing)
 #endif
 #define AVFMT_FLAG_FAST_SEEK   0x80000 ///< Enable fast, but inaccurate seeks for some formats
 #define AVFMT_FLAG_SHORTEST   0x100000 ///< Stop muxing when the shortest stream stops.
@@ -2016,14 +2016,6 @@ int av_probe_input_buffer(AVIOContext *pb, const AVInputFormat **fmt,
  */
 int avformat_open_input(AVFormatContext **ps, const char *url,
                         const AVInputFormat *fmt, AVDictionary **options);
-
-#if FF_API_DEMUXER_OPEN
-/**
- * @deprecated Use an AVDictionary to pass options to a demuxer.
- */
-attribute_deprecated
-int av_demuxer_open(AVFormatContext *ic);
-#endif
 
 /**
  * Read packets of a media file to get stream information. This
