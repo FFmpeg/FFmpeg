@@ -41,13 +41,13 @@
 
 // FIXME: YUV420P etc. are actually supported with full color range,
 // yet the latter information isn't available here.
-static const enum AVPixelFormat *get_compliance_normal_pix_fmts(enum AVCodecID codec_id, const enum AVPixelFormat default_formats[])
+static const enum AVPixelFormat *get_compliance_normal_pix_fmts(const AVCodec *codec, const enum AVPixelFormat default_formats[])
 {
     static const enum AVPixelFormat mjpeg_formats[] =
         { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
           AV_PIX_FMT_NONE };
 
-    if (codec_id == AV_CODEC_ID_MJPEG) {
+    if (!strcmp(codec->name, "mjpeg")) {
         return mjpeg_formats;
     } else {
         return default_formats;
@@ -65,7 +65,7 @@ static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx
         enum AVPixelFormat best= AV_PIX_FMT_NONE;
 
         if (enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_normal_pix_fmts(enc_ctx->codec_id, p);
+            p = get_compliance_normal_pix_fmts(codec, p);
         }
         for (; *p != AV_PIX_FMT_NONE; p++) {
             best = av_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
@@ -113,7 +113,7 @@ static char *choose_pix_fmts(OutputFilter *ofilter)
 
         p = ost->enc->pix_fmts;
         if (ost->enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-            p = get_compliance_normal_pix_fmts(ost->enc_ctx->codec_id, p);
+            p = get_compliance_normal_pix_fmts(ost->enc, p);
         }
 
         for (; *p != AV_PIX_FMT_NONE; p++) {
