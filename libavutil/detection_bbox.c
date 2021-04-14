@@ -54,10 +54,6 @@ AVDetectionBBoxHeader *av_detection_bbox_create_side_data(AVFrame *frame, uint32
     header = av_detection_bbox_alloc(nb_bboxes, &size);
     if (!header)
         return NULL;
-    if (size > INT_MAX) {
-        av_freep(&header);
-        return NULL;
-    }
     buf = av_buffer_create((uint8_t *)header, size, NULL, NULL, 0);
     if (!buf) {
         av_freep(&header);

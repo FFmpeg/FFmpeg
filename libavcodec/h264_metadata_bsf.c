@@ -371,7 +371,7 @@ static int h264_metadata_handle_display_orientation(AVBSFContext *bsf,
         H264RawSEIDisplayOrientation *disp =
             &ctx->display_orientation_payload;
         uint8_t *data;
-        buffer_size_t size;
+        size_t size;
         int write = 0;
 
         data = av_packet_get_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX, &size);

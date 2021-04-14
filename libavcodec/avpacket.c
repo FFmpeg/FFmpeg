@@ -218,16 +218,12 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 
 
 uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-                                 buffer_size_t size)
+                                 size_t size)
 {
     int ret;
     uint8_t *data;
 
-#if FF_API_BUFFER_SIZE_T
-    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
-#else
     if (size > SIZE_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
-#endif
         return NULL;
     data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
@@ -243,7 +239,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 }
 
 uint8_t *av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
-                                 buffer_size_t *size)
+                                 size_t *size)
 {
     int i;
 
@@ -297,11 +293,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     return NULL;
 }
 
-#if FF_API_BUFFER_SIZE_T
-uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
-#else
 uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size)
-#endif
 {
     uint8_t *data = NULL;
     *size = 0;
@@ -320,11 +312,7 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size)
 
                 if (pass)
                     memcpy(data + total_length, str, len);
-#if FF_API_BUFFER_SIZE_T
-                else if (len > INT_MAX - total_length)
-#else
                 else if (len > SIZE_MAX - total_length)
-#endif
                     return NULL;
                 total_length += len;
             }
@@ -340,12 +328,8 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size)
     return data;
 }
 
-#if FF_API_BUFFER_SIZE_T
-int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **dict)
-#else
 int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
                                 AVDictionary **dict)
-#endif
 {
     const uint8_t *end;
     int ret;
@@ -372,7 +356,7 @@ int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
 }
 
 int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-                               buffer_size_t size)
+                               size_t size)
 {
     int i;
 
@@ -402,7 +386,7 @@ int av_packet_copy_props(AVPacket *dst, const AVPacket *src)
     dst->side_data_elems      = 0;
     for (i = 0; i < src->side_data_elems; i++) {
         enum AVPacketSideDataType type = src->side_data[i].type;
-        buffer_size_t size = src->side_data[i].size;
+        size_t size = src->side_data[i].size;
         uint8_t *src_data = src->side_data[i].data;
         uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
 
@@ -599,7 +583,7 @@ void avpriv_packet_list_free(PacketList **pkt_buf, PacketList **pkt_buf_end)
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type)
 {
     uint8_t *side_data;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
     int i;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS, &side_data_size);
@@ -625,7 +609,7 @@ int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp)
 {
     AVProducerReferenceTime *prft;
     uint8_t *side_data;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT, &side_data_size);
     if (!side_data) {

@@ -2030,7 +2030,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     mkv_track *track = &mkv->tracks[pkt->stream_index];
     uint8_t *data = NULL, *side_data = NULL;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
     int err = 0, offset = 0, size = pkt->size;
     int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
     uint64_t additional_id;
@@ -2141,7 +2141,7 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, const AVPac
     MatroskaMuxContext *mkv = s->priv_data;
     mkv_track *track = &mkv->tracks[pkt->stream_index];
     ebml_master blockgroup;
-    buffer_size_t id_size, settings_size;
+    size_t id_size, settings_size;
     int size, id_size_int, settings_size_int;
     const char *id, *settings;
     int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
@@ -2214,7 +2214,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
     mkv_track *track        = &mkv->tracks[pkt->stream_index];
     AVCodecParameters *par  = s->streams[pkt->stream_index]->codecpar;
     uint8_t *side_data;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
     int ret;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,

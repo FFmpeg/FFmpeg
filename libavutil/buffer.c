@@ -26,7 +26,7 @@
 #include "mem.h"
 #include "thread.h"
 
-AVBufferRef *av_buffer_create(uint8_t *data, buffer_size_t size,
+AVBufferRef *av_buffer_create(uint8_t *data, size_t size,
                               void (*free)(void *opaque, uint8_t *data),
                               void *opaque, int flags)
 {
@@ -64,7 +64,7 @@ void av_buffer_default_free(void *opaque, uint8_t *data)
     av_free(data);
 }
 
-AVBufferRef *av_buffer_alloc(buffer_size_t size)
+AVBufferRef *av_buffer_alloc(size_t size)
 {
     AVBufferRef *ret = NULL;
     uint8_t    *data = NULL;
@@ -80,7 +80,7 @@ AVBufferRef *av_buffer_alloc(buffer_size_t size)
     return ret;
 }
 
-AVBufferRef *av_buffer_allocz(buffer_size_t size)
+AVBufferRef *av_buffer_allocz(size_t size)
 {
     AVBufferRef *ret = av_buffer_alloc(size);
     if (!ret)
@@ -166,7 +166,7 @@ int av_buffer_make_writable(AVBufferRef **pbuf)
     return 0;
 }
 
-int av_buffer_realloc(AVBufferRef **pbuf, buffer_size_t size)
+int av_buffer_realloc(AVBufferRef **pbuf, size_t size)
 {
     AVBufferRef *buf = *pbuf;
     uint8_t *tmp;
@@ -242,8 +242,8 @@ int av_buffer_replace(AVBufferRef **pdst, AVBufferRef *src)
     return 0;
 }
 
-AVBufferPool *av_buffer_pool_init2(buffer_size_t size, void *opaque,
-                                   AVBufferRef* (*alloc)(void *opaque, buffer_size_t size),
+AVBufferPool *av_buffer_pool_init2(size_t size, void *opaque,
+                                   AVBufferRef* (*alloc)(void *opaque, size_t size),
                                    void (*pool_free)(void *opaque))
 {
     AVBufferPool *pool = av_mallocz(sizeof(*pool));
@@ -263,7 +263,7 @@ AVBufferPool *av_buffer_pool_init2(buffer_size_t size, void *opaque,
     return pool;
 }
 
-AVBufferPool *av_buffer_pool_init(buffer_size_t size, AVBufferRef* (*alloc)(buffer_size_t size))
+AVBufferPool *av_buffer_pool_init(size_t size, AVBufferRef* (*alloc)(size_t size))
 {
     AVBufferPool *pool = av_mallocz(sizeof(*pool));
     if (!pool)

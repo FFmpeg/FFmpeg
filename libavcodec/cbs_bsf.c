@@ -24,7 +24,7 @@ static int cbs_bsf_update_side_data(AVBSFContext *bsf, AVPacket *pkt)
     CBSBSFContext           *ctx = bsf->priv_data;
     CodedBitstreamFragment *frag = &ctx->fragment;
     uint8_t *side_data;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
     int err;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,

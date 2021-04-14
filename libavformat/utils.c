@@ -5462,7 +5462,7 @@ int ff_generate_avci_extradata(AVStream *st)
 }
 
 uint8_t *av_stream_get_side_data(const AVStream *st,
-                                 enum AVPacketSideDataType type, buffer_size_t *size)
+                                 enum AVPacketSideDataType type, size_t *size)
 {
     int i;
 
@@ -5515,7 +5515,7 @@ int av_stream_add_side_data(AVStream *st, enum AVPacketSideDataType type,
 }
 
 uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
-                                 buffer_size_t size)
+                                 size_t size)
 {
     int ret;
     uint8_t *data = av_malloc(size);
@@ -5631,7 +5631,7 @@ int ff_standardize_creation_time(AVFormatContext *s)
 int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette)
 {
     uint8_t *side_data;
-    buffer_size_t size;
+    size_t size;
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
     if (side_data) {

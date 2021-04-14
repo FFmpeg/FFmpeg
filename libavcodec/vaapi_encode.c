@@ -2235,7 +2235,7 @@ static void vaapi_encode_free_output_buffer(void *opaque,
 }
 
 static AVBufferRef *vaapi_encode_alloc_output_buffer(void *opaque,
-                                                     buffer_size_t size)
+                                                     size_t size)
 {
     AVCodecContext   *avctx = opaque;
     VAAPIEncodeContext *ctx = avctx->priv_data;

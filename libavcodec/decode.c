@@ -67,7 +67,7 @@ typedef struct FramePool {
 static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     int ret;
-    buffer_size_t size;
+    size_t size;
     const uint8_t *data;
     uint32_t flags;
     int64_t val;
@@ -344,7 +344,7 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
             got_frame = 0;
     } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
         uint8_t *side;
-        buffer_size_t side_size;
+        size_t side_size;
         uint32_t discard_padding = 0;
         uint8_t skip_reason = 0;
         uint8_t discard_reason = 0;
@@ -1463,7 +1463,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
 
 static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 {
-    buffer_size_t size;
+    size_t size;
     const uint8_t *side_metadata;
 
     AVDictionary **frame_md = &frame->metadata;
@@ -1502,7 +1502,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     frame->pkt_size     = pkt->size;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
-        buffer_size_t size;
+        size_t size;
         uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
         if (packet_sd) {
             AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
@@ -1841,14 +1841,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
 {
-    buffer_size_t size;
+    size_t size;
     const void *pal = av_packet_get_side_data(src, AV_PKT_DATA_PALETTE, &size);
 
     if (pal && size == AVPALETTE_SIZE) {
         memcpy(dst, pal, AVPALETTE_SIZE);
         return 1;
     } else if (pal) {
-        av_log(logctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
+        av_log(logctx, AV_LOG_ERROR,
+               "Palette size %"SIZE_SPECIFIER" is wrong\n", size);
     }
     return 0;
 }

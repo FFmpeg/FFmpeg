@@ -225,7 +225,7 @@ static void vdpau_buffer_free(void *opaque, uint8_t *data)
     device_priv->surf_destroy(surf);
 }
 
-static AVBufferRef *vdpau_pool_alloc(void *opaque, buffer_size_t size)
+static AVBufferRef *vdpau_pool_alloc(void *opaque, size_t size)
 {
     AVHWFramesContext             *ctx = opaque;
     VDPAUFramesContext           *priv = ctx->internal->priv;

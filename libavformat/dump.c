@@ -491,8 +491,8 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent)
             dump_s12m_timecode(ctx, st, sd);
             break;
         default:
-            av_log(ctx, AV_LOG_INFO,
-                   "unknown side data type %d (%d bytes)", sd->type, sd->size);
+            av_log(ctx, AV_LOG_INFO, "unknown side data type %d "
+                   "(%"SIZE_SPECIFIER" bytes)", sd->type, sd->size);
             break;
         }
 

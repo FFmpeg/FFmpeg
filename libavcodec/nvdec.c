@@ -242,7 +242,7 @@ fail:
     return ret;
 }
 
-static AVBufferRef *nvdec_decoder_frame_alloc(void *opaque, buffer_size_t size)
+static AVBufferRef *nvdec_decoder_frame_alloc(void *opaque, size_t size)
 {
     NVDECFramePool *pool = opaque;
     AVBufferRef *ret;
@@ -283,7 +283,7 @@ static void nvdec_free_dummy(struct AVHWFramesContext *ctx)
     av_buffer_pool_uninit(&ctx->pool);
 }
 
-static AVBufferRef *nvdec_alloc_dummy(buffer_size_t size)
+static AVBufferRef *nvdec_alloc_dummy(size_t size)
 {
     return av_buffer_create(NULL, 0, NULL, NULL, 0);
 }

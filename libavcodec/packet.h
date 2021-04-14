@@ -305,11 +305,7 @@ enum AVPacketSideDataType {
 
 typedef struct AVPacketSideData {
     uint8_t *data;
-#if FF_API_BUFFER_SIZE_T
-    int      size;
-#else
     size_t   size;
-#endif
     enum AVPacketSideDataType type;
 } AVPacketSideData;
 
@@ -528,11 +524,7 @@ int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size);
  * @return pointer to fresh allocated data or NULL otherwise
  */
 uint8_t* av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-#if FF_API_BUFFER_SIZE_T
-                                 int size);
-#else
                                  size_t size);
-#endif
 
 /**
  * Wrap an existing array as a packet side data.
@@ -559,11 +551,7 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
  * @return 0 on success, < 0 on failure
  */
 int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-#if FF_API_BUFFER_SIZE_T
-                               int size);
-#else
                                size_t size);
-#endif
 
 /**
  * Get side information from packet.
@@ -575,11 +563,7 @@ int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
  * @return pointer to data if present or NULL otherwise
  */
 uint8_t* av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
-#if FF_API_BUFFER_SIZE_T
-                                 int *size);
-#else
                                  size_t *size);
-#endif
 
 const char *av_packet_side_data_name(enum AVPacketSideDataType type);
 
@@ -590,11 +574,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type);
  * @param size pointer to store the size of the returned data
  * @return pointer to data if successful, NULL otherwise
  */
-#if FF_API_BUFFER_SIZE_T
-uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size);
-#else
 uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size);
-#endif
 /**
  * Unpack a dictionary from side_data.
  *
@@ -603,12 +583,8 @@ uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size);
  * @param dict the metadata storage dictionary
  * @return 0 on success, < 0 on failure
  */
-#if FF_API_BUFFER_SIZE_T
-int av_packet_unpack_dictionary(const uint8_t *data, int size, AVDictionary **dict);
-#else
 int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
                                 AVDictionary **dict);
-#endif
 
 /**
  * Convenience function to free all the side data stored.

@@ -1693,7 +1693,7 @@ static void try_export_flags(AVHWFramesContext *hwfc,
     }
 }
 
-static AVBufferRef *vulkan_pool_alloc(void *opaque, buffer_size_t size)
+static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
 {
     int err;
     AVVkFrame *f;

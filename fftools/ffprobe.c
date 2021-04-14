@@ -2158,7 +2158,7 @@ static void show_packet(WriterContext *w, InputFile *ifile, AVPacket *pkt, int p
               pkt->flags & AV_PKT_FLAG_DISCARD ? 'D' : '_');
 
     if (pkt->side_data_elems) {
-        int size;
+        size_t size;
         const uint8_t *side_metadata;
 
         side_metadata = av_packet_get_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, &size);

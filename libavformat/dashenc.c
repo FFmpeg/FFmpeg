@@ -1806,7 +1806,7 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
 {
     AVCodecParameters *par = os->ctx->streams[0]->codecpar;
     uint8_t *extradata;
-    buffer_size_t extradata_size;
+    size_t extradata_size;
     int ret;
 
     if (par->extradata_size)
@@ -2022,7 +2022,7 @@ static int dash_parse_prft(DASHContext *c, AVPacket *pkt)
 {
     OutputStream *os = &c->streams[pkt->stream_index];
     AVProducerReferenceTime *prft;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
 
     prft = (AVProducerReferenceTime *)av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT, &side_data_size);
     if (!prft || side_data_size != sizeof(AVProducerReferenceTime) || (prft->flags && prft->flags != 24)) {

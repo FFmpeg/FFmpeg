@@ -1992,7 +1992,7 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track, int prefer_icc)
     // Ref (MP4): ISO/IEC 14496-12:2012
 
     const uint8_t *icc_profile;
-    buffer_size_t icc_profile_size;
+    size_t icc_profile_size;
 
     if (prefer_icc) {
         icc_profile = av_stream_get_side_data(track->st, AV_PKT_DATA_ICC_PROFILE, &icc_profile_size);
@@ -3046,7 +3046,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     int group   = 0;
 
     uint32_t *display_matrix = NULL;
-    buffer_size_t display_matrix_size;
+    size_t display_matrix_size;
     int       i;
 
     if (st) {
@@ -4173,7 +4173,7 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
             track->tref_tag = MKTAG('h','i','n','t');
             track->tref_id = mov->tracks[track->src_track].track_id;
         } else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO) {
-            buffer_size_t size;
+            size_t size;
             int *fallback;
             fallback = (int*)av_stream_get_side_data(track->st,
                                                      AV_PKT_DATA_FALLBACK_TRACK,
@@ -5557,7 +5557,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVProducerReferenceTime *prft;
     unsigned int samples_in_chunk = 0;
     int size = pkt->size, ret = 0, offset = 0;
-    buffer_size_t prft_size;
+    size_t prft_size;
     uint8_t *reformatted_data = NULL;
 
     ret = check_pkt(s, pkt);
@@ -5910,7 +5910,7 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
             trk->par->codec_id == AV_CODEC_ID_AAC ||
             trk->par->codec_id == AV_CODEC_ID_AV1 ||
             trk->par->codec_id == AV_CODEC_ID_FLAC) {
-        buffer_size_t side_size;
+        size_t side_size;
         uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
         if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
             void *newextra = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);

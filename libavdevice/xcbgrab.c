@@ -236,7 +236,7 @@ static void free_shm_buffer(void *opaque, uint8_t *data)
     shmdt(data);
 }
 
-static AVBufferRef *allocate_shm_buffer(void *opaque, buffer_size_t size)
+static AVBufferRef *allocate_shm_buffer(void *opaque, size_t size)
 {
     xcb_connection_t *conn = opaque;
     xcb_shm_seg_t segment;

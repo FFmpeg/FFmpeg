@@ -33,7 +33,7 @@
 
 struct AVBuffer {
     uint8_t *data; /**< data described by this buffer */
-    buffer_size_t size; /**< size of data in bytes */
+    size_t size; /**< size of data in bytes */
 
     /**
      *  number of existing AVBufferRef instances referring to this buffer
@@ -90,10 +90,10 @@ struct AVBufferPool {
      */
     atomic_uint refcount;
 
-    buffer_size_t size;
+    size_t size;
     void *opaque;
-    AVBufferRef* (*alloc)(buffer_size_t size);
-    AVBufferRef* (*alloc2)(void *opaque, buffer_size_t size);
+    AVBufferRef* (*alloc)(size_t size);
+    AVBufferRef* (*alloc2)(void *opaque, size_t size);
     void         (*pool_free)(void *opaque);
 };
 

@@ -355,7 +355,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (mp3->xing_offset) {
             uint8_t *side_data = NULL;
-            buffer_size_t side_data_size;
+            size_t side_data_size;
 
             mp3_xing_add_frame(mp3, pkt);
             mp3->audio_size += pkt->size;
@@ -402,7 +402,7 @@ static void mp3_update_xing(AVFormatContext *s)
     AVReplayGain *rg;
     uint16_t tag_crc;
     uint8_t *toc;
-    buffer_size_t rg_size;
+    size_t rg_size;
     int i;
     int64_t old_pos = avio_tell(s->pb);
 

@@ -446,7 +446,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     frame_metadata = frame->metadata;
     if (frame_metadata) {
-        buffer_size_t size;
+        size_t size;
         uint8_t *metadata = av_packet_pack_dictionary(frame_metadata, &size);
 
         if (!metadata) {

@@ -119,7 +119,7 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
     AVIOContext *io_context = format_context->pb;
     AVStream *codec_stream = format_context->streams[0];
     uint8_t *side_data = NULL;
-    buffer_size_t side_data_size;
+    size_t side_data_size;
 
     av_assert0(apng->prev_packet);
 

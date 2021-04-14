@@ -340,7 +340,8 @@ static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSi
     int i;
 
     if (sd->size < uuid_size) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data(%d < UUID(%d-bytes))\n", sd->size, uuid_size);
+        av_log(ctx, AV_LOG_ERROR, "invalid data(%"SIZE_SPECIFIER" < "
+               "UUID(%d-bytes))\n", sd->size, uuid_size);
         return;
     }
 
@@ -498,7 +499,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_log(ctx, AV_LOG_INFO, "pan/scan");
             break;
         case AV_FRAME_DATA_A53_CC:
-            av_log(ctx, AV_LOG_INFO, "A/53 closed captions (%d bytes)", sd->size);
+            av_log(ctx, AV_LOG_INFO, "A/53 closed captions "
+                   "(%"SIZE_SPECIFIER" bytes)", sd->size);
             break;
         case AV_FRAME_DATA_SPHERICAL:
             dump_spherical(ctx, frame, sd);
@@ -545,8 +547,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             dump_sei_unregistered_metadata(ctx, sd);
             break;
         default:
-            av_log(ctx, AV_LOG_WARNING, "unknown side data type %d (%d bytes)\n",
-                   sd->type, sd->size);
+            av_log(ctx, AV_LOG_WARNING, "unknown side data type %d "
+                   "(%"SIZE_SPECIFIER" bytes)\n", sd->type, sd->size);
             break;
         }
 

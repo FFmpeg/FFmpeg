@@ -383,7 +383,7 @@ int ff_img_read_header(AVFormatContext *s1)
 static int add_filename_as_pkt_side_data(char *filename, AVPacket *pkt) {
     AVDictionary *d = NULL;
     char *packed_metadata = NULL;
-    buffer_size_t metadata_len;
+    size_t metadata_len;
     int ret;
 
     av_dict_set(&d, "lavf.image2dec.source_path", filename, 0);

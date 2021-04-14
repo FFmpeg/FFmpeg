@@ -298,18 +298,19 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     avio_write(s->pb, buf, strlen(buf));
 
     if (c->format_version > 1 && pkt->side_data_elems) {
-        int i, j;
+        int i;
         avio_printf(s->pb, ", S=%d", pkt->side_data_elems);
         for (i = 0; i < pkt->side_data_elems; i++) {
             av_hash_init(c->hashes[0]);
             if (HAVE_BIGENDIAN && pkt->side_data[i].type == AV_PKT_DATA_PALETTE) {
-                for (j = 0; j < pkt->side_data[i].size; j += sizeof(uint32_t)) {
+                for (size_t j = 0; j < pkt->side_data[i].size; j += sizeof(uint32_t)) {
                     uint32_t data = AV_RL32(pkt->side_data[i].data + j);
                     av_hash_update(c->hashes[0], (uint8_t *)&data, sizeof(uint32_t));
                 }
             } else
                 av_hash_update(c->hashes[0], pkt->side_data[i].data, pkt->side_data[i].size);
-            snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1), ", %8d, ", pkt->side_data[i].size);
+            snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1),
+                     ", %8"SIZE_SPECIFIER", ", pkt->side_data[i].size);
             len = strlen(buf);
             av_hash_final_hex(c->hashes[0], buf + len, sizeof(buf) - len);
             avio_write(s->pb, buf, strlen(buf));

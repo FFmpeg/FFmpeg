@@ -78,7 +78,7 @@ static int webvtt_read_header(AVFormatContext *s)
         int64_t pos;
         AVPacket *sub;
         const char *p, *identifier, *settings;
-        int identifier_len, settings_len;
+        size_t identifier_len, settings_len;
         int64_t ts_start, ts_end;
 
         ff_subtitles_read_chunk(s->pb, &cue);

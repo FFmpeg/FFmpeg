@@ -575,8 +575,8 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
                 put_bits(&s->pb, 8, 0xff);                  // marker_bits
             } else {
                 av_log(s->avctx, AV_LOG_WARNING,
-                    "Warning Closed Caption size (%d) can not exceed 93 bytes "
-                    "and must be a multiple of 3\n", side_data->size);
+                    "Closed Caption size (%"SIZE_SPECIFIER") can not exceed "
+                    "93 bytes and must be a multiple of 3\n", side_data->size);
             }
         }
     }

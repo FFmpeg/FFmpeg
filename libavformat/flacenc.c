@@ -280,7 +280,7 @@ static int flac_write_audio_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     FlacMuxerContext *c = s->priv_data;
     uint8_t *streaminfo;
-    buffer_size_t streaminfo_size;
+    size_t streaminfo_size;
 
     /* check for updated streaminfo */
     streaminfo = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,

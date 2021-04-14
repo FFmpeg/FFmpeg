@@ -103,7 +103,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf  = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
     int num_blocks, ch, ret;
-    buffer_size_t new_extradata_size;
+    size_t new_extradata_size;
     uint8_t *new_extradata;
 
     new_extradata = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,

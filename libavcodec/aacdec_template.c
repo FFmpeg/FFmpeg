@@ -3437,11 +3437,11 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     int buf_consumed;
     int buf_offset;
     int err;
-    buffer_size_t new_extradata_size;
+    size_t new_extradata_size;
     const uint8_t *new_extradata = av_packet_get_side_data(avpkt,
                                        AV_PKT_DATA_NEW_EXTRADATA,
                                        &new_extradata_size);
-    buffer_size_t jp_dualmono_size;
+    size_t jp_dualmono_size;
     const uint8_t *jp_dualmono   = av_packet_get_side_data(avpkt,
                                        AV_PKT_DATA_JP_DUALMONO,
                                        &jp_dualmono_size);

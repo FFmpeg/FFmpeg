@@ -88,7 +88,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
             case AV_PKT_DATA_SPHERICAL:
             case AV_PKT_DATA_CONTENT_LIGHT_LEVEL:
             case AV_PKT_DATA_S12M_TIMECODE:
-                for (int j = 0; j < sd->size / 4; j++) {
+                for (size_t j = 0; j < sd->size / 4; j++) {
                     uint8_t buf[4];
                     AV_WL32(buf, AV_RB32(sd->data + 4 * j));
                     side_data_crc = av_adler32_update(side_data_crc, buf, 4);
@@ -119,7 +119,9 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
             default:
                 side_data_crc = av_adler32_update(0, data, sd->size);
             }
-            av_strlcatf(buf, sizeof(buf), ", %8d, 0x%08"PRIx32, pkt->side_data[i].size, side_data_crc);
+
+            av_strlcatf(buf, sizeof(buf), ", %8"SIZE_SPECIFIER", 0x%08"PRIx32,
+                        pkt->side_data[i].size, side_data_crc);
         }
     }
     av_strlcatf(buf, sizeof(buf), "\n");
