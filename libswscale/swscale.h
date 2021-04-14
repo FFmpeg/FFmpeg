@@ -260,17 +260,6 @@ void sws_scaleVec(SwsVector *a, double scalar);
  */
 void sws_normalizeVec(SwsVector *a, double height);
 
-#if FF_API_SWS_VECTOR
-attribute_deprecated SwsVector *sws_getConstVec(double c, int length);
-attribute_deprecated SwsVector *sws_getIdentityVec(void);
-attribute_deprecated void sws_convVec(SwsVector *a, SwsVector *b);
-attribute_deprecated void sws_addVec(SwsVector *a, SwsVector *b);
-attribute_deprecated void sws_subVec(SwsVector *a, SwsVector *b);
-attribute_deprecated void sws_shiftVec(SwsVector *a, int shift);
-attribute_deprecated SwsVector *sws_cloneVec(SwsVector *a);
-attribute_deprecated void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
-#endif
-
 void sws_freeVec(SwsVector *a);
 
 SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,

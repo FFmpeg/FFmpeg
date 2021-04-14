@@ -46,8 +46,4 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_SWS_VECTOR
-#define FF_API_SWS_VECTOR            (LIBSWSCALE_VERSION_MAJOR < 6)
-#endif
-
 #endif /* SWSCALE_VERSION_H */
