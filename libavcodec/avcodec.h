@@ -155,29 +155,6 @@
  * at least will not fail with AVERROR(EAGAIN). In general, no codec will
  * permit unlimited buffering of input or output.
  *
- * This API replaces the following legacy functions:
- * - avcodec_decode_video2() and avcodec_decode_audio4():
- *   Use avcodec_send_packet() to feed input to the decoder, then use
- *   avcodec_receive_frame() to receive decoded frames after each packet.
- *   Unlike with the old video decoding API, multiple frames might result from
- *   a packet. For audio, splitting the input packet into frames by partially
- *   decoding packets becomes transparent to the API user. You never need to
- *   feed an AVPacket to the API twice (unless it is rejected with AVERROR(EAGAIN) - then
- *   no data was read from the packet).
- *   Additionally, sending a flush/draining packet is required only once.
- * - avcodec_encode_video2()/avcodec_encode_audio2():
- *   Use avcodec_send_frame() to feed input to the encoder, then use
- *   avcodec_receive_packet() to receive encoded packets.
- *   Providing user-allocated buffers for avcodec_receive_packet() is not
- *   possible.
- * - The new API does not handle subtitles yet.
- *
- * Mixing new and old function calls on the same AVCodecContext is not allowed,
- * and will result in undefined behavior.
- *
- * Some codecs might require using the new API; using the old API will return
- * an error when calling it. All codecs support the new API.
- *
  * A codec is not allowed to return AVERROR(EAGAIN) for both sending and receiving. This
  * would be an invalid state, which could put the codec user into an endless
  * loop. The API has no concept of time either: it cannot happen that trying to
@@ -685,7 +662,7 @@ typedef struct AVCodecContext {
      * picture width / height.
      *
      * @note Those fields may not match the values of the last
-     * AVFrame output by avcodec_decode_video2 due frame
+     * AVFrame output by avcodec_receive_frame() due frame
      * reordering.
      *
      * - encoding: MUST be set by user.
@@ -1274,24 +1251,6 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec, user can override.
      */
     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
-
-#if FF_API_OLD_ENCDEC
-    /**
-     * If non-zero, the decoded audio and video frames returned from
-     * avcodec_decode_video2() and avcodec_decode_audio4() are reference-counted
-     * and are valid indefinitely. The caller must free them with
-     * av_frame_unref() when they are not needed anymore.
-     * Otherwise, the decoded frames must not be freed by the caller and are
-     * only valid until the next decode call.
-     *
-     * This is always automatically enabled if avcodec_receive_frame() is used.
-     *
-     * - encoding: unused
-     * - decoding: set by the caller before avcodec_open2().
-     */
-    attribute_deprecated
-    int refcounted_frames;
-#endif
 
     /* - encoding parameters */
     float qcompress;  ///< amount of qscale change between easy & hard scenes (0.0-1.0)
@@ -2644,115 +2603,6 @@ int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos);
  */
 enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos);
 
-#if FF_API_OLD_ENCDEC
-/**
- * Decode the audio frame of size avpkt->size from avpkt->data into frame.
- *
- * Some decoders may support multiple frames in a single AVPacket. Such
- * decoders would then just decode the first frame and the return value would be
- * less than the packet size. In this case, avcodec_decode_audio4 has to be
- * called again with an AVPacket containing the remaining data in order to
- * decode the second frame, etc...  Even if no frames are returned, the packet
- * needs to be fed to the decoder with remaining data until it is completely
- * consumed or an error occurs.
- *
- * Some decoders (those marked with AV_CODEC_CAP_DELAY) have a delay between input
- * and output. This means that for some packets they will not immediately
- * produce decoded output and need to be flushed at the end of decoding to get
- * all the decoded data. Flushing is done by calling this function with packets
- * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
- * returning samples. It is safe to flush even those decoders that are not
- * marked with AV_CODEC_CAP_DELAY, then no samples will be returned.
- *
- * @warning The input buffer, avpkt->data must be AV_INPUT_BUFFER_PADDING_SIZE
- *          larger than the actual read bytes because some optimized bitstream
- *          readers read 32 or 64 bits at once and could read over the end.
- *
- * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
- * before packets may be fed to the decoder.
- *
- * @param      avctx the codec context
- * @param[out] frame The AVFrame in which to store decoded audio samples.
- *                   The decoder will allocate a buffer for the decoded frame by
- *                   calling the AVCodecContext.get_buffer2() callback.
- *                   When AVCodecContext.refcounted_frames is set to 1, the frame is
- *                   reference counted and the returned reference belongs to the
- *                   caller. The caller must release the frame using av_frame_unref()
- *                   when the frame is no longer needed. The caller may safely write
- *                   to the frame if av_frame_is_writable() returns 1.
- *                   When AVCodecContext.refcounted_frames is set to 0, the returned
- *                   reference belongs to the decoder and is valid only until the
- *                   next call to this function or until closing or flushing the
- *                   decoder. The caller may not write to it.
- * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
- *                           non-zero. Note that this field being set to zero
- *                           does not mean that an error has occurred. For
- *                           decoders with AV_CODEC_CAP_DELAY set, no given decode
- *                           call is guaranteed to produce a frame.
- * @param[in]  avpkt The input AVPacket containing the input buffer.
- *                   At least avpkt->data and avpkt->size should be set. Some
- *                   decoders might also require additional fields to be set.
- * @return A negative error code is returned if an error occurred during
- *         decoding, otherwise the number of bytes consumed from the input
- *         AVPacket is returned.
- *
-* @deprecated Use avcodec_send_packet() and avcodec_receive_frame().
- */
-attribute_deprecated
-int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
-                          int *got_frame_ptr, const AVPacket *avpkt);
-
-/**
- * Decode the video frame of size avpkt->size from avpkt->data into picture.
- * Some decoders may support multiple frames in a single AVPacket, such
- * decoders would then just decode the first frame.
- *
- * @warning The input buffer must be AV_INPUT_BUFFER_PADDING_SIZE larger than
- * the actual read bytes because some optimized bitstream readers read 32 or 64
- * bits at once and could read over the end.
- *
- * @warning The end of the input buffer buf should be set to 0 to ensure that
- * no overreading happens for damaged MPEG streams.
- *
- * @note Codecs which have the AV_CODEC_CAP_DELAY capability set have a delay
- * between input and output, these need to be fed with avpkt->data=NULL,
- * avpkt->size=0 at the end to return the remaining frames.
- *
- * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
- * before packets may be fed to the decoder.
- *
- * @param avctx the codec context
- * @param[out] picture The AVFrame in which the decoded video frame will be stored.
- *             Use av_frame_alloc() to get an AVFrame. The codec will
- *             allocate memory for the actual bitmap by calling the
- *             AVCodecContext.get_buffer2() callback.
- *             When AVCodecContext.refcounted_frames is set to 1, the frame is
- *             reference counted and the returned reference belongs to the
- *             caller. The caller must release the frame using av_frame_unref()
- *             when the frame is no longer needed. The caller may safely write
- *             to the frame if av_frame_is_writable() returns 1.
- *             When AVCodecContext.refcounted_frames is set to 0, the returned
- *             reference belongs to the decoder and is valid only until the
- *             next call to this function or until closing or flushing the
- *             decoder. The caller may not write to it.
- *
- * @param[in] avpkt The input AVPacket containing the input buffer.
- *            You can create such packet with av_init_packet() and by then setting
- *            data and size, some decoders might in addition need other fields like
- *            flags&AV_PKT_FLAG_KEY. All decoders are designed to use the least
- *            fields possible.
- * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
- * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame could be decompressed.
- *
- * @deprecated Use avcodec_send_packet() and avcodec_receive_frame().
- */
-attribute_deprecated
-int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
-                         int *got_picture_ptr,
-                         const AVPacket *avpkt);
-#endif
-
 /**
  * Decode a subtitle message.
  * Return a negative value on error, otherwise return the number of bytes used.
@@ -2795,10 +2645,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
  * @warning The input buffer, avpkt->data must be AV_INPUT_BUFFER_PADDING_SIZE
  *          larger than the actual read bytes because some optimized bitstream
  *          readers read 32 or 64 bits at once and could read over the end.
- *
- * @warning Do not mix this API with the legacy API (like avcodec_decode_video2())
- *          on the same AVCodecContext. It will return unexpected results now
- *          or in future libavcodec versions.
  *
  * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
  *       before packets may be fed to the decoder.
@@ -3264,95 +3110,6 @@ void av_parser_close(AVCodecParserContext *s);
  * @addtogroup lavc_encoding
  * @{
  */
-
-#if FF_API_OLD_ENCDEC
-/**
- * Encode a frame of audio.
- *
- * Takes input samples from frame and writes the next output packet, if
- * available, to avpkt. The output packet does not necessarily contain data for
- * the most recent frame, as encoders can delay, split, and combine input frames
- * internally as needed.
- *
- * @param avctx     codec context
- * @param avpkt     output AVPacket.
- *                  The user can supply an output buffer by setting
- *                  avpkt->data and avpkt->size prior to calling the
- *                  function, but if the size of the user-provided data is not
- *                  large enough, encoding will fail. If avpkt->data and
- *                  avpkt->size are set, avpkt->destruct must also be set. All
- *                  other AVPacket fields will be reset by the encoder using
- *                  av_init_packet(). If avpkt->data is NULL, the encoder will
- *                  allocate it. The encoder will set avpkt->size to the size
- *                  of the output packet.
- *
- *                  If this function fails or produces no output, avpkt will be
- *                  freed using av_packet_unref().
- * @param[in] frame AVFrame containing the raw audio data to be encoded.
- *                  May be NULL when flushing an encoder that has the
- *                  AV_CODEC_CAP_DELAY capability set.
- *                  If AV_CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame
- *                  can have any number of samples.
- *                  If it is not set, frame->nb_samples must be equal to
- *                  avctx->frame_size for all frames except the last.
- *                  The final frame may be smaller than avctx->frame_size.
- * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
- *                            output packet is non-empty, and to 0 if it is
- *                            empty. If the function returns an error, the
- *                            packet can be assumed to be invalid, and the
- *                            value of got_packet_ptr is undefined and should
- *                            not be used.
- * @return          0 on success, negative error code on failure
- *
- * @deprecated use avcodec_send_frame()/avcodec_receive_packet() instead.
- *             If allowed and required, set AVCodecContext.get_encode_buffer to
- *             a custom function to pass user supplied output buffers.
- */
-attribute_deprecated
-int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
-                          const AVFrame *frame, int *got_packet_ptr);
-
-/**
- * Encode a frame of video.
- *
- * Takes input raw video data from frame and writes the next output packet, if
- * available, to avpkt. The output packet does not necessarily contain data for
- * the most recent frame, as encoders can delay and reorder input frames
- * internally as needed.
- *
- * @param avctx     codec context
- * @param avpkt     output AVPacket.
- *                  The user can supply an output buffer by setting
- *                  avpkt->data and avpkt->size prior to calling the
- *                  function, but if the size of the user-provided data is not
- *                  large enough, encoding will fail. All other AVPacket fields
- *                  will be reset by the encoder using av_init_packet(). If
- *                  avpkt->data is NULL, the encoder will allocate it.
- *                  The encoder will set avpkt->size to the size of the
- *                  output packet. The returned data (if any) belongs to the
- *                  caller, he is responsible for freeing it.
- *
- *                  If this function fails or produces no output, avpkt will be
- *                  freed using av_packet_unref().
- * @param[in] frame AVFrame containing the raw video data to be encoded.
- *                  May be NULL when flushing an encoder that has the
- *                  AV_CODEC_CAP_DELAY capability set.
- * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
- *                            output packet is non-empty, and to 0 if it is
- *                            empty. If the function returns an error, the
- *                            packet can be assumed to be invalid, and the
- *                            value of got_packet_ptr is undefined and should
- *                            not be used.
- * @return          0 on success, negative error code on failure
- *
- * @deprecated use avcodec_send_frame()/avcodec_receive_packet() instead.
- *             If allowed and required, set AVCodecContext.get_encode_buffer to
- *             a custom function to pass user supplied output buffers.
- */
-attribute_deprecated
-int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
-                          const AVFrame *frame, int *got_packet_ptr);
-#endif
 
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                             const AVSubtitle *sub);

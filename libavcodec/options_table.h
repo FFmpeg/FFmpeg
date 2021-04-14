@@ -368,9 +368,6 @@ static const AVOption avcodec_options[] = {
 {"ignore",      NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_IGNORE},      INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
 {"sub_text_format", "set decoded text subtitle format", OFFSET(sub_text_format), AV_OPT_TYPE_INT, {.i64 = FF_SUB_TEXT_FMT_ASS}, 0, 1, S|D, "sub_text_format"},
 {"ass",              NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_TEXT_FMT_ASS},              INT_MIN, INT_MAX, S|D, "sub_text_format"},
-#if FF_API_OLD_ENCDEC
-{"refcounted_frames", NULL, OFFSET(refcounted_frames), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|V|D },
-#endif
 {"apply_cropping", NULL, OFFSET(apply_cropping), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, V | D },
 {"skip_alpha", "Skip processing alpha", OFFSET(skip_alpha), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, V|D },
 {"field_order", "Field order", OFFSET(field_order), AV_OPT_TYPE_INT, {.i64 = AV_FIELD_UNKNOWN }, 0, 5, V|D|E, "field_order" },
