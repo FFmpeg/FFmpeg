@@ -3747,16 +3747,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ic->codec_whitelist)
             av_dict_set(options ? &options[i] : &thread_opt, "codec_whitelist", ic->codec_whitelist, 0);
 
-        /* Ensure that subtitle_header is properly set. */
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE
-            && codec && !avctx->codec) {
-            if (avcodec_open2(avctx, codec, options ? &options[i] : &thread_opt) < 0)
-                av_log(ic, AV_LOG_WARNING,
-                       "Failed to open codec in %s\n",__FUNCTION__);
-        }
-
         // Try to just open decoders, in case this is enough to get parameters.
-        if (!has_codec_parameters(st, NULL) && st->internal->request_probe <= 0) {
+        // Also ensure that subtitle_header is properly set.
+        if (!has_codec_parameters(st, NULL) && st->internal->request_probe <= 0 ||
+            st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (codec && !avctx->codec)
                 if (avcodec_open2(avctx, codec, options ? &options[i] : &thread_opt) < 0)
                     av_log(ic, AV_LOG_WARNING,
