@@ -24,6 +24,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"

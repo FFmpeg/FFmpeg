@@ -23,6 +23,7 @@
 #ifndef AVCODEC_X86_VP9DSP_INIT_H
 #define AVCODEC_X86_VP9DSP_INIT_H
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
 
 #include "libavcodec/vp9dsp.h"

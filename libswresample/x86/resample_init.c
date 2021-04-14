@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/x86/cpu.h"
 #include "libswresample/resample.h"
 

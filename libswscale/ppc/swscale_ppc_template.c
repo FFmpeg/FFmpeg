@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
 
 static void FUNC(yuv2planeX_8_16)(const int16_t *filter, int filterSize,

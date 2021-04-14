@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavcodec/takdsp.h"
 #include "libavutil/x86/cpu.h"
 #include "config.h"
