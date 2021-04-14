@@ -24,6 +24,7 @@
 #include <stddef.h>
 
 #include "attributes.h"
+#include "version.h"
 
 #define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
 
@@ -88,6 +89,7 @@ int av_get_cpu_flags(void);
  */
 void av_force_cpu_flags(int flags);
 
+#if FF_API_CPU_FLAGS
 /**
  * Set a mask on flags returned by av_get_cpu_flags().
  * This function is mainly useful for testing.
@@ -106,6 +108,7 @@ attribute_deprecated void av_set_cpu_flags_mask(int mask);
  */
 attribute_deprecated
 int av_parse_cpu_flags(const char *s);
+#endif
 
 /**
  * Parse CPU caps from a string and update the given AV_CPU_* flags based on that.

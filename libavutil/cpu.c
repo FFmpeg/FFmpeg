@@ -102,6 +102,7 @@ int av_get_cpu_flags(void)
     return flags;
 }
 
+#if FF_API_CPU_FLAGS
 void av_set_cpu_flags_mask(int mask)
 {
     atomic_store_explicit(&cpu_flags, get_cpu_flags() & mask,
@@ -192,7 +193,7 @@ int av_parse_cpu_flags(const char *s)
 
     return flags & INT_MAX;
 }
-
+#endif
 int av_parse_cpu_caps(unsigned *flags, const char *s)
 {
         static const AVOption cpuflags_opts[] = {
