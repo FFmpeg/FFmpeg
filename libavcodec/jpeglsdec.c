@@ -45,6 +45,11 @@
  */
 //#define JLS_BROKEN
 
+typedef struct JpegLSDecodeContext {
+    MJpegDecodeContext mjpeg;
+    JLSState state;
+} JpegLSDecodeContext;
+
 /**
  * Decode LSE block with initialization parameters
  */
@@ -350,7 +355,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
 {
     int i, t = 0;
     uint8_t *zero, *last, *cur;
-    JLSState *state;
+    JLSState *const state = &((JpegLSDecodeContext*)s)->state;
     int off = 0, stride = 1, width, shift, ret = 0;
     int decoded_height = 0;
 
@@ -360,12 +365,8 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     last = zero;
     cur  = s->picture_ptr->data[0];
 
-    state = av_mallocz(sizeof(JLSState));
-    if (!state) {
-        av_free(zero);
-        return AVERROR(ENOMEM);
-    }
     /* initialize JPEG-LS state from JPEG parameters */
+    memset(state, 0, sizeof(*state));
     state->near   = near;
     state->bpp    = (s->bits < 2) ? 2 : s->bits;
     state->maxval = s->maxval;
@@ -537,7 +538,6 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     }
 
 end:
-    av_free(state);
     av_free(zero);
 
     return ret;
@@ -548,7 +548,7 @@ AVCodec ff_jpegls_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEGLS,
-    .priv_data_size = sizeof(MJpegDecodeContext),
+    .priv_data_size = sizeof(JpegLSDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .receive_frame  = ff_mjpeg_receive_frame,
