@@ -43,7 +43,6 @@ EOF
 # gen-rc libavdevice   "FFmpeg device handling library"
 # gen-rc libavfilter   "FFmpeg audio/video filtering library"
 # gen-rc libpostproc   "FFmpeg postprocessing library"
-# gen-rc libavresample "Libav audio resampling library"
 # gen-rc libswscale    "FFmpeg image rescaling library"
 # gen-rc libswresample "FFmpeg audio resampling library"
 

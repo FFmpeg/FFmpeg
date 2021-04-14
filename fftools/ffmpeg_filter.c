@@ -26,8 +26,6 @@
 #include "libavfilter/buffersink.h"
 #include "libavfilter/buffersrc.h"
 
-#include "libavresample/avresample.h"
-
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"

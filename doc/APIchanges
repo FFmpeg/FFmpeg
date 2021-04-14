@@ -6,7 +6,6 @@ libavcodec:    2017-10-21
 libavdevice:   2017-10-21
 libavfilter:   2017-10-21
 libavformat:   2017-10-21
-libavresample: 2017-10-21
 libpostproc:   2017-10-21
 libswresample: 2017-10-21
 libswscale:    2017-10-21

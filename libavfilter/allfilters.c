@@ -129,7 +129,6 @@ extern AVFilter ff_af_lv2;
 extern AVFilter ff_af_mcompand;
 extern AVFilter ff_af_pan;
 extern AVFilter ff_af_replaygain;
-extern AVFilter ff_af_resample;
 extern AVFilter ff_af_rubberband;
 extern AVFilter ff_af_sidechaincompress;
 extern AVFilter ff_af_sidechaingate;

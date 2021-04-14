@@ -132,7 +132,6 @@ Component options:
   --disable-swscale        disable libswscale build
   --disable-postproc       disable libpostproc build
   --disable-avfilter       disable libavfilter build
-  --enable-avresample      enable libavresample build (deprecated) [no]
   --disable-pthreads       disable pthreads [autodetect]
   --disable-w32threads     disable Win32 threads [autodetect]
   --disable-os2threads     disable OS/2 threads [autodetect]
@@ -1901,7 +1900,6 @@ LIBRARY_LIST="
     avformat
     avcodec
     swresample
-    avresample
     avutil
 "
 
@@ -3609,7 +3607,6 @@ program_opencl_filter_deps="opencl"
 pullup_filter_deps="gpl"
 removelogo_filter_deps="avcodec avformat swscale"
 repeatfields_filter_deps="gpl"
-resample_filter_deps="avresample"
 roberts_opencl_filter_deps="opencl"
 rubberband_filter_deps="librubberband"
 sab_filter_deps="gpl swscale"
@@ -3711,8 +3708,6 @@ avfilter_deps="avutil"
 avfilter_suggest="libm"
 avformat_deps="avcodec avutil"
 avformat_suggest="libm network zlib"
-avresample_deps="avutil"
-avresample_suggest="libm"
 avutil_suggest="clock_gettime ffnvcodec libm libdrm libmfx opencl user32 vaapi vulkan videotoolbox corefoundation corevideo coremedia bcrypt"
 postproc_deps="avutil gpl"
 postproc_suggest="libm"
@@ -3795,7 +3790,7 @@ intrinsics="none"
 enable $PROGRAM_LIST
 enable $DOCUMENT_LIST
 enable $EXAMPLE_LIST
-enable $(filter_out avresample $LIBRARY_LIST)
+enable $LIBRARY_LIST
 enable stripping
 
 enable asm
@@ -6845,7 +6840,7 @@ EOF
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
-check_ldflags -Wl,-rpath-link=:libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
+check_ldflags -Wl,-rpath-link=:libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
 enabled rpath && add_ldexeflags -Wl,-rpath,$libdir && add_ldsoflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
@@ -6860,8 +6855,7 @@ enabled neon_clobber_test &&
                   -Wl,--wrap,avcodec_receive_packet     \
                   -Wl,--wrap,avcodec_send_frame         \
                   -Wl,--wrap,avcodec_receive_frame      \
-                  -Wl,--wrap,swr_convert                \
-                  -Wl,--wrap,avresample_convert ||
+                  -Wl,--wrap,swr_convert        ||
     disable neon_clobber_test
 
 enabled xmm_clobber_test &&
@@ -6873,7 +6867,6 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,avcodec_send_frame         \
                   -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,swr_convert                \
-                  -Wl,--wrap,avresample_convert         \
                   -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
 
@@ -7098,7 +7091,6 @@ check_deps $CONFIG_LIST       \
            $ALL_COMPONENTS    \
 
 enabled threads && ! enabled pthreads && ! enabled atomics_native && die "non pthread threading without atomics not supported, try adding --enable-pthreads or --cpu=i486 or higher if you are on x86"
-enabled avresample && warn "Building with deprecated library libavresample"
 
 case $target_os in
 haiku)
@@ -7214,7 +7206,6 @@ enabled movie_filter    && prepend avfilter_deps "avformat avcodec"
 enabled pan_filter          && prepend avfilter_deps "swresample"
 enabled pp_filter           && prepend avfilter_deps "postproc"
 enabled removelogo_filter   && prepend avfilter_deps "avformat avcodec swscale"
-enabled resample_filter && prepend avfilter_deps "avresample"
 enabled sab_filter          && prepend avfilter_deps "swscale"
 enabled scale_filter    && prepend avfilter_deps "swscale"
 enabled scale2ref_filter    && prepend avfilter_deps "swscale"
@@ -7707,7 +7698,6 @@ extralibs_avcodec="$avcodec_extralibs"
 extralibs_avformat="$avformat_extralibs"
 extralibs_avdevice="$avdevice_extralibs"
 extralibs_avfilter="$avfilter_extralibs"
-extralibs_avresample="$avresample_extralibs"
 extralibs_postproc="$postproc_extralibs"
 extralibs_swscale="$swscale_extralibs"
 extralibs_swresample="$swresample_extralibs"
