@@ -533,12 +533,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 #endif
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     s->avctx = avctx;
 
     return 0;

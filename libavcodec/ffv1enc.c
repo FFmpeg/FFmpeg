@@ -745,12 +745,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (!s->transparency)
         s->plane_count = 2;
     if (!s->chroma_planes && s->version > 3)
@@ -1174,11 +1168,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     av_frame_unref(p);
     if ((ret = av_frame_ref(p, pict)) < 0)
         return ret;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
         put_rac(c, &keystate, 1);
@@ -1243,12 +1232,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (avctx->flags & AV_CODEC_FLAG_PASS1)
         avctx->stats_out[0] = '\0';
-
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->key_frame = f->key_frame;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     f->picture_number++;
     pkt->size   = buf_p - pkt->data;

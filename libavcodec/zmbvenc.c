@@ -180,12 +180,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     c->curfrm++;
     if(c->curfrm == c->keyint)
         c->curfrm = 0;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
-    avctx->coded_frame->key_frame = keyframe;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     palptr = (avctx->pix_fmt == AV_PIX_FMT_PAL8) ? (uint32_t *)p->data[1] : NULL;
     chpal = !keyframe && palptr && memcmp(palptr, c->pal2, 1024);

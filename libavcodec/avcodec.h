@@ -1578,17 +1578,6 @@ typedef struct AVCodecContext {
      */
      int lowres;
 
-#if FF_API_CODED_FRAME
-    /**
-     * the picture in the bitstream
-     * - encoding: Set by libavcodec.
-     * - decoding: unused
-     *
-     * @deprecated use the quality factor packet side data instead
-     */
-    attribute_deprecated AVFrame *coded_frame;
-#endif
-
     /**
      * thread count
      * is used to decide how many independent tasks should be passed to execute()

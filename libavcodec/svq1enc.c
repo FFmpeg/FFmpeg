@@ -615,13 +615,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->pict_type = AV_PICTURE_TYPE_I;
     s->quality = pict->quality;
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = s->pict_type;
-    avctx->coded_frame->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
 
     svq1_write_header(s, s->pict_type);

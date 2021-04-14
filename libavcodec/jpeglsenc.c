@@ -413,18 +413,6 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int encode_init_ls(AVCodecContext *ctx)
-{
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    ctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    ctx->coded_frame->key_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-    return 0;
-}
-
 #define OFFSET(x) offsetof(JPEGLSContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -450,7 +438,6 @@ AVCodec ff_jpegls_encoder = {
     .id             = AV_CODEC_ID_JPEGLS,
     .priv_data_size = sizeof(JPEGLSContext),
     .priv_class     = &jpegls_class,
-    .init           = encode_init_ls,
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .encode2        = encode_picture_ls,
     .pix_fmts       = (const enum AVPixelFormat[]) {

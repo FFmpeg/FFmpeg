@@ -245,21 +245,8 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame->pict_type      = AV_PICTURE_TYPE_I;
-        avctx->coded_frame->key_frame      = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         s->last_key_frame = avctx->frame_number;
         ff_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
-    } else {
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
-        avctx->coded_frame->key_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     if (I_frame)

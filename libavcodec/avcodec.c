@@ -400,11 +400,6 @@ free_and_end:
     av_opt_free(avctx);
 
     if (av_codec_is_encoder(avctx->codec)) {
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        av_frame_free(&avctx->coded_frame);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         av_freep(&avctx->extradata);
         avctx->extradata_size = 0;
     }
@@ -578,11 +573,6 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     av_freep(&avctx->priv_data);
     if (av_codec_is_encoder(avctx->codec)) {
         av_freep(&avctx->extradata);
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        av_frame_free(&avctx->coded_frame);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     } else if (av_codec_is_decoder(avctx->codec))
         av_freep(&avctx->subtitle_header);
 

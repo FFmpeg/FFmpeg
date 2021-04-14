@@ -51,9 +51,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
-#ifndef FF_API_CODED_FRAME
-#define FF_API_CODED_FRAME       (LIBAVCODEC_VERSION_MAJOR < 59)
-#endif
 #ifndef FF_API_OPENH264_SLICE_MODE
 #define FF_API_OPENH264_SLICE_MODE (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif

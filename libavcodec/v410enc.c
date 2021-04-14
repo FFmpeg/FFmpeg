@@ -51,13 +51,6 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     dst = pkt->data;
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     y = (uint16_t *)pic->data[0];
     u = (uint16_t *)pic->data[1];
     v = (uint16_t *)pic->data[2];

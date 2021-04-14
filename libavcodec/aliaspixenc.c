@@ -33,13 +33,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int width, height, bits_pixel, i, j, length, ret;
     uint8_t *in_buf, *buf;
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     width  = avctx->width;
     height = avctx->height;
 

@@ -1179,28 +1179,12 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         int pict_type;
         memcpy(pkt->data, cx_frame->buf, pkt->size);
         pkt->pts = pkt->dts = cx_frame->pts;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame->pts       = cx_frame->pts;
-        avctx->coded_frame->key_frame = !!(cx_frame->flags & VPX_FRAME_IS_KEY);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         if (!!(cx_frame->flags & VPX_FRAME_IS_KEY)) {
             pict_type = AV_PICTURE_TYPE_I;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->coded_frame->pict_type = pict_type;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             pkt->flags |= AV_PKT_FLAG_KEY;
         } else {
             pict_type = AV_PICTURE_TYPE_P;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->coded_frame->pict_type = pict_type;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         }
 
         ff_side_data_set_encoder_stats(pkt, 0, cx_frame->sse + 1,
@@ -1209,14 +1193,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (cx_frame->have_sse) {
             int i;
             /* Beware of the Y/U/V/all order! */
-#if FF_API_CODED_FRAME && FF_API_ERROR_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->coded_frame->error[0] = cx_frame->sse[1];
-            avctx->coded_frame->error[1] = cx_frame->sse[2];
-            avctx->coded_frame->error[2] = cx_frame->sse[3];
-            avctx->coded_frame->error[3] = 0;    // alpha
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             for (i = 0; i < 3; ++i) {
                 avctx->error[i] += cx_frame->sse[i + 1];
             }

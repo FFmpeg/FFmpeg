@@ -321,11 +321,6 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
     }
 
     if (for_user) {
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        dst->coded_frame = src->coded_frame;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         if (dst->codec->update_thread_context_for_user)
             err = dst->codec->update_thread_context_for_user(dst, src);
     } else {

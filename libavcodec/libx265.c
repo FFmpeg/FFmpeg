@@ -566,12 +566,6 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR_EXTERNAL;
     }
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = pict_type;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 #if X265_BUILD >= 130
     if (x265pic_out.sliceType == X265_TYPE_B)
 #else

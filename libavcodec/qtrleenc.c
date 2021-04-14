@@ -391,13 +391,6 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     }
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->key_frame = s->key_frame;
-    avctx->coded_frame->pict_type = s->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (s->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

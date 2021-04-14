@@ -1008,13 +1008,6 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
         avctx->bits_per_coded_sample = 8;
     }
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     ff_llvidencdsp_init(&s->llvidencdsp);
 
     if (avctx->pix_fmt == AV_PIX_FMT_MONOBLACK)

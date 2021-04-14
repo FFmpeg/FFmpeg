@@ -165,11 +165,6 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
         return 0;
     }
 
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pts = pic_out.i_pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     pkt->pts = pic_out.i_pts;
     if (avctx->has_b_frames) {
         if (!x4->out_frame_count)
@@ -194,28 +189,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     default:
         pict_type = AV_PICTURE_TYPE_NONE;
     }
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = pict_type;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     /* There is no IDR frame in AVS JiZhun */
     /* Sequence header is used as a flag */
     if (pic_out.i_type == XAVS_TYPE_I) {
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame->key_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         pkt->flags |= AV_PKT_FLAG_KEY;
     }
-
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 

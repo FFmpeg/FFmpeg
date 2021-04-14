@@ -276,19 +276,8 @@ static int libkvazaar_encode(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Unknown picture type encountered.\n");
             return AVERROR_EXTERNAL;
         }
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame->pict_type = pict_type;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         ff_side_data_set_encoder_stats(avpkt, frame_info.qp * FF_QP2LAMBDA, NULL, 0, pict_type);
-
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->coded_frame->quality = frame_info.qp * FF_QP2LAMBDA;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         *got_packet_ptr = 1;
     }

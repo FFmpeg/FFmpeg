@@ -527,14 +527,6 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 int ff_encode_preinit(AVCodecContext *avctx)
 {
     int i;
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        return AVERROR(ENOMEM);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
         av_log(avctx, AV_LOG_ERROR, "The encoder timebase is not set.\n");
