@@ -961,8 +961,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
         s->out_format == FMT_MJPEG)
         ff_mjpeg_encode_close(s);
 
-    av_freep(&avctx->extradata);
-
     for (i = 0; i < FF_ARRAY_ELEMS(s->tmp_frames); i++)
         av_frame_free(&s->tmp_frames[i]);
 

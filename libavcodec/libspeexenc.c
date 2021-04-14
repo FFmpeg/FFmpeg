@@ -318,7 +318,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
     speex_encoder_destroy(s->enc_state);
 
     ff_af_queue_close(&s->afq);
-    av_freep(&avctx->extradata);
 
     return 0;
 }

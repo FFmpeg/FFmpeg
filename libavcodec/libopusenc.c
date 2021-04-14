@@ -432,7 +432,6 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
 
 fail:
     opus_multistream_encoder_destroy(enc);
-    av_freep(&avctx->extradata);
     return ret;
 }
 
@@ -538,7 +537,6 @@ static av_cold int libopus_encode_close(AVCodecContext *avctx)
     ff_af_queue_close(&opus->afq);
 
     av_freep(&opus->samples);
-    av_freep(&avctx->extradata);
 
     return 0;
 }

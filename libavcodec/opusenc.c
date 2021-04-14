@@ -614,7 +614,6 @@ static av_cold int opus_encode_end(AVCodecContext *avctx)
     ff_af_queue_close(&s->afq);
     ff_opus_psy_end(&s->psyctx);
     ff_bufqueue_discard_all(&s->bufqueue);
-    av_freep(&avctx->extradata);
 
     return 0;
 }

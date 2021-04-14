@@ -1254,8 +1254,6 @@ static av_cold int vorbis_encode_close(AVCodecContext *avctx)
     ff_af_queue_close(&venc->afq);
     ff_bufqueue_discard_all(&venc->bufqueue);
 
-    av_freep(&avctx->extradata);
-
     return 0 ;
 }
 

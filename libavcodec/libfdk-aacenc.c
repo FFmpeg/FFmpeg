@@ -112,7 +112,6 @@ static int aac_encode_close(AVCodecContext *avctx)
 
     if (s->handle)
         aacEncClose(&s->handle);
-    av_freep(&avctx->extradata);
     ff_af_queue_close(&s->afq);
 
     return 0;

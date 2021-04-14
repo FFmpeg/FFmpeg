@@ -858,7 +858,6 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx)
         x->encoder_handle = NULL;
     }
 
-    av_freep(&avctx->extradata);
     if (x->twopassbuffer) {
         av_freep(&x->twopassbuffer);
         av_freep(&x->old_twopassbuffer);

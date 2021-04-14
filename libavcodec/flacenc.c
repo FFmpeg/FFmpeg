@@ -1413,8 +1413,6 @@ static av_cold int flac_encode_close(AVCodecContext *avctx)
         av_freep(&s->md5_buffer);
         ff_lpc_end(&s->lpc_ctx);
     }
-    av_freep(&avctx->extradata);
-    avctx->extradata_size = 0;
     return 0;
 }
 

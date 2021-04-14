@@ -156,9 +156,6 @@ static av_cold int libkvazaar_close(AVCodecContext *avctx)
         ctx->api->config_destroy(ctx->config);
     }
 
-    if (avctx->extradata)
-        av_freep(&avctx->extradata);
-
     return 0;
 }
 
