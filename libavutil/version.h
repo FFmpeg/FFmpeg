@@ -108,9 +108,6 @@
 #ifndef FF_API_CHILD_CLASS_NEXT
 #define FF_API_CHILD_CLASS_NEXT         (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
-#ifndef FF_API_CPU_FLAGS
-#define FF_API_CPU_FLAGS                (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
 #ifndef FF_API_D2STR
 #define FF_API_D2STR                    (LIBAVUTIL_VERSION_MAJOR < 58)
 #endif

@@ -23,9 +23,6 @@
 
 #include <stddef.h>
 
-#include "attributes.h"
-#include "version.h"
-
 #define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
 
     /* lower 16 bits - CPU features */
@@ -88,27 +85,6 @@ int av_get_cpu_flags(void);
  * -1 is a special case that disables forcing of specific flags.
  */
 void av_force_cpu_flags(int flags);
-
-#if FF_API_CPU_FLAGS
-/**
- * Set a mask on flags returned by av_get_cpu_flags().
- * This function is mainly useful for testing.
- * Please use av_force_cpu_flags() and av_get_cpu_flags() instead which are more flexible
- */
-attribute_deprecated void av_set_cpu_flags_mask(int mask);
-
-/**
- * Parse CPU flags from a string.
- *
- * The returned flags contain the specified flags as well as related unspecified flags.
- *
- * This function exists only for compatibility with libav.
- * Please use av_parse_cpu_caps() when possible.
- * @return a combination of AV_CPU_* flags, negative on error.
- */
-attribute_deprecated
-int av_parse_cpu_flags(const char *s);
-#endif
 
 /**
  * Parse CPU caps from a string and update the given AV_CPU_* flags based on that.
