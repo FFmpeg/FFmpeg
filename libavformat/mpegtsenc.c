@@ -287,6 +287,50 @@ static void putbuf(uint8_t **q_ptr, const uint8_t *buf, size_t len)
     *q_ptr += len;
 }
 
+static int put_arib_caption_descriptor(AVFormatContext *s, uint8_t **q_ptr,
+                                       AVCodecParameters *codecpar)
+{
+    uint8_t stream_identifier;
+    uint16_t data_component_id;
+    uint8_t *q = *q_ptr;
+
+    switch (codecpar->profile) {
+    case FF_PROFILE_ARIB_PROFILE_A:
+        stream_identifier = 0x30;
+        data_component_id = 0x0008;
+        break;
+    case FF_PROFILE_ARIB_PROFILE_C:
+        stream_identifier = 0x87;
+        data_component_id = 0x0012;
+        break;
+    default:
+        av_log(s, AV_LOG_ERROR,
+               "Unset/unknown ARIB caption profile %d utilized!\n",
+               codecpar->profile);
+        return AVERROR_INVALIDDATA;
+    }
+
+    // stream_identifier_descriptor
+    *q++ = 0x52;  // descriptor_tag
+    *q++ = 1;     // descriptor_length
+    *q++ = stream_identifier;  // component_tag: stream_identifier
+
+    // data_component_descriptor, defined in ARIB STD-B10, part 2, 6.2.20
+    *q++ = 0xFD;  // descriptor_tag: ARIB data coding type descriptor
+    *q++ = 3;     // descriptor_length
+    put16(&q, data_component_id);  // data_component_id
+    // additional_arib_caption_info: defined in ARIB STD-B24, fascicle 1, Part 3, 9.6.1
+    // Here we utilize a pre-defined set of values defined in ARIB TR-B14,
+    // Fascicle 2, 4.2.8.5 for PMT usage, with the reserved bits in the middle
+    // set to 1 (as that is what every broadcaster seems to be doing in
+    // production).
+    *q++ = 0x3D; // DMF('0011'), Reserved('11'), Timing('01')
+
+    *q_ptr = q;
+
+    return 0;
+}
+
 static void put_registration_descriptor(uint8_t **q_ptr, uint32_t tag)
 {
     uint8_t *q = *q_ptr;
@@ -369,6 +413,7 @@ static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
         break;
     case AV_CODEC_ID_DVB_SUBTITLE:
     case AV_CODEC_ID_DVB_TELETEXT:
+    case AV_CODEC_ID_ARIB_CAPTION:
         stream_type = STREAM_TYPE_PRIVATE_DATA;
         break;
     case AV_CODEC_ID_SMPTE_KLV:
@@ -726,6 +771,9 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                }
 
                *len_ptr = q - len_ptr - 1;
+            } else if (codec_id == AV_CODEC_ID_ARIB_CAPTION) {
+                if (put_arib_caption_descriptor(s, &q, st->codecpar) < 0)
+                    break;
             }
         break;
         case AVMEDIA_TYPE_VIDEO:
