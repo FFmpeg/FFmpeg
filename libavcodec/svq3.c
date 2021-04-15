@@ -1319,7 +1319,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void free_picture(AVCodecContext *avctx, SVQ3Frame *pic)
+static void free_picture(SVQ3Frame *pic)
 {
     int i;
     for (i = 0; i < 2; i++) {
@@ -1371,7 +1371,7 @@ static int get_buffer(AVCodecContext *avctx, SVQ3Frame *pic)
 
     return 0;
 fail:
-    free_picture(avctx, pic);
+    free_picture(pic);
     return ret;
 }
 
@@ -1587,9 +1587,9 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
 
-    free_picture(avctx, s->cur_pic);
-    free_picture(avctx, s->next_pic);
-    free_picture(avctx, s->last_pic);
+    free_picture(s->cur_pic);
+    free_picture(s->next_pic);
+    free_picture(s->last_pic);
     av_frame_free(&s->cur_pic->f);
     av_frame_free(&s->next_pic->f);
     av_frame_free(&s->last_pic->f);
