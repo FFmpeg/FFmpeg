@@ -268,18 +268,20 @@ static av_cold void ivi_free_buffers(IVIPlaneDesc *planes)
     int p, b, t;
 
     for (p = 0; p < 3; p++) {
-        if (planes[p].bands)
-        for (b = 0; b < planes[p].num_bands; b++) {
-            av_freep(&planes[p].bands[b].bufs[0]);
-            av_freep(&planes[p].bands[b].bufs[1]);
-            av_freep(&planes[p].bands[b].bufs[2]);
-            av_freep(&planes[p].bands[b].bufs[3]);
+        if (planes[p].bands) {
+            for (b = 0; b < planes[p].num_bands; b++) {
+                IVIBandDesc *band = &planes[p].bands[b];
+                av_freep(&band->bufs[0]);
+                av_freep(&band->bufs[1]);
+                av_freep(&band->bufs[2]);
+                av_freep(&band->bufs[3]);
 
-            if (planes[p].bands[b].blk_vlc.cust_tab.table)
-                ff_free_vlc(&planes[p].bands[b].blk_vlc.cust_tab);
-            for (t = 0; t < planes[p].bands[b].num_tiles; t++)
-                av_freep(&planes[p].bands[b].tiles[t].mbs);
-            av_freep(&planes[p].bands[b].tiles);
+                if (band->blk_vlc.cust_tab.table)
+                    ff_free_vlc(&band->blk_vlc.cust_tab);
+                for (t = 0; t < band->num_tiles; t++)
+                    av_freep(&band->tiles[t].mbs);
+                av_freep(&band->tiles);
+            }
         }
         av_freep(&planes[p].bands);
         planes[p].num_bands = 0;
