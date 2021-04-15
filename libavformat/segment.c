@@ -167,8 +167,10 @@ static int segment_mux_init(AVFormatContext *s)
 
         if (!(st = avformat_new_stream(oc, NULL)))
             return AVERROR(ENOMEM);
+        ret = ff_stream_encode_params_copy(st, ist);
+        if (ret < 0)
+            return ret;
         opar = st->codecpar;
-        avcodec_parameters_copy(opar, ipar);
         if (!oc->oformat->codec_tag ||
             av_codec_get_id (oc->oformat->codec_tag, ipar->codec_tag) == opar->codec_id ||
             av_codec_get_tag(oc->oformat->codec_tag, ipar->codec_id) <= 0) {
@@ -176,17 +178,12 @@ static int segment_mux_init(AVFormatContext *s)
         } else {
             opar->codec_tag = 0;
         }
-        st->sample_aspect_ratio = ist->sample_aspect_ratio;
-        st->time_base           = ist->time_base;
-        st->avg_frame_rate      = ist->avg_frame_rate;
-        st->disposition         = ist->disposition;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
         if (ipar->codec_tag == MKTAG('t','m','c','d'))
             st->codec->time_base = ist->codec->time_base;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        av_dict_copy(&st->metadata, ist->metadata, 0);
     }
 
     return 0;
