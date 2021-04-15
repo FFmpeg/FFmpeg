@@ -224,7 +224,7 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
             run       = 0;
             mode      = !mode;
         } else if ((int)t == -1) {
-            if (show_bits(gb, 12) == 15) {
+            if (get_bits_left(gb) > 12 && show_bits(gb, 12) == 15) {
                 int ret;
                 skip_bits(gb, 12);
                 ret = decode_uncompressed(avctx, gb, &pix_left, &runs, runend, &mode);
