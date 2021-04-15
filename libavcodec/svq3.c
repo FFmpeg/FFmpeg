@@ -1587,12 +1587,10 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
 
-    free_picture(s->cur_pic);
-    free_picture(s->next_pic);
-    free_picture(s->last_pic);
-    av_frame_free(&s->cur_pic->f);
-    av_frame_free(&s->next_pic->f);
-    av_frame_free(&s->last_pic->f);
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->frames); i++) {
+        free_picture(&s->frames[i]);
+        av_frame_free(&s->frames[i].f);
+    }
     av_freep(&s->slice_buf);
     av_freep(&s->intra4x4_pred_mode);
     av_freep(&s->edge_emu_buffer);
