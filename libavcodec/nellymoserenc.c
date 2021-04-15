@@ -138,10 +138,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     ff_mdct_end(&s->mdct_ctx);
 
-    if (s->avctx->trellis) {
-        av_freep(&s->opt);
-        av_freep(&s->path);
-    }
+    av_freep(&s->opt);
+    av_freep(&s->path);
     ff_af_queue_close(&s->afq);
     av_freep(&s->fdsp);
 
