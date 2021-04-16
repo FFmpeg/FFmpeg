@@ -2370,6 +2370,7 @@ HAVE_LIST="
     perl
     pod2man
     texi2html
+    xmllint
     zlib_gzip
 "
 
@@ -6654,6 +6655,7 @@ disabled makeinfo_html && texi2html --help 2> /dev/null | grep -q 'init-file' &&
 perl -v            > /dev/null 2>&1 && enable perl      || disable perl
 pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
+xmllint --version  > /dev/null 2>&1 && enable xmllint   || disable xmllint
 
 # check V4L2 codecs available in the API
 if enabled v4l2_m2m; then
@@ -7417,6 +7419,7 @@ echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
 echo "makeinfo enabled          ${makeinfo-no}"
 echo "makeinfo supports HTML    ${makeinfo_html-no}"
+echo "xmllint enabled           ${xmllint-no}"
 test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
 echo
