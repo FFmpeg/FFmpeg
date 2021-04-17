@@ -80,7 +80,7 @@ typedef struct AVDetectionBBoxHeader {
 /*
  * Get the bounding box at the specified {@code idx}. Must be between 0 and nb_bboxes.
  */
-static av_always_inline AVDetectionBBox*
+static av_always_inline AVDetectionBBox *
 av_get_detection_bbox(const AVDetectionBBoxHeader *header, unsigned int idx)
 {
     av_assert0(idx < header->nb_bboxes);
