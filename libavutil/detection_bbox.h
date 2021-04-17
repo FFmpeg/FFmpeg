@@ -47,10 +47,10 @@ typedef struct AVDetectionBBox {
      * DNN models on one bounding box.
      * classify_count is zero if no classification.
      */
-#define AV_NUM_BBOX_CLASSIFY 4
+#define AV_NUM_DETECTION_BBOX_CLASSIFY 4
     uint32_t classify_count;
-    char classify_labels[AV_NUM_BBOX_CLASSIFY][AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE];
-    AVRational classify_confidences[AV_NUM_BBOX_CLASSIFY];
+    char classify_labels[AV_NUM_DETECTION_BBOX_CLASSIFY][AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE];
+    AVRational classify_confidences[AV_NUM_DETECTION_BBOX_CLASSIFY];
 } AVDetectionBBox;
 
 typedef struct AVDetectionBBoxHeader {
