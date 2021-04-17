@@ -161,7 +161,6 @@ static int aom_decode(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *picture      = data;
     const void *iter      = NULL;
     struct aom_image *img;
-    aom_codec_frame_flags_t av_unused flags;
     int ret;
 
     if (aom_codec_decode(&ctx->decoder, avpkt->data, avpkt->size, NULL) !=
@@ -200,15 +199,18 @@ static int aom_decode(AVCodecContext *avctx, void *data, int *got_frame,
             return ret;
 
 #ifdef AOM_CTRL_AOMD_GET_FRAME_FLAGS
-        ret = aom_codec_control(&ctx->decoder, AOMD_GET_FRAME_FLAGS, &flags);
-        if (ret == AOM_CODEC_OK) {
-            picture->key_frame = !!(flags & AOM_FRAME_IS_KEY);
-            if (flags & (AOM_FRAME_IS_KEY | AOM_FRAME_IS_INTRAONLY))
-                picture->pict_type = AV_PICTURE_TYPE_I;
-            else if (flags & AOM_FRAME_IS_SWITCH)
-                picture->pict_type = AV_PICTURE_TYPE_SP;
-            else
-                picture->pict_type = AV_PICTURE_TYPE_P;
+        {
+            aom_codec_frame_flags_t flags;
+            ret = aom_codec_control(&ctx->decoder, AOMD_GET_FRAME_FLAGS, &flags);
+            if (ret == AOM_CODEC_OK) {
+                picture->key_frame = !!(flags & AOM_FRAME_IS_KEY);
+                if (flags & (AOM_FRAME_IS_KEY | AOM_FRAME_IS_INTRAONLY))
+                    picture->pict_type = AV_PICTURE_TYPE_I;
+                else if (flags & AOM_FRAME_IS_SWITCH)
+                    picture->pict_type = AV_PICTURE_TYPE_SP;
+                else
+                    picture->pict_type = AV_PICTURE_TYPE_P;
+            }
         }
 #endif
 
