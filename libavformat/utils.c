@@ -1157,7 +1157,9 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
             (pktl->pkt.dts == AV_NOPTS_VALUE ||
              pktl->pkt.dts == st->internal->first_dts ||
              pktl->pkt.dts == RELATIVE_TS_BASE) &&
-            !pktl->pkt.duration) {
+            !pktl->pkt.duration &&
+            av_sat_add64(cur_dts, duration) == cur_dts + (uint64_t)duration
+        ) {
             pktl->pkt.dts = cur_dts;
             if (!st->internal->avctx->has_b_frames)
                 pktl->pkt.pts = cur_dts;
