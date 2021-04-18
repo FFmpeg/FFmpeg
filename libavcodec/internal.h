@@ -161,6 +161,12 @@ typedef struct AVCodecInternal {
     EncodeSimpleContext es;
 
     /**
+     * If this is set, then AVCodec->close (if existing) needs to be called
+     * for the parent AVCodecContext.
+     */
+    int needs_close;
+
+    /**
      * Number of audio samples to skip at the start of the next decoded frame
      */
     int skip_samples;

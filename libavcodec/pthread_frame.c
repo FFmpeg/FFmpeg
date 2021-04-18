@@ -801,10 +801,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     free_pthread(fctx, thread_ctx_offsets);
 
     av_freep(&avctx->internal->thread_ctx);
-
-    if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
-        av_opt_free(avctx->priv_data);
-    avctx->codec = NULL;
 }
 
 static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,

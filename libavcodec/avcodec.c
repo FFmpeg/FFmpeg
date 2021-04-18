@@ -135,7 +135,6 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
 int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
-    int codec_init_ok = 0;
     AVDictionary *tmp = NULL;
     AVCodecInternal *avci;
 
@@ -320,14 +319,16 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (!HAVE_THREADS && !(codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS))
         avctx->thread_count = 1;
 
-    if (   avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME)
-        || avci->frame_thread_encoder)) {
-        ret = avctx->codec->init(avctx);
-        if (ret < 0) {
-            codec_init_ok = -1;
-            goto free_and_end;
+    if (!(avctx->active_thread_type & FF_THREAD_FRAME) ||
+        avci->frame_thread_encoder) {
+        if (avctx->codec->init) {
+            ret = avctx->codec->init(avctx);
+            if (ret < 0) {
+                avci->needs_close = avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP;
+                goto free_and_end;
+            }
         }
-        codec_init_ok = 1;
+        avci->needs_close = 1;
     }
 
     ret=0;
@@ -378,9 +379,7 @@ end:
 
     return ret;
 free_and_end:
-    if (avctx->codec && avctx->codec->close &&
-        (codec_init_ok > 0 || (codec_init_ok < 0 &&
-         avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
+    if (avci->needs_close && avctx->codec->close)
         avctx->codec->close(avctx);
 
     if (CONFIG_FRAME_THREAD_ENCODER && avci->frame_thread_encoder)
@@ -502,7 +501,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         }
         if (HAVE_THREADS && avci->thread_ctx)
             ff_thread_free(avctx);
-        if (avctx->codec && avctx->codec->close)
+        if (avci->needs_close && avctx->codec->close)
             avctx->codec->close(avctx);
         avci->byte_buffer_size = 0;
         av_freep(&avci->byte_buffer);
