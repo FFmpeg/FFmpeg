@@ -305,9 +305,6 @@ static int name##_framesync_preinit(AVFilterContext *ctx) { \
     ff_framesync_preinit(&s->field); \
     return 0; \
 } \
-static const AVClass *name##_child_class_next(const AVClass *prev) { \
-    return prev ? NULL : ff_framesync_get_class(); \
-} \
 static void *name##_child_next(void *obj, void *prev) { \
     context *s = obj; \
     s->fs.class = ff_framesync_get_class(); /* FIXME */ \
@@ -319,7 +316,6 @@ static const AVClass name##_class = { \
     .option           = name##_options, \
     .version          = LIBAVUTIL_VERSION_INT, \
     .category         = AV_CLASS_CATEGORY_FILTER, \
-    .child_class_next = name##_child_class_next, \
     .child_class_iterate = ff_framesync_child_class_iterate, \
     .child_next       = name##_child_next, \
 }

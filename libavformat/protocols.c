@@ -75,27 +75,6 @@ extern const URLProtocol ff_libzmq_protocol;
 
 #include "libavformat/protocol_list.c"
 
-#if FF_API_CHILD_CLASS_NEXT
-const AVClass *ff_urlcontext_child_class_next(const AVClass *prev)
-{
-    int i;
-
-    /* find the protocol that corresponds to prev */
-    for (i = 0; prev && url_protocols[i]; i++) {
-        if (url_protocols[i]->priv_data_class == prev) {
-            i++;
-            break;
-        }
-    }
-
-    /* find next protocol with priv options */
-    for (; url_protocols[i]; i++)
-        if (url_protocols[i]->priv_data_class)
-            return url_protocols[i]->priv_data_class;
-    return NULL;
-}
-#endif
-
 const AVClass *ff_urlcontext_child_class_iterate(void **iter)
 {
     const AVClass *ret = NULL;

@@ -48,13 +48,6 @@ static void *ff_avio_child_next(void *obj, void *prev)
     return prev ? NULL : s->opaque;
 }
 
-#if FF_API_CHILD_CLASS_NEXT
-static const AVClass *ff_avio_child_class_next(const AVClass *prev)
-{
-    return prev ? NULL : &ffurl_context_class;
-}
-#endif
-
 static const AVClass *child_class_iterate(void **iter)
 {
     const AVClass *c = *iter ? NULL : &ffurl_context_class;
@@ -76,9 +69,6 @@ const AVClass ff_avio_class = {
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = ff_avio_options,
     .child_next = ff_avio_child_next,
-#if FF_API_CHILD_CLASS_NEXT
-    .child_class_next = ff_avio_child_class_next,
-#endif
     .child_class_iterate = child_class_iterate,
 };
 

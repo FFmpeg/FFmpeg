@@ -112,19 +112,6 @@ typedef struct AVClass {
      */
     void* (*child_next)(void *obj, void *prev);
 
-#if FF_API_CHILD_CLASS_NEXT
-    /**
-     * Return an AVClass corresponding to the next potential
-     * AVOptions-enabled child.
-     *
-     * The difference between child_next and this is that
-     * child_next iterates over _already existing_ objects, while
-     * child_class_next iterates over _all possible_ children.
-     */
-    attribute_deprecated
-    const struct AVClass* (*child_class_next)(const struct AVClass *prev);
-#endif
-
     /**
      * Category used for visualization (like color)
      * This is only set if the category is equal for all objects using this class.

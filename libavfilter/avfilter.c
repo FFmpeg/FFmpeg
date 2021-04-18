@@ -571,30 +571,6 @@ static void *filter_child_next(void *obj, void *prev)
     return NULL;
 }
 
-#if FF_API_CHILD_CLASS_NEXT
-static const AVClass *filter_child_class_next(const AVClass *prev)
-{
-    void *opaque = NULL;
-    const AVFilter *f = NULL;
-
-    /* find the filter that corresponds to prev */
-    while (prev && (f = av_filter_iterate(&opaque)))
-        if (f->priv_class == prev)
-            break;
-
-    /* could not find filter corresponding to prev */
-    if (prev && !f)
-        return NULL;
-
-    /* find next filter with specific options */
-    while ((f = av_filter_iterate(&opaque)))
-        if (f->priv_class)
-            return f->priv_class;
-
-    return NULL;
-}
-#endif
-
 static const AVClass *filter_child_class_iterate(void **iter)
 {
     const AVFilter *f;
@@ -627,9 +603,6 @@ static const AVClass avfilter_class = {
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,
     .child_next = filter_child_next,
-#if FF_API_CHILD_CLASS_NEXT
-    .child_class_next = filter_child_class_next,
-#endif
     .child_class_iterate = filter_child_class_iterate,
     .option           = avfilter_options,
 };
