@@ -2017,7 +2017,7 @@ No extension is registered so format name has to be supplied e.g. with the ffmpe
 @subsection data
 
 Data muxer accepts a single stream with any codec of any type.
-The input stream has to be selected using the @code {-map} option with the ffmpeg CLI tool.
+The input stream has to be selected using the @code{-map} option with the ffmpeg CLI tool.
 
 No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f data}.
 
