@@ -28,6 +28,9 @@ If a url is specified in input, ffprobe will try to open and
 probe the url content. If the url cannot be opened or recognized as
 a multimedia file, a positive exit code is returned.
 
+If no output is specified as output with @option{o} ffprobe will write
+to stdout.
+
 ffprobe may be employed both as a standalone application or in
 combination with a textual filter, which may perform more
 sophisticated processing, e.g. statistical processing or plotting.
@@ -347,6 +350,10 @@ on the specific build.
 
 @item -i @var{input_url}
 Read @var{input_url}.
+
+@item -o @var{output_url}
+Write output to @var{output_url}. If not specified, the output is sent
+to stdout.
 
 @end table
 @c man end

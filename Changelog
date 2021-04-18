@@ -19,6 +19,7 @@ version 5.1:
 - blurdetect filter
 - tiltshelf audio filter
 - QOI image format support
+- ffprobe -o option
 
 
 version 5.0:
