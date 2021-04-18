@@ -418,7 +418,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
-    av_freep(&avctx->subtitle_header);
+    if (av_codec_is_decoder(avctx->codec))
+        av_freep(&avctx->subtitle_header);
 
 #if FF_API_OLD_ENCDEC
     av_frame_free(&avci->to_free);
@@ -589,7 +590,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
         av_frame_free(&avctx->coded_frame);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    }
+    } else if (av_codec_is_decoder(avctx->codec))
+        av_freep(&avctx->subtitle_header);
+
     avctx->codec = NULL;
     avctx->active_thread_type = 0;
 
