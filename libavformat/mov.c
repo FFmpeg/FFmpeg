@@ -804,12 +804,6 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (st->codecpar->channels > 1 && bsmod == 0x7)
         *ast = AV_AUDIO_SERVICE_TYPE_KARAOKE;
 
-#if FF_API_LAVF_AVCTX
-    FF_DISABLE_DEPRECATION_WARNINGS
-    st->codec->audio_service_type = *ast;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     return 0;
 }
 
@@ -843,12 +837,6 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     *ast = bsmod;
     if (st->codecpar->channels > 1 && bsmod == 0x7)
         *ast = AV_AUDIO_SERVICE_TYPE_KARAOKE;
-
-#if FF_API_LAVF_AVCTX
-    FF_DISABLE_DEPRECATION_WARNINGS
-    st->codec->audio_service_type = *ast;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return 0;
 }
@@ -2340,11 +2328,6 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
             tmcd_ctx->tmcd_flags = val;
             st->avg_frame_rate.num = AV_RB32(st->codecpar->extradata + 8); /* timescale */
             st->avg_frame_rate.den = AV_RB32(st->codecpar->extradata + 12); /* frameDuration */
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-            st->codec->time_base = av_inv_q(st->avg_frame_rate);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             if (size > 30) {
                 uint32_t len = AV_RB32(st->codecpar->extradata + 18); /* name atom length */
                 uint32_t format = AV_RB32(st->codecpar->extradata + 22);

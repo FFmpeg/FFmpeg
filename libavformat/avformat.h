@@ -839,13 +839,7 @@ typedef struct AVStream {
      * encoding: set by the user, replaced by libavformat if left unset
      */
     int id;
-#if FF_API_LAVF_AVCTX
-    /**
-     * @deprecated use the codecpar struct instead
-     */
-    attribute_deprecated
-    AVCodecContext *codec;
-#endif
+
     void *priv_data;
 
     /**
@@ -1837,13 +1831,11 @@ const AVClass *avformat_get_class(void);
  *
  * When muxing, should be called by the user before avformat_write_header().
  *
- * User is required to call avcodec_close() and avformat_free_context() to
- * clean up the allocation by avformat_new_stream().
+ * User is required to call avformat_free_context() to clean up the allocation
+ * by avformat_new_stream().
  *
  * @param s media file handle
- * @param c If non-NULL, the AVCodecContext corresponding to the new stream
- * will be initialized to use this codec. This is needed for e.g. codec-specific
- * defaults to be set, so codec should be provided if it is known.
+ * @param c unused, does nothing
  *
  * @return newly created stream or NULL on error.
  */

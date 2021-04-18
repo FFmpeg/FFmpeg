@@ -178,12 +178,6 @@ static int segment_mux_init(AVFormatContext *s)
         } else {
             opar->codec_tag = 0;
         }
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (ipar->codec_tag == MKTAG('t','m','c','d'))
-            st->codec->time_base = ist->codec->time_base;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     return 0;

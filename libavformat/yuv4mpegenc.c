@@ -50,13 +50,6 @@ static int yuv4_write_header(AVFormatContext *s)
     if (aspectn == 0 && aspectd == 1)
         aspectd = 0;  // 0:0 means unknown
 
-#if FF_API_LAVF_AVCTX
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (field_order != st->codec->field_order && st->codec->field_order != AV_FIELD_UNKNOWN)
-        field_order = st->codec->field_order;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     switch(st->codecpar->color_range) {
     case AVCOL_RANGE_MPEG:
         colorrange = " XCOLORRANGE=LIMITED";
