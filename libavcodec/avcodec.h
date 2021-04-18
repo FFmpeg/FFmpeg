@@ -2126,8 +2126,6 @@ typedef struct AVCodecContext {
     int (*get_encode_buffer)(struct AVCodecContext *s, AVPacket *pkt, int flags);
 } AVCodecContext;
 
-struct AVSubtitle;
-
 struct MpegEncContext;
 
 /**
