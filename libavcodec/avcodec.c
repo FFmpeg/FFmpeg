@@ -383,6 +383,8 @@ free_and_end:
          avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
         avctx->codec->close(avctx);
 
+    if (CONFIG_FRAME_THREAD_ENCODER && avci->frame_thread_encoder)
+        ff_frame_thread_encoder_free(avctx);
     if (HAVE_THREADS && avci->thread_ctx)
         ff_thread_free(avctx);
 
