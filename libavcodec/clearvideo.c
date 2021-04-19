@@ -722,8 +722,8 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
     }
 
     c->tile_shift = av_log2(c->tile_size);
-    if (1U << c->tile_shift != c->tile_size) {
-        av_log(avctx, AV_LOG_ERROR, "Tile size: %d, is not power of 2.\n", c->tile_size);
+    if (1U << c->tile_shift != c->tile_size || c->tile_shift < 1) {
+        av_log(avctx, AV_LOG_ERROR, "Tile size: %d, is not power of 2 > 1\n", c->tile_size);
         return AVERROR_INVALIDDATA;
     }
 
