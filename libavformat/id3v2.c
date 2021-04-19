@@ -824,7 +824,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
     int isv34, unsync;
     unsigned tlen;
     char tag[5];
-    int64_t next, end = avio_tell(pb) + len;
+    int64_t next, end = avio_tell(pb);
     int taghdrlen;
     const char *reason = NULL;
     AVIOContext pb_local;
@@ -835,6 +835,10 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
     unsigned char *uncompressed_buffer = NULL;
     av_unused int uncompressed_buffer_size = 0;
     const char *comm_frame;
+
+    if (end > INT64_MAX - len - 10)
+        return;
+    end += len;
 
     av_log(s, AV_LOG_DEBUG, "id3v2 ver:%d flags:%02X len:%d\n", version, flags, len);
 
