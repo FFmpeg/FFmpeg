@@ -5444,6 +5444,11 @@ static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     avio_skip(pb, 3); /* flags */
 
+    if (sc->coll){
+        av_log(c->fc, AV_LOG_WARNING, "Ignoring duplicate COLL\n");
+        return 0;
+    }
+
     sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
     if (!sc->coll)
         return AVERROR(ENOMEM);
