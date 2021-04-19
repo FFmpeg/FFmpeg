@@ -1292,7 +1292,7 @@ static const AVClass opengl_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-AVOutputFormat ff_opengl_muxer = {
+const AVOutputFormat ff_opengl_muxer = {
     .name           = "opengl",
     .long_name      = NULL_IF_CONFIG_SMALL("OpenGL output"),
     .priv_data_size = sizeof(OpenGLContext),

@@ -294,7 +294,7 @@ static const AVClass at_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-AVOutputFormat ff_audiotoolbox_muxer = {
+const AVOutputFormat ff_audiotoolbox_muxer = {
     .name           = "audiotoolbox",
     .long_name      = NULL_IF_CONFIG_SMALL("AudioToolbox output device"),
     .priv_data_size = sizeof(ATContext),

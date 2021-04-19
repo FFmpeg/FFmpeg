@@ -157,7 +157,7 @@ static const AVClass alsa_muxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-AVOutputFormat ff_alsa_muxer = {
+const AVOutputFormat ff_alsa_muxer = {
     .name           = "alsa",
     .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio output"),
     .priv_data_size = sizeof(AlsaData),

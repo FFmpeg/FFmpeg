@@ -101,7 +101,7 @@ static const AVClass decklink_demuxer_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_decklink_demuxer = {
+const AVInputFormat ff_decklink_demuxer = {
     .name           = "decklink",
     .long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink input"),
     .flags          = AVFMT_NOFILE,

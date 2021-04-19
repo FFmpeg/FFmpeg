@@ -86,7 +86,7 @@ static const AVClass sndio_muxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-AVOutputFormat ff_sndio_muxer = {
+const AVOutputFormat ff_sndio_muxer = {
     .name           = "sndio",
     .long_name      = NULL_IF_CONFIG_SMALL("sndio audio playback"),
     .priv_data_size = sizeof(SndioData),

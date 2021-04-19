@@ -859,7 +859,7 @@ static const AVClass android_camera_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_android_camera_demuxer = {
+const AVInputFormat ff_android_camera_demuxer = {
     .name           = "android_camera",
     .long_name      = NULL_IF_CONFIG_SMALL("Android camera input device"),
     .priv_data_size = sizeof(AndroidCameraCtx),

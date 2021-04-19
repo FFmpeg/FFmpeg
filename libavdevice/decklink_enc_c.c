@@ -48,7 +48,7 @@ static const AVClass decklink_muxer_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-AVOutputFormat ff_decklink_muxer = {
+const AVOutputFormat ff_decklink_muxer = {
     .name           = "decklink",
     .long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink output"),
     .audio_codec    = AV_CODEC_ID_PCM_S16LE,

@@ -708,7 +708,7 @@ static const AVClass kmsgrab_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_kmsgrab_demuxer = {
+const AVInputFormat ff_kmsgrab_demuxer = {
     .name           = "kmsgrab",
     .long_name      = NULL_IF_CONFIG_SMALL("KMS screen capture"),
     .priv_data_size = sizeof(KMSGrabContext),

@@ -1214,7 +1214,7 @@ static const AVClass avf_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_avfoundation_demuxer = {
+const AVInputFormat ff_avfoundation_demuxer = {
     .name           = "avfoundation",
     .long_name      = NULL_IF_CONFIG_SMALL("AVFoundation input device"),
     .priv_data_size = sizeof(AVFContext),

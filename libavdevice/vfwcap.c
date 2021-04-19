@@ -482,7 +482,7 @@ static const AVClass vfw_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT
 };
 
-AVInputFormat ff_vfwcap_demuxer = {
+const AVInputFormat ff_vfwcap_demuxer = {
     .name           = "vfwcap",
     .long_name      = NULL_IF_CONFIG_SMALL("VfW video capture"),
     .priv_data_size = sizeof(struct vfw_ctx),

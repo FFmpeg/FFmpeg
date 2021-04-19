@@ -1328,7 +1328,7 @@ static const AVClass dshow_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_dshow_demuxer = {
+const AVInputFormat ff_dshow_demuxer = {
     .name           = "dshow",
     .long_name      = NULL_IF_CONFIG_SMALL("DirectShow capture"),
     .priv_data_size = sizeof(struct dshow_ctx),

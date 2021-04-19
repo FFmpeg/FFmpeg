@@ -376,7 +376,7 @@ static const AVClass xv_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-AVOutputFormat ff_xv_muxer = {
+const AVOutputFormat ff_xv_muxer = {
     .name           = "xv",
     .long_name      = NULL_IF_CONFIG_SMALL("XV (XVideo) output device"),
     .priv_data_size = sizeof(XVContext),

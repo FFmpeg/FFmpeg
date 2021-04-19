@@ -664,7 +664,7 @@ static const AVClass gdigrab_class = {
 };
 
 /** gdi grabber device demuxer declaration */
-AVInputFormat ff_gdigrab_demuxer = {
+const AVInputFormat ff_gdigrab_demuxer = {
     .name           = "gdigrab",
     .long_name      = NULL_IF_CONFIG_SMALL("GDI API Windows frame grabber"),
     .priv_data_size = sizeof(struct gdigrab),

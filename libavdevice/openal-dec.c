@@ -248,7 +248,7 @@ static const AVClass class = {
     .category = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-AVInputFormat ff_openal_demuxer = {
+const AVInputFormat ff_openal_demuxer = {
     .name = "openal",
     .long_name = NULL_IF_CONFIG_SMALL("OpenAL audio capture device"),
     .priv_data_size = sizeof(al_data),

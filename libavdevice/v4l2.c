@@ -1117,7 +1117,7 @@ static const AVClass v4l2_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_v4l2_demuxer = {
+const AVInputFormat ff_v4l2_demuxer = {
     .name           = "video4linux2,v4l2",
     .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux2 device grab"),
     .priv_data_size = sizeof(struct video_data),

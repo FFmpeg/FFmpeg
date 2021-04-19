@@ -386,7 +386,7 @@ static const AVClass pulse_demuxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-AVInputFormat ff_pulse_demuxer = {
+const AVInputFormat ff_pulse_demuxer = {
     .name           = "pulse",
     .long_name      = NULL_IF_CONFIG_SMALL("Pulse audio input"),
     .priv_data_size = sizeof(PulseData),

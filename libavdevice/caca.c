@@ -227,7 +227,7 @@ static const AVClass caca_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
 };
 
-AVOutputFormat ff_caca_muxer = {
+const AVOutputFormat ff_caca_muxer = {
     .name           = "caca",
     .long_name      = NULL_IF_CONFIG_SMALL("caca (color ASCII art) output device"),
     .priv_data_size = sizeof(CACAContext),

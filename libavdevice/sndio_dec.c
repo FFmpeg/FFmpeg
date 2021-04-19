@@ -109,7 +109,7 @@ static const AVClass sndio_demuxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-AVInputFormat ff_sndio_demuxer = {
+const AVInputFormat ff_sndio_demuxer = {
     .name           = "sndio",
     .long_name      = NULL_IF_CONFIG_SMALL("sndio audio capture"),
     .priv_data_size = sizeof(SndioData),

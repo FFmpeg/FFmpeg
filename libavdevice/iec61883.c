@@ -499,7 +499,7 @@ static const AVClass iec61883_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-AVInputFormat ff_iec61883_demuxer = {
+const AVInputFormat ff_iec61883_demuxer = {
     .name           = "iec61883",
     .long_name      = NULL_IF_CONFIG_SMALL("libiec61883 (new DV1394) A/V input device"),
     .priv_data_size = sizeof(struct iec61883_data),

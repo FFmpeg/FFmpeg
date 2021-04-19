@@ -342,7 +342,7 @@ static const AVClass jack_indev_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-AVInputFormat ff_jack_demuxer = {
+const AVInputFormat ff_jack_demuxer = {
     .name           = "jack",
     .long_name      = NULL_IF_CONFIG_SMALL("JACK Audio Connection Kit"),
     .priv_data_size = sizeof(JackData),

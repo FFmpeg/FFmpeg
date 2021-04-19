@@ -182,7 +182,7 @@ static const AVClass libcdio_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-AVInputFormat ff_libcdio_demuxer = {
+const AVInputFormat ff_libcdio_demuxer = {
     .name           = "libcdio",
     .read_header    = read_header,
     .read_packet    = read_packet,

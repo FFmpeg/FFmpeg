@@ -494,7 +494,7 @@ static const AVClass lavfi_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_INPUT,
 };
 
-AVInputFormat ff_lavfi_demuxer = {
+const AVInputFormat ff_lavfi_demuxer = {
     .name           = "lavfi",
     .long_name      = NULL_IF_CONFIG_SMALL("Libavfilter virtual input device"),
     .priv_data_size = sizeof(LavfiContext),
