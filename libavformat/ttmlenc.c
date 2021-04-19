@@ -219,7 +219,7 @@ static int ttml_write_trailer(AVFormatContext *ctx)
     return 0;
 }
 
-AVOutputFormat ff_ttml_muxer = {
+const AVOutputFormat ff_ttml_muxer = {
     .name              = "ttml",
     .long_name         = NULL_IF_CONFIG_SMALL("TTML subtitle"),
     .extensions        = "ttml",

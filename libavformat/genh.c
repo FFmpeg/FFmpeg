@@ -189,7 +189,7 @@ static int genh_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_genh_demuxer = {
+const AVInputFormat ff_genh_demuxer = {
     .name           = "genh",
     .long_name      = NULL_IF_CONFIG_SMALL("GENeric Header"),
     .priv_data_size = sizeof(GENHDemuxContext),

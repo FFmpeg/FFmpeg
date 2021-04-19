@@ -300,7 +300,7 @@ static const AVClass codec2raw_demux_class = {
 };
 
 #if CONFIG_CODEC2_DEMUXER
-AVInputFormat ff_codec2_demuxer = {
+const AVInputFormat ff_codec2_demuxer = {
     .name           = "codec2",
     .long_name      = NULL_IF_CONFIG_SMALL("codec2 .c2 demuxer"),
     .priv_data_size = sizeof(Codec2Context),
@@ -316,7 +316,7 @@ AVInputFormat ff_codec2_demuxer = {
 #endif
 
 #if CONFIG_CODEC2_MUXER
-AVOutputFormat ff_codec2_muxer = {
+const AVOutputFormat ff_codec2_muxer = {
     .name           = "codec2",
     .long_name      = NULL_IF_CONFIG_SMALL("codec2 .c2 muxer"),
     .priv_data_size = sizeof(Codec2Context),
@@ -331,7 +331,7 @@ AVOutputFormat ff_codec2_muxer = {
 #endif
 
 #if CONFIG_CODEC2RAW_DEMUXER
-AVInputFormat ff_codec2raw_demuxer = {
+const AVInputFormat ff_codec2raw_demuxer = {
     .name           = "codec2raw",
     .long_name      = NULL_IF_CONFIG_SMALL("raw codec2 demuxer"),
     .priv_data_size = sizeof(Codec2Context),

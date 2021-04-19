@@ -633,7 +633,7 @@ static const AVClass img2_class = {
     .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-AVInputFormat ff_image2_demuxer = {
+const AVInputFormat ff_image2_demuxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .priv_data_size = sizeof(VideoDemuxData),
@@ -659,7 +659,7 @@ static const AVClass img2pipe_class = {
     .option     = ff_img2pipe_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-AVInputFormat ff_image2pipe_demuxer = {
+const AVInputFormat ff_image2pipe_demuxer = {
     .name           = "image2pipe",
     .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoDemuxData),
@@ -1112,7 +1112,7 @@ static const AVClass imgname ## _class = {\
     .option     = ff_img2pipe_options,\
     .version    = LIBAVUTIL_VERSION_INT,\
 };\
-AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
+const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .name           = AV_STRINGIFY(imgname) "_pipe",\
     .long_name      = NULL_IF_CONFIG_SMALL("piped " AV_STRINGIFY(imgname) " sequence"),\
     .priv_data_size = sizeof(VideoDemuxData),\

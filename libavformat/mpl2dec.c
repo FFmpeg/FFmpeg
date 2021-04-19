@@ -145,7 +145,7 @@ static int mpl2_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_mpl2_demuxer = {
+const AVInputFormat ff_mpl2_demuxer = {
     .name           = "mpl2",
     .long_name      = NULL_IF_CONFIG_SMALL("MPL2 subtitles"),
     .priv_data_size = sizeof(MPL2Context),

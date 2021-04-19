@@ -102,7 +102,7 @@ static int webvtt_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_webvtt_muxer = {
+const AVOutputFormat ff_webvtt_muxer = {
     .name              = "webvtt",
     .long_name         = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
     .extensions        = "vtt",

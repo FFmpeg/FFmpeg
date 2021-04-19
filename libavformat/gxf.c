@@ -599,7 +599,7 @@ static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
     return res;
 }
 
-AVInputFormat ff_gxf_demuxer = {
+const AVInputFormat ff_gxf_demuxer = {
     .name           = "gxf",
     .long_name      = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
     .priv_data_size = sizeof(struct gxf_stream_info),

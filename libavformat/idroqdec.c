@@ -239,7 +239,7 @@ static int roq_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat ff_roq_demuxer = {
+const AVInputFormat ff_roq_demuxer = {
     .name           = "roq",
     .long_name      = NULL_IF_CONFIG_SMALL("id RoQ"),
     .priv_data_size = sizeof(RoqDemuxContext),

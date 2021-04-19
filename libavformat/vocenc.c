@@ -95,7 +95,7 @@ static int voc_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_voc_muxer = {
+const AVOutputFormat ff_voc_muxer = {
     .name              = "voc",
     .long_name         = NULL_IF_CONFIG_SMALL("Creative Voice"),
     .mime_type         = "audio/x-voc",

@@ -212,7 +212,7 @@ static int thp_read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat ff_thp_demuxer = {
+const AVInputFormat ff_thp_demuxer = {
     .name           = "thp",
     .long_name      = NULL_IF_CONFIG_SMALL("THP"),
     .priv_data_size = sizeof(ThpDemuxContext),

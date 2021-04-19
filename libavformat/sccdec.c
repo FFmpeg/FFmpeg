@@ -201,7 +201,7 @@ static int scc_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_scc_demuxer = {
+const AVInputFormat ff_scc_demuxer = {
     .name           = "scc",
     .long_name      = NULL_IF_CONFIG_SMALL("Scenarist Closed Captions"),
     .priv_data_size = sizeof(SCCContext),

@@ -106,7 +106,7 @@ static int msp_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_msp_demuxer = {
+const AVInputFormat ff_msp_demuxer = {
     .name         = "msp",
     .long_name    = NULL_IF_CONFIG_SMALL("Microsoft Paint (MSP))"),
     .read_probe   = msp_probe,

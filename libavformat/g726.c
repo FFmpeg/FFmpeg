@@ -73,7 +73,7 @@ static const AVClass g726le_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_g726_demuxer = {
+const AVInputFormat ff_g726_demuxer = {
     .name           = "g726",
     .long_name      = NULL_IF_CONFIG_SMALL("raw big-endian G.726 (\"left aligned\")"),
     .read_header    = g726_read_header,
@@ -92,7 +92,7 @@ static const AVClass g726_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_g726le_demuxer = {
+const AVInputFormat ff_g726le_demuxer = {
     .name           = "g726le",
     .long_name      = NULL_IF_CONFIG_SMALL("raw little-endian G.726 (\"right aligned\")"),
     .read_header    = g726_read_header,

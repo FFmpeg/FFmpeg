@@ -159,7 +159,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 #if CONFIG_AMR_DEMUXER
-AVInputFormat ff_amr_demuxer = {
+const AVInputFormat ff_amr_demuxer = {
     .name           = "amr",
     .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR"),
     .priv_data_size = sizeof(AMRContext),
@@ -215,7 +215,7 @@ static int amrnb_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_amrnb_demuxer = {
+const AVInputFormat ff_amrnb_demuxer = {
     .name           = "amrnb",
     .long_name      = NULL_IF_CONFIG_SMALL("raw AMR-NB"),
     .priv_data_size = sizeof(AMRContext),
@@ -271,7 +271,7 @@ static int amrwb_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_amrwb_demuxer = {
+const AVInputFormat ff_amrwb_demuxer = {
     .name           = "amrwb",
     .long_name      = NULL_IF_CONFIG_SMALL("raw AMR-WB"),
     .priv_data_size = sizeof(AMRContext),
@@ -283,7 +283,7 @@ AVInputFormat ff_amrwb_demuxer = {
 #endif
 
 #if CONFIG_AMR_MUXER
-AVOutputFormat ff_amr_muxer = {
+const AVOutputFormat ff_amr_muxer = {
     .name              = "amr",
     .long_name         = NULL_IF_CONFIG_SMALL("3GPP AMR"),
     .mime_type         = "audio/amr",

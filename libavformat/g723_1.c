@@ -75,7 +75,7 @@ static int g723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-AVInputFormat ff_g723_1_demuxer = {
+const AVInputFormat ff_g723_1_demuxer = {
     .name        = "g723_1",
     .long_name   = NULL_IF_CONFIG_SMALL("G.723.1"),
     .read_header = g723_1_init,

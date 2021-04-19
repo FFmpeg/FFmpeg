@@ -124,7 +124,7 @@ static int sox_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_sox_demuxer = {
+const AVInputFormat ff_sox_demuxer = {
     .name           = "sox",
     .long_name      = NULL_IF_CONFIG_SMALL("SoX native"),
     .read_probe     = sox_probe,

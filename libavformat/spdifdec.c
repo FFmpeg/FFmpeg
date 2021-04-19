@@ -231,7 +231,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_spdif_demuxer = {
+const AVInputFormat ff_spdif_demuxer = {
     .name           = "spdif",
     .long_name      = NULL_IF_CONFIG_SMALL("IEC 61937 (compressed data in S/PDIF)"),
     .read_probe     = spdif_probe,

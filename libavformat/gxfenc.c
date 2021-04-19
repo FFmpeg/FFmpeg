@@ -1025,7 +1025,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
     return ff_interleave_packet_per_dts(s, out, NULL, flush);
 }
 
-AVOutputFormat ff_gxf_muxer = {
+const AVOutputFormat ff_gxf_muxer = {
     .name              = "gxf",
     .long_name         = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
     .extensions        = "gxf",

@@ -178,7 +178,7 @@ static int musx_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-AVInputFormat ff_musx_demuxer = {
+const AVInputFormat ff_musx_demuxer = {
     .name           = "musx",
     .long_name      = NULL_IF_CONFIG_SMALL("Eurocom MUSX"),
     .read_probe     = musx_probe,

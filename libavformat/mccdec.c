@@ -225,7 +225,7 @@ static int mcc_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_mcc_demuxer = {
+const AVInputFormat ff_mcc_demuxer = {
     .name           = "mcc",
     .long_name      = NULL_IF_CONFIG_SMALL("MacCaption"),
     .priv_data_size = sizeof(MCCContext),

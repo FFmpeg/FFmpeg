@@ -332,7 +332,7 @@ static int pp_bnk_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_pp_bnk_demuxer = {
+const AVInputFormat ff_pp_bnk_demuxer = {
     .name           = "pp_bnk",
     .long_name      = NULL_IF_CONFIG_SMALL("Pro Pinball Series Soundbank"),
     .priv_data_size = sizeof(PPBnkCtx),

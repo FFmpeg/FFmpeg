@@ -61,7 +61,7 @@ static const AVClass image2_alias_pix_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_image2_alias_pix_demuxer = {
+const AVInputFormat ff_image2_alias_pix_demuxer = {
     .name           = "alias_pix",
     .long_name      = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
     .priv_data_size = sizeof(VideoDemuxData),

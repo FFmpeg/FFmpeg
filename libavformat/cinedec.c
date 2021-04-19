@@ -322,7 +322,7 @@ static int cine_read_seek(AVFormatContext *avctx, int stream_index, int64_t time
     return 0;
 }
 
-AVInputFormat ff_cine_demuxer = {
+const AVInputFormat ff_cine_demuxer = {
     .name           = "cine",
     .long_name      = NULL_IF_CONFIG_SMALL("Phantom Cine"),
     .priv_data_size = sizeof(CineDemuxContext),

@@ -287,7 +287,7 @@ static int vqf_read_seek(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat ff_vqf_demuxer = {
+const AVInputFormat ff_vqf_demuxer = {
     .name           = "vqf",
     .long_name      = NULL_IF_CONFIG_SMALL("Nippon Telegraph and Telephone Corporation (NTT) TwinVQ"),
     .priv_data_size = sizeof(VqfContext),

@@ -331,7 +331,7 @@ static int film_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     return 0;
 }
 
-AVInputFormat ff_segafilm_demuxer = {
+const AVInputFormat ff_segafilm_demuxer = {
     .name           = "film_cpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
     .priv_data_size = sizeof(FilmDemuxContext),

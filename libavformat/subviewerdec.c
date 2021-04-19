@@ -203,7 +203,7 @@ static int subviewer_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_subviewer_demuxer = {
+const AVInputFormat ff_subviewer_demuxer = {
     .name           = "subviewer",
     .long_name      = NULL_IF_CONFIG_SMALL("SubViewer subtitle format"),
     .priv_data_size = sizeof(SubViewerContext),

@@ -271,7 +271,7 @@ static int argo_asf_seek(AVFormatContext *s, int stream_index,
  * - Argonaut Sound File?
  * - Audio Stream File?
  */
-AVInputFormat ff_argo_asf_demuxer = {
+const AVInputFormat ff_argo_asf_demuxer = {
     .name           = "argo_asf",
     .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games ASF"),
     .priv_data_size = sizeof(ArgoASFDemuxContext),
@@ -468,7 +468,7 @@ static const AVClass argo_asf_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT
 };
 
-AVOutputFormat ff_argo_asf_muxer = {
+const AVOutputFormat ff_argo_asf_muxer = {
     .name           = "argo_asf",
     .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games ASF"),
     /*

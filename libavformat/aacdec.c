@@ -206,7 +206,7 @@ retry:
     return ret;
 }
 
-AVInputFormat ff_aac_demuxer = {
+const AVInputFormat ff_aac_demuxer = {
     .name         = "aac",
     .long_name    = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
     .read_probe   = adts_aac_probe,

@@ -66,7 +66,7 @@ static int shn_probe(const AVProbeData *p)
 }
 
 FF_RAW_DEMUXER_CLASS(shorten)
-AVInputFormat ff_shorten_demuxer = {
+const AVInputFormat ff_shorten_demuxer = {
     .name           = "shn",
     .long_name      = NULL_IF_CONFIG_SMALL("raw Shorten"),
     .read_probe     = shn_probe,

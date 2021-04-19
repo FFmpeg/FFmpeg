@@ -132,7 +132,7 @@ static int smjpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_smjpeg_muxer = {
+const AVOutputFormat ff_smjpeg_muxer = {
     .name           = "smjpeg",
     .long_name      = NULL_IF_CONFIG_SMALL("Loki SDL MJPEG"),
     .priv_data_size = sizeof(SMJPEGMuxContext),

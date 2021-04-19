@@ -305,7 +305,7 @@ static int ifv_read_seek(AVFormatContext *s, int stream_index, int64_t ts, int f
     return 0;
 }
 
-AVInputFormat ff_ifv_demuxer = {
+const AVInputFormat ff_ifv_demuxer = {
     .name           = "ifv",
     .long_name      = NULL_IF_CONFIG_SMALL("IFV CCTV DVR"),
     .priv_data_size = sizeof(IFVContext),

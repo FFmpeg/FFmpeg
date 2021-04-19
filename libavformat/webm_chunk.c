@@ -289,7 +289,7 @@ static const AVClass webm_chunk_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_webm_chunk_muxer = {
+const AVOutputFormat ff_webm_chunk_muxer = {
     .name           = "webm_chunk",
     .long_name      = NULL_IF_CONFIG_SMALL("WebM Chunk Muxer"),
     .mime_type      = "video/webm",

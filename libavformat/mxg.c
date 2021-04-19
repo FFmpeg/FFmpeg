@@ -249,7 +249,7 @@ static int mxg_close(struct AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_mxg_demuxer = {
+const AVInputFormat ff_mxg_demuxer = {
     .name           = "mxg",
     .long_name      = NULL_IF_CONFIG_SMALL("MxPEG clip"),
     .priv_data_size = sizeof(MXGContext),

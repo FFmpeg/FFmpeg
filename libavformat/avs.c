@@ -224,7 +224,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
     }
 }
 
-AVInputFormat ff_avs_demuxer = {
+const AVInputFormat ff_avs_demuxer = {
     .name           = "avs",
     .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games Creature Shock"),
     .priv_data_size = sizeof(AvsFormat),

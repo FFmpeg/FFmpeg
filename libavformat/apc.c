@@ -83,7 +83,7 @@ static int apc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_apc_demuxer = {
+const AVInputFormat ff_apc_demuxer = {
     .name           = "apc",
     .long_name      = NULL_IF_CONFIG_SMALL("CRYO APC"),
     .read_probe     = apc_probe,

@@ -234,7 +234,7 @@ static int srt_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_srt_demuxer = {
+const AVInputFormat ff_srt_demuxer = {
     .name        = "srt",
     .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .priv_data_size = sizeof(SRTContext),

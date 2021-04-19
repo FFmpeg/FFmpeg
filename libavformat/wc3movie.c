@@ -309,7 +309,7 @@ static int wc3_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat ff_wc3_demuxer = {
+const AVInputFormat ff_wc3_demuxer = {
     .name           = "wc3movie",
     .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie"),
     .priv_data_size = sizeof(Wc3DemuxContext),

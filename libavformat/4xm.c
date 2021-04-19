@@ -393,7 +393,7 @@ static int fourxm_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_fourxm_demuxer = {
+const AVInputFormat ff_fourxm_demuxer = {
     .name           = "4xm",
     .long_name      = NULL_IF_CONFIG_SMALL("4X Technologies"),
     .priv_data_size = sizeof(FourxmDemuxContext),

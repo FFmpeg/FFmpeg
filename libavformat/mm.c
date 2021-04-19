@@ -190,7 +190,7 @@ static int read_packet(AVFormatContext *s,
     }
 }
 
-AVInputFormat ff_mm_demuxer = {
+const AVInputFormat ff_mm_demuxer = {
     .name           = "mm",
     .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM"),
     .priv_data_size = sizeof(MmDemuxContext),

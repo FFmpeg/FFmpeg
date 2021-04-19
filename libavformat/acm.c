@@ -61,7 +61,7 @@ static int acm_read_header(AVFormatContext *s)
 }
 
 FF_RAW_DEMUXER_CLASS(acm)
-AVInputFormat ff_acm_demuxer = {
+const AVInputFormat ff_acm_demuxer = {
     .name           = "acm",
     .long_name      = NULL_IF_CONFIG_SMALL("Interplay ACM"),
     .read_probe     = acm_probe,

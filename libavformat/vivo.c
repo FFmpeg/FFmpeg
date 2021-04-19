@@ -309,7 +309,7 @@ restart:
     return ret;
 }
 
-AVInputFormat ff_vivo_demuxer = {
+const AVInputFormat ff_vivo_demuxer = {
     .name           = "vivo",
     .long_name      = NULL_IF_CONFIG_SMALL("Vivo"),
     .priv_data_size = sizeof(VivoContext),

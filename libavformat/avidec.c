@@ -1969,7 +1969,7 @@ static int avi_probe(const AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ff_avi_demuxer = {
+const AVInputFormat ff_avi_demuxer = {
     .name           = "avi",
     .long_name      = NULL_IF_CONFIG_SMALL("AVI (Audio Video Interleaved)"),
     .priv_data_size = sizeof(AVIContext),

@@ -241,7 +241,7 @@ static int lrc_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_lrc_demuxer = {
+const AVInputFormat ff_lrc_demuxer = {
     .name           = "lrc",
     .long_name      = NULL_IF_CONFIG_SMALL("LRC lyrics"),
     .priv_data_size = sizeof (LRCContext),

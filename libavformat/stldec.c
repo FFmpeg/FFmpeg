@@ -130,7 +130,7 @@ static int stl_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_stl_demuxer = {
+const AVInputFormat ff_stl_demuxer = {
     .name           = "stl",
     .long_name      = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
     .priv_data_size = sizeof(STLContext),

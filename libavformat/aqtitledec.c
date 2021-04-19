@@ -137,7 +137,7 @@ static const AVClass aqt_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_aqtitle_demuxer = {
+const AVInputFormat ff_aqtitle_demuxer = {
     .name           = "aqtitle",
     .long_name      = NULL_IF_CONFIG_SMALL("AQTitle subtitles"),
     .priv_data_size = sizeof(AQTitleContext),

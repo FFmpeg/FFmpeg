@@ -1518,7 +1518,7 @@ static const AVClass sbg_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_sbg_demuxer = {
+const AVInputFormat ff_sbg_demuxer = {
     .name           = "sbg",
     .long_name      = NULL_IF_CONFIG_SMALL("SBaGen binaural beats script"),
     .priv_data_size = sizeof(struct sbg_demuxer),

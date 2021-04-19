@@ -90,7 +90,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return size;
 }
 
-AVInputFormat ff_nc_demuxer = {
+const AVInputFormat ff_nc_demuxer = {
     .name           = "nc",
     .long_name      = NULL_IF_CONFIG_SMALL("NC camera feed"),
     .read_probe     = nc_probe,

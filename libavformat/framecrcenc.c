@@ -129,7 +129,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_framecrc_muxer = {
+const AVOutputFormat ff_framecrc_muxer = {
     .name              = "framecrc",
     .long_name         = NULL_IF_CONFIG_SMALL("framecrc testing"),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,

@@ -583,7 +583,7 @@ static int xmv_read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat ff_xmv_demuxer = {
+const AVInputFormat ff_xmv_demuxer = {
     .name           = "xmv",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft XMV"),
     .extensions     = "xmv",

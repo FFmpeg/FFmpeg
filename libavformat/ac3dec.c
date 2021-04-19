@@ -103,7 +103,7 @@ static int ac3_probe(const AVProbeData *p)
 }
 
 FF_RAW_DEMUXER_CLASS(ac3)
-AVInputFormat ff_ac3_demuxer = {
+const AVInputFormat ff_ac3_demuxer = {
     .name           = "ac3",
     .long_name      = NULL_IF_CONFIG_SMALL("raw AC-3"),
     .read_probe     = ac3_probe,
@@ -124,7 +124,7 @@ static int eac3_probe(const AVProbeData *p)
 }
 
 FF_RAW_DEMUXER_CLASS(eac3)
-AVInputFormat ff_eac3_demuxer = {
+const AVInputFormat ff_eac3_demuxer = {
     .name           = "eac3",
     .long_name      = NULL_IF_CONFIG_SMALL("raw E-AC-3"),
     .read_probe     = eac3_probe,

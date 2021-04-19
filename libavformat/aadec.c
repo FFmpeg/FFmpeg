@@ -406,7 +406,7 @@ static const AVClass aa_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_aa_demuxer = {
+const AVInputFormat ff_aa_demuxer = {
     .name           = "aa",
     .long_name      = NULL_IF_CONFIG_SMALL("Audible AA format files"),
     .priv_class     = &aa_class,

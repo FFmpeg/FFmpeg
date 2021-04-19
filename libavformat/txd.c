@@ -92,7 +92,7 @@ next_chunk:
     return 0;
 }
 
-AVInputFormat ff_txd_demuxer = {
+const AVInputFormat ff_txd_demuxer = {
     .name        = "txd",
     .long_name   = NULL_IF_CONFIG_SMALL("Renderware TeXture Dictionary"),
     .read_probe  = txd_probe,

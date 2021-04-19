@@ -218,7 +218,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 }
 
 
-AVInputFormat ff_mpc_demuxer = {
+const AVInputFormat ff_mpc_demuxer = {
     .name           = "mpc",
     .long_name      = NULL_IF_CONFIG_SMALL("Musepack"),
     .priv_data_size = sizeof(MPCContext),

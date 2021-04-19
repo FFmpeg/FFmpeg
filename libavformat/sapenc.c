@@ -267,7 +267,7 @@ static int sap_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_write_chained(rtpctx, 0, pkt, s, 0);
 }
 
-AVOutputFormat ff_sap_muxer = {
+const AVOutputFormat ff_sap_muxer = {
     .name              = "sap",
     .long_name         = NULL_IF_CONFIG_SMALL("SAP output"),
     .priv_data_size    = sizeof(struct SAPState),

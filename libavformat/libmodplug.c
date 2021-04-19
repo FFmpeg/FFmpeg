@@ -380,7 +380,7 @@ static const AVClass modplug_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_libmodplug_demuxer = {
+const AVInputFormat ff_libmodplug_demuxer = {
     .name           = "libmodplug",
     .long_name      = NULL_IF_CONFIG_SMALL("ModPlug demuxer"),
     .priv_data_size = sizeof(ModPlugContext),

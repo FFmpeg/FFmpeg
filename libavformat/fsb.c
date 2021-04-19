@@ -200,7 +200,7 @@ static int fsb_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_fsb_demuxer = {
+const AVInputFormat ff_fsb_demuxer = {
     .name        = "fsb",
     .long_name   = NULL_IF_CONFIG_SMALL("FMOD Sample Bank"),
     .read_probe  = fsb_probe,

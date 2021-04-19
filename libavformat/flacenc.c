@@ -411,7 +411,7 @@ static const AVClass flac_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_flac_muxer = {
+const AVOutputFormat ff_flac_muxer = {
     .name              = "flac",
     .long_name         = NULL_IF_CONFIG_SMALL("raw FLAC"),
     .priv_data_size    = sizeof(FlacMuxerContext),

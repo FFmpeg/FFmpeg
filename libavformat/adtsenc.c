@@ -227,7 +227,7 @@ static const AVClass adts_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_adts_muxer = {
+const AVOutputFormat ff_adts_muxer = {
     .name              = "adts",
     .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC (Advanced Audio Coding)"),
     .mime_type         = "audio/aac",

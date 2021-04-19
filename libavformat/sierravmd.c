@@ -317,7 +317,7 @@ static int vmd_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_vmd_demuxer = {
+const AVInputFormat ff_vmd_demuxer = {
     .name           = "vmd",
     .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD"),
     .priv_data_size = sizeof(VmdDemuxContext),

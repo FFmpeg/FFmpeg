@@ -97,7 +97,7 @@ static int sup_probe(const AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-AVInputFormat ff_sup_demuxer = {
+const AVInputFormat ff_sup_demuxer = {
     .name           = "sup",
     .long_name      = NULL_IF_CONFIG_SMALL("raw HDMV Presentation Graphic Stream subtitles"),
     .extensions     = "sup",

@@ -1053,7 +1053,7 @@ static const AVClass seg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_segment_muxer = {
+const AVOutputFormat ff_segment_muxer = {
     .name           = "segment",
     .long_name      = NULL_IF_CONFIG_SMALL("segment"),
     .priv_data_size = sizeof(SegmentContext),
@@ -1076,7 +1076,7 @@ static const AVClass sseg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_stream_segment_muxer = {
+const AVOutputFormat ff_stream_segment_muxer = {
     .name           = "stream_segment,ssegment",
     .long_name      = NULL_IF_CONFIG_SMALL("streaming segment muxer"),
     .priv_data_size = sizeof(SegmentContext),

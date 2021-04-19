@@ -104,7 +104,7 @@ static int sox_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_sox_muxer = {
+const AVOutputFormat ff_sox_muxer = {
     .name              = "sox",
     .long_name         = NULL_IF_CONFIG_SMALL("SoX native"),
     .extensions        = "sox",

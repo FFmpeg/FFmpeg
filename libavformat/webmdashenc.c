@@ -537,7 +537,7 @@ static const AVClass webm_dash_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_webm_dash_manifest_muxer = {
+const AVOutputFormat ff_webm_dash_manifest_muxer = {
     .name              = "webm_dash_manifest",
     .long_name         = NULL_IF_CONFIG_SMALL("WebM DASH Manifest"),
     .mime_type         = "application/xml",

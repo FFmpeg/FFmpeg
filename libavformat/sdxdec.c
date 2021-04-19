@@ -78,7 +78,7 @@ static int sdx_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_sdx_demuxer = {
+const AVInputFormat ff_sdx_demuxer = {
     .name           = "sdx",
     .long_name      = NULL_IF_CONFIG_SMALL("Sample Dump eXchange"),
     .read_probe     = sdx_probe,

@@ -281,7 +281,7 @@ static const AVClass annexb_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_av1_demuxer = {
+const AVInputFormat ff_av1_demuxer = {
     .name           = "av1",
     .long_name      = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
     .priv_data_size = sizeof(AnnexBContext),
@@ -468,7 +468,7 @@ static const AVClass obu_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_obu_demuxer = {
+const AVInputFormat ff_obu_demuxer = {
     .name           = "obu",
     .long_name      = NULL_IF_CONFIG_SMALL("AV1 low overhead OBU"),
     .priv_data_size = sizeof(ObuContext),

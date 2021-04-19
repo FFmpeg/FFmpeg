@@ -436,7 +436,7 @@ static void dv_deinit(AVFormatContext *s)
         av_fifo_freep(&c->audio_data[i]);
 }
 
-AVOutputFormat ff_dv_muxer = {
+const AVOutputFormat ff_dv_muxer = {
     .name              = "dv",
     .long_name         = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .extensions        = "dv",

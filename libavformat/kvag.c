@@ -119,7 +119,7 @@ static int kvag_seek(AVFormatContext *s, int stream_index,
     return avio_seek(s->pb, KVAG_HEADER_SIZE, SEEK_SET);
 }
 
-AVInputFormat ff_kvag_demuxer = {
+const AVInputFormat ff_kvag_demuxer = {
     .name           = "kvag",
     .long_name      = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
     .read_probe     = kvag_probe,
@@ -193,7 +193,7 @@ static int kvag_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_kvag_muxer = {
+const AVOutputFormat ff_kvag_muxer = {
     .name           = "kvag",
     .long_name      = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
     .extensions     = "vag",

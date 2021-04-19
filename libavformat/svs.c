@@ -86,7 +86,7 @@ static int svs_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_svs_demuxer = {
+const AVInputFormat ff_svs_demuxer = {
     .name        = "svs",
     .long_name   = NULL_IF_CONFIG_SMALL("Square SVS"),
     .read_probe  = svs_probe,

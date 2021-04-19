@@ -966,7 +966,7 @@ static int ogg_probe(const AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ff_ogg_demuxer = {
+const AVInputFormat ff_ogg_demuxer = {
     .name           = "ogg",
     .long_name      = NULL_IF_CONFIG_SMALL("Ogg"),
     .priv_data_size = sizeof(struct ogg),

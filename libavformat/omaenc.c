@@ -94,7 +94,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_oma_muxer = {
+const AVOutputFormat ff_oma_muxer = {
     .name              = "oma",
     .long_name         = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
     .mime_type         = "audio/x-oma",

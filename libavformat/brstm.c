@@ -481,7 +481,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_brstm_demuxer = {
+const AVInputFormat ff_brstm_demuxer = {
     .name           = "brstm",
     .long_name      = NULL_IF_CONFIG_SMALL("BRSTM (Binary Revolution Stream)"),
     .priv_data_size = sizeof(BRSTMDemuxContext),
@@ -493,7 +493,7 @@ AVInputFormat ff_brstm_demuxer = {
     .extensions     = "brstm",
 };
 
-AVInputFormat ff_bfstm_demuxer = {
+const AVInputFormat ff_bfstm_demuxer = {
     .name           = "bfstm",
     .long_name      = NULL_IF_CONFIG_SMALL("BFSTM (Binary Cafe Stream)"),
     .priv_data_size = sizeof(BRSTMDemuxContext),

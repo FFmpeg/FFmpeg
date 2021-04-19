@@ -366,7 +366,7 @@ static int idcin_read_seek(AVFormatContext *s, int stream_index,
     return -1;
 }
 
-AVInputFormat ff_idcin_demuxer = {
+const AVInputFormat ff_idcin_demuxer = {
     .name           = "idcin",
     .long_name      = NULL_IF_CONFIG_SMALL("id Cinematic"),
     .priv_data_size = sizeof(IdcinDemuxContext),

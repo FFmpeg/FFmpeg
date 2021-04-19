@@ -110,7 +110,7 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_ast_demuxer = {
+const AVInputFormat ff_ast_demuxer = {
     .name           = "ast",
     .long_name      = NULL_IF_CONFIG_SMALL("AST (Audio Stream)"),
     .read_probe     = ast_probe,

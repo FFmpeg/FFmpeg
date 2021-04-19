@@ -323,7 +323,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return 0;
 }
 
-AVInputFormat ff_bink_demuxer = {
+const AVInputFormat ff_bink_demuxer = {
     .name           = "bink",
     .long_name      = NULL_IF_CONFIG_SMALL("Bink"),
     .priv_data_size = sizeof(BinkDemuxContext),

@@ -734,7 +734,7 @@ static int nsv_probe(const AVProbeData *p)
     return score;
 }
 
-AVInputFormat ff_nsv_demuxer = {
+const AVInputFormat ff_nsv_demuxer = {
     .name           = "nsv",
     .long_name      = NULL_IF_CONFIG_SMALL("Nullsoft Streaming Video"),
     .priv_data_size = sizeof(NSVContext),

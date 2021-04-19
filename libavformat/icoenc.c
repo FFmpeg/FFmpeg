@@ -191,7 +191,7 @@ static void ico_deinit(AVFormatContext *s)
     av_freep(&ico->images);
 }
 
-AVOutputFormat ff_ico_muxer = {
+const AVOutputFormat ff_ico_muxer = {
     .name           = "ico",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
     .priv_data_size = sizeof(IcoMuxContext),

@@ -156,7 +156,7 @@ retry:
     return ret;
 }
 
-AVInputFormat ff_simbiosis_imx_demuxer = {
+const AVInputFormat ff_simbiosis_imx_demuxer = {
     .name           = "simbiosis_imx",
     .long_name      = NULL_IF_CONFIG_SMALL("Simbiosis Interactive IMX"),
     .priv_data_size = sizeof(SimbiosisIMXDemuxContext),

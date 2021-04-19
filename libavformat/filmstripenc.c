@@ -60,7 +60,7 @@ static int write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_filmstrip_muxer = {
+const AVOutputFormat ff_filmstrip_muxer = {
     .name              = "filmstrip",
     .long_name         = NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
     .extensions        = "flm",

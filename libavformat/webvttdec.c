@@ -210,7 +210,7 @@ static const AVClass webvtt_demuxer_class = {
     .version     = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_webvtt_demuxer = {
+const AVInputFormat ff_webvtt_demuxer = {
     .name           = "webvtt",
     .long_name      = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
     .priv_data_size = sizeof(WebVTTContext),

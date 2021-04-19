@@ -78,7 +78,7 @@ static int fwse_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_fwse_demuxer = {
+const AVInputFormat ff_fwse_demuxer = {
     .name           = "fwse",
     .long_name      = NULL_IF_CONFIG_SMALL("Capcom's MT Framework sound"),
     .read_probe     = fwse_probe,

@@ -636,7 +636,7 @@ static void mp3_deinit(struct AVFormatContext *s)
     av_freep(&mp3->xing_frame);
 }
 
-AVOutputFormat ff_mp3_muxer = {
+const AVOutputFormat ff_mp3_muxer = {
     .name              = "mp3",
     .long_name         = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
     .mime_type         = "audio/mpeg",

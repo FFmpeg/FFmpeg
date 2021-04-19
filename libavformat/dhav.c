@@ -451,7 +451,7 @@ static int dhav_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_dhav_demuxer = {
+const AVInputFormat ff_dhav_demuxer = {
     .name           = "dhav",
     .long_name      = NULL_IF_CONFIG_SMALL("Video DAV"),
     .priv_data_size = sizeof(DHAVContext),

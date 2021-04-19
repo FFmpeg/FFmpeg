@@ -103,7 +103,7 @@ static int xvag_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-AVInputFormat ff_xvag_demuxer = {
+const AVInputFormat ff_xvag_demuxer = {
     .name           = "xvag",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony PS3 XVAG"),
     .read_probe     = xvag_probe,

@@ -149,7 +149,7 @@ static int realtext_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_realtext_demuxer = {
+const AVInputFormat ff_realtext_demuxer = {
     .name           = "realtext",
     .long_name      = NULL_IF_CONFIG_SMALL("RealText subtitle format"),
     .priv_data_size = sizeof(RealTextContext),

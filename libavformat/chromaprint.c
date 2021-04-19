@@ -179,7 +179,7 @@ static const AVClass chromaprint_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_chromaprint_muxer = {
+const AVOutputFormat ff_chromaprint_muxer = {
     .name              = "chromaprint",
     .long_name         = NULL_IF_CONFIG_SMALL("Chromaprint"),
     .priv_data_size    = sizeof(ChromaprintMuxContext),

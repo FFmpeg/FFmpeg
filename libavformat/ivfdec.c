@@ -81,7 +81,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_ivf_demuxer = {
+const AVInputFormat ff_ivf_demuxer = {
     .name           = "ivf",
     .long_name      = NULL_IF_CONFIG_SMALL("On2 IVF"),
     .read_probe     = probe,

@@ -93,7 +93,7 @@ static const AVClass g729_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_g729_demuxer = {
+const AVInputFormat ff_g729_demuxer = {
     .name           = "g729",
     .long_name      = NULL_IF_CONFIG_SMALL("G.729 raw format demuxer"),
     .priv_data_size = sizeof(G729DemuxerContext),

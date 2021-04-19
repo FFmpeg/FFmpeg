@@ -300,7 +300,7 @@ static int rl2_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-AVInputFormat ff_rl2_demuxer = {
+const AVInputFormat ff_rl2_demuxer = {
     .name           = "rl2",
     .long_name      = NULL_IF_CONFIG_SMALL("RL2"),
     .priv_data_size = sizeof(Rl2DemuxContext),

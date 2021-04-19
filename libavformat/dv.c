@@ -614,7 +614,7 @@ static int dv_probe(const AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ff_dv_demuxer = {
+const AVInputFormat ff_dv_demuxer = {
     .name           = "dv",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .priv_data_size = sizeof(RawDVContext),

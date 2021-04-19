@@ -109,7 +109,7 @@ static int sdr2_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_sdr2_demuxer = {
+const AVInputFormat ff_sdr2_demuxer = {
     .name        = "sdr2",
     .long_name   = NULL_IF_CONFIG_SMALL("SDR2"),
     .read_probe  = sdr2_probe,

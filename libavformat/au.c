@@ -226,7 +226,7 @@ static int au_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_au_demuxer = {
+const AVInputFormat ff_au_demuxer = {
     .name        = "au",
     .long_name   = NULL_IF_CONFIG_SMALL("Sun AU"),
     .read_probe  = au_probe,
@@ -328,7 +328,7 @@ static int au_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_au_muxer = {
+const AVOutputFormat ff_au_muxer = {
     .name          = "au",
     .long_name     = NULL_IF_CONFIG_SMALL("Sun AU"),
     .mime_type     = "audio/basic",

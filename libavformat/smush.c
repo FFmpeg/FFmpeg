@@ -242,7 +242,7 @@ static int smush_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_smush_demuxer = {
+const AVInputFormat ff_smush_demuxer = {
     .name           = "smush",
     .long_name      = NULL_IF_CONFIG_SMALL("LucasArts Smush"),
     .priv_data_size = sizeof(SMUSHContext),

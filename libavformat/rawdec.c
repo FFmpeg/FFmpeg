@@ -133,7 +133,7 @@ const AVOption ff_raw_options[] = {
 #if CONFIG_DATA_DEMUXER
 FF_RAW_DEMUXER_CLASS(raw_data)
 
-AVInputFormat ff_data_demuxer = {
+const AVInputFormat ff_data_demuxer = {
     .name           = "data",
     .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
     .read_header    = ff_raw_data_read_header,

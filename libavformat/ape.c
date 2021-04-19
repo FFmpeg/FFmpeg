@@ -450,7 +450,7 @@ static int ape_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-AVInputFormat ff_ape_demuxer = {
+const AVInputFormat ff_ape_demuxer = {
     .name           = "ape",
     .long_name      = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
     .priv_data_size = sizeof(APEContext),

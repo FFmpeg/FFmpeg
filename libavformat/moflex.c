@@ -375,7 +375,7 @@ static int moflex_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_moflex_demuxer = {
+const AVInputFormat ff_moflex_demuxer = {
     .name           = "moflex",
     .long_name      = NULL_IF_CONFIG_SMALL("MobiClip MOFLEX"),
     .priv_data_size = sizeof(MOFLEXDemuxContext),

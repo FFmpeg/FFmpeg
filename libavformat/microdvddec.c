@@ -203,7 +203,7 @@ static const AVClass microdvd_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_microdvd_demuxer = {
+const AVInputFormat ff_microdvd_demuxer = {
     .name           = "microdvd",
     .long_name      = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
     .priv_data_size = sizeof(MicroDVDContext),

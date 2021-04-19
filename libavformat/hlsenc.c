@@ -3159,7 +3159,7 @@ static const AVClass hls_class = {
 };
 
 
-AVOutputFormat ff_hls_muxer = {
+const AVOutputFormat ff_hls_muxer = {
     .name           = "hls",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming"),
     .extensions     = "m3u8",

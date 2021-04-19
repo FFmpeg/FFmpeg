@@ -164,7 +164,7 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return AVERROR(ENOSYS);
 }
 
-AVOutputFormat ff_uncodedframecrc_muxer = {
+const AVOutputFormat ff_uncodedframecrc_muxer = {
     .name              = "uncodedframecrc",
     .long_name         = NULL_IF_CONFIG_SMALL("uncoded framecrc testing"),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,

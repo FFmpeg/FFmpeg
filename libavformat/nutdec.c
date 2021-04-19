@@ -1292,7 +1292,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_nut_demuxer = {
+const AVInputFormat ff_nut_demuxer = {
     .name           = "nut",
     .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
     .flags          = AVFMT_SEEK_TO_PTS,

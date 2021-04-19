@@ -481,7 +481,7 @@ static int read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_mlv_demuxer = {
+const AVInputFormat ff_mlv_demuxer = {
     .name           = "mlv",
     .long_name      = NULL_IF_CONFIG_SMALL("Magic Lantern Video (MLV)"),
     .priv_data_size = sizeof(MlvContext),

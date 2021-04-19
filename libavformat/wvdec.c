@@ -329,7 +329,7 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_wv_demuxer = {
+const AVInputFormat ff_wv_demuxer = {
     .name           = "wv",
     .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
     .priv_data_size = sizeof(WVContext),

@@ -400,7 +400,7 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
     return 0;
 }
 
-AVInputFormat ff_r3d_demuxer = {
+const AVInputFormat ff_r3d_demuxer = {
     .name           = "r3d",
     .long_name      = NULL_IF_CONFIG_SMALL("REDCODE R3D"),
     .priv_data_size = sizeof(R3DContext),

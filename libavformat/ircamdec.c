@@ -106,7 +106,7 @@ static int ircam_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_ircam_demuxer = {
+const AVInputFormat ff_ircam_demuxer = {
     .name           = "ircam",
     .long_name      = NULL_IF_CONFIG_SMALL("Berkeley/IRCAM/CARL Sound Format"),
     .read_probe     = ircam_probe,

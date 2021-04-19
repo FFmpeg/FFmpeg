@@ -69,7 +69,7 @@ static int afc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_afc_demuxer = {
+const AVInputFormat ff_afc_demuxer = {
     .name           = "afc",
     .long_name      = NULL_IF_CONFIG_SMALL("AFC"),
     .priv_data_size = sizeof(AFCDemuxContext),

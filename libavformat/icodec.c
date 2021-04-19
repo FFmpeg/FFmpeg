@@ -220,7 +220,7 @@ static int ico_read_close(AVFormatContext * s)
     return 0;
 }
 
-AVInputFormat ff_ico_demuxer = {
+const AVInputFormat ff_ico_demuxer = {
     .name           = "ico",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
     .priv_data_size = sizeof(IcoDemuxContext),

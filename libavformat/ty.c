@@ -710,7 +710,7 @@ static int ty_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_ty_demuxer = {
+const AVInputFormat ff_ty_demuxer = {
     .name           = "ty",
     .long_name      = NULL_IF_CONFIG_SMALL("TiVo TY Stream"),
     .priv_data_size = sizeof(TYDemuxContext),

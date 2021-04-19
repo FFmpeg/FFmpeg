@@ -214,7 +214,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 FF_RAW_DEMUXER_CLASS(tak)
-AVInputFormat ff_tak_demuxer = {
+const AVInputFormat ff_tak_demuxer = {
     .name           = "tak",
     .long_name      = NULL_IF_CONFIG_SMALL("raw TAK"),
     .priv_data_size = sizeof(TAKDemuxContext),

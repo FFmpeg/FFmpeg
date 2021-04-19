@@ -185,7 +185,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_c93_demuxer = {
+const AVInputFormat ff_c93_demuxer = {
     .name           = "c93",
     .long_name      = NULL_IF_CONFIG_SMALL("Interplay C93"),
     .priv_data_size = sizeof(C93DemuxContext),

@@ -121,7 +121,7 @@ static int xa_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat ff_xa_demuxer = {
+const AVInputFormat ff_xa_demuxer = {
     .name           = "xa",
     .long_name      = NULL_IF_CONFIG_SMALL("Maxis XA"),
     .priv_data_size = sizeof(MaxisXADemuxContext),

@@ -701,7 +701,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
     }
 }
 
-AVInputFormat ff_ipmovie_demuxer = {
+const AVInputFormat ff_ipmovie_demuxer = {
     .name           = "ipmovie",
     .long_name      = NULL_IF_CONFIG_SMALL("Interplay MVE"),
     .priv_data_size = sizeof(IPMVEContext),

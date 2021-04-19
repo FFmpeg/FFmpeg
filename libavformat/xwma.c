@@ -313,7 +313,7 @@ static int xwma_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_xwma_demuxer = {
+const AVInputFormat ff_xwma_demuxer = {
     .name           = "xwma",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft xWMA"),
     .priv_data_size = sizeof(XWMAContext),

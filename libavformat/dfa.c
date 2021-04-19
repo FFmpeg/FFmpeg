@@ -120,7 +120,7 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_dfa_demuxer = {
+const AVInputFormat ff_dfa_demuxer = {
     .name           = "dfa",
     .long_name      = NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
     .read_probe     = dfa_probe,

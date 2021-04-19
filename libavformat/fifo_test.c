@@ -138,7 +138,7 @@ static const AVClass failing_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_fifo_test_muxer = {
+const AVOutputFormat ff_fifo_test_muxer = {
     .name           = "fifo_test",
     .long_name      = NULL_IF_CONFIG_SMALL("Fifo test muxer"),
     .priv_data_size = sizeof(FailingMuxerContext),

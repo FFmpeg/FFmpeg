@@ -134,7 +134,7 @@ static int vpk_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_vpk_demuxer = {
+const AVInputFormat ff_vpk_demuxer = {
     .name           = "vpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 VPK"),
     .priv_data_size = sizeof(VPKDemuxContext),

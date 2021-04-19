@@ -697,7 +697,7 @@ static const AVClass fifo_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_fifo_muxer = {
+const AVOutputFormat ff_fifo_muxer = {
     .name           = "fifo",
     .long_name      = NULL_IF_CONFIG_SMALL("FIFO queue pseudo-muxer"),
     .priv_data_size = sizeof(FifoContext),

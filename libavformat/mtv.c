@@ -225,7 +225,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_mtv_demuxer = {
+const AVInputFormat ff_mtv_demuxer = {
     .name           = "mtv",
     .long_name      = NULL_IF_CONFIG_SMALL("MTV"),
     .priv_data_size = sizeof(MTVDemuxContext),

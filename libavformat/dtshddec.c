@@ -159,7 +159,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_dtshd_demuxer = {
+const AVInputFormat ff_dtshd_demuxer = {
     .name           = "dtshd",
     .long_name      = NULL_IF_CONFIG_SMALL("raw DTS-HD"),
     .priv_data_size = sizeof(DTSHDDemuxContext),

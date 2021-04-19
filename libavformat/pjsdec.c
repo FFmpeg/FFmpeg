@@ -128,7 +128,7 @@ static int pjs_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_pjs_demuxer = {
+const AVInputFormat ff_pjs_demuxer = {
     .name           = "pjs",
     .long_name      = NULL_IF_CONFIG_SMALL("PJS (Phoenix Japanimation Society) subtitles"),
     .priv_data_size = sizeof(PJSContext),

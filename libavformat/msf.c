@@ -100,7 +100,7 @@ static int msf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align ? par->block_align : 1024 * par->channels);
 }
 
-AVInputFormat ff_msf_demuxer = {
+const AVInputFormat ff_msf_demuxer = {
     .name           = "msf",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony PS3 MSF"),
     .read_probe     = msf_probe,

@@ -413,7 +413,7 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_argo_brp_demuxer = {
+const AVInputFormat ff_argo_brp_demuxer = {
     .name           = "argo_brp",
     .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games BRP"),
     .priv_data_size = sizeof(ArgoBRPDemuxContext),

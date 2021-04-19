@@ -108,7 +108,7 @@ static const AVClass name_ ## _demuxer_class = {            \
     .option     = pcm_options,                              \
     .version    = LIBAVUTIL_VERSION_INT,                    \
 };                                                          \
-AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
+const AVInputFormat ff_pcm_ ## name_ ## _demuxer = {        \
     .name           = #name_,                               \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
     .priv_data_size = sizeof(PCMAudioDemuxerContext),       \
@@ -168,7 +168,7 @@ static const AVClass sln_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_sln_demuxer = {
+const AVInputFormat ff_sln_demuxer = {
     .name           = "sln",
     .long_name      = NULL_IF_CONFIG_SMALL("Asterisk raw pcm"),
     .priv_data_size = sizeof(PCMAudioDemuxerContext),

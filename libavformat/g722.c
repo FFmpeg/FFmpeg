@@ -47,7 +47,7 @@ static int g722_read_header(AVFormatContext *s)
 }
 
 FF_RAW_DEMUXER_CLASS(g722)
-AVInputFormat ff_g722_demuxer = {
+const AVInputFormat ff_g722_demuxer = {
     .name           = "g722",
     .long_name      = NULL_IF_CONFIG_SMALL("raw G.722"),
     .read_header    = g722_read_header,

@@ -201,7 +201,7 @@ static int apm_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_apm_demuxer = {
+const AVInputFormat ff_apm_demuxer = {
     .name           = "apm",
     .long_name      = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
     .read_probe     = apm_probe,
@@ -303,7 +303,7 @@ static int apm_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_apm_muxer = {
+const AVOutputFormat ff_apm_muxer = {
     .name           = "apm",
     .long_name      = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
     .extensions     = "apm",

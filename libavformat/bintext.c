@@ -394,7 +394,7 @@ static const AVOption options[] = {
 }}
 
 #if CONFIG_BINTEXT_DEMUXER
-AVInputFormat ff_bintext_demuxer = {
+const AVInputFormat ff_bintext_demuxer = {
     .name           = "bin",
     .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
     .priv_data_size = sizeof(BinDemuxContext),
@@ -406,7 +406,7 @@ AVInputFormat ff_bintext_demuxer = {
 #endif
 
 #if CONFIG_XBIN_DEMUXER
-AVInputFormat ff_xbin_demuxer = {
+const AVInputFormat ff_xbin_demuxer = {
     .name           = "xbin",
     .long_name      = NULL_IF_CONFIG_SMALL("eXtended BINary text (XBIN)"),
     .priv_data_size = sizeof(BinDemuxContext),
@@ -418,7 +418,7 @@ AVInputFormat ff_xbin_demuxer = {
 #endif
 
 #if CONFIG_ADF_DEMUXER
-AVInputFormat ff_adf_demuxer = {
+const AVInputFormat ff_adf_demuxer = {
     .name           = "adf",
     .long_name      = NULL_IF_CONFIG_SMALL("Artworx Data Format"),
     .priv_data_size = sizeof(BinDemuxContext),
@@ -430,7 +430,7 @@ AVInputFormat ff_adf_demuxer = {
 #endif
 
 #if CONFIG_IDF_DEMUXER
-AVInputFormat ff_idf_demuxer = {
+const AVInputFormat ff_idf_demuxer = {
     .name           = "idf",
     .long_name      = NULL_IF_CONFIG_SMALL("iCE Draw File"),
     .priv_data_size = sizeof(BinDemuxContext),

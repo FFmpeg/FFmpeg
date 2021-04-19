@@ -96,7 +96,7 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_srt_muxer = {
+const AVOutputFormat ff_srt_muxer = {
     .name           = "srt",
     .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .mime_type      = "application/x-subrip",

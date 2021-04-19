@@ -321,7 +321,7 @@ static void film_deinit(AVFormatContext *format_context)
     ffio_free_dyn_buf(&film->header);
 }
 
-AVOutputFormat ff_segafilm_muxer = {
+const AVOutputFormat ff_segafilm_muxer = {
     .name           = "film_cpk",
     .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
     .extensions     = "cpk",

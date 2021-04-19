@@ -285,7 +285,7 @@ static const AVClass aiff_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_aiff_muxer = {
+const AVOutputFormat ff_aiff_muxer = {
     .name              = "aiff",
     .long_name         = NULL_IF_CONFIG_SMALL("Audio IFF"),
     .mime_type         = "audio/aiff",

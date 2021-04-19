@@ -404,7 +404,7 @@ static int amv_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_amv_muxer = {
+const AVOutputFormat ff_amv_muxer = {
     .name           = "amv",
     .long_name      = NULL_IF_CONFIG_SMALL("AMV"),
     .mime_type      = "video/amv",

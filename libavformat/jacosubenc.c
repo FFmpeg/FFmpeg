@@ -29,7 +29,7 @@ static int jacosub_write_header(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_jacosub_muxer = {
+const AVOutputFormat ff_jacosub_muxer = {
     .name           = "jacosub",
     .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
     .mime_type      = "text/x-jacosub",

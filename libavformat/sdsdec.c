@@ -153,7 +153,7 @@ static int sds_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_sds_demuxer = {
+const AVInputFormat ff_sds_demuxer = {
     .name           = "sds",
     .long_name      = NULL_IF_CONFIG_SMALL("MIDI Sample Dump Standard"),
     .priv_data_size = sizeof(SDSContext),

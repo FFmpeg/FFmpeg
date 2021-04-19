@@ -83,7 +83,7 @@ static int adp_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_adp_demuxer = {
+const AVInputFormat ff_adp_demuxer = {
     .name           = "adp",
     .long_name      = NULL_IF_CONFIG_SMALL("ADP"),
     .read_probe     = adp_probe,

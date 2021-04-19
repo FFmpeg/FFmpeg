@@ -84,7 +84,7 @@ static int loas_read_header(AVFormatContext *s)
 }
 
 FF_RAW_DEMUXER_CLASS(loas)
-AVInputFormat ff_loas_demuxer = {
+const AVInputFormat ff_loas_demuxer = {
     .name           = "loas",
     .long_name      = NULL_IF_CONFIG_SMALL("LOAS AudioSyncStream"),
     .read_probe     = loas_probe,

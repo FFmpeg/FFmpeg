@@ -193,7 +193,7 @@ static int mpsub_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_mpsub_demuxer = {
+const AVInputFormat ff_mpsub_demuxer = {
     .name           = "mpsub",
     .long_name      = NULL_IF_CONFIG_SMALL("MPlayer subtitles"),
     .priv_data_size = sizeof(MPSubContext),

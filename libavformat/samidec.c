@@ -142,7 +142,7 @@ static int sami_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_sami_demuxer = {
+const AVInputFormat ff_sami_demuxer = {
     .name           = "sami",
     .long_name      = NULL_IF_CONFIG_SMALL("SAMI subtitle format"),
     .priv_data_size = sizeof(SAMIContext),

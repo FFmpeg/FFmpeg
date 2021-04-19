@@ -345,7 +345,7 @@ static int yuv4_probe(const AVProbeData *pd)
         return 0;
 }
 
-AVInputFormat ff_yuv4mpegpipe_demuxer = {
+const AVInputFormat ff_yuv4mpegpipe_demuxer = {
     .name           = "yuv4mpegpipe",
     .long_name      = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
     .read_probe     = yuv4_probe,

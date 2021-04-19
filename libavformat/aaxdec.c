@@ -402,7 +402,7 @@ static int aax_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_aax_demuxer = {
+const AVInputFormat ff_aax_demuxer = {
     .name           = "aax",
     .long_name      = NULL_IF_CONFIG_SMALL("CRI AAX"),
     .priv_data_size = sizeof(AAXContext),

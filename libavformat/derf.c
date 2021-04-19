@@ -68,7 +68,7 @@ static int derf_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_derf_demuxer = {
+const AVInputFormat ff_derf_demuxer = {
     .name           = "derf",
     .long_name      = NULL_IF_CONFIG_SMALL("Xilam DERF"),
     .read_probe     = derf_probe,

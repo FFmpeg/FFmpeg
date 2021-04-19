@@ -42,7 +42,7 @@ static int daud_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_daud_muxer = {
+const AVOutputFormat ff_daud_muxer = {
     .name         = "daud",
     .long_name    = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
     .extensions   = "302",

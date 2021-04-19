@@ -1662,7 +1662,7 @@ failed:
     return ret;
 }
 
-AVInputFormat ff_asf_o_demuxer = {
+const AVInputFormat ff_asf_o_demuxer = {
     .name           = "asf_o",
     .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
     .priv_data_size = sizeof(ASFContext),

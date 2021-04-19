@@ -316,7 +316,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_tiertexseq_demuxer = {
+const AVInputFormat ff_tiertexseq_demuxer = {
     .name           = "tiertexseq",
     .long_name      = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ"),
     .priv_data_size = sizeof(SeqDemuxContext),

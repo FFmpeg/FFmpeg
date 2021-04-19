@@ -163,7 +163,7 @@ static int alp_seek(AVFormatContext *s, int stream_index,
     return avio_seek(s->pb, hdr->header_size + 8, SEEK_SET);
 }
 
-AVInputFormat ff_alp_demuxer = {
+const AVInputFormat ff_alp_demuxer = {
     .name           = "alp",
     .long_name      = NULL_IF_CONFIG_SMALL("LEGO Racers ALP"),
     .priv_data_size = sizeof(ALPHeader),
@@ -291,7 +291,7 @@ static const AVClass alp_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT
 };
 
-AVOutputFormat ff_alp_muxer = {
+const AVOutputFormat ff_alp_muxer = {
     .name           = "alp",
     .long_name      = NULL_IF_CONFIG_SMALL("LEGO Racers ALP"),
     .extensions     = "tun,pcm",

@@ -76,7 +76,7 @@ static av_cold int wv_write_trailer(AVFormatContext *ctx)
     return 0;
 }
 
-AVOutputFormat ff_wv_muxer = {
+const AVOutputFormat ff_wv_muxer = {
     .name              = "wv",
     .long_name         = NULL_IF_CONFIG_SMALL("raw WavPack"),
     .mime_type         = "audio/x-wavpack",

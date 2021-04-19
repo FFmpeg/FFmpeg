@@ -127,7 +127,7 @@ static int wsaud_write_trailer(AVFormatContext *ctx)
     return 0;
 }
 
-AVOutputFormat ff_wsaud_muxer = {
+const AVOutputFormat ff_wsaud_muxer = {
     .name              = "wsaud",
     .long_name         = NULL_IF_CONFIG_SMALL("Westwood Studios audio"),
     .extensions        = "aud",

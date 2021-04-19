@@ -354,7 +354,7 @@ static int tedcaptions_read_seek(AVFormatContext *avf, int stream_index,
                                    min_ts, ts, max_ts, flags);
 }
 
-AVInputFormat ff_tedcaptions_demuxer = {
+const AVInputFormat ff_tedcaptions_demuxer = {
     .name           = "tedcaptions",
     .long_name      = NULL_IF_CONFIG_SMALL("TED Talks captions"),
     .priv_data_size = sizeof(TEDCaptionsDemuxer),

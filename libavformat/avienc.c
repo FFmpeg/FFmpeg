@@ -1011,7 +1011,7 @@ static const AVClass avi_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_avi_muxer = {
+const AVOutputFormat ff_avi_muxer = {
     .name           = "avi",
     .long_name      = NULL_IF_CONFIG_SMALL("AVI (Audio Video Interleaved)"),
     .mime_type      = "video/x-msvideo",

@@ -896,7 +896,7 @@ static int iff_read_packet(AVFormatContext *s,
     return ret;
 }
 
-AVInputFormat ff_iff_demuxer = {
+const AVInputFormat ff_iff_demuxer = {
     .name           = "iff",
     .long_name      = NULL_IF_CONFIG_SMALL("IFF (Interchange File Format)"),
     .priv_data_size = sizeof(IffDemuxContext),

@@ -186,7 +186,7 @@ static int s337m_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_s337m_demuxer = {
+const AVInputFormat ff_s337m_demuxer = {
     .name           = "s337m",
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 337M"),
     .read_probe     = s337m_probe,

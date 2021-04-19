@@ -227,7 +227,7 @@ static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
     return res;
 }
 
-AVInputFormat ff_pva_demuxer = {
+const AVInputFormat ff_pva_demuxer = {
     .name           = "pva",
     .long_name      = NULL_IF_CONFIG_SMALL("TechnoTrend PVA"),
     .priv_data_size = sizeof(PVAContext),

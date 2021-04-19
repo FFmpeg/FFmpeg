@@ -63,7 +63,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 FF_RAWVIDEO_DEMUXER_CLASS(ingenient)
 
-AVInputFormat ff_ingenient_demuxer = {
+const AVInputFormat ff_ingenient_demuxer = {
     .name           = "ingenient",
     .long_name      = NULL_IF_CONFIG_SMALL("raw Ingenient MJPEG"),
     .priv_data_size = sizeof(FFRawVideoDemuxerContext),

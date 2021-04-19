@@ -217,7 +217,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_mca_demuxer = {
+const AVInputFormat ff_mca_demuxer = {
     .name           = "mca",
     .long_name      = NULL_IF_CONFIG_SMALL("MCA Audio Format"),
     .priv_data_size = sizeof(MCADemuxContext),

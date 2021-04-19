@@ -57,7 +57,7 @@ static int mlp_probe(const AVProbeData *p)
 }
 
 FF_RAW_DEMUXER_CLASS(mlp)
-AVInputFormat ff_mlp_demuxer = {
+const AVInputFormat ff_mlp_demuxer = {
     .name           = "mlp",
     .long_name      = NULL_IF_CONFIG_SMALL("raw MLP"),
     .read_probe     = mlp_probe,
@@ -78,7 +78,7 @@ static int thd_probe(const AVProbeData *p)
 }
 
 FF_RAW_DEMUXER_CLASS(truehd)
-AVInputFormat ff_truehd_demuxer = {
+const AVInputFormat ff_truehd_demuxer = {
     .name           = "truehd",
     .long_name      = NULL_IF_CONFIG_SMALL("raw TrueHD"),
     .read_probe     = thd_probe,

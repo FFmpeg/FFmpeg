@@ -878,7 +878,7 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_avisynth_demuxer = {
+const AVInputFormat ff_avisynth_demuxer = {
     .name           = "avisynth",
     .long_name      = NULL_IF_CONFIG_SMALL("AviSynth script"),
     .priv_data_size = sizeof(AviSynthContext),

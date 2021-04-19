@@ -240,7 +240,7 @@ static int rtsp_write_close(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_rtsp_muxer = {
+const AVOutputFormat ff_rtsp_muxer = {
     .name              = "rtsp",
     .long_name         = NULL_IF_CONFIG_SMALL("RTSP output"),
     .priv_data_size    = sizeof(RTSPState),

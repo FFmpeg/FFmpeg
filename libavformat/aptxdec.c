@@ -95,7 +95,7 @@ static const AVClass aptx_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_aptx_demuxer = {
+const AVInputFormat ff_aptx_demuxer = {
     .name           = "aptx",
     .long_name      = NULL_IF_CONFIG_SMALL("raw aptX"),
     .extensions     = "aptx",
@@ -115,7 +115,7 @@ static const AVClass aptx_hd_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_aptx_hd_demuxer = {
+const AVInputFormat ff_aptx_hd_demuxer = {
     .name           = "aptx_hd",
     .long_name      = NULL_IF_CONFIG_SMALL("raw aptX HD"),
     .extensions     = "aptxhd",

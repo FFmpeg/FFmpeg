@@ -75,7 +75,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, st->codecpar->block_align);
 }
 
-AVInputFormat ff_boa_demuxer = {
+const AVInputFormat ff_boa_demuxer = {
     .name           = "boa",
     .long_name      = NULL_IF_CONFIG_SMALL("Black Ops Audio"),
     .read_probe     = probe,

@@ -133,7 +133,7 @@ static int dts_probe(const AVProbeData *p)
 }
 
 FF_RAW_DEMUXER_CLASS(dts)
-AVInputFormat ff_dts_demuxer = {
+const AVInputFormat ff_dts_demuxer = {
     .name           = "dts",
     .long_name      = NULL_IF_CONFIG_SMALL("raw DTS"),
     .read_probe     = dts_probe,

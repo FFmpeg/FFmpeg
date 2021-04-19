@@ -285,7 +285,7 @@ static int flic_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-AVInputFormat ff_flic_demuxer = {
+const AVInputFormat ff_flic_demuxer = {
     .name           = "flic",
     .long_name      = NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation"),
     .priv_data_size = sizeof(FlicDemuxContext),

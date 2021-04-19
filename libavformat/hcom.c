@@ -82,7 +82,7 @@ static int hcom_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_hcom_demuxer = {
+const AVInputFormat ff_hcom_demuxer = {
     .name           = "hcom",
     .long_name      = NULL_IF_CONFIG_SMALL("Macintosh HCOM"),
     .read_probe     = hcom_probe,

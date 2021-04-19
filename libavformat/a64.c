@@ -58,7 +58,7 @@ static int a64_write_header(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_a64_muxer = {
+const AVOutputFormat ff_a64_muxer = {
     .name           = "a64",
     .long_name      = NULL_IF_CONFIG_SMALL("a64 - video for Commodore 64"),
     .extensions     = "a64, A64",

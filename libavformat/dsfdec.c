@@ -199,7 +199,7 @@ static int dsf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_dsf_demuxer = {
+const AVInputFormat ff_dsf_demuxer = {
     .name           = "dsf",
     .long_name      = NULL_IF_CONFIG_SMALL("DSD Stream File (DSF)"),
     .priv_data_size = sizeof(DSFContext),

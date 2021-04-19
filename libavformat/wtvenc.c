@@ -829,7 +829,7 @@ static int write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_wtv_muxer = {
+const AVOutputFormat ff_wtv_muxer = {
     .name           = "wtv",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
     .extensions     = "wtv",

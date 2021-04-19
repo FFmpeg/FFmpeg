@@ -191,7 +191,7 @@ static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-AVInputFormat ff_threedostr_demuxer = {
+const AVInputFormat ff_threedostr_demuxer = {
     .name           = "3dostr",
     .long_name      = NULL_IF_CONFIG_SMALL("3DO STR"),
     .read_probe     = threedostr_probe,

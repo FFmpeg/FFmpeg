@@ -394,7 +394,7 @@ static int64_t nuv_read_dts(AVFormatContext *s, int stream_index,
 }
 
 
-AVInputFormat ff_nuv_demuxer = {
+const AVInputFormat ff_nuv_demuxer = {
     .name           = "nuv",
     .long_name      = NULL_IF_CONFIG_SMALL("NuppelVideo"),
     .priv_data_size = sizeof(NUVContext),

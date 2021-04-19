@@ -291,7 +291,7 @@ static int vid_read_packet(AVFormatContext *s,
     }
 }
 
-AVInputFormat ff_bethsoftvid_demuxer = {
+const AVInputFormat ff_bethsoftvid_demuxer = {
     .name           = "bethsoftvid",
     .long_name      = NULL_IF_CONFIG_SMALL("Bethesda Softworks VID"),
     .priv_data_size = sizeof(BVID_DemuxContext),

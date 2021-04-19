@@ -121,7 +121,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_lmlm4_demuxer = {
+const AVInputFormat ff_lmlm4_demuxer = {
     .name           = "lmlm4",
     .long_name      = NULL_IF_CONFIG_SMALL("raw lmlm4"),
     .read_probe     = lmlm4_probe,

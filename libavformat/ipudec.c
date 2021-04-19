@@ -75,7 +75,7 @@ static const AVClass ipu_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_ipu_demuxer = {
+const AVInputFormat ff_ipu_demuxer = {
     .name           = "ipu",
     .long_name      = NULL_IF_CONFIG_SMALL("raw IPU Video"),
     .read_probe     = ipu_read_probe,

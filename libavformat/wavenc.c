@@ -504,7 +504,7 @@ static const AVClass wav_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_wav_muxer = {
+const AVOutputFormat ff_wav_muxer = {
     .name              = "wav",
     .long_name         = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
     .mime_type         = "audio/x-wav",
@@ -603,7 +603,7 @@ static int w64_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_w64_muxer = {
+const AVOutputFormat ff_w64_muxer = {
     .name              = "w64",
     .long_name         = NULL_IF_CONFIG_SMALL("Sony Wave64"),
     .extensions        = "w64",

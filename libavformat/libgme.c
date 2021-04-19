@@ -197,7 +197,7 @@ static const AVClass class_gme = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_libgme_demuxer = {
+const AVInputFormat ff_libgme_demuxer = {
     .name           = "libgme",
     .long_name      = NULL_IF_CONFIG_SMALL("Game Music Emu demuxer"),
     .priv_data_size = sizeof(GMEContext),

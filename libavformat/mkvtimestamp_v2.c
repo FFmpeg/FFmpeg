@@ -40,7 +40,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_mkvtimestamp_v2_muxer = {
+const AVOutputFormat ff_mkvtimestamp_v2_muxer = {
     .name         = "mkvtimestamp_v2",
     .long_name    = NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
     .audio_codec  = AV_CODEC_ID_NONE,

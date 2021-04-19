@@ -107,7 +107,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_iv8_demuxer = {
+const AVInputFormat ff_iv8_demuxer = {
     .name           = "iv8",
     .long_name      = NULL_IF_CONFIG_SMALL("IndigoVision 8000 video"),
     .read_probe     = probe,

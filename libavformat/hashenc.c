@@ -171,7 +171,7 @@ static const AVClass hashenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_hash_muxer = {
+const AVOutputFormat ff_hash_muxer = {
     .name              = "hash",
     .long_name         = NULL_IF_CONFIG_SMALL("Hash testing"),
     .priv_data_size    = sizeof(struct HashContext),
@@ -195,7 +195,7 @@ static const AVClass md5enc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_md5_muxer = {
+const AVOutputFormat ff_md5_muxer = {
     .name              = "md5",
     .long_name         = NULL_IF_CONFIG_SMALL("MD5 testing"),
     .priv_data_size    = sizeof(struct HashContext),
@@ -219,7 +219,7 @@ static const AVClass streamhashenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_streamhash_muxer = {
+const AVOutputFormat ff_streamhash_muxer = {
     .name              = "streamhash",
     .long_name         = NULL_IF_CONFIG_SMALL("Per-stream hash testing"),
     .priv_data_size    = sizeof(struct HashContext),
@@ -330,7 +330,7 @@ static const AVClass framehash_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_framehash_muxer = {
+const AVOutputFormat ff_framehash_muxer = {
     .name              = "framehash",
     .long_name         = NULL_IF_CONFIG_SMALL("Per-frame hash testing"),
     .priv_data_size    = sizeof(struct HashContext),
@@ -354,7 +354,7 @@ static const AVClass framemd5_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_framemd5_muxer = {
+const AVOutputFormat ff_framemd5_muxer = {
     .name              = "framemd5",
     .long_name         = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing"),
     .priv_data_size    = sizeof(struct HashContext),

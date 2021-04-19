@@ -2464,7 +2464,7 @@ static const AVClass sdp_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_sdp_demuxer = {
+const AVInputFormat ff_sdp_demuxer = {
     .name           = "sdp",
     .long_name      = NULL_IF_CONFIG_SMALL("SDP"),
     .priv_data_size = sizeof(RTSPState),
@@ -2623,7 +2623,7 @@ static const AVClass rtp_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_rtp_demuxer = {
+const AVInputFormat ff_rtp_demuxer = {
     .name           = "rtp",
     .long_name      = NULL_IF_CONFIG_SMALL("RTP input"),
     .priv_data_size = sizeof(RTSPState),

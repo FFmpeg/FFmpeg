@@ -328,7 +328,7 @@ static int yuv4_init(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat ff_yuv4mpegpipe_muxer = {
+const AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .name              = "yuv4mpegpipe",
     .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
     .extensions        = "y4m",

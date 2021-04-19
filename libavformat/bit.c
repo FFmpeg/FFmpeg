@@ -109,7 +109,7 @@ static int read_packet(AVFormatContext *s,
     return 0;
 }
 
-AVInputFormat ff_bit_demuxer = {
+const AVInputFormat ff_bit_demuxer = {
     .name        = "bit",
     .long_name   = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
     .read_probe  = probe,
@@ -155,7 +155,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_bit_muxer = {
+const AVOutputFormat ff_bit_muxer = {
     .name         = "bit",
     .long_name    = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
     .mime_type    = "audio/bit",

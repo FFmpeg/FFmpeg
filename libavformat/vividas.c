@@ -781,7 +781,7 @@ static int viv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-AVInputFormat ff_vividas_demuxer = {
+const AVInputFormat ff_vividas_demuxer = {
     .name           = "vividas",
     .long_name      = NULL_IF_CONFIG_SMALL("Vividas VIV"),
     .priv_data_size = sizeof(VividasDemuxContext),

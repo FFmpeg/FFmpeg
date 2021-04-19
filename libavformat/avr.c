@@ -87,7 +87,7 @@ static int avr_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_avr_demuxer = {
+const AVInputFormat ff_avr_demuxer = {
     .name           = "avr",
     .long_name      = NULL_IF_CONFIG_SMALL("AVR (Audio Visual Research)"),
     .read_probe     = avr_probe,

@@ -89,7 +89,7 @@ static int binka_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVInputFormat ff_binka_demuxer = {
+const AVInputFormat ff_binka_demuxer = {
     .name           = "binka",
     .long_name      = NULL_IF_CONFIG_SMALL("Bink Audio"),
     .read_probe     = binka_probe,

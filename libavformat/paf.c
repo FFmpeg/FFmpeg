@@ -271,7 +271,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-AVInputFormat ff_paf_demuxer = {
+const AVInputFormat ff_paf_demuxer = {
     .name           = "paf",
     .long_name      = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File"),
     .priv_data_size = sizeof(PAFDemuxContext),

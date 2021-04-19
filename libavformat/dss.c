@@ -354,7 +354,7 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
 }
 
 
-AVInputFormat ff_dss_demuxer = {
+const AVInputFormat ff_dss_demuxer = {
     .name           = "dss",
     .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard (DSS)"),
     .priv_data_size = sizeof(DSSDemuxContext),

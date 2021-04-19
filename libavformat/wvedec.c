@@ -52,7 +52,7 @@ static int wve_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_wve_demuxer = {
+const AVInputFormat ff_wve_demuxer = {
     .name           = "wve",
     .long_name      = NULL_IF_CONFIG_SMALL("Psion 3 audio"),
     .read_probe     = wve_probe,

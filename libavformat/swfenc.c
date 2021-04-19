@@ -539,7 +539,7 @@ static void swf_deinit(AVFormatContext *s)
 }
 
 #if CONFIG_SWF_MUXER
-AVOutputFormat ff_swf_muxer = {
+const AVOutputFormat ff_swf_muxer = {
     .name              = "swf",
     .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
     .mime_type         = "application/x-shockwave-flash",
@@ -555,7 +555,7 @@ AVOutputFormat ff_swf_muxer = {
 };
 #endif
 #if CONFIG_AVM2_MUXER
-AVOutputFormat ff_avm2_muxer = {
+const AVOutputFormat ff_avm2_muxer = {
     .name              = "avm2",
     .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash) (AVM2)"),
     .mime_type         = "application/x-shockwave-flash",

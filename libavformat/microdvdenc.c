@@ -55,7 +55,7 @@ static int microdvd_write_packet(AVFormatContext *avf, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_microdvd_muxer = {
+const AVOutputFormat ff_microdvd_muxer = {
     .name           = "microdvd",
     .long_name      = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
     .mime_type      = "text/x-microdvd",

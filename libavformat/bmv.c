@@ -125,7 +125,7 @@ static int bmv_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_bmv_demuxer = {
+const AVInputFormat ff_bmv_demuxer = {
     .name           = "bmv",
     .long_name      = NULL_IF_CONFIG_SMALL("Discworld II BMV"),
     .priv_data_size = sizeof(BMVContext),

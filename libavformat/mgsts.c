@@ -96,7 +96,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_mgsts_demuxer = {
+const AVInputFormat ff_mgsts_demuxer = {
     .name        = "mgsts",
     .long_name   = NULL_IF_CONFIG_SMALL("Metal Gear Solid: The Twin Snakes"),
     .read_probe  = read_probe,

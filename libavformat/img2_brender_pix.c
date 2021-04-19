@@ -45,7 +45,7 @@ static const AVClass image2_brender_pix_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVInputFormat ff_image2_brender_pix_demuxer = {
+const AVInputFormat ff_image2_brender_pix_demuxer = {
     .name           = "brender_pix",
     .long_name      = NULL_IF_CONFIG_SMALL("BRender PIX image"),
     .priv_data_size = sizeof(VideoDemuxData),

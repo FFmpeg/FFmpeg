@@ -150,7 +150,7 @@ static int redspark_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_redspark_demuxer = {
+const AVInputFormat ff_redspark_demuxer = {
     .name           =   "redspark",
     .long_name      =   NULL_IF_CONFIG_SMALL("RedSpark"),
     .priv_data_size =   sizeof(RedSparkContext),

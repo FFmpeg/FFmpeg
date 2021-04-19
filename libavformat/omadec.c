@@ -624,7 +624,7 @@ wipe:
     return err;
 }
 
-AVInputFormat ff_oma_demuxer = {
+const AVInputFormat ff_oma_demuxer = {
     .name           = "oma",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
     .priv_data_size = sizeof(OMAContext),

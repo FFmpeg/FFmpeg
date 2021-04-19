@@ -673,7 +673,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_spdif_muxer = {
+const AVOutputFormat ff_spdif_muxer = {
     .name              = "spdif",
     .long_name         = NULL_IF_CONFIG_SMALL("IEC 61937 (used on S/PDIF - IEC958)"),
     .extensions        = "spdif",

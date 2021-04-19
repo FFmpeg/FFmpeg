@@ -226,7 +226,7 @@ static const AVClass ass_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_ass_muxer = {
+const AVOutputFormat ff_ass_muxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .mime_type      = "text/x-ass",

@@ -23,7 +23,7 @@
 #include "rawdec.h"
 
 FF_RAW_DEMUXER_CLASS(sbc)
-AVInputFormat ff_sbc_demuxer = {
+const AVInputFormat ff_sbc_demuxer = {
     .name           = "sbc",
     .long_name      = NULL_IF_CONFIG_SMALL("raw SBC (low-complexity subband codec)"),
     .extensions     = "sbc,msbc",

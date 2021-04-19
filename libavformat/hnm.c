@@ -158,7 +158,7 @@ static int hnm_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-AVInputFormat ff_hnm_demuxer = {
+const AVInputFormat ff_hnm_demuxer = {
     .name           = "hnm",
     .long_name      = NULL_IF_CONFIG_SMALL("Cryo HNM v4"),
     .priv_data_size = sizeof(Hnm4DemuxContext),

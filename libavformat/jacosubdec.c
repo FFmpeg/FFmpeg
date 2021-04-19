@@ -276,7 +276,7 @@ static int jacosub_read_seek(AVFormatContext *s, int stream_index,
                                    min_ts, ts, max_ts, flags);
 }
 
-AVInputFormat ff_jacosub_demuxer = {
+const AVInputFormat ff_jacosub_demuxer = {
     .name           = "jacosub",
     .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
     .priv_data_size = sizeof(JACOsubContext),

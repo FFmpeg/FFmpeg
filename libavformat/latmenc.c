@@ -256,7 +256,7 @@ static int latm_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
     return ret;
 }
 
-AVOutputFormat ff_latm_muxer = {
+const AVOutputFormat ff_latm_muxer = {
     .name           = "latm",
     .long_name      = NULL_IF_CONFIG_SMALL("LOAS/LATM"),
     .mime_type      = "audio/MP4A-LATM",

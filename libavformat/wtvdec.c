@@ -1124,7 +1124,7 @@ static int read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_wtv_demuxer = {
+const AVInputFormat ff_wtv_demuxer = {
     .name           = "wtv",
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
     .priv_data_size = sizeof(WtvContext),

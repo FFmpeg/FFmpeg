@@ -136,7 +136,7 @@ static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     return HEADER_SIZE + size;
 }
 
-AVInputFormat ff_msnwc_tcp_demuxer = {
+const AVInputFormat ff_msnwc_tcp_demuxer = {
     .name        = "msnwctcp",
     .long_name   = NULL_IF_CONFIG_SMALL("MSN TCP Webcam stream"),
     .read_probe  = msnwc_tcp_probe,

@@ -266,7 +266,7 @@ typedef struct PESContext {
     int merged_st;
 } PESContext;
 
-extern AVInputFormat ff_mpegts_demuxer;
+extern const AVInputFormat ff_mpegts_demuxer;
 
 static struct Program * get_program(MpegTSContext *ts, unsigned int programid)
 {
@@ -3389,7 +3389,7 @@ void avpriv_mpegts_parse_close(MpegTSContext *ts)
     av_free(ts);
 }
 
-AVInputFormat ff_mpegts_demuxer = {
+const AVInputFormat ff_mpegts_demuxer = {
     .name           = "mpegts",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
     .priv_data_size = sizeof(MpegTSContext),
@@ -3402,7 +3402,7 @@ AVInputFormat ff_mpegts_demuxer = {
     .priv_class     = &mpegts_class,
 };
 
-AVInputFormat ff_mpegtsraw_demuxer = {
+const AVInputFormat ff_mpegtsraw_demuxer = {
     .name           = "mpegtsraw",
     .long_name      = NULL_IF_CONFIG_SMALL("raw MPEG-TS (MPEG-2 Transport Stream)"),
     .priv_data_size = sizeof(MpegTSContext),

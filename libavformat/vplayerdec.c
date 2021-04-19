@@ -118,7 +118,7 @@ static int vplayer_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_vplayer_demuxer = {
+const AVInputFormat ff_vplayer_demuxer = {
     .name           = "vplayer",
     .long_name      = NULL_IF_CONFIG_SMALL("VPlayer subtitles"),
     .priv_data_size = sizeof(VPlayerContext),

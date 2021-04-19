@@ -187,7 +187,7 @@ static const AVClass rtp_mpegts_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVOutputFormat ff_rtp_mpegts_muxer = {
+const AVOutputFormat ff_rtp_mpegts_muxer = {
     .name              = "rtp_mpegts",
     .long_name         = NULL_IF_CONFIG_SMALL("RTP/mpegts output format"),
     .priv_data_size    = sizeof(MuxChain),

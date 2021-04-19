@@ -98,7 +98,7 @@ static int voc_read_seek(AVFormatContext *s, int stream_index,
     return -1;
 }
 
-AVInputFormat ff_voc_demuxer = {
+const AVInputFormat ff_voc_demuxer = {
     .name           = "voc",
     .long_name      = NULL_IF_CONFIG_SMALL("Creative Voice"),
     .priv_data_size = sizeof(VocDecContext),
