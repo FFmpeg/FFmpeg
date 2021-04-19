@@ -393,7 +393,7 @@ static const AVFilterPad gblur_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_gblur = {
+const AVFilter ff_vf_gblur = {
     .name          = "gblur",
     .description   = NULL_IF_CONFIG_SMALL("Apply Gaussian Blur filter."),
     .priv_size     = sizeof(GBlurContext),

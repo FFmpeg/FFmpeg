@@ -600,7 +600,7 @@ static const AVFilterPad rotate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_rotate = {
+const AVFilter ff_vf_rotate = {
     .name          = "rotate",
     .description   = NULL_IF_CONFIG_SMALL("Rotate the input image."),
     .priv_size     = sizeof(RotContext),

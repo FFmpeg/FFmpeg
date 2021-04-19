@@ -375,7 +375,7 @@ static const AVFilterPad midequalizer_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_midequalizer = {
+const AVFilter ff_vf_midequalizer = {
     .name          = "midequalizer",
     .description   = NULL_IF_CONFIG_SMALL("Apply Midway Equalization."),
     .priv_size     = sizeof(MidEqualizerContext),

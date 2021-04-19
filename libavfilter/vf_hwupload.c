@@ -250,7 +250,7 @@ static const AVFilterPad hwupload_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hwupload = {
+const AVFilter ff_vf_hwupload = {
     .name          = "hwupload",
     .description   = NULL_IF_CONFIG_SMALL("Upload a normal frame to a hardware frame"),
     .uninit        = hwupload_uninit,

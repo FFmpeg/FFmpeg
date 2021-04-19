@@ -1112,7 +1112,7 @@ static const AVFilterPad stereo3d_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_stereo3d = {
+const AVFilter ff_vf_stereo3d = {
     .name          = "stereo3d",
     .description   = NULL_IF_CONFIG_SMALL("Convert video stereoscopic 3D view."),
     .priv_size     = sizeof(Stereo3DContext),

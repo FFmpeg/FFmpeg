@@ -357,7 +357,7 @@ static const AVOption colortemperature_options[] = {
 
 AVFILTER_DEFINE_CLASS(colortemperature);
 
-AVFilter ff_vf_colortemperature = {
+const AVFilter ff_vf_colortemperature = {
     .name          = "colortemperature",
     .description   = NULL_IF_CONFIG_SMALL("Adjust color temperature of video."),
     .priv_size     = sizeof(ColorTemperatureContext),

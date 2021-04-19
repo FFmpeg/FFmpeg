@@ -258,7 +258,7 @@ static const AVFilterPad blackdetect_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_blackdetect = {
+const AVFilter ff_vf_blackdetect = {
     .name          = "blackdetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
     .priv_size     = sizeof(BlackDetectContext),

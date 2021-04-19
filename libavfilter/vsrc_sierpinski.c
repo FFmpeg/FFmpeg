@@ -223,7 +223,7 @@ static const AVFilterPad sierpinski_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_sierpinski = {
+const AVFilter ff_vsrc_sierpinski = {
     .name          = "sierpinski",
     .description   = NULL_IF_CONFIG_SMALL("Render a Sierpinski fractal."),
     .priv_size     = sizeof(SierpinskiContext),

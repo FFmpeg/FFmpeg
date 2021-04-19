@@ -398,7 +398,7 @@ static const AVFilterPad avfilter_vf_delogo_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_delogo = {
+const AVFilter ff_vf_delogo = {
     .name          = "delogo",
     .description   = NULL_IF_CONFIG_SMALL("Remove logo from input video."),
     .priv_size     = sizeof(DelogoContext),

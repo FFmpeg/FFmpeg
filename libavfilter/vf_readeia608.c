@@ -556,7 +556,7 @@ static const AVFilterPad readeia608_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_readeia608 = {
+const AVFilter ff_vf_readeia608 = {
     .name          = "readeia608",
     .description   = NULL_IF_CONFIG_SMALL("Read EIA-608 Closed Caption codes from input video and write them to frame metadata."),
     .priv_size     = sizeof(ReadEIA608Context),

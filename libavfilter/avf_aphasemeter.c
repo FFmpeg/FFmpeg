@@ -385,7 +385,7 @@ static const AVFilterPad inputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_aphasemeter = {
+const AVFilter ff_avf_aphasemeter = {
     .name          = "aphasemeter",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to phase meter video output."),
     .init          = init,

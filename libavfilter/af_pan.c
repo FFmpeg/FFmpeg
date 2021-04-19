@@ -448,7 +448,7 @@ static const AVFilterPad pan_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_pan = {
+const AVFilter ff_af_pan = {
     .name          = "pan",
     .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)."),
     .priv_size     = sizeof(PanContext),

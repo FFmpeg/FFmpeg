@@ -375,7 +375,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_stereotools = {
+const AVFilter ff_af_stereotools = {
     .name           = "stereotools",
     .description    = NULL_IF_CONFIG_SMALL("Apply various stereo tools."),
     .query_formats  = query_formats,

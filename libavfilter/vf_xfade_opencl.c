@@ -424,7 +424,7 @@ static const AVFilterPad xfade_opencl_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_xfade_opencl = {
+const AVFilter ff_vf_xfade_opencl = {
     .name            = "xfade_opencl",
     .description     = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
     .priv_size       = sizeof(XFadeOpenCLContext),

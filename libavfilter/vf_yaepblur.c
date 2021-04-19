@@ -335,7 +335,7 @@ static const AVOption yaepblur_options[] = {
 
 AVFILTER_DEFINE_CLASS(yaepblur);
 
-AVFilter ff_vf_yaepblur = {
+const AVFilter ff_vf_yaepblur = {
     .name            = "yaepblur",
     .description     = NULL_IF_CONFIG_SMALL("Yet another edge preserving blur filter."),
     .priv_size       = sizeof(YAEPContext),

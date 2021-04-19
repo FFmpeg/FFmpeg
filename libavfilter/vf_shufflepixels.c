@@ -443,7 +443,7 @@ static const AVFilterPad shufflepixels_outputs[] = {
     { NULL },
 };
 
-AVFilter ff_vf_shufflepixels = {
+const AVFilter ff_vf_shufflepixels = {
     .name          = "shufflepixels",
     .description   = NULL_IF_CONFIG_SMALL("Shuffle video pixels."),
     .priv_size     = sizeof(ShufflePixelsContext),

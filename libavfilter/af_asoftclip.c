@@ -474,7 +474,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_asoftclip = {
+const AVFilter ff_af_asoftclip = {
     .name           = "asoftclip",
     .description    = NULL_IF_CONFIG_SMALL("Audio Soft Clipper."),
     .query_formats  = query_formats,

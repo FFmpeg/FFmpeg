@@ -160,7 +160,7 @@ static const AVFilterPad avfilter_af_tremolo_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_tremolo = {
+const AVFilter ff_af_tremolo = {
     .name          = "tremolo",
     .description   = NULL_IF_CONFIG_SMALL("Apply tremolo effect."),
     .priv_size     = sizeof(TremoloContext),

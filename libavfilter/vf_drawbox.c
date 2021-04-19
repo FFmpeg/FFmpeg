@@ -347,7 +347,7 @@ static const AVFilterPad drawbox_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_drawbox = {
+const AVFilter ff_vf_drawbox = {
     .name          = "drawbox",
     .description   = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
     .priv_size     = sizeof(DrawBoxContext),
@@ -481,7 +481,7 @@ static const AVFilterPad drawgrid_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_drawgrid = {
+const AVFilter ff_vf_drawgrid = {
     .name          = "drawgrid",
     .description   = NULL_IF_CONFIG_SMALL("Draw a colored grid on the input video."),
     .priv_size     = sizeof(DrawBoxContext),

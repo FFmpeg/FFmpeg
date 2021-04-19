@@ -216,7 +216,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_haas = {
+const AVFilter ff_af_haas = {
     .name           = "haas",
     .description    = NULL_IF_CONFIG_SMALL("Apply Haas Stereo Enhancer."),
     .query_formats  = query_formats,

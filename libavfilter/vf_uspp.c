@@ -493,7 +493,7 @@ static const AVFilterPad uspp_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_uspp = {
+const AVFilter ff_vf_uspp = {
     .name            = "uspp",
     .description     = NULL_IF_CONFIG_SMALL("Apply Ultra Simple / Slow Post-processing filter."),
     .priv_size       = sizeof(USPPContext),

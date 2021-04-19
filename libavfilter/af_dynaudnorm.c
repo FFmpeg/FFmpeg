@@ -868,7 +868,7 @@ static const AVFilterPad avfilter_af_dynaudnorm_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_dynaudnorm = {
+const AVFilter ff_af_dynaudnorm = {
     .name          = "dynaudnorm",
     .description   = NULL_IF_CONFIG_SMALL("Dynamic Audio Normalizer."),
     .query_formats = query_formats,

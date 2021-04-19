@@ -43,7 +43,7 @@ static const AVFilterPad avfilter_af_anull_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_anull = {
+const AVFilter ff_af_anull = {
     .name          = "anull",
     .description   = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
     .inputs        = avfilter_af_anull_inputs,

@@ -205,7 +205,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_amultiply = {
+const AVFilter ff_af_amultiply = {
     .name           = "amultiply",
     .description    = NULL_IF_CONFIG_SMALL("Multiply two audio streams."),
     .priv_size      = sizeof(AudioMultiplyContext),

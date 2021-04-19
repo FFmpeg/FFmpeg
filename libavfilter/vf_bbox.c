@@ -153,7 +153,7 @@ static const AVFilterPad bbox_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_bbox = {
+const AVFilter ff_vf_bbox = {
     .name          = "bbox",
     .description   = NULL_IF_CONFIG_SMALL("Compute bounding box for each frame."),
     .priv_size     = sizeof(BBoxContext),

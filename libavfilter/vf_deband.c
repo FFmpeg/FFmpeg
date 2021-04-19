@@ -471,7 +471,7 @@ static const AVFilterPad avfilter_vf_deband_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_deband = {
+const AVFilter ff_vf_deband = {
     .name          = "deband",
     .description   = NULL_IF_CONFIG_SMALL("Debands video."),
     .priv_size     = sizeof(DebandContext),

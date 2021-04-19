@@ -377,7 +377,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_zoompan = {
+const AVFilter ff_vf_zoompan = {
     .name          = "zoompan",
     .description   = NULL_IF_CONFIG_SMALL("Apply Zoom & Pan effect."),
     .priv_size     = sizeof(ZPContext),

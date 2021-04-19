@@ -328,7 +328,7 @@ static const AVFilterPad maskedminmax_outputs[] = {
 #define maskedmin_options maskedminmax_options
 AVFILTER_DEFINE_CLASS(maskedmin);
 
-AVFilter ff_vf_maskedmin = {
+const AVFilter ff_vf_maskedmin = {
     .name          = "maskedmin",
     .description   = NULL_IF_CONFIG_SMALL("Apply filtering with minimum difference of two streams."),
     .priv_class    = &maskedmin_class,
@@ -346,7 +346,7 @@ AVFilter ff_vf_maskedmin = {
 #define maskedmax_options maskedminmax_options
 AVFILTER_DEFINE_CLASS(maskedmax);
 
-AVFilter ff_vf_maskedmax = {
+const AVFilter ff_vf_maskedmax = {
     .name          = "maskedmax",
     .description   = NULL_IF_CONFIG_SMALL("Apply filtering with maximum difference of two streams."),
     .priv_class    = &maskedmax_class,

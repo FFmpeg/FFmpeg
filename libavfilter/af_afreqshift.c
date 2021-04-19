@@ -390,7 +390,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_afreqshift = {
+const AVFilter ff_af_afreqshift = {
     .name            = "afreqshift",
     .description     = NULL_IF_CONFIG_SMALL("Apply frequency shifting to input audio."),
     .query_formats   = query_formats,
@@ -412,7 +412,7 @@ static const AVOption aphaseshift_options[] = {
 
 AVFILTER_DEFINE_CLASS(aphaseshift);
 
-AVFilter ff_af_aphaseshift = {
+const AVFilter ff_af_aphaseshift = {
     .name            = "aphaseshift",
     .description     = NULL_IF_CONFIG_SMALL("Apply phase shifting to input audio."),
     .query_formats   = query_formats,

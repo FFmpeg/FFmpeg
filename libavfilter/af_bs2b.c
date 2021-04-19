@@ -211,7 +211,7 @@ static const AVFilterPad bs2b_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_bs2b = {
+const AVFilter ff_af_bs2b = {
     .name           = "bs2b",
     .description    = NULL_IF_CONFIG_SMALL("Bauer stereo-to-binaural filter."),
     .query_formats  = query_formats,

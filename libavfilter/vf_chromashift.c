@@ -446,7 +446,7 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(chromashift);
 
-AVFilter ff_vf_chromashift = {
+const AVFilter ff_vf_chromashift = {
     .name          = "chromashift",
     .description   = NULL_IF_CONFIG_SMALL("Shift chroma."),
     .priv_size     = sizeof(ChromaShiftContext),
@@ -475,7 +475,7 @@ static const AVOption rgbashift_options[] = {
 
 AVFILTER_DEFINE_CLASS(rgbashift);
 
-AVFilter ff_vf_rgbashift = {
+const AVFilter ff_vf_rgbashift = {
     .name          = "rgbashift",
     .description   = NULL_IF_CONFIG_SMALL("Shift RGBA."),
     .priv_size     = sizeof(ChromaShiftContext),

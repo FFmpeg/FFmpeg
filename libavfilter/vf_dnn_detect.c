@@ -407,7 +407,7 @@ static const AVFilterPad dnn_detect_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_dnn_detect = {
+const AVFilter ff_vf_dnn_detect = {
     .name          = "dnn_detect",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN detect filter to the input."),
     .priv_size     = sizeof(DnnDetectContext),

@@ -401,7 +401,7 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(dedot);
 
-AVFilter ff_vf_dedot = {
+const AVFilter ff_vf_dedot = {
     .name          = "dedot",
     .description   = NULL_IF_CONFIG_SMALL("Reduce cross-luminance and cross-color."),
     .priv_size     = sizeof(DedotContext),

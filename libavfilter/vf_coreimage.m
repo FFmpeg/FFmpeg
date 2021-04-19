@@ -656,7 +656,7 @@ static const AVOption coreimage_options[] = {
 
 AVFILTER_DEFINE_CLASS(coreimage);
 
-AVFilter ff_vf_coreimage = {
+const AVFilter ff_vf_coreimage = {
     .name          = "coreimage",
     .description   = NULL_IF_CONFIG_SMALL("Video filtering using CoreImage API."),
     .init          = init,
@@ -677,7 +677,7 @@ static const AVOption coreimagesrc_options[] = {
 
 AVFILTER_DEFINE_CLASS(coreimagesrc);
 
-AVFilter ff_vsrc_coreimagesrc = {
+const AVFilter ff_vsrc_coreimagesrc = {
     .name          = "coreimagesrc",
     .description   = NULL_IF_CONFIG_SMALL("Video source using image generators of CoreImage API."),
     .init          = init_src,

@@ -230,7 +230,7 @@ static const AVOption colorkey_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorkey_opencl);
 
-AVFilter ff_vf_colorkey_opencl = {
+const AVFilter ff_vf_colorkey_opencl = {
     .name           = "colorkey_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
     .priv_size      = sizeof(ColorkeyOpenCLContext),

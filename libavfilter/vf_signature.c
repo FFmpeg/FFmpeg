@@ -758,7 +758,7 @@ static const AVFilterPad signature_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_signature = {
+const AVFilter ff_vf_signature = {
     .name          = "signature",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the MPEG-7 video signature"),
     .priv_size     = sizeof(SignatureContext),

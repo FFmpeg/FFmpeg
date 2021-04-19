@@ -231,7 +231,7 @@ static const AVFilterPad earwax_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_earwax = {
+const AVFilter ff_af_earwax = {
     .name           = "earwax",
     .description    = NULL_IF_CONFIG_SMALL("Widen the stereo image."),
     .query_formats  = query_formats,

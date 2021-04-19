@@ -205,7 +205,7 @@ static const AVOption lumakey_options[] = {
 
 AVFILTER_DEFINE_CLASS(lumakey);
 
-AVFilter ff_vf_lumakey = {
+const AVFilter ff_vf_lumakey = {
     .name          = "lumakey",
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain luma into transparency."),
     .priv_size     = sizeof(LumakeyContext),

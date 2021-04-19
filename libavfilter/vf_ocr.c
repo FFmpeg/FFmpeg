@@ -146,7 +146,7 @@ static const AVFilterPad ocr_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_ocr = {
+const AVFilter ff_vf_ocr = {
     .name          = "ocr",
     .description   = NULL_IF_CONFIG_SMALL("Optical Character Recognition."),
     .priv_size     = sizeof(OCRContext),

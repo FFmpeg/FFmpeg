@@ -262,7 +262,7 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(chromanr);
 
-AVFilter ff_vf_chromanr = {
+const AVFilter ff_vf_chromanr = {
     .name          = "chromanr",
     .description   = NULL_IF_CONFIG_SMALL("Reduce chrominance noise."),
     .priv_size     = sizeof(ChromaNRContext),

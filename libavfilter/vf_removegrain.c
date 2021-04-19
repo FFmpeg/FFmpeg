@@ -648,7 +648,7 @@ static const AVFilterPad removegrain_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_removegrain = {
+const AVFilter ff_vf_removegrain = {
     .name          = "removegrain",
     .description   = NULL_IF_CONFIG_SMALL("Remove grain."),
     .priv_size     = sizeof(RemoveGrainContext),

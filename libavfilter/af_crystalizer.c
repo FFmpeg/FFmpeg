@@ -456,7 +456,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_crystalizer = {
+const AVFilter ff_af_crystalizer = {
     .name           = "crystalizer",
     .description    = NULL_IF_CONFIG_SMALL("Simple audio noise sharpening filter."),
     .query_formats  = query_formats,

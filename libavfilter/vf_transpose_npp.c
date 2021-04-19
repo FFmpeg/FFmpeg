@@ -473,7 +473,7 @@ static const AVFilterPad npptranspose_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_transpose_npp = {
+const AVFilter ff_vf_transpose_npp = {
     .name           = "transpose_npp",
     .description    = NULL_IF_CONFIG_SMALL("NVIDIA Performance Primitives video transpose"),
     .init           = npptranspose_init,

@@ -137,7 +137,7 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_asrc_anullsrc = {
+const AVFilter ff_asrc_anullsrc = {
     .name          = "anullsrc",
     .description   = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
     .init          = init,

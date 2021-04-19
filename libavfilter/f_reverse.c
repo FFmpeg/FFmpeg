@@ -133,7 +133,7 @@ static const AVFilterPad reverse_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_reverse = {
+const AVFilter ff_vf_reverse = {
     .name        = "reverse",
     .description = NULL_IF_CONFIG_SMALL("Reverse a clip."),
     .priv_size   = sizeof(ReverseContext),
@@ -294,7 +294,7 @@ static const AVFilterPad areverse_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_areverse = {
+const AVFilter ff_af_areverse = {
     .name          = "areverse",
     .description   = NULL_IF_CONFIG_SMALL("Reverse an audio clip."),
     .query_formats = query_formats,

@@ -968,7 +968,7 @@ static const AVFilterPad firequalizer_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_firequalizer = {
+const AVFilter ff_af_firequalizer = {
     .name               = "firequalizer",
     .description        = NULL_IF_CONFIG_SMALL("Finite Impulse Response Equalizer."),
     .uninit             = uninit,

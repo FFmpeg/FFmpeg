@@ -193,7 +193,7 @@ static const AVFilterPad qp_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_qp = {
+const AVFilter ff_vf_qp = {
     .name          = "qp",
     .description   = NULL_IF_CONFIG_SMALL("Change video quantization parameters."),
     .priv_size     = sizeof(QPContext),

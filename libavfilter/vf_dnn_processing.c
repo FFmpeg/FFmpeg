@@ -444,7 +444,7 @@ static const AVFilterPad dnn_processing_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_dnn_processing = {
+const AVFilter ff_vf_dnn_processing = {
     .name          = "dnn_processing",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN processing filter to the input."),
     .priv_size     = sizeof(DnnProcessingContext),

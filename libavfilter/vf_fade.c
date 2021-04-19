@@ -568,7 +568,7 @@ static const AVFilterPad avfilter_vf_fade_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fade = {
+const AVFilter ff_vf_fade = {
     .name          = "fade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video."),
     .init          = init,

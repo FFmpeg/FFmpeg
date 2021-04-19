@@ -379,7 +379,7 @@ static const AVFilterPad extractplanes_inputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_extractplanes = {
+const AVFilter ff_vf_extractplanes = {
     .name          = "extractplanes",
     .description   = NULL_IF_CONFIG_SMALL("Extract planes as grayscale frames."),
     .priv_size     = sizeof(ExtractPlanesContext),
@@ -403,7 +403,7 @@ static av_cold int init_alphaextract(AVFilterContext *ctx)
     return init(ctx);
 }
 
-AVFilter ff_vf_alphaextract = {
+const AVFilter ff_vf_alphaextract = {
     .name           = "alphaextract",
     .description    = NULL_IF_CONFIG_SMALL("Extract an alpha channel as a "
                       "grayscale image component."),

@@ -309,7 +309,7 @@ static const AVFilterPad maskfun_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_maskfun = {
+const AVFilter ff_vf_maskfun = {
     .name          = "maskfun",
     .description   = NULL_IF_CONFIG_SMALL("Create Mask."),
     .priv_size     = sizeof(MaskFunContext),

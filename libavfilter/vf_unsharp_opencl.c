@@ -398,7 +398,7 @@ static const AVFilterPad unsharp_opencl_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_unsharp_opencl = {
+const AVFilter ff_vf_unsharp_opencl = {
     .name           = "unsharp_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply unsharp mask to input video"),
     .priv_size      = sizeof(UnsharpOpenCLContext),

@@ -374,7 +374,7 @@ static const AVOption superequalizer_options[] = {
 
 AVFILTER_DEFINE_CLASS(superequalizer);
 
-AVFilter ff_af_superequalizer = {
+const AVFilter ff_af_superequalizer = {
     .name          = "superequalizer",
     .description   = NULL_IF_CONFIG_SMALL("Apply 18 band equalization filter."),
     .priv_size     = sizeof(SuperEqualizerContext),

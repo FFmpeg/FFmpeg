@@ -372,7 +372,7 @@ static const AVFilterPad detelecine_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_detelecine = {
+const AVFilter ff_vf_detelecine = {
     .name          = "detelecine",
     .description   = NULL_IF_CONFIG_SMALL("Apply an inverse telecine pattern."),
     .priv_size     = sizeof(DetelecineContext),

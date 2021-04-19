@@ -219,7 +219,7 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(lagfun);
 
-AVFilter ff_vf_lagfun = {
+const AVFilter ff_vf_lagfun = {
     .name          = "lagfun",
     .description   = NULL_IF_CONFIG_SMALL("Slowly update darker pixels."),
     .priv_size     = sizeof(LagfunContext),

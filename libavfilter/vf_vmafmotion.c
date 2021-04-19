@@ -355,7 +355,7 @@ static const AVFilterPad vmafmotion_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_vmafmotion = {
+const AVFilter ff_vf_vmafmotion = {
     .name          = "vmafmotion",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the VMAF Motion score."),
     .init          = init,

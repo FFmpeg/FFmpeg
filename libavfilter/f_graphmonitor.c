@@ -393,7 +393,7 @@ static const AVFilterPad graphmonitor_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_graphmonitor = {
+const AVFilter ff_vf_graphmonitor = {
     .name          = "graphmonitor",
     .description   = NULL_IF_CONFIG_SMALL("Show various filtergraph stats."),
     .priv_size     = sizeof(GraphMonitorContext),
@@ -428,7 +428,7 @@ static const AVFilterPad agraphmonitor_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_agraphmonitor = {
+const AVFilter ff_avf_agraphmonitor = {
     .name          = "agraphmonitor",
     .description   = NULL_IF_CONFIG_SMALL("Show various filtergraph stats."),
     .priv_size     = sizeof(GraphMonitorContext),

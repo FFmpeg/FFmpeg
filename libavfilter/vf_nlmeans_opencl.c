@@ -429,7 +429,7 @@ static const AVFilterPad nlmeans_opencl_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_nlmeans_opencl = {
+const AVFilter ff_vf_nlmeans_opencl = {
     .name           = "nlmeans_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Non-local means denoiser through OpenCL"),
     .priv_size      = sizeof(NLMeansOpenCLContext),

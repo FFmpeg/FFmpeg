@@ -291,7 +291,7 @@ static const AVFilterPad smartblur_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_smartblur = {
+const AVFilter ff_vf_smartblur = {
     .name          = "smartblur",
     .description   = NULL_IF_CONFIG_SMALL("Blur the input video without impacting the outlines."),
     .priv_size     = sizeof(SmartblurContext),

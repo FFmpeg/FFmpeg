@@ -342,7 +342,7 @@ static const AVFilterPad aresample_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_aresample = {
+const AVFilter ff_af_aresample = {
     .name          = "aresample",
     .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
     .init_dict     = init_dict,

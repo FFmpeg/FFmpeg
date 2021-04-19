@@ -313,7 +313,7 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(amplify);
 
-AVFilter ff_vf_amplify = {
+const AVFilter ff_vf_amplify = {
     .name          = "amplify",
     .description   = NULL_IF_CONFIG_SMALL("Amplify changes between successive video frames."),
     .priv_size     = sizeof(AmplifyContext),

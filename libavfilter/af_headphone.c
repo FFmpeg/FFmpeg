@@ -744,7 +744,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_headphone = {
+const AVFilter ff_af_headphone = {
     .name          = "headphone",
     .description   = NULL_IF_CONFIG_SMALL("Apply headphone binaural spatialization with HRTFs in additional streams."),
     .priv_size     = sizeof(HeadphoneContext),

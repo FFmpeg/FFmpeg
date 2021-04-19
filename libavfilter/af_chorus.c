@@ -369,7 +369,7 @@ static const AVFilterPad chorus_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_chorus = {
+const AVFilter ff_af_chorus = {
     .name          = "chorus",
     .description   = NULL_IF_CONFIG_SMALL("Add a chorus effect to the audio."),
     .query_formats = query_formats,

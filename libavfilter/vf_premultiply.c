@@ -824,7 +824,7 @@ static const AVFilterPad premultiply_outputs[] = {
 
 #if CONFIG_PREMULTIPLY_FILTER
 
-AVFilter ff_vf_premultiply = {
+const AVFilter ff_vf_premultiply = {
     .name          = "premultiply",
     .description   = NULL_IF_CONFIG_SMALL("PreMultiply first stream with first plane of second stream."),
     .priv_size     = sizeof(PreMultiplyContext),
@@ -847,7 +847,7 @@ AVFilter ff_vf_premultiply = {
 #define unpremultiply_options options
 AVFILTER_DEFINE_CLASS(unpremultiply);
 
-AVFilter ff_vf_unpremultiply = {
+const AVFilter ff_vf_unpremultiply = {
     .name          = "unpremultiply",
     .description   = NULL_IF_CONFIG_SMALL("UnPreMultiply first stream with first plane of second stream."),
     .priv_size     = sizeof(PreMultiplyContext),

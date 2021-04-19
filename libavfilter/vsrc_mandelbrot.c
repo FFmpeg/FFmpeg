@@ -419,7 +419,7 @@ static const AVFilterPad mandelbrot_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_mandelbrot = {
+const AVFilter ff_vsrc_mandelbrot = {
     .name          = "mandelbrot",
     .description   = NULL_IF_CONFIG_SMALL("Render a Mandelbrot fractal."),
     .priv_size     = sizeof(MBContext),

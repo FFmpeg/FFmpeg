@@ -314,7 +314,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_anlms = {
+const AVFilter ff_af_anlms = {
     .name           = "anlms",
     .description    = NULL_IF_CONFIG_SMALL("Apply Normalized Least-Mean-Squares algorithm to first audio stream."),
     .priv_size      = sizeof(AudioNLMSContext),

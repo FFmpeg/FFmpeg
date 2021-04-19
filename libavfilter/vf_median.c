@@ -285,7 +285,7 @@ static const AVFilterPad median_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_median = {
+const AVFilter ff_vf_median = {
     .name          = "median",
     .description   = NULL_IF_CONFIG_SMALL("Apply Median filter."),
     .priv_size     = sizeof(MedianContext),

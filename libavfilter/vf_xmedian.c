@@ -391,7 +391,7 @@ static const AVFilterPad outputs[] = {
 #if CONFIG_XMEDIAN_FILTER
 FRAMESYNC_DEFINE_CLASS(xmedian, XMedianContext, fs);
 
-AVFilter ff_vf_xmedian = {
+const AVFilter ff_vf_xmedian = {
     .name          = "xmedian",
     .description   = NULL_IF_CONFIG_SMALL("Pick median pixels from several video inputs."),
     .priv_size     = sizeof(XMedianContext),
@@ -475,7 +475,7 @@ static const AVFilterPad tmedian_outputs[] = {
 
 AVFILTER_DEFINE_CLASS(tmedian);
 
-AVFilter ff_vf_tmedian = {
+const AVFilter ff_vf_tmedian = {
     .name          = "tmedian",
     .description   = NULL_IF_CONFIG_SMALL("Pick median pixels from successive frames."),
     .priv_size     = sizeof(XMedianContext),

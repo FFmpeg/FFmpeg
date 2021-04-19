@@ -186,7 +186,7 @@ static const AVFilterPad compensationdelay_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_compensationdelay = {
+const AVFilter ff_af_compensationdelay = {
     .name          = "compensationdelay",
     .description   = NULL_IF_CONFIG_SMALL("Audio Compensation Delay Line."),
     .query_formats = query_formats,

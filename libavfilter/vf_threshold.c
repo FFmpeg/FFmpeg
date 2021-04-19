@@ -354,7 +354,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_threshold = {
+const AVFilter ff_vf_threshold = {
     .name          = "threshold",
     .description   = NULL_IF_CONFIG_SMALL("Threshold first video stream using other video streams."),
     .priv_size     = sizeof(ThresholdContext),

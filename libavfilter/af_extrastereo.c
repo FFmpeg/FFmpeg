@@ -120,7 +120,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_extrastereo = {
+const AVFilter ff_af_extrastereo = {
     .name           = "extrastereo",
     .description    = NULL_IF_CONFIG_SMALL("Increase difference between stereo audio channels."),
     .query_formats  = query_formats,

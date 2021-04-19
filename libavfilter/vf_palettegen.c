@@ -570,7 +570,7 @@ static const AVFilterPad palettegen_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_palettegen = {
+const AVFilter ff_vf_palettegen = {
     .name          = "palettegen",
     .description   = NULL_IF_CONFIG_SMALL("Find the optimal palette for a given stream."),
     .priv_size     = sizeof(PaletteGenContext),

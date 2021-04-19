@@ -398,7 +398,7 @@ static const AVFilterPad avfilter_af_channelmap_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_channelmap = {
+const AVFilter ff_af_channelmap = {
     .name          = "channelmap",
     .description   = NULL_IF_CONFIG_SMALL("Remap audio channels."),
     .init          = channelmap_init,

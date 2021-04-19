@@ -340,7 +340,7 @@ static const AVOption avgblur_opencl_options[] = {
 AVFILTER_DEFINE_CLASS(avgblur_opencl);
 
 
-AVFilter ff_vf_avgblur_opencl = {
+const AVFilter ff_vf_avgblur_opencl = {
     .name           = "avgblur_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply average blur filter"),
     .priv_size      = sizeof(AverageBlurOpenCLContext),
@@ -379,7 +379,7 @@ static const AVOption boxblur_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(boxblur_opencl);
 
-AVFilter ff_vf_boxblur_opencl = {
+const AVFilter ff_vf_boxblur_opencl = {
     .name           = "boxblur_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply boxblur filter to input video"),
     .priv_size      = sizeof(AverageBlurOpenCLContext),

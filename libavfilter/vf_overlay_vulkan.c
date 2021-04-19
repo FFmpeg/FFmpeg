@@ -475,7 +475,7 @@ static const AVFilterPad overlay_vulkan_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_overlay_vulkan = {
+const AVFilter ff_vf_overlay_vulkan = {
     .name           = "overlay_vulkan",
     .description    = NULL_IF_CONFIG_SMALL("Overlay a source on top of another"),
     .priv_size      = sizeof(OverlayVulkanContext),

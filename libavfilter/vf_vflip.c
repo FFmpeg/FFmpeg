@@ -144,7 +144,7 @@ static const AVFilterPad avfilter_vf_vflip_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_vflip = {
+const AVFilter ff_vf_vflip = {
     .name        = "vflip",
     .description = NULL_IF_CONFIG_SMALL("Flip the input video vertically."),
     .priv_size   = sizeof(FlipContext),

@@ -668,7 +668,7 @@ static const AVFilterPad silenceremove_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_silenceremove = {
+const AVFilter ff_af_silenceremove = {
     .name          = "silenceremove",
     .description   = NULL_IF_CONFIG_SMALL("Remove silence."),
     .priv_size     = sizeof(SilenceRemoveContext),

@@ -260,7 +260,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_limiter = {
+const AVFilter ff_vf_limiter = {
     .name          = "limiter",
     .description   = NULL_IF_CONFIG_SMALL("Limit pixels components to the specified range."),
     .priv_size     = sizeof(LimiterContext),

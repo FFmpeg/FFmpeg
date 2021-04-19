@@ -470,7 +470,7 @@ static const AVFilterPad selectivecolor_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_selectivecolor = {
+const AVFilter ff_vf_selectivecolor = {
     .name          = "selectivecolor",
     .description   = NULL_IF_CONFIG_SMALL("Apply CMYK adjustments to specific color ranges."),
     .priv_size     = sizeof(SelectiveColorContext),

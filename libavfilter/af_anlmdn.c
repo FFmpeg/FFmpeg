@@ -408,7 +408,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_anlmdn = {
+const AVFilter ff_af_anlmdn = {
     .name          = "anlmdn",
     .description   = NULL_IF_CONFIG_SMALL("Reduce broadband noise from stream using Non-Local Means."),
     .query_formats = query_formats,

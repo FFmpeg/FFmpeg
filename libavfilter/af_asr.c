@@ -168,7 +168,7 @@ static const AVFilterPad asr_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_asr = {
+const AVFilter ff_af_asr = {
     .name          = "asr",
     .description   = NULL_IF_CONFIG_SMALL("Automatic Speech Recognition."),
     .priv_size     = sizeof(ASRContext),

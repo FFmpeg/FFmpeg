@@ -81,7 +81,7 @@ static const AVFilterPad avfilter_vf_copy_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_copy = {
+const AVFilter ff_vf_copy = {
     .name        = "copy",
     .description = NULL_IF_CONFIG_SMALL("Copy the input video unchanged to the output."),
     .inputs      = avfilter_vf_copy_inputs,

@@ -556,7 +556,7 @@ static const AVFilterPad showfreqs_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showfreqs = {
+const AVFilter ff_avf_showfreqs = {
     .name          = "showfreqs",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a frequencies video output."),
     .init          = init,

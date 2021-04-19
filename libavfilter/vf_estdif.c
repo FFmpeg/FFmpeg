@@ -577,7 +577,7 @@ static const AVFilterPad estdif_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_estdif = {
+const AVFilter ff_vf_estdif = {
     .name          = "estdif",
     .description   = NULL_IF_CONFIG_SMALL("Apply Edge Slope Tracing deinterlace."),
     .priv_size     = sizeof(ESTDIFContext),

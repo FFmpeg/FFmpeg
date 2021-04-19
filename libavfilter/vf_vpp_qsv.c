@@ -591,7 +591,7 @@ static const AVFilterPad vpp_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_vpp_qsv = {
+const AVFilter ff_vf_vpp_qsv = {
     .name          = "vpp_qsv",
     .description   = NULL_IF_CONFIG_SMALL("Quick Sync Video VPP."),
     .priv_size     = sizeof(VPPContext),

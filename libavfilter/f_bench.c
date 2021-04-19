@@ -107,7 +107,7 @@ static const AVFilterPad bench_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_bench = {
+const AVFilter ff_vf_bench = {
     .name          = "bench",
     .description   = NULL_IF_CONFIG_SMALL("Benchmark part of a filtergraph."),
     .priv_size     = sizeof(BenchContext),
@@ -139,7 +139,7 @@ static const AVFilterPad abench_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_abench = {
+const AVFilter ff_af_abench = {
     .name          = "abench",
     .description   = NULL_IF_CONFIG_SMALL("Benchmark part of a filtergraph."),
     .priv_size     = sizeof(BenchContext),

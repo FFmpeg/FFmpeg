@@ -274,7 +274,7 @@ static const AVFilterPad transpose_vaapi_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_transpose_vaapi = {
+const AVFilter ff_vf_transpose_vaapi = {
     .name           = "transpose_vaapi",
     .description    = NULL_IF_CONFIG_SMALL("VAAPI VPP for transpose"),
     .priv_size      = sizeof(TransposeVAAPIContext),

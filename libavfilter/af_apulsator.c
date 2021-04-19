@@ -246,7 +246,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_apulsator = {
+const AVFilter ff_af_apulsator = {
     .name          = "apulsator",
     .description   = NULL_IF_CONFIG_SMALL("Audio pulsator."),
     .priv_size     = sizeof(AudioPulsatorContext),

@@ -186,7 +186,7 @@ static const AVFilterPad aderivative_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_aderivative = {
+const AVFilter ff_af_aderivative = {
     .name          = "aderivative",
     .description   = NULL_IF_CONFIG_SMALL("Compute derivative of input audio."),
     .query_formats = query_formats,
@@ -196,7 +196,7 @@ AVFilter ff_af_aderivative = {
     .outputs       = aderivative_outputs,
 };
 
-AVFilter ff_af_aintegral = {
+const AVFilter ff_af_aintegral = {
     .name          = "aintegral",
     .description   = NULL_IF_CONFIG_SMALL("Compute integral of input audio."),
     .query_formats = query_formats,

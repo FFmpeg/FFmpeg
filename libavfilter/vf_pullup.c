@@ -764,7 +764,7 @@ static const AVFilterPad pullup_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_pullup = {
+const AVFilter ff_vf_pullup = {
     .name          = "pullup",
     .description   = NULL_IF_CONFIG_SMALL("Pullup from field sequence to frames."),
     .priv_size     = sizeof(PullupContext),

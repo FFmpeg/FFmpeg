@@ -347,7 +347,7 @@ static const AVFilterPad amerge_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_amerge = {
+const AVFilter ff_af_amerge = {
     .name          = "amerge",
     .description   = NULL_IF_CONFIG_SMALL("Merge two or more audio streams into "
                                           "a single multi-channel stream."),

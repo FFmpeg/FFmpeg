@@ -1092,7 +1092,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_sofalizer = {
+const AVFilter ff_af_sofalizer = {
     .name          = "sofalizer",
     .description   = NULL_IF_CONFIG_SMALL("SOFAlizer (Spatially Oriented Format for Acoustics)."),
     .priv_size     = sizeof(SOFAlizerContext),

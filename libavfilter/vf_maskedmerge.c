@@ -317,7 +317,7 @@ static const AVFilterPad maskedmerge_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_maskedmerge = {
+const AVFilter ff_vf_maskedmerge = {
     .name          = "maskedmerge",
     .description   = NULL_IF_CONFIG_SMALL("Merge first stream with second stream using third stream as mask."),
     .priv_size     = sizeof(MaskedMergeContext),

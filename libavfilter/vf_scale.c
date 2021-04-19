@@ -155,7 +155,7 @@ typedef struct ScaleContext {
 
 } ScaleContext;
 
-AVFilter ff_vf_scale2ref;
+const AVFilter ff_vf_scale2ref;
 
 static int config_props(AVFilterLink *outlink);
 
@@ -964,7 +964,7 @@ static const AVFilterPad avfilter_vf_scale_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_scale = {
+const AVFilter ff_vf_scale = {
     .name            = "scale",
     .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format."),
     .init_dict       = init_dict,
@@ -1016,7 +1016,7 @@ static const AVFilterPad avfilter_vf_scale2ref_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_scale2ref = {
+const AVFilter ff_vf_scale2ref = {
     .name            = "scale2ref",
     .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format to the given reference."),
     .init_dict       = init_dict,

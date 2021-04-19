@@ -469,7 +469,7 @@ static const AVFilterPad framepack_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_framepack = {
+const AVFilter ff_vf_framepack = {
     .name          = "framepack",
     .description   = NULL_IF_CONFIG_SMALL("Generate a frame packed stereoscopic video."),
     .priv_size     = sizeof(FramepackContext),

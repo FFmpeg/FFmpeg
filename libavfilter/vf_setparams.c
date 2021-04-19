@@ -162,7 +162,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_setparams = {
+const AVFilter ff_vf_setparams = {
     .name        = "setparams",
     .description = NULL_IF_CONFIG_SMALL("Force field, or color property for the output video frame."),
     .priv_size   = sizeof(SetParamsContext),
@@ -200,7 +200,7 @@ static av_cold int init_setrange(AVFilterContext *ctx)
     return 0;
 }
 
-AVFilter ff_vf_setrange = {
+const AVFilter ff_vf_setrange = {
     .name        = "setrange",
     .description = NULL_IF_CONFIG_SMALL("Force color range for the output video frame."),
     .priv_size   = sizeof(SetParamsContext),
@@ -234,7 +234,7 @@ static av_cold int init_setfield(AVFilterContext *ctx)
     return 0;
 }
 
-AVFilter ff_vf_setfield = {
+const AVFilter ff_vf_setfield = {
     .name        = "setfield",
     .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
     .priv_size   = sizeof(SetParamsContext),

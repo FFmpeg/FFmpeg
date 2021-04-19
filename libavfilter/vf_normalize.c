@@ -530,7 +530,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_normalize = {
+const AVFilter ff_vf_normalize = {
     .name          = "normalize",
     .description   = NULL_IF_CONFIG_SMALL("Normalize RGB video."),
     .priv_size     = sizeof(NormalizeContext),

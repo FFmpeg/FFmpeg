@@ -919,7 +919,7 @@ static const AVFilterPad avfilter_af_loudnorm_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_loudnorm = {
+const AVFilter ff_af_loudnorm = {
     .name          = "loudnorm",
     .description   = NULL_IF_CONFIG_SMALL("EBU R128 loudness normalization"),
     .priv_size     = sizeof(LoudNormContext),

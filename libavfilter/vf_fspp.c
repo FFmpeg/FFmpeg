@@ -668,7 +668,7 @@ static const AVFilterPad fspp_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fspp = {
+const AVFilter ff_vf_fspp = {
     .name            = "fspp",
     .description     = NULL_IF_CONFIG_SMALL("Apply Fast Simple Post-processing filter."),
     .priv_size       = sizeof(FSPPContext),

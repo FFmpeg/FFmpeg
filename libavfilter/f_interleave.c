@@ -238,7 +238,7 @@ static const AVFilterPad interleave_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_interleave = {
+const AVFilter ff_vf_interleave = {
     .name        = "interleave",
     .description = NULL_IF_CONFIG_SMALL("Temporally interleave video inputs."),
     .priv_size   = sizeof(InterleaveContext),
@@ -266,7 +266,7 @@ static const AVFilterPad ainterleave_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_ainterleave = {
+const AVFilter ff_af_ainterleave = {
     .name        = "ainterleave",
     .description = NULL_IF_CONFIG_SMALL("Temporally interleave audio inputs."),
     .priv_size   = sizeof(InterleaveContext),

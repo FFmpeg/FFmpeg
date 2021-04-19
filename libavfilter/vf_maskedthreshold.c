@@ -284,7 +284,7 @@ static const AVFilterPad maskedthreshold_outputs[] = {
 
 AVFILTER_DEFINE_CLASS(maskedthreshold);
 
-AVFilter ff_vf_maskedthreshold = {
+const AVFilter ff_vf_maskedthreshold = {
     .name          = "maskedthreshold",
     .description   = NULL_IF_CONFIG_SMALL("Pick pixels comparing absolute difference of two streams with threshold."),
     .priv_class    = &maskedthreshold_class,

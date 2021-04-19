@@ -1158,7 +1158,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_nnedi = {
+const AVFilter ff_vf_nnedi = {
     .name          = "nnedi",
     .description   = NULL_IF_CONFIG_SMALL("Apply neural network edge directed interpolation intra-only deinterlacer."),
     .priv_size     = sizeof(NNEDIContext),

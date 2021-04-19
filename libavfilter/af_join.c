@@ -528,7 +528,7 @@ static const AVFilterPad avfilter_af_join_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_join = {
+const AVFilter ff_af_join = {
     .name           = "join",
     .description    = NULL_IF_CONFIG_SMALL("Join multiple audio streams into "
                                            "multi-channel output."),

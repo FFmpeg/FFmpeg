@@ -1526,7 +1526,7 @@ static const AVFilterPad showspectrum_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showspectrum = {
+const AVFilter ff_avf_showspectrum = {
     .name          = "showspectrum",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spectrum video output."),
     .uninit        = uninit,
@@ -1709,7 +1709,7 @@ static const AVFilterPad showspectrumpic_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showspectrumpic = {
+const AVFilter ff_avf_showspectrumpic = {
     .name          = "showspectrumpic",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spectrum video output single picture."),
     .uninit        = uninit,

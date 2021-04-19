@@ -667,7 +667,7 @@ static const AVFilterPad qsvscale_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_scale_qsv = {
+const AVFilter ff_vf_scale_qsv = {
     .name      = "scale_qsv",
     .description = NULL_IF_CONFIG_SMALL("QuickSync video scaling and format conversion"),
 

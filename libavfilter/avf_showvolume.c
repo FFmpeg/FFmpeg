@@ -498,7 +498,7 @@ static const AVFilterPad showvolume_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showvolume = {
+const AVFilter ff_avf_showvolume = {
     .name          = "showvolume",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio volume to video output."),
     .init          = init,

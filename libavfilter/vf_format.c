@@ -166,7 +166,7 @@ static const AVFilterPad avfilter_vf_format_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_format = {
+const AVFilter ff_vf_format = {
     .name          = "format",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
 
@@ -205,7 +205,7 @@ static const AVFilterPad avfilter_vf_noformat_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_noformat = {
+const AVFilter ff_vf_noformat = {
     .name          = "noformat",
     .description   = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
 

@@ -318,7 +318,7 @@ static const AVOption adenorm_options[] = {
 
 AVFILTER_DEFINE_CLASS(adenorm);
 
-AVFilter ff_af_adenorm = {
+const AVFilter ff_af_adenorm = {
     .name            = "adenorm",
     .description     = NULL_IF_CONFIG_SMALL("Remedy denormals by adding extremely low-level noise."),
     .query_formats   = query_formats,

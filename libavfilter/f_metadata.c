@@ -383,7 +383,7 @@ static const AVFilterPad aoutputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_ametadata = {
+const AVFilter ff_af_ametadata = {
     .name          = "ametadata",
     .description   = NULL_IF_CONFIG_SMALL("Manipulate audio frame metadata."),
     .priv_size     = sizeof(MetadataContext),
@@ -418,7 +418,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_metadata = {
+const AVFilter ff_vf_metadata = {
     .name        = "metadata",
     .description = NULL_IF_CONFIG_SMALL("Manipulate video frame metadata."),
     .priv_size   = sizeof(MetadataContext),

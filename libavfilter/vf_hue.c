@@ -516,7 +516,7 @@ static const AVFilterPad hue_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hue = {
+const AVFilter ff_vf_hue = {
     .name            = "hue",
     .description     = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
     .priv_size       = sizeof(HueContext),

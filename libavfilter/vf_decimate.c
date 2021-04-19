@@ -434,7 +434,7 @@ static const AVFilterPad decimate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_decimate = {
+const AVFilter ff_vf_decimate = {
     .name          = "decimate",
     .description   = NULL_IF_CONFIG_SMALL("Decimate frames (post field matching filter)."),
     .init          = decimate_init,

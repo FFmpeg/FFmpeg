@@ -427,7 +427,7 @@ static const AVFilterPad tmidequalizer_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tmidequalizer = {
+const AVFilter ff_vf_tmidequalizer = {
     .name          = "tmidequalizer",
     .description   = NULL_IF_CONFIG_SMALL("Apply Temporal Midway Equalization."),
     .priv_size     = sizeof(TMidEqualizerContext),

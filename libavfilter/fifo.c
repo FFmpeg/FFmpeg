@@ -128,7 +128,7 @@ static const AVFilterPad avfilter_vf_fifo_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fifo = {
+const AVFilter ff_vf_fifo = {
     .name        = "fifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input images and send them when they are requested."),
     .init        = init,
@@ -156,7 +156,7 @@ static const AVFilterPad avfilter_af_afifo_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_afifo = {
+const AVFilter ff_af_afifo = {
     .name        = "afifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input frames and send them when they are requested."),
     .init        = init,

@@ -212,7 +212,7 @@ static const AVOption colorkey_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorkey);
 
-AVFilter ff_vf_colorkey = {
+const AVFilter ff_vf_colorkey = {
     .name          = "colorkey",
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
     .priv_size     = sizeof(ColorkeyContext),
@@ -237,7 +237,7 @@ static const AVOption colorhold_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorhold);
 
-AVFilter ff_vf_colorhold = {
+const AVFilter ff_vf_colorhold = {
     .name          = "colorhold",
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray. Operates on RGB colors."),
     .priv_size     = sizeof(ColorkeyContext),

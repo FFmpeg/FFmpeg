@@ -362,7 +362,7 @@ static const AVFilterPad alimiter_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_alimiter = {
+const AVFilter ff_af_alimiter = {
     .name           = "alimiter",
     .description    = NULL_IF_CONFIG_SMALL("Audio lookahead limiter."),
     .priv_size      = sizeof(AudioLimiterContext),

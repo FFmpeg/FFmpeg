@@ -643,7 +643,7 @@ static const AVFilterPad vif_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_vif = {
+const AVFilter ff_vf_vif = {
     .name          = "vif",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the VIF between two video streams."),
     .uninit        = uninit,

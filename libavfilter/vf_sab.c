@@ -323,7 +323,7 @@ static const AVFilterPad sab_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_sab = {
+const AVFilter ff_vf_sab = {
     .name          = "sab",
     .description   = NULL_IF_CONFIG_SMALL("Apply shape adaptive blur."),
     .priv_size     = sizeof(SabContext),

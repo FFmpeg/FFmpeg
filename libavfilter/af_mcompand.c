@@ -666,7 +666,7 @@ static const AVFilterPad mcompand_outputs[] = {
 };
 
 
-AVFilter ff_af_mcompand = {
+const AVFilter ff_af_mcompand = {
     .name           = "mcompand",
     .description    = NULL_IF_CONFIG_SMALL(
             "Multiband Compress or expand audio dynamic range."),

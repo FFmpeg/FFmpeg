@@ -141,7 +141,7 @@ static const AVFilterPad aoutputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_asidedata = {
+const AVFilter ff_af_asidedata = {
     .name          = "asidedata",
     .description   = NULL_IF_CONFIG_SMALL("Manipulate audio frame side data."),
     .priv_size     = sizeof(SideDataContext),
@@ -175,7 +175,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_sidedata = {
+const AVFilter ff_vf_sidedata = {
     .name        = "sidedata",
     .description = NULL_IF_CONFIG_SMALL("Manipulate video frame side data."),
     .priv_size   = sizeof(SideDataContext),

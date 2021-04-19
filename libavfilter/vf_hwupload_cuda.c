@@ -183,7 +183,7 @@ static const AVFilterPad cudaupload_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hwupload_cuda = {
+const AVFilter ff_vf_hwupload_cuda = {
     .name        = "hwupload_cuda",
     .description = NULL_IF_CONFIG_SMALL("Upload a system memory frame to a CUDA device."),
 

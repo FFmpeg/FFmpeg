@@ -365,7 +365,7 @@ static const AVFilterPad owdenoise_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_owdenoise = {
+const AVFilter ff_vf_owdenoise = {
     .name          = "owdenoise",
     .description   = NULL_IF_CONFIG_SMALL("Denoise using wavelets."),
     .priv_size     = sizeof(OWDenoiseContext),

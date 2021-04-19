@@ -274,7 +274,7 @@ static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_cropdetect = {
+const AVFilter ff_vf_cropdetect = {
     .name          = "cropdetect",
     .description   = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
     .priv_size     = sizeof(CropDetectContext),

@@ -813,7 +813,7 @@ static const AVFilterPad curves_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_curves = {
+const AVFilter ff_vf_curves = {
     .name          = "curves",
     .description   = NULL_IF_CONFIG_SMALL("Adjust components curves."),
     .priv_size     = sizeof(CurvesContext),

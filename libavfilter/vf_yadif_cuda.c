@@ -373,7 +373,7 @@ static const AVFilterPad deint_cuda_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_yadif_cuda = {
+const AVFilter ff_vf_yadif_cuda = {
     .name           = "yadif_cuda",
     .description    = NULL_IF_CONFIG_SMALL("Deinterlace CUDA frames"),
     .priv_size      = sizeof(DeintCUDAContext),

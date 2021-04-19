@@ -298,7 +298,7 @@ static const AVFilterPad gradients_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_gradients = {
+const AVFilter ff_vsrc_gradients = {
     .name          = "gradients",
     .description   = NULL_IF_CONFIG_SMALL("Draw a gradients."),
     .priv_size     = sizeof(GradientsContext),

@@ -577,7 +577,7 @@ static const AVFilterPad nlmeans_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_nlmeans = {
+const AVFilter ff_vf_nlmeans = {
     .name          = "nlmeans",
     .description   = NULL_IF_CONFIG_SMALL("Non-local means denoiser."),
     .priv_size     = sizeof(NLMeansContext),

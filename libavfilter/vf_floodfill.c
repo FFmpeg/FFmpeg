@@ -420,7 +420,7 @@ static const AVOption floodfill_options[] = {
 
 AVFILTER_DEFINE_CLASS(floodfill);
 
-AVFilter ff_vf_floodfill = {
+const AVFilter ff_vf_floodfill = {
     .name          = "floodfill",
     .description   = NULL_IF_CONFIG_SMALL("Fill area with same color with another color."),
     .priv_size     = sizeof(FloodfillContext),

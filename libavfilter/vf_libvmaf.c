@@ -365,7 +365,7 @@ static const AVFilterPad libvmaf_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_libvmaf = {
+const AVFilter ff_vf_libvmaf = {
     .name          = "libvmaf",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the VMAF between two video streams."),
     .preinit       = libvmaf_framesync_preinit,

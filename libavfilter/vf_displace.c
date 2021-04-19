@@ -400,7 +400,7 @@ static const AVFilterPad displace_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_displace = {
+const AVFilter ff_vf_displace = {
     .name          = "displace",
     .description   = NULL_IF_CONFIG_SMALL("Displace pixels."),
     .priv_size     = sizeof(DisplaceContext),

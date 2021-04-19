@@ -316,7 +316,7 @@ static const AVFilterPad maskedclamp_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_maskedclamp = {
+const AVFilter ff_vf_maskedclamp = {
     .name          = "maskedclamp",
     .description   = NULL_IF_CONFIG_SMALL("Clamp first stream with second stream and third stream."),
     .priv_size     = sizeof(MaskedClampContext),

@@ -413,7 +413,7 @@ static const AVOption options[] = {
 #define identity_options options
 FRAMESYNC_DEFINE_CLASS(identity, IdentityContext, fs);
 
-AVFilter ff_vf_identity = {
+const AVFilter ff_vf_identity = {
     .name          = "identity",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the Identity between two video streams."),
     .preinit       = identity_framesync_preinit,
@@ -435,7 +435,7 @@ AVFilter ff_vf_identity = {
 #define msad_options options
 FRAMESYNC_DEFINE_CLASS(msad, IdentityContext, fs);
 
-AVFilter ff_vf_msad = {
+const AVFilter ff_vf_msad = {
     .name          = "msad",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the MSAD between two video streams."),
     .preinit       = msad_framesync_preinit,

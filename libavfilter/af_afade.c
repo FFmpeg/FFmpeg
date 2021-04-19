@@ -365,7 +365,7 @@ static const AVFilterPad avfilter_af_afade_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_afade = {
+const AVFilter ff_af_afade = {
     .name          = "afade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input audio."),
     .query_formats = query_formats,
@@ -653,7 +653,7 @@ static const AVFilterPad avfilter_af_acrossfade_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_acrossfade = {
+const AVFilter ff_af_acrossfade = {
     .name          = "acrossfade",
     .description   = NULL_IF_CONFIG_SMALL("Cross fade two input audio streams."),
     .query_formats = query_formats,

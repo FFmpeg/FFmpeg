@@ -205,7 +205,7 @@ static const AVFilterPad tpad_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tpad = {
+const AVFilter ff_vf_tpad = {
     .name          = "tpad",
     .description   = NULL_IF_CONFIG_SMALL("Temporarily pad video frames."),
     .priv_size     = sizeof(TPadContext),

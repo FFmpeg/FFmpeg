@@ -400,7 +400,7 @@ static const AVFilterPad avfilter_af_aemphasis_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_aemphasis = {
+const AVFilter ff_af_aemphasis = {
     .name          = "aemphasis",
     .description   = NULL_IF_CONFIG_SMALL("Audio emphasis."),
     .priv_size     = sizeof(AudioEmphasisContext),

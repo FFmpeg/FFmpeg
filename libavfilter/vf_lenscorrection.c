@@ -357,7 +357,7 @@ static const AVFilterPad lenscorrection_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_lenscorrection = {
+const AVFilter ff_vf_lenscorrection = {
     .name          = "lenscorrection",
     .description   = NULL_IF_CONFIG_SMALL("Rectify the image by correcting for lens distortion."),
     .priv_size     = sizeof(LenscorrectionCtx),

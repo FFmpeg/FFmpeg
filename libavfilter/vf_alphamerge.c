@@ -188,7 +188,7 @@ static const AVOption alphamerge_options[] = {
 
 FRAMESYNC_DEFINE_CLASS(alphamerge, AlphaMergeContext, fs);
 
-AVFilter ff_vf_alphamerge = {
+const AVFilter ff_vf_alphamerge = {
     .name           = "alphamerge",
     .description    = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
                       "input into the alpha channel of the first input."),

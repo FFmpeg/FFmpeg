@@ -211,7 +211,7 @@ static const AVFilterPad scroll_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_scroll = {
+const AVFilter ff_vf_scroll = {
     .name          = "scroll",
     .description   = NULL_IF_CONFIG_SMALL("Scroll input video."),
     .priv_size     = sizeof(ScrollContext),

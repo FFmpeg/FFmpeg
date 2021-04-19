@@ -615,7 +615,7 @@ static const AVFilterPad w3fdif_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_w3fdif = {
+const AVFilter ff_vf_w3fdif = {
     .name          = "w3fdif",
     .description   = NULL_IF_CONFIG_SMALL("Apply Martin Weston three field deinterlace."),
     .priv_size     = sizeof(W3FDIFContext),

@@ -368,7 +368,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_asupercut = {
+const AVFilter ff_af_asupercut = {
     .name            = "asupercut",
     .description     = NULL_IF_CONFIG_SMALL("Cut super frequencies."),
     .query_formats   = query_formats,
@@ -391,7 +391,7 @@ static const AVOption asubcut_options[] = {
 
 AVFILTER_DEFINE_CLASS(asubcut);
 
-AVFilter ff_af_asubcut = {
+const AVFilter ff_af_asubcut = {
     .name            = "asubcut",
     .description     = NULL_IF_CONFIG_SMALL("Cut subwoofer frequencies."),
     .query_formats   = query_formats,
@@ -416,7 +416,7 @@ static const AVOption asuperpass_asuperstop_options[] = {
 #define asuperpass_options asuperpass_asuperstop_options
 AVFILTER_DEFINE_CLASS(asuperpass);
 
-AVFilter ff_af_asuperpass = {
+const AVFilter ff_af_asuperpass = {
     .name            = "asuperpass",
     .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-pass filter."),
     .query_formats   = query_formats,
@@ -433,7 +433,7 @@ AVFilter ff_af_asuperpass = {
 #define asuperstop_options asuperpass_asuperstop_options
 AVFILTER_DEFINE_CLASS(asuperstop);
 
-AVFilter ff_af_asuperstop = {
+const AVFilter ff_af_asuperstop = {
     .name            = "asuperstop",
     .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-stop filter."),
     .query_formats   = query_formats,

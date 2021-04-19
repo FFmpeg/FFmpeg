@@ -415,7 +415,7 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(deblock);
 
-AVFilter ff_vf_deblock = {
+const AVFilter ff_vf_deblock = {
     .name          = "deblock",
     .description   = NULL_IF_CONFIG_SMALL("Deblock video."),
     .priv_size     = sizeof(DeblockContext),

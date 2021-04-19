@@ -296,7 +296,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fieldhint = {
+const AVFilter ff_vf_fieldhint = {
     .name          = "fieldhint",
     .description   = NULL_IF_CONFIG_SMALL("Field matching using hints."),
     .priv_size     = sizeof(FieldHintContext),

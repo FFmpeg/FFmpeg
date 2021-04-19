@@ -243,7 +243,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_swaprect = {
+const AVFilter ff_vf_swaprect = {
     .name          = "swaprect",
     .description   = NULL_IF_CONFIG_SMALL("Swap 2 rectangular objects in video."),
     .priv_size     = sizeof(SwapRectContext),

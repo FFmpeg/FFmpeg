@@ -365,7 +365,7 @@ static const AVFilterPad mestimate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_mestimate = {
+const AVFilter ff_vf_mestimate = {
     .name          = "mestimate",
     .description   = NULL_IF_CONFIG_SMALL("Generate motion vectors."),
     .priv_size     = sizeof(MEContext),

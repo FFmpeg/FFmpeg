@@ -359,7 +359,7 @@ static const AVFilterPad super2xsai_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_super2xsai = {
+const AVFilter ff_vf_super2xsai = {
     .name          = "super2xsai",
     .description   = NULL_IF_CONFIG_SMALL("Scale the input by 2x using the Super2xSaI pixel art algorithm."),
     .priv_size     = sizeof(Super2xSaIContext),

@@ -92,7 +92,7 @@ static const AVFilterPad avfilter_vf_realtime_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_realtime = {
+const AVFilter ff_vf_realtime = {
     .name        = "realtime",
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
     .priv_size   = sizeof(RealtimeContext),
@@ -124,7 +124,7 @@ static const AVFilterPad arealtime_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_arealtime = {
+const AVFilter ff_af_arealtime = {
     .name        = "arealtime",
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
     .priv_size   = sizeof(RealtimeContext),

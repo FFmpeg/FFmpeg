@@ -1012,7 +1012,7 @@ static const AVFilterPad signalstats_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_signalstats = {
+const AVFilter ff_vf_signalstats = {
     .name          = "signalstats",
     .description   = "Generate statistics from video analysis.",
     .init          = init,

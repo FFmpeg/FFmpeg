@@ -192,7 +192,7 @@ static const AVFilterPad hwdownload_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hwdownload = {
+const AVFilter ff_vf_hwdownload = {
     .name          = "hwdownload",
     .description   = NULL_IF_CONFIG_SMALL("Download a hardware frame to a normal frame"),
     .uninit        = hwdownload_uninit,

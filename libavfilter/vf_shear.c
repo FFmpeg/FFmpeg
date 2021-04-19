@@ -316,7 +316,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_shear = {
+const AVFilter ff_vf_shear = {
     .name            = "shear",
     .description     = NULL_IF_CONFIG_SMALL("Shear transform the input image."),
     .priv_size       = sizeof(ShearContext),

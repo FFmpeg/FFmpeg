@@ -313,7 +313,7 @@ static const AVFilterPad avgblur_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_avgblur = {
+const AVFilter ff_vf_avgblur = {
     .name          = "avgblur",
     .description   = NULL_IF_CONFIG_SMALL("Apply Average Blur filter."),
     .priv_size     = sizeof(AverageBlurContext),

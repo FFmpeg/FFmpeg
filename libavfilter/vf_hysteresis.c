@@ -374,7 +374,7 @@ static const AVFilterPad hysteresis_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hysteresis = {
+const AVFilter ff_vf_hysteresis = {
     .name          = "hysteresis",
     .description   = NULL_IF_CONFIG_SMALL("Grow first stream into second stream by connecting components."),
     .preinit       = hysteresis_framesync_preinit,

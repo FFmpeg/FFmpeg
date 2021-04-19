@@ -628,7 +628,7 @@ static const AVFilterPad fillborders_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fillborders = {
+const AVFilter ff_vf_fillborders = {
     .name          = "fillborders",
     .description   = NULL_IF_CONFIG_SMALL("Fill borders of the input video."),
     .priv_size     = sizeof(FillBordersContext),

@@ -1134,7 +1134,7 @@ static const AVFilterPad paletteuse_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_paletteuse = {
+const AVFilter ff_vf_paletteuse = {
     .name          = "paletteuse",
     .description   = NULL_IF_CONFIG_SMALL("Use a palette to downsample an input video stream."),
     .priv_size     = sizeof(PaletteUseContext),

@@ -476,7 +476,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_afftfilt = {
+const AVFilter ff_af_afftfilt = {
     .name            = "afftfilt",
     .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to samples in frequency domain."),
     .priv_size       = sizeof(AFFTFiltContext),

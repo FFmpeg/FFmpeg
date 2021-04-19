@@ -286,7 +286,7 @@ static const AVOption cas_options[] = {
 
 AVFILTER_DEFINE_CLASS(cas);
 
-AVFilter ff_vf_cas = {
+const AVFilter ff_vf_cas = {
     .name          = "cas",
     .description   = NULL_IF_CONFIG_SMALL("Contrast Adaptive Sharpen."),
     .priv_size     = sizeof(CASContext),

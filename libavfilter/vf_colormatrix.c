@@ -507,7 +507,7 @@ static const AVFilterPad colormatrix_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_colormatrix = {
+const AVFilter ff_vf_colormatrix = {
     .name          = "colormatrix",
     .description   = NULL_IF_CONFIG_SMALL("Convert color matrix."),
     .priv_size     = sizeof(ColorMatrixContext),

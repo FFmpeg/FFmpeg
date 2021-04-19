@@ -231,7 +231,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_deesser = {
+const AVFilter ff_af_deesser = {
     .name          = "deesser",
     .description   = NULL_IF_CONFIG_SMALL("Apply de-essing to the audio."),
     .query_formats = query_formats,

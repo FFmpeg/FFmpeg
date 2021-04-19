@@ -402,7 +402,7 @@ static const AVFilterPad pp7_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_pp7 = {
+const AVFilter ff_vf_pp7 = {
     .name            = "pp7",
     .description     = NULL_IF_CONFIG_SMALL("Apply Postprocessing 7 filter."),
     .priv_size       = sizeof(PP7Context),

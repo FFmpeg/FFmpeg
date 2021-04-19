@@ -747,7 +747,7 @@ static const AVOption greyedge_options[] = {
 
 AVFILTER_DEFINE_CLASS(greyedge);
 
-AVFilter ff_vf_greyedge = {
+const AVFilter ff_vf_greyedge = {
     .name          = GREY_EDGE,
     .description   = NULL_IF_CONFIG_SMALL("Estimates scene illumination by grey edge assumption."),
     .priv_size     = sizeof(ColorConstancyContext),

@@ -453,7 +453,7 @@ static const AVFilterPad avfilter_vf_pad_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_pad = {
+const AVFilter ff_vf_pad = {
     .name          = "pad",
     .description   = NULL_IF_CONFIG_SMALL("Pad the input video."),
     .priv_size     = sizeof(PadContext),

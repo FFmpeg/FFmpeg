@@ -383,7 +383,7 @@ static const AVOption pad_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(pad_opencl);
 
-AVFilter ff_vf_pad_opencl = {
+const AVFilter ff_vf_pad_opencl = {
     .name           = "pad_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Pad the input video."),
     .priv_size      = sizeof(PadOpenCLContext),

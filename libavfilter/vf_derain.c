@@ -126,7 +126,7 @@ static const AVFilterPad derain_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_derain = {
+const AVFilter ff_vf_derain = {
     .name          = "derain",
     .description   = NULL_IF_CONFIG_SMALL("Apply derain filter to the input."),
     .priv_size     = sizeof(DRContext),

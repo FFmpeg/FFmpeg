@@ -337,7 +337,7 @@ static const AVFilterPad noise_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_noise = {
+const AVFilter ff_vf_noise = {
     .name          = "noise",
     .description   = NULL_IF_CONFIG_SMALL("Add noise."),
     .priv_size     = sizeof(NoiseContext),

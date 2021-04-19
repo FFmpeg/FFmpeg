@@ -397,7 +397,7 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_transpose = {
+const AVFilter ff_vf_transpose = {
     .name          = "transpose",
     .description   = NULL_IF_CONFIG_SMALL("Transpose input video."),
     .priv_size     = sizeof(TransContext),

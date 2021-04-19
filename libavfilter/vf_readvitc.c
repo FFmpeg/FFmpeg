@@ -246,7 +246,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_readvitc = {
+const AVFilter ff_vf_readvitc = {
     .name          = "readvitc",
     .description   = NULL_IF_CONFIG_SMALL("Read vertical interval timecode and write it to frame metadata."),
     .priv_size     = sizeof(ReadVitcContext),

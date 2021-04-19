@@ -184,7 +184,7 @@ static const AVFilterPad untile_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_untile = {
+const AVFilter ff_vf_untile = {
     .name          = "untile",
     .description   = NULL_IF_CONFIG_SMALL("Untile a frame into a sequence of frames."),
     .init          = init,

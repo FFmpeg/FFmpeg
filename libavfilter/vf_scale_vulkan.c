@@ -524,7 +524,7 @@ static const AVFilterPad scale_vulkan_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_scale_vulkan = {
+const AVFilter ff_vf_scale_vulkan = {
     .name           = "scale_vulkan",
     .description    = NULL_IF_CONFIG_SMALL("Scale Vulkan frames"),
     .priv_size      = sizeof(ScaleVulkanContext),

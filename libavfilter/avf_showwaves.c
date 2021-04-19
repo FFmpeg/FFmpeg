@@ -775,7 +775,7 @@ static const AVFilterPad showwaves_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showwaves = {
+const AVFilter ff_avf_showwaves = {
     .name          = "showwaves",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a video output."),
     .init          = init,
@@ -890,7 +890,7 @@ static const AVFilterPad showwavespic_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showwavespic = {
+const AVFilter ff_avf_showwavespic = {
     .name          = "showwavespic",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a video output single picture."),
     .init          = init,

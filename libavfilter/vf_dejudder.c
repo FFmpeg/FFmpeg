@@ -175,7 +175,7 @@ static const AVFilterPad dejudder_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_dejudder = {
+const AVFilter ff_vf_dejudder = {
     .name        = "dejudder",
     .description = NULL_IF_CONFIG_SMALL("Remove judder produced by pullup."),
     .priv_size   = sizeof(DejudderContext),

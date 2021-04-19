@@ -303,7 +303,7 @@ static const AVFilterPad foc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_find_rect = {
+const AVFilter ff_vf_find_rect = {
     .name            = "find_rect",
     .description     = NULL_IF_CONFIG_SMALL("Find a user specified object."),
     .priv_size       = sizeof(FOCContext),

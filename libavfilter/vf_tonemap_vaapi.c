@@ -405,7 +405,7 @@ static const AVFilterPad tonemap_vaapi_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tonemap_vaapi = {
+const AVFilter ff_vf_tonemap_vaapi = {
     .name           = "tonemap_vaapi",
     .description    = NULL_IF_CONFIG_SMALL("VAAPI VPP for tone-mapping"),
     .priv_size      = sizeof(HDRVAAPIContext),

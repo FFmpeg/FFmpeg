@@ -416,7 +416,7 @@ static const AVFilterPad overlay_qsv_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_overlay_qsv = {
+const AVFilter ff_vf_overlay_qsv = {
     .name           = "overlay_qsv",
     .description    = NULL_IF_CONFIG_SMALL("Quick Sync Video overlay."),
     .priv_size      = sizeof(QSVOverlayContext),

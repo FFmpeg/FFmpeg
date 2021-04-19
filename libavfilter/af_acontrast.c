@@ -208,7 +208,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_acontrast = {
+const AVFilter ff_af_acontrast = {
     .name           = "acontrast",
     .description    = NULL_IF_CONFIG_SMALL("Simple audio dynamic range compression/expansion filter."),
     .query_formats  = query_formats,

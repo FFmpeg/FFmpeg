@@ -536,7 +536,7 @@ static const AVFilterPad lensfun_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_lensfun = {
+const AVFilter ff_vf_lensfun = {
     .name          = "lensfun",
     .description   = NULL_IF_CONFIG_SMALL("Apply correction to an image based on info derived from the lensfun database."),
     .priv_size     = sizeof(LensfunContext),

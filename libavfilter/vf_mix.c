@@ -358,7 +358,7 @@ static const AVFilterPad outputs[] = {
 #if CONFIG_MIX_FILTER
 AVFILTER_DEFINE_CLASS(mix);
 
-AVFilter ff_vf_mix = {
+const AVFilter ff_vf_mix = {
     .name          = "mix",
     .description   = NULL_IF_CONFIG_SMALL("Mix video inputs."),
     .priv_size     = sizeof(MixContext),
@@ -435,7 +435,7 @@ static const AVFilterPad inputs[] = {
 
 AVFILTER_DEFINE_CLASS(tmix);
 
-AVFilter ff_vf_tmix = {
+const AVFilter ff_vf_tmix = {
     .name          = "tmix",
     .description   = NULL_IF_CONFIG_SMALL("Mix successive video frames."),
     .priv_size     = sizeof(MixContext),

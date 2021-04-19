@@ -2187,7 +2187,7 @@ static const AVOption deshake_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(deshake_opencl);
 
-AVFilter ff_vf_deshake_opencl = {
+const AVFilter ff_vf_deshake_opencl = {
     .name           = "deshake_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Feature-point based video stabilization filter"),
     .priv_size      = sizeof(DeshakeOpenCLContext),

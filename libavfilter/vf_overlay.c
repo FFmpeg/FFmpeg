@@ -1106,7 +1106,7 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_overlay = {
+const AVFilter ff_vf_overlay = {
     .name          = "overlay",
     .description   = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
     .preinit       = overlay_framesync_preinit,

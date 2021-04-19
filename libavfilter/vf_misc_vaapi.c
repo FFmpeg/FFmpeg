@@ -236,7 +236,7 @@ static const AVFilterPad misc_vaapi_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_denoise_vaapi = {
+const AVFilter ff_vf_denoise_vaapi = {
     .name          = "denoise_vaapi",
     .description   = NULL_IF_CONFIG_SMALL("VAAPI VPP for de-noise"),
     .priv_size     = sizeof(DenoiseVAAPIContext),
@@ -249,7 +249,7 @@ AVFilter ff_vf_denoise_vaapi = {
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
-AVFilter ff_vf_sharpness_vaapi = {
+const AVFilter ff_vf_sharpness_vaapi = {
     .name          = "sharpness_vaapi",
     .description   = NULL_IF_CONFIG_SMALL("VAAPI VPP for sharpness"),
     .priv_size     = sizeof(SharpnessVAAPIContext),

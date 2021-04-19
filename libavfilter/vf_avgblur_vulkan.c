@@ -398,7 +398,7 @@ static const AVFilterPad avgblur_vulkan_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_avgblur_vulkan = {
+const AVFilter ff_vf_avgblur_vulkan = {
     .name           = "avgblur_vulkan",
     .description    = NULL_IF_CONFIG_SMALL("Apply avgblur mask to input video"),
     .priv_size      = sizeof(AvgBlurVulkanContext),

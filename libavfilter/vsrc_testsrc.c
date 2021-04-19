@@ -266,7 +266,7 @@ static const AVFilterPad color_outputs[] = {
     {  NULL }
 };
 
-AVFilter ff_vsrc_color = {
+const AVFilter ff_vsrc_color = {
     .name            = "color",
     .description     = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
     .priv_class      = &color_class,
@@ -400,7 +400,7 @@ static const AVFilterPad haldclutsrc_outputs[] = {
     {  NULL }
 };
 
-AVFilter ff_vsrc_haldclutsrc = {
+const AVFilter ff_vsrc_haldclutsrc = {
     .name          = "haldclutsrc",
     .description   = NULL_IF_CONFIG_SMALL("Provide an identity Hald CLUT."),
     .priv_class    = &haldclutsrc_class,
@@ -438,7 +438,7 @@ static const AVFilterPad nullsrc_outputs[] = {
     { NULL },
 };
 
-AVFilter ff_vsrc_nullsrc = {
+const AVFilter ff_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
     .init        = nullsrc_init,
@@ -674,7 +674,7 @@ static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_testsrc = {
+const AVFilter ff_vsrc_testsrc = {
     .name          = "testsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
     .priv_size     = sizeof(TestSourceContext),
@@ -947,7 +947,7 @@ static const AVFilterPad avfilter_vsrc_testsrc2_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_testsrc2 = {
+const AVFilter ff_vsrc_testsrc2 = {
     .name          = "testsrc2",
     .description   = NULL_IF_CONFIG_SMALL("Generate another test pattern."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1122,7 +1122,7 @@ static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_rgbtestsrc = {
+const AVFilter ff_vsrc_rgbtestsrc = {
     .name          = "rgbtestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1298,7 +1298,7 @@ static const AVFilterPad avfilter_vsrc_yuvtestsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_yuvtestsrc = {
+const AVFilter ff_vsrc_yuvtestsrc = {
     .name          = "yuvtestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate YUV test pattern."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1475,7 +1475,7 @@ static av_cold int pal75bars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-AVFilter ff_vsrc_pal75bars = {
+const AVFilter ff_vsrc_pal75bars = {
     .name          = "pal75bars",
     .description   = NULL_IF_CONFIG_SMALL("Generate PAL 75% color bars."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1522,7 +1522,7 @@ static av_cold int pal100bars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-AVFilter ff_vsrc_pal100bars = {
+const AVFilter ff_vsrc_pal100bars = {
     .name          = "pal100bars",
     .description   = NULL_IF_CONFIG_SMALL("Generate PAL 100% color bars."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1590,7 +1590,7 @@ static av_cold int smptebars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-AVFilter ff_vsrc_smptebars = {
+const AVFilter ff_vsrc_smptebars = {
     .name          = "smptebars",
     .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1696,7 +1696,7 @@ static av_cold int smptehdbars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-AVFilter ff_vsrc_smptehdbars = {
+const AVFilter ff_vsrc_smptehdbars = {
     .name          = "smptehdbars",
     .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE HD color bars."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1774,7 +1774,7 @@ static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_allyuv = {
+const AVFilter ff_vsrc_allyuv = {
     .name          = "allyuv",
     .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
     .priv_size     = sizeof(TestSourceContext),
@@ -1851,7 +1851,7 @@ static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_allrgb = {
+const AVFilter ff_vsrc_allrgb = {
     .name          = "allrgb",
     .description   = NULL_IF_CONFIG_SMALL("Generate all RGB colors."),
     .priv_size     = sizeof(TestSourceContext),

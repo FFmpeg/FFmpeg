@@ -424,7 +424,7 @@ static const AVFilterPad ahistogram_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_ahistogram = {
+const AVFilter ff_avf_ahistogram = {
     .name          = "ahistogram",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to histogram video output."),
     .uninit        = uninit,

@@ -1772,7 +1772,7 @@ static const AVFilterPad avfilter_af_hdcd_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_hdcd = {
+const AVFilter ff_af_hdcd = {
     .name          = "hdcd",
     .description   = NULL_IF_CONFIG_SMALL("Apply High Definition Compatible Digital (HDCD) decoding."),
     .priv_size     = sizeof(HDCDContext),

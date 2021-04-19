@@ -591,7 +591,7 @@ static const AVFilterPad nppscale_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_scale_npp = {
+const AVFilter ff_vf_scale_npp = {
     .name      = "scale_npp",
     .description = NULL_IF_CONFIG_SMALL("NVIDIA Performance Primitives video "
                                         "scaling and format conversion"),

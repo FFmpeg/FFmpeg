@@ -1589,7 +1589,7 @@ static const AVFilterPad showcqt_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showcqt = {
+const AVFilter ff_avf_showcqt = {
     .name          = "showcqt",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a CQT (Constant/Clamped Q Transform) spectrum video output."),
     .init          = init,

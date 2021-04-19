@@ -358,7 +358,7 @@ static const AVFilterPad showspatial_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_avf_showspatial = {
+const AVFilter ff_avf_showspatial = {
     .name          = "showspatial",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spatial video output."),
     .uninit        = uninit,

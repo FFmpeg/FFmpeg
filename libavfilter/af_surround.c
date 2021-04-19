@@ -1785,7 +1785,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_surround = {
+const AVFilter ff_af_surround = {
     .name           = "surround",
     .description    = NULL_IF_CONFIG_SMALL("Apply audio surround upmix filter."),
     .query_formats  = query_formats,

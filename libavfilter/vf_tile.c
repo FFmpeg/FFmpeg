@@ -285,7 +285,7 @@ static const AVFilterPad tile_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tile = {
+const AVFilter ff_vf_tile = {
     .name          = "tile",
     .description   = NULL_IF_CONFIG_SMALL("Tile several successive frames together."),
     .init          = init,

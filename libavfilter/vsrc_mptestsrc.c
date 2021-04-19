@@ -357,7 +357,7 @@ static const AVFilterPad mptestsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_mptestsrc = {
+const AVFilter ff_vsrc_mptestsrc = {
     .name          = "mptestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate various test pattern."),
     .priv_size     = sizeof(MPTestContext),

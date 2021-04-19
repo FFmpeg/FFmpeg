@@ -160,7 +160,7 @@ static const AVFilterPad dcshift_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_dcshift = {
+const AVFilter ff_af_dcshift = {
     .name           = "dcshift",
     .description    = NULL_IF_CONFIG_SMALL("Apply a DC shift to the audio."),
     .query_formats  = query_formats,

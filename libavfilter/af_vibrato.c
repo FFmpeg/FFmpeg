@@ -198,7 +198,7 @@ static const AVFilterPad avfilter_af_vibrato_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_vibrato = {
+const AVFilter ff_af_vibrato = {
     .name          = "vibrato",
     .description   = NULL_IF_CONFIG_SMALL("Apply vibrato effect."),
     .priv_size     = sizeof(VibratoContext),

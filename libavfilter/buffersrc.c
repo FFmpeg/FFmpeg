@@ -438,7 +438,7 @@ static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_buffer = {
+const AVFilter ff_vsrc_buffer = {
     .name      = "buffer",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them accessible to the filterchain."),
     .priv_size = sizeof(BufferSourceContext),
@@ -462,7 +462,7 @@ static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_asrc_abuffer = {
+const AVFilter ff_asrc_abuffer = {
     .name          = "abuffer",
     .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them accessible to the filterchain."),
     .priv_size     = sizeof(BufferSourceContext),

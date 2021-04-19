@@ -398,7 +398,7 @@ static const AVOption chromakey_options[] = {
 
 AVFILTER_DEFINE_CLASS(chromakey);
 
-AVFilter ff_vf_chromakey = {
+const AVFilter ff_vf_chromakey = {
     .name          = "chromakey",
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on YUV colors."),
     .priv_size     = sizeof(ChromakeyContext),
@@ -440,7 +440,7 @@ static const AVFilterPad chromahold_outputs[] = {
 
 AVFILTER_DEFINE_CLASS(chromahold);
 
-AVFilter ff_vf_chromahold = {
+const AVFilter ff_vf_chromahold = {
     .name          = "chromahold",
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray."),
     .priv_size     = sizeof(ChromakeyContext),

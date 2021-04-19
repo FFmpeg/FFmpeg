@@ -377,7 +377,7 @@ static const AVOption eq_options[] = {
 
 AVFILTER_DEFINE_CLASS(eq);
 
-AVFilter ff_vf_eq = {
+const AVFilter ff_vf_eq = {
     .name            = "eq",
     .description     = NULL_IF_CONFIG_SMALL("Adjust brightness, contrast, gamma, and saturation."),
     .priv_size       = sizeof(EQContext),

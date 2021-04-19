@@ -3899,7 +3899,7 @@ find_things_extern(){
 
 find_filters_extern(){
     file=$source_path/$1
-    sed -n 's/^extern AVFilter ff_[avfsinkrc]\{2,5\}_\([[:alnum:]_]\{1,\}\);/\1_filter/p' $file
+    sed -n 's/^extern const AVFilter ff_[avfsinkrc]\{2,5\}_\([[:alnum:]_]\{1,\}\);/\1_filter/p' $file
 }
 
 FILTER_LIST=$(find_filters_extern libavfilter/allfilters.c)
@@ -7636,7 +7636,7 @@ cp_if_changed $TMPH libavutil/avconfig.h
 # full_filter_name_foo=vf_foo
 # full_filter_name_bar=asrc_bar
 # ...
-eval "$(sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_\(.*\);/full_filter_name_\2=\1_\2/p" $source_path/libavfilter/allfilters.c)"
+eval "$(sed -n "s/^extern const AVFilter ff_\([avfsinkrc]\{2,5\}\)_\(.*\);/full_filter_name_\2=\1_\2/p" $source_path/libavfilter/allfilters.c)"
 
 # generate the lists of enabled components
 print_enabled_components(){

@@ -383,7 +383,7 @@ static const AVFilterPad deint_vaapi_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_deinterlace_vaapi = {
+const AVFilter ff_vf_deinterlace_vaapi = {
     .name           = "deinterlace_vaapi",
     .description    = NULL_IF_CONFIG_SMALL("Deinterlacing of VAAPI surfaces"),
     .priv_size      = sizeof(DeintVAAPIContext),

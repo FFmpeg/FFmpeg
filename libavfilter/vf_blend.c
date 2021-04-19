@@ -906,7 +906,7 @@ static const AVFilterPad blend_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_blend = {
+const AVFilter ff_vf_blend = {
     .name          = "blend",
     .description   = NULL_IF_CONFIG_SMALL("Blend two video frames into each other."),
     .preinit       = blend_framesync_preinit,
@@ -968,7 +968,7 @@ static const AVFilterPad tblend_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tblend = {
+const AVFilter ff_vf_tblend = {
     .name          = "tblend",
     .description   = NULL_IF_CONFIG_SMALL("Blend successive frames."),
     .priv_size     = sizeof(BlendContext),

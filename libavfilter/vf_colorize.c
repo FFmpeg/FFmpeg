@@ -293,7 +293,7 @@ static const AVOption colorize_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorize);
 
-AVFilter ff_vf_colorize = {
+const AVFilter ff_vf_colorize = {
     .name          = "colorize",
     .description   = NULL_IF_CONFIG_SMALL("Overlay a solid color on the video stream."),
     .priv_size     = sizeof(ColorizeContext),

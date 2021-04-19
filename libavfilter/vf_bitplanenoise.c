@@ -214,7 +214,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_bitplanenoise = {
+const AVFilter ff_vf_bitplanenoise = {
     .name           = "bitplanenoise",
     .description    = NULL_IF_CONFIG_SMALL("Measure bit plane noise."),
     .priv_size      = sizeof(BPNContext),

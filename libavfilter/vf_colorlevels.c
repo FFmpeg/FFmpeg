@@ -315,7 +315,7 @@ static const AVFilterPad colorlevels_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_colorlevels = {
+const AVFilter ff_vf_colorlevels = {
     .name          = "colorlevels",
     .description   = NULL_IF_CONFIG_SMALL("Adjust the color levels."),
     .priv_size     = sizeof(ColorLevelsContext),

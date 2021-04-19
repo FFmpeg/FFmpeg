@@ -1258,7 +1258,7 @@ static const AVFilterPad minterpolate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_minterpolate = {
+const AVFilter ff_vf_minterpolate = {
     .name          = "minterpolate",
     .description   = NULL_IF_CONFIG_SMALL("Frame rate conversion using Motion Interpolation."),
     .priv_size     = sizeof(MIContext),

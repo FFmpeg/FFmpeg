@@ -234,7 +234,7 @@ static const AVFilterPad rubberband_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_rubberband = {
+const AVFilter ff_af_rubberband = {
     .name          = "rubberband",
     .description   = NULL_IF_CONFIG_SMALL("Apply time-stretching and pitch-shifting."),
     .query_formats = query_formats,

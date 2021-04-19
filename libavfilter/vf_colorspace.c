@@ -1069,7 +1069,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_colorspace = {
+const AVFilter ff_vf_colorspace = {
     .name            = "colorspace",
     .description     = NULL_IF_CONFIG_SMALL("Convert between colorspaces."),
     .init            = init,

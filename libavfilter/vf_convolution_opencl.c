@@ -362,7 +362,7 @@ static const AVOption convolution_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(convolution_opencl);
 
-AVFilter ff_vf_convolution_opencl = {
+const AVFilter ff_vf_convolution_opencl = {
     .name           = "convolution_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply convolution mask to input video"),
     .priv_size      = sizeof(ConvolutionOpenCLContext),
@@ -388,7 +388,7 @@ static const AVOption sobel_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(sobel_opencl);
 
-AVFilter ff_vf_sobel_opencl = {
+const AVFilter ff_vf_sobel_opencl = {
     .name           = "sobel_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply sobel operator"),
     .priv_size      = sizeof(ConvolutionOpenCLContext),
@@ -414,7 +414,7 @@ static const AVOption prewitt_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(prewitt_opencl);
 
-AVFilter ff_vf_prewitt_opencl = {
+const AVFilter ff_vf_prewitt_opencl = {
     .name           = "prewitt_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply prewitt operator"),
     .priv_size      = sizeof(ConvolutionOpenCLContext),
@@ -440,7 +440,7 @@ static const AVOption roberts_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(roberts_opencl);
 
-AVFilter ff_vf_roberts_opencl = {
+const AVFilter ff_vf_roberts_opencl = {
     .name           = "roberts_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Apply roberts operator"),
     .priv_size      = sizeof(ConvolutionOpenCLContext),

@@ -4857,7 +4857,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_v360 = {
+const AVFilter ff_vf_v360 = {
     .name          = "v360",
     .description   = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
     .priv_size     = sizeof(V360Context),

@@ -235,7 +235,7 @@ static const AVFilterPad phase_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_phase = {
+const AVFilter ff_vf_phase = {
     .name          = "phase",
     .description   = NULL_IF_CONFIG_SMALL("Phase shift fields."),
     .priv_size     = sizeof(PhaseContext),

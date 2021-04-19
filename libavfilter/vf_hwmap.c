@@ -419,7 +419,7 @@ static const AVFilterPad hwmap_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hwmap = {
+const AVFilter ff_vf_hwmap = {
     .name           = "hwmap",
     .description    = NULL_IF_CONFIG_SMALL("Map hardware frames"),
     .uninit         = hwmap_uninit,

@@ -529,7 +529,7 @@ static const AVFilterPad spectrumsynth_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vaf_spectrumsynth = {
+const AVFilter ff_vaf_spectrumsynth = {
     .name          = "spectrumsynth",
     .description   = NULL_IF_CONFIG_SMALL("Convert input spectrum videos to audio output."),
     .uninit        = uninit,

@@ -764,7 +764,7 @@ static const AVFilterPad inputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_anequalizer = {
+const AVFilter ff_af_anequalizer = {
     .name          = "anequalizer",
     .description   = NULL_IF_CONFIG_SMALL("Apply high-order audio parametric multi band equalizer."),
     .priv_size     = sizeof(AudioNEqualizerContext),

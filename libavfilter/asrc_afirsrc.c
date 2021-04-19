@@ -317,7 +317,7 @@ static const AVFilterPad afirsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_asrc_afirsrc = {
+const AVFilter ff_asrc_afirsrc = {
     .name          = "afirsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate a FIR coefficients audio stream."),
     .query_formats = query_formats,

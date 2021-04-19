@@ -131,7 +131,7 @@ static const AVOption exposure_options[] = {
 
 AVFILTER_DEFINE_CLASS(exposure);
 
-AVFilter ff_vf_exposure = {
+const AVFilter ff_vf_exposure = {
     .name          = "exposure",
     .description   = NULL_IF_CONFIG_SMALL("Adjust exposure of the video stream."),
     .priv_size     = sizeof(ExposureContext),

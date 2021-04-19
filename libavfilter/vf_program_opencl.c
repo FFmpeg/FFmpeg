@@ -362,7 +362,7 @@ static const AVFilterPad program_opencl_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_program_opencl = {
+const AVFilter ff_vf_program_opencl = {
     .name           = "program_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Filter video using an OpenCL program"),
     .priv_size      = sizeof(ProgramOpenCLContext),
@@ -415,7 +415,7 @@ static const AVFilterPad openclsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vsrc_openclsrc = {
+const AVFilter ff_vsrc_openclsrc = {
     .name           = "openclsrc",
     .description    = NULL_IF_CONFIG_SMALL("Generate video using an OpenCL program"),
     .priv_size      = sizeof(ProgramOpenCLContext),

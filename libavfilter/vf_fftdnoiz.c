@@ -685,7 +685,7 @@ static const AVFilterPad fftdnoiz_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fftdnoiz = {
+const AVFilter ff_vf_fftdnoiz = {
     .name          = "fftdnoiz",
     .description   = NULL_IF_CONFIG_SMALL("Denoise frames using 3D FFT."),
     .priv_size     = sizeof(FFTdnoizContext),

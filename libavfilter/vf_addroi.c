@@ -255,7 +255,7 @@ static const AVFilterPad addroi_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_addroi = {
+const AVFilter ff_vf_addroi = {
     .name        = "addroi",
     .description = NULL_IF_CONFIG_SMALL("Add region of interest to frame."),
     .init        = addroi_init,

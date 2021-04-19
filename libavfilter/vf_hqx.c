@@ -553,7 +553,7 @@ static const AVFilterPad hqx_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_hqx = {
+const AVFilter ff_vf_hqx = {
     .name          = "hqx",
     .description   = NULL_IF_CONFIG_SMALL("Scale the input by 2, 3 or 4 using the hq*x magnification algorithm."),
     .priv_size     = sizeof(HQXContext),

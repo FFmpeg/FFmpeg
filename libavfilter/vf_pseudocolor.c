@@ -888,7 +888,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 AVFILTER_DEFINE_CLASS(pseudocolor);
 
-AVFilter ff_vf_pseudocolor = {
+const AVFilter ff_vf_pseudocolor = {
     .name          = "pseudocolor",
     .description   = NULL_IF_CONFIG_SMALL("Make pseudocolored video frames."),
     .priv_size     = sizeof(PseudoColorContext),

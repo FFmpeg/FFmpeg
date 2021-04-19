@@ -233,7 +233,7 @@ static const AVFilterPad flanger_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_flanger = {
+const AVFilter ff_af_flanger = {
     .name          = "flanger",
     .description   = NULL_IF_CONFIG_SMALL("Apply a flanging effect to the audio."),
     .query_formats = query_formats,

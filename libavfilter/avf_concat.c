@@ -447,7 +447,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return ret;
 }
 
-AVFilter ff_avf_concat = {
+const AVFilter ff_avf_concat = {
     .name          = "concat",
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
     .init          = init,

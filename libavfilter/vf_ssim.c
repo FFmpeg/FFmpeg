@@ -593,7 +593,7 @@ static const AVFilterPad ssim_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_ssim = {
+const AVFilter ff_vf_ssim = {
     .name          = "ssim",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the SSIM between two video streams."),
     .preinit       = ssim_framesync_preinit,

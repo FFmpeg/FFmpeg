@@ -244,7 +244,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_asubboost = {
+const AVFilter ff_af_asubboost = {
     .name           = "asubboost",
     .description    = NULL_IF_CONFIG_SMALL("Boost subwoofer frequencies."),
     .query_formats  = query_formats,

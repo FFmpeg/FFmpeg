@@ -358,7 +358,7 @@ static const AVFilterPad neighbor_outputs[] = {
 #define DEFINE_NEIGHBOR_FILTER(name_, description_)          \
 AVFILTER_DEFINE_CLASS(name_);                                \
                                                              \
-AVFilter ff_vf_##name_ = {                                   \
+const AVFilter ff_vf_##name_ = {                                   \
     .name          = #name_,                                 \
     .description   = NULL_IF_CONFIG_SMALL(description_),     \
     .priv_size     = sizeof(NContext),                       \

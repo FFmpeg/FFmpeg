@@ -409,7 +409,7 @@ static const AVFilterPad outputs[] = {
 #define hstack_options stack_options
 AVFILTER_DEFINE_CLASS(hstack);
 
-AVFilter ff_vf_hstack = {
+const AVFilter ff_vf_hstack = {
     .name          = "hstack",
     .description   = NULL_IF_CONFIG_SMALL("Stack video inputs horizontally."),
     .priv_size     = sizeof(StackContext),
@@ -429,7 +429,7 @@ AVFilter ff_vf_hstack = {
 #define vstack_options stack_options
 AVFILTER_DEFINE_CLASS(vstack);
 
-AVFilter ff_vf_vstack = {
+const AVFilter ff_vf_vstack = {
     .name          = "vstack",
     .description   = NULL_IF_CONFIG_SMALL("Stack video inputs vertically."),
     .priv_size     = sizeof(StackContext),
@@ -456,7 +456,7 @@ static const AVOption xstack_options[] = {
 
 AVFILTER_DEFINE_CLASS(xstack);
 
-AVFilter ff_vf_xstack = {
+const AVFilter ff_vf_xstack = {
     .name          = "xstack",
     .description   = NULL_IF_CONFIG_SMALL("Stack video inputs into custom layout."),
     .priv_size     = sizeof(StackContext),

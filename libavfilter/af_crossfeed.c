@@ -175,7 +175,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_crossfeed = {
+const AVFilter ff_af_crossfeed = {
     .name           = "crossfeed",
     .description    = NULL_IF_CONFIG_SMALL("Apply headphone crossfeed filter."),
     .query_formats  = query_formats,

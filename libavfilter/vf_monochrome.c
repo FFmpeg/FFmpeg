@@ -301,7 +301,7 @@ static const AVOption monochrome_options[] = {
 
 AVFILTER_DEFINE_CLASS(monochrome);
 
-AVFilter ff_vf_monochrome = {
+const AVFilter ff_vf_monochrome = {
     .name          = "monochrome",
     .description   = NULL_IF_CONFIG_SMALL("Convert video to gray using custom color filter."),
     .priv_size     = sizeof(MonochromeContext),

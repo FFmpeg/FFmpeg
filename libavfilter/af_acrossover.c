@@ -569,7 +569,7 @@ static const AVFilterPad inputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_acrossover = {
+const AVFilter ff_af_acrossover = {
     .name           = "acrossover",
     .description    = NULL_IF_CONFIG_SMALL("Split audio into per-bands streams."),
     .priv_size      = sizeof(AudioCrossoverContext),

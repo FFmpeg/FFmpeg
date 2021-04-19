@@ -637,7 +637,7 @@ static const AVFilterPad avfilter_af_amix_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_amix = {
+const AVFilter ff_af_amix = {
     .name           = "amix",
     .description    = NULL_IF_CONFIG_SMALL("Audio mixing."),
     .priv_size      = sizeof(MixContext),

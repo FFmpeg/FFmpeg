@@ -204,7 +204,7 @@ static const AVOption colorcorrect_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorcorrect);
 
-AVFilter ff_vf_colorcorrect = {
+const AVFilter ff_vf_colorcorrect = {
     .name          = "colorcorrect",
     .description   = NULL_IF_CONFIG_SMALL("Adjust color white balance selectively for blacks and whites."),
     .priv_size     = sizeof(ColorCorrectContext),

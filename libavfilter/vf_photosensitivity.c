@@ -329,7 +329,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_photosensitivity = {
+const AVFilter ff_vf_photosensitivity = {
     .name          = "photosensitivity",
     .description   = NULL_IF_CONFIG_SMALL("Filter out photosensitive epilepsy seizure-inducing flashes."),
     .priv_size     = sizeof(PhotosensitivityContext),

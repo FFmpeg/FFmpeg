@@ -1619,7 +1619,7 @@ static const AVOption arnndn_options[] = {
 
 AVFILTER_DEFINE_CLASS(arnndn);
 
-AVFilter ff_af_arnndn = {
+const AVFilter ff_af_arnndn = {
     .name          = "arnndn",
     .description   = NULL_IF_CONFIG_SMALL("Reduce noise from speech using Recurrent Neural Networks."),
     .query_formats = query_formats,

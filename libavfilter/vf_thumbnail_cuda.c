@@ -440,7 +440,7 @@ static const AVFilterPad thumbnail_cuda_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_thumbnail_cuda = {
+const AVFilter ff_vf_thumbnail_cuda = {
     .name          = "thumbnail_cuda",
     .description   = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
     .priv_size     = sizeof(ThumbnailCudaContext),

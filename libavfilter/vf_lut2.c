@@ -560,7 +560,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
 FRAMESYNC_DEFINE_CLASS(lut2, LUT2Context, fs);
 
-AVFilter ff_vf_lut2 = {
+const AVFilter ff_vf_lut2 = {
     .name          = "lut2",
     .description   = NULL_IF_CONFIG_SMALL("Compute and apply a lookup table from two video inputs."),
     .preinit       = lut2_framesync_preinit,
@@ -652,7 +652,7 @@ static const AVFilterPad tlut2_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tlut2 = {
+const AVFilter ff_vf_tlut2 = {
     .name          = "tlut2",
     .description   = NULL_IF_CONFIG_SMALL("Compute and apply a lookup table from two successive frames."),
     .priv_size     = sizeof(LUT2Context),

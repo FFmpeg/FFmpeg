@@ -248,7 +248,7 @@ static const AVFilterPad cover_rect_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_cover_rect = {
+const AVFilter ff_vf_cover_rect = {
     .name            = "cover_rect",
     .description     = NULL_IF_CONFIG_SMALL("Find and cover a user specified object."),
     .priv_size       = sizeof(CoverContext),

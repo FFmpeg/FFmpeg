@@ -762,7 +762,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_adeclick = {
+const AVFilter ff_af_adeclick = {
     .name          = "adeclick",
     .description   = NULL_IF_CONFIG_SMALL("Remove impulsive noise from input audio."),
     .query_formats = query_formats,
@@ -798,7 +798,7 @@ static const AVOption adeclip_options[] = {
 
 AVFILTER_DEFINE_CLASS(adeclip);
 
-AVFilter ff_af_adeclip = {
+const AVFilter ff_af_adeclip = {
     .name          = "adeclip",
     .description   = NULL_IF_CONFIG_SMALL("Remove clipping from input audio."),
     .query_formats = query_formats,

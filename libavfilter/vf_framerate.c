@@ -441,7 +441,7 @@ static const AVFilterPad framerate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_framerate = {
+const AVFilter ff_vf_framerate = {
     .name          = "framerate",
     .description   = NULL_IF_CONFIG_SMALL("Upsamples or downsamples progressive source between specified frame rates."),
     .priv_size     = sizeof(FrameRateContext),

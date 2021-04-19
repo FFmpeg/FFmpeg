@@ -313,7 +313,7 @@ static const AVFilterPad overlay_opencl_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_overlay_opencl = {
+const AVFilter ff_vf_overlay_opencl = {
     .name            = "overlay_opencl",
     .description     = NULL_IF_CONFIG_SMALL("Overlay one video on top of another"),
     .priv_size       = sizeof(OverlayOpenCLContext),

@@ -395,7 +395,7 @@ static const AVOption colorcontrast_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorcontrast);
 
-AVFilter ff_vf_colorcontrast = {
+const AVFilter ff_vf_colorcontrast = {
     .name          = "colorcontrast",
     .description   = NULL_IF_CONFIG_SMALL("Adjust color contrast between RGB components."),
     .priv_size     = sizeof(ColorContrastContext),

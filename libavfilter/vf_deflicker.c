@@ -466,7 +466,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_deflicker = {
+const AVFilter ff_vf_deflicker = {
     .name          = "deflicker",
     .description   = NULL_IF_CONFIG_SMALL("Remove temporal frame luminance variations."),
     .priv_size     = sizeof(DeflickerContext),

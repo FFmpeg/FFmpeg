@@ -610,7 +610,7 @@ static const AVFilterPad vaguedenoiser_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_vaguedenoiser = {
+const AVFilter ff_vf_vaguedenoiser = {
     .name          = "vaguedenoiser",
     .description   = NULL_IF_CONFIG_SMALL("Apply a Wavelet based Denoiser."),
     .priv_size     = sizeof(VagueDenoiserContext),

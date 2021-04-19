@@ -503,7 +503,7 @@ static const AVFilterPad outputs[] = {
 
 #if CONFIG_HISTOGRAM_FILTER
 
-AVFilter ff_vf_histogram = {
+const AVFilter ff_vf_histogram = {
     .name          = "histogram",
     .description   = NULL_IF_CONFIG_SMALL("Compute and draw a histogram."),
     .priv_size     = sizeof(HistogramContext),
@@ -545,7 +545,7 @@ static const AVOption thistogram_options[] = {
 
 AVFILTER_DEFINE_CLASS(thistogram);
 
-AVFilter ff_vf_thistogram = {
+const AVFilter ff_vf_thistogram = {
     .name          = "thistogram",
     .description   = NULL_IF_CONFIG_SMALL("Compute and draw a temporal histogram."),
     .priv_size     = sizeof(HistogramContext),

@@ -1418,7 +1418,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_afftdn = {
+const AVFilter ff_af_afftdn = {
     .name            = "afftdn",
     .description     = NULL_IF_CONFIG_SMALL("Denoise audio samples using FFT."),
     .query_formats   = query_formats,

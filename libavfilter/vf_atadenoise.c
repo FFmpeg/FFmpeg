@@ -572,7 +572,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_atadenoise = {
+const AVFilter ff_vf_atadenoise = {
     .name          = "atadenoise",
     .description   = NULL_IF_CONFIG_SMALL("Apply an Adaptive Temporal Averaging Denoiser."),
     .priv_size     = sizeof(ATADenoiseContext),

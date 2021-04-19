@@ -364,7 +364,7 @@ static const AVFilterPad avfilter_af_acrusher_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_acrusher = {
+const AVFilter ff_af_acrusher = {
     .name          = "acrusher",
     .description   = NULL_IF_CONFIG_SMALL("Reduce audio bit resolution."),
     .priv_size     = sizeof(ACrusherContext),

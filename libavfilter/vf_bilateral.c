@@ -379,7 +379,7 @@ static const AVFilterPad bilateral_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_bilateral = {
+const AVFilter ff_vf_bilateral = {
     .name          = "bilateral",
     .description   = NULL_IF_CONFIG_SMALL("Apply Bilateral filter."),
     .priv_size     = sizeof(BilateralContext),

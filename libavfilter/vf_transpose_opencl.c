@@ -274,7 +274,7 @@ static const AVFilterPad transpose_opencl_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_transpose_opencl = {
+const AVFilter ff_vf_transpose_opencl = {
     .name           = "transpose_opencl",
     .description    = NULL_IF_CONFIG_SMALL("Transpose input video"),
     .priv_size      = sizeof(TransposeOpenCLContext),

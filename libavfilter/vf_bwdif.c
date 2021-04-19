@@ -410,7 +410,7 @@ static const AVFilterPad avfilter_vf_bwdif_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_bwdif = {
+const AVFilter ff_vf_bwdif = {
     .name          = "bwdif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
     .priv_size     = sizeof(BWDIFContext),

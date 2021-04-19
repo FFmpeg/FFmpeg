@@ -1956,7 +1956,7 @@ static const AVFilterPad xfade_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_xfade = {
+const AVFilter ff_vf_xfade = {
     .name          = "xfade",
     .description   = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
     .priv_size     = sizeof(XFadeContext),

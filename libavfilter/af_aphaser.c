@@ -290,7 +290,7 @@ static const AVFilterPad aphaser_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_aphaser = {
+const AVFilter ff_af_aphaser = {
     .name          = "aphaser",
     .description   = NULL_IF_CONFIG_SMALL("Add a phasing effect to the audio."),
     .query_formats = query_formats,

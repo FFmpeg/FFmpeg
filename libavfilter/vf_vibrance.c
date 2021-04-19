@@ -378,7 +378,7 @@ static const AVOption vibrance_options[] = {
 
 AVFILTER_DEFINE_CLASS(vibrance);
 
-AVFilter ff_vf_vibrance = {
+const AVFilter ff_vf_vibrance = {
     .name          = "vibrance",
     .description   = NULL_IF_CONFIG_SMALL("Boost or alter saturation."),
     .priv_size     = sizeof(VibranceContext),

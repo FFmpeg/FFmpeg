@@ -193,7 +193,7 @@ static const AVFilterPad sr_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_sr = {
+const AVFilter ff_vf_sr = {
     .name          = "sr",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN-based image super resolution to the input."),
     .priv_size     = sizeof(SRContext),

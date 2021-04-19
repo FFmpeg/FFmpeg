@@ -242,7 +242,7 @@ static const AVFilterPad mpdecimate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_mpdecimate = {
+const AVFilter ff_vf_mpdecimate = {
     .name          = "mpdecimate",
     .description   = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
     .init          = init,

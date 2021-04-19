@@ -303,7 +303,7 @@ static const AVFilterPad avfilter_af_aexciter_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_aexciter = {
+const AVFilter ff_af_aexciter = {
     .name          = "aexciter",
     .description   = NULL_IF_CONFIG_SMALL("Enhance high frequency part of audio."),
     .priv_size     = sizeof(AExciterContext),

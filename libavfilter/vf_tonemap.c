@@ -334,7 +334,7 @@ static const AVFilterPad tonemap_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_tonemap = {
+const AVFilter ff_vf_tonemap = {
     .name            = "tonemap",
     .description     = NULL_IF_CONFIG_SMALL("Conversion to/from different dynamic ranges."),
     .init            = init,

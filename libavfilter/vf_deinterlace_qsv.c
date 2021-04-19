@@ -594,7 +594,7 @@ static const AVFilterPad qsvdeint_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_deinterlace_qsv = {
+const AVFilter ff_vf_deinterlace_qsv = {
     .name      = "deinterlace_qsv",
     .description = NULL_IF_CONFIG_SMALL("QuickSync video deinterlacing"),
 

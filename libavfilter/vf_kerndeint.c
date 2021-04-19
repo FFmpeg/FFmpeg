@@ -307,7 +307,7 @@ static const AVFilterPad kerndeint_outputs[] = {
 };
 
 
-AVFilter ff_vf_kerndeint = {
+const AVFilter ff_vf_kerndeint = {
     .name          = "kerndeint",
     .description   = NULL_IF_CONFIG_SMALL("Apply kernel deinterlacing to the input."),
     .priv_size     = sizeof(KerndeintContext),

@@ -511,7 +511,7 @@ static const AVFilterPad perspective_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_perspective = {
+const AVFilter ff_vf_perspective = {
     .name          = "perspective",
     .description   = NULL_IF_CONFIG_SMALL("Correct the perspective of video."),
     .priv_size     = sizeof(PerspectiveContext),

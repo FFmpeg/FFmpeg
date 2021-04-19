@@ -193,7 +193,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_entropy = {
+const AVFilter ff_vf_entropy = {
     .name           = "entropy",
     .description    = NULL_IF_CONFIG_SMALL("Measure video frames entropy."),
     .priv_size      = sizeof(EntropyContext),

@@ -428,7 +428,7 @@ static const AVFilterPad fftfilt_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_fftfilt = {
+const AVFilter ff_vf_fftfilt = {
     .name            = "fftfilt",
     .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to pixels in frequency domain."),
     .priv_size       = sizeof(FFTFILTContext),

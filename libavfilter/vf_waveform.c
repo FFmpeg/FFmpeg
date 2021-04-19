@@ -3490,7 +3490,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_waveform = {
+const AVFilter ff_vf_waveform = {
     .name          = "waveform",
     .description   = NULL_IF_CONFIG_SMALL("Video waveform monitor."),
     .priv_size     = sizeof(WaveformContext),

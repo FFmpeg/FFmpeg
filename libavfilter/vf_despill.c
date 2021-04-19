@@ -171,7 +171,7 @@ static const AVOption despill_options[] = {
 
 AVFILTER_DEFINE_CLASS(despill);
 
-AVFilter ff_vf_despill = {
+const AVFilter ff_vf_despill = {
     .name          = "despill",
     .description   = NULL_IF_CONFIG_SMALL("Despill video."),
     .priv_size     = sizeof(DespillContext),

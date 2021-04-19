@@ -106,7 +106,7 @@ static const AVFilterPad asetrate_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_af_asetrate = {
+const AVFilter ff_af_asetrate = {
     .name          = "asetrate",
     .description   = NULL_IF_CONFIG_SMALL("Change the sample rate without "
                                           "altering the data."),
