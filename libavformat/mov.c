@@ -4656,6 +4656,8 @@ static int mov_read_chap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < num && !pb->eof_reached; i++)
         c->chapter_tracks[i] = avio_rb32(pb);
 
+    c->nb_chapter_tracks = i;
+
     return 0;
 }
 
