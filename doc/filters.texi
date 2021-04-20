@@ -21803,6 +21803,9 @@ Default is @code{3}.
 Apply cross fade from one input video stream to another input video stream.
 The cross fade is applied for specified duration.
 
+Both inputs must be constant frame-rate and have the same resolution, pixel format,
+frame rate and timebase.
+
 The filter accepts the following options:
 
 @table @option
