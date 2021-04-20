@@ -25,7 +25,7 @@
  * MMS protocol specification:
  *  [1]http://msdn.microsoft.com/en-us/library/cc234711(PROT.10).aspx
  * ASF specification. Revision 01.20.03.
- *  [2]http://msdn.microsoft.com/en-us/library/bb643323.aspx
+ *  [2]http://web.archive.org/web/20131203084402/http://msdn.microsoft.com/en-us/library/bb643323.aspx
  */
 
 #include "avformat.h"

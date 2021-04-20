@@ -59,7 +59,7 @@ int avpriv_vsnprintf(char *s, size_t n, const char *fmt,
      * recommends to provide _snprintf/_vsnprintf() a buffer size that
      * is one less than the actual buffer, and zero it before calling
      * _snprintf/_vsnprintf() to workaround this problem.
-     * See http://msdn.microsoft.com/en-us/library/1kt27hek(v=vs.80).aspx */
+     * See https://web.archive.org/web/20151214111935/http://msdn.microsoft.com/en-us/library/1kt27hek(v=vs.80).aspx */
     memset(s, 0, n);
     va_copy(ap_copy, ap);
     ret = _vsnprintf(s, n - 1, fmt, ap_copy);
