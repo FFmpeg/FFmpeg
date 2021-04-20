@@ -45,11 +45,6 @@
  */
 //#define JLS_BROKEN
 
-typedef struct JpegLSDecodeContext {
-    MJpegDecodeContext mjpeg;
-    JLSState state;
-} JpegLSDecodeContext;
-
 /**
  * Decode LSE block with initialization parameters
  */
@@ -355,10 +350,16 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
 {
     int i, t = 0;
     uint8_t *zero, *last, *cur;
-    JLSState *const state = &((JpegLSDecodeContext*)s)->state;
+    JLSState *state = s->jls_state;
     int off = 0, stride = 1, width, shift, ret = 0;
     int decoded_height = 0;
 
+    if (!state) {
+        state = av_malloc(sizeof(*state));
+        if (!state)
+            return AVERROR(ENOMEM);
+        s->jls_state = state;
+    }
     zero = av_mallocz(s->picture_ptr->linesize[0]);
     if (!zero)
         return AVERROR(ENOMEM);
@@ -548,7 +549,7 @@ AVCodec ff_jpegls_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEGLS,
-    .priv_data_size = sizeof(JpegLSDecodeContext),
+    .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .receive_frame  = ff_mjpeg_receive_frame,

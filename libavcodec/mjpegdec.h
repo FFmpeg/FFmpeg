@@ -49,6 +49,8 @@ typedef struct ICCEntry {
     int    length;
 } ICCEntry;
 
+struct JLSState;
+
 typedef struct MJpegDecodeContext {
     AVClass *class;
     AVCodecContext *avctx;
@@ -163,6 +165,7 @@ typedef struct MJpegDecodeContext {
     enum AVPixelFormat hwaccel_sw_pix_fmt;
     enum AVPixelFormat hwaccel_pix_fmt;
     void *hwaccel_picture_private;
+    struct JLSState *jls_state;
 } MJpegDecodeContext;
 
 int ff_mjpeg_build_vlc(VLC *vlc, const uint8_t *bits_table,
