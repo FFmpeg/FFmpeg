@@ -3817,7 +3817,11 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         if ((empty_duration || start_time) && mov->time_scale > 0) {
             if (empty_duration)
                 empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
-            sc->time_offset = start_time - empty_duration;
+
+            if (av_sat_sub64(start_time, empty_duration) != start_time - (uint64_t)empty_duration)
+                av_log(mov->fc, AV_LOG_WARNING, "start_time - empty_duration is not representable\n");
+
+            sc->time_offset = start_time -  (uint64_t)empty_duration;
             sc->min_corrected_pts = start_time;
             if (!mov->advanced_editlist)
                 current_dts = -sc->time_offset;
