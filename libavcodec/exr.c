@@ -1795,6 +1795,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
             ymax   = bytestream2_get_le32(gb);
 
             if (xmin > xmax || ymin > ymax ||
+                ymax == INT_MAX || xmax == INT_MAX ||
                 (unsigned)xmax - xmin >= INT_MAX ||
                 (unsigned)ymax - ymin >= INT_MAX) {
                 ret = AVERROR_INVALIDDATA;
