@@ -924,7 +924,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             fs->c.bytestream_end = buf_p + v;
 
         fs->avctx = avctx;
-        fs->cur = p;
     }
 
     avctx->execute(avctx,
@@ -965,11 +964,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     }
     ff_thread_report_progress(&f->picture, INT_MAX, 0);
 
-    f->picture_number++;
-
     if (f->last_picture.f)
         ff_thread_release_buffer(avctx, &f->last_picture);
-    f->cur = NULL;
     if ((ret = av_frame_ref(data, f->picture.f)) < 0)
         return ret;
 
