@@ -1072,18 +1072,12 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (dst == src)
         return 0;
 
-    {
-        ThreadFrame picture = fdst->picture, last_picture = fdst->last_picture;
-        uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
-        struct FFV1Context *slice_context[MAX_SLICES];
-        memcpy(initial_states, fdst->initial_states, sizeof(fdst->initial_states));
-        memcpy(slice_context,  fdst->slice_context , sizeof(fdst->slice_context));
+    copy_fields(fdst, fsrc, fsrc);
+    fdst->use32bit     = fsrc->use32bit;
+    memcpy(fdst->state_transition, fsrc->state_transition,
+           sizeof(fdst->state_transition));
+    memcpy(fdst->quant_table, fsrc->quant_table, sizeof(fsrc->quant_table));
 
-        memcpy(fdst, fsrc, sizeof(*fdst));
-        memcpy(fdst->initial_states, initial_states, sizeof(fdst->initial_states));
-        memcpy(fdst->slice_context,  slice_context , sizeof(fdst->slice_context));
-        fdst->picture      = picture;
-        fdst->last_picture = last_picture;
         for (i = 0; i<fdst->num_h_slices * fdst->num_v_slices; i++) {
             FFV1Context *fssrc = fsrc->slice_context[i];
             FFV1Context *fsdst = fdst->slice_context[i];
@@ -1091,7 +1085,6 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         }
         av_assert0(!fdst->plane[0].state);
         av_assert0(!fdst->sample_buffer);
-    }
 
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
