@@ -161,7 +161,7 @@ static int decode_plane(FFV1Context *s, uint8_t *src,
     return 0;
 }
 
-static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
+static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
 {
     RangeCoder *c = &fs->c;
     uint8_t state[CONTEXT_SIZE];
@@ -974,7 +974,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     return buf_size;
 }
 
-static void copy_fields(FFV1Context *fsdst, FFV1Context *fssrc, FFV1Context *fsrc)
+static void copy_fields(FFV1Context *fsdst, const FFV1Context *fssrc,
+                        const FFV1Context *fsrc)
 {
     fsdst->version             = fsrc->version;
     fsdst->micro_version       = fsrc->micro_version;

@@ -63,7 +63,7 @@ av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
     return 0;
 }
 
-av_cold int ff_ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
+av_cold int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs)
 {
     int j, i;
 
@@ -170,7 +170,7 @@ int ff_ffv1_allocate_initial_states(FFV1Context *f)
     return 0;
 }
 
-void ff_ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
+void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1Context *fs)
 {
     int i, j;
 
