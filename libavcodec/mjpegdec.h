@@ -109,6 +109,7 @@ typedef struct MJpegDecodeContext {
     int last_dc[MAX_COMPONENTS]; /* last DEQUANTIZED dc (XXX: am I right to do that ?) */
     AVFrame *picture; /* picture structure */
     AVFrame *picture_ptr; /* pointer to picture structure */
+    int seen_sof;                                   ///< we found a SOF.
     int got_picture;                                ///< we found a SOF and picture is valid, too.
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
@@ -165,7 +166,9 @@ typedef struct MJpegDecodeContext {
     enum AVPixelFormat hwaccel_sw_pix_fmt;
     enum AVPixelFormat hwaccel_pix_fmt;
     void *hwaccel_picture_private;
+
     struct JLSState *jls_state;
+    uint32_t palette[AVPALETTE_COUNT];
 } MJpegDecodeContext;
 
 int ff_mjpeg_build_vlc(VLC *vlc, const uint8_t *bits_table,
