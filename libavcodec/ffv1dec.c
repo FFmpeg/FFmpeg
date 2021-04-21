@@ -1078,13 +1078,13 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
            sizeof(fdst->state_transition));
     memcpy(fdst->quant_table, fsrc->quant_table, sizeof(fsrc->quant_table));
 
-        for (i = 0; i<fdst->num_h_slices * fdst->num_v_slices; i++) {
-            FFV1Context *fssrc = fsrc->slice_context[i];
-            FFV1Context *fsdst = fdst->slice_context[i];
-            copy_fields(fsdst, fssrc, fsrc);
-        }
-        av_assert0(!fdst->plane[0].state);
-        av_assert0(!fdst->sample_buffer);
+    for (i = 0; i < fdst->num_h_slices * fdst->num_v_slices; i++) {
+        FFV1Context *fssrc = fsrc->slice_context[i];
+        FFV1Context *fsdst = fdst->slice_context[i];
+        copy_fields(fsdst, fssrc, fsrc);
+    }
+    av_assert0(!fdst->plane[0].state);
+    av_assert0(!fdst->sample_buffer);
 
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
