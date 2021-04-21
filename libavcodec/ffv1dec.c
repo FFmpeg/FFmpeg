@@ -992,7 +992,6 @@ static void copy_fields(FFV1Context *fsdst, const FFV1Context *fssrc,
     fsdst->slice_damaged       = fssrc->slice_damaged;
     fsdst->key_frame_ok        = fsrc->key_frame_ok;
 
-    fsdst->bits_per_raw_sample = fsrc->bits_per_raw_sample;
     fsdst->packed_at_lsb       = fsrc->packed_at_lsb;
     fsdst->slice_count         = fsrc->slice_count;
     if (fsrc->version<3){
