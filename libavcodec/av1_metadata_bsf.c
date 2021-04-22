@@ -28,6 +28,7 @@ typedef struct AV1MetadataContext {
     CBSBSFContext common;
 
     int td;
+    AV1RawOBU td_obu;
 
     int color_primaries;
     int transfer_characteristics;
@@ -107,12 +108,11 @@ static int av1_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
                                         CodedBitstreamFragment *frag)
 {
     AV1MetadataContext *ctx = bsf->priv_data;
-    AV1RawOBU td, *obu;
     int err, i;
 
     for (i = 0; i < frag->nb_units; i++) {
         if (frag->units[i].type == AV1_OBU_SEQUENCE_HEADER) {
-            obu = frag->units[i].content;
+            AV1RawOBU *obu = frag->units[i].content;
             err = av1_metadata_update_sequence_header(bsf, &obu->obu.sequence_header);
             if (err < 0)
                 return err;
@@ -124,12 +124,8 @@ static int av1_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
         if (ctx->td == BSF_ELEMENT_REMOVE)
             ff_cbs_delete_unit(frag, 0);
     } else if (pkt && ctx->td == BSF_ELEMENT_INSERT) {
-        td = (AV1RawOBU) {
-            .header.obu_type = AV1_OBU_TEMPORAL_DELIMITER,
-        };
-
         err = ff_cbs_insert_unit_content(frag, 0, AV1_OBU_TEMPORAL_DELIMITER,
-                                         &td, NULL);
+                                         &ctx->td_obu, NULL);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to insert Temporal Delimiter.\n");
             return err;
@@ -155,6 +151,12 @@ static const CBSBSFType av1_metadata_type = {
 
 static int av1_metadata_init(AVBSFContext *bsf)
 {
+    AV1MetadataContext *ctx = bsf->priv_data;
+
+    ctx->td_obu = (AV1RawOBU) {
+        .header.obu_type = AV1_OBU_TEMPORAL_DELIMITER,
+    };
+
     return ff_cbs_bsf_generic_init(bsf, &av1_metadata_type);
 }
 
