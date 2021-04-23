@@ -318,7 +318,7 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
     }
 
     // all models in openvino open model zoo use BGR with range [0.0f, 255.0f] as input,
-    // we don't have a AVPixelFormat to descibe it, so we'll use AV_PIX_FMT_BGR24 and
+    // we don't have a AVPixelFormat to describe it, so we'll use AV_PIX_FMT_BGR24 and
     // ask openvino to do the conversion internally.
     // the current supported SR model (frame processing) is generated from tensorflow model,
     // and its input is Y channel as float with range [0.0f, 1.0f], so do not set for this case.
