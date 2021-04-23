@@ -1776,7 +1776,10 @@ static int avi_load_index(AVFormatContext *s)
         size = avio_rl32(pb);
         if (avio_feof(pb))
             break;
-        next = avio_tell(pb) + size + (size & 1);
+        next = avio_tell(pb);
+        if (next < 0 || next > INT64_MAX - size - (size & 1))
+            break;
+        next += size + (size & 1LL);
 
         if (tag == MKTAG('i', 'd', 'x', '1') &&
             avi_read_idx1(s, size) >= 0) {
