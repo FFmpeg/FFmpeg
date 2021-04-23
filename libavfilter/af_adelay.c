@@ -28,9 +28,9 @@
 #include "internal.h"
 
 typedef struct ChanDelay {
-    int delay;
-    unsigned delay_index;
-    unsigned index;
+    int64_t delay;
+    size_t delay_index;
+    size_t index;
     uint8_t *samples;
 } ChanDelay;
 
@@ -152,7 +152,7 @@ static int config_input(AVFilterLink *inlink)
 
         p = NULL;
 
-        ret = av_sscanf(arg, "%d%c", &d->delay, &type);
+        ret = av_sscanf(arg, "%"SCNd64"%c", &d->delay, &type);
         if (ret != 2 || type != 'S') {
             div = type == 's' ? 1.0 : 1000.0;
             if (av_sscanf(arg, "%f", &delay) != 1) {
@@ -193,6 +193,11 @@ static int config_input(AVFilterLink *inlink)
 
         if (!d->delay)
             continue;
+
+        if (d->delay > SIZE_MAX) {
+            av_log(ctx, AV_LOG_ERROR, "Requested delay is too big.\n");
+            return AVERROR(EINVAL);
+        }
 
         d->samples = av_malloc_array(d->delay, s->block_align);
         if (!d->samples)
