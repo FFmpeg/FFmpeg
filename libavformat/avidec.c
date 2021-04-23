@@ -1736,7 +1736,10 @@ static int avi_load_index(AVFormatContext *s)
         size = avio_rl32(pb);
         if (avio_feof(pb))
             break;
-        next = avio_tell(pb) + size + (size & 1);
+        next = avio_tell(pb);
+        if (next < 0 || next > INT64_MAX - size - (size & 1))
+            break;
+        next += size + (size & 1LL);
 
         av_log(s, AV_LOG_TRACE, "tag=%c%c%c%c size=0x%x\n",
                  tag        & 0xff,
