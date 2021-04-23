@@ -166,7 +166,8 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
     CinDemuxContext *cin = s->priv_data;
     AVIOContext *pb = s->pb;
     CinFrameHeader *hdr = &cin->frame_header;
-    int rc, palette_type, pkt_size;
+    int rc, palette_type;
+    int64_t pkt_size;
     int ret;
 
     if (cin->audio_buffer_size == 0) {
@@ -182,7 +183,9 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         /* palette and video packet */
-        pkt_size = (palette_type + 3) * hdr->pal_colors_count + hdr->video_frame_size;
+        pkt_size = (palette_type + 3LL) * hdr->pal_colors_count + hdr->video_frame_size;
+        if (pkt_size + 4 > INT_MAX)
+            return AVERROR_INVALIDDATA;
 
         pkt_size = ffio_limit(pb, pkt_size);
 
