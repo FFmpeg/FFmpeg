@@ -73,6 +73,8 @@ static int bfi_read_header(AVFormatContext * s)
         return AVERROR_INVALIDDATA;
 
     bfi->nframes           = avio_rl32(pb);
+    if (bfi->nframes < 0)
+        return AVERROR_INVALIDDATA;
     avio_rl32(pb);
     avio_rl32(pb);
     avio_rl32(pb);
