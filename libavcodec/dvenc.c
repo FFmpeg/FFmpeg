@@ -39,6 +39,7 @@
 #include "dv.h"
 #include "dv_profile_internal.h"
 #include "dv_tablegen.h"
+#include "encode.h"
 #include "fdctdsp.h"
 #include "internal.h"
 #include "mathops.h"
@@ -1170,8 +1171,10 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     DVVideoContext *s = c->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(c, pkt, s->sys->frame_size, 0)) < 0)
         return ret;
+    /* Fixme: Only zero the part that is not overwritten later. */
+    memset(pkt->data, 0, pkt->size);
 
     c->pix_fmt                = s->sys->pix_fmt;
     s->frame                  = frame;
@@ -1209,10 +1212,11 @@ const AVCodec ff_dvvideo_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DVVIDEO,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+                      AV_CODEC_CAP_SLICE_THREADS,
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_encode_init,
     .encode2        = dvvideo_encode_frame,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
