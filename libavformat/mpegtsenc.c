@@ -1300,8 +1300,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     MpegTSWrite *ts = s->priv_data;
     uint8_t buf[TS_PACKET_SIZE];
     uint8_t *q;
-    int val, is_start, len, header_len, write_pcr, is_dvb_subtitle, is_dvb_teletext, flags;
+    int val, is_start, len, header_len, write_pcr, flags;
     int afc_len, stuffing_len;
+    int is_dvb_subtitle = (st->codecpar->codec_id == AV_CODEC_ID_DVB_SUBTITLE);
+    int is_dvb_teletext = (st->codecpar->codec_id == AV_CODEC_ID_DVB_TELETEXT);
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int force_pat = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && key && !ts_st->prev_payload_key;
     int force_sdt = 0;
@@ -1412,8 +1414,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = 0x00;
             *q++ = 0x00;
             *q++ = 0x01;
-            is_dvb_subtitle = 0;
-            is_dvb_teletext = 0;
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 if (st->codecpar->codec_id == AV_CODEC_ID_DIRAC)
                     *q++ = STREAM_ID_EXTENDED_STREAM_ID;
@@ -1438,13 +1438,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                     pts = dts = AV_NOPTS_VALUE;
             } else {
                 *q++ = STREAM_ID_PRIVATE_STREAM_1;
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-                    if (st->codecpar->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
-                        is_dvb_subtitle = 1;
-                    } else if (st->codecpar->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
-                        is_dvb_teletext = 1;
-                    }
-                }
             }
             header_len = 0;
             flags      = 0;
