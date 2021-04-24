@@ -205,8 +205,11 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
 
     switch(tag){
     case TAG_SEEKTBLOFF:
-        pos = avio_tell(pb) + size;
+        pos = avio_tell(pb);
         off = ffio_read_varlen(pb);
+        if (pos > INT64_MAX - size || off < 0 || off > INT64_MAX - chunk_pos)
+            return;
+        pos += size;
         mpc8_parse_seektable(s, chunk_pos + off);
         avio_seek(pb, pos, SEEK_SET);
         break;
