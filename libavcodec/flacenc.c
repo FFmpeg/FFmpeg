@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "encode.h"
 #include "put_bits.h"
 #include "golomb.h"
 #include "internal.h"
@@ -1378,7 +1379,7 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame_bytes, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, frame_bytes, 0)) < 0)
         return ret;
 
     out_bytes = write_frame(s, avpkt);
@@ -1396,9 +1397,10 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     avpkt->pts      = frame->pts;
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
-    avpkt->size     = out_bytes;
 
     s->next_pts = avpkt->pts + avpkt->duration;
+
+    av_shrink_packet(avpkt, out_bytes);
 
     *got_packet_ptr = 1;
     return 0;
@@ -1459,11 +1461,12 @@ const AVCodec ff_flac_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_FLAC,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(FlacEncodeContext),
     .init           = flac_encode_init,
     .encode2        = flac_encode_frame,
     .close          = flac_encode_close,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },
