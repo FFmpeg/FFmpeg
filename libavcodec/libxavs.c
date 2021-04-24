@@ -27,6 +27,7 @@
 #include <float.h>
 #include <xavs.h>
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
 #include "libavutil/internal.h"
@@ -85,18 +86,20 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
                        xavs_nal_t *nals, int nnal)
 {
     XavsContext *x4 = ctx->priv_data;
-    uint8_t *p;
-    int i, s, ret, size = x4->sei_size + AV_INPUT_BUFFER_MIN_SIZE;
+    int64_t size = x4->sei_size;
+    uint8_t *p, *p_end;
+    int i, s, ret;
 
     if (!nnal)
         return 0;
 
     for (i = 0; i < nnal; i++)
-        size += nals[i].i_payload;
+        size += 3U + nals[i].i_payload;
 
-    if ((ret = ff_alloc_packet2(ctx, pkt, size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(ctx, pkt, size, 0)) < 0)
         return ret;
     p = pkt->data;
+    p_end = pkt->data + size;
 
     /* Write the SEI as part of the first frame. */
     if (x4->sei_size > 0 && nnal > 0) {
@@ -106,12 +109,14 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     }
 
     for (i = 0; i < nnal; i++) {
+        int size = p_end - p;
         s = xavs_nal_encode(p, &size, 1, nals + i);
         if (s < 0)
             return -1;
+        if (s != 3U + nals[i].i_payload)
+            return AVERROR_EXTERNAL;
         p += s;
     }
-    pkt->size = p - pkt->data;
 
     return 1;
 }
@@ -150,7 +155,7 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (!ret) {
         if (!frame && !(x4->end_of_stream)) {
-            if ((ret = ff_alloc_packet2(avctx, pkt, 4, 0)) < 0)
+            if ((ret = ff_get_encode_buffer(avctx, pkt, 4, 0)) < 0)
                 return ret;
 
             pkt->data[0] = 0x0;
@@ -421,11 +426,12 @@ const AVCodec ff_libxavs_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libxavs Chinese AVS (Audio Video Standard)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CAVS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_OTHER_THREADS,
     .priv_data_size = sizeof(XavsContext),
     .init           = XAVS_init,
     .encode2        = XAVS_frame,
     .close          = XAVS_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &xavs_class,
