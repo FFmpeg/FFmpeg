@@ -26,6 +26,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -353,7 +354,7 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int i, ret, out_size;
 
     out_size = (frame->nb_samples * c->code_size + 7) / 8;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, out_size, 0)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
@@ -370,7 +371,6 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         flush_put_bits(&pb);
     }
 
-    avpkt->size = out_size;
     *got_packet_ptr = 1;
     return 0;
 }
@@ -401,10 +401,10 @@ const AVCodec ff_adpcm_g726_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ADPCM_G726,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     .encode2        = g726_encode_frame,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &g726_class,
@@ -426,10 +426,10 @@ const AVCodec ff_adpcm_g726le_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 little endian ADPCM (\"right-justified\")"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ADPCM_G726LE,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     .encode2        = g726_encode_frame,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &g726le_class,
