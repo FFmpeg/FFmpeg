@@ -1288,6 +1288,36 @@ static uint8_t *get_ts_payload_start(uint8_t *pkt)
         return pkt + 4;
 }
 
+static int get_pes_stream_id(AVFormatContext *s, AVStream *st, int stream_id, int *async)
+{
+    MpegTSWrite *ts = s->priv_data;
+    *async = 0;
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (st->codecpar->codec_id == AV_CODEC_ID_DIRAC)
+            return STREAM_ID_EXTENDED_STREAM_ID;
+        else
+            return STREAM_ID_VIDEO_STREAM_0;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+               (st->codecpar->codec_id == AV_CODEC_ID_MP2 ||
+                st->codecpar->codec_id == AV_CODEC_ID_MP3 ||
+                st->codecpar->codec_id == AV_CODEC_ID_AAC)) {
+        return STREAM_ID_AUDIO_STREAM_0;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                st->codecpar->codec_id == AV_CODEC_ID_AC3 &&
+                ts->m2ts_mode) {
+        return STREAM_ID_EXTENDED_STREAM_ID;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
+               st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+        return STREAM_ID_PRIVATE_STREAM_1;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
+        if (stream_id == STREAM_ID_PRIVATE_STREAM_1) /* asynchronous KLV */
+            *async = 1;
+        return stream_id != -1 ? stream_id : STREAM_ID_METADATA_STREAM;
+    } else {
+        return STREAM_ID_PRIVATE_STREAM_1;
+    }
+}
+
 /* Add a PES header to the front of the payload, and segment into an integer
  * number of TS packets. The final TS packet is padded using an oversized
  * adaptation header to exactly fill the last TS packet.
@@ -1410,35 +1440,15 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         if (is_start) {
             int pes_extension = 0;
             int pes_header_stuffing_bytes = 0;
+            int async;
             /* write PES header */
             *q++ = 0x00;
             *q++ = 0x00;
             *q++ = 0x01;
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-                if (st->codecpar->codec_id == AV_CODEC_ID_DIRAC)
-                    *q++ = STREAM_ID_EXTENDED_STREAM_ID;
-                else
-                    *q++ = STREAM_ID_VIDEO_STREAM_0;
-            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                       (st->codecpar->codec_id == AV_CODEC_ID_MP2 ||
-                        st->codecpar->codec_id == AV_CODEC_ID_MP3 ||
-                        st->codecpar->codec_id == AV_CODEC_ID_AAC)) {
-                *q++ = STREAM_ID_AUDIO_STREAM_0;
-            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                        st->codecpar->codec_id == AV_CODEC_ID_AC3 &&
-                        ts->m2ts_mode) {
-                *q++ = STREAM_ID_EXTENDED_STREAM_ID;
-            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
-                       st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
-                *q++ = STREAM_ID_PRIVATE_STREAM_1;
-            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
-                *q++ = stream_id != -1 ? stream_id : STREAM_ID_METADATA_STREAM;
+            *q++ = stream_id = get_pes_stream_id(s, st, stream_id, &async);
+            if (async)
+                pts = dts = AV_NOPTS_VALUE;
 
-                if (stream_id == STREAM_ID_PRIVATE_STREAM_1) /* asynchronous KLV */
-                    pts = dts = AV_NOPTS_VALUE;
-            } else {
-                *q++ = STREAM_ID_PRIVATE_STREAM_1;
-            }
             header_len = 0;
             flags      = 0;
             if (pts != AV_NOPTS_VALUE) {
