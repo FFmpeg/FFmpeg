@@ -24,6 +24,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 #include "xwd.h"
 
@@ -147,7 +148,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     header_size = XWD_HEADER_SIZE + WINDOW_NAME_SIZE;
     out_size    = header_size + ncolors * XWD_CMAP_SIZE + avctx->height * lsize;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, out_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, pkt, out_size, 0)) < 0)
         return ret;
     buf = pkt->data;
 
@@ -220,6 +221,7 @@ const AVCodec ff_xwd_encoder = {
     .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XWD,
+    .capabilities = AV_CODEC_CAP_DR1,
     .encode2      = xwd_encode_frame,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGRA,
                                                  AV_PIX_FMT_RGBA,
