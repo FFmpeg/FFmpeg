@@ -214,7 +214,7 @@ SECTION .text
     addsubps   %3, %3, %2               ;  z1234, z5678
     addsubps   %1, %1, %4               ;  s3142, s7586
 
-    mulps      %3, [s8_mult_odd]        ;  z * s8_mult_odd
+    mulps      %3, %3, [s8_mult_odd]    ;  z * s8_mult_odd
     vpermilps  %1, %1, [s8_perm_even]   ;  s1234, s5687 !
 
     shufps     %2, %3, %3, q2332        ;   junk, z7887
