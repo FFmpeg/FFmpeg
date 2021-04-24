@@ -28,6 +28,7 @@
 #include "libavutil/time.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
 #include "atsc_a53.h"
@@ -144,7 +145,7 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     for (i = 0; i < nnal; i++)
         size += nals[i].i_payload;
 
-    if ((ret = ff_alloc_packet2(ctx, pkt, size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(ctx, pkt, size, 0)) < 0)
         return ret;
 
     p = pkt->data;
@@ -1147,12 +1148,13 @@ AVCodec ff_libx264_encoder = {
     .long_name        = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_H264,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                        AV_CODEC_CAP_OTHER_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size   = sizeof(X264Context),
     .init             = X264_init,
     .encode2          = X264_frame,
     .close            = X264_close,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
-                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &x264_class,
     .defaults         = x264_defaults,
 #if X264_BUILD < 153
@@ -1182,12 +1184,13 @@ const AVCodec ff_libx264rgb_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_OTHER_THREADS |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(X264Context),
     .init           = X264_init,
     .encode2        = X264_frame,
     .close          = X264_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
-                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class     = &rgbclass,
     .defaults       = x264_defaults,
     .pix_fmts       = pix_fmts_8bit_rgb,
@@ -1213,12 +1216,13 @@ const AVCodec ff_libx262_encoder = {
     .long_name        = NULL_IF_CONFIG_SMALL("libx262 MPEG2VIDEO"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_MPEG2VIDEO,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                        AV_CODEC_CAP_OTHER_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size   = sizeof(X264Context),
     .init             = X264_init,
     .encode2          = X264_frame,
     .close            = X264_close,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
-                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &X262_class,
     .defaults         = x264_defaults,
     .pix_fmts         = pix_fmts_8bit,
