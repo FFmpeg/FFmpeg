@@ -29,6 +29,7 @@
 #include "bytestream.h"
 #include "adpcm.h"
 #include "adpcm_data.h"
+#include "encode.h"
 #include "internal.h"
 
 /**
@@ -605,7 +606,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         pkt_size = (frame->nb_samples * avctx->channels) / 2;
     else
         pkt_size = avctx->block_align;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
     dst = avpkt->data;
 
@@ -960,7 +961,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return AVERROR(EINVAL);
     }
 
-    avpkt->size = pkt_size;
     *got_packet_ptr = 1;
     return 0;
 }
@@ -1005,7 +1005,7 @@ const AVCodec ff_ ## name_ ## _encoder = {                                 \
     .encode2        = adpcm_encode_frame,                                  \
     .close          = adpcm_encode_close,                                  \
     .sample_fmts    = sample_fmts_,                                        \
-    .capabilities   = capabilities_,                                       \
+    .capabilities   = capabilities_ | AV_CODEC_CAP_DR1,                    \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE, \
     .priv_class     = &name_ ## _encoder_class,                            \
 }
