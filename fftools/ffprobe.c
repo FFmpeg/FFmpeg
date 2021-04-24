@@ -2029,6 +2029,23 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("el_present_flag", dovi->el_present_flag);
             print_int("bl_present_flag", dovi->bl_present_flag);
             print_int("dv_bl_signal_compatibility_id", dovi->dv_bl_signal_compatibility_id);
+        } else if (sd->type == AV_PKT_DATA_AUDIO_SERVICE_TYPE) {
+            enum AVAudioServiceType *t = (enum AVAudioServiceType *)sd->data;
+            print_int("type", *t);
+        } else if (sd->type == AV_PKT_DATA_MPEGTS_STREAM_ID) {
+            print_int("id", *sd->data);
+        } else if (sd->type == AV_PKT_DATA_CPB_PROPERTIES) {
+            const AVCPBProperties *prop = (AVCPBProperties *)sd->data;
+            print_int("max_bitrate", prop->max_bitrate);
+            print_int("min_bitrate", prop->min_bitrate);
+            print_int("avg_bitrate", prop->avg_bitrate);
+            print_int("buffer_size", prop->buffer_size);
+            print_int("vbv_delay",   prop->vbv_delay);
+        } else if (sd->type == AV_PKT_DATA_WEBVTT_IDENTIFIER ||
+                   sd->type == AV_PKT_DATA_WEBVTT_SETTINGS) {
+            if (do_show_data)
+                writer_print_data(w, "data", sd->data, sd->size);
+            writer_print_data_hash(w, "data_hash", sd->data, sd->size);
         }
         writer_print_section_footer(w);
     }

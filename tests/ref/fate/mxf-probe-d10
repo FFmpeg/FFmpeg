@@ -56,6 +56,11 @@ DISPOSITION:still_image=0
 TAG:file_package_umid=0x060A2B340101010501010D1313000000AE86B200913105800000080046A54011
 [SIDE_DATA]
 side_data_type=CPB properties
+max_bitrate=50000000
+min_bitrate=0
+avg_bitrate=0
+buffer_size=2015232
+vbv_delay=-1
 [/SIDE_DATA]
 [/STREAM]
 [STREAM]
