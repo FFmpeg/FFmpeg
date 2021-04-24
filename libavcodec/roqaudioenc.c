@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 #include "mathops.h"
 
@@ -154,7 +155,8 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     else
         data_size = avctx->channels * avctx->frame_size;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, ROQ_HEADER_SIZE + data_size, 0)) < 0)
+    ret = ff_get_encode_buffer(avctx, avpkt, ROQ_HEADER_SIZE + data_size, 0);
+    if (ret < 0)
         return ret;
     out = avpkt->data;
 
@@ -188,11 +190,11 @@ const AVCodec ff_roq_dpcm_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ROQ_DPCM,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(ROQDPCMContext),
     .init           = roq_dpcm_encode_init,
     .encode2        = roq_dpcm_encode_frame,
     .close          = roq_dpcm_encode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
