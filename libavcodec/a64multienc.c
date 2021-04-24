@@ -27,6 +27,7 @@
 #include "a64colors.h"
 #include "a64tables.h"
 #include "elbg.h"
+#include "encode.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
@@ -327,7 +328,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         /* any frames to encode? */
         if (c->mc_lifetime) {
             int alloc_size = charset_size + c->mc_lifetime*(screen_size + colram_size);
-            if ((ret = ff_alloc_packet2(avctx, pkt, alloc_size, 0)) < 0)
+            if ((ret = ff_get_encode_buffer(avctx, pkt, alloc_size, 0)) < 0)
                 return ret;
             buf = pkt->data;
 
@@ -383,8 +384,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pkt->pts = pkt->dts = c->next_pts;
         c->next_pts         = AV_NOPTS_VALUE;
 
-        av_assert0(pkt->size >= req_size);
-        pkt->size   = req_size;
+        av_assert0(pkt->size == req_size);
         pkt->flags |= AV_PKT_FLAG_KEY;
         *got_packet = !!req_size;
     }
@@ -397,12 +397,12 @@ const AVCodec ff_a64multi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_A64_MULTI,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_encode_init,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
     .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
-    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
@@ -412,12 +412,12 @@ const AVCodec ff_a64multi5_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64, extended with 5th color (colram)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_A64_MULTI5,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_encode_init,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
     .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
-    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
