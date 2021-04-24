@@ -32,6 +32,7 @@
 
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "profiles.h"
 #include "put_bits.h"
@@ -290,7 +291,7 @@ static int sbc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (av_frame->nb_samples * frame->channels * 2 < frame->codesize)
         return 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame_length, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, frame_length, 0)) < 0)
         return ret;
 
     /* Select the needed input data processing function and call it */
@@ -346,10 +347,10 @@ const AVCodec ff_sbc_encoder = {
     .long_name             = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_SBC,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size        = sizeof(SBCEncContext),
     .init                  = sbc_encode_init,
     .encode2               = sbc_encode_frame,
-    .capabilities          = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO, 0},
