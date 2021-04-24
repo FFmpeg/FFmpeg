@@ -37,6 +37,7 @@
 #include "libavutil/common.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "gsm.h"
 
@@ -98,7 +99,7 @@ static int libgsm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     gsm_signal *samples = (gsm_signal *)frame->data[0];
     struct gsm_state *state = avctx->priv_data;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, avctx->block_align, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, avctx->block_align, 0)) < 0)
         return ret;
 
     switch(avctx->codec_id) {
@@ -125,6 +126,7 @@ const AVCodec ff_libgsm_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .init           = libgsm_encode_init,
     .encode2        = libgsm_encode_frame,
     .close          = libgsm_encode_close,
@@ -141,6 +143,7 @@ const AVCodec ff_libgsm_ms_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM_MS,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .init           = libgsm_encode_init,
     .encode2        = libgsm_encode_frame,
     .close          = libgsm_encode_close,
