@@ -288,10 +288,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         *buf++ = c->fmt; // format
         *buf++ = ZMBV_BLOCK; // block width
         *buf++ = ZMBV_BLOCK; // block height
+        pkt->flags |= AV_PKT_FLAG_KEY;
     }
     memcpy(buf, c->comp_buf, c->zstream.total_out);
 
-    pkt->flags |= AV_PKT_FLAG_KEY*keyframe;
     *got_packet = 1;
 
     return 0;
