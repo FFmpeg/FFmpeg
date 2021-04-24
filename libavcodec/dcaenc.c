@@ -37,6 +37,7 @@
 #include "dca_core.h"
 #include "dcadata.h"
 #include "dcaenc.h"
+#include "encode.h"
 #include "fft.h"
 #include "internal.h"
 #include "mathops.h"
@@ -1182,7 +1183,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const int32_t *samples;
     int ret, i;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, c->frame_size, 0)) < 0)
         return ret;
 
     samples = (const int32_t *)frame->data[0];
@@ -1239,11 +1240,11 @@ const AVCodec ff_dca_encoder = {
     .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_DTS,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
     .priv_data_size        = sizeof(DCAEncContext),
     .init                  = encode_init,
     .close                 = encode_close,
     .encode2               = encode_frame,
-    .capabilities          = AV_CODEC_CAP_EXPERIMENTAL,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
