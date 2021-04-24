@@ -36,6 +36,7 @@
 
 #include "av1.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
 #include "profiles.h"
@@ -970,7 +971,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
 {
     AOMContext *ctx = avctx->priv_data;
     int av_unused pict_type;
-    int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz, 0);
+    int ret = ff_get_encode_buffer(avctx, pkt, cx_frame->sz, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Error getting output packet of size %"SIZE_SPECIFIER".\n", cx_frame->sz);
@@ -1344,11 +1345,12 @@ AVCodec ff_libaom_av1_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libaom AV1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AV1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_OTHER_THREADS,
     .priv_data_size = sizeof(AOMContext),
     .init           = av1_init,
     .encode2        = aom_encode,
     .close          = aom_free,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .priv_class     = &class_aom,
