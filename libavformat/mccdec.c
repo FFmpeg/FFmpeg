@@ -127,8 +127,7 @@ static int mcc_read_header(AVFormatContext *s)
                 num = strtol(rate_str, &df, 10);
                 den = 1;
                 if (df && !av_strncasecmp(df, "DF", 2)) {
-                    num *= 1000;
-                    den  = 1001;
+                    av_reduce(&num, &den, num * 1000LL, 1001, INT_MAX);
                 }
             }
 
