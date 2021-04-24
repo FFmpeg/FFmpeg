@@ -79,7 +79,7 @@ static int dxa_read_header(AVFormatContext *s)
     if(fps > 0){
         den = 1000;
         num = fps;
-    }else if (fps < 0){
+    }else if (fps < 0 && fps > INT_MIN){
         den = 100000;
         num = -fps;
     }else{
