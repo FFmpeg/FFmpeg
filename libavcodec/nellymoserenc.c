@@ -42,6 +42,7 @@
 
 #include "audio_frame_queue.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "fft.h"
 #include "internal.h"
 #include "nellymoser.h"
@@ -405,7 +406,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->last_frame = 1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, NELLY_BLOCK_LEN, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, NELLY_BLOCK_LEN, 0)) < 0)
         return ret;
     encode_block(s, avpkt->data, avpkt->size);
 
@@ -422,11 +423,12 @@ const AVCodec ff_nellymoser_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_NELLYMOSER,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(NellyMoserEncodeContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
