@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 #include <zlib.h>
@@ -275,7 +276,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     pkt_size = c->zstream.total_out + 1 + 6*keyframe;
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, pkt, pkt_size, 0)) < 0)
         return ret;
     buf = pkt->data;
 
@@ -427,6 +428,7 @@ const AVCodec ff_zmbv_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ZMBV,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(ZmbvEncContext),
     .init           = encode_init,
     .encode2        = encode_frame,
