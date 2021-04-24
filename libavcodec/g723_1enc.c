@@ -34,6 +34,7 @@
 
 #include "avcodec.h"
 #include "celp_math.h"
+#include "encode.h"
 #include "g723_1.h"
 #include "internal.h"
 
@@ -1044,10 +1045,9 @@ static void fcb_search(G723_1_ChannelContext *p, int16_t *impulse_resp,
  * @param frame output buffer
  * @param size  size of the buffer
  */
-static int pack_bitstream(G723_1_ChannelContext *p, AVPacket *avpkt)
+static void pack_bitstream(G723_1_ChannelContext *p, AVPacket *avpkt, int info_bits)
 {
     PutBitContext pb;
-    int info_bits = 0;
     int i, temp;
 
     init_put_bits(&pb, avpkt->data, avpkt->size);
@@ -1099,7 +1099,6 @@ static int pack_bitstream(G723_1_ChannelContext *p, AVPacket *avpkt)
     }
 
     flush_put_bits(&pb);
-    return frame_size[info_bits];
 }
 
 static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
@@ -1112,7 +1111,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int16_t cur_lsp[LPC_ORDER];
     int16_t weighted_lpc[LPC_ORDER * SUBFRAMES << 1];
     int16_t vector[FRAME_LEN + PITCH_MAX];
-    int offset, ret, i, j;
+    int offset, ret, i, j, info_bits = 0;
     int16_t *in, *start;
     HFParam hf[4];
 
@@ -1231,11 +1230,12 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     av_free(start);
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 24, 0)) < 0)
+    ret = ff_get_encode_buffer(avctx, avpkt, frame_size[info_bits], 0);
+    if (ret < 0)
         return ret;
 
     *got_packet_ptr = 1;
-    avpkt->size = pack_bitstream(p, avpkt);
+    pack_bitstream(p, avpkt, info_bits);
     return 0;
 }
 
@@ -1249,6 +1249,7 @@ const AVCodec ff_g723_1_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_G723_1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
     .encode2        = g723_1_encode_frame,
