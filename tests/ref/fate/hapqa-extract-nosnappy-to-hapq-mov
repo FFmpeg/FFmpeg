@@ -50,7 +50,6 @@ bits_per_raw_sample=N/A
 nb_frames=1
 nb_read_frames=N/A
 nb_read_packets=1
-extradata_hash=adler32:00000001
 DISPOSITION:default=1
 DISPOSITION:dub=0
 DISPOSITION:original=0

@@ -2748,8 +2748,11 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     if (do_show_data)
         writer_print_data(w, "extradata", par->extradata,
                                           par->extradata_size);
-    writer_print_data_hash(w, "extradata_hash", par->extradata,
-                                                par->extradata_size);
+
+    if (par->extradata_size > 0) {
+        writer_print_data_hash(w, "extradata_hash", par->extradata,
+                                                    par->extradata_size);
+    }
 
     /* Print disposition information */
 #define PRINT_DISPOSITION(flagname, name) do {                                \
