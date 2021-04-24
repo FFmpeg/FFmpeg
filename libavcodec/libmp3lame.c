@@ -34,6 +34,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
+#include "encode.h"
 #include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodecheader.h"
@@ -264,7 +265,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ff_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
             s->buffer_index);
     if (len <= s->buffer_index) {
-        if ((ret = ff_alloc_packet2(avctx, avpkt, len, 0)) < 0)
+        if ((ret = ff_get_encode_buffer(avctx, avpkt, len, 0)) < 0)
             return ret;
         memcpy(avpkt->data, s->buffer, len);
         s->buffer_index -= len;
@@ -296,7 +297,6 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             AV_WL32(side_data + 4, discard_padding);
         }
 
-        avpkt->size = len;
         *got_packet_ptr = 1;
     }
     return 0;
@@ -332,11 +332,12 @@ const AVCodec ff_libmp3lame_encoder = {
     .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_MP3,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                             AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size        = sizeof(LAMEContext),
     .init                  = mp3lame_encode_init,
     .encode2               = mp3lame_encode_frame,
     .close                 = mp3lame_encode_close,
-    .capabilities          = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P,
                                                              AV_SAMPLE_FMT_FLTP,
                                                              AV_SAMPLE_FMT_S16P,
