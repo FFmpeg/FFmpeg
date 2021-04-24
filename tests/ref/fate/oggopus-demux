@@ -1,48 +1,45 @@
-#extradata 0:       19, 0x399c0471
-#tb 0: 1/48000
-#media_type 0: audio
-#codec_id 0: opus
-#sample_rate 0: 48000
-#channel_layout 0: 3
-#channel_layout_name 0: stereo
-0,       -356,       -356,      960,      402, 0x89b1c40f, S=1,       10, 0x03f10065
-0,        604,        604,      960,      216, 0x7bf97146
-0,       1564,       1564,      960,      215, 0x6cb86d8b
-0,       2524,       2524,      960,      218, 0x9cfd691c
-0,       3484,       3484,      960,      218, 0xd7fe6a94
-0,       4444,       4444,      960,      194, 0x35735de6
-0,       5404,       5404,      960,      216, 0x3ee6705a
-0,       6364,       6364,      960,      218, 0x67eb6cb1
-0,       7324,       7324,      960,      218, 0x32d0700d
-0,       8284,       8284,      960,      219, 0xcb7f6c60
-0,       9244,       9244,      960,      218, 0x9c866b33
-0,      10204,      10204,      960,      217, 0xfe3e6a53
-0,      11164,      11164,      960,      218, 0x13586833
-0,      12124,      12124,      960,      222, 0xbcb2669e
-0,      13084,      13084,      960,      218, 0x8dfc6e33
-0,      14044,      14044,      960,      217, 0xf5957051
-0,      15004,      15004,      960,      210, 0xed126e6b
-0,      15964,      15964,      960,      216, 0xbf947249
-0,      16924,      16924,      960,      203, 0x6c7e680a
-0,      17884,      17884,      960,      209, 0xf78f6af4
-0,      18844,      18844,      960,      217, 0xd60c684d
-0,      19804,      19804,      960,      218, 0x89056a7a
-0,      20764,      20764,      960,      219, 0x0bc674ad
-0,      21724,      21724,      960,      217, 0xb1d86d1a
-0,      22684,      22684,      960,      220, 0x433d685a
-0,      23644,      23644,      960,      364, 0x0c88be84
-0,      24604,      24604,      960,      221, 0x804a733d
-0,      25564,      25564,      960,      215, 0x6e9d6e9b
-0,      26524,      26524,      960,      215, 0x63016a83
-0,      27484,      27484,      960,      218, 0xf9a46fbe
-0,      28444,      28444,      960,      216, 0xa0d66c08
-0,      29404,      29404,      960,      216, 0xa2ca6d0a
-0,      30364,      30364,      960,      216, 0xf50e6f1d
-0,      31324,      31324,      960,      215, 0x6aaa70b6
-0,      32284,      32284,      960,      219, 0x7ceb6ba0
-0,      33244,      33244,      960,      220, 0x398d6ca9
-0,      34204,      34204,      960,      218, 0x7bd06ed5
-0,      35164,      35164,      960,      219, 0xe2906c62
-0,      36124,      36124,      960,      217, 0xcf316ba1
-0,      37084,      37084,      960,      217, 0x470b6eea
-0,      38044,      38044,      356,      359, 0x36c2a18a, S=1,       10, 0x0232005e
+packet|codec_type=audio|stream_index=0|pts=-356|pts_time=-0.007417|dts=-356|dts_time=-0.007417|duration=960|duration_time=0.020000|size=402|pos=841|flags=K_side_data|side_data_type=Skip Samples|skip_samples=356|discard_padding=0|skip_reason=0|discard_reason=0
+|data_hash=CRC32:052ff811
+packet|codec_type=audio|stream_index=0|pts=604|pts_time=0.012583|dts=604|dts_time=0.012583|duration=960|duration_time=0.020000|size=216|pos=841|flags=K_|data_hash=CRC32:77f232d3
+packet|codec_type=audio|stream_index=0|pts=1564|pts_time=0.032583|dts=1564|dts_time=0.032583|duration=960|duration_time=0.020000|size=215|pos=841|flags=K_|data_hash=CRC32:3746e223
+packet|codec_type=audio|stream_index=0|pts=2524|pts_time=0.052583|dts=2524|dts_time=0.052583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:3326bc9f
+packet|codec_type=audio|stream_index=0|pts=3484|pts_time=0.072583|dts=3484|dts_time=0.072583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:e341a3da
+packet|codec_type=audio|stream_index=0|pts=4444|pts_time=0.092583|dts=4444|dts_time=0.092583|duration=960|duration_time=0.020000|size=194|pos=841|flags=K_|data_hash=CRC32:59dcb3fb
+packet|codec_type=audio|stream_index=0|pts=5404|pts_time=0.112583|dts=5404|dts_time=0.112583|duration=960|duration_time=0.020000|size=216|pos=841|flags=K_|data_hash=CRC32:7b5566f5
+packet|codec_type=audio|stream_index=0|pts=6364|pts_time=0.132583|dts=6364|dts_time=0.132583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:e95e91d1
+packet|codec_type=audio|stream_index=0|pts=7324|pts_time=0.152583|dts=7324|dts_time=0.152583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:4e2a2dcd
+packet|codec_type=audio|stream_index=0|pts=8284|pts_time=0.172583|dts=8284|dts_time=0.172583|duration=960|duration_time=0.020000|size=219|pos=841|flags=K_|data_hash=CRC32:8d3e1e9c
+packet|codec_type=audio|stream_index=0|pts=9244|pts_time=0.192583|dts=9244|dts_time=0.192583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:0cf422f3
+packet|codec_type=audio|stream_index=0|pts=10204|pts_time=0.212583|dts=10204|dts_time=0.212583|duration=960|duration_time=0.020000|size=217|pos=841|flags=K_|data_hash=CRC32:e683509f
+packet|codec_type=audio|stream_index=0|pts=11164|pts_time=0.232583|dts=11164|dts_time=0.232583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:53c28210
+packet|codec_type=audio|stream_index=0|pts=12124|pts_time=0.252583|dts=12124|dts_time=0.252583|duration=960|duration_time=0.020000|size=222|pos=841|flags=K_|data_hash=CRC32:1e7778cb
+packet|codec_type=audio|stream_index=0|pts=13084|pts_time=0.272583|dts=13084|dts_time=0.272583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:ea403207
+packet|codec_type=audio|stream_index=0|pts=14044|pts_time=0.292583|dts=14044|dts_time=0.292583|duration=960|duration_time=0.020000|size=217|pos=841|flags=K_|data_hash=CRC32:9a8e4930
+packet|codec_type=audio|stream_index=0|pts=15004|pts_time=0.312583|dts=15004|dts_time=0.312583|duration=960|duration_time=0.020000|size=210|pos=841|flags=K_|data_hash=CRC32:afbec644
+packet|codec_type=audio|stream_index=0|pts=15964|pts_time=0.332583|dts=15964|dts_time=0.332583|duration=960|duration_time=0.020000|size=216|pos=841|flags=K_|data_hash=CRC32:0f8f7901
+packet|codec_type=audio|stream_index=0|pts=16924|pts_time=0.352583|dts=16924|dts_time=0.352583|duration=960|duration_time=0.020000|size=203|pos=841|flags=K_|data_hash=CRC32:e8c6eb24
+packet|codec_type=audio|stream_index=0|pts=17884|pts_time=0.372583|dts=17884|dts_time=0.372583|duration=960|duration_time=0.020000|size=209|pos=841|flags=K_|data_hash=CRC32:5fdfb02e
+packet|codec_type=audio|stream_index=0|pts=18844|pts_time=0.392583|dts=18844|dts_time=0.392583|duration=960|duration_time=0.020000|size=217|pos=841|flags=K_|data_hash=CRC32:a72182be
+packet|codec_type=audio|stream_index=0|pts=19804|pts_time=0.412583|dts=19804|dts_time=0.412583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:ede6d275
+packet|codec_type=audio|stream_index=0|pts=20764|pts_time=0.432583|dts=20764|dts_time=0.432583|duration=960|duration_time=0.020000|size=219|pos=841|flags=K_|data_hash=CRC32:b9d28f17
+packet|codec_type=audio|stream_index=0|pts=21724|pts_time=0.452583|dts=21724|dts_time=0.452583|duration=960|duration_time=0.020000|size=217|pos=841|flags=K_|data_hash=CRC32:e0307b65
+packet|codec_type=audio|stream_index=0|pts=22684|pts_time=0.472583|dts=22684|dts_time=0.472583|duration=960|duration_time=0.020000|size=220|pos=841|flags=K_|data_hash=CRC32:dca81c5d
+packet|codec_type=audio|stream_index=0|pts=23644|pts_time=0.492583|dts=23644|dts_time=0.492583|duration=960|duration_time=0.020000|size=364|pos=841|flags=K_|data_hash=CRC32:46844268
+packet|codec_type=audio|stream_index=0|pts=24604|pts_time=0.512583|dts=24604|dts_time=0.512583|duration=960|duration_time=0.020000|size=221|pos=841|flags=K_|data_hash=CRC32:bcac731f
+packet|codec_type=audio|stream_index=0|pts=25564|pts_time=0.532583|dts=25564|dts_time=0.532583|duration=960|duration_time=0.020000|size=215|pos=841|flags=K_|data_hash=CRC32:cf6f9041
+packet|codec_type=audio|stream_index=0|pts=26524|pts_time=0.552583|dts=26524|dts_time=0.552583|duration=960|duration_time=0.020000|size=215|pos=841|flags=K_|data_hash=CRC32:903fc52d
+packet|codec_type=audio|stream_index=0|pts=27484|pts_time=0.572583|dts=27484|dts_time=0.572583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:2d204bcc
+packet|codec_type=audio|stream_index=0|pts=28444|pts_time=0.592583|dts=28444|dts_time=0.592583|duration=960|duration_time=0.020000|size=216|pos=841|flags=K_|data_hash=CRC32:8fa7b453
+packet|codec_type=audio|stream_index=0|pts=29404|pts_time=0.612583|dts=29404|dts_time=0.612583|duration=960|duration_time=0.020000|size=216|pos=841|flags=K_|data_hash=CRC32:8fefaa27
+packet|codec_type=audio|stream_index=0|pts=30364|pts_time=0.632583|dts=30364|dts_time=0.632583|duration=960|duration_time=0.020000|size=216|pos=841|flags=K_|data_hash=CRC32:dc96ebe2
+packet|codec_type=audio|stream_index=0|pts=31324|pts_time=0.652583|dts=31324|dts_time=0.652583|duration=960|duration_time=0.020000|size=215|pos=841|flags=K_|data_hash=CRC32:47e4da62
+packet|codec_type=audio|stream_index=0|pts=32284|pts_time=0.672583|dts=32284|dts_time=0.672583|duration=960|duration_time=0.020000|size=219|pos=841|flags=K_|data_hash=CRC32:b822d69d
+packet|codec_type=audio|stream_index=0|pts=33244|pts_time=0.692583|dts=33244|dts_time=0.692583|duration=960|duration_time=0.020000|size=220|pos=841|flags=K_|data_hash=CRC32:c7f5cf20
+packet|codec_type=audio|stream_index=0|pts=34204|pts_time=0.712583|dts=34204|dts_time=0.712583|duration=960|duration_time=0.020000|size=218|pos=841|flags=K_|data_hash=CRC32:f9fed5d8
+packet|codec_type=audio|stream_index=0|pts=35164|pts_time=0.732583|dts=35164|dts_time=0.732583|duration=960|duration_time=0.020000|size=219|pos=841|flags=K_|data_hash=CRC32:aba60587
+packet|codec_type=audio|stream_index=0|pts=36124|pts_time=0.752583|dts=36124|dts_time=0.752583|duration=960|duration_time=0.020000|size=217|pos=841|flags=K_|data_hash=CRC32:b04fe85a
+packet|codec_type=audio|stream_index=0|pts=37084|pts_time=0.772583|dts=37084|dts_time=0.772583|duration=960|duration_time=0.020000|size=217|pos=841|flags=K_|data_hash=CRC32:06797ece
+packet|codec_type=audio|stream_index=0|pts=38044|pts_time=0.792583|dts=38044|dts_time=0.792583|duration=356|duration_time=0.007417|size=359|pos=841|flags=K_side_data|side_data_type=Skip Samples|skip_samples=0|discard_padding=604|skip_reason=0|discard_reason=0
+|data_hash=CRC32:01ca3f8f
+stream|index=0|codec_name=opus|profile=unknown|codec_type=audio|codec_tag_string=[0][0][0][0]|codec_tag=0x0000|sample_fmt=fltp|sample_rate=48000|channels=2|channel_layout=stereo|bits_per_sample=0|id=N/A|r_frame_rate=0/0|avg_frame_rate=0/0|time_base=1/48000|start_pts=0|start_time=0.000000|duration_ts=38756|duration=0.807417|bit_rate=N/A|max_bit_rate=N/A|bits_per_raw_sample=N/A|nb_frames=N/A|nb_read_frames=N/A|nb_read_packets=41|extradata_hash=CRC32:58ba5ff3|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|tag:ENCODER=opusenc from opus-tools 0.1.9|tag:ENCODER_OPTIONS=--discard-comments
+format|filename=intro-partial.opus|nb_streams=1|nb_programs=0|format_name=ogg|start_time=0.000000|duration=0.807417|size=10250|bit_rate=101558|probe_score=100

@@ -135,6 +135,15 @@ ffmpeg(){
     run ffmpeg${PROGSUF}${EXECSUF} ${ffmpeg_args}
 }
 
+ffprobe_demux(){
+    filename=$1
+    shift
+    print_filename=$(basename "$filename")
+    run ffprobe${PROGSUF}${EXECSUF} -print_filename "${print_filename}" \
+        -of compact -bitexact -show_format -show_streams -show_packets  \
+        -show_data_hash CRC32 "$filename" "$@"
+}
+
 framecrc(){
     ffmpeg "$@" -bitexact -f framecrc -
 }
