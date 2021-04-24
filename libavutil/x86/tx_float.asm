@@ -126,11 +126,11 @@ SECTION .text
 ; %2 - temporary
 %macro FFT2 2
     shufps   %2, %1, %1, q3322
-    shufps   %1, %1, q1100
+    shufps   %1, %1, %1, q1100
 
-    addsubps %1, %2
+    addsubps %1, %1, %2
 
-    shufps   %1, %1, q2031
+    shufps   %1, %1, %1, q2031
 %endmacro
 
 ; Single 4-point in-place complex FFT (will do 2 transforms at once in [AVX] mode)
@@ -139,18 +139,18 @@ SECTION .text
 ; %3 - temporary
 %macro FFT4 3
     subps  %3, %1, %2         ;  r1234, [r5678]
-    addps  %1, %2             ;  t1234, [t5678]
+    addps  %1, %1, %2         ;  t1234, [t5678]
 
     shufps %2, %1, %3, q1010  ;  t12, r12
-    shufps %1, %3, q2332      ;  t34, r43
+    shufps %1, %1, %3, q2332  ;  t34, r43
 
     subps  %3, %2, %1         ;  a34, b32
-    addps  %2, %1             ;  a12, b14
+    addps  %2, %2, %1         ;  a12, b14
 
     shufps %1, %2, %3, q1010  ;  a1234     even
 
-    shufps %2, %3, q2332      ;  b1423
-    shufps %2, %2, q1320      ;  b1234     odd
+    shufps %2, %2, %3, q2332  ;  b1423
+    shufps %2, %2, %2, q1320  ;  b1234     odd
 %endmacro
 
 ; Single/Dual 8-point in-place complex FFT (will do 2 transforms in [AVX] mode)
@@ -164,36 +164,36 @@ SECTION .text
     addps    %5, %1, %3           ; q1-8
     addps    %6, %2, %4           ; k1-8
 
-    subps    %1, %3               ; r1-8
-    subps    %2, %4               ; j1-8
+    subps    %1, %1, %3           ; r1-8
+    subps    %2, %2, %4           ; j1-8
 
     shufps   %4, %1, %1, q2323    ; r4343
     shufps   %3, %5, %6, q3032    ; q34, k14
 
-    shufps   %1, %1, q1010        ; r1212
-    shufps   %5, %6, q1210        ; q12, k32
+    shufps   %1, %1, %1, q1010    ; r1212
+    shufps   %5, %5, %6, q1210    ; q12, k32
 
-    xorps    %4, [mask_pmmppmmp]  ; r4343 * pmmp
+    xorps    %4, %4, [mask_pmmppmmp] ; r4343 * pmmp
     addps    %6, %5, %3           ; s12, g12
 
-    mulps    %2, [d8_mult_odd]    ; r8 * d8_mult_odd
-    subps    %5, %3               ; s34, g43
+    mulps    %2, %2, [d8_mult_odd] ; r8 * d8_mult_odd
+    subps    %5, %5, %3           ; s34, g43
 
     addps    %3, %1, %4           ; z1234
     unpcklpd %1, %6, %5           ; s1234
 
     shufps   %4, %2, %2, q2301    ; j2143
-    shufps   %6, %5, q2332        ; g1234
+    shufps   %6, %6, %5, q2332    ; g1234
 
-    addsubps %2, %4               ; l2143
+    addsubps %2, %2, %4           ; l2143
     shufps   %5, %2, %2, q0123    ; l3412
-    addsubps %5, %2               ; t1234
+    addsubps %5, %5, %2           ; t1234
 
     subps    %2, %1, %6           ; h1234 even
     subps    %4, %3, %5           ; u1234 odd
 
-    addps    %1, %6               ; w1234 even
-    addps    %3, %5               ; o1234 odd
+    addps    %1, %1, %6           ; w1234 even
+    addps    %3, %3, %5           ; o1234 odd
 %endmacro
 
 ; Single 8-point in-place complex FFT in 20 instructions
@@ -203,18 +203,18 @@ SECTION .text
 ; %4 - temporary
 %macro FFT8_AVX 4
     subps      %3, %1, %2               ;  r1234, r5678
-    addps      %1, %2                   ;  q1234, q5678
+    addps      %1, %1, %2               ;  q1234, q5678
 
     vpermilps  %2, %3, [s8_perm_odd1]   ;  r4422, r6688
     shufps     %4, %1, %1, q3322        ;  q1122, q5566
 
     movsldup   %3, %3                   ;  r1133, r5577
-    shufps     %1, %1, q1100            ;  q3344, q7788
+    shufps     %1, %1, %1, q1100        ;  q3344, q7788
 
-    addsubps   %3, %2                   ;  z1234, z5678
-    addsubps   %1, %4                   ;  s3142, s7586
+    addsubps   %3, %3, %2               ;  z1234, z5678
+    addsubps   %1, %1, %4               ;  s3142, s7586
 
-    mulps      %3, [s8_mult_odd]        ;  z * s8_mult_odd
+    mulps      %3, %3, [s8_mult_odd]    ;  z * s8_mult_odd
     vpermilps  %1, [s8_perm_even]       ;  s1234, s5687 !
 
     shufps     %2, %3, %3, q2332        ;   junk, z7887
@@ -223,13 +223,13 @@ SECTION .text
     vpermilps  %3, %3, [s8_perm_odd2]   ;  z2314, z6556
     vperm2f128 %1, %4, 0x03             ;  e5687, s1234
 
-    addsubps   %2, %3                   ;   junk, t5678
-    subps      %1, %4                   ;  w1234, w5678 even
+    addsubps   %2, %2, %3               ;   junk, t5678
+    subps      %1, %1, %4               ;  w1234, w5678 even
 
     vperm2f128 %2, %2, 0x11             ;  t5678, t5678
     vperm2f128 %3, %3, 0x00             ;  z2314, z2314
 
-    xorps      %2, [mask_ppmpmmpm]      ;  t * ppmpmmpm
+    xorps      %2, %2, [mask_ppmpmmpm]  ;  t * ppmpmmpm
     addps      %2, %3, %2               ;  u1234, u5678 odd
 %endmacro
 
@@ -258,23 +258,23 @@ SECTION .text
 %define mask [mask_mpmppmpm]
 %define perm [s16_perm]
 %endif
-    xorps      %5, %5                       ; 0
+    xorps      %5, %5, %5                   ; 0
 
     shufps     %6, %4, %4, q2301            ; z12.imre, z13.imre...
     shufps     %5, %5, %3, q2301            ; 0, 0, z8.imre...
 
-    mulps      %4, [s16_mult_odd1]          ; z.reim * costab
-    xorps      %5, [mask_mppmmpmp]
+    mulps      %4, %4, [s16_mult_odd1]      ; z.reim * costab
+    xorps      %5, %5, [mask_mppmmpmp]
 %if cpuflag(fma3)
     fmaddps    %6, %6, [s16_mult_odd2], %4  ; s[8..15]
     addps      %5, %3, %5                   ; s[0...7]
 %else
-    mulps      %6, [s16_mult_odd2]          ; z.imre * costab
+    mulps      %6, %6, [s16_mult_odd2]      ; z.imre * costab
 
     addps      %5, %3, %5                   ; s[0...7]
     addps      %6, %4, %6                   ; s[8..15]
 %endif
-    mulps      %5, [s16_mult_even]          ; s[0...7]*costab
+    mulps      %5, %5, [s16_mult_even]      ; s[0...7]*costab
 
     xorps      %4, %6, mask                 ; s[8..15]*mpmppmpm
     xorps      %3, %5, mask                 ; s[0...7]*mpmppmpm
@@ -282,8 +282,8 @@ SECTION .text
     vperm2f128 %4, %4, 0x01                 ; s[12..15, 8..11]
     vperm2f128 %3, %3, 0x01                 ; s[4..7, 0..3]
 
-    addps      %6, %4                       ; y56, u56, y34, u34
-    addps      %5, %3                       ; w56, x56, w34, x34
+    addps      %6, %6, %4                   ; y56, u56, y34, u34
+    addps      %5, %5, %3                   ; w56, x56, w34, x34
 
     vpermilps  %6, perm                     ; y56, u56, y43, u43
     vpermilps  %5, perm                     ; w56, x56, w43, x43
@@ -312,7 +312,7 @@ SECTION .text
     shufps     %12, %10, %10, q2200  ; cos00224466
     shufps     %13, %11, %11, q1133  ; wim77553311
     movshdup   %10, %10              ; cos11335577
-    shufps     %11, %11, q0022       ; wim66442200
+    shufps     %11, %11, %11, q0022  ; wim66442200
 
 %if %1 && mmsize == 32
     shufps     %6, %14, %14, q2301   ; m2[0].imre, m2[1].imre, m2[2].imre, m2[3].imre even
@@ -320,20 +320,20 @@ SECTION .text
     shufps     %7, %15, %15, q2301   ; m3[0].imre, m3[1].imre, m3[2].imre, m3[3].imre even
     shufps     %9, %17, %17, q2301   ; m3[0].imre, m3[1].imre, m3[2].imre, m3[3].imre odd
 
-    mulps      %14, %13              ; m2[0123]reim * wim7531 even
-    mulps      %16, %11              ; m2[0123]reim * wim7531 odd
-    mulps      %15, %13              ; m3[0123]reim * wim7531 even
-    mulps      %17, %11              ; m3[0123]reim * wim7531 odd
+    mulps      %14, %14, %13         ; m2[0123]reim * wim7531 even
+    mulps      %16, %16, %11         ; m2[0123]reim * wim7531 odd
+    mulps      %15, %15, %13         ; m3[0123]reim * wim7531 even
+    mulps      %17, %17, %11         ; m3[0123]reim * wim7531 odd
 %else
     mulps      %14, %6, %13          ; m2,3[01]reim * wim7531 even
     mulps      %16, %8, %11          ; m2,3[01]reim * wim7531 odd
     mulps      %15, %7, %13          ; m2,3[23]reim * wim7531 even
     mulps      %17, %9, %11          ; m2,3[23]reim * wim7531 odd
     ; reorder the multiplies to save movs reg, reg in the %if above
-    shufps     %6, %6, q2301         ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre even
-    shufps     %8, %8, q2301         ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre odd
-    shufps     %7, %7, q2301         ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre even
-    shufps     %9, %9, q2301         ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre odd
+    shufps     %6, %6, %6, q2301     ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre even
+    shufps     %8, %8, %8, q2301     ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre odd
+    shufps     %7, %7, %7, q2301     ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre even
+    shufps     %9, %9, %9, q2301     ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre odd
 %endif
 
 %if cpuflag(fma3) ; 11 - 5 = 6 instructions saved through FMA!
@@ -343,17 +343,17 @@ SECTION .text
     fmsubaddps %9, %9, %10, %17      ; j[0..8] odd
     movaps     %13, [mask_pmpmpmpm]  ; "subaddps? pfft, who needs that!"
 %else
-    mulps      %6, %12               ; m2,3[01]imre * cos0246
-    mulps      %8, %10               ; m2,3[01]imre * cos0246
+    mulps      %6, %6, %12           ; m2,3[01]imre * cos0246
+    mulps      %8, %8, %10           ; m2,3[01]imre * cos0246
     movaps     %13, [mask_pmpmpmpm]  ; "subaddps? pfft, who needs that!"
-    mulps      %7, %12               ; m2,3[23]reim * cos0246
-    mulps      %9, %10               ; m2,3[23]reim * cos0246
-    addsubps   %6, %14               ; w[0..8]
-    addsubps   %8, %16               ; w[0..8]
-    xorps      %15, %13              ; +-m2,3[23]imre * wim7531
-    xorps      %17, %13              ; +-m2,3[23]imre * wim7531
-    addps      %7, %15               ; j[0..8]
-    addps      %9, %17               ; j[0..8]
+    mulps      %7, %7, %12           ; m2,3[23]reim * cos0246
+    mulps      %9, %9, %10           ; m2,3[23]reim * cos0246
+    addsubps   %6, %6, %14           ; w[0..8]
+    addsubps   %8, %8, %16           ; w[0..8]
+    xorps      %15, %15, %13         ; +-m2,3[23]imre * wim7531
+    xorps      %17, %17, %13         ; +-m2,3[23]imre * wim7531
+    addps      %7, %7, %15           ; j[0..8]
+    addps      %9, %9, %17           ; j[0..8]
 %endif
 
     addps      %14, %6, %7           ; t10235476 even
@@ -361,20 +361,20 @@ SECTION .text
     subps      %15, %6, %7           ; +-r[0..7] even
     subps      %17, %8, %9           ; +-r[0..7] odd
 
-    shufps     %14, %14, q2301       ; t[0..7] even
-    shufps     %16, %16, q2301       ; t[0..7] odd
-    xorps      %15, %13              ; r[0..7] even
-    xorps      %17, %13              ; r[0..7] odd
+    shufps     %14, %14, %14, q2301  ; t[0..7] even
+    shufps     %16, %16, %16, q2301  ; t[0..7] odd
+    xorps      %15, %15, %13         ; r[0..7] even
+    xorps      %17, %17, %13         ; r[0..7] odd
 
     subps      %6, %2, %14           ; m2,3[01] even
     subps      %8, %4, %16           ; m2,3[01] odd
     subps      %7, %3, %15           ; m2,3[23] even
     subps      %9, %5, %17           ; m2,3[23] odd
 
-    addps      %2, %14               ; m0 even
-    addps      %4, %16               ; m0 odd
-    addps      %3, %15               ; m1 even
-    addps      %5, %17               ; m1 odd
+    addps      %2, %2, %14           ; m0 even
+    addps      %4, %4, %16           ; m0 odd
+    addps      %3, %3, %15           ; m1 even
+    addps      %5, %5, %17           ; m1 odd
 %endmacro
 
 ; Same as above, only does one parity at a time, takes 3 temporary registers,
@@ -390,35 +390,35 @@ SECTION .text
 %endif
 
     mulps      %10, %4, %9           ; m2,3[01]reim * wim7531 even
-    mulps      %9, %5                ; m2,3[23]reim * wim7531 even
+    mulps      %9, %9, %5            ; m2,3[23]reim * wim7531 even
 
-    shufps     %4, %4, q2301         ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre even
-    shufps     %5, %5, q2301         ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre even
+    shufps     %4, %4, %4, q2301     ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre even
+    shufps     %5, %5, %5, q2301     ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre even
 
 %if cpuflag(fma3)
     fmaddsubps %4, %4, %8, %10       ; w[0..8] even
     fmsubaddps %5, %5, %8, %9        ; j[0..8] even
     movaps     %10, [mask_pmpmpmpm]
 %else
-    mulps      %4, %8                ; m2,3[01]imre * cos0246
-    mulps      %5, %8                ; m2,3[23]reim * cos0246
-    addsubps   %4, %10               ; w[0..8]
+    mulps      %4, %4, %8            ; m2,3[01]imre * cos0246
+    mulps      %5, %5, %8            ; m2,3[23]reim * cos0246
+    addsubps   %4, %4, %10           ; w[0..8]
     movaps     %10, [mask_pmpmpmpm]
-    xorps      %9, %10               ; +-m2,3[23]imre * wim7531
-    addps      %5, %9                ; j[0..8]
+    xorps      %9, %9, %10           ; +-m2,3[23]imre * wim7531
+    addps      %5, %5, %9            ; j[0..8]
 %endif
 
     addps      %8, %4, %5            ; t10235476
     subps      %9, %4, %5            ; +-r[0..7]
 
-    shufps     %8, %8, q2301         ; t[0..7]
-    xorps      %9, %10               ; r[0..7]
+    shufps     %8, %8, %8, q2301     ; t[0..7]
+    xorps      %9, %9, %10           ; r[0..7]
 
     subps      %4, %2, %8            ; %3,3[01]
     subps      %5, %3, %9            ; %3,3[23]
 
-    addps      %2, %8                ; m0
-    addps      %3, %9                ; m1
+    addps      %2, %2, %8            ; m0
+    addps      %3, %3, %9            ; m1
 %endmacro
 
 ; Same as above, tries REALLY hard to use 2 temporary registers.
@@ -431,14 +431,14 @@ SECTION .text
     shufps     %9, %7, %7, q0022     ; wim66442200
 %endif
 
-    mulps      %9, %4                ; m2,3[01]reim * wim7531 even
-    shufps     %4, %4, q2301         ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre even
+    mulps      %9, %9, %4            ; m2,3[01]reim * wim7531 even
+    shufps     %4, %4, %4, q2301     ; m2[0].imre, m2[1].imre, m3[0].imre, m3[1].imre even
 
 %if cpuflag(fma3)
     fmaddsubps %4, %4, %8, %9        ; w[0..8] even
 %else
-    mulps      %4, %8                ; m2,3[01]imre * cos0246
-    addsubps   %4, %9                ; w[0..8]
+    mulps      %4, %4, %8            ; m2,3[01]imre * cos0246
+    addsubps   %4, %4, %9            ; w[0..8]
 %endif
 
 %if %1
@@ -447,27 +447,27 @@ SECTION .text
     shufps     %9, %7, %7, q0022     ; wim66442200
 %endif
 
-    mulps      %9, %5                ; m2,3[23]reim * wim7531 even
-    shufps     %5, %5, q2301         ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre even
+    mulps      %9, %9, %5            ; m2,3[23]reim * wim7531 even
+    shufps     %5, %5, %5, q2301     ; m2[2].imre, m2[3].imre, m3[2].imre, m3[3].imre even
 %if cpuflag (fma3)
     fmsubaddps %5, %5, %8, %9        ; j[0..8] even
 %else
-    mulps      %5, %8                ; m2,3[23]reim * cos0246
-    xorps      %9, [mask_pmpmpmpm]   ; +-m2,3[23]imre * wim7531
-    addps      %5, %9                ; j[0..8]
+    mulps      %5, %5, %8            ; m2,3[23]reim * cos0246
+    xorps      %9, %9, [mask_pmpmpmpm]; +-m2,3[23]imre * wim7531
+    addps      %5, %5, %9            ; j[0..8]
 %endif
 
     addps      %8, %4, %5            ; t10235476
     subps      %9, %4, %5            ; +-r[0..7]
 
-    shufps     %8, %8, q2301         ; t[0..7]
-    xorps      %9, [mask_pmpmpmpm]   ; r[0..7]
+    shufps     %8, %8, %8, q2301     ; t[0..7]
+    xorps      %9, %9, [mask_pmpmpmpm] ; r[0..7]
 
     subps      %4, %2, %8            ; %3,3[01]
     subps      %5, %3, %9            ; %3,3[23]
 
-    addps      %2, %8                ; m0
-    addps      %3, %9                ; m1
+    addps      %2, %2, %8            ; m0
+    addps      %3, %3, %9            ; m1
 %endmacro
 
 %macro SPLIT_RADIX_COMBINE_64 0
@@ -591,10 +591,10 @@ SECTION .text
     unpckhpd m11, m1, m3
     unpckhpd m12, m4, m6
     unpckhpd m13, m5, m7
-    unpcklpd m0, m2
-    unpcklpd m1, m3
-    unpcklpd m4, m6
-    unpcklpd m5, m7
+    unpcklpd m0, m0, m2
+    unpcklpd m1, m1, m3
+    unpcklpd m4, m4, m6
+    unpcklpd m5, m5, m7
 
     vextractf128 [outq +      (0 + 0 + %1)*mmsize + %6 +  0], m0,  0
     vextractf128 [outq +      (0 + 0 + %1)*mmsize + %6 + 16], m10, 0
@@ -639,10 +639,10 @@ SECTION .text
     unpcklpd m9,  m1, m3
     unpcklpd m10, m4, m6
     unpcklpd m11, m5, m7
-    unpckhpd m0, m2
-    unpckhpd m1, m3
-    unpckhpd m4, m6
-    unpckhpd m5, m7
+    unpckhpd m0, m0, m2
+    unpckhpd m1, m1, m3
+    unpckhpd m4, m4, m6
+    unpckhpd m5, m5, m7
 
     vextractf128 [outq +      (2 + 0 + %1)*mmsize + %6 +  0], m8,  0
     vextractf128 [outq +      (2 + 0 + %1)*mmsize + %6 + 16], m0,  0
@@ -690,14 +690,14 @@ cglobal fft4_ %+ %1 %+ _float, 4, 4, 3, ctx, out, in, stride
 
 %if %2
     shufps m2, m1, m0, q3210
-    shufps m0, m1, q3210
+    shufps m0, m0, m1, q3210
     movaps m1, m2
 %endif
 
     FFT4 m0, m1, m2
 
     unpcklpd m2, m0, m1
-    unpckhpd m0, m1
+    unpckhpd m0, m0, m1
 
     movaps [outq + 0*mmsize], m2
     movaps [outq + 1*mmsize], m0
@@ -721,8 +721,8 @@ cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
 
     unpcklpd m4, m0, m3
     unpcklpd m5, m1, m2
-    unpckhpd m0, m3
-    unpckhpd m1, m2
+    unpckhpd m0, m0, m3
+    unpckhpd m1, m1, m2
 
     movups [outq + 0*mmsize], m4
     movups [outq + 1*mmsize], m0
@@ -741,7 +741,7 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
     FFT8_AVX m0, m1, m2, m3
 
     unpcklpd m2, m0, m1
-    unpckhpd m0, m1
+    unpckhpd m0, m0, m1
 
     ; Around 2% faster than 2x vperm2f128 + 2x movapd
     vextractf128 [outq + 16*0], m2, 0
@@ -765,8 +765,8 @@ cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
 
     unpcklpd m5, m1, m3
     unpcklpd m4, m0, m2
-    unpckhpd m1, m3
-    unpckhpd m0, m2
+    unpckhpd m1, m1, m3
+    unpckhpd m0, m0, m2
 
     vextractf128 [outq + 16*0], m4, 0
     vextractf128 [outq + 16*1], m0, 0
@@ -812,10 +812,10 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     unpcklpd m10, m5, m7
     unpcklpd  m8, m0, m2
     unpcklpd m11, m4, m6
-    unpckhpd  m1, m3
-    unpckhpd  m5, m7
-    unpckhpd  m0, m2
-    unpckhpd  m4, m6
+    unpckhpd  m1, m1, m3
+    unpckhpd  m5, m5, m7
+    unpckhpd  m0, m0, m2
+    unpckhpd  m4, m4, m6
 
     vextractf128 [outq + 16* 0],  m8, 0
     vextractf128 [outq + 16* 1],  m0, 0
@@ -858,7 +858,7 @@ ALIGN 16
     POP lenq
     sub outq, (%1*4) + (%1*2) + (%1/2)
 
-    mov rtabq, ff_cos_ %+ %1 %+ _float
+    lea rtabq, [ff_cos_ %+ %1 %+ _float]
     lea itabq, [rtabq + %1 - 4*7]
 
 %if %0 > 1
@@ -989,7 +989,7 @@ ALIGN 16
     POP lenq
     sub outq, 24*mmsize
 
-    mov rtabq, ff_cos_128_float
+    lea rtabq, [ff_cos_128_float]
     lea itabq, [rtabq + 128 - 4*7]
 
     cmp tgtq, 128
@@ -1016,7 +1016,7 @@ ALIGN 16
     POP lenq
     sub outq, 48*mmsize
 
-    mov rtabq, ff_cos_256_float
+    lea rtabq, [ff_cos_256_float]
     lea itabq, [rtabq + 256 - 4*7]
 
     cmp tgtq, 256
@@ -1044,7 +1044,7 @@ ALIGN 16
     POP lenq
     sub outq, 96*mmsize
 
-    mov rtabq, ff_cos_512_float
+    lea rtabq, [ff_cos_512_float]
     lea itabq, [rtabq + 512 - 4*7]
 
     cmp tgtq, 512
@@ -1079,7 +1079,7 @@ ALIGN 16
     POP lenq
     sub outq, 192*mmsize
 
-    mov rtabq, ff_cos_1024_float
+    lea rtabq, [ff_cos_1024_float]
     lea itabq, [rtabq + 1024 - 4*7]
 
     cmp tgtq, 1024
@@ -1137,10 +1137,10 @@ FFT_SPLIT_RADIX_DEF 131072
     unpcklpd tmp2, m1, m3
     unpcklpd tw_o, tx1_e0, tx1_o0
     unpcklpd tw_e, tx2_e0, tx2_o0
-    unpckhpd m0, m2
-    unpckhpd m1, m3
-    unpckhpd tx1_e0, tx1_o0
-    unpckhpd tx2_e0, tx2_o0
+    unpckhpd m0, m0, m2
+    unpckhpd m1, m1, m3
+    unpckhpd tx1_e0, tx1_e0, tx1_o0
+    unpckhpd tx2_e0, tx2_e0, tx2_o0
 
     vextractf128 [outq +  0*mmsize +  0], tmp1,   0
     vextractf128 [outq +  0*mmsize + 16], m0,     0
@@ -1178,10 +1178,10 @@ FFT_SPLIT_RADIX_DEF 131072
     unpcklpd tmp2, m2, m3
     unpcklpd tw_e, tx1_e1, tx1_o1
     unpcklpd tw_o, tx2_e1, tx2_o1
-    unpckhpd m0, m1
-    unpckhpd m2, m3
-    unpckhpd tx1_e1, tx1_o1
-    unpckhpd tx2_e1, tx2_o1
+    unpckhpd m0, m0, m1
+    unpckhpd m2, m2, m3
+    unpckhpd tx1_e1, tx1_e1, tx1_o1
+    unpckhpd tx2_e1, tx2_e1, tx2_o1
 
     vextractf128 [outq +  2*mmsize +  0], tmp1,   0
     vextractf128 [outq +  2*mmsize + 16], m0,     0
@@ -1208,5 +1208,7 @@ FFT_SPLIT_RADIX_DEF 131072
 
 %if ARCH_X86_64
 FFT_SPLIT_RADIX_FN avx
+%if HAVE_AVX2_EXTERNAL
 FFT_SPLIT_RADIX_FN avx2
+%endif
 %endif
