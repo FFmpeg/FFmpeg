@@ -24,6 +24,7 @@
  * WebP encoder using libwebp (WebPEncode API)
  */
 
+#include "encode.h"
 #include "libwebpenc_common.h"
 
 typedef LibWebPContextCommon LibWebPContext;
@@ -57,7 +58,7 @@ static int libwebp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         goto end;
     }
 
-    ret = ff_alloc_packet2(avctx, pkt, mw.size, mw.size);
+    ret = ff_get_encode_buffer(avctx, pkt, mw.size, 0);
     if (ret < 0)
         goto end;
     memcpy(pkt->data, mw.mem, mw.size);
@@ -98,6 +99,7 @@ const AVCodec ff_libwebp_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WEBP,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(LibWebPContext),
     .init           = libwebp_encode_init,
     .encode2        = libwebp_encode_frame,
