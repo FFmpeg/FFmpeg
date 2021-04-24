@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 static av_cold int v308_encode_init(AVCodecContext *avctx)
@@ -44,7 +45,8 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *y, *u, *v;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 3, 0)) < 0)
+    ret = ff_get_encode_buffer(avctx, pkt, avctx->width * avctx->height * 3, 0);
+    if (ret < 0)
         return ret;
     dst = pkt->data;
 
@@ -73,6 +75,7 @@ const AVCodec ff_v308_encoder = {
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_V308,
+    .capabilities = AV_CODEC_CAP_DR1,
     .init         = v308_encode_init,
     .encode2      = v308_encode_frame,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
