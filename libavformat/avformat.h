@@ -1241,9 +1241,15 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_AUTO_BSF   0x200000 ///< Add bitstream filters as requested by the muxer
 
     /**
-     * Maximum size of the data read from input for determining
-     * the input container format.
+     * Maximum number of bytes read from input in order to determine stream
+     * properties. Used when reading the global header and in
+     * avformat_find_stream_info().
+     *
      * Demuxing only, set by the caller before avformat_open_input().
+     *
+     * @note this is \e not  used for determining the \ref AVInputFormat
+     *       "input format"
+     * @sa format_probesize
      */
     int64_t probesize;
 
@@ -1518,9 +1524,13 @@ typedef struct AVFormatContext {
     int probe_score;
 
     /**
-     * number of bytes to read maximally to identify format.
-     * - encoding: unused
-     * - decoding: set by user
+     * Maximum number of bytes read from input in order to identify the
+     * \ref AVInputFormat "input format". Only used when the format is not set
+     * explicitly by the caller.
+     *
+     * Demuxing only, set by the caller before avformat_open_input().
+     *
+     * @sa probesize
      */
     int format_probesize;
 
