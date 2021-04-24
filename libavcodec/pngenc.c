@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "bytestream.h"
 #include "lossless_videoencdsp.h"
@@ -887,12 +888,11 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         if (!s->last_frame_packet)
             return AVERROR(ENOMEM);
     } else if (s->last_frame) {
-        ret = ff_alloc_packet2(avctx, pkt, max_packet_size, 0);
+        ret = ff_get_encode_buffer(avctx, pkt, s->last_frame_packet_size, 0);
         if (ret < 0)
             return ret;
 
         memcpy(pkt->data, s->last_frame_packet, s->last_frame_packet_size);
-        pkt->size = s->last_frame_packet_size;
         pkt->pts = pkt->dts = s->last_frame->pts;
     }
 
@@ -1148,11 +1148,11 @@ const AVCodec ff_apng_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_APNG,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
     .close          = png_enc_close,
     .encode2        = encode_apng,
-    .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
