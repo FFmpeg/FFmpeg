@@ -49,7 +49,7 @@ fate-fits-demux: tests/data/fits-multi.fits
 fate-fits-demux: CMD = framecrc -i $(TARGET_PATH)/tests/data/fits-multi.fits -c:v copy
 
 FATE_SAMPLES_DEMUX-$(CONFIG_FLV_DEMUXER) += fate-flv-demux
-fate-flv-demux: CMD = framecrc -i $(TARGET_SAMPLES)/flv/Enigma_Principles_of_Lust-part.flv -codec copy
+fate-flv-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/flv/Enigma_Principles_of_Lust-part.flv
 
 FATE_SAMPLES_DEMUX-$(CONFIG_GIF_DEMUXER) += fate-gif-demux
 fate-gif-demux: CMD = framecrc -i $(TARGET_SAMPLES)/gif/Newtons_cradle_animation_book_2.gif -c:v copy
