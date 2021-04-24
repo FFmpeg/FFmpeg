@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
 
@@ -237,7 +238,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         kvz_data_chunk *chunk = NULL;
         uint64_t written = 0;
 
-        retval = ff_alloc_packet2(avctx, avpkt, len_out, len_out);
+        retval = ff_get_encode_buffer(avctx, avpkt, len_out, 0);
         if (retval < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to allocate output packet.\n");
             goto done;
@@ -316,7 +317,8 @@ const AVCodec ff_libkvazaar_encoder = {
     .long_name        = NULL_IF_CONFIG_SMALL("libkvazaar H.265 / HEVC"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_HEVC,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                        AV_CODEC_CAP_OTHER_THREADS,
     .pix_fmts         = pix_fmts,
 
     .priv_class       = &class,
