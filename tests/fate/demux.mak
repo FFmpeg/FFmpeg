@@ -158,7 +158,7 @@ FATE_SAMPLES_DEMUX-$(CONFIG_XWMA_DEMUXER) += fate-xwma-demux
 fate-xwma-demux: CMD = crc -i $(TARGET_SAMPLES)/xwma/ergon.xwma -c:a copy
 
 FATE_SAMPLES_DEMUX-$(CONFIG_MPEGTS_DEMUXER) += fate-ts-demux
-fate-ts-demux: CMD = framecrc -i $(TARGET_SAMPLES)/ac3/mp3ac325-4864-small.ts -codec copy
+fate-ts-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/ac3/mp3ac325-4864-small.ts
 
 FATE_SAMPLES_DEMUX += $(FATE_SAMPLES_DEMUX-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_DEMUX)

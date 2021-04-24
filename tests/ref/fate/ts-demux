@@ -1,32 +1,48 @@
-#extradata 0:      150, 0xb4192fb9
-#tb 0: 1/90000
-#media_type 0: video
-#codec_id 0: mpeg2video
-#dimensions 0: 1280x720
-#sar 0: 1/1
-#tb 1: 1/90000
-#media_type 1: audio
-#codec_id 1: ac3
-#sample_rate 1: 48000
-#channel_layout 1: 60f
-#channel_layout_name 1: 5.1(side)
-1,          0,          0,     2880,     1536, 0x773ffeea, S=1,        1, 0x00bd00bd
-1,       2880,       2880,     2880,     1536, 0x6dc10748
-1,       5760,       5760,     2880,     1536, 0xbab5129c
-1,       8640,       8640,     2880,     1536, 0x602f034b, S=1,        1, 0x00bd00bd
-1,      11520,      11520,     2880,      906, 0x69cdcbcd
-0,      32037,      36541,     1501,   114336, 0x37a215a8, S=2,        1, 0x00e000e0,       40, 0x91e10b52
-0,      33538,      33538,     1501,    12560, 0xb559a3d4, F=0x0, S=1,        1, 0x00e000e0
-0,      35040,      35040,     1501,    12704, 0x2614adf4, F=0x0, S=1,        1, 0x00e000e0
-0,      36541,      41046,     1501,    51976, 0x9ff1dbfe, F=0x0, S=1,        1, 0x00e000e0
-0,      38043,      38043,     1501,    13096, 0x4ff9ea23, F=0x0, S=1,        1, 0x00e000e0
-0,      39544,      39544,     1501,    13744, 0xf2b2402a, F=0x0, S=1,        1, 0x00e000e0
-0,      41046,      45550,     1501,    56568, 0x65f5aee1, F=0x0, S=1,        1, 0x00e000e0
-0,      42547,      42547,     1501,    14720, 0x8855866c, F=0x0, S=1,        1, 0x00e000e0
-0,      44049,      44049,     1501,    15216, 0x83cbc4fc, F=0x0, S=1,        1, 0x00e000e0
-0,      45550,      50055,     1501,    61720, 0xecda6b05, F=0x0, S=1,        1, 0x00e000e0
-0,      47052,      47052,     1501,    17416, 0xdf480c6d, F=0x0, S=1,        1, 0x00e000e0
-0,      48553,      48553,     1501,    18144, 0x1950624c, F=0x0, S=1,        1, 0x00e000e0
-0,      50055,      54559,     1501,    56848, 0xd4f315be, F=0x0, S=1,        1, 0x00e000e0
-0,      51556,      51556,     1501,    16296, 0xd391a1d0, F=0x0, S=1,        1, 0x00e000e0
-0,      53058,      53058,     1501,     4944, 0x4d88640e, F=0x0
+packet|codec_type=video|stream_index=0|pts=3912669846|pts_time=43474.109400|dts=3912665342|dts_time=43474.059356|duration=1501|duration_time=0.016678|size=114336|pos=376|flags=K_side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:9bc8b561
+packet|codec_type=video|stream_index=0|pts=3912666843|pts_time=43474.076033|dts=3912666843|dts_time=43474.076033|duration=1501|duration_time=0.016678|size=12560|pos=122012|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:4f8c97dd
+packet|codec_type=video|stream_index=0|pts=3912668345|pts_time=43474.092722|dts=3912668345|dts_time=43474.092722|duration=1501|duration_time=0.016678|size=12704|pos=135548|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:27f259db
+packet|codec_type=video|stream_index=0|pts=3912674351|pts_time=43474.159456|dts=3912669846|dts_time=43474.109400|duration=1501|duration_time=0.016678|size=51976|pos=149084|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:a6588b80
+packet|codec_type=video|stream_index=0|pts=3912671348|pts_time=43474.126089|dts=3912671348|dts_time=43474.126089|duration=1501|duration_time=0.016678|size=13096|pos=204356|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:33547f9f
+packet|codec_type=video|stream_index=0|pts=3912672849|pts_time=43474.142767|dts=3912672849|dts_time=43474.142767|duration=1501|duration_time=0.016678|size=13744|pos=218456|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:547f3d4e
+packet|codec_type=video|stream_index=0|pts=3912678855|pts_time=43474.209500|dts=3912674351|dts_time=43474.159456|duration=1501|duration_time=0.016678|size=56568|pos=232932|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:fb5f4b9e
+packet|codec_type=video|stream_index=0|pts=3912675852|pts_time=43474.176133|dts=3912675852|dts_time=43474.176133|duration=1501|duration_time=0.016678|size=14720|pos=293092|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:1fb84db4
+packet|codec_type=video|stream_index=0|pts=3912677354|pts_time=43474.192822|dts=3912677354|dts_time=43474.192822|duration=1501|duration_time=0.016678|size=15216|pos=309072|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:77516f2c
+packet|codec_type=video|stream_index=0|pts=3912683360|pts_time=43474.259556|dts=3912678855|dts_time=43474.209500|duration=1501|duration_time=0.016678|size=61720|pos=325240|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:7e6594e5
+packet|codec_type=video|stream_index=0|pts=3912680357|pts_time=43474.226189|dts=3912680357|dts_time=43474.226189|duration=1501|duration_time=0.016678|size=17416|pos=390852|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:31c8b89d
+packet|codec_type=audio|stream_index=1|pts=3912633305|pts_time=43473.703389|dts=3912633305|dts_time=43473.703389|duration=2880|duration_time=0.032000|size=1536|pos=218080|flags=K_side_data|side_data_type=MPEGTS Stream ID|id=189
+|data_hash=CRC32:25b60d38
+packet|codec_type=audio|stream_index=1|pts=3912636185|pts_time=43473.735389|dts=3912636185|dts_time=43473.735389|duration=2880|duration_time=0.032000|size=1536|pos=N/A|flags=K_|data_hash=CRC32:d4e30aaf
+packet|codec_type=audio|stream_index=1|pts=3912639065|pts_time=43473.767389|dts=3912639065|dts_time=43473.767389|duration=2880|duration_time=0.032000|size=1536|pos=N/A|flags=K_|data_hash=CRC32:32d6d14d
+packet|codec_type=audio|stream_index=2|pts=3912634060|pts_time=43473.711778|dts=3912634060|dts_time=43473.711778|duration=2880|duration_time=0.032000|size=768|pos=235564|flags=K_side_data|side_data_type=MPEGTS Stream ID|id=189
+|data_hash=CRC32:34b350c9
+packet|codec_type=audio|stream_index=2|pts=3912636940|pts_time=43473.743778|dts=3912636940|dts_time=43473.743778|duration=2880|duration_time=0.032000|size=768|pos=N/A|flags=K_|data_hash=CRC32:457881f8
+packet|codec_type=audio|stream_index=2|pts=3912639820|pts_time=43473.775778|dts=3912639820|dts_time=43473.775778|duration=2880|duration_time=0.032000|size=768|pos=N/A|flags=K_|data_hash=CRC32:1abb0d9a
+packet|codec_type=video|stream_index=0|pts=3912681858|pts_time=43474.242867|dts=3912681858|dts_time=43474.242867|duration=1501|duration_time=0.016678|size=18144|pos=409464|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:826f8e8e
+packet|codec_type=video|stream_index=0|pts=3912687864|pts_time=43474.309600|dts=3912683360|dts_time=43474.259556|duration=1501|duration_time=0.016678|size=56848|pos=428640|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:6b15be8c
+packet|codec_type=video|stream_index=0|pts=3912684861|pts_time=43474.276233|dts=3912684861|dts_time=43474.276233|duration=1501|duration_time=0.016678|size=16296|pos=489176|flags=__side_data|side_data_type=MPEGTS Stream ID|id=224
+|data_hash=CRC32:911b1649
+packet|codec_type=audio|stream_index=1|pts=3912641945|pts_time=43473.799389|dts=3912641945|dts_time=43473.799389|duration=2880|duration_time=0.032000|size=1536|pos=N/A|flags=K_side_data|side_data_type=MPEGTS Stream ID|id=189
+|data_hash=CRC32:d2f2012f
+packet|codec_type=audio|stream_index=2|pts=3912642700|pts_time=43473.807778|dts=3912642700|dts_time=43473.807778|duration=2880|duration_time=0.032000|size=768|pos=N/A|flags=K_side_data|side_data_type=MPEGTS Stream ID|id=189
+|data_hash=CRC32:3dad674a
+packet|codec_type=video|stream_index=0|pts=3912686363|pts_time=43474.292922|dts=3912686363|dts_time=43474.292922|duration=1501|duration_time=0.016678|size=4944|pos=506660|flags=__|data_hash=CRC32:54a86cbb
+packet|codec_type=audio|stream_index=1|pts=3912644825|pts_time=43473.831389|dts=3912644825|dts_time=43473.831389|duration=2880|duration_time=0.032000|size=906|pos=474888|flags=K_|data_hash=CRC32:0893d398
+packet|codec_type=audio|stream_index=2|pts=3912645580|pts_time=43473.839778|dts=3912645580|dts_time=43473.839778|duration=2880|duration_time=0.032000|size=354|pos=491808|flags=K_|data_hash=CRC32:f5963fa6
+stream|index=0|codec_name=mpeg2video|profile=4|codec_type=video|codec_tag_string=[2][0][0][0]|codec_tag=0x0002|width=1280|height=720|coded_width=0|coded_height=0|closed_captions=0|has_b_frames=1|sample_aspect_ratio=1:1|display_aspect_ratio=16:9|pix_fmt=yuv420p|level=4|color_range=tv|color_space=unknown|color_transfer=unknown|color_primaries=unknown|chroma_location=left|field_order=progressive|refs=1|id=0x31|r_frame_rate=60000/1001|avg_frame_rate=60000/1001|time_base=1/90000|start_pts=3912669846|start_time=43474.109400|duration_ts=19519|duration=0.216878|bit_rate=15000000|max_bit_rate=N/A|bits_per_raw_sample=N/A|nb_frames=N/A|nb_read_frames=N/A|nb_read_packets=15|extradata_hash=CRC32:53134fa8|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0
+side_data|side_data_type=CPB properties|max_bitrate=15000000|min_bitrate=0|avg_bitrate=0|buffer_size=9781248|vbv_delay=-1
+stream|index=1|codec_name=ac3|profile=unknown|codec_type=audio|codec_tag_string=[4][0][0][0]|codec_tag=0x0004|sample_fmt=fltp|sample_rate=48000|channels=6|channel_layout=5.1(side)|bits_per_sample=0|id=0x34|r_frame_rate=0/0|avg_frame_rate=0/0|time_base=1/90000|start_pts=3912633305|start_time=43473.703389|duration_ts=14400|duration=0.160000|bit_rate=384000|max_bit_rate=N/A|bits_per_raw_sample=N/A|nb_frames=N/A|nb_read_frames=N/A|nb_read_packets=5|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|tag:language=eng
+stream|index=2|codec_name=ac3|profile=unknown|codec_type=audio|codec_tag_string=[4][0][0][0]|codec_tag=0x0004|sample_fmt=fltp|sample_rate=48000|channels=2|channel_layout=stereo|bits_per_sample=0|id=0x35|r_frame_rate=0/0|avg_frame_rate=0/0|time_base=1/90000|start_pts=3912634060|start_time=43473.711778|duration_ts=14400|duration=0.160000|bit_rate=192000|max_bit_rate=N/A|bits_per_raw_sample=N/A|nb_frames=N/A|nb_read_frames=N/A|nb_read_packets=5|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|tag:language=es
+format|filename=mp3ac325-4864-small.ts|nb_streams=3|nb_programs=1|format_name=mpegts|start_time=43473.703389|duration=0.622889|size=512000|bit_rate=6575810|probe_score=50
