@@ -32,13 +32,14 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 
 static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     AVFrame * const p = (AVFrame *)pict;
-    uint8_t *bytestream, *bytestream_start, *ptr;
+    uint8_t *bytestream, *ptr;
     const uint16_t flip = (1 << 15);
     uint64_t data_size = 0, padded_data_size = 0;
     int ret, bitpix, naxis3 = 1, i, j, k, bytes_left;
@@ -80,10 +81,9 @@ static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     data_size = (bitpix >> 3) * avctx->height * avctx->width * naxis3;
     padded_data_size = ((data_size + 2879) / 2880 ) * 2880;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, padded_data_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, pkt, padded_data_size, 0)) < 0)
         return ret;
 
-    bytestream_start =
     bytestream       = pkt->data;
 
     for (k = 0; k < naxis3; k++) {
@@ -104,9 +104,7 @@ static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     bytes_left = padded_data_size - data_size;
     memset(bytestream, 0, bytes_left);
-    bytestream += bytes_left;
 
-    pkt->size   = bytestream - bytestream_start;
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
@@ -118,6 +116,7 @@ const AVCodec ff_fits_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FITS,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .encode2        = fits_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_GBRAP16BE,
                                                      AV_PIX_FMT_GBRP16BE,
