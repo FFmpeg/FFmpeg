@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "bmp.h"
+#include "encode.h"
 #include "internal.h"
 
 static const uint32_t monoblack_pal[] = { 0x000000, 0xFFFFFF };
@@ -112,7 +113,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #define SIZE_BITMAPINFOHEADER 40
     hsize = SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2);
     n_bytes = n_bytes_image + hsize;
-    if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, pkt, n_bytes, 0)) < 0)
         return ret;
     buf = pkt->data;
     bytestream_put_byte(&buf, 'B');                   // BITMAPFILEHEADER.bfType
@@ -140,9 +141,8 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for(i = 0; i < avctx->height; i++) {
         if (bit_count == 16) {
             const uint16_t *src = (const uint16_t *) ptr;
-            uint16_t *dst = (uint16_t *) buf;
             for(n = 0; n < avctx->width; n++)
-                AV_WL16(dst + n, src[n]);
+                AV_WL16(buf + 2 * n, src[n]);
         } else {
             memcpy(buf, ptr, n_bytes_per_row);
         }
@@ -162,6 +162,7 @@ const AVCodec ff_bmp_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_BMP,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .init           = bmp_encode_init,
     .encode2        = bmp_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
