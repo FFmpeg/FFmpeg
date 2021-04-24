@@ -385,7 +385,7 @@ static int read_dst_frame(AVFormatContext *s, AVPacket *pkt)
                 avio_skip(pb, 1);
             pkt->flags |= AV_PKT_FLAG_KEY;
             pkt->stream_index = 0;
-            pkt->duration = 588 * s->streams[0]->codecpar->sample_rate / 44100;
+            pkt->duration = 588LL * s->streams[0]->codecpar->sample_rate / 44100;
             pkt->pos = chunk_pos;
 
             chunk_pos = avio_tell(pb);
