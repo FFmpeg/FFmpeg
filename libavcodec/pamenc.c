@@ -19,16 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
-    uint8_t *bytestream_start, *bytestream, *bytestream_end;
-    int i, h, w, n, linesize, depth, maxval, ret;
+    int i, h, w, n, linesize, depth, maxval, ret, header_size;
+    uint8_t *bytestream, *ptr;
     const char *tuple_type;
-    uint8_t *ptr;
+    char header[100];
 
     h = avctx->height;
     w = avctx->width;
@@ -91,17 +93,17 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200, 0)) < 0)
-        return ret;
-
-    bytestream_start =
-    bytestream       = pkt->data;
-    bytestream_end   = pkt->data + pkt->size;
-
-    snprintf(bytestream, bytestream_end - bytestream,
+    header_size = snprintf(header, sizeof(header),
              "P7\nWIDTH %d\nHEIGHT %d\nDEPTH %d\nMAXVAL %d\nTUPLTYPE %s\nENDHDR\n",
              w, h, depth, maxval, tuple_type);
-    bytestream += strlen(bytestream);
+    av_assert1(header_size < sizeof(header));
+
+    if ((ret = ff_get_encode_buffer(avctx, pkt, n*h + header_size, 0)) < 0)
+        return ret;
+
+    bytestream       = pkt->data;
+    memcpy(bytestream, header, header_size);
+    bytestream += header_size;
 
     ptr      = p->data[0];
     linesize = p->linesize[0];
@@ -121,7 +123,6 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    pkt->size   = bytestream - bytestream_start;
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
@@ -132,6 +133,7 @@ const AVCodec ff_pam_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PAM,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .encode2        = pam_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
