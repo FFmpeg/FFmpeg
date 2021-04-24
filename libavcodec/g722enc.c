@@ -29,6 +29,7 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "g722.h"
 #include "libavutil/common.h"
@@ -346,7 +347,7 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int nb_samples, out_size, ret;
 
     out_size = (frame->nb_samples + 1) / 2;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, out_size, 0)) < 0)
         return ret;
 
     nb_samples = frame->nb_samples - (frame->nb_samples & 1);
@@ -373,11 +374,11 @@ const AVCodec ff_adpcm_g722_encoder = {
     .long_name       = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_ADPCM_G722,
+    .capabilities    = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size  = sizeof(G722Context),
     .init            = g722_encode_init,
     .close           = g722_encode_close,
     .encode2         = g722_encode_frame,
-    .capabilities    = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .channel_layouts = (const uint64_t[]){ AV_CH_LAYOUT_MONO, 0 },
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
