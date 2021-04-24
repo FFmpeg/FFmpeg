@@ -37,6 +37,7 @@
 #include "libavutil/log.h"
 #include "libavutil/base64.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 /* libtheora includes */
@@ -339,7 +340,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
     }
 
     /* Copy ogg_packet content out to buffer */
-    if ((ret = ff_alloc_packet2(avc_context, pkt, o_packet.bytes, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avc_context, pkt, o_packet.bytes, 0)) < 0)
         return ret;
     memcpy(pkt->data, o_packet.packet, o_packet.bytes);
 
@@ -371,11 +372,12 @@ const AVCodec ff_libtheora_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libtheora Theora"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_THEORA,
+    .capabilities   = AV_CODEC_CAP_DR1 |
+                      AV_CODEC_CAP_DELAY /* for statsfile summary */,
     .priv_data_size = sizeof(TheoraContext),
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .capabilities   = AV_CODEC_CAP_DELAY, // needed to get the statsfile summary
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },
