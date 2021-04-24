@@ -32,7 +32,7 @@ void ff_fft32_float_avx     (AVTXContext *s, void *out, void *in, ptrdiff_t stri
 void ff_fft32_float_fma3    (AVTXContext *s, void *out, void *in, ptrdiff_t stride);
 
 void ff_split_radix_fft_float_avx (AVTXContext *s, void *out, void *in, ptrdiff_t stride);
-void ff_split_radix_fft_float_fma3(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
+void ff_split_radix_fft_float_avx2(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
 
 av_cold void ff_tx_init_float_x86(AVTXContext *s, av_tx_fn *tx)
 {
@@ -87,10 +87,15 @@ av_cold void ff_tx_init_float_x86(AVTXContext *s, av_tx_fn *tx)
 #if ARCH_X86_64
             else if (s->m == 32)
                 TXFN(ff_fft32_float_fma3, 1, 8, 2);
-            else if (s->m >= 64 && s->m <= 131072 && !(s->flags & AV_TX_INPLACE))
-                TXFN(ff_split_radix_fft_float_fma3, 1, 8, 2);
 #endif
         }
+
+#if ARCH_X86_64
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            if (s->m >= 64 && s->m <= 131072 && !(s->flags & AV_TX_INPLACE))
+                TXFN(ff_split_radix_fft_float_avx2, 1, 8, 2);
+        }
+#endif
     }
 
     if (gen_revtab)

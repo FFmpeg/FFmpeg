@@ -100,7 +100,7 @@ SECTION .text
 ; %6 - temporary register (for avx only)
 ; %7 - temporary register (for avx only, enables vgatherdpd (AVX2) if FMA3 is set)
 %macro LOAD64_LUT 5-7
-%if %0 > 6 && cpuflag(fma3)
+%if %0 > 6 && cpuflag(avx2)
     pcmpeqd %6, %6 ; pcmpeqq has a 0.5 throughput on Zen 3, this has 0.25
     movapd xmm%7, [%3 + %4] ; float mov since vgatherdpd is a float instruction
     vgatherdpd %1, [%2 + xmm%7*8], %6 ; must use separate registers for args
@@ -1208,5 +1208,5 @@ FFT_SPLIT_RADIX_DEF 131072
 
 %if ARCH_X86_64
 FFT_SPLIT_RADIX_FN avx
-FFT_SPLIT_RADIX_FN fma3
+FFT_SPLIT_RADIX_FN avx2
 %endif
