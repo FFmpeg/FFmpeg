@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "blockdsp.h"
+#include "encode.h"
 #include "fdctdsp.h"
 #include "internal.h"
 #include "mpegvideo.h"
@@ -1257,7 +1258,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     int offset, i, ret;
     uint8_t *buf;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->frame_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, pkt, ctx->frame_size, 0)) < 0)
         return ret;
     buf = pkt->data;
 
@@ -1354,11 +1355,12 @@ const AVCodec ff_dnxhd_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DNXHD,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+                      AV_CODEC_CAP_SLICE_THREADS,
     .priv_data_size = sizeof(DNXHDEncContext),
     .init           = dnxhd_encode_init,
     .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV422P,
