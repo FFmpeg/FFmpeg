@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 
 typedef struct PCMDVDContext {
@@ -119,7 +120,7 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     PutByteContext pb;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
 
     memcpy(avpkt->data, s->header, 3);
@@ -163,7 +164,6 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     avpkt->pts      = frame->pts;
-    avpkt->size     = pkt_size;
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
 
@@ -175,10 +175,10 @@ const AVCodec ff_pcm_dvd_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for DVD media"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_PCM_DVD,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(PCMDVDContext),
     .init           = pcm_dvd_encode_init,
     .encode2        = pcm_dvd_encode_frame,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .supported_samplerates = (const int[]) { 48000, 96000, 0},
     .channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                             AV_CH_LAYOUT_STEREO,
