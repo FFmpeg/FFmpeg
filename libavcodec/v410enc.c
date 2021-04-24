@@ -23,6 +23,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 static av_cold int v410_encode_init(AVCodecContext *avctx)
@@ -46,8 +47,8 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint32_t val;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 4,
-                                            avctx->width * avctx->height * 4)) < 0)
+    ret = ff_get_encode_buffer(avctx, pkt, avctx->width * avctx->height * 4, 0);
+    if (ret < 0)
         return ret;
     dst = pkt->data;
 
@@ -78,6 +79,7 @@ const AVCodec ff_v410_encoder = {
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_V410,
+    .capabilities = AV_CODEC_CAP_DR1,
     .init         = v410_encode_init,
     .encode2      = v410_encode_frame,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE },
