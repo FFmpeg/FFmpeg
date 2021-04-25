@@ -93,7 +93,8 @@ static int qcp_read_header(AVFormatContext *s)
     QCPContext    *c  = s->priv_data;
     AVStream      *st = avformat_new_stream(s, NULL);
     uint8_t       buf[16];
-    int           i, nb_rates;
+    int           i;
+    unsigned      nb_rates;
 
     if (!st)
         return AVERROR(ENOMEM);
