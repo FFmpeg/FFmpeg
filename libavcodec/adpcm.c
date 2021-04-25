@@ -111,6 +111,8 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     unsigned int min_channels = 1;
     unsigned int max_channels = 2;
 
+    adpcm_flush(avctx);
+
     switch(avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_IMA_AMV:
         max_channels = 1;
@@ -201,8 +203,6 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     default:
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     }
-
-    adpcm_flush(avctx);
     return 0;
 }
 
