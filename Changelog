@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - ADPCM IMA Westwood encoder
+- Westwood AUD muxer
 
 
 version 4.4:

@@ -478,6 +478,7 @@ extern AVOutputFormat ff_webp_muxer;
 extern AVInputFormat  ff_webvtt_demuxer;
 extern AVOutputFormat ff_webvtt_muxer;
 extern AVInputFormat  ff_wsaud_demuxer;
+extern AVOutputFormat ff_wsaud_muxer;
 extern AVInputFormat  ff_wsd_demuxer;
 extern AVInputFormat  ff_wsvqa_demuxer;
 extern AVInputFormat  ff_wtv_demuxer;
