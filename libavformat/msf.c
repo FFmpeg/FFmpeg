@@ -70,6 +70,8 @@ static int msf_read_header(AVFormatContext *s)
     case 4:
     case 5:
     case 6: st->codecpar->block_align = (codec == 4 ? 96 : codec == 5 ? 152 : 192) * st->codecpar->channels;
+            if (st->codecpar->channels > UINT16_MAX / 2048)
+                return AVERROR_INVALIDDATA;
             ret = ff_alloc_extradata(st->codecpar, 14);
             if (ret < 0)
                 return ret;
