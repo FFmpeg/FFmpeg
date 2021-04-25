@@ -111,10 +111,11 @@ static int realtext_read_header(AVFormatContext *s)
             if (!merge) {
                 const char *begin = ff_smil_get_attr_ptr(buf.str, "begin");
                 const char *end   = ff_smil_get_attr_ptr(buf.str, "end");
+                int64_t endi = end ? read_ts(end) : 0;
 
                 sub->pos      = pos;
                 sub->pts      = begin ? read_ts(begin) : 0;
-                sub->duration = end ? (read_ts(end) - sub->pts) : duration;
+                sub->duration = (end && endi > sub->pts && endi - (uint64_t)sub->pts <= INT64_MAX) ? endi - sub->pts : duration;
             }
         }
         av_bprint_clear(&buf);
