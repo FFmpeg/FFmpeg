@@ -1400,16 +1400,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 
                 for (n = nb_samples / 2; n > 0; n--) {
                     int v = bytestream2_get_byteu(&gb);
-                    *smp++ = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
                     *smp++ = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
+                    *smp++ = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
                 }
             }
         } else {
             for (n = nb_samples / 2; n > 0; n--) {
                 for (channel = 0; channel < avctx->channels; channel++) {
                     int v = bytestream2_get_byteu(&gb);
-                    *samples++  = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
-                    samples[st] = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
+                    *samples++  = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
+                    samples[st] = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
                 }
                 samples += avctx->channels;
             }
