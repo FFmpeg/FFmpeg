@@ -90,7 +90,7 @@ probefmt(){
 }
 
 probeaudiostream(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout:side_data "$@"
 }
 
 probetags(){
