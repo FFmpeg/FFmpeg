@@ -1460,99 +1460,99 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 stream_id != STREAM_ID_DSMCC_STREAM &&
                 stream_id != STREAM_ID_TYPE_E_STREAM) {
 
-            flags      = 0;
-            if (pts != AV_NOPTS_VALUE) {
-                header_len += 5;
-                flags      |= 0x80;
-            }
-            if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
-                header_len += 5;
-                flags      |= 0x40;
-            }
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                st->codecpar->codec_id == AV_CODEC_ID_DIRAC) {
-                /* set PES_extension_flag */
-                pes_extension = 1;
-                flags        |= 0x01;
+                flags      = 0;
+                if (pts != AV_NOPTS_VALUE) {
+                    header_len += 5;
+                    flags      |= 0x80;
+                }
+                if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
+                    header_len += 5;
+                    flags      |= 0x40;
+                }
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    st->codecpar->codec_id == AV_CODEC_ID_DIRAC) {
+                    /* set PES_extension_flag */
+                    pes_extension = 1;
+                    flags        |= 0x01;
 
-                /* One byte for PES2 extension flag +
-                 * one byte for extension length +
-                 * one byte for extension id */
-                header_len += 3;
-            }
-            /* for Blu-ray AC3 Audio the PES Extension flag should be as follow
-             * otherwise it will not play sound on blu-ray
-             */
-            if (ts->m2ts_mode &&
-                st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                st->codecpar->codec_id == AV_CODEC_ID_AC3) {
-                /* set PES_extension_flag */
-                pes_extension = 1;
-                flags |= 0x01;
-                header_len += 3;
-            }
-            if (is_dvb_teletext) {
-                pes_header_stuffing_bytes = 0x24 - header_len;
-                header_len = 0x24;
-            }
-            len = payload_size + header_len + 3;
-            /* 3 extra bytes should be added to DVB subtitle payload: 0x20 0x00 at the beginning and trailing 0xff */
-            if (is_dvb_subtitle) {
-                len += 3;
-                payload_size++;
-            }
-            if (len > 0xffff)
-                len = 0;
-            if (ts->omit_video_pes_length && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-                len = 0;
-            }
-            *q++ = len >> 8;
-            *q++ = len;
-            val  = 0x80;
-            /* data alignment indicator is required for subtitle and data streams */
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-                val |= 0x04;
-            *q++ = val;
-            *q++ = flags;
-            *q++ = header_len;
-            if (pts != AV_NOPTS_VALUE) {
-                write_pts(q, flags >> 6, pts);
-                q += 5;
-            }
-            if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
-                write_pts(q, 1, dts);
-                q += 5;
-            }
-            if (pes_extension && st->codecpar->codec_id == AV_CODEC_ID_DIRAC) {
-                flags = 0x01;  /* set PES_extension_flag_2 */
-                *q++  = flags;
-                *q++  = 0x80 | 0x01; /* marker bit + extension length */
-                /* Set the stream ID extension flag bit to 0 and
-                 * write the extended stream ID. */
-                *q++ = 0x00 | 0x60;
-            }
-            /* For Blu-ray AC3 Audio Setting extended flags */
-            if (ts->m2ts_mode &&
-                pes_extension &&
-                st->codecpar->codec_id == AV_CODEC_ID_AC3) {
-                flags = 0x01; /* set PES_extension_flag_2 */
+                    /* One byte for PES2 extension flag +
+                     * one byte for extension length +
+                     * one byte for extension id */
+                    header_len += 3;
+                }
+                /* for Blu-ray AC3 Audio the PES Extension flag should be as follow
+                 * otherwise it will not play sound on blu-ray
+                 */
+                if (ts->m2ts_mode &&
+                    st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                    st->codecpar->codec_id == AV_CODEC_ID_AC3) {
+                    /* set PES_extension_flag */
+                    pes_extension = 1;
+                    flags |= 0x01;
+                    header_len += 3;
+                }
+                if (is_dvb_teletext) {
+                    pes_header_stuffing_bytes = 0x24 - header_len;
+                    header_len = 0x24;
+                }
+                len = payload_size + header_len + 3;
+                /* 3 extra bytes should be added to DVB subtitle payload: 0x20 0x00 at the beginning and trailing 0xff */
+                if (is_dvb_subtitle) {
+                    len += 3;
+                    payload_size++;
+                }
+                if (len > 0xffff)
+                    len = 0;
+                if (ts->omit_video_pes_length && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                    len = 0;
+                }
+                *q++ = len >> 8;
+                *q++ = len;
+                val  = 0x80;
+                /* data alignment indicator is required for subtitle and data streams */
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+                    val |= 0x04;
+                *q++ = val;
                 *q++ = flags;
-                *q++ = 0x80 | 0x01; /* marker bit + extension length */
-                *q++ = 0x00 | 0x71; /* for AC3 Audio (specifically on blue-rays) */
-            }
+                *q++ = header_len;
+                if (pts != AV_NOPTS_VALUE) {
+                    write_pts(q, flags >> 6, pts);
+                    q += 5;
+                }
+                if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
+                    write_pts(q, 1, dts);
+                    q += 5;
+                }
+                if (pes_extension && st->codecpar->codec_id == AV_CODEC_ID_DIRAC) {
+                    flags = 0x01;  /* set PES_extension_flag_2 */
+                    *q++  = flags;
+                    *q++  = 0x80 | 0x01; /* marker bit + extension length */
+                    /* Set the stream ID extension flag bit to 0 and
+                     * write the extended stream ID. */
+                    *q++ = 0x00 | 0x60;
+                }
+                /* For Blu-ray AC3 Audio Setting extended flags */
+                if (ts->m2ts_mode &&
+                    pes_extension &&
+                    st->codecpar->codec_id == AV_CODEC_ID_AC3) {
+                    flags = 0x01; /* set PES_extension_flag_2 */
+                    *q++ = flags;
+                    *q++ = 0x80 | 0x01; /* marker bit + extension length */
+                    *q++ = 0x00 | 0x71; /* for AC3 Audio (specifically on blue-rays) */
+                }
 
 
-            if (is_dvb_subtitle) {
-                /* First two fields of DVB subtitles PES data:
-                 * data_identifier: for DVB subtitle streams shall be coded with the value 0x20
-                 * subtitle_stream_id: for DVB subtitle stream shall be identified by the value 0x00 */
-                *q++ = 0x20;
-                *q++ = 0x00;
-            }
-            if (is_dvb_teletext) {
-                memset(q, 0xff, pes_header_stuffing_bytes);
-                q += pes_header_stuffing_bytes;
-            }
+                if (is_dvb_subtitle) {
+                    /* First two fields of DVB subtitles PES data:
+                     * data_identifier: for DVB subtitle streams shall be coded with the value 0x20
+                     * subtitle_stream_id: for DVB subtitle stream shall be identified by the value 0x00 */
+                    *q++ = 0x20;
+                    *q++ = 0x00;
+                }
+                if (is_dvb_teletext) {
+                    memset(q, 0xff, pes_header_stuffing_bytes);
+                    q += pes_header_stuffing_bytes;
+                }
             } else {
                 len = payload_size;
                 *q++ = len >> 8;
