@@ -485,8 +485,8 @@ SECTION .text
     movaps [outq + 10*mmsize], tx1_o0
     movaps [outq + 14*mmsize], tx2_o0
 
-    movaps tw_e,           [ff_cos_64_float + mmsize]
-    vperm2f128 tw_o, tw_o, [ff_cos_64_float + 64 - 4*7 - mmsize], 0x23
+    movaps tw_e,           [cos_64_float + mmsize]
+    vperm2f128 tw_o, tw_o, [cos_64_float + 64 - 4*7 - mmsize], 0x23
 
     movaps m0, [outq +  1*mmsize]
     movaps m1, [outq +  3*mmsize]
@@ -800,8 +800,8 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq, m12, m13
     LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq, m14, m15
 
-    movaps m8,         [ff_cos_32_float]
-    vperm2f128 m9, m9, [ff_cos_32_float + 4*8 - 4*7], 0x23
+    movaps m8,         [cos_32_float]
+    vperm2f128 m9, m9, [cos_32_float + 4*8 - 4*7], 0x23
 
     FFT16 m0, m1, m2, m3, m10, m11, m12, m13
 
@@ -858,8 +858,8 @@ ALIGN 16
     POP lenq
     sub outq, (%1*4) + (%1*2) + (%1/2)
 
-    lea rtabq, [ff_cos_ %+ %1 %+ _float]
-    lea itabq, [ff_cos_ %+ %1 %+ _float + %1 - 4*7]
+    lea rtabq, [cos_ %+ %1 %+ _float]
+    lea itabq, [cos_ %+ %1 %+ _float + %1 - 4*7]
 
 %if %0 > 1
     cmp tgtq, %1
@@ -903,8 +903,8 @@ ALIGN 16
     LOAD64_LUT m2, inq, lutq, (mmsize/2)*2, tmpq, m12, m13
     LOAD64_LUT m3, inq, lutq, (mmsize/2)*3, tmpq, m14, m15
 
-    movaps m8,         [ff_cos_32_float]
-    vperm2f128 m9, m9, [ff_cos_32_float + 32 - 4*7], 0x23
+    movaps m8,         [cos_32_float]
+    vperm2f128 m9, m9, [cos_32_float + 32 - 4*7], 0x23
 
     FFT16 m0, m1, m2, m3, m10, m11, m12, m13
 
@@ -961,8 +961,8 @@ ALIGN 16
 
     FFT16 tx2_e0, tx2_e1, tx2_o0, tx2_o1, tmp1, tmp2, tw_e, tw_o
 
-    movaps tw_e,           [ff_cos_64_float]
-    vperm2f128 tw_o, tw_o, [ff_cos_64_float + 64 - 4*7], 0x23
+    movaps tw_e,           [cos_64_float]
+    vperm2f128 tw_o, tw_o, [cos_64_float + 64 - 4*7], 0x23
 
     add lutq, (mmsize/2)*8
     cmp tgtq, 64
@@ -989,8 +989,8 @@ ALIGN 16
     POP lenq
     sub outq, 24*mmsize
 
-    lea rtabq, [ff_cos_128_float]
-    lea itabq, [ff_cos_128_float + 128 - 4*7]
+    lea rtabq, [cos_128_float]
+    lea itabq, [cos_128_float + 128 - 4*7]
 
     cmp tgtq, 128
     je .deinterleave
@@ -1016,8 +1016,8 @@ ALIGN 16
     POP lenq
     sub outq, 48*mmsize
 
-    lea rtabq, [ff_cos_256_float]
-    lea itabq, [ff_cos_256_float + 256 - 4*7]
+    lea rtabq, [cos_256_float]
+    lea itabq, [cos_256_float + 256 - 4*7]
 
     cmp tgtq, 256
     je .deinterleave
@@ -1044,8 +1044,8 @@ ALIGN 16
     POP lenq
     sub outq, 96*mmsize
 
-    lea rtabq, [ff_cos_512_float]
-    lea itabq, [ff_cos_512_float + 512 - 4*7]
+    lea rtabq, [cos_512_float]
+    lea itabq, [cos_512_float + 512 - 4*7]
 
     cmp tgtq, 512
     je .deinterleave
@@ -1079,8 +1079,8 @@ ALIGN 16
     POP lenq
     sub outq, 192*mmsize
 
-    lea rtabq, [ff_cos_1024_float]
-    lea itabq, [ff_cos_1024_float + 1024 - 4*7]
+    lea rtabq, [cos_1024_float]
+    lea itabq, [cos_1024_float + 1024 - 4*7]
 
     cmp tgtq, 1024
     je .deinterleave
@@ -1160,8 +1160,8 @@ FFT_SPLIT_RADIX_DEF 131072
     vextractf128 [outq + 13*mmsize +  0], tw_e,   1
     vextractf128 [outq + 13*mmsize + 16], tx2_e0, 1
 
-    movaps tw_e,           [ff_cos_64_float + mmsize]
-    vperm2f128 tw_o, tw_o, [ff_cos_64_float + 64 - 4*7 - mmsize], 0x23
+    movaps tw_e,           [cos_64_float + mmsize]
+    vperm2f128 tw_o, tw_o, [cos_64_float + 64 - 4*7 - mmsize], 0x23
 
     movaps m0, [outq +  1*mmsize]
     movaps m1, [outq +  3*mmsize]
