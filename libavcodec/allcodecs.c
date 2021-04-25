@@ -645,6 +645,7 @@ extern AVCodec ff_adpcm_ima_ssi_encoder;
 extern AVCodec ff_adpcm_ima_smjpeg_decoder;
 extern AVCodec ff_adpcm_ima_wav_encoder;
 extern AVCodec ff_adpcm_ima_wav_decoder;
+extern AVCodec ff_adpcm_ima_ws_encoder;
 extern AVCodec ff_adpcm_ima_ws_decoder;
 extern AVCodec ff_adpcm_ms_encoder;
 extern AVCodec ff_adpcm_ms_decoder;
