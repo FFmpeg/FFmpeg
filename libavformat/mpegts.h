@@ -138,18 +138,18 @@
 #define STREAM_TYPE_AUDIO_EAC3      0x87
 
 /* ISO/IEC 13818-1 Table 2-22 */
-#define STREAM_ID_PROGRAM_STREAM_MAP 0xbc
-#define STREAM_ID_PRIVATE_STREAM_1   0xbd
-#define STREAM_ID_PADDING_STREAM     0xbe
-#define STREAM_ID_PRIVATE_STREAM_2   0xbf
-#define STREAM_ID_AUDIO_STREAM_0     0xc0
-#define STREAM_ID_VIDEO_STREAM_0     0xe0
-#define STREAM_ID_ECM_STREAM         0xf0
-#define STREAM_ID_EMM_STREAM         0xf1
-#define STREAM_ID_DSMCC_STREAM       0xf2
-#define STREAM_ID_TYPE_E_STREAM      0xf8
-#define STREAM_ID_METADATA_STREAM    0xfc
-#define STREAM_ID_EXTENDED_STREAM_ID 0xfd
+#define STREAM_ID_PROGRAM_STREAM_MAP        0xbc
+#define STREAM_ID_PRIVATE_STREAM_1          0xbd
+#define STREAM_ID_PADDING_STREAM            0xbe
+#define STREAM_ID_PRIVATE_STREAM_2          0xbf
+#define STREAM_ID_AUDIO_STREAM_0            0xc0
+#define STREAM_ID_VIDEO_STREAM_0            0xe0
+#define STREAM_ID_ECM_STREAM                0xf0
+#define STREAM_ID_EMM_STREAM                0xf1
+#define STREAM_ID_DSMCC_STREAM              0xf2
+#define STREAM_ID_TYPE_E_STREAM             0xf8
+#define STREAM_ID_METADATA_STREAM           0xfc
+#define STREAM_ID_EXTENDED_STREAM_ID        0xfd
 #define STREAM_ID_PROGRAM_STREAM_DIRECTORY  0xff
 
 /* ISO/IEC 13818-1 Table 2-45 */
