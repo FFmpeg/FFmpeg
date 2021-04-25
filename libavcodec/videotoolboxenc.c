@@ -1113,8 +1113,8 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
-    if (vtctx->codec_id == AV_CODEC_ID_H264 && max_rate > 0) {
-        // kVTCompressionPropertyKey_DataRateLimits is not available for HEVC
+    if ((vtctx->codec_id == AV_CODEC_ID_H264 || vtctx->codec_id == AV_CODEC_ID_HEVC)
+            && max_rate > 0) {
         bytes_per_second_value = max_rate >> 3;
         bytes_per_second = CFNumberCreate(kCFAllocatorDefault,
                                           kCFNumberSInt64Type,
@@ -1152,7 +1152,11 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting max bitrate property: %d\n", status);
-            return AVERROR_EXTERNAL;
+            // kVTCompressionPropertyKey_DataRateLimits is available for HEVC
+            // now but not on old release. There is no document about since
+            // when. So ignore the error if it failed for hevc.
+            if (vtctx->codec_id != AV_CODEC_ID_HEVC)
+                return AVERROR_EXTERNAL;
         }
     }
 
