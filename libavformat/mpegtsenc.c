@@ -1450,6 +1450,16 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 pts = dts = AV_NOPTS_VALUE;
 
             header_len = 0;
+
+            if (stream_id != STREAM_ID_PROGRAM_STREAM_MAP &&
+                stream_id != STREAM_ID_PADDING_STREAM &&
+                stream_id != STREAM_ID_PRIVATE_STREAM_2 &&
+                stream_id != STREAM_ID_ECM_STREAM &&
+                stream_id != STREAM_ID_EMM_STREAM &&
+                stream_id != STREAM_ID_PROGRAM_STREAM_DIRECTORY &&
+                stream_id != STREAM_ID_DSMCC_STREAM &&
+                stream_id != STREAM_ID_TYPE_E_STREAM) {
+
             flags      = 0;
             if (pts != AV_NOPTS_VALUE) {
                 header_len += 5;
@@ -1542,6 +1552,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             if (is_dvb_teletext) {
                 memset(q, 0xff, pes_header_stuffing_bytes);
                 q += pes_header_stuffing_bytes;
+            }
+            } else {
+                len = payload_size;
+                *q++ = len >> 8;
+                *q++ = len;
             }
             is_start = 0;
         }
