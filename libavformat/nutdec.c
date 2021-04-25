@@ -286,6 +286,11 @@ static int decode_main_header(NUTContext *nut)
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
+        if (tmp_size < 0 || tmp_size > INT_MAX - count) {
+            av_log(s, AV_LOG_ERROR, "illegal size\n");
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
 
         for (j = 0; j < count; j++, i++) {
             if (i == 'N') {
