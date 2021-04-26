@@ -993,7 +993,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     flush_put_bits(&s->pb);
-    avpkt->size = put_bits_count(&s->pb) >> 3;
+    av_shrink_packet(avpkt, put_bytes_output(&s->pb));
 
     *got_packet = 1;
 
