@@ -9886,7 +9886,7 @@ Native implementation of DNN loading and execution.
 @item tensorflow
 TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
-@url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
+@url{https://www.tensorflow.org/install/lang_c}) and configure FFmpeg with
 @code{--enable-libtensorflow}
 @end table
 Default value is @samp{native}.
@@ -10187,7 +10187,7 @@ Native implementation of DNN loading and execution.
 @item tensorflow
 TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
-@url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
+@url{https://www.tensorflow.org/install/lang_c}) and configure FFmpeg with
 @code{--enable-libtensorflow}
 
 @item openvino
@@ -18893,7 +18893,7 @@ Native implementation of DNN loading and execution.
 @item tensorflow
 TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
-@url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
+@url{https://www.tensorflow.org/install/lang_c}) and configure FFmpeg with
 @code{--enable-libtensorflow}
 @end table
 
