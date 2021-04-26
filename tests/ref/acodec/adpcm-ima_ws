@@ -1,0 +1,4 @@
+64808f6c710d62f18a6a12e27dca1e2e *tests/data/fate/acodec-adpcm-ima_ws.wsaud
+266684 tests/data/fate/acodec-adpcm-ima_ws.wsaud
+5ca78409893d1917cc42a49c96f51df8 *tests/data/fate/acodec-adpcm-ima_ws.out.wav
+stddev:  905.02 PSNR: 37.20 MAXDIFF:34026 bytes:  1058400/  1058400
