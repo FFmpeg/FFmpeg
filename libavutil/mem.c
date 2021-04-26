@@ -133,14 +133,20 @@ void *av_malloc(size_t size)
 
 void *av_realloc(void *ptr, size_t size)
 {
+    void *ret;
     if (size > max_alloc_size)
         return NULL;
 
 #if HAVE_ALIGNED_MALLOC
-    return _aligned_realloc(ptr, size + !size, ALIGN);
+    ret = _aligned_realloc(ptr, size + !size, ALIGN);
 #else
-    return realloc(ptr, size + !size);
+    ret = realloc(ptr, size + !size);
 #endif
+#if CONFIG_MEMORY_POISONING
+    if (ret && !ptr)
+        memset(ret, FF_MEMORY_POISON, size);
+#endif
+    return ret;
 }
 
 void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
