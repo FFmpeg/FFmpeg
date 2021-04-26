@@ -1012,8 +1012,8 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;
     AVStream *st = NULL; // init to silence compiler warning
-    int i, len, res, seq = 1;
-    int64_t timestamp, pos;
+    int i, res, seq = 1;
+    int64_t timestamp, pos, len;
     int flags;
 
     for (;;) {
@@ -1032,7 +1032,9 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
                 ast = st->priv_data;
                 timestamp = AV_NOPTS_VALUE;
                 len = !ast->audio_framesize ? RAW_PACKET_SIZE :
-                    ast->coded_framesize * ast->sub_packet_h / 2;
+                    ast->coded_framesize * (int64_t)ast->sub_packet_h / 2;
+                if (len > INT_MAX)
+                    return AVERROR_INVALIDDATA;
                 flags = (seq++ == 1) ? 2 : 0;
                 pos = avio_tell(s->pb);
             } else {
