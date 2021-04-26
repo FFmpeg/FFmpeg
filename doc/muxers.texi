@@ -24,6 +24,28 @@ A description of some of the currently available muxers follows.
 
 A64 muxer for Commodore 64 video. Accepts a single @code{a64_multi} or @code{a64_multi5} codec video stream.
 
+@anchor{adts}
+@section adts
+
+Audio Data Transport Stream muxer. It accepts a single AAC stream.
+
+@subsection Options
+
+It accepts the following options:
+
+@table @option
+
+@item write_id3v2 @var{bool}
+Enable to write ID3v2.4 tags at the start of the stream. Default is disabled.
+
+@item write_apetag @var{bool}
+Enable to write APE tags at the end of the stream. Default is disabled.
+
+@item write_mpeg2 @var{bool}
+Enable to set MPEG version bit in the ADTS frame header to 1 which indicates MPEG-2. Default is 0, which indicates MPEG-4.
+
+@end table
+
 @anchor{aiff}
 @section aiff
 
