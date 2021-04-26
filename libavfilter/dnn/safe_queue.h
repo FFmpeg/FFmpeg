@@ -21,16 +21,76 @@
 #ifndef AVFILTER_DNN_SAFE_QUEUE_H
 #define AVFILTER_DNN_SAFE_QUEUE_H
 
+/**
+ * Double-ended queue with mutex locks ensuring
+ * data consistency while multithreading.
+ */
 typedef struct SafeQueue SafeQueue;
 
+/**
+ * @brief Create and initialize a SafeQueue instance.
+ *
+ * @return Pointer to the SafeQueue
+ * @retval NULL if initialization fails
+ */
 SafeQueue *ff_safe_queue_create(void);
+
+/**
+ * @brief Destroy the SafeQueue instance.
+ * It also frees all elements of the queue,
+ * destroys the mutex and condition variable.
+ */
 void ff_safe_queue_destroy(SafeQueue *sq);
 
+/**
+ * @brief Return the length of the SafeQueue
+ */
 size_t ff_safe_queue_size(SafeQueue *sq);
 
+/**
+ * @brief Add data to the head of queue in the
+ * SafeQueue after locking mutex. After adding
+ * the data, it signals the condition variable
+ * and unlocks the mutex. It increases the length
+ * of queue in the SafeQueue by one.
+ *
+ * @param sq pointer to the SafeQueue
+ * @param v data to be added
+ * @return The length of the queue
+ * @retval 0 if the queue is not initialized
+ * @retval -1 if new entry cannot be created
+ */
 int ff_safe_queue_push_front(SafeQueue *sq, void *v);
+
+/**
+ * @brief Add data to the tail of queue in the
+ * SafeQueue after locking mutex. After adding
+ * the data, it signals the condition variable
+ * and unlocks the mutex. It increases the length
+ * of queue in the SafeQueue by one.
+ *
+ * @param sq pointer to the SafeQueue
+ * @param v data to be added
+ * @return The length of the queue
+ * @retval 0 if the queue is not initialized
+ * @retval -1 if new entry cannot be created
+ */
 int ff_safe_queue_push_back(SafeQueue *sq, void *v);
 
+/**
+ * @brief Remove and free first element from
+ * the queue in SafeQueue. Before removing, it
+ * waits for the condition variable to signal and
+ * acquires the mutex. Finally, it signals the
+ * condition and unlocks the mutex.
+ * It shrinks the length of queue in the SafeQueue
+ * by one.
+ *
+ * @param sq pointer to the SafeQueue.
+ * @return The value of first element as void.
+ * If a null pointer or empty queue is passed,
+ * it returns NULL
+ */
 void *ff_safe_queue_pop_front(SafeQueue *sq);
 
 #endif
