@@ -210,8 +210,10 @@ static int rpl_read_header(AVFormatContext *s)
             ast->codecpar->bits_per_coded_sample = 4;
 
         ast->codecpar->bit_rate = ast->codecpar->sample_rate *
-                                  ast->codecpar->bits_per_coded_sample *
-                                  ast->codecpar->channels;
+                                  (int64_t)ast->codecpar->channels;
+        if (ast->codecpar->bit_rate > INT64_MAX / ast->codecpar->bits_per_coded_sample)
+            return AVERROR_INVALIDDATA;
+        ast->codecpar->bit_rate *= ast->codecpar->bits_per_coded_sample;
 
         ast->codecpar->codec_id = AV_CODEC_ID_NONE;
         switch (audio_format) {
