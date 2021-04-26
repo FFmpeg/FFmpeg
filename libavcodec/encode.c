@@ -74,7 +74,6 @@ int avcodec_default_get_encode_buffer(AVCodecContext *avctx, AVPacket *avpkt, in
         return ret;
     }
     avpkt->data = avpkt->buf->data;
-    memset(avpkt->data + avpkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;
 }
@@ -98,6 +97,7 @@ int ff_get_encode_buffer(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, i
         ret = AVERROR(EINVAL);
         goto fail;
     }
+    memset(avpkt->data + avpkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     ret = 0;
 fail:
