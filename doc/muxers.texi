@@ -65,6 +65,37 @@ ID3v2.3 and ID3v2.4) are supported. The default is version 4.
 
 @end table
 
+@anchor{alp}
+@section alp
+
+Muxer for audio of High Voltage Software's Lego Racers game. It accepts a single ADPCM_IMA_ALP stream
+with no more than 2 channels nor a sample rate greater than 44100 Hz.
+
+Extensions: tun, pcm
+
+@subsection Options
+
+It accepts the following options:
+
+@table @option
+
+@item type @var{type}
+Set file type.
+
+@table @samp
+@item tun
+Set file type as music. Must have a sample rate of 22050 Hz.
+
+@item pcm
+Set file type as sfx.
+
+@item auto
+Set file type as per output file extension. @code{.pcm} results in type @code{pcm} else type @code{tun} is set. @var{(default)}
+
+@end table
+
+@end table
+
 @anchor{asf}
 @section asf
 
