@@ -73,7 +73,6 @@ static int wsaud_write_header(AVFormatContext *ctx)
     AVStream     *st = ctx->streams[0];
     AVIOContext  *pb = ctx->pb;
     AUDMuxContext *a = ctx->priv_data;
-    int ret;
     unsigned char flags = 0;
 
     a->uncomp_size = 0;
