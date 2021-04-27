@@ -107,6 +107,7 @@ static const AVOption options[] = {
     { "wallclock", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = MOV_PRFT_SRC_WALLCLOCK}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
     { "pts", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = MOV_PRFT_SRC_PTS}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
     { "empty_hdlr_name", "write zero-length name string in hdlr atoms within mdia and minf atoms", offsetof(MOVMuxContext, empty_hdlr_name), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "movie_timescale", "set movie timescale", offsetof(MOVMuxContext, movie_timescale), AV_OPT_TYPE_INT, {.i64 = MOV_TIMESCALE}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -3007,7 +3008,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, AVStream *st)
 {
     int64_t duration = av_rescale_rnd(calc_pts_duration(mov, track),
-                                      MOV_TIMESCALE, track->timescale,
+                                      mov->movie_timescale, track->timescale,
                                       AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
     int flags   = MOV_TKHD_FLAG_IN_MOVIE;
@@ -3141,7 +3142,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
     int64_t duration = av_rescale_rnd(calc_samples_pts_duration(mov, track),
-                                      MOV_TIMESCALE, track->timescale,
+                                      mov->movie_timescale, track->timescale,
                                       AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
     int entry_size, entry_count, size;
@@ -3160,7 +3161,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
         }
     }
 
-    delay = av_rescale_rnd(start_dts + start_ct, MOV_TIMESCALE,
+    delay = av_rescale_rnd(start_dts + start_ct, mov->movie_timescale,
                            track->timescale, AV_ROUND_DOWN);
     version |= delay < INT32_MAX ? 0 : 1;
 
@@ -3195,8 +3196,8 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
         /* Avoid accidentally ending up with start_ct = -1 which has got a
          * special meaning. Normally start_ct should end up positive or zero
          * here, but use FFMIN in case dts is a small positive integer
-         * rounded to 0 when represented in MOV_TIMESCALE units. */
-        av_assert0(av_rescale_rnd(start_dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
+         * rounded to 0 when represented in movie timescale units. */
+        av_assert0(av_rescale_rnd(start_dts, mov->movie_timescale, track->timescale, AV_ROUND_DOWN) <= 0);
         start_ct  = -FFMIN(start_dts, 0);
         /* Note, this delay is calculated from the pts of the first sample,
          * ensuring that we don't reduce the duration for cases with
@@ -3430,7 +3431,7 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
         if (mov->tracks[i].entry > 0 && mov->tracks[i].timescale) {
             int64_t max_track_len_temp = av_rescale_rnd(
                                                 calc_pts_duration(mov, &mov->tracks[i]),
-                                                MOV_TIMESCALE,
+                                                mov->movie_timescale,
                                                 mov->tracks[i].timescale,
                                                 AV_ROUND_UP);
             if (max_track_len < max_track_len_temp)
@@ -3459,7 +3460,7 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
         avio_wb32(pb, mov->time); /* creation time */
         avio_wb32(pb, mov->time); /* modification time */
     }
-    avio_wb32(pb, MOV_TIMESCALE);
+    avio_wb32(pb, mov->movie_timescale);
     (version == 1) ? avio_wb64(pb, max_track_len) : avio_wb32(pb, max_track_len); /* duration of longest track */
 
     avio_wb32(pb, 0x00010000); /* reserved (preferred rate) 1.0 = normal */
@@ -6068,7 +6069,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
 
     track->mode = mov->mode;
     track->tag = MKTAG('t','e','x','t');
-    track->timescale = MOV_TIMESCALE;
+    track->timescale = mov->movie_timescale;
     track->par = avcodec_parameters_alloc();
     if (!track->par)
         return AVERROR(ENOMEM);
@@ -6132,8 +6133,8 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
         AVChapter *c = s->chapters[i];
         AVDictionaryEntry *t;
 
-        int64_t end = av_rescale_q(c->end, c->time_base, (AVRational){1,MOV_TIMESCALE});
-        pkt->pts = pkt->dts = av_rescale_q(c->start, c->time_base, (AVRational){1,MOV_TIMESCALE});
+        int64_t end = av_rescale_q(c->end, c->time_base, (AVRational){1,mov->movie_timescale});
+        pkt->pts = pkt->dts = av_rescale_q(c->start, c->time_base, (AVRational){1,mov->movie_timescale});
         pkt->duration = end - pkt->dts;
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
@@ -6690,7 +6691,7 @@ static int mov_init(AVFormatContext *s)
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             track->timescale = st->time_base.den;
         } else {
-            track->timescale = MOV_TIMESCALE;
+            track->timescale = mov->movie_timescale;
         }
         if (!track->height)
             track->height = st->codecpar->height;
