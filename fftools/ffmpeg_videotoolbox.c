@@ -29,6 +29,7 @@
 
 typedef struct VTContext {
     AVFrame *tmp_frame;
+    int log_once;
 } VTContext;
 
 char *videotoolbox_pixfmt;
@@ -43,6 +44,13 @@ static int videotoolbox_retrieve_data(AVCodecContext *s, AVFrame *frame)
     uint8_t *data[4] = { 0 };
     int linesize[4] = { 0 };
     int planes, ret, i;
+
+    if (frame->format == ist->hwaccel_output_format) {
+        av_log_once(s, AV_LOG_INFO, AV_LOG_TRACE, &vt->log_once,
+            "There is no video filter for videotoolbox pix_fmt now, remove the "
+            "-hwaccel_output_format option if video filter doesn't work\n");
+        return 0;
+    }
 
     av_frame_unref(vt->tmp_frame);
 
