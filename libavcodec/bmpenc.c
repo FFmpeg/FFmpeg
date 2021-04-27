@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
@@ -139,7 +141,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ptr = p->data[0] + (avctx->height - 1) * p->linesize[0];
     buf = pkt->data + hsize;
     for(i = 0; i < avctx->height; i++) {
-        if (bit_count == 16) {
+        if (HAVE_BIGENDIAN && bit_count == 16) {
             const uint16_t *src = (const uint16_t *) ptr;
             for(n = 0; n < avctx->width; n++)
                 AV_WL16(buf + 2 * n, src[n]);
