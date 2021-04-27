@@ -1292,6 +1292,10 @@ static int generate_intervals(void *log, struct sbg_script *s, int sample_rate,
         ev1 = &s->events[i];
         ev2 = &s->events[(i + 1) % s->nb_events];
         ev1->ts_int   = ev1->ts;
+
+        if (!ev1->fade.slide && ev1 >= ev2 && ev2->ts > INT64_MAX - period)
+            return AVERROR_INVALIDDATA;
+
         ev1->ts_trans = ev1->fade.slide ? ev1->ts
                                         : ev2->ts + (ev1 < ev2 ? 0 : period);
     }
