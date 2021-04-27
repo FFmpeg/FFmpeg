@@ -14,30 +14,30 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
-2021-04-27 - xxxxxxxxxx - lavc yyyyyyyyy - avcodec.h
+2021-04-27 - cb3ac722f4 - lavc 59.0.100 - avcodec.h
   Constified AVCodecParserContext.parser.
 
-2021-04-27 - xxxxxxxxxx - lavd yyyyyyyyy - avdevice.h
+2021-04-27 - 8b3e6ce5f4 - lavd 59.0.100 - avdevice.h
   The av_*_device_next API functions now accept and return
   pointers to const AVInputFormat resp. AVOutputFormat.
 
-2021-04-27 - xxxxxxxxxx - lavd yyyyyyyyy - avdevice.h
+2021-04-27 - d7e0d428fa - lavd 59.0.100 - avdevice.h
   avdevice_list_input_sources and avdevice_list_output_sinks now accept
   pointers to const AVInputFormat resp. const AVOutputFormat.
 
-2021-04-27 - xxxxxxxxxx - lavf yyyyyyyyy - avformat.h
+2021-04-27 - 46dac8cf3d - lavf 59.0.100 - avformat.h
   av_find_best_stream now uses a const AVCodec ** parameter
   for the returned decoder.
 
-2021-04-27 - xxxxxxxxxx - lavc yyyyyyyyy - codec.h
+2021-04-27 - 626535f6a1 - lavc 59.0.100 - codec.h
   avcodec_find_encoder_by_name(), avcodec_find_encoder(),
   avcodec_find_decoder_by_name() and avcodec_find_decoder()
   now return a pointer to const AVCodec.
 
-2021-04-27 - xxxxxxxxxx - lavf yyyyyyyyy - avformat.h
+2021-04-27 - 14fa0a4efb - lavf 59.0.100 - avformat.h
   Constified AVFormatContext.*_codec.
 
-2021-04-27 - xxxxxxxxxx - lavf yyyyyyyyy - avformat.h
+2021-04-27 - 56450a0ee4 - lavf 59.0.100 - avformat.h
   Constified the pointers to AVInputFormats and AVOutputFormats
   in AVFormatContext, avformat_alloc_output_context2(),
   av_find_input_format(), av_probe_input_format(),
@@ -47,17 +47,17 @@ API changes, most recent first:
   Furthermore, constified the AVProbeData in av_probe_input_format(),
   av_probe_input_format2() and av_probe_input_format3().
 
-2021-04-19 - xxxxxxxxxx - lavu 56.74.100 - tx.h
+2021-04-19 - 18af1ea8d1 - lavu 56.74.100 - tx.h
   Add AV_TX_FULL_IMDCT and AV_TX_UNALIGNED.
 
-2021-04-17 - xxxxxxxxxx - lavu 56.73.100 - frame.h detection_bbox.h
+2021-04-17 - f1bf465aa0 - lavu 56.73.100 - frame.h detection_bbox.h
   Add AV_FRAME_DATA_DETECTION_BBOXES
 
-2021-04-06 - xxxxxxxxxx - lavf 58.78.100 - avformat.h
+2021-04-06 - 557953a397 - lavf 58.78.100 - avformat.h
   Add avformat_index_get_entries_count(), avformat_index_get_entry(),
   and avformat_index_get_entry_from_timestamp().
 
-2021-03-21 - xxxxxxxxxx - lavu 56.72.100 - frame.h
+2021-03-21 - a77beea6c8 - lavu 56.72.100 - frame.h
   Deprecated av_get_colorspace_name().
   Use av_color_space_name() instead.
 
