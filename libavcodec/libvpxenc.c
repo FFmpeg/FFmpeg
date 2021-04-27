@@ -1176,42 +1176,40 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
 {
     int ret = ff_get_encode_buffer(avctx, pkt, cx_frame->sz, 0);
     uint8_t *side_data;
-    if (ret >= 0) {
-        int pict_type;
-        memcpy(pkt->data, cx_frame->buf, pkt->size);
-        pkt->pts = pkt->dts = cx_frame->pts;
+    int pict_type;
 
-        if (!!(cx_frame->flags & VPX_FRAME_IS_KEY)) {
-            pict_type = AV_PICTURE_TYPE_I;
-            pkt->flags |= AV_PKT_FLAG_KEY;
-        } else {
-            pict_type = AV_PICTURE_TYPE_P;
-        }
-
-        ff_side_data_set_encoder_stats(pkt, 0, cx_frame->sse + 1,
-                                       cx_frame->have_sse ? 3 : 0, pict_type);
-
-        if (cx_frame->have_sse) {
-            int i;
-            /* Beware of the Y/U/V/all order! */
-            for (i = 0; i < 3; ++i) {
-                avctx->error[i] += cx_frame->sse[i + 1];
-            }
-            cx_frame->have_sse = 0;
-        }
-        if (cx_frame->sz_alpha > 0) {
-            side_data = av_packet_new_side_data(pkt,
-                                                AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-                                                cx_frame->sz_alpha + 8);
-            if(!side_data) {
-                av_packet_unref(pkt);
-                return AVERROR(ENOMEM);
-            }
-            AV_WB64(side_data, 1);
-            memcpy(side_data + 8, cx_frame->buf_alpha, cx_frame->sz_alpha);
-        }
-    } else {
+    if (ret < 0)
         return ret;
+
+    memcpy(pkt->data, cx_frame->buf, pkt->size);
+    pkt->pts = pkt->dts = cx_frame->pts;
+
+    if (!!(cx_frame->flags & VPX_FRAME_IS_KEY)) {
+        pict_type = AV_PICTURE_TYPE_I;
+        pkt->flags |= AV_PKT_FLAG_KEY;
+    } else {
+        pict_type = AV_PICTURE_TYPE_P;
+    }
+
+    ff_side_data_set_encoder_stats(pkt, 0, cx_frame->sse + 1,
+                                   cx_frame->have_sse ? 3 : 0, pict_type);
+
+    if (cx_frame->have_sse) {
+        /* Beware of the Y/U/V/all order! */
+        for (int i = 0; i < 3; ++i)
+            avctx->error[i] += cx_frame->sse[i + 1];
+        cx_frame->have_sse = 0;
+    }
+    if (cx_frame->sz_alpha > 0) {
+        side_data = av_packet_new_side_data(pkt,
+                                            AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                            cx_frame->sz_alpha + 8);
+        if (!side_data) {
+            av_packet_unref(pkt);
+            return AVERROR(ENOMEM);
+        }
+        AV_WB64(side_data, 1);
+        memcpy(side_data + 8, cx_frame->buf_alpha, cx_frame->sz_alpha);
     }
     return pkt->size;
 }
