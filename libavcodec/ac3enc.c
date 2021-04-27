@@ -38,6 +38,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "me_cmp.h"
 #include "put_bits.h"
@@ -1760,7 +1761,7 @@ int ff_ac3_encode_frame_common_end(AVCodecContext *avctx, AVPacket *avpkt,
 
     ac3_quantize_mantissas(s);
 
-    ret = ff_alloc_packet2(avctx, avpkt, s->frame_size, s->frame_size);
+    ret = ff_get_encode_buffer(avctx, avpkt, s->frame_size, 0);
     if (ret < 0)
         return ret;
     ac3_output_frame(s, avpkt->data);

@@ -253,6 +253,7 @@ const AVCodec ff_eac3_encoder = {
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_EAC3,
+    .capabilities    = AV_CODEC_CAP_DR1,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ff_ac3_float_encode_init,
     .encode2         = ff_ac3_float_encode_frame,

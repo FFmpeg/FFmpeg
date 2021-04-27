@@ -132,6 +132,7 @@ const AVCodec ff_ac3_fixed_encoder = {
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_AC3,
+    .capabilities    = AV_CODEC_CAP_DR1,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ac3_fixed_encode_init,
     .encode2         = ff_ac3_fixed_encode_frame,
