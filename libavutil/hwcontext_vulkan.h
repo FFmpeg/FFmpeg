@@ -41,43 +41,30 @@ typedef struct AVVulkanDeviceContext {
      * Custom memory allocator, else NULL
      */
     const VkAllocationCallbacks *alloc;
+
     /**
      * Vulkan instance. Must be at least version 1.1.
      */
     VkInstance inst;
+
     /**
      * Physical device
      */
     VkPhysicalDevice phys_dev;
+
     /**
      * Active device
      */
     VkDevice act_dev;
+
     /**
-     * Queue family index for graphics
-     * @note av_hwdevice_create() will set all 3 queue indices if unset
-     * If there is no dedicated queue for compute or transfer operations,
-     * they will be set to the graphics queue index which can handle both.
-     * nb_graphics_queues indicates how many queues were enabled for the
-     * graphics queue (must be at least 1)
+     * This structure should be set to the set of features that present and enabled
+     * during device creation. When a device is created by FFmpeg, it will default to
+     * enabling all that are present of the shaderImageGatherExtended,
+     * fragmentStoresAndAtomics, shaderInt64 and vertexPipelineStoresAndAtomics features.
      */
-    int queue_family_index;
-    int nb_graphics_queues;
-    /**
-     * Queue family index to use for transfer operations, and the amount of queues
-     * enabled. In case there is no dedicated transfer queue, nb_tx_queues
-     * must be 0 and queue_family_tx_index must be the same as either the graphics
-     * queue or the compute queue, if available.
-     */
-    int queue_family_tx_index;
-    int nb_tx_queues;
-    /**
-     * Queue family index for compute ops, and the amount of queues enabled.
-     * In case there are no dedicated compute queues, nb_comp_queues must be
-     * 0 and its queue family index must be set to the graphics queue.
-     */
-    int queue_family_comp_index;
-    int nb_comp_queues;
+    VkPhysicalDeviceFeatures2 device_features;
+
     /**
      * Enabled instance extensions.
      * If supplying your own device context, set this to an array of strings, with
@@ -87,6 +74,7 @@ typedef struct AVVulkanDeviceContext {
      */
     const char * const *enabled_inst_extensions;
     int nb_enabled_inst_extensions;
+
     /**
      * Enabled device extensions. By default, VK_KHR_external_memory_fd,
      * VK_EXT_external_memory_dma_buf, VK_EXT_image_drm_format_modifier,
@@ -97,13 +85,34 @@ typedef struct AVVulkanDeviceContext {
      */
     const char * const *enabled_dev_extensions;
     int nb_enabled_dev_extensions;
+
     /**
-     * This structure should be set to the set of features that present and enabled
-     * during device creation. When a device is created by FFmpeg, it will default to
-     * enabling all that are present of the shaderImageGatherExtended,
-     * fragmentStoresAndAtomics, shaderInt64 and vertexPipelineStoresAndAtomics features.
+     * Queue family index for graphics
+     * @note av_hwdevice_create() will set all 3 queue indices if unset
+     * If there is no dedicated queue for compute or transfer operations,
+     * they will be set to the graphics queue index which can handle both.
+     * nb_graphics_queues indicates how many queues were enabled for the
+     * graphics queue (must be at least 1)
      */
-    VkPhysicalDeviceFeatures2 device_features;
+    int queue_family_index;
+    int nb_graphics_queues;
+
+    /**
+     * Queue family index to use for transfer operations, and the amount of queues
+     * enabled. In case there is no dedicated transfer queue, nb_tx_queues
+     * must be 0 and queue_family_tx_index must be the same as either the graphics
+     * queue or the compute queue, if available.
+     */
+    int queue_family_tx_index;
+    int nb_tx_queues;
+
+    /**
+     * Queue family index for compute ops, and the amount of queues enabled.
+     * In case there are no dedicated compute queues, nb_comp_queues must be
+     * 0 and its queue family index must be set to the graphics queue.
+     */
+    int queue_family_comp_index;
+    int nb_comp_queues;
 } AVVulkanDeviceContext;
 
 /**
@@ -114,15 +123,18 @@ typedef struct AVVulkanFramesContext {
      * Controls the tiling of allocated frames.
      */
     VkImageTiling tiling;
+
     /**
      * Defines extra usage of output frames. If left as 0, the following bits
      * are set: TRANSFER_SRC, TRANSFER_DST. SAMPLED and STORAGE.
      */
     VkImageUsageFlagBits usage;
+
     /**
      * Extension data for image creation.
      */
     void *create_pnext;
+
     /**
      * Extension data for memory allocation. Must have as many entries as
      * the number of planes of the sw_format.
