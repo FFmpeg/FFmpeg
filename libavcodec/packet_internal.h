@@ -24,8 +24,8 @@
 #include "packet.h"
 
 typedef struct PacketList {
-    AVPacket pkt;
     struct PacketList *next;
+    AVPacket pkt;
 } PacketList;
 
 /**
