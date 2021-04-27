@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "encode.h"
 #include "raw.h"
 #include "internal.h"
 #include "libavutil/pixdesc.h"
@@ -53,7 +54,7 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, ret, ret)) < 0)
+    if ((ret = ff_get_encode_buffer(avctx, pkt, ret, 0)) < 0)
         return ret;
     if ((ret = av_image_copy_to_buffer(pkt->data, pkt->size,
                                        (const uint8_t **)frame->data, frame->linesize,
@@ -85,6 +86,7 @@ const AVCodec ff_rawvideo_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RAWVIDEO,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .init           = raw_encode_init,
     .encode2        = raw_encode,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
