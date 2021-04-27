@@ -1206,14 +1206,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     for (i = 0; i < SUBFRAMES; i++)
         put_subframe(c, i);
 
-
-    for (i = put_bits_count(&c->pb); i < 8*c->frame_size; i++)
-        put_bits(&c->pb, 1, 0);
-
     flush_put_bits(&c->pb);
+    memset(put_bits_ptr(&c->pb), 0, put_bytes_left(&c->pb, 0));
 
     avpkt->pts      = frame->pts;
-    avpkt->size     = put_bytes_output(&c->pb);
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
     *got_packet_ptr = 1;
     return 0;
