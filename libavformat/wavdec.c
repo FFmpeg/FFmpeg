@@ -718,7 +718,7 @@ smv_retry:
         if (wav->smv_last_stream) {
             uint64_t old_pos = avio_tell(s->pb);
             uint64_t new_pos = wav->smv_data_ofs +
-                wav->smv_block * wav->smv_block_size;
+                wav->smv_block * (int64_t)wav->smv_block_size;
             if (avio_seek(s->pb, new_pos, SEEK_SET) < 0) {
                 ret = AVERROR_EOF;
                 goto smv_out;
