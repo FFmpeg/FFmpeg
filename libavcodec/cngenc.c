@@ -23,6 +23,7 @@
 
 #include "libavutil/common.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "lpc.h"
 
@@ -73,7 +74,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int qdbov;
     int16_t *samples = (int16_t*) frame->data[0];
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 1 + p->order, 1 + p->order))) {
+    if ((ret = ff_get_encode_buffer(avctx, avpkt, 1 + p->order, 0))) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
         return ret;
     }
@@ -105,6 +106,7 @@ const AVCodec ff_comfortnoise_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_COMFORT_NOISE,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(CNGContext),
     .init           = cng_encode_init,
     .encode2        = cng_encode_frame,
