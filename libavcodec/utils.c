@@ -746,25 +746,33 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
             if (ba > 0) {
                 /* calc from frame_bytes, channels, and block_align */
                 int blocks = frame_bytes / ba;
-                int64_t tmp;
+                int64_t tmp = 0;
                 switch (id) {
                 case AV_CODEC_ID_ADPCM_IMA_WAV:
                     if (bps < 2 || bps > 5)
                         return 0;
                     tmp = blocks * (1LL + (ba - 4 * ch) / (bps * ch) * 8);
+                    break;
+                case AV_CODEC_ID_ADPCM_IMA_DK3:
+                    tmp = blocks * (((ba - 16LL) * 2 / 3 * 4) / ch);
+                    break;
+                case AV_CODEC_ID_ADPCM_IMA_DK4:
+                    tmp = blocks * (1 + (ba - 4LL * ch) * 2 / ch);
+                    break;
+                case AV_CODEC_ID_ADPCM_IMA_RAD:
+                    tmp = blocks * ((ba - 4LL * ch) * 2 / ch);
+                    break;
+                case AV_CODEC_ID_ADPCM_MS:
+                    tmp = blocks * (2 + (ba - 7LL * ch) * 2LL / ch);
+                    break;
+                case AV_CODEC_ID_ADPCM_MTAF:
+                    tmp = blocks * (ba - 16LL) * 2 / ch;
+                    break;
+                }
+                if (tmp) {
                     if (tmp != (int)tmp)
                         return 0;
                     return tmp;
-                case AV_CODEC_ID_ADPCM_IMA_DK3:
-                    return blocks * (((ba - 16) * 2 / 3 * 4) / ch);
-                case AV_CODEC_ID_ADPCM_IMA_DK4:
-                    return blocks * (1 + (ba - 4 * ch) * 2 / ch);
-                case AV_CODEC_ID_ADPCM_IMA_RAD:
-                    return blocks * ((ba - 4 * ch) * 2 / ch);
-                case AV_CODEC_ID_ADPCM_MS:
-                    return blocks * (2 + (ba - 7 * ch) * 2LL / ch);
-                case AV_CODEC_ID_ADPCM_MTAF:
-                    return blocks * (ba - 16) * 2 / ch;
                 }
             }
 
