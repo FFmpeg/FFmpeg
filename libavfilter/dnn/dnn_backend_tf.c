@@ -28,6 +28,7 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layer_depth2space.h"
 #include "libavformat/avio.h"
+#include "libavformat/internal.h"
 #include "libavutil/avassert.h"
 #include "../internal.h"
 #include "dnn_backend_native_layer_pad.h"
@@ -206,53 +207,26 @@ static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename
 
     // prepare the sess config data
     if (tf_model->ctx.options.sess_config != NULL) {
+        const char *config;
         /*
         tf_model->ctx.options.sess_config is hex to present the serialized proto
         required by TF_SetConfig below, so we need to first generate the serialized
-        proto in a python script, the following is a script example to generate
-        serialized proto which specifies one GPU, we can change the script to add
-        more options.
-
-        import tensorflow as tf
-        gpu_options = tf.GPUOptions(visible_device_list='0')
-        config = tf.ConfigProto(gpu_options=gpu_options)
-        s = config.SerializeToString()
-        b = ''.join("%02x" % int(ord(b)) for b in s[::-1])
-        print('0x%s' % b)
-
-        the script output looks like: 0xab...cd, and then pass 0xab...cd to sess_config.
+        proto in a python script, tools/python/tf_sess_config.py is a script example
+        to generate the configs of sess_config.
         */
-        char tmp[3];
-        tmp[2] = '\0';
-
         if (strncmp(tf_model->ctx.options.sess_config, "0x", 2) != 0) {
             av_log(ctx, AV_LOG_ERROR, "sess_config should start with '0x'\n");
             return DNN_ERROR;
         }
+        config = tf_model->ctx.options.sess_config + 2;
+        sess_config_length = ff_hex_to_data(NULL, config);
 
-        sess_config_length = strlen(tf_model->ctx.options.sess_config);
-        if (sess_config_length % 2 != 0) {
-            av_log(ctx, AV_LOG_ERROR, "the length of sess_config is not even (%s), "
-                                      "please re-generate the config.\n",
-                                      tf_model->ctx.options.sess_config);
-            return DNN_ERROR;
-        }
-
-        sess_config_length -= 2; //ignore the first '0x'
-        sess_config_length /= 2; //get the data length in byte
-
-        sess_config = av_malloc(sess_config_length);
+        sess_config = av_mallocz(sess_config_length + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!sess_config) {
             av_log(ctx, AV_LOG_ERROR, "failed to allocate memory\n");
             return DNN_ERROR;
         }
-
-        for (int i = 0; i < sess_config_length; i++) {
-            int index = 2 + (sess_config_length - 1 - i) * 2;
-            tmp[0] = tf_model->ctx.options.sess_config[index];
-            tmp[1] = tf_model->ctx.options.sess_config[index + 1];
-            sess_config[i] = strtol(tmp, NULL, 16);
-        }
+        ff_hex_to_data(sess_config, config);
     }
 
     graph_def = read_graph(model_filename);
