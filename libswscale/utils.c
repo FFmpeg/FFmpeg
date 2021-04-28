@@ -49,6 +49,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 #include "libavutil/aarch64/cpu.h"
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
@@ -1189,12 +1190,13 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     int ret = 0;
     enum AVPixelFormat tmpFmt;
     static const float float_mult = 1.0f / 255.0f;
+    static AVOnce rgb2rgb_once = AV_ONCE_INIT;
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
     emms_c();
-    if (!rgb15to16)
-        ff_sws_rgb2rgb_init();
+    if (ff_thread_once(&rgb2rgb_once, ff_sws_rgb2rgb_init) != 0)
+        return AVERROR_UNKNOWN;
 
     unscaled = (srcW == dstW && srcH == dstH);
 
