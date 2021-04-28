@@ -157,6 +157,8 @@ static int parse_audio_var(AVFormatContext *avctx, AVStream *st,
         return set_channels(avctx, st, var_read_int(pb, size));
     } else if (!strcmp(name, "SAMPLE_RATE")) {
         st->codecpar->sample_rate = var_read_int(pb, size);
+        if (st->codecpar->sample_rate <= 0)
+            return AVERROR_INVALIDDATA;
         avpriv_set_pts_info(st, 33, 1, st->codecpar->sample_rate);
     } else if (!strcmp(name, "SAMPLE_WIDTH")) {
         uint64_t bpc = var_read_int(pb, size) * (uint64_t)8;
