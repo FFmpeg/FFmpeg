@@ -379,41 +379,8 @@ end:
 
     return ret;
 free_and_end:
-    if (avci->needs_close && avctx->codec->close)
-        avctx->codec->close(avctx);
-
-    if (CONFIG_FRAME_THREAD_ENCODER && avci->frame_thread_encoder)
-        ff_frame_thread_encoder_free(avctx);
-    if (HAVE_THREADS && avci->thread_ctx)
-        ff_thread_free(avctx);
-
-    if (codec->priv_class && avctx->priv_data)
-        av_opt_free(avctx->priv_data);
-    av_opt_free(avctx);
-
-    if (av_codec_is_encoder(avctx->codec)) {
-        av_freep(&avctx->extradata);
-        avctx->extradata_size = 0;
-    }
-
+    avcodec_close(avctx);
     av_dict_free(&tmp);
-    av_freep(&avctx->priv_data);
-    if (av_codec_is_decoder(avctx->codec))
-        av_freep(&avctx->subtitle_header);
-
-    av_frame_free(&avci->buffer_frame);
-    av_packet_free(&avci->buffer_pkt);
-    av_packet_free(&avci->last_pkt_props);
-    av_fifo_freep(&avci->pkt_props);
-
-    av_packet_free(&avci->ds.in_pkt);
-    av_frame_free(&avci->es.in_frame);
-    av_bsf_free(&avci->bsf);
-
-    av_buffer_unref(&avci->pool);
-    av_freep(&avci);
-    avctx->internal = NULL;
-    avctx->codec = NULL;
     goto end;
 }
 
@@ -507,14 +474,15 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_freep(&avci->byte_buffer);
         av_frame_free(&avci->buffer_frame);
         av_packet_free(&avci->buffer_pkt);
-        av_packet_unref(avci->last_pkt_props);
-        while (av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props)) {
-            av_fifo_generic_read(avci->pkt_props, avci->last_pkt_props,
-                                 sizeof(*avci->last_pkt_props), NULL);
-            av_packet_unref(avci->last_pkt_props);
+        if (avci->pkt_props) {
+            while (av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props)) {
+                av_packet_unref(avci->last_pkt_props);
+                av_fifo_generic_read(avci->pkt_props, avci->last_pkt_props,
+                                     sizeof(*avci->last_pkt_props), NULL);
+            }
+            av_fifo_freep(&avci->pkt_props);
         }
         av_packet_free(&avci->last_pkt_props);
-        av_fifo_freep(&avci->pkt_props);
 
         av_packet_free(&avci->ds.in_pkt);
         av_frame_free(&avci->es.in_frame);
@@ -544,6 +512,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     av_freep(&avctx->priv_data);
     if (av_codec_is_encoder(avctx->codec)) {
         av_freep(&avctx->extradata);
+        avctx->extradata_size = 0;
     } else if (av_codec_is_decoder(avctx->codec))
         av_freep(&avctx->subtitle_header);
 
