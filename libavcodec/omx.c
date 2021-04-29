@@ -863,26 +863,21 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             avctx->extradata_size += buffer->nFilledLen;
             memset(avctx->extradata + avctx->extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         } else {
-                int newsize = s->output_buf_size + buffer->nFilledLen + AV_INPUT_BUFFER_PADDING_SIZE;
-                if ((ret = av_reallocp(&s->output_buf, newsize)) < 0) {
+            int newsize = s->output_buf_size + buffer->nFilledLen + AV_INPUT_BUFFER_PADDING_SIZE;
+            if ((ret = av_reallocp(&s->output_buf, newsize)) < 0) {
+                s->output_buf_size = 0;
+                goto end;
+            }
+            memcpy(s->output_buf + s->output_buf_size, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
+            s->output_buf_size += buffer->nFilledLen;
+            if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
+                if ((ret = av_packet_from_data(pkt, s->output_buf, s->output_buf_size)) < 0) {
+                    av_freep(&s->output_buf);
                     s->output_buf_size = 0;
                     goto end;
                 }
-                memcpy(s->output_buf + s->output_buf_size, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
-                s->output_buf_size += buffer->nFilledLen;
-                if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
-                    if ((ret = av_packet_from_data(pkt, s->output_buf, s->output_buf_size)) < 0) {
-                        av_freep(&s->output_buf);
-                        s->output_buf_size = 0;
-                        goto end;
-                    }
-                    s->output_buf = NULL;
-                    s->output_buf_size = 0;
-                }
-#if CONFIG_OMX_RPI
-                had_partial = 1;
-#endif
-            if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
+                s->output_buf = NULL;
+                s->output_buf_size = 0;
                 pkt->pts = av_rescale_q(from_omx_ticks(buffer->nTimeStamp), AV_TIME_BASE_Q, avctx->time_base);
                 // We don't currently enable B-frames for the encoders, so set
                 // pkt->dts = pkt->pts. (The calling code behaves worse if the encoder
@@ -891,6 +886,10 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 if (buffer->nFlags & OMX_BUFFERFLAG_SYNCFRAME)
                     pkt->flags |= AV_PKT_FLAG_KEY;
                 *got_packet = 1;
+            } else {
+#if CONFIG_OMX_RPI
+                had_partial = 1;
+#endif
             }
         }
 end:
