@@ -1451,10 +1451,34 @@ test_pkg_config(){
         set_sanitized "${name}_extralibs" $pkg_libs
 }
 
+test_pkg_config_cpp(){
+    log test_pkg_config_cpp "$@"
+    name="$1"
+    pkg_version="$2"
+    pkg="${2%% *}"
+    headers="$3"
+    cond="$4"
+    shift 4
+    disable $name
+    test_cmd $pkg_config --exists --print-errors $pkg_version || return
+    pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
+    pkg_incdir=$($pkg_config --variable=includedir $pkg_config_flags $pkg)
+    test_cpp_condition "$pkg_incdir/$headers" "$cond" "$@" &&
+        enable $name &&
+        set_sanitized "${name}_cflags" $pkg_cflags
+}
+
 check_pkg_config(){
     log check_pkg_config "$@"
     name="$1"
     test_pkg_config "$@" &&
+        eval add_cflags \$${name}_cflags
+}
+
+check_pkg_config_cpp(){
+    log check_pkg_config_cpp "$@"
+    name="$1"
+    test_pkg_config_cpp "$@" &&
         eval add_cflags \$${name}_cflags
 }
 
@@ -1579,6 +1603,12 @@ require_pkg_config(){
     log require_pkg_config "$@"
     pkg_version="$2"
     check_pkg_config "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
+}
+
+require_pkg_config_cpp(){
+    log require_pkg_config_cpp "$@"
+    pkg_version="$2"
+    check_pkg_config_cpp "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
 }
 
 test_host_cc(){
@@ -2920,6 +2950,7 @@ nvdec_deps="ffnvcodec"
 vaapi_x11_deps="xlib"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
+vulkan_deps_any="libdl LoadLibrary"
 xvmc_deps="X11_extensions_XvMClib_h"
 
 av1_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_AV1"
@@ -6739,7 +6770,8 @@ enabled vdpau &&
 enabled crystalhd && check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
 
 enabled vulkan &&
-    require_pkg_config vulkan "vulkan >= 1.1.97" "vulkan/vulkan.h" vkCreateInstance
+    { require_pkg_config_cpp vulkan "vulkan >= 1.1.97" "vulkan/vulkan.h" "defined VK_VERSION_1_1" ||
+      require_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_1"; }
 
 if enabled x86; then
     case $target_os in

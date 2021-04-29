@@ -26,8 +26,11 @@
 #include "hwcontext_internal.h"
 #include "hwcontext_vulkan.h"
 
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance,
-                                                               const char *name);
+#ifdef _WIN32
+#include "compat/w32dlfcn.h"
+#else
+#include <dlfcn.h>
+#endif
 
 #if CONFIG_LIBDRM
 #include <unistd.h>
@@ -186,7 +189,8 @@ typedef struct VulkanExecCtx {
 } VulkanExecCtx;
 
 typedef struct VulkanDevicePriv {
-    /* Vulkan loader functions */
+    /* Vulkan library and loader functions */
+    void *libvulkan;
     VulkanFunctions vkfn;
 
     /* Properties */
@@ -367,6 +371,40 @@ static int pixfmt_is_supported(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
     }
 
     return 1;
+}
+
+static int load_libvulkan(AVHWDeviceContext *ctx)
+{
+    AVVulkanDeviceContext *hwctx = ctx->hwctx;
+    VulkanDevicePriv *p = ctx->internal->priv;
+
+    static const char *lib_names[] = {
+#if defined(_WIN32)
+        "vulkan-1.dll",
+#elif defined(__APPLE__)
+        "libvulkan.dylib",
+        "libvulkan.1.dylib",
+        "libMoltenVK.dylib",
+#else
+        "libvulkan.so.1",
+        "libvulkan.so",
+#endif
+    };
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(lib_names); i++) {
+        p->libvulkan = dlopen(lib_names[i], RTLD_NOW | RTLD_LOCAL);
+        if (p->libvulkan)
+            break;
+    }
+
+    if (!p->libvulkan) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to open the libvulkan library!\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    hwctx->get_proc_addr = (PFN_vkGetInstanceProcAddr)dlsym(p->libvulkan, "vkGetInstanceProcAddr");
+
+    return 0;
 }
 
 static int load_functions(AVHWDeviceContext *ctx, int has_inst, int has_dev)
@@ -649,7 +687,9 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     };
 
     if (!hwctx->get_proc_addr) {
-        hwctx->get_proc_addr = vkGetInstanceProcAddr;
+        err = load_libvulkan(ctx);
+        if (err < 0)
+            return err;
     }
 
     err = load_functions(ctx, 0, 0);
@@ -1187,6 +1227,9 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
                                           hwctx->alloc);
 
     vk->DestroyInstance(hwctx->inst, hwctx->alloc);
+
+    if (p->libvulkan)
+        dlclose(p->libvulkan);
 
     for (int i = 0; i < hwctx->nb_enabled_inst_extensions; i++)
         av_free((void *)hwctx->enabled_inst_extensions[i]);
