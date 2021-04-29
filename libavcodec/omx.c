@@ -863,9 +863,6 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             avctx->extradata_size += buffer->nFilledLen;
             memset(avctx->extradata + avctx->extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         } else {
-            if (!(buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) || !pkt->data) {
-                // If the output packet isn't preallocated, just concatenate everything in our
-                // own buffer
                 int newsize = s->output_buf_size + buffer->nFilledLen + AV_INPUT_BUFFER_PADDING_SIZE;
                 if ((ret = av_reallocp(&s->output_buf, newsize)) < 0) {
                     s->output_buf_size = 0;
@@ -885,18 +882,6 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #if CONFIG_OMX_RPI
                 had_partial = 1;
 #endif
-            } else {
-                // End of frame, and the caller provided a preallocated frame
-                if ((ret = ff_alloc_packet2(avctx, pkt, s->output_buf_size + buffer->nFilledLen, 0)) < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n",
-                           (int)(s->output_buf_size + buffer->nFilledLen));
-                    goto end;
-                }
-                memcpy(pkt->data, s->output_buf, s->output_buf_size);
-                memcpy(pkt->data + s->output_buf_size, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
-                av_freep(&s->output_buf);
-                s->output_buf_size = 0;
-            }
             if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
                 pkt->pts = av_rescale_q(from_omx_ticks(buffer->nTimeStamp), AV_TIME_BASE_Q, avctx->time_base);
                 // We don't currently enable B-frames for the encoders, so set
