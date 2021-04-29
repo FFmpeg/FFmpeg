@@ -26,6 +26,7 @@
  */
 
 #define UNCHECKED_BITSTREAM_READER 1
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "encode.h"
@@ -35,7 +36,6 @@
 #include "internal.h"
 #include "mathops.h"
 #include "mjpeg.h"
-#include "mjpegenc.h"
 #include "jpegls.h"
 
 typedef struct JPEGLSContext {
