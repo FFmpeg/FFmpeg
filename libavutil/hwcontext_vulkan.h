@@ -43,6 +43,13 @@ typedef struct AVVulkanDeviceContext {
     const VkAllocationCallbacks *alloc;
 
     /**
+     * Pointer to the instance-provided vkGetInstanceProcAddr loading function.
+     * If NULL, will pick either libvulkan or libvolk, depending on libavutil's
+     * compilation settings, and set this field.
+     */
+    PFN_vkGetInstanceProcAddr get_proc_addr;
+
+    /**
      * Vulkan instance. Must be at least version 1.1.
      */
     VkInstance inst;

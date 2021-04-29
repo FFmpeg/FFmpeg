@@ -427,16 +427,19 @@ static int cuda_device_derive(AVHWDeviceContext *device_ctx,
 
     switch (src_ctx->type) {
 #if CONFIG_VULKAN
+#define TYPE PFN_vkGetPhysicalDeviceProperties2
     case AV_HWDEVICE_TYPE_VULKAN: {
         AVVulkanDeviceContext *vkctx = src_ctx->hwctx;
+        TYPE prop_fn = (TYPE)vkctx->get_proc_addr(vkctx->inst, "vkGetPhysicalDeviceProperties2");
         VkPhysicalDeviceProperties2 vk_dev_props = {
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
             .pNext = &vk_idp,
         };
-        vkGetPhysicalDeviceProperties2(vkctx->phys_dev, &vk_dev_props);
+        prop_fn(vkctx->phys_dev, &vk_dev_props);
         src_uuid = vk_idp.deviceUUID;
         break;
     }
+#undef TYPE
 #endif
     default:
         return AVERROR(ENOSYS);
