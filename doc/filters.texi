@@ -10214,6 +10214,12 @@ Set the input name of the dnn network.
 @item output
 Set the output name of the dnn network.
 
+@item backend_configs
+Set the configs to be passed into backend
+
+For tensorflow backend, you can set its configs with @option{sess_config} options,
+please use tools/python/tf_sess_config.py to get the configs of TensorFlow backend for your system.
+
 @item async
 use DNN async execution if set (default: set),
 roll back to sync execution if the backend does not support async.
@@ -10242,9 +10248,10 @@ Handle the Y channel with srcnn.pb (see @ref{sr} filter) for frame with yuv420p 
 @end example
 
 @item
-Handle the Y channel with espcn.pb (see @ref{sr} filter), which changes frame size, for format yuv420p (planar YUV formats supported):
+Handle the Y channel with espcn.pb (see @ref{sr} filter), which changes frame size, for format yuv420p (planar YUV formats supported),
+please use tools/python/tf_sess_config.py to get the configs of TensorFlow backend for your system.
 @example
-./ffmpeg -i 480p.jpg -vf format=yuv420p,dnn_processing=dnn_backend=tensorflow:model=espcn.pb:input=x:output=y -y tmp.espcn.jpg
+./ffmpeg -i 480p.jpg -vf format=yuv420p,dnn_processing=dnn_backend=tensorflow:model=espcn.pb:input=x:output=y:backend_configs=sess_config=0x10022805320e09cdccccccccccec3f20012a01303801 -y tmp.espcn.jpg
 @end example
 
 @end itemize
