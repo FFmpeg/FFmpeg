@@ -25,6 +25,7 @@
  * JPEG-LS encoder.
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
 #include "avcodec.h"
 #include "bytestream.h"
 #include "encode.h"
@@ -51,12 +52,6 @@ static inline void put_marker_byteu(PutByteContext *pb, enum JpegMarker code)
 {
     bytestream2_put_byteu(pb, 0xff);
     bytestream2_put_byteu(pb, code);
-}
-
-static inline void put_marker_byte(PutByteContext *pb, enum JpegMarker code)
-{
-    bytestream2_put_byte(pb, 0xff);
-    bytestream2_put_byte(pb, code);
 }
 
 /**
@@ -408,15 +403,15 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     while (get_bits_count(&gb) < size_in_bits) {
         int v;
         v = get_bits(&gb, 8);
-        bytestream2_put_byte(&pb, v);
+        bytestream2_put_byteu(&pb, v);
         if (v == 0xFF) {
             v = get_bits(&gb, 7);
-            bytestream2_put_byte(&pb, v);
+            bytestream2_put_byteu(&pb, v);
         }
     }
 
     /* End of image */
-    put_marker_byte(&pb, EOI);
+    put_marker_byteu(&pb, EOI);
 
     emms_c();
 
