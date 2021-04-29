@@ -40,6 +40,10 @@ typedef struct JPEGLSContext {
     AVClass *class;
 
     int pred;
+    int comps;
+
+    size_t size;
+    uint8_t *buf;
 } JPEGLSContext;
 
 static inline void put_marker_byteu(PutByteContext *pb, enum JpegMarker code)
@@ -282,25 +286,18 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     int i, size, ret;
     int comps;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 ||
-        avctx->pix_fmt == AV_PIX_FMT_GRAY16)
-        comps = 1;
-    else
-        comps = 3;
-
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width  *avctx->height * comps * 4 +
-                                AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->size, 0)) < 0)
         return ret;
 
-    last = av_malloc((unsigned)pkt->size + FFABS(p->linesize[0]));
+    last = av_mallocz(FFABS(p->linesize[0]));
     if (!last)
         return AVERROR(ENOMEM);
-    memset(last, 0, FFABS(p->linesize[0]));
 
     bytestream2_init_writer(&pb, pkt->data, pkt->size);
-    init_put_bits(&pb2, last + FFABS(p->linesize[0]), pkt->size);
+    init_put_bits(&pb2, ctx->buf, ctx->size);
 
     /* write our own JPEG header, can't use mjpeg_picture_header */
+    comps = ctx->comps;
     put_marker_byteu(&pb, SOI);
     put_marker_byteu(&pb, SOF48);
     bytestream2_put_be16u(&pb, 8 + comps * 3); // header size depends on components
@@ -415,10 +412,36 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int encode_jpegls_init(AVCodecContext *avctx)
 {
+    JPEGLSContext *ctx = avctx->priv_data;
+    size_t size;
+
     if ((avctx->width | avctx->height) > UINT16_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Dimensions exceeding 65535x65535\n");
         return AVERROR(EINVAL);
     }
+    if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 ||
+        avctx->pix_fmt == AV_PIX_FMT_GRAY16)
+        ctx->comps = 1;
+    else
+        ctx->comps = 3;
+    size = AV_INPUT_BUFFER_MIN_SIZE;
+    /* INT_MAX due to PutBit-API. */
+    if (avctx->width * (unsigned)avctx->height > (INT_MAX - size) / 4 / ctx->comps)
+        return AVERROR(ERANGE);
+    size += 4 * ctx->comps * avctx->width * avctx->height;
+    ctx->size = size;
+    ctx->buf = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!ctx->buf)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static av_cold int encode_jpegls_close(AVCodecContext *avctx)
+{
+    JPEGLSContext *ctx = avctx->priv_data;
+
+    av_freep(&ctx->buf);
     return 0;
 }
 
@@ -450,6 +473,7 @@ const AVCodec ff_jpegls_encoder = {
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .init           = encode_jpegls_init,
     .encode2        = encode_picture_ls,
+    .close          = encode_jpegls_close,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
