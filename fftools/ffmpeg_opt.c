@@ -2272,7 +2272,8 @@ static int open_output_file(OptionsContext *o, const char *filename)
             for (i = 0; i < nb_input_streams; i++) {
                 int score;
                 ist = input_streams[i];
-                score = ist->st->codecpar->channels + 100000000*!!ist->st->codec_info_nb_frames
+                score = ist->st->codecpar->channels
+                        + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
                         + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
                 if (ist->user_set_discard == AVDISCARD_ALL)
                     continue;
