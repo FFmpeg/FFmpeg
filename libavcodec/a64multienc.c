@@ -210,7 +210,7 @@ static av_cold int a64multi_encode_init(AVCodecContext *avctx)
     if (avctx->global_quality < 1) {
         c->mc_lifetime = 4;
     } else {
-        c->mc_lifetime = avctx->global_quality /= FF_QP2LAMBDA;
+        c->mc_lifetime = avctx->global_quality / FF_QP2LAMBDA;
     }
 
     av_log(avctx, AV_LOG_INFO, "charset lifetime set to %d frame(s)\n", c->mc_lifetime);
