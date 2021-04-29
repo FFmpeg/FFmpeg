@@ -50,7 +50,6 @@ typedef struct A64Context {
     int *mc_charmap;
     int *mc_best_cb;
     int mc_luma_vals[5];
-    uint8_t *mc_charset;
     uint8_t *mc_colram;
     uint8_t *mc_palette;
     int mc_pal_size;
@@ -197,7 +196,6 @@ static av_cold int a64multi_close_encoder(AVCodecContext *avctx)
     A64Context *c = avctx->priv_data;
     av_freep(&c->mc_meta_charset);
     av_freep(&c->mc_best_cb);
-    av_freep(&c->mc_charset);
     av_freep(&c->mc_charmap);
     av_freep(&c->mc_colram);
     return 0;
@@ -231,8 +229,7 @@ static av_cold int a64multi_encode_init(AVCodecContext *avctx)
     if (!(c->mc_meta_charset = av_mallocz_array(c->mc_lifetime, 32000 * sizeof(int))) ||
        !(c->mc_best_cb       = av_malloc(CHARSET_CHARS * 32 * sizeof(int)))     ||
        !(c->mc_charmap       = av_mallocz_array(c->mc_lifetime, 1000 * sizeof(int))) ||
-       !(c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t)))     ||
-       !(c->mc_charset       = av_malloc(0x800 * (INTERLACED+1) * sizeof(uint8_t)))) {
+       !(c->mc_colram        = av_mallocz(CHARSET_CHARS * sizeof(uint8_t)))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to allocate buffer memory.\n");
         return AVERROR(ENOMEM);
     }
@@ -284,7 +281,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     int *charmap     = c->mc_charmap;
     uint8_t *colram  = c->mc_colram;
-    uint8_t *charset = c->mc_charset;
     int *meta        = c->mc_meta_charset;
     int *best_cb     = c->mc_best_cb;
 
@@ -346,10 +342,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 return ret;
 
             /* create colorram map and a c64 readable charset */
-            render_charset(avctx, charset, colram);
-
-            /* copy charset to buf */
-            memcpy(buf, charset, charset_size);
+            render_charset(avctx, buf, colram);
 
             /* advance pointers */
             buf      += charset_size;
