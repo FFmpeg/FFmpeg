@@ -413,6 +413,15 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
+static av_cold int encode_jpegls_init(AVCodecContext *avctx)
+{
+    if ((avctx->width | avctx->height) > UINT16_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions exceeding 65535x65535\n");
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 #define OFFSET(x) offsetof(JPEGLSContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -439,6 +448,7 @@ const AVCodec ff_jpegls_encoder = {
     .priv_data_size = sizeof(JPEGLSContext),
     .priv_class     = &jpegls_class,
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
+    .init           = encode_jpegls_init,
     .encode2        = encode_picture_ls,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
