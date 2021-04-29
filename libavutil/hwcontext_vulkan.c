@@ -1123,12 +1123,12 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     av_log(ctx, AV_LOG_VERBOSE, "Using device: %s\n",
            p->props.properties.deviceName);
     av_log(ctx, AV_LOG_VERBOSE, "Alignments:\n");
-    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %li\n",
+    av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %"PRIu64"\n",
            p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
-    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %li\n",
+    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %"SIZE_SPECIFIER"\n",
            p->props.properties.limits.minMemoryMapAlignment);
     if (p->extensions & EXT_EXTERNAL_HOST_MEMORY)
-        av_log(ctx, AV_LOG_VERBOSE, "    minImportedHostPointerAlignment:    %li\n",
+        av_log(ctx, AV_LOG_VERBOSE, "    minImportedHostPointerAlignment:    %"PRIu64"\n",
                p->hprops.minImportedHostPointerAlignment);
 
     p->dev_is_nvidia = (p->props.properties.vendorID == 0x10de);
