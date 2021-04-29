@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "golomb.h"
@@ -283,52 +284,22 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     const uint8_t *in;
     uint8_t *last = NULL;
     JLSState state = { 0 };
-    int i, size, ret;
+    size_t size;
+    int i, ret, size_in_bits;
     int comps;
-
-    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->size, 0)) < 0)
-        return ret;
 
     last = av_mallocz(FFABS(p->linesize[0]));
     if (!last)
         return AVERROR(ENOMEM);
 
-    bytestream2_init_writer(&pb, pkt->data, pkt->size);
     init_put_bits(&pb2, ctx->buf, ctx->size);
 
-    /* write our own JPEG header, can't use mjpeg_picture_header */
     comps = ctx->comps;
-    put_marker_byteu(&pb, SOI);
-    put_marker_byteu(&pb, SOF48);
-    bytestream2_put_be16u(&pb, 8 + comps * 3); // header size depends on components
-    bytestream2_put_byteu(&pb, (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8);  // bpp
-    bytestream2_put_be16u(&pb, avctx->height);
-    bytestream2_put_be16u(&pb, avctx->width);
-    bytestream2_put_byteu(&pb, comps);          // components
-    for (i = 1; i <= comps; i++) {
-        bytestream2_put_byteu(&pb, i);     // component ID
-        bytestream2_put_byteu(&pb, 0x11);  // subsampling: none
-        bytestream2_put_byteu(&pb, 0);     // Tiq, used by JPEG-LS ext
-    }
-
-    put_marker_byteu(&pb, SOS);
-    bytestream2_put_be16u(&pb, 6 + comps * 2);
-    bytestream2_put_byteu(&pb, comps);
-    for (i = 1; i <= comps; i++) {
-        bytestream2_put_byteu(&pb, i);   // component ID
-        bytestream2_put_byteu(&pb, 0);   // mapping index: none
-    }
-    bytestream2_put_byteu(&pb, ctx->pred);
-    bytestream2_put_byteu(&pb, (comps > 1) ? 1 : 0);  // interleaving: 0 - plane, 1 - line
-    bytestream2_put_byteu(&pb, 0);  // point transform: none
-
     /* initialize JPEG-LS state from JPEG parameters */
     state.near = ctx->pred;
     state.bpp  = (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8;
     ff_jpegls_reset_coding_parameters(&state, 0);
     ff_jpegls_init_state(&state);
-
-    ls_store_lse(&state, &pb);
 
     in = p->data[0];
     if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
@@ -378,17 +349,63 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
             in += p->linesize[0];
         }
     }
-
-    /* the specification says that after doing 0xff escaping unused bits in
-     * the last byte must be set to 0, so just append 7 "optional" zero bits
-     * to avoid special-casing. */
+    av_free(last);
+    /* Now the actual image data has been written, which enables us to estimate
+     * the needed packet size: For every 15 input bits, an escape bit might be
+     * added below; and if put_bits_count % 15 is >= 8, then another bit might
+     * be added.
+     * Furthermore the specification says that after doing 0xff escaping unused
+     * bits in the last byte must be set to 0, so just append 7 "optional" zero
+     * bits to avoid special-casing. This also simplifies the size calculation:
+     * Properly rounding up is now automatically baked-in. */
     put_bits(&pb2, 7, 0);
-    size = put_bits_count(&pb2);
+    /* Make sure that the bit count + padding is representable in an int;
+       necessary for put_bits_count() as well as for using a GetBitContext. */
+    if (put_bytes_count(&pb2, 0) > INT_MAX / 8 - AV_INPUT_BUFFER_PADDING_SIZE)
+        return AVERROR(ERANGE);
+    size_in_bits = put_bits_count(&pb2);
     flush_put_bits(&pb2);
+    size  = size_in_bits * 2U / 15;
+    size += 2 + 2 + 2 + 1 + 2 + 2 + 1 + comps * (1 + 1 + 1) + 2 + 2 + 1
+            + comps * (1 + 1) + 1 + 1 + 1; /* Header */
+    size += 2 + 2 + 1 + 2 + 2 + 2 + 2 + 2; /* LSE */
+    size += 2; /* EOI */
+    if ((ret = ff_get_encode_buffer(avctx, pkt, size, 0)) < 0)
+        return ret;
+
+    bytestream2_init_writer(&pb, pkt->data, pkt->size);
+
+    /* write our own JPEG header, can't use mjpeg_picture_header */
+    put_marker_byteu(&pb, SOI);
+    put_marker_byteu(&pb, SOF48);
+    bytestream2_put_be16u(&pb, 8 + comps * 3); // header size depends on components
+    bytestream2_put_byteu(&pb, (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8);  // bpp
+    bytestream2_put_be16u(&pb, avctx->height);
+    bytestream2_put_be16u(&pb, avctx->width);
+    bytestream2_put_byteu(&pb, comps);          // components
+    for (i = 1; i <= comps; i++) {
+        bytestream2_put_byteu(&pb, i);     // component ID
+        bytestream2_put_byteu(&pb, 0x11);  // subsampling: none
+        bytestream2_put_byteu(&pb, 0);     // Tiq, used by JPEG-LS ext
+    }
+
+    put_marker_byteu(&pb, SOS);
+    bytestream2_put_be16u(&pb, 6 + comps * 2);
+    bytestream2_put_byteu(&pb, comps);
+    for (i = 1; i <= comps; i++) {
+        bytestream2_put_byteu(&pb, i);   // component ID
+        bytestream2_put_byteu(&pb, 0);   // mapping index: none
+    }
+    bytestream2_put_byteu(&pb, ctx->pred);
+    bytestream2_put_byteu(&pb, (comps > 1) ? 1 : 0);  // interleaving: 0 - plane, 1 - line
+    bytestream2_put_byteu(&pb, 0);  // point transform: none
+
+    ls_store_lse(&state, &pb);
+
     /* do escape coding */
-    init_get_bits(&gb, pb2.buf, size);
-    size -= 7;
-    while (get_bits_count(&gb) < size) {
+    init_get_bits(&gb, pb2.buf, size_in_bits);
+    size_in_bits -= 7;
+    while (get_bits_count(&gb) < size_in_bits) {
         int v;
         v = get_bits(&gb, 8);
         bytestream2_put_byte(&pb, v);
@@ -397,15 +414,14 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
             bytestream2_put_byte(&pb, v);
         }
     }
-    av_freep(&last);
 
     /* End of image */
     put_marker_byte(&pb, EOI);
 
     emms_c();
 
-    pkt->size   = bytestream2_tell_p(&pb);
     pkt->flags |= AV_PKT_FLAG_KEY;
+    av_shrink_packet(pkt, bytestream2_tell_p(&pb));
     *got_packet = 1;
     return 0;
 }
@@ -468,9 +484,9 @@ const AVCodec ff_jpegls_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEGLS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size = sizeof(JPEGLSContext),
     .priv_class     = &jpegls_class,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .init           = encode_jpegls_init,
     .encode2        = encode_picture_ls,
     .close          = encode_jpegls_close,
