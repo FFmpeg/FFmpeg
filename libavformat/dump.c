@@ -564,17 +564,16 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         int tbr = st->r_frame_rate.den && st->r_frame_rate.num;
         int tbn = st->time_base.den && st->time_base.num;
-        int tbc = 0;
 
-        if (fps || tbr || tbn || tbc)
+        if (fps || tbr || tbn)
             av_log(NULL, AV_LOG_INFO, "%s", separator);
 
         if (fps)
-            print_fps(av_q2d(st->avg_frame_rate), tbr || tbn || tbc ? "fps, " : "fps");
+            print_fps(av_q2d(st->avg_frame_rate), tbr || tbn ? "fps, " : "fps");
         if (tbr)
-            print_fps(av_q2d(st->r_frame_rate), tbn || tbc ? "tbr, " : "tbr");
+            print_fps(av_q2d(st->r_frame_rate), tbn ? "tbr, " : "tbr");
         if (tbn)
-            print_fps(1 / av_q2d(st->time_base), tbc ? "tbn, " : "tbn");
+            print_fps(1 / av_q2d(st->time_base), "tbn");
     }
 
     if (st->disposition & AV_DISPOSITION_DEFAULT)
