@@ -335,6 +335,12 @@ Show information about all pixel formats supported by FFmpeg.
 Pixel format information for each format is printed within a section
 with name "PIXEL_FORMAT".
 
+@item -show_optional_fields @var{value}
+Some writers viz. JSON and XML, omit the printing of fields with invalid or non-applicable values,
+while other writers always print them. This option enables one to control this behaviour.
+Valid values are @code{always}/@code{1}, @code{never}/@code{0} and @code{auto}/@code{-1}.
+Default is @var{auto}.
+
 @item -bitexact
 Force bitexact output, useful to produce output which is not dependent
 on the specific build.
