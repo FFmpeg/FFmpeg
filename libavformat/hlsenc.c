@@ -2650,14 +2650,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     vs->packets_written++;
     if (oc->pb) {
-        int64_t keyframe_pre_pos = avio_tell(oc->pb);
         ret = ff_write_chained(oc, stream_index, pkt, s, 0);
-        if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
-            (pkt->flags & AV_PKT_FLAG_KEY) && !keyframe_pre_pos) {
-            av_write_frame(oc, NULL); /* Flush any buffered data */
-            vs->video_keyframe_size = avio_tell(oc->pb) - keyframe_pre_pos;
+        vs->video_keyframe_size += pkt->size;
+        if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && (pkt->flags & AV_PKT_FLAG_KEY)) {
+            vs->video_keyframe_size = avio_tell(oc->pb);
+        } else {
+            vs->video_keyframe_pos = avio_tell(vs->out);
         }
-        vs->video_keyframe_pos = vs->start_pos;
         if (hls->ignore_io_errors)
             ret = 0;
     }
