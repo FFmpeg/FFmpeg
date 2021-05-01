@@ -73,7 +73,7 @@ int ff_dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_ope
     DnnOperand *output_operand = &operands[output_operand_index];
 
     /**
-     * When padding_method = SAME, the tensorflow will only padding the hald number of 0 pxiels
+     * When padding_method = SAME, the tensorflow will only padding the hald number of 0 pixels
      * except the remainders.
      * Eg: assuming the input height = 1080, the strides = 11, so the remainders = 1080 % 11 = 2
      *     and if ksize = 5: it will fill (5 - 2) >> 1 = 1 line before the first line of input image,
