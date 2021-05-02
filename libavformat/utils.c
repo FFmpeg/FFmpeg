@@ -1798,7 +1798,7 @@ int av_find_default_stream_index(AVFormatContext *s)
             if (st->codecpar->sample_rate)
                 score += 50;
         }
-        if (st->codec_info_nb_frames)
+        if (st->internal->codec_info_nb_frames)
             score += 12;
 
         if (st->discard != AVDISCARD_ALL)
@@ -2682,7 +2682,7 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
                     break;
                 }
                 bit_rate += st->codecpar->bit_rate;
-            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->codec_info_nb_frames > 1) {
+            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->internal->codec_info_nb_frames > 1) {
                 // If we have a videostream with packets but without a bitrate
                 // then consider the sum not known
                 bit_rate = 0;
@@ -2946,7 +2946,7 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
         if (st->internal->info->found_decoder >= 0 && avctx->pix_fmt == AV_PIX_FMT_NONE)
             FAIL("unspecified pixel format");
         if (st->codecpar->codec_id == AV_CODEC_ID_RV30 || st->codecpar->codec_id == AV_CODEC_ID_RV40)
-            if (!st->sample_aspect_ratio.num && !st->codecpar->sample_aspect_ratio.num && !st->codec_info_nb_frames)
+            if (!st->sample_aspect_ratio.num && !st->codecpar->sample_aspect_ratio.num && !st->internal->codec_info_nb_frames)
                 FAIL("no frame in rv30/40 and no sar");
         break;
     case AVMEDIA_TYPE_SUBTITLE:
@@ -3023,7 +3023,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
     while ((pkt.size > 0 || (!pkt.data && got_picture)) &&
            ret >= 0 &&
            (!has_codec_parameters(st, NULL) || !has_decode_delay_been_guessed(st) ||
-            (!st->codec_info_nb_frames &&
+            (!st->internal->codec_info_nb_frames &&
              (avctx->codec->capabilities & AV_CODEC_CAP_CHANNEL_CONF)))) {
         got_picture = 0;
         if (avctx->codec_type == AVMEDIA_TYPE_VIDEO ||
@@ -3701,7 +3701,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 break;
             if (st->first_dts == AV_NOPTS_VALUE &&
                 !(ic->iformat->flags & AVFMT_NOTIMESTAMPS) &&
-                st->codec_info_nb_frames < ((st->disposition & AV_DISPOSITION_ATTACHED_PIC) ? 1 : ic->max_ts_probe) &&
+                st->internal->codec_info_nb_frames < ((st->disposition & AV_DISPOSITION_ATTACHED_PIC) ? 1 : ic->max_ts_probe) &&
                 (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
                  st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
                 break;
@@ -3772,7 +3772,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             st->internal->avctx_inited = 1;
         }
 
-        if (pkt->dts != AV_NOPTS_VALUE && st->codec_info_nb_frames > 1) {
+        if (pkt->dts != AV_NOPTS_VALUE && st->internal->codec_info_nb_frames > 1) {
             /* check for non-increasing dts */
             if (st->internal->info->fps_last_dts != AV_NOPTS_VALUE &&
                 st->internal->info->fps_last_dts >= pkt->dts) {
@@ -3780,7 +3780,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                        "Non-increasing DTS in stream %d: packet %d with DTS "
                        "%"PRId64", packet %d with DTS %"PRId64"\n",
                        st->index, st->internal->info->fps_last_dts_idx,
-                       st->internal->info->fps_last_dts, st->codec_info_nb_frames,
+                       st->internal->info->fps_last_dts, st->internal->codec_info_nb_frames,
                        pkt->dts);
                 st->internal->info->fps_first_dts =
                 st->internal->info->fps_last_dts  = AV_NOPTS_VALUE;
@@ -3797,7 +3797,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                        "DTS discontinuity in stream %d: packet %d with DTS "
                        "%"PRId64", packet %d with DTS %"PRId64"\n",
                        st->index, st->internal->info->fps_last_dts_idx,
-                       st->internal->info->fps_last_dts, st->codec_info_nb_frames,
+                       st->internal->info->fps_last_dts, st->internal->codec_info_nb_frames,
                        pkt->dts);
                 st->internal->info->fps_first_dts =
                 st->internal->info->fps_last_dts  = AV_NOPTS_VALUE;
@@ -3806,22 +3806,22 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             /* update stored dts values */
             if (st->internal->info->fps_first_dts == AV_NOPTS_VALUE) {
                 st->internal->info->fps_first_dts     = pkt->dts;
-                st->internal->info->fps_first_dts_idx = st->codec_info_nb_frames;
+                st->internal->info->fps_first_dts_idx = st->internal->codec_info_nb_frames;
             }
             st->internal->info->fps_last_dts     = pkt->dts;
-            st->internal->info->fps_last_dts_idx = st->codec_info_nb_frames;
+            st->internal->info->fps_last_dts_idx = st->internal->codec_info_nb_frames;
         }
-        if (st->codec_info_nb_frames>1) {
+        if (st->internal->codec_info_nb_frames>1) {
             int64_t t = 0;
             int64_t limit;
 
             if (st->time_base.den > 0)
                 t = av_rescale_q(st->internal->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q);
             if (st->avg_frame_rate.num > 0)
-                t = FFMAX(t, av_rescale_q(st->codec_info_nb_frames, av_inv_q(st->avg_frame_rate), AV_TIME_BASE_Q));
+                t = FFMAX(t, av_rescale_q(st->internal->codec_info_nb_frames, av_inv_q(st->avg_frame_rate), AV_TIME_BASE_Q));
 
             if (   t == 0
-                && st->codec_info_nb_frames>30
+                && st->internal->codec_info_nb_frames>30
                 && st->internal->info->fps_first_dts != AV_NOPTS_VALUE
                 && st->internal->info->fps_last_dts  != AV_NOPTS_VALUE) {
                 int64_t dur = av_sat_sub64(st->internal->info->fps_last_dts, st->internal->info->fps_first_dts);
@@ -3877,7 +3877,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         if (ic->flags & AVFMT_FLAG_NOBUFFER)
             av_packet_unref(pkt1);
 
-        st->codec_info_nb_frames++;
+        st->internal->codec_info_nb_frames++;
         count++;
     }
 
@@ -4155,7 +4155,7 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
         }
         disposition = !(st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED | AV_DISPOSITION_VISUAL_IMPAIRED))
                       + !! (st->disposition & AV_DISPOSITION_DEFAULT);
-        count = st->codec_info_nb_frames;
+        count = st->internal->codec_info_nb_frames;
         bitrate = par->bit_rate;
         multiframe = FFMIN(5, count);
         if ((best_disposition >  disposition) ||

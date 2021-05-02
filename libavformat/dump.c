@@ -544,7 +544,7 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
         av_log(NULL, AV_LOG_INFO, "[0x%x]", st->id);
     if (lang)
         av_log(NULL, AV_LOG_INFO, "(%s)", lang->value);
-    av_log(NULL, AV_LOG_DEBUG, ", %d, %d/%d", st->codec_info_nb_frames,
+    av_log(NULL, AV_LOG_DEBUG, ", %d, %d/%d", st->internal->codec_info_nb_frames,
            st->time_base.num, st->time_base.den);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
 

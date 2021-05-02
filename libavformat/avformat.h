@@ -1004,11 +1004,6 @@ typedef struct AVStream {
     int64_t cur_dts;
 
     /**
-     * Number of frames that have been demuxed during avformat_find_stream_info()
-     */
-    int codec_info_nb_frames;
-
-    /**
      * Stream Identifier
      * This is the MPEG-TS stream identifier +1
      * 0 means unknown
