@@ -111,6 +111,7 @@ static av_cold int init(AVFilterContext *ctx)
     ass_set_message_cb(ass->library, ass_log, ctx);
 
     ass_set_fonts_dir(ass->library, ass->fontsdir);
+    ass_set_extract_fonts(ass->library, 1);
 
     ass->renderer = ass_renderer_init(ass->library);
     if (!ass->renderer) {
