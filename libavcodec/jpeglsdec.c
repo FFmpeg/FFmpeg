@@ -108,8 +108,9 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
         if (s->palette_index > maxtab)
             return AVERROR_INVALIDDATA;
 
-        if (s->avctx->pix_fmt == AV_PIX_FMT_GRAY8 || s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-            uint32_t *pal = s->palette;
+        if ((s->avctx->pix_fmt == AV_PIX_FMT_GRAY8 || s->avctx->pix_fmt == AV_PIX_FMT_PAL8) &&
+            (s->picture_ptr->format == AV_PIX_FMT_GRAY8 || s->picture_ptr->format == AV_PIX_FMT_PAL8)) {
+            uint32_t *pal = (uint32_t *)s->picture_ptr->data[1];
             int shift = 0;
 
             if (s->avctx->bits_per_raw_sample > 0 && s->avctx->bits_per_raw_sample < 8) {
@@ -117,6 +118,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
                 shift = 8 - s->avctx->bits_per_raw_sample;
             }
 
+            s->picture_ptr->format =
             s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
             for (i=s->palette_index; i<=maxtab; i++) {
                 uint8_t k = i << shift;

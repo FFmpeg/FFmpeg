@@ -197,7 +197,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
     buf_end = buf + buf_size;
     jpg->got_picture = 0;
     s->got_mxm_bitmask = 0;
-    jpg->seen_sof = s->got_sof_data = !!s->got_sof_data;
+    s->got_sof_data = !!s->got_sof_data;
     while (buf_ptr < buf_end) {
         start_code = ff_mjpeg_find_marker(jpg, &buf_ptr, buf_end,
                                           &unescaped_buf_ptr, &unescaped_buf_size);
