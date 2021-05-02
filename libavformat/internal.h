@@ -373,7 +373,13 @@ struct AVStreamInternal {
      * Number of packets to buffer for codec probing
      */
     int probe_packets;
+
+    /* av_read_frame() support */
+    enum AVStreamParseType need_parsing;
+    struct AVCodecParserContext *parser;
 };
+
+void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);
 
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\

@@ -123,7 +123,12 @@ int64_t av_stream_get_end_pts(const AVStream *st)
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
 {
-    return st->parser;
+    return st->internal->parser;
+}
+
+void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type)
+{
+    st->internal->need_parsing = type;
 }
 
 void av_format_inject_global_side_data(AVFormatContext *s)
@@ -457,9 +462,9 @@ static int update_stream_avctx(AVFormatContext *s)
             continue;
 
         /* close parser, because it depends on the codec */
-        if (st->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
-            av_parser_close(st->parser);
-            st->parser = NULL;
+        if (st->internal->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
+            av_parser_close(st->internal->parser);
+            st->internal->parser = NULL;
         }
 
         /* update internal codec context, for the parser */
@@ -1256,7 +1261,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
     /* Correct timestamps with byte offset if demuxers only have timestamps
      * on packet boundaries */
-    if (pc && st->need_parsing == AVSTREAM_PARSE_TIMESTAMPS && pkt->size) {
+    if (pc && st->internal->need_parsing == AVSTREAM_PARSE_TIMESTAMPS && pkt->size) {
         /* this will estimate bitrate based on this frame's duration and size */
         offset = av_rescale(pc->offset, pkt->duration, pkt->size);
         if (pkt->pts != AV_NOPTS_VALUE)
@@ -1365,9 +1370,9 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
     int size      = pkt->size;
     int ret = 0, got_output = flush;
 
-    if (!size && !flush && st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+    if (!size && !flush && st->internal->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         // preserve 0-size sync packets
-        compute_pkt_fields(s, st, st->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
+        compute_pkt_fields(s, st, st->internal->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
     }
 
     while (size > 0 || (flush && got_output)) {
@@ -1375,7 +1380,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         int64_t next_pts = pkt->pts;
         int64_t next_dts = pkt->dts;
 
-        len = av_parser_parse2(st->parser, st->internal->avctx,
+        len = av_parser_parse2(st->internal->parser, st->internal->avctx,
                                &out_pkt->data, &out_pkt->size, data, size,
                                pkt->pts, pkt->dts, pkt->pos);
 
@@ -1394,7 +1399,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         if (pkt->buf && out_pkt->data == pkt->data) {
             /* reference pkt->buf only when out_pkt->data is guaranteed to point
              * to data in it and not in the parser's internal buffer. */
-            /* XXX: Ensure this is the case with all parsers when st->parser->flags
+            /* XXX: Ensure this is the case with all parsers when st->internal->parser->flags
              * is PARSER_FLAG_COMPLETE_FRAMES and check for that instead? */
             out_pkt->buf = av_buffer_ref(pkt->buf);
             if (!out_pkt->buf) {
@@ -1415,11 +1420,11 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         }
 
         /* set the duration */
-        out_pkt->duration = (st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) ? pkt->duration : 0;
+        out_pkt->duration = (st->internal->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) ? pkt->duration : 0;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->internal->avctx->sample_rate > 0) {
                 out_pkt->duration =
-                    av_rescale_q_rnd(st->parser->duration,
+                    av_rescale_q_rnd(st->internal->parser->duration,
                                      (AVRational) { 1, st->internal->avctx->sample_rate },
                                      st->time_base,
                                      AV_ROUND_DOWN);
@@ -1427,23 +1432,23 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         }
 
         out_pkt->stream_index = st->index;
-        out_pkt->pts          = st->parser->pts;
-        out_pkt->dts          = st->parser->dts;
-        out_pkt->pos          = st->parser->pos;
+        out_pkt->pts          = st->internal->parser->pts;
+        out_pkt->dts          = st->internal->parser->dts;
+        out_pkt->pos          = st->internal->parser->pos;
         out_pkt->flags       |= pkt->flags & AV_PKT_FLAG_DISCARD;
 
-        if (st->need_parsing == AVSTREAM_PARSE_FULL_RAW)
-            out_pkt->pos = st->parser->frame_offset;
+        if (st->internal->need_parsing == AVSTREAM_PARSE_FULL_RAW)
+            out_pkt->pos = st->internal->parser->frame_offset;
 
-        if (st->parser->key_frame == 1 ||
-            (st->parser->key_frame == -1 &&
-             st->parser->pict_type == AV_PICTURE_TYPE_I))
+        if (st->internal->parser->key_frame == 1 ||
+            (st->internal->parser->key_frame == -1 &&
+             st->internal->parser->pict_type == AV_PICTURE_TYPE_I))
             out_pkt->flags |= AV_PKT_FLAG_KEY;
 
-        if (st->parser->key_frame == -1 && st->parser->pict_type ==AV_PICTURE_TYPE_NONE && (pkt->flags&AV_PKT_FLAG_KEY))
+        if (st->internal->parser->key_frame == -1 && st->internal->parser->pict_type ==AV_PICTURE_TYPE_NONE && (pkt->flags&AV_PKT_FLAG_KEY))
             out_pkt->flags |= AV_PKT_FLAG_KEY;
 
-        compute_pkt_fields(s, st, st->parser, out_pkt, next_dts, next_pts);
+        compute_pkt_fields(s, st, st->internal->parser, out_pkt, next_dts, next_pts);
 
         ret = avpriv_packet_list_put(&s->internal->parse_queue,
                                  &s->internal->parse_queue_end,
@@ -1454,8 +1459,8 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
 
     /* end of the stream => close and free the parser */
     if (flush) {
-        av_parser_close(st->parser);
-        st->parser = NULL;
+        av_parser_close(st->internal->parser);
+        st->internal->parser = NULL;
     }
 
 fail:
@@ -1486,7 +1491,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             /* flush the parsers */
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->parser && st->need_parsing)
+                if (st->internal->parser && st->internal->need_parsing)
                     parse_packet(s, pkt, st->index, 1);
             }
             /* all remaining packets are now in parse_queue =>
@@ -1507,9 +1512,9 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
 
             /* close parser, because it depends on the codec */
-            if (st->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
-                av_parser_close(st->parser);
-                st->parser = NULL;
+            if (st->internal->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
+                av_parser_close(st->internal->parser);
+                st->internal->parser = NULL;
             }
 
             ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
@@ -1539,23 +1544,23 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                    av_ts2str(pkt->dts),
                    pkt->size, pkt->duration, pkt->flags);
 
-        if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
-            st->parser = av_parser_init(st->codecpar->codec_id);
-            if (!st->parser) {
+        if (st->internal->need_parsing && !st->internal->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
+            st->internal->parser = av_parser_init(st->codecpar->codec_id);
+            if (!st->internal->parser) {
                 av_log(s, AV_LOG_VERBOSE, "parser not found for codec "
                        "%s, packets or times may be invalid.\n",
                        avcodec_get_name(st->codecpar->codec_id));
                 /* no parser available: just output the raw packets */
-                st->need_parsing = AVSTREAM_PARSE_NONE;
-            } else if (st->need_parsing == AVSTREAM_PARSE_HEADERS)
-                st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-            else if (st->need_parsing == AVSTREAM_PARSE_FULL_ONCE)
-                st->parser->flags |= PARSER_FLAG_ONCE;
-            else if (st->need_parsing == AVSTREAM_PARSE_FULL_RAW)
-                st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
+                st->internal->need_parsing = AVSTREAM_PARSE_NONE;
+            } else if (st->internal->need_parsing == AVSTREAM_PARSE_HEADERS)
+                st->internal->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+            else if (st->internal->need_parsing == AVSTREAM_PARSE_FULL_ONCE)
+                st->internal->parser->flags |= PARSER_FLAG_ONCE;
+            else if (st->internal->need_parsing == AVSTREAM_PARSE_FULL_RAW)
+                st->internal->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
         }
 
-        if (!st->need_parsing || !st->parser) {
+        if (!st->internal->need_parsing || !st->internal->parser) {
             /* no parsing needed: we just output the packet as is */
             compute_pkt_fields(s, st, NULL, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
             if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
@@ -1819,9 +1824,9 @@ void ff_read_frame_flush(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
 
-        if (st->parser) {
-            av_parser_close(st->parser);
-            st->parser = NULL;
+        if (st->internal->parser) {
+            av_parser_close(st->internal->parser);
+            st->internal->parser = NULL;
         }
         st->internal->last_IP_pts = AV_NOPTS_VALUE;
         st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
@@ -2736,9 +2741,9 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             av_log(ic, AV_LOG_WARNING,
                    "start time for stream %d is not set in estimate_timings_from_pts\n", i);
 
-        if (st->parser) {
-            av_parser_close(st->parser);
-            st->parser = NULL;
+        if (st->internal->parser) {
+            av_parser_close(st->internal->parser);
+            st->internal->parser = NULL;
         }
     }
 
@@ -2774,7 +2779,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 (st->start_time != AV_NOPTS_VALUE ||
                  st->first_dts  != AV_NOPTS_VALUE)) {
                 if (pkt->duration == 0) {
-                    ff_compute_frame_duration(ic, &num, &den, st, st->parser, pkt);
+                    ff_compute_frame_duration(ic, &num, &den, st, st->internal->parser, pkt);
                     if (den && num) {
                         pkt->duration = av_rescale_rnd(1,
                                            num * (int64_t) st->time_base.den,
@@ -3589,15 +3594,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         /* check if the caller has overridden the codec id */
         // only for the split stuff
-        if (!st->parser && !(ic->flags & AVFMT_FLAG_NOPARSE) && st->internal->request_probe <= 0) {
-            st->parser = av_parser_init(st->codecpar->codec_id);
-            if (st->parser) {
-                if (st->need_parsing == AVSTREAM_PARSE_HEADERS) {
-                    st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-                } else if (st->need_parsing == AVSTREAM_PARSE_FULL_RAW) {
-                    st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
+        if (!st->internal->parser && !(ic->flags & AVFMT_FLAG_NOPARSE) && st->internal->request_probe <= 0) {
+            st->internal->parser = av_parser_init(st->codecpar->codec_id);
+            if (st->internal->parser) {
+                if (st->internal->need_parsing == AVSTREAM_PARSE_HEADERS) {
+                    st->internal->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+                } else if (st->internal->need_parsing == AVSTREAM_PARSE_FULL_RAW) {
+                    st->internal->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
                 }
-            } else if (st->need_parsing) {
+            } else if (st->internal->need_parsing) {
                 av_log(ic, AV_LOG_VERBOSE, "parser not found for codec "
                        "%s, packets or times may be invalid.\n",
                        avcodec_get_name(st->codecpar->codec_id));
@@ -3840,7 +3845,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     st->internal->info->codec_info_duration = FFMIN(pkt->pts - st->start_time, st->internal->info->codec_info_duration + pkt->duration);
                 } else
                     st->internal->info->codec_info_duration += pkt->duration;
-                st->internal->info->codec_info_duration_fields += st->parser && st->need_parsing && avctx->ticks_per_frame ==2 ? st->parser->repeat_pict + 1 : 2;
+                st->internal->info->codec_info_duration_fields += st->internal->parser && st->internal->need_parsing && avctx->ticks_per_frame == 2
+                                                                  ? st->internal->parser->repeat_pict + 1 : 2;
             }
         }
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -4256,8 +4262,8 @@ static void free_stream(AVStream **pst)
         av_freep(&st->side_data[i].data);
     av_freep(&st->side_data);
 
-    if (st->parser)
-        av_parser_close(st->parser);
+    if (st->internal->parser)
+        av_parser_close(st->internal->parser);
 
     if (st->attached_pic.data)
         av_packet_unref(&st->attached_pic);

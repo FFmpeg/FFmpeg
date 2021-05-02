@@ -66,7 +66,7 @@ static int read_header(AVFormatContext *s, const AVRational *framerate, AVBSFCon
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = AV_CODEC_ID_AV1;
-    st->need_parsing = AVSTREAM_PARSE_HEADERS;
+    st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     st->internal->avctx->framerate = *framerate;
     // taken from rawvideo demuxers

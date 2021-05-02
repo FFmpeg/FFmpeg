@@ -50,7 +50,7 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->need_parsing = AVSTREAM_PARSE_HEADERS;
+    st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
     st->start_time = 0;
     st->nb_frames  =
     st->duration   = avio_rb32(pb);

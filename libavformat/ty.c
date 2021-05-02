@@ -308,7 +308,7 @@ static int ty_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = AV_CODEC_ID_MPEG2VIDEO;
-    st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
+    st->internal->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
     avpriv_set_pts_info(st, 64, 1, 90000);
 
     ast = avformat_new_stream(s, NULL);
@@ -318,7 +318,7 @@ static int ty_read_header(AVFormatContext *s)
 
     if (ty->audio_type == TIVO_AUDIO_MPEG) {
         ast->codecpar->codec_id = AV_CODEC_ID_MP2;
-        ast->need_parsing       = AVSTREAM_PARSE_FULL_RAW;
+        ast->internal->need_parsing       = AVSTREAM_PARSE_FULL_RAW;
     } else {
         ast->codecpar->codec_id = AV_CODEC_ID_AC3;
     }

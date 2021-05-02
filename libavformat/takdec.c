@@ -65,7 +65,7 @@ static int tak_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id   = AV_CODEC_ID_TAK;
-    st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
+    st->internal->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
 
     tc->mlast_frame = 0;
     if (avio_rl32(pb) != MKTAG('t', 'B', 'a', 'K')) {

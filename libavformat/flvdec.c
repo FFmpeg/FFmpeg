@@ -271,7 +271,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
         break;
     case FLV_CODECID_MP3:
         apar->codec_id      = AV_CODEC_ID_MP3;
-        astream->need_parsing = AVSTREAM_PARSE_FULL;
+        astream->internal->need_parsing = AVSTREAM_PARSE_FULL;
         break;
     case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
         // in case metadata does not otherwise declare samplerate
@@ -362,7 +362,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
         break;
     case FLV_CODECID_H264:
         par->codec_id = AV_CODEC_ID_H264;
-        vstream->need_parsing = AVSTREAM_PARSE_HEADERS;
+        vstream->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
         ret = 3;     // not 4, reading packet type will consume one byte
         break;
     case FLV_CODECID_MPEG4:

@@ -183,7 +183,7 @@ static int aa_read_header(AVFormatContext *s)
     if (!strcmp(codec_name, "mp332")) {
         st->codecpar->codec_id = AV_CODEC_ID_MP3;
         st->codecpar->sample_rate = 22050;
-        st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+        st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
         avpriv_set_pts_info(st, 64, 8, 32000 * TIMEPREC);
         // encoded audio frame is MP3_FRAME_SIZE bytes (+1 with padding, unlikely)
     } else if (!strcmp(codec_name, "acelp85")) {
@@ -192,7 +192,7 @@ static int aa_read_header(AVFormatContext *s)
         st->codecpar->channels = 1;
         st->codecpar->sample_rate = 8500;
         st->codecpar->bit_rate = 8500;
-        st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+        st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
         avpriv_set_pts_info(st, 64, 8, 8500 * TIMEPREC);
     } else if (!strcmp(codec_name, "acelp16")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
@@ -200,7 +200,7 @@ static int aa_read_header(AVFormatContext *s)
         st->codecpar->channels = 1;
         st->codecpar->sample_rate = 16000;
         st->codecpar->bit_rate = 16000;
-        st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+        st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
         avpriv_set_pts_info(st, 64, 8, 16000 * TIMEPREC);
     }
 

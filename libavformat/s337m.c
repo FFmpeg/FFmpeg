@@ -20,6 +20,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "spdif.h"
 
 #define MARKER_16LE         0x72F81F4E
@@ -180,7 +181,7 @@ static int s337m_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id   = codec;
-        st->need_parsing         = AVSTREAM_PARSE_HEADERS;
+        st->internal->need_parsing         = AVSTREAM_PARSE_HEADERS;
     }
 
     return 0;

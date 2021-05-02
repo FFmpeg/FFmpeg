@@ -75,7 +75,7 @@ static int loas_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = s->iformat->raw_codec_id;
-    st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+    st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     //LCM of all possible AAC sample rates
     avpriv_set_pts_info(st, 64, 1, 28224000);

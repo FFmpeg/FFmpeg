@@ -78,7 +78,7 @@ static int xwma_read_header(AVFormatContext *s)
     ret = ff_get_wav_header(s, pb, st->codecpar, size, 0);
     if (ret < 0)
         return ret;
-    st->need_parsing = AVSTREAM_PARSE_NONE;
+    st->internal->need_parsing = AVSTREAM_PARSE_NONE;
 
     /* XWMA encoder only allows a few channel/sample rate/bitrate combinations,
      * but some create identical files with fake bitrate (1ch 22050hz at

@@ -112,7 +112,7 @@ static int theora_header(AVFormatContext *s, int idx)
 
         st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codecpar->codec_id   = AV_CODEC_ID_THEORA;
-        st->need_parsing      = AVSTREAM_PARSE_HEADERS;
+        st->internal->need_parsing      = AVSTREAM_PARSE_HEADERS;
     }
     break;
     case 0x81:

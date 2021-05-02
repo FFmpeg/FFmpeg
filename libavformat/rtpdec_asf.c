@@ -167,8 +167,8 @@ static int asfrtp_parse_sdp_line(AVFormatContext *s, int stream_index,
                 if (s->streams[stream_index]->id == rt->asf_ctx->streams[i]->id) {
                     avcodec_parameters_copy(s->streams[stream_index]->codecpar,
                                             rt->asf_ctx->streams[i]->codecpar);
-                    s->streams[stream_index]->need_parsing =
-                        rt->asf_ctx->streams[i]->need_parsing;
+                    s->streams[stream_index]->internal->need_parsing =
+                        rt->asf_ctx->streams[i]->internal->need_parsing;
                     avpriv_set_pts_info(s->streams[stream_index], 32, 1, 1000);
                 }
            }

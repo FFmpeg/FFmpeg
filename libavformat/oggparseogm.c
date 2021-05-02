@@ -60,7 +60,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codecpar->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag);
             st->codecpar->codec_tag = tag;
             if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4)
-                st->need_parsing = AVSTREAM_PARSE_HEADERS;
+                st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (bytestream2_peek_byte(&p) == 't') {
             st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
             st->codecpar->codec_id = AV_CODEC_ID_TEXT;
@@ -76,7 +76,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codecpar->codec_id = ff_codec_get_id(ff_codec_wav_tags, cid);
             // our parser completely breaks AAC in Ogg
             if (st->codecpar->codec_id != AV_CODEC_ID_AAC)
-                st->need_parsing = AVSTREAM_PARSE_FULL;
+                st->internal->need_parsing = AVSTREAM_PARSE_FULL;
         }
 
         size        = bytestream2_get_le32(&p);

@@ -382,9 +382,9 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             st->codecpar->codec_tag = 0;
         }
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC)
-            st->need_parsing = AVSTREAM_PARSE_NONE;
+            st->internal->need_parsing = AVSTREAM_PARSE_NONE;
         else
-            st->need_parsing = AVSTREAM_PARSE_FULL;
+            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
         /* We have to init the frame size at some point .... */
         pos2 = avio_tell(pb);
         if (size >= (pos2 + 8 - pos1 + 24)) {
@@ -443,7 +443,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         st->codecpar->codec_tag = tag1;
         st->codecpar->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag1);
         if (tag1 == MKTAG('D', 'V', 'R', ' ')) {
-            st->need_parsing = AVSTREAM_PARSE_FULL;
+            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
             /* issue658 contains wrong w/h and MS even puts a fake seq header
              * with wrong w/h in extradata while a correct one is in the stream.
              * maximum lameness */
@@ -453,9 +453,9 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             st->codecpar->extradata_size = 0;
         }
         if (st->codecpar->codec_id == AV_CODEC_ID_H264)
-            st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+            st->internal->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
         if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4)
-            st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+            st->internal->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     pos2 = avio_tell(pb);
     avio_skip(pb, size - (pos2 - pos1 + 24));

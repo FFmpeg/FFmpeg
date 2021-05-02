@@ -1008,10 +1008,6 @@ typedef struct AVStream {
      */
     int codec_info_nb_frames;
 
-    /* av_read_frame() support */
-    enum AVStreamParseType need_parsing;
-    struct AVCodecParserContext *parser;
-
     /**
      * Stream Identifier
      * This is the MPEG-TS stream identifier +1

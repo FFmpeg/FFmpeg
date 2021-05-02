@@ -262,7 +262,7 @@ static int lxf_read_header(AVFormatContext *s)
     st->codecpar->bit_rate   = 1000000 * ((video_params >> 14) & 0xFF);
     st->codecpar->codec_tag  = video_params & 0xF;
     st->codecpar->codec_id   = ff_codec_get_id(lxf_tags, st->codecpar->codec_tag);
-    st->need_parsing         = AVSTREAM_PARSE_HEADERS;
+    st->internal->need_parsing         = AVSTREAM_PARSE_HEADERS;
 
     av_log(s, AV_LOG_DEBUG, "record: %x = %i-%02i-%02i\n",
            record_date, 1900 + (record_date & 0x7F), (record_date >> 7) & 0xF,

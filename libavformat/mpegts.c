@@ -904,7 +904,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     st->priv_data         = pes;
     st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
     st->codecpar->codec_id   = AV_CODEC_ID_NONE;
-    st->need_parsing      = AVSTREAM_PARSE_FULL;
+    st->internal->need_parsing      = AVSTREAM_PARSE_FULL;
     pes->st          = st;
     pes->stream_type = stream_type;
 
@@ -942,7 +942,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
             sub_st->priv_data         = sub_pes;
             sub_st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
             sub_st->codecpar->codec_id   = AV_CODEC_ID_AC3;
-            sub_st->need_parsing      = AVSTREAM_PARSE_FULL;
+            sub_st->internal->need_parsing      = AVSTREAM_PARSE_FULL;
             sub_pes->sub_st           = pes->sub_st = sub_st;
         }
     }
@@ -1717,10 +1717,10 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
             ff_mp4_read_dec_config_descr(s, st, &pb);
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
                 st->codecpar->extradata_size > 0)
-                st->need_parsing = 0;
+                st->internal->need_parsing = 0;
             if (st->codecpar->codec_id == AV_CODEC_ID_H264 &&
                 st->codecpar->extradata_size > 0)
-                st->need_parsing = 0;
+                st->internal->need_parsing = 0;
 
             st->codecpar->codec_type = avcodec_get_type(st->codecpar->codec_id);
             st->internal->need_context_update = 1;
@@ -1826,7 +1826,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 ff_mp4_read_dec_config_descr(fc, st, &pb);
                 if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
                     st->codecpar->extradata_size > 0) {
-                    st->need_parsing = 0;
+                    st->internal->need_parsing = 0;
                     st->internal->need_context_update = 1;
                 }
                 if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4SYSTEMS)
@@ -1848,7 +1848,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             ff_mp4_read_dec_config_descr(fc, st, &pb);
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
                 st->codecpar->extradata_size > 0) {
-                st->internal->request_probe = st->need_parsing = 0;
+                st->internal->request_probe = st->internal->need_parsing = 0;
                 st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
                 st->internal->need_context_update = 1;
             }
@@ -2035,7 +2035,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 } else {
                     avpriv_request_sample(fc, "Opus in MPEG-TS - channel_config_code > 0x8");
                 }
-                st->need_parsing = AVSTREAM_PARSE_FULL;
+                st->internal->need_parsing = AVSTREAM_PARSE_FULL;
                 st->internal->need_context_update = 1;
             }
         }

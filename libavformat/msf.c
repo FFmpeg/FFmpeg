@@ -80,7 +80,7 @@ static int msf_read_header(AVFormatContext *s)
             AV_WL16(st->codecpar->extradata+8, codec == 4 ? 1 : 0); /* joint stereo (repeat?) */
             AV_WL16(st->codecpar->extradata+10, 1);
             st->codecpar->codec_id = AV_CODEC_ID_ATRAC3;    break;
-    case 7: st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+    case 7: st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
             st->codecpar->codec_id = AV_CODEC_ID_MP3;       break;
     default:
             avpriv_request_sample(s, "Codec %d", codec);

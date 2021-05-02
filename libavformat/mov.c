@@ -2186,7 +2186,7 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
             switch (st->codecpar->codec_id) {
             case AV_CODEC_ID_MP2:
             case AV_CODEC_ID_MP3:
-                st->need_parsing = AVSTREAM_PARSE_FULL;
+                st->internal->need_parsing = AVSTREAM_PARSE_FULL;
                 break;
             }
         }
@@ -2424,10 +2424,10 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     case AV_CODEC_ID_VC1:
     case AV_CODEC_ID_VP8:
     case AV_CODEC_ID_VP9:
-        st->need_parsing = AVSTREAM_PARSE_FULL;
+        st->internal->need_parsing = AVSTREAM_PARSE_FULL;
         break;
     case AV_CODEC_ID_AV1:
-        st->need_parsing = AVSTREAM_PARSE_HEADERS;
+        st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
         break;
     default:
         break;
@@ -2773,8 +2773,8 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (!entries) {
         sc->keyframe_absent = 1;
-        if (!st->need_parsing && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            st->need_parsing = AVSTREAM_PARSE_HEADERS;
+        if (!st->internal->need_parsing && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
         return 0;
     }
     if (sc->keyframes)
@@ -4317,7 +4317,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         && sc->stts_count > 3
         && sc->stts_count*10 > st->nb_frames
         && sc->time_scale == st->codecpar->sample_rate) {
-            st->need_parsing = AVSTREAM_PARSE_FULL;
+            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
     }
     /* Do not need those anymore. */
     av_freep(&sc->chunk_offsets);
@@ -7644,7 +7644,7 @@ static int mov_read_header(AVFormatContext *s)
             mov->handbrake_version <= 1000000*0 + 1000*10 + 2 &&  // 0.10.2
             st->codecpar->codec_id == AV_CODEC_ID_MP3) {
             av_log(s, AV_LOG_VERBOSE, "Forcing full parsing for mp3 stream\n");
-            st->need_parsing = AVSTREAM_PARSE_FULL;
+            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
         }
     }
 
@@ -7950,9 +7950,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                 sc->has_palette = 0;
             }
         }
-        if (st->codecpar->codec_id == AV_CODEC_ID_MP3 && !st->need_parsing && pkt->size > 4) {
+        if (st->codecpar->codec_id == AV_CODEC_ID_MP3 && !st->internal->need_parsing && pkt->size > 4) {
             if (ff_mpa_check_header(AV_RB32(pkt->data)) < 0)
-                st->need_parsing = AVSTREAM_PARSE_FULL;
+                st->internal->need_parsing = AVSTREAM_PARSE_FULL;
         }
     }
 

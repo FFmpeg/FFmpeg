@@ -130,13 +130,13 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 20:
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codecpar->codec_id = AV_CODEC_ID_MPEG2VIDEO;
-            st->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
+            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 22:
         case 23:
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codecpar->codec_id = AV_CODEC_ID_MPEG1VIDEO;
-            st->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
+            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 9:
             st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -169,7 +169,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 29: /* AVCHD */
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codecpar->codec_id = AV_CODEC_ID_H264;
-            st->need_parsing = AVSTREAM_PARSE_HEADERS;
+            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
             break;
         // timecode tracks:
         case 7:

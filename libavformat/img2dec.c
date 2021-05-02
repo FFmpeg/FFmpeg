@@ -209,7 +209,7 @@ int ff_img_read_header(AVFormatContext *s1)
         s->is_pipe = 0;
     else {
         s->is_pipe       = 1;
-        st->need_parsing = AVSTREAM_PARSE_FULL;
+        st->internal->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
     if (s->ts_from_file == 2) {
@@ -482,7 +482,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             return AVERROR_EOF;
         if (s->frame_size > 0) {
             size[0] = s->frame_size;
-        } else if (!s1->streams[0]->parser) {
+        } else if (!s1->streams[0]->internal->parser) {
             size[0] = avio_size(s1->pb);
         } else {
             size[0] = 4096;

@@ -218,7 +218,7 @@ static void init_rtp_handler(const RTPDynamicProtocolHandler *handler,
         par->codec_id          = handler->codec_id;
     rtsp_st->dynamic_handler = handler;
     if (st)
-        st->need_parsing = handler->need_parsing;
+        st->internal->need_parsing = handler->need_parsing;
     if (handler->priv_data_size) {
         rtsp_st->dynamic_protocol_context = av_mallocz(handler->priv_data_size);
         if (!rtsp_st->dynamic_protocol_context)
