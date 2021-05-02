@@ -7930,9 +7930,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 #if CONFIG_DV_DEMUXER
         if (mov->dv_demux && sc->dv_audio_container) {
-            AVBufferRef *buf = pkt->buf;
             ret = avpriv_dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size, pkt->pos);
-            pkt->buf = buf;
             av_packet_unref(pkt);
             if (ret < 0)
                 return ret;
