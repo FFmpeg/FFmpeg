@@ -118,8 +118,10 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
                 shift = 8 - s->avctx->bits_per_raw_sample;
             }
 
-            s->picture_ptr->format =
-            s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            s->force_pal8 = 1;
+            if (!pal)
+                return 1;
+
             for (i=s->palette_index; i<=maxtab; i++) {
                 uint8_t k = i << shift;
                 pal[k] = 0;

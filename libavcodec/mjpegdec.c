@@ -582,7 +582,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         case 0x43000000:
         case 0x44000000:
             if(s->bits <= 8)
-                s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+                s->avctx->pix_fmt = s->force_pal8 ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_GRAY8;
             else
                 s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             break;
@@ -681,7 +681,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             } else if (s->nb_components != 1) {
                 av_log(s->avctx, AV_LOG_ERROR, "Unsupported number of components %d\n", s->nb_components);
                 return AVERROR_PATCHWELCOME;
-            } else if (s->palette_index && s->bits <= 8)
+            } else if (s->palette_index && s->bits <= 8 || s->force_pal8)
                 s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
             else if (s->bits <= 8)
                 s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
@@ -2398,6 +2398,8 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     int ret = 0;
     int is16bit;
 
+    s->force_pal8 = 0;
+
     if (avctx->codec_id == AV_CODEC_ID_SMVJPEG && s->smv_next_frame > 0)
         return smv_process_frame(avctx, frame);
 
@@ -2411,7 +2413,7 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     ret = mjpeg_get_packet(avctx);
     if (ret < 0)
         return ret;
-
+redo_for_pal8:
     buf_ptr = s->pkt->data;
     buf_end = s->pkt->data + s->pkt->size;
     while (buf_ptr < buf_end) {
@@ -2542,6 +2544,8 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             if (!CONFIG_JPEGLS_DECODER ||
                 (ret = ff_jpegls_decode_lse(s)) < 0)
                 goto fail;
+            if (ret == 1)
+                goto redo_for_pal8;
             break;
         case EOI:
 eoi_parser:
