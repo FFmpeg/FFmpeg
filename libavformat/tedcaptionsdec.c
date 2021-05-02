@@ -299,7 +299,7 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
     st->codecpar->codec_type     = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id       = AV_CODEC_ID_TEXT;
     avpriv_set_pts_info(st, 64, 1, 1000);
-    st->probe_packets = 0;
+    st->internal->probe_packets = 0;
     st->start_time    = 0;
     st->duration      = last->pts + last->duration;
     st->cur_dts       = 0;

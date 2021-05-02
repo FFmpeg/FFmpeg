@@ -334,7 +334,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
         int i;
         av_log(s, AV_LOG_DEBUG,
                "Probe with size=%d, packets=%d detected %s with score=%d\n",
-               pd->buf_size, s->max_probe_packets - st->probe_packets,
+               pd->buf_size, s->max_probe_packets - st->internal->probe_packets,
                fmt->name, score);
         for (i = 0; fmt_id_type[i].name; i++) {
             if (!strcmp(fmt->name, fmt_id_type[i].name)) {
@@ -648,8 +648,8 @@ static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
     if (st->internal->request_probe>0) {
         AVProbeData *pd = &st->internal->probe_data;
         int end;
-        av_log(s, AV_LOG_DEBUG, "probing stream %d pp:%d\n", st->index, st->probe_packets);
-        --st->probe_packets;
+        av_log(s, AV_LOG_DEBUG, "probing stream %d pp:%d\n", st->index, st->internal->probe_packets);
+        --st->internal->probe_packets;
 
         if (pkt) {
             uint8_t *new_buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
@@ -665,7 +665,7 @@ static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
             memset(pd->buf + pd->buf_size, 0, AVPROBE_PADDING_SIZE);
         } else {
 no_packet:
-            st->probe_packets = 0;
+            st->internal->probe_packets = 0;
             if (!pd->buf_size) {
                 av_log(s, AV_LOG_WARNING,
                        "nothing to probe for stream %d\n", st->index);
@@ -673,7 +673,7 @@ no_packet:
         }
 
         end=    s->internal->raw_packet_buffer_remaining_size <= 0
-                || st->probe_packets<= 0;
+                || st->internal->probe_packets<= 0;
 
         if (end || av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)) {
             int score = set_codec_from_probe_data(s, st, pd);
@@ -804,7 +804,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return err;
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->probe_packets || st->internal->request_probe > 0)
+                if (st->internal->probe_packets || st->internal->request_probe > 0)
                     if ((err = probe_codec(s, st, NULL)) < 0)
                         return err;
                 av_assert0(st->internal->request_probe <= 0);
@@ -1831,7 +1831,7 @@ void ff_read_frame_flush(AVFormatContext *s)
             /* We set the current DTS to an unspecified origin. */
             st->cur_dts = AV_NOPTS_VALUE;
 
-        st->probe_packets = s->max_probe_packets;
+        st->internal->probe_packets = s->max_probe_packets;
 
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
             st->internal->pts_buffer[j] = AV_NOPTS_VALUE;
@@ -4419,7 +4419,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     st->start_time = AV_NOPTS_VALUE;
     st->duration   = AV_NOPTS_VALUE;
     st->first_dts     = AV_NOPTS_VALUE;
-    st->probe_packets = s->max_probe_packets;
+    st->internal->probe_packets = s->max_probe_packets;
     st->internal->pts_wrap_reference = AV_NOPTS_VALUE;
     st->internal->pts_wrap_behavior = AV_PTS_WRAP_IGNORE;
 

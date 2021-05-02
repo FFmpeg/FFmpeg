@@ -1438,7 +1438,7 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     st->codecpar->sample_rate    = sbg->sample_rate;
     st->codecpar->frame_size     = sbg->frame_size;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-    st->probe_packets = 0;
+    st->internal->probe_packets = 0;
     st->start_time    = av_rescale(script.start_ts,
                                    sbg->sample_rate, AV_TIME_BASE);
     st->duration      = script.end_ts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :

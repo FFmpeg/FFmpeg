@@ -368,6 +368,11 @@ struct AVStreamInternal {
 
     int64_t last_IP_pts;
     int last_IP_duration;
+
+    /**
+     * Number of packets to buffer for codec probing
+     */
+    int probe_packets;
 };
 
 #ifdef __GNUC__

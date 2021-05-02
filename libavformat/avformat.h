@@ -1004,11 +1004,6 @@ typedef struct AVStream {
     int64_t cur_dts;
 
     /**
-     * Number of packets to buffer for codec probing
-     */
-    int probe_packets;
-
-    /**
      * Number of frames that have been demuxed during avformat_find_stream_info()
      */
     int codec_info_nb_frames;

@@ -167,7 +167,7 @@ static void handle_stream_probing(AVStream *st)
 {
     if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16LE) {
         st->internal->request_probe = AVPROBE_SCORE_EXTENSION;
-        st->probe_packets = FFMIN(st->probe_packets, 32);
+        st->internal->probe_packets = FFMIN(st->internal->probe_packets, 32);
     }
 }
 

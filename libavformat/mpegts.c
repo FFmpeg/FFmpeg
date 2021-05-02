@@ -954,7 +954,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     }
     if ((st->codecpar->codec_id == AV_CODEC_ID_NONE ||
             (st->internal->request_probe > 0 && st->internal->request_probe < AVPROBE_SCORE_STREAM_RETRY / 5)) &&
-        st->probe_packets > 0 &&
+        st->internal->probe_packets > 0 &&
         stream_type == STREAM_TYPE_PRIVATE_DATA) {
         st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
         st->codecpar->codec_id   = AV_CODEC_ID_BIN_DATA;
