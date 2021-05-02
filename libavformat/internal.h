@@ -365,6 +365,9 @@ struct AVStreamInternal {
      * last packet in packet_buffer for this stream when muxing.
      */
     struct PacketList *last_in_packet_buffer;
+
+    int64_t last_IP_pts;
+    int last_IP_duration;
 };
 
 #ifdef __GNUC__

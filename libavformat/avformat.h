@@ -1002,8 +1002,6 @@ typedef struct AVStream {
      */
     int64_t first_dts;
     int64_t cur_dts;
-    int64_t last_IP_pts;
-    int last_IP_duration;
 
     /**
      * Number of packets to buffer for codec probing

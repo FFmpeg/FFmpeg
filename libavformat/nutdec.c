@@ -1086,7 +1086,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code)
         stc->skip_until_key_frame = 0;
 
     discard     = s->streams[stream_id]->discard;
-    last_IP_pts = s->streams[stream_id]->last_IP_pts;
+    last_IP_pts = s->streams[stream_id]->internal->last_IP_pts;
     if ((discard >= AVDISCARD_NONKEY && !(stc->last_flags & FLAG_KEY)) ||
         (discard >= AVDISCARD_BIDIR  && last_IP_pts != AV_NOPTS_VALUE &&
          last_IP_pts > pts) ||

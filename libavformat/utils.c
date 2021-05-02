@@ -1285,28 +1285,28 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             /* DTS = decompression timestamp */
             /* PTS = presentation timestamp */
             if (pkt->dts == AV_NOPTS_VALUE)
-                pkt->dts = st->last_IP_pts;
+                pkt->dts = st->internal->last_IP_pts;
             update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);
             if (pkt->dts == AV_NOPTS_VALUE)
                 pkt->dts = st->cur_dts;
 
             /* This is tricky: the dts must be incremented by the duration
              * of the frame we are displaying, i.e. the last I- or P-frame. */
-            if (st->last_IP_duration == 0 && (uint64_t)pkt->duration <= INT32_MAX)
-                st->last_IP_duration = pkt->duration;
+            if (st->internal->last_IP_duration == 0 && (uint64_t)pkt->duration <= INT32_MAX)
+                st->internal->last_IP_duration = pkt->duration;
             if (pkt->dts != AV_NOPTS_VALUE)
-                st->cur_dts = av_sat_add64(pkt->dts, st->last_IP_duration);
+                st->cur_dts = av_sat_add64(pkt->dts, st->internal->last_IP_duration);
             if (pkt->dts != AV_NOPTS_VALUE &&
                 pkt->pts == AV_NOPTS_VALUE &&
-                st->last_IP_duration > 0 &&
+                st->internal->last_IP_duration > 0 &&
                 ((uint64_t)st->cur_dts - (uint64_t)next_dts + 1) <= 2 &&
                 next_dts != next_pts &&
                 next_pts != AV_NOPTS_VALUE)
                 pkt->pts = next_dts;
 
             if ((uint64_t)pkt->duration <= INT32_MAX)
-                st->last_IP_duration = pkt->duration;
-            st->last_IP_pts      = pkt->pts;
+                st->internal->last_IP_duration = pkt->duration;
+            st->internal->last_IP_pts      = pkt->pts;
             /* Cannot compute PTS if not present (we can compute it only
              * by knowing the future. */
         } else if (pkt->pts != AV_NOPTS_VALUE ||
@@ -1823,7 +1823,7 @@ void ff_read_frame_flush(AVFormatContext *s)
             av_parser_close(st->parser);
             st->parser = NULL;
         }
-        st->last_IP_pts = AV_NOPTS_VALUE;
+        st->internal->last_IP_pts = AV_NOPTS_VALUE;
         st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
         if (st->first_dts == AV_NOPTS_VALUE)
             st->cur_dts = RELATIVE_TS_BASE;
@@ -2840,7 +2840,7 @@ skip_duration_calc:
 
         st              = ic->streams[i];
         st->cur_dts     = st->first_dts;
-        st->last_IP_pts = AV_NOPTS_VALUE;
+        st->internal->last_IP_pts = AV_NOPTS_VALUE;
         st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
             st->internal->pts_buffer[j] = AV_NOPTS_VALUE;
@@ -4423,7 +4423,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     st->internal->pts_wrap_reference = AV_NOPTS_VALUE;
     st->internal->pts_wrap_behavior = AV_PTS_WRAP_IGNORE;
 
-    st->last_IP_pts = AV_NOPTS_VALUE;
+    st->internal->last_IP_pts = AV_NOPTS_VALUE;
     st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
     for (i = 0; i < MAX_REORDER_DELAY + 1; i++)
         st->internal->pts_buffer[i] = AV_NOPTS_VALUE;
