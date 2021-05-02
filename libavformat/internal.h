@@ -382,6 +382,13 @@ struct AVStreamInternal {
      * Number of frames that have been demuxed during avformat_find_stream_info()
      */
     int codec_info_nb_frames;
+
+    /**
+     * Stream Identifier
+     * This is the MPEG-TS stream identifier +1
+     * 0 means unknown
+     */
+    int stream_identifier;
 };
 
 void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);

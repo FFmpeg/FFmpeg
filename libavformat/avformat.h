@@ -1004,13 +1004,6 @@ typedef struct AVStream {
     int64_t cur_dts;
 
     /**
-     * Stream Identifier
-     * This is the MPEG-TS stream identifier +1
-     * 0 means unknown
-     */
-    int stream_identifier;
-
-    /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
      */

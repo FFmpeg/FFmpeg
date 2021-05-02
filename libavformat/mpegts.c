@@ -1995,7 +1995,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         }
         break;
     case 0x52: /* stream identifier descriptor */
-        st->stream_identifier = 1 + get8(pp, desc_end);
+        st->internal->stream_identifier = 1 + get8(pp, desc_end);
         break;
     case METADATA_DESCRIPTOR:
         if (get16(pp, desc_end) == 0xFFFF)
@@ -2114,7 +2114,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             // Listing of data_component_ids is in STD-B10, part 2, Annex J.
             // Component tag limits are documented in TR-B14, fascicle 2,
             // Vol. 3, Section 2, 4.2.8.1
-            int actual_component_tag = st->stream_identifier - 1;
+            int actual_component_tag = st->internal->stream_identifier - 1;
             int picked_profile = FF_PROFILE_UNKNOWN;
             int data_component_id = get16(pp, desc_end);
             if (data_component_id < 0)
