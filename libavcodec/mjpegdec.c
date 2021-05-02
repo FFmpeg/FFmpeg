@@ -2560,14 +2560,9 @@ eoi_parser:
                 s->progressive && s->cur_scan && s->got_picture)
                 mjpeg_idct_scan_progressive_ac(s);
             s->cur_scan = 0;
-            if (!s->seen_sof) {
+            if (!s->got_picture) {
                 av_log(avctx, AV_LOG_WARNING,
                        "Found EOI before any SOF, ignoring\n");
-                break;
-            }
-            if (!s->got_picture && avctx->skip_frame != AVDISCARD_ALL) {
-                av_log(avctx, AV_LOG_WARNING,
-                       "Found EOI before any SOS, ignoring\n");
                 break;
             }
             if (s->interlaced) {
