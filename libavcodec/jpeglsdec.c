@@ -122,7 +122,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
             s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
             for (i=s->palette_index; i<=maxtab; i++) {
                 uint8_t k = i << shift;
-                pal[k] = 0;
+                pal[k] = wt < 4 ? 0xFF000000 : 0;
                 for (j=0; j<wt; j++) {
                     pal[k] |= get_bits(&s->gb, 8) << (8*(wt-j-1));
                 }
