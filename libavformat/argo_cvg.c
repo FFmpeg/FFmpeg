@@ -1,5 +1,5 @@
 /*
- * Argonaut Games CVG demuxer
+ * Argonaut Games CVG (de)muxer
  *
  * Copyright (C) 2021 Zane van Iperen (zane@zanevaniperen.com)
  *
@@ -21,6 +21,7 @@
  */
 #include "avformat.h"
 #include "internal.h"
+#include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 
 /*
@@ -53,6 +54,14 @@ typedef struct ArgoCVGDemuxContext {
     uint32_t      blocks_read;
 } ArgoCVGDemuxContext;
 
+typedef struct ArgoCVGMuxContext {
+    const AVClass *class;
+    int           skip_rate_check;
+    uint32_t      checksum;
+    size_t        size;
+} ArgoCVGMuxContext;
+
+#if CONFIG_ARGO_CVG_DEMUXER
 /* "Special" files that are played at a different rate. */
 static ArgoCVGOverride overrides[] = {
     { "CRYS.CVG",     { 23592, 0, 1 }, 2495499, 88200 }, /* Beta */
@@ -243,3 +252,141 @@ const AVInputFormat ff_argo_cvg_demuxer = {
     .read_packet    = argo_cvg_read_packet,
     .read_seek      = argo_cvg_seek,
 };
+#endif
+
+#if CONFIG_ARGO_CVG_MUXER
+static int argo_cvg_write_init(AVFormatContext *s)
+{
+    ArgoCVGMuxContext *ctx = s->priv_data;
+    const AVCodecParameters *par;
+
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "CVG files have exactly one stream\n");
+        return AVERROR(EINVAL);
+    }
+
+    par = s->streams[0]->codecpar;
+
+    if (par->codec_id != AV_CODEC_ID_ADPCM_PSX) {
+        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
+               avcodec_get_name(par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
+    if (par->channels != 1) {
+        av_log(s, AV_LOG_ERROR, "CVG files only support 1 channel\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (par->block_align != ARGO_CVG_BLOCK_ALIGN)
+        return AVERROR(EINVAL);
+
+    if (!ctx->skip_rate_check && par->sample_rate != 22050) {
+        av_log(s, AV_LOG_ERROR, "Sample rate must be 22050\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(s, AV_LOG_ERROR, "Stream not seekable, unable to write output file\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+static int argo_cvg_write_header(AVFormatContext *s)
+{
+    ArgoCVGMuxContext *ctx = s->priv_data;
+
+    avio_wl32(s->pb, 0); /* Size, fixed later. */
+    avio_wl32(s->pb, 0);
+    avio_wl32(s->pb, 1);
+
+    ctx->checksum = 1;
+    ctx->size     = 8;
+    return 0;
+}
+
+static int argo_cvg_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    ArgoCVGMuxContext *ctx = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+
+    if (pkt->size % par->block_align != 0)
+        return AVERROR_INVALIDDATA;
+
+    avio_write(s->pb, pkt->data, pkt->size);
+
+    ctx->size += pkt->size;
+
+    if (ctx->size > UINT32_MAX)
+        return AVERROR_INVALIDDATA;
+
+    for (int i = 0; i < pkt->size; i++)
+        ctx->checksum += pkt->data[i];
+
+    return 0;
+}
+
+static int argo_cvg_write_trailer(AVFormatContext *s)
+{
+    ArgoCVGMuxContext *ctx = s->priv_data;
+    int64_t ret;
+
+    av_log(s, AV_LOG_TRACE, "size     = %zu\n", ctx->size);
+    av_log(s, AV_LOG_TRACE, "checksum = %u\n",  ctx->checksum);
+
+    /*
+     * NB: This is wrong. We're always slightly under the original.
+     *     Verified by remuxing. For reference (orig - remuxed):
+     *     - TCLD.CVG:     4706074 - 4705696 = 378
+     *     - DANLOOP1.CVG: 5684641 - 5684212 = 429
+     *     - CRYS.CVG:     2495499 - 2495367 = 132
+     *     - PICKUP88.CVG: 1348091 - 1347937 = 154
+     *     - SELECT1.CVG:   549987 - 549752  = 235
+     *     Also NB: it doesn't matter, the game doesn't check them.
+     */
+    avio_wl32(s->pb, ctx->checksum);
+
+    if ((ret = avio_seek(s->pb, 0, SEEK_SET) < 0))
+        return ret;
+
+    avio_wl32(s->pb, (uint32_t)ctx->size);
+    return 0;
+}
+
+static const AVOption argo_cvg_options[] = {
+    {
+        .name        = "skip_rate_check",
+        .help        = "skip sample rate check",
+        .offset      = offsetof(ArgoCVGMuxContext, skip_rate_check),
+        .type        = AV_OPT_TYPE_BOOL,
+        .default_val = {.i64 = 0},
+        .min         = 0,
+        .max         = 1,
+        .flags       = AV_OPT_FLAG_ENCODING_PARAM
+    },
+    { NULL }
+};
+
+static const AVClass argo_cvg_muxer_class = {
+    .class_name = "argo_cvg_muxer",
+    .item_name  = av_default_item_name,
+    .option     = argo_cvg_options,
+    .version    = LIBAVUTIL_VERSION_INT
+};
+
+const AVOutputFormat ff_argo_cvg_muxer = {
+    .name           = "argo_cvg",
+    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games CVG"),
+    .extensions     = "cvg",
+    .audio_codec    = AV_CODEC_ID_ADPCM_PSX,
+    .video_codec    = AV_CODEC_ID_NONE,
+    .init           = argo_cvg_write_init,
+    .write_header   = argo_cvg_write_header,
+    .write_packet   = argo_cvg_write_packet,
+    .write_trailer  = argo_cvg_write_trailer,
+    .priv_class     = &argo_cvg_muxer_class,
+    .priv_data_size = sizeof(ArgoCVGMuxContext),
+};
+#endif

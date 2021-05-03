@@ -67,6 +67,7 @@ extern const AVInputFormat  ff_argo_asf_demuxer;
 extern const AVOutputFormat ff_argo_asf_muxer;
 extern const AVInputFormat  ff_argo_brp_demuxer;
 extern const AVInputFormat  ff_argo_cvg_demuxer;
+extern const AVOutputFormat ff_argo_cvg_muxer;
 extern const AVInputFormat  ff_asf_demuxer;
 extern const AVOutputFormat ff_asf_muxer;
 extern const AVInputFormat  ff_asf_o_demuxer;

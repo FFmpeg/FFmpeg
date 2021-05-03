@@ -6,6 +6,7 @@ version <next>:
 - Westwood AUD muxer
 - ADPCM IMA Acorn Replay decoder
 - Argonaut Games CVG demuxer
+- Argonaut Games CVG muxer
 
 
 version 4.4:
