@@ -5,6 +5,7 @@ version <next>:
 - ADPCM IMA Westwood encoder
 - Westwood AUD muxer
 - ADPCM IMA Acorn Replay decoder
+- Argonaut Games CVG demuxer
 
 
 version 4.4:

@@ -399,6 +399,7 @@ Muxers/Demuxers:
   apngdec.c                             Benoit Fouet
   argo_asf.c                            Zane van Iperen
   argo_brp.c                            Zane van Iperen
+  argo_cvg.c                            Zane van Iperen
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
   astenc.c                              James Almer
