@@ -730,6 +730,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->picture_ptr->key_frame = 1;
         s->got_picture            = 1;
 
+        // Lets clear the palette to avoid leaving uninitialized values in it
+        if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
+            memset(s->picture_ptr->data[1], 0, 1024);
+
         for (i = 0; i < 4; i++)
             s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
 
