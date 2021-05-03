@@ -2002,7 +2002,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     filter = filter >> 4;
                     if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table))
                         return AVERROR_INVALIDDATA;
-                    flag   = bytestream2_get_byteu(&gb);
+                    flag   = bytestream2_get_byteu(&gb) & 0x7;
 
                     /* Decode 28 samples.  */
                     for (n = 0; n < 28; n++) {
