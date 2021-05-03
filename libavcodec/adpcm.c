@@ -2008,14 +2008,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     for (n = 0; n < 28; n++) {
                         int sample = 0, scale;
 
-                        if (flag < 0x07) {
-                            if (n & 1) {
-                                scale = sign_extend(byte >> 4, 4);
-                            } else {
-                                byte  = bytestream2_get_byteu(&gb);
-                                scale = sign_extend(byte, 4);
-                            }
+                        if (n & 1) {
+                            scale = sign_extend(byte >> 4, 4);
+                        } else {
+                            byte  = bytestream2_get_byteu(&gb);
+                            scale = sign_extend(byte, 4);
+                        }
 
+                        if (flag < 0x07) {
                             scale  = scale * (1 << 12);
                             sample = (int)((scale >> shift) + (c->status[channel].sample1 * xa_adpcm_table[filter][0] + c->status[channel].sample2 * xa_adpcm_table[filter][1]) / 64);
                         }
