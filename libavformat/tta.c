@@ -119,6 +119,8 @@ static int tta_read_header(AVFormatContext *s)
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
         int r;
+        if (avio_feof(s->pb))
+            return AVERROR_INVALIDDATA;
         if ((r = av_add_index_entry(st, framepos, i * (int64_t)c->frame_size, size, 0,
                                     AVINDEX_KEYFRAME)) < 0)
             return r;
