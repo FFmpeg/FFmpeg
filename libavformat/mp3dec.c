@@ -613,6 +613,7 @@ const FFInputFormat ff_mp3_demuxer = {
     .p.flags        = AVFMT_GENERIC_INDEX,
     .p.extensions   = "mp2,mp3,m2a,mpa", /* XXX: use probe */
     .p.priv_class   = &demuxer_class,
+    .p.mime_type    = "audio/mpeg",
     .read_probe     = mp3_read_probe,
     .read_header    = mp3_read_header,
     .read_packet    = mp3_read_packet,
