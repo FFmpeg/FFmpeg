@@ -1848,7 +1848,8 @@ static int decode_frame(AVCodecContext *avctx,
                     buf += s->planesize;
                 }
             }
-            memcpy(frame->data[1], s->pal, 256 * 4);
+            if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
+                memcpy(frame->data[1], s->pal, 256 * 4);
         } else if (s->ham) {
             int i, count = 1 << s->ham;
 
