@@ -318,7 +318,7 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
 {
     uint8_t *edata_ptr = avctx->extradata;
     unsigned int channel_mask;
-    int i, bits;
+    int i, bits, ret;
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
@@ -543,10 +543,13 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         return AVERROR(ENOMEM);
 
     /** init MDCT, FIXME: only init needed sizes */
-    for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)
-        ff_mdct_init(&s->mdct_ctx[i], WMAPRO_BLOCK_MIN_BITS+1+i, 1,
-                     1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
-                     / (1ll << (s->bits_per_sample - 1)));
+    for (int i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
+        ret = ff_mdct_init(&s->mdct_ctx[i], WMAPRO_BLOCK_MIN_BITS + 1 + i, 1,
+                           1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
+                           / (1ll << (s->bits_per_sample - 1)));
+        if (ret < 0)
+            return ret;
+    }
 
     /** init MDCT windows: simple sine window */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
