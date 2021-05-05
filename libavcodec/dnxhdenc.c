@@ -1353,7 +1353,7 @@ static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
     av_freep(&ctx->qmatrix_c16);
     av_freep(&ctx->qmatrix_l16);
 
-    if (avctx->active_thread_type == FF_THREAD_SLICE) {
+    if (ctx->thread[1]) {
         for (i = 1; i < avctx->thread_count; i++)
             av_freep(&ctx->thread[i]);
     }
