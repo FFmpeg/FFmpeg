@@ -1797,18 +1797,14 @@ static int init_frames(AVCodecContext *avctx)
 
     for (i = 0; i < 3; i++) {
         s->s.frames[i].tf.f = av_frame_alloc();
-        if (!s->s.frames[i].tf.f) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
+        if (!s->s.frames[i].tf.f)
             return AVERROR(ENOMEM);
-        }
     }
     for (i = 0; i < 8; i++) {
         s->s.refs[i].f = av_frame_alloc();
         s->next_refs[i].f = av_frame_alloc();
-        if (!s->s.refs[i].f || !s->next_refs[i].f) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
+        if (!s->s.refs[i].f || !s->next_refs[i].f)
             return AVERROR(ENOMEM);
-        }
     }
 
     return 0;
