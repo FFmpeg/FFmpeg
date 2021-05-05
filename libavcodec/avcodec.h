@@ -2097,6 +2097,10 @@ typedef struct AVCodecContext {
      * This callback must use the above value to calculate the required buffer size,
      * which must padded by at least AV_INPUT_BUFFER_PADDING_SIZE bytes.
      *
+     * In some specific cases, the encoder may not use the entire buffer allocated by this
+     * callback. This will be reflected in the size value in the packet once returned by
+     * avcodec_receive_packet().
+     *
      * This callback must fill the following fields in the packet:
      * - data: alignment requirements for AVPacket apply, if any. Some architectures and
      *   encoders may benefit from having aligned data.
