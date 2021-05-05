@@ -73,6 +73,7 @@ typedef struct ZmbvEncContext {
     int keyint, curfrm;
     int bypp;
     enum ZmbvFormat fmt;
+    int zlib_init_ok;
     z_stream zstream;
 
     int score_tab[ZMBV_BLOCK * ZMBV_BLOCK * 4 + 1];
@@ -310,8 +311,9 @@ static av_cold int encode_end(AVCodecContext *avctx)
     av_freep(&c->comp_buf);
     av_freep(&c->work_buf);
 
-    deflateEnd(&c->zstream);
     av_freep(&c->prev_buf);
+    if (c->zlib_init_ok)
+        deflateEnd(&c->zstream);
 
     return 0;
 }
@@ -381,8 +383,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    // Needed if zlib unused or init aborted before deflateInit
-    memset(&c->zstream, 0, sizeof(z_stream));
     c->comp_size = avctx->width * c->bypp * avctx->height + 1024 +
         ((avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * ((avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * 2 + 4;
     if (!(c->work_buf = av_malloc(c->comp_size))) {
@@ -424,6 +424,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return -1;
     }
+    c->zlib_init_ok = 1;
 
     return 0;
 }
@@ -445,4 +446,5 @@ AVCodec ff_zmbv_encoder = {
 #endif //ZMBV_ENABLE_24BPP
                                                      AV_PIX_FMT_BGR0,
                                                      AV_PIX_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
