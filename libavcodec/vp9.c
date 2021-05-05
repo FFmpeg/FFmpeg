@@ -1790,26 +1790,6 @@ static void vp9_decode_flush(AVCodecContext *avctx)
         ff_thread_release_buffer(avctx, &s->s.refs[i]);
 }
 
-static int init_frames(AVCodecContext *avctx)
-{
-    VP9Context *s = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < 3; i++) {
-        s->s.frames[i].tf.f = av_frame_alloc();
-        if (!s->s.frames[i].tf.f)
-            return AVERROR(ENOMEM);
-    }
-    for (i = 0; i < 8; i++) {
-        s->s.refs[i].f = av_frame_alloc();
-        s->next_refs[i].f = av_frame_alloc();
-        if (!s->s.refs[i].f || !s->next_refs[i].f)
-            return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
 static av_cold int vp9_decode_init(AVCodecContext *avctx)
 {
     VP9Context *s = avctx->priv_data;
@@ -1817,7 +1797,18 @@ static av_cold int vp9_decode_init(AVCodecContext *avctx)
     s->last_bpp = 0;
     s->s.h.filter.sharpness = -1;
 
-    return init_frames(avctx);
+    for (int i = 0; i < 3; i++) {
+        s->s.frames[i].tf.f = av_frame_alloc();
+        if (!s->s.frames[i].tf.f)
+            return AVERROR(ENOMEM);
+    }
+    for (int i = 0; i < 8; i++) {
+        s->s.refs[i].f      = av_frame_alloc();
+        s->next_refs[i].f   = av_frame_alloc();
+        if (!s->s.refs[i].f || !s->next_refs[i].f)
+            return AVERROR(ENOMEM);
+    }
+    return 0;
 }
 
 #if HAVE_THREADS
