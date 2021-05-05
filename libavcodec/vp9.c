@@ -1798,7 +1798,6 @@ static int init_frames(AVCodecContext *avctx)
     for (i = 0; i < 3; i++) {
         s->s.frames[i].tf.f = av_frame_alloc();
         if (!s->s.frames[i].tf.f) {
-            vp9_decode_free(avctx);
             av_log(avctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
             return AVERROR(ENOMEM);
         }
@@ -1807,7 +1806,6 @@ static int init_frames(AVCodecContext *avctx)
         s->s.refs[i].f = av_frame_alloc();
         s->next_refs[i].f = av_frame_alloc();
         if (!s->s.refs[i].f || !s->next_refs[i].f) {
-            vp9_decode_free(avctx);
             av_log(avctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
             return AVERROR(ENOMEM);
         }
@@ -1883,7 +1881,8 @@ const AVCodec ff_vp9_decoder = {
     .close                 = vp9_decode_free,
     .decode                = vp9_decode_frame,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal         = FF_CODEC_CAP_SLICE_THREAD_HAS_MF |
+    .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP |
+                             FF_CODEC_CAP_SLICE_THREAD_HAS_MF |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,
     .flush                 = vp9_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp9_decode_update_thread_context),
