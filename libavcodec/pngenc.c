@@ -1140,6 +1140,7 @@ const AVCodec ff_png_encoder = {
         AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
     },
     .priv_class     = &pngenc_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 
 const AVCodec ff_apng_encoder = {
@@ -1161,4 +1162,5 @@ const AVCodec ff_apng_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &apngenc_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
