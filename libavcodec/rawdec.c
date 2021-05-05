@@ -492,4 +492,5 @@ const AVCodec ff_rawvideo_decoder = {
     .decode         = raw_decode,
     .priv_class     = &rawdec_class,
     .capabilities   = AV_CODEC_CAP_PARAM_CHANGE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
