@@ -242,7 +242,7 @@ int ff_opencl_filter_load_program_from_file(AVFilterContext *avctx,
             goto fail;
         }
         pos += rb;
-        if (pos < len)
+        if (pos + 1 < len)
             break;
         len <<= 1;
         err = av_reallocp(&src, len);
