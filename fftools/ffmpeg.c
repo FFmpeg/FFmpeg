@@ -3958,7 +3958,7 @@ static OutputStream *choose_output(void)
                 ost->st->index, ost->st->id, ost->initialized, ost->inputs_done, ost->finished);
 
         if (!ost->initialized && !ost->inputs_done)
-            return ost;
+            return ost->unavailable ? NULL : ost;
 
         if (!ost->finished && opts < opts_min) {
             opts_min = opts;
