@@ -793,15 +793,40 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
         outputs[i].data = TF_TensorData(output_tensors[i]);
         outputs[i].dt = TF_TensorType(output_tensors[i]);
     }
-    if (do_ioproc) {
-        if (tf_model->model->frame_post_proc != NULL) {
-            tf_model->model->frame_post_proc(out_frame, outputs, tf_model->model->filter_ctx);
+    switch (model->func_type) {
+    case DFT_PROCESS_FRAME:
+        //it only support 1 output if it's frame in & frame out
+        if (do_ioproc) {
+            if (tf_model->model->frame_post_proc != NULL) {
+                tf_model->model->frame_post_proc(out_frame, outputs, tf_model->model->filter_ctx);
+            } else {
+                ff_proc_from_dnn_to_frame(out_frame, outputs, ctx);
+            }
         } else {
-            ff_proc_from_dnn_to_frame(out_frame, outputs, ctx);
+            out_frame->width = outputs[0].width;
+            out_frame->height = outputs[0].height;
         }
-    } else {
-        out_frame->width = outputs[0].width;
-        out_frame->height = outputs[0].height;
+        break;
+    case DFT_ANALYTICS_DETECT:
+        if (!model->detect_post_proc) {
+            av_log(ctx, AV_LOG_ERROR, "Detect filter needs provide post proc\n");
+            return DNN_ERROR;
+        }
+        model->detect_post_proc(out_frame, outputs, nb_output, model->filter_ctx);
+        break;
+    default:
+        for (uint32_t i = 0; i < nb_output; ++i) {
+            if (output_tensors[i]) {
+                TF_DeleteTensor(output_tensors[i]);
+            }
+        }
+        TF_DeleteTensor(input_tensor);
+        av_freep(&output_tensors);
+        av_freep(&tf_outputs);
+        av_freep(&outputs);
+
+        av_log(ctx, AV_LOG_ERROR, "Tensorflow backend does not support this kind of dnn filter now\n");
+        return DNN_ERROR;
     }
 
     for (uint32_t i = 0; i < nb_output; ++i) {

@@ -203,10 +203,40 @@ static int read_detect_label_file(AVFilterContext *context)
     return 0;
 }
 
+static int check_output_nb(DnnDetectContext *ctx, DNNBackendType backend_type, int output_nb)
+{
+    switch(backend_type) {
+    case DNN_TF:
+        if (output_nb != 4) {
+            av_log(ctx, AV_LOG_ERROR, "Only support tensorflow detect model with 4 outputs, \
+                                       but get %d instead\n", output_nb);
+            return AVERROR(EINVAL);
+        }
+        return 0;
+    case DNN_OV:
+        if (output_nb != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Dnn detect filter with openvino backend needs 1 output only, \
+                                       but get %d instead\n", output_nb);
+            return AVERROR(EINVAL);
+        }
+        return 0;
+    default:
+        avpriv_report_missing_feature(ctx, "Dnn detect filter does not support current backend\n");
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 static av_cold int dnn_detect_init(AVFilterContext *context)
 {
     DnnDetectContext *ctx = context->priv;
-    int ret = ff_dnn_init(&ctx->dnnctx, DFT_ANALYTICS_DETECT, context);
+    DnnContext *dnn_ctx = &ctx->dnnctx;
+    int ret;
+
+    ret = ff_dnn_init(&ctx->dnnctx, DFT_ANALYTICS_DETECT, context);
+    if (ret < 0)
+        return ret;
+    ret = check_output_nb(ctx, dnn_ctx->backend_type, dnn_ctx->nb_outputs);
     if (ret < 0)
         return ret;
     ff_dnn_set_detect_post_proc(&ctx->dnnctx, dnn_detect_post_proc);
