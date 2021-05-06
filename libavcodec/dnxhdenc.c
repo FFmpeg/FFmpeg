@@ -1360,7 +1360,6 @@ const AVCodec ff_dnxhd_encoder = {
     .init           = dnxhd_encode_init,
     .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV422P10,
@@ -1371,4 +1370,5 @@ const AVCodec ff_dnxhd_encoder = {
     .priv_class     = &dnxhd_class,
     .defaults       = dnxhd_defaults,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
