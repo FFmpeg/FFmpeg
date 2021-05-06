@@ -143,6 +143,7 @@ static DNNReturnType get_input_tf(void *model, DNNData *input, const char *input
 
     tf_output.index = 0;
     input->dt = TF_OperationOutputType(tf_output);
+    input->order = DCO_RGB;
 
     status = TF_NewStatus();
     TF_GraphGetTensorShape(tf_model->graph, tf_output, dims, 4, status);

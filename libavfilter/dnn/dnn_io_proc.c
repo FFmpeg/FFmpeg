@@ -168,11 +168,19 @@ static DNNReturnType proc_from_frame_to_dnn_frameprocessing(AVFrame *frame, DNND
 
 static enum AVPixelFormat get_pixel_format(DNNData *data)
 {
-    if (data->dt == DNN_UINT8 && data->order == DCO_BGR) {
-        return AV_PIX_FMT_BGR24;
+    if (data->dt == DNN_UINT8) {
+        switch (data->order) {
+        case DCO_BGR:
+            return AV_PIX_FMT_BGR24;
+        case DCO_RGB:
+            return AV_PIX_FMT_RGB24;
+        default:
+            av_assert0(!"unsupported data pixel format.\n");
+            return AV_PIX_FMT_BGR24;
+        }
     }
 
-    av_assert0(!"not supported yet.\n");
+    av_assert0(!"unsupported data type.\n");
     return AV_PIX_FMT_BGR24;
 }
 
