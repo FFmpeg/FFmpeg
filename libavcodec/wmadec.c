@@ -70,7 +70,7 @@ static void dump_floats(WMACodecContext *s, const char *name,
 static av_cold int wma_decode_init(AVCodecContext *avctx)
 {
     WMACodecContext *s = avctx->priv_data;
-    int i, flags2;
+    int i, flags2, ret;
     uint8_t *extradata;
 
     if (!avctx->block_align) {
@@ -102,8 +102,8 @@ static av_cold int wma_decode_init(AVCodecContext *avctx)
     for (i=0; i<MAX_CHANNELS; i++)
         s->max_exponent[i] = 1.0;
 
-    if (ff_wma_init(avctx, flags2) < 0)
-        return -1;
+    if ((ret = ff_wma_init(avctx, flags2)) < 0)
+        return ret;
 
     /* init MDCT */
     for (i = 0; i < s->nb_block_sizes; i++)
