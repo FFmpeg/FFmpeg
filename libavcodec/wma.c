@@ -79,7 +79,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     WMACodecContext *s = avctx->priv_data;
     int i, ret;
     float bps1, high_freq;
-    volatile float bps;
+    float bps;
     int sample_rate1;
     int coef_vlc_table;
 
