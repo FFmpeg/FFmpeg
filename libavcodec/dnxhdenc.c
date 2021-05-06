@@ -516,10 +516,9 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     ctx->thread[0] = ctx;
     if (avctx->active_thread_type == FF_THREAD_SLICE) {
         for (i = 1; i < avctx->thread_count; i++) {
-            ctx->thread[i] = av_malloc(sizeof(DNXHDEncContext));
+            ctx->thread[i] = av_memdup(ctx, sizeof(DNXHDEncContext));
             if (!ctx->thread[i])
                 return AVERROR(ENOMEM);
-            memcpy(ctx->thread[i], ctx, sizeof(DNXHDEncContext));
         }
     }
 
