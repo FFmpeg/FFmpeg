@@ -279,7 +279,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
     venc->log2_blocksize[0] = venc->log2_blocksize[1] = 11;
 
     venc->ncodebooks = FF_ARRAY_ELEMS(cvectors);
-    venc->codebooks  = av_malloc(sizeof(vorbis_enc_codebook) * venc->ncodebooks);
+    venc->codebooks  = av_mallocz(sizeof(vorbis_enc_codebook) * venc->ncodebooks);
     if (!venc->codebooks)
         return AVERROR(ENOMEM);
 
@@ -318,7 +318,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
     }
 
     venc->nfloors = 1;
-    venc->floors  = av_malloc(sizeof(vorbis_enc_floor) * venc->nfloors);
+    venc->floors  = av_mallocz(sizeof(vorbis_enc_floor) * venc->nfloors);
     if (!venc->floors)
         return AVERROR(ENOMEM);
 
@@ -335,7 +335,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
         fc->nclasses = FFMAX(fc->nclasses, fc->partition_to_class[i]);
     }
     fc->nclasses++;
-    fc->classes = av_malloc_array(fc->nclasses, sizeof(vorbis_enc_floor_class));
+    fc->classes = av_calloc(fc->nclasses, sizeof(vorbis_enc_floor_class));
     if (!fc->classes)
         return AVERROR(ENOMEM);
     for (i = 0; i < fc->nclasses; i++) {
@@ -375,7 +375,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
         return AVERROR_BUG;
 
     venc->nresidues = 1;
-    venc->residues  = av_malloc(sizeof(vorbis_enc_residue) * venc->nresidues);
+    venc->residues  = av_mallocz(sizeof(vorbis_enc_residue) * venc->nresidues);
     if (!venc->residues)
         return AVERROR(ENOMEM);
 
@@ -409,7 +409,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
         return ret;
 
     venc->nmappings = 1;
-    venc->mappings  = av_malloc(sizeof(vorbis_enc_mapping) * venc->nmappings);
+    venc->mappings  = av_mallocz(sizeof(vorbis_enc_mapping) * venc->nmappings);
     if (!venc->mappings)
         return AVERROR(ENOMEM);
 
