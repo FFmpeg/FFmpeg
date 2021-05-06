@@ -88,8 +88,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return ret;
 
     /* init MDCT */
-    for (i = 0; i < s->nb_block_sizes; i++)
-        ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 0, 1.0);
+    for (i = 0; i < s->nb_block_sizes; i++) {
+        ret = ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 0, 1.0);
+        if (ret < 0)
+            return ret;
+    }
 
     block_align        = avctx->bit_rate * (int64_t) s->frame_len /
                          (avctx->sample_rate * 8);
