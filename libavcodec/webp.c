@@ -1560,4 +1560,5 @@ const AVCodec ff_webp_decoder = {
     .decode         = webp_decode_frame,
     .close          = webp_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
