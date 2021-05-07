@@ -33,9 +33,9 @@
 #define MQC_CX_UNI 17
 #define MQC_CX_RL  18
 
-extern uint16_t ff_mqc_qe[2 * 47];
-extern uint8_t  ff_mqc_nlps[2 * 47];
-extern uint8_t  ff_mqc_nmps[2 * 47];
+extern const uint16_t ff_mqc_qe[2 * 47];
+extern const uint8_t  ff_mqc_nlps[2 * 47];
+extern const uint8_t  ff_mqc_nmps[2 * 47];
 
 typedef struct MqcState {
     uint8_t *bp, *bpstart;
@@ -78,11 +78,6 @@ void ff_mqc_initdec(MqcState *mqc, uint8_t *bp, int raw, int reset);
 int ff_mqc_decode(MqcState *mqc, uint8_t *cxstate);
 
 /* common */
-
-/**
- * MQ-coder Initialize context tables (QE, NLPS, NMPS)
- */
-void ff_mqc_init_context_tables(void);
 
 /**
  * MQ-coder context initialisations.

@@ -1780,7 +1780,6 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     }
 
     ff_jpeg2000_init_tier1_luts();
-    ff_mqc_init_context_tables();
     init_luts();
 
     init_quantization(s);

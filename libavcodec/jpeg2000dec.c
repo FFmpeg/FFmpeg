@@ -2476,7 +2476,6 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
 static av_cold void jpeg2000_init_static_data(void)
 {
     ff_jpeg2000_init_tier1_luts();
-    ff_mqc_init_context_tables();
 }
 
 static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
