@@ -392,5 +392,5 @@ const AVCodec ff_ttml_encoder = {
     .init           = ttml_encode_init,
     .encode_sub     = ttml_encode_frame,
     .close          = ttml_encode_close,
-    .capabilities   = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
