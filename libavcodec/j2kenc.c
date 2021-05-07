@@ -74,6 +74,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/thread.h"
 
 #define NMSEDEC_BITS 7
 #define NMSEDEC_FRACBITS (NMSEDEC_BITS-1)
@@ -591,6 +592,7 @@ static void init_luts(void)
         lut_nmsedec_ref0[i] = FFMAX(((i * i - (i << NMSEDEC_BITS) + (1 << 2 * NMSEDEC_FRACBITS) + (1 << (NMSEDEC_FRACBITS - 1))) & mask)
                                     << 1, 0);
     }
+    ff_jpeg2000_init_tier1_luts();
 }
 
 /* tier-1 routines */
@@ -1713,6 +1715,7 @@ static int parse_layer_rates(Jpeg2000EncoderContext *s)
 
 static av_cold int j2kenc_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     int i, ret;
     Jpeg2000EncoderContext *s = avctx->priv_data;
     Jpeg2000CodingStyle *codsty = &s->codsty;
@@ -1779,8 +1782,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
             return ret;
     }
 
-    ff_jpeg2000_init_tier1_luts();
-    init_luts();
+    ff_thread_once(&init_static_once, init_luts);
 
     init_quantization(s);
     if ((ret=init_tiles(s)) < 0)
@@ -1849,5 +1851,5 @@ const AVCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &j2k_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
