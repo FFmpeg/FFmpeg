@@ -77,6 +77,10 @@ static int dnn_classify_post_proc(AVFrame *frame, DNNData *output, uint32_t bbox
     }
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+    if (!sd) {
+        av_log(filter_ctx, AV_LOG_ERROR, "Cannot get side data in dnn_classify_post_proc\n");
+        return -1;
+    }
     header = (AVDetectionBBoxHeader *)sd->data;
 
     if (bbox_index == 0) {
