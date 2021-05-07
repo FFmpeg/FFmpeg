@@ -739,12 +739,6 @@ static void dvdsub_flush(AVCodecContext *avctx)
     ctx->buf_size = 0;
 }
 
-static av_cold int dvdsub_close(AVCodecContext *avctx)
-{
-    dvdsub_flush(avctx);
-    return 0;
-}
-
 #define OFFSET(field) offsetof(DVDSubContext, field)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
@@ -769,6 +763,5 @@ const AVCodec ff_dvdsub_decoder = {
     .init           = dvdsub_init,
     .decode         = dvdsub_decode,
     .flush          = dvdsub_flush,
-    .close          = dvdsub_close,
     .priv_class     = &dvdsub_class,
 };
