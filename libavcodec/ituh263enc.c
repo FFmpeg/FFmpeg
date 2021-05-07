@@ -445,6 +445,47 @@ static void h263p_encode_umotion(PutBitContext *pb, int val)
     }
 }
 
+static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
+{
+    int x, y, wrap, a, c, pred_dc;
+    int16_t *dc_val;
+
+    /* find prediction */
+    if (n < 4) {
+        x = 2 * s->mb_x + (n & 1);
+        y = 2 * s->mb_y + ((n & 2) >> 1);
+        wrap = s->b8_stride;
+        dc_val = s->dc_val[0];
+    } else {
+        x = s->mb_x;
+        y = s->mb_y;
+        wrap = s->mb_stride;
+        dc_val = s->dc_val[n - 4 + 1];
+    }
+    /* B C
+     * A X
+     */
+    a = dc_val[(x - 1) + (y) * wrap];
+    c = dc_val[(x) + (y - 1) * wrap];
+
+    /* No prediction outside GOB boundary */
+    if (s->first_slice_line && n != 3) {
+        if (n != 2) c = 1024;
+        if (n != 1 && s->mb_x == s->resync_mb_x) a = 1024;
+    }
+    /* just DC prediction */
+    if (a != 1024 && c != 1024)
+        pred_dc = (a + c) >> 1;
+    else if (a != 1024)
+        pred_dc = a;
+    else
+        pred_dc = c;
+
+    /* we assume pred is positive */
+    *dc_val_ptr = &dc_val[x + y * wrap];
+    return pred_dc;
+}
+
 void ff_h263_encode_mb(MpegEncContext * s,
                        int16_t block[6][64],
                        int motion_x, int motion_y)
@@ -552,7 +593,7 @@ void ff_h263_encode_mb(MpegEncContext * s,
                 if(i<4) scale= s->y_dc_scale;
                 else    scale= s->c_dc_scale;
 
-                pred_dc = ff_h263_pred_dc(s, i, &dc_ptr[i]);
+                pred_dc = h263_pred_dc(s, i, &dc_ptr[i]);
                 level -= pred_dc;
                 /* Quant */
                 if (level >= 0)
