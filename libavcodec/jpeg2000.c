@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "jpeg2000.h"
@@ -157,7 +158,7 @@ static int getsgnctxno(int flag, uint8_t *xorbit)
     return ctxlbltab[hcontrib][vcontrib];
 }
 
-void av_cold ff_jpeg2000_init_tier1_luts(void)
+static void av_cold jpeg2000_init_tier1_luts(void)
 {
     int i, j;
     for (i = 0; i < 256; i++)
@@ -167,6 +168,12 @@ void av_cold ff_jpeg2000_init_tier1_luts(void)
         for (j = 0; j < 16; j++)
             ff_jpeg2000_sgnctxno_lut[i][j] =
                 getsgnctxno(i + (j << 8), &ff_jpeg2000_xorbit_lut[i][j]);
+}
+
+void av_cold ff_jpeg2000_init_tier1_luts(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, jpeg2000_init_tier1_luts);
 }
 
 void ff_jpeg2000_set_significance(Jpeg2000T1Context *t1, int x, int y,
