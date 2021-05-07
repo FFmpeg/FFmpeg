@@ -25,8 +25,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/thread.h"
-
 #include "h263data.h"
 #include "mpegvideo.h"
 
@@ -290,15 +288,3 @@ const AVRational ff_h263_pixel_aspect[16] = {
     {  0,  1 },
     {  0,  1 },
 };
-
-static av_cold void h263_init_rl_inter(void)
-{
-    static uint8_t h263_rl_inter_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
-    ff_rl_init(&ff_h263_rl_inter, h263_rl_inter_table);
-}
-
-av_cold void ff_h263_init_rl_inter(void)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-    ff_thread_once(&init_static_once, h263_init_rl_inter);
-}
