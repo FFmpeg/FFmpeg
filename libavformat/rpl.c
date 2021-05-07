@@ -121,6 +121,7 @@ static int rpl_read_header(AVFormatContext *s)
     int error = 0;
     const char *endptr;
     char audio_type[RPL_LINE_LENGTH];
+    char audio_codec[RPL_LINE_LENGTH];
 
     uint32_t i;
 
@@ -189,7 +190,9 @@ static int rpl_read_header(AVFormatContext *s)
 
     // ARMovie supports multiple audio tracks; I don't have any
     // samples, though. This code will ignore additional tracks.
-    audio_format = read_line_and_int(pb, &error);  // audio format ID
+    error |= read_line(pb, line, sizeof(line));
+    audio_format = read_int(line, &endptr, &error);  // audio format ID
+    av_strlcpy(audio_codec, endptr, RPL_LINE_LENGTH);
     if (audio_format) {
         ast = avformat_new_stream(s, NULL);
         if (!ast)
@@ -227,6 +230,11 @@ static int rpl_read_header(AVFormatContext *s)
                 // There are some other formats listed as legal per the spec;
                 // samples needed.
                 break;
+            case 2:
+                if (av_stristr(audio_codec, "adpcm") != NULL) {
+                    ast->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_ACORN;
+                }
+                break;
             case 101:
                 if (ast->codecpar->bits_per_coded_sample == 8) {
                     // The samples with this kind of audio that I have
@@ -238,8 +246,8 @@ static int rpl_read_header(AVFormatContext *s)
                 break;
         }
         if (ast->codecpar->codec_id == AV_CODEC_ID_NONE)
-            avpriv_request_sample(s, "Audio format %"PRId32,
-                                  audio_format);
+            avpriv_request_sample(s, "Audio format %"PRId32" (%s)",
+                                  audio_format, audio_codec);
         avpriv_set_pts_info(ast, 32, 1, ast->codecpar->bit_rate);
     } else {
         for (i = 0; i < 3; i++)
