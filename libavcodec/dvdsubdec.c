@@ -764,4 +764,5 @@ const AVCodec ff_dvdsub_decoder = {
     .decode         = dvdsub_decode,
     .flush          = dvdsub_flush,
     .priv_class     = &dvdsub_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
