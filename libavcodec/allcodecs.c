@@ -619,6 +619,7 @@ extern const AVCodec ff_adpcm_g726_encoder;
 extern const AVCodec ff_adpcm_g726_decoder;
 extern const AVCodec ff_adpcm_g726le_encoder;
 extern const AVCodec ff_adpcm_g726le_decoder;
+extern const AVCodec ff_adpcm_ima_acorn_decoder;
 extern const AVCodec ff_adpcm_ima_amv_decoder;
 extern const AVCodec ff_adpcm_ima_amv_encoder;
 extern const AVCodec ff_adpcm_ima_alp_decoder;

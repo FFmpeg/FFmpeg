@@ -1126,6 +1126,7 @@ following image formats are supported:
 @item ADPCM Electronic Arts XAS @tab     @tab  X
 @item ADPCM G.722            @tab  X  @tab  X
 @item ADPCM G.726            @tab  X  @tab  X
+@item ADPCM IMA Acorn Replay @tab     @tab  X
 @item ADPCM IMA AMV          @tab  X  @tab  X
     @tab Used in AMV files
 @item ADPCM IMA Cunning Developments  @tab     @tab  X

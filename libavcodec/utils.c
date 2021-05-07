@@ -699,6 +699,7 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                     return 0;
                 return frame_bytes * 28;
             case AV_CODEC_ID_ADPCM_4XM:
+            case AV_CODEC_ID_ADPCM_IMA_ACORN:
             case AV_CODEC_ID_ADPCM_IMA_DAT4:
             case AV_CODEC_ID_ADPCM_IMA_ISS:
                 return (frame_bytes - 4 * ch) * 2 / ch;

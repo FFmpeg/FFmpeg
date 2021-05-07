@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - ADPCM IMA Westwood encoder
 - Westwood AUD muxer
+- ADPCM IMA Acorn Replay decoder
 
 
 version 4.4:
