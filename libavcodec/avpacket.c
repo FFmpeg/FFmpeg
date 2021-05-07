@@ -519,13 +519,14 @@ int avpriv_packet_list_put(PacketList **packet_buffer,
                            int (*copy)(AVPacket *dst, const AVPacket *src),
                            int flags)
 {
-    PacketList *pktl = av_mallocz(sizeof(PacketList));
+    PacketList *pktl = av_malloc(sizeof(PacketList));
     int ret;
 
     if (!pktl)
         return AVERROR(ENOMEM);
 
     if (copy) {
+        get_packet_defaults(&pktl->pkt);
         ret = copy(&pktl->pkt, pkt);
         if (ret < 0) {
             av_free(pktl);
@@ -539,6 +540,8 @@ int avpriv_packet_list_put(PacketList **packet_buffer,
         }
         av_packet_move_ref(&pktl->pkt, pkt);
     }
+
+    pktl->next = NULL;
 
     if (*packet_buffer)
         (*plast_pktl)->next = pktl;
