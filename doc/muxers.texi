@@ -1722,6 +1722,11 @@ Setting value to @samp{pts} is applicable only for a live encoding use case,
 where PTS values are set as as wallclock time at the source. For example, an
 encoding use case with decklink capture source where @option{video_pts} and
 @option{audio_pts} are set to @samp{abs_wallclock}.
+
+@item -movie_timescale @var{scale}
+Set the timescale written in the movie header box (@code{mvhd}).
+Range is 1 to INT_MAX. Default is 1000.
+
 @end table
 
 @subsection Example
