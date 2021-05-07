@@ -66,6 +66,7 @@ int16_t *ff_h263_pred_motion(MpegEncContext * s, int block, int dir,
                              int *px, int *py);
 void ff_h263_encode_init(MpegEncContext *s);
 void ff_h263_decode_init_vlc(void);
+void ff_h263_init_rl_inter(void);
 int ff_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_gob_header(MpegEncContext *s);
 void ff_h263_update_motion_val(MpegEncContext * s);

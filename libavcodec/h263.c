@@ -29,6 +29,7 @@
 
 #include <limits.h>
 
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"
@@ -38,6 +39,17 @@
 #include "flv.h"
 #include "mpeg4video.h"
 
+static av_cold void h263_init_rl_inter(void)
+{
+    static uint8_t h263_rl_inter_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
+    ff_rl_init(&ff_h263_rl_inter, h263_rl_inter_table);
+}
+
+av_cold void ff_h263_init_rl_inter(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, h263_init_rl_inter);
+}
 
 void ff_h263_update_motion_val(MpegEncContext * s){
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;

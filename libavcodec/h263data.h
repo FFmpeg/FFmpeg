@@ -61,7 +61,6 @@ extern const int8_t ff_inter_run[102];
 
 extern RLTable ff_h263_rl_inter;
 extern RLTable ff_rl_intra_aic;
-void ff_h263_init_rl_inter(void);
 
 extern const uint16_t ff_h263_format[8][2];
 
