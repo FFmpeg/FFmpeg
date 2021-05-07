@@ -1303,4 +1303,5 @@ const AVCodec ff_vorbis_encoder = {
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
