@@ -1632,7 +1632,7 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
     AVCodecContext *avctx    = ctx->avctx;
     GetBitContext *gb = &ctx->gb;
     unsigned int div_blocks[32];                ///< block sizes.
-    unsigned int c;
+    int c;
     unsigned int js_blocks[2];
     uint32_t bs_info = 0;
     int ret;
@@ -1810,14 +1810,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     else
         ctx->cur_frame_length = sconf->frame_length;
 
-    ctx->highest_decoded_channel = 0;
+    ctx->highest_decoded_channel = -1;
     // decode the frame data
     if ((invalid_frame = read_frame_data(ctx, ra_frame)) < 0)
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Reading frame data failed. Skipping RA unit.\n");
 
-    if (ctx->highest_decoded_channel == 0)
+    if (ctx->highest_decoded_channel == -1) {
+        av_log(ctx->avctx, AV_LOG_WARNING,
+               "No channel data decoded.\n");
         return AVERROR_INVALIDDATA;
+    }
 
     ctx->frame_id++;
 
