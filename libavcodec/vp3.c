@@ -2408,6 +2408,8 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->fragment_start[2] = y_fragment_count + c_fragment_count;
 
     if (!s->theora_tables) {
+        const uint8_t (*bias_tabs)[32][2];
+
         for (i = 0; i < 64; i++) {
             s->coded_dc_scale_factor[0][i] = s->version < 2 ? vp31_dc_scale_factor[i] : vp4_y_dc_scale_factor[i];
             s->coded_dc_scale_factor[1][i] = s->version < 2 ? vp31_dc_scale_factor[i] : vp4_uv_dc_scale_factor[i];
@@ -2428,27 +2430,15 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         }
 
         /* init VLC tables */
-        if (s->version < 2) {
+        bias_tabs = CONFIG_VP4_DECODER && s->version >= 2 ? vp4_bias : vp3_bias;
             for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
                 ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, 32,
-                                               &vp3_bias[i][0][1], 2,
-                                               &vp3_bias[i][0][0], 2, 1,
+                                               &bias_tabs[i][0][1], 2,
+                                               &bias_tabs[i][0][0], 2, 1,
                                                0, 0, avctx);
                 if (ret < 0)
                     return ret;
             }
-#if CONFIG_VP4_DECODER
-        } else { /* version >= 2 */
-            for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
-                ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, 32,
-                                               &vp4_bias[i][0][1], 2,
-                                               &vp4_bias[i][0][0], 2, 1,
-                                               0, 0, avctx);
-                if (ret < 0)
-                    return ret;
-            }
-#endif
-        }
     } else {
         for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
             const HuffTable *tab = &s->huffman_table[i];
