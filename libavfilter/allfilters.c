@@ -271,6 +271,7 @@ extern const AVFilter ff_vf_geq;
 extern const AVFilter ff_vf_gradfun;
 extern const AVFilter ff_vf_graphmonitor;
 extern const AVFilter ff_vf_greyedge;
+extern const AVFilter ff_vf_guided;
 extern const AVFilter ff_vf_haldclut;
 extern const AVFilter ff_vf_hflip;
 extern const AVFilter ff_vf_histeq;

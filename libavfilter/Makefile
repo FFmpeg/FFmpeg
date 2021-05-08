@@ -286,6 +286,7 @@ OBJS-$(CONFIG_GEQ_FILTER)                    += vf_geq.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
 OBJS-$(CONFIG_GRAPHMONITOR_FILTER)           += f_graphmonitor.o
 OBJS-$(CONFIG_GREYEDGE_FILTER)               += vf_colorconstancy.o
+OBJS-$(CONFIG_GUIDED_FILTER)                 += vf_guided.o
 OBJS-$(CONFIG_HALDCLUT_FILTER)               += vf_lut3d.o framesync.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_HISTEQ_FILTER)                 += vf_histeq.o

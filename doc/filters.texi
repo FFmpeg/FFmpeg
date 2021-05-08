@@ -12957,6 +12957,44 @@ greyedge=difford=1:minknorm=0:sigma=2
 
 @end itemize
 
+@section guided filter
+Apply guided filter for edge-preserving smoothing, dehazing and so on.
+
+The filter accepts the following options:
+@table @option
+@item radius
+Set the radius in pixels.
+Allowed range is 1 to 20. Default is 3.
+
+@item eps
+Set regularization parameter.
+Allowed range is 0 to 1. Default is 0.1.
+
+@item planes
+Set planes to filter. Default is first only.
+@end table
+
+@subsection Commands
+This filter supports the all above options as @ref{commands}.
+
+@subsection Examples
+@itemize
+@item
+Edge-preserving smoothing with guided filter:
+@example
+ffmpeg -i in.png -i in.png -filter_complex guided out.png
+@end example
+
+@item
+Dehazing, structure-transferring filtering, detail enhancement with guided filter.
+For the generation of guidance image,
+see @url{http://kaiminghe.com/publications/pami12guidedfilter.pdf}.
+@example
+ffmpeg -i in.png -i guidance.png -filter_complex guided out.png
+@end example
+
+@end itemize
+
 @anchor{haldclut}
 @section haldclut
 
