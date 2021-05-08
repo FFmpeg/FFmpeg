@@ -2431,14 +2431,14 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
         /* init VLC tables */
         bias_tabs = CONFIG_VP4_DECODER && s->version >= 2 ? vp4_bias : vp3_bias;
-            for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
-                ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, 32,
-                                               &bias_tabs[i][0][1], 2,
-                                               &bias_tabs[i][0][0], 2, 1,
-                                               0, 0, avctx);
-                if (ret < 0)
-                    return ret;
-            }
+        for (int i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
+            ret = ff_init_vlc_from_lengths(&s->coeff_vlc[i], 11, 32,
+                                           &bias_tabs[i][0][1], 2,
+                                           &bias_tabs[i][0][0], 2, 1,
+                                           0, 0, avctx);
+            if (ret < 0)
+                return ret;
+        }
     } else {
         for (i = 0; i < FF_ARRAY_ELEMS(s->coeff_vlc); i++) {
             const HuffTable *tab = &s->huffman_table[i];
