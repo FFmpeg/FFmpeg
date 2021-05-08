@@ -153,7 +153,7 @@ DNNReturnType ff_dnn_execute_model_async(DnnContext *ctx, AVFrame *in_frame, AVF
     return (ctx->dnn_module->execute_model_async)(ctx->model, &exec_params);
 }
 
-DNNReturnType ff_dnn_execute_model_classification(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame, char *target)
+DNNReturnType ff_dnn_execute_model_classification(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame, const char *target)
 {
     DNNExecClassificationParams class_params = {
         {
