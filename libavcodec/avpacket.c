@@ -58,7 +58,7 @@ static void get_packet_defaults(AVPacket *pkt)
 
 AVPacket *av_packet_alloc(void)
 {
-    AVPacket *pkt = av_mallocz(sizeof(AVPacket));
+    AVPacket *pkt = av_malloc(sizeof(AVPacket));
     if (!pkt)
         return pkt;
 
