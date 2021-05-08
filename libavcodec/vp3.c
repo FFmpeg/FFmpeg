@@ -2335,9 +2335,13 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    if (avctx->codec_tag == MKTAG('V', 'P', '4', '0'))
+    if (avctx->codec_tag == MKTAG('V', 'P', '4', '0')) {
         s->version = 3;
-    else if (avctx->codec_tag == MKTAG('V', 'P', '3', '0'))
+#if !CONFIG_VP4_DECODER
+        av_log(avctx, AV_LOG_ERROR, "This build does not support decoding VP4.\n");
+        return AVERROR_DECODER_NOT_FOUND;
+#endif
+    } else if (avctx->codec_tag == MKTAG('V', 'P', '3', '0'))
         s->version = 0;
     else
         s->version = 1;
