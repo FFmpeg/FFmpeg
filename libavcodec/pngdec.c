@@ -1622,7 +1622,7 @@ static int decode_frame_apng(AVCodecContext *avctx,
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
             ff_thread_release_buffer(avctx, &s->picture);
-        } else if (s->dispose_op == APNG_DISPOSE_OP_NONE) {
+        } else {
             ff_thread_release_buffer(avctx, &s->last_picture);
             FFSWAP(ThreadFrame, s->picture, s->last_picture);
         }
@@ -1671,8 +1671,8 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         pdst->hdr_state |= psrc->hdr_state;
     }
 
-    src_frame = psrc->dispose_op == APNG_DISPOSE_OP_NONE ?
-                &psrc->picture : &psrc->last_picture;
+    src_frame = psrc->dispose_op == APNG_DISPOSE_OP_PREVIOUS ?
+                &psrc->last_picture : &psrc->picture;
 
     ff_thread_release_buffer(dst, &pdst->last_picture);
     if (src_frame && src_frame->f->data[0]) {
