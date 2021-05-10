@@ -681,7 +681,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             } else if (s->nb_components != 1) {
                 av_log(s->avctx, AV_LOG_ERROR, "Unsupported number of components %d\n", s->nb_components);
                 return AVERROR_PATCHWELCOME;
-            } else if (s->palette_index && s->bits <= 8 || s->force_pal8)
+            } else if ((s->palette_index || s->force_pal8) && s->bits <= 8)
                 s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
             else if (s->bits <= 8)
                 s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
