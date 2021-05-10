@@ -12963,12 +12963,22 @@ Apply guided filter for edge-preserving smoothing, dehazing and so on.
 The filter accepts the following options:
 @table @option
 @item radius
-Set the radius in pixels.
+Set the box radius in pixels.
 Allowed range is 1 to 20. Default is 3.
 
 @item eps
-Set regularization parameter.
-Allowed range is 0 to 1. Default is 0.1.
+Set regularization parameter (with square).
+Allowed range is 0 to 1. Default is 0.01.
+
+@item mode
+Set filter mode. Can be @code{basic} or @code{fast}.
+Default is @code{basic}.
+
+@item sub
+Set subsampling ratio.
+Allowed range is 1 to 64.
+Default is always 1 for @code{basic} value of @var{mode} option,
+and 4 for @code{fast} value of @var{mode} option.
 
 @item planes
 Set planes to filter. Default is first only.
@@ -12987,8 +12997,8 @@ ffmpeg -i in.png -i in.png -filter_complex guided out.png
 
 @item
 Dehazing, structure-transferring filtering, detail enhancement with guided filter.
-For the generation of guidance image,
-see @url{http://kaiminghe.com/publications/pami12guidedfilter.pdf}.
+For the generation of guidance image, refer to paper "Guided Image Filtering".
+See: @url{http://kaiminghe.com/publications/pami12guidedfilter.pdf}.
 @example
 ffmpeg -i in.png -i guidance.png -filter_complex guided out.png
 @end example

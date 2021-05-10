@@ -27,12 +27,20 @@
 #include "internal.h"
 #include "video.h"
 
+enum FilterModes {
+    BASIC,
+    FAST,
+    NB_MODES,
+};
+
 typedef struct GuidedContext {
     const AVClass *class;
     FFFrameSync fs;
 
     int radius;
     float eps;
+    int mode;
+    int sub;
 
     int planes;
 
@@ -51,9 +59,13 @@ typedef struct GuidedContext {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption guided_options[] = {
-    { "radius", "set the box radius",           OFFSET(radius), AV_OPT_TYPE_INT,   {.i64=3    },   1,  20, FLAGS },
-    { "eps",    "set the regularization parameter (with square)",              OFFSET(eps),    AV_OPT_TYPE_FLOAT, {.dbl=0.01  }, 0.0,   1, FLAGS },
-    { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1    },   0, 0xF, FLAGS },
+    { "radius", "set the box radius",                               OFFSET(radius), AV_OPT_TYPE_INT,   {.i64 = 3    },   1,           20, FLAGS },
+    { "eps",    "set the regularization parameter (with square)",   OFFSET(eps),    AV_OPT_TYPE_FLOAT, {.dbl = 0.01 }, 0.0,            1, FLAGS },
+    { "mode",   "set filtering mode (0: basic mode; 1: fast mode)", OFFSET(mode),   AV_OPT_TYPE_INT,   {.i64 = BASIC},   0, NB_MODES - 1, FLAGS, "mode" },
+    { "basic",  "basic guided filter",                              0,              AV_OPT_TYPE_CONST, {.i64 = BASIC},   0,            0, FLAGS, "mode" },
+    { "fast",   "fast guided filter",                               0,              AV_OPT_TYPE_CONST, {.i64 = FAST },   0,            0, FLAGS, "mode" },
+    { "sub",    "subsampling ratio",                                OFFSET(sub),    AV_OPT_TYPE_INT,   {.i64 = 1    },   1,           64, FLAGS },
+    { "planes", "set planes to filter",                             OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1      },   0,          0xF, FLAGS },
     { NULL }
 };
 
@@ -147,6 +159,26 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
+    if (s->mode == BASIC) {
+        if (s->sub != 1) {
+            av_log(ctx, AV_LOG_WARNING, "Subsampling ratio is 1 in basic mode.\n");
+            s->sub = 1;
+        }
+    }
+    else if (s->mode == FAST) {
+        if (s->sub == 1) {
+            av_log(ctx, AV_LOG_WARNING, "Subsampling ratio is larger than 1 in fast mode.\n");
+            s->sub = 4;
+        }
+        if (s->radius >= s->sub)
+            s->radius = s->radius / s->sub;
+        else {
+            s->radius = 1;
+        }
+    }
+    else {
+        return AVERROR_BUG;
+    }
 
     s->depth = desc->comp[0].depth;
     s->width = ctx->inputs[0]->w;
@@ -174,6 +206,10 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
     const type *src = (const type *)ssrc;                                               \
     const type *srcRef = (const type *)ssrcRef;                                         \
                                                                                         \
+    int sub = s->sub;                                                                   \
+    int h = (height % sub) == 0 ? height / sub : height / sub + 1;                      \
+    int w = (width % sub) == 0 ? width / sub : width / sub + 1;                         \
+                                                                                        \
     ThreadData t;                                                                       \
     const int nb_threads = ff_filter_get_nb_threads(ctx);                               \
     float *I;                                                                           \
@@ -189,55 +225,55 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
     float *meanA;                                                                       \
     float *meanB;                                                                       \
                                                                                         \
-    I      = av_calloc(width * height, sizeof(float));                                  \
-    II     = av_calloc(width * height, sizeof(float));                                  \
-    P      = av_calloc(width * height, sizeof(float));                                  \
-    IP     = av_calloc(width * height, sizeof(float));                                  \
-    meanI  = av_calloc(width * height, sizeof(float));                                  \
-    meanII = av_calloc(width * height, sizeof(float));                                  \
-    meanP  = av_calloc(width * height, sizeof(float));                                  \
-    meanIP = av_calloc(width * height, sizeof(float));                                  \
+    I      = av_calloc(w * h, sizeof(float));                                           \
+    II     = av_calloc(w * h, sizeof(float));                                           \
+    P      = av_calloc(w * h, sizeof(float));                                           \
+    IP     = av_calloc(w * h, sizeof(float));                                           \
+    meanI  = av_calloc(w * h, sizeof(float));                                           \
+    meanII = av_calloc(w * h, sizeof(float));                                           \
+    meanP  = av_calloc(w * h, sizeof(float));                                           \
+    meanIP = av_calloc(w * h, sizeof(float));                                           \
                                                                                         \
-    A      = av_calloc(width * height, sizeof(float));                                  \
-    B      = av_calloc(width * height, sizeof(float));                                  \
-    meanA  = av_calloc(width * height, sizeof(float));                                  \
-    meanB  = av_calloc(width * height, sizeof(float));                                  \
+    A      = av_calloc(w * h, sizeof(float));                                           \
+    B      = av_calloc(w * h, sizeof(float));                                           \
+    meanA  = av_calloc(w * h, sizeof(float));                                           \
+    meanB  = av_calloc(w * h, sizeof(float));                                           \
                                                                                         \
     if (!I || !II || !P || !IP || !meanI || !meanII || !meanP ||                        \
         !meanIP || !A || !B || !meanA || !meanB){                                       \
         ret = AVERROR(ENOMEM);                                                          \
         goto end;                                                                       \
     }                                                                                   \
-    for (int i = 0;i < height;i++) {                                                    \
-      for (int j = 0;j < width;j++) {                                                   \
-        int x = i * width + j;                                                          \
-        I[x]  = src[i * src_stride + j] / maxval;                                       \
+    for (int i = 0;i < h;i++) {                                                         \
+      for (int j = 0;j < w;j++) {                                                       \
+        int x = i * w + j;                                                              \
+        I[x]  = src[(i * src_stride + j) * sub] / maxval;                               \
         II[x] = I[x] * I[x];                                                            \
-        P[x]  = srcRef[i * src_ref_stride + j] / maxval;                                \
+        P[x]  = srcRef[(i * src_ref_stride + j) * sub] / maxval;                        \
         IP[x] = I[x] * P[x];                                                            \
       }                                                                                 \
     }                                                                                   \
                                                                                         \
-    t.width  = width;                                                                   \
-    t.height = height;                                                                  \
-    t.srcStride = width;                                                                \
-    t.dstStride = width;                                                                \
+    t.width  = w;                                                                       \
+    t.height = h;                                                                       \
+    t.srcStride = w;                                                                    \
+    t.dstStride = w;                                                                    \
     t.src = I;                                                                          \
     t.dst = meanI;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(height, nb_threads));     \
+    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
     t.src = II;                                                                         \
     t.dst = meanII;                                                                     \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(height, nb_threads));     \
+    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
     t.src = P;                                                                          \
     t.dst = meanP;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(height, nb_threads));     \
+    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
     t.src = IP;                                                                         \
     t.dst = meanIP;                                                                     \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(height, nb_threads));     \
+    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
                                                                                         \
-    for (int i = 0;i < height;i++) {                                                    \
-      for (int j = 0;j < width;j++) {                                                   \
-        int x = i * width + j;                                                          \
+    for (int i = 0;i < h;i++) {                                                         \
+      for (int j = 0;j < w;j++) {                                                       \
+        int x = i * w + j;                                                              \
         float varI = meanII[x] - (meanI[x] * meanI[x]);                                 \
         float covIP = meanIP[x] - (meanI[x] * meanP[x]);                                \
         A[x] = covIP / (varI + eps);                                                    \
@@ -247,14 +283,14 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
                                                                                         \
     t.src = A;                                                                          \
     t.dst = meanA;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(height, nb_threads));     \
+    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
     t.src = B;                                                                          \
     t.dst = meanB;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(height, nb_threads));     \
+    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
                                                                                         \
     for (int i = 0;i < height;i++) {                                                    \
       for (int j = 0;j < width;j++) {                                                   \
-        int x = i * width + j;                                                          \
+        int x = i / sub * w + j / sub;                                                  \
         dst[i * dst_stride + j] = meanA[x] * src[i * src_stride + j] +                  \
                                   meanB[x] * maxval;                                    \
       }                                                                                 \
