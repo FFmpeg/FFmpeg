@@ -118,9 +118,12 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
                 shift = 8 - s->avctx->bits_per_raw_sample;
             }
 
-            s->force_pal8 = 1;
-            if (!pal)
+            s->force_pal8++;
+            if (!pal) {
+                if (s->force_pal8 > 1)
+                    return AVERROR_INVALIDDATA;
                 return 1;
+            }
 
             for (i=s->palette_index; i<=maxtab; i++) {
                 uint8_t k = i << shift;
