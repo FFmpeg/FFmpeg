@@ -686,8 +686,11 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             struct tm t;
             char datestr[128];
             time =  date.milliseconds / 1000; // to seconds
-            localtime_r(&time, &t);
-            strftime(datestr, sizeof(datestr), "%a, %d %b %Y %H:%M:%S %z", &t);
+            gmtime_r(&time, &t);
+
+            // timezone is ignored, since there is no easy way to offset the UTC
+            // timestamp into the specified timezone
+            strftime(datestr, sizeof(datestr), "%Y-%m-%dT%H:%M:%SZ", &t);
 
             av_dict_set(&s->metadata, key, datestr, 0);
         }
