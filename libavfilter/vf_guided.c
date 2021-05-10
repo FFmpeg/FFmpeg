@@ -413,7 +413,7 @@ static const AVFilterPad guided_outputs[] = {
     { NULL }
 };
 
-AVFilter ff_vf_guided = {
+const AVFilter ff_vf_guided = {
     .name            = "guided",
     .description     = NULL_IF_CONFIG_SMALL("Apply Guided filter."),
     .init            = init,
