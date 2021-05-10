@@ -622,9 +622,8 @@ static int request_frame_ref(AVFilterLink *outlink)
     return ff_request_frame(outlink->src->inputs[1]);
 }
 
-static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, struct SwsContext *sws, int y, int h, int mul, int field)
+static int scale_slice(ScaleContext *scale, AVFrame *out_buf, AVFrame *cur_pic, struct SwsContext *sws, int y, int h, int mul, int field)
 {
-    ScaleContext *scale = link->dst->priv;
     const uint8_t *in[4];
     uint8_t *out[4];
     int in_stride[4],out_stride[4];
@@ -792,8 +791,8 @@ scale:
               INT_MAX);
 
     if (scale->interlaced>0 || (scale->interlaced<0 && in->interlaced_frame)) {
-        scale_slice(link, out, in, scale->isws[0], 0, (link->h+1)/2, 2, 0);
-        scale_slice(link, out, in, scale->isws[1], 0,  link->h   /2, 2, 1);
+        scale_slice(scale, out, in, scale->isws[0], 0, (link->h+1)/2, 2, 0);
+        scale_slice(scale, out, in, scale->isws[1], 0,  link->h   /2, 2, 1);
     } else if (scale->nb_slices) {
         int i, slice_h, slice_start, slice_end = 0;
         const int nb_slices = FFMIN(scale->nb_slices, link->h);
@@ -801,10 +800,10 @@ scale:
             slice_start = slice_end;
             slice_end   = (link->h * (i+1)) / nb_slices;
             slice_h     = slice_end - slice_start;
-            scale_slice(link, out, in, scale->sws, slice_start, slice_h, 1, 0);
+            scale_slice(scale, out, in, scale->sws, slice_start, slice_h, 1, 0);
         }
     } else {
-        scale_slice(link, out, in, scale->sws, 0, link->h, 1, 0);
+        scale_slice(scale, out, in, scale->sws, 0, link->h, 1, 0);
     }
 
     av_frame_free(&in);
