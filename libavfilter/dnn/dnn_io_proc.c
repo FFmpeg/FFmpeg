@@ -28,6 +28,9 @@ DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *l
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
+    if (bytewidth < 0) {
+        return DNN_ERROR;
+    }
     if (output->dt != DNN_FLOAT) {
         avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
         return DNN_ERROR;
@@ -98,6 +101,9 @@ static DNNReturnType proc_from_frame_to_dnn_frameprocessing(AVFrame *frame, DNND
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
+    if (bytewidth < 0) {
+        return DNN_ERROR;
+    }
     if (input->dt != DNN_FLOAT) {
         avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
         return DNN_ERROR;
