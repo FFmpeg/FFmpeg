@@ -164,7 +164,7 @@ static int get_riff(AVFormatContext *s, AVIOContext *pb)
     return 0;
 }
 
-static int read_odml_index(AVFormatContext *s, int frame_num)
+static int read_odml_index(AVFormatContext *s, int64_t frame_num)
 {
     AVIContext *avi     = s->priv_data;
     AVIOContext *pb     = s->pb;
@@ -184,7 +184,7 @@ static int read_odml_index(AVFormatContext *s, int frame_num)
 
     av_log(s, AV_LOG_TRACE,
             "longs_per_entry:%d index_type:%d entries_in_use:%d "
-            "chunk_id:%X base:%16"PRIX64" frame_num:%d\n",
+            "chunk_id:%X base:%16"PRIX64" frame_num:%"PRId64"\n",
             longs_per_entry,
             index_type,
             entries_in_use,
