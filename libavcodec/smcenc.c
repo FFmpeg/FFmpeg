@@ -553,6 +553,7 @@ const FFCodec ff_smc_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SMC,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(SMCContext),
     .init           = smc_encode_init,
     FF_CODEC_ENCODE_CB(smc_encode_frame),

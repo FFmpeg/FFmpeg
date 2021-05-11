@@ -1933,6 +1933,7 @@ const FFCodec ff_snow_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("Snow"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SNOW,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(SnowContext),
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),

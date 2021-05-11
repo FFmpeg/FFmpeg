@@ -28,6 +28,7 @@ const FFCodec ff_mp2fixed_encoder = {
     .p.long_name           = NULL_IF_CONFIG_SMALL("MP2 fixed point (MPEG audio layer 2)"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_MP2,
+    .p.capabilities        = AV_CODEC_CAP_DR1,
     .priv_data_size        = sizeof(MpegAudioContext),
     .init                  = MPA_encode_init,
     FF_CODEC_ENCODE_CB(MPA_encode_frame),

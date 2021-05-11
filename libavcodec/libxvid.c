@@ -902,6 +902,7 @@ const FFCodec ff_libxvid_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MPEG4,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(struct xvid_context),
     .init           = xvid_encode_init,
     FF_CODEC_ENCODE_CB(xvid_encode_frame),

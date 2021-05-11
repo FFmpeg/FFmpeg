@@ -107,6 +107,23 @@ fail:
     return ret;
 }
 
+static int encode_make_refcounted(AVCodecContext *avctx, AVPacket *avpkt)
+{
+    uint8_t *data = avpkt->data;
+    int ret;
+
+    if (avpkt->buf)
+        return 0;
+
+    avpkt->data = NULL;
+    ret = ff_get_encode_buffer(avctx, avpkt, avpkt->size, 0);
+    if (ret < 0)
+        return ret;
+    memcpy(avpkt->data, data, avpkt->size);
+
+    return 0;
+}
+
 /**
  * Pad last frame with silence.
  */
@@ -184,7 +201,7 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
 
     if (!ret && *got_packet) {
         if (avpkt->data) {
-            ret = av_packet_make_refcounted(avpkt);
+            ret = encode_make_refcounted(avctx, avpkt);
             if (ret < 0)
                 goto unref;
             // Date returned by encoders must always be ref-counted

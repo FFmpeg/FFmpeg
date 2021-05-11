@@ -730,6 +730,8 @@ const FFCodec ff_opus_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("Opus"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_OPUS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_EXPERIMENTAL,
     .defaults       = opusenc_defaults,
     .p.priv_class   = &opusenc_class,
     .priv_data_size = sizeof(OpusEncContext),
@@ -737,7 +739,6 @@ const FFCodec ff_opus_encoder = {
     FF_CODEC_ENCODE_CB(opus_encode_frame),
     .close          = opus_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .p.capabilities = AV_CODEC_CAP_EXPERIMENTAL | AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .p.supported_samplerates = (const int []){ 48000, 0 },
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts = (const uint64_t []){ AV_CH_LAYOUT_MONO,

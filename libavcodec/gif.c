@@ -553,6 +553,7 @@ const FFCodec ff_gif_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_GIF,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(GIFContext),
     .init           = gif_encode_init,
     FF_CODEC_ENCODE_CB(gif_encode_frame),
