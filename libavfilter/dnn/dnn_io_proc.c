@@ -154,7 +154,7 @@ static DNNReturnType proc_from_frame_to_dnn_frameprocessing(AVFrame *frame, DNND
         }
         sws_scale(sws_ctx, (const uint8_t **)frame->data,
                            frame->linesize, 0, frame->height,
-                           (uint8_t * const*)(&input->data),
+                           (uint8_t * const [4]){input->data, 0, 0, 0},
                            (const int [4]){frame->width * sizeof(float), 0, 0, 0});
         sws_freeContext(sws_ctx);
         break;
@@ -236,7 +236,7 @@ DNNReturnType ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t 
 
     sws_scale(sws_ctx, (const uint8_t *const *)&bbox_data, frame->linesize,
                        0, height,
-                       (uint8_t *const *)(&input->data), linesizes);
+                       (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
 
     sws_freeContext(sws_ctx);
 
@@ -266,7 +266,7 @@ static DNNReturnType proc_from_frame_to_dnn_analytics(AVFrame *frame, DNNData *i
     }
 
     sws_scale(sws_ctx, (const uint8_t *const *)frame->data, frame->linesize, 0, frame->height,
-                       (uint8_t *const *)(&input->data), linesizes);
+                       (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
 
     sws_freeContext(sws_ctx);
     return DNN_SUCCESS;
