@@ -847,7 +847,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
     size_t max_packet_size;
     APNGFctlChunk fctl_chunk = {0};
 
-    if (pict && avctx->codec_id == AV_CODEC_ID_APNG && s->color_type == PNG_COLOR_TYPE_PALETTE) {
+    if (pict && s->color_type == PNG_COLOR_TYPE_PALETTE) {
         uint32_t checksum = ~av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), ~0U, pict->data[1], 256 * sizeof(uint32_t));
 
         if (avctx->frame_number == 0) {
