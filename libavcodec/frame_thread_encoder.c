@@ -121,7 +121,8 @@ end:
     return NULL;
 }
 
-int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
+int ff_frame_thread_encoder_init(AVCodecContext *avctx)
+{
     int i=0;
     ThreadContext *c;
 
@@ -148,18 +149,14 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     if (avctx->codec_id == AV_CODEC_ID_HUFFYUV ||
         avctx->codec_id == AV_CODEC_ID_FFVHUFF) {
         int warn = 0;
-        int context_model = 0;
-        AVDictionaryEntry *con = av_dict_get(options, "context", NULL, AV_DICT_MATCH_CASE);
-
-        if (con && con->value)
-            context_model = atoi(con->value);
+        int64_t tmp;
 
         if (avctx->flags & AV_CODEC_FLAG_PASS1)
             warn = 1;
-        else if(context_model > 0) {
-            AVDictionaryEntry *t = av_dict_get(options, "non_deterministic",
-                                               NULL, AV_DICT_MATCH_CASE);
-            warn = !t || !t->value || !atoi(t->value) ? 1 : 0;
+        else if (av_opt_get_int(avctx->priv_data, "context", 0, &tmp) >= 0 &&
+                 tmp > 0) {
+            warn = av_opt_get_int(avctx->priv_data, "non_deterministic", 0, &tmp) < 0
+                   || !tmp;
         }
         // huffyuv does not support these with multiple frame threads currently
         if (warn) {
@@ -202,7 +199,6 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     }
 
     for(i=0; i<avctx->thread_count ; i++){
-        AVDictionary *tmp = NULL;
         int ret;
         void *tmpv;
         AVCodecContext *thread_avctx = avcodec_alloc_context3(avctx->codec);
@@ -225,13 +221,8 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
         thread_avctx->thread_count = 1;
         thread_avctx->active_thread_type &= ~FF_THREAD_FRAME;
 
-        av_dict_copy(&tmp, options, 0);
-        av_dict_set(&tmp, "threads", "1", 0);
-        if(avcodec_open2(thread_avctx, avctx->codec, &tmp) < 0) {
-            av_dict_free(&tmp);
+        if (avcodec_open2(thread_avctx, avctx->codec, NULL) < 0)
             goto fail;
-        }
-        av_dict_free(&tmp);
         av_assert0(!thread_avctx->internal->frame_thread_encoder);
         thread_avctx->internal->frame_thread_encoder = c;
         if(pthread_create(&c->worker[i], NULL, worker, thread_avctx)) {

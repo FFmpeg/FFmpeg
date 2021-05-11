@@ -303,7 +303,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     if (CONFIG_FRAME_THREAD_ENCODER && av_codec_is_encoder(avctx->codec)) {
         unlock_avcodec(codec); //we will instantiate a few encoders thus kick the counter to prevent false detection of a problem
-        ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
+        ret = ff_frame_thread_encoder_init(avctx);
         lock_avcodec(codec);
         if (ret < 0)
             goto free_and_end;

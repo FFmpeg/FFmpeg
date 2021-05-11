@@ -1016,7 +1016,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 #define COMMON_OPTIONS \
     { "non_deterministic", "Allow multithreading for e.g. context=1 at the expense of determinism", \
-      OFFSET(non_determ), AV_OPT_TYPE_BOOL, { .i64 = 1 }, \
+      OFFSET(non_determ), AV_OPT_TYPE_BOOL, { .i64 = 0 }, \
       0, 1, VE }, \
     { "pred", "Prediction method", OFFSET(predictor), AV_OPT_TYPE_INT, { .i64 = LEFT }, LEFT, MEDIAN, VE, "pred" }, \
         { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LEFT },   INT_MIN, INT_MAX, VE, "pred" }, \
