@@ -28,8 +28,8 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layer_depth2space.h"
 #include "libavformat/avio.h"
-#include "libavformat/internal.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "../internal.h"
 #include "dnn_backend_native_layer_pad.h"
 #include "dnn_backend_native_layer_maximum.h"
@@ -196,6 +196,36 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
     return ret;
 }
 
+#define SPACE_CHARS " \t\r\n"
+static int hex_to_data(uint8_t *data, const char *p)
+{
+    int c, len, v;
+
+    len = 0;
+    v   = 1;
+    for (;;) {
+        p += strspn(p, SPACE_CHARS);
+        if (*p == '\0')
+            break;
+        c = av_toupper((unsigned char) *p++);
+        if (c >= '0' && c <= '9')
+            c = c - '0';
+        else if (c >= 'A' && c <= 'F')
+            c = c - 'A' + 10;
+        else
+            break;
+        v = (v << 4) | c;
+        if (v & 0x100) {
+            if (data) {
+                data[len] = v;
+            }
+            len++;
+            v = 1;
+        }
+    }
+    return len;
+}
+
 static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename)
 {
     TFContext *ctx = &tf_model->ctx;
@@ -220,14 +250,17 @@ static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename
             return DNN_ERROR;
         }
         config = tf_model->ctx.options.sess_config + 2;
-        sess_config_length = ff_hex_to_data(NULL, config);
+        sess_config_length = hex_to_data(NULL, config);
 
         sess_config = av_mallocz(sess_config_length + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!sess_config) {
             av_log(ctx, AV_LOG_ERROR, "failed to allocate memory\n");
             return DNN_ERROR;
         }
-        ff_hex_to_data(sess_config, config);
+        if (hex_to_data(sess_config, config) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "failed to convert hex to data\n");
+            return DNN_ERROR;
+        }
     }
 
     graph_def = read_graph(model_filename);
