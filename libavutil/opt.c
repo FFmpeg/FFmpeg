@@ -1807,12 +1807,13 @@ int av_opt_copy(void *dst, const void *src)
         } else if (o->type == AV_OPT_TYPE_DICT) {
             AVDictionary **sdict = (AVDictionary **) field_src;
             AVDictionary **ddict = (AVDictionary **) field_dst;
+            int ret2;
             if (*sdict != *ddict)
                 av_dict_free(ddict);
             *ddict = NULL;
-            av_dict_copy(ddict, *sdict, 0);
-            if (av_dict_count(*sdict) != av_dict_count(*ddict))
-                ret = AVERROR(ENOMEM);
+            ret2 = av_dict_copy(ddict, *sdict, 0);
+            if (ret2 < 0)
+                ret = ret2;
         } else {
             int size = opt_size(o->type);
             if (size < 0)
