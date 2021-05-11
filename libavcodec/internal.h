@@ -229,20 +229,16 @@ void ff_color_frame(AVFrame *frame, const int color[4]);
 #define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
 
 /**
- * Check AVPacket size and/or allocate data.
+ * Check AVPacket size and allocate data.
  *
  * Encoders supporting AVCodec.encode2() can use this as a convenience to
- * ensure the output packet data is large enough, whether provided by the user
- * or allocated in this function.
+ * obtain a big enough buffer for the encoded bitstream.
  *
  * @param avctx   the AVCodecContext of the encoder
- * @param avpkt   the AVPacket
- *                If avpkt->data is already set, avpkt->size is checked
- *                to ensure it is large enough.
- *                If avpkt->data is NULL, a new buffer is allocated.
- *                avpkt->size is set to the specified size.
- *                All other AVPacket fields will be reset with av_init_packet().
- * @param size    the minimum required packet size
+ * @param avpkt   The AVPacket: on success, avpkt->data will point to a buffer
+ *                of size at least `size`; the packet will not be refcounted.
+ *                This packet must be initially blank.
+ * @param size    an upper bound of the size of the packet to encode
  * @param min_size This is a hint to the allocation algorithm, which indicates
  *                to what minimal size the caller might later shrink the packet
  *                to. Encoders often allocate packets which are larger than the
