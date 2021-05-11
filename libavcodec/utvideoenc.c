@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
@@ -530,8 +531,8 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, ret = 0;
 
     /* Allocate a new packet if needed, and set it to the pointer dst */
-    ret = ff_alloc_packet2(avctx, pkt, (256 + 4 * c->slices + width * height) *
-                           c->planes + 4, 0);
+    ret = ff_alloc_packet(avctx, pkt, (256 + 4 * c->slices + width * height)
+                                      * c->planes + 4);
 
     if (ret < 0)
         return ret;

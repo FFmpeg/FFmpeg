@@ -23,6 +23,7 @@
 #include "libavutil/ffmath.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "wma.h"
 #include "libavutil/avassert.h"
@@ -392,7 +393,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
         }
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 2 * MAX_CODED_SUPERFRAME_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 2 * MAX_CODED_SUPERFRAME_SIZE)) < 0)
         return ret;
 
     total_gain = 128;

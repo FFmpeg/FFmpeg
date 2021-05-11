@@ -39,6 +39,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "mpegutils.h"
 #include "packet_internal.h"
@@ -740,7 +741,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     xvid_enc_frame_t xvid_enc_frame = { 0 };
     xvid_enc_stats_t xvid_enc_stats = { 0 };
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, mb_width*(int64_t)mb_height*MAX_MB_BYTES + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, mb_width*(int64_t)mb_height*MAX_MB_BYTES + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     /* Start setting up the frame */

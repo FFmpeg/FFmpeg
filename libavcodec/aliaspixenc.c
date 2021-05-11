@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 
 #define ALIAS_HEADER_SIZE 10
@@ -54,10 +55,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     length = ALIAS_HEADER_SIZE + 4 * width * height; // max possible
-    if ((ret = ff_alloc_packet2(avctx, pkt, length, ALIAS_HEADER_SIZE + height*2)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", length);
+    if ((ret = ff_alloc_packet(avctx, pkt, length)) < 0)
         return ret;
-    }
 
     buf = pkt->data;
 

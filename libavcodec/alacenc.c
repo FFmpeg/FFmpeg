@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "put_bits.h"
 #include "internal.h"
 #include "lpc.h"
@@ -589,7 +590,7 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     else
         max_frame_size = s->max_coded_frame_size;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 4 * max_frame_size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 4 * max_frame_size)) < 0)
         return ret;
 
     /* use verbatim mode for compression_level 0 */

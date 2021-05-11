@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "audio_frame_queue.h"
@@ -2214,7 +2215,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int restart_frame, ret;
     uint8_t *data;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 87500 * avctx->channels, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 87500 * avctx->channels)) < 0)
         return ret;
 
     /* add current frame to queue */

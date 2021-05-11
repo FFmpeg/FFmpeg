@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
+#include "encode.h"
 #include "internal.h"
 
 #if CONFIG_LIBOPENCORE_AMRNB_DECODER || CONFIG_LIBOPENCORE_AMRWB_DECODER
@@ -243,7 +244,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->enc_bitrate = avctx->bit_rate;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 32, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 32)) < 0)
         return ret;
 
     if (frame) {

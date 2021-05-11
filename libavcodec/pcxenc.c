@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "libavutil/imgutils.h"
+#include "encode.h"
 #include "internal.h"
 
 static const uint32_t monoblack_pal[16] = { 0x000000, 0xFFFFFF };
@@ -133,7 +134,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     line_bytes = (line_bytes + 1) & ~1;
 
     max_pkt_size = 128 + avctx->height * 2 * line_bytes * nplanes + (pal ? 256*3 + 1 : 0);
-    if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, max_pkt_size)) < 0)
         return ret;
     buf     = pkt->data;
     buf_end = pkt->data + pkt->size;

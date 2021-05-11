@@ -44,6 +44,21 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame);
  */
 int ff_get_encode_buffer(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int flags);
 
+/**
+ * Check AVPacket size and allocate data.
+ *
+ * Encoders supporting AVCodec.encode2() can use this as a convenience to
+ * obtain a big enough buffer for the encoded bitstream.
+ *
+ * @param avctx   the AVCodecContext of the encoder
+ * @param avpkt   The AVPacket: on success, avpkt->data will point to a buffer
+ *                of size at least `size`; the packet will not be refcounted.
+ *                This packet must be initially blank.
+ * @param size    an upper bound of the size of the packet to encode
+ * @return        non negative on success, negative error code on failure
+ */
+int ff_alloc_packet(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
+
 /*
  * Perform encoder initialization and validation.
  * Called when opening the encoder, before the AVCodec.init() call.

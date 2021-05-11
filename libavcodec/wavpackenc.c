@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
@@ -2869,7 +2870,7 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     buf_size = s->block_samples * avctx->channels * 8
              + 200 * avctx->channels /* for headers */;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, buf_size)) < 0)
         return ret;
     buf = avpkt->data;
 

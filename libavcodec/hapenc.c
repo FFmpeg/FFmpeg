@@ -39,6 +39,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "hap.h"
 #include "internal.h"
 #include "texturedsp.h"
@@ -200,7 +201,7 @@ static int hap_encode(AVCodecContext *avctx, AVPacket *pkt,
     int pktsize = FFMAX(ctx->tex_size, ctx->max_snappy * ctx->chunk_count) + header_length;
 
     /* Allocate maximum size packet, shrink later. */
-    ret = ff_alloc_packet2(avctx, pkt, pktsize, header_length);
+    ret = ff_alloc_packet(avctx, pkt, pktsize);
     if (ret < 0)
         return ret;
 

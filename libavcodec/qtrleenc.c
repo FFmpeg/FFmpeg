@@ -25,6 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 
 /** Maximum RLE code for bulk copy */
@@ -369,7 +370,7 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     QtrleEncContext * const s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, s->max_buf_size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, s->max_buf_size)) < 0)
         return ret;
 
     if (avctx->gop_size == 0 || !s->previous_frame->data[0] ||

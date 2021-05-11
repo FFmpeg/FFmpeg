@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "rangecoder.h"
@@ -1159,7 +1160,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         maxsize = INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, maxsize, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, maxsize)) < 0)
         return ret;
 
     ff_init_range_encoder(c, pkt->data, pkt->size);

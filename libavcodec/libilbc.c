@@ -25,6 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 
 #ifndef LIBILBC_VERSION_MAJOR
@@ -183,7 +184,7 @@ static int ilbc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ILBCEncContext *s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 50, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 50)) < 0)
         return ret;
 
     WebRtcIlbcfix_EncodeImpl((uint16_t *) avpkt->data, (const int16_t *) frame->data[0], &s->encoder);

@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 #include "libopus.h"
 #include "vorbis.h"
@@ -483,7 +484,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     /* Maximum packet size taken from opusenc in opus-tools. 120ms packets
      * consist of 6 frames in one packet. The maximum frame size is 1275
      * bytes along with the largest possible packet header of 7 bytes. */
-    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 6 + 7) * opus->stream_count, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, (1275 * 6 + 7) * opus->stream_count)) < 0)
         return ret;
 
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)

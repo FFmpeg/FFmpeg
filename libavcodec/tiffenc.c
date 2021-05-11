@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 #include "lzw.h"
 #include "put_bits.h"
@@ -334,7 +335,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     packet_size = avctx->height * bytes_per_row * 2 +
                   avctx->height * 4 + AV_INPUT_BUFFER_MIN_SIZE;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, packet_size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, packet_size)) < 0)
         return ret;
     ptr          = pkt->data;
     s->buf_start = pkt->data;

@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
 
@@ -776,9 +777,9 @@ static int rpza_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     RpzaContext *s = avctx->priv_data;
     const AVFrame *pict = frame;
     uint8_t *buf;
-    int ret;
+    int ret = ff_alloc_packet(avctx, pkt, 6LL * avctx->height * avctx->width);
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, 6LL * avctx->height * avctx->width, 0)) < 0)
+    if (ret < 0)
         return ret;
 
     init_put_bits(&s->pb, pkt->data, pkt->size);

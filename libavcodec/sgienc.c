@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 #include "sgi.h"
 #include "rle.h"
@@ -154,7 +155,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     else // assume sgi_rle_encode() produces at most 2x size of input
         length += tablesize * 2 + depth * height * (2 * width + 1);
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, bytes_per_channel * length, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, bytes_per_channel * length)) < 0)
         return ret;
 
     bytestream2_init_writer(&pbc, pkt->data, pkt->size);

@@ -27,6 +27,7 @@
 #include "libavutil/channel_layout.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
 
@@ -760,7 +761,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     compute_bit_allocation(s, smr, bit_alloc, &padding);
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE)) < 0)
         return ret;
 
     init_put_bits(&s->pb, avpkt->data, avpkt->size);

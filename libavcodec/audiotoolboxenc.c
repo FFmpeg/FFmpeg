@@ -29,6 +29,7 @@
 #include "audio_frame_queue.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "internal.h"
 #include "libavformat/isom.h"
 #include "libavutil/avassert.h"
@@ -536,7 +537,7 @@ static int ffat_encode(AVCodecContext *avctx, AVPacket *avpkt,
         at->eof = 1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, at->pkt_size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, at->pkt_size)) < 0)
         return ret;
 
 

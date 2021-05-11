@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dct.h"
+#include "encode.h"
 #include "internal.h"
 #include "profiles.h"
 #include "proresdata.h"
@@ -727,7 +728,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + AV_INPUT_BUFFER_MIN_SIZE; //FIXME choose tighter limit
 
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, frame_size + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, frame_size + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     buf = pkt->data;

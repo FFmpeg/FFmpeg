@@ -539,7 +539,7 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
         );
     if (max_packet_size > INT_MAX)
         return AVERROR(ENOMEM);
-    ret = ff_alloc_packet2(avctx, pkt, max_packet_size, 0);
+    ret = ff_alloc_packet(avctx, pkt, max_packet_size);
     if (ret < 0)
         return ret;
 

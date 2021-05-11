@@ -27,6 +27,7 @@
  */
 
 #include "avcodec.h"
+#include "encode.h"
 #include "hpeldsp.h"
 #include "me_cmp.h"
 #include "mpegvideo.h"
@@ -581,8 +582,9 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     SVQ1EncContext *const s = avctx->priv_data;
     int i, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, s->y_block_width * s->y_block_height *
-                             MAX_MB_BYTES*3 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    ret = ff_alloc_packet(avctx, pkt, s->y_block_width * s->y_block_height *
+                          MAX_MB_BYTES * 3 + AV_INPUT_BUFFER_MIN_SIZE);
+    if (ret < 0)
         return ret;
 
     if (avctx->pix_fmt != AV_PIX_FMT_YUV410P) {

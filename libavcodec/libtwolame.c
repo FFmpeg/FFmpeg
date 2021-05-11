@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "mpegaudio.h"
 
@@ -110,7 +111,7 @@ static int twolame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     TWOLAMEContext *s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE)) < 0)
         return ret;
 
     if (frame) {

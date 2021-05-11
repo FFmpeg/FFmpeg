@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "encode.h"
 #include "put_bits.h"
 #include "internal.h"
 #include "thread.h"
@@ -413,8 +414,8 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const int width = avctx->width, height = avctx->height;
     int pos, slice, i, j, ret = 0;
 
-    ret = ff_alloc_packet2(avctx, pkt, (256 + 4 * s->nb_slices + width * height) *
-                           s->planes + 256, 0);
+    ret = ff_alloc_packet(avctx, pkt, (256 + 4 * s->nb_slices + width * height) *
+                          s->planes + 256);
     if (ret < 0)
         return ret;
 

@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
+#include "encode.h"
 #include "internal.h"
 #include "profiles.h"
 
@@ -391,7 +392,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     in_buf.bufElSizes        = &in_buffer_element_size;
 
     /* The maximum packet size is 6144 bits aka 768 bytes per channel. */
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels), 0)) < 0)
+    ret = ff_alloc_packet(avctx, avpkt, FFMAX(8192, 768 * avctx->channels));
+    if (ret < 0)
         return ret;
 
     out_ptr                   = avpkt->data;

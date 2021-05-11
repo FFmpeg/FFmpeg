@@ -62,6 +62,7 @@
 #include "roqvideo.h"
 #include "bytestream.h"
 #include "elbg.h"
+#include "encode.h"
 #include "internal.h"
 #include "mathops.h"
 
@@ -1071,7 +1072,7 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* 138 bits max per 8x8 block +
      *     256 codebooks*(6 bytes 2x2 + 4 bytes 4x4) + 8 bytes frame header */
     size = ((roq->width * roq->height / 64) * 138 + 7) / 8 + 256 * (6 + 4) + 8;
-    if ((ret = ff_alloc_packet2(avctx, pkt, size, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, size)) < 0)
         return ret;
     enc->out_buf = pkt->data;
 

@@ -66,6 +66,7 @@
 
 #include <float.h>
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "bytestream.h"
 #include "jpeg2000.h"
@@ -1534,7 +1535,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     Jpeg2000EncoderContext *s = avctx->priv_data;
     uint8_t *chunkstart, *jp2cstart, *jp2hstart;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, avctx->width*avctx->height*9 + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     // init:

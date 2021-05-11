@@ -49,6 +49,7 @@
 #include <zlib.h>
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
@@ -229,7 +230,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         I_frame = 1;
     }
 
-    if ((res = ff_alloc_packet2(avctx, pkt, s->image_width * s->image_height * 3, 0)) < 0)
+    if ((res = ff_alloc_packet(avctx, pkt, s->image_width * s->image_height * 3)) < 0)
         return res;
 
     pkt->size = encode_bitstream(s, p, pkt->data, pkt->size, opt_w * 16, opt_h * 16,

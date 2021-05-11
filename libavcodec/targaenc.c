@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "rle.h"
 #include "targa.h"
@@ -91,7 +92,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     picsize = av_image_get_buffer_size(avctx->pix_fmt,
                                        avctx->width, avctx->height, 1);
-    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, picsize + 45)) < 0)
         return ret;
 
     /* zero out the header and only set applicable fields */

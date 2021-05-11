@@ -34,6 +34,7 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "put_bits.h"
 #include "internal.h"
 #include "mpeg4audio.h"
@@ -676,7 +677,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
         start_ch += chans;
     }
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192 * s->channels, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 8192 * s->channels)) < 0)
         return ret;
     frame_bits = its = 0;
     do {

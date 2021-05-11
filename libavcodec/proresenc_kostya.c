@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "fdctdsp.h"
 #include "put_bits.h"
 #include "profiles.h"
@@ -998,7 +999,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ctx->pic = pic;
     pkt_size = ctx->frame_size_upper_bound;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, pkt_size + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     orig_buf = pkt->data;

@@ -28,6 +28,7 @@
 #include "libavutil/float_dsp.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "fft.h"
 #include "mathops.h"
@@ -1134,7 +1135,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (!apply_window_and_mdct(venc))
         return 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 8192, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, avpkt, 8192)) < 0)
         return ret;
 
     init_put_bits(&pb, avpkt->data, avpkt->size);

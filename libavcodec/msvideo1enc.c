@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "encode.h"
 #include "internal.h"
 #include "bytestream.h"
 #include "libavutil/lfg.h"
@@ -76,7 +77,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int skips = 0;
     int quality = 24;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, avctx->width*avctx->height*9 + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
     dst= buf= pkt->data;
 
