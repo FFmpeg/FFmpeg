@@ -112,7 +112,7 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
         int size = p_end - p;
         s = xavs_nal_encode(p, &size, 1, nals + i);
         if (s < 0)
-            return -1;
+            return AVERROR_EXTERNAL;
         if (s != 3U + nals[i].i_payload)
             return AVERROR_EXTERNAL;
         p += s;
@@ -146,12 +146,12 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (xavs_encoder_encode(x4->enc, &nal, &nnal,
                             frame? &x4->pic: NULL, &pic_out) < 0)
-    return -1;
+        return AVERROR_EXTERNAL;
 
     ret = encode_nals(avctx, pkt, nal, nnal);
 
     if (ret < 0)
-        return -1;
+        return ret;
 
     if (!ret) {
         if (!frame && !(x4->end_of_stream)) {
@@ -345,7 +345,7 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
 
     x4->enc = xavs_encoder_open(&x4->params);
     if (!x4->enc)
-        return -1;
+        return AVERROR_EXTERNAL;
 
     if (!(x4->pts_buffer = av_mallocz_array((avctx->max_b_frames+1), sizeof(*x4->pts_buffer))))
         return AVERROR(ENOMEM);
