@@ -2737,8 +2737,7 @@ int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
  *                         the call will not fail with EAGAIN).
  *      AVERROR_EOF:       the encoder has been flushed, and no new frames can
  *                         be sent to it
- *      AVERROR(EINVAL):   codec not opened, refcounted_frames not set, it is a
- *                         decoder, or requires flush
+ *      AVERROR(EINVAL):   codec not opened, it is a decoder, or requires flush
  *      AVERROR(ENOMEM):   failed to add packet to internal queue, or similar
  *      other errors: legitimate encoding errors
  */
@@ -3230,11 +3229,8 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
  * Reset the internal codec state / flush internal buffers. Should be called
  * e.g. when seeking or when switching to a different stream.
  *
- * @note for decoders, when refcounted frames are not used
- * (i.e. avctx->refcounted_frames is 0), this invalidates the frames previously
- * returned from the decoder. When refcounted frames are used, the decoder just
- * releases any references it might keep internally, but the caller's reference
- * remains valid.
+ * @note for decoders, this function just releases any references the decoder
+ * might keep internally, but the caller's references remain valid.
  *
  * @note for encoders, this function will only do something if the encoder
  * declares support for AV_CODEC_CAP_ENCODER_FLUSH. When called, the encoder
