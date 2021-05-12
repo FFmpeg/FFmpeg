@@ -372,7 +372,6 @@ end:
     return ret;
 free_and_end:
     avcodec_close(avctx);
-    av_dict_free(options);
     goto end;
 }
 
