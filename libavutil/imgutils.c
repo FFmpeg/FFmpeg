@@ -165,6 +165,9 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
         ret += sizes[i];
     }
 
+    if (!ptr)
+        return ret;
+
     data[0] = ptr;
     for (i = 1; i < 4 && sizes[i]; i++)
         data[i] = data[i - 1] + sizes[i - 1];
