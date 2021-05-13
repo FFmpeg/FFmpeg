@@ -12957,8 +12957,10 @@ greyedge=difford=1:minknorm=0:sigma=2
 
 @end itemize
 
-@section guided filter
+@section guided
 Apply guided filter for edge-preserving smoothing, dehazing and so on.
+This filter requires two inputs of same resolution and pixel format.
+The second input serves as the reference.
 
 The filter accepts the following options:
 @table @option
@@ -12975,10 +12977,9 @@ Set filter mode. Can be @code{basic} or @code{fast}.
 Default is @code{basic}.
 
 @item sub
-Set subsampling ratio.
-Allowed range is 1 to 64.
-Default is always 1 for @code{basic} value of @var{mode} option,
-and 4 for @code{fast} value of @var{mode} option.
+Set subsampling ratio for @code{fast} mode.
+Allowed effective range is 2 to 64. Default is 4.
+No subsampling occurs in @code{basic} mode.
 
 @item planes
 Set planes to filter. Default is first only.
