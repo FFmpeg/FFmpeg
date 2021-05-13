@@ -4262,13 +4262,11 @@ static void free_stream(AVStream **pst)
         av_freep(&st->side_data[i].data);
     av_freep(&st->side_data);
 
-    if (st->internal->parser)
-        av_parser_close(st->internal->parser);
-
     if (st->attached_pic.data)
         av_packet_unref(&st->attached_pic);
 
     if (st->internal) {
+        av_parser_close(st->internal->parser);
         avcodec_free_context(&st->internal->avctx);
         av_bsf_free(&st->internal->bsfc);
         av_freep(&st->internal->priv_pts);
