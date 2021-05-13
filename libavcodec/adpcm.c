@@ -193,8 +193,6 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
         break;
     case AV_CODEC_ID_ADPCM_IMA_WS:
-        if (avctx->extradata && avctx->extradata_size >= 2)
-            c->vqa_version = AV_RL16(avctx->extradata);
         avctx->sample_fmt = c->vqa_version == 3 ? AV_SAMPLE_FMT_S16P :
                                                   AV_SAMPLE_FMT_S16;
         break;
