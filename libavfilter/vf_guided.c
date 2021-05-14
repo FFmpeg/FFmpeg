@@ -59,13 +59,13 @@ typedef struct GuidedContext {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption guided_options[] = {
-    { "radius", "set the box radius",                               OFFSET(radius), AV_OPT_TYPE_INT,   {.i64 = 3    },   1,           20, FLAGS },
-    { "eps",    "set the regularization parameter (with square)",   OFFSET(eps),    AV_OPT_TYPE_FLOAT, {.dbl = 0.01 }, 0.0,            1, FLAGS },
+    { "radius", "set the box radius",                               OFFSET(radius), AV_OPT_TYPE_INT,   {.i64 = 3    },     1,           20, FLAGS },
+    { "eps",    "set the regularization parameter (with square)",   OFFSET(eps),    AV_OPT_TYPE_FLOAT, {.dbl = 0.01 },   0.0,            1, FLAGS },
     { "mode",   "set filtering mode (0: basic mode; 1: fast mode)", OFFSET(mode),   AV_OPT_TYPE_INT,   {.i64 = BASIC}, BASIC, NB_MODES - 1, FLAGS, "mode" },
-    { "basic",  "basic guided filter",                              0,              AV_OPT_TYPE_CONST, {.i64 = BASIC},   0,            0, FLAGS, "mode" },
-    { "fast",   "fast guided filter",                               0,              AV_OPT_TYPE_CONST, {.i64 = FAST },   0,            0, FLAGS, "mode" },
-    { "sub",    "subsampling ratio for fast mode",                  OFFSET(sub),    AV_OPT_TYPE_INT,   {.i64 = 4    },   2,           64, FLAGS },
-    { "planes", "set planes to filter",                             OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1      },   0,          0xF, FLAGS },
+    { "basic",  "basic guided filter",                              0,              AV_OPT_TYPE_CONST, {.i64 = BASIC},     0,            0, FLAGS, "mode" },
+    { "fast",   "fast guided filter",                               0,              AV_OPT_TYPE_CONST, {.i64 = FAST },     0,            0, FLAGS, "mode" },
+    { "sub",    "subsampling ratio for fast mode",                  OFFSET(sub),    AV_OPT_TYPE_INT,   {.i64 = 4    },     2,           64, FLAGS },
+    { "planes", "set planes to filter",                             OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1      },     0,          0xF, FLAGS },
     { NULL }
 };
 
@@ -163,11 +163,11 @@ static int config_input(AVFilterLink *inlink)
         s->sub = 1;
     }
     else if (s->mode == FAST) {
-       if (s->radius >= s->sub)
-           s->radius = s->radius / s->sub;
-       else {
-           s->radius = 1;
-       }
+        if (s->radius >= s->sub)
+            s->radius = s->radius / s->sub;
+        else {
+            s->radius = 1;
+        }
     }
 
     s->depth = desc->comp[0].depth;
