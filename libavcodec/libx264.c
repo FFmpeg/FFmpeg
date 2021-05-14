@@ -1153,7 +1153,6 @@ AVCodec ff_libx264_encoder = {
     .close            = X264_close,
     .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .caps_internal    = FF_CODEC_CAP_AUTO_THREADS,
     .priv_class       = &x264_class,
     .defaults         = x264_defaults,
 #if X264_BUILD < 153
