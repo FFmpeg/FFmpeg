@@ -61,10 +61,10 @@ typedef struct GuidedContext {
 static const AVOption guided_options[] = {
     { "radius", "set the box radius",                               OFFSET(radius), AV_OPT_TYPE_INT,   {.i64 = 3    },   1,           20, FLAGS },
     { "eps",    "set the regularization parameter (with square)",   OFFSET(eps),    AV_OPT_TYPE_FLOAT, {.dbl = 0.01 }, 0.0,            1, FLAGS },
-    { "mode",   "set filtering mode (0: basic mode; 1: fast mode)", OFFSET(mode),   AV_OPT_TYPE_INT,   {.i64 = BASIC},   0, NB_MODES - 1, FLAGS, "mode" },
+    { "mode",   "set filtering mode (0: basic mode; 1: fast mode)", OFFSET(mode),   AV_OPT_TYPE_INT,   {.i64 = BASIC}, BASIC, NB_MODES - 1, FLAGS, "mode" },
     { "basic",  "basic guided filter",                              0,              AV_OPT_TYPE_CONST, {.i64 = BASIC},   0,            0, FLAGS, "mode" },
     { "fast",   "fast guided filter",                               0,              AV_OPT_TYPE_CONST, {.i64 = FAST },   0,            0, FLAGS, "mode" },
-    { "sub",    "subsampling ratio",                                OFFSET(sub),    AV_OPT_TYPE_INT,   {.i64 = 1    },   1,           64, FLAGS },
+    { "sub",    "subsampling ratio for fast mode",                  OFFSET(sub),    AV_OPT_TYPE_INT,   {.i64 = 4    },   2,           64, FLAGS },
     { "planes", "set planes to filter",                             OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1      },   0,          0xF, FLAGS },
     { NULL }
 };
@@ -160,24 +160,14 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (s->mode == BASIC) {
-        if (s->sub != 1) {
-            av_log(ctx, AV_LOG_WARNING, "Subsampling ratio is 1 in basic mode.\n");
-            s->sub = 1;
-        }
+        s->sub = 1;
     }
     else if (s->mode == FAST) {
-        if (s->sub == 1) {
-            av_log(ctx, AV_LOG_WARNING, "Subsampling ratio is larger than 1 in fast mode.\n");
-            s->sub = 4;
-        }
-        if (s->radius >= s->sub)
-            s->radius = s->radius / s->sub;
-        else {
-            s->radius = 1;
-        }
-    }
-    else {
-        return AVERROR_BUG;
+       if (s->radius >= s->sub)
+           s->radius = s->radius / s->sub;
+       else {
+           s->radius = 1;
+       }
     }
 
     s->depth = desc->comp[0].depth;
