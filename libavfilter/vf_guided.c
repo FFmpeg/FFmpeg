@@ -319,7 +319,6 @@ static int process_frame(FFFrameSync *fs)
     out_frame = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out_frame) {
         av_frame_free(&main_frame);
-        av_frame_free(&ref_frame);
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out_frame, main_frame);
