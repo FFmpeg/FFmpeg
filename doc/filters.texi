@@ -10356,6 +10356,14 @@ The x and y offset coordinates where the box is drawn.
 @item h
 The width and height of the drawn box.
 
+@item box_source
+Box source can be set as side_data_detection_bboxes if you want to use box data in
+detection bboxes of side data.
+
+If @var{box_source} is set, the @var{x}, @var{y}, @var{width} and @var{height} will be ignored and
+still use box data in detection bboxes of side data. So please do not use this parameter if you were
+not sure about the box source.
+
 @item t
 The thickness of the drawn box.
 

@@ -31,6 +31,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/detection_bbox.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -79,8 +80,10 @@ typedef struct DrawBoxContext {
     char *x_expr, *y_expr; ///< expression for x and y
     char *w_expr, *h_expr; ///< expression for width and height
     char *t_expr;          ///< expression for thickness
+    char *box_source_string; ///< string for box data source
     int have_alpha;
     int replace;
+    enum AVFrameSideDataType box_source;
 } DrawBoxContext;
 
 static const int NUM_EXPR_EVALS = 5;
@@ -140,10 +143,29 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
     }
 }
 
+static enum AVFrameSideDataType box_source_string_parse(const char *box_source_string)
+{
+    av_assert0(box_source_string);
+    if (!strcmp(box_source_string, "side_data_detection_bboxes")) {
+        return AV_FRAME_DATA_DETECTION_BBOXES;
+    } else {
+        // will support side_data_regions_of_interest next
+        return AVERROR(EINVAL);
+    }
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     DrawBoxContext *s = ctx->priv;
     uint8_t rgba_color[4];
+
+    if (s->box_source_string) {
+        s->box_source = box_source_string_parse(s->box_source_string);
+        if ((int)s->box_source < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error box source: %s\n",s->box_source_string);
+            return AVERROR(EINVAL);
+        }
+    }
 
     if (!strcmp(s->color_str, "invert"))
         s->invert_color = 1;
@@ -272,9 +294,34 @@ static av_pure av_always_inline int pixel_belongs_to_box(DrawBoxContext *s, int 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     DrawBoxContext *s = inlink->dst->priv;
+    const AVDetectionBBoxHeader *header = NULL;
+    const AVDetectionBBox *bbox;
+    AVFrameSideData *sd;
+    int loop = 1;
 
-    draw_region(frame, s, FFMAX(s->x, 0), FFMAX(s->y, 0), FFMIN(s->x + s->w, frame->width),
-                FFMIN(s->y + s->h, frame->height), pixel_belongs_to_box);
+    if (s->box_source == AV_FRAME_DATA_DETECTION_BBOXES) {
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+        if (sd) {
+            header = (AVDetectionBBoxHeader *)sd->data;
+            loop = header->nb_bboxes;
+        } else {
+            av_log(s, AV_LOG_WARNING, "No detection bboxes.\n");
+            return ff_filter_frame(inlink->dst->outputs[0], frame);
+        }
+    }
+
+    for (int i = 0; i < loop; i++) {
+        if (header) {
+            bbox = av_get_detection_bbox(header, i);
+            s->y = bbox->y;
+            s->x = bbox->x;
+            s->h = bbox->h;
+            s->w = bbox->w;
+        }
+
+        draw_region(frame, s, FFMAX(s->x, 0), FFMAX(s->y, 0), FFMIN(s->x + s->w, frame->width),
+                    FFMIN(s->y + s->h, frame->height), pixel_belongs_to_box);
+    }
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
@@ -329,6 +376,7 @@ static const AVOption drawbox_options[] = {
     { "thickness", "set the box thickness",                        OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       0, 0, FLAGS },
     { "t",         "set the box thickness",                        OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       0, 0, FLAGS },
     { "replace",   "replace color & alpha",                        OFFSET(replace),   AV_OPT_TYPE_BOOL,   { .i64=0   },       0, 1, FLAGS },
+    { "box_source", "use datas from bounding box in side data",    OFFSET(box_source_string), AV_OPT_TYPE_STRING, { .str=NULL }, 0, 1, FLAGS },
     { NULL }
 };
 
