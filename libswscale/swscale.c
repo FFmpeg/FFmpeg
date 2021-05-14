@@ -487,10 +487,8 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                            yuv2packed1, yuv2packed2, yuv2packedX, yuv2anyX, use_mmx_vfilter);
         }
 
-        {
-            for (i = vStart; i < vEnd; ++i)
-                desc[i].process(c, &desc[i], dstY, 1);
-        }
+        for (i = vStart; i < vEnd; ++i)
+            desc[i].process(c, &desc[i], dstY, 1);
     }
     if (isPlanar(dstFormat) && isALPHA(dstFormat) && !needAlpha) {
         int length = dstW;
