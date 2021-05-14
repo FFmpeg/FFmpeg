@@ -343,6 +343,7 @@ static int process_frame(FFFrameSync *fs)
                        s->planewidth[plane], s->planeheight[plane],
                        main_frame->linesize[plane] / 2, ref_frame->linesize[plane] / 2, out_frame->linesize[plane] / 2, (1 << s->depth) - 1.f);
     }
+    av_frame_free(&main_frame);
 
     return ff_filter_frame(outlink, out_frame);
 }
