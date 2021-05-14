@@ -55,6 +55,7 @@
 #include "libavutil/time_internal.h"
 #include "libavutil/tree.h"
 #include "libavutil/lfg.h"
+#include "libavutil/detection_bbox.h"
 #include "avfilter.h"
 #include "drawutils.h"
 #include "formats.h"
@@ -199,6 +200,8 @@ typedef struct DrawTextContext {
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
     int reload;                     ///< reload text file for each frame
     int start_number;               ///< starting frame number for n/frame_num var
+    char *text_source_string;       ///< the string to specify text data source
+    enum AVFrameSideDataType text_source;
 #if CONFIG_LIBFRIBIDI
     int text_shaping;               ///< 1 to shape the text before drawing it
 #endif
@@ -246,6 +249,7 @@ static const AVOption drawtext_options[]= {
     { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
     {"fix_bounds", "check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
+    {"text_source", "the source of text", OFFSET(text_source_string), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS },
 
 #if CONFIG_LIBFRIBIDI
     {"text_shaping", "attempt to shape text before drawing", OFFSET(text_shaping), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS},
@@ -690,6 +694,16 @@ out:
 }
 #endif
 
+static enum AVFrameSideDataType text_source_string_parse(const char *text_source_string)
+{
+    av_assert0(text_source_string);
+    if (!strcmp(text_source_string, "side_data_detection_bboxes")) {
+        return AV_FRAME_DATA_DETECTION_BBOXES;
+    } else {
+        return AVERROR(EINVAL);
+    }
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     int err;
@@ -731,9 +745,28 @@ static av_cold int init(AVFilterContext *ctx)
             s->text = av_strdup("");
     }
 
+    if (s->text_source_string) {
+        s->text_source = text_source_string_parse(s->text_source_string);
+        if ((int)s->text_source < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error text source: %s\n", s->text_source_string);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (s->text_source == AV_FRAME_DATA_DETECTION_BBOXES) {
+        if (s->text) {
+            av_log(ctx, AV_LOG_WARNING, "Multiple texts provided, will use text_source only\n");
+            av_free(s->text);
+        }
+        s->text = av_mallocz(AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE *
+                             (AV_NUM_DETECTION_BBOX_CLASSIFY + 1));
+        if (!s->text)
+            return AVERROR(ENOMEM);
+    }
+
     if (!s->text) {
         av_log(ctx, AV_LOG_ERROR,
-               "Either text, a valid file or a timecode must be provided\n");
+               "Either text, a valid file, a timecode or text source must be provided\n");
         return AVERROR(EINVAL);
     }
 
@@ -1440,10 +1473,15 @@ continue_on_invalid2:
 
     s->var_values[VAR_LINE_H] = s->var_values[VAR_LH] = s->max_glyph_h;
 
-    s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
-    s->y = s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
-    /* It is necessary if x is expressed from y  */
-    s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
+    if (s->text_source == AV_FRAME_DATA_DETECTION_BBOXES) {
+        s->var_values[VAR_X] = s->x;
+        s->var_values[VAR_Y] = s->y;
+    } else {
+        s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
+        s->y = s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
+        /* It is necessary if x is expressed from y  */
+        s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
+    }
 
     update_alpha(s);
     update_color_with_alpha(s, &fontcolor  , s->fontcolor  );
@@ -1511,6 +1549,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterLink *outlink = ctx->outputs[0];
     DrawTextContext *s = ctx->priv;
     int ret;
+    const AVDetectionBBoxHeader *header = NULL;
+    const AVDetectionBBox *bbox;
+    AVFrameSideData *sd;
+    int loop = 1;
+
+    if (s->text_source == AV_FRAME_DATA_DETECTION_BBOXES && sd) {
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+        if (sd) {
+            header = (AVDetectionBBoxHeader *)sd->data;
+            loop = header->nb_bboxes;
+        } else {
+            av_log(s, AV_LOG_WARNING, "No detection bboxes.\n");
+            return ff_filter_frame(outlink, frame);
+        }
+    }
 
     if (s->reload) {
         if ((ret = load_textfile(ctx)) < 0) {
@@ -1536,7 +1589,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     s->var_values[VAR_PKT_SIZE] = frame->pkt_size;
     s->metadata = frame->metadata;
 
-    draw_text(ctx, frame, frame->width, frame->height);
+    for (int i = 0; i < loop; i++) {
+        if (header) {
+            bbox = av_get_detection_bbox(header, i);
+            strcpy(s->text, bbox->detect_label);
+            for (int j = 0; j < bbox->classify_count; j++) {
+                strcat(s->text, ", ");
+                strcat(s->text, bbox->classify_labels[j]);
+            }
+            s->x = bbox->x;
+            s->y = bbox->y - s->fontsize;
+        }
+        draw_text(ctx, frame, frame->width, frame->height);
+    }
 
     av_log(ctx, AV_LOG_DEBUG, "n:%d t:%f text_w:%d text_h:%d x:%d y:%d\n",
            (int)s->var_values[VAR_N], s->var_values[VAR_T],
