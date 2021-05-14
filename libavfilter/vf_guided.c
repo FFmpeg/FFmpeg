@@ -323,10 +323,6 @@ static int process_frame(FFFrameSync *fs)
     }
     av_frame_copy_props(out_frame, main_frame);
 
-    if (ctx->is_disabled || !ref_frame) {
-        av_frame_copy_props(ref_frame, main_frame);
-    }
-
     for (int plane = 0; plane < s->nb_planes; plane++) {
         if (!(s->planes & (1 << plane))) {
             av_image_copy_plane(out_frame->data[plane], out_frame->linesize[plane],
