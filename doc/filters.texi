@@ -12978,7 +12978,7 @@ Default is @code{basic}.
 
 @item sub
 Set subsampling ratio for @code{fast} mode.
-Allowed effective range is 2 to 64. Default is 4.
+Range is 2 to 64. Default is 4.
 No subsampling occurs in @code{basic} mode.
 
 @item planes
