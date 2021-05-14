@@ -54,7 +54,37 @@ typedef struct DnnLayerMathUnaryParams{
     DNNMathUnaryOperation un_op;
 } DnnLayerMathUnaryParams;
 
+/**
+ * @brief Load the Unary Math Layer.
+ *
+ * It assigns the unary math layer with DnnLayerMathUnaryParams
+ * after parsing from the model file context.
+ *
+ * @param layer pointer to the DNN layer instance
+ * @param model_file_context pointer to model file context
+ * @param file_size model file size to check if data is read
+ * correctly from the model file
+ * @param operands_num operand count of the whole model to
+ * check if data is read correctly from the model file
+ * @return number of bytes read from the model file
+ * @retval 0 if out of memory or an error occurs
+ */
 int ff_dnn_load_layer_math_unary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num);
+
+/**
+ * @brief Execute the Unary Math Layer.
+ *
+ * It applies the unary operator parsed while
+ * loading to the given input operands.
+ *
+ * @param operands all operands for the model
+ * @param input_operand_indexes input operand indexes for this layer
+ * @param output_operand_index output operand index for this layer
+ * @param parameters unary math layer parameters
+ * @param ctx pointer to Native model context for logging
+ * @retval 0 if the execution succeeds
+ * @retval DNN_ERROR if the execution fails
+ */
 int ff_dnn_execute_layer_math_unary(DnnOperand *operands, const int32_t *input_operand_indexes,
                                     int32_t output_operand_index, const void *parameters, NativeContext *ctx);
 
