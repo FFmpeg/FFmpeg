@@ -85,6 +85,61 @@ typedef struct DrawBoxContext {
 
 static const int NUM_EXPR_EVALS = 5;
 
+typedef int (*PixelBelongsToRegion)(DrawBoxContext *s, int x, int y);
+
+#define ASSIGN_THREE_CHANNELS                                        \
+    row[0] = frame->data[0] +  y               * frame->linesize[0]; \
+    row[1] = frame->data[1] + (y >> ctx->vsub) * frame->linesize[1]; \
+    row[2] = frame->data[2] + (y >> ctx->vsub) * frame->linesize[2];
+
+#define ASSIGN_FOUR_CHANNELS                          \
+    ASSIGN_THREE_CHANNELS                             \
+    row[3] = frame->data[3] + y * frame->linesize[3];
+
+static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, int right, int down,
+                        PixelBelongsToRegion pixel_belongs_to_region)
+{
+    unsigned char *row[4];
+    int x, y;
+    if (ctx->have_alpha && ctx->replace) {
+        for (y = top; y < down; y++) {
+            ASSIGN_FOUR_CHANNELS
+            if (ctx->invert_color) {
+                for (x = left; x < right; x++)
+                    if (pixel_belongs_to_region(ctx, x, y))
+                        row[0][x] = 0xff - row[0][x];
+            } else {
+                for (x = left; x < right; x++) {
+                    if (pixel_belongs_to_region(ctx, x, y)) {
+                        row[0][x             ] = ctx->yuv_color[Y];
+                        row[1][x >> ctx->hsub] = ctx->yuv_color[U];
+                        row[2][x >> ctx->hsub] = ctx->yuv_color[V];
+                        row[3][x             ] = ctx->yuv_color[A];
+                    }
+                }
+            }
+        }
+    } else {
+        for (y = top; y < down; y++) {
+            ASSIGN_THREE_CHANNELS
+            if (ctx->invert_color) {
+                if (pixel_belongs_to_region(ctx, x, y))
+                    row[0][x] = 0xff - row[0][x];
+            } else {
+                for (x = left; x < right; x++) {
+                    double alpha = (double)ctx->yuv_color[A] / 255;
+
+                    if (pixel_belongs_to_region(ctx, x, y)) {
+                        row[0][x             ] = (1 - alpha) * row[0][x             ] + alpha * ctx->yuv_color[Y];
+                        row[1][x >> ctx->hsub] = (1 - alpha) * row[1][x >> ctx->hsub] + alpha * ctx->yuv_color[U];
+                        row[2][x >> ctx->hsub] = (1 - alpha) * row[2][x >> ctx->hsub] + alpha * ctx->yuv_color[V];
+                    }
+                }
+            }
+        }
+    }
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     DrawBoxContext *s = ctx->priv;
@@ -217,58 +272,9 @@ static av_pure av_always_inline int pixel_belongs_to_box(DrawBoxContext *s, int 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     DrawBoxContext *s = inlink->dst->priv;
-    int plane, x, y, xb = s->x, yb = s->y;
-    unsigned char *row[4];
 
-    if (s->have_alpha && s->replace) {
-        for (y = FFMAX(yb, 0); y < frame->height && y < (yb + s->h); y++) {
-            row[0] = frame->data[0] + y * frame->linesize[0];
-            row[3] = frame->data[3] + y * frame->linesize[3];
-
-            for (plane = 1; plane < 3; plane++)
-                row[plane] = frame->data[plane] +
-                     frame->linesize[plane] * (y >> s->vsub);
-
-            if (s->invert_color) {
-                for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                    if (pixel_belongs_to_box(s, x, y))
-                        row[0][x] = 0xff - row[0][x];
-            } else {
-                for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
-                    if (pixel_belongs_to_box(s, x, y)) {
-                        row[0][x           ] = s->yuv_color[Y];
-                        row[1][x >> s->hsub] = s->yuv_color[U];
-                        row[2][x >> s->hsub] = s->yuv_color[V];
-                        row[3][x           ] = s->yuv_color[A];
-                    }
-                }
-            }
-        }
-    } else {
-        for (y = FFMAX(yb, 0); y < frame->height && y < (yb + s->h); y++) {
-            row[0] = frame->data[0] + y * frame->linesize[0];
-
-            for (plane = 1; plane < 3; plane++)
-                row[plane] = frame->data[plane] +
-                     frame->linesize[plane] * (y >> s->vsub);
-
-            if (s->invert_color) {
-                for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                    if (pixel_belongs_to_box(s, x, y))
-                        row[0][x] = 0xff - row[0][x];
-            } else {
-                for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
-                    double alpha = (double)s->yuv_color[A] / 255;
-
-                    if (pixel_belongs_to_box(s, x, y)) {
-                        row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
-                        row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
-                        row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
-                    }
-                }
-            }
-        }
-    }
+    draw_region(frame, s, FFMAX(s->x, 0), FFMAX(s->y, 0), FFMIN(s->x + s->w, frame->width),
+                FFMIN(s->y + s->h, frame->height), pixel_belongs_to_box);
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
@@ -389,58 +395,8 @@ static av_pure av_always_inline int pixel_belongs_to_grid(DrawBoxContext *drawgr
 static int drawgrid_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     DrawBoxContext *drawgrid = inlink->dst->priv;
-    int plane, x, y;
-    uint8_t *row[4];
 
-    if (drawgrid->have_alpha && drawgrid->replace) {
-        for (y = 0; y < frame->height; y++) {
-            row[0] = frame->data[0] + y * frame->linesize[0];
-            row[3] = frame->data[3] + y * frame->linesize[3];
-
-            for (plane = 1; plane < 3; plane++)
-                row[plane] = frame->data[plane] +
-                     frame->linesize[plane] * (y >> drawgrid->vsub);
-
-            if (drawgrid->invert_color) {
-                for (x = 0; x < frame->width; x++)
-                    if (pixel_belongs_to_grid(drawgrid, x, y))
-                        row[0][x] = 0xff - row[0][x];
-            } else {
-                for (x = 0; x < frame->width; x++) {
-                    if (pixel_belongs_to_grid(drawgrid, x, y)) {
-                        row[0][x                  ] = drawgrid->yuv_color[Y];
-                        row[1][x >> drawgrid->hsub] = drawgrid->yuv_color[U];
-                        row[2][x >> drawgrid->hsub] = drawgrid->yuv_color[V];
-                        row[3][x                  ] = drawgrid->yuv_color[A];
-                    }
-                }
-            }
-        }
-    } else {
-        for (y = 0; y < frame->height; y++) {
-            row[0] = frame->data[0] + y * frame->linesize[0];
-
-            for (plane = 1; plane < 3; plane++)
-                row[plane] = frame->data[plane] +
-                     frame->linesize[plane] * (y >> drawgrid->vsub);
-
-            if (drawgrid->invert_color) {
-                for (x = 0; x < frame->width; x++)
-                    if (pixel_belongs_to_grid(drawgrid, x, y))
-                        row[0][x] = 0xff - row[0][x];
-            } else {
-                for (x = 0; x < frame->width; x++) {
-                    double alpha = (double)drawgrid->yuv_color[A] / 255;
-
-                    if (pixel_belongs_to_grid(drawgrid, x, y)) {
-                        row[0][x                  ] = (1 - alpha) * row[0][x                  ] + alpha * drawgrid->yuv_color[Y];
-                        row[1][x >> drawgrid->hsub] = (1 - alpha) * row[1][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[U];
-                        row[2][x >> drawgrid->hsub] = (1 - alpha) * row[2][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[V];
-                    }
-                }
-            }
-        }
-    }
+    draw_region(frame, drawgrid, 0, 0, frame->width, frame->height, pixel_belongs_to_grid);
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
