@@ -528,7 +528,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->stats_mode == STATS_MODE_DIFF_FRAMES) {
         av_frame_free(&s->prev_frame);
         s->prev_frame = in;
-    } else if (s->stats_mode == STATS_MODE_SINGLE_FRAMES) {
+    } else if (s->stats_mode == STATS_MODE_SINGLE_FRAMES && s->nb_refs > 0) {
         AVFrame *out;
         int i;
 
