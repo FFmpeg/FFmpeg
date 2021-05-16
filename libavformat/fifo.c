@@ -593,7 +593,7 @@ static int fifo_write_packet(AVFormatContext *avf, AVPacket *pkt)
         goto fail;
     }
 
-    if (fifo->timeshift && pkt->dts != AV_NOPTS_VALUE)
+    if (fifo->timeshift && pkt && pkt->dts != AV_NOPTS_VALUE)
         atomic_fetch_add_explicit(&fifo->queue_duration, next_duration(avf, pkt, &fifo->last_sent_dts), memory_order_relaxed);
 
     return ret;
