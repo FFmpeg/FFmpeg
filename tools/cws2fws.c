@@ -89,6 +89,12 @@ int main(int argc, char *argv[])
     for (i = 0; i < comp_len - 8;) {
         int ret, len = read(fd_in, &buf_in, 1024);
 
+        if (len == -1) {
+            printf("read failure\n");
+            inflateEnd(&zstream);
+            goto out;
+        }
+
         dbgprintf("read %d bytes\n", len);
 
         last_out = zstream.total_out;
