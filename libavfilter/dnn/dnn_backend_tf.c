@@ -763,12 +763,22 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     }
     input.data = (float *)TF_TensorData(input_tensor);
 
-    if (do_ioproc) {
-        if (tf_model->model->frame_pre_proc != NULL) {
-            tf_model->model->frame_pre_proc(in_frame, &input, tf_model->model->filter_ctx);
-        } else {
-            ff_proc_from_frame_to_dnn(in_frame, &input, tf_model->model->func_type, ctx);
+    switch (tf_model->model->func_type) {
+    case DFT_PROCESS_FRAME:
+        if (do_ioproc) {
+            if (tf_model->model->frame_pre_proc != NULL) {
+                tf_model->model->frame_pre_proc(in_frame, &input, tf_model->model->filter_ctx);
+            } else {
+                ff_proc_from_frame_to_dnn(in_frame, &input, ctx);
+            }
         }
+        break;
+    case DFT_ANALYTICS_DETECT:
+        ff_frame_to_dnn_detect(in_frame, &input, ctx);
+        break;
+    default:
+        avpriv_report_missing_feature(ctx, "model function type %d", tf_model->model->func_type);
+        break;
     }
 
     tf_outputs = av_malloc_array(nb_output, sizeof(*tf_outputs));

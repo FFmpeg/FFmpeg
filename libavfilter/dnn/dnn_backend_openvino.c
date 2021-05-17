@@ -186,14 +186,16 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request
         task = inference->task;
         switch (task->ov_model->model->func_type) {
         case DFT_PROCESS_FRAME:
-        case DFT_ANALYTICS_DETECT:
             if (task->do_ioproc) {
                 if (ov_model->model->frame_pre_proc != NULL) {
                     ov_model->model->frame_pre_proc(task->in_frame, &input, ov_model->model->filter_ctx);
                 } else {
-                    ff_proc_from_frame_to_dnn(task->in_frame, &input, ov_model->model->func_type, ctx);
+                    ff_proc_from_frame_to_dnn(task->in_frame, &input, ctx);
                 }
             }
+            break;
+        case DFT_ANALYTICS_DETECT:
+            ff_frame_to_dnn_detect(task->in_frame, &input, ctx);
             break;
         case DFT_ANALYTICS_CLASSIFY:
             ff_frame_to_dnn_classify(task->in_frame, &input, inference->bbox_index, ctx);

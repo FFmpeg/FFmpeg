@@ -97,7 +97,7 @@ DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *l
     return DNN_SUCCESS;
 }
 
-static DNNReturnType proc_from_frame_to_dnn_frameprocessing(AVFrame *frame, DNNData *input, void *log_ctx)
+DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
@@ -249,7 +249,7 @@ DNNReturnType ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t 
     return DNN_SUCCESS;
 }
 
-static DNNReturnType proc_from_frame_to_dnn_analytics(AVFrame *frame, DNNData *input, void *log_ctx)
+DNNReturnType ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int linesizes[4];
@@ -276,18 +276,4 @@ static DNNReturnType proc_from_frame_to_dnn_analytics(AVFrame *frame, DNNData *i
 
     sws_freeContext(sws_ctx);
     return DNN_SUCCESS;
-}
-
-DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, DNNFunctionType func_type, void *log_ctx)
-{
-    switch (func_type)
-    {
-    case DFT_PROCESS_FRAME:
-        return proc_from_frame_to_dnn_frameprocessing(frame, input, log_ctx);
-    case DFT_ANALYTICS_DETECT:
-        return proc_from_frame_to_dnn_analytics(frame, input, log_ctx);
-    default:
-        avpriv_report_missing_feature(log_ctx, "model function type %d", func_type);
-        return DNN_ERROR;
-    }
 }
