@@ -573,14 +573,13 @@ idct_16x16 10
 // void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
 .macro idct_dc size, bitdepth
 function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
-        movi          v1.8h,  #((1 << (14 - \bitdepth))+1)
         ld1r         {v4.8h}, [x0]
-        add           v4.8h,  v4.8h,  v1.8h
-        sshr          v0.8h,  v4.8h,  #(15 - \bitdepth)
-        sshr          v1.8h,  v4.8h,  #(15 - \bitdepth)
+        srshr         v4.8h,  v4.8h,  #1
+        srshr         v0.8h,  v4.8h,  #(14 - \bitdepth)
+        srshr         v1.8h,  v4.8h,  #(14 - \bitdepth)
 .if \size > 4
-        sshr          v2.8h,  v4.8h,  #(15 - \bitdepth)
-        sshr          v3.8h,  v4.8h,  #(15 - \bitdepth)
+        srshr         v2.8h,  v4.8h,  #(14 - \bitdepth)
+        srshr         v3.8h,  v4.8h,  #(14 - \bitdepth)
 .if \size > 16 /* dc 32x32 */
         mov              x2,  #4
 1:
