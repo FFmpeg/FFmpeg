@@ -1682,7 +1682,7 @@ static int parse_layer_rates(Jpeg2000EncoderContext *s)
     }
 
     token = av_strtok(s->lr_str, ",", &saveptr);
-    if (rate = strtol(token, NULL, 10)) {
+    if (token && (rate = strtol(token, NULL, 10))) {
             s->layer_rates[0] = rate <= 1 ? 0:rate;
             nlayers++;
     } else {
