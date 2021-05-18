@@ -1876,6 +1876,8 @@ Reemit PAT and PMT at each video frame.
 Conform to System B (DVB) instead of System A (ATSC).
 @item initial_discontinuity
 Mark the initial packet of each stream as discontinuity.
+@item nit
+Emit NIT table.
 @end table
 
 @item mpegts_copyts @var{boolean}
@@ -1897,8 +1899,11 @@ Maximum time in seconds between PAT/PMT tables. Default is @code{0.1}.
 @item sdt_period @var{duration}
 Maximum time in seconds between SDT tables. Default is @code{0.5}.
 
+@item nit_period @var{duration}
+Maximum time in seconds between NIT tables. Default is @code{0.5}.
+
 @item tables_version @var{integer}
-Set PAT, PMT and SDT version (default @code{0}, valid values are from 0 to 31, inclusively).
+Set PAT, PMT, SDT and NIT version (default @code{0}, valid values are from 0 to 31, inclusively).
 This option allows updating stream structure so that standard consumer may
 detect the change. To do so, reopen output @code{AVFormatContext} (in case of API
 usage) or restart @command{ffmpeg} instance, cyclically changing

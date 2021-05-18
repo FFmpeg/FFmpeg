@@ -76,10 +76,12 @@ typedef struct MpegTSWrite {
     const AVClass *av_class;
     MpegTSSection pat; /* MPEG-2 PAT table */
     MpegTSSection sdt; /* MPEG-2 SDT table context */
+    MpegTSSection nit; /* MPEG-2 NIT table context */
     MpegTSService **services;
     AVPacket *pkt;
     int64_t sdt_period; /* SDT period in PCR time base */
     int64_t pat_period; /* PAT/PMT period in PCR time base */
+    int64_t nit_period; /* NIT period in PCR time base */
     int nb_services;
     int64_t first_pcr;
     int first_dts_checked;
@@ -107,13 +109,18 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
 #define MPEGTS_FLAG_SYSTEM_B        0x08
 #define MPEGTS_FLAG_DISCONT         0x10
+#define MPEGTS_FLAG_NIT             0x20
     int flags;
     int copyts;
     int tables_version;
     int64_t pat_period_us;
     int64_t sdt_period_us;
+    int64_t nit_period_us;
     int64_t last_pat_ts;
     int64_t last_sdt_ts;
+    int64_t last_nit_ts;
+
+    uint8_t provider_name[256];
 
     int omit_video_pes_length;
 } MpegTSWrite;
@@ -196,8 +203,8 @@ static int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 {
     uint8_t section[1024], *q;
     unsigned int tot_len;
-    /* reserved_future_use field must be set to 1 for SDT */
-    unsigned int flags = tid == SDT_TID ? 0xf000 : 0xb000;
+    /* reserved_future_use field must be set to 1 for SDT and NIT */
+    unsigned int flags = (tid == SDT_TID || tid == NIT_TID) ? 0xf000 : 0xb000;
 
     tot_len = 3 + 5 + len + 4;
     /* check if not too big */
@@ -227,6 +234,7 @@ static int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 #define SDT_RETRANS_TIME 500
 #define PAT_RETRANS_TIME 100
 #define PCR_RETRANS_TIME 20
+#define NIT_RETRANS_TIME 500
 
 typedef struct MpegTSWriteStream {
     int pid; /* stream associated pid */
@@ -260,6 +268,10 @@ static void mpegts_write_pat(AVFormatContext *s)
     int i;
 
     q = data;
+    if (ts->flags & MPEGTS_FLAG_NIT) {
+        put16(&q, 0x0000);
+        put16(&q, NIT_PID);
+    }
     for (i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];
         put16(&q, service->sid);
@@ -796,6 +808,47 @@ static void mpegts_write_sdt(AVFormatContext *s)
                           data, q - data);
 }
 
+static void mpegts_write_nit(AVFormatContext *s)
+{
+    MpegTSWrite *ts = s->priv_data;
+    uint8_t data[SECTION_LENGTH], *q, *desc_len_ptr, *loop_len_ptr;
+
+    q = data;
+
+    //network_descriptors_length
+    put16(&q, 0xf000 | (ts->provider_name[0] + 2));
+
+    //network_name_descriptor
+    *q++ = 0x40;
+    putbuf(&q, ts->provider_name, ts->provider_name[0] + 1);
+
+    //transport_stream_loop_length
+    loop_len_ptr = q;
+    q += 2;
+
+    put16(&q, ts->transport_stream_id);
+    put16(&q, ts->original_network_id);
+
+    //transport_descriptors_length
+    desc_len_ptr = q;
+    q += 2;
+
+    //service_list_descriptor
+    *q++ = 0x41;
+    *q++ = 3 * ts->nb_services;
+    for (int i = 0; i < ts->nb_services; i++) {
+        put16(&q, ts->services[i]->sid);
+        *q++ = ts->service_type;
+    }
+
+    //calculate lengths
+    put16(&desc_len_ptr, 0xf000 | q - (desc_len_ptr + 2));
+    put16(&loop_len_ptr, 0xf000 | q - (loop_len_ptr + 2));
+
+    mpegts_write_section1(&ts->nit, NIT_TID, ts->original_network_id, ts->tables_version, 0, 0,
+                          data, q - data);
+}
+
 /* This stores a string in buf with the correct encoding and also sets the
  * first byte as the length. !str is accepted for an empty string.
  * If the string is already encoded, invalid UTF-8 or has no multibyte sequence
@@ -966,6 +1019,8 @@ static void select_pcr_streams(AVFormatContext *s)
 static int mpegts_init(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
+    AVDictionaryEntry *provider;
+    const char *provider_name;
     int i, j;
     int ret;
 
@@ -1021,6 +1076,12 @@ static int mpegts_init(AVFormatContext *s)
     ts->sdt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque       = s;
+
+    ts->nit.pid          = NIT_PID;
+    ts->nit.cc           = 15;
+    ts->nit.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
+    ts->nit.write_packet = section_write_packet;
+    ts->nit.opaque       = s;
 
     ts->pkt = av_packet_alloc();
     if (!ts->pkt)
@@ -1143,23 +1204,36 @@ static int mpegts_init(AVFormatContext *s)
 
     ts->last_pat_ts = AV_NOPTS_VALUE;
     ts->last_sdt_ts = AV_NOPTS_VALUE;
+    ts->last_nit_ts = AV_NOPTS_VALUE;
     ts->pat_period = av_rescale(ts->pat_period_us, PCR_TIME_BASE, AV_TIME_BASE);
     ts->sdt_period = av_rescale(ts->sdt_period_us, PCR_TIME_BASE, AV_TIME_BASE);
+    ts->nit_period = av_rescale(ts->nit_period_us, PCR_TIME_BASE, AV_TIME_BASE);
+
+    /* assign provider name */
+    provider = av_dict_get(s->metadata, "service_provider", NULL, 0);
+    provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
+    if (encode_str8(ts->provider_name, provider_name) < 0) {
+        av_log(s, AV_LOG_ERROR, "Too long provider name\n");
+        return AVERROR(EINVAL);
+    }
 
     if (ts->mux_rate == 1)
         av_log(s, AV_LOG_VERBOSE, "muxrate VBR, ");
     else
         av_log(s, AV_LOG_VERBOSE, "muxrate %d, ", ts->mux_rate);
     av_log(s, AV_LOG_VERBOSE,
-           "sdt every %"PRId64" ms, pat/pmt every %"PRId64" ms\n",
+           "sdt every %"PRId64" ms, pat/pmt every %"PRId64" ms",
            av_rescale(ts->sdt_period, 1000, PCR_TIME_BASE),
            av_rescale(ts->pat_period, 1000, PCR_TIME_BASE));
+    if (ts->flags & MPEGTS_FLAG_NIT)
+        av_log(s, AV_LOG_VERBOSE, ", nit every %"PRId64" ms", av_rescale(ts->nit_period, 1000, PCR_TIME_BASE));
+    av_log(s, AV_LOG_VERBOSE, "\n");
 
     return 0;
 }
 
-/* send SDT, PAT and PMT tables regularly */
-static void retransmit_si_info(AVFormatContext *s, int force_pat, int force_sdt, int64_t pcr)
+/* send SDT, NIT, PAT and PMT tables regularly */
+static void retransmit_si_info(AVFormatContext *s, int force_pat, int force_sdt, int force_nit, int64_t pcr)
 {
     MpegTSWrite *ts = s->priv_data;
     int i;
@@ -1180,6 +1254,15 @@ static void retransmit_si_info(AVFormatContext *s, int force_pat, int force_sdt,
         mpegts_write_pat(s);
         for (i = 0; i < ts->nb_services; i++)
             mpegts_write_pmt(s, ts->services[i]);
+    }
+    if ((pcr != AV_NOPTS_VALUE && ts->last_nit_ts == AV_NOPTS_VALUE) ||
+        (pcr != AV_NOPTS_VALUE && pcr - ts->last_nit_ts >= ts->nit_period) ||
+        force_nit
+    ) {
+        if (pcr != AV_NOPTS_VALUE)
+            ts->last_nit_ts = FFMAX(pcr, ts->last_nit_ts);
+        if (ts->flags & MPEGTS_FLAG_NIT)
+            mpegts_write_nit(s);
     }
 }
 
@@ -1337,6 +1420,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int force_pat = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && key && !ts_st->prev_payload_key;
     int force_sdt = 0;
+    int force_nit = 0;
 
     av_assert0(ts_st->payload != buf || st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO);
     if (ts->flags & MPEGTS_FLAG_PAT_PMT_AT_FRAMES && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -1346,6 +1430,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     if (ts->flags & MPEGTS_FLAG_REEMIT_PAT_PMT) {
         force_pat = 1;
         force_sdt = 1;
+        force_nit = 1;
         ts->flags &= ~MPEGTS_FLAG_REEMIT_PAT_PMT;
     }
 
@@ -1357,9 +1442,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         else if (dts != AV_NOPTS_VALUE)
             pcr = (dts - delay) * 300;
 
-        retransmit_si_info(s, force_pat, force_sdt, pcr);
+        retransmit_si_info(s, force_pat, force_sdt, force_nit, pcr);
         force_pat = 0;
         force_sdt = 0;
+        force_nit = 0;
 
         write_pcr = 0;
         if (ts->mux_rate > 1) {
@@ -2132,8 +2218,10 @@ static const AVOption options[] = {
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_SYSTEM_B }, 0, INT_MAX, ENC, "mpegts_flags" },
     { "initial_discontinuity", "Mark initial packets as discontinuous",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_DISCONT }, 0, INT_MAX, ENC, "mpegts_flags" },
+    { "nit", "Enable NIT transmission",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_NIT}, 0, INT_MAX, ENC, "mpegts_flags" },
     { "mpegts_copyts", "don't offset dts/pts", OFFSET(copyts), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, ENC },
-    { "tables_version", "set PAT, PMT and SDT version", OFFSET(tables_version), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 31, ENC },
+    { "tables_version", "set PAT, PMT, SDT and NIT version", OFFSET(tables_version), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 31, ENC },
     { "omit_video_pes_length", "Omit the PES packet length for video packets",
       OFFSET(omit_video_pes_length), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, ENC },
     { "pcr_period", "PCR retransmission time in milliseconds",
@@ -2142,6 +2230,8 @@ static const AVOption options[] = {
       OFFSET(pat_period_us), AV_OPT_TYPE_DURATION, { .i64 = PAT_RETRANS_TIME * 1000LL }, 0, INT64_MAX, ENC },
     { "sdt_period", "SDT retransmission time limit in seconds",
       OFFSET(sdt_period_us), AV_OPT_TYPE_DURATION, { .i64 = SDT_RETRANS_TIME * 1000LL }, 0, INT64_MAX, ENC },
+    { "nit_period", "NIT retransmission time limit in seconds",
+      OFFSET(nit_period_us), AV_OPT_TYPE_DURATION, { .i64 = NIT_RETRANS_TIME * 1000LL }, 0, INT64_MAX, ENC },
     { NULL },
 };
 
