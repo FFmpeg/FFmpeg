@@ -972,6 +972,8 @@ static int ftp_parse_entry_mlsd(char *mlsd, AVIODirEntry *next)
             continue;
         }
         fact = av_strtok(fact, "=", &value);
+        if (!fact)
+            continue;
         if (!av_strcasecmp(fact, "type")) {
             if (!av_strcasecmp(value, "cdir") || !av_strcasecmp(value, "pdir"))
                 return 1;
