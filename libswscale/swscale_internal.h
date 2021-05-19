@@ -626,6 +626,18 @@ typedef struct SwsContext {
     SwsDither dither;
 
     SwsAlphaBlend alphablend;
+
+    // scratch buffer for converting packed rgb0 sources
+    // filled with a copy of the input frame + fully opaque alpha,
+    // then passed as input to further conversion
+    uint8_t     *rgb0_scratch;
+    unsigned int rgb0_scratch_allocated;
+
+    // scratch buffer for converting XYZ sources
+    // filled with the input converted to rgb48
+    // then passed as input to further conversion
+    uint8_t     *xyz_scratch;
+    unsigned int xyz_scratch_allocated;
 } SwsContext;
 //FIXME check init (where 0)
 

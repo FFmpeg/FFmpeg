@@ -2295,6 +2295,9 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->gamma);
     av_freep(&c->inv_gamma);
 
+    av_freep(&c->rgb0_scratch);
+    av_freep(&c->xyz_scratch);
+
     ff_free_filters(c);
 
     av_free(c);

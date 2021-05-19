@@ -871,7 +871,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     int i, ret;
     const uint8_t *src2[4];
     uint8_t *dst2[4];
-    uint8_t *rgb0_tmp = NULL;
     int macro_height = isBayer(c->srcFormat) ? 2 : (1 << c->chrSrcVSubSample);
     // copy strides, so they can safely be modified
     int srcStride2[4];
@@ -928,11 +927,14 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (c->src0Alpha && !c->dst0Alpha && isALPHA(c->dstFormat)) {
         uint8_t *base;
         int x,y;
-        rgb0_tmp = av_malloc(FFABS(srcStride[0]) * srcSliceH + 32);
-        if (!rgb0_tmp)
+
+        av_fast_malloc(&c->rgb0_scratch, &c->rgb0_scratch_allocated,
+                       FFABS(srcStride[0]) * srcSliceH + 32);
+        if (!c->rgb0_scratch)
             return AVERROR(ENOMEM);
 
-        base = srcStride[0] < 0 ? rgb0_tmp - srcStride[0] * (srcSliceH-1) : rgb0_tmp;
+        base = srcStride[0] < 0 ? c->rgb0_scratch - srcStride[0] * (srcSliceH-1) :
+                                  c->rgb0_scratch;
         for (y=0; y<srcSliceH; y++){
             memcpy(base + srcStride[0]*y, src2[0] + srcStride[0]*y, 4*c->srcW);
             for (x=c->src0Alpha-1; x<4*c->srcW; x+=4) {
@@ -944,11 +946,14 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
 
     if (c->srcXYZ && !(c->dstXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {
         uint8_t *base;
-        rgb0_tmp = av_malloc(FFABS(srcStride[0]) * srcSliceH + 32);
-        if (!rgb0_tmp)
+
+        av_fast_malloc(&c->xyz_scratch, &c->xyz_scratch_allocated,
+                       FFABS(srcStride[0]) * srcSliceH + 32);
+        if (!c->xyz_scratch)
             return AVERROR(ENOMEM);
 
-        base = srcStride[0] < 0 ? rgb0_tmp - srcStride[0] * (srcSliceH-1) : rgb0_tmp;
+        base = srcStride[0] < 0 ? c->xyz_scratch - srcStride[0] * (srcSliceH-1) :
+                                  c->xyz_scratch;
 
         xyz12Torgb48(c, (uint16_t*)base, (const uint16_t*)src2[0], srcStride[0]/2, srcSliceH);
         src2[0] = base;
@@ -996,6 +1001,5 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         rgb48Toxyz12(c, dst16, dst16, dstStride2[0]/2, ret);
     }
 
-    av_free(rgb0_tmp);
     return ret;
 }
