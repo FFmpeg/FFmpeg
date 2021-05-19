@@ -847,15 +847,15 @@ static int scale_cascaded(SwsContext *c,
                           int srcSliceY, int srcSliceH,
                           uint8_t * const dst[], const int dstStride[])
 {
-        int ret = sws_scale(c->cascaded_context[0],
+    int ret = sws_scale(c->cascaded_context[0],
                         srcSlice, srcStride, srcSliceY, srcSliceH,
                         c->cascaded_tmp, c->cascaded_tmpStride);
-        if (ret < 0)
-            return ret;
-        ret = sws_scale(c->cascaded_context[1],
-                        (const uint8_t * const * )c->cascaded_tmp, c->cascaded_tmpStride, 0, c->cascaded_context[0]->dstH,
-                        dst, dstStride);
+    if (ret < 0)
         return ret;
+    ret = sws_scale(c->cascaded_context[1],
+                    (const uint8_t * const * )c->cascaded_tmp, c->cascaded_tmpStride,
+                    0, c->cascaded_context[0]->dstH, dst, dstStride);
+    return ret;
 }
 
 /**
