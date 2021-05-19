@@ -842,6 +842,22 @@ static int scale_gamma(SwsContext *c,
     return ret;
 }
 
+static int scale_cascaded(SwsContext *c,
+                          const uint8_t * const srcSlice[], const int srcStride[],
+                          int srcSliceY, int srcSliceH,
+                          uint8_t * const dst[], const int dstStride[])
+{
+        int ret = sws_scale(c->cascaded_context[0],
+                        srcSlice, srcStride, srcSliceY, srcSliceH,
+                        c->cascaded_tmp, c->cascaded_tmpStride);
+        if (ret < 0)
+            return ret;
+        ret = sws_scale(c->cascaded_context[1],
+                        (const uint8_t * const * )c->cascaded_tmp, c->cascaded_tmpStride, 0, c->cascaded_context[0]->dstH,
+                        dst, dstStride);
+        return ret;
+}
+
 /**
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
@@ -882,17 +898,8 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (c->gamma_flag && c->cascaded_context[0])
         return scale_gamma(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
-    if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH) {
-        ret = sws_scale(c->cascaded_context[0],
-                        srcSlice, srcStride, srcSliceY, srcSliceH,
-                        c->cascaded_tmp, c->cascaded_tmpStride);
-        if (ret < 0)
-            return ret;
-        ret = sws_scale(c->cascaded_context[1],
-                        (const uint8_t * const * )c->cascaded_tmp, c->cascaded_tmpStride, 0, c->cascaded_context[0]->dstH,
-                        dst, dstStride);
-        return ret;
-    }
+    if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH)
+        return scale_cascaded(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
     memcpy(src2, srcSlice, sizeof(src2));
     memcpy(dst2, dst, sizeof(dst2));
