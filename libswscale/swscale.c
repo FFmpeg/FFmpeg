@@ -890,6 +890,15 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         return AVERROR(EINVAL);
     }
 
+    if (!check_image_pointers(srcSlice, c->srcFormat, srcStride)) {
+        av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
+        return AVERROR(EINVAL);
+    }
+    if (!check_image_pointers((const uint8_t* const*)dst, c->dstFormat, dstStride)) {
+        av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
+        return AVERROR(EINVAL);
+    }
+
     if (c->gamma_flag && c->cascaded_context[0])
         return scale_gamma(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
@@ -904,15 +913,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     // do not mess up sliceDir if we have a "trailing" 0-size slice
     if (srcSliceH == 0)
         return 0;
-
-    if (!check_image_pointers(srcSlice, c->srcFormat, srcStride)) {
-        av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
-        return 0;
-    }
-    if (!check_image_pointers((const uint8_t* const*)dst, c->dstFormat, dstStride)) {
-        av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
-        return 0;
-    }
 
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
