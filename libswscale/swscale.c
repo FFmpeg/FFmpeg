@@ -883,11 +883,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         return AVERROR(EINVAL);
     }
 
-    for (i=0; i<4; i++) {
-        srcStride2[i] = srcStride[i];
-        dstStride2[i] = dstStride[i];
-    }
-
     if ((srcSliceY & (macro_height-1)) ||
         ((srcSliceH& (macro_height-1)) && srcSliceY + srcSliceH != c->srcH) ||
         srcSliceY + srcSliceH > c->srcH) {
@@ -901,8 +896,10 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH)
         return scale_cascaded(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
-    memcpy(src2, srcSlice, sizeof(src2));
-    memcpy(dst2, dst, sizeof(dst2));
+    memcpy(src2,       srcSlice,  sizeof(src2));
+    memcpy(dst2,       dst,       sizeof(dst2));
+    memcpy(srcStride2, srcStride, sizeof(srcStride2));
+    memcpy(dstStride2, dstStride, sizeof(dstStride2));
 
     // do not mess up sliceDir if we have a "trailing" 0-size slice
     if (srcSliceH == 0)
