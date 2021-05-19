@@ -178,7 +178,7 @@ typedef struct VariantStream {
     unsigned int nb_streams;
     int m3u8_created; /* status of media play-list creation */
     int is_default; /* default status of audio group */
-    const char *language; /* audio lauguage name */
+    const char *language; /* audio language name */
     const char *agroup;   /* audio group name */
     const char *sgroup;   /* subtitle group name */
     const char *ccgroup;  /* closed caption group name */
@@ -188,7 +188,7 @@ typedef struct VariantStream {
 typedef struct ClosedCaptionsStream {
     const char *ccgroup;    /* closed caption group name */
     const char *instreamid; /* closed captions INSTREAM-ID */
-    const char *language;   /* closed captions langauge */
+    const char *language;   /* closed captions language */
 } ClosedCaptionsStream;
 
 typedef struct HLSContext {
