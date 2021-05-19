@@ -292,7 +292,7 @@ static int vaapi_av1_decode_slice(AVCodecContext *avctx,
         err = ff_vaapi_decode_make_slice_buffer(avctx, pic, &slice_param,
                                                 sizeof(VASliceParameterBufferAV1),
                                                 buffer,
-                                                s->tile_group_info[i].tile_size);
+                                                size);
         if (err) {
             ff_vaapi_decode_cancel(avctx, pic);
             return err;
