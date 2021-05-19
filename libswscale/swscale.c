@@ -738,34 +738,34 @@ static void rgb48Toxyz12(struct SwsContext *c, uint16_t *dst,
 
 static void update_palette(SwsContext *c, const uint32_t *pal)
 {
-        for (int i = 0; i < 256; i++) {
-            int r, g, b, y, u, v, a = 0xff;
-            if (c->srcFormat == AV_PIX_FMT_PAL8) {
-                uint32_t p = pal[i];
-                a = (p >> 24) & 0xFF;
-                r = (p >> 16) & 0xFF;
-                g = (p >>  8) & 0xFF;
-                b =  p        & 0xFF;
-            } else if (c->srcFormat == AV_PIX_FMT_RGB8) {
-                r = ( i >> 5     ) * 36;
-                g = ((i >> 2) & 7) * 36;
-                b = ( i       & 3) * 85;
-            } else if (c->srcFormat == AV_PIX_FMT_BGR8) {
-                b = ( i >> 6     ) * 85;
-                g = ((i >> 3) & 7) * 36;
-                r = ( i       & 7) * 36;
-            } else if (c->srcFormat == AV_PIX_FMT_RGB4_BYTE) {
-                r = ( i >> 3     ) * 255;
-                g = ((i >> 1) & 3) * 85;
-                b = ( i       & 1) * 255;
-            } else if (c->srcFormat == AV_PIX_FMT_GRAY8 || c->srcFormat == AV_PIX_FMT_GRAY8A) {
-                r = g = b = i;
-            } else {
-                av_assert1(c->srcFormat == AV_PIX_FMT_BGR4_BYTE);
-                b = ( i >> 3     ) * 255;
-                g = ((i >> 1) & 3) * 85;
-                r = ( i       & 1) * 255;
-            }
+    for (int i = 0; i < 256; i++) {
+        int r, g, b, y, u, v, a = 0xff;
+        if (c->srcFormat == AV_PIX_FMT_PAL8) {
+            uint32_t p = pal[i];
+            a = (p >> 24) & 0xFF;
+            r = (p >> 16) & 0xFF;
+            g = (p >>  8) & 0xFF;
+            b =  p        & 0xFF;
+        } else if (c->srcFormat == AV_PIX_FMT_RGB8) {
+            r = ( i >> 5     ) * 36;
+            g = ((i >> 2) & 7) * 36;
+            b = ( i       & 3) * 85;
+        } else if (c->srcFormat == AV_PIX_FMT_BGR8) {
+            b = ( i >> 6     ) * 85;
+            g = ((i >> 3) & 7) * 36;
+            r = ( i       & 7) * 36;
+        } else if (c->srcFormat == AV_PIX_FMT_RGB4_BYTE) {
+            r = ( i >> 3     ) * 255;
+            g = ((i >> 1) & 3) * 85;
+            b = ( i       & 1) * 255;
+        } else if (c->srcFormat == AV_PIX_FMT_GRAY8 || c->srcFormat == AV_PIX_FMT_GRAY8A) {
+            r = g = b = i;
+        } else {
+            av_assert1(c->srcFormat == AV_PIX_FMT_BGR4_BYTE);
+            b = ( i >> 3     ) * 255;
+            g = ((i >> 1) & 3) * 85;
+            r = ( i       & 1) * 255;
+        }
 #define RGB2YUV_SHIFT 15
 #define BY ( (int) (0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
 #define BV (-(int) (0.081 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
@@ -777,38 +777,38 @@ static void update_palette(SwsContext *c, const uint32_t *pal)
 #define RV ( (int) (0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
 #define RU (-(int) (0.169 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
 
-            y = av_clip_uint8((RY * r + GY * g + BY * b + ( 33 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
-            u = av_clip_uint8((RU * r + GU * g + BU * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
-            v = av_clip_uint8((RV * r + GV * g + BV * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
-            c->pal_yuv[i]= y + (u<<8) + (v<<16) + ((unsigned)a<<24);
+        y = av_clip_uint8((RY * r + GY * g + BY * b + ( 33 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+        u = av_clip_uint8((RU * r + GU * g + BU * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+        v = av_clip_uint8((RV * r + GV * g + BV * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+        c->pal_yuv[i]= y + (u<<8) + (v<<16) + ((unsigned)a<<24);
 
-            switch (c->dstFormat) {
-            case AV_PIX_FMT_BGR32:
+        switch (c->dstFormat) {
+        case AV_PIX_FMT_BGR32:
 #if !HAVE_BIGENDIAN
-            case AV_PIX_FMT_RGB24:
+        case AV_PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i]=  r + (g<<8) + (b<<16) + ((unsigned)a<<24);
-                break;
-            case AV_PIX_FMT_BGR32_1:
+            c->pal_rgb[i]=  r + (g<<8) + (b<<16) + ((unsigned)a<<24);
+            break;
+        case AV_PIX_FMT_BGR32_1:
 #if HAVE_BIGENDIAN
-            case AV_PIX_FMT_BGR24:
+        case AV_PIX_FMT_BGR24:
 #endif
-                c->pal_rgb[i]= a + (r<<8) + (g<<16) + ((unsigned)b<<24);
-                break;
-            case AV_PIX_FMT_RGB32_1:
+            c->pal_rgb[i]= a + (r<<8) + (g<<16) + ((unsigned)b<<24);
+            break;
+        case AV_PIX_FMT_RGB32_1:
 #if HAVE_BIGENDIAN
-            case AV_PIX_FMT_RGB24:
+        case AV_PIX_FMT_RGB24:
 #endif
-                c->pal_rgb[i]= a + (b<<8) + (g<<16) + ((unsigned)r<<24);
-                break;
-            case AV_PIX_FMT_RGB32:
+            c->pal_rgb[i]= a + (b<<8) + (g<<16) + ((unsigned)r<<24);
+            break;
+        case AV_PIX_FMT_RGB32:
 #if !HAVE_BIGENDIAN
-            case AV_PIX_FMT_BGR24:
+        case AV_PIX_FMT_BGR24:
 #endif
-            default:
-                c->pal_rgb[i]=  b + (g<<8) + (r<<16) + ((unsigned)a<<24);
-            }
+        default:
+            c->pal_rgb[i]=  b + (g<<8) + (r<<16) + ((unsigned)a<<24);
         }
+    }
 }
 
 /**
