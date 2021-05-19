@@ -811,6 +811,34 @@ static void update_palette(SwsContext *c, const uint32_t *pal)
     }
 }
 
+static int scale_gamma(SwsContext *c,
+                       const uint8_t * const srcSlice[], const int srcStride[],
+                       int srcSliceY, int srcSliceH,
+                       uint8_t * const dst[], const int dstStride[])
+{
+        int ret = sws_scale(c->cascaded_context[0],
+                    srcSlice, srcStride, srcSliceY, srcSliceH,
+                    c->cascaded_tmp, c->cascaded_tmpStride);
+
+        if (ret < 0)
+            return ret;
+
+        if (c->cascaded_context[2])
+            ret = sws_scale(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp, c->cascaded_tmpStride, srcSliceY, srcSliceH, c->cascaded1_tmp, c->cascaded1_tmpStride);
+        else
+            ret = sws_scale(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp, c->cascaded_tmpStride, srcSliceY, srcSliceH, dst, dstStride);
+
+        if (ret < 0)
+            return ret;
+
+        if (c->cascaded_context[2]) {
+            ret = sws_scale(c->cascaded_context[2],
+                        (const uint8_t * const *)c->cascaded1_tmp, c->cascaded1_tmpStride, c->cascaded_context[1]->dstY - ret, c->cascaded_context[1]->dstY,
+                        dst, dstStride);
+        }
+        return ret;
+}
+
 /**
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
@@ -848,29 +876,8 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         return AVERROR(EINVAL);
     }
 
-    if (c->gamma_flag && c->cascaded_context[0]) {
-        ret = sws_scale(c->cascaded_context[0],
-                    srcSlice, srcStride, srcSliceY, srcSliceH,
-                    c->cascaded_tmp, c->cascaded_tmpStride);
-
-        if (ret < 0)
-            return ret;
-
-        if (c->cascaded_context[2])
-            ret = sws_scale(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp, c->cascaded_tmpStride, srcSliceY, srcSliceH, c->cascaded1_tmp, c->cascaded1_tmpStride);
-        else
-            ret = sws_scale(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp, c->cascaded_tmpStride, srcSliceY, srcSliceH, dst, dstStride);
-
-        if (ret < 0)
-            return ret;
-
-        if (c->cascaded_context[2]) {
-            ret = sws_scale(c->cascaded_context[2],
-                        (const uint8_t * const *)c->cascaded1_tmp, c->cascaded1_tmpStride, c->cascaded_context[1]->dstY - ret, c->cascaded_context[1]->dstY,
-                        dst, dstStride);
-        }
-        return ret;
-    }
+    if (c->gamma_flag && c->cascaded_context[0])
+        return scale_gamma(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
     if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH) {
         ret = sws_scale(c->cascaded_context[0],
