@@ -1256,14 +1256,10 @@ static int write_manifest(AVFormatContext *s, int final)
 
     if (c->hls_playlist) {
         char filename_hls[1024];
-        const char *audio_group = "A1";
-        char audio_codec_str[128] = "\0";
-        int is_default = 1;
-        int max_audio_bitrate = 0;
 
         // Publish master playlist only the configured rate
         if (c->master_playlist_created && (!c->master_publish_rate ||
-             c->streams[0].segment_index % c->master_publish_rate))
+            c->streams[0].segment_index % c->master_publish_rate))
             return 0;
 
         if (*c->dirname)
@@ -1282,60 +1278,95 @@ static int write_manifest(AVFormatContext *s, int final)
 
         ff_hls_write_playlist_version(c->m3u8_out, 7);
 
-        for (i = 0; i < s->nb_streams; i++) {
-            char playlist_file[64];
-            AVStream *st = s->streams[i];
-            OutputStream *os = &c->streams[i];
-            if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
-                continue;
-            if (os->segment_type != SEGMENT_TYPE_MP4)
-                continue;
-            get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_audio_rendition(c->m3u8_out, (char *)audio_group,
-                                         playlist_file, NULL, i, is_default);
-            max_audio_bitrate = FFMAX(st->codecpar->bit_rate +
-                                      os->muxer_overhead, max_audio_bitrate);
-            if (!av_strnstr(audio_codec_str, os->codec_str, sizeof(audio_codec_str))) {
-                if (strlen(audio_codec_str))
-                    av_strlcat(audio_codec_str, ",", sizeof(audio_codec_str));
-                av_strlcat(audio_codec_str, os->codec_str, sizeof(audio_codec_str));
+        if (c->has_video) {
+            // treat audio streams as alternative renditions for video streams
+            const char *audio_group = "A1";
+            char audio_codec_str[128] = "\0";
+            int is_default = 1;
+            int max_audio_bitrate = 0;
+
+            for (i = 0; i < s->nb_streams; i++) {
+                char playlist_file[64];
+                AVStream *st = s->streams[i];
+                OutputStream *os = &c->streams[i];
+                if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+                    continue;
+                if (os->segment_type != SEGMENT_TYPE_MP4)
+                    continue;
+                get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
+                ff_hls_write_audio_rendition(c->m3u8_out, (char *)audio_group,
+                                             playlist_file, NULL, i, is_default);
+                max_audio_bitrate = FFMAX(st->codecpar->bit_rate +
+                                          os->muxer_overhead, max_audio_bitrate);
+                if (!av_strnstr(audio_codec_str, os->codec_str, sizeof(audio_codec_str))) {
+                    if (strlen(audio_codec_str))
+                        av_strlcat(audio_codec_str, ",", sizeof(audio_codec_str));
+                    av_strlcat(audio_codec_str, os->codec_str, sizeof(audio_codec_str));
+                }
+                is_default = 0;
             }
-            is_default = 0;
+
+            for (i = 0; i < s->nb_streams; i++) {
+                char playlist_file[64];
+                char codec_str[128];
+                AVStream *st = s->streams[i];
+                OutputStream *os = &c->streams[i];
+                char *agroup = NULL;
+                char *codec_str_ptr = NULL;
+                int stream_bitrate = os->muxer_overhead;
+                if (os->bit_rate > 0)
+                    stream_bitrate += os->bit_rate;
+                else if (final)
+                    stream_bitrate += os->pos * 8 * AV_TIME_BASE / c->total_duration;
+                else if (os->first_segment_bit_rate > 0)
+                    stream_bitrate += os->first_segment_bit_rate;
+                if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+                    continue;
+                if (os->segment_type != SEGMENT_TYPE_MP4)
+                    continue;
+                av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
+                if (max_audio_bitrate) {
+                    agroup = (char *)audio_group;
+                    stream_bitrate += max_audio_bitrate;
+                    av_strlcat(codec_str, ",", sizeof(codec_str));
+                    av_strlcat(codec_str, audio_codec_str, sizeof(codec_str));
+                }
+                if (st->codecpar->codec_id != AV_CODEC_ID_HEVC) {
+                    codec_str_ptr = codec_str;
+                }
+                get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
+                ff_hls_write_stream_info(st, c->m3u8_out, stream_bitrate,
+                                         playlist_file, agroup,
+                                         codec_str_ptr, NULL, NULL);
+            }
+
+        } else {
+            // treat audio streams as separate renditions
+
+            for (i = 0; i < s->nb_streams; i++) {
+                char playlist_file[64];
+                char codec_str[128];
+                AVStream *st = s->streams[i];
+                OutputStream *os = &c->streams[i];
+                int stream_bitrate = os->muxer_overhead;
+                if (os->bit_rate > 0)
+                    stream_bitrate += os->bit_rate;
+                else if (final)
+                    stream_bitrate += os->pos * 8 * AV_TIME_BASE / c->total_duration;
+                else if (os->first_segment_bit_rate > 0)
+                    stream_bitrate += os->first_segment_bit_rate;
+                if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+                    continue;
+                if (os->segment_type != SEGMENT_TYPE_MP4)
+                    continue;
+                av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
+                get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
+                ff_hls_write_stream_info(st, c->m3u8_out, stream_bitrate,
+                                         playlist_file, NULL,
+                                         codec_str, NULL, NULL);
+            }
         }
 
-        for (i = 0; i < s->nb_streams; i++) {
-            char playlist_file[64];
-            char codec_str[128];
-            AVStream *st = s->streams[i];
-            OutputStream *os = &c->streams[i];
-            char *agroup = NULL;
-            char *codec_str_ptr = NULL;
-            int stream_bitrate = os->muxer_overhead;
-            if (os->bit_rate > 0)
-                stream_bitrate += os->bit_rate;
-            else if (final)
-                stream_bitrate += os->pos * 8 * AV_TIME_BASE / c->total_duration;
-            else if (os->first_segment_bit_rate > 0)
-                stream_bitrate += os->first_segment_bit_rate;
-            if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
-                continue;
-            if (os->segment_type != SEGMENT_TYPE_MP4)
-                continue;
-            av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
-            if (max_audio_bitrate) {
-                agroup = (char *)audio_group;
-                stream_bitrate += max_audio_bitrate;
-                av_strlcat(codec_str, ",", sizeof(codec_str));
-                av_strlcat(codec_str, audio_codec_str, sizeof(codec_str));
-            }
-            if (st->codecpar->codec_id != AV_CODEC_ID_HEVC) {
-                codec_str_ptr = codec_str;
-            }
-            get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_stream_info(st, c->m3u8_out, stream_bitrate,
-                                     playlist_file, agroup,
-                                     codec_str_ptr, NULL, NULL);
-        }
         dashenc_io_close(s, &c->m3u8_out, temp_filename);
         if (use_rename)
             if ((ret = ff_rename(temp_filename, filename_hls, s)) < 0)
