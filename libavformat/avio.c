@@ -313,8 +313,11 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret < 0)
         return ret;
-    if (parent)
-        av_opt_copy(*puc, parent);
+    if (parent) {
+        ret = av_opt_copy(*puc, parent);
+        if (ret < 0)
+            goto fail;
+    }
     if (options &&
         (ret = av_opt_set_dict(*puc, options)) < 0)
         goto fail;
