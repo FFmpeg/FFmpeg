@@ -918,7 +918,7 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
             return AVERROR(EINVAL);
         }
 
-        if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
+        c->sliceDir = (srcSliceY == 0) ? 1 : -1;
     }
 
     if (usePal(c->srcFormat))
