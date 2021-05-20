@@ -1847,7 +1847,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
-    c->swscale = ff_getSwsFunc(c);
+    ff_sws_init_scale(c);
+
     return ff_init_filters(c);
 nomem:
     ret = AVERROR(ENOMEM);

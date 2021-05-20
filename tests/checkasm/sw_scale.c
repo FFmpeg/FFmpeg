@@ -93,7 +93,7 @@ static void check_yuv2yuvX(void)
     if (sws_init_context(ctx, NULL, NULL) < 0)
         fail();
 
-    ff_getSwsFunc(ctx);
+    ff_sws_init_scale(ctx);
     for(isi = 0; isi < INPUT_SIZES; ++isi){
         dstW = input_sizes[isi];
         for(osi = 0; osi < 64; osi += 16){
@@ -210,7 +210,7 @@ static void check_hscale(void)
 
                 filter[SRC_PIXELS * width + i] = rnd();
             }
-            ff_getSwsFunc(ctx);
+            ff_sws_init_scale(ctx);
 
             if (check_func(ctx->hcScale, "hscale_%d_to_%d_width%d", ctx->srcBpc, ctx->dstBpc + 1, width)) {
                 memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));

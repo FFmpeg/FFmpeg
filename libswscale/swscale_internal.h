@@ -878,11 +878,7 @@ void ff_get_unscaled_swscale_ppc(SwsContext *c);
 void ff_get_unscaled_swscale_arm(SwsContext *c);
 void ff_get_unscaled_swscale_aarch64(SwsContext *c);
 
-/**
- * Return function pointer to fastest main scaler path function depending
- * on architecture and available optimizations.
- */
-SwsFunc ff_getSwsFunc(SwsContext *c);
+void ff_sws_init_scale(SwsContext *c);
 
 void ff_sws_init_input_funcs(SwsContext *c);
 void ff_sws_init_output_funcs(SwsContext *c,

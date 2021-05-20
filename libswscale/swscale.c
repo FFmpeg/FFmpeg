@@ -579,7 +579,7 @@ static av_cold void sws_init_swscale(SwsContext *c)
         c->needs_hcscale = 1;
 }
 
-SwsFunc ff_getSwsFunc(SwsContext *c)
+void ff_sws_init_scale(SwsContext *c)
 {
     sws_init_swscale(c);
 
@@ -591,8 +591,6 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
         ff_sws_init_swscale_aarch64(c);
     if (ARCH_ARM)
         ff_sws_init_swscale_arm(c);
-
-    return swscale;
 }
 
 static void reset_ptr(const uint8_t *src[], enum AVPixelFormat format)
@@ -988,7 +986,11 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     /* reset slice direction at end of frame */
     if (srcSliceY_internal + srcSliceH == c->srcH)
         c->sliceDir = 0;
-    ret = c->swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH, dst2, dstStride2);
+
+    if (c->swscale)
+        ret = c->swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH, dst2, dstStride2);
+    else
+        ret = swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH, dst2, dstStride2);
 
     if (c->dstXYZ && !(c->srcXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {
         int dstY = c->dstY ? c->dstY : srcSliceY + srcSliceH;
