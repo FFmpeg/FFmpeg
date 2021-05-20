@@ -983,10 +983,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     reset_ptr(src2, c->srcFormat);
     reset_ptr((void*)dst2, c->dstFormat);
 
-    /* reset slice direction at end of frame */
-    if (srcSliceY_internal + srcSliceH == c->srcH)
-        c->sliceDir = 0;
-
     if (c->convert_unscaled)
         ret = c->convert_unscaled(c, src2, srcStride2, srcSliceY_internal, srcSliceH,
                                   dst2, dstStride2);
@@ -1003,6 +999,10 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         /* replace on the same data */
         rgb48Toxyz12(c, dst16, dst16, dstStride2[0]/2, ret);
     }
+
+    /* reset slice direction at end of frame */
+    if (srcSliceY_internal + srcSliceH == c->srcH)
+        c->sliceDir = 0;
 
     return ret;
 }
