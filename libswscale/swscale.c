@@ -912,11 +912,12 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (srcSliceH == 0)
         return 0;
 
-    if (frame_start && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
-        av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
-        return 0;
-    }
     if (frame_start) {
+        if (srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
+            av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
+            return AVERROR(EINVAL);
+        }
+
         if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
     }
 
