@@ -866,6 +866,7 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
                                   int srcSliceH, uint8_t *const dst[],
                                   const int dstStride[])
 {
+    const int frame_start = !c->sliceDir;
     int i, ret;
     const uint8_t *src2[4];
     uint8_t *dst2[4];
@@ -911,11 +912,11 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (srcSliceH == 0)
         return 0;
 
-    if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
+    if (frame_start && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
         return 0;
     }
-    if (c->sliceDir == 0) {
+    if (frame_start) {
         if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
     }
 
