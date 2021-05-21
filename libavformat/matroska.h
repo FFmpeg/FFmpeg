@@ -22,7 +22,7 @@
 #ifndef AVFORMAT_MATROSKA_H
 #define AVFORMAT_MATROSKA_H
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
 #include "metadata.h"
 #include "internal.h"
 
