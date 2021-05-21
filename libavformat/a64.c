@@ -19,7 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
+#include "libavcodec/codec_par.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "rawenc.h"
