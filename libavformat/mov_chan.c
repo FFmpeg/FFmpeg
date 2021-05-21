@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 #include "libavutil/channel_layout.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
 #include "mov_chan.h"
 
 /**
