@@ -402,6 +402,15 @@ int av_codec_is_encoder(const AVCodec *codec);
  */
 int av_codec_is_decoder(const AVCodec *codec);
 
+/**
+ * Return a name for the specified profile, if available.
+ *
+ * @param codec the codec that is searched for the given profile
+ * @param profile the profile value for which a name is requested
+ * @return A name for the profile if found, NULL otherwise.
+ */
+const char *av_get_profile_name(const AVCodec *codec, int profile);
+
 enum {
     /**
      * The codec supports this format via the hw_device_ctx interface.
