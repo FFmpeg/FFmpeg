@@ -3125,30 +3125,12 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
 /**
- * Return codec bits per sample.
- *
- * @param[in] codec_id the codec
- * @return Number of bits per sample or zero if unknown for the given codec.
- */
-int av_get_bits_per_sample(enum AVCodecID codec_id);
-
-/**
  * Return the PCM codec associated with a sample format.
  * @param be  endianness, 0 for little, 1 for big,
  *            -1 (or anything else) for native
  * @return  AV_CODEC_ID_PCM_* or AV_CODEC_ID_NONE
  */
 enum AVCodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be);
-
-/**
- * Return codec bits per sample.
- * Only return non-zero if the bits per sample is exactly correct, not an
- * approximation.
- *
- * @param[in] codec_id the codec
- * @return Number of bits per sample or zero if unknown for the given codec.
- */
-int av_get_exact_bits_per_sample(enum AVCodecID codec_id);
 
 /**
  * Return audio frame duration.
