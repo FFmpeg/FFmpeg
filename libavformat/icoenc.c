@@ -26,6 +26,10 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
+
+#include "libavcodec/codec_desc.h"
+#include "libavcodec/codec_id.h"
+
 #include "avformat.h"
 
 typedef struct {
