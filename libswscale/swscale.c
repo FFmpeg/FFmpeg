@@ -907,6 +907,10 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH)
         return scale_cascaded(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
+    if (!srcSliceY && (c->flags & SWS_BITEXACT) && c->dither == SWS_DITHER_ED && c->dither_error[0])
+        for (i = 0; i < 4; i++)
+            memset(c->dither_error[i], 0, sizeof(c->dither_error[0][0]) * (c->dstW+2));
+
     memcpy(src2,       srcSlice,  sizeof(src2));
     memcpy(dst2,       dst,       sizeof(dst2));
     memcpy(srcStride2, srcStride, sizeof(srcStride2));
@@ -958,10 +962,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         xyz12Torgb48(c, (uint16_t*)base, (const uint16_t*)src2[0], srcStride[0]/2, srcSliceH);
         src2[0] = base;
     }
-
-    if (!srcSliceY && (c->flags & SWS_BITEXACT) && c->dither == SWS_DITHER_ED && c->dither_error[0])
-        for (i = 0; i < 4; i++)
-            memset(c->dither_error[i], 0, sizeof(c->dither_error[0][0]) * (c->dstW+2));
 
     if (c->sliceDir != 1) {
         // slices go from bottom to top => we flip the image internally
