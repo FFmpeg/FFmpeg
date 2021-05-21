@@ -911,6 +911,9 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         for (i = 0; i < 4; i++)
             memset(c->dither_error[i], 0, sizeof(c->dither_error[0][0]) * (c->dstW+2));
 
+    if (usePal(c->srcFormat))
+        update_palette(c, (const uint32_t *)srcSlice[1]);
+
     memcpy(src2,       srcSlice,  sizeof(src2));
     memcpy(dst2,       dst,       sizeof(dst2));
     memcpy(srcStride2, srcStride, sizeof(srcStride2));
@@ -924,9 +927,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
 
         c->sliceDir = (srcSliceY == 0) ? 1 : -1;
     }
-
-    if (usePal(c->srcFormat))
-        update_palette(c, (const uint32_t *)srcSlice[1]);
 
     if (c->src0Alpha && !c->dst0Alpha && isALPHA(c->dstFormat)) {
         uint8_t *base;
