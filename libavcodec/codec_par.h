@@ -221,6 +221,11 @@ void avcodec_parameters_free(AVCodecParameters **par);
  */
 int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src);
 
+/**
+ * This function is the same as av_get_audio_frame_duration(), except it works
+ * with AVCodecParameters instead of an AVCodecContext.
+ */
+int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes);
 
 /**
  * @}

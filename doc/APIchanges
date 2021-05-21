@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec_par.h
+  Move av_get_audio_frame_duration2() from avcodec.h to codec_par.h.
+
 2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec_id.h
   Move av_get_bits_per_sample(), av_get_exact_bits_per_sample(),
   avcodec_profile_name(), and av_get_pcm_codec() from avcodec.h

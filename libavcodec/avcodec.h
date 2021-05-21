@@ -3121,12 +3121,6 @@ void avcodec_flush_buffers(AVCodecContext *avctx);
  */
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
 
-/**
- * This function is the same as av_get_audio_frame_duration(), except it works
- * with AVCodecParameters instead of an AVCodecContext.
- */
-int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes);
-
 /* memory */
 
 /**
