@@ -897,6 +897,10 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         return AVERROR(EINVAL);
     }
 
+    // do not mess up sliceDir if we have a "trailing" 0-size slice
+    if (srcSliceH == 0)
+        return 0;
+
     if (c->gamma_flag && c->cascaded_context[0])
         return scale_gamma(c, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 
@@ -907,10 +911,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     memcpy(dst2,       dst,       sizeof(dst2));
     memcpy(srcStride2, srcStride, sizeof(srcStride2));
     memcpy(dstStride2, dstStride, sizeof(dstStride2));
-
-    // do not mess up sliceDir if we have a "trailing" 0-size slice
-    if (srcSliceH == 0)
-        return 0;
 
     if (frame_start) {
         if (srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
