@@ -32,7 +32,7 @@
 #include "id3v1.h"
 #include "replaygain.h"
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
 #include "libavcodec/mpegaudiodecheader.h"
 
 #define XING_FLAG_FRAMES 0x01
