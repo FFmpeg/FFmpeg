@@ -599,6 +599,19 @@ int av_get_bits_per_sample(enum AVCodecID codec_id);
 int av_get_exact_bits_per_sample(enum AVCodecID codec_id);
 
 /**
+ * Return a name for the specified profile, if available.
+ *
+ * @param codec_id the ID of the codec to which the requested profile belongs
+ * @param profile the profile value for which a name is requested
+ * @return A name for the profile if found, NULL otherwise.
+ *
+ * @note unlike av_get_profile_name(), which searches a list of profiles
+ *       supported by a specific decoder or encoder implementation, this
+ *       function searches the list of profiles from the AVCodecDescriptor
+ */
+const char *avcodec_profile_name(enum AVCodecID codec_id, int profile);
+
+/**
  * @}
  */
 

@@ -15,8 +15,8 @@ libavutil:     2021-04-27
 API changes, most recent first:
 
 2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec_id.h
-  Move av_get_bits_per_sample() and av_get_exact_bits_per_sample()
-  from avcodec.h to codec_id.h.
+  Move av_get_bits_per_sample(), av_get_exact_bits_per_sample(),
+  and avcodec_profile_name() from avcodec.h to codec_id.h.
 
 2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h defs.h
   Add new installed header defs.h. The following definitions are moved
