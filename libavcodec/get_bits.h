@@ -33,7 +33,8 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/avassert.h"
-#include "avcodec.h"
+
+#include "defs.h"
 #include "mathops.h"
 #include "vlc.h"
 
