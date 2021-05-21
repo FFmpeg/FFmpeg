@@ -20,7 +20,6 @@
  */
 
 #include "id3v1.h"
-#include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 
 /* See Genre List at http://id3.org/id3v2.3.0 */
