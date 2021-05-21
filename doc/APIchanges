@@ -14,6 +14,16 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h defs.h
+  Add new installed header defs.h. The following definitions are moved
+  into it from avcodec.h:
+    - AVDiscard
+    - AVAudioServiceType
+    - AVPanScan
+    - AVCPBProperties and av_cpb_properties_alloc()
+    - AVProducerReferenceTime
+    - av_xiphlacing()
+
 2021-04-27 - cb3ac722f4 - lavc 59.0.100 - avcodec.h
   Constified AVCodecParserContext.parser.
 
