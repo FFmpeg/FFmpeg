@@ -31,6 +31,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <string.h>
 #if HAVE_MALLOC_H
 #include <malloc.h>
@@ -68,17 +69,17 @@ void  free(void *ptr);
  * dynamic libraries and remove -Wl,-Bsymbolic from the linker flags.
  * Note that this will cost performance. */
 
-static size_t max_alloc_size= INT_MAX;
+static atomic_size_t max_alloc_size = ATOMIC_VAR_INIT(INT_MAX);
 
 void av_max_alloc(size_t max){
-    max_alloc_size = max;
+    atomic_store_explicit(&max_alloc_size, max, memory_order_relaxed);
 }
 
 void *av_malloc(size_t size)
 {
     void *ptr = NULL;
 
-    if (size > max_alloc_size)
+    if (size > atomic_load_explicit(&max_alloc_size, memory_order_relaxed))
         return NULL;
 
 #if HAVE_POSIX_MEMALIGN
@@ -134,7 +135,7 @@ void *av_malloc(size_t size)
 void *av_realloc(void *ptr, size_t size)
 {
     void *ret;
-    if (size > max_alloc_size)
+    if (size > atomic_load_explicit(&max_alloc_size, memory_order_relaxed))
         return NULL;
 
 #if HAVE_ALIGNED_MALLOC
@@ -483,15 +484,19 @@ void av_memcpy_backptr(uint8_t *dst, int back, int cnt)
 
 void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 {
+    size_t max_size;
+
     if (min_size <= *size)
         return ptr;
 
-    if (min_size > max_alloc_size) {
+    max_size = atomic_load_explicit(&max_alloc_size, memory_order_relaxed);
+
+    if (min_size > max_size) {
         *size = 0;
         return NULL;
     }
 
-    min_size = FFMIN(max_alloc_size, FFMAX(min_size + min_size / 16 + 32, min_size));
+    min_size = FFMIN(max_size, FFMAX(min_size + min_size / 16 + 32, min_size));
 
     ptr = av_realloc(ptr, min_size);
     /* we could set this to the unmodified min_size but this is safer
