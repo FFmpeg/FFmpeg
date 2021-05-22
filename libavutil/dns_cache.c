@@ -21,10 +21,7 @@
 #include "libavutil/dns_cache.h"
 #include "libavutil/time.h"
 #include "libavformat/network.h"
-
-#if HAVE_PTHREADS
-#include <pthread.h>
-#endif
+#include "libavutil/thread.h"
 
 typedef struct DnsCacheContext DnsCacheContext;
 typedef struct DnsCacheContext {
@@ -95,14 +92,23 @@ static DnsCacheEntry *new_dns_cache_entry(const char *uri, struct addrinfo *cur_
 
     memcpy(new_entry->res, cur_ai, sizeof(struct addrinfo));
 
-    new_entry->res->ai_addr = (struct sockaddr *) av_mallocz(sizeof(struct sockaddr));
+    if (new_entry->res->ai_family == AF_INET6) {
+        new_entry->res->ai_addr = (struct sockaddr_in6 *) av_mallocz(sizeof(struct sockaddr_in6));
+    } else {
+        new_entry->res->ai_addr = (struct sockaddr *) av_mallocz(sizeof(struct sockaddr));
+    }
     if (!new_entry->res->ai_addr) {
         av_freep(&new_entry->res);
         av_freep(&new_entry);
         goto fail;
     }
 
-    memcpy(new_entry->res->ai_addr, cur_ai->ai_addr, sizeof(struct sockaddr));
+    if (new_entry->res->ai_family == AF_INET6) {
+        memcpy(new_entry->res->ai_addr, cur_ai->ai_addr, sizeof(struct sockaddr_in6));
+    } else {
+        memcpy(new_entry->res->ai_addr, cur_ai->ai_addr, sizeof(struct sockaddr));
+    }
+
     new_entry->res->ai_canonname = NULL;
     new_entry->res->ai_next      = NULL;
     new_entry->ref_count         = 0;
@@ -123,12 +129,7 @@ DnsCacheEntry *get_dns_cache_reference(const char *uri) {
     if (cur_time < 0 || !uri || strlen(uri) == 0) {
         return NULL;
     }
-
-    if (!context || !context->initialized) {
-#if HAVE_PTHREADS
-        pthread_once(&key_once, inner_init);
-#endif
-    }
+    ff_thread_once(&key_once, inner_init);
 
     if (context && context->initialized) {
         pthread_mutex_lock(&context->dns_dictionary_mutex);
@@ -227,3 +228,25 @@ int add_dns_cache_entry(const char *uri, struct addrinfo *cur_ai, int64_t timeou
 fail:
     return -1;
 }
+
+int remove_all_dns_cache_entry() {
+    AVDictionaryEntry *t = NULL;
+    DnsCacheEntry *dns_cache_entry = NULL;
+
+    ff_thread_once(&key_once, inner_init);
+    if (context && context->initialized) {
+        pthread_mutex_lock(&context->dns_dictionary_mutex);
+        while((t = av_dict_get(context->dns_dictionary, "", t, AV_DICT_IGNORE_SUFFIX))){
+            dns_cache_entry = (DnsCacheEntry *) (intptr_t) strtoll(t->value, NULL, 10);
+            if (dns_cache_entry){
+                free_private_addrinfo(&dns_cache_entry->res);
+                av_freep(&dns_cache_entry);
+            }
+        }
+        if (context->dns_dictionary)
+          av_dict_free(&context->dns_dictionary);
+        pthread_mutex_unlock(&context->dns_dictionary_mutex);
+    }
+    return 0;
+}
+

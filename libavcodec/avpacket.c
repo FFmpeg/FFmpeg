@@ -46,6 +46,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     pkt->buf                  = NULL;
     pkt->side_data            = NULL;
     pkt->side_data_elems      = 0;
+    pkt->current_sap          = 0;
+    pkt->next_sap             = 0;
+    pkt->stream_id            = 0;
+    pkt->serial               = 0;
+    pkt->codec_id             = 0;
 }
 
 AVPacket *av_packet_alloc(void)
@@ -573,6 +578,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     dst->side_data            = NULL;
     dst->side_data_elems      = 0;
+    dst->current_sap          = src->current_sap;
+    dst->next_sap             = src->next_sap;
+    dst->stream_id            = src->stream_id;
+    dst->serial               = src->serial;
+    dst->codec_id             = src->codec_id;
+
     for (i = 0; i < src->side_data_elems; i++) {
          enum AVPacketSideDataType type = src->side_data[i].type;
          int size          = src->side_data[i].size;

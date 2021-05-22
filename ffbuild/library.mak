@@ -74,10 +74,18 @@ install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	$(Q)mkdir -p "$(LIBDIR)"
 	$$(INSTALL) -m 644 $$< "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
-
-install-lib$(NAME)-headers: $(addprefix $(SUBDIR),$(HEADERS) $(BUILT_HEADERS))
+	
+install-lib$(NAME)-generic-headers: $(addprefix $(SUBDIR),$(filter-out $(ARCH)/%, $(HEADERS)) $(BUILT_HEADERS))
 	$(Q)mkdir -p "$(INCINSTDIR)"
 	$$(INSTALL) -m 644 $$^ "$(INCINSTDIR)"
+	
+install-lib$(NAME)-arch-headers: $(addprefix $(SUBDIR),$(filter $(ARCH)/%, $(HEADERS)))
+ifneq ($(filter $(ARCH)/%, $(HEADERS)),)
+	$(Q)mkdir -p "$(INCINSTDIR)/$(ARCH)"
+	$$(INSTALL) -m 644 $$^ "$(INCINSTDIR)/$(ARCH)"
+endif
+
+install-lib$(NAME)-headers:install-lib$(NAME)-arch-headers install-lib$(NAME)-generic-headers
 
 install-lib$(NAME)-pkgconfig: $(SUBDIR)lib$(FULLNAME).pc
 	$(Q)mkdir -p "$(PKGCONFIGDIR)"

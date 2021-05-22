@@ -19,6 +19,22 @@ HEADERS = ac3_parser.h                                                  \
           videotoolbox.h                                                \
           vorbis_parser.h                                               \
           xvmc.h                                                        \
+          mathops.h                                                     \
+          vlc.h                                                         \
+          get_bits.h                                                    \
+          h2645_parse.h                                                 \
+          hevc_sei.h                                                    \
+          hevc.h                                                        \
+          hevc_ps.h                                                     \
+          hevc_parse.h                                                  \
+
+ifeq ($(ARCH),arm)
+HEADERS += $(ARCH)/mathops.h
+else 
+ifeq ($(ARCH),x86)
+HEADERS += $(ARCH)/mathops.h
+endif
+endif
 
 OBJS = ac3_parser.o                                                     \
        adts_parser.o                                                    \

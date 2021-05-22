@@ -536,6 +536,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
 {
     HTTPContext *s = h->priv_data;
     int ret;
+    int64_t start_time = 0, end_time = 0;
 
     s->app_ctx = (AVApplicationContext *)av_dict_strtoptr(s->app_ctx_intptr);
 
@@ -568,9 +569,16 @@ static int http_open(URLContext *h, const char *uri, int flags,
     if (s->listen) {
         return http_listen(h, uri, flags, options);
     }
-    av_application_will_http_open(s->app_ctx, (void*)h, uri);
+    start_time = av_gettime();
+    av_application_will_http_open(s->app_ctx, (void*)h, uri, start_time, end_time);
     ret = http_open_cnx(h, options);
-    av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code, s->filesize);
+    end_time = av_gettime();
+    av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code, s->filesize, start_time, end_time);
+    // save http_code,error in extra dict
+
+    av_dict_set_int(options, "ijk-http-code", s->http_code, 0);
+    av_dict_set_int(options, "ijk-http-error", ret, 0);
+
     if (ret < 0)
         av_dict_free(&s->chained_options);
     return ret;
@@ -646,7 +654,7 @@ static int check_http_code(URLContext *h, int http_code, const char *end)
     HTTPContext *s = h->priv_data;
     /* error codes are 4xx and 5xx, but regard 401 as a success, so we
      * don't abort until all headers have been parsed. */
-    if (http_code >= 400 && http_code < 600 &&
+    if (http_code >= 400 &&
         (http_code != 401 || s->auth_state.auth_type != HTTP_AUTH_NONE) &&
         (http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
         end += strspn(end, SPACE_CHARS);
@@ -1150,7 +1158,7 @@ static int http_read_header(URLContext *h, int *new_location)
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
 
-        av_log(h, AV_LOG_TRACE, "header='%s'\n", line);
+        av_log(h, AV_LOG_INFO, "header='%s'\n", line);
 
         err = process_line(h, line, s->line_count, new_location);
         if (err < 0)
@@ -1300,7 +1308,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              authstr ? authstr : "",
              proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
-    av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+    av_log(h, AV_LOG_INFO, "request: %s\n", s->buffer);
 
     if (strlen(headers) + 1 == sizeof(headers) ||
         ret >= sizeof(s->buffer)) {
@@ -1612,6 +1620,8 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
         if (size < 0)
             return size;
     }
+    if (s ->app_ctx && s ->app_ctx->active_reconnect)
+        return AVERROR_IO_INTERRUPT;
 
     size = http_read_stream(h, buf, size);
     if (size > 0)
@@ -1691,6 +1701,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     uint8_t old_buf[BUFFER_SIZE];
     int old_buf_size, ret;
     AVDictionary *options = NULL;
+    int64_t start_time = 0, end_time = 0;
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
@@ -1720,9 +1731,11 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     s->hd = NULL;
 
     /* if it fails, continue on old connection */
-    av_application_will_http_seek(s->app_ctx, (void*)h, s->location, off);
+    start_time = av_gettime();
+    av_application_will_http_seek(s->app_ctx, (void*)h, s->location, off, start_time, end_time);
     if ((ret = http_open_cnx(h, &options)) < 0) {
-        av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code);
+        end_time = av_gettime();
+        av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code, start_time, end_time);
         av_dict_free(&options);
         memcpy(s->buffer, old_buf, old_buf_size);
         s->buf_ptr = s->buffer;
@@ -1731,7 +1744,8 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
         s->off     = old_off;
         return ret;
     }
-    av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code);
+    end_time = av_gettime();
+    av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code, start_time, end_time);
     av_dict_free(&options);
     ffurl_close(old_hd);
     return off;

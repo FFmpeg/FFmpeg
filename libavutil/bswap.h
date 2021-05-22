@@ -72,7 +72,7 @@ static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 #ifndef av_bswap64
 static inline uint64_t av_const av_bswap64(uint64_t x)
 {
-    return (uint64_t)av_bswap32(x) << 32 | av_bswap32(x >> 32);
+    return (uint64_t)av_bswap32((uint32_t)x) << 32 | av_bswap32(x >> 32);
 }
 #endif
 

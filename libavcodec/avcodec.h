@@ -924,6 +924,11 @@ typedef struct RcOverride{
 #define AV_CODEC_FLAG2_IGNORE_CROP    (1 << 16)
 
 /**
+ * Produce fake audio silence frame after drainning done.
+ */
+#define AV_CODEC_FLAG2_DRAIN_SILENCE    (1 << 18)
+
+/**
  * Show all frames before the first keyframe
  */
 #define AV_CODEC_FLAG2_SHOW_ALL       (1 << 22)
@@ -1358,6 +1363,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_ENCRYPTION_INFO,
 
     /**
+     * Private usage
+     * The format is not part of ABI, use AVDictionary type
+     */
+    AV_PKT_DATA_DICT,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
@@ -1429,7 +1440,11 @@ typedef struct AVPacket {
     int64_t dts;
     uint8_t *data;
     int   size;
+
+    int   stream_id;
+    int   serial;
     int   stream_index;
+    enum AVCodecID codec_id;
     /**
      * A combination of AV_PKT_FLAG values
      */
@@ -1458,6 +1473,10 @@ typedef struct AVPacket {
     attribute_deprecated
     int64_t convergence_duration;
 #endif
+
+    int64_t current_sap;
+    int64_t next_sap;
+
 } AVPacket;
 #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
 #define AV_PKT_FLAG_CORRUPT 0x0002 ///< The packet content is corrupted
@@ -1481,6 +1500,9 @@ typedef struct AVPacket {
 #define AV_PKT_FLAG_DISPOSABLE 0x0010
 
 #define AV_PKT_FLAG_NEW_SEG 0x8000 ///< The packet is the first packet from a source in concat
+
+#define AV_PKT_FLAG_SAP 0x4000
+
 
 enum AVSideDataParamChangeFlags {
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,

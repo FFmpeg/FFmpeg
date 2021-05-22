@@ -225,6 +225,8 @@ typedef struct MOVStreamContext {
         int64_t auxiliary_info_index;
         struct AVAESCTR* aes_ctr;
     } cenc;
+
+    int last_pts;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -276,6 +278,8 @@ typedef struct MOVContext {
     int enable_drefs;
     int allow_multi_extradata;
     int has_extradata;
+    int ignore_sidx_index;
+    int fix_fragment_seek;
     int32_t movie_display_matrix[3][3]; ///< display matrix from mvhd
 } MOVContext;
 

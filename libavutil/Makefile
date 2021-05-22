@@ -81,6 +81,11 @@ HEADERS = adler32.h                                                     \
           xtea.h                                                        \
           tea.h                                                         \
           thread.h                                                      \
+          reverse.h                                                     \
+
+ifeq ($(ARCH),x86)
+HEADERS += $(ARCH)/asm.h
+endif
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
 

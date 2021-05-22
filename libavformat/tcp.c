@@ -59,6 +59,9 @@ typedef struct TCPContext {
     int fastopen;
     int tcp_connected;
     int fastopen_success;
+    int dash_audio_tcp;
+    int dash_video_tcp;
+    int enable_ipv6;
 } TCPContext;
 
 #define FAST_OPEN_FLAG 0x20000000
@@ -78,9 +81,12 @@ static const AVOption options[] = {
 
     { "addrinfo_one_by_one",  "parse addrinfo one by one in getaddrinfo()",    OFFSET(addrinfo_one_by_one), AV_OPT_TYPE_INT, { .i64 = 0 },         0, 1, .flags = D|E },
     { "addrinfo_timeout", "set timeout (in microseconds) for getaddrinfo()",   OFFSET(addrinfo_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },       -1, INT_MAX, .flags = D|E },
-    { "dns_cache_timeout", "dns cache TTL (in microseconds)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = 0 },       -1, INT64_MAX, .flags = D|E },
+    { "dns_cache_timeout", "dns cache TTL (in millisecond)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = 0 },       -1, INT64_MAX, .flags = D|E },
     { "dns_cache_clear", "clear dns cache",   OFFSET(dns_cache_clear), AV_OPT_TYPE_INT, { .i64 = 0},       -1, INT_MAX, .flags = D|E },
     { "fastopen", "enable fastopen",          OFFSET(fastopen), AV_OPT_TYPE_INT, { .i64 = 0},       0, INT_MAX, .flags = D|E },
+    { "dash_audio_tcp", "dash audio tcp", OFFSET(dash_audio_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
+    { "dash_video_tcp", "dash video tcp", OFFSET(dash_video_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
+    { "enable_ipv6", "priority of use ipv6", OFFSET(enable_ipv6), AV_OPT_TYPE_INT, { .i64 = 1},       0, 1, .flags = D|E },
     { NULL }
 };
 
@@ -343,6 +349,8 @@ int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
 static int tcp_open(URLContext *h, const char *uri, int flags)
 {
     struct addrinfo hints = { 0 }, *ai, *cur_ai;
+    struct addrinfo *cur_v4_ai = NULL;
+    struct addrinfo *cur_v6_ai = NULL;
     int port, fd = -1;
     TCPContext *s = h->priv_data;
     const char *p;
@@ -352,6 +360,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     char portstr[10];
     AVAppTcpIOControl control = {0};
     DnsCacheEntry *dns_entry = NULL;
+    int64_t dns_time = 0;
+    int64_t tcp_time = 0;
+    char ipbuf[MAX_IP_LEN];
+    struct sockaddr_in *ipaddr;
+    char *c_ipaddr = NULL;
 
     if (s->open_timeout < 0) {
         s->open_timeout = 15000000;
@@ -408,9 +421,16 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             remove_dns_cache_entry(uri);
         } else {
             dns_entry = get_dns_cache_reference(uri);
+            if (dns_entry && dns_entry->res && dns_entry->res->ai_family == AF_INET6 && !s->enable_ipv6) {
+                release_dns_cache_reference(uri, &dns_entry);
+                remove_dns_cache_entry(uri);
+                av_log(NULL, AV_LOG_INFO, "will delete dns cache entry because ipv6 fallback, uri = %s\n", uri);
+                dns_entry = NULL;
+            }
         }
     }
-
+    av_application_on_dns_will_open(s->app_ctx, hostname);
+    dns_time = av_gettime();
     if (!dns_entry) {
 #ifdef HAVE_PTHREADS
         ret = ijk_tcp_getaddrinfo_nonblock(hostname, portstr, &hints, &ai, s->addrinfo_timeout, &h->interrupt_callback, s->addrinfo_one_by_one);
@@ -426,8 +446,15 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (ret) {
             av_log(h, AV_LOG_ERROR,
                 "Failed to resolve hostname %s: %s\n",
-                hostname, gai_strerror(ret));
-            return AVERROR(EIO);
+                    hostname, gai_strerror(ret));
+            dns_time = (av_gettime() - dns_time) / 1000;
+            if (ret == ETIMEDOUT) {
+                ret = AVERROR_DNS_TIMEOUT;
+            } else {
+                ret = AVERROR_DNS_ERROR;
+            }
+            av_application_on_dns_did_open(s->app_ctx, hostname, NULL, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp, WRAP_UNKNOWN_FAMILY,  ret);
+            return ret;
         }
 
         cur_ai = ai;
@@ -435,6 +462,32 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         av_log(NULL, AV_LOG_INFO, "hit dns cache uri = %s\n", uri);
         cur_ai = dns_entry->res;
     }
+    dns_time = (av_gettime() - dns_time) / 1000;
+
+    while (cur_ai->ai_next && cur_ai->ai_next->ai_addr) {
+        if (cur_ai->ai_family == AF_INET && cur_v4_ai == NULL) {
+            ipaddr = (struct sockaddr_in *)cur_ai->ai_addr;
+            c_ipaddr = (char *)inet_ntop(AF_INET, &ipaddr->sin_addr, ipbuf, MAX_IP_LEN);
+            if (!strcmp(c_ipaddr, "0.0.0.0")) {
+                cur_ai = cur_ai->ai_next;
+                continue;
+            }
+            cur_v4_ai = cur_ai;
+        } else if (cur_ai->ai_family == AF_INET6 && cur_v6_ai == NULL) {
+            cur_v6_ai = cur_ai;
+        }
+        if ((s->enable_ipv6 && cur_v6_ai != NULL) || cur_v4_ai != NULL) {
+            break;
+        }
+        cur_ai = cur_ai->ai_next;
+    }
+
+    if ((s->enable_ipv6 || cur_v4_ai == NULL) && cur_v6_ai != NULL) {
+        cur_ai = cur_v6_ai;
+    } else if (cur_v4_ai != NULL) {
+        cur_ai = cur_v4_ai;
+    }
+
 
  restart:
 #if HAVE_STRUCT_SOCKADDR_IN6
@@ -444,8 +497,24 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (!sockaddr_v6->sin6_port){
             sockaddr_v6->sin6_port = htons(port);
         }
+        c_ipaddr = (char *)inet_ntop(AF_INET6, &sockaddr_v6->sin6_addr, ipbuf, MAX_IP_LEN);
+        av_log(NULL, AV_LOG_INFO, "cur ipv6 c_ipaddr = %s\n", c_ipaddr);
     }
 #endif
+    if (cur_ai->ai_family != AF_INET6 && cur_ai && cur_ai->ai_addr) {
+        ipaddr = (struct sockaddr_in *)cur_ai->ai_addr;
+        c_ipaddr = (char *)inet_ntop(AF_INET, &ipaddr->sin_addr, ipbuf, MAX_IP_LEN);
+        av_log(NULL, AV_LOG_INFO, "cur ipv4 c_ipaddr = %s\n", c_ipaddr);
+    }
+    if (dns_entry) {
+        av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_DNS_CACHE, dns_time, s->dash_audio_tcp, cur_ai->ai_family, 0);
+    } else {
+        if (strstr(uri, c_ipaddr)) {
+            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_NO_USE, dns_time, s->dash_audio_tcp, cur_ai->ai_family, 0);
+        } else {
+            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp, cur_ai->ai_family, 0);
+        }
+    }
 
     fd = ff_socket(cur_ai->ai_family,
                    cur_ai->ai_socktype,
@@ -453,6 +522,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (fd < 0) {
         ret = ff_neterrno();
         goto fail;
+    }
+
+    if (s->app_ctx) {
+        if (s->dash_audio_tcp && s->app_ctx->dash_audio_recv_buffer_size > 0 && s->app_ctx->dash_audio_recv_buffer_size != s->recv_buffer_size) {
+            s->recv_buffer_size = s->app_ctx->dash_audio_recv_buffer_size;
+        } else if (s->dash_video_tcp && s->app_ctx->dash_video_recv_buffer_size > 0 && s->app_ctx->dash_video_recv_buffer_size != s->recv_buffer_size) {
+            s->recv_buffer_size = s->app_ctx->dash_video_recv_buffer_size;
+        }
     }
 
     /* Set the socket's send or receive buffer sizes, if specified.
@@ -479,33 +556,33 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         // Socket descriptor already closed here. Safe to overwrite to client one.
         fd = ret;
     } else {
-        ret = av_application_on_tcp_will_open(s->app_ctx);
+        ret = av_application_on_tcp_will_open(s->app_ctx, cur_ai->ai_family);
         if (ret) {
             av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_WILL_TCP_OPEN");
             goto fail1;
         }
-
+        tcp_time = av_gettime();
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
             if (ret == AVERROR(ETIMEDOUT)) {
                 ret = AVERROR_TCP_CONNECT_TIMEOUT;
             }
-            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control))
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, (av_gettime() - tcp_time) / 1000))
                 goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
             else
                 goto fail;
         } else {
-            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control);
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, (av_gettime() - tcp_time) / 1000);
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
             } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
                 add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
-                av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s\n", uri , control.ip);
+                av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
             }
-            av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s\n", uri , control.ip);
+            av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
         }
     }
 
@@ -665,7 +742,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         // Socket descriptor already closed here. Safe to overwrite to client one.
         fd = ret;
     } else {
-        ret = av_application_on_tcp_will_open(s->app_ctx);
+        ret = av_application_on_tcp_will_open(s->app_ctx, cur_ai->ai_family);
         if (ret) {
             av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_WILL_TCP_OPEN");
             goto fail1;
@@ -674,7 +751,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         if ((ret = ff_sendto(fd, http_request, strlen(http_request), FAST_OPEN_FLAG,
                  cur_ai->ai_addr, cur_ai->ai_addrlen, s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
             s->fastopen_success = 0;
-            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control))
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, 0))
                 goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
@@ -686,7 +763,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
             } else {
                 s->fastopen_success = 1;
             }
-            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control);
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, cur_ai->ai_family, 0);
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
@@ -752,6 +829,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret;
+    int nread = 0;
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd_timeout(s->fd, 0, h->rw_timeout, &h->interrupt_callback);
@@ -765,8 +843,36 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     ret = recv(s->fd, buf, size, 0);
     if (ret == 0)
         return AVERROR_EOF;
-    if (ret > 0)
-        av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret);
+    if (ret > 0) {
+        if (s->app_ctx) {
+            if (s->dash_audio_tcp && s->app_ctx->dash_audio_recv_buffer_size > 0 && s->app_ctx->dash_audio_recv_buffer_size != s->recv_buffer_size) {
+                s->recv_buffer_size = s->app_ctx->dash_audio_recv_buffer_size;
+                setsockopt (s->fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+            } else if (s->dash_video_tcp && s->app_ctx->dash_video_recv_buffer_size > 0 && s->app_ctx->dash_video_recv_buffer_size != s->recv_buffer_size) {
+                s->recv_buffer_size = s->app_ctx->dash_video_recv_buffer_size;
+                setsockopt (s->fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+            }
+        }
+#ifdef FIONREAD
+        ioctl(s->fd, FIONREAD, &nread);
+#endif
+
+#ifdef SO_NREAD
+        int avail;
+        socklen_t avail_len = sizeof(avail);
+        if (nread <= 0 && !getsockopt(s->fd, SOL_SOCKET, SO_NREAD, &avail, &avail_len)) {
+            nread = avail;
+        }
+#endif // SO_NREAD
+
+        if (s->dash_audio_tcp) {
+            av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_DASH_AUDIO);
+        } else if (s->dash_video_tcp) {
+            av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_DASH_VIDEO);
+        } else {
+            av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_NORMAL);
+        }
+    }
     return ret < 0 ? ff_neterrno() : ret;
 }
 

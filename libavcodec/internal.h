@@ -195,6 +195,12 @@ typedef struct AVCodecInternal {
     int draining;
 
     /**
+     *  produce silence when draining_done;
+     */
+    int drain_silence;
+    int64_t drain_silence_pts;
+    
+    /**
      * buffers for using new encode/decode API through legacy API
      */
     AVPacket *buffer_pkt;

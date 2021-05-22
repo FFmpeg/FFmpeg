@@ -67,6 +67,7 @@ typedef struct {
     int segment_time_metadata;
     AVDictionary *options;
     int error;
+    int use_new_find_stream_info;
 } ConcatContext;
 
 static int concat_probe(AVProbeData *probe)
@@ -316,6 +317,8 @@ static int match_streams(AVFormatContext *avf)
     return 0;
 }
 
+extern int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options);
+
 static int open_file(AVFormatContext *avf, unsigned fileno)
 {
     ConcatContext *cat = avf->priv_data;
@@ -367,7 +370,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     ret = avformat_open_input(&new_avf, file->url, NULL, &tmp);
     av_dict_free(&tmp);
     if (ret < 0 ||
-        (ret = avformat_find_stream_info(new_avf, NULL)) < 0) {
+        (ret = !cat->use_new_find_stream_info ? avformat_find_stream_info(new_avf, NULL) : av_try_find_stream_info(new_avf, NULL)) < 0) {
         av_log(avf, AV_LOG_ERROR, "Impossible to open '%s'\n", file->url);
         avformat_close_input(&new_avf);
         return ret;
@@ -547,6 +550,8 @@ static int concat_read_header(AVFormatContext *avf, AVDictionary **options)
     if ((ret = open_file(avf, 0)) < 0)
         goto fail;
     av_bprint_finalize(&bp, NULL);
+    if (cat->avf && cat->avf->iformat && cat->avf->iformat->name)
+        av_dict_set(&avf->metadata, "ijk_file_name", cat->avf->iformat->name, 0);
     return 0;
 
 fail:
@@ -834,6 +839,8 @@ static const AVOption options[] = {
       OFFSET(auto_convert), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DEC },
     { "segment_time_metadata", "output file segment start time and duration as packet metadata",
       OFFSET(segment_time_metadata), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "use-new-find-stream-info", "use new find streem info",
+        OFFSET(use_new_find_stream_info), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
     { NULL }
 };
 
