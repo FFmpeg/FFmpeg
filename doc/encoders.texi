@@ -53,7 +53,7 @@ Set AAC encoder coding method. Possible values:
 
 @table @samp
 @item twoloop
-Two loop searching (TLS) method.
+Two loop searching (TLS) method. This is the default method.
 
 This method first sets quantizers depending on band thresholds and then tries
 to find an optimal combination by adding or subtracting a specific value from
@@ -75,7 +75,6 @@ Constant quantizer method.
 Uses a cheaper version of twoloop algorithm that doesn't try to do as many
 clever adjustments. Worse with low bitrates (less than 64kbps), but is better
 and much faster at higher bitrates.
-This is the default choice for a coder
 
 @end table
 
