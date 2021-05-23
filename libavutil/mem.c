@@ -512,6 +512,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 
 static inline void fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
 {
+    size_t max_size;
     void *val;
 
     memcpy(&val, ptr, sizeof(val));
@@ -519,7 +520,15 @@ static inline void fast_malloc(void *ptr, unsigned int *size, size_t min_size, i
         av_assert0(val || !min_size);
         return;
     }
-    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
+
+    max_size = atomic_load_explicit(&max_alloc_size, memory_order_relaxed);
+
+    if (min_size > max_size) {
+        av_freep(ptr);
+        *size = 0;
+        return;
+    }
+    min_size = FFMIN(max_size, FFMAX(min_size + min_size / 16 + 32, min_size));
     av_freep(ptr);
     val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
     memcpy(ptr, &val, sizeof(val));
