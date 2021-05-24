@@ -491,7 +491,7 @@ static MatchingInfo evaluate_parameters(AVFilterContext *ctx, SignatureContext *
         meandist = (double) goodfcount / (double) distsum;
 
         if (meandist < minmeandist ||
-                status == STATUS_END_REACHED | STATUS_BEGIN_REACHED ||
+                status == (STATUS_END_REACHED | STATUS_BEGIN_REACHED) ||
                 mode == MODE_FAST){
             minmeandist = meandist;
             /* bestcandidate in this iteration */
