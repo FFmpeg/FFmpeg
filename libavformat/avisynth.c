@@ -250,15 +250,12 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     st->nb_frames         = avs->vi->num_frames;
     avpriv_set_pts_info(st, 32, avs->vi->fps_denominator, avs->vi->fps_numerator);
 
-    av_log(s, AV_LOG_TRACE, "avs_is_field_based: %d\n", avs_is_field_based(avs->vi));
-    av_log(s, AV_LOG_TRACE, "avs_is_parity_known: %d\n", avs_is_parity_known(avs->vi));
 
-    /* The following typically only works when assumetff (-bff) and
-     * assumefieldbased is used in-script. Additional
-     * logic using GetParity() could deliver more accurate results
-     * but also decodes a frame which we want to avoid. */
     st->codecpar->field_order = AV_FIELD_UNKNOWN;
-    if (avs_is_field_based(avs->vi)) {
+    /* AviSynth works with frame-based video, detecting field order can
+     * only work when avs_is_field_based returns 'false'. */
+    av_log(s, AV_LOG_TRACE, "avs_is_field_based: %d\n", avs_is_field_based(avs->vi));
+    if (avs_is_field_based(avs->vi) == 0) {
         if (avs_is_tff(avs->vi)) {
             st->codecpar->field_order = AV_FIELD_TT;
         }
