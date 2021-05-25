@@ -293,8 +293,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     YADIFContext *s = ctx->priv;
 
-    outlink->time_base.num = ctx->inputs[0]->time_base.num;
-    outlink->time_base.den = ctx->inputs[0]->time_base.den * 2;
+    outlink->time_base = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
     outlink->w             = ctx->inputs[0]->w;
     outlink->h             = ctx->inputs[0]->h;
 
