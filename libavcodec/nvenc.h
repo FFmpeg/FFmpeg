@@ -166,6 +166,9 @@ typedef struct NvencContext
     AVFifoBuffer *output_surface_ready_queue;
     AVFifoBuffer *timestamp_list;
 
+    NV_ENC_SEI_PAYLOAD *sei_data;
+    int sei_data_size;
+
     struct {
         void *ptr;
         int ptr_index;

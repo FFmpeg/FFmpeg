@@ -1610,6 +1610,8 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
 
     av_frame_free(&ctx->frame);
 
+    av_freep(&ctx->sei_data);
+
     if (ctx->nvencoder) {
         p_nvenc->nvEncDestroyEncoder(ctx->nvencoder);
 
@@ -2170,7 +2172,6 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     NVENCSTATUS nv_status;
     NvencSurface *tmp_out_surf, *in_surf;
     int res, res2;
-    NV_ENC_SEI_PAYLOAD sei_data[8];
     int sei_count = 0;
     int i;
 
@@ -2233,15 +2234,25 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             void *a53_data = NULL;
             size_t a53_size = 0;
 
-            if (ff_alloc_a53_sei(frame, 0, (void**)&a53_data, &a53_size) < 0) {
+            if (ff_alloc_a53_sei(frame, 0, &a53_data, &a53_size) < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
             }
 
             if (a53_data) {
-                sei_data[sei_count].payloadSize = (uint32_t)a53_size;
-                sei_data[sei_count].payloadType = 4;
-                sei_data[sei_count].payload = (uint8_t*)a53_data;
-                sei_count ++;
+                void *tmp = av_fast_realloc(ctx->sei_data,
+                                            &ctx->sei_data_size,
+                                            (sei_count + 1) * sizeof(*ctx->sei_data));
+                if (!tmp) {
+                    av_free(a53_data);
+                    res = AVERROR(ENOMEM);
+                    goto sei_failed;
+                } else {
+                    ctx->sei_data = tmp;
+                    ctx->sei_data[sei_count].payloadSize = (uint32_t)a53_size;
+                    ctx->sei_data[sei_count].payloadType = 4;
+                    ctx->sei_data[sei_count].payload = (uint8_t*)a53_data;
+                    sei_count++;
+                }
             }
         }
 
@@ -2249,19 +2260,29 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             void *tc_data = NULL;
             size_t tc_size = 0;
 
-            if (ff_alloc_timecode_sei(frame, avctx->framerate, 0, (void**)&tc_data, &tc_size) < 0) {
+            if (ff_alloc_timecode_sei(frame, avctx->framerate, 0, &tc_data, &tc_size) < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode sei, skipping\n");
             }
 
             if (tc_data) {
-                sei_data[sei_count].payloadSize = (uint32_t)tc_size;
-                sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
-                sei_data[sei_count].payload = (uint8_t*)tc_data;
-                sei_count ++;
+                void *tmp = av_fast_realloc(ctx->sei_data,
+                                            &ctx->sei_data_size,
+                                            (sei_count + 1) * sizeof(*ctx->sei_data));
+                if (!tmp) {
+                    av_free(tc_data);
+                    res = AVERROR(ENOMEM);
+                    goto sei_failed;
+                } else {
+                    ctx->sei_data = tmp;
+                    ctx->sei_data[sei_count].payloadSize = (uint32_t)tc_size;
+                    ctx->sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
+                    ctx->sei_data[sei_count].payload = (uint8_t*)tc_data;
+                    sei_count++;
+                }
             }
         }
 
-        nvenc_codec_specific_pic_params(avctx, &pic_params, sei_data, sei_count);
+        nvenc_codec_specific_pic_params(avctx, &pic_params, ctx->sei_data, sei_count);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
@@ -2272,8 +2293,8 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
 
-    for ( i = 0; i < sei_count; i++)
-        av_freep(&sei_data[i].payload);
+    for (i = 0; i < sei_count; i++)
+        av_freep(&(ctx->sei_data[i].payload));
 
     res = nvenc_pop_context(avctx);
     if (res < 0)
@@ -2297,6 +2318,12 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     }
 
     return 0;
+
+sei_failed:
+    for (i = 0; i < sei_count; i++)
+        av_freep(&(ctx->sei_data[i].payload));
+
+    return res;
 }
 
 int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
