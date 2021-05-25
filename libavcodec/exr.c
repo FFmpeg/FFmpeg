@@ -1059,11 +1059,11 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
         bytestream2_skip(&gb, ac_size);
     }
 
-    if (dc_size > 0) {
+    {
         unsigned long dest_len = dc_count * 2LL;
         GetByteContext agb = gb;
 
-        if (dc_count > (6LL * td->xsize * td->ysize + 63) / 64)
+        if (dc_count != dc_w * dc_h * 3)
             return AVERROR_INVALIDDATA;
 
         av_fast_padded_malloc(&td->dc_data, &td->dc_size, FFALIGN(dest_len, 64) * 2);
