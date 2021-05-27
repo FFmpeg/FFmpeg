@@ -963,7 +963,7 @@ void ff_dnn_free_model_ov(DNNModel **model)
         ff_safe_queue_destroy(ov_model->request_queue);
 
         while (ff_queue_size(ov_model->inference_queue) != 0) {
-            TaskItem *item = ff_queue_pop_front(ov_model->inference_queue);
+            InferenceItem *item = ff_queue_pop_front(ov_model->inference_queue);
             av_freep(&item);
         }
         ff_queue_destroy(ov_model->inference_queue);
