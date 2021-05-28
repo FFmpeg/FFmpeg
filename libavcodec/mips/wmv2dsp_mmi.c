@@ -106,7 +106,7 @@ void ff_wmv2_idct_add_mmi(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
         wmv2_idct_col_mmi(block + i);
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
 
         // low 4 loop
         MMI_LDC1(%[ftmp1], %[block], 0x00)

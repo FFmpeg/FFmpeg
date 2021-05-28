@@ -162,7 +162,7 @@ void ff_pred8x8l_top_dc_8_mmi(uint8_t *src, int has_topleft,
     DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         MMI_ULDC1(%[ftmp10], %[srcA], 0x00)
         MMI_ULDC1(%[ftmp9], %[src0], 0x00)
         MMI_ULDC1(%[ftmp8], %[src1], 0x00)
@@ -266,7 +266,7 @@ void ff_pred8x8l_dc_8_mmi(uint8_t *src, int has_topleft, int has_topright,
         MMI_ULDC1(%[ftmp4], %[srcA], 0x00)
         MMI_ULDC1(%[ftmp5], %[src0], 0x00)
         MMI_ULDC1(%[ftmp6], %[src1], 0x00)
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x03                                    \n\t"
         "punpcklbh  %[ftmp7],   %[ftmp4],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp8],   %[ftmp4],       %[ftmp0]                \n\t"
@@ -357,7 +357,7 @@ void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
     DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         MMI_LDC1(%[ftmp3], %[srcA], 0x00)
         MMI_LDC1(%[ftmp4], %[src0], 0x00)
         MMI_LDC1(%[ftmp5], %[src1], 0x00)
@@ -530,7 +530,7 @@ void ff_pred8x8_top_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
 
     __asm__ volatile (
         "dli        %[tmp0],    0x02                                    \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         PTR_SUBU   "%[addr0],   %[src],         %[stride]               \n\t"
         MMI_LDC1(%[ftmp1], %[addr0], 0x00)
         "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]                \n\t"
@@ -640,7 +640,7 @@ void ff_pred8x8_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
         PTR_SRL    "%[addr4],   0x02                                    \n\t"
         PTR_SRL    "%[addr1],   0x02                                    \n\t"
         PTR_SRL    "%[addr2],   0x03                                    \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dmtc1      %[addr3],   %[ftmp1]                                \n\t"
         "pshufh     %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
         "dmtc1      %[addr4],   %[ftmp2]                                \n\t"
@@ -757,9 +757,9 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
         MMI_ULDC1(%[ftmp0], %[addr0], -0x01)
         MMI_ULDC1(%[ftmp2], %[addr0],  0x08)
-        "dsrl       %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
-        "dsrl       %[ftmp3],   %[ftmp2],       %[ftmp4]                \n\t"
-        "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
+        "ssrld      %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
+        "ssrld      %[ftmp3],   %[ftmp2],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "punpcklbh  %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
         "punpcklbh  %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
@@ -915,7 +915,7 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         "dmul       %[tmp3],    %[tmp3],        %[tmp2]                 \n\t"
         "dsubu      %[tmp5],    %[tmp5],        %[tmp3]                 \n\t"
 
-        "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         "dmtc1      %[tmp0],    %[ftmp0]                                \n\t"
         "pshufh     %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "dmtc1      %[tmp1],    %[ftmp5]                                \n\t"

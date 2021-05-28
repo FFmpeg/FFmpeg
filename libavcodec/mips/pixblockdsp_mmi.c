@@ -33,7 +33,7 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
     DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
 
         MMI_LDC1(%[ftmp1], %[pixels], 0x00)
         MMI_LDXC1(%[ftmp2], %[pixels], %[stride], 0x00)
@@ -103,12 +103,12 @@ void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
 
     __asm__ volatile (
         "li         %[tmp0],    0x08                                    \n\t"
-        "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         "1:                                                             \n\t"
         MMI_LDC1(%[ftmp0], %[src1], 0x00)
-        "or         %[ftmp1],   %[ftmp0],       %[ftmp0]                \n\t"
+        "por        %[ftmp1],   %[ftmp0],       %[ftmp0]                \n\t"
         MMI_LDC1(%[ftmp2], %[src2], 0x00)
-        "or         %[ftmp3],   %[ftmp2],       %[ftmp2]                \n\t"
+        "por        %[ftmp3],   %[ftmp2],       %[ftmp2]                \n\t"
         "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "punpckhbh  %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
         "punpcklbh  %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"

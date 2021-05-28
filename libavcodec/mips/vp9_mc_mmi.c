@@ -82,7 +82,7 @@ static void convolve_horiz_mmi(const uint8_t *src, int32_t src_stride,
     dst_stride -= w;
     __asm__ volatile (
         "move       %[tmp1],    %[width]                   \n\t"
-        "xor        %[ftmp0],   %[ftmp0],    %[ftmp0]      \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],    %[ftmp0]      \n\t"
         "gsldlc1    %[filter1], 0x03(%[filter])            \n\t"
         "gsldrc1    %[filter1], 0x00(%[filter])            \n\t"
         "gsldlc1    %[filter2], 0x0b(%[filter])            \n\t"
@@ -157,7 +157,7 @@ static void convolve_vert_mmi(const uint8_t *src, int32_t src_stride,
     dst_stride -= w;
 
     __asm__ volatile (
-        "xor        %[ftmp0],    %[ftmp0],   %[ftmp0]      \n\t"
+        "pxor       %[ftmp0],    %[ftmp0],   %[ftmp0]      \n\t"
         "gsldlc1    %[ftmp4],    0x03(%[filter])           \n\t"
         "gsldrc1    %[ftmp4],    0x00(%[filter])           \n\t"
         "gsldlc1    %[ftmp5],    0x0b(%[filter])           \n\t"
@@ -253,7 +253,7 @@ static void convolve_avg_horiz_mmi(const uint8_t *src, int32_t src_stride,
 
     __asm__ volatile (
         "move       %[tmp1],    %[width]                   \n\t"
-        "xor        %[ftmp0],   %[ftmp0],    %[ftmp0]      \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],    %[ftmp0]      \n\t"
         "gsldlc1    %[filter1], 0x03(%[filter])            \n\t"
         "gsldrc1    %[filter1], 0x00(%[filter])            \n\t"
         "gsldlc1    %[filter2], 0x0b(%[filter])            \n\t"
@@ -339,7 +339,7 @@ static void convolve_avg_vert_mmi(const uint8_t *src, int32_t src_stride,
     dst_stride -= w;
 
     __asm__ volatile (
-        "xor        %[ftmp0],    %[ftmp0],   %[ftmp0]      \n\t"
+        "pxor       %[ftmp0],    %[ftmp0],   %[ftmp0]      \n\t"
         "gsldlc1    %[ftmp4],    0x03(%[filter])           \n\t"
         "gsldrc1    %[ftmp4],    0x00(%[filter])           \n\t"
         "gsldlc1    %[ftmp5],    0x0b(%[filter])           \n\t"
@@ -444,7 +444,7 @@ static void convolve_avg_mmi(const uint8_t *src, int32_t src_stride,
 
     __asm__ volatile (
         "move       %[tmp1],    %[width]                  \n\t"
-        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]      \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],   %[ftmp0]      \n\t"
         "li         %[tmp0],    0x10001                   \n\t"
         "dmtc1      %[tmp0],    %[ftmp3]                  \n\t"
         "punpcklhw  %[ftmp3],   %[ftmp3],   %[ftmp3]      \n\t"

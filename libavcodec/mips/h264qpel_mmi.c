@@ -114,7 +114,7 @@ static void put_h264_qpel4_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     DECLARE_VAR_LOW32;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x04                                    \n\t"
         "1:                                                             \n\t"
         MMI_ULWC1(%[ftmp1], %[src], -0x02)
@@ -169,7 +169,7 @@ static void put_h264_qpel8_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x08                                    \n\t"
         "1:                                                             \n\t"
         MMI_ULDC1(%[ftmp1], %[src], -0x02)
@@ -250,7 +250,7 @@ static void avg_h264_qpel4_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     DECLARE_VAR_LOW32;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x04                                    \n\t"
         "1:                                                             \n\t"
         MMI_ULWC1(%[ftmp1], %[src], -0x02)
@@ -307,7 +307,7 @@ static void avg_h264_qpel8_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x08                                    \n\t"
         "1:                                                             \n\t"
         MMI_ULDC1(%[ftmp1], %[src], -0x02)
@@ -394,7 +394,7 @@ static void put_h264_qpel4_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     __asm__ volatile (
         ".set       push                                                \n\t"
         ".set       noreorder                                           \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x02                                    \n\t"
         MMI_LWC1(%[ftmp1], %[src], 0x00)
         "mtc1       %[tmp0],    %[ftmp10]                               \n\t"
@@ -516,7 +516,7 @@ static void put_h264_qpel8_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
             PTR_ADDU   "%[src],     %[src],         %[srcStride]        \n\t"
             MMI_LWC1(%[ftmp2], %[src], 0x00)
             PTR_ADDU   "%[src],     %[src],         %[srcStride]        \n\t"
-            "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"
+            "pxor       %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"
             MMI_LWC1(%[ftmp3], %[src], 0x00)
             PTR_ADDU   "%[src],     %[src],         %[srcStride]        \n\t"
             MMI_LWC1(%[ftmp4], %[src], 0x00)
@@ -812,7 +812,7 @@ static void avg_h264_qpel4_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
         ".set       push                                                \n\t"
         ".set       noreorder                                           \n\t"
         "dli        %[tmp0],    0x02                                    \n\t"
-        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
+        "pxor       %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
         "mtc1       %[tmp0],    %[ftmp9]                                \n\t"
         "dli        %[tmp0],    0x05                                    \n\t"
         MMI_LWC1(%[ftmp0], %[src], 0x00)
@@ -930,7 +930,7 @@ static void avg_h264_qpel8_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
             ".set       push                                            \n\t"
             ".set       noreorder                                       \n\t"
             "dli        %[tmp0],    0x02                                \n\t"
-            "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"
+            "pxor       %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"
             "mtc1       %[tmp0],    %[ftmp9]                            \n\t"
             "dli        %[tmp0],    0x05                                \n\t"
             MMI_LWC1(%[ftmp0], %[src], 0x00)
@@ -1269,7 +1269,7 @@ static void put_h264_qpel4_hv_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     src -= 2*srcStride;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x09                                    \n\t"
         "1:                                                             \n\t"
         MMI_ULWC1(%[ftmp1], %[src], -0x02)
@@ -1347,7 +1347,7 @@ static void put_h264_qpel8or16_hv1_lowpass_mmi(int16_t *tmp,
             MMI_ULWC1(%[ftmp0], %[src], 0x00)
             "mtc1       %[tmp0],    %[ftmp10]                           \n\t"
             PTR_ADDU   "%[src],     %[src],         %[srcStride]        \n\t"
-            "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"
+            "pxor       %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"
             MMI_ULWC1(%[ftmp1], %[src], 0x00)
             PTR_ADDU   "%[src],     %[src],         %[srcStride]        \n\t"
             MMI_ULWC1(%[ftmp2], %[src], 0x00)
@@ -1684,7 +1684,7 @@ static void put_h264_qpel8_h_lowpass_l2_mmi(uint8_t *dst, const uint8_t *src,
         "dli        %[tmp0],    0x02                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp7]                                \n\t"
         "dli        %[tmp0],    0x05                                    \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "mtc1       %[tmp0],    %[ftmp8]                                \n\t"
         "1:                                                             \n\t"
         MMI_ULDC1(%[ftmp1], %[src], 0x00)
@@ -1833,7 +1833,7 @@ static void avg_h264_qpel4_hv_lowpass_mmi(uint8_t *dst, const uint8_t *src,
     src -= 2*srcStride;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x09                                    \n\t"
         "1:                                                             \n\t"
         MMI_ULWC1(%[ftmp1], %[src], -0x02)
@@ -2005,7 +2005,7 @@ static void avg_h264_qpel8_h_lowpass_l2_mmi(uint8_t *dst, const uint8_t *src,
         "ori        %[tmp0],    $0,             0x8                     \n\t"
         "mtc1       %[tmp1],    %[ftmp7]                                \n\t"
         "dli        %[tmp1],    0x05                                    \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "mtc1       %[tmp1],    %[ftmp8]                                \n\t"
         "1:                                                             \n\t"
         MMI_ULDC1(%[ftmp1], %[src], 0x00)

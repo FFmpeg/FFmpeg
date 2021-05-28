@@ -676,14 +676,14 @@ inline void ff_put_no_rnd_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
         MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
-        "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
-        "xor        %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
-        "xor        %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
-        "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
         MMI_SDC1(%[ftmp0], %[dst], 0x00)
         MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
@@ -696,14 +696,14 @@ inline void ff_put_no_rnd_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
         MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
-        "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
-        "xor        %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
-        "xor        %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
-        "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "pxor       %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
         MMI_SDC1(%[ftmp0], %[dst], 0x00)
         MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
@@ -846,7 +846,7 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
     DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
-        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
+        "pxor       %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
         "dli        %[addr0],   0x0f                                    \n\t"
         "pcmpeqw    %[ftmp6],   %[ftmp6],       %[ftmp6]                \n\t"
         "dmtc1      %[addr0],   %[ftmp8]                                \n\t"

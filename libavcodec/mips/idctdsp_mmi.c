@@ -154,7 +154,7 @@ void ff_add_pixels_clamped_mmi(const int16_t *block,
     uint64_t tmp[1];
     __asm__ volatile (
         "li         %[tmp0],    0x04                           \n\t"
-        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]           \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],   %[ftmp0]           \n\t"
         "1:                                                    \n\t"
         MMI_LDC1(%[ftmp5], %[pixels], 0x00)
         PTR_ADDU   "%[pixels],  %[pixels],  %[line_size]       \n\t"

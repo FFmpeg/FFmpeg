@@ -38,10 +38,10 @@
         "pcmpeqb    %[db_1],    "#src1",        "#src2"             \n\t"   \
         "pmaxub     %[db_2],    "#src1",        "#src2"             \n\t"   \
         "pcmpeqb    %[db_2],    %[db_2],        "#src1"             \n\t"   \
-        "xor        "#dst",     %[db_2],        %[db_1]             \n\t"
+        "pxor       "#dst",     %[db_2],        %[db_1]             \n\t"
 
 #define MMI_BTOH(dst_l, dst_r, src)                                         \
-        "xor        %[db_1],    %[db_1],        %[db_1]             \n\t"   \
+        "pxor       %[db_1],    %[db_1],        %[db_1]             \n\t"   \
         "pcmpgtb    %[db_2],    %[db_1],        "#src"              \n\t"   \
         "punpcklbh  "#dst_r",   "#src",         %[db_2]             \n\t"   \
         "punpckhbh  "#dst_l",   "#src",         %[db_2]             \n\t"
@@ -84,17 +84,17 @@
         "punpcklwd  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
         MMI_PCMPGTUB(%[mask], %[mask], %[ftmp3])                            \
         "pcmpeqw    %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
-        "xor        %[mask],    %[mask],        %[ftmp3]            \n\t"   \
+        "pxor       %[mask],    %[mask],        %[ftmp3]            \n\t"   \
         /* VP8_MBFILTER */                                                  \
         "li         %[tmp0],    0x80808080                          \n\t"   \
         "dmtc1      %[tmp0],    %[ftmp7]                            \n\t"   \
         "punpcklwd  %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"   \
-        "xor        %[p2],      %[p2],          %[ftmp7]            \n\t"   \
-        "xor        %[p1],      %[p1],          %[ftmp7]            \n\t"   \
-        "xor        %[p0],      %[p0],          %[ftmp7]            \n\t"   \
-        "xor        %[q0],      %[q0],          %[ftmp7]            \n\t"   \
-        "xor        %[q1],      %[q1],          %[ftmp7]            \n\t"   \
-        "xor        %[q2],      %[q2],          %[ftmp7]            \n\t"   \
+        "pxor       %[p2],      %[p2],          %[ftmp7]            \n\t"   \
+        "pxor       %[p1],      %[p1],          %[ftmp7]            \n\t"   \
+        "pxor       %[p0],      %[p0],          %[ftmp7]            \n\t"   \
+        "pxor       %[q0],      %[q0],          %[ftmp7]            \n\t"   \
+        "pxor       %[q1],      %[q1],          %[ftmp7]            \n\t"   \
+        "pxor       %[q2],      %[q2],          %[ftmp7]            \n\t"   \
         "psubsb     %[ftmp4],   %[p1],          %[q1]               \n\t"   \
         "psubb      %[ftmp5],   %[q0],          %[p0]               \n\t"   \
         MMI_BTOH(%[ftmp1],  %[ftmp0],  %[ftmp5])                            \
@@ -109,8 +109,8 @@
         "paddh      %[ftmp1],   %[ftmp3],       %[ftmp1]            \n\t"   \
         /* Combine left and right part */                                   \
         "packsshb   %[ftmp1],   %[ftmp0],       %[ftmp1]            \n\t"   \
-        "and        %[ftmp1],   %[ftmp1],       %[mask]             \n\t"   \
-        "and        %[ftmp2],   %[ftmp1],       %[hev]              \n\t"   \
+        "pand       %[ftmp1],   %[ftmp1],       %[mask]             \n\t"   \
+        "pand       %[ftmp2],   %[ftmp1],       %[hev]              \n\t"   \
         "li         %[tmp0],    0x04040404                          \n\t"   \
         "dmtc1      %[tmp0],    %[ftmp0]                            \n\t"   \
         "punpcklwd  %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"   \
@@ -129,8 +129,8 @@
         "paddsb     %[p0],      %[p0],          %[ftmp4]            \n\t"   \
         /* filt_val &= ~hev */                                              \
         "pcmpeqw    %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"   \
-        "xor        %[hev],     %[hev],         %[ftmp0]            \n\t"   \
-        "and        %[ftmp1],   %[ftmp1],       %[hev]              \n\t"   \
+        "pxor       %[hev],     %[hev],         %[ftmp0]            \n\t"   \
+        "pand       %[ftmp1],   %[ftmp1],       %[hev]              \n\t"   \
         MMI_BTOH(%[ftmp5],  %[ftmp6],  %[ftmp1])                            \
         "li         %[tmp0],    0x07                                \n\t"   \
         "dmtc1      %[tmp0],    %[ftmp2]                            \n\t"   \
@@ -151,9 +151,9 @@
         /* Combine left and right part */                                   \
         "packsshb   %[ftmp4],   %[ftmp3],       %[ftmp4]            \n\t"   \
         "psubsb     %[q0],      %[q0],          %[ftmp4]            \n\t"   \
-        "xor        %[q0],      %[q0],          %[ftmp7]            \n\t"   \
+        "pxor       %[q0],      %[q0],          %[ftmp7]            \n\t"   \
         "paddsb     %[p0],      %[p0],          %[ftmp4]            \n\t"   \
-        "xor        %[p0],      %[p0],          %[ftmp7]            \n\t"   \
+        "pxor       %[p0],      %[p0],          %[ftmp7]            \n\t"   \
         "li         %[tmp0],    0x00120012                          \n\t"   \
         "dmtc1      %[tmp0],    %[ftmp1]                            \n\t"   \
         "punpcklwd  %[ftmp1],   %[ftmp1],       %[ftmp1]            \n\t"   \
@@ -168,9 +168,9 @@
         /* Combine left and right part */                                   \
         "packsshb   %[ftmp4],   %[ftmp3],       %[ftmp4]            \n\t"   \
         "psubsb     %[q1],      %[q1],          %[ftmp4]            \n\t"   \
-        "xor        %[q1],      %[q1],          %[ftmp7]            \n\t"   \
+        "pxor       %[q1],      %[q1],          %[ftmp7]            \n\t"   \
         "paddsb     %[p1],      %[p1],          %[ftmp4]            \n\t"   \
-        "xor        %[p1],      %[p1],          %[ftmp7]            \n\t"   \
+        "pxor       %[p1],      %[p1],          %[ftmp7]            \n\t"   \
         "li         %[tmp0],    0x03                                \n\t"   \
         "dmtc1      %[tmp0],    %[ftmp1]                            \n\t"   \
         /* Right part */                                                    \
@@ -186,9 +186,9 @@
         /* Combine left and right part */                                   \
         "packsshb   %[ftmp4],   %[ftmp3],       %[ftmp4]            \n\t"   \
         "psubsb     %[q2],      %[q2],          %[ftmp4]            \n\t"   \
-        "xor        %[q2],      %[q2],          %[ftmp7]            \n\t"   \
+        "pxor       %[q2],      %[q2],          %[ftmp7]            \n\t"   \
         "paddsb     %[p2],      %[p2],          %[ftmp4]            \n\t"   \
-        "xor        %[p2],      %[p2],          %[ftmp7]            \n\t"
+        "pxor       %[p2],      %[p2],          %[ftmp7]            \n\t"
 
 #define PUT_VP8_EPEL4_H6_MMI(src, dst)                                      \
         MMI_ULWC1(%[ftmp1], src, 0x00)                                      \
@@ -1021,7 +1021,7 @@ void ff_vp8_luma_dc_wht_mmi(int16_t block[4][4][16], int16_t dc[16])
     block[3][3][0] = (dc[12] - dc[15] + 3 - dc[13] + dc[14]) >> 3;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         MMI_SDC1(%[ftmp0], %[dc], 0x00)
         MMI_SDC1(%[ftmp0], %[dc], 0x08)
         MMI_SDC1(%[ftmp0], %[dc], 0x10)
@@ -1136,7 +1136,7 @@ void ff_vp8_idct_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
     DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         MMI_LDC1(%[ftmp1], %[block], 0x00)
         MMI_LDC1(%[ftmp2], %[block], 0x08)
         MMI_LDC1(%[ftmp3], %[block], 0x10)
@@ -1302,7 +1302,7 @@ void ff_vp8_idct_dc_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
     block[0] = 0;
 
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "mtc1       %[dc],      %[ftmp5]                            \n\t"
         MMI_LWC1(%[ftmp1], %[dst0], 0x00)
         MMI_LWC1(%[ftmp2], %[dst1], 0x00)
@@ -1618,7 +1618,7 @@ void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[15] = cm[(filter[2] * src[15] - filter[1] * src[14] + filter[3] * src[16] - filter[4] * src[17] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -1685,7 +1685,7 @@ void ff_put_vp8_epel8_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[7] = cm[(filter[2] * src[7] - filter[1] * src[ 6] + filter[3] * src[8] - filter[4] * src[9] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -1742,7 +1742,7 @@ void ff_put_vp8_epel4_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[3] = cm[(filter[2] * src[3] - filter[1] * src[ 2] + filter[3] * src[4] - filter[4] * src[5] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -1811,7 +1811,7 @@ void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[15] = cm[(filter[2]*src[15] - filter[1]*src[14] + filter[0]*src[13] + filter[3]*src[16] - filter[4]*src[17] + filter[5]*src[18] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -1879,7 +1879,7 @@ void ff_put_vp8_epel8_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[7] = cm[(filter[2]*src[7] - filter[1]*src[ 6] + filter[0]*src[ 5] + filter[3]*src[8] - filter[4]*src[9] + filter[5]*src[10] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -1937,7 +1937,7 @@ void ff_put_vp8_epel4_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[3] = cm[(filter[2]*src[3] - filter[1]*src[ 2] + filter[0]*src[ 1] + filter[3]*src[4] - filter[4]*src[5] + filter[5]*src[ 6] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2007,7 +2007,7 @@ void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[15] = cm[(filter[2] * src[15] - filter[1] * src[15-srcstride] + filter[3] * src[15+srcstride] - filter[4] * src[15+2*srcstride] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2076,7 +2076,7 @@ void ff_put_vp8_epel8_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[7] = cm[(filter[2] * src[7] - filter[1] * src[7-srcstride] + filter[3] * src[7+srcstride] - filter[4] * src[7+2*srcstride] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2135,7 +2135,7 @@ void ff_put_vp8_epel4_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[3] = cm[(filter[2] * src[3] - filter[1] * src[3-srcstride] + filter[3] * src[3+srcstride] - filter[4] * src[3+2*srcstride] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2205,7 +2205,7 @@ void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[15] = cm[(filter[2]*src[15] - filter[1]*src[15-srcstride] + filter[0]*src[15-2*srcstride] + filter[3]*src[15+srcstride] - filter[4]*src[15+2*srcstride] + filter[5]*src[15+3*srcstride] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2275,7 +2275,7 @@ void ff_put_vp8_epel8_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[7] = cm[(filter[2]*src[7] - filter[1]*src[7-srcstride] + filter[0]*src[7-2*srcstride] + filter[3]*src[7+srcstride] - filter[4]*src[7+2*srcstride] + filter[5]*src[7+3*srcstride] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2335,7 +2335,7 @@ void ff_put_vp8_epel4_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
     dst[3] = cm[(filter[2]*src[3] - filter[1]*src[3-srcstride] + filter[0]*src[3-2*srcstride] + filter[3]*src[3+srcstride] - filter[4]*src[3+2*srcstride] + filter[5]*src[3+3*srcstride] + 64) >> 7];
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x07                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
@@ -2873,7 +2873,7 @@ void ff_put_vp8_bilinear16_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
     dst[15] = (a * src[15] + b * src[16] + 4) >> 3;
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x03                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
         "pshufh     %[a],       %[a],           %[ftmp0]            \n\t"
@@ -2940,7 +2940,7 @@ void ff_put_vp8_bilinear16_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
     dst[7] = (c * src[7] + d * src[7 + sstride] + 4) >> 3;
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x03                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
         "pshufh     %[c],       %[c],           %[ftmp0]            \n\t"
@@ -3041,7 +3041,7 @@ void ff_put_vp8_bilinear8_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
     dst[7] = (a * src[7] + b * src[8] + 4) >> 3;
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x03                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
         "pshufh     %[a],       %[a],           %[ftmp0]            \n\t"
@@ -3102,7 +3102,7 @@ void ff_put_vp8_bilinear8_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
     dst[7] = (c * src[7] + d * src[7 + sstride] + 4) >> 3;
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x03                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
         "pshufh     %[c],       %[c],           %[ftmp0]            \n\t"
@@ -3194,7 +3194,7 @@ void ff_put_vp8_bilinear4_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
     dst[3] = (a * src[3] + b * src[4] + 4) >> 3;
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x03                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
         "pshufh     %[a],       %[a],           %[ftmp0]            \n\t"
@@ -3252,7 +3252,7 @@ void ff_put_vp8_bilinear4_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
     dst[3] = (c * src[3] + d * src[3 + sstride] + 4) >> 3;
     */
     __asm__ volatile (
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+        "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
         "li         %[tmp0],    0x03                                \n\t"
         "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
         "pshufh     %[c],       %[c],           %[ftmp0]            \n\t"

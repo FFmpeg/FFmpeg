@@ -133,7 +133,7 @@ void ff_simple_idct_8_mmi(int16_t *block)
         "psllh        $f28,     "#src1",    $f30                \n\t" \
         "dmtc1        $9,        $f31                           \n\t" \
         "punpcklhw    $f29,      $f28,      $f28                \n\t" \
-        "and          $f29,      $f29,      $f31                \n\t" \
+        "pand         $f29,      $f29,      $f31                \n\t" \
         "paddw        $f28,      $f28,      $f29                \n\t" \
         "punpcklwd   "#src1",    $f28,      $f28                \n\t" \
         "punpcklwd   "#src2",    $f28,      $f28                \n\t" \
@@ -268,9 +268,9 @@ void ff_simple_idct_8_mmi(int16_t *block)
         "punpcklwd    $f8,       $f27,      $f29                \n\t"
         "punpckhwd    $f12,      $f27,      $f29                \n\t"
 
-        "or           $f26,      $f2,       $f6                 \n\t"
-        "or           $f26,      $f26,      $f10                \n\t"
-        "or           $f26,      $f26,      $f14                \n\t"
+        "por          $f26,      $f2,       $f6                 \n\t"
+        "por          $f26,      $f26,      $f10                \n\t"
+        "por          $f26,      $f26,      $f14                \n\t"
         "dmfc1        $10,       $f26                           \n\t"
         "bnez         $10,       1f                             \n\t"
         /* case1: In this case, row[1,3,5,7] are all zero */
@@ -338,9 +338,9 @@ void ff_simple_idct_8_mmi(int16_t *block)
         "punpcklwd    $f9,       $f27,      $f29                \n\t"
         "punpckhwd    $f13,      $f27,      $f29                \n\t"
 
-        "or           $f26,      $f3,       $f7                 \n\t"
-        "or           $f26,      $f26,      $f11                \n\t"
-        "or           $f26,      $f26,      $f15                \n\t"
+        "por          $f26,      $f3,       $f7                 \n\t"
+        "por          $f26,      $f26,      $f11                \n\t"
+        "por          $f26,      $f26,      $f15                \n\t"
         "dmfc1        $10,       $f26                           \n\t"
         "bnez         $10,       1f                             \n\t"
         /* case1: In this case, row[1,3,5,7] are all zero */
