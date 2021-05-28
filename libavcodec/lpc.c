@@ -189,7 +189,7 @@ double ff_lpc_calc_ref_coefs_f(LPCContext *s, const float *samples, int len,
     compute_ref_coefs(autoc, order, ref, error);
     for (i = 0; i < order; i++)
         avg_err = (avg_err + error[i])/2.0f;
-    return signal/avg_err;
+    return avg_err ? signal/avg_err : NAN;
 }
 
 /**
