@@ -665,6 +665,12 @@ Set mfra timestamps as PTS
 Don't use mfra box to set timestamps
 @end table
 
+@item use_tfdt
+For fragmented input, set fragment's starting timestamp to @code{baseMediaDecodeTime} from the @code{tfdt} box.
+Default is disabled, which will preferentially use the @code{earliest_presentation_time} from the @code{sidx} box.
+In either case, the timestamp from the @code{mfra} box will be used if it's available and @code{use_mfra_for} is
+set to pts or dts.
+
 @item export_all
 Export unrecognized boxes within the @var{udta} box as metadata entries. The first four
 characters of the box type are set as the key. Default is false.

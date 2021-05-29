@@ -277,6 +277,7 @@ typedef struct MOVContext {
     int moov_retry;
     int use_mfra_for;
     int has_looked_for_mfra;
+    int use_tfdt;
     MOVFragmentIndex frag_index;
     int atom_depth;
     unsigned int aax_mode;  ///< 'aax' file has been detected
