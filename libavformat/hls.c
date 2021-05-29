@@ -207,6 +207,7 @@ typedef struct HLSContext {
     int64_t cur_timestamp;
     AVIOInterruptCB *interrupt_callback;
     AVDictionary *avio_opts;
+    AVDictionary *seg_format_opts;
     char *allowed_extensions;
     int max_reload;
     int http_persistent;
@@ -1959,6 +1960,7 @@ static int hls_read_header(AVFormatContext *s)
         struct playlist *pls = c->playlists[i];
         const AVInputFormat *in_fmt = NULL;
         char *url;
+        AVDictionary *seg_format_opts = NULL;
 
         if (!(pls->ctx = avformat_alloc_context())) {
             ret = AVERROR(ENOMEM);
@@ -2017,7 +2019,10 @@ static int hls_read_header(AVFormatContext *s)
         if ((ret = ff_copy_whiteblacklists(pls->ctx, s)) < 0)
             goto fail;
 
-        ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, NULL);
+        av_dict_copy(&seg_format_opts, c->seg_format_opts, 0);
+
+        ret = avformat_open_input(&pls->ctx, pls->segments[0]->url, in_fmt, &seg_format_opts);
+        av_dict_free(&seg_format_opts);
         if (ret < 0)
             goto fail;
 
@@ -2403,6 +2408,8 @@ static const AVOption hls_options[] = {
         OFFSET(http_multiple), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, FLAGS},
     {"http_seekable", "Use HTTP partial requests, 0 = disable, 1 = enable, -1 = auto",
         OFFSET(http_seekable), AV_OPT_TYPE_BOOL, { .i64 = -1}, -1, 1, FLAGS},
+    {"seg_format_options", "Set options for segment demuxer",
+        OFFSET(seg_format_opts), AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, FLAGS},
     {NULL}
 };
 

@@ -347,6 +347,9 @@ Enabled by default for HTTP/1.1 servers.
 @item http_seekable
 Use HTTP partial requests for downloading HTTP segments.
 0 = disable, 1 = enable, -1 = auto, Default is auto.
+
+@item seg_format_options
+Set options for the demuxer of media segments using a list of key=value pairs separated by @code{:}.
 @end table
 
 @section image2
