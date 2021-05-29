@@ -128,7 +128,7 @@ DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *lo
         }
         sws_scale(sws_ctx, (const uint8_t **)frame->data,
                            frame->linesize, 0, frame->height,
-                           (uint8_t * const*)(&input->data),
+                           (uint8_t * const [4]){input->data, 0, 0, 0},
                            (const int [4]){frame->width * 3 * sizeof(float), 0, 0, 0});
         sws_freeContext(sws_ctx);
         break;
