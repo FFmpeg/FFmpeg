@@ -898,7 +898,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
 
-    av_log(avctx, AV_LOG_INFO, "Qavg: %.3f\n", s->lambda_sum / s->lambda_count);
+    av_log(avctx, AV_LOG_INFO, "Qavg: %.3f\n", s->lambda_count ? s->lambda_sum / s->lambda_count : NAN);
 
     ff_mdct_end(&s->mdct1024);
     ff_mdct_end(&s->mdct128);
