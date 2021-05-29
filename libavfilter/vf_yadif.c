@@ -123,20 +123,22 @@ static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
     uint8_t *next2 = parity ? cur  : next;
 
     const int edge = MAX_ALIGN - 1;
+    int offset = FFMAX(w - edge, 3);
 
     /* Only edge pixels need to be processed here.  A constant value of false
      * for is_not_edge should let the compiler ignore the whole branch. */
-    FILTER(0, 3, 0)
+    FILTER(0, FFMIN(3, w), 0)
 
-    dst  = (uint8_t*)dst1  + w - edge;
-    prev = (uint8_t*)prev1 + w - edge;
-    cur  = (uint8_t*)cur1  + w - edge;
-    next = (uint8_t*)next1 + w - edge;
+    dst  = (uint8_t*)dst1  + offset;
+    prev = (uint8_t*)prev1 + offset;
+    cur  = (uint8_t*)cur1  + offset;
+    next = (uint8_t*)next1 + offset;
     prev2 = (uint8_t*)(parity ? prev : cur);
     next2 = (uint8_t*)(parity ? cur  : next);
 
-    FILTER(w - edge, w - 3, 1)
-    FILTER(w - 3, w, 0)
+    FILTER(offset, w - 3, 1)
+    offset = FFMAX(offset, w - 3);
+    FILTER(offset, w, 0)
 }
 
 
@@ -170,21 +172,23 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     uint16_t *next2 = parity ? cur  : next;
 
     const int edge = MAX_ALIGN / 2 - 1;
+    int offset = FFMAX(w - edge, 3);
 
     mrefs /= 2;
     prefs /= 2;
 
-    FILTER(0, 3, 0)
+    FILTER(0,  FFMIN(3, w), 0)
 
-    dst   = (uint16_t*)dst1  + w - edge;
-    prev  = (uint16_t*)prev1 + w - edge;
-    cur   = (uint16_t*)cur1  + w - edge;
-    next  = (uint16_t*)next1 + w - edge;
+    dst   = (uint16_t*)dst1  + offset;
+    prev  = (uint16_t*)prev1 + offset;
+    cur   = (uint16_t*)cur1  + offset;
+    next  = (uint16_t*)next1 + offset;
     prev2 = (uint16_t*)(parity ? prev : cur);
     next2 = (uint16_t*)(parity ? cur  : next);
 
-    FILTER(w - edge, w - 3, 1)
-    FILTER(w - 3, w, 0)
+    FILTER(offset, w - 3, 1)
+    offset = FFMAX(offset, w - 3);
+    FILTER(offset, w, 0)
 }
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
