@@ -2160,11 +2160,13 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         avio_wb16(pb, 0x18); /* Reserved */
 
     if (track->mode == MODE_MOV && track->par->format == AV_PIX_FMT_PAL8) {
-        int pal_size = 1 << track->par->bits_per_coded_sample;
-        int i;
+        int pal_size, i;
         avio_wb16(pb, 0);             /* Color table ID */
         avio_wb32(pb, 0);             /* Color table seed */
         avio_wb16(pb, 0x8000);        /* Color table flags */
+        if (track->par->bits_per_coded_sample < 0 || track->par->bits_per_coded_sample > 8)
+            return AVERROR(EINVAL);
+        pal_size = 1 << track->par->bits_per_coded_sample;
         avio_wb16(pb, pal_size - 1);  /* Color table size (zero-relative) */
         for (i = 0; i < pal_size; i++) {
             uint32_t rgb = track->palette[i];
