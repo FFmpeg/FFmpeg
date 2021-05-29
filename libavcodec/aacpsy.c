@@ -308,6 +308,9 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     const int bandwidth    = ctx->cutoff ? ctx->cutoff : AAC_CUTOFF(ctx->avctx);
     const float num_bark   = calc_bark((float)bandwidth);
 
+    if (bandwidth <= 0)
+        return AVERROR(EINVAL);
+
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
     if (!ctx->model_priv_data)
         return AVERROR(ENOMEM);
