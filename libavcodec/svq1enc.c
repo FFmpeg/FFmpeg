@@ -499,9 +499,10 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
     SVQ1EncContext *const s = avctx->priv_data;
     int i;
 
-    av_log(avctx, AV_LOG_DEBUG, "RD: %f\n",
-           s->rd_total / (double)(avctx->width * avctx->height *
-                                  avctx->frame_number));
+    if (avctx->frame_number)
+        av_log(avctx, AV_LOG_DEBUG, "RD: %f\n",
+               s->rd_total / (double)(avctx->width * avctx->height *
+                                      avctx->frame_number));
 
     s->m.mb_type = NULL;
     ff_mpv_common_end(&s->m);
