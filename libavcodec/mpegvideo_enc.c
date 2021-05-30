@@ -1846,6 +1846,7 @@ vbv_retry:
             break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
+                s->stuffing_bits = 0;
             }
             flush_put_bits(&s->pb);
             s->frame_bits  = put_bits_count(&s->pb);
