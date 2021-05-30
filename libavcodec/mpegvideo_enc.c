@@ -463,9 +463,13 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if (!s->fixed_qscale &&
         avctx->bit_rate * av_q2d(avctx->time_base) >
             avctx->bit_rate_tolerance) {
+        double nbt = avctx->bit_rate * av_q2d(avctx->time_base) * 5;
         av_log(avctx, AV_LOG_WARNING,
                "bitrate tolerance %d too small for bitrate %"PRId64", overriding\n", avctx->bit_rate_tolerance, avctx->bit_rate);
-        avctx->bit_rate_tolerance = 5 * avctx->bit_rate * av_q2d(avctx->time_base);
+        if (nbt <= INT_MAX) {
+            avctx->bit_rate_tolerance = nbt;
+        } else
+            avctx->bit_rate_tolerance = INT_MAX;
     }
 
     if (avctx->rc_max_rate &&
