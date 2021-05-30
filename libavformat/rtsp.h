@@ -404,7 +404,7 @@ typedef struct RTSPState {
     /**
      * timeout of socket i/o operations.
      */
-    int stimeout;
+    int64_t stimeout;
 
     /**
      * Size of RTP packet reordering queue.
