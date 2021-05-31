@@ -186,7 +186,8 @@ static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_o
             for(j=0; j<i; j++)
                 r -= lpc_last[j] * autoc[i-j-1];
 
-            r /= err;
+            if (err)
+                r /= err;
             err *= FIXR(1.0) - (r * r);
         }
 
