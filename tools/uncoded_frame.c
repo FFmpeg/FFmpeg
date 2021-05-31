@@ -6,6 +6,7 @@
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersink.h"
 #include "libavformat/avformat.h"
+#include "libavcodec/codec_id.h"
 
 typedef struct {
     AVFormatContext *mux;
