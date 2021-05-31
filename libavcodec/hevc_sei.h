@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/buffer.h"
+
 #include "get_bits.h"
 #include "sei.h"
 
