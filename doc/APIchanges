@@ -16,7 +16,8 @@ API changes, most recent first:
 
 2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec_id.h
   Move av_get_bits_per_sample(), av_get_exact_bits_per_sample(),
-  and avcodec_profile_name() from avcodec.h to codec_id.h.
+  avcodec_profile_name(), and av_get_pcm_codec() from avcodec.h
+  to codec_id.h.
 
 2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h defs.h
   Add new installed header defs.h. The following definitions are moved

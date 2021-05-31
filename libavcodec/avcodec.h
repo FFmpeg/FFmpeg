@@ -3112,14 +3112,6 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
 /**
- * Return the PCM codec associated with a sample format.
- * @param be  endianness, 0 for little, 1 for big,
- *            -1 (or anything else) for native
- * @return  AV_CODEC_ID_PCM_* or AV_CODEC_ID_NONE
- */
-enum AVCodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be);
-
-/**
  * Return audio frame duration.
  *
  * @param avctx        codec context

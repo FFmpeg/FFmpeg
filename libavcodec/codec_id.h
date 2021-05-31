@@ -22,6 +22,7 @@
 #define AVCODEC_CODEC_ID_H
 
 #include "libavutil/avutil.h"
+#include "libavutil/samplefmt.h"
 
 /**
  * @addtogroup lavc_core
@@ -610,6 +611,14 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id);
  *       function searches the list of profiles from the AVCodecDescriptor
  */
 const char *avcodec_profile_name(enum AVCodecID codec_id, int profile);
+
+/**
+ * Return the PCM codec associated with a sample format.
+ * @param be  endianness, 0 for little, 1 for big,
+ *            -1 (or anything else) for native
+ * @return  AV_CODEC_ID_PCM_* or AV_CODEC_ID_NONE
+ */
+enum AVCodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be);
 
 /**
  * @}
