@@ -1168,7 +1168,7 @@ static void do_video_out(OutputFile *of,
     if (frame_rate.num > 0 && frame_rate.den > 0)
         duration = 1/(av_q2d(frame_rate) * av_q2d(enc->time_base));
 
-    if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
+    if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
         duration = FFMIN(duration, 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base)));
 
     if (!ost->filters_script &&
@@ -2625,9 +2625,11 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     avpkt = ist->pkt;
 
     if (!ist->saw_first_ts) {
+        ist->first_dts =
         ist->dts = ist->st->avg_frame_rate.num ? - ist->dec_ctx->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
         ist->pts = 0;
         if (pkt && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
+            ist->first_dts =
             ist->dts += av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
             ist->pts = ist->dts; //unused but better to set it to a value thats not totally wrong
         }
@@ -3949,10 +3951,10 @@ static OutputStream *choose_output(void)
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
-        int64_t opts = ost->st->cur_dts == AV_NOPTS_VALUE ? INT64_MIN :
-                       av_rescale_q(ost->st->cur_dts, ost->st->time_base,
+        int64_t opts = ost->last_mux_dts == AV_NOPTS_VALUE ? INT64_MIN :
+                       av_rescale_q(ost->last_mux_dts, ost->st->time_base,
                                     AV_TIME_BASE_Q);
-        if (ost->st->cur_dts == AV_NOPTS_VALUE)
+        if (ost->last_mux_dts == AV_NOPTS_VALUE)
             av_log(NULL, AV_LOG_DEBUG,
                 "cur_dts is invalid st:%d (%d) [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
                 ost->st->index, ost->st->id, ost->initialized, ost->inputs_done, ost->finished);

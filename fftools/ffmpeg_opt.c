@@ -809,6 +809,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->discard = 1;
         st->discard  = AVDISCARD_ALL;
         ist->nb_samples = 0;
+        ist->first_dts = AV_NOPTS_VALUE;
         ist->min_pts = INT64_MAX;
         ist->max_pts = INT64_MIN;
 
