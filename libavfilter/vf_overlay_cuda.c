@@ -145,11 +145,16 @@ static int overlay_cuda_blend(FFFrameSync *fs)
     AVFilterContext *avctx = fs->parent;
     OverlayCUDAContext *ctx = avctx->priv;
     AVFilterLink *outlink = avctx->outputs[0];
+    AVFilterLink *inlink = avctx->inputs[0];
 
     CudaFunctions *cu = ctx->hwctx->internal->cuda_dl;
     CUcontext dummy, cuda_ctx = ctx->hwctx->cuda_ctx;
 
     AVFrame *input_main, *input_overlay;
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
+
+    int hsub = pix_desc->log2_chroma_w;
+    int vsub = pix_desc->log2_chroma_h;
 
     ctx->cu_ctx = cuda_ctx;
 
@@ -177,6 +182,9 @@ static int overlay_cuda_blend(FFFrameSync *fs)
         av_frame_free(&input_main);
         return ret;
     }
+
+    ctx->x_position &= (1 << hsub) - 1;
+    ctx->y_position &= (1 << vsub) - 1;
 
     // overlay first plane
 
