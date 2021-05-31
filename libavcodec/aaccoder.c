@@ -843,25 +843,25 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
                                                     sce0->ics.swb_sizes[g],
                                                     sce0->sf_idx[w*16+g],
                                                     sce0->band_type[w*16+g],
-                                                    lambda / band0->threshold, INFINITY, &b1, NULL, 0);
+                                                    lambda / (band0->threshold + FLT_MIN), INFINITY, &b1, NULL, 0);
                         dist1 += quantize_band_cost(s, &sce1->coeffs[start + (w+w2)*128],
                                                     R34,
                                                     sce1->ics.swb_sizes[g],
                                                     sce1->sf_idx[w*16+g],
                                                     sce1->band_type[w*16+g],
-                                                    lambda / band1->threshold, INFINITY, &b2, NULL, 0);
+                                                    lambda / (band1->threshold + FLT_MIN), INFINITY, &b2, NULL, 0);
                         dist2 += quantize_band_cost(s, M,
                                                     M34,
                                                     sce0->ics.swb_sizes[g],
                                                     mididx,
                                                     midcb,
-                                                    lambda / minthr, INFINITY, &b3, NULL, 0);
+                                                    lambda / (minthr + FLT_MIN), INFINITY, &b3, NULL, 0);
                         dist2 += quantize_band_cost(s, S,
                                                     S34,
                                                     sce1->ics.swb_sizes[g],
                                                     sididx,
                                                     sidcb,
-                                                    mslambda / (minthr * bmax), INFINITY, &b4, NULL, 0);
+                                                    mslambda / (minthr * bmax + FLT_MIN), INFINITY, &b4, NULL, 0);
                         B0 += b1+b2;
                         B1 += b3+b4;
                         dist1 -= b1+b2;
