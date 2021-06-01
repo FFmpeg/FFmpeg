@@ -853,7 +853,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 /* Not so fast though */
                 ratio = sqrtf(ratio);
             }
-            s->lambda = av_clipf(s->lambda * ratio, FLT_MIN, 65536.f);
+            s->lambda = av_clipf(s->lambda * ratio, FLT_EPSILON, 65536.f);
 
             /* Keep iterating if we must reduce and lambda is in the sky */
             if (ratio > 0.9f && ratio < 1.1f) {
