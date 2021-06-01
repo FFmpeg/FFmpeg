@@ -162,7 +162,7 @@ void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
           RESTRICT_ASM_ADDRT
           [tmp0]"=&r"(tmp[0])
         : [dst]"r"(dst),                    [block]"r"(block),
-          [stride]"r"((mips_reg)stride),    [ff_pw_32]"f"(ff_pw_32)
+          [stride]"r"((mips_reg)stride),    [ff_pw_32]"f"(ff_pw_32.f)
         : "memory"
     );
 
@@ -1078,7 +1078,7 @@ void ff_h264_luma_dc_dequant_idct_8_mmi(int16_t *output, int16_t *input,
           RESTRICT_ASM_ALL64
           [output]"+&r"(output),            [input]"+&r"(input),
           [qmul]"+&r"(qmul)
-        : [ff_pw_1]"f"(ff_pw_1)
+        : [ff_pw_1]"f"(ff_pw_1.f)
         : "memory"
     );
 }
@@ -1556,8 +1556,8 @@ void ff_deblock_v8_luma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int bet
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1])
         : [pix]"r"(pix),                    [stride]"r"((mips_reg)stride),
           [alpha]"r"((mips_reg)alpha),      [beta]"r"((mips_reg)beta),
-          [tc0]"r"(tc0),                    [ff_pb_1]"f"(ff_pb_1),
-          [ff_pb_3]"f"(ff_pb_3),            [ff_pb_A1]"f"(ff_pb_A1)
+          [tc0]"r"(tc0),                    [ff_pb_1]"f"(ff_pb_1.f),
+          [ff_pb_3]"f"(ff_pb_3.f),          [ff_pb_A1]"f"(ff_pb_A1.f)
         : "memory"
     );
 }
@@ -1866,8 +1866,8 @@ void ff_deblock_v_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
           [addr0]"=&r"(addr[0])
         : [pix]"r"(pix),                    [stride]"r"((mips_reg)stride),
           [alpha]"r"(alpha),                [beta]"r"(beta),
-          [tc0]"r"(tc0),                    [ff_pb_1]"f"(ff_pb_1),
-          [ff_pb_3]"f"(ff_pb_3),            [ff_pb_A1]"f"(ff_pb_A1)
+          [tc0]"r"(tc0),                    [ff_pb_1]"f"(ff_pb_1.f),
+          [ff_pb_3]"f"(ff_pb_3.f),          [ff_pb_A1]"f"(ff_pb_A1.f)
         : "memory"
     );
 }
@@ -1945,7 +1945,7 @@ void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
           [addr0]"=&r"(addr[0])
         : [pix]"r"(pix),                    [stride]"r"((mips_reg)stride),
           [alpha]"r"(alpha),                [beta]"r"(beta),
-          [ff_pb_1]"f"(ff_pb_1)
+          [ff_pb_1]"f"(ff_pb_1.f)
         : "memory"
     );
 }
@@ -2084,8 +2084,8 @@ void ff_deblock_h_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int be
           [pix]"+&r"(pix)
         : [alpha]"r"(alpha),                [beta]"r"(beta),
           [stride]"r"((mips_reg)stride),    [tc0]"r"(tc0),
-          [ff_pb_1]"f"(ff_pb_1),            [ff_pb_3]"f"(ff_pb_3),
-          [ff_pb_A1]"f"(ff_pb_A1)
+          [ff_pb_1]"f"(ff_pb_1.f),          [ff_pb_3]"f"(ff_pb_3.f),
+          [ff_pb_A1]"f"(ff_pb_A1.f)
         : "memory"
     );
 }
@@ -2218,7 +2218,7 @@ void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha,
           [addr4]"=&r"(addr[4]),            [addr5]"=&r"(addr[5]),
           [pix]"+&r"(pix)
         : [alpha]"r"(alpha),                [beta]"r"(beta),
-          [stride]"r"((mips_reg)stride),    [ff_pb_1]"f"(ff_pb_1)
+          [stride]"r"((mips_reg)stride),    [ff_pb_1]"f"(ff_pb_1.f)
         : "memory"
     );
 }

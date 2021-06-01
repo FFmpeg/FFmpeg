@@ -142,7 +142,7 @@ void ff_put_signed_pixels_clamped_mmi(const int16_t *block,
           [pixels]"+&r"(pixels)
         : [block]"r"(block),
           [line_size]"r"((mips_reg)line_size),
-          [ff_pb_80]"f"(ff_pb_80)
+          [ff_pb_80]"f"(ff_pb_80.f)
         : "memory"
     );
 }

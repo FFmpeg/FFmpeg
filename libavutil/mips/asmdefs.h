@@ -27,6 +27,8 @@
 #ifndef AVUTIL_MIPS_ASMDEFS_H
 #define AVUTIL_MIPS_ASMDEFS_H
 
+#include <stdint.h>
+
 #if defined(_ABI64) && _MIPS_SIM == _ABI64
 # define mips_reg       int64_t
 # define PTRSIZE        " 8 "
@@ -96,5 +98,11 @@ __asm__(".macro        parse_r var r\n\t"
         ".error        \"Unable to parse register name \\r\"\n\t"
         ".endif\n\t"
         ".endm");
+
+/* General union structure for clang adaption */
+union mmi_intfloat64 {
+    int64_t i;
+    double  f;
+};
 
 #endif /* AVCODEC_MIPS_ASMDEFS_H */

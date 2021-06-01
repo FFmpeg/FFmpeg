@@ -32,7 +32,7 @@ void ff_hevc_put_hevc_qpel_h##w##_8_mmi(int16_t *dst, uint8_t *_src,     \
     int x, y;                                                            \
     pixel *src = (pixel*)_src - 3;                                       \
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);                    \
-    uint64_t ftmp[15];                                                   \
+    double ftmp[15];                                                     \
     uint64_t rtmp[1];                                                    \
     const int8_t *filter = ff_hevc_qpel_filters[mx - 1];                 \
                                                                          \
@@ -132,7 +132,7 @@ void ff_hevc_put_hevc_qpel_hv##w##_8_mmi(int16_t *dst, uint8_t *_src,    \
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);                    \
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];         \
     int16_t *tmp = tmp_array;                                            \
-    uint64_t ftmp[15];                                                   \
+    double ftmp[15];                                                     \
     uint64_t rtmp[1];                                                    \
                                                                          \
     src   -= (QPEL_EXTRA_BEFORE * srcstride + 3);                        \
@@ -329,10 +329,12 @@ void ff_hevc_put_hevc_qpel_bi_h##w##_8_mmi(uint8_t *_dst,               \
     pixel *dst          = (pixel *)_dst;                                \
     ptrdiff_t dststride = _dststride / sizeof(pixel);                   \
     const int8_t *filter    = ff_hevc_qpel_filters[mx - 1];             \
-    uint64_t ftmp[20];                                                  \
+    double ftmp[20];                                                    \
     uint64_t rtmp[1];                                                   \
-    int shift = 7;                                                      \
-    int offset = 64;                                                    \
+    union av_intfloat64 shift;                                          \
+    union av_intfloat64 offset;                                         \
+    shift.i = 7;                                                        \
+    offset.i = 64;                                                      \
                                                                         \
     x = width >> 2;                                                     \
     y = height;                                                         \
@@ -430,9 +432,9 @@ void ff_hevc_put_hevc_qpel_bi_h##w##_8_mmi(uint8_t *_dst,               \
           [ftmp10]"=&f"(ftmp[10]), [ftmp11]"=&f"(ftmp[11]),             \
           [ftmp12]"=&f"(ftmp[12]), [src2]"+&r"(src2),                   \
           [dst]"+&r"(dst), [src]"+&r"(src), [y]"+&r"(y), [x]"=&r"(x),   \
-          [offset]"+&f"(offset), [rtmp0]"=&r"(rtmp[0])                  \
+          [offset]"+&f"(offset.f), [rtmp0]"=&r"(rtmp[0])                \
         : [src_stride]"r"(srcstride), [dst_stride]"r"(dststride),       \
-          [filter]"r"(filter), [shift]"f"(shift)                        \
+          [filter]"r"(filter), [shift]"f"(shift.f)                      \
         : "memory"                                                      \
     );                                                                  \
 }
@@ -463,10 +465,12 @@ void ff_hevc_put_hevc_qpel_bi_hv##w##_8_mmi(uint8_t *_dst,              \
     ptrdiff_t dststride = _dststride / sizeof(pixel);                   \
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];        \
     int16_t *tmp = tmp_array;                                           \
-    uint64_t ftmp[20];                                                  \
+    double ftmp[20];                                                    \
     uint64_t rtmp[1];                                                   \
-    int shift = 7;                                                      \
-    int offset = 64;                                                    \
+    union av_intfloat64 shift;                                          \
+    union av_intfloat64 offset;                                         \
+    shift.i = 7;                                                        \
+    offset.i = 64;                                                      \
                                                                         \
     src   -= (QPEL_EXTRA_BEFORE * srcstride + 3);                       \
     filter = ff_hevc_qpel_filters[mx - 1];                              \
@@ -659,9 +663,9 @@ void ff_hevc_put_hevc_qpel_bi_hv##w##_8_mmi(uint8_t *_dst,              \
           [ftmp12]"=&f"(ftmp[12]), [ftmp13]"=&f"(ftmp[13]),             \
           [ftmp14]"=&f"(ftmp[14]), [src2]"+&r"(src2),                   \
           [dst]"+&r"(dst), [tmp]"+&r"(tmp), [y]"+&r"(y), [x]"=&r"(x),   \
-          [offset]"+&f"(offset), [rtmp0]"=&r"(rtmp[0])                  \
+          [offset]"+&f"(offset.f), [rtmp0]"=&r"(rtmp[0])                \
         : [filter]"r"(filter), [stride]"r"(dststride),                  \
-          [shift]"f"(shift)                                             \
+          [shift]"f"(shift.f)                                           \
         : "memory"                                                      \
     );                                                                  \
 }
@@ -692,10 +696,12 @@ void ff_hevc_put_hevc_epel_bi_hv##w##_8_mmi(uint8_t *_dst,              \
     const int8_t *filter = ff_hevc_epel_filters[mx - 1];                \
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];        \
     int16_t *tmp = tmp_array;                                           \
-    uint64_t ftmp[12];                                                  \
+    double  ftmp[12];                                                   \
     uint64_t rtmp[1];                                                   \
-    int shift = 7;                                                      \
-    int offset = 64;                                                    \
+    union av_intfloat64 shift;                                          \
+    union av_intfloat64 offset;                                         \
+    shift.i = 7;                                                        \
+    offset.i = 64;                                                      \
                                                                         \
     src -= (EPEL_EXTRA_BEFORE * srcstride + 1);                         \
     x = width >> 2;                                                     \
@@ -847,9 +853,9 @@ void ff_hevc_put_hevc_epel_bi_hv##w##_8_mmi(uint8_t *_dst,              \
           [ftmp8]"=&f"(ftmp[8]), [ftmp9]"=&f"(ftmp[9]),                 \
           [ftmp10]"=&f"(ftmp[10]), [src2]"+&r"(src2),                   \
           [dst]"+&r"(dst), [tmp]"+&r"(tmp), [y]"+&r"(y), [x]"=&r"(x),   \
-          [offset]"+&f"(offset), [rtmp0]"=&r"(rtmp[0])                  \
+          [offset]"+&f"(offset.f), [rtmp0]"=&r"(rtmp[0])                \
         : [filter]"r"(filter), [stride]"r"(dststride),                  \
-          [shift]"f"(shift)                                             \
+          [shift]"f"(shift.f)                                           \
         : "memory"                                                      \
     );                                                                  \
 }
@@ -875,9 +881,10 @@ void ff_hevc_put_hevc_pel_bi_pixels##w##_8_mmi(uint8_t *_dst,             \
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);                     \
     pixel *dst          = (pixel *)_dst;                                  \
     ptrdiff_t dststride = _dststride / sizeof(pixel);                     \
-    uint64_t ftmp[12];                                                    \
+    double  ftmp[12];                                                     \
     uint64_t rtmp[1];                                                     \
-    int shift = 7;                                                        \
+    union av_intfloat64 shift;                                            \
+    shift.i = 7;                                                          \
                                                                           \
     y = height;                                                           \
     x = width >> 3;                                                       \
@@ -959,7 +966,7 @@ void ff_hevc_put_hevc_pel_bi_pixels##w##_8_mmi(uint8_t *_dst,             \
           [ftmp10]"=&f"(ftmp[10]), [offset]"=&f"(ftmp[11]),               \
           [src2]"+&r"(src2), [dst]"+&r"(dst), [src]"+&r"(src),            \
           [x]"+&r"(x), [y]"+&r"(y), [rtmp0]"=&r"(rtmp[0])                 \
-        : [dststride]"r"(dststride), [shift]"f"(shift),                   \
+        : [dststride]"r"(dststride), [shift]"f"(shift.f),                 \
           [srcstride]"r"(srcstride)                                       \
         : "memory"                                                        \
     );                                                                    \
@@ -989,10 +996,12 @@ void ff_hevc_put_hevc_qpel_uni_hv##w##_8_mmi(uint8_t *_dst,             \
     ptrdiff_t dststride = _dststride / sizeof(pixel);                   \
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];        \
     int16_t *tmp = tmp_array;                                           \
-    uint64_t ftmp[20];                                                  \
+    double ftmp[20];                                                    \
     uint64_t rtmp[1];                                                   \
-    int shift = 6;                                                      \
-    int offset = 32;                                                    \
+    union av_intfloat64 shift;                                          \
+    union av_intfloat64 offset;                                         \
+    shift.i = 6;                                                        \
+    offset.i = 32;                                                      \
                                                                         \
     src   -= (QPEL_EXTRA_BEFORE * srcstride + 3);                       \
     filter = ff_hevc_qpel_filters[mx - 1];                              \
@@ -1166,9 +1175,9 @@ void ff_hevc_put_hevc_qpel_uni_hv##w##_8_mmi(uint8_t *_dst,             \
           [ftmp12]"=&f"(ftmp[12]), [ftmp13]"=&f"(ftmp[13]),             \
           [ftmp14]"=&f"(ftmp[14]),                                      \
           [dst]"+&r"(dst), [tmp]"+&r"(tmp), [y]"+&r"(y), [x]"=&r"(x),   \
-          [offset]"+&f"(offset), [rtmp0]"=&r"(rtmp[0])                  \
+          [offset]"+&f"(offset.f), [rtmp0]"=&r"(rtmp[0])                \
         : [filter]"r"(filter), [stride]"r"(dststride),                  \
-          [shift]"f"(shift)                                             \
+          [shift]"f"(shift.f)                                           \
         : "memory"                                                      \
     );                                                                  \
 }

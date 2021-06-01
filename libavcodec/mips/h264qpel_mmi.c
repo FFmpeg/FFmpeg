@@ -155,8 +155,8 @@ static void put_h264_qpel4_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [dst]"+&r"(dst),                  [src]"+&r"(src)
         : [dstStride]"r"((mips_reg)dstStride),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_20]"f"(ff_pw_20),          [ff_pw_5]"f"(ff_pw_5),
-          [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_20]"f"(ff_pw_20.f),        [ff_pw_5]"f"(ff_pw_5.f),
+          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -225,8 +225,8 @@ static void put_h264_qpel8_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [dst]"+&r"(dst),                  [src]"+&r"(src)
         : [dstStride]"r"((mips_reg)dstStride),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_20]"f"(ff_pw_20),          [ff_pw_5]"f"(ff_pw_5),
-          [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_20]"f"(ff_pw_20.f),        [ff_pw_5]"f"(ff_pw_5.f),
+          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -293,8 +293,8 @@ static void avg_h264_qpel4_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [dst]"+&r"(dst),                  [src]"+&r"(src)
         : [dstStride]"r"((mips_reg)dstStride),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_20]"f"(ff_pw_20),          [ff_pw_5]"f"(ff_pw_5),
-          [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_20]"f"(ff_pw_20.f),        [ff_pw_5]"f"(ff_pw_5.f),
+          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -365,8 +365,8 @@ static void avg_h264_qpel8_h_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [dst]"+&r"(dst),                  [src]"+&r"(src)
         : [dstStride]"r"((mips_reg)dstStride),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_20]"f"(ff_pw_20),          [ff_pw_5]"f"(ff_pw_5),
-          [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_20]"f"(ff_pw_20.f),        [ff_pw_5]"f"(ff_pw_5.f),
+          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -486,7 +486,7 @@ static void put_h264_qpel4_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [dst]"+&r"(dst),                  [src]"+&r"(src)
         : [dstStride]"r"((mips_reg)dstStride),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_5]"f"(ff_pw_5),            [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_5]"f"(ff_pw_5.f),          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -780,7 +780,7 @@ static void put_h264_qpel8_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
               [h]"+&r"(h)
             : [dstStride]"r"((mips_reg)dstStride),
               [srcStride]"r"((mips_reg)srcStride),
-              [ff_pw_5]"f"(ff_pw_5),        [ff_pw_16]"f"(ff_pw_16)
+              [ff_pw_5]"f"(ff_pw_5.f),      [ff_pw_16]"f"(ff_pw_16.f)
             : "memory"
         );
 
@@ -909,7 +909,7 @@ static void avg_h264_qpel4_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [src]"+&r"(src),              [dst]"+&r"(dst)
         : [dstStride]"r"((mips_reg)dstStride),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_5]"f"(ff_pw_5),        [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_5]"f"(ff_pw_5.f),      [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -1235,7 +1235,7 @@ static void avg_h264_qpel8_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
               [h]"+&r"(h)
             : [dstStride]"r"((mips_reg)dstStride),
               [srcStride]"r"((mips_reg)srcStride),
-              [ff_pw_5]"f"(ff_pw_5),        [ff_pw_16]"f"(ff_pw_16)
+              [ff_pw_5]"f"(ff_pw_5.f),      [ff_pw_16]"f"(ff_pw_16.f)
             : "memory"
         );
 
@@ -1306,7 +1306,7 @@ static void put_h264_qpel4_hv_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [tmp]"+&r"(tmp),                  [src]"+&r"(src)
         : [tmpStride]"r"(8),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_20]"f"(ff_pw_20),          [ff_pw_5]"f"(ff_pw_5)
+          [ff_pw_20]"f"(ff_pw_20.f),        [ff_pw_5]"f"(ff_pw_5.f)
         : "memory"
     );
 
@@ -1567,7 +1567,7 @@ static void put_h264_qpel8or16_hv1_lowpass_mmi(int16_t *tmp,
               [src]"+&r"(src)
             : [tmp]"r"(tmp),                [size]"r"(size),
               [srcStride]"r"((mips_reg)srcStride),
-              [ff_pw_5]"f"(ff_pw_5),        [ff_pw_16]"f"(ff_pw_16)
+              [ff_pw_5]"f"(ff_pw_5.f),      [ff_pw_16]"f"(ff_pw_16.f)
             : "memory"
         );
 
@@ -1742,7 +1742,7 @@ static void put_h264_qpel8_h_lowpass_l2_mmi(uint8_t *dst, const uint8_t *src,
           [src2]"+&r"(src2),                [h]"+&r"(h)
         : [src2Stride]"r"((mips_reg)src2Stride),
           [dstStride]"r"((mips_reg)dstStride),
-          [ff_pw_5]"f"(ff_pw_5),            [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_5]"f"(ff_pw_5.f),          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }
@@ -1870,7 +1870,7 @@ static void avg_h264_qpel4_hv_lowpass_mmi(uint8_t *dst, const uint8_t *src,
           [tmp]"+&r"(tmp),                  [src]"+&r"(src)
         : [tmpStride]"r"(8),
           [srcStride]"r"((mips_reg)srcStride),
-          [ff_pw_20]"f"(ff_pw_20),          [ff_pw_5]"f"(ff_pw_5)
+          [ff_pw_20]"f"(ff_pw_20.f),        [ff_pw_5]"f"(ff_pw_5.f)
         : "memory"
     );
 
@@ -2065,7 +2065,7 @@ static void avg_h264_qpel8_h_lowpass_l2_mmi(uint8_t *dst, const uint8_t *src,
           [src2]"+&r"(src2)
         : [dstStride]"r"((mips_reg)dstStride),
           [src2Stride]"r"((mips_reg)src2Stride),
-          [ff_pw_5]"f"(ff_pw_5),            [ff_pw_16]"f"(ff_pw_16)
+          [ff_pw_5]"f"(ff_pw_5.f),          [ff_pw_16]"f"(ff_pw_16.f)
         : "memory"
     );
 }

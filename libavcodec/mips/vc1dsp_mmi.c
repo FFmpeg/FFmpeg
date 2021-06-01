@@ -129,9 +129,11 @@ void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
     double ftmp[9];
     mips_reg addr[1];
     int count;
+    union mmi_intfloat64 dc_u;
 
     dc = (3 * dc +  1) >> 1;
     dc = (3 * dc + 16) >> 5;
+    dc_u.i = dc;
 
     __asm__ volatile(
         "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
@@ -189,7 +191,7 @@ void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
           [addr0]"=&r"(addr[0]),
           [count]"=&r"(count),          [dest]"+&r"(dest)
         : [linesize]"r"((mips_reg)linesize),
-          [dc]"f"(dc)
+          [dc]"f"(dc_u.f)
         : "memory"
     );
 }
@@ -198,9 +200,6 @@ void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
 void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
 {
     DECLARE_ALIGNED(16, int16_t, temp[64]);
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_1_local) = {0x0000000100000001ULL};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
     double ftmp[23];
     uint64_t tmp[1];
 
@@ -407,8 +406,8 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
           [ftmp20]"=&f"(ftmp[20]),      [ftmp21]"=&f"(ftmp[21]),
           [ftmp22]"=&f"(ftmp[22]),
           [tmp0]"=&r"(tmp[0])
-        : [ff_pw_1]"f"(ff_pw_1_local),  [ff_pw_64]"f"(ff_pw_64_local),
-          [ff_pw_4]"f"(ff_pw_4_local), [block]"r"(block),
+        : [ff_pw_1]"f"(ff_pw_32_1.f),   [ff_pw_64]"f"(ff_pw_32_64.f),
+          [ff_pw_4]"f"(ff_pw_32_4.f),   [block]"r"(block),
           [temp]"r"(temp)
         : "memory"
     );
@@ -420,9 +419,11 @@ void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
 {
     int dc = block[0];
     double ftmp[9];
+    union mmi_intfloat64 dc_u;
 
     dc = ( 3 * dc +  1) >> 1;
     dc = (17 * dc + 64) >> 7;
+    dc_u.i = dc;
 
     __asm__ volatile(
         "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
@@ -467,7 +468,7 @@ void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
           [ftmp8]"=&f"(ftmp[8])
         : [dest0]"r"(dest+0*linesize),  [dest1]"r"(dest+1*linesize),
           [dest2]"r"(dest+2*linesize),  [dest3]"r"(dest+3*linesize),
-          [dc]"f"(dc)
+          [dc]"f"(dc_u.f)
         : "memory"
     );
 }
@@ -480,8 +481,6 @@ void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
     double ftmp[16];
     uint32_t tmp[1];
     int16_t count = 4;
-    DECLARE_ALIGNED(16, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
-    DECLARE_ALIGNED(16, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
     int16_t coeff[64] = {12, 16,  16,  15,  12,   9,   6,   4,
                          12, 15,   6,  -4, -12, -16, -16,  -9,
                          12,  9,  -6, -16, -12,   4,  16,  15,
@@ -591,7 +590,7 @@ void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
           [ftmp14]"=&f"(ftmp[14]),      [tmp0]"=&r"(tmp[0]),
           [src]"+&r"(src), [dst]"+&r"(dst), [count]"+&r"(count)
-        : [ff_pw_4]"f"(ff_pw_4_local),  [coeff]"r"(coeff)
+        : [ff_pw_4]"f"(ff_pw_32_4.f),   [coeff]"r"(coeff)
         : "memory"
     );
 
@@ -859,7 +858,7 @@ void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
           [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
           [tmp0]"=&r"(tmp[0])
-        : [ff_pw_64]"f"(ff_pw_64_local),
+        : [ff_pw_64]"f"(ff_pw_32_64.f),
           [src]"r"(src), [dest]"r"(dest), [linesize]"r"(linesize)
         :"memory"
     );
@@ -871,10 +870,12 @@ void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
 {
     int dc = block[0];
     double ftmp[9];
+    union mmi_intfloat64 dc_u;
     DECLARE_VAR_LOW32;
 
     dc = (17 * dc +  4) >> 3;
     dc = (12 * dc + 64) >> 7;
+    dc_u.i = dc;
 
     __asm__ volatile(
         "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
@@ -934,7 +935,7 @@ void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
           [dest2]"r"(dest+2*linesize),  [dest3]"r"(dest+3*linesize),
           [dest4]"r"(dest+4*linesize),  [dest5]"r"(dest+5*linesize),
           [dest6]"r"(dest+6*linesize),  [dest7]"r"(dest+7*linesize),
-          [dc]"f"(dc)
+          [dc]"f"(dc_u.f)
         : "memory"
     );
 }
@@ -945,14 +946,11 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
     int16_t *src = block;
     int16_t *dst = block;
     double ftmp[23];
-    uint32_t count = 8, tmp[1];
+    uint64_t count = 8, tmp[1];
     int16_t coeff[16] = {17, 22, 17, 10,
                          17, 10,-17,-22,
                          17,-10,-17, 22,
                          17,-22, 17,-10};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_1_local) = {0x0000000100000001ULL};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
 
     // 1st loop
     __asm__ volatile (
@@ -998,7 +996,7 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
           [tmp0]"=&r"(tmp[0]),          [count]"+&r"(count),
           [src]"+&r"(src),              [dst]"+&r"(dst)
-        : [ff_pw_4]"f"(ff_pw_4_local),  [coeff]"r"(coeff)
+        : [ff_pw_4]"f"(ff_pw_32_4.f),   [coeff]"r"(coeff)
         : "memory"
     );
 
@@ -1115,7 +1113,7 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp20]"=&f"(ftmp[20]),      [ftmp21]"=&f"(ftmp[21]),
           [ftmp22]"=&f"(ftmp[22]),
           [tmp0]"=&r"(tmp[0])
-        : [ff_pw_1]"f"(ff_pw_1_local),  [ff_pw_64]"f"(ff_pw_64_local),
+        : [ff_pw_1]"f"(ff_pw_32_1.f),   [ff_pw_64]"f"(ff_pw_32_64.f),
           [src]"r"(src), [dest]"r"(dest), [linesize]"r"(linesize)
         : "memory"
     );
@@ -1127,10 +1125,12 @@ void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
 {
     int dc = block[0];
     double ftmp[5];
+    union mmi_intfloat64 dc_u;
     DECLARE_VAR_LOW32;
 
     dc = (17 * dc +  4) >> 3;
     dc = (17 * dc + 64) >> 7;
+    dc_u.i = dc;
 
     __asm__ volatile(
         "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
@@ -1166,7 +1166,7 @@ void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
           [ftmp4]"=&f"(ftmp[4])
         : [dest0]"r"(dest+0*linesize),  [dest1]"r"(dest+1*linesize),
           [dest2]"r"(dest+2*linesize),  [dest3]"r"(dest+3*linesize),
-          [dc]"f"(dc)
+          [dc]"f"(dc_u.f)
         : "memory"
     );
 }
@@ -1181,8 +1181,6 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
                          17, 10,-17,-22,
                          17,-10,-17, 22,
                          17,-22, 17,-10};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
-    DECLARE_ALIGNED(8, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
     // 1st loop
     __asm__ volatile (
 
@@ -1226,7 +1224,7 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
           [tmp0]"=&r"(tmp[0]),          [count]"+&r"(count),
           [src]"+&r"(src),              [dst]"+&r"(dst)
-        : [ff_pw_4]"f"(ff_pw_4_local),  [coeff]"r"(coeff)
+        : [ff_pw_4]"f"(ff_pw_32_4.f),   [coeff]"r"(coeff)
         : "memory"
     );
 
@@ -1370,7 +1368,7 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
           [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
           [tmp0]"=&r"(tmp[0])
-        : [ff_pw_64]"f"(ff_pw_64_local),
+        : [ff_pw_64]"f"(ff_pw_32_64.f),
           [src]"r"(src), [dest]"r"(dest), [linesize]"r"(linesize)
         :"memory"
     );
@@ -1660,14 +1658,15 @@ static void vc1_put_ver_16b_shift2_mmi(int16_t *dst,
                                        const uint8_t *src, mips_reg stride,
                                        int rnd, int64_t shift)
 {
+    union mmi_intfloat64 shift_u;
     DECLARE_VAR_LOW32;
     DECLARE_VAR_ADDRT;
+    shift_u.i = shift;
 
     __asm__ volatile(
         "pxor       $f0,    $f0,    $f0             \n\t"
         "li         $8,     0x03                    \n\t"
         LOAD_ROUNDER_MMI("%[rnd]")
-        "ldc1       $f12,   %[ff_pw_9]              \n\t"
         "1:                                         \n\t"
         MMI_ULWC1($f4, %[src], 0x00)
         PTR_ADDU   "%[src], %[src], %[stride]       \n\t"
@@ -1689,9 +1688,9 @@ static void vc1_put_ver_16b_shift2_mmi(int16_t *dst,
         : RESTRICT_ASM_LOW32            RESTRICT_ASM_ADDRT
           [src]"+r"(src),               [dst]"+r"(dst)
         : [stride]"r"(stride),          [stride1]"r"(-2*stride),
-          [shift]"f"(shift),            [rnd]"m"(rnd),
-          [stride2]"r"(9*stride-4),     [ff_pw_9]"m"(ff_pw_9)
-        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f12",
+          [shift]"f"(shift_u.f),        [rnd]"m"(rnd),
+          [stride2]"r"(9*stride-4)
+        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10",
           "$f14", "$f16", "memory"
     );
 }
@@ -1713,8 +1712,6 @@ static void OPNAME ## vc1_hor_16b_shift2_mmi(uint8_t *dst, mips_reg stride, \
                                                                             \
     __asm__ volatile(                                                       \
         LOAD_ROUNDER_MMI("%[rnd]")                                          \
-        "ldc1       $f12,   %[ff_pw_128]            \n\t"                   \
-        "ldc1       $f10,   %[ff_pw_9]              \n\t"                   \
         "1:                                         \n\t"                   \
         MMI_ULDC1($f2, %[src], 0x00)                                        \
         MMI_ULDC1($f4, %[src], 0x08)                                        \
@@ -1728,16 +1725,16 @@ static void OPNAME ## vc1_hor_16b_shift2_mmi(uint8_t *dst, mips_reg stride, \
         "paddh      $f6,    $f6,    $f0             \n\t"                   \
         MMI_ULDC1($f0, %[src], 0x0b)                                        \
         "paddh      $f8,    $f8,    $f0             \n\t"                   \
-        "pmullh     $f6,    $f6,    $f10            \n\t"                   \
-        "pmullh     $f8,    $f8,    $f10            \n\t"                   \
+        "pmullh     $f6,    $f6,    %[ff_pw_9]      \n\t"                   \
+        "pmullh     $f8,    $f8,    %[ff_pw_9]      \n\t"                   \
         "psubh      $f6,    $f6,    $f2             \n\t"                   \
         "psubh      $f8,    $f8,    $f4             \n\t"                   \
         "li         $8,     0x07                    \n\t"                   \
         "mtc1       $8,     $f16                    \n\t"                   \
         NORMALIZE_MMI("$f16")                                               \
         /* Remove bias */                                                   \
-        "paddh      $f6,    $f6,    $f12            \n\t"                   \
-        "paddh      $f8,    $f8,    $f12            \n\t"                   \
+        "paddh      $f6,    $f6,    %[ff_pw_128]    \n\t"                   \
+        "paddh      $f8,    $f8,    %[ff_pw_128]    \n\t"                   \
         TRANSFER_DO_PACK(OP)                                                \
         "addiu      %[h],   %[h],  -0x01            \n\t"                   \
         PTR_ADDIU  "%[src], %[src], 0x18            \n\t"                   \
@@ -1747,8 +1744,8 @@ static void OPNAME ## vc1_hor_16b_shift2_mmi(uint8_t *dst, mips_reg stride, \
           [h]"+r"(h),                                                       \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [stride]"r"(stride),          [rnd]"m"(rnd),                      \
-          [ff_pw_9]"m"(ff_pw_9),        [ff_pw_128]"m"(ff_pw_128)           \
-        : "$8", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f12", "$f14",  \
+          [ff_pw_9]"f"(ff_pw_9.f),      [ff_pw_128]"f"(ff_pw_128.f)         \
+        : "$8", "$f0", "$f2", "$f4", "$f6", "$f8", "$f14",                  \
           "$f16", "memory"                                                  \
     );                                                                      \
 }
@@ -1774,7 +1771,6 @@ static void OPNAME ## vc1_shift2_mmi(uint8_t *dst, const uint8_t *src,      \
         "pxor       $f0,    $f0,    $f0             \n\t"                   \
         "li         $10,    0x08                    \n\t"                   \
         LOAD_ROUNDER_MMI("%[rnd]")                                          \
-        "ldc1       $f12,   %[ff_pw_9]              \n\t"                   \
         "1:                                         \n\t"                   \
         MMI_ULWC1($f6, %[src], 0x00)                                        \
         MMI_ULWC1($f8, %[src], 0x04)                                        \
@@ -1791,8 +1787,8 @@ static void OPNAME ## vc1_shift2_mmi(uint8_t *dst, const uint8_t *src,      \
         PTR_ADDU   "$9,     %[src], %[offset_x2n]   \n\t"                   \
         MMI_ULWC1($f2, $9, 0x00)                                            \
         MMI_ULWC1($f4, $9, 0x04)                                            \
-        "pmullh     $f6,    $f6,    $f12            \n\t" /* 0,9,9,0*/      \
-        "pmullh     $f8,    $f8,    $f12            \n\t" /* 0,9,9,0*/      \
+        "pmullh     $f6,    $f6,    %[ff_pw_9]      \n\t" /* 0,9,9,0*/      \
+        "pmullh     $f8,    $f8,    %[ff_pw_9]      \n\t" /* 0,9,9,0*/      \
         "punpcklbh  $f2,    $f2,    $f0             \n\t"                   \
         "punpcklbh  $f4,    $f4,    $f0             \n\t"                   \
         "psubh      $f6,    $f6,    $f2             \n\t" /*-1,9,9,0*/      \
@@ -1819,9 +1815,9 @@ static void OPNAME ## vc1_shift2_mmi(uint8_t *dst, const uint8_t *src,      \
         : [offset]"r"(offset),          [offset_x2n]"r"(-2*offset),         \
           [stride]"r"(stride),          [rnd]"m"(rnd),                      \
           [stride1]"r"(stride-offset),                                      \
-          [ff_pw_9]"m"(ff_pw_9)                                             \
+          [ff_pw_9]"f"(ff_pw_9.f)                                           \
         : "$8", "$9", "$10", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10",     \
-          "$f12", "$f14", "$f16", "memory"                                  \
+          "$f14", "$f16", "memory"                                          \
     );                                                                      \
 }
 
@@ -1852,8 +1848,8 @@ VC1_SHIFT2(OP_AVG, avg_)
     LOAD($f8, $9, M*4)                                                      \
     UNPACK("$f6")                                                           \
     UNPACK("$f8")                                                           \
-    "pmullh     $f6,    $f6,    $f12            \n\t" /* *18 */             \
-    "pmullh     $f8,    $f8,    $f12            \n\t" /* *18 */             \
+    "pmullh     $f6,    $f6,    %[ff_pw_18]     \n\t" /* *18 */             \
+    "pmullh     $f8,    $f8,    %[ff_pw_18]     \n\t" /* *18 */             \
     "psubh      $f6,    $f6,    $f2             \n\t" /* *18, -3 */         \
     "psubh      $f8,    $f8,    $f4             \n\t" /* *18, -3 */         \
     PTR_ADDU   "$9,     %[src], "#A4"           \n\t"                       \
@@ -1872,8 +1868,8 @@ VC1_SHIFT2(OP_AVG, avg_)
     LOAD($f4, $9, M*4)                                                      \
     UNPACK("$f2")                                                           \
     UNPACK("$f4")                                                           \
-    "pmullh     $f2,    $f2,    $f10            \n\t" /* *53 */             \
-    "pmullh     $f4,    $f4,    $f10            \n\t" /* *53 */             \
+    "pmullh     $f2,    $f2,    %[ff_pw_53]     \n\t" /* *53 */             \
+    "pmullh     $f4,    $f4,    %[ff_pw_53]     \n\t" /* *53 */             \
     "paddh      $f6,    $f6,    $f2             \n\t" /* 4,53,18,-3 */      \
     "paddh      $f8,    $f8,    $f4             \n\t" /* 4,53,18,-3 */
 
@@ -1892,16 +1888,16 @@ vc1_put_ver_16b_ ## NAME ## _mmi(int16_t *dst, const uint8_t *src,          \
                                  int rnd, int64_t shift)                    \
 {                                                                           \
     int h = 8;                                                              \
+    union mmi_intfloat64 shift_u;                                           \
     DECLARE_VAR_LOW32;                                                      \
     DECLARE_VAR_ADDRT;                                                      \
+    shift_u.i = shift;                                                      \
                                                                             \
     src -= src_stride;                                                      \
                                                                             \
     __asm__ volatile(                                                       \
         "pxor       $f0,    $f0,    $f0             \n\t"                   \
         LOAD_ROUNDER_MMI("%[rnd]")                                          \
-        "ldc1       $f10,   %[ff_pw_53]             \n\t"                   \
-        "ldc1       $f12,   %[ff_pw_18]             \n\t"                   \
         ".p2align 3                                 \n\t"                   \
         "1:                                         \n\t"                   \
         MSPEL_FILTER13_CORE(DO_UNPACK, MMI_ULWC1, 1, A1, A2, A3, A4)        \
@@ -1917,12 +1913,12 @@ vc1_put_ver_16b_ ## NAME ## _mmi(int16_t *dst, const uint8_t *src,          \
         PTR_ADDU   "$9,     %[src], "#A2"           \n\t"                   \
         MMI_ULWC1($f6, $9, 0x08)                                            \
         DO_UNPACK("$f6")                                                    \
-        "pmullh     $f6,    $f6,    $f12            \n\t" /* *18 */         \
+        "pmullh     $f6,    $f6,    %[ff_pw_18]     \n\t" /* *18 */         \
         "psubh      $f6,    $f6,    $f2             \n\t" /* *18,-3 */      \
         PTR_ADDU   "$9,     %[src], "#A3"           \n\t"                   \
         MMI_ULWC1($f2, $9, 0x08)                                            \
         DO_UNPACK("$f2")                                                    \
-        "pmullh     $f2,    $f2,    $f10            \n\t" /* *53 */         \
+        "pmullh     $f2,    $f2,    %[ff_pw_53]     \n\t" /* *53 */         \
         "paddh      $f6,    $f6,    $f2             \n\t" /* *53,18,-3 */   \
         PTR_ADDU   "$9,     %[src], "#A4"           \n\t"                   \
         MMI_ULWC1($f2, $9, 0x08)                                            \
@@ -1945,10 +1941,10 @@ vc1_put_ver_16b_ ## NAME ## _mmi(int16_t *dst, const uint8_t *src,          \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [stride_x1]"r"(src_stride),   [stride_x2]"r"(2*src_stride),       \
           [stride_x3]"r"(3*src_stride),                                     \
-          [rnd]"m"(rnd),                [shift]"f"(shift),                  \
-          [ff_pw_53]"m"(ff_pw_53),      [ff_pw_18]"m"(ff_pw_18),            \
-          [ff_pw_3]"f"(ff_pw_3)                                             \
-        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f12",    \
+          [rnd]"m"(rnd),                [shift]"f"(shift_u.f),              \
+          [ff_pw_53]"f"(ff_pw_53.f),    [ff_pw_18]"f"(ff_pw_18.f),          \
+          [ff_pw_3]"f"(ff_pw_3.f)                                           \
+        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8",                    \
           "$f14", "$f16", "memory"                                          \
     );                                                                      \
 }
@@ -1975,8 +1971,6 @@ OPNAME ## vc1_hor_16b_ ## NAME ## _mmi(uint8_t *dst, mips_reg stride,       \
     __asm__ volatile(                                                       \
         "pxor       $f0,    $f0,    $f0             \n\t"                   \
         LOAD_ROUNDER_MMI("%[rnd]")                                          \
-        "ldc1       $f10,   %[ff_pw_53]             \n\t"                   \
-        "ldc1       $f12,   %[ff_pw_18]             \n\t"                   \
         ".p2align 3                                 \n\t"                   \
         "1:                                         \n\t"                   \
         MSPEL_FILTER13_CORE(DONT_UNPACK, MMI_ULDC1, 2, A1, A2, A3, A4)      \
@@ -1995,9 +1989,9 @@ OPNAME ## vc1_hor_16b_ ## NAME ## _mmi(uint8_t *dst, mips_reg stride,       \
           [h]"+r"(h),                                                       \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [stride]"r"(stride),          [rnd]"m"(rnd),                      \
-          [ff_pw_53]"m"(ff_pw_53),      [ff_pw_18]"m"(ff_pw_18),            \
-          [ff_pw_3]"f"(ff_pw_3),        [ff_pw_128]"f"(ff_pw_128)           \
-        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f12",    \
+          [ff_pw_53]"f"(ff_pw_53.f),    [ff_pw_18]"f"(ff_pw_18.f),          \
+          [ff_pw_3]"f"(ff_pw_3.f),      [ff_pw_128]"f"(ff_pw_128.f)         \
+        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8",                    \
           "$f14", "$f16", "memory"                                          \
     );                                                                      \
 }
@@ -2025,8 +2019,6 @@ OPNAME ## vc1_## NAME ## _mmi(uint8_t *dst, const uint8_t *src,             \
     __asm__ volatile (                                                      \
         "pxor       $f0,    $f0,    $f0             \n\t"                   \
         LOAD_ROUNDER_MMI("%[rnd]")                                          \
-        "ldc1       $f10,   %[ff_pw_53]             \n\t"                   \
-        "ldc1       $f12,   %[ff_pw_18]             \n\t"                   \
         ".p2align 3                                 \n\t"                   \
         "1:                                         \n\t"                   \
         MSPEL_FILTER13_CORE(DO_UNPACK, MMI_ULWC1, 1, A1, A2, A3, A4)        \
@@ -2044,9 +2036,9 @@ OPNAME ## vc1_## NAME ## _mmi(uint8_t *dst, const uint8_t *src,             \
         : [offset_x1]"r"(offset),       [offset_x2]"r"(2*offset),           \
           [offset_x3]"r"(3*offset),     [stride]"r"(stride),                \
           [rnd]"m"(rnd),                                                    \
-          [ff_pw_53]"m"(ff_pw_53),      [ff_pw_18]"m"(ff_pw_18),            \
-          [ff_pw_3]"f"(ff_pw_3)                                             \
-        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f12",    \
+          [ff_pw_53]"f"(ff_pw_53.f),    [ff_pw_18]"f"(ff_pw_18.f),          \
+          [ff_pw_3]"f"(ff_pw_3.f)                                           \
+        : "$8", "$9", "$f0", "$f2", "$f4", "$f6", "$f8",                    \
           "$f14", "$f16", "memory"                                          \
     );                                                                      \
 }
@@ -2246,14 +2238,15 @@ void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
-    const int A = (8 - x) * (8 - y);
-    const int B =     (x) * (8 - y);
-    const int C = (8 - x) *     (y);
-    const int D =     (x) *     (y);
+    union mmi_intfloat64 A, B, C, D;
     double ftmp[10];
     uint32_t tmp[1];
     DECLARE_VAR_ALL64;
     DECLARE_VAR_ADDRT;
+    A.i = (8 - x) * (8 - y);
+    B.i =     (x) * (8 - y);
+    C.i = (8 - x) *     (y);
+    D.i =     (x) *     (y);
 
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -2290,9 +2283,9 @@ void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
           [src]"+&r"(src),              [dst]"+&r"(dst),
           [h]"+&r"(h)
         : [stride]"r"((mips_reg)stride),
-          [A]"f"(A),                    [B]"f"(B),
-          [C]"f"(C),                    [D]"f"(D),
-          [ff_pw_28]"f"(ff_pw_28)
+          [A]"f"(A.f),                  [B]"f"(B.f),
+          [C]"f"(C.f),                  [D]"f"(D.f),
+          [ff_pw_28]"f"(ff_pw_28.f)
         : "memory"
     );
 }
@@ -2301,14 +2294,15 @@ void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
-    const int A = (8 - x) * (8 - y);
-    const int B =     (x) * (8 - y);
-    const int C = (8 - x) *     (y);
-    const int D =     (x) *     (y);
+    union mmi_intfloat64 A, B, C, D;
     double ftmp[6];
     uint32_t tmp[1];
     DECLARE_VAR_LOW32;
     DECLARE_VAR_ADDRT;
+    A.i = (8 - x) * (8 - y);
+    B.i =     (x) * (8 - y);
+    C.i = (8 - x) *     (y);
+    D.i =     (x) *     (y);
 
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -2343,9 +2337,9 @@ void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
           [src]"+&r"(src),              [dst]"+&r"(dst),
           [h]"+&r"(h)
         : [stride]"r"((mips_reg)stride),
-          [A]"f"(A),                    [B]"f"(B),
-          [C]"f"(C),                    [D]"f"(D),
-          [ff_pw_28]"f"(ff_pw_28)
+          [A]"f"(A.f),                  [B]"f"(B.f),
+          [C]"f"(C.f),                  [D]"f"(D.f),
+          [ff_pw_28]"f"(ff_pw_28.f)
         : "memory"
     );
 }
@@ -2354,14 +2348,15 @@ void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
-    const int A = (8 - x) * (8 - y);
-    const int B =     (x) * (8 - y);
-    const int C = (8 - x) *     (y);
-    const int D =     (x) *     (y);
+    union mmi_intfloat64 A, B, C, D;
     double ftmp[10];
     uint32_t tmp[1];
     DECLARE_VAR_ALL64;
     DECLARE_VAR_ADDRT;
+    A.i = (8 - x) * (8 - y);
+    B.i =     (x) * (8 - y);
+    C.i = (8 - x) *     (y);
+    D.i =     (x) *     (y);
 
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -2401,9 +2396,9 @@ void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
           [src]"+&r"(src),              [dst]"+&r"(dst),
           [h]"+&r"(h)
         : [stride]"r"((mips_reg)stride),
-          [A]"f"(A),                    [B]"f"(B),
-          [C]"f"(C),                    [D]"f"(D),
-          [ff_pw_28]"f"(ff_pw_28)
+          [A]"f"(A.f),                 [B]"f"(B.f),
+          [C]"f"(C.f),                 [D]"f"(D.f),
+          [ff_pw_28]"f"(ff_pw_28.f)
         : "memory"
     );
 }
@@ -2412,14 +2407,15 @@ void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y)
 {
-    const int A = (8 - x) * (8 - y);
-    const int B = (    x) * (8 - y);
-    const int C = (8 - x) * (    y);
-    const int D = (    x) * (    y);
+    union mmi_intfloat64 A, B, C, D;
     double ftmp[6];
     uint32_t tmp[1];
     DECLARE_VAR_LOW32;
     DECLARE_VAR_ADDRT;
+    A.i = (8 - x) * (8 - y);
+    B.i = (x) * (8 - y);
+    C.i = (8 - x) * (y);
+    D.i = (x) * (y);
 
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -2457,9 +2453,9 @@ void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
           [src]"+&r"(src),              [dst]"+&r"(dst),
           [h]"+&r"(h)
         : [stride]"r"((mips_reg)stride),
-          [A]"f"(A),                    [B]"f"(B),
-          [C]"f"(C),                    [D]"f"(D),
-          [ff_pw_28]"f"(ff_pw_28)
+          [A]"f"(A.f),                  [B]"f"(B.f),
+          [C]"f"(C.f),                  [D]"f"(D.f),
+          [ff_pw_28]"f"(ff_pw_28.f)
         : "memory"
     );
 }

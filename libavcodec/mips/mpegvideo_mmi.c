@@ -28,12 +28,13 @@
 void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
         int n, int qscale)
 {
-    int64_t level, qmul, qadd, nCoeffs;
+    int64_t level, nCoeffs;
     double ftmp[6];
     mips_reg addr[1];
+    union mmi_intfloat64 qmul_u, qadd_u;
     DECLARE_VAR_ALL64;
 
-    qmul = qscale << 1;
+    qmul_u.i = qscale << 1;
     av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
     if (!s->h263_aic) {
@@ -41,9 +42,9 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
             level = block[0] * s->y_dc_scale;
         else
             level = block[0] * s->c_dc_scale;
-        qadd = (qscale-1) | 1;
+        qadd_u.i = (qscale-1) | 1;
     } else {
-        qadd = 0;
+        qadd_u.i = 0;
         level = block[0];
     }
 
@@ -93,7 +94,7 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
-          [qmul]"f"(qmul),                  [qadd]"f"(qadd)
+          [qmul]"f"(qmul_u.f),              [qadd]"f"(qadd_u.f)
         : "memory"
     );
 
@@ -103,13 +104,14 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
 void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
         int n, int qscale)
 {
-    int64_t qmul, qadd, nCoeffs;
+    int64_t nCoeffs;
     double ftmp[6];
     mips_reg addr[1];
+    union mmi_intfloat64 qmul_u, qadd_u;
     DECLARE_VAR_ALL64;
 
-    qmul = qscale << 1;
-    qadd = (qscale - 1) | 1;
+    qmul_u.i = qscale << 1;
+    qadd_u.i = (qscale - 1) | 1;
     av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
     nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
 
@@ -153,7 +155,7 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
-          [qmul]"f"(qmul),                  [qadd]"f"(qadd)
+          [qmul]"f"(qmul_u.f),              [qadd]"f"(qadd_u.f)
         : "memory"
     );
 }
