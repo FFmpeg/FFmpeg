@@ -605,6 +605,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
     }
 fail:
     av_dict_free(&s->chained_options);
+    av_dict_free(&s->cookie_dict);
     return ret;
 }
 
@@ -645,8 +646,10 @@ static int http_open(URLContext *h, const char *uri, int flags,
     }
     ret = http_open_cnx(h, options);
 bail_out:
-    if (ret < 0)
+    if (ret < 0) {
         av_dict_free(&s->chained_options);
+        av_dict_free(&s->cookie_dict);
+    }
     return ret;
 }
 
@@ -1763,6 +1766,7 @@ static int http_close(URLContext *h)
     if (s->hd)
         ffurl_closep(&s->hd);
     av_dict_free(&s->chained_options);
+    av_dict_free(&s->cookie_dict);
     return ret;
 }
 
