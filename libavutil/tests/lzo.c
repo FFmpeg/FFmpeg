@@ -55,7 +55,6 @@ int main(int argc, char *argv[]) {
     } else
         lzo1x_999_compress(orig, s, comp, &clen, tmp);
     for (i = 0; i < 300; i++) {
-START_TIMER
         inlen = clen; outlen = MAXSZ;
 #if BENCHMARK_LIBLZO_SAFE
         if (lzo1x_decompress_safe(comp, inlen, decomp, &outlen, NULL))
@@ -65,7 +64,6 @@ START_TIMER
         if (av_lzo1x_decode(decomp, &outlen, comp, &inlen))
 #endif
             av_log(NULL, AV_LOG_ERROR, "decompression error\n");
-STOP_TIMER("lzod")
     }
     if (memcmp(orig, decomp, s))
         av_log(NULL, AV_LOG_ERROR, "decompression incorrect\n");
