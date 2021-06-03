@@ -140,6 +140,9 @@ static int get_shift(int timeres, const char *buf)
     int n = sscanf(buf, "%d"SSEP"%d"SSEP"%d"SSEP"%d", &a, &b, &c, &d);
 #undef SSEP
 
+    if (a == INT_MIN)
+        return 0;
+
     if (*buf == '-' || a < 0) {
         sign = -1;
         a = FFABS(a);
