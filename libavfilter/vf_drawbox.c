@@ -126,8 +126,9 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
         for (y = top; y < down; y++) {
             ASSIGN_THREE_CHANNELS
             if (ctx->invert_color) {
-                if (pixel_belongs_to_region(ctx, x, y))
-                    row[0][x] = 0xff - row[0][x];
+                for (x = left; x < right; x++)
+                    if (pixel_belongs_to_region(ctx, x, y))
+                        row[0][x] = 0xff - row[0][x];
             } else {
                 for (x = left; x < right; x++) {
                     double alpha = (double)ctx->yuv_color[A] / 255;
