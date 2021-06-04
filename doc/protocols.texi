@@ -1558,6 +1558,9 @@ This option doesn’t make sense in Rendezvous connection; the result
 might be that simply one side will override the value from the other
 side and it’s the matter of luck which one would win
 
+@item srt_streamid=@var{string}
+Alias for @samp{streamid} to avoid conflict with ffmpeg command line option.
+
 @item smoother=@var{live|file}
 The type of Smoother used for the transmission for that socket, which
 is responsible for the transmission and congestion control. The Smoother
