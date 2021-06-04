@@ -2075,6 +2075,101 @@ static int output_ready(AVCodecContext *avctx, int flush)
     return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
+static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
+{
+    NvencContext *ctx = avctx->priv_data;
+    int sei_count = 0;
+    int i, res;
+
+    if (ctx->a53_cc && av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)) {
+        void *a53_data = NULL;
+        size_t a53_size = 0;
+
+        if (ff_alloc_a53_sei(frame, 0, &a53_data, &a53_size) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+        }
+
+        if (a53_data) {
+            void *tmp = av_fast_realloc(ctx->sei_data,
+                                        &ctx->sei_data_size,
+                                        (sei_count + 1) * sizeof(*ctx->sei_data));
+            if (!tmp) {
+                av_free(a53_data);
+                res = AVERROR(ENOMEM);
+                goto error;
+            } else {
+                ctx->sei_data = tmp;
+                ctx->sei_data[sei_count].payloadSize = (uint32_t)a53_size;
+                ctx->sei_data[sei_count].payloadType = 4;
+                ctx->sei_data[sei_count].payload = (uint8_t*)a53_data;
+                sei_count++;
+            }
+        }
+    }
+
+    if (ctx->s12m_tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
+        void *tc_data = NULL;
+        size_t tc_size = 0;
+
+        if (ff_alloc_timecode_sei(frame, avctx->framerate, 0, &tc_data, &tc_size) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode sei, skipping\n");
+        }
+
+        if (tc_data) {
+            void *tmp = av_fast_realloc(ctx->sei_data,
+                                        &ctx->sei_data_size,
+                                        (sei_count + 1) * sizeof(*ctx->sei_data));
+            if (!tmp) {
+                av_free(tc_data);
+                res = AVERROR(ENOMEM);
+                goto error;
+            } else {
+                ctx->sei_data = tmp;
+                ctx->sei_data[sei_count].payloadSize = (uint32_t)tc_size;
+                ctx->sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
+                ctx->sei_data[sei_count].payload = (uint8_t*)tc_data;
+                sei_count++;
+            }
+        }
+    }
+
+    for (i = 0; i < frame->nb_side_data; i++) {
+        AVFrameSideData *side_data = frame->side_data[i];
+        void *tmp;
+
+        if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
+            continue;
+
+        tmp = av_fast_realloc(ctx->sei_data,
+                              &ctx->sei_data_size,
+                              (sei_count + 1) * sizeof(*ctx->sei_data));
+        if (!tmp) {
+            res = AVERROR(ENOMEM);
+            goto error;
+        } else {
+            ctx->sei_data = tmp;
+            ctx->sei_data[sei_count].payloadSize = side_data->size;
+            ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
+            ctx->sei_data[sei_count].payload = av_memdup(side_data->data, side_data->size);
+
+            if (!ctx->sei_data[sei_count].payload) {
+                res = AVERROR(ENOMEM);
+                goto error;
+            }
+
+            sei_count++;
+        }
+    }
+
+    return sei_count;
+
+error:
+    for (i = 0; i < sei_count; i++)
+        av_freep(&(ctx->sei_data[i].payload));
+
+    return res;
+}
+
 static void reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
 {
     NvencContext *ctx = avctx->priv_data;
@@ -2230,85 +2325,10 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
         pic_params.inputTimeStamp = frame->pts;
 
-        if (ctx->a53_cc && av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)) {
-            void *a53_data = NULL;
-            size_t a53_size = 0;
-
-            if (ff_alloc_a53_sei(frame, 0, &a53_data, &a53_size) < 0) {
-                av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-            }
-
-            if (a53_data) {
-                void *tmp = av_fast_realloc(ctx->sei_data,
-                                            &ctx->sei_data_size,
-                                            (sei_count + 1) * sizeof(*ctx->sei_data));
-                if (!tmp) {
-                    av_free(a53_data);
-                    res = AVERROR(ENOMEM);
-                    goto sei_failed;
-                } else {
-                    ctx->sei_data = tmp;
-                    ctx->sei_data[sei_count].payloadSize = (uint32_t)a53_size;
-                    ctx->sei_data[sei_count].payloadType = 4;
-                    ctx->sei_data[sei_count].payload = (uint8_t*)a53_data;
-                    sei_count++;
-                }
-            }
-        }
-
-        if (ctx->s12m_tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
-            void *tc_data = NULL;
-            size_t tc_size = 0;
-
-            if (ff_alloc_timecode_sei(frame, avctx->framerate, 0, &tc_data, &tc_size) < 0) {
-                av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode sei, skipping\n");
-            }
-
-            if (tc_data) {
-                void *tmp = av_fast_realloc(ctx->sei_data,
-                                            &ctx->sei_data_size,
-                                            (sei_count + 1) * sizeof(*ctx->sei_data));
-                if (!tmp) {
-                    av_free(tc_data);
-                    res = AVERROR(ENOMEM);
-                    goto sei_failed;
-                } else {
-                    ctx->sei_data = tmp;
-                    ctx->sei_data[sei_count].payloadSize = (uint32_t)tc_size;
-                    ctx->sei_data[sei_count].payloadType = SEI_TYPE_TIME_CODE;
-                    ctx->sei_data[sei_count].payload = (uint8_t*)tc_data;
-                    sei_count++;
-                }
-            }
-        }
-
-        for (int j = 0; j < frame->nb_side_data; j++) {
-            AVFrameSideData *side_data = frame->side_data[j];
-            void *tmp;
-
-            if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
-                continue;
-
-            tmp = av_fast_realloc(ctx->sei_data,
-                                  &ctx->sei_data_size,
-                                  (sei_count + 1) * sizeof(*ctx->sei_data));
-            if (!tmp) {
-                res = AVERROR(ENOMEM);
-                goto sei_failed;
-            } else {
-                ctx->sei_data = tmp;
-                ctx->sei_data[sei_count].payloadSize = side_data->size;
-                ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
-                ctx->sei_data[sei_count].payload = av_memdup(side_data->data, side_data->size);
-
-                if (!ctx->sei_data[sei_count].payload) {
-                    res = AVERROR(ENOMEM);
-                    goto sei_failed;
-                }
-
-                sei_count++;
-            }
-        }
+        res = prepare_sei_data_array(avctx, frame);
+        if (res < 0)
+            return res;
+        sei_count = res;
 
         nvenc_codec_specific_pic_params(avctx, &pic_params, ctx->sei_data, sei_count);
     } else {
@@ -2346,12 +2366,6 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     }
 
     return 0;
-
-sei_failed:
-    for (i = 0; i < sei_count; i++)
-        av_freep(&(ctx->sei_data[i].payload));
-
-    return res;
 }
 
 int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
