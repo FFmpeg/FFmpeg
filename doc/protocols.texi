@@ -1607,6 +1607,11 @@ Default is -1. -1 means auto (off with 0 seconds in live mode, on with 180
 seconds in file mode). The range for this option is integers in the
 0 - @code{INT_MAX}.
 
+@item tsbpd=@var{1|0}
+When true, use Timestamp-based Packet Delivery mode. The default behavior
+depends on the transmission type: enabled in live mode, disabled in file
+mode.
+
 @end table
 
 For more information see: @url{https://github.com/Haivision/srt}.
