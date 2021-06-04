@@ -683,7 +683,7 @@ static int libsrt_write(URLContext *h, const uint8_t *buf, int size)
             return ret;
     }
 
-    ret = srt_sendmsg(s->fd, buf, size, -1, 0);
+    ret = srt_sendmsg(s->fd, buf, size, -1, 1);
     if (ret < 0) {
         ret = libsrt_neterrno(h);
     }
