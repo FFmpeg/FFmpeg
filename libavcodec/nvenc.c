@@ -2282,6 +2282,34 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             }
         }
 
+        for (int j = 0; j < frame->nb_side_data; j++) {
+            AVFrameSideData *side_data = frame->side_data[j];
+            void *tmp;
+
+            if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
+                continue;
+
+            tmp = av_fast_realloc(ctx->sei_data,
+                                  &ctx->sei_data_size,
+                                  (sei_count + 1) * sizeof(*ctx->sei_data));
+            if (!tmp) {
+                res = AVERROR(ENOMEM);
+                goto sei_failed;
+            } else {
+                ctx->sei_data = tmp;
+                ctx->sei_data[sei_count].payloadSize = side_data->size;
+                ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
+                ctx->sei_data[sei_count].payload = av_memdup(side_data->data, side_data->size);
+
+                if (!ctx->sei_data[sei_count].payload) {
+                    res = AVERROR(ENOMEM);
+                    goto sei_failed;
+                }
+
+                sei_count++;
+            }
+        }
+
         nvenc_codec_specific_pic_params(avctx, &pic_params, ctx->sei_data, sei_count);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
