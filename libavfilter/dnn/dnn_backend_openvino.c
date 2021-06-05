@@ -678,6 +678,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     task.in_frame = in_frame;
     task.output_names = &output_name;
     task.out_frame = out_frame;
+    task.nb_output = 1;
     task.model = ov_model;
 
     if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue, NULL) != DNN_SUCCESS) {
@@ -798,6 +799,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
     task.in_frame = exec_params->in_frame;
     task.output_names = &exec_params->output_names[0];
     task.out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
+    task.nb_output = exec_params->nb_output;
     task.model = ov_model;
 
     if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue, exec_params) != DNN_SUCCESS) {
@@ -845,6 +847,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
     task->in_frame = exec_params->in_frame;
     task->output_names = &exec_params->output_names[0];
     task->out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
+    task->nb_output = exec_params->nb_output;
     task->model = ov_model;
     if (ff_queue_push_back(ov_model->task_queue, task) < 0) {
         av_freep(&task);
