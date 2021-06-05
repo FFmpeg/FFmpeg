@@ -167,6 +167,11 @@ static void print_stats(AVFilterContext *ctx)
         float chdr, secondpeak, rmssum = 0;
         int i, j, first = 0;
 
+        if (!p->nb_samples) {
+            av_log(ctx, AV_LOG_INFO, "No data, dynamic range not meassurable\n");
+            return;
+        }
+
         finish_block(p);
 
         for (i = 0; i <= 10000; i++) {
