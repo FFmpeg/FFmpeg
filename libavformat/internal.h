@@ -389,6 +389,17 @@ struct AVStreamInternal {
      * 0 means unknown
      */
     int stream_identifier;
+
+    // Timestamp generation support:
+    /**
+     * Timestamp corresponding to the last dts sync point.
+     *
+     * Initialized when AVCodecParserContext.dts_sync_point >= 0 and
+     * a DTS is received from the underlying container. Otherwise set to
+     * AV_NOPTS_VALUE by default.
+     */
+    int64_t first_dts;
+    int64_t cur_dts;
 };
 
 void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);

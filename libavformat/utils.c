@@ -842,12 +842,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->internal->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
             // correct first time stamps to negative values
-            if (!is_relative(st->first_dts))
-                st->first_dts = wrap_timestamp(st, st->first_dts);
+            if (!is_relative(st->internal->first_dts))
+                st->internal->first_dts = wrap_timestamp(st, st->internal->first_dts);
             if (!is_relative(st->start_time))
                 st->start_time = wrap_timestamp(st, st->start_time);
-            if (!is_relative(st->cur_dts))
-                st->cur_dts = wrap_timestamp(st, st->cur_dts);
+            if (!is_relative(st->internal->cur_dts))
+                st->internal->cur_dts = wrap_timestamp(st, st->internal->cur_dts);
         }
 
         pkt->dts = wrap_timestamp(st, pkt->dts);
@@ -1071,17 +1071,17 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
 
     uint64_t shift;
 
-    if (st->first_dts != AV_NOPTS_VALUE ||
+    if (st->internal->first_dts != AV_NOPTS_VALUE ||
         dts           == AV_NOPTS_VALUE ||
-        st->cur_dts   == AV_NOPTS_VALUE ||
-        st->cur_dts < INT_MIN + RELATIVE_TS_BASE ||
-        dts  < INT_MIN + (st->cur_dts - RELATIVE_TS_BASE) ||
+        st->internal->cur_dts   == AV_NOPTS_VALUE ||
+        st->internal->cur_dts < INT_MIN + RELATIVE_TS_BASE ||
+        dts  < INT_MIN + (st->internal->cur_dts - RELATIVE_TS_BASE) ||
         is_relative(dts))
         return;
 
-    st->first_dts = dts - (st->cur_dts - RELATIVE_TS_BASE);
-    st->cur_dts   = dts;
-    shift         = (uint64_t)st->first_dts - RELATIVE_TS_BASE;
+    st->internal->first_dts = dts - (st->internal->cur_dts - RELATIVE_TS_BASE);
+    st->internal->cur_dts   = dts;
+    shift         = (uint64_t)st->internal->first_dts - RELATIVE_TS_BASE;
 
     if (is_relative(pts))
         pts += shift;
@@ -1121,11 +1121,11 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
     PacketList *pktl = s->internal->packet_buffer ? s->internal->packet_buffer : s->internal->parse_queue;
     int64_t cur_dts    = RELATIVE_TS_BASE;
 
-    if (st->first_dts != AV_NOPTS_VALUE) {
+    if (st->internal->first_dts != AV_NOPTS_VALUE) {
         if (st->internal->update_initial_durations_done)
             return;
         st->internal->update_initial_durations_done = 1;
-        cur_dts = st->first_dts;
+        cur_dts = st->internal->first_dts;
         for (; pktl; pktl = get_next_pkt(s, st, pktl)) {
             if (pktl->pkt.stream_index == stream_index) {
                 if (pktl->pkt.pts != pktl->pkt.dts  ||
@@ -1135,18 +1135,18 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
                 cur_dts -= duration;
             }
         }
-        if (pktl && pktl->pkt.dts != st->first_dts) {
+        if (pktl && pktl->pkt.dts != st->internal->first_dts) {
             av_log(s, AV_LOG_DEBUG, "first_dts %s not matching first dts %s (pts %s, duration %"PRId64") in the queue\n",
-                   av_ts2str(st->first_dts), av_ts2str(pktl->pkt.dts), av_ts2str(pktl->pkt.pts), pktl->pkt.duration);
+                   av_ts2str(st->internal->first_dts), av_ts2str(pktl->pkt.dts), av_ts2str(pktl->pkt.pts), pktl->pkt.duration);
             return;
         }
         if (!pktl) {
-            av_log(s, AV_LOG_DEBUG, "first_dts %s but no packet with dts in the queue\n", av_ts2str(st->first_dts));
+            av_log(s, AV_LOG_DEBUG, "first_dts %s but no packet with dts in the queue\n", av_ts2str(st->internal->first_dts));
             return;
         }
         pktl          = s->internal->packet_buffer ? s->internal->packet_buffer : s->internal->parse_queue;
-        st->first_dts = cur_dts;
-    } else if (st->cur_dts != RELATIVE_TS_BASE)
+        st->internal->first_dts = cur_dts;
+    } else if (st->internal->cur_dts != RELATIVE_TS_BASE)
         return;
 
     for (; pktl; pktl = get_next_pkt(s, st, pktl)) {
@@ -1155,7 +1155,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
         if ((pktl->pkt.pts == pktl->pkt.dts ||
              pktl->pkt.pts == AV_NOPTS_VALUE) &&
             (pktl->pkt.dts == AV_NOPTS_VALUE ||
-             pktl->pkt.dts == st->first_dts ||
+             pktl->pkt.dts == st->internal->first_dts ||
              pktl->pkt.dts == RELATIVE_TS_BASE) &&
             !pktl->pkt.duration) {
             pktl->pkt.dts = cur_dts;
@@ -1167,7 +1167,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
         cur_dts = pktl->pkt.dts + pktl->pkt.duration;
     }
     if (!pktl)
-        st->cur_dts = cur_dts;
+        st->internal->cur_dts = cur_dts;
 }
 
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
@@ -1226,7 +1226,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE &&
         st->pts_wrap_bits < 63 && pkt->dts > INT64_MIN + (1LL << st->pts_wrap_bits) &&
         pkt->dts - (1LL << (st->pts_wrap_bits - 1)) > pkt->pts) {
-        if (is_relative(st->cur_dts) || pkt->dts - (1LL<<(st->pts_wrap_bits - 1)) > st->cur_dts) {
+        if (is_relative(st->internal->cur_dts) || pkt->dts - (1LL<<(st->pts_wrap_bits - 1)) > st->internal->cur_dts) {
             pkt->dts -= 1LL << st->pts_wrap_bits;
         } else
             pkt->pts += 1LL << st->pts_wrap_bits;
@@ -1279,7 +1279,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG,
             "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%"PRId64" delay:%d onein_oneout:%d\n",
-            presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts),
+            presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->internal->cur_dts),
             pkt->stream_index, pc, pkt->duration, delay, onein_oneout);
 
     /* Interpolate PTS and DTS if they are not present. We skip H264
@@ -1293,18 +1293,18 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 pkt->dts = st->internal->last_IP_pts;
             update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);
             if (pkt->dts == AV_NOPTS_VALUE)
-                pkt->dts = st->cur_dts;
+                pkt->dts = st->internal->cur_dts;
 
             /* This is tricky: the dts must be incremented by the duration
              * of the frame we are displaying, i.e. the last I- or P-frame. */
             if (st->internal->last_IP_duration == 0 && (uint64_t)pkt->duration <= INT32_MAX)
                 st->internal->last_IP_duration = pkt->duration;
             if (pkt->dts != AV_NOPTS_VALUE)
-                st->cur_dts = av_sat_add64(pkt->dts, st->internal->last_IP_duration);
+                st->internal->cur_dts = av_sat_add64(pkt->dts, st->internal->last_IP_duration);
             if (pkt->dts != AV_NOPTS_VALUE &&
                 pkt->pts == AV_NOPTS_VALUE &&
                 st->internal->last_IP_duration > 0 &&
-                ((uint64_t)st->cur_dts - (uint64_t)next_dts + 1) <= 2 &&
+                ((uint64_t)st->internal->cur_dts - (uint64_t)next_dts + 1) <= 2 &&
                 next_dts != next_pts &&
                 next_pts != AV_NOPTS_VALUE)
                 pkt->pts = next_dts;
@@ -1324,10 +1324,10 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             update_initial_timestamps(s, pkt->stream_index, pkt->pts,
                                       pkt->pts, pkt);
             if (pkt->pts == AV_NOPTS_VALUE)
-                pkt->pts = st->cur_dts;
+                pkt->pts = st->internal->cur_dts;
             pkt->dts = pkt->pts;
             if (pkt->pts != AV_NOPTS_VALUE && duration.num >= 0)
-                st->cur_dts = av_add_stable(st->time_base, pkt->pts, duration, 1);
+                st->internal->cur_dts = av_add_stable(st->time_base, pkt->pts, duration, 1);
         }
     }
 
@@ -1343,12 +1343,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (!onein_oneout)
         // This should happen on the first packet
         update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts, pkt);
-    if (pkt->dts > st->cur_dts)
-        st->cur_dts = pkt->dts;
+    if (pkt->dts > st->internal->cur_dts)
+        st->internal->cur_dts = pkt->dts;
 
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s st:%d (%d)\n",
-            presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), st->index, st->id);
+            presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->internal->cur_dts), st->index, st->id);
 
     /* update flags */
     if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA || ff_is_intra_only(st->codecpar->codec_id))
@@ -1830,11 +1830,11 @@ void ff_read_frame_flush(AVFormatContext *s)
         }
         st->internal->last_IP_pts = AV_NOPTS_VALUE;
         st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
-        if (st->first_dts == AV_NOPTS_VALUE)
-            st->cur_dts = RELATIVE_TS_BASE;
+        if (st->internal->first_dts == AV_NOPTS_VALUE)
+            st->internal->cur_dts = RELATIVE_TS_BASE;
         else
             /* We set the current DTS to an unspecified origin. */
-            st->cur_dts = AV_NOPTS_VALUE;
+            st->internal->cur_dts = AV_NOPTS_VALUE;
 
         st->internal->probe_packets = s->max_probe_packets;
 
@@ -1855,7 +1855,7 @@ void avpriv_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timesta
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
 
-        st->cur_dts =
+        st->internal->cur_dts =
             av_rescale(timestamp,
                        st->time_base.den * (int64_t) ref_st->time_base.num,
                        st->time_base.num * (int64_t) ref_st->time_base.den);
@@ -2736,7 +2736,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
     for (i = 0; i < ic->nb_streams; i++) {
         st = ic->streams[i];
         if (st->start_time == AV_NOPTS_VALUE &&
-            st->first_dts == AV_NOPTS_VALUE &&
+            st->internal->first_dts == AV_NOPTS_VALUE &&
             st->codecpar->codec_type != AVMEDIA_TYPE_UNKNOWN)
             av_log(ic, AV_LOG_WARNING,
                    "start time for stream %d is not set in estimate_timings_from_pts\n", i);
@@ -2777,7 +2777,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             st         = ic->streams[pkt->stream_index];
             if (pkt->pts != AV_NOPTS_VALUE &&
                 (st->start_time != AV_NOPTS_VALUE ||
-                 st->first_dts  != AV_NOPTS_VALUE)) {
+                 st->internal->first_dts  != AV_NOPTS_VALUE)) {
                 if (pkt->duration == 0) {
                     ff_compute_frame_duration(ic, &num, &den, st, st->internal->parser, pkt);
                     if (den && num) {
@@ -2792,7 +2792,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 if (st->start_time != AV_NOPTS_VALUE)
                     duration -= st->start_time;
                 else
-                    duration -= st->first_dts;
+                    duration -= st->internal->first_dts;
                 if (duration > 0) {
                     if (st->duration == AV_NOPTS_VALUE || st->internal->info->last_duration<= 0 ||
                         (st->duration < duration && FFABS(duration - st->internal->info->last_duration) < 60LL*st->time_base.den / st->time_base.num))
@@ -2829,7 +2829,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             switch (st->codecpar->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
             case AVMEDIA_TYPE_AUDIO:
-                if (st->start_time != AV_NOPTS_VALUE || st->first_dts  != AV_NOPTS_VALUE) {
+                if (st->start_time != AV_NOPTS_VALUE || st->internal->first_dts  != AV_NOPTS_VALUE) {
                     av_log(ic, AV_LOG_WARNING, "stream %d : no PTS found at end of file, duration not set\n", i);
                 } else
                     av_log(ic, AV_LOG_WARNING, "stream %d : no TS found at start of file, duration not set\n", i);
@@ -2844,7 +2844,7 @@ skip_duration_calc:
         int j;
 
         st              = ic->streams[i];
-        st->cur_dts     = st->first_dts;
+        st->internal->cur_dts     = st->internal->first_dts;
         st->internal->last_IP_pts = AV_NOPTS_VALUE;
         st->internal->last_dts_for_order_check = AV_NOPTS_VALUE;
         for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
@@ -3699,7 +3699,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                  st->internal->extract_extradata.bsf) &&
                 extract_extradata_check(st))
                 break;
-            if (st->first_dts == AV_NOPTS_VALUE &&
+            if (st->internal->first_dts == AV_NOPTS_VALUE &&
                 !(ic->iformat->flags & AVFMT_NOTIMESTAMPS) &&
                 st->internal->codec_info_nb_frames < ((st->disposition & AV_DISPOSITION_ATTACHED_PIC) ? 1 : ic->max_ts_probe) &&
                 (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
@@ -4414,15 +4414,15 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
          * but durations get some timestamps, formats with some unknown
          * timestamps have their first few packets buffered and the
          * timestamps corrected before they are returned to the user */
-        st->cur_dts = RELATIVE_TS_BASE;
+        st->internal->cur_dts = RELATIVE_TS_BASE;
     } else {
-        st->cur_dts = AV_NOPTS_VALUE;
+        st->internal->cur_dts = AV_NOPTS_VALUE;
     }
 
     st->index      = s->nb_streams;
     st->start_time = AV_NOPTS_VALUE;
     st->duration   = AV_NOPTS_VALUE;
-    st->first_dts     = AV_NOPTS_VALUE;
+    st->internal->first_dts     = AV_NOPTS_VALUE;
     st->internal->probe_packets = s->max_probe_packets;
     st->internal->pts_wrap_reference = AV_NOPTS_VALUE;
     st->internal->pts_wrap_behavior = AV_PTS_WRAP_IGNORE;

@@ -1766,7 +1766,7 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
      * 6:  5   5
      *
      * We do this by bucket sorting x by x+TemporalOffset[x] into mxf->ptses,
-     * then settings mxf->first_dts = -max(TemporalOffset[x]).
+     * then settings mxf->internal->first_dts = -max(TemporalOffset[x]).
      * The latter makes DTS <= PTS.
      */
     for (i = x = 0; i < index_table->nb_segments; i++) {

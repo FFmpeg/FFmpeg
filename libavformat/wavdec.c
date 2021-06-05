@@ -702,8 +702,8 @@ static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
         int64_t audio_dts, video_dts;
         AVStream *vst = wav->vst;
 smv_retry:
-        audio_dts = (int32_t)st->cur_dts;
-        video_dts = (int32_t)vst->cur_dts;
+        audio_dts = (int32_t)st->internal->cur_dts;
+        video_dts = (int32_t)vst->internal->cur_dts;
 
         if (audio_dts != AV_NOPTS_VALUE && video_dts != AV_NOPTS_VALUE) {
             /*We always return a video frame first to get the pixel format first*/

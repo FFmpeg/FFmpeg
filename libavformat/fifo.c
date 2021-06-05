@@ -139,7 +139,7 @@ static int fifo_thread_write_header(FifoThreadContext *ctx)
     }
 
     for (i = 0;i < avf2->nb_streams; i++)
-        avf2->streams[i]->cur_dts = 0;
+        avf2->streams[i]->internal->cur_dts = 0;
 
     ret = avformat_write_header(avf2, &format_options);
     if (!ret)

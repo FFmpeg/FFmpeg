@@ -415,7 +415,7 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
     if (av_strstart(p, "OpaqueData:buffer;", &p)) {
         rdt->mlti_data = rdt_parse_b64buf(&rdt->mlti_data_size, p);
     } else if (av_strstart(p, "StartTime:integer;", &p))
-        stream->first_dts = atoi(p);
+        stream->internal->first_dts = atoi(p);
     else if (av_strstart(p, "ASMRuleBook:string;", &p)) {
         int n, first = -1;
 
@@ -465,7 +465,7 @@ add_dstream(AVFormatContext *s, AVStream *orig_st)
         return NULL;
     st->id = orig_st->id;
     st->codecpar->codec_type = orig_st->codecpar->codec_type;
-    st->first_dts         = orig_st->first_dts;
+    st->internal->first_dts         = orig_st->internal->first_dts;
 
     return st;
 }

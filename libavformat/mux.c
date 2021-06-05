@@ -525,7 +525,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
 
     if (s->debug & FF_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "compute_muxer_pkt_fields: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
-            av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
+            av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->internal->cur_dts), delay, pkt->size, pkt->stream_index);
 
     if (pkt->pts == AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && delay == 0)
         pkt->pts = pkt->dts;
@@ -553,14 +553,14 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         pkt->dts = st->internal->pts_buffer[0];
     }
 
-    if (st->cur_dts && st->cur_dts != AV_NOPTS_VALUE &&
+    if (st->internal->cur_dts && st->internal->cur_dts != AV_NOPTS_VALUE &&
         ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) &&
           st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE &&
           st->codecpar->codec_type != AVMEDIA_TYPE_DATA &&
-          st->cur_dts >= pkt->dts) || st->cur_dts > pkt->dts)) {
+          st->internal->cur_dts >= pkt->dts) || st->internal->cur_dts > pkt->dts)) {
         av_log(s, AV_LOG_ERROR,
                "Application provided invalid, non monotonically increasing dts to muxer in stream %d: %s >= %s\n",
-               st->index, av_ts2str(st->cur_dts), av_ts2str(pkt->dts));
+               st->index, av_ts2str(st->internal->cur_dts), av_ts2str(pkt->dts));
         return AVERROR(EINVAL);
     }
     if (pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts) {
@@ -575,7 +575,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%s dts2:%s\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 
-    st->cur_dts = pkt->dts;
+    st->internal->cur_dts = pkt->dts;
     st->internal->priv_pts->val = pkt->dts;
 
     /* update pts */
@@ -763,13 +763,13 @@ static int prepare_input_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
         /* check that the dts are increasing (or at least non-decreasing,
          * if the format allows it */
-        if (st->cur_dts != AV_NOPTS_VALUE &&
-            ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) && st->cur_dts >= pkt->dts) ||
-             st->cur_dts > pkt->dts)) {
+        if (st->internal->cur_dts != AV_NOPTS_VALUE &&
+            ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) && st->internal->cur_dts >= pkt->dts) ||
+             st->internal->cur_dts > pkt->dts)) {
             av_log(s, AV_LOG_ERROR,
                    "Application provided invalid, non monotonically increasing "
                    "dts to muxer in stream %d: %" PRId64 " >= %" PRId64 "\n",
-                   st->index, st->cur_dts, pkt->dts);
+                   st->index, st->internal->cur_dts, pkt->dts);
             return AVERROR(EINVAL);
         }
 
