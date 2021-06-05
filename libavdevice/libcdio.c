@@ -118,9 +118,6 @@ static int read_packet(AVFormatContext *ctx, AVPacket *pkt)
     uint16_t *buf;
     char *err = NULL;
 
-    if (ctx->streams[0]->cur_dts > s->last_sector)
-        return AVERROR_EOF;
-
     buf = cdio_paranoia_read(s->paranoia, NULL);
     if (!buf)
         return AVERROR_EOF;
@@ -157,7 +154,7 @@ static int read_seek(AVFormatContext *ctx, int stream_index, int64_t timestamp,
     AVStream *st = ctx->streams[0];
 
     cdio_paranoia_seek(s->paranoia, timestamp, SEEK_SET);
-    st->cur_dts = timestamp;
+    avpriv_update_cur_dts(ctx, st, timestamp);
     return 0;
 }
 
