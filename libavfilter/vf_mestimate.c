@@ -100,6 +100,9 @@ static int config_input(AVFilterLink *inlink)
     s->b_height = inlink->h >> s->log2_mb_size;
     s->b_count = s->b_width * s->b_height;
 
+    if (s->b_count == 0)
+        return AVERROR(EINVAL);
+
     for (i = 0; i < 3; i++) {
         s->mv_table[i] = av_mallocz_array(s->b_count, sizeof(*s->mv_table[0]));
         if (!s->mv_table[i])
