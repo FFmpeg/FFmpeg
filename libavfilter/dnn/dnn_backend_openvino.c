@@ -208,7 +208,7 @@ static void infer_completion_callback(void *args)
     DNNData output;
     OVContext *ctx = &ov_model->ctx;
 
-    status = ie_infer_request_get_blob(request->infer_request, task->output_name, &output_blob);
+    status = ie_infer_request_get_blob(request->infer_request, task->output_names[0], &output_blob);
     if (status != OK) {
         //incorrect output name
         char *model_output_name = NULL;
@@ -222,7 +222,7 @@ static void infer_completion_callback(void *args)
         }
         av_log(ctx, AV_LOG_ERROR,
                "output \"%s\" may not correct, all output(s) are: \"%s\"\n",
-               task->output_name, all_output_names);
+               task->output_names[0], all_output_names);
         return;
     }
 
@@ -676,7 +676,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     task.async = 0;
     task.input_name = input_name;
     task.in_frame = in_frame;
-    task.output_name = output_name;
+    task.output_names = &output_name;
     task.out_frame = out_frame;
     task.model = ov_model;
 
@@ -796,7 +796,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
     task.async = 0;
     task.input_name = exec_params->input_name;
     task.in_frame = exec_params->in_frame;
-    task.output_name = exec_params->output_names[0];
+    task.output_names = &exec_params->output_names[0];
     task.out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
     task.model = ov_model;
 
@@ -843,7 +843,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
     task->async = 1;
     task->input_name = exec_params->input_name;
     task->in_frame = exec_params->in_frame;
-    task->output_name = exec_params->output_names[0];
+    task->output_names = &exec_params->output_names[0];
     task->out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
     task->model = ov_model;
     if (ff_queue_push_back(ov_model->task_queue, task) < 0) {

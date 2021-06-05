@@ -32,7 +32,7 @@ typedef struct TaskItem {
     AVFrame *in_frame;
     AVFrame *out_frame;
     const char *input_name;
-    const char *output_name;
+    const char **output_names;
     int async;
     int do_ioproc;
     uint32_t inference_todo;
