@@ -48,4 +48,19 @@ typedef struct InferenceItem {
 
 int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func_type, DNNExecBaseParams *exec_params);
 
+/**
+ * Fill the Task for Backend Execution. It should be called after
+ * checking execution parameters using ff_check_exec_params.
+ *
+ * @param task pointer to the allocated task
+ * @param exec_param pointer to execution parameters
+ * @param backend_model void pointer to the backend model
+ * @param async flag for async execution. Must be 0 or 1
+ * @param do_ioproc flag for IO processing. Must be 0 or 1
+ *
+ * @retval DNN_SUCCESS if successful
+ * @retval DNN_ERROR if flags are invalid or any parameter is NULL
+ */
+DNNReturnType ff_dnn_fill_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int async, int do_ioproc);
+
 #endif

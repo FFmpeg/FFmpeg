@@ -793,14 +793,9 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
         }
     }
 
-    task.do_ioproc = 1;
-    task.async = 0;
-    task.input_name = exec_params->input_name;
-    task.in_frame = exec_params->in_frame;
-    task.output_names = &exec_params->output_names[0];
-    task.out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
-    task.nb_output = exec_params->nb_output;
-    task.model = ov_model;
+    if (ff_dnn_fill_task(&task, exec_params, ov_model, 0, 1) != DNN_SUCCESS) {
+        return DNN_ERROR;
+    }
 
     if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue, exec_params) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
@@ -841,14 +836,10 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
         return DNN_ERROR;
     }
 
-    task->do_ioproc = 1;
-    task->async = 1;
-    task->input_name = exec_params->input_name;
-    task->in_frame = exec_params->in_frame;
-    task->output_names = &exec_params->output_names[0];
-    task->out_frame = exec_params->out_frame ? exec_params->out_frame : exec_params->in_frame;
-    task->nb_output = exec_params->nb_output;
-    task->model = ov_model;
+    if (ff_dnn_fill_task(task, exec_params, ov_model, 1, 1) != DNN_SUCCESS) {
+        return DNN_ERROR;
+    }
+
     if (ff_queue_push_back(ov_model->task_queue, task) < 0) {
         av_freep(&task);
         av_log(ctx, AV_LOG_ERROR, "unable to push back task_queue.\n");

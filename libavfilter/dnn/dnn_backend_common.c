@@ -49,3 +49,23 @@ int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func
 
     return 0;
 }
+
+DNNReturnType ff_dnn_fill_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int async, int do_ioproc) {
+    if (task == NULL || exec_params == NULL || backend_model == NULL)
+        return DNN_ERROR;
+    if (do_ioproc != 0 && do_ioproc != 1)
+        return DNN_ERROR;
+    if (async != 0 && async != 1)
+        return DNN_ERROR;
+
+    task->do_ioproc = do_ioproc;
+    task->async = async;
+    task->input_name = exec_params->input_name;
+    task->in_frame = exec_params->in_frame;
+    task->out_frame = exec_params->out_frame;
+    task->model = backend_model;
+    task->nb_output = exec_params->nb_output;
+    task->output_names = exec_params->output_names;
+
+    return DNN_SUCCESS;
+}
