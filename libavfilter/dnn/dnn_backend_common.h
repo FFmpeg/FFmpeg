@@ -26,6 +26,25 @@
 
 #include "../dnn_interface.h"
 
+// one task for one function call from dnn interface
+typedef struct TaskItem {
+    void *model; // model for the backend
+    AVFrame *in_frame;
+    AVFrame *out_frame;
+    const char *input_name;
+    const char *output_name;
+    int async;
+    int do_ioproc;
+    uint32_t inference_todo;
+    uint32_t inference_done;
+} TaskItem;
+
+// one task might have multiple inferences
+typedef struct InferenceItem {
+    TaskItem *task;
+    uint32_t bbox_index;
+} InferenceItem;
+
 int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func_type, DNNExecBaseParams *exec_params);
 
 #endif
