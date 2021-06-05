@@ -1848,7 +1848,7 @@ void ff_read_frame_flush(AVFormatContext *s)
     }
 }
 
-void ff_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp)
+void avpriv_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp)
 {
     int i;
 
@@ -2156,7 +2156,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
         return ret;
 
     ff_read_frame_flush(s);
-    ff_update_cur_dts(s, st, ts);
+    avpriv_update_cur_dts(s, st, ts);
 
     return 0;
 }
@@ -2350,7 +2350,7 @@ static int seek_frame_generic(AVFormatContext *s, int stream_index,
             ie = &st->internal->index_entries[st->internal->nb_index_entries - 1];
             if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
                 return ret;
-            ff_update_cur_dts(s, st, ie->timestamp);
+            avpriv_update_cur_dts(s, st, ie->timestamp);
         } else {
             if ((ret = avio_seek(s->pb, s->internal->data_offset, SEEK_SET)) < 0)
                 return ret;
@@ -2388,7 +2388,7 @@ static int seek_frame_generic(AVFormatContext *s, int stream_index,
     ie = &st->internal->index_entries[index];
     if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
         return ret;
-    ff_update_cur_dts(s, st, ie->timestamp);
+    avpriv_update_cur_dts(s, st, ie->timestamp);
 
     return 0;
 }

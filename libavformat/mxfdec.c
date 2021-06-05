@@ -3815,7 +3815,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         if (seekpos < 0)
             return seekpos;
 
-        ff_update_cur_dts(s, st, sample_time);
+        avpriv_update_cur_dts(s, st, sample_time);
         mxf->current_klv_data = (KLVPacket){{0}};
     } else {
         MXFPartition *partition;
@@ -3868,7 +3868,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, source_track->edit_rate, &sample_time, &seekpos, &partition, 1)) < 0)
             return ret;
 
-        ff_update_cur_dts(s, st, sample_time);
+        avpriv_update_cur_dts(s, st, sample_time);
         if (source_track->wrapping == ClipWrapped) {
             KLVPacket klv = partition->first_essence_klv;
             if (seekpos < klv.next_klv - klv.length || seekpos >= klv.next_klv) {

@@ -477,7 +477,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
         return ret;
 
     b->current_block = timestamp;
-    ff_update_cur_dts(s, st, timestamp * b->samples_per_block);
+    avpriv_update_cur_dts(s, st, timestamp * b->samples_per_block);
     return 0;
 }
 

@@ -3859,7 +3859,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     }
     matroska->skip_to_keyframe = 1;
     matroska->done             = 0;
-    ff_update_cur_dts(s, st, st->internal->index_entries[index].timestamp);
+    avpriv_update_cur_dts(s, st, st->internal->index_entries[index].timestamp);
     return 0;
 err:
     // slightly hackish but allows proper fallback to

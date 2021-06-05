@@ -589,7 +589,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         ie1.timestamp = frame_duration * av_rescale(best_pos - s->internal->data_offset, mp3->frames, mp3->header_filesize);
     }
 
-    ff_update_cur_dts(s, st, ie->timestamp);
+    avpriv_update_cur_dts(s, st, ie->timestamp);
     return 0;
 }
 

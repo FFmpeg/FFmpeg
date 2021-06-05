@@ -130,7 +130,7 @@ static int vpk_read_seek(AVFormatContext *s, int stream_index,
         return ret;
 
     vpk->current_block = timestamp;
-    ff_update_cur_dts(s, st, timestamp * samples_per_block);
+    avpriv_update_cur_dts(s, st, timestamp * samples_per_block);
     return 0;
 }
 

@@ -320,7 +320,7 @@ static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     if(index < 0) return -1;
     if (avio_seek(s->pb, st->internal->index_entries[index].pos, SEEK_SET) < 0)
         return -1;
-    ff_update_cur_dts(s, st, st->internal->index_entries[index].timestamp);
+    avpriv_update_cur_dts(s, st, st->internal->index_entries[index].timestamp);
     return 0;
 }
 

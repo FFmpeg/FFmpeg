@@ -238,7 +238,7 @@ static int aa_read_header(AVFormatContext *s)
 
     st->duration = (largest_size - CHAPTER_HEADER_SIZE * s->nb_chapters) * TIMEPREC;
 
-    ff_update_cur_dts(s, st, 0);
+    avpriv_update_cur_dts(s, st, 0);
     avio_seek(pb, start, SEEK_SET);
     c->current_chapter_size = 0;
     c->seek_offset = 0;
@@ -365,7 +365,7 @@ static int aa_read_seek(AVFormatContext *s,
         c->seek_offset = (MP3_FRAME_SIZE - chapter_pos % MP3_FRAME_SIZE) % MP3_FRAME_SIZE;
     }
 
-    ff_update_cur_dts(s, s->streams[0], ch->start + (chapter_pos + c->seek_offset) * TIMEPREC);
+    avpriv_update_cur_dts(s, s->streams[0], ch->start + (chapter_pos + c->seek_offset) * TIMEPREC);
 
     return 1;
 }
