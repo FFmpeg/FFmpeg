@@ -48,6 +48,7 @@
 #endif
 
 static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
+static atomic_int cpu_count = ATOMIC_VAR_INIT(-1);
 
 static int get_cpu_flags(void)
 {
@@ -186,6 +187,7 @@ int av_cpu_count(void)
     static atomic_int printed = ATOMIC_VAR_INIT(0);
 
     int nb_cpus = 1;
+    int count   = 0;
 #if HAVE_WINRT
     SYSTEM_INFO sysinfo;
 #endif
@@ -224,7 +226,18 @@ int av_cpu_count(void)
     if (!atomic_exchange_explicit(&printed, 1, memory_order_relaxed))
         av_log(NULL, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
 
+    count = atomic_load_explicit(&cpu_count, memory_order_relaxed);
+
+    if (count > 0) {
+        nb_cpus = count;
+        av_log(NULL, AV_LOG_DEBUG, "overriding to %d logical cores\n", nb_cpus);
+    }
+
     return nb_cpus;
+}
+
+void av_force_cpu_count(int count){
+    atomic_store_explicit(&cpu_count, count, memory_order_relaxed);
 }
 
 size_t av_cpu_max_align(void)
