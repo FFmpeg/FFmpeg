@@ -2325,10 +2325,12 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
         pic_params.inputTimeStamp = frame->pts;
 
-        res = prepare_sei_data_array(avctx, frame);
-        if (res < 0)
-            return res;
-        sei_count = res;
+        if (ctx->extra_sei) {
+            res = prepare_sei_data_array(avctx, frame);
+            if (res < 0)
+                return res;
+            sei_count = res;
+        }
 
         nvenc_codec_specific_pic_params(avctx, &pic_params, ctx->sei_data, sei_count);
     } else {

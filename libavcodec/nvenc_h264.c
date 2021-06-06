@@ -182,6 +182,8 @@ static const AVOption options[] = {
     { "ldkfs",        "Low delay key frame scale; Specifies the Scene Change frame size increase allowed in case of single frame VBV and CBR",
                                                             OFFSET(ldkfs),        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, UCHAR_MAX, VE },
 #endif
+    { "extra_sei",    "Pass on extra SEI data (e.g. a53 cc) to be included in the bitstream",
+                                                            OFFSET(extra_sei),    AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { NULL }
 };
 
