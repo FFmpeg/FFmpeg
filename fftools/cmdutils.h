@@ -50,6 +50,7 @@ extern AVDictionary *sws_dict;
 extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts, *resample_opts;
 extern int hide_banner;
+extern int cpu_count;
 
 /**
  * Register a program-specific cleanup routine.
@@ -87,6 +88,11 @@ void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
  * Override the cpuflags.
  */
 int opt_cpuflags(void *optctx, const char *opt, const char *arg);
+
+/**
+ * Override the cpucount.
+ */
+int opt_cpucount(void *optctx, const char *opt, const char *arg);
 
 /**
  * Fallback for options that are not explicitly handled, these will be
@@ -239,6 +245,7 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
     { "report",      0,                    { .func_arg = opt_report },       "generate a report" },                     \
     { "max_alloc",   HAS_ARG,              { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
     { "cpuflags",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
+    { "cpucount",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpucount },     "force specific cpu count", "count" },     \
     { "hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner},     "do not show program banner", "hide_banner" },          \
     CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                    \
 
