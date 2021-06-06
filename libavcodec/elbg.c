@@ -44,12 +44,12 @@ typedef struct cell_s {
  * ELBG internal data
  */
 typedef struct elbg_data {
-    int error;
+    int64_t error;
     int dim;
     int numCB;
     int *codebook;
     cell **cells;
-    int *utility;
+    int64_t *utility;
     int64_t *utility_inc;
     int *nearest_cb;
     int *points;
@@ -264,7 +264,8 @@ static void update_utility_and_n_cb(elbg_data *elbg, int idx, int newutility)
  */
 static void try_shift_candidate(elbg_data *elbg, int idx[3])
 {
-    int j, k, olderror=0, newerror, cont=0;
+    int j, k, cont=0;
+    int64_t olderror=0, newerror;
     int newutility[3];
     int *newcentroid[3] = {
         elbg->scratchbuf,
@@ -374,19 +375,20 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
     int dist;
     elbg_data elbg_d;
     elbg_data *elbg = &elbg_d;
-    int i, j, k, last_error, steps = 0, ret = 0;
+    int i, j, k, steps = 0, ret = 0;
     int *dist_cb = av_malloc_array(numpoints, sizeof(int));
     int *size_part = av_malloc_array(numCB, sizeof(int));
     cell *list_buffer = av_malloc_array(numpoints, sizeof(cell));
     cell *free_cells;
     int best_dist, best_idx = 0;
+    int64_t last_error;
 
-    elbg->error = INT_MAX;
+    elbg->error = INT64_MAX;
     elbg->dim = dim;
     elbg->numCB = numCB;
     elbg->codebook = codebook;
     elbg->cells = av_malloc_array(numCB, sizeof(cell *));
-    elbg->utility = av_malloc_array(numCB, sizeof(int));
+    elbg->utility = av_malloc_array(numCB, sizeof(*elbg->utility));
     elbg->nearest_cb = closest_cb;
     elbg->points = points;
     elbg->utility_inc = av_malloc_array(numCB, sizeof(*elbg->utility_inc));
@@ -404,7 +406,7 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
         free_cells = list_buffer;
         last_error = elbg->error;
         steps++;
-        memset(elbg->utility, 0, numCB*sizeof(int));
+        memset(elbg->utility, 0, numCB*sizeof(*elbg->utility));
         memset(elbg->cells, 0, numCB*sizeof(cell *));
 
         elbg->error = 0;
