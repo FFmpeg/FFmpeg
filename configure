@@ -4388,8 +4388,16 @@ else
     NVCC_C=""
 fi
 
+set_default nvcc
+
+if enabled cuda_nvcc; then
+    if $nvcc $nvccflags_default 2>&1 | grep -qi unsupported; then
+        nvccflags_default="-gencode arch=compute_60,code=sm_60 -O2"
+    fi
+fi
+
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec x86asmexe nvcc
+    target_exec x86asmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
