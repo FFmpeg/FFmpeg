@@ -31,8 +31,7 @@
 #include "rawdec.h"
 
 typedef struct TAKDemuxContext {
-    AVClass *class;
-    int     raw_packet_size;
+    FFRawDemuxerContext rawctx;
     int     mlast_frame;
     int64_t data_end;
 } TAKDemuxContext;

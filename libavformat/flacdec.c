@@ -31,8 +31,7 @@
 #define SEEKPOINT_SIZE 18
 
 typedef struct FLACDecContext {
-    AVClass *class;
-    int raw_packet_size;
+    FFRawDemuxerContext rawctx;
     int found_seektable;
 } FLACDecContext;
 
