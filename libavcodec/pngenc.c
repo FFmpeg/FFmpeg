@@ -1108,14 +1108,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass pngenc_class = {
-    .class_name = "PNG encoder",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-static const AVClass apngenc_class = {
-    .class_name = "APNG encoder",
+    .class_name = "(A)PNG encoder",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -1161,6 +1154,6 @@ const AVCodec ff_apng_encoder = {
         AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
         AV_PIX_FMT_NONE
     },
-    .priv_class     = &apngenc_class,
+    .priv_class     = &pngenc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
