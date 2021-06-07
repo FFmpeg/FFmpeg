@@ -328,7 +328,6 @@ static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return -1;
 }
 
-FF_RAW_DEMUXER_CLASS(flac)
 const AVInputFormat ff_flac_demuxer = {
     .name           = "flac",
     .long_name      = NULL_IF_CONFIG_SMALL("raw FLAC"),
@@ -341,5 +340,5 @@ const AVInputFormat ff_flac_demuxer = {
     .extensions     = "flac",
     .raw_codec_id   = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACDecContext),
-    .priv_class     = &flac_demuxer_class,
+    .priv_class     = &ff_raw_demuxer_class,
 };

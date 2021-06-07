@@ -68,13 +68,6 @@ static int ipu_read_header(AVFormatContext *s)
     return 0;
 }
 
-static const AVClass ipu_demuxer_class = {
-    .class_name = "ipu demuxer",
-    .item_name  = av_default_item_name,
-    .option     = ff_raw_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVInputFormat ff_ipu_demuxer = {
     .name           = "ipu",
     .long_name      = NULL_IF_CONFIG_SMALL("raw IPU Video"),
@@ -85,5 +78,5 @@ const AVInputFormat ff_ipu_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .raw_codec_id   = AV_CODEC_ID_IPU,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ipu_demuxer_class,
+    .priv_class     = &ff_raw_demuxer_class,
 };

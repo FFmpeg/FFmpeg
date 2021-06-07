@@ -83,7 +83,6 @@ static int loas_read_header(AVFormatContext *s)
     return 0;
 }
 
-FF_RAW_DEMUXER_CLASS(loas)
 const AVInputFormat ff_loas_demuxer = {
     .name           = "loas",
     .long_name      = NULL_IF_CONFIG_SMALL("LOAS AudioSyncStream"),
@@ -93,5 +92,5 @@ const AVInputFormat ff_loas_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .raw_codec_id = AV_CODEC_ID_AAC_LATM,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &loas_demuxer_class,
+    .priv_class     = &ff_raw_demuxer_class,
 };

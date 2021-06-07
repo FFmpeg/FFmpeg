@@ -125,14 +125,19 @@ const AVOption ff_rawvideo_options[] = {
 };
 #undef OFFSET
 #define OFFSET(x) offsetof(FFRawDemuxerContext, x)
-const AVOption ff_raw_options[] = {
+static const AVOption raw_options[] = {
     { "raw_packet_size", "", OFFSET(raw_packet_size), AV_OPT_TYPE_INT, {.i64 = RAW_PACKET_SIZE }, 1, INT_MAX, DEC},
     { NULL },
 };
 
-#if CONFIG_DATA_DEMUXER
-FF_RAW_DEMUXER_CLASS(raw_data)
+const AVClass ff_raw_demuxer_class = {
+    .class_name = "generic raw demuxer",
+    .item_name  = av_default_item_name,
+    .option     = raw_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
+#if CONFIG_DATA_DEMUXER
 const AVInputFormat ff_data_demuxer = {
     .name           = "data",
     .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
@@ -141,7 +146,7 @@ const AVInputFormat ff_data_demuxer = {
     .raw_codec_id   = AV_CODEC_ID_NONE,
     .flags          = AVFMT_NOTIMESTAMPS,
     .priv_data_size = sizeof(FFRawDemuxerContext),\
-    .priv_class     = &raw_data_demuxer_class,\
+    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 

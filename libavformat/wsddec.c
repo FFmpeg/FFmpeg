@@ -161,7 +161,6 @@ static int wsd_read_header(AVFormatContext *s)
     return avio_seek(pb, data_offset, SEEK_SET);
 }
 
-FF_RAW_DEMUXER_CLASS(wsd)
 const AVInputFormat ff_wsd_demuxer = {
     .name         = "wsd",
     .long_name    = NULL_IF_CONFIG_SMALL("Wideband Single-bit Data (WSD)"),
@@ -172,5 +171,5 @@ const AVInputFormat ff_wsd_demuxer = {
     .flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
     .raw_codec_id = AV_CODEC_ID_DSD_MSBF,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &wsd_demuxer_class,
+    .priv_class     = &ff_raw_demuxer_class,
 };
