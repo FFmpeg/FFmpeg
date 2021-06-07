@@ -982,14 +982,14 @@ static const AVOption options[] = {
     { NULL }
 };
 
+static const AVClass adpcm_encoder_class = {
+    .class_name = "ADPCM encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 #define ADPCM_ENCODER(id_, name_, sample_fmts_, capabilities_, long_name_) \
-static const AVClass name_ ## _encoder_class = {                           \
-    .class_name = #name_,                                                  \
-    .item_name  = av_default_item_name,                                    \
-    .option     = options,                                                 \
-    .version    = LIBAVUTIL_VERSION_INT,                                   \
-};                                                                         \
-                                                                           \
 const AVCodec ff_ ## name_ ## _encoder = {                                 \
     .name           = #name_,                                              \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),                    \
@@ -1002,7 +1002,7 @@ const AVCodec ff_ ## name_ ## _encoder = {                                 \
     .sample_fmts    = sample_fmts_,                                        \
     .capabilities   = capabilities_ | AV_CODEC_CAP_DR1,                    \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE, \
-    .priv_class     = &name_ ## _encoder_class,                            \
+    .priv_class     = &adpcm_encoder_class,                                \
 }
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games");
