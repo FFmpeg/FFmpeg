@@ -1365,8 +1365,8 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass flv_class = {
-    .class_name = "flvdec",
+static const AVClass flv_kux_class = {
+    .class_name = "(live) flv/kux demuxer",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -1382,14 +1382,7 @@ const AVInputFormat ff_flv_demuxer = {
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
     .extensions     = "flv",
-    .priv_class     = &flv_class,
-};
-
-static const AVClass live_flv_class = {
-    .class_name = "live_flvdec",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
+    .priv_class     = &flv_kux_class,
 };
 
 const AVInputFormat ff_live_flv_demuxer = {
@@ -1402,15 +1395,8 @@ const AVInputFormat ff_live_flv_demuxer = {
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
     .extensions     = "flv",
-    .priv_class     = &live_flv_class,
+    .priv_class     = &flv_kux_class,
     .flags          = AVFMT_TS_DISCONT
-};
-
-static const AVClass kux_class = {
-    .class_name = "kuxdec",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 const AVInputFormat ff_kux_demuxer = {
@@ -1423,5 +1409,5 @@ const AVInputFormat ff_kux_demuxer = {
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
     .extensions     = "kux",
-    .priv_class     = &kux_class,
+    .priv_class     = &flv_kux_class,
 };
