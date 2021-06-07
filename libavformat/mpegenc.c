@@ -1280,16 +1280,14 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#define MPEGENC_CLASS(flavor)                   \
-static const AVClass flavor ## _class = {       \
-    .class_name = #flavor " muxer",             \
-    .item_name  = av_default_item_name,         \
-    .version    = LIBAVUTIL_VERSION_INT,        \
-    .option     = options,                      \
+static const AVClass mpeg_class = {
+    .class_name = "mpeg/(s)vcd/vob/dvd muxer",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .option     = options,
 };
 
 #if CONFIG_MPEG1SYSTEM_MUXER
-MPEGENC_CLASS(mpeg)
 const AVOutputFormat ff_mpeg1system_muxer = {
     .name              = "mpeg",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream"),
@@ -1307,7 +1305,6 @@ const AVOutputFormat ff_mpeg1system_muxer = {
 #endif
 
 #if CONFIG_MPEG1VCD_MUXER
-MPEGENC_CLASS(vcd)
 const AVOutputFormat ff_mpeg1vcd_muxer = {
     .name              = "vcd",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream (VCD)"),
@@ -1319,12 +1316,11 @@ const AVOutputFormat ff_mpeg1vcd_muxer = {
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &vcd_class,
+    .priv_class        = &mpeg_class,
 };
 #endif
 
 #if CONFIG_MPEG2VOB_MUXER
-MPEGENC_CLASS(vob)
 const AVOutputFormat ff_mpeg2vob_muxer = {
     .name              = "vob",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (VOB)"),
@@ -1337,13 +1333,12 @@ const AVOutputFormat ff_mpeg2vob_muxer = {
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &vob_class,
+    .priv_class        = &mpeg_class,
 };
 #endif
 
 /* Same as mpeg2vob_mux except that the pack size is 2324 */
 #if CONFIG_MPEG2SVCD_MUXER
-MPEGENC_CLASS(svcd)
 const AVOutputFormat ff_mpeg2svcd_muxer = {
     .name              = "svcd",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (SVCD)"),
@@ -1356,13 +1351,12 @@ const AVOutputFormat ff_mpeg2svcd_muxer = {
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &svcd_class,
+    .priv_class        = &mpeg_class,
 };
 #endif
 
 /*  Same as mpeg2vob_mux except the 'is_dvd' flag is set to produce NAV pkts */
 #if CONFIG_MPEG2DVD_MUXER
-MPEGENC_CLASS(dvd)
 const AVOutputFormat ff_mpeg2dvd_muxer = {
     .name              = "dvd",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (DVD VOB)"),
@@ -1375,6 +1369,6 @@ const AVOutputFormat ff_mpeg2dvd_muxer = {
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
     .deinit            = mpeg_mux_deinit,
-    .priv_class        = &dvd_class,
+    .priv_class        = &mpeg_class,
 };
 #endif
