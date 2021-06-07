@@ -22,10 +22,10 @@
 #include <memory.h>
 #include "libavcodec/codec2utils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "avio_internal.h"
 #include "avformat.h"
 #include "internal.h"
-#include "rawdec.h"
 #include "rawenc.h"
 #include "pcm.h"
 

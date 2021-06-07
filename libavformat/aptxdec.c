@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 #include "avformat.h"
-#include "rawdec.h"
 
 #define APTX_BLOCK_SIZE   4
 #define APTX_PACKET_SIZE  (256*APTX_BLOCK_SIZE)
