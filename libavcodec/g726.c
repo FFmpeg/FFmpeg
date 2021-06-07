@@ -382,13 +382,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVCodecDefault defaults[] = {
-    { "b", "0" },
-    { NULL },
-};
-#endif
-
-#if CONFIG_ADPCM_G726_ENCODER
 static const AVClass g726_class = {
     .class_name = "g726",
     .item_name  = av_default_item_name,
@@ -396,6 +389,13 @@ static const AVClass g726_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault defaults[] = {
+    { "b", "0" },
+    { NULL },
+};
+#endif
+
+#if CONFIG_ADPCM_G726_ENCODER
 const AVCodec ff_adpcm_g726_encoder = {
     .name           = "g726",
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
@@ -414,13 +414,6 @@ const AVCodec ff_adpcm_g726_encoder = {
 #endif
 
 #if CONFIG_ADPCM_G726LE_ENCODER
-static const AVClass g726le_class = {
-    .class_name = "g726le",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVCodec ff_adpcm_g726le_encoder = {
     .name           = "g726le",
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 little endian ADPCM (\"right-justified\")"),
@@ -432,7 +425,7 @@ const AVCodec ff_adpcm_g726le_encoder = {
     .encode2        = g726_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &g726le_class,
+    .priv_class     = &g726_class,
     .defaults       = defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
