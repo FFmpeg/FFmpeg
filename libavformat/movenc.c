@@ -111,12 +111,11 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#define MOV_CLASS(flavor)\
-static const AVClass flavor ## _muxer_class = {\
-    .class_name = #flavor " muxer",\
-    .item_name  = av_default_item_name,\
-    .option     = options,\
-    .version    = LIBAVUTIL_VERSION_INT,\
+static const AVClass mov_isobmff_muxer_class = {
+    .class_name = "mov/mp4/tgp/psp/tg2/ipod/ismv/f4v muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static int get_moov_size(AVFormatContext *s);
@@ -7223,7 +7222,6 @@ static const AVCodecTag codec_f4v_tags[] = {
 };
 
 #if CONFIG_MOV_MUXER
-MOV_CLASS(mov)
 const AVOutputFormat ff_mov_muxer = {
     .name              = "mov",
     .long_name         = NULL_IF_CONFIG_SMALL("QuickTime / MOV"),
@@ -7242,11 +7240,10 @@ const AVOutputFormat ff_mov_muxer = {
         ff_codec_movvideo_tags, ff_codec_movaudio_tags, ff_codec_movsubtitle_tags, 0
     },
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &mov_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_TGP_MUXER
-MOV_CLASS(tgp)
 const AVOutputFormat ff_tgp_muxer = {
     .name              = "3gp",
     .long_name         = NULL_IF_CONFIG_SMALL("3GP (3GPP file format)"),
@@ -7262,11 +7259,10 @@ const AVOutputFormat ff_tgp_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = codec_3gp_tags_list,
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &tgp_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_MP4_MUXER
-MOV_CLASS(mp4)
 const AVOutputFormat ff_mp4_muxer = {
     .name              = "mp4",
     .long_name         = NULL_IF_CONFIG_SMALL("MP4 (MPEG-4 Part 14)"),
@@ -7284,11 +7280,10 @@ const AVOutputFormat ff_mp4_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = mp4_codec_tags_list,
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &mp4_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_PSP_MUXER
-MOV_CLASS(psp)
 const AVOutputFormat ff_psp_muxer = {
     .name              = "psp",
     .long_name         = NULL_IF_CONFIG_SMALL("PSP MP4 (MPEG-4 Part 14)"),
@@ -7305,11 +7300,10 @@ const AVOutputFormat ff_psp_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = mp4_codec_tags_list,
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &psp_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_TG2_MUXER
-MOV_CLASS(tg2)
 const AVOutputFormat ff_tg2_muxer = {
     .name              = "3g2",
     .long_name         = NULL_IF_CONFIG_SMALL("3GP2 (3GPP2 file format)"),
@@ -7325,11 +7319,10 @@ const AVOutputFormat ff_tg2_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = codec_3gp_tags_list,
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &tg2_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_IPOD_MUXER
-MOV_CLASS(ipod)
 const AVOutputFormat ff_ipod_muxer = {
     .name              = "ipod",
     .long_name         = NULL_IF_CONFIG_SMALL("iPod H.264 MP4 (MPEG-4 Part 14)"),
@@ -7346,11 +7339,10 @@ const AVOutputFormat ff_ipod_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ codec_ipod_tags, 0 },
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &ipod_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_ISMV_MUXER
-MOV_CLASS(ismv)
 const AVOutputFormat ff_ismv_muxer = {
     .name              = "ismv",
     .long_name         = NULL_IF_CONFIG_SMALL("ISMV/ISMA (Smooth Streaming)"),
@@ -7368,11 +7360,10 @@ const AVOutputFormat ff_ismv_muxer = {
     .codec_tag         = (const AVCodecTag* const []){
         codec_mp4_tags, codec_ism_tags, 0 },
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &ismv_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
 #if CONFIG_F4V_MUXER
-MOV_CLASS(f4v)
 const AVOutputFormat ff_f4v_muxer = {
     .name              = "f4v",
     .long_name         = NULL_IF_CONFIG_SMALL("F4V Adobe Flash Video"),
@@ -7389,6 +7380,6 @@ const AVOutputFormat ff_f4v_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH,
     .codec_tag         = (const AVCodecTag* const []){ codec_f4v_tags, 0 },
     .check_bitstream   = mov_check_bitstream,
-    .priv_class        = &f4v_muxer_class,
+    .priv_class        = &mov_isobmff_muxer_class,
 };
 #endif
