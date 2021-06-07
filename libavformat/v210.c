@@ -87,14 +87,14 @@ static const AVOption v210_options[] = {
     { NULL },
 };
 
-#if CONFIG_V210_DEMUXER
 static const AVClass v210_demuxer_class = {
-    .class_name = "v210 demuxer",
+    .class_name = "v210(x) demuxer",
     .item_name  = av_default_item_name,
     .option     = v210_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+#if CONFIG_V210_DEMUXER
 const AVInputFormat ff_v210_demuxer = {
     .name           = "v210",
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
@@ -109,13 +109,6 @@ const AVInputFormat ff_v210_demuxer = {
 #endif // CONFIG_V210_DEMUXER
 
 #if CONFIG_V210X_DEMUXER
-static const AVClass v210x_demuxer_class = {
-    .class_name = "v210x demuxer",
-    .item_name  = av_default_item_name,
-    .option     = v210_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVInputFormat ff_v210x_demuxer = {
     .name           = "v210x",
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
@@ -125,6 +118,6 @@ const AVInputFormat ff_v210x_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "yuv10",
     .raw_codec_id   = AV_CODEC_ID_V210X,
-    .priv_class     = &v210x_demuxer_class,
+    .priv_class     = &v210_demuxer_class,
 };
 #endif // CONFIG_V210X_DEMUXER
