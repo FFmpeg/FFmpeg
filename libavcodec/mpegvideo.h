@@ -680,7 +680,7 @@ FF_MPV_OPT_CMP_FUNC, \
    { "brd_scale",     "Deprecated, does nothing", FF_MPV_OFFSET(brd_scale),        AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 3, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
 #endif
 
-extern const AVOption ff_mpv_generic_options[];
+extern const AVClass ff_mpv_enc_class;
 
 /**
  * Set the given MpegEncContext to common defaults (same for encoding
