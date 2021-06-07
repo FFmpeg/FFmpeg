@@ -651,21 +651,21 @@ static const AVOption img2pipe_options[] = {
     { "frame_size", "force frame size in bytes", OFFSET(frame_size), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, DEC },
     COMMON_OPTIONS
 };
-
-#if CONFIG_IMAGE2PIPE_DEMUXER
-static const AVClass img2pipe_class = {
-    .class_name = "image2pipe demuxer",
+static const AVClass imgagepipe_class = {
+    .class_name = "imagepipe demuxer",
     .item_name  = av_default_item_name,
     .option     = img2pipe_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
+#if CONFIG_IMAGE2PIPE_DEMUXER
 const AVInputFormat ff_image2pipe_demuxer = {
     .name           = "image2pipe",
     .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoDemuxData),
     .read_header    = ff_img_read_header,
     .read_packet    = ff_img_read_packet,
-    .priv_class     = &img2pipe_class,
+    .priv_class     = &imgagepipe_class,
 };
 #endif
 
@@ -1106,12 +1106,6 @@ static int photocd_probe(const AVProbeData *p)
 }
 
 #define IMAGEAUTO_DEMUXER(imgname, codecid)\
-static const AVClass imgname ## _class = {\
-    .class_name = AV_STRINGIFY(imgname) " demuxer",\
-    .item_name  = av_default_item_name,\
-    .option     = img2pipe_options,\
-    .version    = LIBAVUTIL_VERSION_INT,\
-};\
 const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .name           = AV_STRINGIFY(imgname) "_pipe",\
     .long_name      = NULL_IF_CONFIG_SMALL("piped " AV_STRINGIFY(imgname) " sequence"),\
@@ -1119,7 +1113,7 @@ const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .read_probe     = imgname ## _probe,\
     .read_header    = ff_img_read_header,\
     .read_packet    = ff_img_read_packet,\
-    .priv_class     = & imgname ## _class,\
+    .priv_class     = &imgagepipe_class,\
     .flags          = AVFMT_GENERIC_INDEX, \
     .raw_codec_id   = codecid,\
 };
