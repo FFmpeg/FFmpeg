@@ -965,10 +965,10 @@ static void set_sdl_yuv_conversion_mode(AVFrame *frame)
             mode = SDL_YUV_CONVERSION_JPEG;
         else if (frame->colorspace == AVCOL_SPC_BT709)
             mode = SDL_YUV_CONVERSION_BT709;
-        else if (frame->colorspace == AVCOL_SPC_BT470BG || frame->colorspace == AVCOL_SPC_SMPTE170M || frame->colorspace == AVCOL_SPC_SMPTE240M)
+        else if (frame->colorspace == AVCOL_SPC_BT470BG || frame->colorspace == AVCOL_SPC_SMPTE170M)
             mode = SDL_YUV_CONVERSION_BT601;
     }
-    SDL_SetYUVConversionMode(mode);
+    SDL_SetYUVConversionMode(mode); /* FIXME: no support for linear transfer */
 #endif
 }
 
