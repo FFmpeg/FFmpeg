@@ -34,14 +34,6 @@
 #include "kbdwin.h"
 
 
-static const AVClass ac3enc_class = {
-    .class_name = "AC-3 Encoder",
-    .item_name  = av_default_item_name,
-    .option     = ff_ac3_enc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-
 /*
  * Scale MDCT coefficients from float to 24-bit fixed-point.
  */
@@ -143,7 +135,7 @@ const AVCodec ff_ac3_encoder = {
     .close           = ff_ac3_encode_close,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
-    .priv_class      = &ac3enc_class,
+    .priv_class      = &ff_ac3enc_class,
     .supported_samplerates = ff_ac3_sample_rate_tab,
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ff_ac3_enc_defaults,
