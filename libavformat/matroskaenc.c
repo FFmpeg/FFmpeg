@@ -2829,14 +2829,14 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#if CONFIG_MATROSKA_MUXER
-static const AVClass matroska_class = {
-    .class_name = "matroska muxer",
+static const AVClass matroska_webm_class = {
+    .class_name = "matroska/webm muxer",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+#if CONFIG_MATROSKA_MUXER
 const AVOutputFormat ff_matroska_muxer = {
     .name              = "matroska",
     .long_name         = NULL_IF_CONFIG_SMALL("Matroska"),
@@ -2861,18 +2861,11 @@ const AVOutputFormat ff_matroska_muxer = {
     .subtitle_codec    = AV_CODEC_ID_ASS,
     .query_codec       = mkv_query_codec,
     .check_bitstream   = mkv_check_bitstream,
-    .priv_class        = &matroska_class,
+    .priv_class        = &matroska_webm_class,
 };
 #endif
 
 #if CONFIG_WEBM_MUXER
-static const AVClass webm_class = {
-    .class_name = "webm muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVOutputFormat ff_webm_muxer = {
     .name              = "webm",
     .long_name         = NULL_IF_CONFIG_SMALL("WebM"),
@@ -2891,17 +2884,11 @@ const AVOutputFormat ff_webm_muxer = {
     .check_bitstream   = mkv_check_bitstream,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
-    .priv_class        = &webm_class,
+    .priv_class        = &matroska_webm_class,
 };
 #endif
 
 #if CONFIG_MATROSKA_AUDIO_MUXER
-static const AVClass mka_class = {
-    .class_name = "matroska audio muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
 const AVOutputFormat ff_matroska_audio_muxer = {
     .name              = "matroska",
     .long_name         = NULL_IF_CONFIG_SMALL("Matroska Audio"),
@@ -2922,6 +2909,6 @@ const AVOutputFormat ff_matroska_audio_muxer = {
     .codec_tag         = (const AVCodecTag* const []){
         ff_codec_wav_tags, additional_audio_tags, 0
     },
-    .priv_class        = &mka_class,
+    .priv_class        = &matroska_webm_class,
 };
 #endif
