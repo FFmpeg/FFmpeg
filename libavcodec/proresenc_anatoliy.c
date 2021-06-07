@@ -931,13 +931,6 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass proresaw_enc_class = {
-    .class_name = "ProResAw encoder",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 static const AVClass prores_enc_class = {
     .class_name = "ProRes encoder",
     .item_name  = av_default_item_name,
@@ -956,7 +949,7 @@ const AVCodec ff_prores_aw_encoder = {
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
-    .priv_class     = &proresaw_enc_class,
+    .priv_class     = &prores_enc_class,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
