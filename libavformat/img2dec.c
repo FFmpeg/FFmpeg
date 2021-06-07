@@ -647,7 +647,7 @@ const AVInputFormat ff_image2_demuxer = {
 };
 #endif
 
-const AVOption ff_img2pipe_options[] = {
+static const AVOption img2pipe_options[] = {
     { "frame_size", "force frame size in bytes", OFFSET(frame_size), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, DEC },
     COMMON_OPTIONS
 };
@@ -656,7 +656,7 @@ const AVOption ff_img2pipe_options[] = {
 static const AVClass img2pipe_class = {
     .class_name = "image2pipe demuxer",
     .item_name  = av_default_item_name,
-    .option     = ff_img2pipe_options,
+    .option     = img2pipe_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 const AVInputFormat ff_image2pipe_demuxer = {
@@ -1109,7 +1109,7 @@ static int photocd_probe(const AVProbeData *p)
 static const AVClass imgname ## _class = {\
     .class_name = AV_STRINGIFY(imgname) " demuxer",\
     .item_name  = av_default_item_name,\
-    .option     = ff_img2pipe_options,\
+    .option     = img2pipe_options,\
     .version    = LIBAVUTIL_VERSION_INT,\
 };\
 const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
