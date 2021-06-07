@@ -1154,14 +1154,14 @@ static const AVOption asf_options[] = {
     { NULL },
 };
 
-#if CONFIG_ASF_MUXER
 static const AVClass asf_muxer_class = {
-    .class_name     = "ASF muxer",
+    .class_name     = "ASF (stream) muxer",
     .item_name      = av_default_item_name,
     .option         = asf_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
+#if CONFIG_ASF_MUXER
 const AVOutputFormat ff_asf_muxer = {
     .name           = "asf",
     .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
@@ -1180,13 +1180,6 @@ const AVOutputFormat ff_asf_muxer = {
 #endif /* CONFIG_ASF_MUXER */
 
 #if CONFIG_ASF_STREAM_MUXER
-static const AVClass asf_stream_muxer_class = {
-    .class_name     = "ASF stream muxer",
-    .item_name      = av_default_item_name,
-    .option         = asf_options,
-    .version        = LIBAVUTIL_VERSION_INT,
-};
-
 const AVOutputFormat ff_asf_stream_muxer = {
     .name           = "asf_stream",
     .long_name      = NULL_IF_CONFIG_SMALL("ASF (Advanced / Active Streaming Format)"),
@@ -1200,6 +1193,6 @@ const AVOutputFormat ff_asf_stream_muxer = {
     .write_trailer  = asf_write_trailer,
     .flags          = AVFMT_GLOBALHEADER,
     .codec_tag      = asf_codec_tags,
-    .priv_class        = &asf_stream_muxer_class,
+    .priv_class     = &asf_muxer_class,
 };
 #endif /* CONFIG_ASF_STREAM_MUXER */
