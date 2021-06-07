@@ -87,14 +87,14 @@ static const AVOption aptx_options[] = {
     { NULL },
 };
 
-#if CONFIG_APTX_DEMUXER
 static const AVClass aptx_demuxer_class = {
-    .class_name = "aptx demuxer",
+    .class_name = "aptx (hd) demuxer",
     .item_name  = av_default_item_name,
     .option     = aptx_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+#if CONFIG_APTX_DEMUXER
 const AVInputFormat ff_aptx_demuxer = {
     .name           = "aptx",
     .long_name      = NULL_IF_CONFIG_SMALL("raw aptX"),
@@ -108,13 +108,6 @@ const AVInputFormat ff_aptx_demuxer = {
 #endif
 
 #if CONFIG_APTX_HD_DEMUXER
-static const AVClass aptx_hd_demuxer_class = {
-    .class_name = "aptx hd demuxer",
-    .item_name  = av_default_item_name,
-    .option     = aptx_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVInputFormat ff_aptx_hd_demuxer = {
     .name           = "aptx_hd",
     .long_name      = NULL_IF_CONFIG_SMALL("raw aptX HD"),
@@ -123,6 +116,6 @@ const AVInputFormat ff_aptx_hd_demuxer = {
     .read_header    = aptx_hd_read_header,
     .read_packet    = aptx_hd_read_packet,
     .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &aptx_hd_demuxer_class,
+    .priv_class     = &aptx_demuxer_class,
 };
 #endif
