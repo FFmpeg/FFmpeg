@@ -87,29 +87,18 @@ static int libwebp_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVClass class = {
-    .class_name = "libwebp",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVCodec ff_libwebp_encoder = {
     .name           = "libwebp",
     .long_name      = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WEBP,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .pix_fmts       = ff_libwebpenc_pix_fmts,
+    .priv_class     = &ff_libwebpenc_class,
     .priv_data_size = sizeof(LibWebPContext),
+    .defaults       = ff_libwebp_defaults,
     .init           = libwebp_encode_init,
     .encode2        = libwebp_encode_frame,
     .close          = libwebp_encode_close,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_RGB32,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_NONE
-    },
-    .priv_class     = &class,
-    .defaults       = libwebp_defaults,
     .wrapper_name   = "libwebp",
 };
