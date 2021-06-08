@@ -38,6 +38,18 @@
  * See ADPCM decoder reference documents for codec information.
  */
 
+#define CASE_0(codec_id, ...)
+#define CASE_1(codec_id, ...) \
+    case codec_id:            \
+    { __VA_ARGS__ }           \
+    break;
+#define CASE_2(enabled, codec_id, ...) \
+        CASE_ ## enabled(codec_id, __VA_ARGS__)
+#define CASE_3(config, codec_id, ...) \
+        CASE_2(config, codec_id, __VA_ARGS__)
+#define CASE(codec, ...) \
+        CASE_3(CONFIG_ ## codec ## _ENCODER, AV_CODEC_ID_ ## codec, __VA_ARGS__)
+
 typedef struct TrellisPath {
     int nibble;
     int prev;
@@ -115,7 +127,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
     avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
 
     switch (avctx->codec->id) {
-    case AV_CODEC_ID_ADPCM_IMA_WAV:
+    CASE(ADPCM_IMA_WAV,
         /* each 16 bits sample gives one nibble
            and we have 4 bytes per channel overhead */
         avctx->frame_size = (s->block_size - 4 * avctx->channels) * 8 /
@@ -124,13 +136,12 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
            have to buffer the samples :-( */
         avctx->block_align = s->block_size;
         avctx->bits_per_coded_sample = 4;
-        break;
-    case AV_CODEC_ID_ADPCM_IMA_QT:
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_QT,
         avctx->frame_size  = 64;
         avctx->block_align = 34 * avctx->channels;
-        break;
-    case AV_CODEC_ID_ADPCM_MS:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_MS,
         uint8_t *extradata;
         /* each 16 bits sample gives one nibble
            and we have 7 bytes per channel overhead */
@@ -147,13 +158,12 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
             bytestream_put_le16(&extradata, ff_adpcm_AdaptCoeff1[i] * 4);
             bytestream_put_le16(&extradata, ff_adpcm_AdaptCoeff2[i] * 4);
         }
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_YAMAHA:
+        ) /* End of CASE */
+    CASE(ADPCM_YAMAHA,
         avctx->frame_size  = s->block_size * 2 / avctx->channels;
         avctx->block_align = s->block_size;
-        break;
-    case AV_CODEC_ID_ADPCM_SWF:
+        ) /* End of CASE */
+    CASE(ADPCM_SWF,
         if (avctx->sample_rate != 11025 &&
             avctx->sample_rate != 22050 &&
             avctx->sample_rate != 44100) {
@@ -163,13 +173,13 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         }
         avctx->frame_size  = 4096; /* Hardcoded according to the SWF spec. */
         avctx->block_align = (2 + avctx->channels * (22 + 4 * (avctx->frame_size - 1)) + 7) / 8;
-        break;
+        ) /* End of CASE */
     case AV_CODEC_ID_ADPCM_IMA_SSI:
     case AV_CODEC_ID_ADPCM_IMA_ALP:
         avctx->frame_size  = s->block_size * 2 / avctx->channels;
         avctx->block_align = s->block_size;
         break;
-    case AV_CODEC_ID_ADPCM_IMA_AMV:
+    CASE(ADPCM_IMA_AMV,
         if (avctx->sample_rate != 22050) {
             av_log(avctx, AV_LOG_ERROR, "Sample rate must be 22050\n");
             return AVERROR(EINVAL);
@@ -182,24 +192,24 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 
         avctx->frame_size  = s->block_size;
         avctx->block_align = 8 + (FFALIGN(avctx->frame_size, 2) / 2);
-        break;
-    case AV_CODEC_ID_ADPCM_IMA_APM:
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_APM,
         avctx->frame_size  = s->block_size * 2 / avctx->channels;
         avctx->block_align = s->block_size;
 
         if (!(avctx->extradata = av_mallocz(28 + AV_INPUT_BUFFER_PADDING_SIZE)))
             return AVERROR(ENOMEM);
         avctx->extradata_size = 28;
-        break;
-    case AV_CODEC_ID_ADPCM_ARGO:
+        ) /* End of CASE */
+    CASE(ADPCM_ARGO,
         avctx->frame_size = 32;
         avctx->block_align = 17 * avctx->channels;
-        break;
-    case AV_CODEC_ID_ADPCM_IMA_WS:
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_WS,
         /* each 16 bits sample gives one nibble */
         avctx->frame_size = s->block_size * 2 / avctx->channels;
         avctx->block_align = s->block_size;
-        break;
+        ) /* End of CASE */
     default:
         return AVERROR(EINVAL);
     }
@@ -546,6 +556,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
     c->idelta     = nodes[0]->step;
 }
 
+#if CONFIG_ADPCM_ARGO_ENCODER
 static inline int adpcm_argo_compress_nibble(const ADPCMChannelStatus *cs, int16_t s,
                                              int shift, int flag)
 {
@@ -585,6 +596,7 @@ static int64_t adpcm_argo_compress_block(ADPCMChannelStatus *cs, PutBitContext *
 
     return error;
 }
+#endif
 
 static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                               const AVFrame *frame, int *got_packet_ptr)
@@ -611,8 +623,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     dst = avpkt->data;
 
     switch(avctx->codec->id) {
-    case AV_CODEC_ID_ADPCM_IMA_WAV:
-    {
+    CASE(ADPCM_IMA_WAV,
         int blocks = (frame->nb_samples - 1) / 8;
 
         for (int ch = 0; ch < avctx->channels; ch++) {
@@ -656,10 +667,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 }
             }
         }
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_IMA_QT:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_QT,
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
 
@@ -686,10 +695,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         flush_put_bits(&pb);
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_IMA_SSI:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_SSI,
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
 
@@ -702,10 +709,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         flush_put_bits(&pb);
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_IMA_ALP:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_ALP,
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
 
@@ -720,10 +725,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         flush_put_bits(&pb);
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_SWF:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_SWF,
         const int n = frame->nb_samples - 1;
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
@@ -766,9 +769,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             }
         }
         flush_put_bits(&pb);
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_MS:
+        ) /* End of CASE */
+    CASE(ADPCM_MS,
         for (int i = 0; i < avctx->channels; i++) {
             int predictor = 0;
             *dst++ = predictor;
@@ -816,9 +818,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 *dst++  = nibble;
             }
         }
-        break;
-    case AV_CODEC_ID_ADPCM_YAMAHA:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_YAMAHA,
         int n = frame->nb_samples / 2;
         if (avctx->trellis > 0) {
             uint8_t *buf = av_malloc(2 * n * 2);
@@ -846,10 +847,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 nibble |= adpcm_yamaha_compress_sample(&c->status[st], *samples++) << 4;
                 *dst++  = nibble;
             }
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_IMA_APM:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_APM,
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
 
@@ -864,10 +863,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         flush_put_bits(&pb);
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_IMA_AMV:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_AMV,
         av_assert0(avctx->channels == 1);
 
         c->status[0].prev_sample = *samples;
@@ -900,10 +897,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             int nibble = adpcm_ima_compress_sample(&c->status[0], *samples++) << 4;
             bytestream_put_byte(&dst, nibble);
         }
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_ARGO:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_ARGO,
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
 
@@ -938,10 +933,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         flush_put_bits(&pb);
-        break;
-    }
-    case AV_CODEC_ID_ADPCM_IMA_WS:
-    {
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_WS,
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size);
 
@@ -958,8 +951,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             samples += avctx->channels;
         }
         flush_put_bits(&pb);
-        break;
-    }
+        ) /* End of CASE */
     default:
         return AVERROR(EINVAL);
     }
