@@ -1034,17 +1034,17 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             }
             bytestream2_skip(&gb, avctx->block_align - avctx->channels * 4);
         } else {
-        for (int n = 0; n < (nb_samples - 1) / 8; n++) {
-            for (int i = 0; i < avctx->channels; i++) {
-                ADPCMChannelStatus *cs = &c->status[i];
-                samples = &samples_p[i][1 + n * 8];
-                for (int m = 0; m < 8; m += 2) {
-                    int v = bytestream2_get_byteu(&gb);
-                    samples[m    ] = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
-                    samples[m + 1] = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
+            for (int n = 0; n < (nb_samples - 1) / 8; n++) {
+                for (int i = 0; i < avctx->channels; i++) {
+                    ADPCMChannelStatus *cs = &c->status[i];
+                    samples = &samples_p[i][1 + n * 8];
+                    for (int m = 0; m < 8; m += 2) {
+                        int v = bytestream2_get_byteu(&gb);
+                        samples[m    ] = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
+                        samples[m + 1] = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
+                    }
                 }
             }
-        }
         }
         break;
     case AV_CODEC_ID_ADPCM_4XM:
@@ -1823,41 +1823,41 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         for (int m = 0; m < blocks; m++) {
-        for (int channel = 0; channel < avctx->channels; channel++) {
-            int prev1 = c->status[channel].sample1;
-            int prev2 = c->status[channel].sample2;
+            for (int channel = 0; channel < avctx->channels; channel++) {
+                int prev1 = c->status[channel].sample1;
+                int prev2 = c->status[channel].sample2;
 
-            samples = samples_p[channel] + m * 16;
-            /* Read in every sample for this channel.  */
-            for (int i = 0; i < samples_per_block; i++) {
-                int byte = bytestream2_get_byteu(&gb);
-                int scale = 1 << (byte >> 4);
-                int index = byte & 0xf;
-                int factor1 = ff_adpcm_afc_coeffs[0][index];
-                int factor2 = ff_adpcm_afc_coeffs[1][index];
+                samples = samples_p[channel] + m * 16;
+                /* Read in every sample for this channel.  */
+                for (int i = 0; i < samples_per_block; i++) {
+                    int byte = bytestream2_get_byteu(&gb);
+                    int scale = 1 << (byte >> 4);
+                    int index = byte & 0xf;
+                    int factor1 = ff_adpcm_afc_coeffs[0][index];
+                    int factor2 = ff_adpcm_afc_coeffs[1][index];
 
-                /* Decode 16 samples.  */
-                for (int n = 0; n < 16; n++) {
-                    int32_t sampledat;
+                    /* Decode 16 samples.  */
+                    for (int n = 0; n < 16; n++) {
+                        int32_t sampledat;
 
-                    if (n & 1) {
-                        sampledat = sign_extend(byte, 4);
-                    } else {
-                        byte = bytestream2_get_byteu(&gb);
-                        sampledat = sign_extend(byte >> 4, 4);
+                        if (n & 1) {
+                            sampledat = sign_extend(byte, 4);
+                        } else {
+                            byte = bytestream2_get_byteu(&gb);
+                            sampledat = sign_extend(byte >> 4, 4);
+                        }
+
+                        sampledat = ((prev1 * factor1 + prev2 * factor2) >> 11) +
+                                    sampledat * scale;
+                        *samples = av_clip_int16(sampledat);
+                        prev2 = prev1;
+                        prev1 = *samples++;
                     }
-
-                    sampledat = ((prev1 * factor1 + prev2 * factor2) >> 11) +
-                                sampledat * scale;
-                    *samples = av_clip_int16(sampledat);
-                    prev2 = prev1;
-                    prev1 = *samples++;
                 }
-            }
 
-            c->status[channel].sample1 = prev1;
-            c->status[channel].sample2 = prev2;
-        }
+                c->status[channel].sample1 = prev1;
+                c->status[channel].sample2 = prev2;
+            }
         }
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
