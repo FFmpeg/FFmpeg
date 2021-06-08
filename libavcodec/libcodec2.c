@@ -46,12 +46,6 @@ static const AVClass libcodec2_enc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVClass libcodec2_dec_class = {
-    .class_name = "libcodec2 decoder",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 static av_cold int libcodec2_init_common(AVCodecContext *avctx, int mode)
 {
     LibCodec2Context *c2 = avctx->priv_data;
@@ -194,7 +188,6 @@ const AVCodec ff_libcodec2_decoder = {
     .supported_samplerates  = (const int[]){ 8000, 0 },
     .sample_fmts            = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .channel_layouts        = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
-    .priv_class             = &libcodec2_dec_class,
 };
 
 const AVCodec ff_libcodec2_encoder = {
