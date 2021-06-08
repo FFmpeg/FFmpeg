@@ -989,7 +989,8 @@ static const AVClass adpcm_encoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#define ADPCM_ENCODER(id_, name_, sample_fmts_, capabilities_, long_name_) \
+#define ADPCM_ENCODER_0(id_, name_, sample_fmts_, capabilities_, long_name_)
+#define ADPCM_ENCODER_1(id_, name_, sample_fmts_, capabilities_, long_name_) \
 const AVCodec ff_ ## name_ ## _encoder = {                                 \
     .name           = #name_,                                              \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),                    \
@@ -1003,16 +1004,23 @@ const AVCodec ff_ ## name_ ## _encoder = {                                 \
     .capabilities   = capabilities_ | AV_CODEC_CAP_DR1,                    \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE, \
     .priv_class     = &adpcm_encoder_class,                                \
-}
+};
+#define ADPCM_ENCODER_2(enabled, codec_id, name, sample_fmts, capabilities, long_name) \
+    ADPCM_ENCODER_ ## enabled(codec_id, name, sample_fmts, capabilities, long_name)
+#define ADPCM_ENCODER_3(config, codec_id, name, sample_fmts, capabilities, long_name) \
+    ADPCM_ENCODER_2(config, codec_id, name, sample_fmts, capabilities, long_name)
+#define ADPCM_ENCODER(codec, name, sample_fmts, capabilities, long_name) \
+    ADPCM_ENCODER_3(CONFIG_ ## codec ## _ENCODER, AV_CODEC_ID_ ## codec, \
+                    name, sample_fmts, capabilities, long_name)
 
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_WS,  adpcm_ima_ws,  sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Westwood");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_SWF,     adpcm_swf,     sample_fmts,   0,                             "ADPCM Shockwave Flash");
-ADPCM_ENCODER(AV_CODEC_ID_ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha");
+ADPCM_ENCODER(ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games")
+ADPCM_ENCODER(ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV")
+ADPCM_ENCODER(ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM")
+ADPCM_ENCODER(ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP")
+ADPCM_ENCODER(ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime")
+ADPCM_ENCODER(ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive")
+ADPCM_ENCODER(ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV")
+ADPCM_ENCODER(ADPCM_IMA_WS,  adpcm_ima_ws,  sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Westwood")
+ADPCM_ENCODER(ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft")
+ADPCM_ENCODER(ADPCM_SWF,     adpcm_swf,     sample_fmts,   0,                             "ADPCM Shockwave Flash")
+ADPCM_ENCODER(ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha")
