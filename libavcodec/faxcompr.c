@@ -301,7 +301,10 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                 mode = !mode;
             }
         } else if (cmode == 9 || cmode == 10) {
-            int xxx = get_bits(gb, 3);
+            int xxx;
+            if (get_bits_left(gb) < 3)
+                return AVERROR_INVALIDDATA;
+            xxx = get_bits(gb, 3);
             if (cmode == 9 && xxx == 7) {
                 int ret;
                 int pix_left = width - offs;
