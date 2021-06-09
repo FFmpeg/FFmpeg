@@ -985,17 +985,14 @@ typedef struct AVStream {
      */
     AVCodecParameters *codecpar;
 
-    /*****************************************************************
-     * All fields below this line are not part of the public API. They
-     * may not be used outside of libavformat and can be changed and
-     * removed at will.
-     * Internal note: be aware that physically removing these fields
-     * will break ABI. Replace removed fields with dummy fields, and
-     * add new fields to AVStreamInternal.
-     *****************************************************************
+    /**
+     * Number of bits in timestamps. Used for wrapping control.
+     *
+     * - demuxing: set by libavformat
+     * - muxing: set by libavformat
+     *
      */
-
-    int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
+    int pts_wrap_bits;
 
     /**
      * An opaque field for libavformat internal usage.
