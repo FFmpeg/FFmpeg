@@ -368,7 +368,7 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
         if ((unsigned) last_exp + 60 >= FF_ARRAY_ELEMS(pow_tab)) {
             av_log(s->avctx, AV_LOG_ERROR, "Exponent out of range: %d\n",
                    last_exp);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         v  = ptab[last_exp];
         iv = iptab[last_exp];
@@ -439,8 +439,10 @@ static void wma_window(WMACodecContext *s, float *out)
 }
 
 /**
- * @return 0 if OK. 1 if last block of frame. return -1 if
- * unrecoverable error.
+ * @return
+ * 0 if OK.
+ * 1 if last block of frame.
+ * AVERROR if unrecoverable error.
  */
 static int wma_decode_block(WMACodecContext *s)
 {
@@ -468,7 +470,7 @@ static int wma_decode_block(WMACodecContext *s)
                 av_log(s->avctx, AV_LOG_ERROR,
                        "prev_block_len_bits %d out of range\n",
                        s->frame_len_bits - v);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             s->prev_block_len_bits = s->frame_len_bits - v;
             v                      = get_bits(&s->gb, n);
@@ -476,7 +478,7 @@ static int wma_decode_block(WMACodecContext *s)
                 av_log(s->avctx, AV_LOG_ERROR,
                        "block_len_bits %d out of range\n",
                        s->frame_len_bits - v);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             s->block_len_bits = s->frame_len_bits - v;
         } else {
@@ -489,7 +491,7 @@ static int wma_decode_block(WMACodecContext *s)
             av_log(s->avctx, AV_LOG_ERROR,
                    "next_block_len_bits %d out of range\n",
                    s->frame_len_bits - v);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         s->next_block_len_bits = s->frame_len_bits - v;
     } else {
@@ -501,14 +503,14 @@ static int wma_decode_block(WMACodecContext *s)
 
     if (s->frame_len_bits - s->block_len_bits >= s->nb_block_sizes){
         av_log(s->avctx, AV_LOG_ERROR, "block_len_bits not initialized to a valid value\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* now check if the block length is coherent with the frame length */
     s->block_len = 1 << s->block_len_bits;
     if ((s->block_pos + s->block_len) > s->frame_len) {
         av_log(s->avctx, AV_LOG_ERROR, "frame_len overflow\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (channels == 2)
@@ -590,7 +592,7 @@ static int wma_decode_block(WMACodecContext *s)
             if (s->channel_coded[ch]) {
                 if (s->use_exp_vlc) {
                     if (decode_exp_vlc(s, ch) < 0)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                 } else {
                     decode_exp_lsp(s, ch);
                 }
@@ -802,7 +804,7 @@ static int wma_decode_frame(WMACodecContext *s, float **samples,
     for (;;) {
         ret = wma_decode_block(s);
         if (ret < 0)
-            return -1;
+            return ret;
         if (ret)
             break;
     }
@@ -879,8 +881,10 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
                 return AVERROR_INVALIDDATA;
 
             if ((s->last_superframe_len + buf_size - 1) >
-                MAX_CODED_SUPERFRAME_SIZE)
+                MAX_CODED_SUPERFRAME_SIZE) {
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
+            }
 
             q   = s->last_superframe + s->last_superframe_len;
             len = buf_size - 1;
@@ -911,14 +915,17 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid last frame bit offset %d > buf size %d (%d)\n",
                    bit_offset, get_bits_left(&s->gb), buf_size);
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
 
         if (s->last_superframe_len > 0) {
             /* add bit_offset bits to last frame */
             if ((s->last_superframe_len + ((bit_offset + 7) >> 3)) >
-                MAX_CODED_SUPERFRAME_SIZE)
+                MAX_CODED_SUPERFRAME_SIZE) {
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
+            }
             q   = s->last_superframe + s->last_superframe_len;
             len = bit_offset;
             while (len > 7) {
@@ -937,7 +944,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
                 skip_bits(&s->gb, s->last_bitoffset);
             /* this frame is stored in the last superframe and in the
              * current one */
-            if (wma_decode_frame(s, samples, samples_offset) < 0)
+            if ((ret = wma_decode_frame(s, samples, samples_offset)) < 0)
                 goto fail;
             samples_offset += s->frame_len;
             nb_frames--;
@@ -954,7 +961,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
 
         s->reset_block_lengths = 1;
         for (i = 0; i < nb_frames; i++) {
-            if (wma_decode_frame(s, samples, samples_offset) < 0)
+            if ((ret = wma_decode_frame(s, samples, samples_offset)) < 0)
                 goto fail;
             samples_offset += s->frame_len;
         }
@@ -967,13 +974,14 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
         len               = buf_size - pos;
         if (len > MAX_CODED_SUPERFRAME_SIZE || len < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "len %d invalid\n", len);
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
         s->last_superframe_len = len;
         memcpy(s->last_superframe, buf + pos, len);
     } else {
         /* single frame decode */
-        if (wma_decode_frame(s, samples, samples_offset) < 0)
+        if ((ret = wma_decode_frame(s, samples, samples_offset)) < 0)
             goto fail;
         samples_offset += s->frame_len;
     }
@@ -989,7 +997,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, AVFrame *frame,
 fail:
     /* when error, we reset the bit reservoir */
     s->last_superframe_len = 0;
-    return -1;
+    return ret;
 }
 
 static av_cold void flush(AVCodecContext *avctx)
