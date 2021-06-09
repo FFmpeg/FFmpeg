@@ -3915,7 +3915,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 break;
             }
             if (pkt->duration) {
-                if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE && pkt->pts != AV_NOPTS_VALUE && st->start_time != AV_NOPTS_VALUE && pkt->pts >= st->start_time) {
+                if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE && pkt->pts != AV_NOPTS_VALUE && st->start_time != AV_NOPTS_VALUE && pkt->pts >= st->start_time
+                    && (uint64_t)pkt->pts - st->start_time < INT64_MAX
+                ) {
                     st->internal->info->codec_info_duration = FFMIN(pkt->pts - st->start_time, st->internal->info->codec_info_duration + pkt->duration);
                 } else
                     st->internal->info->codec_info_duration += pkt->duration;
