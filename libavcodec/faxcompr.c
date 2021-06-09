@@ -144,6 +144,8 @@ static int decode_uncompressed(AVCodecContext *avctx, GetBitContext *gb,
                 return AVERROR_INVALIDDATA;
             }
             cwi = 10 - av_log2(cwi);
+            if (get_bits_left(gb) < cwi + 1)
+                return AVERROR_INVALIDDATA;
             skip_bits(gb, cwi + 1);
             if (cwi > 5) {
                 newmode = get_bits1(gb);
