@@ -155,6 +155,15 @@ static int libsrt_neterrno(URLContext *h)
     return os_errno ? AVERROR(os_errno) : AVERROR_UNKNOWN;
 }
 
+static int libsrt_getsockopt(URLContext *h, int fd, SRT_SOCKOPT optname, const char * optnamestr, void * optval, int * optlen)
+{
+    if (srt_getsockopt(fd, 0, optname, optval, optlen) < 0) {
+        av_log(h, AV_LOG_ERROR, "failed to get option %s on socket: %s\n", optnamestr, srt_getlasterror_str());
+        return AVERROR(EIO);
+    }
+    return 0;
+}
+
 static int libsrt_socket_nonblock(int socket, int enable)
 {
     int ret, blocking = enable ? 0 : 1;
@@ -226,6 +235,9 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
 {
     int ret;
     int reuse = 1;
+    /* Max streamid length plus an extra space for the terminating null character */
+    char streamid[513];
+    int streamid_len = sizeof(streamid);
     if (srt_setsockopt(fd, SOL_SOCKET, SRTO_REUSEADDR, &reuse, sizeof(reuse))) {
         av_log(h, AV_LOG_WARNING, "setsockopt(SRTO_REUSEADDR) failed\n");
     }
@@ -244,6 +256,9 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
         return libsrt_neterrno(h);
     if (libsrt_socket_nonblock(ret, 1) < 0)
         av_log(h, AV_LOG_DEBUG, "libsrt_socket_nonblock failed\n");
+    if (!libsrt_getsockopt(h, ret, SRTO_STREAMID, "SRTO_STREAMID", streamid, &streamid_len))
+        /* Note: returned streamid_len doesn't count the terminating null character */
+        av_log(h, AV_LOG_VERBOSE, "accept streamid [%s], length %d\n", streamid, streamid_len);
 
     return ret;
 }
@@ -273,15 +288,6 @@ static int libsrt_setsockopt(URLContext *h, int fd, SRT_SOCKOPT optname, const c
 {
     if (srt_setsockopt(fd, 0, optname, optval, optlen) < 0) {
         av_log(h, AV_LOG_ERROR, "failed to set option %s on socket: %s\n", optnamestr, srt_getlasterror_str());
-        return AVERROR(EIO);
-    }
-    return 0;
-}
-
-static int libsrt_getsockopt(URLContext *h, int fd, SRT_SOCKOPT optname, const char * optnamestr, void * optval, int * optlen)
-{
-    if (srt_getsockopt(fd, 0, optname, optval, optlen) < 0) {
-        av_log(h, AV_LOG_ERROR, "failed to get option %s on socket: %s\n", optnamestr, srt_getlasterror_str());
         return AVERROR(EIO);
     }
     return 0;
