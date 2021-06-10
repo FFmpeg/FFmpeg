@@ -1988,28 +1988,28 @@ void ff_get_unscaled_swscale(SwsContext *c)
     /* yv12_to_nv12 */
     if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUVA420P) &&
         (dstFormat == AV_PIX_FMT_NV12 || dstFormat == AV_PIX_FMT_NV21)) {
-        c->swscale = planarToNv12Wrapper;
+        c->convert_unscaled = planarToNv12Wrapper;
     }
     /* yv24_to_nv24 */
     if ((srcFormat == AV_PIX_FMT_YUV444P || srcFormat == AV_PIX_FMT_YUVA444P) &&
         (dstFormat == AV_PIX_FMT_NV24 || dstFormat == AV_PIX_FMT_NV42)) {
-        c->swscale = planarToNv24Wrapper;
+        c->convert_unscaled = planarToNv24Wrapper;
     }
     /* nv12_to_yv12 */
     if (dstFormat == AV_PIX_FMT_YUV420P &&
         (srcFormat == AV_PIX_FMT_NV12 || srcFormat == AV_PIX_FMT_NV21)) {
-        c->swscale = nv12ToPlanarWrapper;
+        c->convert_unscaled = nv12ToPlanarWrapper;
     }
     /* nv24_to_yv24 */
     if (dstFormat == AV_PIX_FMT_YUV444P &&
         (srcFormat == AV_PIX_FMT_NV24 || srcFormat == AV_PIX_FMT_NV42)) {
-        c->swscale = nv24ToPlanarWrapper;
+        c->convert_unscaled = nv24ToPlanarWrapper;
     }
     /* yuv2bgr */
     if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUV422P ||
          srcFormat == AV_PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
         !(flags & SWS_ACCURATE_RND) && (c->dither == SWS_DITHER_BAYER || c->dither == SWS_DITHER_AUTO) && !(dstH & 1)) {
-        c->swscale = ff_yuv2rgb_get_func_ptr(c);
+        c->convert_unscaled = ff_yuv2rgb_get_func_ptr(c);
     }
     /* yuv420p1x_to_p01x */
     if ((srcFormat == AV_PIX_FMT_YUV420P10 || srcFormat == AV_PIX_FMT_YUVA420P10 ||
@@ -2017,35 +2017,35 @@ void ff_get_unscaled_swscale(SwsContext *c)
          srcFormat == AV_PIX_FMT_YUV420P14 ||
          srcFormat == AV_PIX_FMT_YUV420P16 || srcFormat == AV_PIX_FMT_YUVA420P16) &&
         (dstFormat == AV_PIX_FMT_P010 || dstFormat == AV_PIX_FMT_P016)) {
-        c->swscale = planarToP01xWrapper;
+        c->convert_unscaled = planarToP01xWrapper;
     }
     /* yuv420p_to_p01xle */
     if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUVA420P) &&
         (dstFormat == AV_PIX_FMT_P010LE || dstFormat == AV_PIX_FMT_P016LE)) {
-        c->swscale = planar8ToP01xleWrapper;
+        c->convert_unscaled = planar8ToP01xleWrapper;
     }
 
     if (srcFormat == AV_PIX_FMT_YUV410P && !(dstH & 3) &&
         (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P) &&
         !(flags & SWS_BITEXACT)) {
-        c->swscale = yvu9ToYv12Wrapper;
+        c->convert_unscaled = yvu9ToYv12Wrapper;
     }
 
     /* bgr24toYV12 */
     if (srcFormat == AV_PIX_FMT_BGR24 &&
         (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P) &&
         !(flags & SWS_ACCURATE_RND) && !(dstW&1))
-        c->swscale = bgr24ToYv12Wrapper;
+        c->convert_unscaled = bgr24ToYv12Wrapper;
 
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
     if (isAnyRGB(srcFormat) && isAnyRGB(dstFormat) && findRgbConvFn(c)
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
-        c->swscale = rgbToRgbWrapper;
+        c->convert_unscaled = rgbToRgbWrapper;
 
     /* RGB to planar RGB */
     if ((srcFormat == AV_PIX_FMT_GBRP && dstFormat == AV_PIX_FMT_GBRAP) ||
         (srcFormat == AV_PIX_FMT_GBRAP && dstFormat == AV_PIX_FMT_GBRP))
-        c->swscale = planarRgbToplanarRgbWrapper;
+        c->convert_unscaled = planarRgbToplanarRgbWrapper;
 
 #define isByteRGB(f) (             \
         f == AV_PIX_FMT_RGB32   || \
@@ -2056,10 +2056,10 @@ void ff_get_unscaled_swscale(SwsContext *c)
         f == AV_PIX_FMT_BGR24)
 
     if (srcFormat == AV_PIX_FMT_GBRP && isPlanar(srcFormat) && isByteRGB(dstFormat))
-        c->swscale = planarRgbToRgbWrapper;
+        c->convert_unscaled = planarRgbToRgbWrapper;
 
     if (srcFormat == AV_PIX_FMT_GBRAP && isByteRGB(dstFormat))
-        c->swscale = planarRgbaToRgbWrapper;
+        c->convert_unscaled = planarRgbaToRgbWrapper;
 
     if ((srcFormat == AV_PIX_FMT_RGB48LE  || srcFormat == AV_PIX_FMT_RGB48BE  ||
          srcFormat == AV_PIX_FMT_BGR48LE  || srcFormat == AV_PIX_FMT_BGR48BE  ||
@@ -2073,7 +2073,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
          dstFormat == AV_PIX_FMT_GBRAP10LE || dstFormat == AV_PIX_FMT_GBRAP10BE ||
          dstFormat == AV_PIX_FMT_GBRAP12LE || dstFormat == AV_PIX_FMT_GBRAP12BE ||
          dstFormat == AV_PIX_FMT_GBRAP16LE || dstFormat == AV_PIX_FMT_GBRAP16BE ))
-        c->swscale = Rgb16ToPlanarRgb16Wrapper;
+        c->convert_unscaled = Rgb16ToPlanarRgb16Wrapper;
 
     if ((srcFormat == AV_PIX_FMT_GBRP9LE  || srcFormat == AV_PIX_FMT_GBRP9BE  ||
          srcFormat == AV_PIX_FMT_GBRP16LE || srcFormat == AV_PIX_FMT_GBRP16BE ||
@@ -2087,19 +2087,19 @@ void ff_get_unscaled_swscale(SwsContext *c)
          dstFormat == AV_PIX_FMT_BGR48LE  || dstFormat == AV_PIX_FMT_BGR48BE  ||
          dstFormat == AV_PIX_FMT_RGBA64LE || dstFormat == AV_PIX_FMT_RGBA64BE ||
          dstFormat == AV_PIX_FMT_BGRA64LE || dstFormat == AV_PIX_FMT_BGRA64BE))
-        c->swscale = planarRgb16ToRgb16Wrapper;
+        c->convert_unscaled = planarRgb16ToRgb16Wrapper;
 
     if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth == 8 &&
         isPackedRGB(srcFormat) && dstFormat == AV_PIX_FMT_GBRP)
-        c->swscale = rgbToPlanarRgbWrapper;
+        c->convert_unscaled = rgbToPlanarRgbWrapper;
 
     if (isBayer(srcFormat)) {
         if (dstFormat == AV_PIX_FMT_RGB24)
-            c->swscale = bayer_to_rgb24_wrapper;
+            c->convert_unscaled = bayer_to_rgb24_wrapper;
         else if (dstFormat == AV_PIX_FMT_RGB48)
-            c->swscale = bayer_to_rgb48_wrapper;
+            c->convert_unscaled = bayer_to_rgb48_wrapper;
         else if (dstFormat == AV_PIX_FMT_YUV420P)
-            c->swscale = bayer_to_yv12_wrapper;
+            c->convert_unscaled = bayer_to_yv12_wrapper;
         else if (!isBayer(dstFormat)) {
             av_log(c, AV_LOG_ERROR, "unsupported bayer conversion\n");
             av_assert0(0);
@@ -2154,31 +2154,31 @@ void ff_get_unscaled_swscale(SwsContext *c)
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P12) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P14) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P16))
-        c->swscale = bswap_16bpc;
+        c->convert_unscaled = bswap_16bpc;
 
     /* bswap 32 bits per pixel/component formats */
     if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRPF32) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRAPF32))
-        c->swscale = bswap_32bpc;
+        c->convert_unscaled = bswap_32bpc;
 
     if (usePal(srcFormat) && isByteRGB(dstFormat))
-        c->swscale = palToRgbWrapper;
+        c->convert_unscaled = palToRgbWrapper;
 
     if (srcFormat == AV_PIX_FMT_YUV422P) {
         if (dstFormat == AV_PIX_FMT_YUYV422)
-            c->swscale = yuv422pToYuy2Wrapper;
+            c->convert_unscaled = yuv422pToYuy2Wrapper;
         else if (dstFormat == AV_PIX_FMT_UYVY422)
-            c->swscale = yuv422pToUyvyWrapper;
+            c->convert_unscaled = yuv422pToUyvyWrapper;
     }
 
     /* uint Y to float Y */
     if (srcFormat == AV_PIX_FMT_GRAY8 && dstFormat == AV_PIX_FMT_GRAYF32){
-        c->swscale = uint_y_to_float_y_wrapper;
+        c->convert_unscaled = uint_y_to_float_y_wrapper;
     }
 
     /* float Y to uint Y */
     if (srcFormat == AV_PIX_FMT_GRAYF32 && dstFormat == AV_PIX_FMT_GRAY8){
-        c->swscale = float_y_to_uint_y_wrapper;
+        c->convert_unscaled = float_y_to_uint_y_wrapper;
     }
 
     /* LQ converters if -sws 0 or -sws 4*/
@@ -2186,21 +2186,21 @@ void ff_get_unscaled_swscale(SwsContext *c)
         /* yv12_to_yuy2 */
         if (srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUVA420P) {
             if (dstFormat == AV_PIX_FMT_YUYV422)
-                c->swscale = planarToYuy2Wrapper;
+                c->convert_unscaled = planarToYuy2Wrapper;
             else if (dstFormat == AV_PIX_FMT_UYVY422)
-                c->swscale = planarToUyvyWrapper;
+                c->convert_unscaled = planarToUyvyWrapper;
         }
     }
     if (srcFormat == AV_PIX_FMT_YUYV422 &&
        (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P))
-        c->swscale = yuyvToYuv420Wrapper;
+        c->convert_unscaled = yuyvToYuv420Wrapper;
     if (srcFormat == AV_PIX_FMT_UYVY422 &&
        (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P))
-        c->swscale = uyvyToYuv420Wrapper;
+        c->convert_unscaled = uyvyToYuv420Wrapper;
     if (srcFormat == AV_PIX_FMT_YUYV422 && dstFormat == AV_PIX_FMT_YUV422P)
-        c->swscale = yuyvToYuv422Wrapper;
+        c->convert_unscaled = yuyvToYuv422Wrapper;
     if (srcFormat == AV_PIX_FMT_UYVY422 && dstFormat == AV_PIX_FMT_YUV422P)
-        c->swscale = uyvyToYuv422Wrapper;
+        c->convert_unscaled = uyvyToYuv422Wrapper;
 
 #define isPlanarGray(x) (isGray(x) && (x) != AV_PIX_FMT_YA8 && (x) != AV_PIX_FMT_YA16LE && (x) != AV_PIX_FMT_YA16BE)
     /* simple copy */
@@ -2216,9 +2216,9 @@ void ff_get_unscaled_swscale(SwsContext *c)
          !isSemiPlanarYUV(srcFormat) && !isSemiPlanarYUV(dstFormat))))
     {
         if (isPacked(c->srcFormat))
-            c->swscale = packedCopyWrapper;
+            c->convert_unscaled = packedCopyWrapper;
         else /* Planar YUV or gray */
-            c->swscale = planarCopyWrapper;
+            c->convert_unscaled = planarCopyWrapper;
     }
 
     if (ARCH_PPC)

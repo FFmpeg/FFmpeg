@@ -290,7 +290,7 @@ typedef struct SwsContext {
      * Note that src, dst, srcStride, dstStride will be copied in the
      * sws_scale() wrapper so they can be freely modified here.
      */
-    SwsFunc swscale;
+    SwsFunc convert_unscaled;
     int srcW;                     ///< Width  of source      luma/alpha planes.
     int srcH;                     ///< Height of source      luma/alpha planes.
     int dstH;                     ///< Height of destination luma/alpha planes.
@@ -870,8 +870,8 @@ extern const int32_t ff_yuv2rgb_coeffs[11][4];
 extern const AVClass ff_sws_context_class;
 
 /**
- * Set c->swscale to an unscaled converter if one exists for the specific
- * source and destination formats, bit depths, flags, etc.
+ * Set c->convert_unscaled to an unscaled converter if one exists for the
+ * specific source and destination formats, bit depths, flags, etc.
  */
 void ff_get_unscaled_swscale(SwsContext *c);
 void ff_get_unscaled_swscale_ppc(SwsContext *c);

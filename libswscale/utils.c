@@ -1823,7 +1823,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         (c->srcRange == c->dstRange || isAnyRGB(dstFormat)) &&
         alphaless_fmt(srcFormat) == dstFormat
     ) {
-        c->swscale = ff_sws_alphablendaway;
+        c->convert_unscaled = ff_sws_alphablendaway;
 
         if (flags & SWS_PRINT_INFO)
             av_log(c, AV_LOG_INFO,
@@ -1838,7 +1838,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
          isFloat(srcFormat) || isFloat(dstFormat))){
         ff_get_unscaled_swscale(c);
 
-        if (c->swscale) {
+        if (c->convert_unscaled) {
             if (flags & SWS_PRINT_INFO)
                 av_log(c, AV_LOG_INFO,
                        "using unscaled %s -> %s special converter\n",

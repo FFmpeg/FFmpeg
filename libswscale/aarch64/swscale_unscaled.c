@@ -102,7 +102,7 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
         && !(c->srcH & 1)                                                                   \
         && !(c->srcW & 15)                                                                  \
         && !accurate_rnd)                                                                   \
-        c->swscale = ifmt##_to_##ofmt##_neon_wrapper;                                       \
+        c->convert_unscaled = ifmt##_to_##ofmt##_neon_wrapper;                              \
 } while (0)
 
 #define SET_FF_NVX_TO_ALL_RGBX_FUNC(nvx, NVX, accurate_rnd) do {                            \

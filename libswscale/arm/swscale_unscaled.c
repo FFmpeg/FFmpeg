@@ -147,7 +147,7 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
         && !(c->srcH & 1)                                                                   \
         && !(c->srcW & 15)                                                                  \
         && !accurate_rnd) {                                                                 \
-        c->swscale = ifmt##_to_##ofmt##_neon_wrapper;                                       \
+        c->convert_unscaled = ifmt##_to_##ofmt##_neon_wrapper;                              \
     }                                                                                       \
 } while (0)
 
@@ -163,8 +163,8 @@ static void get_unscaled_swscale_neon(SwsContext *c) {
     if (c->srcFormat == AV_PIX_FMT_RGBA
             && c->dstFormat == AV_PIX_FMT_NV12
             && (c->srcW >= 16)) {
-        c->swscale = accurate_rnd ? rgbx_to_nv12_neon_32_wrapper
-                        : rgbx_to_nv12_neon_16_wrapper;
+        c->convert_unscaled = accurate_rnd ? rgbx_to_nv12_neon_32_wrapper
+                                           : rgbx_to_nv12_neon_16_wrapper;
     }
 
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv12, NV12, accurate_rnd);

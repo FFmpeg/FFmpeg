@@ -987,8 +987,9 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (srcSliceY_internal + srcSliceH == c->srcH)
         c->sliceDir = 0;
 
-    if (c->swscale)
-        ret = c->swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH, dst2, dstStride2);
+    if (c->convert_unscaled)
+        ret = c->convert_unscaled(c, src2, srcStride2, srcSliceY_internal, srcSliceH,
+                                  dst2, dstStride2);
     else
         ret = swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH, dst2, dstStride2);
 
