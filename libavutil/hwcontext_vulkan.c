@@ -1349,7 +1349,7 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         }
     }
 
-    err = load_functions(ctx, 1, 0);
+    err = load_functions(ctx, 1, 1);
     if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to load functions!\n");
         return err;
