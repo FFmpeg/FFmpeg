@@ -103,7 +103,7 @@ static AVRational read_fps(const char* line, int* error)
         // Truncate any numerator too large to fit into an int64_t
         if (num > (INT64_MAX - 9) / 10 || den > INT64_MAX / 10)
             break;
-        num  = 10 * num + *line - '0';
+        num  = 10 * num + (*line - '0');
         den *= 10;
     }
     if (!num)
