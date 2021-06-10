@@ -759,6 +759,16 @@ This option is similar to @option{-filter}, the only difference is that its
 argument is the name of the file from which a filtergraph description is to be
 read.
 
+@item -reinit_filter[:@var{stream_specifier}] @var{integer} (@emph{input,per-stream})
+This boolean option determines if the filtergraph(s) to which this stream is fed gets
+reinitialized when input frame parameters change mid-stream. This option is enabled by
+default as most video and all audio filters cannot handle deviation in input frame properties.
+Upon reinitialization, existing filter state is lost, like e.g. the frame count @code{n}
+reference available in some filters. Any frames buffered at time of reinitialization are lost.
+The properties where a change triggers reinitialization are,
+for video, frame resolution or pixel format;
+for audio, sample format, sample rate, channel count or channel layout.
+
 @item -filter_threads @var{nb_threads} (@emph{global})
 Defines how many threads are used to process a filter pipeline. Each pipeline
 will produce a thread pool with this many threads available for parallel processing.
