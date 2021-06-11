@@ -21,6 +21,7 @@
 
 #include <shine/layer3.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "audio_frame_queue.h"
 #include "avcodec.h"

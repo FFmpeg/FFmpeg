@@ -25,6 +25,7 @@
  * @author Paul B Mahol
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"

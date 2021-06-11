@@ -31,6 +31,7 @@
 #endif
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"

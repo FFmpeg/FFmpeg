@@ -21,6 +21,7 @@
 
 #include <memory.h>
 #include "libavcodec/codec2utils.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avio_internal.h"

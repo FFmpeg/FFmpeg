@@ -20,6 +20,7 @@
  */
 
 #include <codec2/codec2.h>
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "encode.h"

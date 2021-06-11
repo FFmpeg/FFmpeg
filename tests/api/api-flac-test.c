@@ -28,6 +28,7 @@
  */
 
 #include "libavcodec/avcodec.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/samplefmt.h"
 

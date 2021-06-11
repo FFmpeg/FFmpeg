@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
 
 #define IMX_TAG MKTAG('I', 'M', 'A', 'X')

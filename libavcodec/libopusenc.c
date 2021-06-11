@@ -22,6 +22,7 @@
 #include <opus.h>
 #include <opus_multistream.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"

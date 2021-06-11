@@ -20,6 +20,7 @@
  */
 
 #include "swresample_internal.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/frame.h"
 #include "libavutil/opt.h"
 

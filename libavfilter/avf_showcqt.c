@@ -21,6 +21,7 @@
 #include "config.h"
 #include "libavcodec/avfft.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/xga_font_data.h"
 #include "libavutil/eval.h"

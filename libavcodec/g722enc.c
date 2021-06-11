@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "encode.h"
 #include "internal.h"

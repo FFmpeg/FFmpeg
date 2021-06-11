@@ -21,6 +21,7 @@
 #include <vorbis/vorbisenc.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"

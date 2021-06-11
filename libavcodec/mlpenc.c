@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "put_bits.h"
 #include "audio_frame_queue.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/avstring.h"
 #include "libavutil/samplefmt.h"

@@ -89,6 +89,7 @@
            Parametric Stereo.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/thread.h"
 
 static VLC vlc_scalefactors;
