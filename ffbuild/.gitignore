@@ -1,4 +1,6 @@
 /.config
+/bin2c
+/bin2c.exe
 /config.fate
 /config.log
 /config.mak

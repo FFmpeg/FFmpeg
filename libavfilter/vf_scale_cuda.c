@@ -39,6 +39,7 @@
 #include "scale_eval.h"
 #include "video.h"
 
+#include "cuda/load_helper.h"
 #include "vf_scale_cuda.h"
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -275,34 +276,41 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     int w, h;
     int ret;
 
-    char *scaler_ptx;
+    const unsigned char *scaler_ptx;
+    unsigned int scaler_ptx_len;
     const char *function_infix = "";
 
-    extern char vf_scale_cuda_ptx[];
-    extern char vf_scale_cuda_bicubic_ptx[];
+    extern const unsigned char ff_vf_scale_cuda_ptx_data[];
+    extern const unsigned int ff_vf_scale_cuda_ptx_len;
+    extern const unsigned char ff_vf_scale_cuda_bicubic_ptx_data[];
+    extern const unsigned int ff_vf_scale_cuda_bicubic_ptx_len;
 
     switch(s->interp_algo) {
     case INTERP_ALGO_NEAREST:
-        scaler_ptx = vf_scale_cuda_ptx;
+        scaler_ptx = ff_vf_scale_cuda_ptx_data;
+        scaler_ptx_len = ff_vf_scale_cuda_ptx_len;
         function_infix = "_Nearest";
         s->interp_use_linear = 0;
         s->interp_as_integer = 1;
         break;
     case INTERP_ALGO_BILINEAR:
-        scaler_ptx = vf_scale_cuda_ptx;
+        scaler_ptx = ff_vf_scale_cuda_ptx_data;
+        scaler_ptx_len = ff_vf_scale_cuda_ptx_len;
         function_infix = "_Bilinear";
         s->interp_use_linear = 1;
         s->interp_as_integer = 1;
         break;
     case INTERP_ALGO_DEFAULT:
     case INTERP_ALGO_BICUBIC:
-        scaler_ptx = vf_scale_cuda_bicubic_ptx;
+        scaler_ptx = ff_vf_scale_cuda_bicubic_ptx_data;
+        scaler_ptx_len = ff_vf_scale_cuda_bicubic_ptx_len;
         function_infix = "_Bicubic";
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
         break;
     case INTERP_ALGO_LANCZOS:
-        scaler_ptx = vf_scale_cuda_bicubic_ptx;
+        scaler_ptx = ff_vf_scale_cuda_bicubic_ptx_data;
+        scaler_ptx_len = ff_vf_scale_cuda_bicubic_ptx_len;
         function_infix = "_Lanczos";
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
@@ -319,7 +327,7 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     if (ret < 0)
         goto fail;
 
-    ret = CHECK_CU(cu->cuModuleLoadData(&s->cu_module, scaler_ptx));
+    ret = ff_cuda_load_module(ctx, device_hwctx, &s->cu_module, scaler_ptx, scaler_ptx_len);
     if (ret < 0)
         goto fail;
 

@@ -489,6 +489,7 @@ Developer options (useful when working on FFmpeg itself):
                            in the name) of tests whose result is ignored
   --enable-linux-perf      enable Linux Performance Monitor API
   --disable-large-tests    disable tests that use a large amount of memory
+  --disable-ptx-compression don't compress CUDA PTX code even when possible
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1980,6 +1981,7 @@ CONFIG_LIST="
     neon_clobber_test
     ossfuzz
     pic
+    ptx_compression
     thumb
     valgrind_backtrace
     xmm_clobber_test
@@ -2355,6 +2357,7 @@ HAVE_LIST="
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
+    gzip
     libdrm_getfb2
     makeinfo
     makeinfo_html
@@ -2367,6 +2370,7 @@ HAVE_LIST="
     perl
     pod2man
     texi2html
+    zlib_gzip
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
@@ -3836,6 +3840,7 @@ enable doc
 enable faan faandct faanidct
 enable large_tests
 enable optimizations
+enable ptx_compression
 enable runtime_cpudetect
 enable safe_bitstream_reader
 enable static
@@ -6345,6 +6350,18 @@ enabled  zlib && { check_pkg_config zlib zlib "zlib.h" zlibVersion ||
                    check_lib zlib   zlib.h      zlibVersion    -lz; }
 enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
 enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
+
+enabled zlib && test_exec $zlib_extralibs <<EOF && enable zlib_gzip
+#include <zlib.h>
+int main(void) {
+    if (zlibCompileFlags() & (1 << 17)) return 1;
+    return 0;
+}
+EOF
+
+[ -x "$(command -v gzip)" ] && enable gzip
+
+enabled zlib_gzip && enabled gzip || disable ptx_compression
 
 # On some systems dynamic loading requires no extra linker flags
 check_lib libdl dlfcn.h "dlopen dlsym" || check_lib libdl dlfcn.h "dlopen dlsym" -ldl

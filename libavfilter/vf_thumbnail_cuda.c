@@ -29,6 +29,8 @@
 #include "avfilter.h"
 #include "internal.h"
 
+#include "cuda/load_helper.h"
+
 #define CHECK_CU(x) FF_CUDA_CHECK_DL(ctx, s->hwctx->internal->cuda_dl, x)
 
 #define HIST_SIZE (3*256)
@@ -358,7 +360,8 @@ static int config_props(AVFilterLink *inlink)
     CudaFunctions *cu = device_hwctx->internal->cuda_dl;
     int ret;
 
-    extern char vf_thumbnail_cuda_ptx[];
+    extern const unsigned char ff_vf_thumbnail_cuda_ptx_data[];
+    extern const unsigned int ff_vf_thumbnail_cuda_ptx_len;
 
     s->hwctx = device_hwctx;
     s->cu_stream = s->hwctx->stream;
@@ -367,7 +370,7 @@ static int config_props(AVFilterLink *inlink)
     if (ret < 0)
         return ret;
 
-    ret = CHECK_CU(cu->cuModuleLoadData(&s->cu_module, vf_thumbnail_cuda_ptx));
+    ret = ff_cuda_load_module(ctx, device_hwctx, &s->cu_module, ff_vf_thumbnail_cuda_ptx_data, ff_vf_thumbnail_cuda_ptx_len);
     if (ret < 0)
         return ret;
 

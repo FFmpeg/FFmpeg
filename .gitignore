@@ -21,6 +21,7 @@
 *.version
 *.ptx
 *.ptx.c
+*.ptx.gz
 *_g
 \#*
 .\#*
