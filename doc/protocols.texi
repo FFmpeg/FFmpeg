@@ -1728,6 +1728,8 @@ Set send buffer size, expressed bytes.
 @item tcp_nodelay=@var{1|0}
 Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
 
+@emph{Remark: Writing to the socket is currently not optimized to minimize system calls and reduces the efficiency / effect of TCP_NODELAY.}
+
 @item tcp_mss=@var{bytes}
 Set maximum segment size for outgoing TCP packets, expressed in bytes.
 @end table
