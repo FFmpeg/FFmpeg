@@ -28,7 +28,6 @@
 #include "sha.h"
 #include "sha512.h"
 #include "mem.h"
-#include "version.h"
 
 #define MAX_HASHLEN 64
 #define MAX_BLOCKLEN 128

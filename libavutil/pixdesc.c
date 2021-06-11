@@ -29,7 +29,6 @@
 #include "pixdesc.h"
 #include "internal.h"
 #include "intreadwrite.h"
-#include "version.h"
 
 void av_read_image_line2(void *dst,
                         const uint8_t *data[4], const int linesize[4],

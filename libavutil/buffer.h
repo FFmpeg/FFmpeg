@@ -28,8 +28,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "version.h"
-
 /**
  * @defgroup lavu_buffer AVBuffer
  * @ingroup lavu_data

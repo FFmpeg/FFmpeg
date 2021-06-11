@@ -32,7 +32,6 @@
 #include <stdint.h>
 
 #include "attributes.h"
-#include "version.h"
 
 /**
  * @defgroup lavu_ripemd RIPEMD

@@ -30,8 +30,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "version.h"
-
 /**
  * @defgroup lavu_murmur3 Murmur3
  * @ingroup lavu_hash

@@ -26,7 +26,6 @@
 #include "libavutil/frame.h"
 
 #include "avcodec.h"
-#include "version.h"
 
 /**
  * Return value for header parsers if frame is not coded.

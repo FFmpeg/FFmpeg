@@ -23,7 +23,6 @@
 #include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "blockdsp.h"
-#include "version.h"
 
 static void clear_block_c(int16_t *block)
 {

@@ -30,8 +30,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "version.h"
-
 /**
  * @defgroup lavu_hash Hash Functions
  * @ingroup lavu_crypto

@@ -30,7 +30,6 @@
 #include "libavutil/intmath.h"
 #include "libavutil/common.h"
 #include "avassert.h"
-#include "version.h"
 
 /* Stein's binary GCD algorithm:
  * https://en.wikipedia.org/wiki/Binary_GCD_algorithm */

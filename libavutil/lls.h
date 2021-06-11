@@ -25,7 +25,6 @@
 
 #include "macros.h"
 #include "mem_internal.h"
-#include "version.h"
 
 #define MAX_VARS 32
 #define MAX_VARS_ALIGN FFALIGN(MAX_VARS+1,4)

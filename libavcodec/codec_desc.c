@@ -27,7 +27,6 @@
 #include "codec_id.h"
 #include "codec_desc.h"
 #include "profiles.h"
-#include "version.h"
 
 #define MT(...) (const char *const[]){ __VA_ARGS__, NULL }
 

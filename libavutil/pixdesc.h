@@ -26,7 +26,6 @@
 
 #include "attributes.h"
 #include "pixfmt.h"
-#include "version.h"
 
 typedef struct AVComponentDescriptor {
     /**

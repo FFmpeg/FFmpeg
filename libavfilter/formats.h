@@ -20,7 +20,6 @@
 #define AVFILTER_FORMATS_H
 
 #include "avfilter.h"
-#include "version.h"
 
 /**
  * A list of supported formats for one end of a filter link. This is used

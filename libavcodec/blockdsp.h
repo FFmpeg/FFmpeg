@@ -23,7 +23,6 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "version.h"
 
 /* add and put pixel (decoding)
  * Block sizes for op_pixels_func are 8x4,8x8 16x8 16x16.

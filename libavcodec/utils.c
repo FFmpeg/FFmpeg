@@ -41,7 +41,6 @@
 #include "internal.h"
 #include "put_bits.h"
 #include "raw.h"
-#include "version.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdatomic.h>
