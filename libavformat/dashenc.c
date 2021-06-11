@@ -330,16 +330,6 @@ static int init_segment_types(AVFormatContext *s)
     return 0;
 }
 
-static int check_file_extension(const char *filename, const char *extension) {
-    char *dot;
-    if (!filename || !extension)
-        return -1;
-    dot = strrchr(filename, '.');
-    if (dot && !strcmp(dot + 1, extension))
-        return 0;
-    return -1;
-}
-
 static void set_vp9_codec_str(AVFormatContext *s, AVCodecParameters *par,
                               AVRational *frame_rate, char *str, int size) {
     VPCC vpcc;
@@ -1530,9 +1520,9 @@ static int dash_init(AVFormatContext *s)
         }
 
         if (os->segment_type == SEGMENT_TYPE_WEBM) {
-            if ((!c->single_file && check_file_extension(os->init_seg_name, os->format_name) != 0) ||
-                (!c->single_file && check_file_extension(os->media_seg_name, os->format_name) != 0) ||
-                (c->single_file && check_file_extension(os->single_file_name, os->format_name) != 0)) {
+            if ((!c->single_file && !av_match_ext(os->init_seg_name, os->format_name))  ||
+                (!c->single_file && !av_match_ext(os->media_seg_name, os->format_name)) ||
+                ( c->single_file && !av_match_ext(os->single_file_name, os->format_name))) {
                 av_log(s, AV_LOG_WARNING,
                        "One or many segment file names doesn't end with .webm. "
                        "Override -init_seg_name and/or -media_seg_name and/or "
