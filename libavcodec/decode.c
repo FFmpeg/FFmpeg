@@ -40,6 +40,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "bsf.h"
 #include "decode.h"
 #include "hwconfig.h"
 #include "internal.h"

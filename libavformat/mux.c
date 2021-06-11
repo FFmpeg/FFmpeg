@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "libavcodec/bsf.h"
 #include "libavcodec/internal.h"
 #include "libavcodec/packet_internal.h"
 #include "libavutil/opt.h"

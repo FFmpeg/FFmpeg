@@ -26,6 +26,7 @@
 #include "libavutil/bprint.h"
 
 #include "libavcodec/avcodec.h"
+#include "libavcodec/bsf.h"
 
 #include "avformat.h"
 #include "os_support.h"

@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/timestamp.h"
+#include "libavcodec/bsf.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"

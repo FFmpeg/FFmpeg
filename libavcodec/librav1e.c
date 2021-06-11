@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
+#include "bsf.h"
 #include "encode.h"
 #include "internal.h"
 

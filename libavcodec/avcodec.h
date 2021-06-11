@@ -41,7 +41,6 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
 
-#include "bsf.h"
 #include "codec.h"
 #include "codec_desc.h"
 #include "codec_par.h"

@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "bsf.h"
 #include "decode.h"
 #include "encode.h"
 #include "frame_thread_encoder.h"

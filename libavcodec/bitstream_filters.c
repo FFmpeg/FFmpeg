@@ -16,12 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
+#include <stdint.h>
+#include <string.h>
 
-#include "libavutil/common.h"
 #include "libavutil/log.h"
 
-#include "avcodec.h"
+#include "bsf.h"
 #include "bsf_internal.h"
 
 extern const AVBitStreamFilter ff_aac_adtstoasc_bsf;

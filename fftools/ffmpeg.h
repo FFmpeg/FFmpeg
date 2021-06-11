@@ -31,6 +31,7 @@
 #include "libavformat/avio.h"
 
 #include "libavcodec/avcodec.h"
+#include "libavcodec/bsf.h"
 
 #include "libavfilter/avfilter.h"
 

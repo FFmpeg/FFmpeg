@@ -53,6 +53,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/ffversion.h"
 #include "libavutil/version.h"
+#include "libavcodec/bsf.h"
 #include "cmdutils.h"
 #if HAVE_SYS_RESOURCE_H
 #include <sys/time.h>

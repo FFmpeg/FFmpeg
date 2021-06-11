@@ -27,6 +27,7 @@
 #include "libavformat/avformat.h"
 
 #include "libavcodec/avcodec.h"
+#include "libavcodec/bsf.h"
 
 #include "libavfilter/avfilter.h"
 

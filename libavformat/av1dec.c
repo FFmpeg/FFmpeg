@@ -25,6 +25,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "libavcodec/av1_parse.h"
+#include "libavcodec/bsf.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"

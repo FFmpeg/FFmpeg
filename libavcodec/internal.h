@@ -32,6 +32,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
+#include "bsf.h"
 #include "config.h"
 
 /**
