@@ -22,6 +22,7 @@
  */
 
 #include <libavutil/motion_vector.h>
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
 static AVFormatContext *fmt_ctx = NULL;
