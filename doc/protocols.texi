@@ -843,6 +843,11 @@ URL to player swf file, compute hash/size automatically.
 @item rtmp_tcurl
 URL of the target stream. Defaults to proto://host[:port]/app.
 
+@item tcp_nodelay=@var{1|0}
+Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
+
+@emph{Remark: Writing to the socket is currently not optimized to minimize system calls and reduces the efficiency / effect of TCP_NODELAY.}
+
 @end table
 
 For example to read with @command{ffplay} a multimedia resource named

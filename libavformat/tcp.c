@@ -135,6 +135,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "listen_timeout", p)) {
             s->listen_timeout = strtol(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "tcp_nodelay", p)) {
+            s->tcp_nodelay = strtol(buf, NULL, 10);
+        }
     }
     if (s->rw_timeout >= 0) {
         s->open_timeout =

@@ -374,6 +374,12 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     prev_pkt[pkt->channel_id].ts_field   = pkt->ts_field;
     prev_pkt[pkt->channel_id].extra      = pkt->extra;
 
+    // FIXME:
+    // Writing packets is currently not optimized to minimize system calls.
+    // Since system calls flush on exit which we cannot change in a system-independant way.
+    // We should fix this behavior and by writing packets in a single or in as few as possible system calls.
+    // Protocols like TCP and RTMP should benefit from this when enabling TCP_NODELAY.
+
     if ((ret = ffurl_write(h, pkt_hdr, p - pkt_hdr)) < 0)
         return ret;
     written = p - pkt_hdr + pkt->size;
