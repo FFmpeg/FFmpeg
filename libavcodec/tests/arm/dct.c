@@ -18,6 +18,7 @@
 
 #include "config.h"
 
+#include "libavutil/cpu.h"
 #include "libavcodec/arm/idct.h"
 
 static const struct algo fdct_tab_arch[] = {

@@ -23,6 +23,7 @@
 #include "frame_thread_encoder.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"

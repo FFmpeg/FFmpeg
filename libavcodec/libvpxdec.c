@@ -29,6 +29,7 @@
 #include <vpx/vp8dx.h>
 
 #include "libavutil/common.h"
+#include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"

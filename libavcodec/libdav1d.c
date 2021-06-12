@@ -22,6 +22,7 @@
 #include <dav1d/dav1d.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/cpu.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/imgutils.h"

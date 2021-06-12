@@ -29,6 +29,7 @@
 
 #include "config.h"
 #include "libavcodec/me_cmp.h"
+#include "libavutil/cpu.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem.h"

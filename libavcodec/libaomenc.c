@@ -30,6 +30,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
+#include "libavutil/cpu.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"

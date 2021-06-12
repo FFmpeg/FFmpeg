@@ -17,6 +17,7 @@
  */
 
 #include <stdatomic.h>
+#include "cpu.h"
 #include "slicethread.h"
 #include "mem.h"
 #include "thread.h"

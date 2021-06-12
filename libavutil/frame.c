@@ -20,6 +20,7 @@
 #include "avassert.h"
 #include "buffer.h"
 #include "common.h"
+#include "cpu.h"
 #include "dict.h"
 #include "frame.h"
 #include "imgutils.h"

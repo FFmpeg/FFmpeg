@@ -30,6 +30,7 @@
 #include "libavformat/avio.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/cpu.h"
 #include "../internal.h"
 #include "dnn_backend_native_layer_pad.h"
 #include "dnn_backend_native_layer_maximum.h"

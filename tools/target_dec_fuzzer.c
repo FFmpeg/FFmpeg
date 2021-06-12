@@ -47,6 +47,7 @@
 
 #include "config.h"
 #include "libavutil/avassert.h"
+#include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 

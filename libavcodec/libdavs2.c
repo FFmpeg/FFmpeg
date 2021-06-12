@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/cpu.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "davs2.h"
