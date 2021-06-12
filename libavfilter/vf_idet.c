@@ -20,7 +20,6 @@
 
 #include <float.h> /* FLT_MAX */
 
-#include "libavutil/cpu.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "internal.h"

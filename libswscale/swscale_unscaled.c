@@ -27,7 +27,6 @@
 #include "swscale_internal.h"
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"

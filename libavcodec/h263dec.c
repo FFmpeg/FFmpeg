@@ -27,7 +27,6 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
-#include "libavutil/cpu.h"
 #include "libavutil/video_enc_params.h"
 
 #include "avcodec.h"

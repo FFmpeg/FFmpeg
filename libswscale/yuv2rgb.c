@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
 #include "config.h"
 #include "rgb2rgb.h"

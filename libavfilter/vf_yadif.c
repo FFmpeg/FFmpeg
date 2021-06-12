@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/cpu.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
