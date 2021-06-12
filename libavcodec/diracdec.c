@@ -37,7 +37,7 @@
 #include "dirac_arith.h"
 #include "dirac_vlc.h"
 #include "mpeg12data.h"
-#include "libavcodec/mpegvideo.h"
+#include "mpegpicture.h"
 #include "mpegvideoencdsp.h"
 #include "dirac_dwt.h"
 #include "dirac.h"
