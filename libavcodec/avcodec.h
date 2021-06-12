@@ -34,7 +34,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/dict.h"
 #include "libavutil/frame.h"
-#include "libavutil/hwcontext.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
