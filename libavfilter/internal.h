@@ -363,7 +363,7 @@ static inline int ff_norm_qscale(int qscale, int type)
  * Get number of threads for current filter instance.
  * This number is always same or less than graph->nb_threads.
  */
-int ff_filter_get_nb_threads(AVFilterContext *ctx);
+int ff_filter_get_nb_threads(AVFilterContext *ctx) av_pure;
 
 /**
  * Generic processing of user supplied commands that are set
