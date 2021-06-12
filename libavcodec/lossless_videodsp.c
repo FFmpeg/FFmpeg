@@ -17,7 +17,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "avcodec.h"
+
+#include "config.h"
 #include "lossless_videodsp.h"
 #include "libavcodec/mathops.h"
 

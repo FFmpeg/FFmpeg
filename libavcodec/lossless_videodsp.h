@@ -25,9 +25,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "avcodec.h"
-#include "libavutil/cpu.h"
-
 typedef struct LLVidDSPContext {
     void (*add_bytes)(uint8_t *dst /* align 32 */, uint8_t *src /* align 32 */,
                       ptrdiff_t w);
