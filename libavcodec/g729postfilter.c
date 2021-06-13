@@ -23,7 +23,6 @@
 
 #include "avcodec.h"
 #include "g729.h"
-#include "acelp_pitch_delay.h"
 #include "g729postfilter.h"
 #include "celp_math.h"
 #include "acelp_filters.h"

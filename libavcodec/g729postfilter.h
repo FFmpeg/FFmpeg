@@ -22,6 +22,7 @@
 #define AVCODEC_G729POSTFILTER_H
 
 #include <stdint.h>
+#include "acelp_pitch_delay.h"
 #include "audiodsp.h"
 
 /**
