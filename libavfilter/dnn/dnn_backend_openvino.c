@@ -598,8 +598,10 @@ static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, Task
             InferenceItem *inference;
             const AVDetectionBBox *bbox = av_get_detection_bbox(header, i);
 
-            if (av_strncasecmp(bbox->detect_label, params->target, sizeof(bbox->detect_label)) != 0) {
-                continue;
+            if (params->target) {
+                if (av_strncasecmp(bbox->detect_label, params->target, sizeof(bbox->detect_label)) != 0) {
+                    continue;
+                }
             }
 
             inference = av_malloc(sizeof(*inference));
