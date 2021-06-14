@@ -1038,7 +1038,7 @@ static int get_cv_ycbcr_matrix(AVCodecContext *avctx, CFStringRef *matrix) {
 // constant quality only on Macs with Apple Silicon
 static bool vtenc_qscale_enabled(void)
 {
-    return TARGET_OS_OSX && TARGET_CPU_ARM64;
+    return !TARGET_OS_IPHONE && TARGET_CPU_ARM64;
 }
 
 static int vtenc_create_encoder(AVCodecContext   *avctx,
