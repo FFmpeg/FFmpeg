@@ -1,6 +1,9 @@
 LIBAVCODEC_MAJOR {
     global:
-        av*;
+        av_*;
+        avcodec_*;
+        avpriv_*;
+        avsubtitle_free;
     local:
         *;
 };
