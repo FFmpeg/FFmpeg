@@ -209,10 +209,10 @@ static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
 }
 
 static av_cold void dump_enc_cfg(AVCodecContext *avctx,
-                                 const struct aom_codec_enc_cfg *cfg)
+                                 const struct aom_codec_enc_cfg *cfg,
+                                 int level)
 {
     int width = -30;
-    int level = AV_LOG_DEBUG;
 
     av_log(avctx, level, "aom_codec_enc_cfg\n");
     av_log(avctx, level, "generic settings\n"
@@ -612,7 +612,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
             return AVERROR(EINVAL);
         }
 
-    dump_enc_cfg(avctx, &enccfg);
+    dump_enc_cfg(avctx, &enccfg, AV_LOG_DEBUG);
 
     enccfg.g_w            = avctx->width;
     enccfg.g_h            = avctx->height;
@@ -746,13 +746,14 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (res < 0)
         return res;
 
-    dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
     res = aom_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
     if (res != AOM_CODEC_OK) {
+        dump_enc_cfg(avctx, &enccfg, AV_LOG_WARNING);
         log_encoder_error(avctx, "Failed to initialize encoder");
         return AVERROR(EINVAL);
     }
+    dump_enc_cfg(avctx, &enccfg, AV_LOG_DEBUG);
 
     // codec control failures are currently treated only as warnings
     av_log(avctx, AV_LOG_DEBUG, "aom_codec_control\n");
