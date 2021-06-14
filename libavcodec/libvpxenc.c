@@ -190,10 +190,10 @@ static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
 }
 
 static av_cold void dump_enc_cfg(AVCodecContext *avctx,
-                                 const struct vpx_codec_enc_cfg *cfg)
+                                 const struct vpx_codec_enc_cfg *cfg,
+                                 int level)
 {
     int width = -30;
-    int level = AV_LOG_DEBUG;
     int i;
 
     av_log(avctx, level, "vpx_codec_enc_cfg\n");
@@ -860,7 +860,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             return AVERROR(EINVAL);
         }
 
-    dump_enc_cfg(avctx, &enccfg);
+    dump_enc_cfg(avctx, &enccfg, AV_LOG_DEBUG);
 
     enccfg.g_w            = avctx->width;
     enccfg.g_h            = avctx->height;
@@ -1004,13 +1004,15 @@ static av_cold int vpx_init(AVCodecContext *avctx,
                    en->key, en->value);
     }
 
-    dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
     res = vpx_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
     if (res != VPX_CODEC_OK) {
+        dump_enc_cfg(avctx, &enccfg, AV_LOG_WARNING);
         log_encoder_error(avctx, "Failed to initialize encoder");
         return AVERROR(EINVAL);
     }
+    dump_enc_cfg(avctx, &enccfg, AV_LOG_DEBUG);
+
 #if CONFIG_LIBVPX_VP9_ENCODER
     if (avctx->codec_id == AV_CODEC_ID_VP9 && enccfg.ts_number_layers > 1) {
         memset(&svc_params, 0, sizeof(svc_params));
