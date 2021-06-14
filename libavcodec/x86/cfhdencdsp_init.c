@@ -18,12 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/cfhdencdsp.h"
 
 void ff_cfhdenc_horiz_filter_sse2(int16_t *input, int16_t *low, int16_t *high,

@@ -19,9 +19,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "config.h"
+#include "libavutil/attributes.h"
+#include "libavutil/common.h"
+#include "libavutil/intmath.h"
 #include "libavutil/mem_internal.h"
 
-#include "avcodec.h"
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "mathops.h"

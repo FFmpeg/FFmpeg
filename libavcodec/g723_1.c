@@ -21,11 +21,12 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/common.h"
+#include "libavutil/intmath.h"
 
 #include "acelp_vectors.h"
-#include "avcodec.h"
 #include "celp_math.h"
 #include "g723_1.h"
 

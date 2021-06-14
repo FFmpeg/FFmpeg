@@ -19,9 +19,8 @@
 #ifndef AVCODEC_LOSSLESS_VIDEOENCDSP_H
 #define AVCODEC_LOSSLESS_VIDEOENCDSP_H
 
+#include <stddef.h>
 #include <stdint.h>
-
-#include "avcodec.h"
 
 typedef struct LLVidEncDSPContext {
     void (*diff_bytes)(uint8_t *dst /* align 16 */,

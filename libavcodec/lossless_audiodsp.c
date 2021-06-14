@@ -20,7 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
+#include "config.h"
+#include "libavutil/attributes.h"
 #include "lossless_audiodsp.h"
 
 static int32_t scalarproduct_and_madd_int16_c(int16_t *v1, const int16_t *v2,

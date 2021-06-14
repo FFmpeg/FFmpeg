@@ -29,7 +29,6 @@
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
 #include "elbg.h"
-#include "avcodec.h"
 
 #define DELTA_ERR_MAX 0.1  ///< Precision of the ELBG algorithm (as percentage error)
 

@@ -26,13 +26,11 @@
  */
 
 #include <math.h>
-#include <stddef.h>
-#include <stdio.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/thread.h"
 
-#include "avcodec.h"
 #include "atrac.h"
 
 float ff_atrac_sf_table[64];

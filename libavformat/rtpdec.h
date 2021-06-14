@@ -23,7 +23,8 @@
 #ifndef AVFORMAT_RTPDEC_H
 #define AVFORMAT_RTPDEC_H
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
+#include "libavcodec/packet.h"
 #include "avformat.h"
 #include "rtp.h"
 #include "url.h"

@@ -28,7 +28,6 @@
 #ifndef AVFORMAT_RIFF_H
 #define AVFORMAT_RIFF_H
 
-#include "libavcodec/avcodec.h"
 #include "avio.h"
 #include "internal.h"
 #include "metadata.h"

@@ -34,7 +34,7 @@
 #ifndef AVCODEC_NELLYMOSER_H
 #define AVCODEC_NELLYMOSER_H
 
-#include "avcodec.h"
+#include <stdint.h>
 
 #define NELLY_BANDS       23
 #define NELLY_BLOCK_LEN   64

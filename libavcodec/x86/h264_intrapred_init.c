@@ -18,10 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+#include <stdint.h>
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
 #include "libavcodec/h264pred.h"
 
 #define PRED4x4(TYPE, DEPTH, OPT) \

@@ -16,7 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
+#include <stddef.h>
+#include "libavutil/common.h"
 #include "h264_levels.h"
 
 // H.264 table A-1.

@@ -37,8 +37,6 @@
 #include "libavutil/timestamp.h"
 #include "libavutil/samplefmt.h"
 
-#include "libavcodec/avcodec.h"
-
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"

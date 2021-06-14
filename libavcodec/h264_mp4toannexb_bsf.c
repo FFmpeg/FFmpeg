@@ -25,10 +25,10 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
-#include "avcodec.h"
 #include "bsf.h"
 #include "bsf_internal.h"
 #include "bytestream.h"
+#include "defs.h"
 #include "h264.h"
 
 typedef struct H264BSFContext {

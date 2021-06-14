@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/opt.h"
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "avcodec.h"

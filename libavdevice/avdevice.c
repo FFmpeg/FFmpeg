@@ -19,7 +19,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/pixfmt.h"
-#include "libavcodec/avcodec.h"
 #include "avdevice.h"
 #include "internal.h"
 #include "config.h"

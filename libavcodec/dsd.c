@@ -21,10 +21,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+#include "libavutil/attributes.h"
+#include "libavutil/reverse.h"
 #include "libavutil/thread.h"
-#include "libavcodec/internal.h"
-#include "libavcodec/mathops.h"
-#include "avcodec.h"
 #include "dsd.h"
 
 #define CTABLES ((HTAPS + 7) / 8) /** number of "8 MACs" lookup tables */

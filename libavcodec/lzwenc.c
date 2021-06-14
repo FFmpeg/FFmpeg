@@ -25,9 +25,10 @@
  * @author Bartlomiej Wolowiec
  */
 
-#include "avcodec.h"
+#include <stdint.h>
+#include "libavutil/avassert.h"
+#include "libavutil/common.h"
 #include "lzw.h"
-#include "mathops.h"
 #include "put_bits.h"
 
 #define LZW_MAXBITS 12

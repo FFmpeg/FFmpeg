@@ -18,10 +18,14 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include <inttypes.h>
-#include <limits.h>
 
-#include "avcodec.h"
+#include <stdint.h>
+#include <string.h>
+
+#include "libavutil/common.h"
+#include "libavutil/intmath.h"
+
+#include "audiodsp.h"
 #include "g729.h"
 #include "g729postfilter.h"
 #include "celp_math.h"

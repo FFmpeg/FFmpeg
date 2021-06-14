@@ -27,7 +27,7 @@
  * @author modified for use in TIFF by Konstantin Shishkov
  */
 
-#include "avcodec.h"
+#include "libavutil/attributes.h"
 #include "bytestream.h"
 #include "lzw.h"
 #include "libavutil/mem.h"

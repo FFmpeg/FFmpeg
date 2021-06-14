@@ -30,8 +30,6 @@
 
 #include "libavutil/internal.h"
 
-#include "libavcodec/avcodec.h"
-
 #include "avdevice.h"
 #include "libavformat/internal.h"
 

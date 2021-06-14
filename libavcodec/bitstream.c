@@ -28,10 +28,21 @@
  * bitstream api.
  */
 
+#include <inttypes.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "config.h"
 #include "libavutil/avassert.h"
+#include "libavutil/bswap.h"
+#include "libavutil/common.h"
+#include "libavutil/error.h"
+#include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/qsort.h"
-#include "avcodec.h"
-#include "internal.h"
 #include "mathops.h"
 #include "put_bits.h"
 #include "vlc.h"

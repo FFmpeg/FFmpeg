@@ -26,9 +26,9 @@
  * VC-1 tables.
  */
 
-#include "avcodec.h"
 #include "vc1.h"
 #include "vc1data.h"
+#include "vlc.h"
 
 /** Table for conversion between TTBLK and TTMB */
 const int ff_vc1_ttblk_to_tt[3][8] = {

@@ -30,7 +30,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 
-#include "avcodec.h"
 #include "h264dsp.h"
 #include "h264idct.h"
 #include "startcode.h"

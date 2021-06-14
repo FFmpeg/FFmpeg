@@ -27,10 +27,10 @@
 #ifndef AVFORMAT_VPCC_H
 #define AVFORMAT_VPCC_H
 
-#include <stdint.h>
+#include "libavutil/rational.h"
+#include "libavcodec/codec_par.h"
 #include "avio.h"
 #include "avformat.h"
-#include "libavcodec/avcodec.h"
 
 typedef struct VPCC {
     int profile;

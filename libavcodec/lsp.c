@@ -23,8 +23,8 @@
 
 #include <inttypes.h>
 
-#include "avcodec.h"
 #define FRAC_BITS 14
+#include "libavutil/common.h"
 #include "mathops.h"
 #include "lsp.h"
 #include "libavcodec/mips/lsp_mips.h"

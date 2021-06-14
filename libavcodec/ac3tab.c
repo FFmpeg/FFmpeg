@@ -25,9 +25,8 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/mem_internal.h"
 
-#include "avcodec.h"
+#include "ac3.h"
 #include "ac3tab.h"
 
 /**

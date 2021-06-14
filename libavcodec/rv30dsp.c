@@ -24,10 +24,13 @@
  * RV30 decoder motion compensation functions
  */
 
-#include "avcodec.h"
+#include <stddef.h>
+#include <stdint.h>
+#include "libavutil/attributes.h"
 #include "h264chroma.h"
 #include "h264qpel.h"
 #include "mathops.h"
+#include "qpeldsp.h"
 #include "rv34dsp.h"
 
 #define RV30_LOWPASS(OPNAME, OP) \

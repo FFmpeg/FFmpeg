@@ -20,9 +20,10 @@
  */
 
 #include "config.h"
-#include "libavutil/error.h"
-#include "libavcodec/avcodec.h"
+#include "libavutil/common.h"
 #include "avformat.h"
+#include "internal.h"
+#include "metadata.h"
 #include "riff.h"
 
 /* Note: When encoding, the first matching tag is used, so order is

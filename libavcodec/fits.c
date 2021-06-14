@@ -19,8 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
+#include <inttypes.h>
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
 #include "libavutil/dict.h"
+#include "libavutil/error.h"
+#include "libavutil/log.h"
 #include "fits.h"
 
 int avpriv_fits_header_init(FITSHeader *header, FITSHeaderState state)

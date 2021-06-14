@@ -26,12 +26,10 @@
  * @author Marco Gerards <marco@gnu.org>, David Conrad, Jordi Ortiz <nenjordi@gmail.com>
  */
 
-#include "libavutil/imgutils.h"
+#include "libavutil/pixdesc.h"
 
-#include "avcodec.h"
 #include "dirac.h"
 #include "golomb.h"
-#include "internal.h"
 #include "mpeg12data.h"
 
 #if CONFIG_DIRAC_PARSE

@@ -22,8 +22,6 @@
 #ifndef AVCODEC_BMP_H
 #define AVCODEC_BMP_H
 
-#include "avcodec.h"
-
 typedef enum {
     BMP_RGB         =0,
     BMP_RLE8        =1,

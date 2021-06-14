@@ -24,12 +24,15 @@
  * source code.
  */
 
+#include <string.h>
+
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 
-#include "avcodec.h"
 #include "rnd_avg.h"
 #include "vp3dsp.h"
 

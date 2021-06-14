@@ -28,10 +28,9 @@
 #ifndef AVCODEC_TIFF_COMMON_H
 #define AVCODEC_TIFF_COMMON_H
 
-#include "avcodec.h"
-#include "tiff.h"
+#include <stdint.h>
+#include "libavutil/dict.h"
 #include "bytestream.h"
-#include "libavutil/bprint.h"
 
 /** data type identifiers for TIFF tags */
 enum TiffTypes {

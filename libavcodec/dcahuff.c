@@ -20,11 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 
-#include "avcodec.h"
-#include "get_bits.h"
 #include "dcahuff.h"
+#include "put_bits.h"
 
 #define TMODE_COUNT 4
 static const uint8_t tmode_vlc_bits[TMODE_COUNT] = { 3, 3, 3, 2 };

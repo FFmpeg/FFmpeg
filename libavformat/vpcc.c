@@ -21,6 +21,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
+#include "libavcodec/avcodec.h"
 #include "vpcc.h"
 
 enum VPX_CHROMA_SUBSAMPLING

@@ -24,7 +24,8 @@
  * id RoQ Video common functions based on work by Dr. Tim Ferguson
  */
 
-#include "avcodec.h"
+#include <stdint.h>
+#include <string.h>
 #include "roqvideo.h"
 
 static inline void block_copy(unsigned char *out, unsigned char *in,

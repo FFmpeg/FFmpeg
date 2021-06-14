@@ -19,9 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "libavutil/common.h"
 
-#include "avcodec.h"
 #include "rle.h"
 
 int ff_rle_count_pixels(const uint8_t *start, int len, int bpp, int same)

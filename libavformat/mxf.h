@@ -21,9 +21,10 @@
 #ifndef AVFORMAT_MXF_H
 #define AVFORMAT_MXF_H
 
-#include "avformat.h"
-#include "libavcodec/avcodec.h"
 #include <stdint.h>
+#include "libavutil/log.h"
+#include "libavutil/pixfmt.h"
+#include "libavutil/rational.h"
 
 typedef uint8_t UID[16];
 

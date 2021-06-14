@@ -24,7 +24,9 @@
 #include <stdint.h>
 
 #include "libavutil/buffer.h"
-#include "avcodec.h"
+#include "libavutil/error.h"
+#include "libavutil/log.h"
+#include "codec_id.h"
 #include "get_bits.h"
 
 #define MAX_MBPAIR_SIZE (256*1024) // a tighter bound could be calculated if someone cares about a few bytes

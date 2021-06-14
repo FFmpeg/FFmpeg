@@ -34,9 +34,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/bswap.h"
 #include "libavutil/intreadwrite.h"
 
-#include "avcodec.h"
 #include "rangecoder.h"
 
 av_cold void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)

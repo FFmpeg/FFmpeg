@@ -25,8 +25,8 @@
  * H.261 codec
  */
 
-#include "avcodec.h"
 #include "h261.h"
+#include "mpegvideo.h"
 
 #define IS_FIL(a)    ((a) & MB_TYPE_H261_FIL)
 

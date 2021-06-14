@@ -26,7 +26,6 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "avcodec.h"
 #include "mathops.h"
 #include "simple_idct.h"
 

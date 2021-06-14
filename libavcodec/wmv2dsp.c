@@ -16,11 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "avcodec.h"
 #include "idctdsp.h"
 #include "mathops.h"
+#include "qpeldsp.h"
 #include "wmv2dsp.h"
 
 #define W0 2048
