@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
@@ -33,6 +34,12 @@ enum FilterModes {
     NB_MODES,
 };
 
+enum GuidanceModes {
+    OFF,
+    ON,
+    NB_GUIDANCE_MODES,
+};
+
 typedef struct GuidedContext {
     const AVClass *class;
     FFFrameSync fs;
@@ -41,7 +48,7 @@ typedef struct GuidedContext {
     float eps;
     int mode;
     int sub;
-
+    int guidance;
     int planes;
 
     int width;
@@ -59,13 +66,16 @@ typedef struct GuidedContext {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption guided_options[] = {
-    { "radius", "set the box radius",                               OFFSET(radius), AV_OPT_TYPE_INT,   {.i64 = 3    },     1,           20, FLAGS },
-    { "eps",    "set the regularization parameter (with square)",   OFFSET(eps),    AV_OPT_TYPE_FLOAT, {.dbl = 0.01 },   0.0,            1, FLAGS },
-    { "mode",   "set filtering mode (0: basic mode; 1: fast mode)", OFFSET(mode),   AV_OPT_TYPE_INT,   {.i64 = BASIC}, BASIC, NB_MODES - 1, FLAGS, "mode" },
-    { "basic",  "basic guided filter",                              0,              AV_OPT_TYPE_CONST, {.i64 = BASIC},     0,            0, FLAGS, "mode" },
-    { "fast",   "fast guided filter",                               0,              AV_OPT_TYPE_CONST, {.i64 = FAST },     0,            0, FLAGS, "mode" },
-    { "sub",    "subsampling ratio for fast mode",                  OFFSET(sub),    AV_OPT_TYPE_INT,   {.i64 = 4    },     2,           64, FLAGS },
-    { "planes", "set planes to filter",                             OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1      },     0,          0xF, FLAGS },
+    { "radius",   "set the box radius",                               OFFSET(radius),   AV_OPT_TYPE_INT,   {.i64 = 3    },     1,                    20, FLAGS },
+    { "eps",      "set the regularization parameter (with square)",   OFFSET(eps),      AV_OPT_TYPE_FLOAT, {.dbl = 0.01 },   0.0,                     1, FLAGS },
+    { "mode",     "set filtering mode (0: basic mode; 1: fast mode)", OFFSET(mode),     AV_OPT_TYPE_INT,   {.i64 = BASIC}, BASIC,          NB_MODES - 1, FLAGS, "mode" },
+    { "basic",    "basic guided filter",                              0,                AV_OPT_TYPE_CONST, {.i64 = BASIC},     0,                     0, FLAGS, "mode" },
+    { "fast",     "fast guided filter",                               0,                AV_OPT_TYPE_CONST, {.i64 = FAST },     0,                     0, FLAGS, "mode" },
+    { "sub",      "subsampling ratio for fast mode",                  OFFSET(sub),      AV_OPT_TYPE_INT,   {.i64 = 4    },     2,                    64, FLAGS },
+    { "guidance", "set guidance mode (0: off mode; 1: on mode)",      OFFSET(guidance), AV_OPT_TYPE_INT,   {.i64 = OFF  },   OFF, NB_GUIDANCE_MODES - 1, FLAGS, "guidance" },
+    { "off",      "only one input is enabled",                        0,                AV_OPT_TYPE_CONST, {.i64 = OFF  },     0,                     0, FLAGS, "guidance" },
+    { "on",       "two inputs are required",                          0,                AV_OPT_TYPE_CONST, {.i64 = ON   },     0,                     0, FLAGS, "guidance" },
+    { "planes",   "set planes to filter",                             OFFSET(planes),   AV_OPT_TYPE_INT,   {.i64 = 1    },     0,                   0xF, FLAGS },
     { NULL }
 };
 
@@ -149,16 +159,6 @@ static int config_input(AVFilterLink *inlink)
     GuidedContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    if (ctx->inputs[0]->w != ctx->inputs[1]->w ||
-        ctx->inputs[0]->h != ctx->inputs[1]->h) {
-        av_log(ctx, AV_LOG_ERROR, "Width and height of input videos must be same.\n");
-        return AVERROR(EINVAL);
-    }
-    if (ctx->inputs[0]->format != ctx->inputs[1]->format) {
-        av_log(ctx, AV_LOG_ERROR, "Inputs must be of same pixel format.\n");
-        return AVERROR(EINVAL);
-    }
-
     if (s->mode == BASIC) {
         s->sub = 1;
     }
@@ -230,7 +230,7 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
     meanB  = av_calloc(w * h, sizeof(float));                                           \
                                                                                         \
     if (!I || !II || !P || !IP || !meanI || !meanII || !meanP ||                        \
-        !meanIP || !A || !B || !meanA || !meanB){                                       \
+        !meanIP || !A || !B || !meanA || !meanB) {                                      \
         ret = AVERROR(ENOMEM);                                                          \
         goto end;                                                                       \
     }                                                                                   \
@@ -304,46 +304,53 @@ end:                                                                            
 GUIDED(uint8_t, byte)
 GUIDED(uint16_t, word)
 
-static int process_frame(FFFrameSync *fs)
+static int filter_frame(AVFilterContext *ctx, AVFrame **out, AVFrame *in, AVFrame *ref)
 {
-    AVFilterContext *ctx = fs->parent;
-    GuidedContext *s = fs->opaque;
+    GuidedContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out_frame = NULL, *main_frame = NULL, *ref_frame = NULL;
-    int ret;
-
-    ret = ff_framesync_dualinput_get(fs, &main_frame, &ref_frame);
-    if (ret < 0)
-        return ret;
-
-    out_frame = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out_frame) {
-        av_frame_free(&main_frame);
+    *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!*out)
         return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(out_frame, main_frame);
+    av_frame_copy_props(*out, in);
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
         if (!(s->planes & (1 << plane))) {
-            av_image_copy_plane(out_frame->data[plane], out_frame->linesize[plane],
-                                main_frame->data[plane], main_frame->linesize[plane],
+            av_image_copy_plane((*out)->data[plane], (*out)->linesize[plane],
+                                in->data[plane], in->linesize[plane],
                                 s->planewidth[plane] * ((s->depth + 7) / 8), s->planeheight[plane]);
             continue;
         }
         if (s->depth <= 8)
-           guided_byte(ctx, s, main_frame->data[plane], ref_frame->data[plane], out_frame->data[plane], s->radius, s->eps,
+           guided_byte(ctx, s, in->data[plane], ref->data[plane], (*out)->data[plane], s->radius, s->eps,
                        s->planewidth[plane], s->planeheight[plane],
-                       main_frame->linesize[plane], ref_frame->linesize[plane], out_frame->linesize[plane], (1 << s->depth) - 1.f);
+                       in->linesize[plane], ref->linesize[plane], (*out)->linesize[plane], (1 << s->depth) - 1.f);
         else
-           guided_word(ctx, s, main_frame->data[plane], ref_frame->data[plane], out_frame->data[plane], s->radius, s->eps,
+           guided_word(ctx, s, in->data[plane], ref->data[plane], (*out)->data[plane], s->radius, s->eps,
                        s->planewidth[plane], s->planeheight[plane],
-                       main_frame->linesize[plane] / 2, ref_frame->linesize[plane] / 2, out_frame->linesize[plane] / 2, (1 << s->depth) - 1.f);
+                       in->linesize[plane] / 2, ref->linesize[plane] / 2, (*out)->linesize[plane] / 2, (1 << s->depth) - 1.f);
+    }
+
+    return 0;
+}
+
+static int process_frame(FFFrameSync *fs)
+{
+    AVFilterContext *ctx = fs->parent;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out_frame = NULL, *main_frame = NULL, *ref_frame = NULL;
+    int ret;
+    ret = ff_framesync_dualinput_get(fs, &main_frame, &ref_frame);
+    if (ret < 0)
+        return ret;
+
+    ret = filter_frame(ctx, &out_frame, main_frame, ref_frame);
+    if (ret < 0) {
+        return ret;
     }
     av_frame_free(&main_frame);
 
     return ff_filter_frame(outlink, out_frame);
 }
-
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -354,12 +361,27 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
+    if (s->guidance == ON) {
+        if (ctx->inputs[0]->w != ctx->inputs[1]->w ||
+            ctx->inputs[0]->h != ctx->inputs[1]->h) {
+            av_log(ctx, AV_LOG_ERROR, "Width and height of input videos must be same.\n");
+            return AVERROR(EINVAL);
+        }
+        if (ctx->inputs[0]->format != ctx->inputs[1]->format) {
+            av_log(ctx, AV_LOG_ERROR, "Inputs must be of same pixel format.\n");
+            return AVERROR(EINVAL);
+        }
+    }
 
     outlink->w = mainlink->w;
     outlink->h = mainlink->h;
     outlink->time_base = mainlink->time_base;
     outlink->sample_aspect_ratio = mainlink->sample_aspect_ratio;
     outlink->frame_rate = mainlink->frame_rate;
+
+    if (s->guidance == OFF)
+        return 0;
+
     if ((ret = ff_framesync_init(&s->fs, ctx, 2)) < 0)
         return ret;
 
@@ -383,21 +405,65 @@ static int config_output(AVFilterLink *outlink)
 static int activate(AVFilterContext *ctx)
 {
     GuidedContext *s = ctx->priv;
-    return ff_framesync_activate(&s->fs);
+    AVFrame *frame = NULL;
+    AVFrame *out = NULL;
+    int ret, status;
+    int64_t pts;
+    if (s->guidance)
+        return ff_framesync_activate(&s->fs);
+
+    FF_FILTER_FORWARD_STATUS_BACK(ctx->outputs[0], ctx->inputs[0]);
+
+    if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &frame)) > 0) {
+        ret = filter_frame(ctx, &out, frame, frame);
+        av_frame_free(&frame);
+        if (ret < 0)
+            return ret;
+        ret = ff_filter_frame(ctx->outputs[0], out);
+    }
+    if (ret < 0)
+        return ret;
+    if (ff_inlink_acknowledge_status(ctx->inputs[0], &status, &pts)) {
+        ff_outlink_set_status(ctx->outputs[0], status, pts);
+        return 0;
+    }
+    if (ff_outlink_frame_wanted(ctx->outputs[0]))
+        ff_inlink_request_frame(ctx->inputs[0]);
+    return 0;
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
+    GuidedContext *s = ctx->priv;
+    AVFilterPad pad = { 0 };
+    int ret;
+
+    pad.type         = AVMEDIA_TYPE_VIDEO;
+    pad.name         = "source";
+    pad.config_props = config_input;
+
+    if ((ret = ff_insert_inpad(ctx, 0, &pad)) < 0)
+        return ret;
+
+    if (s->guidance == ON) {
+        pad.type         = AVMEDIA_TYPE_VIDEO;
+        pad.name         = "guidance";
+        pad.config_props = NULL;
+
+        if ((ret = ff_insert_inpad(ctx, 1, &pad)) < 0)
+            return ret;
+    }
+
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     GuidedContext *s = ctx->priv;
-    ff_framesync_uninit(&s->fs);
+    if (s->guidance == ON)
+        ff_framesync_uninit(&s->fs);
     return;
 }
-
 
 static int process_command(AVFilterContext *ctx,
                            const char *cmd,
@@ -413,18 +479,6 @@ static int process_command(AVFilterContext *ctx,
 
     return 0;
 }
-
-static const AVFilterPad guided_inputs[] = {
-    {
-        .name         = "main",
-        .type         = AVMEDIA_TYPE_VIDEO,
-    },{
-        .name         = "reference",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_input,
-    },
-    { NULL }
-};
 
 static const AVFilterPad guided_outputs[] = {
     {
@@ -444,7 +498,7 @@ const AVFilter ff_vf_guided = {
     .priv_size       = sizeof(GuidedContext),
     .priv_class      = &guided_class,
     .activate        = activate,
-    .inputs          = guided_inputs,
+    .inputs          = NULL,
     .outputs         = guided_outputs,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

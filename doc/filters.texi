@@ -12995,8 +12995,6 @@ greyedge=difford=1:minknorm=0:sigma=2
 
 @section guided
 Apply guided filter for edge-preserving smoothing, dehazing and so on.
-This filter requires two inputs of same resolution and pixel format.
-The second input serves as the reference.
 
 The filter accepts the following options:
 @table @option
@@ -13017,6 +13015,12 @@ Set subsampling ratio for @code{fast} mode.
 Range is 2 to 64. Default is 4.
 No subsampling occurs in @code{basic} mode.
 
+@item guidance
+Set guidance mode. Can be @code{off} or @code{on}. Default is @code{off}.
+If @code{off}, single input is required.
+If @code{on}, two inputs of the same resolution and pixel format are required.
+The second input serves as the guidance.
+
 @item planes
 Set planes to filter. Default is first only.
 @end table
@@ -13029,7 +13033,7 @@ This filter supports the all above options as @ref{commands}.
 @item
 Edge-preserving smoothing with guided filter:
 @example
-ffmpeg -i in.png -i in.png -filter_complex guided out.png
+ffmpeg -i in.png -vf guided out.png
 @end example
 
 @item
@@ -13037,7 +13041,7 @@ Dehazing, structure-transferring filtering, detail enhancement with guided filte
 For the generation of guidance image, refer to paper "Guided Image Filtering".
 See: @url{http://kaiminghe.com/publications/pami12guidedfilter.pdf}.
 @example
-ffmpeg -i in.png -i guidance.png -filter_complex guided out.png
+ffmpeg -i in.png -i guidance.png -filter_complex guided=guidance=on out.png
 @end example
 
 @end itemize
