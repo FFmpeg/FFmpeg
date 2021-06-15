@@ -535,6 +535,11 @@ typedef struct AVOutputFormat {
      */
     int priv_data_size;
 
+    /**
+     * Internal flags. See FF_FMT_FLAG_* in internal.h.
+     */
+    int flags_internal;
+
     int (*write_header)(struct AVFormatContext *);
     /**
      * Write a packet. If AVFMT_ALLOW_FLUSH is set in flags,
@@ -673,6 +678,11 @@ typedef struct AVInputFormat {
      * Size of private data so that it can be allocated in the wrapper.
      */
     int priv_data_size;
+
+    /**
+     * Internal flags. See FF_FMT_FLAG_* in internal.h.
+     */
+    int flags_internal;
 
     /**
      * Tell if a given file has a chance of being parsed as this format.
