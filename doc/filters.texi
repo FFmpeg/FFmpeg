@@ -12334,7 +12334,27 @@ It accepts the following parameters:
 @table @option
 
 @item fps
-The desired output frame rate. The default is @code{25}.
+The desired output frame rate. It accepts expressions containing the following
+constants:
+
+@table @samp
+@item source_fps
+The input's frame rate
+
+@item ntsc, qntsc, sntsc
+NTSC frame rate of @code{30000/1001}
+
+@item pal, qpal, spal
+PAL frame rate of @code{25.0}
+
+@item film
+Film frame rate of @code{24.0}
+
+@item ntsc_film
+NTSC-film frame rate of @code{24000/1001}
+@end table
+
+The default is @code{25}.
 
 @item start_time
 Assume the first PTS should be the given value, in seconds. This allows for
