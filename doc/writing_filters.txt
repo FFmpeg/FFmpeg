@@ -418,4 +418,4 @@ done:
 
 When all of this is done, you can submit your patch to the ffmpeg-devel
 mailing-list for review.  If you need any help, feel free to come on our IRC
-channel, #ffmpeg-devel on irc.freenode.net.
+channel, #ffmpeg-devel on irc.libera.chat.
