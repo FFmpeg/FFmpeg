@@ -621,17 +621,29 @@ typedef struct AVCodecContext {
                             int y, int type, int height);
 
     /**
-     * callback to negotiate the pixelFormat
-     * @param fmt is the list of formats which are supported by the codec,
-     * it is terminated by -1 as 0 is a valid format, the formats are ordered by quality.
-     * The first is always the native one.
-     * @note The callback may be called again immediately if initialization for
-     * the selected (hardware-accelerated) pixel format failed.
-     * @warning Behavior is undefined if the callback returns a value not
-     * in the fmt list of formats.
-     * @return the chosen format
-     * - encoding: unused
-     * - decoding: Set by user, if not set the native format will be chosen.
+     * Callback to negotiate the pixel format. Decoding only, may be set by the
+     * caller before avcodec_open2().
+     *
+     * Called by some decoders to select the pixel format that will be used for
+     * the output frames. This is mainly used to set up hardware acceleration,
+     * then the provided format list contains the corresponding hwaccel pixel
+     * formats alongside the "software" one. The software pixel format may also
+     * be retrieved from \ref sw_pix_fmt.
+     *
+     * This callback will be called when the coded frame properties (such as
+     * resolution, pixel format, etc.) change and more than one output format is
+     * supported for those new properties. If a hardware pixel format is chosen
+     * and initialization for it fails, the callback may be called again
+     * immediately.
+     *
+     * This callback may be called from different threads if the decoder is
+     * multi-threaded, but not from more than one thread simultaneously.
+     *
+     * @param fmt list of formats which may be used in the current
+     *            configuration, terminated by AV_PIX_FMT_NONE.
+     * @warning Behavior is undefined if the callback returns a value other
+     *          than one of the formats in fmt or AV_PIX_FMT_NONE.
+     * @return the chosen format or AV_PIX_FMT_NONE
      */
     enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
 
