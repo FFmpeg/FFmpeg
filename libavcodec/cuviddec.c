@@ -646,37 +646,6 @@ error:
         return ret;
 }
 
-static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
-{
-    CuvidContext *ctx = avctx->priv_data;
-    AVFrame *frame = data;
-    int ret = 0;
-
-    av_log(avctx, AV_LOG_TRACE, "cuvid_decode_frame\n");
-
-    if (ctx->deint_mode_current != cudaVideoDeinterlaceMode_Weave) {
-        av_log(avctx, AV_LOG_ERROR, "Deinterlacing is not supported via the old API\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (!ctx->decoder_flushing) {
-        ret = cuvid_decode_packet(avctx, avpkt);
-        if (ret < 0)
-            return ret;
-    }
-
-    ret = cuvid_output_frame(avctx, frame);
-    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-        *got_frame = 0;
-    } else if (ret < 0) {
-        return ret;
-    } else {
-        *got_frame = 1;
-    }
-
-    return 0;
-}
-
 static av_cold int cuvid_decode_end(AVCodecContext *avctx)
 {
     CuvidContext *ctx = avctx->priv_data;
@@ -1143,7 +1112,6 @@ static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
         .priv_class     = &x##_cuvid_class, \
         .init           = cuvid_decode_init, \
         .close          = cuvid_decode_end, \
-        .decode         = cuvid_decode_frame, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
         .bsfs           = bsf_name, \
