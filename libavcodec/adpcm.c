@@ -82,12 +82,139 @@ static const int8_t xa_adpcm_table[5][2] = {
     { 122, -60 }
 };
 
+static const int16_t afc_coeffs[2][16] = {
+    { 0, 2048, 0, 1024, 4096, 3584, 3072, 4608, 4200, 4800, 5120, 2048, 1024, -1024, -1024, -2048 },
+    { 0, 0, 2048, 1024, -2048, -1536, -1024, -2560, -2248, -2300, -3072, -2048, -1024, 1024, 0, 0 }
+};
+
 static const int16_t ea_adpcm_table[] = {
     0,  240,  460,  392,
     0,    0, -208, -220,
     0,    1,    3,    4,
     7,    8,   10,   11,
     0,   -1,   -3,   -4
+};
+
+/*
+ * Dumped from the binaries:
+ * - FantasticJourney.exe - 0x794D2, DGROUP:0x47A4D2
+ * - BigRaceUSA.exe       - 0x9B8AA, DGROUP:0x49C4AA
+ * - Timeshock!.exe       - 0x8506A, DGROUP:0x485C6A
+ */
+static const int8_t ima_cunning_index_table[9] = {
+    -1, -1, -1, -1, 1, 2, 3, 4, -1
+};
+
+/*
+ * Dumped from the binaries:
+ * - FantasticJourney.exe - 0x79458, DGROUP:0x47A458
+ * - BigRaceUSA.exe       - 0x9B830, DGROUP:0x49C430
+ * - Timeshock!.exe       - 0x84FF0, DGROUP:0x485BF0
+ */
+static const int16_t ima_cunning_step_table[61] = {
+       1,    1,   1,      1,     2,     2,     3,     3,    4,      5,
+       6,    7,   8,     10,    12,    14,    16,    20,    24,    28,
+      32,   40,  48,     56,    64,    80,    96,   112,   128,   160,
+     192,  224,  256,   320,   384,   448,   512,   640,   768,   896,
+    1024, 1280, 1536,  1792,  2048,  2560,  3072,  3584,  4096,  5120,
+    6144, 7168, 8192, 10240, 12288, 14336, 16384, 20480, 24576, 28672, 0
+};
+
+static const int8_t adpcm_index_table2[4] = {
+    -1,  2,
+    -1,  2,
+};
+
+static const int8_t adpcm_index_table3[8] = {
+    -1, -1,  1,  2,
+    -1, -1,  1,  2,
+};
+
+static const int8_t adpcm_index_table5[32] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, 4, 6, 8, 10, 13, 16,
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, 4, 6, 8, 10, 13, 16,
+};
+
+static const int8_t * const adpcm_index_tables[4] = {
+    &adpcm_index_table2[0],
+    &adpcm_index_table3[0],
+    &ff_adpcm_index_table[0],
+    &adpcm_index_table5[0],
+};
+
+static const int16_t mtaf_stepsize[32][16] = {
+    {     1,     5,     9,    13,    16,    20,    24,    28,
+         -1,    -5,    -9,   -13,   -16,   -20,   -24,   -28, },
+    {     2,     6,    11,    15,    20,    24,    29,    33,
+         -2,    -6,   -11,   -15,   -20,   -24,   -29,   -33, },
+    {     2,     7,    13,    18,    23,    28,    34,    39,
+         -2,    -7,   -13,   -18,   -23,   -28,   -34,   -39, },
+    {     3,     9,    15,    21,    28,    34,    40,    46,
+         -3,    -9,   -15,   -21,   -28,   -34,   -40,   -46, },
+    {     3,    11,    18,    26,    33,    41,    48,    56,
+         -3,   -11,   -18,   -26,   -33,   -41,   -48,   -56, },
+    {     4,    13,    22,    31,    40,    49,    58,    67,
+         -4,   -13,   -22,   -31,   -40,   -49,   -58,   -67, },
+    {     5,    16,    26,    37,    48,    59,    69,    80,
+         -5,   -16,   -26,   -37,   -48,   -59,   -69,   -80, },
+    {     6,    19,    31,    44,    57,    70,    82,    95,
+         -6,   -19,   -31,   -44,   -57,   -70,   -82,   -95, },
+    {     7,    22,    38,    53,    68,    83,    99,   114,
+         -7,   -22,   -38,   -53,   -68,   -83,   -99,  -114, },
+    {     9,    27,    45,    63,    81,    99,   117,   135,
+         -9,   -27,   -45,   -63,   -81,   -99,  -117,  -135, },
+    {    10,    32,    53,    75,    96,   118,   139,   161,
+        -10,   -32,   -53,   -75,   -96,  -118,  -139,  -161, },
+    {    12,    38,    64,    90,   115,   141,   167,   193,
+        -12,   -38,   -64,   -90,  -115,  -141,  -167,  -193, },
+    {    15,    45,    76,   106,   137,   167,   198,   228,
+        -15,   -45,   -76,  -106,  -137,  -167,  -198,  -228, },
+    {    18,    54,    91,   127,   164,   200,   237,   273,
+        -18,   -54,   -91,  -127,  -164,  -200,  -237,  -273, },
+    {    21,    65,   108,   152,   195,   239,   282,   326,
+        -21,   -65,  -108,  -152,  -195,  -239,  -282,  -326, },
+    {    25,    77,   129,   181,   232,   284,   336,   388,
+        -25,   -77,  -129,  -181,  -232,  -284,  -336,  -388, },
+    {    30,    92,   153,   215,   276,   338,   399,   461,
+        -30,   -92,  -153,  -215,  -276,  -338,  -399,  -461, },
+    {    36,   109,   183,   256,   329,   402,   476,   549,
+        -36,  -109,  -183,  -256,  -329,  -402,  -476,  -549, },
+    {    43,   130,   218,   305,   392,   479,   567,   654,
+        -43,  -130,  -218,  -305,  -392,  -479,  -567,  -654, },
+    {    52,   156,   260,   364,   468,   572,   676,   780,
+        -52,  -156,  -260,  -364,  -468,  -572,  -676,  -780, },
+    {    62,   186,   310,   434,   558,   682,   806,   930,
+        -62,  -186,  -310,  -434,  -558,  -682,  -806,  -930, },
+    {    73,   221,   368,   516,   663,   811,   958,  1106,
+        -73,  -221,  -368,  -516,  -663,  -811,  -958, -1106, },
+    {    87,   263,   439,   615,   790,   966,  1142,  1318,
+        -87,  -263,  -439,  -615,  -790,  -966, -1142, -1318, },
+    {   104,   314,   523,   733,   942,  1152,  1361,  1571,
+       -104,  -314,  -523,  -733,  -942, -1152, -1361, -1571, },
+    {   124,   374,   623,   873,  1122,  1372,  1621,  1871,
+       -124,  -374,  -623,  -873, -1122, -1372, -1621, -1871, },
+    {   148,   445,   743,  1040,  1337,  1634,  1932,  2229,
+       -148,  -445,  -743, -1040, -1337, -1634, -1932, -2229, },
+    {   177,   531,   885,  1239,  1593,  1947,  2301,  2655,
+       -177,  -531,  -885, -1239, -1593, -1947, -2301, -2655, },
+    {   210,   632,  1053,  1475,  1896,  2318,  2739,  3161,
+       -210,  -632, -1053, -1475, -1896, -2318, -2739, -3161, },
+    {   251,   753,  1255,  1757,  2260,  2762,  3264,  3766,
+       -251,  -753, -1255, -1757, -2260, -2762, -3264, -3766, },
+    {   299,   897,  1495,  2093,  2692,  3290,  3888,  4486,
+       -299,  -897, -1495, -2093, -2692, -3290, -3888, -4486, },
+    {   356,  1068,  1781,  2493,  3206,  3918,  4631,  5343,
+       -356, -1068, -1781, -2493, -3206, -3918, -4631, -5343, },
+    {   424,  1273,  2121,  2970,  3819,  4668,  5516,  6365,
+       -424, -1273, -2121, -2970, -3819, -4668, -5516, -6365, },
+};
+
+static const int16_t oki_step_table[49] = {
+     16,  17,  19,  21,   23,   25,   28,   31,   34,  37,
+     41,  45,  50,  55,   60,   66,   73,   80,   88,  97,
+    107, 118, 130, 143,  157,  173,  190,  209,  230, 253,
+    279, 307, 337, 371,  408,  449,  494,  544,  598, 658,
+    724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552
 };
 
 // padded to zero where table size is less then 16
@@ -335,8 +462,8 @@ static inline int16_t adpcm_ima_cunning_expand_nibble(ADPCMChannelStatus *c, int
 
     nibble = sign_extend(nibble & 0xF, 4);
 
-    step = ff_adpcm_ima_cunning_step_table[c->step_index];
-    step_index = c->step_index + ff_adpcm_ima_cunning_index_table[abs(nibble)];
+    step = ima_cunning_step_table[c->step_index];
+    step_index = c->step_index + ima_cunning_index_table[abs(nibble)];
     step_index = av_clip(step_index, 0, 60);
 
     predictor = c->predictor + step * nibble;
@@ -354,7 +481,7 @@ static inline int16_t adpcm_ima_wav_expand_nibble(ADPCMChannelStatus *c, GetBitC
     shift = bps - 1;
     nibble = get_bits_le(gb, bps),
     step = ff_adpcm_step_table[c->step_index];
-    step_index = c->step_index + ff_adpcm_index_tables[bps - 2][nibble];
+    step_index = c->step_index + adpcm_index_tables[bps - 2][nibble];
     step_index = av_clip(step_index, 0, 88);
 
     sign = nibble & (1 << shift);
@@ -419,7 +546,7 @@ static inline int16_t adpcm_ima_oki_expand_nibble(ADPCMChannelStatus *c, int nib
 {
     int step_index, predictor, sign, delta, diff, step;
 
-    step = ff_adpcm_oki_step_table[c->step_index];
+    step = oki_step_table[c->step_index];
     step_index = c->step_index + ff_adpcm_index_table[(unsigned)nibble];
     step_index = av_clip(step_index, 0, 48);
 
@@ -493,7 +620,7 @@ static inline int16_t adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, uint8_t 
 
 static inline int16_t adpcm_mtaf_expand_nibble(ADPCMChannelStatus *c, uint8_t nibble)
 {
-    c->predictor += ff_adpcm_mtaf_stepsize[c->step][nibble];
+    c->predictor += mtaf_stepsize[c->step][nibble];
     c->predictor = av_clip_int16(c->predictor);
     c->step += ff_adpcm_index_table[nibble];
     c->step = av_clip_uintp2(c->step, 5);
@@ -1836,8 +1963,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     int byte = bytestream2_get_byteu(&gb);
                     int scale = 1 << (byte >> 4);
                     int index = byte & 0xf;
-                    int factor1 = ff_adpcm_afc_coeffs[0][index];
-                    int factor2 = ff_adpcm_afc_coeffs[1][index];
+                    int factor1 = afc_coeffs[0][index];
+                    int factor2 = afc_coeffs[1][index];
 
                     /* Decode 16 samples.  */
                     for (int n = 0; n < 16; n++) {
