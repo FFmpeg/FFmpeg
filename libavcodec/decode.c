@@ -533,6 +533,10 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
 
+    if (IS_EMPTY(avci->last_pkt_props) && av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props))
+        av_fifo_generic_read(avci->pkt_props,
+                             avci->last_pkt_props, sizeof(*avci->last_pkt_props), NULL);
+
     if (!ret) {
         frame->best_effort_timestamp = guess_correct_pts(avctx,
                                                          frame->pts,
@@ -1489,10 +1493,6 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         { AV_PKT_DATA_ICC_PROFILE,                AV_FRAME_DATA_ICC_PROFILE },
         { AV_PKT_DATA_S12M_TIMECODE,              AV_FRAME_DATA_S12M_TIMECODE },
     };
-
-    if (IS_EMPTY(pkt) && av_fifo_size(avctx->internal->pkt_props) >= sizeof(*pkt))
-        av_fifo_generic_read(avctx->internal->pkt_props,
-                             pkt, sizeof(*pkt), NULL);
 
     frame->pts = pkt->pts;
     frame->pkt_pos      = pkt->pos;
