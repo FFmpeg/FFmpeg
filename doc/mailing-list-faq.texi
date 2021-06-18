@@ -116,7 +116,7 @@ or is abusive towards others).
 @section How long does it take for my message in the moderation queue to be approved?
 
 The queue is not checked on a regular basis. You can ask on the
-@t{#ffmpeg-devel} IRC channel on Freenode for someone to approve your message.
+@t{#ffmpeg-devel} IRC channel on Libera Chat for someone to approve your message.
 
 @anchor{How do I delete my message in the moderation queue?}
 @section How do I delete my message in the moderation queue?
@@ -155,7 +155,7 @@ Perform a site search using your favorite search engine. Example:
 
 @section Is there an alternative to the mailing list?
 
-You can ask for help in the official @t{#ffmpeg} IRC channel on Freenode.
+You can ask for help in the official @t{#ffmpeg} IRC channel on Libera Chat.
 
 Some users prefer the third-party @url{http://www.ffmpeg-archive.org/, Nabble}
 interface which presents the mailing lists in a typical forum layout.
