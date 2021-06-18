@@ -233,9 +233,11 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
+    if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
     ret = extract_packet_props(avctx->internal, pkt);
     if (ret < 0)
         goto finish;
+    }
 
     ret = apply_param_change(avctx, pkt);
     if (ret < 0)
@@ -502,11 +504,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         pkt->data                += consumed;
         pkt->size                -= consumed;
-        avci->last_pkt_props->size -= consumed; // See extract_packet_props() comment.
         pkt->pts                  = AV_NOPTS_VALUE;
         pkt->dts                  = AV_NOPTS_VALUE;
+        if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
+            avci->last_pkt_props->size -= consumed; // See extract_packet_props() comment.
         avci->last_pkt_props->pts = AV_NOPTS_VALUE;
         avci->last_pkt_props->dts = AV_NOPTS_VALUE;
+        }
     }
 
     if (got_frame)
@@ -548,7 +552,8 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
 
-    if (IS_EMPTY(avci->last_pkt_props) && av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props))
+    if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS) &&
+        IS_EMPTY(avci->last_pkt_props) && av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props))
         av_fifo_generic_read(avci->pkt_props,
                              avci->last_pkt_props, sizeof(*avci->last_pkt_props), NULL);
 
@@ -1742,6 +1747,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         { AV_PKT_DATA_S12M_TIMECODE,              AV_FRAME_DATA_S12M_TIMECODE },
     };
 
+    if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
     frame->pts = pkt->pts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -1771,6 +1777,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         frame->flags |= AV_FRAME_FLAG_DISCARD;
     } else {
         frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
+    }
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 
