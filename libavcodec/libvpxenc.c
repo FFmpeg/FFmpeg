@@ -64,6 +64,11 @@ struct FrameListData {
     struct FrameListData *next;
 };
 
+typedef struct FrameHDR10Plus {
+    int64_t pts;
+    AVBufferRef *hdr10_plus;
+} FrameHDR10Plus;
+
 typedef struct VPxEncoderContext {
     AVClass *class;
     struct vpx_codec_ctx encoder;
@@ -121,6 +126,8 @@ typedef struct VPxEncoderContext {
     int tune_content;
     int corpus_complexity;
     int tpl_model;
+    int discard_hdr10_plus;
+    AVFifoBuffer *hdr10_plus_fifo;
     /**
      * If the driver does not support ROI then warn the first time we
      * encounter a frame with ROI side data.
@@ -316,6 +323,51 @@ static av_cold void free_frame_list(struct FrameListData *list)
     }
 }
 
+static av_cold int add_hdr10_plus(AVFifoBuffer *fifo, struct FrameHDR10Plus *data)
+{
+    int err = av_fifo_grow(fifo, sizeof(*data));
+    if (err < 0)
+        return err;
+    av_fifo_generic_write(fifo, data, sizeof(*data), NULL);
+    return 0;
+}
+
+static av_cold void free_hdr10_plus_fifo(AVFifoBuffer **fifo)
+{
+    FrameHDR10Plus frame_hdr10_plus;
+    while (av_fifo_size(*fifo) >= sizeof(frame_hdr10_plus)) {
+        av_fifo_generic_read(*fifo, &frame_hdr10_plus, sizeof(frame_hdr10_plus), NULL);
+        av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
+    }
+    av_fifo_freep(fifo);
+}
+
+static int copy_hdr10_plus_to_pkt(AVFifoBuffer *fifo, AVPacket *pkt)
+{
+    FrameHDR10Plus frame_hdr10_plus;
+    uint8_t *data;
+    if (!pkt)
+        return 0;
+    if (av_fifo_size(fifo) < sizeof(frame_hdr10_plus))
+        return 0;
+    av_fifo_generic_peek(fifo, &frame_hdr10_plus, sizeof(frame_hdr10_plus), NULL);
+    if (!frame_hdr10_plus.hdr10_plus || frame_hdr10_plus.pts != pkt->pts)
+        return 0;
+    av_fifo_generic_read(fifo, &frame_hdr10_plus, sizeof(frame_hdr10_plus), NULL);
+    if (!frame_hdr10_plus.hdr10_plus)
+        return 0;
+
+    data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, frame_hdr10_plus.hdr10_plus->size);
+    if (!data) {
+        av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
+        return AVERROR(ENOMEM);
+    }
+
+    memcpy(data, frame_hdr10_plus.hdr10_plus->data, frame_hdr10_plus.hdr10_plus->size);
+    av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
+    return 0;
+}
+
 static av_cold int codecctl_int(AVCodecContext *avctx,
                                 enum vp8e_enc_control_id id, int val)
 {
@@ -384,6 +436,8 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
+    if (ctx->hdr10_plus_fifo)
+        free_hdr10_plus_fifo(&ctx->hdr10_plus_fifo);
     return 0;
 }
 
@@ -835,6 +889,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 #endif
     AVDictionaryEntry* en = NULL;
 
+    ctx->discard_hdr10_plus = 1;
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
 
@@ -851,6 +906,14 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->codec_id == AV_CODEC_ID_VP9) {
         if (set_pix_fmt(avctx, codec_caps, &enccfg, &flags, &img_fmt))
             return AVERROR(EINVAL);
+        // Keep HDR10+ if it has bit depth higher than 8 and
+        // it has PQ trc (SMPTE2084).
+        if (enccfg.g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
+            ctx->discard_hdr10_plus = 0;
+            ctx->hdr10_plus_fifo = av_fifo_alloc(sizeof(FrameHDR10Plus));
+            if (!ctx->hdr10_plus_fifo)
+                return AVERROR(ENOMEM);
+        }
     }
 #endif
 
@@ -1213,6 +1276,15 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         AV_WB64(side_data, 1);
         memcpy(side_data + 8, cx_frame->buf_alpha, cx_frame->sz_alpha);
     }
+    if (cx_frame->frame_number != -1) {
+        VPxContext *ctx = avctx->priv_data;
+        if (!ctx->discard_hdr10_plus) {
+            int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
+            if (err < 0)
+                return err;
+        }
+    }
+
     return pkt->size;
 }
 
@@ -1618,6 +1690,25 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
                 vp8_encode_set_roi(avctx, frame->width, frame->height, sd);
             } else {
                 vp9_encode_set_roi(avctx, frame->width, frame->height, sd);
+            }
+        }
+
+        if (!ctx->discard_hdr10_plus) {
+            AVFrameSideData *hdr10_plus_metadata;
+            // Add HDR10+ metadata to queue.
+            hdr10_plus_metadata = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
+            if (hdr10_plus_metadata) {
+                int err;
+                struct FrameHDR10Plus data;
+                data.pts = frame->pts;
+                data.hdr10_plus = av_buffer_ref(hdr10_plus_metadata->buf);
+                if (!data.hdr10_plus)
+                    return AVERROR(ENOMEM);
+                err = add_hdr10_plus(ctx->hdr10_plus_fifo, &data);
+                if (err < 0) {
+                    av_buffer_unref(&data.hdr10_plus);
+                    return err;
+                }
             }
         }
     }

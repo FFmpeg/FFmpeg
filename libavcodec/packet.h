@@ -291,6 +291,14 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_S12M_TIMECODE,
 
     /**
+     * HDR10+ dynamic metadata associated with a video frame. The metadata is in
+     * the form of the AVDynamicHDRPlus struct and contains
+     * information for color volume transform - application 4 of
+     * SMPTE 2094-40:2016 standard.
+     */
+    AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.

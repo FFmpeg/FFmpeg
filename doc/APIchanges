@@ -13,6 +13,8 @@ libavutil:     2021-04-27
 
 
 API changes, most recent first:
+2021-06-17 - xxxxxxxxxx - lavc 59.2.100 - packet.h
+  Add AV_PKT_DATA_DYNAMIC_HDR10_PLUS
 
 2021-06-09 - xxxxxxxxxx - lavf 59.3.100 - avformat.h
   Add pts_wrap_bits to AVStream
