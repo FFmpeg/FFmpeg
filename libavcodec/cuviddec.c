@@ -1116,6 +1116,7 @@ static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
         .flush          = cuvid_flush, \
         .bsfs           = bsf_name, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
+        .caps_internal  = FF_CODEC_CAP_SETS_FRAME_PROPS, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
                                                         AV_PIX_FMT_P010, \
