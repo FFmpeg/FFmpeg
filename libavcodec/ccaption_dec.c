@@ -238,6 +238,7 @@ struct Screen {
 typedef struct CCaptionSubContext {
     AVClass *class;
     int real_time;
+    int real_time_latency_msec;
     int data_field;
     struct Screen screen[2];
     int active_screen;
@@ -906,7 +907,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     }
 
     if (ctx->real_time && ctx->screen_touched &&
-        sub->pts > ctx->last_real_time + av_rescale_q(200, ms_tb, AV_TIME_BASE_Q)) {
+        sub->pts >= ctx->last_real_time + av_rescale_q(ctx->real_time_latency_msec, ms_tb, AV_TIME_BASE_Q)) {
         ctx->last_real_time = sub->pts;
         ctx->screen_touched = 0;
 
@@ -927,6 +928,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "real_time", "emit subtitle events as they are decoded for real-time display", OFFSET(real_time), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, SD },
+    { "real_time_latency_msec", "minimum elapsed time between emitting real-time subtitle events", OFFSET(real_time_latency_msec), AV_OPT_TYPE_INT, { .i64 = 200 }, 0, 500, SD },
     { "data_field", "select data field", OFFSET(data_field), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, SD, "data_field" },
     { "auto",   "pick first one that appears", 0, AV_OPT_TYPE_CONST, { .i64 =-1 }, 0, 0, SD, "data_field" },
     { "first",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, SD, "data_field" },
