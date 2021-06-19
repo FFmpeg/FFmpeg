@@ -386,7 +386,7 @@ static int decode_nal_sei_timecode(HEVCSEITimeCode *s, GetBitContext *gb)
 
             s->time_offset_length[i] = get_bits(gb, 5);
             if (s->time_offset_length[i] > 0) {
-                s->time_offset_value[i] = get_bits(gb, s->time_offset_length[i]);
+                s->time_offset_value[i] = get_bits_long(gb, s->time_offset_length[i]);
             }
         }
     }
