@@ -1287,6 +1287,7 @@ static void do_video_out(OutputFile *of,
         }
     }
     ost->last_dropped = nb_frames == nb0_frames && next_picture;
+    ost->dropped_keyframe = ost->last_dropped && next_picture && next_picture->key_frame;
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
@@ -1347,6 +1348,11 @@ static void do_video_out(OutputFile *of,
                    && in_picture->key_frame==1
                    && !i) {
             forced_keyframe = 1;
+        } else if (   ost->forced_keyframes
+                   && !strncmp(ost->forced_keyframes, "source_no_drop", 6)
+                   && !i) {
+            forced_keyframe = (in_picture->key_frame == 1) || ost->dropped_keyframe;
+            ost->dropped_keyframe = 0;
         }
 
         if (forced_keyframe) {
