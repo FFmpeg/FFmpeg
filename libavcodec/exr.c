@@ -1014,7 +1014,7 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     dc_count = AV_RL64(src + 72);
     ac_compression = AV_RL64(src + 80);
 
-    if (compressed_size < 88LL + lo_size + ac_size + dc_size + rle_csize)
+    if (compressed_size < (uint64_t)(lo_size | ac_size | dc_size | rle_csize) || compressed_size < 88LL + lo_size + ac_size + dc_size + rle_csize)
         return AVERROR_INVALIDDATA;
 
     bytestream2_init(&gb, src + 88, compressed_size - 88);
