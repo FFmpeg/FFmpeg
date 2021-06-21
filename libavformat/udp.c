@@ -550,9 +550,7 @@ static void *circular_buffer_task_tx( void *_URLContext)
         while (len<4) {
             if (s->close_req)
                 goto end;
-            if (pthread_cond_wait(&s->cond, &s->mutex) < 0) {
-                goto end;
-            }
+            pthread_cond_wait(&s->cond, &s->mutex);
             len = av_fifo_size(s->fifo);
         }
 
