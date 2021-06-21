@@ -234,9 +234,9 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
         return ret;
 
     if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
-    ret = extract_packet_props(avctx->internal, pkt);
-    if (ret < 0)
-        goto finish;
+        ret = extract_packet_props(avctx->internal, pkt);
+        if (ret < 0)
+            goto finish;
     }
 
     ret = apply_param_change(avctx, pkt);
@@ -493,8 +493,8 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
         pkt->dts                  = AV_NOPTS_VALUE;
         if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
             avci->last_pkt_props->size -= consumed; // See extract_packet_props() comment.
-        avci->last_pkt_props->pts = AV_NOPTS_VALUE;
-        avci->last_pkt_props->dts = AV_NOPTS_VALUE;
+            avci->last_pkt_props->pts = AV_NOPTS_VALUE;
+            avci->last_pkt_props->dts = AV_NOPTS_VALUE;
         }
     }
 
@@ -1500,31 +1500,31 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     };
 
     if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
-    frame->pts = pkt->pts;
-    frame->pkt_pos      = pkt->pos;
-    frame->pkt_duration = pkt->duration;
-    frame->pkt_size     = pkt->size;
+        frame->pts = pkt->pts;
+        frame->pkt_pos      = pkt->pos;
+        frame->pkt_duration = pkt->duration;
+        frame->pkt_size     = pkt->size;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
-        size_t size;
-        uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
-        if (packet_sd) {
-            AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
-                                                               sd[i].frame,
-                                                               size);
-            if (!frame_sd)
-                return AVERROR(ENOMEM);
+        for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
+            size_t size;
+            uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
+            if (packet_sd) {
+                AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
+                                                                   sd[i].frame,
+                                                                   size);
+                if (!frame_sd)
+                    return AVERROR(ENOMEM);
 
-            memcpy(frame_sd->data, packet_sd, size);
+                memcpy(frame_sd->data, packet_sd, size);
+            }
         }
-    }
-    add_metadata_from_side_data(pkt, frame);
+        add_metadata_from_side_data(pkt, frame);
 
-    if (pkt->flags & AV_PKT_FLAG_DISCARD) {
-        frame->flags |= AV_FRAME_FLAG_DISCARD;
-    } else {
-        frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
-    }
+        if (pkt->flags & AV_PKT_FLAG_DISCARD) {
+            frame->flags |= AV_FRAME_FLAG_DISCARD;
+        } else {
+            frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
+        }
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 
