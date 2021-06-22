@@ -276,41 +276,29 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     int w, h;
     int ret;
 
-    const unsigned char *scaler_ptx;
-    unsigned int scaler_ptx_len;
     const char *function_infix = "";
 
     extern const unsigned char ff_vf_scale_cuda_ptx_data[];
     extern const unsigned int ff_vf_scale_cuda_ptx_len;
-    extern const unsigned char ff_vf_scale_cuda_bicubic_ptx_data[];
-    extern const unsigned int ff_vf_scale_cuda_bicubic_ptx_len;
 
     switch(s->interp_algo) {
     case INTERP_ALGO_NEAREST:
-        scaler_ptx = ff_vf_scale_cuda_ptx_data;
-        scaler_ptx_len = ff_vf_scale_cuda_ptx_len;
         function_infix = "_Nearest";
         s->interp_use_linear = 0;
         s->interp_as_integer = 1;
         break;
     case INTERP_ALGO_BILINEAR:
-        scaler_ptx = ff_vf_scale_cuda_ptx_data;
-        scaler_ptx_len = ff_vf_scale_cuda_ptx_len;
         function_infix = "_Bilinear";
         s->interp_use_linear = 1;
         s->interp_as_integer = 1;
         break;
     case INTERP_ALGO_DEFAULT:
     case INTERP_ALGO_BICUBIC:
-        scaler_ptx = ff_vf_scale_cuda_bicubic_ptx_data;
-        scaler_ptx_len = ff_vf_scale_cuda_bicubic_ptx_len;
         function_infix = "_Bicubic";
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
         break;
     case INTERP_ALGO_LANCZOS:
-        scaler_ptx = ff_vf_scale_cuda_bicubic_ptx_data;
-        scaler_ptx_len = ff_vf_scale_cuda_bicubic_ptx_len;
         function_infix = "_Lanczos";
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
@@ -327,7 +315,8 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     if (ret < 0)
         goto fail;
 
-    ret = ff_cuda_load_module(ctx, device_hwctx, &s->cu_module, scaler_ptx, scaler_ptx_len);
+    ret = ff_cuda_load_module(ctx, device_hwctx, &s->cu_module,
+                              ff_vf_scale_cuda_ptx_data, ff_vf_scale_cuda_ptx_len);
     if (ret < 0)
         goto fail;
 
