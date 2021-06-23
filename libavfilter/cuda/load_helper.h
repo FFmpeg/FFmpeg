@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_CUDA_DECOMPRESS_H
-#define AVFILTER_CUDA_DECOMPRESS_H
+#ifndef AVFILTER_CUDA_LOAD_HELPER_H
+#define AVFILTER_CUDA_LOAD_HELPER_H
 
 /**
  * Loads a CUDA module and applies any decompression, if neccesary.
@@ -25,4 +25,4 @@
 int ff_cuda_load_module(void *avctx, AVCUDADeviceContext *hwctx, CUmodule *cu_module,
                         const unsigned char *data, const unsigned int length);
 
-#endif
+#endif /* AVFILTER_CUDA_LOAD_HELPER_H */
