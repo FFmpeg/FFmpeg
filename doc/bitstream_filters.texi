@@ -253,6 +253,11 @@ Set whether the stream has fixed framerate - typically this indicates
 that the framerate is exactly half the tick rate, but the exact
 meaning is dependent on interlacing and the picture structure (see
 H.264 section E.2.1 and table E-6).
+@item zero_new_constraint_set_flags
+Zero constraint_set4_flag and constraint_set5_flag in the SPS. These
+bits were reserved in a previous version of the H.264 spec, and thus
+some hardware decoders require these to be zero. The result of zeroing
+this is still a valid bitstream.
 
 @item crop_left
 @item crop_right

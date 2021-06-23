@@ -61,6 +61,7 @@ typedef struct H264MetadataContext {
 
     AVRational tick_rate;
     int fixed_frame_rate_flag;
+    int zero_new_constraint_set_flags;
 
     int crop_left;
     int crop_right;
@@ -228,6 +229,10 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
         need_vui = 1;
     }
     SET_VUI_FIELD(fixed_frame_rate_flag);
+    if (ctx->zero_new_constraint_set_flags) {
+        sps->constraint_set4_flag = 0;
+        sps->constraint_set5_flag = 0;
+    }
 
     if (sps->separate_colour_plane_flag || sps->chroma_format_idc == 0) {
         crop_unit_x = 1;
@@ -618,6 +623,9 @@ static const AVOption h264_metadata_options[] = {
     { "fixed_frame_rate_flag", "Set VUI fixed frame rate flag",
         OFFSET(fixed_frame_rate_flag), AV_OPT_TYPE_INT,
         { .i64 = -1 }, -1, 1, FLAGS },
+    { "zero_new_constraint_set_flags", "Set constraint_set4_flag / constraint_set5_flag to zero",
+        OFFSET(zero_new_constraint_set_flags), AV_OPT_TYPE_BOOL,
+        { .i64 = 0 }, 0, 1, FLAGS },
 
     { "crop_left", "Set left border crop offset",
         OFFSET(crop_left), AV_OPT_TYPE_INT,
