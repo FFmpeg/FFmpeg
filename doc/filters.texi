@@ -17832,6 +17832,90 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section scale_cuda
+
+Scale (resize) and convert (pixel format) the input video, using accelerated CUDA kernels.
+Setting the output width and height works in the same way as for the @ref{scale} filter.
+
+The filter accepts the following options:
+@table @option
+@item w
+@item h
+Set the output video dimension expression. Default value is the input dimension.
+
+Allows for the same expressions as the @ref{scale} filter.
+
+@item interp_algo
+Sets the algorithm used for scaling:
+
+@table @var
+@item nearest
+Nearest neighbour
+
+Used by default if input parameters match the desired output.
+
+@item bilinear
+Bilinear
+
+@item bicubic
+Bicubic
+
+This is the default.
+
+@item lanczos
+Lanczos
+
+@end table
+
+@item format
+Controls the output pixel format. By default, or if none is specified, the input
+pixel format is used.
+
+The filter does not support converting between YUV and RGB pixel formats.
+
+@item passthrough
+If set to 0, every frame is processed, even if no conversion is neccesary.
+This mode can be useful to use the filter as a buffer for a downstream
+frame-consumer that exhausts the limited decoder frame pool.
+
+If set to 1, frames are passed through as-is if they match the desired output
+parameters. This is the default behaviour.
+
+@item param
+Algorithm-Specific parameter.
+
+Affects the curves of the bicubic algorithm.
+
+@item force_original_aspect_ratio
+@item force_divisible_by
+Work the same as the identical @ref{scale} filter options.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Scale input to 720p, keeping aspect ratio and ensuring the output is yuv420p.
+@example
+scale_cuda=-2:720:format=yuv420p
+@end example
+
+@item
+Upscale to 4K using nearest neighbour algorithm.
+@example
+scale_cuda=4096:2160:interp_algo=nearest
+@end example
+
+@item
+Don't do any conversion or scaling, but copy all input frames into newly allocated ones.
+This can be useful to deal with a filter and encode chain that otherwise exhausts the
+decoders frame pool.
+@example
+scale_cuda=passthrough=0
+@end example
+@end itemize
+
 @section scale_npp
 
 Use the NVIDIA Performance Primitives (libnpp) to perform scaling and/or pixel

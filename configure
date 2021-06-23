@@ -6283,6 +6283,8 @@ if [ -z "$nvccflags" ]; then
     nvccflags=$nvccflags_default
 fi
 
+nvccflags="$nvccflags -std=c++11"
+
 if enabled x86_64 || enabled ppc64 || enabled aarch64; then
     nvccflags="$nvccflags -m64"
 else
