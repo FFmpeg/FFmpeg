@@ -62,8 +62,8 @@ int ff_cuda_load_module(void *avctx, AVCUDADeviceContext *hwctx, CUmodule *cu_mo
         stream.next_out = buf + stream.total_out;
 
         ret = inflate(&stream, Z_FINISH);
-        if (ret != Z_OK && ret != Z_STREAM_END) {
-            av_log(avctx, AV_LOG_ERROR, "zlib inflate error: %s\n", stream.msg);
+        if (ret != Z_OK && ret != Z_STREAM_END && ret != Z_BUF_ERROR) {
+            av_log(avctx, AV_LOG_ERROR, "zlib inflate error(%d): %s\n", ret, stream.msg);
             inflateEnd(&stream);
             av_free(buf);
             return AVERROR(EINVAL);
