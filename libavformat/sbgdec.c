@@ -936,6 +936,9 @@ static int expand_timestamps(void *log, struct sbg_script *s)
     }
     if (s->start_ts == AV_NOPTS_VALUE)
         s->start_ts = (s->opt_start_at_first && s->tseq) ? s->tseq[0].ts.t : now;
+    if (s->start_ts > INT64_MAX - s->opt_duration)
+        return AVERROR_INVALIDDATA;
+
     s->end_ts = s->opt_duration ? s->start_ts + s->opt_duration :
                 AV_NOPTS_VALUE; /* may be overridden later by -E option */
     cur_ts = now;
