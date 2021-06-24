@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/common.h"
+#include "libavutil/frame.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mem_internal.h"
@@ -79,6 +80,19 @@ typedef enum SwsAlphaBlend {
     SWS_ALPHA_BLEND_CHECKERBOARD,
     SWS_ALPHA_BLEND_NB,
 } SwsAlphaBlend;
+
+typedef struct Range {
+    unsigned int start;
+    unsigned int len;
+} Range;
+
+typedef struct RangeList {
+    Range          *ranges;
+    unsigned int nb_ranges;
+    int             ranges_allocated;
+} RangeList;
+
+int ff_range_add(RangeList *r, unsigned int start, unsigned int len);
 
 typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
@@ -312,6 +326,11 @@ typedef struct SwsContext {
     int vChrDrop;                 ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
     int sliceDir;                 ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
     double param[2];              ///< Input parameters for scaling algorithms that need them.
+
+    AVFrame *frame_src;
+    AVFrame *frame_dst;
+
+    RangeList src_ranges;
 
     /* The cascaded_* fields allow spliting a scaler task into multiple
      * sequential steps, this is for example used to limit the maximum
@@ -638,6 +657,8 @@ typedef struct SwsContext {
     // then passed as input to further conversion
     uint8_t     *xyz_scratch;
     unsigned int xyz_scratch_allocated;
+
+    unsigned int dst_slice_align;
 } SwsContext;
 //FIXME check init (where 0)
 

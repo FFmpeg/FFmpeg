@@ -2009,6 +2009,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
          srcFormat == AV_PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
         !(flags & SWS_ACCURATE_RND) && (c->dither == SWS_DITHER_BAYER || c->dither == SWS_DITHER_AUTO) && !(dstH & 1)) {
         c->convert_unscaled = ff_yuv2rgb_get_func_ptr(c);
+        c->dst_slice_align = 2;
     }
     /* yuv420p1x_to_p01x */
     if ((srcFormat == AV_PIX_FMT_YUV420P10 || srcFormat == AV_PIX_FMT_YUVA420P10 ||
@@ -2028,6 +2029,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P) &&
         !(flags & SWS_BITEXACT)) {
         c->convert_unscaled = yvu9ToYv12Wrapper;
+        c->dst_slice_align = 4;
     }
 
     /* bgr24toYV12 */

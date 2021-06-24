@@ -1300,6 +1300,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     av_pix_fmt_get_chroma_sub_sample(srcFormat, &c->chrSrcHSubSample, &c->chrSrcVSubSample);
     av_pix_fmt_get_chroma_sub_sample(dstFormat, &c->chrDstHSubSample, &c->chrDstVSubSample);
 
+    c->dst_slice_align = 1 << c->chrDstVSubSample;
+
     if (isAnyRGB(dstFormat) && !(flags&SWS_FULL_CHR_H_INT)) {
         if (dstW&1) {
             av_log(c, AV_LOG_DEBUG, "Forcing full internal H chroma due to odd output size\n");
@@ -1422,6 +1424,11 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     c->chrDstH = AV_CEIL_RSHIFT(dstH, c->chrDstVSubSample);
 
     if (!FF_ALLOCZ_TYPED_ARRAY(c->formatConvBuffer, FFALIGN(srcW * 2 + 78, 16) * 2))
+        goto nomem;
+
+    c->frame_src = av_frame_alloc();
+    c->frame_dst = av_frame_alloc();
+    if (!c->frame_src || !c->frame_dst)
         goto nomem;
 
     c->srcBpc = desc_src->comp[0].depth;
@@ -2250,6 +2257,11 @@ void sws_freeContext(SwsContext *c)
     for (i = 0; i < 4; i++)
         av_freep(&c->dither_error[i]);
 
+    av_frame_free(&c->frame_src);
+    av_frame_free(&c->frame_dst);
+
+    av_freep(&c->src_ranges.ranges);
+
     av_freep(&c->vLumFilter);
     av_freep(&c->vChrFilter);
     av_freep(&c->hLumFilter);
@@ -2363,4 +2375,64 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context, int srcW,
         }
     }
     return context;
+}
+
+int ff_range_add(RangeList *rl, unsigned int start, unsigned int len)
+{
+    Range *tmp;
+    unsigned int idx;
+
+    /* find the first existing range after the new one */
+    for (idx = 0; idx < rl->nb_ranges; idx++)
+        if (rl->ranges[idx].start > start)
+            break;
+
+    /* check for overlap */
+    if (idx > 0) {
+        Range *prev = &rl->ranges[idx - 1];
+        if (prev->start + prev->len > start)
+            return AVERROR(EINVAL);
+    }
+    if (idx < rl->nb_ranges) {
+        Range *next = &rl->ranges[idx];
+        if (start + len > next->start)
+            return AVERROR(EINVAL);
+    }
+
+    tmp = av_fast_realloc(rl->ranges, &rl->ranges_allocated,
+                          (rl->nb_ranges + 1) * sizeof(*rl->ranges));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    rl->ranges = tmp;
+
+    memmove(rl->ranges + idx + 1, rl->ranges + idx,
+            sizeof(*rl->ranges) * (rl->nb_ranges - idx));
+    rl->ranges[idx].start = start;
+    rl->ranges[idx].len   = len;
+    rl->nb_ranges++;
+
+    /* merge ranges */
+    if (idx > 0) {
+        Range *prev = &rl->ranges[idx - 1];
+        Range *cur  = &rl->ranges[idx];
+        if (prev->start + prev->len == cur->start) {
+            prev->len += cur->len;
+            memmove(rl->ranges + idx - 1, rl->ranges + idx,
+                    sizeof(*rl->ranges) * (rl->nb_ranges - idx));
+            rl->nb_ranges--;
+            idx--;
+        }
+    }
+    if (idx < rl->nb_ranges - 1) {
+        Range *cur  = &rl->ranges[idx];
+        Range *next = &rl->ranges[idx + 1];
+        if (cur->start + cur->len == next->start) {
+            cur->len += next->len;
+            memmove(rl->ranges + idx, rl->ranges + idx + 1,
+                    sizeof(*rl->ranges) * (rl->nb_ranges - idx - 1));
+            rl->nb_ranges--;
+        }
+    }
+
+    return 0;
 }

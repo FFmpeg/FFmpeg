@@ -14,6 +14,15 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-09-06 - xxxxxxxxxx - lsws 6.1.100 - swscale.h
+  Add AVFrame-based scaling API:
+    - sws_scale_frame()
+    - sws_frame_start()
+    - sws_frame_end()
+    - sws_send_slice()
+    - sws_receive_slice()
+    - sws_receive_slice_alignment()
+
 2021-09-02 - xxxxxxxxxx - lavc 59.7.100 - avcodec.h
   Incremented the number of elements of AVCodecParser.codec_ids to seven.
 
