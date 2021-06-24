@@ -803,20 +803,22 @@ static const char *const matroska_doctypes[] = { "matroska", "webm" };
 static int matroska_reset_status(MatroskaDemuxContext *matroska,
                                  uint32_t id, int64_t position)
 {
+    int64_t err = 0;
     if (position >= 0) {
-        int64_t err = avio_seek(matroska->ctx->pb, position, SEEK_SET);
-        if (err < 0)
-            return err;
-    }
+        err = avio_seek(matroska->ctx->pb, position, SEEK_SET);
+        if (err > 0)
+            err = 0;
+    } else
+        position = avio_tell(matroska->ctx->pb);
 
     matroska->current_id    = id;
     matroska->num_levels    = 1;
     matroska->unknown_count = 0;
-    matroska->resync_pos = avio_tell(matroska->ctx->pb);
+    matroska->resync_pos    = position;
     if (id)
         matroska->resync_pos -= (av_log2(id) + 7) / 8;
 
-    return 0;
+    return err;
 }
 
 static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
@@ -1872,6 +1874,7 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
     uint32_t saved_id  = matroska->current_id;
     int64_t before_pos = avio_tell(matroska->ctx->pb);
     int ret = 0;
+    int ret2;
 
     /* seek */
     if (avio_seek(matroska->ctx->pb, pos, SEEK_SET) == pos) {
@@ -1896,7 +1899,9 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
     }
     /* Seek back - notice that in all instances where this is used
      * it is safe to set the level to 1. */
-    matroska_reset_status(matroska, saved_id, before_pos);
+    ret2 = matroska_reset_status(matroska, saved_id, before_pos);
+    if (ret >= 0)
+        ret = ret2;
 
     return ret;
 }
