@@ -2030,7 +2030,10 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
 
             c->nr_of_streams_flushed = 0;
         }
-        ret = write_manifest(s, final);
+        // In streaming mode the manifest is written at the beginning
+        // of the segment instead
+        if (!c->streaming || final)
+            ret = write_manifest(s, final);
     }
     return ret;
 }
@@ -2261,7 +2264,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         // in streaming mode, the segments are available for playing
         // before fully written but the manifest is needed so that
         // clients and discover the segment filenames.
-        if (c->streaming && os->segment_type == SEGMENT_TYPE_MP4) {
+        if (c->streaming) {
             write_manifest(s, 0);
         }
 
