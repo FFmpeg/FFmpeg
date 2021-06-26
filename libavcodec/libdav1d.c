@@ -120,6 +120,41 @@ static void libdav1d_picture_release(Dav1dPicture *p, void *cookie)
     av_buffer_unref(&buf);
 }
 
+static void libdav1d_init_params(AVCodecContext *c, const Dav1dSequenceHeader *seq)
+{
+    c->profile = seq->profile;
+    c->level = ((seq->operating_points[0].major_level - 2) << 2)
+               | seq->operating_points[0].minor_level;
+
+    switch (seq->chr) {
+    case DAV1D_CHR_VERTICAL:
+        c->chroma_sample_location = AVCHROMA_LOC_LEFT;
+        break;
+    case DAV1D_CHR_COLOCATED:
+        c->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
+        break;
+    }
+    c->colorspace = (enum AVColorSpace) seq->mtrx;
+    c->color_primaries = (enum AVColorPrimaries) seq->pri;
+    c->color_trc = (enum AVColorTransferCharacteristic) seq->trc;
+    c->color_range = seq->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+    if (seq->layout == DAV1D_PIXEL_LAYOUT_I444 &&
+        seq->mtrx == DAV1D_MC_IDENTITY &&
+        seq->pri  == DAV1D_COLOR_PRI_BT709 &&
+        seq->trc  == DAV1D_TRC_SRGB)
+        c->pix_fmt = pix_fmt_rgb[seq->hbd];
+    else
+        c->pix_fmt = pix_fmt[seq->layout][seq->hbd];
+
+    if (seq->num_units_in_tick && seq->time_scale) {
+        av_reduce(&c->framerate.den, &c->framerate.num,
+                  seq->num_units_in_tick, seq->time_scale, INT_MAX);
+        if (seq->equal_picture_interval)
+            c->ticks_per_frame = seq->num_ticks_per_picture;
+    }
+}
+
 static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -261,9 +296,11 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->linesize[1] = p->stride[1];
     frame->linesize[2] = p->stride[1];
 
-    c->profile = p->seq_hdr->profile;
-    c->level = ((p->seq_hdr->operating_points[0].major_level - 2) << 2)
-               | p->seq_hdr->operating_points[0].minor_level;
+    libdav1d_init_params(c, p->seq_hdr);
+    res = ff_decode_frame_props(c, frame);
+    if (res < 0)
+        goto fail;
+
     frame->width = p->p.w;
     frame->height = p->p.h;
     if (c->width != p->p.w || c->height != p->p.h) {
@@ -279,38 +316,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
               INT_MAX);
     ff_set_sar(c, frame->sample_aspect_ratio);
 
-    switch (p->seq_hdr->chr) {
-    case DAV1D_CHR_VERTICAL:
-        frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_LEFT;
-        break;
-    case DAV1D_CHR_COLOCATED:
-        frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
-        break;
-    }
-    frame->colorspace = c->colorspace = (enum AVColorSpace) p->seq_hdr->mtrx;
-    frame->color_primaries = c->color_primaries = (enum AVColorPrimaries) p->seq_hdr->pri;
-    frame->color_trc = c->color_trc = (enum AVColorTransferCharacteristic) p->seq_hdr->trc;
-    frame->color_range = c->color_range = p->seq_hdr->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
-
-    if (p->p.layout == DAV1D_PIXEL_LAYOUT_I444 &&
-        p->seq_hdr->mtrx == DAV1D_MC_IDENTITY &&
-        p->seq_hdr->pri  == DAV1D_COLOR_PRI_BT709 &&
-        p->seq_hdr->trc  == DAV1D_TRC_SRGB)
-        frame->format = c->pix_fmt = pix_fmt_rgb[p->seq_hdr->hbd];
-    else
-        frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
-
     if (p->m.user_data.data)
         memcpy(&frame->reordered_opaque, p->m.user_data.data, sizeof(frame->reordered_opaque));
     else
         frame->reordered_opaque = AV_NOPTS_VALUE;
-
-    if (p->seq_hdr->num_units_in_tick && p->seq_hdr->time_scale) {
-        av_reduce(&c->framerate.den, &c->framerate.num,
-                  p->seq_hdr->num_units_in_tick, p->seq_hdr->time_scale, INT_MAX);
-        if (p->seq_hdr->equal_picture_interval)
-            c->ticks_per_frame = p->seq_hdr->num_ticks_per_picture;
-    }
 
     // match timestamps and packet size
     frame->pts = p->m.timestamp;
