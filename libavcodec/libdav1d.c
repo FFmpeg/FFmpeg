@@ -33,6 +33,9 @@
 #include "decode.h"
 #include "internal.h"
 
+#define FF_DAV1D_VERSION_AT_LEAST(x,y) \
+    (DAV1D_API_VERSION_MAJOR > (x) || DAV1D_API_VERSION_MAJOR == (x) && DAV1D_API_VERSION_MINOR >= (y))
+
 typedef struct Libdav1dContext {
     AVClass *class;
     Dav1dContext *c;
@@ -220,6 +223,9 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dData *data = &dav1d->data;
     Dav1dPicture pic = { 0 }, *p = &pic;
+#if FF_DAV1D_VERSION_AT_LEAST(5,1)
+    enum Dav1dEventFlags event_flags = 0;
+#endif
     int res;
 
     if (!data->sz) {
@@ -296,6 +302,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->linesize[1] = p->stride[1];
     frame->linesize[2] = p->stride[1];
 
+#if FF_DAV1D_VERSION_AT_LEAST(5,1)
+    dav1d_get_event_flags(dav1d->c, &event_flags);
+    if (event_flags & DAV1D_EVENT_FLAG_NEW_SEQUENCE)
+#endif
     libdav1d_init_params(c, p->seq_hdr);
     res = ff_decode_frame_props(c, frame);
     if (res < 0)
