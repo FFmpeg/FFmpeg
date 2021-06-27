@@ -1299,6 +1299,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         axmax = FFMAX(0, (avctx->width - (s->xmax + 1))) * step;
     }
 
+    if (avctx->max_pixels && uncompressed_size > avctx->max_pixels * 16LL)
+        return AVERROR_INVALIDDATA;
+
     if (data_size < uncompressed_size || s->is_tile) { /* td->tmp is use for tile reorganization */
         av_fast_padded_malloc(&td->tmp, &td->tmp_size, uncompressed_size);
         if (!td->tmp)
