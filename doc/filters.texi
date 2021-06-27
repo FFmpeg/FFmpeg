@@ -14689,6 +14689,8 @@ Apply motion-compensation deinterlacing.
 It needs one field per frame as input and must thus be used together
 with yadif=1/3 or equivalent.
 
+This filter is only available in ffmpeg version 4.4 or earlier.
+
 This filter accepts the following options:
 @table @option
 @item mode
@@ -20666,6 +20668,8 @@ shifts and average the results.
 The way this differs from the behavior of spp is that uspp actually encodes &
 decodes each case with libavcodec Snow, whereas spp uses a simplified intra only 8x8
 DCT similar to MJPEG.
+
+This filter is only available in ffmpeg version 4.4 or earlier.
 
 The filter accepts the following options:
 
