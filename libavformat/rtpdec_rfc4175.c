@@ -199,7 +199,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         cont = headers[4] & 0x80;
         headers += 6;
 
-        if (length % data->pgroup)
+        if (!data->pgroup || length % data->pgroup)
             return AVERROR_INVALIDDATA;
 
         if (length > payload_len)
