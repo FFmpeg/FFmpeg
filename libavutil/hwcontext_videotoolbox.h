@@ -29,11 +29,14 @@
  * @file
  * An API-specific header for AV_HWDEVICE_TYPE_VIDEOTOOLBOX.
  *
- * This API currently does not support frame allocation, as the raw VideoToolbox
- * API does allocation, and FFmpeg itself never has the need to allocate frames.
+ * This API supports frame allocation using a native CVPixelBufferPool
+ * instead of an AVBufferPool.
  *
  * If the API user sets a custom pool, AVHWFramesContext.pool must return
  * AVBufferRefs whose data pointer is a CVImageBufferRef or CVPixelBufferRef.
+ * Note that the underlying CVPixelBuffer could be retained by OS frameworks
+ * depending on application usage, so it is preferable to let CoreVideo manage
+ * the pool using the default implementation.
  *
  * Currently AVHWDeviceContext.hwctx and AVHWFramesContext.hwctx are always
  * NULL.
