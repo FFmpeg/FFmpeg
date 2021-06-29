@@ -553,15 +553,21 @@ int hw_device_setup_for_filter(FilterGraph *fg)
     HWDevice *dev;
     int i;
 
-    // If the user has supplied exactly one hardware device then just
-    // give it straight to every filter for convenience.  If more than
-    // one device is available then the user needs to pick one explcitly
-    // with the filter_hw_device option.
+    // Pick the last hardware device if the user doesn't pick the device for
+    // filters explicitly with the filter_hw_device option.
     if (filter_hw_device)
         dev = filter_hw_device;
-    else if (nb_hw_devices == 1)
-        dev = hw_devices[0];
-    else
+    else if (nb_hw_devices > 0) {
+        dev = hw_devices[nb_hw_devices - 1];
+
+        if (nb_hw_devices > 1)
+            av_log(NULL, AV_LOG_WARNING, "There are %d hardware devices. device "
+                   "%s of type %s is picked for filters by default. Set hardware "
+                   "device explicitly with the filter_hw_device option if device "
+                   "%s is not usable for filters.\n",
+                   nb_hw_devices, dev->name,
+                   av_hwdevice_get_type_name(dev->type), dev->name);
+    } else
         dev = NULL;
 
     if (dev) {
