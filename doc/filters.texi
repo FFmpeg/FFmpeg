@@ -20977,6 +20977,10 @@ If diagonal field of view is set it overrides horizontal and vertical field of v
 Octahedron projection.
 @end table
 
+@item cylindricalea
+Cylindrical Equal Area projection.
+@end table
+
 @item interp
 Set interpolation method.@*
 @i{Note: more complex interpolation methods require much more memory to run.}

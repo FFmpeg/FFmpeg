@@ -54,6 +54,7 @@ enum Projections {
     EQUISOLID,
     ORTHOGRAPHIC,
     OCTAHEDRON,
+    CYLINDRICALEA,
     NB_PROJECTIONS,
 };
 
