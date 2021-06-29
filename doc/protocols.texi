@@ -215,6 +215,38 @@ ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
 Note that you may need to escape the character "|" which is special for
 many shells.
 
+@section concatf
+
+Physical concatenation protocol using a line break delimited list of
+resources.
+
+Read and seek from many resources in sequence as if they were
+a unique resource.
+
+A URL accepted by this protocol has the syntax:
+@example
+concatf:@var{URL}
+@end example
+
+where @var{URL} is the url containing a line break delimited list of
+resources to be concatenated, each one possibly specifying a distinct
+protocol. Special characters must be escaped with backslash or single
+quotes. See @ref{quoting_and_escaping,,the "Quoting and escaping"
+section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
+
+For example to read a sequence of files @file{split1.mpeg},
+@file{split2.mpeg}, @file{split3.mpeg} listed in separate lines within
+a file @file{split.txt} with @command{ffplay} use the command:
+@example
+ffplay concatf:split.txt
+@end example
+Where @file{split.txt} contains the lines:
+@example
+split1.mpeg
+split2.mpeg
+split3.mpeg
+@end example
+
 @section crypto
 
 AES-encrypted stream reading protocol.

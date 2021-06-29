@@ -27,6 +27,7 @@ extern const URLProtocol ff_async_protocol;
 extern const URLProtocol ff_bluray_protocol;
 extern const URLProtocol ff_cache_protocol;
 extern const URLProtocol ff_concat_protocol;
+extern const URLProtocol ff_concatf_protocol;
 extern const URLProtocol ff_crypto_protocol;
 extern const URLProtocol ff_data_protocol;
 extern const URLProtocol ff_ffrtmpcrypt_protocol;

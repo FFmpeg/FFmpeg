@@ -7,6 +7,7 @@ version <next>:
 - ADPCM IMA Acorn Replay decoder
 - Argonaut Games CVG demuxer
 - Argonaut Games CVG muxer
+- Concatf protocol
 
 
 version 4.4:
