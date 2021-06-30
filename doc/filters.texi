@@ -20975,7 +20975,6 @@ If diagonal field of view is set it overrides horizontal and vertical field of v
 
 @item octahedron
 Octahedron projection.
-@end table
 
 @item cylindricalea
 Cylindrical Equal Area projection.
