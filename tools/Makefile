@@ -17,6 +17,8 @@ tools/target_dem_fuzzer.o: tools/target_dem_fuzzer.c
 tools/target_io_dem_fuzzer.o: tools/target_dem_fuzzer.c
 	$(COMPILE_C) -DIO_FLAT=0
 
+tools/venc_data_dump$(EXESUF): tools/decode_simple.o
+
 OUTDIRS += tools
 
 clean::
