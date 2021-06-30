@@ -1419,6 +1419,10 @@ overwritten with new images. Default value is 0.
 If set to 1, expand the filename with date and time information from
 @code{strftime()}. Default value is 0.
 
+@item atomic_writing
+Write output to a temporary file, which is renamed to target filename once
+writing is completed. Default is disabled.
+
 @item protocol_opts @var{options_list}
 Set protocol options as a :-separated list of key=value parameters. Values
 containing the @code{:} special character must be escaped.
