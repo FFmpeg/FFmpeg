@@ -6132,7 +6132,6 @@ check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
-check_builtin x264_csp_bgr "stdint.h x264.h" "X264_CSP_BGR"
 
 case "$custom_allocator" in
     jemalloc)
@@ -6530,6 +6529,7 @@ enabled libx264           && { check_pkg_config libx264 x264 "stdint.h x264.h" x
                                { require libx264 "stdint.h x264.h" x264_encoder_encode "-lx264 $pthreads_extralibs $libm_extralibs" &&
                                  warn "using libx264 without pkg-config"; } } &&
                              require_cpp_condition libx264 x264.h "X264_BUILD >= 118" &&
+                             check_cpp_condition x264_csp_bgr x264.h "X264_CSP_BGR" &&
                              check_cpp_condition libx262 x264.h "X264_MPEG2"
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
                              require_cpp_condition libx265 x265.h "X265_BUILD >= 70"
