@@ -43,8 +43,8 @@ struct PayloadContext {
 static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
 {
     enum AVPixelFormat pixfmt = AV_PIX_FMT_NONE;
-    int bits_per_sample = 0;
     int tag = 0;
+    const AVPixFmtDescriptor *desc;
 
     if (!strncmp(data->sampling, "YCbCr-4:2:2", 11)) {
         tag = MKTAG('U', 'Y', 'V', 'Y');
@@ -52,11 +52,9 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
 
         if (data->depth == 8) {
             data->pgroup = 4;
-            bits_per_sample = 16;
             pixfmt = AV_PIX_FMT_UYVY422;
         } else if (data->depth == 10) {
             data->pgroup = 5;
-            bits_per_sample = 20;
             pixfmt = AV_PIX_FMT_YUV422P10;
         } else {
             return AVERROR_INVALIDDATA;
@@ -65,9 +63,10 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
         return AVERROR_INVALIDDATA;
     }
 
+    desc = av_pix_fmt_desc_get(pixfmt);
     stream->codecpar->format = pixfmt;
     stream->codecpar->codec_tag = tag;
-    stream->codecpar->bits_per_coded_sample = bits_per_sample;
+    stream->codecpar->bits_per_coded_sample = av_get_bits_per_pixel(desc);
     data->frame_size = data->width * data->height * data->pgroup / data->xinc;
 
     return 0;
