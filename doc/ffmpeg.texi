@@ -449,6 +449,11 @@ output file already exists.
 Set number of times input stream shall be looped. Loop 0 means no loop,
 loop -1 means infinite loop.
 
+@item -recast_media (@emph{global})
+Allow forcing a decoder of a different media type than the one
+detected or designated by the demuxer. Useful for decoding media
+data muxed as data streams.
+
 @item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 @itemx -codec[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 Select an encoder (when used before an output file) or a decoder (when used

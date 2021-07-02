@@ -186,6 +186,7 @@ static int input_sync;
 static int input_stream_potentially_available = 0;
 static int ignore_unknown_streams = 0;
 static int copy_unknown_streams = 0;
+static int recast_media = 0;
 static int find_stream_info = 1;
 
 static void uninit_options(OptionsContext *o)
@@ -759,7 +760,7 @@ static const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type,
         av_log(NULL, AV_LOG_FATAL, "Unknown %s '%s'\n", codec_string, name);
         exit_program(1);
     }
-    if (codec->type != type) {
+    if (codec->type != type && !recast_media) {
         av_log(NULL, AV_LOG_FATAL, "Invalid %s type '%s'\n", codec_string, name);
         exit_program(1);
     }
@@ -774,6 +775,8 @@ static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVSt
     if (codec_name) {
         const AVCodec *codec = find_codec_or_die(codec_name, st->codecpar->codec_type, 0);
         st->codecpar->codec_id = codec->id;
+        if (recast_media && st->codecpar->codec_type != codec->type)
+            st->codecpar->codec_type = codec->type;
         return codec;
     } else
         return avcodec_find_decoder(st->codecpar->codec_id);
@@ -3429,6 +3432,8 @@ const OptionDef options[] = {
         "Ignore unknown stream types" },
     { "copy_unknown",   OPT_BOOL | OPT_EXPERT,                       {              &copy_unknown_streams },
         "Copy unknown stream types" },
+    { "recast_media",   OPT_BOOL | OPT_EXPERT,                       {              &recast_media },
+        "allow recasting stream type in order to force a decoder of different media type" },
     { "c",              HAS_ARG | OPT_STRING | OPT_SPEC |
                         OPT_INPUT | OPT_OUTPUT,                      { .off       = OFFSET(codec_names) },
         "codec name", "codec" },
