@@ -42,8 +42,8 @@ struct PayloadContext {
 
 static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
 {
-    enum AVPixelFormat pixfmt = AV_PIX_FMT_NONE;
-    int tag = 0;
+    enum AVPixelFormat pixfmt;
+    int tag;
     const AVPixFmtDescriptor *desc;
 
     if (!strncmp(data->sampling, "YCbCr-4:2:2", 11)) {
