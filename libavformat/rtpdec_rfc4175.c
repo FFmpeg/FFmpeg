@@ -105,7 +105,7 @@ static int rfc4175_parse_sdp_line(AVFormatContext *s, int st_index,
 
 
         if (!data->sampling || !data->depth || !data->width || !data->height)
-            return -1;
+            return AVERROR(EINVAL);
 
         stream->codecpar->width = data->width;
         stream->codecpar->height = data->height;
