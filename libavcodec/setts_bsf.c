@@ -171,10 +171,10 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
         new_dts = new_ts;
     }
 
-    s->var_values[VAR_PREV_INPTS]  = pkt->pts;
-    s->var_values[VAR_PREV_INDTS]  = pkt->dts;
-    s->var_values[VAR_PREV_OUTPTS] = new_pts;
-    s->var_values[VAR_PREV_OUTDTS] = new_dts;
+    s->prev_inpts  = pkt->pts;
+    s->prev_indts  = pkt->dts;
+    s->prev_outpts = new_pts;
+    s->prev_outdts = new_dts;
 
     pkt->pts = new_pts;
     pkt->dts = new_dts;
