@@ -217,8 +217,10 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
         for (i = 0; i < 64; i++) {
             s->quant_matrixes[index][i] = get_bits(&s->gb, pr ? 16 : 8);
             if (s->quant_matrixes[index][i] == 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "dqt: 0 quant value\n");
-                return AVERROR_INVALIDDATA;
+                int log_level = s->avctx->err_recognition & AV_EF_EXPLODE ? AV_LOG_ERROR : AV_LOG_WARNING;
+                av_log(s->avctx, log_level, "dqt: 0 quant value\n");
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
         }
 
