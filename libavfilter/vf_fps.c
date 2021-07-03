@@ -47,10 +47,6 @@ static const char *const var_names[] = {
   "source_fps",
   "ntsc",
   "pal",
-  "qntsc",
-  "qpal",
-  "sntsc",
-  "spal",
   "film",
   "ntsc_film",
   NULL
@@ -60,10 +56,6 @@ enum var_name {
   VAR_SOURCE_FPS,
   VAR_FPS_NTSC,
   VAR_FPS_PAL,
-  VAR_FPS_QNTSC,
-  VAR_FPS_QPAL,
-  VAR_FPS_SNTSC,
-  VAR_FPS_SPAL,
   VAR_FPS_FILM,
   VAR_FPS_NTSC_FILM,
   VARS_NB
@@ -71,10 +63,6 @@ enum var_name {
 
 static const double ntsc_fps = 30000.0 / 1001.0;
 static const double pal_fps = 25.0;
-static const double qntsc_fps = 30000.0 / 1001.0;
-static const double qpal_fps = 25.0;
-static const double sntsc_fps = 30000.0 / 1001.0;
-static const double spal_fps = 25.0;
 static const double film_fps = 24.0;
 static const double ntsc_film_fps = 24000.0 / 1001.0;
 
@@ -194,10 +182,6 @@ static int config_props(AVFilterLink* outlink)
     var_values[VAR_SOURCE_FPS]    = av_q2d(inlink->frame_rate);
     var_values[VAR_FPS_NTSC]      = ntsc_fps;
     var_values[VAR_FPS_PAL]       = pal_fps;
-    var_values[VAR_FPS_QNTSC]     = qntsc_fps;
-    var_values[VAR_FPS_QPAL]      = qpal_fps;
-    var_values[VAR_FPS_SNTSC]     = sntsc_fps;
-    var_values[VAR_FPS_SPAL]      = spal_fps;
     var_values[VAR_FPS_FILM]      = film_fps;
     var_values[VAR_FPS_NTSC_FILM] = ntsc_film_fps;
     ret = av_expr_parse_and_eval(&res, s->framerate,
