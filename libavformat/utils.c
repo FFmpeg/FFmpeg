@@ -3914,7 +3914,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     av_packet_unref(pkt1);
                 break;
             }
-            if (pkt->duration) {
+            if (pkt->duration > 0) {
                 if (avctx->codec_type == AVMEDIA_TYPE_SUBTITLE && pkt->pts != AV_NOPTS_VALUE && st->start_time != AV_NOPTS_VALUE && pkt->pts >= st->start_time
                     && (uint64_t)pkt->pts - st->start_time < INT64_MAX
                 ) {
