@@ -735,6 +735,9 @@ The timebase of stream packet belongs.
 
 @item SR
 The sample rate of stream packet belongs.
+
+@item NOPTS
+The AV_NOPTS_VALUE constant.
 @end table
 
 @anchor{text2movsub}

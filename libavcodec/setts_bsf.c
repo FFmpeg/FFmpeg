@@ -44,6 +44,7 @@ static const char *const var_names[] = {
     "STARTDTS",    ///< DTS at start of movie
     "TB",          ///< timebase of the stream
     "SR",          ///< sample rate of the stream
+    "NOPTS",       ///< The AV_NOPTS_VALUE constant
     NULL
 };
 
@@ -61,6 +62,7 @@ enum var_name {
     VAR_STARTDTS,
     VAR_TB,
     VAR_SR,
+    VAR_NOPTS,
     VAR_VARS_NB
 };
 
@@ -121,6 +123,7 @@ static int setts_init(AVBSFContext *ctx)
     s->prev_indts  = AV_NOPTS_VALUE;
     s->prev_outpts = AV_NOPTS_VALUE;
     s->prev_outdts = AV_NOPTS_VALUE;
+    s->var_values[VAR_NOPTS] = AV_NOPTS_VALUE;
 
     return 0;
 }
