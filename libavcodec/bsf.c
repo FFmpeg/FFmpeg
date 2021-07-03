@@ -520,7 +520,6 @@ static int bsf_parse_single(char *str, AVBSFList *bsf_lst)
 int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
 {
     AVBSFList *lst;
-    char *bsf_str, *buf, *dup, *saveptr;
     int ret;
 
     if (!str)
@@ -530,24 +529,18 @@ int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
     if (!lst)
         return AVERROR(ENOMEM);
 
-    if (!(dup = buf = av_strdup(str))) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-
-    while (bsf_str = av_strtok(buf, ",", &saveptr)) {
+    do {
+        char *bsf_str = av_get_token(&str, ",");
         ret = bsf_parse_single(bsf_str, lst);
+        av_free(bsf_str);
         if (ret < 0)
             goto end;
-
-        buf = NULL;
-    }
+    } while (*str && *++str);
 
     ret = av_bsf_list_finalize(&lst, bsf_lst);
 end:
     if (ret < 0)
         av_bsf_list_free(&lst);
-    av_free(dup);
     return ret;
 }
 
