@@ -1458,9 +1458,9 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
      * port range, to allow for a number of ports to try even if the offset
      * happens to be at the end of the random range. */
     if (rt->rtp_port_max - rt->rtp_port_min >= 4) {
-    port_off = av_get_random_seed() % ((rt->rtp_port_max - rt->rtp_port_min)/2);
-    /* even random offset */
-    port_off -= port_off & 0x01;
+        port_off = av_get_random_seed() % ((rt->rtp_port_max - rt->rtp_port_min)/2);
+        /* even random offset */
+        port_off -= port_off & 0x01;
     }
 
     for (j = rt->rtp_port_min + port_off, i = 0; i < rt->nb_rtsp_streams; ++i) {
