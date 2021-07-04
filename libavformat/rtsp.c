@@ -1438,7 +1438,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                               int lower_transport, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
-    int rtx = 0, j, i, err, interleave = 0, port_off;
+    int rtx = 0, j, i, err, interleave = 0, port_off = 0;
     RTSPStream *rtsp_st;
     RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[MAX_URL_SIZE];
@@ -1457,9 +1457,11 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     /* Choose a random starting offset within the first half of the
      * port range, to allow for a number of ports to try even if the offset
      * happens to be at the end of the random range. */
+    if (rt->rtp_port_max - rt->rtp_port_min >= 4) {
     port_off = av_get_random_seed() % ((rt->rtp_port_max - rt->rtp_port_min)/2);
     /* even random offset */
     port_off -= port_off & 0x01;
+    }
 
     for (j = rt->rtp_port_min + port_off, i = 0; i < rt->nb_rtsp_streams; ++i) {
         char transport[MAX_URL_SIZE];
