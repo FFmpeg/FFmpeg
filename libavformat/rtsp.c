@@ -1500,7 +1500,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             }
 
             /* first try in specified port range */
-            while (j <= rt->rtp_port_max) {
+            while (j + 1 <= rt->rtp_port_max) {
                 AVDictionary *opts = map_to_opts(rt);
 
                 ff_url_join(buf, sizeof(buf), "rtp", NULL, host, -1,
