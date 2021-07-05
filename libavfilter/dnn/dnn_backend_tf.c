@@ -839,20 +839,16 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_
     return model;
 }
 
-static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_queue)
-{
-    TFModel *tf_model;
-    TFContext *ctx;
-    TFInferRequest *infer_request;
+static DNNReturnType fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
+    DNNData input;
     InferenceItem *inference;
     TaskItem *task;
-    DNNData input, *outputs;
+    TFInferRequest *infer_request;
+    TFContext *ctx = &tf_model->ctx;
 
-    inference = ff_queue_pop_front(inference_queue);
+    inference = ff_queue_pop_front(tf_model->inference_queue);
     av_assert0(inference);
     task = inference->task;
-    tf_model = task->model;
-    ctx = &tf_model->ctx;
     request->inference = inference;
 
     if (get_input_tf(tf_model, &input, task->input_name) != DNN_SUCCESS)
@@ -916,63 +912,90 @@ static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_q
         infer_request->tf_outputs[i].index = 0;
     }
 
-    TF_SessionRun(tf_model->session, NULL,
-                    infer_request->tf_input, &infer_request->input_tensor, 1,
-                    infer_request->tf_outputs, infer_request->output_tensors,
-                    task->nb_output, NULL, 0, NULL,
-                    tf_model->status);
-    if (TF_GetCode(tf_model->status) != TF_OK) {
+    return DNN_SUCCESS;
+}
+
+static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_queue)
+{
+    TFModel *tf_model;
+    TFContext *ctx;
+    TFInferRequest *infer_request;
+    InferenceItem *inference;
+    TaskItem *task;
+    DNNData *outputs;
+
+    inference = ff_queue_peek_front(inference_queue);
+    task = inference->task;
+    tf_model = task->model;
+    ctx = &tf_model->ctx;
+
+    if (task->async) {
+        avpriv_report_missing_feature(ctx, "Async execution not supported");
+        return DNN_ERROR;
+    } else {
+        if (fill_model_input_tf(tf_model, request) != DNN_SUCCESS) {
+            return DNN_ERROR;
+        }
+
+        infer_request = request->infer_request;
+        TF_SessionRun(tf_model->session, NULL,
+                      infer_request->tf_input, &infer_request->input_tensor, 1,
+                      infer_request->tf_outputs, infer_request->output_tensors,
+                      task->nb_output, NULL, 0, NULL,
+                      tf_model->status);
+        if (TF_GetCode(tf_model->status) != TF_OK) {
+                tf_free_request(infer_request);
+                av_log(ctx, AV_LOG_ERROR, "Failed to run session when executing model\n");
+                return DNN_ERROR;
+        }
+
+        outputs = av_malloc_array(task->nb_output, sizeof(*outputs));
+        if (!outputs) {
             tf_free_request(infer_request);
-            av_log(ctx, AV_LOG_ERROR, "Failed to run session when executing model\n");
+            av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for *outputs\n");
             return DNN_ERROR;
-    }
+        }
 
-    outputs = av_malloc_array(task->nb_output, sizeof(*outputs));
-    if (!outputs) {
-        tf_free_request(infer_request);
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for *outputs\n");
-        return DNN_ERROR;
-    }
-
-    for (uint32_t i = 0; i < task->nb_output; ++i) {
-        outputs[i].height = TF_Dim(infer_request->output_tensors[i], 1);
-        outputs[i].width = TF_Dim(infer_request->output_tensors[i], 2);
-        outputs[i].channels = TF_Dim(infer_request->output_tensors[i], 3);
-        outputs[i].data = TF_TensorData(infer_request->output_tensors[i]);
-        outputs[i].dt = TF_TensorType(infer_request->output_tensors[i]);
-    }
-    switch (tf_model->model->func_type) {
-    case DFT_PROCESS_FRAME:
-        //it only support 1 output if it's frame in & frame out
-        if (task->do_ioproc) {
-            if (tf_model->model->frame_post_proc != NULL) {
-                tf_model->model->frame_post_proc(task->out_frame, outputs, tf_model->model->filter_ctx);
+        for (uint32_t i = 0; i < task->nb_output; ++i) {
+            outputs[i].height = TF_Dim(infer_request->output_tensors[i], 1);
+            outputs[i].width = TF_Dim(infer_request->output_tensors[i], 2);
+            outputs[i].channels = TF_Dim(infer_request->output_tensors[i], 3);
+            outputs[i].data = TF_TensorData(infer_request->output_tensors[i]);
+            outputs[i].dt = TF_TensorType(infer_request->output_tensors[i]);
+        }
+        switch (tf_model->model->func_type) {
+        case DFT_PROCESS_FRAME:
+            //it only support 1 output if it's frame in & frame out
+            if (task->do_ioproc) {
+                if (tf_model->model->frame_post_proc != NULL) {
+                    tf_model->model->frame_post_proc(task->out_frame, outputs, tf_model->model->filter_ctx);
+                } else {
+                    ff_proc_from_dnn_to_frame(task->out_frame, outputs, ctx);
+                }
             } else {
-                ff_proc_from_dnn_to_frame(task->out_frame, outputs, ctx);
+                task->out_frame->width = outputs[0].width;
+                task->out_frame->height = outputs[0].height;
             }
-        } else {
-            task->out_frame->width = outputs[0].width;
-            task->out_frame->height = outputs[0].height;
-        }
-        break;
-    case DFT_ANALYTICS_DETECT:
-        if (!tf_model->model->detect_post_proc) {
-            av_log(ctx, AV_LOG_ERROR, "Detect filter needs provide post proc\n");
+            break;
+        case DFT_ANALYTICS_DETECT:
+            if (!tf_model->model->detect_post_proc) {
+                av_log(ctx, AV_LOG_ERROR, "Detect filter needs provide post proc\n");
+                return DNN_ERROR;
+            }
+            tf_model->model->detect_post_proc(task->out_frame, outputs, task->nb_output, tf_model->model->filter_ctx);
+            break;
+        default:
+            tf_free_request(infer_request);
+
+            av_log(ctx, AV_LOG_ERROR, "Tensorflow backend does not support this kind of dnn filter now\n");
             return DNN_ERROR;
         }
-        tf_model->model->detect_post_proc(task->out_frame, outputs, task->nb_output, tf_model->model->filter_ctx);
-        break;
-    default:
+        task->inference_done++;
         tf_free_request(infer_request);
-
-        av_log(ctx, AV_LOG_ERROR, "Tensorflow backend does not support this kind of dnn filter now\n");
-        return DNN_ERROR;
+        av_freep(&outputs);
+        ff_safe_queue_push_back(tf_model->request_queue, request);
+        return (task->inference_done == task->inference_todo) ? DNN_SUCCESS : DNN_ERROR;
     }
-    task->inference_done++;
-    tf_free_request(infer_request);
-    av_freep(&outputs);
-    ff_safe_queue_push_back(tf_model->request_queue, request);
-    return (task->inference_done == task->inference_todo) ? DNN_SUCCESS : DNN_ERROR;
 }
 
 DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_params)
