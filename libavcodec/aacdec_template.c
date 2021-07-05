@@ -1076,14 +1076,18 @@ static int decode_audio_specific_config_gb(AACContext *ac,
 {
     int i, ret;
     GetBitContext gbc = *gb;
+    MPEG4AudioConfig m4ac_bak = *m4ac;
 
-    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension, avctx)) < 0)
+    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension, avctx)) < 0) {
+        *m4ac = m4ac_bak;
         return AVERROR_INVALIDDATA;
+    }
 
     if (m4ac->sampling_index > 12) {
         av_log(avctx, AV_LOG_ERROR,
                "invalid sampling rate index %d\n",
                m4ac->sampling_index);
+        *m4ac = m4ac_bak;
         return AVERROR_INVALIDDATA;
     }
     if (m4ac->object_type == AOT_ER_AAC_LD &&
@@ -1091,6 +1095,7 @@ static int decode_audio_specific_config_gb(AACContext *ac,
         av_log(avctx, AV_LOG_ERROR,
                "invalid low delay sampling rate index %d\n",
                m4ac->sampling_index);
+        *m4ac = m4ac_bak;
         return AVERROR_INVALIDDATA;
     }
 
