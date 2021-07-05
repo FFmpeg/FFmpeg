@@ -56,6 +56,23 @@ typedef struct TFModel{
     Queue *inference_queue;
 } TFModel;
 
+/**
+ * Stores execution parameters for single
+ * call to the TensorFlow C API
+ */
+typedef struct TFInferRequest {
+    TF_Output *tf_outputs;
+    TF_Tensor **output_tensors;
+    TF_Output *tf_input;
+    TF_Tensor *input_tensor;
+} TFInferRequest;
+
+typedef struct TFRequestItem {
+    TFInferRequest *infer_request;
+    InferenceItem *inference;
+    // further properties will be added later for async
+} TFRequestItem;
+
 #define OFFSET(x) offsetof(TFContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption dnn_tensorflow_options[] = {
@@ -70,6 +87,38 @@ static DNNReturnType execute_model_tf(Queue *inference_queue);
 static void free_buffer(void *data, size_t length)
 {
     av_freep(&data);
+}
+
+static void tf_free_request(TFInferRequest *request)
+{
+    if (!request)
+        return;
+    if (request->input_tensor) {
+        TF_DeleteTensor(request->input_tensor);
+        request->input_tensor = NULL;
+    }
+    av_freep(&request->tf_input);
+    av_freep(&request->tf_outputs);
+    if (request->output_tensors) {
+        int nb_output = sizeof(*request->output_tensors)/sizeof(request->output_tensors[0]);
+        for (uint32_t i = 0; i < nb_output; ++i) {
+            if (request->output_tensors[i]) {
+                TF_DeleteTensor(request->output_tensors[i]);
+                request->output_tensors[i] = NULL;
+            }
+        }
+        av_freep(&request->output_tensors);
+    }
+}
+
+static TFInferRequest *tf_create_inference_request(void)
+{
+    TFInferRequest *infer_request = av_malloc(sizeof(TFInferRequest));
+    infer_request->tf_outputs = NULL;
+    infer_request->tf_input = NULL;
+    infer_request->input_tensor = NULL;
+    infer_request->output_tensors = NULL;
+    return infer_request;
 }
 
 static DNNReturnType extract_inference_from_task(TaskItem *task, Queue *inference_queue)
