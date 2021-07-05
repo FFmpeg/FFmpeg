@@ -26,6 +26,9 @@
 
 #include "../dnn_interface.h"
 
+#define DNN_BACKEND_COMMON_OPTIONS \
+    { "nireq",           "number of request",             OFFSET(options.nireq),           AV_OPT_TYPE_INT,    { .i64 = 0 },     0, INT_MAX, FLAGS },
+
 // one task for one function call from dnn interface
 typedef struct TaskItem {
     void *model; // model for the backend
