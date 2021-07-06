@@ -1,4 +1,4 @@
-TOOLS = enum_options qt-faststart trasher uncoded_frame
+TOOLS = enum_options qt-faststart scale_slice_test trasher uncoded_frame
 TOOLS-$(CONFIG_LIBMYSOFA) += sofa2wavs
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
@@ -18,6 +18,7 @@ tools/target_io_dem_fuzzer.o: tools/target_dem_fuzzer.c
 	$(COMPILE_C) -DIO_FLAT=0
 
 tools/venc_data_dump$(EXESUF): tools/decode_simple.o
+tools/scale_slice_test$(EXESUF): tools/decode_simple.o
 
 OUTDIRS += tools
 
