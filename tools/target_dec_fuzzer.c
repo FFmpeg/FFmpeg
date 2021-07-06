@@ -98,15 +98,15 @@ static int audio_video_handler(AVCodecContext *avctx, AVFrame *frame,
 
 // Ensure we don't loop forever
 const uint32_t maxiteration = 8096;
-uint64_t maxpixels_per_frame = 4096 * 4096;
-uint64_t maxpixels;
-
-uint64_t maxsamples_per_frame = 256*1024*32;
-uint64_t maxsamples;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+    uint64_t maxpixels_per_frame = 4096 * 4096;
+    uint64_t maxpixels;
+
+    uint64_t maxsamples_per_frame = 256*1024*32;
+    uint64_t maxsamples;
     const uint64_t fuzz_tag = FUZZ_TAG;
     const uint8_t *last = data;
     const uint8_t *end = data + size;
