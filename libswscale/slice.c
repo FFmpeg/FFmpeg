@@ -243,7 +243,8 @@ int ff_init_filters(SwsContext * c)
     if (!c->desc)
         return AVERROR(ENOMEM);
     c->slice = av_mallocz_array(sizeof(SwsSlice), c->numSlice);
-
+    if (!c->slice)
+        goto cleanup;
 
     res = alloc_slice(&c->slice[0], c->srcFormat, c->srcH, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
     if (res < 0) goto cleanup;
