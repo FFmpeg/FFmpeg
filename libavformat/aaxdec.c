@@ -151,26 +151,20 @@ static int aax_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     a->xcolumns = av_calloc(a->columns, sizeof(*a->xcolumns));
-    if (!a->xcolumns) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!a->xcolumns)
+        return AVERROR(ENOMEM);
 
     a->string_table = av_calloc(a->strings_size + 1, sizeof(*a->string_table));
-    if (!a->string_table) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!a->string_table)
+        return AVERROR(ENOMEM);
 
     for (int c = 0; c < a->columns; c++) {
         uint8_t info = avio_r8(pb);
         uint32_t offset = avio_rb32(pb);
         int value_size;
 
-        if (offset >= a->strings_size) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (offset >= a->strings_size)
+            return AVERROR_INVALIDDATA;
 
         a->xcolumns[c].flag = info >>   4;
         a->xcolumns[c].type = info & 0x0F;
@@ -197,8 +191,7 @@ static int aax_read_header(AVFormatContext *s)
             value_size = 0x10;
             break;
         default:
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
 
         a->xcolumns[c].size = value_size;
@@ -221,14 +214,13 @@ static int aax_read_header(AVFormatContext *s)
 
     ret = ret64 = avio_seek(pb, a->strings_offset, SEEK_SET);
     if (ret64 < 0)
-        goto fail;
+        return ret;
 
     ret = avio_read(pb, a->string_table, a->strings_size);
     if (ret != a->strings_size) {
         if (ret < 0)
-            goto fail;
-        ret = AVERROR(EIO);
-        goto fail;
+            return ret;
+        return AVERROR(EIO);
     }
 
     for (int c = 0; c < a->columns; c++) {
@@ -248,14 +240,12 @@ static int aax_read_header(AVFormatContext *s)
                 data_offset = a->schema_offset + col_offset;
             } else if (flag & COLUMN_FLAG_ROW) {
                 data_offset = a->rows_offset + r * a->row_width + col_offset;
-            } else {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            } else
+                return AVERROR_INVALIDDATA;
 
             ret = ret64 = avio_seek(pb, data_offset, SEEK_SET);
             if (ret64 < 0)
-                goto fail;
+                return ret;
 
             if (type == COLUMN_TYPE_VLDATA) {
                 int64_t start, size;
@@ -264,23 +254,17 @@ static int aax_read_header(AVFormatContext *s)
                 size  = avio_rb32(pb);
                 a->segments[r].start = start + a->data_offset;
                 a->segments[r].end   = a->segments[r].start + size;
-            } else {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            } else
+                return AVERROR_INVALIDDATA;
         }
     }
 
-    if (!a->segments[0].end) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    if (!a->segments[0].end)
+        return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
-    if (!st) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!st)
+        return AVERROR(ENOMEM);
     st->start_time = 0;
     par = s->streams[0]->codecpar;
     par->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -289,42 +273,28 @@ static int aax_read_header(AVFormatContext *s)
     if (!strcmp(codec, "AAX")) {
         par->codec_id = AV_CODEC_ID_ADPCM_ADX;
         ret64 = avio_seek(pb, a->segments[0].start, SEEK_SET);
-        if (ret64 < 0 || avio_rb16(pb) != 0x8000) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (ret64 < 0 || avio_rb16(pb) != 0x8000)
+            return AVERROR_INVALIDDATA;
         extradata_size = avio_rb16(pb) + 4;
-        if (extradata_size < 12) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (extradata_size < 12)
+            return AVERROR_INVALIDDATA;
         avio_seek(pb, -4, SEEK_CUR);
         ret = ff_get_extradata(s, par, pb, extradata_size);
-        if (ret < 0) {
-            goto fail;
-        }
+        if (ret < 0)
+            return ret;
         par->channels    = AV_RB8 (par->extradata + 7);
         par->sample_rate = AV_RB32(par->extradata + 8);
-        if (!par->channels || !par->sample_rate) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (!par->channels || !par->sample_rate)
+            return AVERROR_INVALIDDATA;
 
         avpriv_set_pts_info(st, 64, 32, par->sample_rate);
   /*} else if (!strcmp(codec, "HCA") ){
         par->codec_id = AV_CODEC_ID_HCA;*/
     } else {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
-fail:
-    av_freep(&a->string_table);
-    av_freep(&a->xcolumns);
-    av_freep(&a->segments);
-
-    return ret;
 }
 
 static int aax_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -413,6 +383,7 @@ const AVInputFormat ff_aax_demuxer = {
     .name           = "aax",
     .long_name      = NULL_IF_CONFIG_SMALL("CRI AAX"),
     .priv_data_size = sizeof(AAXContext),
+    .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = aax_probe,
     .read_header    = aax_read_header,
     .read_packet    = aax_read_packet,
