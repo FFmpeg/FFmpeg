@@ -1287,6 +1287,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = ret;
 
     avctx->frame_size = 64;
+    avctx->initial_padding = 1 << (venc->log2_blocksize[1] - 1);
 
     ff_af_queue_init(avctx, &venc->afq);
 
