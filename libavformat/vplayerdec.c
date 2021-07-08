@@ -95,27 +95,6 @@ static int vplayer_read_header(AVFormatContext *s)
     return 0;
 }
 
-static int vplayer_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    VPlayerContext *vplayer = s->priv_data;
-    return ff_subtitles_queue_read_packet(&vplayer->q, pkt);
-}
-
-static int vplayer_read_seek(AVFormatContext *s, int stream_index,
-                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    VPlayerContext *vplayer = s->priv_data;
-    return ff_subtitles_queue_seek(&vplayer->q, s, stream_index,
-                                   min_ts, ts, max_ts, flags);
-}
-
-static int vplayer_read_close(AVFormatContext *s)
-{
-    VPlayerContext *vplayer = s->priv_data;
-    ff_subtitles_queue_clean(&vplayer->q);
-    return 0;
-}
-
 const AVInputFormat ff_vplayer_demuxer = {
     .name           = "vplayer",
     .long_name      = NULL_IF_CONFIG_SMALL("VPlayer subtitles"),
@@ -123,8 +102,8 @@ const AVInputFormat ff_vplayer_demuxer = {
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vplayer_probe,
     .read_header    = vplayer_read_header,
-    .read_packet    = vplayer_read_packet,
-    .read_seek2     = vplayer_read_seek,
-    .read_close     = vplayer_read_close,
     .extensions     = "txt",
+    .read_packet    = ff_subtitles_read_packet,
+    .read_seek2     = ff_subtitles_read_seek,
+    .read_close     = ff_subtitles_read_close,
 };

@@ -143,6 +143,13 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
  */
 void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q);
 
+int ff_subtitles_read_packet(AVFormatContext *s, AVPacket *pkt);
+
+int ff_subtitles_read_seek(AVFormatContext *s, int stream_index,
+                           int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
+
+int ff_subtitles_read_close(AVFormatContext *s);
+
 /**
  * SMIL helper to load next chunk ("<...>" or untagged content) in buf.
  *

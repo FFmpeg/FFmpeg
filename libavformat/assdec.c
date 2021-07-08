@@ -50,13 +50,6 @@ static int ass_probe(const AVProbeData *p)
     return 0;
 }
 
-static int ass_read_close(AVFormatContext *s)
-{
-    ASSContext *ass = s->priv_data;
-    ff_subtitles_queue_clean(&ass->q);
-    return 0;
-}
-
 static int read_dialogue(ASSContext *ass, AVBPrint *dst, const uint8_t *p,
                          int64_t *start, int *duration)
 {
@@ -166,20 +159,6 @@ end:
     return res;
 }
 
-static int ass_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    ASSContext *ass = s->priv_data;
-    return ff_subtitles_queue_read_packet(&ass->q, pkt);
-}
-
-static int ass_read_seek(AVFormatContext *s, int stream_index,
-                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    ASSContext *ass = s->priv_data;
-    return ff_subtitles_queue_seek(&ass->q, s, stream_index,
-                                   min_ts, ts, max_ts, flags);
-}
-
 const AVInputFormat ff_ass_demuxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
@@ -187,7 +166,7 @@ const AVInputFormat ff_ass_demuxer = {
     .priv_data_size = sizeof(ASSContext),
     .read_probe     = ass_probe,
     .read_header    = ass_read_header,
-    .read_packet    = ass_read_packet,
-    .read_close     = ass_read_close,
-    .read_seek2     = ass_read_seek,
+    .read_packet    = ff_subtitles_read_packet,
+    .read_close     = ff_subtitles_read_close,
+    .read_seek2     = ff_subtitles_read_seek,
 };

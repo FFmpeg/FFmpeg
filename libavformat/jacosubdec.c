@@ -35,9 +35,9 @@
 #include "libavutil/intreadwrite.h"
 
 typedef struct {
+    FFDemuxSubtitlesQueue q;
     int shift;
     unsigned timeres;
-    FFDemuxSubtitlesQueue q;
 } JACOsubContext;
 
 static int timed_line(const char *ptr)
@@ -91,13 +91,6 @@ static int get_jss_cmd(char k)
         if (k == cmds[i][0])
             return i;
     return -1;
-}
-
-static int jacosub_read_close(AVFormatContext *s)
-{
-    JACOsubContext *jacosub = s->priv_data;
-    ff_subtitles_queue_clean(&jacosub->q);
-    return 0;
 }
 
 static const char *read_ts(JACOsubContext *jacosub, const char *buf,
@@ -258,20 +251,6 @@ static int jacosub_read_header(AVFormatContext *s)
     return 0;
 }
 
-static int jacosub_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    JACOsubContext *jacosub = s->priv_data;
-    return ff_subtitles_queue_read_packet(&jacosub->q, pkt);
-}
-
-static int jacosub_read_seek(AVFormatContext *s, int stream_index,
-                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    JACOsubContext *jacosub = s->priv_data;
-    return ff_subtitles_queue_seek(&jacosub->q, s, stream_index,
-                                   min_ts, ts, max_ts, flags);
-}
-
 const AVInputFormat ff_jacosub_demuxer = {
     .name           = "jacosub",
     .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
@@ -279,7 +258,7 @@ const AVInputFormat ff_jacosub_demuxer = {
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = jacosub_probe,
     .read_header    = jacosub_read_header,
-    .read_packet    = jacosub_read_packet,
-    .read_seek2     = jacosub_read_seek,
-    .read_close     = jacosub_read_close,
+    .read_packet    = ff_subtitles_read_packet,
+    .read_seek2     = ff_subtitles_read_seek,
+    .read_close     = ff_subtitles_read_close,
 };

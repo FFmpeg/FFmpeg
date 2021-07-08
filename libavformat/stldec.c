@@ -107,26 +107,6 @@ static int stl_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(s, &stl->q);
     return 0;
 }
-static int stl_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    STLContext *stl = s->priv_data;
-    return ff_subtitles_queue_read_packet(&stl->q, pkt);
-}
-
-static int stl_read_seek(AVFormatContext *s, int stream_index,
-                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    STLContext *stl = s->priv_data;
-    return ff_subtitles_queue_seek(&stl->q, s, stream_index,
-                                   min_ts, ts, max_ts, flags);
-}
-
-static int stl_read_close(AVFormatContext *s)
-{
-    STLContext *stl = s->priv_data;
-    ff_subtitles_queue_clean(&stl->q);
-    return 0;
-}
 
 const AVInputFormat ff_stl_demuxer = {
     .name           = "stl",
@@ -135,8 +115,8 @@ const AVInputFormat ff_stl_demuxer = {
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = stl_probe,
     .read_header    = stl_read_header,
-    .read_packet    = stl_read_packet,
-    .read_seek2     = stl_read_seek,
-    .read_close     = stl_read_close,
     .extensions     = "stl",
+    .read_packet    = ff_subtitles_read_packet,
+    .read_seek2     = ff_subtitles_read_seek,
+    .read_close     = ff_subtitles_read_close,
 };

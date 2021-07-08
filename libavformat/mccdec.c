@@ -200,27 +200,6 @@ static int mcc_read_header(AVFormatContext *s)
     return ret;
 }
 
-static int mcc_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    MCCContext *mcc = s->priv_data;
-    return ff_subtitles_queue_read_packet(&mcc->q, pkt);
-}
-
-static int mcc_read_seek(AVFormatContext *s, int stream_index,
-                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    MCCContext *mcc = s->priv_data;
-    return ff_subtitles_queue_seek(&mcc->q, s, stream_index,
-                                   min_ts, ts, max_ts, flags);
-}
-
-static int mcc_read_close(AVFormatContext *s)
-{
-    MCCContext *mcc = s->priv_data;
-    ff_subtitles_queue_clean(&mcc->q);
-    return 0;
-}
-
 const AVInputFormat ff_mcc_demuxer = {
     .name           = "mcc",
     .long_name      = NULL_IF_CONFIG_SMALL("MacCaption"),
@@ -228,8 +207,8 @@ const AVInputFormat ff_mcc_demuxer = {
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mcc_probe,
     .read_header    = mcc_read_header,
-    .read_packet    = mcc_read_packet,
-    .read_seek2     = mcc_read_seek,
-    .read_close     = mcc_read_close,
     .extensions     = "mcc",
+    .read_packet    = ff_subtitles_read_packet,
+    .read_seek2     = ff_subtitles_read_seek,
+    .read_close     = ff_subtitles_read_close,
 };

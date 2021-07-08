@@ -314,6 +314,27 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
 }
 
+int ff_subtitles_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    FFDemuxSubtitlesQueue *q = s->priv_data;
+    return ff_subtitles_queue_read_packet(q, pkt);
+}
+
+int ff_subtitles_read_seek(AVFormatContext *s, int stream_index,
+                           int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    FFDemuxSubtitlesQueue *q = s->priv_data;
+    return ff_subtitles_queue_seek(q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
+int ff_subtitles_read_close(AVFormatContext *s)
+{
+    FFDemuxSubtitlesQueue *q = s->priv_data;
+    ff_subtitles_queue_clean(q);
+    return 0;
+}
+
 int ff_smil_extract_next_text_chunk(FFTextReader *tr, AVBPrint *buf, char *c)
 {
     int i = 0;

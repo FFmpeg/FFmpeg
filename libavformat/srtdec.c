@@ -211,27 +211,6 @@ end:
     return res;
 }
 
-static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    SRTContext *srt = s->priv_data;
-    return ff_subtitles_queue_read_packet(&srt->q, pkt);
-}
-
-static int srt_read_seek(AVFormatContext *s, int stream_index,
-                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    SRTContext *srt = s->priv_data;
-    return ff_subtitles_queue_seek(&srt->q, s, stream_index,
-                                   min_ts, ts, max_ts, flags);
-}
-
-static int srt_read_close(AVFormatContext *s)
-{
-    SRTContext *srt = s->priv_data;
-    ff_subtitles_queue_clean(&srt->q);
-    return 0;
-}
-
 const AVInputFormat ff_srt_demuxer = {
     .name        = "srt",
     .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
@@ -239,7 +218,7 @@ const AVInputFormat ff_srt_demuxer = {
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe  = srt_probe,
     .read_header = srt_read_header,
-    .read_packet = srt_read_packet,
-    .read_seek2  = srt_read_seek,
-    .read_close  = srt_read_close,
+    .read_packet = ff_subtitles_read_packet,
+    .read_seek2  = ff_subtitles_read_seek,
+    .read_close  = ff_subtitles_read_close,
 };
