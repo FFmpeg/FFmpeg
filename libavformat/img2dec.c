@@ -651,7 +651,7 @@ static const AVOption img2pipe_options[] = {
     { "frame_size", "force frame size in bytes", OFFSET(frame_size), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, DEC },
     COMMON_OPTIONS
 };
-static const AVClass imgagepipe_class = {
+static const AVClass imagepipe_class = {
     .class_name = "imagepipe demuxer",
     .item_name  = av_default_item_name,
     .option     = img2pipe_options,
@@ -665,7 +665,7 @@ const AVInputFormat ff_image2pipe_demuxer = {
     .priv_data_size = sizeof(VideoDemuxData),
     .read_header    = ff_img_read_header,
     .read_packet    = ff_img_read_packet,
-    .priv_class     = &imgagepipe_class,
+    .priv_class     = &imagepipe_class,
 };
 #endif
 
@@ -1113,7 +1113,7 @@ const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .read_probe     = imgname ## _probe,\
     .read_header    = ff_img_read_header,\
     .read_packet    = ff_img_read_packet,\
-    .priv_class     = &imgagepipe_class,\
+    .priv_class     = &imagepipe_class,\
     .flags          = AVFMT_GENERIC_INDEX, \
     .raw_codec_id   = codecid,\
 };
