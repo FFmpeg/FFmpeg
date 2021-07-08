@@ -1912,6 +1912,17 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
         int r,g,b;
 
         switch (c->dither) {
+        case SWS_DITHER_NONE:
+            if (isrgb8) {
+                r = av_clip_uintp2(R >> 27, 3);
+                g = av_clip_uintp2(G >> 27, 3);
+                b = av_clip_uintp2(B >> 28, 2);
+            } else {
+                r = av_clip_uintp2(R >> 29, 1);
+                g = av_clip_uintp2(G >> 28, 2);
+                b = av_clip_uintp2(B >> 29, 1);
+            }
+            break;
         default:
         case SWS_DITHER_AUTO:
         case SWS_DITHER_ED:
