@@ -87,6 +87,7 @@ fate-vorbis-19: REF = $(SAMPLES)/vorbis/test-short2_small.pcm
 FATE_VORBIS += fate-vorbis-20
 fate-vorbis-20: CMD = pcm -i $(TARGET_SAMPLES)/vorbis/6.ogg
 fate-vorbis-20: REF = $(SAMPLES)/vorbis/6.pcm
+fate-vorbis-20: SIZE_TOLERANCE = 9948
 
 FATE_VORBIS_FFPROBE-$(CONFIG_OGG_DEMUXER) += fate-vorbis-1833-chapters
 fate-vorbis-1833-chapters: CMD = probechapters $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg
