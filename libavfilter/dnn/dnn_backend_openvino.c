@@ -432,6 +432,8 @@ static DNNReturnType execute_model_ov(RequestItem *request, Queue *inferenceq)
     OVModel *ov_model;
 
     if (ff_queue_size(inferenceq) == 0) {
+        ie_infer_request_free(&request->infer_request);
+        av_freep(&request);
         return DNN_SUCCESS;
     }
 
@@ -443,7 +445,7 @@ static DNNReturnType execute_model_ov(RequestItem *request, Queue *inferenceq)
     if (task->async) {
         ret = fill_model_input_ov(ov_model, request);
         if (ret != DNN_SUCCESS) {
-            return ret;
+            goto err;
         }
         status = ie_infer_set_completion_callback(request->infer_request, &request->callback);
         if (status != OK) {
@@ -459,7 +461,7 @@ static DNNReturnType execute_model_ov(RequestItem *request, Queue *inferenceq)
     } else {
         ret = fill_model_input_ov(ov_model, request);
         if (ret != DNN_SUCCESS) {
-            return ret;
+            goto err;
         }
         status = ie_infer_request_infer(request->infer_request);
         if (status != OK) {
