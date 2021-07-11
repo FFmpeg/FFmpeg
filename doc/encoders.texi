@@ -3119,7 +3119,8 @@ also set (the @option{-qscale} ffmpeg option).
 @option{look_ahead} option is also set.
 
 @item
-@var{ICQ} -- intelligent constant quality otherwise.
+@var{ICQ} -- intelligent constant quality otherwise. For the ICQ modes, global
+quality range is 1 to 51, with 1 being the best quality.
 @end itemize
 
 @item

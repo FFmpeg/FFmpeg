@@ -650,7 +650,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     case MFX_RATECONTROL_LA_ICQ:
         q->extco2.LookAheadDepth = q->look_ahead_depth;
     case MFX_RATECONTROL_ICQ:
-        q->param.mfx.ICQQuality  = avctx->global_quality;
+        q->param.mfx.ICQQuality  = av_clip(avctx->global_quality, 1, 51);
         break;
 #endif
 #endif
