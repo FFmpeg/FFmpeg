@@ -54,18 +54,18 @@ typedef struct OVModel{
     ie_core_t *core;
     ie_network_t *network;
     ie_executable_network_t *exe_network;
-    SafeQueue *request_queue;   // holds RequestItem
+    SafeQueue *request_queue;   // holds OVRequestItem
     Queue *task_queue;          // holds TaskItem
     Queue *inference_queue;     // holds InferenceItem
 } OVModel;
 
 // one request for one call to openvino
-typedef struct RequestItem {
+typedef struct OVRequestItem {
     ie_infer_request_t *infer_request;
     InferenceItem **inferences;
     uint32_t inference_count;
     ie_complete_call_back_t callback;
-} RequestItem;
+} OVRequestItem;
 
 #define APPEND_STRING(generated_string, iterate_string)                                            \
     generated_string = generated_string ? av_asprintf("%s %s", generated_string, iterate_string) : \
@@ -111,7 +111,7 @@ static int get_datatype_size(DNNDataType dt)
     }
 }
 
-static DNNReturnType fill_model_input_ov(OVModel *ov_model, RequestItem *request)
+static DNNReturnType fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
 {
     dimensions_t dims;
     precision_e precision;
@@ -198,7 +198,7 @@ static void infer_completion_callback(void *args)
     dimensions_t dims;
     precision_e precision;
     IEStatusCode status;
-    RequestItem *request = args;
+    OVRequestItem *request = args;
     InferenceItem *inference = request->inferences[0];
     TaskItem *task = inference->task;
     OVModel *ov_model = task->model;
@@ -381,7 +381,7 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
     }
 
     for (int i = 0; i < ctx->options.nireq; i++) {
-        RequestItem *item = av_mallocz(sizeof(*item));
+        OVRequestItem *item = av_mallocz(sizeof(*item));
         if (!item) {
             goto err;
         }
@@ -422,7 +422,7 @@ err:
     return DNN_ERROR;
 }
 
-static DNNReturnType execute_model_ov(RequestItem *request, Queue *inferenceq)
+static DNNReturnType execute_model_ov(OVRequestItem *request, Queue *inferenceq)
 {
     IEStatusCode status;
     DNNReturnType ret;
@@ -639,7 +639,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
     OVModel *ov_model = model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
-    RequestItem *request;
+    OVRequestItem *request;
     AVFrame *in_frame = NULL;
     AVFrame *out_frame = NULL;
     IEStatusCode status;
@@ -779,7 +779,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
     OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
     TaskItem task;
-    RequestItem *request;
+    OVRequestItem *request;
 
     if (ff_check_exec_params(ctx, DNN_OV, model->func_type, exec_params) != 0) {
         return DNN_ERROR;
@@ -827,7 +827,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
 {
     OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
-    RequestItem *request;
+    OVRequestItem *request;
     TaskItem *task;
     DNNReturnType ret;
 
@@ -904,7 +904,7 @@ DNNReturnType ff_dnn_flush_ov(const DNNModel *model)
 {
     OVModel *ov_model = model->model;
     OVContext *ctx = &ov_model->ctx;
-    RequestItem *request;
+    OVRequestItem *request;
     IEStatusCode status;
     DNNReturnType ret;
 
@@ -943,7 +943,7 @@ void ff_dnn_free_model_ov(DNNModel **model)
     if (*model){
         OVModel *ov_model = (*model)->model;
         while (ff_safe_queue_size(ov_model->request_queue) != 0) {
-            RequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
+            OVRequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
             if (item && item->infer_request) {
                 ie_infer_request_free(&item->infer_request);
             }
