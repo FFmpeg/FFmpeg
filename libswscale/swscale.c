@@ -1113,6 +1113,9 @@ int sws_send_slice(struct SwsContext *c, unsigned int slice_start,
 
 unsigned int sws_receive_slice_alignment(const struct SwsContext *c)
 {
+    if (c->slice_ctx)
+        return c->slice_ctx[0]->dst_slice_align;
+
     return c->dst_slice_align;
 }
 
@@ -1134,6 +1137,27 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
                "Incorrectly aligned output: %u/%u not multiples of %u\n",
                slice_start, slice_height, align);
         return AVERROR(EINVAL);
+    }
+
+    if (c->slicethread) {
+        int nb_jobs = c->slice_ctx[0]->dither == SWS_DITHER_ED ? 1 : c->nb_slice_ctx;
+        int ret = 0;
+
+        c->dst_slice_start  = slice_start;
+        c->dst_slice_height = slice_height;
+
+        avpriv_slicethread_execute(c->slicethread, nb_jobs, 0);
+
+        for (int i = 0; i < c->nb_slice_ctx; i++) {
+            if (c->slice_err[i] < 0) {
+                ret = c->slice_err[i];
+                break;
+            }
+        }
+
+        memset(c->slice_err, 0, c->nb_slice_ctx * sizeof(*c->slice_err));
+
+        return ret;
     }
 
     for (int i = 0; i < FF_ARRAY_ELEMS(dst) && c->frame_dst->data[i]; i++) {
@@ -1173,6 +1197,41 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
                                   int srcSliceH, uint8_t *const dst[],
                                   const int dstStride[])
 {
+    if (c->nb_slice_ctx)
+        c = c->slice_ctx[0];
+
     return scale_internal(c, srcSlice, srcStride, srcSliceY, srcSliceH,
                           dst, dstStride, 0, c->dstH);
+}
+
+void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
+                         int nb_jobs, int nb_threads)
+{
+    SwsContext *parent = priv;
+    SwsContext      *c = parent->slice_ctx[threadnr];
+
+    const int slice_height = FFALIGN(FFMAX((parent->dst_slice_height + nb_jobs - 1) / nb_jobs, 1),
+                                     c->dst_slice_align);
+    const int slice_start  = jobnr * slice_height;
+    const int slice_end    = FFMIN((jobnr + 1) * slice_height, parent->dst_slice_height);
+    int err = 0;
+
+    if (slice_end > slice_start) {
+        uint8_t *dst[4] = { NULL };
+
+        for (int i = 0; i < FF_ARRAY_ELEMS(dst) && parent->frame_dst->data[i]; i++) {
+            const int vshift = (i == 1 || i == 2) ? c->chrDstVSubSample : 0;
+            const ptrdiff_t offset = parent->frame_dst->linesize[i] *
+                ((slice_start + parent->dst_slice_start) >> vshift);
+
+            dst[i] = parent->frame_dst->data[i] + offset;
+        }
+
+        err = scale_internal(c, (const uint8_t * const *)parent->frame_src->data,
+                             parent->frame_src->linesize, 0, c->srcH,
+                             dst, parent->frame_dst->linesize,
+                             parent->dst_slice_start + slice_start, slice_end - slice_start);
+    }
+
+    parent->slice_err[threadnr] = err;
 }

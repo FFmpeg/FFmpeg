@@ -33,6 +33,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/slicethread.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
@@ -300,6 +301,15 @@ typedef struct SwsContext {
      */
     const AVClass *av_class;
 
+    AVSliceThread      *slicethread;
+    struct SwsContext **slice_ctx;
+    int                *slice_err;
+    int              nb_slice_ctx;
+
+    // values passed to current sws_receive_slice() call
+    unsigned int dst_slice_start;
+    unsigned int dst_slice_height;
+
     /**
      * Note that src, dst, srcStride, dstStride will be copied in the
      * sws_scale() wrapper so they can be freely modified here.
@@ -325,6 +335,7 @@ typedef struct SwsContext {
     int chrDstVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in destination image.
     int vChrDrop;                 ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
     int sliceDir;                 ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
+    int nb_threads;               ///< Number of threads used for scaling
     double param[2];              ///< Input parameters for scaling algorithms that need them.
 
     AVFrame *frame_src;
@@ -1081,6 +1092,9 @@ int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsS
 void ff_init_vscale_pfn(SwsContext *c, yuv2planar1_fn yuv2plane1, yuv2planarX_fn yuv2planeX,
     yuv2interleavedX_fn yuv2nv12cX, yuv2packed1_fn yuv2packed1, yuv2packed2_fn yuv2packed2,
     yuv2packedX_fn yuv2packedX, yuv2anyX_fn yuv2anyX, int use_mmx);
+
+void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
+                         int nb_jobs, int nb_threads);
 
 //number of extra lines to process
 #define MAX_LINES_AHEAD 4

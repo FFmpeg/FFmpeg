@@ -16,6 +16,7 @@ version <next>:
 - atilt audio filter
 - grayworld video filter
 - AV1 Low overhead bitstream format muxer
+- swscale slice threading
 
 
 version 4.4:
