@@ -1,5 +1,5 @@
-pkt_pts=0|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:20
-pkt_pts=1|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:21
-pkt_pts=2|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:22
-pkt_pts=3|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:23
-pkt_pts=4|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:24
+pts=0|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:20
+pts=1|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:21
+pts=2|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:22
+pts=3|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:23
+pts=4|tag:lavfi.readvitc.found=1|tag:lavfi.readvitc.tc_str=05:01:02:24

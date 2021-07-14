@@ -86,8 +86,6 @@
       <xsd:attribute name="key_frame"     type="xsd:int"    use="required"/>
       <xsd:attribute name="pts"           type="xsd:long" />
       <xsd:attribute name="pts_time"      type="xsd:float"/>
-      <xsd:attribute name="pkt_pts"       type="xsd:long" />
-      <xsd:attribute name="pkt_pts_time"  type="xsd:float"/>
       <xsd:attribute name="pkt_dts"       type="xsd:long" />
       <xsd:attribute name="pkt_dts_time"  type="xsd:float"/>
       <xsd:attribute name="best_effort_timestamp"      type="xsd:long" />

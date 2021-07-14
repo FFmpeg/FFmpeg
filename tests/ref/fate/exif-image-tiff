@@ -2,8 +2,8 @@
 media_type=video
 stream_index=0
 key_frame=1
-pkt_pts=0
-pkt_pts_time=0.000000
+pts=0
+pts_time=0.000000
 pkt_dts=0
 pkt_dts_time=0.000000
 best_effort_timestamp=0

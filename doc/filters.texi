@@ -17161,7 +17161,7 @@ This filter supports the all above options as @ref{commands}.
 @item
 Output a csv with presentation time and the first two lines of identified EIA-608 captioning data.
 @example
-ffprobe -f lavfi -i movie=captioned_video.mov,readeia608 -show_entries frame=pkt_pts_time:frame_tags=lavfi.readeia608.0.cc,lavfi.readeia608.1.cc -of csv
+ffprobe -f lavfi -i movie=captioned_video.mov,readeia608 -show_entries frame=pts_time:frame_tags=lavfi.readeia608.0.cc,lavfi.readeia608.1.cc -of csv
 @end example
 @end itemize
 
