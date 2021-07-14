@@ -92,6 +92,7 @@ int main(int argc, char **argv)
     uint8_t *data;
     size_t   data_size;
     int ret;
+    int eof;
     AVPacket *pkt;
 
     if (argc <= 2) {
@@ -150,15 +151,16 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    while (!feof(f)) {
+    do {
         /* read raw data from the input file */
         data_size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (!data_size)
+        if (ferror(f))
             break;
+        eof = !data_size;
 
         /* use the parser to split the data into frames */
         data = inbuf;
-        while (data_size > 0) {
+        while (data_size > 0 || eof) {
             ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                    data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
             if (ret < 0) {
@@ -170,8 +172,10 @@ int main(int argc, char **argv)
 
             if (pkt->size)
                 decode(c, frame, pkt, outfilename);
+            else if (eof)
+                break;
         }
-    }
+    } while (!eof);
 
     /* flush the decoder */
     decode(c, frame, NULL, outfilename);
