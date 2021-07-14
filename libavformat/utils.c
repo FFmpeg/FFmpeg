@@ -482,7 +482,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
                         const AVInputFormat *fmt, AVDictionary **options)
 {
     AVFormatContext *s = *ps;
-    int i, ret = 0;
+    int ret = 0;
     AVDictionary *tmp = NULL;
     ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
@@ -603,9 +603,6 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     s->internal->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 
     update_stream_avctx(s);
-
-    for (i = 0; i < s->nb_streams; i++)
-        s->streams[i]->internal->orig_codec_id = s->streams[i]->codecpar->codec_id;
 
     if (options) {
         av_dict_free(options);
@@ -3613,9 +3610,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                        avcodec_get_name(st->codecpar->codec_id));
             }
         }
-
-        if (st->codecpar->codec_id != st->internal->orig_codec_id)
-            st->internal->orig_codec_id = st->codecpar->codec_id;
 
         ret = avcodec_parameters_to_context(avctx, st->codecpar);
         if (ret < 0)
