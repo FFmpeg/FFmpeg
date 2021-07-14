@@ -6193,8 +6193,9 @@ check_func_headers windows.h SetDllDirectory
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
-enabled xlib &&
-    check_lib xlib "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
+enabled xlib && {
+    check_pkg_config xlib xv "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute ||
+    check_lib xlib "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext; }
 
 check_headers direct.h
 check_headers dirent.h
