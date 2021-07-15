@@ -2950,7 +2950,7 @@ d3d11va_deps="dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
 ffnvcodec_deps_any="libdl LoadLibrary"
 nvdec_deps="ffnvcodec"
-vaapi_x11_deps="xlib"
+vaapi_x11_deps="xlib_x11"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 vulkan_deps_any="libdl LoadLibrary"
@@ -3471,7 +3471,7 @@ v4l2_outdev_suggest="libv4l2"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb"
 xcbgrab_indev_suggest="libxcb_shm libxcb_shape libxcb_xfixes"
-xv_outdev_deps="xlib"
+xv_outdev_deps="xlib_xv xlib_x11 xlib_xext"
 
 # protocols
 async_protocol_deps="threads"
@@ -6193,9 +6193,20 @@ check_func_headers windows.h SetDllDirectory
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
-enabled xlib && {
-    check_pkg_config xlib xv "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute ||
-    check_lib xlib "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext; }
+
+if enabled xlib; then
+    check_pkg_config xlib_x11 x11 "X11/Xlib.h" XPending ||
+    check_lib xlib_x11 "X11/Xlib.h" XPending -lX11 ||
+        disable xlib
+
+    check_pkg_config xlib_xext xext "X11/Xlib.h X11/extensions/XShm.h" XShmAttach ||
+    check_lib xlib_xext "X11/Xlib.h X11/extensions/Xvlib.h" XShmAttach -lXext ||
+        disable xlib
+
+    check_pkg_config xlib_xv xv "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute ||
+    check_lib xlib_xv "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv ||
+        disable xlib
+fi
 
 check_headers direct.h
 check_headers dirent.h
@@ -6752,7 +6763,7 @@ enabled vaapi &&
 if enabled vaapi; then
     check_pkg_config vaapi_drm "libva-drm" "va/va_drm.h" vaGetDisplayDRM
 
-    if enabled xlib; then
+    if enabled xlib_x11; then
         check_pkg_config vaapi_x11 "libva-x11" "va/va_x11.h" vaGetDisplay
     fi
 
