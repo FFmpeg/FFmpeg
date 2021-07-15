@@ -6200,7 +6200,7 @@ if enabled xlib; then
         disable xlib
 
     check_pkg_config xlib_xext xext "X11/Xlib.h X11/extensions/XShm.h" XShmAttach ||
-    check_lib xlib_xext "X11/Xlib.h X11/extensions/Xvlib.h" XShmAttach -lXext ||
+    check_lib xlib_xext "X11/Xlib.h X11/extensions/XShm.h" XShmAttach -lXext ||
         disable xlib
 
     check_pkg_config xlib_xv xv "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute ||
