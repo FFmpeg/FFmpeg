@@ -390,4 +390,16 @@ static inline enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
 #define MOV_ISMV_TTML_TAG MKTAG('d', 'f', 'x', 'p')
 #define MOV_MP4_TTML_TAG  MKTAG('s', 't', 'p', 'p')
 
+struct MP4TrackKindValueMapping {
+    int         disposition;
+    const char *value;
+};
+
+struct MP4TrackKindMapping {
+    const char   *scheme_uri;
+    const struct  MP4TrackKindValueMapping *value_maps;
+};
+
+extern const struct MP4TrackKindMapping ff_mov_track_kind_table[];
+
 #endif /* AVFORMAT_ISOM_H */

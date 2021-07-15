@@ -430,3 +430,22 @@ void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout)
     }
     avio_wb32(pb, 0);              // mNumberChannelDescriptions
 }
+
+static const struct MP4TrackKindValueMapping dash_role_map[] = {
+    { AV_DISPOSITION_HEARING_IMPAIRED|AV_DISPOSITION_CAPTIONS,
+        "caption" },
+    { AV_DISPOSITION_COMMENT,
+        "commentary" },
+    { AV_DISPOSITION_VISUAL_IMPAIRED|AV_DISPOSITION_DESCRIPTIONS,
+        "description" },
+    { AV_DISPOSITION_DUB,
+        "dub" },
+    { AV_DISPOSITION_FORCED,
+        "forced-subtitle" },
+    { 0, NULL }
+};
+
+const struct MP4TrackKindMapping ff_mov_track_kind_table[] = {
+    { "urn:mpeg:dash:role:2011", dash_role_map },
+    { 0, NULL }
+};

@@ -3322,6 +3322,52 @@ static int mov_write_track_metadata(AVIOContext *pb, AVStream *st,
     return update_size(pb, pos);
 }
 
+static int mov_write_track_kind(AVIOContext *pb, const char *scheme_uri,
+                                const char *value)
+{
+    int64_t pos = avio_tell(pb);
+
+    /* Box|FullBox basics */
+    avio_wb32(pb, 0); /* size placeholder */
+    ffio_wfourcc(pb, (const unsigned char *)"kind");
+    avio_w8(pb, 0);   /* version = 0 */
+    avio_wb24(pb, 0); /* flags = 0 */
+
+    /* Required null-terminated scheme URI */
+    avio_write(pb, (const unsigned char *)scheme_uri,
+               strlen(scheme_uri));
+    avio_w8(pb, 0);
+
+    /* Optional value string */
+    if (value && value[0])
+        avio_write(pb, (const unsigned char *)value,
+                   strlen(value));
+
+    avio_w8(pb, 0);
+
+    return update_size(pb, pos);
+}
+
+static int mov_write_track_kinds(AVIOContext *pb, AVStream *st)
+{
+    int ret = AVERROR_BUG;
+
+    for (int i = 0; ff_mov_track_kind_table[i].scheme_uri; i++) {
+        const struct MP4TrackKindMapping map = ff_mov_track_kind_table[i];
+
+        for (int j = 0; map.value_maps[j].disposition; j++) {
+            const struct MP4TrackKindValueMapping value_map = map.value_maps[j];
+            if (!(st->disposition & value_map.disposition))
+                continue;
+
+            if ((ret = mov_write_track_kind(pb, map.scheme_uri, value_map.value)) < 0)
+                return ret;
+        }
+    }
+
+    return 0;
+}
+
 static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
                                     AVStream *st)
 {
@@ -3338,6 +3384,11 @@ static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     if (mov->mode & (MODE_MP4|MODE_MOV))
         mov_write_track_metadata(pb_buf, st, "name", "title");
+
+    if (mov->mode & MODE_MP4) {
+        if ((ret = mov_write_track_kinds(pb_buf, st)) < 0)
+            return ret;
+    }
 
     if ((size = avio_get_dyn_buf(pb_buf, &buf)) > 0) {
         avio_wb32(pb, size + 8);
