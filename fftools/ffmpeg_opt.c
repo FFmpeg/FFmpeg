@@ -1286,6 +1286,17 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->loop = o->loop;
     f->duration = 0;
     f->time_base = (AVRational){ 1, 1 };
+
+    f->readrate = o->readrate ? o->readrate : 0.0;
+    if (f->readrate < 0.0f) {
+        av_log(NULL, AV_LOG_ERROR, "Option -readrate for Input #%d is %0.3f; it must be non-negative.\n", nb_input_files, f->readrate);
+        exit_program(1);
+    }
+    if (f->readrate && f->rate_emu) {
+        av_log(NULL, AV_LOG_WARNING, "Both -readrate and -re set for Input #%d. Using -readrate %0.3f.\n", nb_input_files, f->readrate);
+        f->rate_emu = 0;
+    }
+
     f->pkt = av_packet_alloc();
     if (!f->pkt)
         exit_program(1);
@@ -3507,7 +3518,10 @@ const OptionDef options[] = {
         "when dumping packets, also dump the payload" },
     { "re",             OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
                         OPT_INPUT,                                   { .off = OFFSET(rate_emu) },
-        "read input at native frame rate", "" },
+        "read input at native frame rate; equivalent to -readrate 1", "" },
+    { "readrate",       HAS_ARG | OPT_FLOAT | OPT_OFFSET |
+                        OPT_EXPERT | OPT_INPUT,                      { .off = OFFSET(readrate) },
+        "read input at specified rate", "speed" },
     { "target",         HAS_ARG | OPT_PERFILE | OPT_OUTPUT,          { .func_arg = opt_target },
         "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" "
         "with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")", "type" },

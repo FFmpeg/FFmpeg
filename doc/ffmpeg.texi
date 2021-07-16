@@ -1575,14 +1575,21 @@ Exit after ffmpeg has been running for @var{duration} seconds in CPU user time.
 Dump each input packet to stderr.
 @item -hex (@emph{global})
 When dumping packets, also dump the payload.
+@item -readrate @var{speed} (@emph{input})
+Limit input read speed.
+
+Its value is a floating-point positive number which represents the maximum duration of
+media, in seconds, that should be ingested in one second of wallclock time.
+Default value is zero and represents no imposed limitation on speed of ingestion.
+Value @code{1} represents real-time speed and is equivalent to @code{-re}.
+
+Mainly used to simulate a capture device or live input stream (e.g. when reading from a file).
+Should not be used with a low value when input is an actual capture device or live stream as
+it may cause packet loss.
+
+It is useful for when flow speed of output packets is important, such as live streaming.
 @item -re (@emph{input})
-Read input at native frame rate. Mainly used to simulate a grab device,
-or live input stream (e.g. when reading from a file). Should not be used
-with actual grab devices or live input streams (where it can cause packet
-loss).
-By default @command{ffmpeg} attempts to read the input(s) as fast as possible.
-This option will slow down the reading of the input(s) to the native frame rate
-of the input(s). It is useful for real-time output (e.g. live streaming).
+Read input at native frame rate. This is equivalent to setting @code{-readrate 1}.
 @item -vsync @var{parameter}
 Video sync method.
 For compatibility reasons old values can be specified as numbers.
