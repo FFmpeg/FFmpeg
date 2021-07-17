@@ -230,7 +230,7 @@ static int argo_brp_read_header(AVFormatContext *s)
             st->codecpar->width  = bvid->width;
             st->codecpar->height = bvid->height;
             st->nb_frames = bvid->num_frames;
-            st->codecpar->bits_per_raw_sample = bvid->depth;
+            st->codecpar->bits_per_coded_sample = bvid->depth;
         } else if (hdr->codec_id == BRP_CODEC_ID_BASF) {
             /*
              * It would make the demuxer significantly more complicated
