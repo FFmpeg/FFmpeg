@@ -4236,10 +4236,11 @@ static int get_input_packet(InputFile *f, AVPacket **pkt)
         float scale = f->rate_emu ? 1.0 : f->readrate;
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
+            int64_t stream_ts_offset, pts, now;
             if (!ist->nb_packets) continue;
-            int64_t stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
-            int64_t pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            int64_t now = (av_gettime_relative() - ist->start)*scale + stream_ts_offset;
+            stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
+            pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
+            now = (av_gettime_relative() - ist->start) * scale + stream_ts_offset;
             if (pts > now)
                 return AVERROR(EAGAIN);
         }
