@@ -35,6 +35,7 @@ typedef struct ChromaNRContext {
     float threshold_y;
     float threshold_u;
     float threshold_v;
+    int distance;
     int thres;
     int thres_y;
     int thres_u;
@@ -79,8 +80,11 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-#define FILTER_FUNC(name, type)                                                        \
-static int filter_slice##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)   \
+#define SQR(x) ((x)*(x))
+
+#define FILTER_FUNC(distance, name, ctype, type, fun)                                    \
+static int distance ## _slice##name(AVFilterContext *ctx, void *arg,                     \
+                                    int jobnr, int nb_jobs)                              \
 {                                                                                        \
     ChromaNRContext *s = ctx->priv;                                                      \
     AVFrame *in = arg;                                                                   \
@@ -146,13 +150,13 @@ static int filter_slice##name(AVFilterContext *ctx, void *arg, int jobnr, int nb
                 const type *in_vptr = (const type *)(in->data[2] + yy * in_vlinesize);            \
                                                                                                   \
                 for (int xx = FFMAX(0, x - sizew); xx < FFMIN(x + sizew, w); xx += stepw) {       \
-                    const int Y = in_yptr[xx * chroma_w];                              \
-                    const int U = in_uptr[xx];                                         \
-                    const int V = in_vptr[xx];                                         \
+                    const ctype Y = in_yptr[xx * chroma_w];                            \
+                    const ctype U = in_uptr[xx];                                       \
+                    const ctype V = in_vptr[xx];                                       \
                                                                                        \
-                    if (FFABS(cu - U) + FFABS(cv - V) + FFABS(cy - Y) < thres &&       \
-                        FFABS(cu - U) < thres_u && FFABS(cv - V) < thres_v &&          \
-                        FFABS(cy - Y) < thres_y &&                                     \
+                    if (fun(cu - U) + fun(cv - V) + fun(cy - Y) < thres &&             \
+                        fun(cu - U) < thres_u && fun(cv - V) < thres_v &&              \
+                        fun(cy - Y) < thres_y &&                                       \
                         xx != x && yy != y) {                                          \
                         su += U;                                                       \
                         sv += V;                                                       \
@@ -172,8 +176,11 @@ static int filter_slice##name(AVFilterContext *ctx, void *arg, int jobnr, int nb
     return 0;                                                                          \
 }
 
-FILTER_FUNC(8,  uint8_t)
-FILTER_FUNC(16, uint16_t)
+FILTER_FUNC(manhattan, 8,  int, uint8_t, FFABS)
+FILTER_FUNC(manhattan, 16, int, uint16_t, FFABS)
+
+FILTER_FUNC(euclidean, 8,  int, uint8_t, SQR)
+FILTER_FUNC(euclidean, 16, int64_t, uint16_t, SQR)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -181,6 +188,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     ChromaNRContext *s = ctx->priv;
     AVFrame *out;
+
+    switch (s->distance) {
+    case 0:
+        s->filter_slice = s->depth <= 8 ? manhattan_slice8 : manhattan_slice16;
+        break;
+    case 1:
+        s->filter_slice = s->depth <= 8 ? euclidean_slice8 : euclidean_slice16;
+        break;
+    }
 
     s->thres = s->threshold * (1 << (s->depth - 8));
     s->thres_y = s->threshold_y * (1 << (s->depth - 8));
@@ -213,7 +229,6 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_planes = desc->nb_components;
     s->depth = desc->comp[0].depth;
-    s->filter_slice = s->depth <= 8 ? filter_slice8 : filter_slice16;
     s->chroma_w = 1 << desc->log2_chroma_w;
     s->chroma_h = 1 << desc->log2_chroma_h;
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
@@ -231,14 +246,17 @@ static int config_input(AVFilterLink *inlink)
 #define VF AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption chromanr_options[] = {
-    { "thres", "set y+u+v threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=30}, 1, 200, VF },
-    { "sizew", "set horizontal size", OFFSET(sizew),     AV_OPT_TYPE_INT,   {.i64=5},  1, 100, VF },
-    { "sizeh", "set vertical size",   OFFSET(sizeh),     AV_OPT_TYPE_INT,   {.i64=5},  1, 100, VF },
-    { "stepw", "set horizontal step", OFFSET(stepw),     AV_OPT_TYPE_INT,   {.i64=1},  1,  50, VF },
-    { "steph", "set vertical step",   OFFSET(steph),     AV_OPT_TYPE_INT,   {.i64=1},  1,  50, VF },
-    { "threy", "set y threshold",   OFFSET(threshold_y), AV_OPT_TYPE_FLOAT, {.dbl=200},1, 200, VF },
-    { "threu", "set u threshold",   OFFSET(threshold_u), AV_OPT_TYPE_FLOAT, {.dbl=200},1, 200, VF },
-    { "threv", "set v threshold",   OFFSET(threshold_v), AV_OPT_TYPE_FLOAT, {.dbl=200},1, 200, VF },
+    { "thres", "set y+u+v threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=30}, 1,  5000, VF },
+    { "sizew", "set horizontal size", OFFSET(sizew),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
+    { "sizeh", "set vertical size",   OFFSET(sizeh),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
+    { "stepw", "set horizontal step", OFFSET(stepw),     AV_OPT_TYPE_INT,   {.i64=1},  1,    50, VF },
+    { "steph", "set vertical step",   OFFSET(steph),     AV_OPT_TYPE_INT,   {.i64=1},  1,    50, VF },
+    { "threy", "set y threshold",   OFFSET(threshold_y), AV_OPT_TYPE_FLOAT, {.dbl=5000},1, 5000, VF },
+    { "threu", "set u threshold",   OFFSET(threshold_u), AV_OPT_TYPE_FLOAT, {.dbl=5000},1, 5000, VF },
+    { "threv", "set v threshold",   OFFSET(threshold_v), AV_OPT_TYPE_FLOAT, {.dbl=5000},1, 5000, VF },
+    { "distance", "set distance type", OFFSET(distance), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, VF, "distance" },
+    {   "manhattan", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, VF, "distance" },
+    {   "euclidean", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, VF, "distance" },
     { NULL }
 };
 
