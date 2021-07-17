@@ -2926,7 +2926,7 @@ static int xyz_to_fisheye(const V360Context *s,
     float uf = vec[0] / lh * phi / s->iflat_range[0];
     float vf = vec[1] / lh * phi / s->iflat_range[1];
 
-    const int visible = hypotf(uf, vf) <= 0.5f;
+    const int visible = -0.5f < uf && uf < 0.5f && -0.5f < vf && vf < 0.5f;
     int ui, vi;
 
     uf = (uf + 0.5f) * width;
