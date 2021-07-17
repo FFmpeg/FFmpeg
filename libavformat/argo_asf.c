@@ -109,12 +109,7 @@ int ff_argo_asf_fill_stream(AVFormatContext *s, AVStream *st, const ArgoASFFileH
 
     st->codecpar->bits_per_coded_sample     = 4;
 
-    if (ckhdr->flags & ASF_CF_BITS_PER_SAMPLE)
-        st->codecpar->bits_per_raw_sample   = 16;
-    else
-        st->codecpar->bits_per_raw_sample   = 8;
-
-    if (st->codecpar->bits_per_raw_sample != 16) {
+    if (!(ckhdr->flags & ASF_CF_BITS_PER_SAMPLE)) {
         /* The header allows for these, but I've never seen any files with them. */
         avpriv_request_sample(s, "Non 16-bit samples");
         return AVERROR_PATCHWELCOME;
