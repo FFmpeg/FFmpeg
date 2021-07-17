@@ -183,7 +183,6 @@ static int argo_cvg_read_header(AVFormatContext *s)
     par->channel_layout         = AV_CH_LAYOUT_MONO;
 
     par->bits_per_coded_sample  = 4;
-    par->bits_per_raw_sample    = 16;
     par->block_align            = ARGO_CVG_BLOCK_ALIGN;
     par->bit_rate               = par->sample_rate * par->bits_per_coded_sample;
 
