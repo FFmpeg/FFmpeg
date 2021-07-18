@@ -127,7 +127,6 @@ static int alp_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
 
     par->bits_per_coded_sample  = 4;
-    par->bits_per_raw_sample    = 16;
     par->block_align            = 1;
     par->bit_rate               = par->channels *
                                   par->sample_rate *
