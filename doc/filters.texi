@@ -2363,6 +2363,42 @@ Default value is 8.
 
 This filter supports the all above options as @ref{commands}.
 
+@section apsyclip
+Apply Psychoacoustic clipper to input audio stream.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set input gain. By default it is 1. Range is [0.015625 - 64].
+
+@item level_out
+Set output gain. By default it is 1. Range is [0.015625 - 64].
+
+@item clip
+Set the clipping start value. Default value is 0dBFS or 1.
+
+@item diff
+Output only difference samples, useful to hear introduced distortions.
+By default is disabled.
+
+@item adaptive
+Set strenght of adaptive distortion applied. Default value is 0.5.
+Allowed range is from 0 to 1.
+
+@item iterations
+Set number of iterations of psychoacoustic clipper.
+Allowed range is from 1 to 20. Default value is 10.
+
+@item level
+Auto level output signal. Default is disabled.
+This normalizes audio back to 0dBFS if enabled.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section apulsator
 
 Audio pulsator is something between an autopanner and a tremolo.

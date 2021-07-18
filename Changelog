@@ -19,6 +19,7 @@ version <next>:
 - swscale slice threading
 - MSN Siren decoder
 - scharr video filter
+- apsyclip audio filter
 
 
 version 4.4:
