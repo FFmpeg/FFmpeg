@@ -884,7 +884,7 @@ ALIGN 16
 %macro FFT_SPLIT_RADIX_FN 1
 INIT_YMM %1
 cglobal split_radix_fft_float, 4, 8, 16, 272, lut, out, in, len, tmp, itab, rtab, tgt
-    mov lenq, [lutq + AVTXContext.m]
+    movsxd lenq, dword [lutq + AVTXContext.m]
     mov lutq, [lutq + AVTXContext.revtab]
     mov tgtq, lenq
 
