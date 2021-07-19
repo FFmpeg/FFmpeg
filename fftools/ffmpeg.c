@@ -3483,12 +3483,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             enc_ctx->bits_per_raw_sample = frame_bits_per_raw_sample;
         }
 
-        if (ost->top_field_first == 0) {
-            enc_ctx->field_order = AV_FIELD_BB;
-        } else if (ost->top_field_first == 1) {
-            enc_ctx->field_order = AV_FIELD_TT;
-        }
-
+        // Field order: autodetection
         if (frame) {
             if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
                 ost->top_field_first >= 0)
@@ -3501,6 +3496,13 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
                     enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
             } else
                 enc_ctx->field_order = AV_FIELD_PROGRESSIVE;
+        }
+
+        // Field order: override
+        if (ost->top_field_first == 0) {
+            enc_ctx->field_order = AV_FIELD_BB;
+        } else if (ost->top_field_first == 1) {
+            enc_ctx->field_order = AV_FIELD_TT;
         }
 
         if (ost->forced_keyframes) {
