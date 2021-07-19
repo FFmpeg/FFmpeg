@@ -1349,7 +1349,7 @@ static void do_video_out(OutputFile *of,
                    && !i) {
             forced_keyframe = 1;
         } else if (   ost->forced_keyframes
-                   && !strncmp(ost->forced_keyframes, "source_no_drop", 6)
+                   && !strncmp(ost->forced_keyframes, "source_no_drop", 14)
                    && !i) {
             forced_keyframe = (in_picture->key_frame == 1) || ost->dropped_keyframe;
             ost->dropped_keyframe = 0;
