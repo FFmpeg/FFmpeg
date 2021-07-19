@@ -247,6 +247,7 @@ static int gif_read_ext(AVFormatContext *s)
 
             if (sb_size == 3 && data[0] == 1) {
                 gdc->total_iter = AV_RL16(data+1);
+                av_log(s, AV_LOG_DEBUG, "Loop count is %d\n", gdc->total_iter);
 
                 if (gdc->total_iter == 0)
                     gdc->total_iter = -1;
