@@ -85,8 +85,6 @@ typedef struct
 
     int             frames_captured;
     int             audio_frames_captured;
-    int64_t         first_pts;
-    int64_t         first_audio_pts;
     pthread_mutex_t frame_lock;
     id              avf_delegate;
     id              avf_audio_delegate;
@@ -766,8 +764,6 @@ static int avf_read_header(AVFormatContext *s)
     NSArray *devices_muxed = [AVCaptureDevice devicesWithMediaType:AVMediaTypeMuxed];
 
     ctx->num_video_devices = [devices count] + [devices_muxed count];
-    ctx->first_pts          = av_gettime();
-    ctx->first_audio_pts    = av_gettime();
 
     pthread_mutex_init(&ctx->frame_lock, NULL);
 
