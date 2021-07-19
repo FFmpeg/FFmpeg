@@ -4237,7 +4237,7 @@ static int get_input_packet(InputFile *f, AVPacket **pkt)
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
             int64_t stream_ts_offset, pts, now;
-            if (!ist->nb_packets) continue;
+            if (!ist->nb_packets || (ist->decoding_needed && !ist->got_output)) continue;
             stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
             pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
             now = (av_gettime_relative() - ist->start) * scale + stream_ts_offset;
