@@ -571,6 +571,7 @@ static int hls_delete_file(HLSContext *hls, AVFormatContext *avf,
         AVDictionary *opt = NULL;
         AVIOContext  *out = NULL;
         int ret;
+        set_http_options(avf, &opt, hls);
         av_dict_set(&opt, "method", "DELETE", 0);
         ret = avf->io_open(avf, &out, path, AVIO_FLAG_WRITE, &opt);
         av_dict_free(&opt);
