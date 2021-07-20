@@ -13,6 +13,9 @@ libavutil:     2021-04-27
 
 
 API changes, most recent first:
+2021-07-19 - xxxxxxxxxx - lavu 57.1.100 - cpu.h
+  Add av_cpu_force_count()
+
 2021-06-17 - xxxxxxxxxx - lavc 59.2.100 - packet.h
   Add AV_PKT_DATA_DYNAMIC_HDR10_PLUS
 

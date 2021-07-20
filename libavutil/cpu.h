@@ -102,7 +102,7 @@ int av_cpu_count(void);
  * Overrides cpu count detection and forces the specified count.
  * Count < 1 disables forcing of specific count.
  */
-void av_force_cpu_count(int count);
+void av_cpu_force_count(int count);
 
 /**
  * Get the maximum data alignment that may be required by FFmpeg.

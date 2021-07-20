@@ -236,7 +236,8 @@ int av_cpu_count(void)
     return nb_cpus;
 }
 
-void av_force_cpu_count(int count){
+void av_cpu_force_count(int count)
+{
     atomic_store_explicit(&cpu_count, count, memory_order_relaxed);
 }
 

@@ -874,7 +874,7 @@ int opt_cpucount(void *optctx, const char *opt, const char *arg)
     ret = av_opt_eval_int(&pclass, opts, arg, &count);
 
     if (!ret) {
-        av_force_cpu_count(count);
+        av_cpu_force_count(count);
     }
 
     return ret;
