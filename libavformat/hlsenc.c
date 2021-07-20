@@ -2293,6 +2293,7 @@ static int hls_write_header(AVFormatContext *s)
     VariantStream *vs = NULL;
 
     for (i = 0; i < hls->nb_varstreams; i++) {
+        int subtitle_streams = 0;
         vs = &hls->var_streams[i];
 
         ret = avformat_write_header(vs->avf, NULL);
@@ -2313,10 +2314,11 @@ static int hls_write_header(AVFormatContext *s)
             }
 
             if (outer_st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
-                inner_st = vs->avf->streams[j];
-            else if (vs->vtt_avf)
+                inner_st = vs->avf->streams[j - subtitle_streams];
+            else if (vs->vtt_avf) {
                 inner_st = vs->vtt_avf->streams[0];
-            else {
+                subtitle_streams++;
+            } else {
                 /* We have a subtitle stream, when the user does not want one */
                 inner_st = NULL;
                 continue;
@@ -2403,6 +2405,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int is_ref_pkt = 1;
     int ret = 0, can_split = 1, i, j;
     int stream_index = 0;
+    int subtitle_streams = 0;
     int range_length = 0;
     const char *proto = NULL;
     int use_temp_file = 0;
@@ -2412,13 +2415,16 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
         for (j = 0; j < vs->nb_streams; j++) {
+            if (vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+                subtitle_streams++;
+            }
             if (vs->streams[j] == st) {
                 if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     oc = vs->vtt_avf;
                     stream_index = 0;
                 } else {
                     oc = vs->avf;
-                    stream_index = j;
+                    stream_index = j - subtitle_streams;
                 }
                 break;
             }
@@ -2647,7 +2653,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) {
             return ret;
         }
-
     }
 
     vs->packets_written++;
