@@ -176,6 +176,10 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
         return ret;
 
+    if ((compr & (~TGA_RLE)) == TGA_NODATA) {
+        return avpkt->size;
+    }
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
     p->pict_type = AV_PICTURE_TYPE_I;
@@ -242,9 +246,6 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if ((compr & (~TGA_RLE)) == TGA_NODATA) {
-        memset(p->data[0], 0, p->linesize[0] * h);
-    } else {
         if (compr & TGA_RLE) {
             int res = targa_decode_rle(avctx, s, dst, w, h, stride, bpp, interleave);
             if (res < 0)
@@ -289,7 +290,6 @@ static int decode_frame(AVCodecContext *avctx,
                 }
             }
         }
-    }
 
 
     *got_frame = 1;
