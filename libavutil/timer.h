@@ -42,7 +42,9 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#if HAVE_MACH_ABSOLUTE_TIME
+#if CONFIG_MACOS_KPERF
+#include "macos_kperf.h"
+#elif HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
 #endif
 
@@ -124,6 +126,17 @@
     ioctl(linux_perf_fd, PERF_EVENT_IOC_DISABLE, 0);                        \
     read(linux_perf_fd, &tperf, sizeof(tperf));                             \
     TIMER_REPORT(id, tperf)
+
+#elif CONFIG_MACOS_KPERF
+
+#define START_TIMER                                                         \
+    uint64_t tperf;                                                         \
+    if (ff_kperf_init())                                                    \
+        av_log(NULL, AV_LOG_ERROR, "ff_kperf_init() failed\n");             \
+    tperf = kperf_cycles();
+
+#define STOP_TIMER(id)                                                      \
+    TIMER_REPORT(id, kperf_cycles() - tperf);
 
 #elif defined(AV_READ_TIME)
 #define START_TIMER                             \
