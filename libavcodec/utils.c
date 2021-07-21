@@ -810,20 +810,22 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
 
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
 {
-    return get_audio_frame_duration(avctx->codec_id, avctx->sample_rate,
+    int duration = get_audio_frame_duration(avctx->codec_id, avctx->sample_rate,
                                     avctx->channels, avctx->block_align,
                                     avctx->codec_tag, avctx->bits_per_coded_sample,
                                     avctx->bit_rate, avctx->extradata, avctx->frame_size,
                                     frame_bytes);
+    return FFMAX(0, duration);
 }
 
 int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes)
 {
-    return get_audio_frame_duration(par->codec_id, par->sample_rate,
+    int duration = get_audio_frame_duration(par->codec_id, par->sample_rate,
                                     par->channels, par->block_align,
                                     par->codec_tag, par->bits_per_coded_sample,
                                     par->bit_rate, par->extradata, par->frame_size,
                                     frame_bytes);
+    return FFMAX(0, duration);
 }
 
 #if !HAVE_THREADS
