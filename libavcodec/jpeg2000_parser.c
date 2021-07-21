@@ -42,7 +42,6 @@ typedef struct JPEG2000ParserContext {
     uint8_t fheader_read; // are we reading
     uint8_t reading_file_header;
     uint8_t skipped_codestream;
-    uint8_t codestream_frame_end;
     uint8_t read_tp;
     uint8_t in_codestream;
 } JPEG2000ParserContext;
@@ -57,7 +56,6 @@ static inline void reset_context(JPEG2000ParserContext *m)
     m->ft = 0;
     m->skipped_codestream = 0;
     m->fheader_read = 0;
-    m->codestream_frame_end = 0;
     m->skip_bytes = 0;
     m->read_tp = 0;
     m->in_codestream = 0;
@@ -100,16 +98,13 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             m->skip_bytes--;
             continue;
         }
-        if (m->codestream_frame_end) {
-            reset_context(m);
-            return i;
-        }
         if (m->read_tp) { // Find out how many bytes inside Tile part codestream to skip.
             if (m->read_tp == 1) {
-                m->skip_bytes = (state64 & 0xFFFFFFFF) - 10 > 0?
-                                (state64 & 0xFFFFFFFF) - 10 : 0;
+                m->skip_bytes = (state64 & 0xFFFFFFFF) - 9 > 0?
+                                (state64 & 0xFFFFFFFF) - 9 : 0;
             }
             m->read_tp--;
+            continue;
         }
         if (m->fheader_read) {
             if (m->fheader_read == 1) {
@@ -141,7 +136,8 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             if (pc->frame_start_found && m->ft == jp2_file) {
                 m->skipped_codestream = 1;
             } else if (pc->frame_start_found && m->ft == j2k_cstream) {
-                m->codestream_frame_end = 1;
+                reset_context(m);
+                return i + 1; // End of frame detected, return frame size.
             }
             m->in_codestream = 0;
         } else if (m->in_codestream && (state & 0xFFFF) == 0xFF90) { // Are we in tile part header?
