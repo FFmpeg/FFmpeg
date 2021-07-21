@@ -82,7 +82,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
 {
     ParseContext *pc= &m->pc;
     int i;
-    uint32_t state;
+    uint32_t state, next_state;
     uint64_t state64;
     state= pc->state;
     state64 = pc->state64;
@@ -143,7 +143,17 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
         } else if (m->in_codestream && (state & 0xFFFF) == 0xFF90) { // Are we in tile part header?
             m->read_tp = 8;
         } else if (pc->frame_start_found && info_marker((state & 0xFFFF0000)>>16) && m->in_codestream) {
-            m->skip_bytes = (state & 0xFFFF) - 2;
+            // Calculate number of bytes to skip to get to end of the next marker.
+            m->skip_bytes = (state & 0xFFFF)-1;
+
+            // If the next marker is an info marker, skip to the end of of the marker length.
+            if (i + m->skip_bytes + 1 < buf_size) {
+                next_state = (buf[i + m->skip_bytes] << 8) | buf[i + m->skip_bytes + 1];
+                if (info_marker(next_state)) {
+                    // Skip an additional 2 bytes to get to the end of the marker length.
+                    m->skip_bytes += 2;
+                }
+            }
         }
     }
 
