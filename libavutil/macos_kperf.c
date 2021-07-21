@@ -16,7 +16,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "avassert.h"
 #include "macos_kperf.h"
+#include "thread.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
@@ -68,69 +71,35 @@ KPERF_LIST
 #define CONFIG_COUNT 8
 #define KPC_MASK (KPC_CLASS_CONFIGURABLE_MASK | KPC_CLASS_FIXED_MASK)
 
-static int ff_kperf_was_init = 0;
-
-int ff_kperf_init()
+static void kperf_init(void)
 {
     uint64_t config[COUNTERS_COUNT] = {0};
     void *kperf = NULL;
 
-    if (ff_kperf_was_init)
-        return 0;
+    av_assert0(kperf = dlopen("/System/Library/PrivateFrameworks/kperf.framework/Versions/A/kperf", RTLD_LAZY));
 
-    kperf = dlopen("/System/Library/PrivateFrameworks/kperf.framework/Versions/A/kperf", RTLD_LAZY);
-    if (!kperf) {
-        fprintf(stderr, "kperf: kperf = %p\n", kperf);
-        return -1;
-    }
-
-#define F(ret, name, ...)                            \
-    name = (name##proc *)(dlsym(kperf, #name));      \
-    if (!name) {                                     \
-        fprintf(stderr, "kperf: %s = %p\n", #name, (void *)name);    \
-        return -1;                                   \
-    }
+#define F(ret, name, ...) av_assert0(name = (name##proc *)(dlsym(kperf, #name)));
     KPERF_LIST
 #undef F
 
-    if (kpc_get_counter_count(KPC_MASK) != COUNTERS_COUNT) {
-        fprintf(stderr, "kperf: wrong fixed counters count\n");
-        return -1;
-    }
-
-    if (kpc_get_config_count(KPC_MASK) != CONFIG_COUNT) {
-        fprintf(stderr, "kperf: wrong fixed config count\n");
-        return -1;
-    }
+    av_assert0(kpc_get_counter_count(KPC_MASK) == COUNTERS_COUNT);
+    av_assert0(kpc_get_config_count(KPC_MASK) == CONFIG_COUNT);
 
     config[0] = CPMU_CORE_CYCLE | CFGWORD_EL0A64EN_MASK;
     // config[3] = CPMU_INST_BRANCH | CFGWORD_EL0A64EN_MASK;
     // config[4] = CPMU_SYNC_BR_ANY_MISP | CFGWORD_EL0A64EN_MASK;
     // config[5] = CPMU_INST_A64 | CFGWORD_EL0A64EN_MASK;
 
-    if (kpc_set_config(KPC_MASK, config)) {
-        fprintf(stderr, "kperf: kpc_set_config failed\n");
-        return -1;
-    }
+    av_assert0(kpc_set_config(KPC_MASK, config) == 0 || !"the kperf API needs to be run as root");
+    av_assert0(kpc_force_all_ctrs_set(1) == 0);
+    av_assert0(kpc_set_counting(KPC_MASK) == 0);
+    av_assert0(kpc_set_thread_counting(KPC_MASK) == 0);
+}
 
-    if (kpc_force_all_ctrs_set(1)) {
-        fprintf(stderr, "kperf: kpc_force_all_ctrs_set failed\n");
-        return -1;
-    }
-
-    if (kpc_set_counting(KPC_MASK)) {
-        fprintf(stderr, "kperf: kpc_set_counting failed\n");
-        return -1;
-    }
-
-    if (kpc_set_thread_counting(KPC_MASK)) {
-        fprintf(stderr, "kperf: kpc_set_thread_counting failed\n");
-        return -1;
-    }
-
-    ff_kperf_was_init = 1;
-
-    return 0;
+void ff_kperf_init(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, kperf_init);
 }
 
 uint64_t ff_kperf_cycles()

@@ -641,11 +641,7 @@ static int bench_init_linux(void)
 #elif CONFIG_MACOS_KPERF
 static int bench_init_kperf(void)
 {
-    if (ff_kperf_init()) {
-        fprintf(stderr, "checkasm must be run as root to use kperf on macOS\n");
-        return -1;
-    }
-
+    ff_kperf_init();
     return 0;
 }
 #else

@@ -131,12 +131,11 @@
 
 #define START_TIMER                                                         \
     uint64_t tperf;                                                         \
-    if (ff_kperf_init())                                                    \
-        av_log(NULL, AV_LOG_ERROR, "ff_kperf_init() failed\n");             \
-    tperf = kperf_cycles();
+    ff_kperf_init();                                                        \
+    tperf = ff_kperf_cycles();
 
 #define STOP_TIMER(id)                                                      \
-    TIMER_REPORT(id, kperf_cycles() - tperf);
+    TIMER_REPORT(id, ff_kperf_cycles() - tperf);
 
 #elif defined(AV_READ_TIME)
 #define START_TIMER                             \

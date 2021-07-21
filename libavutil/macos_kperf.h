@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-int ff_kperf_init(void);
+void ff_kperf_init(void);
 uint64_t ff_kperf_cycles(void);
 
 #endif /* AVUTIL_MACOS_KPERF_H */
