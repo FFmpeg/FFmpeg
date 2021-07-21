@@ -1398,7 +1398,6 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
     }
 
     vtctx->codec_id = avctx->codec_id;
-    avctx->max_b_frames = 16;
 
     if (vtctx->codec_id == AV_CODEC_ID_H264) {
         vtctx->get_param_set_func = CMVideoFormatDescriptionGetH264ParameterSetAtIndex;
