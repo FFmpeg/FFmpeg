@@ -1118,7 +1118,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         codecctl_int(avctx, VP8E_SET_TUNING,           ctx->tune);
 
     if (ctx->auto_alt_ref && ctx->is_alpha && avctx->codec_id == AV_CODEC_ID_VP8) {
-        av_log(avctx, AV_LOG_ERROR, "Transparency encoding with auto_alt_ref does not work\n");
+        av_log(avctx, AV_LOG_ERROR, "Transparency encoding with auto-alt-ref does not work\n");
         return AVERROR(EINVAL);
     }
 
