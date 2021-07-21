@@ -53,6 +53,7 @@
 #include "rtpdec_formats.h"
 #include "rtpenc_chain.h"
 #include "url.h"
+#include "tls.h"
 #include "rtpenc.h"
 #include "mpegts.h"
 #include "version.h"
@@ -103,6 +104,9 @@ const AVOption ff_rtsp_options[] = {
     { "timeout", "set timeout (in microseconds) of socket I/O operations", OFFSET(stimeout), AV_OPT_TYPE_INT64, {.i64 = 0}, INT_MIN, INT64_MAX, DEC },
     COMMON_OPTS(),
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT}, 0, 0, DEC },
+
+    // TLS options
+    FF_TLS_CLIENT_OPTIONS(RTSPState, tls_opts),
     { NULL },
 };
 
@@ -137,6 +141,18 @@ static AVDictionary *map_to_opts(RTSPState *rt)
         av_dict_set(&opts, "localaddr", rt->localaddr, 0);
 
     return opts;
+}
+
+/**
+ * Add the TLS options of the given RTSPState to the dict
+ */
+static void copy_tls_opts_dict(RTSPState *rt, AVDictionary **dict)
+{
+    av_dict_set_int(dict, "tls_verify", rt->tls_opts.verify, 0);
+    av_dict_set(dict, "ca_file", rt->tls_opts.ca_file, 0);
+    av_dict_set(dict, "cert_file", rt->tls_opts.cert_file, 0);
+    av_dict_set(dict, "key_file", rt->tls_opts.key_file, 0);
+    av_dict_set(dict, "verifyhost", rt->tls_opts.host, 0);
 }
 
 static void get_word_until_chars(char *buf, int buf_size,
@@ -1821,6 +1837,8 @@ redirect:
         AVDictionary *options = NULL;
 
         av_dict_set_int(&options, "timeout", rt->stimeout, 0);
+        if (https_tunnel)
+            copy_tls_opts_dict(rt, &options);
 
         ff_url_join(httpname, sizeof(httpname), https_tunnel ? "https" : "http", auth, host, port, "%s", path);
         snprintf(sessioncookie, sizeof(sessioncookie), "%08x%08x",
@@ -1905,14 +1923,20 @@ redirect:
     } else {
         int ret;
         /* open the tcp connection */
+        AVDictionary *proto_opts = NULL;
+        if (strcmp("tls", lower_rtsp_proto) == 0)
+            copy_tls_opts_dict(rt, &proto_opts);
+
         ff_url_join(tcpname, sizeof(tcpname), lower_rtsp_proto, NULL,
                     host, port,
                     "?timeout=%"PRId64, rt->stimeout);
         if ((ret = ffurl_open_whitelist(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                       &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL)) < 0) {
+                       &s->interrupt_callback, &proto_opts, s->protocol_whitelist, s->protocol_blacklist, NULL)) < 0) {
+            av_dict_free(&proto_opts);
             err = ret;
             goto fail;
         }
+        av_dict_free(&proto_opts);
         rt->rtsp_hd_out = rt->rtsp_hd;
     }
     rt->seq = 0;
