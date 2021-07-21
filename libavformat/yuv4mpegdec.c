@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
 
 #include "avformat.h"
@@ -77,67 +78,52 @@ static int yuv4_read_header(AVFormatContext *s)
             tokstart = tokend;
             break;
         case 'C': // Color space
-            if (strncmp("420jpeg", tokstart, 7) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P;
-                chroma_sample_location = AVCHROMA_LOC_CENTER;
-            } else if (strncmp("420mpeg2", tokstart, 8) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P;
-                chroma_sample_location = AVCHROMA_LOC_LEFT;
-            } else if (strncmp("420paldv", tokstart, 8) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P;
-                chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
-            } else if (strncmp("420p16", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P16;
-            } else if (strncmp("422p16", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV422P16;
-            } else if (strncmp("444p16", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV444P16;
-            } else if (strncmp("420p14", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P14;
-            } else if (strncmp("422p14", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV422P14;
-            } else if (strncmp("444p14", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV444P14;
-            } else if (strncmp("420p12", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P12;
-            } else if (strncmp("422p12", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV422P12;
-            } else if (strncmp("444p12", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV444P12;
-            } else if (strncmp("420p10", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P10;
-            } else if (strncmp("422p10", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV422P10;
-            } else if (strncmp("444p10", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV444P10;
-            } else if (strncmp("420p9", tokstart, 5) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P9;
-            } else if (strncmp("422p9", tokstart, 5) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV422P9;
-            } else if (strncmp("444p9", tokstart, 5) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV444P9;
-            } else if (strncmp("420", tokstart, 3) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV420P;
-                chroma_sample_location = AVCHROMA_LOC_CENTER;
-            } else if (strncmp("411", tokstart, 3) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV411P;
-            } else if (strncmp("422", tokstart, 3) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV422P;
-            } else if (strncmp("444alpha", tokstart, 8) == 0 ) {
-                pix_fmt = AV_PIX_FMT_YUVA444P;
-            } else if (strncmp("444", tokstart, 3) == 0) {
-                pix_fmt = AV_PIX_FMT_YUV444P;
-            } else if (strncmp("mono16", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_GRAY16;
-            } else if (strncmp("mono12", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_GRAY12;
-            } else if (strncmp("mono10", tokstart, 6) == 0) {
-                pix_fmt = AV_PIX_FMT_GRAY10;
-            } else if (strncmp("mono9", tokstart, 5) == 0) {
-                pix_fmt = AV_PIX_FMT_GRAY9;
-            } else if (strncmp("mono", tokstart, 4) == 0) {
-                pix_fmt = AV_PIX_FMT_GRAY8;
-            } else {
+        {
+            static const struct {
+#define MAX_PIX_FMT_LENGTH 8
+                char name[MAX_PIX_FMT_LENGTH + 1];
+#undef MAX_PIX_FMT_LENGTH
+                enum AVPixelFormat pix_fmt;
+                enum AVChromaLocation chroma_loc;
+            } pix_fmt_array[] = {
+                { "420jpeg",  AV_PIX_FMT_YUV420P,   AVCHROMA_LOC_CENTER      },
+                { "420mpeg2", AV_PIX_FMT_YUV420P,   AVCHROMA_LOC_LEFT        },
+                { "420paldv", AV_PIX_FMT_YUV420P,   AVCHROMA_LOC_TOPLEFT     },
+                { "420p16",   AV_PIX_FMT_YUV420P16, AVCHROMA_LOC_UNSPECIFIED },
+                { "422p16",   AV_PIX_FMT_YUV422P16, AVCHROMA_LOC_UNSPECIFIED },
+                { "444p16",   AV_PIX_FMT_YUV444P16, AVCHROMA_LOC_UNSPECIFIED },
+                { "420p14",   AV_PIX_FMT_YUV420P14, AVCHROMA_LOC_UNSPECIFIED },
+                { "422p14",   AV_PIX_FMT_YUV422P14, AVCHROMA_LOC_UNSPECIFIED },
+                { "444p14",   AV_PIX_FMT_YUV444P14, AVCHROMA_LOC_UNSPECIFIED },
+                { "420p12",   AV_PIX_FMT_YUV420P12, AVCHROMA_LOC_UNSPECIFIED },
+                { "422p12",   AV_PIX_FMT_YUV422P12, AVCHROMA_LOC_UNSPECIFIED },
+                { "444p12",   AV_PIX_FMT_YUV444P12, AVCHROMA_LOC_UNSPECIFIED },
+                { "420p10",   AV_PIX_FMT_YUV420P10, AVCHROMA_LOC_UNSPECIFIED },
+                { "422p10",   AV_PIX_FMT_YUV422P10, AVCHROMA_LOC_UNSPECIFIED },
+                { "444p10",   AV_PIX_FMT_YUV444P10, AVCHROMA_LOC_UNSPECIFIED },
+                { "420p9",    AV_PIX_FMT_YUV420P9,  AVCHROMA_LOC_UNSPECIFIED },
+                { "422p9",    AV_PIX_FMT_YUV422P9,  AVCHROMA_LOC_UNSPECIFIED },
+                { "444p9",    AV_PIX_FMT_YUV444P9,  AVCHROMA_LOC_UNSPECIFIED },
+                { "420",      AV_PIX_FMT_YUV420P,   AVCHROMA_LOC_CENTER      },
+                { "411",      AV_PIX_FMT_YUV411P,   AVCHROMA_LOC_UNSPECIFIED },
+                { "422",      AV_PIX_FMT_YUV422P,   AVCHROMA_LOC_UNSPECIFIED },
+                { "444alpha", AV_PIX_FMT_YUVA444P,  AVCHROMA_LOC_UNSPECIFIED },
+                { "444",      AV_PIX_FMT_YUV444P,   AVCHROMA_LOC_UNSPECIFIED },
+                { "mono16",   AV_PIX_FMT_GRAY16,    AVCHROMA_LOC_UNSPECIFIED },
+                { "mono12",   AV_PIX_FMT_GRAY12,    AVCHROMA_LOC_UNSPECIFIED },
+                { "mono10",   AV_PIX_FMT_GRAY10,    AVCHROMA_LOC_UNSPECIFIED },
+                { "mono9",    AV_PIX_FMT_GRAY9,     AVCHROMA_LOC_UNSPECIFIED },
+                { "mono",     AV_PIX_FMT_GRAY8,     AVCHROMA_LOC_UNSPECIFIED },
+            };
+            for (i = 0; i < FF_ARRAY_ELEMS(pix_fmt_array); i++) {
+                if (av_strstart(tokstart, pix_fmt_array[i].name, NULL)) {
+                    pix_fmt = pix_fmt_array[i].pix_fmt;
+                    if (pix_fmt_array[i].chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
+                        chroma_sample_location = pix_fmt_array[i].chroma_loc;
+                    break;
+                }
+            }
+            if (i == FF_ARRAY_ELEMS(pix_fmt_array)) {
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains an unknown "
                        "pixel format.\n");
                 return AVERROR_INVALIDDATA;
@@ -145,6 +131,7 @@ static int yuv4_read_header(AVFormatContext *s)
             while (tokstart < header_end && *tokstart != 0x20)
                 tokstart++;
             break;
+        }
         case 'I': // Interlace type
             switch (*tokstart++){
             case '?':
@@ -179,50 +166,40 @@ static int yuv4_read_header(AVFormatContext *s)
             break;
         case 'X': // Vendor extensions
             if (strncmp("YSCSS=", tokstart, 6) == 0) {
+                static const struct {
+#define MAX_PIX_FMT_LENGTH 8
+                    char name[MAX_PIX_FMT_LENGTH + 1];
+#undef MAX_PIX_FMT_LENGTH
+                    enum AVPixelFormat pix_fmt;
+                } pix_fmt_array[] = {
+                    { "420JPEG",  AV_PIX_FMT_YUV420P   },
+                    { "420MPEG2", AV_PIX_FMT_YUV420P   },
+                    { "420PALDV", AV_PIX_FMT_YUV420P   },
+                    { "420P9",    AV_PIX_FMT_YUV420P9  },
+                    { "422P9",    AV_PIX_FMT_YUV422P9  },
+                    { "444P9",    AV_PIX_FMT_YUV444P9  },
+                    { "420P10",   AV_PIX_FMT_YUV420P10 },
+                    { "444P10",   AV_PIX_FMT_YUV444P10 },
+                    { "420P12",   AV_PIX_FMT_YUV420P12 },
+                    { "422P12",   AV_PIX_FMT_YUV422P12 },
+                    { "444P12",   AV_PIX_FMT_YUV444P12 },
+                    { "420P14",   AV_PIX_FMT_YUV420P14 },
+                    { "422P14",   AV_PIX_FMT_YUV422P14 },
+                    { "444P14",   AV_PIX_FMT_YUV444P14 },
+                    { "420P16",   AV_PIX_FMT_YUV420P16 },
+                    { "422P16",   AV_PIX_FMT_YUV422P16 },
+                    { "444P16",   AV_PIX_FMT_YUV444P16 },
+                    { "411",      AV_PIX_FMT_YUV411P   },
+                    { "422",      AV_PIX_FMT_YUV422P   },
+                    { "444",      AV_PIX_FMT_YUV444P   },
+                };
                 // Older nonstandard pixel format representation
                 tokstart += 6;
-                if (strncmp("420JPEG", tokstart, 7) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P;
-                else if (strncmp("420MPEG2", tokstart, 8) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P;
-                else if (strncmp("420PALDV", tokstart, 8) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P;
-                else if (strncmp("420P9", tokstart, 5) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P9;
-                else if (strncmp("422P9", tokstart, 5) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV422P9;
-                else if (strncmp("444P9", tokstart, 5) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV444P9;
-                else if (strncmp("420P10", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P10;
-                else if (strncmp("422P10", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV422P10;
-                else if (strncmp("444P10", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV444P10;
-                else if (strncmp("420P12", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P12;
-                else if (strncmp("422P12", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV422P12;
-                else if (strncmp("444P12", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV444P12;
-                else if (strncmp("420P14", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P14;
-                else if (strncmp("422P14", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV422P14;
-                else if (strncmp("444P14", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV444P14;
-                else if (strncmp("420P16", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV420P16;
-                else if (strncmp("422P16", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV422P16;
-                else if (strncmp("444P16", tokstart, 6) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV444P16;
-                else if (strncmp("411", tokstart, 3) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV411P;
-                else if (strncmp("422", tokstart, 3) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV422P;
-                else if (strncmp("444", tokstart, 3) == 0)
-                    alt_pix_fmt = AV_PIX_FMT_YUV444P;
+                for (size_t i = 0; i < FF_ARRAY_ELEMS(pix_fmt_array); i++)
+                    if (av_strstart(tokstart, pix_fmt_array[i].name, NULL)) {
+                        alt_pix_fmt = pix_fmt_array[i].pix_fmt;
+                        break;
+                    }
             } else if (strncmp("COLORRANGE=", tokstart, 11) == 0) {
               tokstart += 11;
               if (strncmp("FULL",tokstart, 4) == 0)
