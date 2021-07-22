@@ -33,9 +33,7 @@
 #define av_realloc_f(p, o, n) NULL
 #define av_free(p) while(0)
 #define av_freep(p) while(0)
-#define AVCODEC_AVCODEC_H
-#define AVCODEC_INTERNAL_H
-#define AV_INPUT_BUFFER_PADDING_SIZE 64 // the value does not matter for this
+#define AVUTIL_INTERNAL_H
 #define avpriv_request_sample(...)
 #include "tableprint.h"
 #include "get_bits.h"
