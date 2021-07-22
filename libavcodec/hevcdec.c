@@ -2950,6 +2950,14 @@ static int set_side_data(HEVCContext *s)
         }
     }
 
+    if (s->rpu_buf) {
+        AVFrameSideData *rpu = av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_DOVI_RPU_BUFFER, s->rpu_buf);
+        if (!rpu)
+            return AVERROR(ENOMEM);
+
+        s->rpu_buf = NULL;
+    }
+
     return 0;
 }
 
@@ -3223,6 +3231,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         break;
     case HEVC_NAL_AUD:
     case HEVC_NAL_FD_NUT:
+    case HEVC_NAL_UNSPEC62:
         break;
     default:
         av_log(s->avctx, AV_LOG_INFO,
@@ -3267,6 +3276,29 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         } else {
             eos_at_start = 0;
         }
+    }
+
+    /*
+     * Check for RPU delimiter.
+     *
+     * Dolby Vision RPUs masquerade as unregistered NALs of type 62.
+     *
+     * We have to do this check here an create the rpu buffer, since RPUs are appended
+     * to the end of an AU; they are the last non-EOB/EOS NAL in the AU.
+     */
+    if (s->pkt.nb_nals > 1 && s->pkt.nals[s->pkt.nb_nals - 1].type == HEVC_NAL_UNSPEC62 &&
+        s->pkt.nals[s->pkt.nb_nals - 1].size > 2 && !s->pkt.nals[s->pkt.nb_nals - 1].nuh_layer_id
+        && !s->pkt.nals[s->pkt.nb_nals - 1].temporal_id) {
+        if (s->rpu_buf) {
+            av_buffer_unref(&s->rpu_buf);
+            av_log(s->avctx, AV_LOG_WARNING, "Multiple Dolby Vision RPUs found in one AU. Skipping previous.\n");
+        }
+
+        s->rpu_buf = av_buffer_alloc(s->pkt.nals[s->pkt.nb_nals - 1].raw_size - 2);
+        if (!s->rpu_buf)
+            return AVERROR(ENOMEM);
+
+        memcpy(s->rpu_buf->data, s->pkt.nals[s->pkt.nb_nals - 1].raw_data + 2, s->pkt.nals[s->pkt.nb_nals - 1].raw_size - 2);
     }
 
     /* decode the NAL units */
@@ -3512,6 +3544,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
+    av_buffer_unref(&s->rpu_buf);
+
     av_freep(&s->md5_ctx);
 
     av_freep(&s->cabac_state);
@@ -3698,6 +3732,10 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
+    ret = av_buffer_replace(&s->rpu_buf, s0->rpu_buf);
+    if (ret < 0)
+        return ret;
+
     s->sei.frame_packing        = s0->sei.frame_packing;
     s->sei.display_orientation  = s0->sei.display_orientation;
     s->sei.mastering_display    = s0->sei.mastering_display;
@@ -3754,6 +3792,7 @@ static void hevc_decode_flush(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
     ff_hevc_flush_dpb(s);
     ff_hevc_reset_sei(&s->sei);
+    av_buffer_unref(&s->rpu_buf);
     s->max_ra = INT_MAX;
     s->eos = 1;
 }
