@@ -377,6 +377,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ThreadData td;
     int ret;
 
+    if (!out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     ret = av_frame_copy_props(out, in);
     if (ret < 0) {
         av_frame_free(&out);
