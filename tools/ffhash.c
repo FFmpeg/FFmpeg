@@ -24,11 +24,11 @@
 #include "libavutil/avstring.h"
 #include "libavutil/error.h"
 #include "libavutil/hash.h"
-#include "libavutil/mem.h"
 
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #if HAVE_IO_H

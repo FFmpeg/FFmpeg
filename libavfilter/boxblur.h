@@ -25,7 +25,6 @@
 
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/mem.h"
 
 #include "avfilter.h"
 

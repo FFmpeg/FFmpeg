@@ -25,7 +25,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mem.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"

@@ -27,7 +27,6 @@
 #include "libavutil/buffer.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/mem.h"
 
 #include "avfilter.h"
 #include "internal.h"

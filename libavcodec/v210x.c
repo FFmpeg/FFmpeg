@@ -22,7 +22,6 @@
 #include "internal.h"
 #include "libavutil/bswap.h"
 #include "libavutil/internal.h"
-#include "libavutil/mem.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {

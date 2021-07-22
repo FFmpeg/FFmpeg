@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/mastering_display_metadata.h"

@@ -21,7 +21,6 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
-#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 

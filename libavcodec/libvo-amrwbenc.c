@@ -25,7 +25,6 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "encode.h"

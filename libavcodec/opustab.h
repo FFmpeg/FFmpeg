@@ -23,8 +23,6 @@
 #ifndef AVCODEC_OPUSTAB_H
 #define AVCODEC_OPUSTAB_H
 
-#include "libavutil/mem.h"
-
 #include <stdint.h>
 
 extern const uint8_t  ff_celt_band_end[];

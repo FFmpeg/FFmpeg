@@ -21,7 +21,6 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 
