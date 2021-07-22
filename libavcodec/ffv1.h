@@ -28,7 +28,6 @@
  * FF Video Codec 1 (a lossless codec)
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"

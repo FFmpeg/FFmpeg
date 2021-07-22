@@ -28,7 +28,6 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/cuda_check.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "atsc_a53.h"

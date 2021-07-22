@@ -27,7 +27,6 @@
 #include "libavutil/eval.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/avstring.h"
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 

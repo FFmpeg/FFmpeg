@@ -24,7 +24,6 @@
  */
 
 #include "dnn_backend_native.h"
-#include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_maximum.h"
 
 int ff_dnn_load_layer_maximum(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)

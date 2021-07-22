@@ -37,7 +37,6 @@
 #include <malloc.h>
 #endif
 
-#include "avassert.h"
 #include "avutil.h"
 #include "common.h"
 #include "dynarray.h"

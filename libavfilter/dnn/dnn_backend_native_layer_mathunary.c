@@ -26,7 +26,6 @@
 #include <math.h>
 
 #include "dnn_backend_native.h"
-#include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_mathunary.h"
 
 int ff_dnn_load_layer_math_unary(Layer *layer, AVIOContext *model_file_context, int file_size, int operands_num)

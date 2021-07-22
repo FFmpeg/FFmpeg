@@ -31,7 +31,6 @@
 
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"

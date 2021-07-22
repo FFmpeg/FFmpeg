@@ -21,7 +21,6 @@
  * Display frame palette (AV_PIX_FMT_PAL8)
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"

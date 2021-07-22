@@ -18,7 +18,6 @@
 
 #include <float.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"

@@ -20,7 +20,6 @@
  */
 
 #include "avformat.h"
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "network.h"

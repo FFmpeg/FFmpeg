@@ -40,7 +40,6 @@
 #include "libavutil/fifo.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
-#include "libavutil/avassert.h"
 #include "libavutil/time.h"
 #include "libavutil/bprint.h"
 #include "libavformat/avformat.h"
@@ -60,8 +59,6 @@
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
-
-#include <assert.h>
 
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;

@@ -29,7 +29,6 @@
 
 #include "config.h"
 #include "common.h"
-#include "avassert.h"
 #include "avstring.h"
 #include "bprint.h"
 

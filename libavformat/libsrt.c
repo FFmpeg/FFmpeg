@@ -23,7 +23,6 @@
 
 #include <srt/srt.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"

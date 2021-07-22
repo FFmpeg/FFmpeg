@@ -21,7 +21,6 @@
 
 #include <string.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/intreadwrite.h"

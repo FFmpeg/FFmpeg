@@ -28,7 +28,6 @@
  * audio multiband compand filter
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/ffmath.h"
 #include "libavutil/opt.h"

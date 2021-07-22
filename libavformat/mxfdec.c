@@ -47,7 +47,6 @@
 #include <inttypes.h>
 
 #include "libavutil/aes.h"
-#include "libavutil/avassert.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"

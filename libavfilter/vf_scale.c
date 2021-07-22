@@ -39,7 +39,6 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
 
 static const char *const var_names[] = {

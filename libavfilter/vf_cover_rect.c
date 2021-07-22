@@ -22,7 +22,6 @@
  * @todo switch to dualinput
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"

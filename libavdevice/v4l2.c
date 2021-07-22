@@ -32,6 +32,7 @@
 
 #include <stdatomic.h>
 
+#include "libavutil/avassert.h"
 #include "v4l2-common.h"
 #include <dirent.h>
 

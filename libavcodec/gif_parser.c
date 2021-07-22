@@ -24,7 +24,6 @@
  * GIF parser
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
 

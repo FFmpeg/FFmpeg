@@ -21,7 +21,6 @@
  * video scene change detection filter
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"

@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/audio_fifo.h"
-#include "libavutil/avassert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"

@@ -23,7 +23,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
 

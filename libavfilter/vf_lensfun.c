@@ -28,7 +28,6 @@
 #include <float.h>
 #include <math.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libswscale/swscale.h"

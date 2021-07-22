@@ -25,7 +25,6 @@
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"

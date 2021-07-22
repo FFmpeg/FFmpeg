@@ -20,7 +20,6 @@
  * are permitted provided that the following conditions are met:
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"

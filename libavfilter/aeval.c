@@ -23,7 +23,6 @@
  * eval audio source
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"

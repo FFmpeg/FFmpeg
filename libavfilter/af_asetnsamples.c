@@ -24,7 +24,6 @@
  * Filter that changes number of samples on single output operation
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"

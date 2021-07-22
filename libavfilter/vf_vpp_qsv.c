@@ -25,7 +25,6 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
-#include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/mathematics.h"
 

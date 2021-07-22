@@ -24,7 +24,6 @@
  * Lookahead limiter filter
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"

@@ -28,8 +28,6 @@
  * @see http://xhp.xwis.net/documents/aud3.txt
  */
 
-#include "libavutil/avassert.h"
-
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"

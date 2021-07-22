@@ -25,7 +25,6 @@
  * ISO/IEC 14496-3 Part 3 Subpart 10: Technical description of lossless coding of oversampled audio
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 #include "internal.h"

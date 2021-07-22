@@ -23,7 +23,6 @@
  * audio to video multimedia aphasemeter filter
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"

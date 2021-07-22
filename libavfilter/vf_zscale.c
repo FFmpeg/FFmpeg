@@ -42,7 +42,6 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/avassert.h"
 
 #define ZIMG_ALIGNMENT 32
 

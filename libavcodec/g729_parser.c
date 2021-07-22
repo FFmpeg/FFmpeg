@@ -25,7 +25,6 @@
  * Splits packets into individual blocks.
  */
 
-#include "libavutil/avassert.h"
 #include "parser.h"
 #include "g729.h"
 

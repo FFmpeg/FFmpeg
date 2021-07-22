@@ -20,7 +20,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "libavutil/avassert.h"
 
 #include "cfhddsp.h"
 

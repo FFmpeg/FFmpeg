@@ -20,7 +20,6 @@
 
 #include <float.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"

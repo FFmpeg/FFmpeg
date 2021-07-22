@@ -31,7 +31,6 @@
  * ported by Clément Bœsch for FFmpeg.
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"

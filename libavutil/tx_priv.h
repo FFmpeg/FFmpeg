@@ -22,7 +22,6 @@
 #include "tx.h"
 #include "thread.h"
 #include "mem_internal.h"
-#include "avassert.h"
 #include "attributes.h"
 
 #ifdef TX_FLOAT

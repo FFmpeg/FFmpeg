@@ -21,7 +21,6 @@
 
 #include "motion_estimation.h"
 #include "libavcodec/mathops.h"
-#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/motion_vector.h"
 #include "libavutil/opt.h"

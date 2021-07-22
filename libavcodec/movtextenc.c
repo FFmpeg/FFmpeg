@@ -22,7 +22,6 @@
 #include <stdarg.h>
 #include "avcodec.h"
 #include "libavutil/opt.h"
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"

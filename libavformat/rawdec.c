@@ -27,7 +27,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 
 #define RAW_PACKET_SIZE 1024
