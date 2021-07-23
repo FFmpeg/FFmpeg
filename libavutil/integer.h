@@ -29,7 +29,7 @@
 #define AVUTIL_INTEGER_H
 
 #include <stdint.h>
-#include "common.h"
+#include "attributes.h"
 
 #define AV_INTEGER_SIZE 8
 
