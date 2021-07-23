@@ -28,8 +28,8 @@
 #define AVUTIL_AVASSERT_H
 
 #include <stdlib.h>
-#include "avutil.h"
 #include "log.h"
+#include "macros.h"
 
 /**
  * assert() equivalent, that is always enabled.

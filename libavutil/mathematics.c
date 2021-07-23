@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <limits.h>
 
+#include "avutil.h"
 #include "mathematics.h"
 #include "libavutil/intmath.h"
 #include "libavutil/common.h"

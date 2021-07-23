@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 
 static const AVSubsampleEncryptionInfo test_subsamples[] = {{1, 2}, {3, 4}, {5, 6}, {7, 8}};
 static const size_t test_subsample_count = sizeof(test_subsamples) / sizeof(test_subsamples[0]);

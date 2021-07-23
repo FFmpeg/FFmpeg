@@ -36,7 +36,7 @@
 #define AVUTIL_INTERNAL_H
 #define avpriv_request_sample(...)
 #include "tableprint.h"
-#include "get_bits.h"
+#include "vlc.h"
 #include "mathtables.c"
 #include "libavutil/reverse.c"
 #include "bitstream.c"

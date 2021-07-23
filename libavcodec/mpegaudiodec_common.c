@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/libm.h"
 #include "libavutil/thread.h"
 
 #include "mpegaudiodata.h"
