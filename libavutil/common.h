@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "attributes.h"
+#include "error.h"
 #include "macros.h"
 
 //rounded division & shift
