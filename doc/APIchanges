@@ -13,6 +13,11 @@ libavutil:     2021-04-27
 
 
 API changes, most recent first:
+
+2021-07-23 - xxxxxxxxxx - lavu 57.3.100 - common.h macros.h
+  Move several macros (AV_NE, FFDIFFSIGN, FFMAX, FFMAX3, FFMIN, FFMIN3,
+  FFSWAP, FF_ARRAY_ELEMS, MKTAG, MKBETAG) from common.h to macros.h.
+
 2021-07-22 - xxxxxxxxxx - lavu 57.2.100 - film_grain_params.h
   Add AV_FILM_GRAIN_PARAMS_H274, AVFilmGrainH274Params
 

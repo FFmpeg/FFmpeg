@@ -42,13 +42,6 @@
 #include "attributes.h"
 #include "macros.h"
 #include "version.h"
-#include "libavutil/avconfig.h"
-
-#if AV_HAVE_BIGENDIAN
-#   define AV_NE(be, le) (be)
-#else
-#   define AV_NE(be, le) (le)
-#endif
 
 //rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
@@ -88,25 +81,6 @@
  */
 #define FFABSU(a) ((a) <= 0 ? -(unsigned)(a) : (unsigned)(a))
 #define FFABS64U(a) ((a) <= 0 ? -(uint64_t)(a) : (uint64_t)(a))
-
-/**
- * Comparator.
- * For two numerical expressions x and y, gives 1 if x > y, -1 if x < y, and 0
- * if x == y. This is useful for instance in a qsort comparator callback.
- * Furthermore, compilers are able to optimize this to branchless code, and
- * there is no risk of overflow with signed types.
- * As with many macros, this evaluates its argument multiple times, it thus
- * must not have a side-effect.
- */
-#define FFDIFFSIGN(x,y) (((x)>(y)) - ((x)<(y)))
-
-#define FFMAX(a,b) ((a) > (b) ? (a) : (b))
-#define FFMAX3(a,b,c) FFMAX(FFMAX(a,b),c)
-#define FFMIN(a,b) ((a) > (b) ? (b) : (a))
-#define FFMIN3(a,b,c) FFMIN(FFMIN(a,b),c)
-
-#define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
-#define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 /* misc math functions */
 
@@ -474,9 +448,6 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
 {
     return av_popcount(v) & 1;
 }
-
-#define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
-#define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
 /**
  * Convert a UTF-8 character (up to 4 bytes) to its 32-bit UCS-4 encoded form.
