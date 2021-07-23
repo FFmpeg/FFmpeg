@@ -21,7 +21,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "common.h"
 
 /**
  * Sum of abs(src1[x] - src2[x])
