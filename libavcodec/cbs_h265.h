@@ -594,6 +594,27 @@ typedef struct H265RawSEIRecoveryPoint {
     uint8_t broken_link_flag;
 } H265RawSEIRecoveryPoint;
 
+typedef struct H265RawFilmGrainCharacteristics {
+    uint8_t      film_grain_characteristics_cancel_flag;
+    uint8_t      film_grain_model_id;
+    uint8_t      separate_colour_description_present_flag;
+    uint8_t      film_grain_bit_depth_luma_minus8;
+    uint8_t      film_grain_bit_depth_chroma_minus8;
+    uint8_t      film_grain_full_range_flag;
+    uint8_t      film_grain_colour_primaries;
+    uint8_t      film_grain_transfer_characteristics;
+    uint8_t      film_grain_matrix_coeffs;
+    uint8_t      blending_mode_id;
+    uint8_t      log2_scale_factor;
+    uint8_t      comp_model_present_flag[3];
+    uint8_t      num_intensity_intervals_minus1[3];
+    uint8_t      num_model_values_minus1[3];
+    uint8_t      intensity_interval_lower_bound[3][256];
+    uint8_t      intensity_interval_upper_bound[3][256];
+    int16_t      comp_model_value[3][256][6];
+    uint8_t      film_grain_characteristics_persistence_flag;
+} H265RawFilmGrainCharacteristics;
+
 typedef struct H265RawSEIDisplayOrientation {
     uint8_t display_orientation_cancel_flag;
     uint8_t hor_flip;
