@@ -165,6 +165,27 @@ typedef struct H264SEIAlternativeTransfer {
     int preferred_transfer_characteristics;
 } H264SEIAlternativeTransfer;
 
+typedef struct H264SEIFilmGrainCharacteristics {
+    int present;
+    int model_id;
+    int separate_colour_description_present_flag;
+    int bit_depth_luma;
+    int bit_depth_chroma;
+    int full_range;
+    int color_primaries;
+    int transfer_characteristics;
+    int matrix_coeffs;
+    int blending_mode_id;
+    int log2_scale_factor;
+    int comp_model_present_flag[3];
+    uint16_t num_intensity_intervals[3];
+    uint8_t num_model_values[3];
+    uint8_t intensity_interval_lower_bound[3][256];
+    uint8_t intensity_interval_upper_bound[3][256];
+    int16_t comp_model_value[3][256][6];
+    int repetition_period;
+} H264SEIFilmGrainCharacteristics;
+
 typedef struct H264SEIContext {
     H264SEIPictureTiming picture_timing;
     H264SEIAFD afd;
@@ -176,6 +197,7 @@ typedef struct H264SEIContext {
     H264SEIDisplayOrientation display_orientation;
     H264SEIGreenMetaData green_metadata;
     H264SEIAlternativeTransfer alternative_transfer;
+    H264SEIFilmGrainCharacteristics film_grain_characteristics;
 } H264SEIContext;
 
 struct H264ParamSets;

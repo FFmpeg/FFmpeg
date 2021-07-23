@@ -55,6 +55,7 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->picture_timing.present      = 0;
     h->buffering_period.present    = 0;
     h->frame_packing.present       = 0;
+    h->film_grain_characteristics.present = 0;
     h->display_orientation.present = 0;
     h->afd.present                 =  0;
 
@@ -416,6 +417,49 @@ static int decode_alternative_transfer(H264SEIAlternativeTransfer *h,
     return 0;
 }
 
+static int decode_film_grain_characteristics(H264SEIFilmGrainCharacteristics *h,
+                                             GetBitContext *gb)
+{
+    int film_grain_characteristics_cancel_flag = get_bits1(gb);
+
+    if (!film_grain_characteristics_cancel_flag) {
+        memset(h, 0, sizeof(*h));
+        h->model_id = get_bits(gb, 8);
+        h->separate_colour_description_present_flag = get_bits1(gb);
+        if (h->separate_colour_description_present_flag) {
+            h->bit_depth_luma = get_bits(gb, 3) + 8;
+            h->bit_depth_chroma = get_bits(gb, 3) + 8;
+            h->full_range = get_bits1(gb);
+            h->color_primaries = get_bits(gb, 8);
+            h->transfer_characteristics = get_bits(gb, 8);
+            h->matrix_coeffs = get_bits(gb, 8);
+        }
+        h->blending_mode_id = get_bits(gb, 2);
+        h->log2_scale_factor = get_bits(gb, 4);
+        for (int c = 0; c < 3; c++)
+            h->comp_model_present_flag[c] = get_bits1(gb);
+        for (int c = 0; c < 3; c++) {
+            if (h->comp_model_present_flag[c]) {
+                h->num_intensity_intervals[c] = get_bits(gb, 8) + 1;
+                h->num_model_values[c] = get_bits(gb, 3) + 1;
+                if (h->num_model_values[c] > 6)
+                    return AVERROR_INVALIDDATA;
+                for (int i = 0; i < h->num_intensity_intervals[c]; i++) {
+                    h->intensity_interval_lower_bound[c][i] = get_bits(gb, 8);
+                    h->intensity_interval_upper_bound[c][i] = get_bits(gb, 8);
+                    for (int j = 0; j < h->num_model_values[c]; j++)
+                        h->comp_model_value[c][i][j] = get_se_golomb_long(gb);
+                }
+            }
+        }
+        h->repetition_period = get_ue_golomb_long(gb);
+
+        h->present = 1;
+    }
+
+    return 0;
+}
+
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const H264ParamSets *ps, void *logctx)
 {
@@ -476,6 +520,9 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             break;
         case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
             ret = decode_alternative_transfer(&h->alternative_transfer, &gb_payload);
+            break;
+        case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
+            ret = decode_film_grain_characteristics(&h->film_grain_characteristics, &gb_payload);
             break;
         default:
             av_log(logctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
