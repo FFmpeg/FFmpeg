@@ -24,10 +24,13 @@
  * Audio FIFO
  */
 
-#include "avutil.h"
+#include <limits.h>
+#include <stddef.h>
+
 #include "audio_fifo.h"
-#include "common.h"
+#include "error.h"
 #include "fifo.h"
+#include "macros.h"
 #include "mem.h"
 #include "samplefmt.h"
 
