@@ -58,13 +58,7 @@ const char *postproc_license(void);
 typedef void pp_context;
 typedef void pp_mode;
 
-#if LIBPOSTPROC_VERSION_INT < (52<<16)
-typedef pp_context pp_context_t;
-typedef pp_mode pp_mode_t;
-extern const char *const pp_help; ///< a simple help text
-#else
 extern const char pp_help[]; ///< a simple help text
-#endif
 
 void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                      uint8_t * dst[3], const int dstStride[3],
