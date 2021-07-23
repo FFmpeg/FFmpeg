@@ -21,9 +21,6 @@
 
 #include <stdint.h>
 
-#include "avutil.h"
-#include "attributes.h"
-
 /**
  * @addtogroup lavu_audio
  * @{
