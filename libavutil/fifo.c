@@ -21,10 +21,13 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "avassert.h"
-#include "common.h"
+#include "error.h"
 #include "fifo.h"
+#include "macros.h"
+#include "mem.h"
 
 // by default the FIFO can be auto-grown to 1MB
 #define AUTO_GROW_DEFAULT_BYTES (1024 * 1024)

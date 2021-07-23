@@ -18,7 +18,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <limits.h>
 #include "fifo.h"
+#include "mem.h"
 #include "threadmessage.h"
 #include "thread.h"
 

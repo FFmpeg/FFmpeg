@@ -24,9 +24,11 @@
 #ifndef AVUTIL_FIFO_H
 #define AVUTIL_FIFO_H
 
+#include <stddef.h>
 #include <stdint.h>
-#include "avutil.h"
+
 #include "attributes.h"
+#include "version.h"
 
 typedef struct AVFifo AVFifo;
 
