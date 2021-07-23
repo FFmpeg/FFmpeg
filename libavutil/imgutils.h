@@ -27,8 +27,10 @@
  * @{
  */
 
-#include "avutil.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "pixdesc.h"
+#include "pixfmt.h"
 #include "rational.h"
 
 /**
