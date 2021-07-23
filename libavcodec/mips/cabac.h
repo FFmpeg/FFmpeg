@@ -77,7 +77,15 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
         "lhu          %[tmp0],       0(%[c_bytestream])            \n\t"
 #else
         "lhu          %[tmp0],       0(%[c_bytestream])            \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "wsbh         %[tmp0],       %[tmp0]                       \n\t"
+#else
+        "and          %[tmp1],      %[tmp0],         0xff00ff00    \n\t"
+        "srl          %[tmp1],      %[tmp1],         8             \n\t"
+        "and          %[tmp0],      %[tmp0],         0x00ff00ff    \n\t"
+        "sll          %[tmp0],      %[tmp0],         8             \n\t"
+        "or           %[tmp0],      %[tmp0],         %[tmp1]       \n\t"
+#endif
 #endif
         PTR_SLL      "%[tmp0],       %[tmp0],        0x01          \n\t"
         PTR_SUBU     "%[tmp0],       %[tmp0],        %[cabac_mask] \n\t"
@@ -125,7 +133,15 @@ static av_always_inline int get_cabac_bypass_mips(CABACContext *c)
         "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
 #else
         "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "wsbh       %[tmp1],         %[tmp1]                              \n\t"
+#else
+        "and        %[tmp0],         %[tmp1],         0xff00ff00          \n\t"
+        "srl        %[tmp0],         %[tmp0],         8                   \n\t"
+        "and        %[tmp1],         %[tmp1],         0x00ff00ff          \n\t"
+        "sll        %[tmp1],         %[tmp1],         8                   \n\t"
+        "or         %[tmp1],         %[tmp1],         %[tmp0]             \n\t"
+#endif
 #endif
         PTR_SLL    "%[tmp1],         %[tmp1],         0x01                \n\t"
         PTR_SUBU   "%[tmp1],         %[tmp1],         %[cabac_mask]       \n\t"
@@ -169,7 +185,15 @@ static av_always_inline int get_cabac_bypass_sign_mips(CABACContext *c, int val)
         "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
 #else
         "lhu        %[tmp1],         0(%[c_bytestream])                   \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "wsbh       %[tmp1],         %[tmp1]                              \n\t"
+#else
+        "and        %[tmp0],         %[tmp1],         0xff00ff00          \n\t"
+        "srl        %[tmp0],         %[tmp0],         8                   \n\t"
+        "and        %[tmp1],         %[tmp1],         0x00ff00ff          \n\t"
+        "sll        %[tmp1],         %[tmp1],         8                   \n\t"
+        "or         %[tmp1],         %[tmp1],         %[tmp0]             \n\t"
+#endif
 #endif
         PTR_SLL    "%[tmp1],         %[tmp1],         0x01                \n\t"
         PTR_SUBU   "%[tmp1],         %[tmp1],         %[cabac_mask]       \n\t"
