@@ -31,7 +31,11 @@
 
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 1
 
+#include <stdlib.h>
+
+#include "error.h"
 #include "log.h"
+#include "macros.h"
 
 #define ASSERT_PTHREAD_ABORT(func, ret) do {                            \
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = "";                         \

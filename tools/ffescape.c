@@ -19,12 +19,18 @@
  */
 
 #include "config.h"
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>             /* getopt */
 #endif
 
 #include "libavutil/log.h"
 #include "libavutil/bprint.h"
+#include "libavutil/mem.h"
 
 #if !HAVE_GETOPT
 #include "compat/getopt.c"

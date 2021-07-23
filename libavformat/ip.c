@@ -18,8 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
 #include "ip.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 
 static int compare_addr(const struct sockaddr_storage *a,
                         const struct sockaddr_storage *b)

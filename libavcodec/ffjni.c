@@ -26,6 +26,7 @@
 
 #include "libavutil/bprint.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 
 #include "config.h"
 #include "jni.h"

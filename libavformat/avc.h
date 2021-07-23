@@ -23,6 +23,7 @@
 #define AVFORMAT_AVC_H
 
 #include <stdint.h>
+#include "libavutil/rational.h"
 #include "avio.h"
 
 typedef struct NALU {

@@ -27,6 +27,7 @@
  */
 
 #include <stdio.h>
+#include "common.h"
 #include "timecode.h"
 #include "log.h"
 #include "error.h"
