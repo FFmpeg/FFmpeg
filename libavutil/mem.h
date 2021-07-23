@@ -27,12 +27,10 @@
 #ifndef AVUTIL_MEM_H
 #define AVUTIL_MEM_H
 
-#include <limits.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "attributes.h"
-#include "avutil.h"
-#include "version.h"
 
 /**
  * @addtogroup lavu_mem

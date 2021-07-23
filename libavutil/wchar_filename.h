@@ -21,6 +21,8 @@
 
 #ifdef _WIN32
 
+#include <errno.h>
+#include <stddef.h>
 #include <windows.h>
 #include "mem.h"
 

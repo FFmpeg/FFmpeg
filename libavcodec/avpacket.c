@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/avutil.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"

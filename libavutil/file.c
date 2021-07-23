@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#include "error.h"
 #include "file.h"
 #include "file_open.h"
 #include "internal.h"

@@ -17,6 +17,8 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/error.h"
+#include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"

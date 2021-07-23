@@ -24,7 +24,7 @@
 #ifndef AVUTIL_TIMESTAMP_H
 #define AVUTIL_TIMESTAMP_H
 
-#include "common.h"
+#include "avutil.h"
 
 #if defined(__cplusplus) && !defined(__STDC_FORMAT_MACROS) && !defined(PRId64)
 #error missing -D__STDC_FORMAT_MACROS / #define __STDC_FORMAT_MACROS

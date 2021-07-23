@@ -18,13 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "avassert.h"
 #include "avstring.h"
 #include "dict.h"
 #include "dict_internal.h"
-#include "internal.h"
+#include "error.h"
 #include "mem.h"
 #include "time_internal.h"
 #include "bprint.h"

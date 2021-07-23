@@ -16,13 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+#include <string.h>
+
 #include "libavutil/attributes.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "avfft.h"
-#include "fft.h"
-#include "rdft.h"
-#include "dct.h"
 
 typedef struct AVTXWrapper {
     AVTXContext *ctx;

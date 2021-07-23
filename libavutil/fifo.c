@@ -293,6 +293,7 @@ void av_fifo_freep2(AVFifo **f)
 
 
 #if FF_API_FIFO_OLD_API
+#include "internal.h"
 FF_DISABLE_DEPRECATION_WARNINGS
 #define OLD_FIFO_SIZE_MAX (size_t)FFMIN3(INT_MAX, UINT32_MAX, SIZE_MAX)
 

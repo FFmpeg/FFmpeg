@@ -19,11 +19,15 @@
  */
 
 #include "config.h"
+#include <stdio.h>
+#include <string.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>             /* getopt */
 #endif
 
+#include "libavutil/error.h"
 #include "libavutil/eval.h"
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
 
 #if !HAVE_GETOPT

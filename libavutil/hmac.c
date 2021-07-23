@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "attributes.h"
+#include "error.h"
 #include "hmac.h"
 #include "md5.h"
 #include "sha.h"

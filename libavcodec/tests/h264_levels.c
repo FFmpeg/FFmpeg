@@ -16,7 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/common.h"
+#include <inttypes.h>
+#include <stddef.h>
+
+#include "libavutil/log.h"
+#include "libavutil/macros.h"
 #include "libavcodec/h264_levels.h"
 
 static const struct {

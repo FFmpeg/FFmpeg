@@ -20,8 +20,11 @@
 
 #include "config.h"
 
+#include <stdio.h>
+#include <string.h>
 #include <zmq.h>
 
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/bprint.h"
 
