@@ -719,6 +719,89 @@ static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(film_grain_characteristics)(CodedBitstreamContext *ctx, RWContext *rw,
+                                            H264RawFilmGrainCharacteristics *current,
+                                            SEIMessageState *state)
+{
+    CodedBitstreamH264Context *h264 = ctx->priv_data;
+    const H264RawSPS *sps;
+    int err, c, i, j;
+
+    HEADER("Film Grain Characteristics");
+
+    sps = h264->active_sps;
+    if (!sps) {
+        // If there is exactly one possible SPS but it is not yet active
+        // then just assume that it should be the active one.
+        int i, k = -1;
+        for (i = 0; i < H264_MAX_SPS_COUNT; i++) {
+            if (h264->sps[i]) {
+                if (k >= 0) {
+                    k = -1;
+                    break;
+                }
+                k = i;
+            }
+        }
+        if (k >= 0)
+            sps = h264->sps[k];
+    }
+
+    flag(film_grain_characteristics_cancel_flag);
+    if (!current->film_grain_characteristics_cancel_flag) {
+        int filmGrainBitDepth[3];
+
+        u(2, film_grain_model_id, 0, 1);
+        flag(separate_colour_description_present_flag);
+        if (current->separate_colour_description_present_flag) {
+            ub(3, film_grain_bit_depth_luma_minus8);
+            ub(3, film_grain_bit_depth_chroma_minus8);
+            flag(film_grain_full_range_flag);
+            ub(8, film_grain_colour_primaries);
+            ub(8, film_grain_transfer_characteristics);
+            ub(8, film_grain_matrix_coefficients);
+        } else {
+            if (!sps) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR,
+                       "No active SPS for film_grain_characteristics.\n");
+                return AVERROR_INVALIDDATA;
+            }
+            infer(film_grain_bit_depth_luma_minus8, sps->bit_depth_luma_minus8);
+            infer(film_grain_bit_depth_chroma_minus8, sps->bit_depth_chroma_minus8);
+            infer(film_grain_full_range_flag, sps->vui.video_full_range_flag);
+            infer(film_grain_colour_primaries, sps->vui.colour_primaries);
+            infer(film_grain_transfer_characteristics, sps->vui.transfer_characteristics);
+            infer(film_grain_matrix_coefficients, sps->vui.matrix_coefficients);
+        }
+
+        filmGrainBitDepth[0] = current->film_grain_bit_depth_luma_minus8 + 8;
+        filmGrainBitDepth[1] =
+        filmGrainBitDepth[2] = current->film_grain_bit_depth_chroma_minus8 + 8;
+
+        u(2, blending_mode_id, 0, 1);
+        ub(4, log2_scale_factor);
+        for (c = 0; c < 3; c++)
+            flags(comp_model_present_flag[c], 1, c);
+        for (c = 0; c < 3; c++) {
+            if (current->comp_model_present_flag[c]) {
+                ubs(8, num_intensity_intervals_minus1[c], 1, c);
+                us(3, num_model_values_minus1[c], 0, 5, 1, c);
+                for (i = 0; i <= current->num_intensity_intervals_minus1[c]; i++) {
+                    ubs(8, intensity_interval_lower_bound[c][i], 2, c, i);
+                    ubs(8, intensity_interval_upper_bound[c][i], 2, c, i);
+                    for (j = 0; j <= current->num_model_values_minus1[c]; j++)
+                        ses(comp_model_value[c][i][j],      0 - current->film_grain_model_id * (1 << (filmGrainBitDepth[c] - 1)),
+                            ((1 << filmGrainBitDepth[c]) - 1) - current->film_grain_model_id * (1 << (filmGrainBitDepth[c] - 1)),
+                            3, c, i, j);
+                }
+            }
+        }
+        ue(film_grain_characteristics_repetition_period, 0, 16384);
+    }
+
+    return 0;
+}
+
 static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *rw,
                                          H264RawSEIDisplayOrientation *current,
                                          SEIMessageState *sei)

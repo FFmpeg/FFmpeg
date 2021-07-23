@@ -1571,6 +1571,12 @@ static const SEIMessageTypeDescriptor cbs_sei_h264_types[] = {
         SEI_MESSAGE_RW(h264, sei_recovery_point),
     },
     {
+        SEI_TYPE_FILM_GRAIN_CHARACTERISTICS,
+        1, 0,
+        sizeof(H264RawFilmGrainCharacteristics),
+        SEI_MESSAGE_RW(h264, film_grain_characteristics),
+    },
+    {
         SEI_TYPE_DISPLAY_ORIENTATION,
         1, 0,
         sizeof(H264RawSEIDisplayOrientation),
