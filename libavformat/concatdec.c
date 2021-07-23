@@ -26,6 +26,7 @@
 #include "libavutil/timestamp.h"
 #include "libavcodec/bsf.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "url.h"
 

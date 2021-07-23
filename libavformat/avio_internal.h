@@ -187,4 +187,18 @@ void ffio_reset_dyn_buf(AVIOContext *s);
  */
 void ffio_free_dyn_buf(AVIOContext **s);
 
+struct AVBPrint;
+/**
+ * Read a whole line of text from AVIOContext to an AVBPrint buffer overwriting
+ * its contents. Stop reading after reaching a \\r, a \\n, a \\r\\n, a \\0 or
+ * EOF. The line ending characters are NOT included in the buffer, but they
+ * are skipped on the input.
+ *
+ * @param s the read-only AVIOContext
+ * @param bp the AVBPrint buffer
+ * @return the length of the read line not including the line endings,
+ *         negative on error, or if the buffer becomes truncated.
+ */
+int64_t ff_read_line_to_bprint_overwrite(AVIOContext *s, struct AVBPrint *bp);
+
 #endif /* AVFORMAT_AVIO_INTERNAL_H */

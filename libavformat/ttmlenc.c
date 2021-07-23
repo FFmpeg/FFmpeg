@@ -27,6 +27,7 @@
  * @see https://www.w3.org/TR/ttml-imsc/rec
  */
 
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/ttmlenc.h"

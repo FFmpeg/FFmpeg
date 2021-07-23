@@ -25,6 +25,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/tea.h"
