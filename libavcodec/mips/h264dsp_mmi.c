@@ -40,8 +40,8 @@ void ff_h264_add_pixels4_8_mmi(uint8_t *dst, int16_t *src, int stride)
         MMI_LDC1(%[ftmp3], %[src], 0x10)
         MMI_LDC1(%[ftmp4], %[src], 0x18)
         /* memset(src, 0, 32); */
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x00(%[src])            \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x10(%[src])            \n\t"
+        MMI_SQC1(%[ftmp0], %[ftmp0], %[src], 0x00)
+        MMI_SQC1(%[ftmp0], %[ftmp0], %[src], 0x10)
         MMI_ULWC1(%[ftmp5], %[dst0], 0x00)
         MMI_ULWC1(%[ftmp6], %[dst1], 0x00)
         MMI_ULWC1(%[ftmp7], %[dst2], 0x00)
@@ -90,8 +90,8 @@ void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
         MMI_LDC1(%[ftmp3], %[block], 0x18)
         /* memset(block, 0, 32) */
         "pxor       %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
-        "gssqc1     %[ftmp4],   %[ftmp4],       0x00(%[block])          \n\t"
-        "gssqc1     %[ftmp4],   %[ftmp4],       0x10(%[block])          \n\t"
+        MMI_SQC1(%[ftmp4], %[ftmp4], %[block], 0x00)
+        MMI_SQC1(%[ftmp4], %[ftmp4], %[block], 0x10)
         "dli        %[tmp0],    0x01                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp8]                                \n\t"
         "dli        %[tmp0],    0x06                                    \n\t"

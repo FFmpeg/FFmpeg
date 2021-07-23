@@ -307,6 +307,7 @@ inline void ff_put_pixels4_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
     double ftmp[4];
     mips_reg addr[5];
     DECLARE_VAR_LOW32;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         "1:                                                             \n\t"

@@ -31,6 +31,8 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 {
     double ftmp[12];
     union mmi_intfloat64 A, B, C, D, E;
+    DECLARE_VAR_ALL64;
+
     A.i = 64;
 
     if (!(x || y)) {
@@ -57,7 +59,8 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp3], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]          \n\t"
             "bnez       %[h],       1b                                 \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [dst]"+&r"(dst),              [src]"+&r"(src),
               [h]"+&r"(h)
@@ -151,7 +154,8 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp3], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]          \n\t"
             "bnez       %[h],       1b                                 \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
               [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
@@ -201,7 +205,8 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp1], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]          \n\t"
             "bnez       %[h],       1b                                 \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
               [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
@@ -268,7 +273,8 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp2], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]          \n\t"
             "bnez       %[h],       1b                                 \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
               [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
@@ -288,6 +294,8 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 {
     double ftmp[10];
     union mmi_intfloat64 A, B, C, D, E;
+    DECLARE_VAR_ALL64;
+
     A.i = 64;
 
     if(!(x || y)){
@@ -310,7 +318,8 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
             "addi       %[h],       %[h],           -0x02               \n\t"
             "bnez       %[h],       1b                                  \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [dst]"+&r"(dst),              [src]"+&r"(src),
               [h]"+&r"(h)
@@ -373,7 +382,8 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp1], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]      \n\t"
             "bnez       %[h],       1b                             \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
               [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
@@ -423,7 +433,8 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp1], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]      \n\t"
             "bnez       %[h],       1b                             \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
               [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
@@ -471,7 +482,8 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
             MMI_SDC1(%[ftmp1], %[dst], 0x00)
             PTR_ADDU   "%[dst],     %[dst],         %[stride]      \n\t"
             "bnez       %[h],       1b                             \n\t"
-            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+            : RESTRICT_ASM_ALL64
+              [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
               [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
               [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
               [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),

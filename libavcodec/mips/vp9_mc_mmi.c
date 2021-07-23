@@ -77,29 +77,24 @@ static void convolve_horiz_mmi(const uint8_t *src, int32_t src_stride,
 {
     double ftmp[15];
     uint32_t tmp[2];
+    DECLARE_VAR_ALL64;
     src -= 3;
     src_stride -= w;
     dst_stride -= w;
     __asm__ volatile (
         "move       %[tmp1],    %[width]                   \n\t"
         "pxor       %[ftmp0],   %[ftmp0],    %[ftmp0]      \n\t"
-        "gsldlc1    %[filter1], 0x07(%[filter])            \n\t"
-        "gsldrc1    %[filter1], 0x00(%[filter])            \n\t"
-        "gsldlc1    %[filter2], 0x0f(%[filter])            \n\t"
-        "gsldrc1    %[filter2], 0x08(%[filter])            \n\t"
+        MMI_ULDC1(%[filter1], %[filter], 0x00)
+        MMI_ULDC1(%[filter2], %[filter], 0x08)
         "li         %[tmp0],    0x07                       \n\t"
         "dmtc1      %[tmp0],    %[ftmp13]                  \n\t"
         "punpcklwd  %[ftmp13],  %[ftmp13],   %[ftmp13]     \n\t"
         "1:                                                \n\t"
         /* Get 8 data per row */
-        "gsldlc1    %[ftmp5],   0x07(%[src])               \n\t"
-        "gsldrc1    %[ftmp5],   0x00(%[src])               \n\t"
-        "gsldlc1    %[ftmp7],   0x08(%[src])               \n\t"
-        "gsldrc1    %[ftmp7],   0x01(%[src])               \n\t"
-        "gsldlc1    %[ftmp9],   0x09(%[src])               \n\t"
-        "gsldrc1    %[ftmp9],   0x02(%[src])               \n\t"
-        "gsldlc1    %[ftmp11],  0x0A(%[src])               \n\t"
-        "gsldrc1    %[ftmp11],  0x03(%[src])               \n\t"
+        MMI_ULDC1(%[ftmp5], %[src], 0x00)
+        MMI_ULDC1(%[ftmp7], %[src], 0x01)
+        MMI_ULDC1(%[ftmp9], %[src], 0x02)
+        MMI_ULDC1(%[ftmp11], %[src], 0x03)
         "punpcklbh  %[ftmp4],   %[ftmp5],    %[ftmp0]      \n\t"
         "punpckhbh  %[ftmp5],   %[ftmp5],    %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp6],   %[ftmp7],    %[ftmp0]      \n\t"
@@ -127,7 +122,8 @@ static void convolve_horiz_mmi(const uint8_t *src, int32_t src_stride,
         PTR_ADDU   "%[dst],     %[dst],      %[dst_stride] \n\t"
         PTR_ADDIU  "%[height],  %[height],   -0x01         \n\t"
         "bnez       %[height],  1b                         \n\t"
-        : [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
+        : RESTRICT_ASM_ALL64
+          [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
           [filter1]"=&f"(ftmp[2]),  [filter2]"=&f"(ftmp[3]),
           [ftmp0]"=&f"(ftmp[4]),    [ftmp4]"=&f"(ftmp[5]),
           [ftmp5]"=&f"(ftmp[6]),    [ftmp6]"=&f"(ftmp[7]),
@@ -153,15 +149,14 @@ static void convolve_vert_mmi(const uint8_t *src, int32_t src_stride,
     double ftmp[17];
     uint32_t tmp[1];
     ptrdiff_t addr = src_stride;
+    DECLARE_VAR_ALL64;
     src_stride -= w;
     dst_stride -= w;
 
     __asm__ volatile (
         "pxor       %[ftmp0],    %[ftmp0],   %[ftmp0]      \n\t"
-        "gsldlc1    %[ftmp4],    0x07(%[filter])           \n\t"
-        "gsldrc1    %[ftmp4],    0x00(%[filter])           \n\t"
-        "gsldlc1    %[ftmp5],    0x0f(%[filter])           \n\t"
-        "gsldrc1    %[ftmp5],    0x08(%[filter])           \n\t"
+        MMI_ULDC1(%[ftmp4], %[filter], 0x00)
+        MMI_ULDC1(%[ftmp5], %[filter], 0x08)
         "punpcklwd  %[filter10], %[ftmp4],   %[ftmp4]      \n\t"
         "punpckhwd  %[filter32], %[ftmp4],   %[ftmp4]      \n\t"
         "punpcklwd  %[filter54], %[ftmp5],   %[ftmp5]      \n\t"
@@ -171,29 +166,21 @@ static void convolve_vert_mmi(const uint8_t *src, int32_t src_stride,
         "punpcklwd  %[ftmp13],   %[ftmp13],  %[ftmp13]     \n\t"
         "1:                                                \n\t"
         /* Get 8 data per column */
-        "gsldlc1    %[ftmp4],    0x07(%[src])              \n\t"
-        "gsldrc1    %[ftmp4],    0x00(%[src])              \n\t"
+        MMI_ULDC1(%[ftmp4], %[src], 0x0)
         PTR_ADDU   "%[tmp0],     %[src],     %[addr]       \n\t"
-        "gsldlc1    %[ftmp5],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp5],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp5], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp6],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp6],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp6], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp7],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp7],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp7], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp8],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp8],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp8], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp9],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp9],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp9], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp10],   0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp10],   0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp10], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp11],   0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp11],   0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp11], %[tmp0], 0x0)
         "punpcklbh  %[ftmp4],    %[ftmp4],   %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp5],    %[ftmp5],   %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp6],    %[ftmp6],   %[ftmp0]      \n\t"
@@ -221,7 +208,8 @@ static void convolve_vert_mmi(const uint8_t *src, int32_t src_stride,
         PTR_ADDU   "%[dst],      %[dst],     %[dst_stride] \n\t"
         PTR_ADDIU  "%[height],   %[height],  -0x01         \n\t"
         "bnez       %[height],   1b                        \n\t"
-        : [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
+        : RESTRICT_ASM_ALL64
+          [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
           [filter10]"=&f"(ftmp[2]), [filter32]"=&f"(ftmp[3]),
           [filter54]"=&f"(ftmp[4]), [filter76]"=&f"(ftmp[5]),
           [ftmp0]"=&f"(ftmp[6]),    [ftmp4]"=&f"(ftmp[7]),
@@ -247,6 +235,7 @@ static void convolve_avg_horiz_mmi(const uint8_t *src, int32_t src_stride,
 {
     double ftmp[15];
     uint32_t tmp[2];
+    DECLARE_VAR_ALL64;
     src -= 3;
     src_stride -= w;
     dst_stride -= w;
@@ -254,23 +243,17 @@ static void convolve_avg_horiz_mmi(const uint8_t *src, int32_t src_stride,
     __asm__ volatile (
         "move       %[tmp1],    %[width]                   \n\t"
         "pxor       %[ftmp0],   %[ftmp0],    %[ftmp0]      \n\t"
-        "gsldlc1    %[filter1], 0x07(%[filter])            \n\t"
-        "gsldrc1    %[filter1], 0x00(%[filter])            \n\t"
-        "gsldlc1    %[filter2], 0x0f(%[filter])            \n\t"
-        "gsldrc1    %[filter2], 0x08(%[filter])            \n\t"
+        MMI_ULDC1(%[filter1], %[filter], 0x00)
+        MMI_ULDC1(%[filter2], %[filter], 0x08)
         "li         %[tmp0],    0x07                       \n\t"
         "dmtc1      %[tmp0],    %[ftmp13]                  \n\t"
         "punpcklwd  %[ftmp13],  %[ftmp13],   %[ftmp13]     \n\t"
         "1:                                                \n\t"
         /* Get 8 data per row */
-        "gsldlc1    %[ftmp5],   0x07(%[src])               \n\t"
-        "gsldrc1    %[ftmp5],   0x00(%[src])               \n\t"
-        "gsldlc1    %[ftmp7],   0x08(%[src])               \n\t"
-        "gsldrc1    %[ftmp7],   0x01(%[src])               \n\t"
-        "gsldlc1    %[ftmp9],   0x09(%[src])               \n\t"
-        "gsldrc1    %[ftmp9],   0x02(%[src])               \n\t"
-        "gsldlc1    %[ftmp11],  0x0A(%[src])               \n\t"
-        "gsldrc1    %[ftmp11],  0x03(%[src])               \n\t"
+        MMI_ULDC1(%[ftmp5], %[src], 0x00)
+        MMI_ULDC1(%[ftmp7], %[src], 0x01)
+        MMI_ULDC1(%[ftmp9], %[src], 0x02)
+        MMI_ULDC1(%[ftmp11], %[src], 0x03)
         "punpcklbh  %[ftmp4],   %[ftmp5],    %[ftmp0]      \n\t"
         "punpckhbh  %[ftmp5],   %[ftmp5],    %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp6],   %[ftmp7],    %[ftmp0]      \n\t"
@@ -289,8 +272,7 @@ static void convolve_avg_horiz_mmi(const uint8_t *src, int32_t src_stride,
         "packsswh   %[srcl],    %[srcl],     %[srch]       \n\t"
         "packushb   %[ftmp12],  %[srcl],     %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp12],  %[ftmp12],   %[ftmp0]      \n\t"
-        "gsldlc1    %[ftmp4],   0x07(%[dst])               \n\t"
-        "gsldrc1    %[ftmp4],   0x00(%[dst])               \n\t"
+        MMI_ULDC1(%[ftmp4], %[dst], 0x0)
         "punpcklbh  %[ftmp4],   %[ftmp4],    %[ftmp0]      \n\t"
         "paddh      %[ftmp12],  %[ftmp12],   %[ftmp4]      \n\t"
         "li         %[tmp0],    0x10001                    \n\t"
@@ -309,7 +291,8 @@ static void convolve_avg_horiz_mmi(const uint8_t *src, int32_t src_stride,
         PTR_ADDU   "%[dst],     %[dst],      %[dst_stride] \n\t"
         PTR_ADDIU  "%[height],  %[height],   -0x01         \n\t"
         "bnez       %[height],  1b                         \n\t"
-        : [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
+        : RESTRICT_ASM_ALL64
+          [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
           [filter1]"=&f"(ftmp[2]),  [filter2]"=&f"(ftmp[3]),
           [ftmp0]"=&f"(ftmp[4]),    [ftmp4]"=&f"(ftmp[5]),
           [ftmp5]"=&f"(ftmp[6]),    [ftmp6]"=&f"(ftmp[7]),
@@ -335,15 +318,14 @@ static void convolve_avg_vert_mmi(const uint8_t *src, int32_t src_stride,
     double ftmp[17];
     uint32_t tmp[1];
     ptrdiff_t addr = src_stride;
+    DECLARE_VAR_ALL64;
     src_stride -= w;
     dst_stride -= w;
 
     __asm__ volatile (
         "pxor       %[ftmp0],    %[ftmp0],   %[ftmp0]      \n\t"
-        "gsldlc1    %[ftmp4],    0x07(%[filter])           \n\t"
-        "gsldrc1    %[ftmp4],    0x00(%[filter])           \n\t"
-        "gsldlc1    %[ftmp5],    0x0f(%[filter])           \n\t"
-        "gsldrc1    %[ftmp5],    0x08(%[filter])           \n\t"
+        MMI_ULDC1(%[ftmp4], %[filter], 0x00)
+        MMI_ULDC1(%[ftmp5], %[filter], 0x08)
         "punpcklwd  %[filter10], %[ftmp4],   %[ftmp4]      \n\t"
         "punpckhwd  %[filter32], %[ftmp4],   %[ftmp4]      \n\t"
         "punpcklwd  %[filter54], %[ftmp5],   %[ftmp5]      \n\t"
@@ -353,29 +335,21 @@ static void convolve_avg_vert_mmi(const uint8_t *src, int32_t src_stride,
         "punpcklwd  %[ftmp13],   %[ftmp13],  %[ftmp13]     \n\t"
         "1:                                                \n\t"
         /* Get 8 data per column */
-        "gsldlc1    %[ftmp4],    0x07(%[src])              \n\t"
-        "gsldrc1    %[ftmp4],    0x00(%[src])              \n\t"
+        MMI_ULDC1(%[ftmp4], %[src], 0x0)
         PTR_ADDU   "%[tmp0],     %[src],     %[addr]       \n\t"
-        "gsldlc1    %[ftmp5],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp5],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp5], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp6],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp6],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp6], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp7],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp7],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp7], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp8],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp8],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp8], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp9],    0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp9],    0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp9], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp10],   0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp10],   0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp10], %[tmp0], 0x0)
         PTR_ADDU   "%[tmp0],     %[tmp0],    %[addr]       \n\t"
-        "gsldlc1    %[ftmp11],   0x07(%[tmp0])             \n\t"
-        "gsldrc1    %[ftmp11],   0x00(%[tmp0])             \n\t"
+        MMI_ULDC1(%[ftmp11], %[tmp0], 0x0)
         "punpcklbh  %[ftmp4],    %[ftmp4],   %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp5],    %[ftmp5],   %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp6],    %[ftmp6],   %[ftmp0]      \n\t"
@@ -394,8 +368,7 @@ static void convolve_avg_vert_mmi(const uint8_t *src, int32_t src_stride,
         "packsswh   %[srcl],     %[srcl],    %[srch]       \n\t"
         "packushb   %[ftmp12],   %[srcl],    %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp12],   %[ftmp12],  %[ftmp0]      \n\t"
-        "gsldlc1    %[ftmp4],    0x07(%[dst])              \n\t"
-        "gsldrc1    %[ftmp4],    0x00(%[dst])              \n\t"
+        MMI_ULDC1(%[ftmp4], %[dst], 0x00)
         "punpcklbh  %[ftmp4],    %[ftmp4],   %[ftmp0]      \n\t"
         "paddh      %[ftmp12],   %[ftmp12],  %[ftmp4]      \n\t"
         "li         %[tmp0],     0x10001                   \n\t"
@@ -414,7 +387,8 @@ static void convolve_avg_vert_mmi(const uint8_t *src, int32_t src_stride,
         PTR_ADDU   "%[dst],      %[dst],     %[dst_stride] \n\t"
         PTR_ADDIU  "%[height],   %[height],  -0x01         \n\t"
         "bnez       %[height],   1b                        \n\t"
-        : [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
+        : RESTRICT_ASM_ALL64
+          [srcl]"=&f"(ftmp[0]),     [srch]"=&f"(ftmp[1]),
           [filter10]"=&f"(ftmp[2]), [filter32]"=&f"(ftmp[3]),
           [filter54]"=&f"(ftmp[4]), [filter76]"=&f"(ftmp[5]),
           [ftmp0]"=&f"(ftmp[6]),    [ftmp4]"=&f"(ftmp[7]),
@@ -439,6 +413,7 @@ static void convolve_avg_mmi(const uint8_t *src, int32_t src_stride,
 {
     double ftmp[4];
     uint32_t tmp[2];
+    DECLARE_VAR_ALL64;
     src_stride -= w;
     dst_stride -= w;
 
@@ -449,10 +424,8 @@ static void convolve_avg_mmi(const uint8_t *src, int32_t src_stride,
         "dmtc1      %[tmp0],    %[ftmp3]                  \n\t"
         "punpcklhw  %[ftmp3],   %[ftmp3],   %[ftmp3]      \n\t"
         "1:                                               \n\t"
-        "gslwlc1    %[ftmp1],   0x07(%[src])              \n\t"
-        "gslwrc1    %[ftmp1],   0x00(%[src])              \n\t"
-        "gslwlc1    %[ftmp2],   0x07(%[dst])              \n\t"
-        "gslwrc1    %[ftmp2],   0x00(%[dst])              \n\t"
+        MMI_ULDC1(%[ftmp1], %[src], 0x00)
+        MMI_ULDC1(%[ftmp2], %[dst], 0x00)
         "punpcklbh  %[ftmp1],   %[ftmp1],   %[ftmp0]      \n\t"
         "punpcklbh  %[ftmp2],   %[ftmp2],   %[ftmp0]      \n\t"
         "paddh      %[ftmp1],   %[ftmp1],   %[ftmp2]      \n\t"
@@ -469,7 +442,8 @@ static void convolve_avg_mmi(const uint8_t *src, int32_t src_stride,
         PTR_ADDU   "%[src],     %[src],     %[src_stride] \n\t"
         PTR_ADDIU  "%[height],  %[height],  -0x01         \n\t"
         "bnez       %[height],  1b                        \n\t"
-        : [ftmp0]"=&f"(ftmp[0]),  [ftmp1]"=&f"(ftmp[1]),
+        : RESTRICT_ASM_ALL64
+          [ftmp0]"=&f"(ftmp[0]),  [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),  [ftmp3]"=&f"(ftmp[3]),
           [tmp0]"=&r"(tmp[0]),    [tmp1]"=&r"(tmp[1]),
           [src]"+&r"(src),        [dst]"+&r"(dst),

@@ -56,6 +56,8 @@ DECLARE_ALIGNED(16, const int16_t, W_arr)[46] = {
 
 void ff_simple_idct_8_mmi(int16_t *block)
 {
+    DECLARE_VAR_ALL64;
+
     BACKUP_REG
     __asm__ volatile (
 
@@ -142,20 +144,20 @@ void ff_simple_idct_8_mmi(int16_t *block)
         /* idctRowCondDC row0~8 */
 
         /* load W */
-        "gslqc1       $f19,      $f18,      0x00(%[w_arr])      \n\t"
-        "gslqc1       $f21,      $f20,      0x10(%[w_arr])      \n\t"
-        "gslqc1       $f23,      $f22,      0x20(%[w_arr])      \n\t"
-        "gslqc1       $f25,      $f24,      0x30(%[w_arr])      \n\t"
-        "gslqc1       $f17,      $f16,      0x40(%[w_arr])      \n\t"
+        MMI_LQC1($f19, $f18, %[w_arr], 0x00)
+        MMI_LQC1($f21, $f20, %[w_arr], 0x10)
+        MMI_LQC1($f23, $f22, %[w_arr], 0x20)
+        MMI_LQC1($f25, $f24, %[w_arr], 0x30)
+        MMI_LQC1($f17, $f16, %[w_arr], 0x40)
         /* load source in block */
-        "gslqc1       $f1,       $f0,       0x00(%[block])      \n\t"
-        "gslqc1       $f3,       $f2,       0x10(%[block])      \n\t"
-        "gslqc1       $f5,       $f4,       0x20(%[block])      \n\t"
-        "gslqc1       $f7,       $f6,       0x30(%[block])      \n\t"
-        "gslqc1       $f9,       $f8,       0x40(%[block])      \n\t"
-        "gslqc1       $f11,      $f10,      0x50(%[block])      \n\t"
-        "gslqc1       $f13,      $f12,      0x60(%[block])      \n\t"
-        "gslqc1       $f15,      $f14,      0x70(%[block])      \n\t"
+        MMI_LQC1($f1, $f0, %[block], 0x00)
+        MMI_LQC1($f3, $f2, %[block], 0x10)
+        MMI_LQC1($f5, $f4, %[block], 0x20)
+        MMI_LQC1($f7, $f6, %[block], 0x30)
+        MMI_LQC1($f9, $f8, %[block], 0x40)
+        MMI_LQC1($f11, $f10, %[block], 0x50)
+        MMI_LQC1($f13, $f12, %[block], 0x60)
+        MMI_LQC1($f15, $f14, %[block], 0x70)
 
         /* $9: mask ; $f17: ROW_SHIFT */
         "dmfc1        $9,        $f17                           \n\t"
@@ -253,8 +255,7 @@ void ff_simple_idct_8_mmi(int16_t *block)
         /* idctSparseCol col0~3 */
 
         /* $f17: ff_p16_32; $f16: COL_SHIFT-16 */
-        "gsldlc1      $f17,      0x57(%[w_arr])                 \n\t"
-        "gsldrc1      $f17,      0x50(%[w_arr])                 \n\t"
+        MMI_ULDC1($f17, %[w_arr], 0x50)
         "li           $10,       4                              \n\t"
         "dmtc1        $10,       $f16                           \n\t"
         "paddh        $f0,       $f0,       $f17                \n\t"
@@ -395,16 +396,16 @@ void ff_simple_idct_8_mmi(int16_t *block)
         "punpcklwd    $f11,      $f27,      $f29                \n\t"
         "punpckhwd    $f15,      $f27,      $f29                \n\t"
         /* Store */
-        "gssqc1       $f1,       $f0,       0x00(%[block])      \n\t"
-        "gssqc1       $f5,       $f4,       0x10(%[block])      \n\t"
-        "gssqc1       $f9,       $f8,       0x20(%[block])      \n\t"
-        "gssqc1       $f13,      $f12,      0x30(%[block])      \n\t"
-        "gssqc1       $f3,       $f2,       0x40(%[block])      \n\t"
-        "gssqc1       $f7,       $f6,       0x50(%[block])      \n\t"
-        "gssqc1       $f11,      $f10,      0x60(%[block])      \n\t"
-        "gssqc1       $f15,      $f14,      0x70(%[block])      \n\t"
+        MMI_SQC1($f1, $f0, %[block], 0x00)
+        MMI_SQC1($f5, $f4, %[block], 0x10)
+        MMI_SQC1($f9, $f8, %[block], 0x20)
+        MMI_SQC1($f13, $f12, %[block], 0x30)
+        MMI_SQC1($f3, $f2, %[block], 0x40)
+        MMI_SQC1($f7, $f6, %[block], 0x50)
+        MMI_SQC1($f11, $f10, %[block], 0x60)
+        MMI_SQC1($f15, $f14, %[block], 0x70)
 
-        : [block]"+&r"(block)
+        : RESTRICT_ASM_ALL64 [block]"+&r"(block)
         : [w_arr]"r"(W_arr)
         : "memory"
     );

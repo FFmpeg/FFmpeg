@@ -722,6 +722,8 @@ void ff_put_no_rnd_pixels_l2_mmi(uint8_t *dst, const uint8_t *src1,
     if (h == 8) {
         double ftmp[6];
         uint64_t tmp[2];
+        DECLARE_VAR_ALL64;
+
         __asm__ volatile (
             "li          %[tmp0],        0x08                            \n\t"
             "li          %[tmp1],        0xfefefefe                      \n\t"
@@ -730,10 +732,8 @@ void ff_put_no_rnd_pixels_l2_mmi(uint8_t *dst, const uint8_t *src1,
             "li          %[tmp1],        0x01                            \n\t"
             "dmtc1       %[tmp1],        %[ftmp5]                        \n\t"
             "1:                                                          \n\t"
-            "gsldlc1     %[ftmp1],       0x07(%[src1])                   \n\t"
-            "gsldrc1     %[ftmp1],       0x00(%[src1])                   \n\t"
-            "gsldlc1     %[ftmp2],       0x07(%[src2])                   \n\t"
-            "gsldrc1     %[ftmp2],       0x00(%[src2])                   \n\t"
+            MMI_ULDC1(%[ftmp1], %[src1], 0x0)
+            MMI_ULDC1(%[ftmp2], %[src2], 0x0)
             "pxor        %[ftmp3],       %[ftmp1],             %[ftmp2]  \n\t"
             "pand        %[ftmp3],       %[ftmp3],             %[ftmp4]  \n\t"
             "psrlw       %[ftmp3],       %[ftmp3],             %[ftmp5]  \n\t"
@@ -745,7 +745,8 @@ void ff_put_no_rnd_pixels_l2_mmi(uint8_t *dst, const uint8_t *src1,
             PTR_ADDU    "%[dst],         %[dst],               %[stride] \n\t"
             PTR_ADDIU   "%[tmp0],        %[tmp0],              -0x01     \n\t"
             "bnez        %[tmp0],        1b                              \n\t"
-            : [dst]"+&r"(dst), [src1]"+&r"(src1), [src2]"+&r"(src2),
+            : RESTRICT_ASM_ALL64
+              [dst]"+&r"(dst), [src1]"+&r"(src1), [src2]"+&r"(src2),
               [ftmp1]"=&f"(ftmp[0]), [ftmp2]"=&f"(ftmp[1]), [ftmp3]"=&f"(ftmp[2]),
               [ftmp4]"=&f"(ftmp[3]), [ftmp5]"=&f"(ftmp[4]), [ftmp6]"=&f"(ftmp[5]),
               [tmp0]"=&r"(tmp[0]), [tmp1]"=&r"(tmp[1])

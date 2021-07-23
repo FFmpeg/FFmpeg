@@ -791,51 +791,40 @@ static av_always_inline void vp8_v_loop_filter8_mmi(uint8_t *dst,
     DECLARE_DOUBLE_1;
     DECLARE_DOUBLE_2;
     DECLARE_UINT32_T;
+    DECLARE_VAR_ALL64;
+
     __asm__ volatile(
         /* Get data from dst */
-        "gsldlc1    %[q0],      0x07(%[dst])                      \n\t"
-        "gsldrc1    %[q0],      0x00(%[dst])                      \n\t"
+        MMI_ULDC1(%[q0], %[dst], 0x0)
         PTR_SUBU    "%[tmp0],   %[dst],         %[stride]         \n\t"
-        "gsldlc1    %[p0],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[p0],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[p0], %[tmp0], 0x0)
         PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gsldlc1    %[p1],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[p1],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[p1], %[tmp0], 0x0)
         PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gsldlc1    %[p2],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[p2],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[p2], %[tmp0], 0x0)
         PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gsldlc1    %[p3],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[p3],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[p3], %[tmp0], 0x0)
         PTR_ADDU    "%[tmp0],   %[dst],         %[stride]         \n\t"
-        "gsldlc1    %[q1],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[q1],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[q1], %[tmp0], 0x0)
         PTR_ADDU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gsldlc1    %[q2],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[q2],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[q2], %[tmp0], 0x0)
         PTR_ADDU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gsldlc1    %[q3],      0x07(%[tmp0])                     \n\t"
-        "gsldrc1    %[q3],      0x00(%[tmp0])                     \n\t"
+        MMI_ULDC1(%[q3], %[tmp0], 0x0)
         MMI_VP8_LOOP_FILTER
         /* Move to dst */
-        "gssdlc1    %[q0],      0x07(%[dst])                      \n\t"
-        "gssdrc1    %[q0],      0x00(%[dst])                      \n\t"
+        MMI_USDC1(%[q0], %[dst], 0x0)
         PTR_SUBU    "%[tmp0],   %[dst],         %[stride]         \n\t"
-        "gssdlc1    %[p0],      0x07(%[tmp0])                     \n\t"
-        "gssdrc1    %[p0],      0x00(%[tmp0])                     \n\t"
+        MMI_USDC1(%[p0], %[tmp0], 0x0)
         PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gssdlc1    %[p1],      0x07(%[tmp0])                     \n\t"
-        "gssdrc1    %[p1],      0x00(%[tmp0])                     \n\t"
+        MMI_USDC1(%[p1], %[tmp0], 0x0)
         PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gssdlc1    %[p2],      0x07(%[tmp0])                     \n\t"
-        "gssdrc1    %[p2],      0x00(%[tmp0])                     \n\t"
+        MMI_USDC1(%[p2], %[tmp0], 0x0)
         PTR_ADDU    "%[tmp0],   %[dst],         %[stride]         \n\t"
-        "gssdlc1    %[q1],      0x07(%[tmp0])                     \n\t"
-        "gssdrc1    %[q1],      0x00(%[tmp0])                     \n\t"
+        MMI_USDC1(%[q1], %[tmp0], 0x0)
         PTR_ADDU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
-        "gssdlc1    %[q2],      0x07(%[tmp0])                     \n\t"
-        "gssdrc1    %[q2],      0x00(%[tmp0])                     \n\t"
-        : [p3]"=&f"(ftmp[0]),       [p2]"=&f"(ftmp[1]),
+        MMI_USDC1(%[q2], %[tmp0], 0x0)
+        : RESTRICT_ASM_ALL64
+          [p3]"=&f"(ftmp[0]),       [p2]"=&f"(ftmp[1]),
           [p1]"=&f"(ftmp[2]),       [p0]"=&f"(ftmp[3]),
           [q0]"=&f"(ftmp[4]),       [q1]"=&f"(ftmp[5]),
           [q2]"=&f"(ftmp[6]),       [q3]"=&f"(ftmp[7]),
@@ -876,31 +865,25 @@ static av_always_inline void vp8_h_loop_filter8_mmi(uint8_t *dst,
     DECLARE_DOUBLE_1;
     DECLARE_DOUBLE_2;
     DECLARE_UINT32_T;
+    DECLARE_VAR_ALL64;
+
     __asm__ volatile(
         /* Get data from dst */
-        "gsldlc1    %[p3],        0x03(%[dst])                    \n\t"
-        "gsldrc1    %[p3],        -0x04(%[dst])                   \n\t"
+        MMI_ULDC1(%[p3], %[dst], -0x04)
         PTR_ADDU    "%[tmp0],     %[dst],           %[stride]     \n\t"
-        "gsldlc1    %[p2],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[p2],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[p2], %[tmp0], -0x04)
         PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
-        "gsldlc1    %[p1],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[p1],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[p1], %[tmp0], -0x04)
         PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
-        "gsldlc1    %[p0],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[p0],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[p0], %[tmp0], -0x04)
         PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
-        "gsldlc1    %[q0],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[q0],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[q0], %[tmp0], -0x04)
         PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
-        "gsldlc1    %[q1],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[q1],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[q1], %[tmp0], -0x04)
         PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
-        "gsldlc1    %[q2],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[q2],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[q2], %[tmp0], -0x04)
         PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
-        "gsldlc1    %[q3],        0x03(%[tmp0])                   \n\t"
-        "gsldrc1    %[q3],        -0x04(%[tmp0])                  \n\t"
+        MMI_ULDC1(%[q3], %[tmp0], -0x04)
         /* Matrix transpose */
         TRANSPOSE_8B(%[p3], %[p2], %[p1], %[p0],
                      %[q0], %[q1], %[q2], %[q3],
@@ -911,30 +894,23 @@ static av_always_inline void vp8_h_loop_filter8_mmi(uint8_t *dst,
                      %[q0], %[q1], %[q2], %[q3],
                      %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
         /* Move to dst */
-        "gssdlc1    %[p3],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[p3],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[p3], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[p2],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[p2],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[p2], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[p1],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[p1],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[p1], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[p0],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[p0],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[p0], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[q0],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[q0],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[q0], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[q1],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[q1],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[q1], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[q2],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[q2],        -0x04(%[dst])                   \n\t"
+        MMI_USDC1(%[q2], %[dst], -0x04)
         PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
-        "gssdlc1    %[q3],        0x03(%[dst])                    \n\t"
-        "gssdrc1    %[q3],        -0x04(%[dst])                   \n\t"
-        : [p3]"=&f"(ftmp[0]),       [p2]"=&f"(ftmp[1]),
+        MMI_USDC1(%[q3], %[dst], -0x04)
+        : RESTRICT_ASM_ALL64
+          [p3]"=&f"(ftmp[0]),       [p2]"=&f"(ftmp[1]),
           [p1]"=&f"(ftmp[2]),       [p0]"=&f"(ftmp[3]),
           [q0]"=&f"(ftmp[4]),       [q1]"=&f"(ftmp[5]),
           [q2]"=&f"(ftmp[6]),       [q3]"=&f"(ftmp[7]),
