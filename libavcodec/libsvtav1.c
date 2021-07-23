@@ -228,6 +228,16 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         return AVERROR(EINVAL);
     }
 
+    param->color_primaries          = avctx->color_primaries;
+    param->matrix_coefficients      = (desc->flags & AV_PIX_FMT_FLAG_RGB) ?
+                                      AVCOL_SPC_RGB : avctx->colorspace;
+    param->transfer_characteristics = avctx->color_trc;
+
+    if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED)
+        param->color_range = avctx->color_range == AVCOL_RANGE_JPEG;
+    else
+        param->color_range = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
+
     if (avctx->profile != FF_PROFILE_UNKNOWN)
         param->profile = avctx->profile;
 
