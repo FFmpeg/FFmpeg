@@ -540,19 +540,6 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen);
 int ff_get_chomp_line(AVIOContext *s, char *buf, int maxlen);
 
 /**
- * Read a whole line of text from AVIOContext to an AVBPrint buffer. Stop
- * reading after reaching a \\r, a \\n, a \\r\\n, a \\0 or EOF.  The line
- * ending characters are NOT included in the buffer, but they are skipped on
- * the input.
- *
- * @param s the read-only AVIOContext
- * @param bp the AVBPrint buffer
- * @return the length of the read line, not including the line endings,
- *         negative on error.
- */
-int64_t ff_read_line_to_bprint(AVIOContext *s, AVBPrint *bp);
-
-/**
  * Read a whole line of text from AVIOContext to an AVBPrint buffer overwriting
  * its contents. Stop reading after reaching a \\r, a \\n, a \\r\\n, a \\0 or
  * EOF. The line ending characters are NOT included in the buffer, but they

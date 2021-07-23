@@ -794,7 +794,7 @@ int ff_get_chomp_line(AVIOContext *s, char *buf, int maxlen)
     return len;
 }
 
-int64_t ff_read_line_to_bprint(AVIOContext *s, AVBPrint *bp)
+static int64_t read_line_to_bprint(AVIOContext *s, AVBPrint *bp)
 {
     int len, end;
     int64_t read = 0;
@@ -830,7 +830,7 @@ int64_t ff_read_line_to_bprint_overwrite(AVIOContext *s, AVBPrint *bp)
     int64_t ret;
 
     av_bprint_clear(bp);
-    ret = ff_read_line_to_bprint(s, bp);
+    ret = read_line_to_bprint(s, bp);
     if (ret < 0)
         return ret;
 
