@@ -395,6 +395,48 @@ static int decode_nal_sei_timecode(HEVCSEITimeCode *s, GetBitContext *gb)
     return 0;
 }
 
+static int decode_film_grain_characteristics(HEVCSEIFilmGrainCharacteristics *h,
+                                             GetBitContext *gb)
+{
+    h->present = !get_bits1(gb); // film_grain_characteristics_cancel_flag
+
+    if (h->present) {
+        memset(h, 0, sizeof(*h));
+        h->model_id = get_bits(gb, 2);
+        h->separate_colour_description_present_flag = get_bits1(gb);
+        if (h->separate_colour_description_present_flag) {
+            h->bit_depth_luma = get_bits(gb, 3) + 8;
+            h->bit_depth_chroma = get_bits(gb, 3) + 8;
+            h->full_range = get_bits1(gb);
+            h->color_primaries = get_bits(gb, 8);
+            h->transfer_characteristics = get_bits(gb, 8);
+            h->matrix_coeffs = get_bits(gb, 8);
+        }
+        h->blending_mode_id = get_bits(gb, 2);
+        h->log2_scale_factor = get_bits(gb, 4);
+        for (int c = 0; c < 3; c++)
+            h->comp_model_present_flag[c] = get_bits1(gb);
+        for (int c = 0; c < 3; c++) {
+            if (h->comp_model_present_flag[c]) {
+                h->num_intensity_intervals[c] = get_bits(gb, 8) + 1;
+                h->num_model_values[c] = get_bits(gb, 3) + 1;
+                if (h->num_model_values[c] > 6)
+                    return AVERROR_INVALIDDATA;
+                for (int i = 0; i < h->num_intensity_intervals[c]; i++) {
+                    h->intensity_interval_lower_bound[c][i] = get_bits(gb, 8);
+                    h->intensity_interval_upper_bound[c][i] = get_bits(gb, 8);
+                    for (int j = 0; j < h->num_model_values[c]; j++)
+                        h->comp_model_value[c][i][j] = get_se_golomb_long(gb);
+                }
+            }
+        }
+        h->persistence_flag = get_bits1(gb);
+
+        h->present = 1;
+    }
+
+    return 0;
+}
 
 static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
                                  const HEVCParamSets *ps, int type, int size)
@@ -422,6 +464,8 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
         return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gb);
     case SEI_TYPE_TIME_CODE:
         return decode_nal_sei_timecode(&s->timecode, gb);
+    case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
+        return decode_film_grain_characteristics(&s->film_grain_characteristics, gb);
     default:
         av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
         skip_bits_long(gb, 8 * size);
