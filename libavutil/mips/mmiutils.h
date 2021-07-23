@@ -204,25 +204,27 @@
 #endif /* HAVE_LOONGSON2 */
 
 /**
- * backup register
+ * Backup saved registers
+ * We're not using compiler's clobber list as it's not smart enough
+ * to take advantage of quad word load/store.
  */
 #define BACKUP_REG \
   LOCAL_ALIGNED_16(double, temp_backup_reg, [8]);               \
   if (_MIPS_SIM == _ABI64)                                      \
     __asm__ volatile (                                          \
-      "gssqc1       $f25,      $f24,       0x00(%[temp])  \n\t" \
-      "gssqc1       $f27,      $f26,       0x10(%[temp])  \n\t" \
-      "gssqc1       $f29,      $f28,       0x20(%[temp])  \n\t" \
-      "gssqc1       $f31,      $f30,       0x30(%[temp])  \n\t" \
+      MMI_SQC1($f25, $f24, %[temp], 0x00)                       \
+      MMI_SQC1($f27, $f26, %[temp], 0x10)                       \
+      MMI_SQC1($f29, $f28, %[temp], 0x20)                       \
+      MMI_SQC1($f31, $f30, %[temp], 0x30)                       \
       :                                                         \
       : [temp]"r"(temp_backup_reg)                              \
       : "memory"                                                \
     );                                                          \
   else                                                          \
     __asm__ volatile (                                          \
-      "gssqc1       $f22,      $f20,       0x00(%[temp])  \n\t" \
-      "gssqc1       $f26,      $f24,       0x10(%[temp])  \n\t" \
-      "gssqc1       $f30,      $f28,       0x20(%[temp])  \n\t" \
+      MMI_SQC1($f22, $f20, %[temp], 0x10)                       \
+      MMI_SQC1($f26, $f24, %[temp], 0x10)                       \
+      MMI_SQC1($f30, $f28, %[temp], 0x20)                       \
       :                                                         \
       : [temp]"r"(temp_backup_reg)                              \
       : "memory"                                                \
@@ -234,19 +236,19 @@
 #define RECOVER_REG \
   if (_MIPS_SIM == _ABI64)                                      \
     __asm__ volatile (                                          \
-      "gslqc1       $f25,      $f24,       0x00(%[temp])  \n\t" \
-      "gslqc1       $f27,      $f26,       0x10(%[temp])  \n\t" \
-      "gslqc1       $f29,      $f28,       0x20(%[temp])  \n\t" \
-      "gslqc1       $f31,      $f30,       0x30(%[temp])  \n\t" \
+      MMI_LQC1($f25, $f24, %[temp], 0x00)                       \
+      MMI_LQC1($f27, $f26, %[temp], 0x10)                       \
+      MMI_LQC1($f29, $f28, %[temp], 0x20)                       \
+      MMI_LQC1($f31, $f30, %[temp], 0x30)                       \
       :                                                         \
       : [temp]"r"(temp_backup_reg)                              \
       : "memory"                                                \
     );                                                          \
   else                                                          \
     __asm__ volatile (                                          \
-      "gslqc1       $f22,      $f20,       0x00(%[temp])  \n\t" \
-      "gslqc1       $f26,      $f24,       0x10(%[temp])  \n\t" \
-      "gslqc1       $f30,      $f28,       0x20(%[temp])  \n\t" \
+      MMI_LQC1($f22, $f20, %[temp], 0x10)                       \
+      MMI_LQC1($f26, $f24, %[temp], 0x10)                       \
+      MMI_LQC1($f30, $f28, %[temp], 0x20)                       \
       :                                                         \
       : [temp]"r"(temp_backup_reg)                              \
       : "memory"                                                \
