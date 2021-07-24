@@ -977,8 +977,8 @@ static int plot_channel_log(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
         a0 = get_value(ctx, ch, yy+0);
         a1 = get_value(ctx, ch, FFMIN(yy+1, h-1));
         for (float j = pos0; j < pos1 && y + j - pos0 < h; j++) {
-            float row = (s->mode == COMBINED) ? y + j - pos0 : ch * h + y + j - pos0;
-            float *out = &s->color_buffer[ch][3 * FFMIN(lrintf(row), h-1)];
+            float row = (s->mode == COMBINED) ? av_clipf(y + j - pos0, 0, h - 1) : ch * h + av_clipf(y + j - pos0, 0, h - 1);
+            float *out = &s->color_buffer[ch][3 * lrintf(row)];
             float lerpfrac = (j - pos0) / delta;
 
             pick_color(s, yf, uf, vf, lerpfrac * a1 + (1.f-lerpfrac) * a0, out);
