@@ -2856,7 +2856,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (!entries)
         return 0;
-    if (entries >= (UINT_MAX - 4) / field_size)
+    if (entries >= (INT_MAX - 4 - 8 * AV_INPUT_BUFFER_PADDING_SIZE) / field_size)
         return AVERROR_INVALIDDATA;
     if (sc->sample_sizes)
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STSZ atom\n");
