@@ -12280,6 +12280,9 @@ fill pixels using wrapping
 
 @item fade
 fade pixels to constant value
+
+@item margins
+fill pixels at top and bottom with weighted averages pixels near borders
 @end table
 
 Default is @var{smear}.
