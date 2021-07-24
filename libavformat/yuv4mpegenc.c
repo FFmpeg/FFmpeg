@@ -113,6 +113,9 @@ static int yuv4_write_header(AVFormatContext *s)
     case AV_PIX_FMT_YUV444P:
         colorspace = " C444 XYSCSS=444";
         break;
+    case AV_PIX_FMT_YUVA444P:
+        colorspace = " C444alpha XYSCSS=444";
+        break;
     case AV_PIX_FMT_YUV420P9:
         colorspace = " C420p9 XYSCSS=420P9";
         break;
@@ -197,6 +200,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVA444P:
     // TODO: remove YUVJ pixel formats when they are completely removed from the codebase.
     case AV_PIX_FMT_YUVJ420P:
     case AV_PIX_FMT_YUVJ422P:
@@ -254,6 +258,13 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_write(pb, ptr2, width);
             ptr2 += frame->linesize[2];
         }
+        if (st->codecpar->format == AV_PIX_FMT_YUVA444P) {
+            ptr = frame->data[3];
+            for (i = 0; i < height; i++) {     /* A */
+                avio_write(pb, ptr, width);
+                ptr += frame->linesize[3];
+            }
+        }
     }
 
     return 0;
@@ -302,6 +313,7 @@ static int yuv4_init(AVFormatContext *s)
     case AV_PIX_FMT_YUV420P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUVA444P:
         if (s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
             av_log(s, AV_LOG_ERROR, "'%s' is not an official yuv4mpegpipe pixel format. "
                    "Use '-strict -1' to encode to this pixel format.\n",
@@ -319,6 +331,7 @@ static int yuv4_init(AVFormatContext *s)
                "yuv444p12, yuv422p12, yuv420p12, "
                "yuv444p14, yuv422p14, yuv420p14, "
                "yuv444p16, yuv422p16, yuv420p16, "
+               "yuva444p, "
                "gray9, gray10, gray12 "
                "and gray16 pixel formats. "
                "Use -pix_fmt to select one.\n");
