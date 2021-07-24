@@ -66,6 +66,7 @@ enum Curves {
     VIRIDIS,
     TURBO,
     CIVIDIS,
+    SOLAR,
     NB_CURVES,
 };
 
@@ -80,11 +81,16 @@ enum Presets {
     PRESET_RANGE2,
     PRESET_SHADOWS,
     PRESET_HIGHLIGHTS,
+    PRESET_SOLAR,
     NB_PRESETS,
 };
 
+typedef double (*curve_fun)(double x);
+
 typedef struct Curve {
     double coef[3][8];
+    double offset[3];
+    curve_fun fun[3];
 } Curve;
 
 typedef struct Fill {
@@ -113,38 +119,55 @@ static const Fill spec2_fills[] = {{{0.5f, 0.f, .5f, 1.f}}, {{0.f, 1.f, 1.f, 1.f
 static const Fill shadows_fills[] = {{{0.8f, 0.4f, .8f, 1.f}}, {{-1.f, -1.f, -1.f, 1.f}}};
 static const Fill highlights_fills[] = {{{-1.f, -1.f, -1.f, 1.f}}, {{1.f, 0.3f, 0.6f, 1.f}}, {{1.f, 0.2f, .5f, 1.f}}};
 
+static double limit(double x)
+{
+    return av_clipd(x, 0., 1.);
+}
+
+static double solarfun(double x)
+{
+    return 0.5 * sin(x) + 0.5;
+}
+
 static const Curve curves[] =
 {
     [MAGMA] = {{
         {-7.5631093e-16,  7.4289183e-13, -2.8525484e-10,  5.4446085e-08, -5.5596238e-06,  3.0569325e-04, -2.3137421e-03,  1.2152095e-02 },
         { 1.3217636e-15, -1.2214648e-12,  4.4319712e-10, -8.0197993e-08,  7.6598370e-06, -3.6523704e-04,  8.4836670e-03, -2.5536888e-02 },
         {-1.1446568e-15,  1.0013446e-12, -3.5651575e-10,  6.6775016e-08, -6.7120346e-06,  2.7346619e-04,  4.7969657e-03,  1.1971441e-02 },
-    }},
+    }, .fun = { limit, limit, limit }, },
     [INFERNO] = {{
         {-3.9848859e-18,  9.4821649e-14, -6.7371977e-11,  1.8469937e-08, -2.5359307e-06,  1.7959053e-04,  3.9782564e-04,  2.8845935e-04 },
         { 6.8408539e-16, -6.5499979e-13,  2.4562526e-10, -4.5989298e-08,  4.5723324e-06, -2.2111913e-04,  5.2023164e-03, -1.1226064e-02 },
         {-2.9921470e-15,  2.5864165e-12, -8.7403799e-10,  1.4713388e-07, -1.2701505e-05,  4.5159935e-04,  3.1087989e-03,  1.9122831e-02 },
-    }},
+    }, .fun = { limit, limit, limit }, },
     [PLASMA] = {{
         { 3.6196089e-16, -3.3623041e-13,  1.2324010e-10, -2.2769060e-08,  2.2297792e-06, -1.2567829e-04,  9.9791629e-03,  5.7247918e-02 },
         { 5.0262888e-16, -5.3193896e-13,  2.2451715e-10, -4.7529623e-08,  5.1374873e-06, -2.3260136e-04,  3.1502825e-03,  1.5362491e-02 },
         {-1.7782261e-16,  2.2487839e-13, -1.0610236e-10,  2.4112644e-08, -2.6331623e-06,  8.9499751e-05,  2.1386328e-03,  5.3824268e-01 },
-    }},
+    }, .fun = { limit, limit, limit }, },
     [VIRIDIS] = {{
         { 9.4850045e-16, -8.6629383e-13,  3.0310944e-10, -5.1340396e-08,  4.6024275e-06, -2.2744239e-04,  4.5559993e-03,  2.5662350e-01 },
         { 9.6461041e-17, -6.9209477e-14,  1.7625397e-11, -2.0229773e-09,  1.4900110e-07, -1.9315187e-05,  5.8967339e-03,  3.9544827e-03 },
         { 5.1785449e-16, -3.6663004e-13,  1.0249990e-10, -1.5431998e-08,  1.5007941e-06, -1.2001502e-04,  7.6951526e-03,  3.2292815e-01 },
-    }},
+    }, .fun = { limit, limit, limit }, },
     [TURBO] = {{
         {-4.3683890e-15,  3.7020347e-12, -1.1712592e-09,  1.6401790e-07, -8.6842919e-06, -1.8542465e-06,  8.4485325e-03,  1.6267077e-01 },
         {-4.0011069e-16,  2.7861423e-13, -6.3388921e-11,  5.8872238e-09, -5.4466522e-07,  1.8037114e-05,  1.0599869e-02,  7.6914696e-02 },
         {-2.8242609e-15,  2.9234108e-12, -1.1726546e-09,  2.2552115e-07, -2.0059387e-05,  5.0595552e-04,  1.7714932e-02,  2.7271836e-01 },
-    }},
+    }, .fun = { limit, limit, limit }, },
     [CIVIDIS] = {{
         {-9.5484131e-16,  9.6988184e-13, -4.0058766e-10,  8.5743924e-08, -9.9644797e-06,  5.9197908e-04, -1.0361579e-02,  3.3164429e-02 },
         { 1.2731941e-17, -9.4238449e-15,  2.2808841e-12, -1.1548296e-10, -2.3888913e-08,  3.8986680e-06,  2.5879330e-03,  1.2769733e-01 },
         { 4.6004608e-16, -5.0686849e-13,  2.2753449e-10, -5.3074099e-08,  6.7196096e-06, -4.4120020e-04,  1.3435551e-02,  2.8293355e-01 },
-    }},
+    }, .fun = { limit, limit, limit }, },
+    [SOLAR] = {{
+        { 0, 0, 0, 0, 0.000001983938313, -0.0007618323, 0.2, -M_PI_2 },
+        { 0, 0, 0, 0, 0.000001983938313, -0.0007618323, 0.2, -M_PI_2 },
+        { 0, 0, 0, 0, 0.000001983938313, -0.0007618323, 0.2, -M_PI_2 },
+    },
+    .offset = { 0., -9., 9. },
+    .fun = { solarfun, solarfun, solarfun }, },
 };
 
 static const Preset presets[] =
@@ -159,6 +182,7 @@ static const Preset presets[] =
     [PRESET_RANGE2]  = { 5, spec2_range, NULL,             spec2_fills },
     [PRESET_SHADOWS] = { 2, shadows_range, NULL,           shadows_fills },
     [PRESET_HIGHLIGHTS] = { 3, highlights_range, NULL,     highlights_fills },
+    [PRESET_SOLAR] = { 1, &full_range, &curves[SOLAR], NULL },
 };
 
 typedef struct PseudoColorContext {
@@ -209,6 +233,7 @@ static const AVOption pseudocolor_options[] = {
     { "range2",     NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_RANGE2},  .flags = FLAGS, "preset" },
     { "shadows",    NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SHADOWS}, .flags = FLAGS, "preset" },
     { "highlights", NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_HIGHLIGHTS},.flags=FLAGS, "preset" },
+    { "solar",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SOLAR},   .flags=FLAGS, "preset" },
     { "opacity", "set pseudocolor opacity",OFFSET(opacity),          AV_OPT_TYPE_FLOAT,  {.dbl=1}, 0, 1, .flags = FLAGS },
     { NULL }
 };
@@ -533,7 +558,7 @@ static void pseudocolor_filter_16_11d(int max, int width, int height,
 ((0.50000*224.0/255.0) * r1 - (0.45415*224.0/255.0) * g1 - \
    (0.04585*224.0/255.0) * b1 + max * 0.5)
 
-static double poly_eval(const double *const poly, double x)
+static double poly_eval(const double *const poly, double x, curve_fun fun)
 {
     double res = 0.;
 
@@ -541,7 +566,7 @@ static double poly_eval(const double *const poly, double x)
         res += pow(x, i) * poly[7-i];
     }
 
-    return av_clipd(res, 0., 1.);
+    return fun(res);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -662,9 +687,9 @@ static int config_input(AVFilterLink *inlink)
                         const double lf = j / (double)factor;
                         double r, g, b;
 
-                        g = poly_eval(curve.coef[1], i + lf) * s->max;
-                        b = poly_eval(curve.coef[2], i + lf) * s->max;
-                        r = poly_eval(curve.coef[0], i + lf) * s->max;
+                        g = poly_eval(curve.coef[1], i + lf + curve.offset[1], curve.fun[1]) * s->max;
+                        b = poly_eval(curve.coef[2], i + lf + curve.offset[2], curve.fun[2]) * s->max;
+                        r = poly_eval(curve.coef[0], i + lf + curve.offset[0], curve.fun[0]) * s->max;
 
                         if (!rgb) {
                             double y = RGB_TO_Y_BT709(r, g, b);
