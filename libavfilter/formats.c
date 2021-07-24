@@ -329,11 +329,15 @@ static const AVFilterFormatsMerger mergers_audio[] = {
 static const AVFilterNegotiation negotiate_video = {
     .nb = FF_ARRAY_ELEMS(mergers_video),
     .mergers = mergers_video,
+    .conversion_filter = "scale",
+    .conversion_opts_offset = offsetof(AVFilterGraph, scale_sws_opts),
 };
 
 static const AVFilterNegotiation negotiate_audio = {
     .nb = FF_ARRAY_ELEMS(mergers_audio),
     .mergers = mergers_audio,
+    .conversion_filter = "aresample",
+    .conversion_opts_offset = offsetof(AVFilterGraph, aresample_swr_opts),
 };
 
 const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link)

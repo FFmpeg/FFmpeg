@@ -78,6 +78,8 @@ typedef struct AVFilterFormatMerger {
 typedef struct AVFilterNegotiation {
     unsigned nb;
     const AVFilterFormatsMerger *mergers;
+    const char *conversion_filter;
+    unsigned conversion_opts_offset;
 } AVFilterNegotiation;
 
 const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link);

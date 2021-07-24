@@ -430,7 +430,7 @@ static int formats_declared(AVFilterContext *f)
 static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j, ret;
-    int scaler_count = 0, resampler_count = 0;
+    int converter_count = 0;
     int count_queried = 0;        /* successful calls to query_formats() */
     int count_merged = 0;         /* successful merge of formats lists */
     int count_already_merged = 0; /* lists already merged */
@@ -497,6 +497,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 const AVFilter *filter;
                 AVFilterLink *inlink, *outlink;
                 char inst_name[30];
+                const char *opts;
 
                 if (graph->disable_auto_convert) {
                     av_log(log_ctx, AV_LOG_ERROR,
@@ -507,40 +508,18 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 }
 
                 /* couldn't merge format lists. auto-insert conversion filter */
-                switch (link->type) {
-                case AVMEDIA_TYPE_VIDEO:
-                    if (!(filter = avfilter_get_by_name("scale"))) {
-                        av_log(log_ctx, AV_LOG_ERROR, "'scale' filter "
-                               "not present, cannot convert pixel formats.\n");
-                        return AVERROR(EINVAL);
-                    }
-
-                    snprintf(inst_name, sizeof(inst_name), "auto_scaler_%d",
-                             scaler_count++);
-
-                    if ((ret = avfilter_graph_create_filter(&convert, filter,
-                                                            inst_name, graph->scale_sws_opts, NULL,
-                                                            graph)) < 0)
-                        return ret;
-                    break;
-                case AVMEDIA_TYPE_AUDIO:
-                    if (!(filter = avfilter_get_by_name("aresample"))) {
-                        av_log(log_ctx, AV_LOG_ERROR, "'aresample' filter "
-                               "not present, cannot convert audio formats.\n");
-                        return AVERROR(EINVAL);
-                    }
-
-                    snprintf(inst_name, sizeof(inst_name), "auto_resampler_%d",
-                             resampler_count++);
-                    if ((ret = avfilter_graph_create_filter(&convert, filter,
-                                                            inst_name, graph->aresample_swr_opts,
-                                                            NULL, graph)) < 0)
-                        return ret;
-                    break;
-                default:
+                if (!(filter = avfilter_get_by_name(neg->conversion_filter))) {
+                    av_log(log_ctx, AV_LOG_ERROR,
+                           "'%s' filter not present, cannot convert formats.\n",
+                           neg->conversion_filter);
                     return AVERROR(EINVAL);
                 }
-
+                snprintf(inst_name, sizeof(inst_name), "auto_%s_%d",
+                         neg->conversion_filter, converter_count++);
+                opts = FF_FIELD_AT(char *, neg->conversion_opts_offset, *graph);
+                ret = avfilter_graph_create_filter(&convert, filter, inst_name, opts, NULL, graph);
+                if (ret < 0)
+                    return ret;
                 if ((ret = avfilter_insert_filter(link, convert, 0, 0)) < 0)
                     return ret;
 
