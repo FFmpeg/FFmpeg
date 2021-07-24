@@ -99,6 +99,11 @@
 
 #define FF_PTR_ADD(ptr, off) ((off) ? (ptr) + (off) : (ptr))
 
+/**
+ * Access a field in a structure by its offset.
+ */
+#define FF_FIELD_AT(type, off, obj) (*(type *)((char *)&(obj) + (off)))
+
 #include "libm.h"
 
 /**
