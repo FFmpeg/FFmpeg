@@ -28,7 +28,7 @@
 
 #include <math.h>
 
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -72,11 +72,14 @@ typedef struct ShowSpectrumContext {
     int start, stop;            ///< zoom mode
     int data;
     int xpos;                   ///< x position (current column)
-    FFTContext **fft;           ///< Fast Fourier Transform context
-    FFTContext **ifft;          ///< Inverse Fast Fourier Transform context
-    int fft_bits;               ///< number of bits (FFT window size = 1<<fft_bits)
-    FFTComplex **fft_data;      ///< bins holder for each (displayed) channels
-    FFTComplex **fft_scratch;   ///< scratch buffers
+    AVTXContext **fft;          ///< Fast Fourier Transform context
+    AVTXContext **ifft;         ///< Inverse Fast Fourier Transform context
+    av_tx_fn tx_fn;
+    av_tx_fn itx_fn;
+    int fft_size;               ///< number of coeffs (FFT window size)
+    AVComplexFloat **fft_in;    ///< input FFT coeffs
+    AVComplexFloat **fft_data;  ///< bins holder for each (displayed) channels
+    AVComplexFloat **fft_scratch;///< scratch buffers
     float *window_func_lut;     ///< Window function LUT
     float **magnitudes;
     float **phases;
@@ -305,12 +308,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->combine_buffer);
     if (s->fft) {
         for (i = 0; i < s->nb_display_channels; i++)
-            av_fft_end(s->fft[i]);
+            av_tx_uninit(&s->fft[i]);
     }
     av_freep(&s->fft);
     if (s->ifft) {
         for (i = 0; i < s->nb_display_channels; i++)
-            av_fft_end(s->ifft[i]);
+            av_tx_uninit(&s->ifft[i]);
     }
     av_freep(&s->ifft);
     if (s->fft_data) {
@@ -318,6 +321,11 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_freep(&s->fft_data[i]);
     }
     av_freep(&s->fft_data);
+    if (s->fft_in) {
+        for (i = 0; i < s->nb_display_channels; i++)
+            av_freep(&s->fft_in[i]);
+    }
+    av_freep(&s->fft_in);
     if (s->fft_scratch) {
         for (i = 0; i < s->nb_display_channels; i++)
             av_freep(&s->fft_scratch[i]);
@@ -386,18 +394,19 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     /* fill FFT input with the number of samples available */
     const float *p = (float *)fin->extended_data[ch];
 
-    for (n = 0; n < s->win_size; n++) {
-        s->fft_data[ch][n].re = p[n] * window_func_lut[n];
-        s->fft_data[ch][n].im = 0;
-    }
-
     if (s->stop) {
         float theta, phi, psi, a, b, S, c;
-        FFTComplex *g = s->fft_data[ch];
-        FFTComplex *h = s->fft_scratch[ch];
+        AVComplexFloat *f = s->fft_in[ch];
+        AVComplexFloat *g = s->fft_data[ch];
+        AVComplexFloat *h = s->fft_scratch[ch];
         int L = s->buf_size;
         int N = s->win_size;
         int M = s->win_size / 2;
+
+        for (n = 0; n < s->win_size; n++) {
+            s->fft_data[ch][n].re = p[n] * window_func_lut[n];
+            s->fft_data[ch][n].im = 0;
+        }
 
         phi = 2.f * M_PI * (s->stop - s->start) / (float)inlink->sample_rate / (M - 1);
         theta = 2.f * M_PI * s->start / (float)inlink->sample_rate;
@@ -417,11 +426,6 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             h[n].im = sinf((L - n) * (L - n) / 2.f * phi);
         }
 
-        for (int n = 0; n < N; n++) {
-            g[n].re = s->fft_data[ch][n].re;
-            g[n].im = s->fft_data[ch][n].im;
-        }
-
         for (int n = N; n < L; n++) {
             g[n].re = 0.f;
             g[n].im = 0.f;
@@ -437,11 +441,11 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             g[n].im = b;
         }
 
-        av_fft_permute(s->fft[ch], h);
-        av_fft_calc(s->fft[ch], h);
+        memcpy(f, h, s->buf_size * sizeof(*f));
+        s->tx_fn(s->fft[ch], h, f, sizeof(float));
 
-        av_fft_permute(s->fft[ch], g);
-        av_fft_calc(s->fft[ch], g);
+        memcpy(f, g, s->buf_size * sizeof(*f));
+        s->tx_fn(s->fft[ch], g, f, sizeof(float));
 
         for (int n = 0; n < L; n++) {
             c = g[n].re;
@@ -453,8 +457,8 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             g[n].im = b / L;
         }
 
-        av_fft_permute(s->ifft[ch], g);
-        av_fft_calc(s->ifft[ch], g);
+        memcpy(f, g, s->buf_size * sizeof(*f));
+        s->itx_fn(s->ifft[ch], g, f, sizeof(float));
 
         for (int k = 0; k < M; k++) {
             psi = k * k / 2.f * phi;
@@ -466,9 +470,13 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
             s->fft_data[ch][k].im = b;
         }
     } else {
+        for (n = 0; n < s->win_size; n++) {
+            s->fft_in[ch][n].re = p[n] * window_func_lut[n];
+            s->fft_in[ch][n].im = 0;
+        }
+
         /* run FFT on each samples set */
-        av_fft_permute(s->fft[ch], s->fft_data[ch]);
-        av_fft_calc(s->fft[ch], s->fft_data[ch]);
+        s->tx_fn(s->fft[ch], s->fft_data[ch], s->fft_in[ch], sizeof(float));
     }
 
     return 0;
@@ -986,7 +994,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpectrumContext *s = ctx->priv;
-    int i, fft_bits, h, w;
+    int i, fft_size, h, w, ret;
     float overlap;
 
     switch (s->fscale) {
@@ -996,7 +1004,7 @@ static int config_output(AVFilterLink *outlink)
     }
 
     s->stop = FFMIN(s->stop, inlink->sample_rate / 2);
-    if (s->stop && s->stop <= s->start) {
+    if ((s->stop || s->start) && s->stop <= s->start) {
         av_log(ctx, AV_LOG_ERROR, "Stop frequency should be greater than start.\n");
         return AVERROR(EINVAL);
     }
@@ -1022,14 +1030,14 @@ static int config_output(AVFilterLink *outlink)
 
     if (s->orientation == VERTICAL) {
         /* FFT window size (precision) according to the requested output frame height */
-        for (fft_bits = 1; 1 << fft_bits < 2 * h; fft_bits++);
+        fft_size = h * 2;
     } else {
         /* FFT window size (precision) according to the requested output frame width */
-        for (fft_bits = 1; 1 << fft_bits < 2 * w; fft_bits++);
+        fft_size = w * 2;
     }
 
-    s->win_size = 1 << fft_bits;
-    s->buf_size = s->win_size << !!s->stop;
+    s->win_size = fft_size;
+    s->buf_size = FFALIGN(s->win_size << (!!s->stop), 512);
 
     if (!s->fft) {
         s->fft = av_calloc(inlink->channels, sizeof(*s->fft));
@@ -1046,39 +1054,42 @@ static int config_output(AVFilterLink *outlink)
     }
 
     /* (re-)configuration if the video output changed (or first init) */
-    if (fft_bits != s->fft_bits) {
+    if (fft_size != s->fft_size) {
         AVFrame *outpicref;
 
-        s->fft_bits = fft_bits;
+        s->fft_size = fft_size;
 
         /* FFT buffers: x2 for each (display) channel buffer.
          * Note: we use free and malloc instead of a realloc-like function to
          * make sure the buffer is aligned in memory for the FFT functions. */
         for (i = 0; i < s->nb_display_channels; i++) {
             if (s->stop) {
-                av_fft_end(s->ifft[i]);
+                av_tx_uninit(&s->ifft[i]);
                 av_freep(&s->fft_scratch[i]);
             }
-            av_fft_end(s->fft[i]);
+            av_tx_uninit(&s->fft[i]);
+            av_freep(&s->fft_in[i]);
             av_freep(&s->fft_data[i]);
         }
         av_freep(&s->fft_data);
 
         s->nb_display_channels = inlink->channels;
         for (i = 0; i < s->nb_display_channels; i++) {
-            s->fft[i] = av_fft_init(fft_bits + !!s->stop, 0);
+            float scale;
+
+            ret = av_tx_init(&s->fft[i], &s->tx_fn, AV_TX_FLOAT_FFT, 0, fft_size << (!!s->stop), &scale, 0);
             if (s->stop) {
-                s->ifft[i] = av_fft_init(fft_bits + !!s->stop, 1);
-                if (!s->ifft[i]) {
+                ret = av_tx_init(&s->ifft[i], &s->itx_fn, AV_TX_FLOAT_FFT, 1, fft_size << (!!s->stop), &scale, 0);
+                if (ret < 0) {
                     av_log(ctx, AV_LOG_ERROR, "Unable to create Inverse FFT context. "
                            "The window size might be too high.\n");
-                    return AVERROR(EINVAL);
+                    return ret;
                 }
             }
-            if (!s->fft[i]) {
+            if (ret < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Unable to create FFT context. "
                        "The window size might be too high.\n");
-                return AVERROR(EINVAL);
+                return ret;
             }
         }
 
@@ -1110,6 +1121,9 @@ static int config_output(AVFilterLink *outlink)
                 return AVERROR(ENOMEM);
         }
 
+        s->fft_in = av_calloc(s->nb_display_channels, sizeof(*s->fft_in));
+        if (!s->fft_in)
+            return AVERROR(ENOMEM);
         s->fft_data = av_calloc(s->nb_display_channels, sizeof(*s->fft_data));
         if (!s->fft_data)
             return AVERROR(ENOMEM);
@@ -1117,6 +1131,10 @@ static int config_output(AVFilterLink *outlink)
         if (!s->fft_scratch)
             return AVERROR(ENOMEM);
         for (i = 0; i < s->nb_display_channels; i++) {
+            s->fft_in[i] = av_calloc(s->buf_size, sizeof(**s->fft_in));
+            if (!s->fft_in[i])
+                return AVERROR(ENOMEM);
+
             s->fft_data[i] = av_calloc(s->buf_size, sizeof(**s->fft_data));
             if (!s->fft_data[i])
                 return AVERROR(ENOMEM);
