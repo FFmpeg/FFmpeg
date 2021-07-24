@@ -759,7 +759,7 @@ static int draw_legend(AVFilterContext *ctx, int samples)
             for (y = 0; y < h; y += 40) {
                 float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
                 float bin = s->fscale == F_LINEAR ? y : get_log_hz(y, h, inlink->sample_rate);
-                float hertz = s->start + bin * range / (float)(1 << (int)ceil(log2(h)));
+                float hertz = s->start + bin * range / (float)h;
                 char *units;
 
                 if (hertz == 0)
@@ -817,7 +817,7 @@ static int draw_legend(AVFilterContext *ctx, int samples)
             for (x = 0; x < w - 79; x += 80) {
                 float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
                 float bin = s->fscale == F_LINEAR ? x : get_log_hz(x, w, inlink->sample_rate);
-                float hertz = s->start + bin * range / (float)(1 << (int)ceil(log2(w)));
+                float hertz = s->start + bin * range / (float)w;
                 char *units;
 
                 if (hertz == 0)
