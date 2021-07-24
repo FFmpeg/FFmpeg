@@ -317,7 +317,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     parser_avctx->codec_id = ctx->codec_id;
     parser_avctx->extradata_size = ctx->extradata_size;
-    parser_avctx->extradata      = av_memdup(ctx->extradata, ctx->extradata_size);
+    parser_avctx->extradata      = ctx->extradata ? av_memdup(ctx->extradata, ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE) : NULL;
 
 
     int got_frame;
