@@ -100,6 +100,8 @@ static int merge_formats_internal(AVFilterFormats *a, AVFilterFormats *b,
     int alpha1=0, alpha2=0;
     int chroma1=0, chroma2=0;
 
+    av_assert2(check || (a->refcount && b->refcount));
+
     if (a == b)
         return 1;
 
@@ -132,43 +134,86 @@ static int merge_formats_internal(AVFilterFormats *a, AVFilterFormats *b,
     return 1;
 }
 
-int ff_can_merge_formats(const AVFilterFormats *a, const AVFilterFormats *b,
-                         enum AVMediaType type)
+
+/**
+ * Check the formats lists for compatibility for merging without actually
+ * merging.
+ *
+ * @return 1 if they are compatible, 0 if not.
+ */
+static int can_merge_pix_fmts(const void *a, const void *b)
 {
     return merge_formats_internal((AVFilterFormats *)a,
-                                  (AVFilterFormats *)b, type, 1);
+                                  (AVFilterFormats *)b, AVMEDIA_TYPE_VIDEO, 1);
 }
 
-int ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
-                     enum AVMediaType type)
+/**
+ * Merge the formats lists if they are compatible and update all the
+ * references of a and b to point to the combined list and free the old
+ * lists as needed. The combined list usually contains the intersection of
+ * the lists of a and b.
+ *
+ * Both a and b must have owners (i.e. refcount > 0) for these functions.
+ *
+ * @return 1 if merging succeeded, 0 if a and b are incompatible
+ *         and negative AVERROR code on failure.
+ *         a and b are unmodified if 0 is returned.
+ */
+static int merge_pix_fmts(void *a, void *b)
 {
-    av_assert2(a->refcount && b->refcount);
-    return merge_formats_internal(a, b, type, 0);
+    return merge_formats_internal(a, b, AVMEDIA_TYPE_VIDEO, 0);
+}
+
+/**
+ * See can_merge_pix_fmts().
+ */
+static int can_merge_sample_fmts(const void *a, const void *b)
+{
+    return merge_formats_internal((AVFilterFormats *)a,
+                                  (AVFilterFormats *)b, AVMEDIA_TYPE_AUDIO, 1);
+}
+
+/**
+ * See merge_pix_fmts().
+ */
+static int merge_sample_fmts(void *a, void *b)
+{
+    return merge_formats_internal(a, b, AVMEDIA_TYPE_AUDIO, 0);
 }
 
 static int merge_samplerates_internal(AVFilterFormats *a,
                                       AVFilterFormats *b, int check)
 {
+    av_assert2(check || (a->refcount && b->refcount));
     if (a == b) return 1;
 
     MERGE_FORMATS(a, b, formats, nb_formats, AVFilterFormats, check, 1);
     return 1;
 }
 
-int ff_can_merge_samplerates(const AVFilterFormats *a, const AVFilterFormats *b)
+/**
+ * See can_merge_pix_fmts().
+ */
+static int can_merge_samplerates(const void *a, const void *b)
 {
     return merge_samplerates_internal((AVFilterFormats *)a, (AVFilterFormats *)b, 1);
 }
 
-int ff_merge_samplerates(AVFilterFormats *a, AVFilterFormats *b)
+/**
+ * See merge_pix_fmts().
+ */
+static int merge_samplerates(void *a, void *b)
 {
-    av_assert2(a->refcount && b->refcount);
     return merge_samplerates_internal(a, b, 0);
 }
 
-int ff_merge_channel_layouts(AVFilterChannelLayouts *a,
-                             AVFilterChannelLayouts *b)
+/**
+ * See merge_pix_fmts().
+ */
+static int merge_channel_layouts(void *va, void *vb)
 {
+    AVFilterChannelLayouts *a = va;
+    AVFilterChannelLayouts *b = vb;
     uint64_t *channel_layouts;
     unsigned a_all = a->all_layouts + a->all_counts;
     unsigned b_all = b->all_layouts + b->all_counts;
@@ -253,6 +298,51 @@ int ff_merge_channel_layouts(AVFilterChannelLayouts *a,
     b->channel_layouts    = channel_layouts;
     b->nb_channel_layouts = ret_nb;
     return 1;
+}
+
+static const AVFilterFormatsMerger mergers_video[] = {
+    {
+        .offset     = offsetof(AVFilterFormatsConfig, formats),
+        .merge      = merge_pix_fmts,
+        .can_merge  = can_merge_pix_fmts,
+    },
+};
+
+static const AVFilterFormatsMerger mergers_audio[] = {
+    {
+        .offset     = offsetof(AVFilterFormatsConfig, channel_layouts),
+        .merge      = merge_channel_layouts,
+        .can_merge  = NULL,
+    },
+    {
+        .offset     = offsetof(AVFilterFormatsConfig, samplerates),
+        .merge      = merge_samplerates,
+        .can_merge  = can_merge_samplerates,
+    },
+    {
+        .offset     = offsetof(AVFilterFormatsConfig, formats),
+        .merge      = merge_sample_fmts,
+        .can_merge  = can_merge_sample_fmts,
+    },
+};
+
+static const AVFilterNegotiation negotiate_video = {
+    .nb = FF_ARRAY_ELEMS(mergers_video),
+    .mergers = mergers_video,
+};
+
+static const AVFilterNegotiation negotiate_audio = {
+    .nb = FF_ARRAY_ELEMS(mergers_audio),
+    .mergers = mergers_audio,
+};
+
+const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link)
+{
+    switch (link->type) {
+    case AVMEDIA_TYPE_VIDEO: return &negotiate_video;
+    case AVMEDIA_TYPE_AUDIO: return &negotiate_audio;
+    default: return NULL;
+    }
 }
 
 int ff_fmt_is_in(int fmt, const int *fmts)
