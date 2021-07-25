@@ -664,6 +664,9 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
     while (y < img->frame->height) {
         int v;
 
+        if (get_bits_left(&s->gb) < 0)
+            return AVERROR_INVALIDDATA;
+
         hg = get_huffman_group(s, img, x, y);
         v = huff_reader_get_symbol(&hg[HUFF_IDX_GREEN], &s->gb);
         if (v < NUM_LITERAL_CODES) {
