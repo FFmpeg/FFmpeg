@@ -308,6 +308,7 @@ extern const AVFilter ff_vf_lagfun;
 extern const AVFilter ff_vf_latency;
 extern const AVFilter ff_vf_lenscorrection;
 extern const AVFilter ff_vf_lensfun;
+extern const AVFilter ff_vf_libplacebo;
 extern const AVFilter ff_vf_libvmaf;
 extern const AVFilter ff_vf_limitdiff;
 extern const AVFilter ff_vf_limiter;
