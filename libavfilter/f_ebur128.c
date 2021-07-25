@@ -435,8 +435,8 @@ static int config_audio_output(AVFilterLink *outlink)
     if (!ebur128->ch_weighting)
         return AVERROR(ENOMEM);
 
-#define I400_BINS  (outlink->sample_rate * 4 / 10)
-#define I3000_BINS (outlink->sample_rate * 3)
+#define I400_BINS(x)  ((x) * 4 / 10)
+#define I3000_BINS(x) ((x) * 3)
 
     for (i = 0; i < nb_channels; i++) {
         /* channel weighting */
@@ -453,8 +453,8 @@ static int config_audio_output(AVFilterLink *outlink)
             continue;
 
         /* bins buffer for the two integration window (400ms and 3s) */
-        ebur128->i400.cache_size = I400_BINS;
-        ebur128->i3000.cache_size = I3000_BINS;
+        ebur128->i400.cache_size = I400_BINS(outlink->sample_rate);
+        ebur128->i3000.cache_size = I3000_BINS(outlink->sample_rate);
         ebur128->i400.cache[i]  = av_calloc(ebur128->i400.cache_size,  sizeof(*ebur128->i400.cache[0]));
         ebur128->i3000.cache[i] = av_calloc(ebur128->i3000.cache_size, sizeof(*ebur128->i3000.cache[0]));
         if (!ebur128->i400.cache[i] || !ebur128->i3000.cache[i])
@@ -687,7 +687,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         /* For integrated loudness, gating blocks are 400ms long with 75%
          * overlap (see BS.1770-2 p5), so a re-computation is needed each 100ms
          * (4800 samples at 48kHz). */
-        if (++ebur128->sample_count == 4800) {
+        if (++ebur128->sample_count == inlink->sample_rate / 10) {
             double loudness_400, loudness_3000;
             double power_400 = 1e-12, power_3000 = 1e-12;
             AVFilterLink *outlink = ctx->outputs[0];
@@ -702,7 +702,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         /* weighting sum of the last <time> ms */                                   \
         for (ch = 0; ch < nb_channels; ch++)                                        \
             power_##time += ebur128->ch_weighting[ch] * ebur128->i##time.sum[ch];   \
-        power_##time /= I##time##_BINS;                                             \
+        power_##time /= I##time##_BINS(inlink->sample_rate);                        \
     }                                                                               \
     loudness_##time = LOUDNESS(power_##time);                                       \
 } while (0)

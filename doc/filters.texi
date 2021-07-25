@@ -25286,7 +25286,7 @@ level. By default, it logs a message at a frequency of 10Hz with the
 Momentary loudness (identified by @code{M}), Short-term loudness (@code{S}),
 Integrated loudness (@code{I}) and Loudness Range (@code{LRA}).
 
-The filter can only analyze streams which have a sampling rate of 48000 Hz and whose
+The filter can only analyze streams which have
 sample format is double-precision floating point. The input stream will be converted to
 this specification, if needed. Users may need to insert aformat and/or aresample filters
 after this filter to obtain the original parameters.
