@@ -86,9 +86,8 @@ typedef struct SilenceRemoveContext {
     int    stop_found_periods;
 
     double window_ratio;
-    double *window;
-    double *window_current;
-    double *window_end;
+    AVFrame *window;
+    int window_offset;
     int window_size;
     double sum;
 
@@ -140,9 +139,9 @@ static void copy_double(SilenceRemoveContext *s, AVFrame *out, AVFrame *in,
 static void copy_doublep(SilenceRemoveContext *s, AVFrame *out, AVFrame *in,
                          int ch, int out_offset, int in_offset)
 {
-    const double *srcp = (const double *)in->data[ch];
+    const double *srcp = (const double *)in->extended_data[ch];
     const double src = srcp[in_offset];
-    double *dstp = (double *)out->data[ch];
+    double *dstp = (double *)out->extended_data[ch];
 
     dstp[out_offset] = src;
 }
@@ -160,9 +159,9 @@ static void copy_float(SilenceRemoveContext *s, AVFrame *out, AVFrame *in,
 static void copy_floatp(SilenceRemoveContext *s, AVFrame *out, AVFrame *in,
                         int ch, int out_offset, int in_offset)
 {
-    const float *srcp = (const float *)in->data[ch];
+    const float *srcp = (const float *)in->extended_data[ch];
     const float src = srcp[in_offset];
-    float *dstp = (float *)out->data[ch];
+    float *dstp = (float *)out->extended_data[ch];
 
     dstp[out_offset] = src;
 }
@@ -170,11 +169,13 @@ static void copy_floatp(SilenceRemoveContext *s, AVFrame *out, AVFrame *in,
 static double compute_peak_double(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const double *samples = (const double *)frame->data[0];
+    const double *wsamples = (const double *)s->window->data[0];
     double sample = samples[frame->channels * offset + ch];
+    double wsample = wsamples[frame->channels * s->window_offset + ch];
     double new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
+    new_sum -= wsample;
     new_sum += fabs(sample);
 
     return new_sum / s->window_size;
@@ -183,26 +184,26 @@ static double compute_peak_double(SilenceRemoveContext *s, AVFrame *frame, int c
 static void update_peak_double(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const double *samples = (const double *)frame->data[0];
+    double *wsamples = (double *)s->window->data[0];
     double sample = samples[frame->channels * offset + ch];
+    double *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
-    s->sum -= *s->window_current;
-    *s->window_current = fabs(sample);
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = fabs(sample);
+    s->sum += *wsample;
 }
 
 static double compute_peak_float(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const float *samples = (const float *)frame->data[0];
+    const float *wsamples = (const float *)s->window->data[0];
     float sample = samples[frame->channels * offset + ch];
+    float wsample = wsamples[frame->channels * s->window_offset + ch];
     float new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
-    new_sum += fabs(sample);
+    new_sum -= wsample;
+    new_sum += fabsf(sample);
 
     return new_sum / s->window_size;
 }
@@ -210,25 +211,25 @@ static double compute_peak_float(SilenceRemoveContext *s, AVFrame *frame, int ch
 static void update_peak_float(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const float *samples = (const float *)frame->data[0];
+    float *wsamples = (float *)s->window->data[0];
     float sample = samples[frame->channels * offset + ch];
+    float *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
-    s->sum -= *s->window_current;
-    *s->window_current = fabs(sample);
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = fabsf(sample);
+    s->sum += *wsample;
 }
 
 static double compute_rms_double(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const double *samples = (const double *)frame->data[0];
+    const double *wsamples = (const double *)s->window->data[0];
     double sample = samples[frame->channels * offset + ch];
+    double wsample = wsamples[frame->channels * s->window_offset + ch];
     double new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
+    new_sum -= wsample;
     new_sum += sample * sample;
 
     return sqrt(new_sum / s->window_size);
@@ -237,25 +238,25 @@ static double compute_rms_double(SilenceRemoveContext *s, AVFrame *frame, int ch
 static void update_rms_double(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const double *samples = (const double *)frame->data[0];
+    double *wsamples = (double *)s->window->data[0];
     double sample = samples[frame->channels * offset + ch];
+    double *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
-    s->sum -= *s->window_current;
-    *s->window_current = sample * sample;
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = sample * sample;
+    s->sum += *wsample;
 }
 
 static double compute_rms_float(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
     const float *samples = (const float *)frame->data[0];
+    const float *wsamples = (const float *)s->window->data[0];
     float sample = samples[frame->channels * offset + ch];
+    float wsample = wsamples[frame->channels * s->window_offset + ch];
     float new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
+    new_sum -= wsample;
     new_sum += sample * sample;
 
     return sqrtf(new_sum / s->window_size);
@@ -265,24 +266,24 @@ static void update_rms_float(SilenceRemoveContext *s, AVFrame *frame, int ch, in
 {
     const float *samples = (const float *)frame->data[0];
     float sample = samples[frame->channels * offset + ch];
+    float *wsamples = (float *)s->window->data[0];
+    float *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
-    s->sum -= *s->window_current;
-    *s->window_current = sample * sample;
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = sample * sample;
+    s->sum += *wsample;
 }
 
 static double compute_peak_doublep(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const double *samples = (const double *)frame->data[ch];
+    const double *samples = (const double *)frame->extended_data[ch];
+    const double *wsamples = (const double *)s->window->extended_data[ch];
     double sample = samples[offset];
+    double wsample = wsamples[s->window_offset];
     double new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
+    new_sum -= wsample;
     new_sum += fabs(sample);
 
     return new_sum / s->window_size;
@@ -290,53 +291,53 @@ static double compute_peak_doublep(SilenceRemoveContext *s, AVFrame *frame, int 
 
 static void update_peak_doublep(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const double *samples = (const double *)frame->data[ch];
+    const double *samples = (const double *)frame->extended_data[ch];
+    double *wsamples = (double *)s->window->extended_data[ch];
     double sample = samples[offset];
+    double *wsample = &wsamples[s->window_offset];
 
-    s->sum -= *s->window_current;
-    *s->window_current = fabs(sample);
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = fabs(sample);
+    s->sum += *wsample;
 }
 
 static double compute_peak_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const float *samples = (const float *)frame->data[ch];
+    const float *samples = (const float *)frame->extended_data[ch];
+    const float *wsamples = (const float *)s->window->extended_data[ch];
     float sample = samples[offset];
+    float wsample = wsamples[s->window_offset];
     float new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
-    new_sum += fabs(sample);
+    new_sum -= wsample;
+    new_sum += fabsf(sample);
 
     return new_sum / s->window_size;
 }
 
 static void update_peak_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const float *samples = (const float *)frame->data[ch];
+    const float *samples = (const float *)frame->extended_data[ch];
+    float *wsamples = (float *)s->window->extended_data[ch];
     float sample = samples[offset];
+    float *wsample = &wsamples[s->window_offset];
 
-    s->sum -= *s->window_current;
-    *s->window_current = fabs(sample);
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = fabsf(sample);
+    s->sum += *wsample;
 }
 
 static double compute_rms_doublep(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const double *samples = (const double *)frame->data[ch];
+    const double *samples = (const double *)frame->extended_data[ch];
+    const double *wsamples = (const double *)s->window->extended_data[ch];
     double sample = samples[offset];
+    double wsample = wsamples[s->window_offset];
     double new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
+    new_sum -= wsample;
     new_sum += sample * sample;
 
     return sqrt(new_sum / s->window_size);
@@ -344,26 +345,26 @@ static double compute_rms_doublep(SilenceRemoveContext *s, AVFrame *frame, int c
 
 static void update_rms_doublep(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const double *samples = (const double *)frame->data[ch];
+    const double *samples = (const double *)frame->extended_data[ch];
+    double *wsamples = (double *)s->window->extended_data[ch];
     double sample = samples[offset];
+    double *wsample = &wsamples[s->window_offset];
 
-    s->sum -= *s->window_current;
-    *s->window_current = sample * sample;
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = sample * sample;
+    s->sum += *wsample;
 }
 
 static double compute_rms_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const float *samples = (const float *)frame->data[ch];
+    const float *samples = (const float *)frame->extended_data[ch];
+    const float *wsamples = (const float *)s->window->extended_data[ch];
     float sample = samples[offset];
+    float wsample = wsamples[s->window_offset];
     float new_sum;
 
     new_sum  = s->sum;
-    new_sum -= *s->window_current;
+    new_sum -= wsample;
     new_sum += sample * sample;
 
     return sqrtf(new_sum / s->window_size);
@@ -371,16 +372,14 @@ static double compute_rms_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch
 
 static void update_rms_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch, int offset)
 {
-    const float *samples = (const float *)frame->data[ch];
+    const float *samples = (const float *)frame->extended_data[ch];
+    float *wsamples = (float *)s->window->extended_data[ch];
     float sample = samples[offset];
+    float *wsample = &wsamples[s->window_offset];
 
-    s->sum -= *s->window_current;
-    *s->window_current = sample * sample;
-    s->sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
+    s->sum -= *wsample;
+    *wsample = sample * sample;
+    s->sum += *wsample;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -397,10 +396,10 @@ static av_cold int init(AVFilterContext *ctx)
 
 static void clear_window(SilenceRemoveContext *s)
 {
-    memset(s->window, 0, s->window_size * sizeof(*s->window));
+    av_samples_set_silence(s->window->extended_data, 0, s->window_size,
+                           s->window->channels, s->window->format);
 
-    s->window_current = s->window;
-    s->window_end = s->window + s->window_size;
+    s->window_offset = 0;
     s->sum = 0;
 }
 
@@ -410,8 +409,8 @@ static int config_input(AVFilterLink *inlink)
     SilenceRemoveContext *s = ctx->priv;
 
     s->next_pts = AV_NOPTS_VALUE;
-    s->window_size = FFMAX((inlink->sample_rate * s->window_ratio), 1) * inlink->channels;
-    s->window = av_malloc_array(s->window_size, sizeof(*s->window));
+    s->window_size = FFMAX((inlink->sample_rate * s->window_ratio), 1);
+    s->window = ff_get_audio_buffer(ctx->outputs[0], s->window_size);
     if (!s->window)
         return AVERROR(ENOMEM);
 
@@ -549,14 +548,14 @@ static void flush(SilenceRemoveContext *s,
     }
 
     if (s->stop_silence_offset < s->stop_silence_end) {
-        av_samples_copy(silence->data, s->stop_silence_hold->data, 0,
+        av_samples_copy(silence->extended_data, s->stop_silence_hold->extended_data, 0,
                         s->stop_silence_offset,
                         s->stop_silence_end - s->stop_silence_offset,
                         outlink->channels, outlink->format);
     }
 
     if (s->stop_silence_offset > 0) {
-        av_samples_copy(silence->data, s->stop_silence_hold->data,
+        av_samples_copy(silence->extended_data, s->stop_silence_hold->extended_data,
                         s->stop_silence_end - s->stop_silence_offset,
                         0, s->stop_silence_offset,
                         outlink->channels, outlink->format);
@@ -612,6 +611,10 @@ silence_trim:
                     s->update(s, in, j, nb_samples_read);
                     s->copy(s, s->start_holdoff, in, j, s->start_holdoff_end, nb_samples_read);
                 }
+
+                s->window_offset++;
+                if (s->window_offset >= s->window_size)
+                    s->window_offset = 0;
                 s->start_holdoff_end++;
                 nb_samples_read++;
 
@@ -635,6 +638,9 @@ silence_trim:
                         s->copy(s, s->start_silence_hold, in, j, s->start_silence_offset, nb_samples_read);
                 }
 
+                s->window_offset++;
+                if (s->window_offset >= s->window_size)
+                    s->window_offset = 0;
                 nb_samples_read++;
                 s->start_silence_offset++;
 
@@ -661,21 +667,21 @@ silence_trim_flush:
 
         if (s->start_silence_end > 0) {
             if (s->start_silence_offset < s->start_silence_end) {
-                av_samples_copy(out->data, s->start_silence_hold->data, 0,
+                av_samples_copy(out->extended_data, s->start_silence_hold->extended_data, 0,
                                 s->start_silence_offset,
                                 s->start_silence_end - s->start_silence_offset,
                                 outlink->channels, outlink->format);
             }
 
             if (s->start_silence_offset > 0) {
-                av_samples_copy(out->data, s->start_silence_hold->data,
+                av_samples_copy(out->extended_data, s->start_silence_hold->extended_data,
                                 s->start_silence_end - s->start_silence_offset,
                                 0, s->start_silence_offset,
                                 outlink->channels, outlink->format);
             }
         }
 
-        av_samples_copy(out->data, s->start_holdoff->data,
+        av_samples_copy(out->extended_data, s->start_holdoff->extended_data,
                         s->start_silence_end,
                         s->start_holdoff_offset, nbs,
                         outlink->channels, outlink->format);
@@ -735,6 +741,9 @@ silence_copy:
                         s->copy(s, out, in, j, nb_samples_written, nb_samples_read);
                     }
 
+                    s->window_offset++;
+                    if (s->window_offset >= s->window_size)
+                        s->window_offset = 0;
                     nb_samples_read++;
                     nb_samples_written++;
                 } else if (!threshold) {
@@ -750,6 +759,10 @@ silence_copy:
 
                         s->copy(s, s->stop_holdoff, in, j, s->stop_holdoff_end, nb_samples_read);
                     }
+
+                    s->window_offset++;
+                    if (s->window_offset >= s->window_size)
+                        s->window_offset = 0;
                     nb_samples_read++;
                     s->stop_holdoff_end++;
 
@@ -783,7 +796,7 @@ silence_copy:
             }
             flush(s, out, outlink, &nb_samples_written, &ret, 0);
         } else {
-            av_samples_copy(out->data, in->data,
+            av_samples_copy(out->extended_data, in->extended_data,
                             nb_samples_written,
                             nb_samples_read, nbs,
                             outlink->channels, outlink->format);
@@ -809,7 +822,7 @@ silence_copy_flush:
             return AVERROR(ENOMEM);
         }
 
-        av_samples_copy(out->data, s->stop_holdoff->data, 0,
+        av_samples_copy(out->extended_data, s->stop_holdoff->extended_data, 0,
                         s->stop_holdoff_offset, nbs,
                         outlink->channels, outlink->format);
 
@@ -858,7 +871,7 @@ static int request_frame(AVFilterLink *outlink)
             if (!frame)
                 return AVERROR(ENOMEM);
 
-            av_samples_copy(frame->data, s->stop_holdoff->data, 0,
+            av_samples_copy(frame->extended_data, s->stop_holdoff->extended_data, 0,
                             s->stop_holdoff_offset, nbs,
                             outlink->channels, outlink->format);
 
@@ -913,7 +926,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->start_silence_hold);
     av_frame_free(&s->stop_holdoff);
     av_frame_free(&s->stop_silence_hold);
-    av_freep(&s->window);
+    av_frame_free(&s->window);
 }
 
 static const AVFilterPad silenceremove_inputs[] = {
