@@ -2026,6 +2026,7 @@ ARCH_LIST="
     parisc
     ppc
     ppc64
+    riscv
     s390
     sh4
     sparc
@@ -2636,7 +2637,7 @@ for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
 done
 
 aligned_stack_if_any="aarch64 ppc x86"
-fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
+fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 riscv64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
@@ -4945,6 +4946,9 @@ case "$arch" in
     "Power Macintosh"|ppc*|powerpc*)
         arch="ppc"
     ;;
+    riscv*)
+        arch="riscv"
+    ;;
     s390|s390x)
         arch="s390"
     ;;
@@ -5336,6 +5340,10 @@ case "$arch" in
     ;;
     ppc)
         check_64bit ppc ppc64
+        enabled shared && enable_weak pic
+    ;;
+    riscv)
+        check_64bit riscv32 riscv64
         enabled shared && enable_weak pic
     ;;
     s390)
