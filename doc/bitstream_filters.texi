@@ -534,20 +534,62 @@ container. Can be used for fuzzing or testing error resilience/concealment.
 Parameters:
 @table @option
 @item amount
-A numeral string, whose value is related to how often output bytes will
-be modified. Therefore, values below or equal to 0 are forbidden, and
-the lower the more frequent bytes will be modified, with 1 meaning
-every byte is modified.
-@item dropamount
-A numeral string, whose value is related to how often packets will be dropped.
-Therefore, values below or equal to 0 are forbidden, and the lower the more
-frequent packets will be dropped, with 1 meaning every packet is dropped.
+Accepts an expression whose evaluation per-packet determines how often bytes in that
+packet will be modified. A value below 0 will result in a variable frequency.
+Default is 0 which results in no modification. However, if neither amount nor drop is specified,
+amount will be set to @var{-1}. See below for accepted variables.
+@item drop, dropamount
+Accepts an expression evaluated per-packet whose value determines whether that packet is dropped.
+Evaluation to a positive value results in the packet being dropped. Evaluation to a negative
+value results in a variable chance of it being dropped, roughly inverse in proportion to the magnitude
+of the value. Default is 0 which results in no drops. See below for accepted variables.
 @end table
 
-The following example applies the modification to every byte but does not drop
-any packets.
+Both @code{amount} and @code{drop} accept expressions containing the following variables:
+
+@table @samp
+@item n
+The index of the packet, starting from zero.
+@item tb
+The timebase for packet timestamps.
+@item pts
+Packet presentation timestamp.
+@item dts
+Packet decoding timestamp.
+@item nopts
+Constant representing AV_NOPTS_VALUE.
+@item startpts
+First non-AV_NOPTS_VALUE PTS seen in the stream.
+@item startdts
+First non-AV_NOPTS_VALUE DTS seen in the stream.
+@item duration
+@itemx d
+Packet duration, in timebase units.
+@item pos
+Packet position in input; may be -1 when unknown or not set.
+@item size
+Packet size, in bytes.
+@item key
+Whether packet is marked as a keyframe.
+@item state
+A pseudo random integer, primarily derived from the content of packet payload.
+@end table
+
+@subsection Examples
+Apply modification to every byte but don't drop any packets.
 @example
-ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
+ffmpeg -i INPUT -c copy -bsf noise=1 output.mkv
+@end example
+
+Drop every video packet not marked as a keyframe after timestamp 30s but do not
+modify any of the remaining packets.
+@example
+ffmpeg -i INPUT -c copy -bsf:v noise=drop='gt(t\,30)*not(key)' output.mkv
+@end example
+
+Drop one second of audio every 10 seconds and add some random noise to the rest.
+@example
+ffmpeg -i INPUT -c copy -bsf:a noise=amount=-1:drop='between(mod(t\,10)\,9\,10)' output.mkv
 @end example
 
 @section null
