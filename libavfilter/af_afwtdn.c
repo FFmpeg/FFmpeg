@@ -1153,6 +1153,7 @@ static int config_output(AVFilterLink *outlink)
         s->hp  = deb10_hp;
         s->ilp = deb10_ilp;
         s->ihp = deb10_ihp;
+        break;
     case SYM10:
         s->wavelet_length = 20;
         s->lp  = sym10_lp;
