@@ -2125,18 +2125,18 @@ context similarity is defined by comparing their surrounding patches of size
 The filter accepts the following options:
 
 @table @option
-@item s
+@item strength, s
 Set denoising strength. Allowed range is from 0.00001 to 10. Default value is 0.00001.
 
-@item p
+@item patch, p
 Set patch radius duration. Allowed range is from 1 to 100 milliseconds.
 Default value is 2 milliseconds.
 
-@item r
+@item research, r
 Set research radius duration. Allowed range is from 2 to 300 milliseconds.
 Default value is 6 milliseconds.
 
-@item o
+@item output, o
 Set the output mode.
 
 It accepts the following values:
@@ -2153,7 +2153,7 @@ Pass only noise.
 Default value is @var{o}.
 @end table
 
-@item m
+@item smooth, m
 Set smooth factor. Default value is @var{11}. Allowed range is from @var{1} to @var{15}.
 @end table
 
