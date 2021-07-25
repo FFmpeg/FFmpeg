@@ -397,12 +397,17 @@ static int activate(AVFilterContext *ctx)
     /* Forward status change */
     if (cat->cur_idx < ctx->nb_inputs) {
         for (i = 0; i < ctx->nb_outputs; i++) {
-            ret = ff_inlink_acknowledge_status(ctx->inputs[cat->cur_idx + i], &status, &pts);
+            AVFilterLink *inlink = ctx->inputs[cat->cur_idx + i];
+
+            ret = ff_inlink_acknowledge_status(inlink, &status, &pts);
             /* TODO use pts */
             if (ret > 0) {
                 close_input(ctx, cat->cur_idx + i);
                 if (cat->cur_idx + ctx->nb_outputs >= ctx->nb_inputs) {
-                    ff_outlink_set_status(ctx->outputs[i], status, pts);
+                    int64_t eof_pts = cat->delta_ts;
+
+                    eof_pts += av_rescale_q(pts, inlink->time_base, ctx->outputs[i]->time_base);
+                    ff_outlink_set_status(ctx->outputs[i], status, eof_pts);
                 }
                 if (!cat->nb_in_active) {
                     ret = flush_segment(ctx);
