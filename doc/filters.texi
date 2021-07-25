@@ -19863,6 +19863,10 @@ otherwise fourth stream pixel component value will be picked.
 
 Using color source filter one can perform various types of thresholding:
 
+@subsection Commands
+
+This filter supports the all options as @ref{commands}.
+
 @subsection Examples
 
 @itemize
