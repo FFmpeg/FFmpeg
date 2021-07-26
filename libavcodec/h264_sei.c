@@ -420,9 +420,9 @@ static int decode_alternative_transfer(H264SEIAlternativeTransfer *h,
 static int decode_film_grain_characteristics(H264SEIFilmGrainCharacteristics *h,
                                              GetBitContext *gb)
 {
-    int film_grain_characteristics_cancel_flag = get_bits1(gb);
+    h->present = !get_bits1(gb); // film_grain_characteristics_cancel_flag
 
-    if (!film_grain_characteristics_cancel_flag) {
+    if (h->present) {
         memset(h, 0, sizeof(*h));
         h->model_id = get_bits(gb, 8);
         h->separate_colour_description_present_flag = get_bits1(gb);
