@@ -82,6 +82,9 @@ enum Presets {
     PRESET_SHADOWS,
     PRESET_HIGHLIGHTS,
     PRESET_SOLAR,
+    PRESET_NOMINAL,
+    PRESET_PREFERRED,
+    PRESET_TOTAL,
     NB_PRESETS,
 };
 
@@ -98,7 +101,7 @@ typedef struct Fill {
 } Fill;
 
 typedef struct Range {
-    int start, end;
+    AVRational start, end;
 } Range;
 
 typedef struct Preset {
@@ -108,11 +111,14 @@ typedef struct Preset {
     const Fill  *fills;
 } Preset;
 
-static const Range full_range   = {0, 256};
-static const Range spec1_range[] = {{0, 16}, {16, 236}, {236, 256}};
-static const Range spec2_range[] = {{0, 16}, {16, 22}, {22, 226}, {226, 236}, {236, 256}};
-static const Range shadows_range[] = {{0, 32}, {32, 256}};
-static const Range highlights_range[] = {{0, 214}, {214, 224}, {224, 256}};
+static const Range full_range   = {{0, 1}, {1, 1}};
+static const Range nominal_range[] = {{{0, 1}, {4096, 65536}}, {{4096, 65536}, {60161, 65536}}, {{60161, 65536}, {1, 1}}};
+static const Range preferred_range[] = {{{0, 1}, {1280, 65536}}, {{1280, 65536}, {62977, 65536}}, {{62977, 65536}, {1, 1}}};
+static const Range total_range[] = {{{0, 1}, {256, 65536}}, {{256, 65536}, {65280, 65536}}, {{65280, 65536}, {1, 1}}};
+static const Range spec1_range[] = {{{0, 1}, {16, 256}}, {{16, 256}, {236, 256}}, {{236, 256}, {256, 256}}};
+static const Range spec2_range[] = {{{0, 1}, {16, 256}}, {{16, 256}, {22, 256}}, {{22, 256}, {226, 256}}, {{226, 256}, {236, 256}}, {{236, 256}, {256, 256}}};
+static const Range shadows_range[] = {{{0, 1}, {32, 256}}, {{32, 256}, {256, 256}}};
+static const Range highlights_range[] = {{{0,1}, {214,256}}, {{214, 256}, {224, 256}}, {{224, 256}, {256, 256}}};
 
 static const Fill spec1_fills[] = {{{0.5f, 0.f, .5f, 1.f}}, {{-1.f, -1.f, -1.f, 1.f}}, {{1.f, 0.f, 0.f, 1.f}}};
 static const Fill spec2_fills[] = {{{0.5f, 0.f, .5f, 1.f}}, {{0.f, 1.f, 1.f, 1.f}}, {{-1.f, -1.f, -1.f, 1.f}}, {{1.f, 1.f, 0.f, 1.f}}, {{1.f, 0.f, 0.f, 1.f}}};
@@ -179,6 +185,9 @@ static const Preset presets[] =
     [PRESET_TURBO]   = { 1, &full_range, &curves[TURBO],   NULL },
     [PRESET_CIVIDIS] = { 1, &full_range, &curves[CIVIDIS], NULL },
     [PRESET_RANGE1]  = { 3, spec1_range, NULL,             spec1_fills },
+    [PRESET_NOMINAL] = { 3, nominal_range, NULL,           spec1_fills },
+    [PRESET_PREFERRED]={ 3, preferred_range, NULL,         spec1_fills },
+    [PRESET_TOTAL]   = { 3, total_range, NULL,             spec1_fills },
     [PRESET_RANGE2]  = { 5, spec2_range, NULL,             spec2_fills },
     [PRESET_SHADOWS] = { 2, shadows_range, NULL,           shadows_fills },
     [PRESET_HIGHLIGHTS] = { 3, highlights_range, NULL,     highlights_fills },
@@ -234,6 +243,9 @@ static const AVOption pseudocolor_options[] = {
     { "shadows",    NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SHADOWS}, .flags = FLAGS, "preset" },
     { "highlights", NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_HIGHLIGHTS},.flags=FLAGS, "preset" },
     { "solar",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_SOLAR},   .flags=FLAGS, "preset" },
+    { "nominal",    NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_NOMINAL}, .flags=FLAGS, "preset" },
+    { "preferred",  NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_PREFERRED},.flags=FLAGS,"preset" },
+    { "total",      NULL,                  0,                        AV_OPT_TYPE_CONST,  {.i64=PRESET_TOTAL},   .flags=FLAGS, "preset" },
     { "opacity", "set pseudocolor opacity",OFFSET(opacity),          AV_OPT_TYPE_FLOAT,  {.dbl=1}, 0, 1, .flags = FLAGS },
     { NULL }
 };
@@ -574,11 +586,10 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     PseudoColorContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int depth, ret, hsub, vsub, color, factor, rgb;
+    int depth, ret, hsub, vsub, color, rgb;
 
     rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
     depth = desc->comp[0].depth;
-    factor = 1 << (depth - 8);
     s->max = (1 << depth) - 1;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
@@ -644,52 +655,25 @@ static int config_input(AVFilterLink *inlink)
         int nb_segments = presets[s->preset].nb_segments;
 
         for (int seg = 0; seg < nb_segments; seg++) {
-            int start = presets[s->preset].ranges[seg].start;
-            int end   = presets[s->preset].ranges[seg].end;
+            AVRational rstart = presets[s->preset].ranges[seg].start;
+            AVRational rend   = presets[s->preset].ranges[seg].end;
+            int start = av_rescale_rnd(s->max + 1, rstart.num, rstart.den, AV_ROUND_UP);
+            int end   = av_rescale_rnd(s->max + 1, rend.num, rend.den, AV_ROUND_UP);
 
             for (int i = start; i < end; i++) {
                 if (!presets[s->preset].curves) {
                     const Fill fill = presets[s->preset].fills[seg];
+                    double r, g, b, a;
 
-                    for (int j = 0; j < factor; j++) {
-                        double r, g, b, a;
+                    g = fill.fill[1];
+                    b = fill.fill[2];
+                    r = fill.fill[0];
+                    a = fill.fill[3];
 
-                        g = fill.fill[1];
-                        b = fill.fill[2];
-                        r = fill.fill[0];
-                        a = fill.fill[3];
-
-                        if (g >= 0.f && b >= 0.f && r >= 0.f) {
-                            g *= s->max;
-                            b *= s->max;
-                            r *= s->max;
-
-                            if (!rgb) {
-                                double y = RGB_TO_Y_BT709(r, g, b);
-                                double u = RGB_TO_U_BT709(r, g, b, s->max);
-                                double v = RGB_TO_V_BT709(r, g, b, s->max);
-
-                                r = v;
-                                g = y;
-                                b = u;
-                            }
-                        }
-
-                        s->lut[0][i*factor+j] = g;
-                        s->lut[1][i*factor+j] = b;
-                        s->lut[2][i*factor+j] = r;
-                        s->lut[3][i*factor+j] = a * s->max;
-                    }
-                } else {
-                    const Curve curve = presets[s->preset].curves[seg];
-
-                    for (int j = 0; j < factor; j++) {
-                        const double lf = j / (double)factor;
-                        double r, g, b;
-
-                        g = poly_eval(curve.coef[1], i + lf + curve.offset[1], curve.fun[1]) * s->max;
-                        b = poly_eval(curve.coef[2], i + lf + curve.offset[2], curve.fun[2]) * s->max;
-                        r = poly_eval(curve.coef[0], i + lf + curve.offset[0], curve.fun[0]) * s->max;
+                    if (g >= 0.f && b >= 0.f && r >= 0.f) {
+                        g *= s->max;
+                        b *= s->max;
+                        r *= s->max;
 
                         if (!rgb) {
                             double y = RGB_TO_Y_BT709(r, g, b);
@@ -700,12 +684,35 @@ static int config_input(AVFilterLink *inlink)
                             g = y;
                             b = u;
                         }
-
-                        s->lut[0][i*factor+j] = g;
-                        s->lut[1][i*factor+j] = b;
-                        s->lut[2][i*factor+j] = r;
-                        s->lut[3][i*factor+j] = 1.f * s->max;
                     }
+
+                    s->lut[0][i] = g;
+                    s->lut[1][i] = b;
+                    s->lut[2][i] = r;
+                    s->lut[3][i] = a * s->max;
+                } else {
+                    const Curve curve = presets[s->preset].curves[seg];
+                    const double lf = i / (double)s->max * 256.;
+                    double r, g, b;
+
+                    g = poly_eval(curve.coef[1], lf + curve.offset[1], curve.fun[1]) * s->max;
+                    b = poly_eval(curve.coef[2], lf + curve.offset[2], curve.fun[2]) * s->max;
+                    r = poly_eval(curve.coef[0], lf + curve.offset[0], curve.fun[0]) * s->max;
+
+                    if (!rgb) {
+                        double y = RGB_TO_Y_BT709(r, g, b);
+                        double u = RGB_TO_U_BT709(r, g, b, s->max);
+                        double v = RGB_TO_V_BT709(r, g, b, s->max);
+
+                        r = v;
+                        g = y;
+                        b = u;
+                    }
+
+                    s->lut[0][i] = g;
+                    s->lut[1][i] = b;
+                    s->lut[2][i] = r;
+                    s->lut[3][i] = 1.f * s->max;
                 }
             }
         }

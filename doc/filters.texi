@@ -16838,6 +16838,9 @@ Available LUTs:
 @item shadows
 @item highlights
 @item solar
+@item nominal
+@item preferred
+@item total
 @end table
 
 @item opacity
