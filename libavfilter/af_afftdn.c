@@ -24,7 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -66,8 +66,10 @@ typedef struct DeNoiseChannel {
     double     *abs_var;
     double     *rel_var;
     double     *min_abs_var;
-    FFTComplex *fft_data;
-    FFTContext *fft, *ifft;
+    AVComplexFloat *fft_in;
+    AVComplexFloat *fft_out;
+    AVTXContext *fft, *ifft;
+    av_tx_fn   tx_fn, itx_fn;
 
     double      noise_band_norm[15];
     double      noise_band_avr[15];
@@ -290,7 +292,7 @@ static double limit_gain(double a, double b)
 }
 
 static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
-                          FFTComplex *fft_data,
+                          AVComplexFloat *fft_data,
                           double *prior, double *prior_band_excit, int track_noise)
 {
     double d1, d2, d3, gain;
@@ -612,7 +614,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AudioFFTDeNoiseContext *s = ctx->priv;
     double wscale, sar, sum, sdiv;
-    int i, j, k, m, n;
+    int i, j, k, m, n, ret;
 
     s->dnch = av_calloc(inlink->channels, sizeof(*s->dnch));
     if (!s->dnch)
@@ -680,6 +682,7 @@ static int config_input(AVFilterLink *inlink)
 
     for (int ch = 0; ch < inlink->channels; ch++) {
         DeNoiseChannel *dnch = &s->dnch[ch];
+        float scale;
 
         switch (s->noise_type) {
         case WHITE_NOISE:
@@ -727,9 +730,14 @@ static int config_input(AVFilterLink *inlink)
         dnch->abs_var = av_calloc(s->bin_count, sizeof(*dnch->abs_var));
         dnch->rel_var = av_calloc(s->bin_count, sizeof(*dnch->rel_var));
         dnch->min_abs_var = av_calloc(s->bin_count, sizeof(*dnch->min_abs_var));
-        dnch->fft_data = av_calloc(s->fft_length2 + 1, sizeof(*dnch->fft_data));
-        dnch->fft  = av_fft_init(av_log2(s->fft_length2), 0);
-        dnch->ifft = av_fft_init(av_log2(s->fft_length2), 1);
+        dnch->fft_in = av_calloc(s->fft_length2 + 1, sizeof(*dnch->fft_in));
+        dnch->fft_out = av_calloc(s->fft_length2 + 1, sizeof(*dnch->fft_out));
+        ret = av_tx_init(&dnch->fft, &dnch->tx_fn, AV_TX_FLOAT_FFT, 0, s->fft_length2, &scale, 0);
+        if (ret < 0)
+            return ret;
+        ret = av_tx_init(&dnch->ifft, &dnch->itx_fn, AV_TX_FLOAT_FFT, 1, s->fft_length2, &scale, 0);
+        if (ret < 0)
+            return ret;
         dnch->spread_function = av_calloc(s->number_of_bands * s->number_of_bands,
                                           sizeof(*dnch->spread_function));
 
@@ -742,7 +750,8 @@ static int config_input(AVFilterLink *inlink)
             !dnch->clean_data ||
             !dnch->noisy_data ||
             !dnch->out_samples ||
-            !dnch->fft_data ||
+            !dnch->fft_in ||
+            !dnch->fft_out ||
             !dnch->abs_var ||
             !dnch->rel_var ||
             !dnch->min_abs_var ||
@@ -855,7 +864,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void preprocess(FFTComplex *in, int len)
+static void preprocess(AVComplexFloat *in, int len)
 {
     double d1, d2, d3, d4, d5, d6, d7, d8, d9, d10;
     int n, i, k;
@@ -888,7 +897,7 @@ static void preprocess(FFTComplex *in, int len)
     in[0].im = d2 - in[0].im;
 }
 
-static void postprocess(FFTComplex *in, int len)
+static void postprocess(AVComplexFloat *in, int len)
 {
     double d1, d2, d3, d4, d5, d6, d7, d8, d9, d10;
     int n, i, k;
@@ -938,28 +947,27 @@ static void sample_noise_block(AudioFFTDeNoiseContext *s,
     int edge, j, k, n, edgemax;
 
     for (int i = 0; i < s->window_length; i++) {
-        dnch->fft_data[i].re = s->window[i] * src[i] * (1LL << 24);
-        dnch->fft_data[i].im = 0.0;
+        dnch->fft_in[i].re = s->window[i] * src[i] * (1LL << 24);
+        dnch->fft_in[i].im = 0.0;
     }
 
     for (int i = s->window_length; i < s->fft_length2; i++) {
-        dnch->fft_data[i].re = 0.0;
-        dnch->fft_data[i].im = 0.0;
+        dnch->fft_in[i].re = 0.0;
+        dnch->fft_in[i].im = 0.0;
     }
 
-    av_fft_permute(dnch->fft, dnch->fft_data);
-    av_fft_calc(dnch->fft, dnch->fft_data);
+    dnch->tx_fn(dnch->fft, dnch->fft_out, dnch->fft_in, sizeof(float));
 
-    preprocess(dnch->fft_data, s->fft_length);
+    preprocess(dnch->fft_out, s->fft_length);
 
     edge = s->noise_band_edge[0];
     j = edge;
     k = 0;
     n = j;
     edgemax = fmin(s->fft_length2, s->noise_band_edge[15]);
-    dnch->fft_data[s->fft_length2].re = dnch->fft_data[0].im;
-    dnch->fft_data[0].im = 0.0;
-    dnch->fft_data[s->fft_length2].im = 0.0;
+    dnch->fft_out[s->fft_length2].re = dnch->fft_out[0].im;
+    dnch->fft_out[0].im = 0.0;
+    dnch->fft_out[s->fft_length2].im = 0.0;
 
     for (int i = j; i <= edgemax; i++) {
         if ((i == j) && (i < edgemax)) {
@@ -979,10 +987,10 @@ static void sample_noise_block(AudioFFTDeNoiseContext *s,
             avr = 0.0;
             avi = 0.0;
         }
-        avr += dnch->fft_data[n].re;
-        avi += dnch->fft_data[n].im;
-        mag2 = dnch->fft_data[n].re * dnch->fft_data[n].re +
-               dnch->fft_data[n].im * dnch->fft_data[n].im;
+        avr += dnch->fft_out[n].re;
+        avi += dnch->fft_out[n].im;
+        mag2 = dnch->fft_out[n].re * dnch->fft_out[n].re +
+               dnch->fft_out[n].im * dnch->fft_out[n].im;
 
         mag2 = fmax(mag2, s->sample_floor);
 
@@ -1107,30 +1115,28 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         }
 
         for (int m = 0; m < s->window_length; m++) {
-            dnch->fft_data[m].re = s->window[m] * src[m] * (1LL << 24);
-            dnch->fft_data[m].im = 0;
+            dnch->fft_in[m].re = s->window[m] * src[m] * (1LL << 24);
+            dnch->fft_in[m].im = 0;
         }
 
         for (int m = s->window_length; m < s->fft_length2; m++) {
-            dnch->fft_data[m].re = 0;
-            dnch->fft_data[m].im = 0;
+            dnch->fft_in[m].re = 0;
+            dnch->fft_in[m].im = 0;
         }
 
-        av_fft_permute(dnch->fft, dnch->fft_data);
-        av_fft_calc(dnch->fft, dnch->fft_data);
+        dnch->tx_fn(dnch->fft, dnch->fft_out, dnch->fft_in, sizeof(float));
 
-        preprocess(dnch->fft_data, s->fft_length);
-        process_frame(s, dnch, dnch->fft_data,
+        preprocess(dnch->fft_out, s->fft_length);
+        process_frame(s, dnch, dnch->fft_out,
                       dnch->prior,
                       dnch->prior_band_excit,
                       s->track_noise);
-        postprocess(dnch->fft_data, s->fft_length);
+        postprocess(dnch->fft_out, s->fft_length);
 
-        av_fft_permute(dnch->ifft, dnch->fft_data);
-        av_fft_calc(dnch->ifft, dnch->fft_data);
+        dnch->itx_fn(dnch->ifft, dnch->fft_in, dnch->fft_out, sizeof(float));
 
         for (int m = 0; m < s->window_length; m++)
-            dst[m] += s->window[m] * dnch->fft_data[m].re / (1LL << 24);
+            dst[m] += s->window[m] * dnch->fft_in[m].re / (1LL << 24);
     }
 
     return 0;
@@ -1330,11 +1336,10 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_freep(&dnch->abs_var);
             av_freep(&dnch->rel_var);
             av_freep(&dnch->min_abs_var);
-            av_freep(&dnch->fft_data);
-            av_fft_end(dnch->fft);
-            dnch->fft = NULL;
-            av_fft_end(dnch->ifft);
-            dnch->ifft = NULL;
+            av_freep(&dnch->fft_in);
+            av_freep(&dnch->fft_out);
+            av_tx_uninit(&dnch->fft);
+            av_tx_uninit(&dnch->ifft);
         }
         av_freep(&s->dnch);
     }
