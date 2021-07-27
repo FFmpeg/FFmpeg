@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/xga_font_data.h"
@@ -144,13 +144,13 @@ static void common_uninit(ShowCQTContext *s)
 
     av_frame_free(&s->axis_frame);
     av_frame_free(&s->sono_frame);
-    av_fft_end(s->fft_ctx);
-    s->fft_ctx = NULL;
+    av_tx_uninit(&s->fft_ctx);
     if (s->coeffs)
         for (k = 0; k < s->cqt_len; k++)
             av_freep(&s->coeffs[k].val);
     av_freep(&s->coeffs);
     av_freep(&s->fft_data);
+    av_freep(&s->fft_input);
     av_freep(&s->fft_result);
     av_freep(&s->cqt_result);
     av_freep(&s->attack_data);
@@ -267,15 +267,15 @@ error:
     return ret;
 }
 
-static void cqt_calc(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeffs,
+static void cqt_calc(AVComplexFloat *dst, const AVComplexFloat *src, const Coeffs *coeffs,
                      int len, int fft_len)
 {
     int k, x, i, j;
     for (k = 0; k < len; k++) {
-        FFTComplex l, r, a = {0,0}, b = {0,0};
+        AVComplexFloat l, r, a = {0,0}, b = {0,0};
 
         for (x = 0; x < coeffs[k].len; x++) {
-            FFTSample u = coeffs[k].val[x];
+            float u = coeffs[k].val[x];
             i = coeffs[k].start + x;
             j = fft_len - i;
             a.re += u * src[i].re;
@@ -730,7 +730,7 @@ static float calculate_gamma(float v, float g)
     return expf(logf(v) / g);
 }
 
-static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len, float cscheme[6])
+static void rgb_from_cqt(ColorFloat *c, const AVComplexFloat *v, float g, int len, float cscheme[6])
 {
     int x;
     for (x = 0; x < len; x++) {
@@ -740,7 +740,7 @@ static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len, f
     }
 }
 
-static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len, float cm[3][3], float cscheme[6])
+static void yuv_from_cqt(ColorFloat *c, const AVComplexFloat *v, float gamma, int len, float cm[3][3], float cscheme[6])
 {
     int x;
     for (x = 0; x < len; x++) {
@@ -1110,7 +1110,7 @@ static void process_cqt(ShowCQTContext *s)
     if (s->fcount > 1) {
         float rcp_fcount = 1.0f / s->fcount;
         for (x = 0; x < s->width; x++) {
-            FFTComplex result = {0.0f, 0.0f};
+            AVComplexFloat result = {0.0f, 0.0f};
             for (i = 0; i < s->fcount; i++) {
                 result.re += s->cqt_result[s->fcount * x + i].re;
                 result.im += s->cqt_result[s->fcount * x + i].im;
@@ -1139,17 +1139,16 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
 
     last_time = av_gettime_relative();
 
-    memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
+    memcpy(s->fft_input, s->fft_data, s->fft_len * sizeof(*s->fft_data));
     if (s->attack_data) {
         int k;
         for (k = 0; k < s->remaining_fill_max; k++) {
-            s->fft_result[s->fft_len/2+k].re *= s->attack_data[k];
-            s->fft_result[s->fft_len/2+k].im *= s->attack_data[k];
+            s->fft_input[s->fft_len/2+k].re *= s->attack_data[k];
+            s->fft_input[s->fft_len/2+k].im *= s->attack_data[k];
         }
     }
 
-    av_fft_permute(s->fft_ctx, s->fft_result);
-    av_fft_calc(s->fft_ctx, s->fft_result);
+    s->tx_fn(s->fft_ctx, s->fft_result, s->fft_input, sizeof(float));
     s->fft_result[s->fft_len] = s->fft_result[0];
     UPDATE_TIME(s->fft_time);
 
@@ -1355,6 +1354,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCQTContext *s = ctx->priv;
+    float scale;
     int ret;
 
     common_uninit(s);
@@ -1380,9 +1380,10 @@ static int config_output(AVFilterLink *outlink)
     s->fft_len = 1 << s->fft_bits;
     av_log(ctx, AV_LOG_INFO, "fft_len = %d, cqt_len = %d.\n", s->fft_len, s->cqt_len);
 
-    s->fft_ctx = av_fft_init(s->fft_bits, 0);
+    ret = av_tx_init(&s->fft_ctx, &s->tx_fn, AV_TX_FLOAT_FFT, 0, s->fft_len, &scale, 0);
     s->fft_data = av_calloc(s->fft_len, sizeof(*s->fft_data));
-    s->fft_result = av_calloc(s->fft_len + 64, sizeof(*s->fft_result));
+    s->fft_input = av_calloc(FFALIGN(s->fft_len + 64, 256), sizeof(*s->fft_input));
+    s->fft_result = av_calloc(FFALIGN(s->fft_len + 64, 256), sizeof(*s->fft_result));
     s->cqt_result = av_malloc_array(s->cqt_len, sizeof(*s->cqt_result));
     if (!s->fft_ctx || !s->fft_data || !s->fft_result || !s->cqt_result)
         return AVERROR(ENOMEM);

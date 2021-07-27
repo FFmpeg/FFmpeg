@@ -24,7 +24,7 @@
 #include "libavfilter/avf_showcqt.h"
 
 #define DECLARE_CQT_CALC(type) \
-void ff_showcqt_cqt_calc_##type(FFTComplex *dst, const FFTComplex *src, \
+void ff_showcqt_cqt_calc_##type(AVComplexFloat *dst, const AVComplexFloat *src, \
                                 const Coeffs *coeffs, int len, int fft_len)
 
 DECLARE_CQT_CALC(sse);
