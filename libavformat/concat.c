@@ -251,7 +251,8 @@ static av_cold int concatf_open(URLContext *h, const char *uri, int flags)
             err = AVERROR(ENOMEM);
             break;
         }
-        cursor++;
+        if (*cursor)
+            cursor++;
 
         if (++len == SIZE_MAX / sizeof(*nodes)) {
             av_free(node_uri);
