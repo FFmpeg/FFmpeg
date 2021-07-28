@@ -52,6 +52,7 @@ typedef struct {
     int64_t inpoint;
     int64_t outpoint;
     AVDictionary *metadata;
+    AVDictionary *options;
     int nb_streams;
 } ConcatFile;
 
@@ -330,6 +331,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
 {
     ConcatContext *cat = avf->priv_data;
     ConcatFile *file = &cat->files[fileno];
+    AVDictionary *options = NULL;
     int ret;
 
     if (cat->avf)
@@ -345,11 +347,21 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     if ((ret = ff_copy_whiteblacklists(cat->avf, avf)) < 0)
         return ret;
 
-    if ((ret = avformat_open_input(&cat->avf, file->url, NULL, NULL)) < 0 ||
+    ret = av_dict_copy(&options, file->options, 0);
+    if (ret < 0)
+        return ret;
+
+    if ((ret = avformat_open_input(&cat->avf, file->url, NULL, &options)) < 0 ||
         (ret = avformat_find_stream_info(cat->avf, NULL)) < 0) {
         av_log(avf, AV_LOG_ERROR, "Impossible to open '%s'\n", file->url);
+        av_dict_free(&options);
         avformat_close_input(&cat->avf);
         return ret;
+    }
+    if (options) {
+        av_log(avf, AV_LOG_WARNING, "Unused options for '%s'.\n", file->url);
+        /* TODO log unused options once we have a proper string API */
+        av_dict_free(&options);
     }
     cat->cur_file = file;
     file->start_time = !fileno ? 0 :
@@ -387,6 +399,7 @@ static int concat_read_close(AVFormatContext *avf)
         }
         av_freep(&cat->files[i].streams);
         av_dict_free(&cat->files[i].metadata);
+        av_dict_free(&cat->files[i].options);
     }
     if (cat->avf)
         avformat_close_input(&cat->avf);
@@ -458,6 +471,26 @@ static int concat_read_header(AVFormatContext *avf)
                 FAIL(AVERROR_INVALIDDATA);
             }
             av_freep(&metadata);
+        } else if (!strcmp(keyword, "option")) {
+            char *key, *val;
+            if (cat->safe) {
+                av_log(avf, AV_LOG_ERROR, "Options not permitted in safe mode.\n");
+                FAIL(AVERROR(EPERM));
+            }
+            if (!file) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: %s without file\n",
+                       line, keyword);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            if (!(key = av_get_token((const char **)&cursor, SPACE_CHARS)) ||
+                !(val = av_get_token((const char **)&cursor, SPACE_CHARS))) {
+                av_freep(&key);
+                FAIL(AVERROR(ENOMEM));
+            }
+            ret = av_dict_set(&file->options, key, val,
+                              AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+            if (ret < 0)
+                FAIL(ret);
         } else if (!strcmp(keyword, "stream")) {
             if (!avformat_new_stream(avf, NULL))
                 FAIL(AVERROR(ENOMEM));

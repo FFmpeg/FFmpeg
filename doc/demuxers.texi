@@ -151,6 +151,10 @@ Metadata of the packets of the file. The specified metadata will be set for
 each file packet. You can specify this directive multiple times to add multiple
 metadata entries.
 
+@item @code{option @var{key} @var{value}}
+Option to access, open and probe the file.
+Can be present multiple times.
+
 @item @code{stream}
 Introduce a stream in the virtual file.
 All subsequent stream-related directives apply to the last introduced
