@@ -139,7 +139,9 @@ typedef struct QSVEncContext {
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
 
-    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2 + QSV_HAVE_CO3 + (QSV_HAVE_MF * 2)];
+    mfxExtVideoSignalInfo extvsi;
+
+    mfxExtBuffer  *extparam_internal[3 + QSV_HAVE_CO2 + QSV_HAVE_CO3 + (QSV_HAVE_MF * 2)];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
