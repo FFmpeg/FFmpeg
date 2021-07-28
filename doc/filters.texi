@@ -2291,12 +2291,12 @@ with @option{pad_len}.
 @item pad_dur
 Specify the duration of samples of silence to add. See
 @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
-for the accepted syntax. Used only if set to non-zero value.
+for the accepted syntax. Used only if set to non-negative value.
 
 @item whole_dur
 Specify the minimum total duration in the output audio stream. See
 @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
-for the accepted syntax. Used only if set to non-zero value. If the value is longer than
+for the accepted syntax. Used only if set to non-negative value. If the value is longer than
 the input audio length, silence is added to the end, until the value is reached.
 This option is mutually exclusive with @option{pad_dur}
 @end table
@@ -2304,6 +2304,9 @@ This option is mutually exclusive with @option{pad_dur}
 If neither the @option{pad_len} nor the @option{whole_len} nor @option{pad_dur}
 nor @option{whole_dur} option is set, the filter will add silence to the end of
 the input stream indefinitely.
+
+Note that for ffmpeg 4.4 and earlier a zero @option{pad_dur} or
+@option{whole_dur} also caused the filter to add silence indefinitely.
 
 @subsection Examples
 
