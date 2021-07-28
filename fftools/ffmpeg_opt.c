@@ -2260,23 +2260,35 @@ static int open_output_file(OptionsContext *o, const char *filename)
         if (!o->video_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_VIDEO) != AV_CODEC_ID_NONE) {
             int best_score = 0, idx = -1;
             int qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
-            for (i = 0; i < nb_input_streams; i++) {
-                int score;
-                ist = input_streams[i];
-                score = ist->st->codecpar->width * ist->st->codecpar->height
-                           + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
-                           + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
-                if (ist->user_set_discard == AVDISCARD_ALL)
-                    continue;
-                if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
-                    score = 1;
-                if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                    score > best_score) {
-                    if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+            for (j = 0; j < nb_input_files; j++) {
+                InputFile *ifile = input_files[j];
+                int file_best_score = 0, file_best_idx = -1;
+                for (i = 0; i < ifile->nb_streams; i++) {
+                    int score;
+                    ist = input_streams[ifile->ist_index + i];
+                    score = ist->st->codecpar->width * ist->st->codecpar->height
+                               + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
+                               + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
+                    if (ist->user_set_discard == AVDISCARD_ALL)
                         continue;
-                    best_score = score;
-                    idx = i;
+                    if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                        score = 1;
+                    if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+                        score > file_best_score) {
+                        if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                            continue;
+                        file_best_score = score;
+                        file_best_idx = ifile->ist_index + i;
+                    }
                 }
+                if (file_best_idx >= 0) {
+                    if((qcr == MKTAG('A', 'P', 'I', 'C')) || !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                        file_best_score -= 5000000*!!(input_streams[file_best_idx]->st->disposition & AV_DISPOSITION_DEFAULT);
+                    if (file_best_score > best_score) {
+                        best_score = file_best_score;
+                        idx = file_best_idx;
+                    }
+               }
             }
             if (idx >= 0)
                 new_video_stream(o, oc, idx);
@@ -2285,19 +2297,30 @@ static int open_output_file(OptionsContext *o, const char *filename)
         /* audio: most channels */
         if (!o->audio_disable && av_guess_codec(oc->oformat, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO) != AV_CODEC_ID_NONE) {
             int best_score = 0, idx = -1;
-            for (i = 0; i < nb_input_streams; i++) {
-                int score;
-                ist = input_streams[i];
-                score = ist->st->codecpar->channels
-                        + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
-                        + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
-                if (ist->user_set_discard == AVDISCARD_ALL)
-                    continue;
-                if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                    score > best_score) {
-                    best_score = score;
-                    idx = i;
+            for (j = 0; j < nb_input_files; j++) {
+                InputFile *ifile = input_files[j];
+                int file_best_score = 0, file_best_idx = -1;
+                for (i = 0; i < ifile->nb_streams; i++) {
+                    int score;
+                    ist = input_streams[ifile->ist_index + i];
+                    score = ist->st->codecpar->channels
+                            + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
+                            + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
+                    if (ist->user_set_discard == AVDISCARD_ALL)
+                        continue;
+                    if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                        score > file_best_score) {
+                        file_best_score = score;
+                        file_best_idx = ifile->ist_index + i;
+                    }
                 }
+                if (file_best_idx >= 0) {
+                    file_best_score -= 5000000*!!(input_streams[file_best_idx]->st->disposition & AV_DISPOSITION_DEFAULT);
+                    if (file_best_score > best_score) {
+                        best_score = file_best_score;
+                        idx = file_best_idx;
+                    }
+               }
             }
             if (idx >= 0)
                 new_audio_stream(o, oc, idx);
