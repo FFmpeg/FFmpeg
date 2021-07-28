@@ -311,7 +311,8 @@ static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q,
                              mfxVideoParam *param)
 {
     int ret;
-
+    mfxExtVideoSignalInfo video_signal_info = { 0 };
+    mfxExtBuffer *header_ext_params[1] = { (mfxExtBuffer *)&video_signal_info };
     mfxBitstream bs = { 0 };
 
     if (avpkt->size) {
@@ -336,6 +337,12 @@ static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q,
         return ret;
 
     param->mfx.CodecId = ret;
+    video_signal_info.Header.BufferId = MFX_EXTBUFF_VIDEO_SIGNAL_INFO;
+    video_signal_info.Header.BufferSz = sizeof(video_signal_info);
+    // The SDK doesn't support other ext buffers when calling MFXVideoDECODE_DecodeHeader,
+    // so do not append this buffer to the existent buffer array
+    param->ExtParam    = header_ext_params;
+    param->NumExtParam = 1;
     ret = MFXVideoDECODE_DecodeHeader(q->session, &bs, param);
     if (MFX_ERR_MORE_DATA == ret) {
        return AVERROR(EAGAIN);
@@ -343,6 +350,17 @@ static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q,
     if (ret < 0)
         return ff_qsv_print_error(avctx, ret,
                 "Error decoding stream header");
+
+    avctx->color_range = video_signal_info.VideoFullRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+    if (video_signal_info.ColourDescriptionPresent) {
+        avctx->color_primaries = video_signal_info.ColourPrimaries;
+        avctx->color_trc = video_signal_info.TransferCharacteristics;
+        avctx->colorspace = video_signal_info.MatrixCoefficients;
+    }
+
+    param->ExtParam    = q->ext_buffers;
+    param->NumExtParam = q->nb_ext_buffers;
 
     return 0;
 }
