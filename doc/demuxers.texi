@@ -96,8 +96,7 @@ backslash or single quotes.
 All subsequent file-related directives apply to that file.
 
 @item @code{ffconcat version 1.0}
-Identify the script type and version. It also sets the @option{safe} option
-to 1 if it was -1.
+Identify the script type and version.
 
 To make FFmpeg recognize the format automatically, this directive must
 appear exactly as is (no extra space or byte-order-mark) on the very first
@@ -177,7 +176,8 @@ This demuxer accepts the following option:
 @table @option
 
 @item safe
-If set to 1, reject unsafe file paths. A file path is considered safe if it
+If set to 1, reject unsafe file paths and directives.
+A file path is considered safe if it
 does not contain a protocol specification and is relative and all components
 only contain characters from the portable character set (letters, digits,
 period, underscore and hyphen) and have no period at the beginning of a
@@ -186,9 +186,6 @@ component.
 If set to 0, any file name is accepted.
 
 The default is 1.
-
--1 is equivalent to 1 if the format was automatically
-probed and 0 otherwise.
 
 @item auto_convert
 If set to 1, try to perform automatic conversions on packet data to make the
