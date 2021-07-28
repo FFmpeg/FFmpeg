@@ -37,7 +37,8 @@ normally contains a directory named B<VIDEO_TS>. It must not be encrypted
 with CSS.
 
 I<file.concat> is the output file. It can be used as an input to ffmpeg.
-It will require the B<-safe 0> option.
+It will require the B<-safe 0> and
+B<-protocol_whitelist file,subfile,concat> options.
 
 =cut
 
