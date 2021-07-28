@@ -117,10 +117,12 @@ for my $cell (@{$track->{cell}}) {
   my $file = @files == 1 ? $files[0] : "concat:" . join("|", @files);
   my $start = $off << 11;
   my $end = ($off + $size) << 11;
-  $file = "subfile,,start,${start},end,${end},,:$file";
 
   my $dur = int(1000 * $cell->{length});
-  $concat .= sprintf "\nfile '%s'\nduration %02d:%02d:%02d.%03d\n", $file,
+  $concat .= "\nfile 'subfile:$file'\n";
+  $concat .= "option start $start\n";
+  $concat .= "option end   $end\n";
+  $concat .= sprintf "duration %02d:%02d:%02d.%03d\n",
     int($dur / 3600000), int($dur / 60000) % 60, int($dur / 1000) % 60,
     $dur % 1000;
 }
