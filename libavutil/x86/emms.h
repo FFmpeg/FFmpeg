@@ -21,11 +21,14 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
 
 void avpriv_emms_asm(void);
 
 #if HAVE_MMX_INLINE
+#ifndef __MMX__
+#include "libavutil/cpu.h"
+#endif
+
 #   define emms_c emms_c
 /**
  * Empty mmx state.
