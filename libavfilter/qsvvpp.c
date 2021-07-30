@@ -807,8 +807,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
         filter_ret = s->filter_frame(outlink, tmp->frame);
         if (filter_ret < 0) {
             av_frame_free(&tmp->frame);
-            ret = filter_ret;
-            break;
+            return filter_ret;
         }
         tmp->queued--;
         s->got_frame = 1;
@@ -842,7 +841,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
         if (ret < 0 && ret != MFX_ERR_MORE_SURFACE) {
             /* Ignore more_data error */
             if (ret == MFX_ERR_MORE_DATA)
-                ret = AVERROR(EAGAIN);
+                return AVERROR(EAGAIN);
             break;
         }
         out_frame->frame->pts = av_rescale_q(out_frame->surface.Data.TimeStamp,
@@ -864,8 +863,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
             filter_ret = s->filter_frame(outlink, tmp->frame);
             if (filter_ret < 0) {
                 av_frame_free(&tmp->frame);
-                ret = filter_ret;
-                break;
+                return filter_ret;
             }
 
             tmp->queued--;
@@ -874,5 +872,10 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
         }
     } while(ret == MFX_ERR_MORE_SURFACE);
 
-    return ret;
+    if (ret < 0)
+        return ff_qsvvpp_print_error(ctx, ret, "Error running VPP");
+    else if (ret > 0)
+        ff_qsvvpp_print_warning(ctx, ret, "Warning in running VPP");
+
+    return 0;
 }
