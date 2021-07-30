@@ -1121,7 +1121,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             ret = AVERROR_INVALIDDATA;
             goto err;
         }
-        if (!v->field_mode)
+        if (   !v->field_mode
+            && avctx->codec_id != AV_CODEC_ID_WMV3IMAGE
+            && avctx->codec_id != AV_CODEC_ID_VC1IMAGE)
             ff_er_frame_end(&s->er);
     }
 
