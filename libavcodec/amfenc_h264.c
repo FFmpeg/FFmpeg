@@ -116,14 +116,15 @@ static const AVOption options[] = {
 
     // engine
     { "engine",         "Specifiy engine type (Vulkan, DX11, DX9 default:auto)",  OFFSET(engine), AV_OPT_TYPE_INT,{ .i64 = AMF_MEMORY_UNKNOWN }, AMF_MEMORY_VULKAN, AMF_MEMORY_DX11, AMF_MEMORY_DX9, VE, "engine" },
+    { "auto",         "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_UNKNOWN }, 0, 0, VE, "engine" },
     { "vulkan",         "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_VULKAN }, 0, 0, VE, "engine" },
     { "dx11",           "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_DX11 }, 0, 0, VE, "engine" },
     { "dx9",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_DX9 }, 0, 0, VE, "engine" },
 
     // ColorBitDepth
     { "bit_depth",      "Set the ColorBitDepth (8, 10 default:8)",  OFFSET(bit_depth), AV_OPT_TYPE_INT,{ .i64 = AMF_COLOR_BIT_DEPTH_8 }, AMF_COLOR_BIT_DEPTH_8, AMF_COLOR_BIT_DEPTH_10, VE, "bit_depth" },
-    { "8",              "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_8 }, 0, 0, VE, "engine" },
-    { "10",             "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_10 }, 0, 0, VE, "engine" },
+    { "8",              "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_8 }, 0, 0, VE, "bit_depth" },
+    { "10",             "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_10 }, 0, 0, VE, "bit_depth" },
 
     { "me_half_pel",    "Enable ME Half Pixel",                 OFFSET(me_half_pel),   AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "me_quarter_pel", "Enable ME Quarter Pixel",              OFFSET(me_quarter_pel),AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },

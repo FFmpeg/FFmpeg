@@ -54,7 +54,6 @@ const enum AVPixelFormat ff_amf_pix_fmts[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_BGR0,
     AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_YUV420P10LE,
     AV_PIX_FMT_P010,
 #if CONFIG_D3D11VA
     AV_PIX_FMT_D3D11,

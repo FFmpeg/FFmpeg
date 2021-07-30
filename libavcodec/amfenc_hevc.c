@@ -70,12 +70,13 @@ static const AVOption options[] = {
     { "idr",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_IDR_ALIGNED }, 0, 0, VE, "hdrmode" },
 
     { "engine",         "Specifiy engine type (DX11, DX9 default:auto)",  OFFSET(engine), AV_OPT_TYPE_INT,{ .i64 = AMF_MEMORY_UNKNOWN }, AMF_MEMORY_DX11, AMF_MEMORY_DX9, VE, "engine" },
+    { "auto",           "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_UNKNOWN }, 0, 0, VE, "engine" },
     { "dx11",           "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_DX11 }, 0, 0, VE, "engine" },
     { "dx9",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_DX9 }, 0, 0, VE, "engine" },
 
     { "bit_depth",      "Set the ColorBitDepth (8, 10 default:8)",  OFFSET(bit_depth), AV_OPT_TYPE_INT,{ .i64 = AMF_COLOR_BIT_DEPTH_8 }, AMF_COLOR_BIT_DEPTH_8, AMF_COLOR_BIT_DEPTH_10, VE, "bit_depth" },
-    { "8",              "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_8 }, 0, 0, VE, "engine" },
-    { "10",             "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_10 }, 0, 0, VE, "engine" },
+    { "8",              "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_8 }, 0, 0, VE, "bit_depth" },
+    { "10",             "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_10 }, 0, 0, VE, "bit_depth" },
 
     { "gops_per_idr",    "GOPs per IDR 0-no IDR will be inserted",  OFFSET(gops_per_idr),  AV_OPT_TYPE_INT,  { .i64 = 1  },  0, INT_MAX, VE },
     { "preanalysis",    "Enable preanalysis",                       OFFSET(preanalysis),   AV_OPT_TYPE_BOOL, { .i64 = 0  },  0, 1, VE},
