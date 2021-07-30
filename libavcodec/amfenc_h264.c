@@ -114,6 +114,17 @@ static const AVOption options[] = {
     { "cavlc",          "Context Adaptive Variable-Length Coding", 0,                  AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_CALV },      0, 0, VE, "coder" },
     { "cabac",          "Context Adaptive Binary Arithmetic Coding", 0,                AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_CABAC },     0, 0, VE, "coder" },
 
+    // engine
+    { "engine",         "Specifiy engine type (Vulkan, DX11, DX9 default:auto)",  OFFSET(engine), AV_OPT_TYPE_INT,{ .i64 = AMF_MEMORY_UNKNOWN }, AMF_MEMORY_VULKAN, AMF_MEMORY_DX11, AMF_MEMORY_DX9, VE, "engine" },
+    { "vulkan",         "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_VULKAN }, 0, 0, VE, "engine" },
+    { "dx11",           "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_DX11 }, 0, 0, VE, "engine" },
+    { "dx9",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_MEMORY_DX9 }, 0, 0, VE, "engine" },
+
+    // ColorBitDepth
+    { "bit_depth",      "Set the ColorBitDepth (8, 10 default:8)",  OFFSET(bit_depth), AV_OPT_TYPE_INT,{ .i64 = AMF_COLOR_BIT_DEPTH_8 }, AMF_COLOR_BIT_DEPTH_8, AMF_COLOR_BIT_DEPTH_10, VE, "bit_depth" },
+    { "8",              "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_8 }, 0, 0, VE, "engine" },
+    { "10",             "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_BIT_DEPTH_10 }, 0, 0, VE, "engine" },
+
     { "me_half_pel",    "Enable ME Half Pixel",                 OFFSET(me_half_pel),   AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "me_quarter_pel", "Enable ME Quarter Pixel",              OFFSET(me_quarter_pel),AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
 
@@ -193,6 +204,12 @@ static av_cold int amf_encode_init_h264(AVCodecContext *avctx)
         AMFRatio ratio = AMFConstructRatio(avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
         AMF_ASSIGN_PROPERTY_RATIO(res, ctx->encoder, AMF_VIDEO_ENCODER_ASPECT_RATIO, ratio);
     }
+
+    // Control component creation
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_MEMORY_TYPE, ctx->engine);
+
+    // Color conversion
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_COLOR_BIT_DEPTH, ctx->bit_depth);
 
     /// Color Range (Partial/TV/MPEG or Full/PC/JPEG)
     if (avctx->color_range == AVCOL_RANGE_JPEG) {

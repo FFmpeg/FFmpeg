@@ -106,6 +106,8 @@ typedef struct AmfContext {
     int                 me_half_pel;
     int                 me_quarter_pel;
     int                 aud;
+    int                 engine;
+    int                 bit_depth;
 
     // HEVC - specific options
 

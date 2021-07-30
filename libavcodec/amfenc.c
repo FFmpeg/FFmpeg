@@ -54,6 +54,8 @@ const enum AVPixelFormat ff_amf_pix_fmts[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_BGR0,
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV420P10LE,
+    AV_PIX_FMT_P010,
 #if CONFIG_D3D11VA
     AV_PIX_FMT_D3D11,
 #endif
@@ -78,6 +80,7 @@ static const FormatMap format_map[] =
     { AV_PIX_FMT_YUV420P,    AMF_SURFACE_YUV420P },
     { AV_PIX_FMT_YUYV422,    AMF_SURFACE_YUY2 },
     { AV_PIX_FMT_P010,       AMF_SURFACE_P010 },
+    { AV_PIX_FMT_YUV420P10LE, AMF_SURFACE_P010 },
     { AV_PIX_FMT_RGB0,       AMF_SURFACE_RGBA_F16 },
     { AV_PIX_FMT_UYVY422,    AMF_SURFACE_UYVY },
     { AV_PIX_FMT_Y210,       AMF_SURFACE_Y210 },
