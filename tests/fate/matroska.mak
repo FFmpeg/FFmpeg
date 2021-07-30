@@ -88,7 +88,7 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MXF_DEMUXER        \
                                             MATROSKA_MUXER MATROSKA_DEMUXER  \
                                             FRAMECRC_MUXER PIPE_PROTOCOL)    \
                                += fate-matroska-mastering-display-metadata
-fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=amount=-1:dropamount=-4" "-map 0 -c copy" "" "-show_entries stream_side_data_list:stream=index,codec_name"
+fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=amount=-1:drop=-4" "-map 0 -c copy" "" "-show_entries stream_side_data_list:stream=index,codec_name"
 
 # This test tests remuxing annex B H.264 into Matroska. It also tests writing
 # the correct interlaced flags and overriding the sample aspect ratio, leading

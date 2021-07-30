@@ -538,11 +538,16 @@ Accepts an expression whose evaluation per-packet determines how often bytes in 
 packet will be modified. A value below 0 will result in a variable frequency.
 Default is 0 which results in no modification. However, if neither amount nor drop is specified,
 amount will be set to @var{-1}. See below for accepted variables.
-@item drop, dropamount
+@item drop
 Accepts an expression evaluated per-packet whose value determines whether that packet is dropped.
 Evaluation to a positive value results in the packet being dropped. Evaluation to a negative
 value results in a variable chance of it being dropped, roughly inverse in proportion to the magnitude
 of the value. Default is 0 which results in no drops. See below for accepted variables.
+@item dropamount
+Accepts a non-negative integer, which assigns a variable chance of it being dropped, roughly inverse
+in proportion to the value. Default is 0 which results in no drops. This option is kept for backwards
+compatibility and is equivalent to setting drop to a negative value with the same magnitude
+i.e. @code{dropamount=4} is the same as @code{drop=-4}. Ignored if drop is also specified.
 @end table
 
 Both @code{amount} and @code{drop} accept expressions containing the following variables:

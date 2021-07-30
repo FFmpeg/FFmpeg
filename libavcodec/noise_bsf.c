@@ -65,6 +65,7 @@ typedef struct NoiseContext {
 
     char *amount_str;
     char *drop_str;
+    int dropamount;
 
     AVExpr *amount_pexpr;
     AVExpr *drop_pexpr;
@@ -81,7 +82,7 @@ static int noise_init(AVBSFContext *ctx)
     int ret;
 
     if (!s->amount_str) {
-        s->amount_str = !s->drop_str ? av_strdup("-1") : av_strdup("0");
+        s->amount_str = (!s->drop_str && !s->dropamount) ? av_strdup("-1") : av_strdup("0");
         if (!s->amount_str)
             return AVERROR(ENOMEM);
     }
@@ -91,6 +92,12 @@ static int noise_init(AVBSFContext *ctx)
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error in parsing expr for amount: %s\n", s->amount_str);
         return ret;
+    }
+
+    if (s->drop_str && s->dropamount) {
+        av_log(ctx, AV_LOG_WARNING, "Both drop '%s' and dropamount=%d set. Ignoring dropamount.\n",
+               s->drop_str, s->dropamount);
+        s->dropamount = 0;
     }
 
     if (s->drop_str) {
@@ -114,7 +121,7 @@ static int noise_init(AVBSFContext *ctx)
 static int noise(AVBSFContext *ctx, AVPacket *pkt)
 {
     NoiseContext *s = ctx->priv_data;
-    int i, ret, amount, drop;
+    int i, ret, amount, drop = 0;
     double res;
 
     ret = ff_bsf_get_packet_ref(ctx, pkt);
@@ -156,10 +163,14 @@ static int noise(AVBSFContext *ctx, AVPacket *pkt)
             drop = !!res;
     }
 
+    if(s->dropamount) {
+        drop = !(s->state % s->dropamount);
+    }
+
     av_log(ctx, AV_LOG_VERBOSE, "Stream #%d packet %d pts %"PRId64" - amount %d drop %d\n",
            pkt->stream_index, (unsigned int)s->var_values[VAR_N], pkt->pts, amount, drop);
 
-    if (s->drop_str && drop) {
+    if (drop) {
         s->var_values[VAR_STATE] = ++s->state;
         av_packet_unref(pkt);
         return AVERROR(EAGAIN);
@@ -198,7 +209,7 @@ static void noise_close(AVBSFContext *bsf)
 static const AVOption options[] = {
     { "amount",     NULL, OFFSET(amount_str),     AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { "drop",       NULL, OFFSET(drop_str),       AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
-    { "dropamount", NULL, OFFSET(drop_str),       AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
+    { "dropamount", NULL, OFFSET(dropamount),     AV_OPT_TYPE_INT,    { .i64 = 0    }, 0, INT_MAX, FLAGS },
     { NULL },
 };
 
