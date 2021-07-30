@@ -87,7 +87,7 @@ static void sbr_neg_odd_64_c(int *x)
 {
     int i;
     for (i = 1; i < 64; i += 2)
-        x[i] = -x[i];
+        x[i] = -(unsigned)x[i];
 }
 
 static void sbr_qmf_pre_shuffle_c(int *z)
