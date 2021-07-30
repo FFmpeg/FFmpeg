@@ -21,7 +21,7 @@
 #include <float.h>
 #include <math.h>
 
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -49,12 +49,13 @@ typedef struct ShowFreqsContext {
     int data_mode;
     int cmode;
     int fft_size;
-    int fft_bits;
     int ascale, fscale;
     int avg;
     int win_func;
-    FFTContext *fft;
-    FFTComplex **fft_data;
+    AVTXContext *fft;
+    av_tx_fn tx_fn;
+    AVComplexFloat **fft_input;
+    AVComplexFloat **fft_data;
     float **avg_data;
     float *window_func_lut;
     float overlap;
@@ -171,32 +172,36 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowFreqsContext *s = ctx->priv;
-    float overlap;
-    int i;
+    float overlap, scale;
+    int i, ret;
 
-    s->fft_bits = av_log2(s->fft_size);
-    s->nb_freq = 1 << (s->fft_bits - 1);
-    s->win_size = s->nb_freq << 1;
+    s->nb_freq = s->fft_size / 2;
+    s->win_size = s->fft_size;
     av_audio_fifo_free(s->fifo);
-    av_fft_end(s->fft);
-    s->fft = av_fft_init(s->fft_bits, 0);
-    if (!s->fft) {
+    av_tx_uninit(&s->fft);
+    ret = av_tx_init(&s->fft, &s->tx_fn, AV_TX_FLOAT_FFT, 0, s->fft_size, &scale, 0);
+    if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to create FFT context. "
                "The window size might be too high.\n");
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
     /* FFT buffers: x2 for each (display) channel buffer.
      * Note: we use free and malloc instead of a realloc-like function to
      * make sure the buffer is aligned in memory for the FFT functions. */
     for (i = 0; i < s->nb_channels; i++) {
+        av_freep(&s->fft_input[i]);
         av_freep(&s->fft_data[i]);
         av_freep(&s->avg_data[i]);
     }
+    av_freep(&s->fft_input);
     av_freep(&s->fft_data);
     av_freep(&s->avg_data);
     s->nb_channels = inlink->channels;
 
+    s->fft_input = av_calloc(s->nb_channels, sizeof(*s->fft_input));
+    if (!s->fft_input)
+        return AVERROR(ENOMEM);
     s->fft_data = av_calloc(s->nb_channels, sizeof(*s->fft_data));
     if (!s->fft_data)
         return AVERROR(ENOMEM);
@@ -204,9 +209,10 @@ static int config_output(AVFilterLink *outlink)
     if (!s->avg_data)
         return AVERROR(ENOMEM);
     for (i = 0; i < s->nb_channels; i++) {
-        s->fft_data[i] = av_calloc(s->win_size, sizeof(**s->fft_data));
+        s->fft_input[i] = av_calloc(FFALIGN(s->win_size, 512), sizeof(**s->fft_input));
+        s->fft_data[i] = av_calloc(FFALIGN(s->win_size, 512), sizeof(**s->fft_data));
         s->avg_data[i] = av_calloc(s->nb_freq, sizeof(**s->avg_data));
-        if (!s->fft_data[i] || !s->avg_data[i])
+        if (!s->fft_data[i] || !s->avg_data[i] || !s->fft_input[i])
             return AVERROR(ENOMEM);
     }
 
@@ -385,19 +391,18 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
         const float *p = (float *)in->extended_data[ch];
 
         for (n = 0; n < in->nb_samples; n++) {
-            s->fft_data[ch][n].re = p[n] * s->window_func_lut[n];
-            s->fft_data[ch][n].im = 0;
+            s->fft_input[ch][n].re = p[n] * s->window_func_lut[n];
+            s->fft_input[ch][n].im = 0;
         }
         for (; n < win_size; n++) {
-            s->fft_data[ch][n].re = 0;
-            s->fft_data[ch][n].im = 0;
+            s->fft_input[ch][n].re = 0;
+            s->fft_input[ch][n].im = 0;
         }
     }
 
     /* run FFT on each samples set */
     for (ch = 0; ch < s->nb_channels; ch++) {
-        av_fft_permute(s->fft, s->fft_data[ch]);
-        av_fft_calc(s->fft, s->fft_data[ch]);
+        s->tx_fn(s->fft, s->fft_data[ch], s->fft_input[ch], sizeof(float));
     }
 
 #define RE(x, ch) s->fft_data[ch][x].re
@@ -526,13 +531,16 @@ static av_cold void uninit(AVFilterContext *ctx)
     ShowFreqsContext *s = ctx->priv;
     int i;
 
-    av_fft_end(s->fft);
+    av_tx_uninit(&s->fft);
     for (i = 0; i < s->nb_channels; i++) {
+        if (s->fft_input)
+            av_freep(&s->fft_input[i]);
         if (s->fft_data)
             av_freep(&s->fft_data[i]);
         if (s->avg_data)
             av_freep(&s->avg_data[i]);
     }
+    av_freep(&s->fft_input);
     av_freep(&s->fft_data);
     av_freep(&s->avg_data);
     av_freep(&s->window_func_lut);
