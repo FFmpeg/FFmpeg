@@ -705,9 +705,6 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 
         surface->pVtbl->SetPts(surface, frame->pts);
         AMF_ASSIGN_PROPERTY_INT64(res, surface, PTS_PROP, frame->pts);
-        if(AMF_VIDEO_CONVERTER_INPUT_HDR_METADATA) {
-            AMF_ASSIGN_PROPERTY_AMFBuffer(res, surface, AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, AMF_VIDEO_CONVERTER_INPUT_HDR_METADATA);
-        }
 
         switch (avctx->codec->id) {
         case AV_CODEC_ID_H264:
