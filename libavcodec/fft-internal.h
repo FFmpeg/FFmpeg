@@ -36,8 +36,6 @@
 
 #else /* FFT_FLOAT */
 
-#define SCALE_FLOAT(a, bits) lrint((a) * (double)(1 << (bits)))
-
 #if FFT_FIXED_32
 
 #define CMUL(dre, dim, are, aim, bre, bim) do {             \
@@ -49,8 +47,6 @@
         (accu) += (int64_t)(bim) * (are);                 \
         (dim)   = (int)(((accu) + 0x40000000) >> 31);       \
     } while (0)
-
-#define FIX15(a) av_clip(SCALE_FLOAT(a, 31), -2147483647, 2147483647)
 
 #endif /* FFT_FIXED_32 */
 
