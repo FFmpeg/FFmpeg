@@ -23,6 +23,7 @@
 #include <math.h>
 
 #include "display.h"
+#include "libm.h"
 #include "mathematics.h"
 
 // fixed point to double
