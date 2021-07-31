@@ -1181,7 +1181,6 @@ SLIBOBJS-$(HAVE_GNU_WINDRES)           += avcodecres.o
 
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
-                                          fft-internal.h                \
                                           tableprint.h                  \
                                           tableprint_vlc.h              \
                                           aaccoder_twoloop.h            \

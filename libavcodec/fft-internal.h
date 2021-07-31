@@ -19,6 +19,9 @@
 #ifndef AVCODEC_FFT_INTERNAL_H
 #define AVCODEC_FFT_INTERNAL_H
 
+#include "libavutil/mathematics.h"
+#include "fft.h"
+
 #if FFT_FLOAT
 
 #define FIX15(v) (v)
