@@ -35,11 +35,7 @@
 #if FFT_FLOAT
 #   define RSCALE(x, y) ((x) + (y))
 #else
-#if FFT_FIXED_32
 #   define RSCALE(x, y) ((int)((x) + (unsigned)(y) + 32) >> 6)
-#else /* FFT_FIXED_32 */
-#   define RSCALE(x, y) ((int)((x) + (unsigned)(y)) >> 1)
-#endif /* FFT_FIXED_32 */
 #endif
 
 /**
@@ -82,7 +78,7 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     scale = sqrt(fabs(scale));
     for(i=0;i<n4;i++) {
         alpha = 2 * M_PI * (i + theta) / n;
-#if FFT_FIXED_32
+#if !FFT_FLOAT
         s->tcos[i*tstep] = lrint(-cos(alpha) * 2147483648.0);
         s->tsin[i*tstep] = lrint(-sin(alpha) * 2147483648.0);
 #else

@@ -36,8 +36,6 @@
 
 #else /* FFT_FLOAT */
 
-#if FFT_FIXED_32
-
 #define CMUL(dre, dim, are, aim, bre, bim) do {             \
         int64_t accu;                                     \
         (accu)  = (int64_t)(bre) * (are);                 \
@@ -47,8 +45,6 @@
         (accu) += (int64_t)(bim) * (are);                 \
         (dim)   = (int)(((accu) + 0x40000000) >> 31);       \
     } while (0)
-
-#endif /* FFT_FIXED_32 */
 
 #endif /* FFT_FLOAT */
 

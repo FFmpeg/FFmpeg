@@ -28,7 +28,6 @@
 
 #define AC3ENC_FLOAT 0
 #define FFT_FLOAT 0
-#define FFT_FIXED_32 1
 #include "internal.h"
 #include "audiodsp.h"
 #include "ac3enc.h"

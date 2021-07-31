@@ -22,7 +22,6 @@
  */
 
 #define FFT_FLOAT 0
-#define FFT_FIXED_32 1
 
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"

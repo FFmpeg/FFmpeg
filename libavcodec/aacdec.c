@@ -33,7 +33,6 @@
  */
 
 #define FFT_FLOAT 1
-#define FFT_FIXED_32 0
 #define USE_FIXED 0
 
 #include "libavutil/float_dsp.h"
