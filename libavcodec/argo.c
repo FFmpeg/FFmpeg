@@ -684,6 +684,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
              return AVERROR_PATCHWELCOME;
     }
 
+    if (avctx->width % 2 || avctx->height % 2) {
+        avpriv_request_sample(s, "Odd dimensions\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->frame = av_frame_alloc();
     if (!s->frame)
         return AVERROR(ENOMEM);
