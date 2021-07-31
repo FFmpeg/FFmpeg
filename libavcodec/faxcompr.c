@@ -283,6 +283,8 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             for (k = 0; k < 2; k++) {
                 run = 0;
                 for (;;) {
+                    if (get_bits_left(gb) <= 0)
+                        return AVERROR_INVALIDDATA;
                     t = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
                     if (t == -1) {
                         av_log(avctx, AV_LOG_ERROR, "Incorrect code\n");
