@@ -19,7 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/common.h"
+#include <stdint.h>
+#include "libavutil/error.h"
+#include "bytestream.h"
 #include "vp56.h"
 
 const uint8_t ff_vp56_norm_shift[256]= {

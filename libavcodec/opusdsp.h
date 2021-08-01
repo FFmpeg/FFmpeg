@@ -19,8 +19,6 @@
 #ifndef AVCODEC_OPUSDSP_H
 #define AVCODEC_OPUSDSP_H
 
-#include "libavutil/common.h"
-
 #define CELT_EMPH_COEFF 0.8500061035f
 
 typedef struct OpusDSP {

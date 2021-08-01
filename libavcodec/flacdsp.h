@@ -20,7 +20,7 @@
 #define AVCODEC_FLACDSP_H
 
 #include <stdint.h>
-#include "libavutil/internal.h"
+
 #include "libavutil/samplefmt.h"
 
 typedef struct FLACDSPContext {

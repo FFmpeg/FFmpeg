@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 
 typedef struct MPADSPContext {
     void (*apply_window_float)(float *synth_buf, float *window,

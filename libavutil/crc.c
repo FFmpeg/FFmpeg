@@ -23,8 +23,8 @@
 #include "thread.h"
 #include "avassert.h"
 #include "bswap.h"
-#include "common.h"
 #include "crc.h"
+#include "error.h"
 
 #if CONFIG_HARDCODED_TABLES
 static const AVCRC av_crc_table[AV_CRC_MAX][257] = {

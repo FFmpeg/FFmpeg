@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <limits.h>
+#include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
 #include "xiph.h"
 

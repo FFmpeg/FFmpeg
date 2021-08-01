@@ -18,22 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <inttypes.h>
-#include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
+#include "libavutil/common.h"
 #include "libavutil/cpu.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "config.h"
-#include "rgb2rgb.h"
 #include "swscale_internal.h"
 #include "swscale.h"
 

@@ -37,10 +37,13 @@
 #include <malloc.h>
 #endif
 
-#include "avutil.h"
-#include "common.h"
+#include "attributes.h"
+#include "avassert.h"
 #include "dynarray.h"
+#include "error.h"
+#include "internal.h"
 #include "intreadwrite.h"
+#include "macros.h"
 #include "mem.h"
 
 #ifdef MALLOC_PREFIX
@@ -58,8 +61,6 @@ void *realloc(void *ptr, size_t size);
 void  free(void *ptr);
 
 #endif /* MALLOC_PREFIX */
-
-#include "mem_internal.h"
 
 #define ALIGN (HAVE_AVX512 ? 64 : (HAVE_AVX ? 32 : 16))
 

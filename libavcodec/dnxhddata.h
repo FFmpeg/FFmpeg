@@ -24,8 +24,9 @@
 
 #include <stdint.h>
 #include "avcodec.h"
-#include "libavutil/internal.h"
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/rational.h"
 
 /** Additional profile info flags */
 #define DNXHD_INTERLACED   (1<<0)

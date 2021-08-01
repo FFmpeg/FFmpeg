@@ -21,7 +21,8 @@
 #include <string.h>
 
 #include "avstring.h"
-#include "common.h"
+#include "frame.h"
+#include "macros.h"
 #include "mem.h"
 #include "stereo3d.h"
 

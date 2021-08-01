@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#include "libavutil/attributes.h"
 #include "opusdsp.h"
 
 static void postfilter_c(float *data, int period, float *gains, int len)

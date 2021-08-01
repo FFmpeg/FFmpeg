@@ -29,8 +29,8 @@
 
 #include <stdint.h>
 
-#include "libavutil/common.h"
 #include "libavutil/avassert.h"
+#include "libavutil/intmath.h"
 
 typedef struct RangeCoder {
     int low;

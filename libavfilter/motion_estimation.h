@@ -21,7 +21,7 @@
 #ifndef AVFILTER_MOTION_ESTIMATION_H
 #define AVFILTER_MOTION_ESTIMATION_H
 
-#include "libavutil/avutil.h"
+#include <stdint.h>
 
 #define AV_ME_METHOD_ESA        1
 #define AV_ME_METHOD_TSS        2

@@ -21,16 +21,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <float.h>
 
-#include "config.h"
-#include "common.h"
 #include "avstring.h"
-#include "bprint.h"
+#include "libm.h"
 
 typedef struct FFFILE {
     size_t buf_size;

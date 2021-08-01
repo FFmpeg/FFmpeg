@@ -23,9 +23,10 @@
 
 #include <string.h>
 
+#include "config.h"
 #include "attributes.h"
-#include "avutil.h"
 #include "bswap.h"
+#include "error.h"
 #include "sha.h"
 #include "intreadwrite.h"
 #include "mem.h"

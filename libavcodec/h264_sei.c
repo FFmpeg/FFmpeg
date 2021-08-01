@@ -28,9 +28,9 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include "libavutil/common.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "atsc_a53.h"
 #include "get_bits.h"

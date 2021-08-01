@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
 #include "libavutil/samplefmt.h"
 #include "flacdsp.h"
 #include "config.h"

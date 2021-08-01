@@ -62,7 +62,9 @@
  * Independent JPEG Group's LLM idct.
  */
 
-#include "libavutil/common.h"
+#include <stddef.h>
+#include <stdint.h>
+
 #include "libavutil/intreadwrite.h"
 
 #include "dct.h"

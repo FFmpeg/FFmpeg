@@ -21,10 +21,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <inttypes.h>
+#include <math.h>
 
 #define FRAC_BITS 14
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 #include "mathops.h"
 #include "lsp.h"
 #include "libavcodec/mips/lsp_mips.h"

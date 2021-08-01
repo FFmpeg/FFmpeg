@@ -28,8 +28,8 @@
  * @ingroup lavu_xtea
  */
 
-#include "avutil.h"
-#include "common.h"
+#include <string.h>
+#include "config.h"
 #include "intreadwrite.h"
 #include "mem.h"
 #include "xtea.h"

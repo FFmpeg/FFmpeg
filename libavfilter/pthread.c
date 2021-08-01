@@ -21,11 +21,11 @@
  * Libavfilter multithreading support
  */
 
-#include "config.h"
+#include <stddef.h>
 
-#include "libavutil/common.h"
+#include "libavutil/error.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
-#include "libavutil/thread.h"
 #include "libavutil/slicethread.h"
 
 #include "avfilter.h"

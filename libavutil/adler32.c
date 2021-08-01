@@ -32,8 +32,8 @@
 
 #include "config.h"
 #include "adler32.h"
-#include "common.h"
 #include "intreadwrite.h"
+#include "macros.h"
 
 #define BASE 65521L /* largest prime smaller than 65536 */
 

@@ -38,6 +38,8 @@
 #include "libavutil/opt.h"
 #include "libavutil/time_internal.h"
 
+#include "libavcodec/codec_desc.h"
+
 typedef struct AdaptationSet {
     char id[10];
     int *streams;

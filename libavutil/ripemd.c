@@ -22,10 +22,12 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "config.h"
 #include "attributes.h"
-#include "avutil.h"
 #include "bswap.h"
+#include "error.h"
 #include "intreadwrite.h"
+#include "macros.h"
 #include "ripemd.h"
 #include "mem.h"
 

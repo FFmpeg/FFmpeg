@@ -25,7 +25,8 @@
  * Discrete wavelet transform
  */
 
-#include "libavutil/common.h"
+#include "libavutil/error.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "jpeg2000dwt.h"
 

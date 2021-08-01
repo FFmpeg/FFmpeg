@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "motion_estimation.h"
 
 static const int8_t sqr1[8][2]  = {{ 0,-1}, { 0, 1}, {-1, 0}, { 1, 0}, {-1,-1}, {-1, 1}, { 1,-1}, { 1, 1}};

@@ -24,10 +24,10 @@
 #ifndef AVFILTER_VOLUME_H
 #define AVFILTER_VOLUME_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
 #include "libavutil/eval.h"
 #include "libavutil/float_dsp.h"
-#include "libavutil/opt.h"
+#include "libavutil/log.h"
 #include "libavutil/samplefmt.h"
 
 enum PrecisionType {

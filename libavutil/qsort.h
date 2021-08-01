@@ -21,7 +21,7 @@
 #ifndef AVUTIL_QSORT_H
 #define AVUTIL_QSORT_H
 
-#include "common.h"
+#include "macros.h"
 
 
 /**

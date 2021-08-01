@@ -17,7 +17,7 @@
  */
 
 #include <stdint.h>
-#include "libavutil/avutil.h"
+#include "libavutil/common.h"
 #include "mathops.h"
 
 #undef FUNC

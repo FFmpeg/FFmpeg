@@ -21,7 +21,8 @@
 #ifndef AVCODEC_DCADCT_H
 #define AVCODEC_DCADCT_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
+#include "libavutil/attributes.h"
 
 typedef struct DCADCTContext {
     void (*imdct_half[2])(int32_t *output, const int32_t *input);

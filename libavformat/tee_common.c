@@ -19,8 +19,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avutil.h"
-#include "libavutil/avstring.h"
+#include <string.h>
+
+#include "libavutil/log.h"
 #include "libavutil/opt.h"
 
 #include "tee_common.h"

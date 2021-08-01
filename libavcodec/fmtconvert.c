@@ -20,9 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "fmtconvert.h"
-#include "libavutil/common.h"
 
 static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src,
                                          float mul, int len)

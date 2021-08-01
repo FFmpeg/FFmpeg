@@ -16,12 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include "buffer.h"
-#include "common.h"
 #include "frame.h"
 #include "mem.h"
 #include "video_enc_params.h"

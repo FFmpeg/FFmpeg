@@ -24,7 +24,8 @@
  * Common code between the AC-3 encoder and decoder.
  */
 
-#include "libavutil/common.h"
+#include "libavutil/error.h"
+#include "libavutil/macros.h"
 
 #include "ac3.h"
 

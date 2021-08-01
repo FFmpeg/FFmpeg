@@ -24,9 +24,9 @@
  * Raw Video Codec
  */
 
+#include "libavutil/macros.h"
 #include "avcodec.h"
 #include "raw.h"
-#include "libavutil/common.h"
 
 static const PixelFormatTag raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */

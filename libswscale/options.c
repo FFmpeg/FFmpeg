@@ -18,9 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avutil.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
 #include "swscale.h"
 #include "swscale_internal.h"
 

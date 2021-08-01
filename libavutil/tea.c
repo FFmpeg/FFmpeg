@@ -22,9 +22,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avutil.h"
-#include "common.h"
+#include <string.h>
 #include "intreadwrite.h"
+#include "mem.h"
 #include "tea.h"
 
 typedef struct AVTEA {

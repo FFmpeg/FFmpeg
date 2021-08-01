@@ -22,7 +22,6 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
-#include "internal.h"
 #include "buffer.h"
 #include "thread.h"
 

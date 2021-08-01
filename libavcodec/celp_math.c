@@ -20,14 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <inttypes.h>
-#include <limits.h>
+#include <stdint.h>
 
+#include "config.h"
 #include "libavutil/avassert.h"
-#include "avcodec.h"
+#include "libavutil/intmath.h"
 #include "mathops.h"
 #include "celp_math.h"
-#include "libavutil/common.h"
 
 #ifdef G729_BITEXACT
 static const uint16_t exp2a[]=

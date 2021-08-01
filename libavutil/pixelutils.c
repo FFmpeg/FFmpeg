@@ -16,12 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+
 #include "config.h"
-#include "common.h"
 #include "pixelutils.h"
-#include "internal.h"
 
 #if CONFIG_PIXELUTILS
+#include <stdlib.h>
+#include <string.h>
+
+#include "attributes.h"
+#include "macros.h"
 
 #include "x86/pixelutils.h"
 
@@ -60,7 +65,8 @@ static const av_pixelutils_sad_fn sad_c[] = {
     block_sad_16x16_c,
     block_sad_32x32_c,
 };
-
+#else
+#include "log.h"
 #endif /* CONFIG_PIXELUTILS */
 
 av_pixelutils_sad_fn av_pixelutils_get_sad_fn(int w_bits, int h_bits, int aligned, void *log_ctx)

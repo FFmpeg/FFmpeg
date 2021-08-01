@@ -21,17 +21,11 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
-#include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 #include "config.h"
-#include "rgb2rgb.h"
-#include "swscale.h"
 #include "swscale_internal.h"
 
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))

@@ -27,11 +27,12 @@
 #include <float.h>
 #include <math.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/common.h"
+#include "libavutil/error.h"
 
 #include "mdct15.h"
 

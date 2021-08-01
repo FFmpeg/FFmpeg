@@ -19,8 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include "config.h"
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 #include "avformat.h"
 #include "internal.h"
 #include "metadata.h"

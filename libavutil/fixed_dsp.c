@@ -45,6 +45,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "common.h"
 #include "fixed_dsp.h"
 
 static void vector_fmul_add_c(int *dst, const int *src0, const int *src1, const int *src2, int len){

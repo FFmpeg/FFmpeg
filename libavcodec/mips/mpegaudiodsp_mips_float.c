@@ -55,6 +55,7 @@
 
 #include <string.h>
 
+#include "config.h"
 #include "libavutil/mips/asmdefs.h"
 #include "libavcodec/mpegaudiodsp.h"
 

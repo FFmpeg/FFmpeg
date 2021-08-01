@@ -16,6 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
+
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixelutils.c"
 
 #define W1 320

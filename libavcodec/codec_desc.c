@@ -19,10 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdlib.h>
 #include <string.h>
 
-#include "libavutil/common.h"
 #include "libavutil/internal.h"
+#include "libavutil/macros.h"
 
 #include "codec_id.h"
 #include "codec_desc.h"

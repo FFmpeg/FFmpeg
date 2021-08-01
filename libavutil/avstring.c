@@ -19,17 +19,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "config.h"
-#include "common.h"
 #include "mem.h"
 #include "avassert.h"
 #include "avstring.h"
 #include "bprint.h"
+#include "error.h"
+#include "macros.h"
+#include "version.h"
 
 int av_strstart(const char *str, const char *pfx, const char **ptr)
 {

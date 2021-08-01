@@ -24,13 +24,10 @@
  * Context Adaptive Binary Arithmetic Coder.
  */
 
-#include <string.h>
-
-#include "libavutil/common.h"
+#include "libavutil/error.h"
 #include "libavutil/mem_internal.h"
 
 #include "cabac.h"
-#include "cabac_functions.h"
 
 DECLARE_ASM_ALIGNED(1, const uint8_t, ff_h264_cabac_tables)[512 + 4*2*64 + 4*64 + 63] = {
     9,8,7,7,6,6,6,6,5,5,5,5,5,5,5,5,

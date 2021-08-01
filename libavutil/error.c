@@ -18,9 +18,12 @@
 
 #undef _GNU_SOURCE
 #define _XOPEN_SOURCE 600 /* XSI-compliant version of strerror_r */
-#include "avutil.h"
+#include <stdio.h>
+#include <string.h>
+#include "config.h"
 #include "avstring.h"
-#include "common.h"
+#include "error.h"
+#include "macros.h"
 
 struct error_entry {
     int num;

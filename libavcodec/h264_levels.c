@@ -17,7 +17,7 @@
  */
 
 #include <stddef.h>
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 #include "h264_levels.h"
 
 // H.264 table A-1.

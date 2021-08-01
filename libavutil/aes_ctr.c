@@ -19,10 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "common.h"
+#include <string.h>
+
 #include "aes_ctr.h"
 #include "aes.h"
 #include "aes_internal.h"
+#include "macros.h"
+#include "mem.h"
 #include "random_seed.h"
 
 #define AES_BLOCK_SIZE (16)

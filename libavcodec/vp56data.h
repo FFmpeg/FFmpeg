@@ -26,7 +26,7 @@
 #ifndef AVCODEC_VP56DATA_H
 #define AVCODEC_VP56DATA_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
 #include "vp56.h"
 
 extern const uint8_t ff_vp56_b2p[];

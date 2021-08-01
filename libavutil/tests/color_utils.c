@@ -18,7 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
 #include "libavutil/color_utils.c"
+#include "libavutil/macros.h"
 
 int main(int argc, char *argv[])
 {

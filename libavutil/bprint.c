@@ -18,15 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "avstring.h"
 #include "bprint.h"
-#include "common.h"
 #include "compat/va_copy.h"
 #include "error.h"
+#include "macros.h"
 #include "mem.h"
 
 #define av_bprint_room(buf) ((buf)->size - FFMIN((buf)->len, (buf)->size))

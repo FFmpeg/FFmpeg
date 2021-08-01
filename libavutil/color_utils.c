@@ -21,7 +21,6 @@
 #include <stddef.h>
 #include <math.h>
 
-#include "common.h"
 #include "libavutil/color_utils.h"
 #include "libavutil/pixfmt.h"
 

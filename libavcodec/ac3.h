@@ -78,6 +78,7 @@ typedef int                     INTFLOAT;
 typedef int16_t                 SHORTFLOAT;
 
 #else /* USE_FIXED */
+#include "libavutil/libm.h"
 
 #define FIXR(x)                 ((float)(x))
 #define FIXR12(x)               ((float)(x))

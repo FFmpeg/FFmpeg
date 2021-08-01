@@ -22,7 +22,6 @@
 #include "network.h"
 #include "tls.h"
 #include "url.h"
-#include "libavutil/avutil.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/time.h"

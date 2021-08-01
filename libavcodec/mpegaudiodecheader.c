@@ -24,7 +24,7 @@
  * MPEG Audio header decoder.
  */
 
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 
 #include "mpegaudio.h"
 #include "mpegaudiodata.h"

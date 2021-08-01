@@ -26,7 +26,6 @@
 #include "config.h"
 
 #include "libavutil/avassert.h"
-#include "libavutil/avutil.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
 #include "libavutil/intreadwrite.h"

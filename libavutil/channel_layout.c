@@ -24,12 +24,14 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "avstring.h"
-#include "avutil.h"
 #include "channel_layout.h"
 #include "bprint.h"
 #include "common.h"
+#include "error.h"
+#include "macros.h"
 
 struct channel_name {
     const char *name;

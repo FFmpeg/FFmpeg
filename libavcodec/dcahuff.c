@@ -23,7 +23,7 @@
 #include <stddef.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 
 #include "dcahuff.h"
 #include "put_bits.h"

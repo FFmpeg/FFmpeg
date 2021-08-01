@@ -16,10 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
+#include <inttypes.h>
 
 #include "libavutil/avstring.h"
-#include "libavutil/common.h"
+#include "libavutil/avutil.h"
 #include "libavutil/log.h"
 
 #include "bsf.h"

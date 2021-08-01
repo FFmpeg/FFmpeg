@@ -21,9 +21,11 @@
 #ifndef AVCODEC_DCADEC_H
 #define AVCODEC_DCADEC_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
+
 #include "libavutil/crc.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/log.h"
 
 #include "avcodec.h"
 #include "get_bits.h"

@@ -23,8 +23,8 @@
 #define AVFORMAT_MATROSKA_H
 
 #include "libavcodec/codec_id.h"
+#include "avformat.h"
 #include "metadata.h"
-#include "internal.h"
 
 /* EBML version supported */
 #define EBML_VERSION 1

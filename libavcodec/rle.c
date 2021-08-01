@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#include "libavutil/common.h"
+#include "libavutil/macros.h"
 
 #include "rle.h"
 

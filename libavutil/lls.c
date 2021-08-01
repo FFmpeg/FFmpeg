@@ -28,8 +28,8 @@
 #include <math.h>
 #include <string.h>
 
+#include "config.h"
 #include "attributes.h"
-#include "internal.h"
 #include "lls.h"
 
 static void update_lls(LLSModel *m, const double *var)

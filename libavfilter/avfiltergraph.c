@@ -25,11 +25,9 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 

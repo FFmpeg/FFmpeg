@@ -26,8 +26,11 @@
 
 #include <stdint.h>
 
+#include "libavutil/error.h"
+#include "libavutil/log.h"
+#include "libavutil/macros.h"
+#include "libavutil/mem.h"
 #include "libavutil/qsort.h"
-#include "libavutil/common.h"
 
 #include "huffman.h"
 #include "vlc.h"
