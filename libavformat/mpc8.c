@@ -177,7 +177,13 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     }
     seekd = get_bits(&gb, 4);
     for(i = 0; i < 2; i++){
-        pos = gb_get_v(&gb) + c->header_pos;
+        pos = gb_get_v(&gb);
+        if (av_sat_add64(pos, c->header_pos) != pos + (uint64_t)c->header_pos) {
+            av_free(buf);
+            return;
+        }
+
+        pos += c->header_pos;
         ppos[1 - i] = pos;
         av_add_index_entry(s->streams[0], pos, i, 0, 0, AVINDEX_KEYFRAME);
     }
