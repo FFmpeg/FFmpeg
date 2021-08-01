@@ -25,6 +25,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "framepool.h"
 #include "internal.h"
 
 #define BUFFER_ALIGN 0

@@ -41,6 +41,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
+#include "framepool.h"
 #include "internal.h"
 
 #include "libavutil/ffversion.h"

@@ -28,6 +28,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avfilter.h"
+#include "framepool.h"
 #include "internal.h"
 #include "video.h"
 
