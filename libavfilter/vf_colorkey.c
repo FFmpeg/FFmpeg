@@ -135,9 +135,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     ColorkeyContext *ctx = avctx->priv;
     int res;
 
-    if (res = av_frame_make_writable(frame))
-        return res;
-
     if (res = ff_filter_execute(avctx, ctx->do_slice, frame, NULL,
                                 FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
         return res;
@@ -180,6 +177,7 @@ static const AVFilterPad colorkey_inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .needs_writable = 1,
     },
     { NULL }
 };
