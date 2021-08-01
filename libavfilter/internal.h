@@ -28,7 +28,6 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "framequeue.h"
-#include "version.h"
 #include "video.h"
 
 typedef struct AVFilterCommand {

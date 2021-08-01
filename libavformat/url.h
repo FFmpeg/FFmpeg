@@ -25,7 +25,6 @@
 #define AVFORMAT_URL_H
 
 #include "avio.h"
-#include "libavformat/version.h"
 
 #include "libavutil/dict.h"
 #include "libavutil/log.h"

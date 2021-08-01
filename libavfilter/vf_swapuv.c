@@ -25,7 +25,6 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/version.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"

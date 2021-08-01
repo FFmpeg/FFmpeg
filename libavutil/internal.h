@@ -43,7 +43,6 @@
 #include "dict.h"
 #include "macros.h"
 #include "pixfmt.h"
-#include "version.h"
 
 #if ARCH_X86
 #   include "x86/emms.h"
