@@ -30,8 +30,6 @@
 #include "framequeue.h"
 #include "version.h"
 #include "video.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/internal.h"
 
 typedef struct AVFilterCommand {
     double time;                ///< time expressed in seconds

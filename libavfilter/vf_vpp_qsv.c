@@ -25,6 +25,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/mathematics.h"
 
