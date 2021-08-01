@@ -91,13 +91,6 @@
 #define FF_CODEC_TAGS_END -1
 
 
-#ifdef TRACE
-#   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
-#else
-#   define ff_tlog(ctx, ...) do { } while(0)
-#endif
-
-
 #define FF_DEFAULT_QUANT_BIAS 999999
 
 #define FF_QSCALE_TYPE_MPEG1 0
