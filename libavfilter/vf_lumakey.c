@@ -135,9 +135,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     LumakeyContext *s = ctx->priv;
     int ret;
 
-    if (ret = av_frame_make_writable(frame))
-        return ret;
-
     if (ret = ff_filter_execute(ctx, s->do_lumakey_slice, frame, NULL,
                                 FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
         return ret;
@@ -177,6 +174,7 @@ static const AVFilterPad lumakey_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
         .config_props = config_input,
+        .needs_writable = 1,
     },
     { NULL }
 };
