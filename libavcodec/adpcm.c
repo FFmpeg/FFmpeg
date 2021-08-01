@@ -546,6 +546,49 @@ int16_t ff_adpcm_ima_qt_expand_nibble(ADPCMChannelStatus *c, int nibble)
     return c->predictor;
 }
 
+static void decode_adpcm_ima_hvqm4(AVCodecContext *avctx, int16_t *outbuf, int samples_to_do,
+                                   int frame_format, GetByteContext *gb)
+{
+    ADPCMDecodeContext *c = avctx->priv_data;
+    int st = avctx->ch_layout.nb_channels == 2;
+    unsigned tmp;
+
+    for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
+        switch (frame_format) {
+        case 1: /* combined hist+index */
+            tmp = bytestream2_get_be16(gb);
+            c->status[ch].predictor  = sign_extend(tmp & 0xFF80, 16);
+            c->status[ch].step_index = tmp & 0x7f;
+            break;
+        case 2:  /* no hist/index (continues from previous frame) */
+        default:
+            break;
+        case 3: /* separate hist+index */
+            tmp = bytestream2_get_be16(gb);
+            c->status[ch].predictor  = sign_extend(tmp, 16);
+            c->status[ch].step_index = bytestream2_get_byte(gb);
+            break;
+        }
+
+        c->status[ch].step_index = av_clip(c->status[ch].step_index, 0, 88);
+    }
+
+    if (frame_format == 1 || frame_format == 3) {
+        for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
+            *outbuf++ = (int16_t)c->status[st - ch].predictor;
+        samples_to_do--;
+    }
+
+    for (int i = 0; i < samples_to_do; i++) {
+        uint8_t nibble = bytestream2_get_byte(gb);
+
+        *outbuf++ = ff_adpcm_ima_qt_expand_nibble(&c->status[st], nibble & 0xF);
+        *outbuf++ = ff_adpcm_ima_qt_expand_nibble(&c->status[ 0], nibble >>  4);
+    }
+
+    bytestream2_seek(gb, 0, SEEK_END);
+}
+
 static inline int16_t adpcm_ms_expand_nibble(ADPCMChannelStatus *c, int nibble)
 {
     int predictor;
@@ -1101,6 +1144,20 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         *coded_samples  = bytestream2_get_le32(gb);
         *coded_samples -= *coded_samples % 28;
         nb_samples      = (buf_size - 12) / (ch == 2 ? 30 : 15) * 28;
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_HVQM4:
+        {
+            int frame_format = bytestream2_get_be16(gb);
+            int skip = 6;
+
+            if (frame_format == 1)
+                skip += 2 * ch;
+            if (frame_format == 3)
+                skip += 3 * ch;
+
+            nb_samples = (buf_size - skip) * 2 / ch;
+            bytestream2_seek(gb, 0, SEEK_SET);
+        }
         break;
     case AV_CODEC_ID_ADPCM_IMA_EA_EACS:
         has_coded_samples = 1;
@@ -1687,6 +1744,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],  v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
+        ) /* End of CASE */
+    CASE(ADPCM_IMA_HVQM4,
+        int format = bytestream2_get_be16(&gb);
+
+        bytestream2_skip(&gb, 4);
+        decode_adpcm_ima_hvqm4(avctx, samples, nb_samples, format, &gb);
         ) /* End of CASE */
     CASE(ADPCM_IMA_SSI,
         for (int n = nb_samples >> (1 - st); n > 0; n--) {
@@ -2638,6 +2701,7 @@ ADPCM_DECODER(ADPCM_IMA_DK3,     sample_fmts_s16,  adpcm_ima_dk3,     "ADPCM IMA
 ADPCM_DECODER(ADPCM_IMA_DK4,     sample_fmts_s16,  adpcm_ima_dk4,     "ADPCM IMA Duck DK4")
 ADPCM_DECODER(ADPCM_IMA_EA_EACS, sample_fmts_s16,  adpcm_ima_ea_eacs, "ADPCM IMA Electronic Arts EACS")
 ADPCM_DECODER(ADPCM_IMA_EA_SEAD, sample_fmts_s16,  adpcm_ima_ea_sead, "ADPCM IMA Electronic Arts SEAD")
+ADPCM_DECODER(ADPCM_IMA_HVQM4,   sample_fmts_s16,  adpcm_ima_hvqm4,   "ADPCM IMA HVQM4")
 ADPCM_DECODER(ADPCM_IMA_ISS,     sample_fmts_s16,  adpcm_ima_iss,     "ADPCM IMA Funcom ISS")
 ADPCM_DECODER(ADPCM_IMA_MOFLEX,  sample_fmts_s16p, adpcm_ima_moflex,  "ADPCM IMA MobiClip MOFLEX")
 ADPCM_DECODER(ADPCM_IMA_MTF,     sample_fmts_s16,  adpcm_ima_mtf,     "ADPCM IMA Capcom's MT Framework")
