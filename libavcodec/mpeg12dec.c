@@ -1529,7 +1529,7 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
         load_matrix(s, s->chroma_inter_matrix, NULL, 0);
 }
 
-static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
+static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
@@ -1539,8 +1539,10 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->mpeg_f_code[1][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][1] = get_bits(&s->gb, 4);
     if (!s->pict_type && s1->mpeg_enc_ctx_allocated) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "Missing picture start code, guessing missing values\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Missing picture start code\n");
+        if (s->avctx->err_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+        av_log(s->avctx, AV_LOG_WARNING, "Guessing pict_type from mpeg_f_code\n");
         if (s->mpeg_f_code[1][0] == 15 && s->mpeg_f_code[1][1] == 15) {
             if (s->mpeg_f_code[0][0] == 15 && s->mpeg_f_code[0][1] == 15)
                 s->pict_type = AV_PICTURE_TYPE_I;
@@ -1586,6 +1588,8 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     ff_dlog(s->avctx, "alternate_scan=%d\n", s->alternate_scan);
     ff_dlog(s->avctx, "frame_pred_frame_dct=%d\n", s->frame_pred_frame_dct);
     ff_dlog(s->avctx, "progressive_frame=%d\n", s->progressive_frame);
+
+    return 0;
 }
 
 static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
@@ -2599,7 +2603,9 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 break;
             case 0x8:
                 if (last_code == PICTURE_START_CODE) {
-                    mpeg_decode_picture_coding_extension(s);
+                    int ret = mpeg_decode_picture_coding_extension(s);
+                    if (ret < 0)
+                       return ret;
                 } else {
                     av_log(avctx, AV_LOG_ERROR,
                            "ignoring pic cod ext after %X\n", last_code);
