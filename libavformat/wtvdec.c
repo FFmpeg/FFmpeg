@@ -665,6 +665,8 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         avio_skip(pb, size - 32);
         ff_get_guid(pb, &actual_subtype);
         ff_get_guid(pb, &actual_formattype);
+        if (avio_feof(pb))
+            return NULL;
         avio_seek(pb, -size, SEEK_CUR);
 
         st = parse_media_type(s, st, sid, mediatype, actual_subtype, actual_formattype, size - 32);
