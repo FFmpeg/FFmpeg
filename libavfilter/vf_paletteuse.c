@@ -1076,11 +1076,8 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->last_in  = av_frame_alloc();
     s->last_out = av_frame_alloc();
-    if (!s->last_in || !s->last_out) {
-        av_frame_free(&s->last_in);
-        av_frame_free(&s->last_out);
+    if (!s->last_in || !s->last_out)
         return AVERROR(ENOMEM);
-    }
 
     s->set_frame = set_frame_lut[s->color_search_method][s->dither];
 
