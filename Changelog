@@ -9,6 +9,7 @@ version <next>:
 - Argonaut Games CVG muxer
 - Concatf protocol
 - afwtdn audio filter
+- audio and video segment filters
 
 
 version 4.4:
