@@ -342,22 +342,6 @@ void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter
 int ff_filter_graph_run_once(AVFilterGraph *graph);
 
 /**
- * Normalize the qscale factor
- * FIXME the H264 qscale is a log based scale, mpeg1/2 is not, the code below
- *       cannot be optimal
- */
-static inline int ff_norm_qscale(int qscale, int type)
-{
-    switch (type) {
-    case FF_QSCALE_TYPE_MPEG1: return qscale;
-    case FF_QSCALE_TYPE_MPEG2: return qscale >> 1;
-    case FF_QSCALE_TYPE_H264:  return qscale >> 2;
-    case FF_QSCALE_TYPE_VP56:  return (63 - qscale + 2) >> 2;
-    }
-    return qscale;
-}
-
-/**
  * Get number of threads for current filter instance.
  * This number is always same or less than graph->nb_threads.
  */

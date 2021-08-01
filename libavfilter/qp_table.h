@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "libavutil/frame.h"
+#include "libavcodec/internal.h"
 
 /**
  * Extract a libpostproc-compatible QP table - an 8-bit QP value per 16x16
@@ -29,5 +30,21 @@
  */
 int ff_qp_table_extract(AVFrame *frame, int8_t **table, int *table_w, int *table_h,
                         int *qscale_type);
+
+/**
+ * Normalize the qscale factor
+ * FIXME the H264 qscale is a log based scale, mpeg1/2 is not, the code below
+ *       cannot be optimal
+ */
+static inline int ff_norm_qscale(int qscale, int type)
+{
+    switch (type) {
+    case FF_QSCALE_TYPE_MPEG1: return qscale;
+    case FF_QSCALE_TYPE_MPEG2: return qscale >> 1;
+    case FF_QSCALE_TYPE_H264:  return qscale >> 2;
+    case FF_QSCALE_TYPE_VP56:  return (63 - qscale + 2) >> 2;
+    }
+    return qscale;
+}
 
 #endif // AVFILTER_QP_TABLE_H
