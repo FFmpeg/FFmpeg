@@ -47,7 +47,7 @@ void av_init_packet(AVPacket *pkt)
     pkt->side_data_elems      = 0;
     pkt->opaque               = NULL;
     pkt->opaque_ref           = NULL;
-    pkt->time_base            = av_make_q(0, 0);
+    pkt->time_base            = av_make_q(0, 1);
 }
 #endif
 
@@ -58,6 +58,7 @@ static void get_packet_defaults(AVPacket *pkt)
     pkt->pts             = AV_NOPTS_VALUE;
     pkt->dts             = AV_NOPTS_VALUE;
     pkt->pos             = -1;
+    pkt->time_base       = av_make_q(0, 1);
 }
 
 AVPacket *av_packet_alloc(void)
