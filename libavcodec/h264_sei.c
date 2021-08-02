@@ -424,7 +424,7 @@ static int decode_film_grain_characteristics(H264SEIFilmGrainCharacteristics *h,
 
     if (h->present) {
         memset(h, 0, sizeof(*h));
-        h->model_id = get_bits(gb, 8);
+        h->model_id = get_bits(gb, 2);
         h->separate_colour_description_present_flag = get_bits1(gb);
         if (h->separate_colour_description_present_flag) {
             h->bit_depth_luma = get_bits(gb, 3) + 8;
