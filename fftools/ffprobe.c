@@ -2032,7 +2032,7 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("dv_bl_signal_compatibility_id", dovi->dv_bl_signal_compatibility_id);
         } else if (sd->type == AV_PKT_DATA_AUDIO_SERVICE_TYPE) {
             enum AVAudioServiceType *t = (enum AVAudioServiceType *)sd->data;
-            print_int("type", *t);
+            print_int("service_type", *t);
         } else if (sd->type == AV_PKT_DATA_MPEGTS_STREAM_ID) {
             print_int("id", *sd->data);
         } else if (sd->type == AV_PKT_DATA_CPB_PROPERTIES) {
