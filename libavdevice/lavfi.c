@@ -100,6 +100,7 @@ static int create_subcc_streams(AVFormatContext *avctx)
     LavfiContext *lavfi = avctx->priv_data;
     AVStream *st;
     int stream_idx, sink_idx;
+    AVRational *time_base;
 
     for (stream_idx = 0; stream_idx < lavfi->nb_sinks; stream_idx++) {
         sink_idx = lavfi->stream_sink_map[stream_idx];
@@ -109,6 +110,9 @@ static int create_subcc_streams(AVFormatContext *avctx)
                 return AVERROR(ENOMEM);
             st->codecpar->codec_id = AV_CODEC_ID_EIA_608;
             st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            time_base = &avctx->streams[stream_idx]->time_base;
+            st->time_base.num = time_base->num;
+            st->time_base.den = time_base->den;
         } else {
             lavfi->sink_stream_subcc_map[sink_idx] = -1;
         }
