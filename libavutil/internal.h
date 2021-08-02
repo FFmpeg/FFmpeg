@@ -86,10 +86,6 @@
 
 #define FF_MEMORY_POISON 0x2a
 
-#define MAKE_ACCESSORS(str, name, type, field) \
-    type av_##name##_get_##field(const str *s) { return s->field; } \
-    void av_##name##_set_##field(str *s, type v) { s->field = v; }
-
 /* Check if the hard coded offset of a struct member still matches reality.
  * Induce a compilation failure if not.
  */

@@ -69,6 +69,9 @@ AVVDPAUContext *av_alloc_vdpaucontext(void)
     return av_vdpau_alloc_context();
 }
 
+#define MAKE_ACCESSORS(str, name, type, field) \
+    type av_##name##_get_##field(const str *s) { return s->field; } \
+    void av_##name##_set_##field(str *s, type v) { s->field = v; }
 MAKE_ACCESSORS(AVVDPAUContext, vdpau_hwaccel, AVVDPAU_Render2, render2)
 
 int av_vdpau_get_surface_parameters(AVCodecContext *avctx,
