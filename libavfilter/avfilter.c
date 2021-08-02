@@ -25,8 +25,8 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
+#include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -1446,19 +1446,10 @@ int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
         return ret;
     }
 
-    switch (link->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        av_image_copy(out->data, out->linesize, (const uint8_t **)frame->data, frame->linesize,
-                      frame->format, frame->width, frame->height);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        av_samples_copy(out->extended_data, frame->extended_data,
-                        0, 0, frame->nb_samples,
-                        frame->channels,
-                        frame->format);
-        break;
-    default:
-        av_assert0(!"reached");
+    ret = av_frame_copy(out, frame);
+    if (ret < 0) {
+        av_frame_free(&out);
+        return ret;
     }
 
     av_frame_free(&frame);
