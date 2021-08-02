@@ -37,6 +37,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
@@ -2468,13 +2469,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                                        * st->time_base.num / st->time_base.den;
             vs->dpp = (double)(pkt->duration) * st->time_base.num / st->time_base.den;
         } else {
-            if (pkt->duration) {
-                vs->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
-            } else {
-                av_log(s, AV_LOG_WARNING, "Stream %d packet with pts %" PRId64 " has duration 0. The segment duration may not be precise.\n",
-                       pkt->stream_index, pkt->pts);
-                vs->duration = (double)(pkt->pts - vs->end_pts) * st->time_base.num / st->time_base.den;
-            }
+//            if (pkt->duration) {
+//                vs->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
+//            } else {
+//                av_log(s, AV_LOG_WARNING, "Stream %d packet with pts %" PRId64 " has duration 0. The segment duration may not be precise.\n",
+//                       pkt->stream_index, pkt->pts);
+            vs->duration = (double)(pkt->pts - vs->end_pts) * st->time_base.num / st->time_base.den;
+//            }
         }
     }
 
