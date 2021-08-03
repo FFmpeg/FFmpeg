@@ -112,6 +112,7 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 
 static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
 {
+    int ret;
     if (cid != ctx->cid) {
         const CIDEntry *cid_table = ff_dnxhd_get_cid_table(cid);
 
@@ -132,19 +133,26 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
         ff_free_vlc(&ctx->dc_vlc);
         ff_free_vlc(&ctx->run_vlc);
 
-        init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
+        if ((ret = init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
                  ctx->cid_table->ac_bits, 1, 1,
-                 ctx->cid_table->ac_codes, 2, 2, 0);
-        init_vlc(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, bitdepth > 8 ? 14 : 12,
+                 ctx->cid_table->ac_codes, 2, 2, 0)) < 0)
+            goto out;
+        if ((ret = init_vlc(&ctx->dc_vlc, DNXHD_DC_VLC_BITS, bitdepth > 8 ? 14 : 12,
                  ctx->cid_table->dc_bits, 1, 1,
-                 ctx->cid_table->dc_codes, 1, 1, 0);
-        init_vlc(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
+                 ctx->cid_table->dc_codes, 1, 1, 0)) < 0)
+            goto out;
+        if ((ret = init_vlc(&ctx->run_vlc, DNXHD_VLC_BITS, 62,
                  ctx->cid_table->run_bits, 1, 1,
-                 ctx->cid_table->run_codes, 2, 2, 0);
+                 ctx->cid_table->run_codes, 2, 2, 0)) < 0)
+            goto out;
 
         ctx->cid = cid;
     }
-    return 0;
+    ret = 0;
+out:
+    if (ret < 0)
+        av_log(ctx->avctx, AV_LOG_ERROR, "init_vlc failed\n");
+    return ret;
 }
 
 static int dnxhd_get_profile(int cid)
