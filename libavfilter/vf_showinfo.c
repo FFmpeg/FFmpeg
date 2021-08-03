@@ -29,6 +29,7 @@
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/film_grain_params.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -361,6 +362,73 @@ static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSi
     av_log(ctx, AV_LOG_INFO, "\n");
 }
 
+static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
+{
+    const AVFilmGrainParams *fgp = (const AVFilmGrainParams *)sd->data;
+    const char *const film_grain_type_names[] = {
+        [AV_FILM_GRAIN_PARAMS_NONE] = "none",
+        [AV_FILM_GRAIN_PARAMS_AV1]  = "av1",
+        [AV_FILM_GRAIN_PARAMS_H274] = "h274",
+    };
+
+    if (fgp->type >= FF_ARRAY_ELEMS(film_grain_type_names)) {
+        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        return;
+    }
+
+    av_log(ctx, AV_LOG_INFO, "film grain parameters: type %s; ", film_grain_type_names[fgp->type]);
+    av_log(ctx, AV_LOG_INFO, "seed=%"PRIu64"; ", fgp->seed);
+
+    switch (fgp->type) {
+    case AV_FILM_GRAIN_PARAMS_NONE:
+    case AV_FILM_GRAIN_PARAMS_AV1:
+        return;
+    case AV_FILM_GRAIN_PARAMS_H274: {
+        const AVFilmGrainH274Params *h274 = &fgp->codec.h274;
+        const char *color_range_str     = av_color_range_name(h274->color_range);
+        const char *color_primaries_str = av_color_primaries_name(h274->color_primaries);
+        const char *color_trc_str       = av_color_transfer_name(h274->color_trc);
+        const char *colorspace_str      = av_color_space_name(h274->color_space);
+
+        av_log(ctx, AV_LOG_INFO, "model_id=%d; ", h274->model_id);
+        av_log(ctx, AV_LOG_INFO, "bit_depth_luma=%d; ", h274->bit_depth_luma);
+        av_log(ctx, AV_LOG_INFO, "bit_depth_chroma=%d; ", h274->bit_depth_chroma);
+        av_log(ctx, AV_LOG_INFO, "color_range=%s; ", color_range_str ? color_range_str : "unknown");
+        av_log(ctx, AV_LOG_INFO, "color_primaries=%s; ", color_primaries_str ? color_primaries_str : "unknown");
+        av_log(ctx, AV_LOG_INFO, "color_trc=%s; ", color_trc_str ? color_trc_str : "unknown");
+        av_log(ctx, AV_LOG_INFO, "color_space=%s; ", colorspace_str ? colorspace_str : "unknown");
+        av_log(ctx, AV_LOG_INFO, "blending_mode_id=%d; ", h274->blending_mode_id);
+        av_log(ctx, AV_LOG_INFO, "log2_scale_factor=%d; ", h274->log2_scale_factor);
+
+        for (int c = 0; c < 3; c++)
+            if (h274->component_model_present[c] && (h274->num_model_values[c] > 6 ||
+                                                     h274->num_intensity_intervals[c] < 1 ||
+                                                     h274->num_intensity_intervals[c] > 256)) {
+                av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+                return;
+            }
+
+        for (int c = 0; c < 3; c++) {
+            if (!h274->component_model_present[c])
+                continue;
+
+            av_log(ctx, AV_LOG_INFO, "num_intensity_intervals[%d]=%u; ", c, h274->num_intensity_intervals[c]);
+            av_log(ctx, AV_LOG_INFO, "num_model_values[%d]=%u; ", c, h274->num_model_values[c]);
+            for (int i = 0; i < h274->num_intensity_intervals[c]; i++) {
+                av_log(ctx, AV_LOG_INFO, "intensity_interval_lower_bound[%d][%d]=%u; ",
+                                         c, i, h274->intensity_interval_lower_bound[c][i]);
+                av_log(ctx, AV_LOG_INFO, "intensity_interval_upper_bound[%d][%d]=%u; ",
+                                         c, i, h274->intensity_interval_upper_bound[c][i]);
+                for (int j = 0; j < h274->num_model_values[c]; j++)
+                    av_log(ctx, AV_LOG_INFO, "comp_model_value[%d][%d][%d]=%d; ",
+                                             c, i, j, h274->comp_model_value[c][i][j]);
+            }
+        }
+        break;
+    }
+    }
+}
+
 static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
 {
     const char *color_range_str     = av_color_range_name(frame->color_range);
@@ -545,6 +613,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_SEI_UNREGISTERED:
             dump_sei_unregistered_metadata(ctx, sd);
+            break;
+        case AV_FRAME_DATA_FILM_GRAIN_PARAMS:
+            dump_sei_film_grain_params_metadata(ctx, sd);
             break;
         default:
             av_log(ctx, AV_LOG_WARNING, "unknown side data type %d "
