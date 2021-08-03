@@ -70,6 +70,11 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_H264_LVL6
 #endif
 
+// SDK 11.1 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(11, 1)
+#define NVENC_HAVE_QP_CHROMA_OFFSETS
+#endif
+
 typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
@@ -213,6 +218,8 @@ typedef struct NvencContext
     int init_qp_b;
     int init_qp_i;
     int cqp;
+    int qp_cb_offset;
+    int qp_cr_offset;
     int weighted_pred;
     int coder;
     int b_ref_mode;
