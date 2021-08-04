@@ -50,9 +50,11 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
     GetBitContext gb;
     PutBitContext pb;
     MPEG4AudioConfig m4ac;
-    int off;
+    int off, ret;
 
-    init_get_bits(&gb, buf, size * 8);
+    ret = init_get_bits8(&gb, buf, size);
+    if (ret < 0)
+        return ret;
     off = avpriv_mpeg4audio_get_config(&m4ac, buf, size * 8, 1);
     if (off < 0)
         return off;
