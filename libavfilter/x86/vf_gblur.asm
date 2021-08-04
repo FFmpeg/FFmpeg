@@ -20,6 +20,14 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION .data
+
+gblur_transpose_16x16_indices1: dq 2, 3, 0, 1, 6, 7, 4, 5
+gblur_transpose_16x16_indices2: dq 1, 0, 3, 2, 5, 4, 7, 6
+gblur_transpose_16x16_indices3: dd 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14
+gblur_transpose_16x16_mask: dw 0xcc, 0x33, 0xaa, 0x55, 0xaaaa, 0x5555
+gblur_vindex_width: dd 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+
 SECTION .text
 
 %xdefine AVX2_MMSIZE   32
@@ -30,6 +38,29 @@ SECTION .text
         movsxdifnidn %1q, %1d
         %rotate 1
     %endrep
+%endmacro
+
+%macro KXNOR 2-*
+%if mmsize == AVX512_MMSIZE
+    kxnorw %2, %2, %2
+%else
+    %if %0 == 3
+        mov %3, -1
+    %else
+        vpcmpeqd %1, %1, %1
+    %endif
+%endif
+%endmacro
+
+%macro KMOVW 2-4
+%if mmsize == AVX2_MMSIZE && %0 == 4
+    mova %1, %2
+%elif mmsize == AVX512_MMSIZE
+    %if %0 == 4
+        %rotate 2
+    %endif
+    kmovw %1, %2
+%endif
 %endmacro
 
 %macro PUSH_MASK 5
@@ -59,15 +90,546 @@ SECTION .text
 %endif
 %endmacro
 
-; void ff_horiz_slice_sse4(float *ptr, int width, int height, int steps,
-;                          float nu, float bscale)
+%macro VGATHERDPS 4
+%if mmsize == AVX2_MMSIZE
+    vgatherdps %1, %2, %3
+%else
+    vgatherdps %1{%4}, %2
+%endif
+%endmacro
 
+%macro VSCATTERDPS128 7
+    %rep 4
+        mov %7, %6
+        and %7, 1
+        cmp %7, 0
+        je %%end_scatter
+        movss [%2 + %3*%4], xm%1
+        vpshufd m%1, m%1, 0x39
+        add %3, %5
+        sar %6, 1
+    %endrep
+    %%end_scatter:
+%endmacro
+
+; %1=register index
+; %2=base address   %3=vindex
+; %4=scale          %5=width
+; %6=mask           %7=tmp
+; m15=reserved
+%macro VSCATTERDPS256 7
+    mova m15, m%1
+    xor %3, %3
+    VSCATTERDPS128 15, %2, %3, %4, %5, %6, %7
+    vextractf128 xm15, m%1, 1
+    VSCATTERDPS128 15, %2, %3, %4, %5, %6, %7
+%endmacro
+
+; %1=base address  %2=avx2 vindex
+; %3=avx512 vindex %4=avx2 mask
+; %5=avx512 mask   %6=register index
+; %7=width         %8-*=tmp
+%macro VSCATTERDPS 8-*
+%if mmsize == AVX2_MMSIZE
+    %if %0 == 9
+        mov  %9, %4
+        VSCATTERDPS256 %6, %1, %2, 4, %7, %9, %8
+    %else
+        VSCATTERDPS256 %6, %1, %2, 4, %7, %4, %8
+    %endif
+%else
+    vscatterdps [%1 + %3*4]{%5}, m%6
+%endif
+%endmacro
+
+%macro INIT_WORD_MASK 1-*
+    %assign %%i 0
+    %rep %0
+        kmovw %1, [gblur_transpose_16x16_mask + %%i * 2]
+        %assign %%i %%i+1
+        %rotate 1
+    %endrep
+%endmacro
+
+%macro INIT_INDICES 1-*
+    %assign %%i 1
+    %rep %0
+        movu %1, [gblur_transpose_16x16_indices %+ %%i]
+        %assign %%i %%i+1
+        %rotate 1
+    %endrep
+%endmacro
+
+%assign stack_offset 0
+%macro PUSH_MM 1
+%if mmsize == AVX2_MMSIZE
+    movu [rsp + stack_offset], %1
+    %assign stack_offset stack_offset+mmsize
+%endif
+%endmacro
+
+%macro POP_MM 1
+%if mmsize == AVX2_MMSIZE
+    %assign stack_offset stack_offset-mmsize
+    movu %1, [rsp + stack_offset]
+%endif
+%endmacro
+
+%macro READ_LOCAL_BUFFER 1
+    %if mmsize == AVX512_MMSIZE
+        %assign %%i 19
+    %else
+        %assign %%i 9
+    %endif
+    %assign  %%j %%i-1
+    %assign  %%k %1-1
+    %xdefine %%m m %+ %%i
+    mova %%m, m3
+    FMULADD_PS %%m, %%m, m0, [localbufq + %%k * mmsize], %%m
+    %assign %%k %%k-1
+    %rep %1-1
+        %xdefine %%m m %+ %%j
+        mova %%m, m %+ %%i
+        FMULADD_PS %%m, %%m, m0, [localbufq + %%k * mmsize], %%m
+        %assign %%i %%i-1
+        %assign %%j %%j-1
+        %assign %%k %%k-1
+    %endrep
+    %if mmsize == AVX512_MMSIZE
+        mova m3, m %+ %%i
+    %endif
+%endmacro
+
+%macro FMADD_WRITE 4
+    FMULADD_PS %1, %1, %2, %3, %1
+    mova %4, %1
+%endmacro
+
+%macro WRITE_LOCAL_BUFFER_INTERNAL 8-16
+    %assign %%i 0
+    %rep %0
+        FMADD_WRITE m3, m0, m %+ %1,  [localbufq + %%i * mmsize]
+        %assign %%i %%i+1
+        %rotate 1
+    %endrep
+%endmacro
+
+%macro GATHERPS 1
+    %if mmsize == AVX512_MMSIZE
+        %assign %%i 4
+    %else
+        %assign %%i 2
+    %endif
+    movu m %+ %%i, [ptrq]
+    mov strideq, widthq
+    %assign %%i %%i+1
+    %rep %1-2
+        movu m %+ %%i, [ptrq + strideq*4]
+        add strideq, widthq
+        %assign %%i %%i+1
+    %endrep
+    movu m %+ %%i, [ptrq + strideq*4]
+%endmacro
+
+%macro SCATTERPS_INTERNAL 8-16
+    movu [ptrq + strideq*0], m %+ %1
+    mov strideq, widthq
+    %rotate 1
+    %rep %0-2
+        movu [ptrq + strideq*4], m %+ %1
+        add strideq, widthq
+        %rotate 1
+    %endrep
+    movu [ptrq + strideq*4], m %+ %1
+%endmacro
+
+%macro BATCH_INSERT64X4 4-*
+    %assign %%imm8 %1
+    %rotate 1
+    %rep (%0-1)/3
+        vinserti64x4 m%1, m%2, ym%3, %%imm8
+        %rotate 3
+    %endrep
+%endmacro
+
+%macro BATCH_EXTRACT_INSERT 2-*
+    %assign %%imm8 %1
+    %rotate 1
+    %rep (%0-1)/2
+        vextractf64x4 ym%1, m%1,       %%imm8
+        vextractf64x4 ym%2, m%2,       %%imm8
+        vinserti64x4   m%1, m%1, ym%2, %%imm8
+        %rotate 2
+    %endrep
+%endmacro
+
+%macro BATCH_MOVE 2-*
+    %rep %0/2
+        mova m%1, m%2
+        %rotate 2
+    %endrep
+%endmacro
+
+%macro BATCH_PERMUTE 3-*
+    %xdefine %%decorator %1
+    %xdefine %%mask      %2
+    %assign  %%index     %3
+    %rotate 3
+    %rep (%0-3)/2
+        vperm %+ %%decorator m%1{%%mask}, m %+ %%index, m%2
+        %rotate 2
+    %endrep
+%endmacro
+
+; input : m3-m19
+; output: m8 m5 m9 m15 m16 m7 m17 m27 m24 m21 m25 m19 m12 m23 m13 m11
+%macro TRANSPOSE_16X16_AVX512 0
+    BATCH_INSERT64X4 0x1, 20,4,12, 21,5,13,  22,6,14,  23,7,15
+    BATCH_INSERT64X4 0x1, 24,8,16, 25,9,17, 26,10,18, 27,11,19
+
+    BATCH_EXTRACT_INSERT 0x1, 4,12, 5,13,  6,14,  7,15
+    BATCH_EXTRACT_INSERT 0x1, 8,16, 9,17, 10,18, 11,19
+
+    BATCH_MOVE 12,20, 13,21, 14,22, 15,23
+    BATCH_PERMUTE q, k6, 28, 12,24, 13,25, 14,26, 15,27
+    BATCH_PERMUTE q, k5, 28, 24,20, 25,21, 26,22, 27,23
+
+    BATCH_MOVE 16,4, 17,5, 18,6, 19,7
+    BATCH_PERMUTE q, k6, 28, 16,8, 17,9, 18,10, 19,11
+    BATCH_PERMUTE q, k5, 28,  8,4,  9,5,  10,6,  11,7
+
+    BATCH_MOVE  4,12,  5,13, 6,24, 7,25
+    BATCH_MOVE 20,16, 21,17, 22,8, 23,9
+
+    BATCH_PERMUTE q, k4, 29,  4,14,  5,15,  6,26,  7,27
+    BATCH_PERMUTE q, k3, 29, 14,12, 15,13, 26,24, 27,25
+    BATCH_PERMUTE q, k4, 29, 20,18, 21,19, 22,10, 23,11
+    BATCH_PERMUTE q, k3, 29, 18,16, 19,17,  10,8,  11,9
+
+    BATCH_MOVE   8,4,  9,14,  16,6, 17,26
+    BATCH_MOVE 24,20, 25,18, 12,22, 13,10
+
+    BATCH_PERMUTE d, k2, 30,   8,5,  9,15,  16,7, 17,27
+    BATCH_PERMUTE d, k1, 30,   5,4, 15,14,   7,6, 27,26
+    BATCH_PERMUTE d, k2, 30, 24,21, 25,19, 12,23, 13,11
+    BATCH_PERMUTE d, k1, 30, 21,20, 19,18, 23,22, 11,10
+%endmacro
+
+%macro INSERT_UNPACK 8
+    vinsertf128 m%5, m%1, xm%3, 0x1
+    vinsertf128 m%6, m%2, xm%4, 0x1
+    vunpcklpd   m%7, m%5,  m%6
+    vunpckhpd   m%8, m%5,  m%6
+%endmacro
+
+%macro SHUFFLE 4
+    vshufps m%3, m%1, m%2, 0x88
+    vshufps m%4, m%1, m%2, 0xDD
+    mova    m%1, m%3
+    mova    m%2, m%4
+%endmacro
+
+%macro EXTRACT_INSERT_UNPACK 6
+    vextractf128 xm%1, m%1,       0x1
+    vextractf128 xm%2, m%2,       0x1
+    vinsertf128   m%3, m%3, xm%1, 0x0
+    vinsertf128   m%4, m%4, xm%2, 0x0
+    vunpcklpd     m%5, m%3, m%4
+    vunpckhpd     m%6, m%3, m%4
+%endmacro
+
+; Transpose 8x8 AVX2
+; Limit the number ym# register to 16 for compatibility
+; Used up registers instead of using stack memory
+; Input:  m2-m9
+; Output: m12, m14, m13, m15, m8, m10, m9, m11
+%macro TRANSPOSE_8X8_AVX2 0
+    INSERT_UNPACK 2, 3, 6, 7, 10, 11, 12, 13
+    INSERT_UNPACK 4, 5, 8, 9, 10, 11, 14, 15
+
+    SHUFFLE 12, 14, 10, 11
+    SHUFFLE 13, 15, 10, 11
+
+    EXTRACT_INSERT_UNPACK 4, 5, 8, 9, 10, 11
+    EXTRACT_INSERT_UNPACK 2, 3, 6, 7,  8, 9
+
+    SHUFFLE 8, 10, 6, 7
+    SHUFFLE 9, 11, 6, 7
+%endmacro
+
+%macro TRANSPOSE 0
+    %if cpuflag(avx512)
+        TRANSPOSE_16X16_AVX512
+    %elif cpuflag(avx2)
+        TRANSPOSE_8X8_AVX2
+    %endif
+%endmacro
+
+%macro WRITE_LOCAL_BUFFER 0
+    %if cpuflag(avx512)
+        WRITE_LOCAL_BUFFER_INTERNAL 8, 5, 9, 15, 16, 7, 17, 27, \
+                                    24, 21, 25, 19, 12, 23, 13, 11
+    %elif cpuflag(avx2)
+        WRITE_LOCAL_BUFFER_INTERNAL 12, 14, 13, 15, 8, 10, 9, 11
+    %endif
+%endmacro
+
+%macro SCATTERPS 0
+    %if cpuflag(avx512)
+        SCATTERPS_INTERNAL 8, 5, 9, 15, 16, 7, 17, 27, \
+                           24, 21, 25, 19, 12, 23, 13, 11
+    %elif cpuflag(avx2)
+        SCATTERPS_INTERNAL 12, 14, 13, 15, 8, 10, 9, 11
+    %endif
+%endmacro
+
+%macro OPTIMIZED_LOOP_STEP 0
+    lea stepd, [stepsd - 1]
+    cmp stepd, 0
+    jle %%bscale_scalar
+%%loop_step:
+    sub localbufq, mmsize
+    mulps m3, m1
+    movu [localbufq], m3
+
+    ; Filter leftwards
+    lea xq, [widthq - 1]
+    %%loop_step_x_back:
+        sub localbufq, mmsize
+        FMULADD_PS m3, m3, m0, [localbufq], m3
+        movu [localbufq], m3
+
+        dec xq
+        cmp xq, 0
+        jg %%loop_step_x_back
+
+    ; Filter rightwards
+    mulps m3, m1
+    movu [localbufq], m3
+    add localbufq, mmsize
+
+    lea xq, [widthq - 1]
+    %%loop_step_x:
+        FMULADD_PS m3, m3, m0, [localbufq], m3
+        movu [localbufq], m3
+        add localbufq, mmsize
+
+        dec xq
+        cmp xq, 0
+        jg %%loop_step_x
+
+    dec stepd
+    cmp stepd, 0
+    jg %%loop_step
+
+%%bscale_scalar:
+%endmacro
+
+;***************************************************************************
+; void ff_horiz_slice(float *ptr, int width, int height, int steps,
+;                          float nu, float bscale)
+;***************************************************************************
 %macro HORIZ_SLICE 0
 %if UNIX64
+%if cpuflag(avx512) || cpuflag(avx2)
+cglobal horiz_slice, 5, 12, mmnum, 0-mmsize*4, buffer, width, height, steps, \
+                                          localbuf, x, y, step, stride, remain, ptr, mask
+%else
 cglobal horiz_slice, 4, 9, 9, ptr, width, height, steps, x, y, step, stride, remain
+%endif
+%else
+%if cpuflag(avx512) || cpuflag(avx2)
+cglobal horiz_slice, 5, 12, mmnum, 0-mmsize*4, buffer, width, height, steps, nu, bscale, \
+                                          localbuf, x, y, step, stride, remain, ptr, mask
 %else
 cglobal horiz_slice, 4, 9, 9, ptr, width, height, steps, nu, bscale, x, y, step, stride, remain
 %endif
+%endif
+%if cpuflag(avx512) || cpuflag(avx2)
+%assign rows mmsize/4
+%assign cols mmsize/4
+%if WIN64
+    VBROADCASTSS    m0, num ; nu
+    VBROADCASTSS    m1, bscalem ; bscale
+
+    mov nuq, localbufm
+    DEFINE_ARGS buffer, width, height, steps, \
+                localbuf, x, y, step, stride, remain, ptr, mask
+    MOVSXDIFNIDN width, height, steps
+%else
+    VBROADCASTSS    m0, xmm0 ; nu
+    VBROADCASTSS    m1, xmm1 ; bscale
+%endif
+
+%if cpuflag(avx512)
+    vpbroadcastd    m2, widthd
+    INIT_WORD_MASK  k6, k5, k4, k3, k2, k1
+    INIT_INDICES   m28, m29, m30
+%else
+    movd         xm2, widthd
+    VBROADCASTSS  m2, xm2
+%endif
+
+    vpmulld m2, m2, [gblur_vindex_width] ; vindex width
+
+    xor yq, yq ; y = 0
+    xor xq, xq ; x = 0
+
+    cmp heightq, rows
+    jl .y_scalar
+    sub heightq, rows
+
+.loop_y:
+    ; ptr = buffer + y * width;
+    mov  ptrq, yq
+    imul ptrq, widthq
+    lea  ptrq, [bufferq + ptrq*4]
+
+    KXNOR m5, k7
+    VGATHERDPS m3, [ptrq + m2*4], m5, k7
+    mulps m3, m1
+    movu [localbufq], m3
+    add ptrq, 4
+    add localbufq, mmsize
+
+    ; Filter rightwards
+    PUSH_MM m2
+    lea xq, [widthq - 1]
+    .loop_x:
+        PUSH_MM m3
+        GATHERPS cols
+        TRANSPOSE
+        POP_MM m3
+        WRITE_LOCAL_BUFFER
+
+        add ptrq,      mmsize
+        add localbufq, rows * mmsize
+        sub xq,        cols
+        cmp xq,        cols
+        jge .loop_x
+        POP_MM m2
+
+    cmp xq, 0
+    jle .bscale_scalar
+    .loop_x_scalar:
+        KXNOR m5, k7
+        VGATHERDPS m4, [ptrq + m2*4], m5, k7
+        FMULADD_PS m3, m3, m0, m4, m3
+        movu [localbufq], m3
+
+        add ptrq,      0x4
+        add localbufq, mmsize
+        dec xq
+        cmp xq,        0
+        jg .loop_x_scalar
+
+    OPTIMIZED_LOOP_STEP
+
+    .bscale_scalar:
+        sub ptrq, 4
+        sub localbufq, mmsize
+        mulps m3, m1
+        KXNOR m5, k7, maskq
+        VSCATTERDPS ptrq, strideq, m2, maskq, k7, 3, widthq, remainq
+
+    ; Filter leftwards
+    PUSH_MM m2
+    lea xq, [widthq - 1]
+    .loop_x_back:
+        sub localbufq, rows * mmsize
+        READ_LOCAL_BUFFER cols
+        PUSH_MM m2
+        TRANSPOSE
+        POP_MM m3
+        sub ptrq, mmsize
+        SCATTERPS
+
+        sub xq, cols
+        cmp xq, cols
+        jge .loop_x_back
+        POP_MM m2
+
+    cmp xq, 0
+    jle .end_loop_x
+    .loop_x_back_scalar:
+        sub ptrq, 0x4
+        sub localbufq, mmsize
+        FMULADD_PS m3, m3, m0, [localbufq], m3
+        KXNOR m5, k7, maskq
+        VSCATTERDPS ptrq, strideq, m2, maskq, k7, 3, widthq, remainq
+
+        dec xq
+        cmp xq, 0
+        jg .loop_x_back_scalar
+
+    .end_loop_x:
+
+    add yq, rows
+    cmp yq, heightq
+    jle .loop_y
+
+    add heightq, rows
+    cmp yq, heightq
+    jge .end_scalar
+
+    mov remainq, widthq
+    imul remainq, mmsize
+    add ptrq, remainq
+
+.y_scalar:
+    mov remainq, heightq
+    sub remainq, yq
+    mov maskq, 1
+    shlx maskq, maskq, remainq
+    sub maskq, 1
+    mov remainq, maskq
+    PUSH_MASK m5, k1, remaind, xd, rsp + 0x20
+
+    mov ptrq, yq
+    imul ptrq, widthq
+    lea ptrq, [bufferq + ptrq * 4] ; ptrq = buffer + y * width
+    KMOVW m6, m5, k7, k1
+    VGATHERDPS m3, [ptrq + m2 * 4], m6, k7
+    mulps m3, m1 ; p0 *= bscale
+    movu [localbufq], m3
+    add localbufq, mmsize
+
+    ; Filter rightwards
+    lea xq, [widthq - 1]
+    .y_scalar_loop_x:
+        add ptrq, 4
+        KMOVW m6, m5, k7, k1
+        VGATHERDPS m4, [ptrq + m2 * 4], m6, k7
+        FMULADD_PS m3, m3, m0, m4, m3
+        movu [localbufq], m3
+        add localbufq, mmsize
+
+        dec xq
+        cmp xq, 0
+        jg .y_scalar_loop_x
+
+    OPTIMIZED_LOOP_STEP
+
+    sub localbufq, mmsize
+    mulps m3, m1 ; p0 *= bscale
+    KMOVW k7, k1
+    VSCATTERDPS ptrq, strideq, m2, maskq, k7, 3, widthq, remainq, heightq
+
+    ; Filter leftwards
+    lea xq, [widthq - 1]
+    .y_scalar_loop_x_back:
+        sub ptrq, 4
+        sub localbufq, mmsize
+        FMULADD_PS m3, m3, m0, [localbufq], m3
+        KMOVW k7, k1
+        VSCATTERDPS ptrq, strideq, m2, maskq, k7, 3, widthq, remainq, heightq
+        dec xq
+        cmp xq, 0
+        jg .y_scalar_loop_x_back
+
+.end_scalar:
+    RET
+%else
 %if WIN64
     movss m0, num
     movss m1, bscalem
@@ -211,14 +773,24 @@ cglobal horiz_slice, 4, 9, 9, ptr, width, height, steps, nu, bscale, x, y, step,
     jl .loop_y
 
     RET
+%endif
 %endmacro
 
 %if ARCH_X86_64
 INIT_XMM sse4
 HORIZ_SLICE
 
-INIT_XMM avx2
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+%xdefine mmnum 16
 HORIZ_SLICE
+%endif
+
+%if HAVE_AVX512_EXTERNAL
+INIT_ZMM avx512
+%xdefine mmnum 32
+HORIZ_SLICE
+%endif
 %endif
 
 %macro POSTSCALE_SLICE 0
@@ -269,7 +841,6 @@ POSTSCALE_SLICE
 INIT_ZMM avx512
 POSTSCALE_SLICE
 %endif
-
 
 ;*******************************************************************************
 ; void ff_verti_slice(float *buffer, int width, int height, int column_begin,

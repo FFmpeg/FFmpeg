@@ -39,9 +39,11 @@ typedef struct GBlurContext {
 
     int flt;
     int depth;
+    int stride;
     int planewidth[4];
     int planeheight[4];
     float *buffer;
+    float *localbuf;  ///< temporary buffer for horiz_slice. NULL if not used
     float boundaryscale;
     float boundaryscaleV;
     float postscale;
@@ -49,7 +51,7 @@ typedef struct GBlurContext {
     float nu;
     float nuV;
     int nb_planes;
-    void (*horiz_slice)(float *buffer, int width, int height, int steps, float nu, float bscale);
+    void (*horiz_slice)(float *buffer, int width, int height, int steps, float nu, float bscale, float *localbuf);
     void (*verti_slice)(float *buffer, int width, int height, int slice_start, int slice_end, int steps,
                             float nu, float bscale);
     void (*postscale_slice)(float *buffer, int length, float postscale, float min, float max);

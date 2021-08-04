@@ -64,7 +64,7 @@ static void postscale_c(float *buffer, int length,
 }
 
 static void horiz_slice_c(float *buffer, int width, int height, int steps,
-                          float nu, float bscale)
+                          float nu, float bscale, float *localbuf)
 {
     int step, x, y;
     float *ptr;
@@ -97,9 +97,13 @@ static int filter_horizontally(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int steps = s->steps;
     const float nu = s->nu;
     float *buffer = s->buffer;
+    float *localbuf = NULL;
+
+    if (s->localbuf)
+        localbuf = s->localbuf + s->stride * width * slice_start;
 
     s->horiz_slice(buffer + width * slice_start, width, slice_end - slice_start,
-                   steps, nu, boundaryscale);
+                   steps, nu, boundaryscale, localbuf);
     emms_c();
     return 0;
 }
@@ -242,6 +246,7 @@ static int query_formats(AVFilterContext *ctx)
 
 void ff_gblur_init(GBlurContext *s)
 {
+    s->localbuf = NULL;
     s->horiz_slice = horiz_slice_c;
     s->verti_slice = verti_slice_c;
     s->postscale_slice = postscale_c;
@@ -384,6 +389,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     GBlurContext *s = ctx->priv;
 
     av_freep(&s->buffer);
+    if (s->localbuf)
+        av_free(s->localbuf);
 }
 
 static const AVFilterPad gblur_inputs[] = {
