@@ -74,6 +74,8 @@ const AVClass ff_avio_class = {
 
 static void fill_buffer(AVIOContext *s);
 static int url_resetbuf(AVIOContext *s, int flags);
+/** @warning must be called before any I/O */
+static int set_buf_size(AVIOContext *s, int buf_size);
 
 int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,
@@ -543,7 +545,7 @@ static void fill_buffer(AVIOContext *s)
     /* make buffer smaller in case it ended up large after probing */
     if (s->read_packet && s->orig_buffer_size && s->buffer_size > s->orig_buffer_size && len >= s->orig_buffer_size) {
         if (dst == s->buffer && s->buf_ptr != dst) {
-            int ret = ffio_set_buf_size(s, s->orig_buffer_size);
+            int ret = set_buf_size(s, s->orig_buffer_size);
             if (ret < 0)
                 av_log(s, AV_LOG_WARNING, "Failed to decrease buffer size\n");
 
@@ -1040,7 +1042,7 @@ int ffio_limit(AVIOContext *s, int size)
     return size;
 }
 
-int ffio_set_buf_size(AVIOContext *s, int buf_size)
+static int set_buf_size(AVIOContext *s, int buf_size)
 {
     uint8_t *buffer;
     buffer = av_malloc(buf_size);
@@ -1062,7 +1064,7 @@ int ffio_realloc_buf(AVIOContext *s, int buf_size)
     int data_size;
 
     if (!s->buffer_size)
-        return ffio_set_buf_size(s, buf_size);
+        return set_buf_size(s, buf_size);
 
     if (buf_size <= s->buffer_size)
         return 0;
