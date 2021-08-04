@@ -22,6 +22,7 @@
 #include "libavutil/avstring.h"
 #include "libavfilter/internal.h"
 #include "libavutil/common.h"
+#include "libavutil/cpu.h"
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
 #include "libavutil/tx.h"
