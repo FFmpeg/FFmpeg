@@ -22,6 +22,43 @@
 
 SECTION .text
 
+%xdefine AVX2_MMSIZE   32
+%xdefine AVX512_MMSIZE 64
+
+%macro MOVSXDIFNIDN 1-*
+    %rep %0
+        movsxdifnidn %1q, %1d
+        %rotate 1
+    %endrep
+%endmacro
+
+%macro PUSH_MASK 5
+%if mmsize == AVX2_MMSIZE
+    %assign %%n mmsize/4
+    %assign %%i 0
+    %rep %%n
+        mov %4, %3
+        and %4, 1
+        neg %4
+        mov dword [%5 + %%i*4], %4
+        sar %3, 1
+        %assign %%i %%i+1
+    %endrep
+    movu %1, [%5]
+%else
+    kmovd %2, %3
+%endif
+%endmacro
+
+%macro VMASKMOVPS 4
+%if mmsize == AVX2_MMSIZE
+    vpmaskmovd %1, %3, %2
+%else
+    kmovw k7, %4
+    vmovups %1{k7}, %2
+%endif
+%endmacro
+
 ; void ff_horiz_slice_sse4(float *ptr, int width, int height, int steps,
 ;                          float nu, float bscale)
 
@@ -231,4 +268,156 @@ POSTSCALE_SLICE
 %if HAVE_AVX512_EXTERNAL
 INIT_ZMM avx512
 POSTSCALE_SLICE
+%endif
+
+
+;*******************************************************************************
+; void ff_verti_slice(float *buffer, int width, int height, int column_begin,
+;                     int column_end, int steps, float nu, float bscale);
+;*******************************************************************************
+%macro VERTI_SLICE 0
+%if UNIX64
+cglobal verti_slice, 6, 12, 9, 0-mmsize*2, buffer, width, height, cbegin, cend, \
+                                         steps, x, y, cwidth, step, ptr, stride
+%else
+cglobal verti_slice, 6, 12, 9, 0-mmsize*2, buffer, width, height, cbegin, cend, \
+                                         steps, nu, bscale, x, y, cwidth, step, \
+                                         ptr, stride
+%endif
+%assign cols mmsize/4
+%if WIN64
+    VBROADCASTSS m0, num
+    VBROADCASTSS m1, bscalem
+    DEFINE_ARGS buffer, width, height, cbegin, cend, \
+                steps, x, y, cwidth, step, ptr, stride
+    MOVSXDIFNIDN width, height, cbegin, cend, steps
+%else
+    VBROADCASTSS m0, xmm0 ; nu
+    VBROADCASTSS m1, xmm1 ; bscale
+%endif
+    mov cwidthq, cendq
+    sub cwidthq, cbeginq
+    lea strideq, [widthq * 4]
+
+    xor xq, xq ; x = 0
+    cmp cwidthq, cols
+    jl .x_scalar
+    cmp cwidthq, 0x0
+    je .end_scalar
+
+    sub cwidthq, cols
+.loop_x:
+    xor stepq, stepq
+    .loop_step:
+        ; ptr = buffer + x + column_begin;
+        lea ptrq, [xq + cbeginq]
+        lea ptrq, [bufferq + ptrq*4]
+
+        ;  ptr[15:0] *= bcale;
+        movu m2, [ptrq]
+        mulps m2, m1
+        movu [ptrq], m2
+
+        ; Filter downwards
+        mov yq, 1
+        .loop_y_down:
+            add ptrq, strideq ; ptrq += width
+            movu m3, [ptrq]
+            FMULADD_PS m2, m2, m0, m3, m2
+            movu [ptrq], m2
+
+            inc yq
+            cmp yq, heightq
+            jl .loop_y_down
+
+        mulps m2, m1
+        movu [ptrq], m2
+
+        ; Filter upwards
+        dec yq
+        .loop_y_up:
+            sub ptrq, strideq
+            movu m3, [ptrq]
+            FMULADD_PS m2, m2, m0, m3, m2
+            movu [ptrq], m2
+
+            dec yq
+            cmp yq, 0
+            jg .loop_y_up
+
+        inc stepq
+        cmp stepq, stepsq
+        jl .loop_step
+
+    add xq, cols
+    cmp xq, cwidthq
+    jle .loop_x
+
+    add cwidthq, cols
+    cmp xq, cwidthq
+    jge .end_scalar
+
+.x_scalar:
+    xor stepq, stepq
+    mov qword [rsp + 0x10], xq
+    sub cwidthq, xq
+    mov xq, 1
+    shlx cwidthq, xq, cwidthq
+    sub cwidthq, 1
+    PUSH_MASK m4, k1, cwidthd, xd, rsp + 0x20
+    mov xq, qword [rsp + 0x10]
+
+    .loop_step_scalar:
+        lea ptrq, [xq + cbeginq]
+        lea ptrq, [bufferq + ptrq*4]
+
+        VMASKMOVPS m2, [ptrq], m4, k1
+        mulps m2, m1
+        VMASKMOVPS [ptrq], m2, m4, k1
+
+        ; Filter downwards
+        mov yq, 1
+        .x_scalar_loop_y_down:
+            add ptrq, strideq
+            VMASKMOVPS m3, [ptrq], m4, k1
+            FMULADD_PS m2, m2, m0, m3, m2
+            VMASKMOVPS [ptrq], m2, m4, k1
+
+            inc yq
+            cmp yq, heightq
+            jl .x_scalar_loop_y_down
+
+        mulps m2, m1
+        VMASKMOVPS [ptrq], m2, m4, k1
+
+        ; Filter upwards
+        dec yq
+        .x_scalar_loop_y_up:
+            sub ptrq, strideq
+            VMASKMOVPS m3, [ptrq], m4, k1
+            FMULADD_PS m2, m2, m0, m3, m2
+            VMASKMOVPS [ptrq], m2, m4, k1
+
+            dec yq
+            cmp yq, 0
+            jg .x_scalar_loop_y_up
+
+        inc stepq
+        cmp stepq, stepsq
+        jl .loop_step_scalar
+
+.end_scalar:
+    RET
+%endmacro
+
+%if ARCH_X86_64
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+VERTI_SLICE
+%endif
+
+%if HAVE_AVX512_EXTERNAL
+INIT_ZMM avx512
+VERTI_SLICE
+%endif
 %endif
