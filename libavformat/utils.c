@@ -213,31 +213,6 @@ static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st,
 /* an arbitrarily chosen "sane" max packet size -- 50M */
 #define SANE_CHUNK_SIZE (50000000)
 
-int ffio_limit(AVIOContext *s, int size)
-{
-    if (s->maxsize>= 0) {
-        int64_t pos = avio_tell(s);
-        int64_t remaining= s->maxsize - pos;
-        if (remaining < size) {
-            int64_t newsize = avio_size(s);
-            if (!s->maxsize || s->maxsize<newsize)
-                s->maxsize = newsize - !newsize;
-            if (pos > s->maxsize && s->maxsize >= 0)
-                s->maxsize = AVERROR(EIO);
-            if (s->maxsize >= 0)
-                remaining = s->maxsize - pos;
-        }
-
-        if (s->maxsize >= 0 && remaining < size && size > 1) {
-            av_log(NULL, remaining ? AV_LOG_ERROR : AV_LOG_DEBUG,
-                   "Truncating packet of size %d to %"PRId64"\n",
-                   size, remaining + !remaining);
-            size = remaining + !remaining;
-        }
-    }
-    return size;
-}
-
 /* Read the data in sane-sized chunks and append to pkt.
  * Return the number of bytes read or an error. */
 static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)

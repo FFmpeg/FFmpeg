@@ -1015,6 +1015,31 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
     return 0;
 }
 
+int ffio_limit(AVIOContext *s, int size)
+{
+    if (s->maxsize>= 0) {
+        int64_t pos = avio_tell(s);
+        int64_t remaining = s->maxsize - pos;
+        if (remaining < size) {
+            int64_t newsize = avio_size(s);
+            if (!s->maxsize || s->maxsize<newsize)
+                s->maxsize = newsize - !newsize;
+            if (pos > s->maxsize && s->maxsize >= 0)
+                s->maxsize = AVERROR(EIO);
+            if (s->maxsize >= 0)
+                remaining = s->maxsize - pos;
+        }
+
+        if (s->maxsize >= 0 && remaining < size && size > 1) {
+            av_log(NULL, remaining ? AV_LOG_ERROR : AV_LOG_DEBUG,
+                   "Truncating packet of size %d to %"PRId64"\n",
+                   size, remaining + !remaining);
+            size = remaining + !remaining;
+        }
+    }
+    return size;
+}
+
 int ffio_set_buf_size(AVIOContext *s, int buf_size)
 {
     uint8_t *buffer;
