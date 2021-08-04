@@ -1377,22 +1377,21 @@ static int64_t dyn_buf_seek(void *opaque, int64_t offset, int whence)
 
 static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size)
 {
+    struct { FFIOContext pb; DynBuffer d; } *ret;
     DynBuffer *d;
     unsigned io_buffer_size = max_packet_size ? max_packet_size : 1024;
 
-    if (sizeof(DynBuffer) + io_buffer_size < io_buffer_size)
+    if (sizeof(*ret) + io_buffer_size < io_buffer_size)
         return AVERROR(ERANGE);
-    d = av_mallocz(sizeof(DynBuffer) + io_buffer_size);
-    if (!d)
+    ret = av_mallocz(sizeof(*ret) + io_buffer_size);
+    if (!ret)
         return AVERROR(ENOMEM);
+    d = &ret->d;
     d->io_buffer_size = io_buffer_size;
-    *s = avio_alloc_context(d->io_buffer, d->io_buffer_size, 1, d, NULL,
-                            max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
-                            max_packet_size ? NULL : dyn_buf_seek);
-    if(!*s) {
-        av_free(d);
-        return AVERROR(ENOMEM);
-    }
+    ffio_init_context(&ret->pb, d->io_buffer, d->io_buffer_size, 1, d, NULL,
+                      max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
+                      max_packet_size ? NULL : dyn_buf_seek);
+    *s = &ret->pb.pub;
     (*s)->max_packet_size = max_packet_size;
     return 0;
 }
@@ -1465,7 +1464,6 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
     d = s->opaque;
     *pbuffer = d->buffer;
     size = d->size;
-    av_free(d);
 
     avio_context_free(&s);
 
@@ -1481,7 +1479,6 @@ void ffio_free_dyn_buf(AVIOContext **s)
 
     d = (*s)->opaque;
     av_free(d->buffer);
-    av_free(d);
     avio_context_free(s);
 }
 
@@ -1513,7 +1510,6 @@ int ffio_close_null_buf(AVIOContext *s)
     avio_flush(s);
 
     size = d->size;
-    av_free(d);
 
     avio_context_free(&s);
 
