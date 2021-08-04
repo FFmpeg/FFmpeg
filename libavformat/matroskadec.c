@@ -2660,18 +2660,18 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     codec_id == AV_CODEC_ID_ATRAC3 ||
                     codec_id == AV_CODEC_ID_SIPR)
                       && track->codec_priv.data) {
+            const uint8_t *ptr = track->codec_priv.data;
             int flavor;
 
-            ffio_init_context(&b, track->codec_priv.data,
-                              track->codec_priv.size,
-                              0, NULL, NULL, NULL, NULL);
-            avio_skip(&b, 22);
-            flavor                       = avio_rb16(&b);
-            track->audio.coded_framesize = avio_rb32(&b);
-            avio_skip(&b, 12);
-            track->audio.sub_packet_h    = avio_rb16(&b);
-            track->audio.frame_size      = avio_rb16(&b);
-            track->audio.sub_packet_size = avio_rb16(&b);
+            if (track->codec_priv.size < 46)
+                return AVERROR_INVALIDDATA;
+            ptr += 22;
+            flavor                       = bytestream_get_be16(&ptr);
+            track->audio.coded_framesize = bytestream_get_be32(&ptr);
+            ptr += 12;
+            track->audio.sub_packet_h    = bytestream_get_be16(&ptr);
+            track->audio.frame_size      = bytestream_get_be16(&ptr);
+            track->audio.sub_packet_size = bytestream_get_be16(&ptr);
             if (track->audio.coded_framesize <= 0 ||
                 track->audio.sub_packet_h    <= 0 ||
                 track->audio.frame_size      <= 0)
