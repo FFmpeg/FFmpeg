@@ -29,6 +29,7 @@ void ff_horiz_slice_avx2(float *ptr, int width, int height, int steps, float nu,
 
 void ff_postscale_slice_sse(float *ptr, int length, float postscale, float min, float max);
 void ff_postscale_slice_avx2(float *ptr, int length, float postscale, float min, float max);
+void ff_postscale_slice_avx512(float *ptr, int length, float postscale, float min, float max);
 
 av_cold void ff_gblur_init_x86(GBlurContext *s)
 {
@@ -46,6 +47,9 @@ av_cold void ff_gblur_init_x86(GBlurContext *s)
     }
     if (EXTERNAL_AVX2(cpu_flags)) {
         s->horiz_slice = ff_horiz_slice_avx2;
+    }
+    if (EXTERNAL_AVX512(cpu_flags)) {
+        s->postscale_slice = ff_postscale_slice_avx512;
     }
 #endif
 }
