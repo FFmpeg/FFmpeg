@@ -1504,7 +1504,7 @@ static int activate(AVFilterContext *ctx)
                 memset(s->outpicref->data[2] + i * s->outpicref->linesize[2], 128, outlink->w);
             }
         }
-        s->outpicref->pts += s->consumed;
+        s->outpicref->pts += av_rescale_q(s->consumed, inlink->time_base, outlink->time_base);
         pts = s->outpicref->pts;
         ret = ff_filter_frame(outlink, s->outpicref);
         s->outpicref = NULL;
