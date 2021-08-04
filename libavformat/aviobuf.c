@@ -274,8 +274,10 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         return AVERROR(EINVAL);
 
     short_seek = s->short_seek_threshold;
-    if (s->short_seek_get)
-        short_seek = FFMAX(s->short_seek_get(s->opaque), short_seek);
+    if (s->short_seek_get) {
+        int tmp = s->short_seek_get(s->opaque);
+        short_seek = FFMAX(tmp, short_seek);
+    }
 
     offset1 = offset - pos; // "offset1" is the relative offset from the beginning of s->buffer
     s->buf_ptr_max = FFMAX(s->buf_ptr_max, s->buf_ptr);
