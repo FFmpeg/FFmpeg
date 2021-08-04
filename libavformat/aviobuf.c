@@ -26,7 +26,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
-#include "avformat.h"
+#include "libavcodec/defs.h"
 #include "avio.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -1445,7 +1445,6 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d;
     int size;
-    static const char padbuf[AV_INPUT_BUFFER_PADDING_SIZE] = {0};
     int padding = 0;
 
     if (!s) {
@@ -1455,7 +1454,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
     /* don't attempt to pad fixed-size packet buffers */
     if (!s->max_packet_size) {
-        avio_write(s, padbuf, sizeof(padbuf));
+        ffio_fill(s, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         padding = AV_INPUT_BUFFER_PADDING_SIZE;
     }
 
