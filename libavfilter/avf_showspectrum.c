@@ -1189,9 +1189,9 @@ static int config_output(AVFilterLink *outlink)
 
     s->auto_frame_rate = av_make_q(inlink->sample_rate, s->hop_size);
     if (s->orientation == VERTICAL && s->sliding == FULLFRAME)
-        s->auto_frame_rate.den *= s->w;
+        s->auto_frame_rate = av_mul_q(s->auto_frame_rate, av_make_q(1, s->w));
     if (s->orientation == HORIZONTAL && s->sliding == FULLFRAME)
-        s->auto_frame_rate.den *= s->h;
+        s->auto_frame_rate = av_mul_q(s->auto_frame_rate, av_make_q(1, s->h));
     if (!s->single_pic && strcmp(s->rate_str, "auto")) {
         int ret = av_parse_video_rate(&s->frame_rate, s->rate_str);
         if (ret < 0)
