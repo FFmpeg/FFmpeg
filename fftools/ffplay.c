@@ -3695,8 +3695,6 @@ int main(int argc, char **argv)
 #endif
     avformat_network_init();
 
-    init_opts();
-
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).    */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
 
