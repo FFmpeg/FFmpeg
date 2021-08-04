@@ -23,8 +23,8 @@
 #include "libavfilter/internal.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
-#include "libavcodec/avfft.h"
 #include "libavutil/eval.h"
+#include "libavutil/tx.h"
 #include "audio.h"
 #include "filters.h"
 #include "window_func.h"
@@ -34,11 +34,12 @@ typedef struct AFFTFiltContext {
     char *real_str;
     char *img_str;
     int fft_size;
-    int fft_bits;
 
-    FFTContext *fft, *ifft;
-    FFTComplex **fft_data;
-    FFTComplex **fft_temp;
+    AVTXContext *fft, *ifft;
+    av_tx_fn  tx_fn, itx_fn;
+    AVComplexFloat **fft_in;
+    AVComplexFloat **fft_out;
+    AVComplexFloat **fft_temp;
     int nb_exprs;
     int channels;
     int window_size;
@@ -100,7 +101,7 @@ static inline double getreal(void *priv, double x, double ch)
     ich = av_clip(ch, 0, s->nb_exprs - 1);
     ix = av_clip(x, 0, s->window_size / 2);
 
-    return s->fft_data[ich][ix].re;
+    return s->fft_out[ich][ix].re;
 }
 
 static inline double getimag(void *priv, double x, double ch)
@@ -111,7 +112,7 @@ static inline double getimag(void *priv, double x, double ch)
     ich = av_clip(ch, 0, s->nb_exprs - 1);
     ix = av_clip(x, 0, s->window_size / 2);
 
-    return s->fft_data[ich][ix].im;
+    return s->fft_out[ich][ix].im;
 }
 
 static double realf(void *priv, double x, double ch) { return getreal(priv, x, ch); }
@@ -126,22 +127,28 @@ static int config_input(AVFilterLink *inlink)
     AFFTFiltContext *s = ctx->priv;
     char *saveptr = NULL;
     int ret = 0, ch;
-    float overlap;
+    float overlap, scale;
     char *args;
     const char *last_expr = "1";
 
     s->channels = inlink->channels;
     s->pts  = AV_NOPTS_VALUE;
-    s->fft_bits = av_log2(s->fft_size);
-    s->fft  = av_fft_init(s->fft_bits, 0);
-    s->ifft = av_fft_init(s->fft_bits, 1);
-    if (!s->fft || !s->ifft)
+    ret = av_tx_init(&s->fft, &s->tx_fn, AV_TX_FLOAT_FFT, 0, s->fft_size, &scale, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = av_tx_init(&s->ifft, &s->itx_fn, AV_TX_FLOAT_FFT, 1, s->fft_size, &scale, 0);
+    if (ret < 0)
+        return ret;
+
+    s->window_size = s->fft_size;
+
+    s->fft_in = av_calloc(inlink->channels, sizeof(*s->fft_in));
+    if (!s->fft_in)
         return AVERROR(ENOMEM);
 
-    s->window_size = 1 << s->fft_bits;
-
-    s->fft_data = av_calloc(inlink->channels, sizeof(*s->fft_data));
-    if (!s->fft_data)
+    s->fft_out = av_calloc(inlink->channels, sizeof(*s->fft_out));
+    if (!s->fft_out)
         return AVERROR(ENOMEM);
 
     s->fft_temp = av_calloc(inlink->channels, sizeof(*s->fft_temp));
@@ -149,12 +156,14 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     for (ch = 0; ch < inlink->channels; ch++) {
-        s->fft_data[ch] = av_calloc(s->window_size, sizeof(**s->fft_data));
-        if (!s->fft_data[ch])
+        s->fft_in[ch] = av_calloc(s->window_size, sizeof(**s->fft_in));
+        if (!s->fft_in[ch])
             return AVERROR(ENOMEM);
-    }
 
-    for (ch = 0; ch < inlink->channels; ch++) {
+        s->fft_out[ch] = av_calloc(s->window_size, sizeof(**s->fft_out));
+        if (!s->fft_out[ch])
+            return AVERROR(ENOMEM);
+
         s->fft_temp[ch] = av_calloc(s->window_size, sizeof(**s->fft_temp));
         if (!s->fft_temp[ch])
             return AVERROR(ENOMEM);
@@ -254,16 +263,16 @@ static int filter_frame(AVFilterLink *inlink)
 
     for (ch = 0; ch < inlink->channels; ch++) {
         const float *src = (float *)in->extended_data[ch];
-        FFTComplex *fft_data = s->fft_data[ch];
+        AVComplexFloat *fft_in = s->fft_in[ch];
 
         for (n = 0; n < in->nb_samples; n++) {
-            fft_data[n].re = src[n] * s->window_func_lut[n];
-            fft_data[n].im = 0;
+            fft_in[n].re = src[n] * s->window_func_lut[n];
+            fft_in[n].im = 0;
         }
 
         for (; n < window_size; n++) {
-            fft_data[n].re = 0;
-            fft_data[n].im = 0;
+            fft_in[n].re = 0;
+            fft_in[n].im = 0;
         }
     }
 
@@ -273,15 +282,15 @@ static int filter_frame(AVFilterLink *inlink)
     values[VAR_CHANNELS]    = inlink->channels;
 
     for (ch = 0; ch < inlink->channels; ch++) {
-        FFTComplex *fft_data = s->fft_data[ch];
+        AVComplexFloat *fft_in = s->fft_in[ch];
+        AVComplexFloat *fft_out = s->fft_out[ch];
 
-        av_fft_permute(s->fft, fft_data);
-        av_fft_calc(s->fft, fft_data);
+        s->tx_fn(s->fft, fft_out, fft_in, sizeof(float));
     }
 
     for (ch = 0; ch < inlink->channels; ch++) {
-        FFTComplex *fft_data = s->fft_data[ch];
-        FFTComplex *fft_temp = s->fft_temp[ch];
+        AVComplexFloat *fft_out = s->fft_out[ch];
+        AVComplexFloat *fft_temp = s->fft_temp[ch];
         float *buf = (float *)s->buffer->extended_data[ch];
         int x;
         values[VAR_CHANNEL] = ch;
@@ -290,8 +299,8 @@ static int filter_frame(AVFilterLink *inlink)
             float fr, fi;
 
             values[VAR_BIN] = n;
-            values[VAR_REAL] = fft_data[n].re;
-            values[VAR_IMAG] = fft_data[n].im;
+            values[VAR_REAL] = fft_out[n].re;
+            values[VAR_IMAG] = fft_out[n].im;
 
             fr = av_expr_eval(s->real[ch], values, s);
             fi = av_expr_eval(s->imag[ch], values, s);
@@ -305,11 +314,10 @@ static int filter_frame(AVFilterLink *inlink)
             fft_temp[n].im = -fft_temp[x].im;
         }
 
-        av_fft_permute(s->ifft, fft_temp);
-        av_fft_calc(s->ifft, fft_temp);
+        s->itx_fn(s->ifft, fft_out, fft_temp, sizeof(float));
 
         for (i = 0; i < window_size; i++) {
-            buf[i] += s->fft_temp[ch][i].re * f;
+            buf[i] += s->fft_out[ch][i].re * f;
         }
     }
 
@@ -434,16 +442,19 @@ static av_cold void uninit(AVFilterContext *ctx)
     AFFTFiltContext *s = ctx->priv;
     int i;
 
-    av_fft_end(s->fft);
-    av_fft_end(s->ifft);
+    av_tx_uninit(&s->fft);
+    av_tx_uninit(&s->ifft);
 
     for (i = 0; i < s->channels; i++) {
-        if (s->fft_data)
-            av_freep(&s->fft_data[i]);
+        if (s->fft_in)
+            av_freep(&s->fft_in[i]);
+        if (s->fft_out)
+            av_freep(&s->fft_out[i]);
         if (s->fft_temp)
             av_freep(&s->fft_temp[i]);
     }
-    av_freep(&s->fft_data);
+    av_freep(&s->fft_in);
+    av_freep(&s->fft_out);
     av_freep(&s->fft_temp);
 
     for (i = 0; i < s->nb_exprs; i++) {
