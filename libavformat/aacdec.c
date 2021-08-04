@@ -135,7 +135,7 @@ static int adts_aac_read_header(AVFormatContext *s)
 static int handle_id3(AVFormatContext *s, AVPacket *pkt)
 {
     AVDictionary *metadata = NULL;
-    AVIOContext ioctx;
+    FFIOContext pb;
     ID3v2ExtraMeta *id3v2_extra_meta;
     int ret;
 
@@ -144,8 +144,8 @@ static int handle_id3(AVFormatContext *s, AVPacket *pkt)
         return ret;
     }
 
-    ffio_init_context(&ioctx, pkt->data, pkt->size, 0, NULL, NULL, NULL, NULL);
-    ff_id3v2_read_dict(&ioctx, &metadata, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+    ffio_init_context(&pb, pkt->data, pkt->size, 0, NULL, NULL, NULL, NULL);
+    ff_id3v2_read_dict(&pb.pub, &metadata, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
     if ((ret = ff_id3v2_parse_priv_dict(&metadata, id3v2_extra_meta)) < 0)
         goto error;
 

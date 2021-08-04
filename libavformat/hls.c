@@ -92,7 +92,7 @@ enum PlaylistType {
  */
 struct playlist {
     char url[MAX_URL_SIZE];
-    AVIOContext pb;
+    FFIOContext pb;
     uint8_t* read_buffer;
     AVIOContext *input;
     int input_read_done;
@@ -258,7 +258,7 @@ static void free_playlist_list(HLSContext *c)
         ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         av_freep(&pls->init_sec_buf);
         av_packet_free(&pls->pkt);
-        av_freep(&pls->pb.buffer);
+        av_freep(&pls->pb.pub.buffer);
         ff_format_io_close(c->ctx, &pls->input);
         pls->input_read_done = 0;
         ff_format_io_close(c->ctx, &pls->input_next);
@@ -1222,9 +1222,9 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
 
     if (pls->id3_buf) {
         /* Now parse all the ID3 tags */
-        AVIOContext id3ioctx;
+        FFIOContext id3ioctx;
         ffio_init_context(&id3ioctx, pls->id3_buf, id3_buf_pos, 0, NULL, NULL, NULL, NULL);
-        handle_id3(&id3ioctx, pls);
+        handle_id3(&id3ioctx.pub, pls);
     }
 
     if (pls->is_id3_timestamped == -1)
@@ -1995,7 +1995,7 @@ static int hls_read_header(AVFormatContext *s)
         pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
         pls->ctx->interrupt_callback = s->interrupt_callback;
         url = av_strdup(pls->segments[0]->url);
-        ret = av_probe_input_buffer(&pls->pb, &in_fmt, url, NULL, 0, 0);
+        ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, url, NULL, 0, 0);
         if (ret < 0) {
             /* Free the ctx - it isn't initialized properly at this point,
              * so avformat_close_input shouldn't be called. If
@@ -2008,7 +2008,7 @@ static int hls_read_header(AVFormatContext *s)
             return ret;
         }
         av_free(url);
-        pls->ctx->pb       = &pls->pb;
+        pls->ctx->pb       = &pls->pb.pub;
         pls->ctx->io_open  = nested_io_open;
         pls->ctx->flags   |= s->flags & ~AVFMT_FLAG_CUSTOM_IO;
 
@@ -2087,7 +2087,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             pls->needed = 1;
             changed = 1;
             pls->cur_seq_no = select_cur_seq_no(c, pls);
-            pls->pb.eof_reached = 0;
+            pls->pb.pub.eof_reached = 0;
             if (c->cur_timestamp != AV_NOPTS_VALUE) {
                 /* catch up */
                 pls->seek_timestamp = c->cur_timestamp;
@@ -2168,7 +2168,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                 AVRational tb;
                 ret = av_read_frame(pls->ctx, pls->pkt);
                 if (ret < 0) {
-                    if (!avio_feof(&pls->pb) && ret != AVERROR_EOF)
+                    if (!avio_feof(&pls->pb.pub) && ret != AVERROR_EOF)
                         return ret;
                     break;
                 } else {
@@ -2336,16 +2336,17 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_playlists; i++) {
         /* Reset reading */
         struct playlist *pls = c->playlists[i];
+        AVIOContext *const pb = &pls->pb.pub;
         ff_format_io_close(pls->parent, &pls->input);
         pls->input_read_done = 0;
         ff_format_io_close(pls->parent, &pls->input_next);
         pls->input_next_requested = 0;
         av_packet_unref(pls->pkt);
-        pls->pb.eof_reached = 0;
+        pb->eof_reached = 0;
         /* Clear any buffered data */
-        pls->pb.buf_end = pls->pb.buf_ptr = pls->pb.buffer;
+        pb->buf_end = pb->buf_ptr = pb->buffer;
         /* Reset the pos, to let the mpegts demuxer know we've seeked. */
-        pls->pb.pos = 0;
+        pb->pos = 0;
         /* Flush the packet queue of the subdemuxer. */
         ff_read_frame_flush(pls->ctx);
 

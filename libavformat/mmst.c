@@ -154,13 +154,13 @@ static int send_command_packet(MMSTContext *mmst)
 
 static int mms_put_utf16(MMSContext *mms, const uint8_t *src)
 {
-    AVIOContext bic;
+    FFIOContext bic;
     int size = mms->write_out_ptr - mms->out_buffer;
     int len;
     ffio_init_context(&bic, mms->write_out_ptr,
             sizeof(mms->out_buffer) - size, 1, NULL, NULL, NULL, NULL);
 
-    len = avio_put_str16le(&bic, src);
+    len = avio_put_str16le(&bic.pub, src);
     if (len < 0)
         return len;
     mms->write_out_ptr += len;

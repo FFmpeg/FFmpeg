@@ -26,7 +26,54 @@
 
 extern const AVClass ff_avio_class;
 
-int ffio_init_context(AVIOContext *s,
+typedef struct FFIOContext {
+    AVIOContext pub;
+    /**
+     * A callback that is used instead of short_seek_threshold.
+     */
+    int (*short_seek_get)(void *opaque);
+
+    /**
+     * Threshold to favor readahead over seek.
+     */
+    int short_seek_threshold;
+
+    enum AVIODataMarkerType current_type;
+    int64_t last_time;
+
+    /**
+     * max filesize, used to limit allocations
+     */
+    int64_t maxsize;
+
+    /**
+     * Bytes read statistic
+     */
+    int64_t bytes_read;
+
+    /**
+     * seek statistic
+     */
+    int seek_count;
+
+    /**
+     * writeout statistic
+     */
+    int writeout_count;
+
+    /**
+     * Original buffer size
+     * used after probing to ensure seekback and to reset the buffer size
+     */
+    int orig_buffer_size;
+} FFIOContext;
+
+static av_always_inline FFIOContext *ffiocontext(AVIOContext *ctx)
+{
+    return (FFIOContext*)ctx;
+}
+
+void ffio_init_context(FFIOContext *s,
                   unsigned char *buffer,
                   int buffer_size,
                   int write_flag,

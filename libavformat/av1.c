@@ -86,7 +86,7 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
 int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out,
                            int *size, int *offset)
 {
-    AVIOContext pb;
+    FFIOContext pb;
     uint8_t *buf;
     int len, off, ret;
 
@@ -108,7 +108,7 @@ int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out,
 
     ffio_init_context(&pb, buf, len, 1, NULL, NULL, NULL, NULL);
 
-    ret = av1_filter_obus(&pb, in, *size, NULL);
+    ret = av1_filter_obus(&pb.pub, in, *size, NULL);
     av_assert1(ret == len);
 
     memset(buf + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);

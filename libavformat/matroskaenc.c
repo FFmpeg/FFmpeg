@@ -839,11 +839,12 @@ static void mkv_write_video_color(AVIOContext *pb, const AVStream *st,
      * a master element with two bytes ID and one byte length field
      * plus another byte to stay clear of the end. */
     uint8_t colour[(2 + 1 + 8) * 18 + (2 + 1) + 1];
-    AVIOContext buf, *dyn_cp = &buf;
+    FFIOContext buf;
+    AVIOContext *const dyn_cp = &buf.pub;
     int colorinfo_size;
     const void *side_data;
 
-    ffio_init_context(dyn_cp, colour, sizeof(colour), 1, NULL, NULL, NULL, NULL);
+    ffio_init_context(&buf, colour, sizeof(colour), 1, NULL, NULL, NULL, NULL);
 
     if (par->color_trc != AVCOL_TRC_UNSPECIFIED &&
         par->color_trc < AVCOL_TRC_NB) {

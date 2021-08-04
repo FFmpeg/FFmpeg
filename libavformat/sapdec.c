@@ -35,7 +35,7 @@
 struct SAPState {
     URLContext *ann_fd;
     AVFormatContext *sdp_ctx;
-    AVIOContext sdp_pb;
+    FFIOContext sdp_pb;
     uint16_t hash;
     char *sdp;
     int eof;
@@ -160,7 +160,7 @@ static int sap_read_header(AVFormatContext *s)
         goto fail;
     }
     sap->sdp_ctx->max_delay = s->max_delay;
-    sap->sdp_ctx->pb        = &sap->sdp_pb;
+    sap->sdp_ctx->pb        = &sap->sdp_pb.pub;
     sap->sdp_ctx->interrupt_callback = s->interrupt_callback;
 
     if ((ret = ff_copy_whiteblacklists(sap->sdp_ctx, s)) < 0)

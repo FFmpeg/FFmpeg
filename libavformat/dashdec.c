@@ -77,7 +77,7 @@ struct timeline {
  */
 struct representation {
     char *url_template;
-    AVIOContext pb;
+    FFIOContext pb;
     AVIOContext *input;
     AVFormatContext *parent;
     AVFormatContext *ctx;
@@ -353,7 +353,7 @@ static void free_representation(struct representation *pls)
     free_fragment(&pls->cur_seg);
     free_fragment(&pls->init_section);
     av_freep(&pls->init_sec_buf);
-    av_freep(&pls->pb.buffer);
+    av_freep(&pls->pb.pub.buffer);
     ff_format_io_close(pls->parent, &pls->input);
     if (pls->ctx) {
         pls->ctx->pb = NULL;
@@ -1871,8 +1871,8 @@ static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
 static void close_demux_for_component(struct representation *pls)
 {
     /* note: the internal buffer could have changed */
-    av_freep(&pls->pb.buffer);
-    memset(&pls->pb, 0x00, sizeof(AVIOContext));
+    av_freep(&pls->pb.pub.buffer);
+    memset(&pls->pb, 0x00, sizeof(pls->pb));
     pls->ctx->pb = NULL;
     avformat_close_input(&pls->ctx);
 }
@@ -1908,7 +1908,7 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     }
     ffio_init_context(&pls->pb, avio_ctx_buffer, INITIAL_BUFFER_SIZE, 0,
                       pls, read_data, NULL, c->is_live ? NULL : seek_data);
-    pls->pb.seekable = 0;
+    pls->pb.pub.seekable = 0;
 
     if ((ret = ff_copy_whiteblacklists(pls->ctx, s)) < 0)
         goto fail;
@@ -1917,7 +1917,7 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     pls->ctx->probesize = s->probesize > 0 ? s->probesize : 1024 * 4;
     pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
     pls->ctx->interrupt_callback = s->interrupt_callback;
-    ret = av_probe_input_buffer(&pls->pb, &in_fmt, "", NULL, 0, 0);
+    ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, "", NULL, 0, 0);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Error when loading first fragment of playlist\n");
         avformat_free_context(pls->ctx);
@@ -1925,7 +1925,7 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
         goto fail;
     }
 
-    pls->ctx->pb = &pls->pb;
+    pls->ctx->pb = &pls->pb.pub;
     pls->ctx->io_open  = nested_io_open;
 
     // provide additional information from mpd if available

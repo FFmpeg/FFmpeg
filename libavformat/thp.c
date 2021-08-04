@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 typedef struct ThpDemuxContext {
@@ -65,6 +66,7 @@ static int thp_read_header(AVFormatContext *s)
     AVStream *st;
     AVIOContext *pb = s->pb;
     int64_t fsize= avio_size(pb);
+    uint32_t maxsize;
     int i;
 
     /* Read the file header.  */
@@ -79,9 +81,10 @@ static int thp_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     thp->framecnt        = avio_rb32(pb);
     thp->first_framesz   = avio_rb32(pb);
-    pb->maxsize          = avio_rb32(pb);
-    if(fsize>0 && (!pb->maxsize || fsize < pb->maxsize))
-        pb->maxsize= fsize;
+    maxsize              = avio_rb32(pb);
+    if (fsize > 0 && (!maxsize || fsize < maxsize))
+        maxsize = fsize;
+    ffiocontext(pb)->maxsize = fsize;
 
     thp->compoff         = avio_rb32(pb);
                            avio_rb32(pb); /* offsetDataOffset.  */

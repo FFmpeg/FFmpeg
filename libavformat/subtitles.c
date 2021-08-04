@@ -51,9 +51,8 @@ void ff_text_init_avio(void *s, FFTextReader *r, AVIOContext *pb)
 
 void ff_text_init_buf(FFTextReader *r, void *buf, size_t size)
 {
-    memset(&r->buf_pb, 0, sizeof(r->buf_pb));
     ffio_init_context(&r->buf_pb, buf, size, 0, NULL, NULL, NULL, NULL);
-    ff_text_init_avio(NULL, r, &r->buf_pb);
+    ff_text_init_avio(NULL, r, &r->buf_pb.pub);
 }
 
 int64_t ff_text_pos(FFTextReader *r)

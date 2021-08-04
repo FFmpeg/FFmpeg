@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include "avformat.h"
 #include "libavutil/bprint.h"
+#include "avio_internal.h"
 
 enum sub_sort {
     SUB_SORT_TS_POS = 0,    ///< sort by timestamps, then position
@@ -42,7 +43,7 @@ typedef struct {
     AVIOContext *pb;
     unsigned char buf[8];
     int buf_pos, buf_len;
-    AVIOContext buf_pb;
+    FFIOContext buf_pb;
 } FFTextReader;
 
 /**

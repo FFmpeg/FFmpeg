@@ -131,7 +131,8 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
 static int
 rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 {
-    AVIOContext pb;
+    FFIOContext pb0;
+    AVIOContext *const pb = &pb0.pub;
     unsigned int size;
     uint32_t tag;
 
@@ -151,32 +152,32 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
      */
     if (!rdt->mlti_data)
         return -1;
-    ffio_init_context(&pb, rdt->mlti_data, rdt->mlti_data_size, 0,
+    ffio_init_context(&pb0, rdt->mlti_data, rdt->mlti_data_size, 0,
                   NULL, NULL, NULL, NULL);
-    tag = avio_rl32(&pb);
+    tag = avio_rl32(pb);
     if (tag == MKTAG('M', 'L', 'T', 'I')) {
         int num, chunk_nr;
 
         /* read index of MDPR chunk numbers */
-        num = avio_rb16(&pb);
+        num = avio_rb16(pb);
         if (rule_nr < 0 || rule_nr >= num)
             return -1;
-        avio_skip(&pb, rule_nr * 2);
-        chunk_nr = avio_rb16(&pb);
-        avio_skip(&pb, (num - 1 - rule_nr) * 2);
+        avio_skip(pb, rule_nr * 2);
+        chunk_nr = avio_rb16(pb);
+        avio_skip(pb, (num - 1 - rule_nr) * 2);
 
         /* read MDPR chunks */
-        num = avio_rb16(&pb);
+        num = avio_rb16(pb);
         if (chunk_nr >= num)
             return -1;
         while (chunk_nr--)
-            avio_skip(&pb, avio_rb32(&pb));
-        size = avio_rb32(&pb);
+            avio_skip(pb, avio_rb32(pb));
+        size = avio_rb32(pb);
     } else {
         size = rdt->mlti_data_size;
-        avio_seek(&pb, 0, SEEK_SET);
+        avio_seek(pb, 0, SEEK_SET);
     }
-    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, &pb, st, rdt->rmst[st->index], size, NULL) < 0)
+    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, pb, st, rdt->rmst[st->index], size, NULL) < 0)
         return -1;
 
     return 0;
@@ -296,16 +297,16 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
                   const uint8_t *buf, int len, uint16_t rtp_seq, int flags)
 {
     int seq = 1, res;
-    AVIOContext pb;
 
     if (rdt->audio_pkt_cnt == 0) {
+        FFIOContext pb;
         int pos, rmflags;
 
         ffio_init_context(&pb, (uint8_t *)buf, len, 0, NULL, NULL, NULL, NULL);
         rmflags = (flags & RTP_FLAG_KEY) ? 2 : 0;
-        res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[st->index], len, pkt,
-                                  &seq, rmflags, *timestamp);
-        pos = avio_tell(&pb);
+        res = ff_rm_parse_packet(rdt->rmctx, &pb.pub, st, rdt->rmst[st->index],
+                                 len, pkt, &seq, rmflags, *timestamp);
+        pos = avio_tell(&pb.pub);
         if (res < 0)
             return res;
         if (res > 0) {

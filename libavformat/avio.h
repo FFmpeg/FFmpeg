@@ -148,9 +148,9 @@ enum AVIODataMarkerType {
 
 /**
  * Bytestream IO Context.
- * New fields can be added to the end with minor version bumps.
- * Removal, reordering and changes to existing fields require a major
- * version bump.
+ * New public fields can be added with minor version bumps.
+ * Removal, reordering and changes to existing public fields require
+ * a major version bump.
  * sizeof(AVIOContext) must not be used outside libav*.
  *
  * @note None of the function pointers in AVIOContext should be called
@@ -237,12 +237,14 @@ typedef struct AVIOContext {
     int64_t (*seek)(void *opaque, int64_t offset, int whence);
     int64_t pos;            /**< position in the file of the current buffer */
     int eof_reached;        /**< true if was unable to read due to error or eof */
+    int error;              /**< contains the error code or 0 if no error happened */
     int write_flag;         /**< true if open for writing */
     int max_packet_size;
+    int min_packet_size;    /**< Try to buffer at least this amount of data
+                                 before flushing it. */
     unsigned long checksum;
     unsigned char *checksum_ptr;
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
-    int error;              /**< contains the error code or 0 if no error happened */
     /**
      * Pause or resume playback for network streaming protocols - e.g. MMS.
      */
@@ -260,48 +262,11 @@ typedef struct AVIOContext {
     int seekable;
 
     /**
-     * max filesize, used to limit allocations
-     * This field is internal to libavformat and access from outside is not allowed.
-     */
-    int64_t maxsize;
-
-    /**
      * avio_read and avio_write should if possible be satisfied directly
      * instead of going through a buffer, and avio_seek will always
      * call the underlying seek function directly.
      */
     int direct;
-
-    /**
-     * Bytes read statistic
-     * This field is internal to libavformat and access from outside is not allowed.
-     */
-    int64_t bytes_read;
-
-    /**
-     * seek statistic
-     * This field is internal to libavformat and access from outside is not allowed.
-     */
-    int seek_count;
-
-    /**
-     * writeout statistic
-     * This field is internal to libavformat and access from outside is not allowed.
-     */
-    int writeout_count;
-
-    /**
-     * Original buffer size
-     * used internally after probing and ensure seekback to reset the buffer size
-     * This field is internal to libavformat and access from outside is not allowed.
-     */
-    int orig_buffer_size;
-
-    /**
-     * Threshold to favor readahead over seek.
-     * This is current internal only, do not use from outside.
-     */
-    int short_seek_threshold;
 
     /**
      * ',' separated list of allowed protocols.
@@ -325,18 +290,6 @@ typedef struct AVIOContext {
      */
     int ignore_boundary_point;
 
-    /**
-     * Internal, not meant to be used from outside of AVIOContext.
-     */
-    enum AVIODataMarkerType current_type;
-    int64_t last_time;
-
-    /**
-     * A callback that is used instead of short_seek_threshold.
-     * This is current internal only, do not use from outside.
-     */
-    int (*short_seek_get)(void *opaque);
-
     int64_t written;
 
     /**
@@ -344,11 +297,6 @@ typedef struct AVIOContext {
      * used keeping track of already written data for a later flush.
      */
     unsigned char *buf_ptr_max;
-
-    /**
-     * Try to buffer at least this amount of data before flushing it
-     */
-    int min_packet_size;
 } AVIOContext;
 
 /**

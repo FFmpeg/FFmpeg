@@ -275,7 +275,7 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
                                         AVChapter **chapters, unsigned int nb_chapters)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
-    AVIOContext pb;
+    FFIOContext pb;
     int64_t size;
     uint8_t *p;
 
@@ -289,9 +289,9 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
         return NULL;
 
     ffio_init_context(&pb, p + offset, size - offset, 1, NULL, NULL, NULL, NULL);
-    ff_vorbiscomment_write(&pb, *m, vendor, chapters, nb_chapters);
+    ff_vorbiscomment_write(&pb.pub, *m, vendor, chapters, nb_chapters);
     if (framing_bit)
-        avio_w8(&pb, 1);
+        avio_w8(&pb.pub, 1);
 
     *header_len = size;
     return p;

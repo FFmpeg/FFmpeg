@@ -283,9 +283,10 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
     int64_t off;
     int val_1;
     int num_video;
-    AVIOContext pb0, *pb = &pb0;
+    FFIOContext pb0;
+    AVIOContext *const pb = &pb0.pub;
 
-    ffio_init_context(pb, buf, size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_context(&pb0, buf, size, 0, NULL, NULL, NULL, NULL);
 
     ffio_read_varlen(pb); // track_header_len
     avio_r8(pb); // '1'
@@ -436,12 +437,13 @@ static int track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *bu
     int64_t off;
     int64_t poff;
     int maxnp=0;
-    AVIOContext pb0, *pb = &pb0;
+    FFIOContext pb0;
+    AVIOContext *const pb = &pb0.pub;
     int i;
     int64_t filesize = avio_size(s->pb);
     uint64_t n_sb_blocks_tmp;
 
-    ffio_init_context(pb, buf, size, 0, NULL, NULL, NULL, NULL);
+    ffio_init_context(&pb0, buf, size, 0, NULL, NULL, NULL, NULL);
 
     ffio_read_varlen(pb); // track_index_len
     avio_r8(pb); // 'c'

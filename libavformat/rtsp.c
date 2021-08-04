@@ -2496,7 +2496,7 @@ static int rtp_read_header(AVFormatContext *s)
     int payload_type;
     AVCodecParameters *par = NULL;
     struct sockaddr_storage addr;
-    AVIOContext pb;
+    FFIOContext pb;
     socklen_t addrlen = sizeof(addr);
     RTSPState *rt = s->priv_data;
     const char *p;
@@ -2594,7 +2594,7 @@ static int rtp_read_header(AVFormatContext *s)
     avcodec_parameters_free(&par);
 
     ffio_init_context(&pb, sdp.str, sdp.len, 0, NULL, NULL, NULL, NULL);
-    s->pb = &pb;
+    s->pb = &pb.pub;
 
     /* if sdp_read_header() fails then following ff_network_close() cancels out */
     /* ff_network_init() at the start of this function. Otherwise it cancels out */

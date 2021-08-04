@@ -230,7 +230,7 @@ static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
         if (read_size > SANE_CHUNK_SIZE/10) {
             read_size = ffio_limit(s, read_size);
             // If filesize/maxsize is unknown, limit to SANE_CHUNK_SIZE
-            if (s->maxsize < 0)
+            if (ffiocontext(s)->maxsize < 0)
                 read_size = FFMIN(read_size, SANE_CHUNK_SIZE);
         }
 
@@ -1972,6 +1972,7 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
     int64_t skip = 0;
     //We could use URLProtocol flags here but as many user applications do not use URLProtocols this would be unreliable
     const char *proto = avio_find_protocol_name(s->url);
+    FFIOContext *ctx;
 
     av_assert0(time_tolerance >= 0);
 
@@ -2012,6 +2013,7 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
     }
 
     pos_delta *= 2;
+    ctx = ffiocontext(s->pb);
     /* XXX This could be adjusted depending on protocol*/
     if (s->pb->buffer_size < pos_delta && pos_delta < (1<<24)) {
         av_log(s, AV_LOG_VERBOSE, "Reconfiguring buffers to size %"PRId64"\n", pos_delta);
@@ -2022,11 +2024,11 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
             return;
         }
 
-        s->pb->short_seek_threshold = FFMAX(s->pb->short_seek_threshold, pos_delta/2);
+        ctx->short_seek_threshold = FFMAX(ctx->short_seek_threshold, pos_delta/2);
     }
 
     if (skip < (1<<23)) {
-        s->pb->short_seek_threshold = FFMAX(s->pb->short_seek_threshold, skip);
+        ctx->short_seek_threshold = FFMAX(ctx->short_seek_threshold, skip);
     }
 }
 
@@ -3556,9 +3558,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             max_stream_analyze_duration = 7*AV_TIME_BASE;
     }
 
-    if (ic->pb)
+    if (ic->pb) {
+        FFIOContext *const ctx = ffiocontext(ic->pb);
         av_log(ic, AV_LOG_DEBUG, "Before avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d nb_streams:%d\n",
-               avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count, ic->nb_streams);
+               avio_tell(ic->pb), ctx->bytes_read, ctx->seek_count, ic->nb_streams);
+    }
 
     for (i = 0; i < ic->nb_streams; i++) {
         const AVCodec *codec;
@@ -4069,9 +4073,11 @@ find_stream_info_err:
         av_freep(&ic->streams[i]->internal->info);
         av_bsf_free(&ic->streams[i]->internal->extract_extradata.bsf);
     }
-    if (ic->pb)
+    if (ic->pb) {
+        FFIOContext *const ctx = ffiocontext(ic->pb);
         av_log(ic, AV_LOG_DEBUG, "After avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d frames:%d\n",
-               avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count, count);
+               avio_tell(ic->pb), ctx->bytes_read, ctx->seek_count, count);
+    }
     return ret;
 
 unref_then_goto_end:

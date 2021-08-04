@@ -5177,7 +5177,7 @@ static int mov_read_wide(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
 #if CONFIG_ZLIB
-    AVIOContext ctx;
+    FFIOContext ctx;
     uint8_t *cmov_data;
     uint8_t *moov_data; /* uncompressed data */
     long cmov_len, moov_len;
@@ -5211,12 +5211,11 @@ static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     ret = AVERROR_INVALIDDATA;
     if (uncompress (moov_data, (uLongf *) &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
         goto free_and_return;
-    if (ffio_init_context(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL) != 0)
-        goto free_and_return;
-    ctx.seekable = AVIO_SEEKABLE_NORMAL;
+    ffio_init_context(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL);
+    ctx.pub.seekable = AVIO_SEEKABLE_NORMAL;
     atom.type = MKTAG('m','o','o','v');
     atom.size = moov_len;
-    ret = mov_read_default(c, &ctx, atom);
+    ret = mov_read_default(c, &ctx.pub, atom);
 free_and_return:
     av_free(moov_data);
     av_free(cmov_data);

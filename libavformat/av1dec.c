@@ -157,32 +157,33 @@ static int read_obu(const uint8_t *buf, int size, int64_t *obu_size, int *type)
 
 static int annexb_probe(const AVProbeData *p)
 {
-    AVIOContext pb;
+    FFIOContext ctx;
+    AVIOContext *const pb = &ctx.pub;
     int64_t obu_size;
     uint32_t temporal_unit_size, frame_unit_size, obu_unit_size;
     int seq = 0;
     int ret, type, cnt = 0;
 
-    ffio_init_context(&pb, p->buf, p->buf_size, 0,
+    ffio_init_context(&ctx, p->buf, p->buf_size, 0,
                       NULL, NULL, NULL, NULL);
 
-    ret = leb(&pb, &temporal_unit_size);
+    ret = leb(pb, &temporal_unit_size);
     if (ret < 0)
         return 0;
     cnt += ret;
-    ret = leb(&pb, &frame_unit_size);
+    ret = leb(pb, &frame_unit_size);
     if (ret < 0 || ((int64_t)frame_unit_size + ret) > temporal_unit_size)
         return 0;
     cnt += ret;
-    ret = leb(&pb, &obu_unit_size);
+    ret = leb(pb, &obu_unit_size);
     if (ret < 0 || ((int64_t)obu_unit_size + ret) >= frame_unit_size)
         return 0;
     cnt += ret;
 
     frame_unit_size -= obu_unit_size + ret;
 
-    avio_skip(&pb, obu_unit_size);
-    if (pb.eof_reached || pb.error)
+    avio_skip(pb, obu_unit_size);
+    if (pb->eof_reached || pb->error)
         return 0;
 
     // Check that the first OBU is a Temporal Delimiter.
@@ -192,13 +193,13 @@ static int annexb_probe(const AVProbeData *p)
     cnt += obu_unit_size;
 
     do {
-        ret = leb(&pb, &obu_unit_size);
+        ret = leb(pb, &obu_unit_size);
         if (ret < 0 || ((int64_t)obu_unit_size + ret) > frame_unit_size)
             return 0;
         cnt += ret;
 
-        avio_skip(&pb, obu_unit_size);
-        if (pb.eof_reached || pb.error)
+        avio_skip(pb, obu_unit_size);
+        if (pb->eof_reached || pb->error)
             return 0;
 
         ret = read_obu(p->buf + cnt, FFMIN(p->buf_size - cnt, obu_unit_size), &obu_size, &type);

@@ -113,7 +113,7 @@ static int mpjpeg_read_close(AVFormatContext *s)
 
 static int mpjpeg_read_probe(const AVProbeData *p)
 {
-    AVIOContext pb;
+    FFIOContext pb;
     int ret = 0;
     int size = 0;
 
@@ -122,7 +122,7 @@ static int mpjpeg_read_probe(const AVProbeData *p)
 
     ffio_init_context(&pb, p->buf, p->buf_size, 0, NULL, NULL, NULL, NULL);
 
-    ret = (parse_multipart_header(&pb, &size, "--", NULL) >= 0) ? AVPROBE_SCORE_MAX : 0;
+    ret = (parse_multipart_header(&pb.pub, &size, "--", NULL) >= 0) ? AVPROBE_SCORE_MAX : 0;
 
     return ret;
 }

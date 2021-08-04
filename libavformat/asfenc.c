@@ -236,7 +236,7 @@ typedef struct ASFContext {
     int64_t packet_timestamp_end;
     unsigned int packet_nb_payloads;
     uint8_t packet_buf[PACKET_SIZE_MAX];
-    AVIOContext pb;
+    FFIOContext pb;
     /* only for reading */
     uint64_t data_offset;                ///< beginning of the first data packet
 
@@ -911,7 +911,7 @@ static void put_payload_header(AVFormatContext *s, ASFStream *stream,
                                int m_obj_offset, int payload_len, int flags)
 {
     ASFContext *asf = s->priv_data;
-    AVIOContext *pb = &asf->pb;
+    AVIOContext *const pb = &asf->pb.pub;
     int val;
 
     val = stream->num;
@@ -983,7 +983,7 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, AVStream *avst,
 
             put_payload_header(s, stream, timestamp + PREROLL_TIME,
                                m_obj_size, m_obj_offset, payload_len, flags);
-            avio_write(&asf->pb, buf, payload_len);
+            avio_write(&asf->pb.pub, buf, payload_len);
 
             if (asf->multi_payloads_present)
                 asf->packet_size_left -= (payload_len + PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS);
@@ -1125,7 +1125,7 @@ static int asf_write_trailer(AVFormatContext *s)
     int ret;
 
     /* flush the current packet */
-    if (asf->pb.buf_ptr > asf->pb.buffer)
+    if (asf->pb.pub.buf_ptr > asf->pb.pub.buffer)
         flush_packet(s);
 
     /* write index */
