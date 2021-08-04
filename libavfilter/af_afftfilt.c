@@ -130,6 +130,7 @@ static int config_input(AVFilterLink *inlink)
     float overlap, scale;
     char *args;
     const char *last_expr = "1";
+    int buf_size;
 
     s->channels = inlink->channels;
     s->pts  = AV_NOPTS_VALUE;
@@ -142,6 +143,7 @@ static int config_input(AVFilterLink *inlink)
         return ret;
 
     s->window_size = s->fft_size;
+    buf_size = FFALIGN(s->window_size, av_cpu_max_align());
 
     s->fft_in = av_calloc(inlink->channels, sizeof(*s->fft_in));
     if (!s->fft_in)
@@ -156,15 +158,15 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     for (ch = 0; ch < inlink->channels; ch++) {
-        s->fft_in[ch] = av_calloc(s->window_size, sizeof(**s->fft_in));
+        s->fft_in[ch] = av_calloc(buf_size, sizeof(**s->fft_in));
         if (!s->fft_in[ch])
             return AVERROR(ENOMEM);
 
-        s->fft_out[ch] = av_calloc(s->window_size, sizeof(**s->fft_out));
+        s->fft_out[ch] = av_calloc(buf_size, sizeof(**s->fft_out));
         if (!s->fft_out[ch])
             return AVERROR(ENOMEM);
 
-        s->fft_temp[ch] = av_calloc(s->window_size, sizeof(**s->fft_temp));
+        s->fft_temp[ch] = av_calloc(buf_size, sizeof(**s->fft_temp));
         if (!s->fft_temp[ch])
             return AVERROR(ENOMEM);
     }
