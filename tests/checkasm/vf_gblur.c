@@ -49,6 +49,22 @@ static void check_horiz_slice(float *dst_ref, float *dst_new)
     bench_new(dst_new, WIDTH, HEIGHT, 1, nu, bscale);
 }
 
+static void check_verti_slice(float *dst_ref, float *dst_new)
+{
+    int steps = 2;
+    float nu = 0.101f;
+    float bscale = 1.112f;
+
+    declare_func(void, float *buffer, int width, int height, int column_begin,
+                int column_end, int steps, float nu, float bscale);
+    call_ref(dst_ref, WIDTH, HEIGHT, 0, WIDTH, steps, nu, bscale);
+    call_new(dst_new, WIDTH, HEIGHT, 0, WIDTH, steps, nu, bscale);
+    if (!float_near_abs_eps_array(dst_ref, dst_new, 0.01f, PIXELS)) {
+         fail();
+    }
+    bench_new(dst_new, WIDTH, HEIGHT, 0, WIDTH, 1, nu, bscale);
+}
+
 static void check_postscale_slice(float *dst_ref, float *dst_new)
 {
     float postscale = 0.0603f;
@@ -84,6 +100,13 @@ void checkasm_check_vf_gblur(void)
         check_postscale_slice(dst_ref, dst_new);
     }
     report("postscale_slice");
+
+    randomize_buffers(dst_ref, PIXELS);
+    memcpy(dst_new, dst_ref, BUF_SIZE);
+    if (check_func(s.verti_slice, "verti_slice")) {
+        check_verti_slice(dst_ref, dst_new);
+    }
+    report("verti_slice");
 
     av_freep(&dst_ref);
     av_freep(&dst_new);
