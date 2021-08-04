@@ -110,7 +110,6 @@
 
 function ff_h264_v_loop_filter_luma_neon, export=1
         h264_loop_filter_start
-        sxtw            x1,  w1
 
         ld1             {v0.16B},  [x0], x1
         ld1             {v2.16B},  [x0], x1
@@ -134,7 +133,6 @@ endfunc
 
 function ff_h264_h_loop_filter_luma_neon, export=1
         h264_loop_filter_start
-        sxtw            x1,  w1
 
         sub             x0,  x0,  #4
         ld1             {v6.8B},  [x0], x1
@@ -188,7 +186,6 @@ endfunc
     cbnz            w4,  1f
     ret
 1:
-    sxtw            x1,  w1
     dup             v30.16b, w2                // alpha
     dup             v31.16b, w3                // beta
 .endm
@@ -414,7 +411,6 @@ endfunc
 
 function ff_h264_v_loop_filter_chroma_neon, export=1
         h264_loop_filter_start
-        sxtw            x1,  w1
 
         sub             x0,  x0,  x1, lsl #1
         ld1             {v18.8B}, [x0], x1
@@ -433,7 +429,6 @@ endfunc
 
 function ff_h264_h_loop_filter_chroma_neon, export=1
         h264_loop_filter_start
-        sxtw            x1,  w1
 
         sub             x0,  x0,  #2
 h_loop_filter_chroma420:
@@ -466,7 +461,6 @@ h_loop_filter_chroma420:
 endfunc
 
 function ff_h264_h_loop_filter_chroma422_neon, export=1
-        sxtw            x1,  w1
         h264_loop_filter_start
         add             x5,  x0,  x1
         sub             x0,  x0,  #2
@@ -691,7 +685,6 @@ endfunc
 
 .macro  biweight_func   w
 function ff_biweight_h264_pixels_\w\()_neon, export=1
-        sxtw            x2,  w2
         lsr             w8,  w5,  #31
         add             w7,  w7,  #1
         eor             w8,  w8,  w6,  lsr #30
@@ -800,7 +793,6 @@ endfunc
 
 .macro  weight_func     w
 function ff_weight_h264_pixels_\w\()_neon, export=1
-        sxtw            x1,  w1
         cmp             w3,  #1
         mov             w6,  #1
         lsl             w5,  w5,  w3
