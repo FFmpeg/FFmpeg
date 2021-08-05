@@ -65,7 +65,7 @@ static const int offsets[] = {0, 255, -1 };
 #define src0 (buf0 + 2 * 4 * MAX_PB_SIZE) /* hevc qpel functions read data from negative src pointer offsets */
 #define src1 (buf1 + 2 * 4 * MAX_PB_SIZE)
 
-void checkasm_check_hevc_qpel(void)
+static void checkasm_check_hevc_qpel(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -109,7 +109,7 @@ void checkasm_check_hevc_qpel(void)
     report("qpel");
 }
 
-void checkasm_check_hevc_qpel_uni(void)
+static void checkasm_check_hevc_qpel_uni(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -150,7 +150,7 @@ void checkasm_check_hevc_qpel_uni(void)
     report("qpel_uni");
 }
 
-void checkasm_check_hevc_qpel_uni_w(void)
+static void checkasm_check_hevc_qpel_uni_w(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -198,7 +198,7 @@ void checkasm_check_hevc_qpel_uni_w(void)
     report("qpel_uni_w");
 }
 
-void checkasm_check_hevc_qpel_bi(void)
+static void checkasm_check_hevc_qpel_bi(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -242,7 +242,7 @@ void checkasm_check_hevc_qpel_bi(void)
     report("qpel_bi");
 }
 
-void checkasm_check_hevc_qpel_bi_w(void)
+static void checkasm_check_hevc_qpel_bi_w(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -294,7 +294,7 @@ void checkasm_check_hevc_qpel_bi_w(void)
     report("qpel_bi_w");
 }
 
-void checkasm_check_hevc_epel(void)
+static void checkasm_check_hevc_epel(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -338,7 +338,7 @@ void checkasm_check_hevc_epel(void)
     report("epel");
 }
 
-void checkasm_check_hevc_epel_uni(void)
+static void checkasm_check_hevc_epel_uni(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -379,7 +379,7 @@ void checkasm_check_hevc_epel_uni(void)
     report("epel_uni");
 }
 
-void checkasm_check_hevc_epel_uni_w(void)
+static void checkasm_check_hevc_epel_uni_w(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -427,7 +427,7 @@ void checkasm_check_hevc_epel_uni_w(void)
     report("epel_uni_w");
 }
 
-void checkasm_check_hevc_epel_bi(void)
+static void checkasm_check_hevc_epel_bi(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -471,7 +471,7 @@ void checkasm_check_hevc_epel_bi(void)
     report("epel_bi");
 }
 
-void checkasm_check_hevc_epel_bi_w(void)
+static void checkasm_check_hevc_epel_bi_w(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, buf1, [BUF_SIZE]);
@@ -521,4 +521,18 @@ void checkasm_check_hevc_epel_bi_w(void)
         }
     }
     report("epel_bi_w");
+}
+
+void checkasm_check_hevc_pel(void)
+{
+    checkasm_check_hevc_qpel();
+    checkasm_check_hevc_qpel_uni();
+    checkasm_check_hevc_qpel_uni_w();
+    checkasm_check_hevc_qpel_bi();
+    checkasm_check_hevc_qpel_bi_w();
+    checkasm_check_hevc_epel();
+    checkasm_check_hevc_epel_uni();
+    checkasm_check_hevc_epel_uni_w();
+    checkasm_check_hevc_epel_bi();
+    checkasm_check_hevc_epel_bi_w();
 }
