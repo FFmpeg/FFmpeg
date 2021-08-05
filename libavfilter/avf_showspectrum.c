@@ -101,6 +101,8 @@ typedef struct ShowSpectrumContext {
     int single_pic;
     int legend;
     int start_x, start_y;
+    float drange;
+    float dmin, dscale;
     int (*plot_channel)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ShowSpectrumContext;
 
@@ -181,6 +183,7 @@ static const AVOption showspectrum_options[] = {
     { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "fps",   "set video rate",  OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = "auto"}, 0, 0, FLAGS },
     { "legend", "draw legend", OFFSET(legend), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
+    { "drange", "set dynamic range in dBFS", OFFSET(drange), AV_OPT_TYPE_FLOAT, {.dbl = 120}, 10, 200, FLAGS },
     { NULL }
 };
 
@@ -871,10 +874,10 @@ static int draw_legend(AVFilterContext *ctx, int samples)
         }
 
         for (y = 0; ch == 0 && y < h; y += h / 10) {
-            float value = 120.f * log10f(1.f - y / (float)h);
+            float value = s->drange * log10f(1.f - y / (float)h);
             char *text;
 
-            if (value < -120)
+            if (value < -s->drange)
                 break;
             text = av_asprintf("%.0f dB", value);
             if (!text)
@@ -925,7 +928,7 @@ static float get_value(AVFilterContext *ctx, int ch, int y)
         a = av_clipf(powf(a, 0.20), 0, 1);
         break;
     case LOG:
-        a = 1.f + log10f(av_clipf(a, 1e-6, 1)) / 6.f; // zero = -120dBFS
+        a = 1.f + log10f(av_clipf(a, s->dmin, 1.f)) * s->dscale;
         break;
     default:
         av_assert0(0);
@@ -998,6 +1001,9 @@ static int config_output(AVFilterLink *outlink)
     ShowSpectrumContext *s = ctx->priv;
     int i, fft_size, h, w, ret;
     float overlap;
+
+    s->dmin = expf(-s->drange * M_LN10 / 20.f);
+    s->dscale = -1.f / log10f(s->dmin);
 
     switch (s->fscale) {
     case F_LINEAR: s->plot_channel = plot_channel_lin; break;
@@ -1641,6 +1647,7 @@ static const AVOption showspectrumpic_options[] = {
     { "rotation", "color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { "start", "start frequency", OFFSET(start), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
+    { "drange", "set dynamic range in dBFS", OFFSET(drange), AV_OPT_TYPE_FLOAT, {.dbl = 120}, 10, 200, FLAGS },
     { NULL }
 };
 
