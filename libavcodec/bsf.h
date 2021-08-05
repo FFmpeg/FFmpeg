@@ -34,8 +34,6 @@
  * @{
  */
 
-typedef struct AVBSFInternal AVBSFInternal;
-
 /**
  * The bitstream filter state.
  *
@@ -56,12 +54,6 @@ typedef struct AVBSFContext {
      * The bitstream filter this context is an instance of.
      */
     const struct AVBitStreamFilter *filter;
-
-    /**
-     * Opaque libavcodec internal data. Must not be touched by the caller in any
-     * way.
-     */
-    AVBSFInternal *internal;
 
     /**
      * Opaque filter-specific private data. If filter->priv_class is non-NULL,

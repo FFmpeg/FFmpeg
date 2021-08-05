@@ -32,29 +32,35 @@
 
 #define IS_EMPTY(pkt) (!(pkt)->data && !(pkt)->side_data_elems)
 
-struct AVBSFInternal {
+typedef struct FFBSFContext {
+    AVBSFContext pub;
     AVPacket *buffer_pkt;
     int eof;
-};
+} FFBSFContext;
+
+static av_always_inline FFBSFContext *ffbsfcontext(AVBSFContext *ctx)
+{
+    return (FFBSFContext *)ctx;
+}
 
 void av_bsf_free(AVBSFContext **pctx)
 {
     AVBSFContext *ctx;
+    FFBSFContext *bsfi;
 
     if (!pctx || !*pctx)
         return;
-    ctx = *pctx;
+    ctx  = *pctx;
+    bsfi = ffbsfcontext(ctx);
 
-    if (ctx->internal) {
+    if (ctx->priv_data) {
         if (ctx->filter->close)
             ctx->filter->close(ctx);
-        av_packet_free(&ctx->internal->buffer_pkt);
-        av_freep(&ctx->internal);
+        if (ctx->filter->priv_class)
+            av_opt_free(ctx->priv_data);
+        av_freep(&ctx->priv_data);
     }
-    if (ctx->filter->priv_class && ctx->priv_data)
-        av_opt_free(ctx->priv_data);
-
-    av_freep(&ctx->priv_data);
+    av_packet_free(&bsfi->buffer_pkt);
 
     avcodec_parameters_free(&ctx->par_in);
     avcodec_parameters_free(&ctx->par_out);
@@ -92,12 +98,13 @@ const AVClass *av_bsf_get_class(void)
 int av_bsf_alloc(const AVBitStreamFilter *filter, AVBSFContext **pctx)
 {
     AVBSFContext *ctx;
-    AVBSFInternal *bsfi;
+    FFBSFContext *bsfi;
     int ret;
 
-    ctx = av_mallocz(sizeof(*ctx));
-    if (!ctx)
+    bsfi = av_mallocz(sizeof(*bsfi));
+    if (!bsfi)
         return AVERROR(ENOMEM);
+    ctx  = &bsfi->pub;
 
     ctx->av_class = &bsf_class;
     ctx->filter   = filter;
@@ -120,15 +127,6 @@ int av_bsf_alloc(const AVBitStreamFilter *filter, AVBSFContext **pctx)
             av_opt_set_defaults(ctx->priv_data);
         }
     }
-    /* Allocate AVBSFInternal; must happen after priv_data has been allocated
-     * so that a filter->close needing priv_data is never called without. */
-    bsfi = av_mallocz(sizeof(*bsfi));
-    if (!bsfi) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    ctx->internal = bsfi;
-
     bsfi->buffer_pkt = av_packet_alloc();
     if (!bsfi->buffer_pkt) {
         ret = AVERROR(ENOMEM);
@@ -185,7 +183,7 @@ int av_bsf_init(AVBSFContext *ctx)
 
 void av_bsf_flush(AVBSFContext *ctx)
 {
-    AVBSFInternal *bsfi = ctx->internal;
+    FFBSFContext *const bsfi = ffbsfcontext(ctx);
 
     bsfi->eof = 0;
 
@@ -197,7 +195,7 @@ void av_bsf_flush(AVBSFContext *ctx)
 
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
-    AVBSFInternal *bsfi = ctx->internal;
+    FFBSFContext *const bsfi = ffbsfcontext(ctx);
     int ret;
 
     if (!pkt || IS_EMPTY(pkt)) {
@@ -228,7 +226,7 @@ int av_bsf_receive_packet(AVBSFContext *ctx, AVPacket *pkt)
 
 int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt)
 {
-    AVBSFInternal *bsfi = ctx->internal;
+    FFBSFContext *const bsfi = ffbsfcontext(ctx);
     AVPacket *tmp_pkt;
 
     if (bsfi->eof)
@@ -249,7 +247,7 @@ int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt)
 
 int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt)
 {
-    AVBSFInternal *bsfi = ctx->internal;
+    FFBSFContext *const bsfi = ffbsfcontext(ctx);
 
     if (bsfi->eof)
         return AVERROR_EOF;
