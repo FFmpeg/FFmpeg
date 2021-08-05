@@ -5931,16 +5931,21 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
              trk->entry && pkt->flags & AV_PKT_FLAG_KEY) ||
             (mov->flags & FF_MOV_FLAG_FRAG_EVERY_FRAME)) {
         if (frag_duration >= mov->min_fragment_duration) {
-            // Set the duration of this track to line up with the next
-            // sample in this track. This avoids relying on AVPacket
-            // duration, but only helps for this particular track, not
-            // for the other ones that are flushed at the same time.
-            trk->track_duration = pkt->dts - trk->start_dts;
-            if (pkt->pts != AV_NOPTS_VALUE)
-                trk->end_pts = pkt->pts;
-            else
-                trk->end_pts = pkt->dts;
-            trk->end_reliable = 1;
+            if (trk->entry) {
+                // Set the duration of this track to line up with the next
+                // sample in this track. This avoids relying on AVPacket
+                // duration, but only helps for this particular track, not
+                // for the other ones that are flushed at the same time.
+                //
+                // If we have trk->entry == 0, no fragment will be written
+                // for this track, and we can't adjust the track end here.
+                trk->track_duration = pkt->dts - trk->start_dts;
+                if (pkt->pts != AV_NOPTS_VALUE)
+                    trk->end_pts = pkt->pts;
+                else
+                    trk->end_pts = pkt->dts;
+                trk->end_reliable = 1;
+            }
             mov_auto_flush_fragment(s, 0);
         }
     }
