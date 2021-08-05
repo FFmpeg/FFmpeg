@@ -13020,6 +13020,12 @@ Display video frame rate or sample rate in case of audio used by filter link.
 
 @item eof
 Display link output status.
+
+@item sample_count_in
+Display number of samples taken from filter.
+
+@item sample_count_out
+Display number of samples given out from filter.
 @end table
 
 @item rate, r
