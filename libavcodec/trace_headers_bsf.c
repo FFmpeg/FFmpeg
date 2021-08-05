@@ -95,6 +95,19 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *pkt)
 
     av_log(bsf, AV_LOG_INFO, "Packet: %d bytes%s.\n", pkt->size, tmp);
 
+    if (av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, NULL)) {
+        av_log(bsf, AV_LOG_INFO, "Side data:\n");
+
+        err = ff_cbs_read_packet_side_data(ctx->cbc, frag, pkt);
+        ff_cbs_fragment_reset(frag);
+
+        if (err < 0) {
+            av_packet_unref(pkt);
+            return err;
+        }
+        av_log(bsf, AV_LOG_INFO, "Payload:\n");
+    }
+
     err = ff_cbs_read_packet(ctx->cbc, frag, pkt);
 
     ff_cbs_fragment_reset(frag);
