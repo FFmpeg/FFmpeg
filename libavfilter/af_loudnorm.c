@@ -504,8 +504,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->pts +=
         out->nb_samples =
         inlink->min_samples =
-        inlink->max_samples =
-        inlink->partial_buf_size = subframe_length;
+        inlink->max_samples = subframe_length;
 
         s->frame_type = INNER_FRAME;
         break;
@@ -761,8 +760,7 @@ static int config_input(AVFilterLink *inlink)
 
     if (s->frame_type != LINEAR_MODE) {
         inlink->min_samples =
-        inlink->max_samples =
-        inlink->partial_buf_size = frame_size(inlink->sample_rate, 3000);
+        inlink->max_samples = frame_size(inlink->sample_rate, 3000);
     }
 
     s->pts = AV_NOPTS_VALUE;

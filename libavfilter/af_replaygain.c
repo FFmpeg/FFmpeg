@@ -359,7 +359,6 @@ static int config_input(AVFilterLink *inlink)
 
     s->yule_hist_i   = 20;
     s->butter_hist_i = 4;
-    inlink->partial_buf_size =
     inlink->min_samples =
     inlink->max_samples = inlink->sample_rate / 20;
 
