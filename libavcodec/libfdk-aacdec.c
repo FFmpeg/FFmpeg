@@ -58,7 +58,11 @@ typedef struct FDKAACDecContext {
     int drc_cut;
     int album_mode;
     int level_limit;
-    int output_delay;
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+    int output_delay_set;
+    int flush_samples;
+    int delay_samples;
+#endif
 } FDKAACDecContext;
 
 
@@ -123,7 +127,12 @@ static int get_stream_info(AVCodecContext *avctx)
     avctx->sample_rate = info->sampleRate;
     avctx->frame_size  = info->frameSize;
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
-    s->output_delay    = info->outputDelay;
+    if (!s->output_delay_set && info->outputDelay) {
+        // Set this only once.
+        s->flush_samples    = info->outputDelay;
+        s->delay_samples    = info->outputDelay;
+        s->output_delay_set = 1;
+    }
 #endif
 
     for (i = 0; i < info->numChannels; i++) {
@@ -367,14 +376,31 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
     AAC_DECODER_ERROR err;
     UINT valid = avpkt->size;
+    UINT flags = 0;
+    int input_offset = 0;
 
-    err = aacDecoder_Fill(s->handle, &avpkt->data, &avpkt->size, &valid);
-    if (err != AAC_DEC_OK) {
-        av_log(avctx, AV_LOG_ERROR, "aacDecoder_Fill() failed: %x\n", err);
-        return AVERROR_INVALIDDATA;
+    if (avpkt->size) {
+        err = aacDecoder_Fill(s->handle, &avpkt->data, &avpkt->size, &valid);
+        if (err != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "aacDecoder_Fill() failed: %x\n", err);
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+        /* Handle decoder draining */
+        if (s->flush_samples > 0) {
+            flags |= AACDEC_FLUSH;
+        } else {
+            return AVERROR_EOF;
+        }
+#else
+        return AVERROR_EOF;
+#endif
     }
 
-    err = aacDecoder_DecodeFrame(s->handle, (INT_PCM *) s->decoder_buffer, s->decoder_buffer_size / sizeof(INT_PCM), 0);
+    err = aacDecoder_DecodeFrame(s->handle, (INT_PCM *) s->decoder_buffer,
+                                 s->decoder_buffer_size / sizeof(INT_PCM),
+                                 flags);
     if (err == AAC_DEC_NOT_ENOUGH_BITS) {
         ret = avpkt->size - valid;
         goto end;
@@ -390,16 +416,36 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
     frame->nb_samples = avctx->frame_size;
 
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+    if (flags & AACDEC_FLUSH) {
+        // Only return the right amount of samples at the end; if calling the
+        // decoder with AACDEC_FLUSH, it will keep returning frames indefinitely.
+        frame->nb_samples = FFMIN(s->flush_samples, frame->nb_samples);
+        av_log(s, AV_LOG_DEBUG, "Returning %d/%d delayed samples.\n",
+                                frame->nb_samples, s->flush_samples);
+        s->flush_samples -= frame->nb_samples;
+    } else {
+        // Trim off samples from the start to compensate for extra decoder
+        // delay. We could also just adjust the pts, but this avoids
+        // including the extra samples in the output altogether.
+        if (s->delay_samples) {
+            int drop_samples = FFMIN(s->delay_samples, frame->nb_samples);
+            av_log(s, AV_LOG_DEBUG, "Dropping %d/%d delayed samples.\n",
+                                    drop_samples, s->delay_samples);
+            s->delay_samples  -= drop_samples;
+            frame->nb_samples -= drop_samples;
+            input_offset = drop_samples * avctx->channels;
+            if (frame->nb_samples <= 0)
+                return 0;
+        }
+    }
+#endif
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         goto end;
 
-    if (frame->pts != AV_NOPTS_VALUE)
-        frame->pts -= av_rescale_q(s->output_delay,
-                                   (AVRational){1, avctx->sample_rate},
-                                   avctx->time_base);
-
-    memcpy(frame->extended_data[0], s->decoder_buffer,
-           avctx->channels * avctx->frame_size *
+    memcpy(frame->extended_data[0], s->decoder_buffer + input_offset,
+           avctx->channels * frame->nb_samples *
            av_get_bytes_per_sample(avctx->sample_fmt));
 
     *got_frame_ptr = 1;
@@ -432,7 +478,11 @@ const AVCodec ff_libfdk_aac_decoder = {
     .decode         = fdk_aac_decode_frame,
     .close          = fdk_aac_decode_close,
     .flush          = fdk_aac_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+                      | AV_CODEC_CAP_DELAY
+#endif
+    ,
     .priv_class     = &fdk_aac_dec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
