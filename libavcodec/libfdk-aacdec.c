@@ -56,6 +56,7 @@ typedef struct FDKAACDecContext {
     int drc_heavy;
     int drc_effect;
     int drc_cut;
+    int album_mode;
     int level_limit;
     int output_delay;
 } FDKAACDecContext;
@@ -87,6 +88,10 @@ static const AVOption fdk_aac_dec_options[] = {
 #if FDKDEC_VER_AT_LEAST(3, 0) // 3.0.0
     { "drc_effect","Dynamic Range Control: effect type, where e.g. [0] is none and [6] is general",
                      OFFSET(drc_effect),     AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 8,   AD, NULL    },
+#endif
+#if FDKDEC_VER_AT_LEAST(3, 1) // 3.1.0
+    { "album_mode","Dynamic Range Control: album mode, where [0] is off and [1] is on",
+                     OFFSET(album_mode),     AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
 #endif
     { NULL }
 };
@@ -330,6 +335,15 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
     if (s->drc_effect != -1) {
         if (aacDecoder_SetParam(s->handle, AAC_UNIDRC_SET_EFFECT, s->drc_effect) != AAC_DEC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set DRC effect type in the decoder\n");
+            return AVERROR_UNKNOWN;
+        }
+    }
+#endif
+
+#if FDKDEC_VER_AT_LEAST(3, 1) // 3.1.0
+    if (s->album_mode != -1) {
+        if (aacDecoder_SetParam(s->handle, AAC_UNIDRC_ALBUM_MODE, s->album_mode) != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set album mode in the decoder\n");
             return AVERROR_UNKNOWN;
         }
     }
