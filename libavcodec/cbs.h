@@ -276,6 +276,10 @@ int ff_cbs_read_extradata_from_codec(CodedBitstreamContext *ctx,
                                      CodedBitstreamFragment *frag,
                                      const struct AVCodecContext *avctx);
 
+int ff_cbs_read_packet_side_data(CodedBitstreamContext *ctx,
+                                 CodedBitstreamFragment *frag,
+                                 const AVPacket *pkt);
+
 /**
  * Read the data bitstream from a packet into a fragment, then
  * split into units and decompose.

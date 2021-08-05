@@ -294,6 +294,19 @@ int ff_cbs_read_packet(CodedBitstreamContext *ctx,
                          pkt->data, pkt->size, 0);
 }
 
+int ff_cbs_read_packet_side_data(CodedBitstreamContext *ctx,
+                                 CodedBitstreamFragment *frag,
+                                 const AVPacket *pkt)
+{
+    size_t side_data_size;
+    const uint8_t *side_data =
+        av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                &side_data_size);
+
+    return cbs_read_data(ctx, frag, NULL,
+                         side_data, side_data_size, 1);
+}
+
 int ff_cbs_read(CodedBitstreamContext *ctx,
                 CodedBitstreamFragment *frag,
                 const uint8_t *data, size_t size)
