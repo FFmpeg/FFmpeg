@@ -628,7 +628,7 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter,
     switch (avfilter_pad_get_type(out->filter_ctx->output_pads, out->pad_idx)) {
     case AVMEDIA_TYPE_VIDEO: return configure_output_video_filter(fg, ofilter, out);
     case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, ofilter, out);
-    default: av_assert0(0);
+    default: av_assert0(0); return 0;
     }
 }
 
@@ -938,7 +938,7 @@ static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
     switch (avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx)) {
     case AVMEDIA_TYPE_VIDEO: return configure_input_video_filter(fg, ifilter, in);
     case AVMEDIA_TYPE_AUDIO: return configure_input_audio_filter(fg, ifilter, in);
-    default: av_assert0(0);
+    default: av_assert0(0); return 0;
     }
 }
 
