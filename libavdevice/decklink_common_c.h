@@ -23,7 +23,10 @@
 #ifndef AVDEVICE_DECKLINK_COMMON_C_H
 #define AVDEVICE_DECKLINK_COMMON_C_H
 
+#include <stdint.h>
 #include <DeckLinkAPIVersion.h>
+
+#include "libavutil/log.h"
 
 typedef enum DecklinkPtsSource {
     PTS_SRC_AUDIO     = 1,
