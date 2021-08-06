@@ -38,6 +38,7 @@ static av_always_inline int mulinv(int n, int m)
         if (((n * x) % m) == 1)
             return x;
     av_assert0(0); /* Never reached */
+    return 0;
 }
 
 /* Guaranteed to work for any n, m where gcd(n, m) == 1 */
