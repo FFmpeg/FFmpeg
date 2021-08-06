@@ -171,7 +171,10 @@ void FUNCC(ff_h264_idct8_dc_add)(uint8_t *_dst, int16_t *_block, int stride){
     }
 }
 
-void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
+void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset,
+                               int16_t *block, int stride,
+                               const uint8_t nnzc[5 * 8])
+{
     int i;
     for(i=0; i<16; i++){
         int nnz = nnzc[ scan8[i] ];
@@ -182,7 +185,10 @@ void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset, int16_t *b
     }
 }
 
-void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
+void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset,
+                                    int16_t *block, int stride,
+                                    const uint8_t nnzc[5 * 8])
+{
     int i;
     for(i=0; i<16; i++){
         if(nnzc[ scan8[i] ])             FUNCC(ff_h264_idct_add   )(dst + block_offset[i], block + i*16*sizeof(pixel), stride);
@@ -190,7 +196,10 @@ void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset, int16
     }
 }
 
-void FUNCC(ff_h264_idct8_add4)(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
+void FUNCC(ff_h264_idct8_add4)(uint8_t *dst, const int *block_offset,
+                               int16_t *block, int stride,
+                               const uint8_t nnzc[5 * 8])
+{
     int i;
     for(i=0; i<16; i+=4){
         int nnz = nnzc[ scan8[i] ];

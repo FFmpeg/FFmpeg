@@ -347,7 +347,7 @@ void ff_h264_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
 void ff_h264_idct_add16_msa(uint8_t *dst,
                             const int32_t *blk_offset,
                             int16_t *block, int32_t dst_stride,
-                            const uint8_t nzc[15 * 8])
+                            const uint8_t nzc[5 * 8])
 {
     int32_t i;
 
@@ -369,7 +369,7 @@ void ff_h264_idct_add16_msa(uint8_t *dst,
 
 void ff_h264_idct8_add4_msa(uint8_t *dst, const int32_t *blk_offset,
                             int16_t *block, int32_t dst_stride,
-                            const uint8_t nzc[15 * 8])
+                            const uint8_t nzc[5 * 8])
 {
     int32_t cnt;
 
@@ -448,7 +448,7 @@ void ff_h264_idct_add16_intra_msa(uint8_t *dst,
                                   const int32_t *blk_offset,
                                   int16_t *block,
                                   int32_t dst_stride,
-                                  const uint8_t nzc[15 * 8])
+                                  const uint8_t nzc[5 * 8])
 {
     int32_t i;
 

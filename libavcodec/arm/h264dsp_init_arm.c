@@ -57,19 +57,19 @@ void ff_h264_idct_add_neon(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct_dc_add_neon(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct_add16_neon(uint8_t *dst, const int *block_offset,
                              int16_t *block, int stride,
-                             const uint8_t nnzc[6*8]);
+                             const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add16intra_neon(uint8_t *dst, const int *block_offset,
                                   int16_t *block, int stride,
-                                  const uint8_t nnzc[6*8]);
+                                  const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add8_neon(uint8_t **dest, const int *block_offset,
                             int16_t *block, int stride,
-                            const uint8_t nnzc[6*8]);
+                            const uint8_t nnzc[15 * 8]);
 
 void ff_h264_idct8_add_neon(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct8_dc_add_neon(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct8_add4_neon(uint8_t *dst, const int *block_offset,
                              int16_t *block, int stride,
-                             const uint8_t nnzc[6*8]);
+                             const uint8_t nnzc[5 * 8]);
 
 static av_cold void h264dsp_init_neon(H264DSPContext *c, const int bit_depth,
                                       const int chroma_format_idc)

@@ -89,16 +89,16 @@ typedef struct H264DSPContext {
 
     void (*h264_idct_add16)(uint8_t *dst /*align 16*/, const int *blockoffset,
                             int16_t *block /*align 16*/, int stride,
-                            const uint8_t nnzc[15 * 8]);
+                            const uint8_t nnzc[5 * 8]);
     void (*h264_idct8_add4)(uint8_t *dst /*align 16*/, const int *blockoffset,
                             int16_t *block /*align 16*/, int stride,
-                            const uint8_t nnzc[15 * 8]);
+                            const uint8_t nnzc[5 * 8]);
     void (*h264_idct_add8)(uint8_t **dst /*align 16*/, const int *blockoffset,
                            int16_t *block /*align 16*/, int stride,
                            const uint8_t nnzc[15 * 8]);
     void (*h264_idct_add16intra)(uint8_t *dst /*align 16*/, const int *blockoffset,
                                  int16_t *block /*align 16*/,
-                                 int stride, const uint8_t nnzc[15 * 8]);
+                                 int stride, const uint8_t nnzc[5 * 8]);
     void (*h264_luma_dc_dequant_idct)(int16_t *output,
                                       int16_t *input /*align 16*/, int qmul);
     void (*h264_chroma_dc_dequant_idct)(int16_t *block, int qmul);

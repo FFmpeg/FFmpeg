@@ -766,7 +766,8 @@ void ff_h264_idct8_dc_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
 }
 
 void ff_h264_idct_add16_8_mmi(uint8_t *dst, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[15*8])
+                              int16_t *block, int stride,
+                              const uint8_t nnzc[5 * 8])
 {
     int i;
     for(i=0; i<16; i++){
@@ -783,7 +784,7 @@ void ff_h264_idct_add16_8_mmi(uint8_t *dst, const int *block_offset,
 }
 
 void ff_h264_idct_add16intra_8_mmi(uint8_t *dst, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[15*8])
+        int16_t *block, int stride, const uint8_t nnzc[5 * 8])
 {
     int i;
     for(i=0; i<16; i++){
@@ -796,7 +797,7 @@ void ff_h264_idct_add16intra_8_mmi(uint8_t *dst, const int *block_offset,
 }
 
 void ff_h264_idct8_add4_8_mmi(uint8_t *dst, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[15*8])
+        int16_t *block, int stride, const uint8_t nnzc[5 * 8])
 {
     int i;
     for(i=0; i<16; i+=4){
