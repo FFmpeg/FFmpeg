@@ -507,6 +507,7 @@ static const MXFLocalTagPair* mxf_lookup_local_tag(int tag)
 
     // this assert can only be hit during development
     av_assert0(0 && "you forgot to add your new tag to mxf_local_tag_batch");
+    return NULL;
 }
 
 static void mxf_mark_tag_unused(MXFContext *mxf, int tag)
