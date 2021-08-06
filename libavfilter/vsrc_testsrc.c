@@ -718,8 +718,8 @@ static uint32_t color_gradient(unsigned index)
     case 3: return 0x0000FF + (sd <<  8);
     case 4: return 0x0000FF + (si << 16);
     case 5: return 0xFF0000 + (sd <<  0);
+    default: av_assert0(0); return 0;
     }
-    av_assert0(0);
 }
 
 static void draw_text(TestSourceContext *s, AVFrame *frame, FFDrawColor *color,
