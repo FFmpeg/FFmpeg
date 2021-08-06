@@ -51,7 +51,8 @@ static void ipdopd_reset(int8_t *ipd_hist, int8_t *opd_hist)
 
 /** Split one subband into 2 subsubbands with a symmetric real filter.
  * The filter must have its non-center even coefficients equal to zero. */
-static void hybrid2_re(INTFLOAT (*in)[2], INTFLOAT (*out)[32][2], const INTFLOAT filter[8], int len, int reverse)
+static void hybrid2_re(INTFLOAT (*in)[2], INTFLOAT (*out)[32][2],
+                       const INTFLOAT filter[7], int len, int reverse)
 {
     int i, j;
     for (i = 0; i < len; i++, in++) {
