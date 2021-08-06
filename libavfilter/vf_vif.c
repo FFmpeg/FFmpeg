@@ -35,7 +35,6 @@
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
-#include "vif.h"
 #include "video.h"
 
 #define NUM_DATA_BUFS 13
@@ -285,11 +284,11 @@ static int vif_filter1d(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     return 0;
 }
 
-int ff_compute_vif2(AVFilterContext *ctx,
-                    const float *ref, const float *main, int w, int h,
-                    int ref_stride, int main_stride, float *score,
-                    float *data_buf[NUM_DATA_BUFS], float **temp,
-                    int gnb_threads)
+static int compute_vif2(AVFilterContext *ctx,
+                        const float *ref, const float *main, int w, int h,
+                        int ref_stride, int main_stride, float *score,
+                        float *const data_buf[NUM_DATA_BUFS], float **temp,
+                        int gnb_threads)
 {
     ThreadData td;
     float *ref_scale = data_buf[0];
@@ -450,11 +449,9 @@ static AVFrame *do_vif(AVFilterContext *ctx, AVFrame *main, const AVFrame *ref)
         offset_16bit(s, ref, main, s->width);
     }
 
-    ff_compute_vif2(ctx,
-                    s->ref_data, s->main_data, s->width,
-                    s->height, s->width, s->width,
-                    score, s->data_buf, s->temp,
-                    s->nb_threads);
+    compute_vif2(ctx, s->ref_data, s->main_data,
+                 s->width, s->height, s->width, s->width,
+                 score, s->data_buf, s->temp, s->nb_threads);
 
     set_meta(metadata, "lavfi.vif.scale.0", score[0]);
     set_meta(metadata, "lavfi.vif.scale.1", score[1]);
