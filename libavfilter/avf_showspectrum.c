@@ -101,8 +101,8 @@ typedef struct ShowSpectrumContext {
     int single_pic;
     int legend;
     int start_x, start_y;
-    float drange;
-    float dmin, dscale;
+    float drange, limit;
+    float dmin, dmax;
     int (*plot_channel)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ShowSpectrumContext;
 
@@ -184,6 +184,7 @@ static const AVOption showspectrum_options[] = {
     { "fps",   "set video rate",  OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = "auto"}, 0, 0, FLAGS },
     { "legend", "draw legend", OFFSET(legend), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { "drange", "set dynamic range in dBFS", OFFSET(drange), AV_OPT_TYPE_FLOAT, {.dbl = 120}, 10, 200, FLAGS },
+    { "limit", "set upper limit in dBFS", OFFSET(limit), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -100, 100, FLAGS },
     { NULL }
 };
 
@@ -692,6 +693,75 @@ static float bin_pos(const int bin, const int num_bins, const float sample_rate)
     return num_bins * scaled_freq / max_freq;
 }
 
+static float get_scale(AVFilterContext *ctx, int scale, float a)
+{
+    ShowSpectrumContext *s = ctx->priv;
+    const float dmin = s->dmin;
+    const float dmax = s->dmax;
+
+    a = av_clipf(a, dmin, dmax);
+    if (scale != LOG)
+        a = (a - dmin) / (dmax - dmin);
+
+    switch (scale) {
+    case LINEAR:
+        break;
+    case SQRT:
+        a = sqrtf(a);
+        break;
+    case CBRT:
+        a = cbrtf(a);
+        break;
+    case FOURTHRT:
+        a = sqrtf(sqrtf(a));
+        break;
+    case FIFTHRT:
+        a = powf(a, 0.2f);
+        break;
+    case LOG:
+        a = (s->drange - s->limit + log10f(a) * 20.f) / s->drange;
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    return a;
+}
+
+static float get_iscale(AVFilterContext *ctx, int scale, float a)
+{
+    ShowSpectrumContext *s = ctx->priv;
+    const float dmin = s->dmin;
+    const float dmax = s->dmax;
+
+    switch (scale) {
+    case LINEAR:
+        break;
+    case SQRT:
+        a = a * a;
+        break;
+    case CBRT:
+        a = a * a * a;
+        break;
+    case FOURTHRT:
+        a = a * a * a * a;
+        break;
+    case FIFTHRT:
+        a = a * a * a * a * a;
+        break;
+    case LOG:
+        a = expf(M_LN10 * (a * s->drange - s->drange + s->limit) / 20.f);
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    if (scale != LOG)
+        a = a * (dmax - dmin) + dmin;
+
+    return a;
+}
+
 static int draw_legend(AVFilterContext *ctx, int samples)
 {
     ShowSpectrumContext *s = ctx->priv;
@@ -873,19 +943,23 @@ static int draw_legend(AVFilterContext *ctx, int samples)
             memset(s->outpicref->data[2]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[2] + s->w + s->start_x + 20, av_clip_uint8(out[2]), 10);
         }
 
-        for (y = 0; ch == 0 && y < h; y += h / 10) {
-            float value = s->drange * log10f(1.f - y / (float)h);
+        for (y = 0; ch == 0 && y < h + 5; y += 25) {
+            static const char *log_fmt = "%.0f";
+            static const char *lin_fmt = "%.3f";
+            const float a = av_clipf(1.f - y / (float)(h - 1), 0.f, 1.f);
+            const float value = s->scale == LOG ? log10f(get_iscale(ctx, s->scale, a)) * 20.f : get_iscale(ctx, s->scale, a);
             char *text;
 
-            if (value < -s->drange)
-                break;
-            text = av_asprintf("%.0f dB", value);
+            text = av_asprintf(s->scale == LOG ? log_fmt : lin_fmt, value);
             if (!text)
                 continue;
-            drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 5, text, 0);
+            drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 3, text, 0);
             av_free(text);
         }
     }
+
+    if (s->scale == LOG)
+        drawtext(s->outpicref, s->w + s->start_x + 22, s->start_y + s->h + 20, "dBFS", 0);
 
     return 0;
 }
@@ -910,31 +984,7 @@ static float get_value(AVFilterContext *ctx, int ch, int y)
         av_assert0(0);
     }
 
-    /* apply scale */
-    switch (s->scale) {
-    case LINEAR:
-        a = av_clipf(a, 0, 1);
-        break;
-    case SQRT:
-        a = av_clipf(sqrtf(a), 0, 1);
-        break;
-    case CBRT:
-        a = av_clipf(cbrtf(a), 0, 1);
-        break;
-    case FOURTHRT:
-        a = av_clipf(sqrtf(sqrtf(a)), 0, 1);
-        break;
-    case FIFTHRT:
-        a = av_clipf(powf(a, 0.20), 0, 1);
-        break;
-    case LOG:
-        a = 1.f + log10f(av_clipf(a, s->dmin, 1.f)) * s->dscale;
-        break;
-    default:
-        av_assert0(0);
-    }
-
-    return a;
+    return av_clipf(get_scale(ctx, s->scale, a), 0.f, 1.f);
 }
 
 static int plot_channel_lin(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -1002,8 +1052,8 @@ static int config_output(AVFilterLink *outlink)
     int i, fft_size, h, w, ret;
     float overlap;
 
-    s->dmin = expf(-s->drange * M_LN10 / 20.f);
-    s->dscale = -1.f / log10f(s->dmin);
+    s->dmax = expf(s->limit * M_LN10 / 20.f);
+    s->dmin = expf((s->limit - s->drange) * M_LN10 / 20.f);
 
     switch (s->fscale) {
     case F_LINEAR: s->plot_channel = plot_channel_lin; break;
@@ -1648,6 +1698,7 @@ static const AVOption showspectrumpic_options[] = {
     { "start", "start frequency", OFFSET(start), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "drange", "set dynamic range in dBFS", OFFSET(drange), AV_OPT_TYPE_FLOAT, {.dbl = 120}, 10, 200, FLAGS },
+    { "limit", "set upper limit in dBFS", OFFSET(limit), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -100, 100, FLAGS },
     { NULL }
 };
 

@@ -26916,8 +26916,12 @@ Set upper frame rate limit. Default is @code{auto}, unlimited.
 Draw time and frequency axes and legends. Default is disabled.
 
 @item drange
-Set dynamic range used to calculate intensity color values. Default is 120dBFS.
+Set dynamic range used to calculate intensity color values. Default is 120 dBFS.
 Allowed range is from 10 to 200.
+
+@item limit
+Set upper limit of input audio samples volume in dBFS. Default is 0 dBFS.
+Allowed range is from -100 to 100.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
@@ -27093,8 +27097,12 @@ Set start frequency from which to display spectrogram. Default is @code{0}.
 Set stop frequency to which to display spectrogram. Default is @code{0}.
 
 @item drange
-Set dynamic range used to calculate intensity color values. Default is 120dBFS.
+Set dynamic range used to calculate intensity color values. Default is 120 dBFS.
 Allowed range is from 10 to 200.
+
+@item limit
+Set upper limit of input audio samples volume in dBFS. Default is 0 dBFS.
+Allowed range is from -100 to 100.
 @end table
 
 @subsection Examples
