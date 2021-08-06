@@ -22,6 +22,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rawenc.h"
 #include "libavutil/intreadwrite.h"
@@ -57,10 +58,8 @@ static int kvag_read_header(AVFormatContext *s)
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
 
-    if ((ret = avio_read(s->pb, buf, KVAG_HEADER_SIZE)) < 0)
+    if ((ret = ffio_read_size(s->pb, buf, KVAG_HEADER_SIZE)) < 0)
         return ret;
-    else if (ret != KVAG_HEADER_SIZE)
-        return AVERROR(EIO);
 
     hdr.magic                   = AV_RL32(buf +  0);
     hdr.data_size               = AV_RL32(buf +  4);

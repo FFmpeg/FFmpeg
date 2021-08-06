@@ -3285,12 +3285,12 @@ int ff_get_extradata(AVFormatContext *s, AVCodecParameters *par, AVIOContext *pb
     int ret = ff_alloc_extradata(par, size);
     if (ret < 0)
         return ret;
-    ret = avio_read(pb, par->extradata, size);
-    if (ret != size) {
+    ret = ffio_read_size(pb, par->extradata, size);
+    if (ret < 0) {
         av_freep(&par->extradata);
         par->extradata_size = 0;
         av_log(s, AV_LOG_ERROR, "Failed to read extradata of size %d\n", size);
-        return ret < 0 ? ret : AVERROR_INVALIDDATA;
+        return ret;
     }
 
     return ret;

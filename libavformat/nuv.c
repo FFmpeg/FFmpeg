@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "riff.h"
 
@@ -258,9 +259,9 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt)
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
         uint64_t pos    = avio_tell(pb);
 
-        ret = avio_read(pb, hdr, HDRSIZE);
-        if (ret < HDRSIZE)
-            return ret < 0 ? ret : AVERROR(EIO);
+        ret = ffio_read_size(pb, hdr, HDRSIZE);
+        if (ret < 0)
+            return ret;
 
         frametype = hdr[0];
         size      = PKTSIZE(AV_RL32(&hdr[8]));

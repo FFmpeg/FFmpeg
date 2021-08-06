@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "riff.h"
 #include "internal.h"
 #include "libavcodec/get_bits.h"
@@ -126,12 +127,10 @@ static int read_packet(AVFormatContext *s,
 
     if(s->streams[0]->codecpar->sample_rate==4400 && !ctx->second_packet)
     {
-        ret = avio_read(pb, ctx->audio_buffer, frame_size);
+        ret = ffio_read_size(pb, ctx->audio_buffer, frame_size);
 
         if(ret<0)
             return ret;
-        if(ret!=frame_size)
-            return AVERROR(EIO);
 
         pkt->data[0]=ctx->audio_buffer[11];
         pkt->data[1]=ctx->audio_buffer[0];
@@ -165,12 +164,10 @@ static int read_packet(AVFormatContext *s,
     }
     else // 8000 Hz
     {
-        ret = avio_read(pb, ctx->audio_buffer, frame_size);
+        ret = ffio_read_size(pb, ctx->audio_buffer, frame_size);
 
         if(ret<0)
             return ret;
-        if(ret!=frame_size)
-            return AVERROR(EIO);
 
         pkt->data[0]=ctx->audio_buffer[5];
         pkt->data[1]=ctx->audio_buffer[0];

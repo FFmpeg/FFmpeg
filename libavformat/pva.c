@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "mpeg.h"
 
@@ -147,9 +148,9 @@ recover:
                 goto recover;
             }
 
-            ret = avio_read(pb, pes_header_data, pes_header_data_length);
-            if (ret != pes_header_data_length)
-                return ret < 0 ? ret : AVERROR_INVALIDDATA;
+            ret = ffio_read_size(pb, pes_header_data, pes_header_data_length);
+            if (ret < 0)
+                return ret;
             length -= 9 + pes_header_data_length;
 
             pes_packet_length -= 3 + pes_header_data_length;

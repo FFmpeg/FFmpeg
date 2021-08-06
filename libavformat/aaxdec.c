@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 typedef struct AAXColumn {
@@ -215,12 +216,9 @@ static int aax_read_header(AVFormatContext *s)
     if (ret64 < 0)
         return ret;
 
-    ret = avio_read(pb, a->string_table, a->strings_size);
-    if (ret != a->strings_size) {
-        if (ret < 0)
-            return ret;
-        return AVERROR(EIO);
-    }
+    ret = ffio_read_size(pb, a->string_table, a->strings_size);
+    if (ret < 0)
+        return ret;
 
     for (int c = 0; c < a->columns; c++) {
         int64_t data_offset = 0;
