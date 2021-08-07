@@ -50,7 +50,6 @@ extern AVDictionary *sws_dict;
 extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts, *resample_opts;
 extern int hide_banner;
-extern int cpu_count;
 
 /**
  * Register a program-specific cleanup routine.
