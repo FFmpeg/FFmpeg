@@ -6,6 +6,7 @@ FATE_PIXFMT-$(CONFIG_SCALE_FILTER) =           bgr24           \
                         rgb32           \
                         rgb555          \
                         rgb565          \
+                        xyz12le         \
                         yuv410p         \
                         yuv411p         \
                         yuv420p         \
