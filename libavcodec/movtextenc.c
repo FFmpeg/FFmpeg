@@ -654,7 +654,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             return AVERROR(EINVAL);
         }
 
-        dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+        dialog = ff_ass_split_dialog(s->ass_ctx, ass);
         if (!dialog)
             return AVERROR(ENOMEM);
         mov_text_dialog(s, dialog);

@@ -424,7 +424,7 @@ void ff_ass_free_dialog(ASSDialog **dialogp)
     av_freep(dialogp);
 }
 
-ASSDialog *ff_ass_split_dialog2(ASSSplitContext *ctx, const char *buf)
+ASSDialog *ff_ass_split_dialog(ASSSplitContext *ctx, const char *buf)
 {
     int i;
     static const ASSFields fields[] = {

@@ -245,7 +245,7 @@ static int encode_frame(AVCodecContext *avctx,
             return AVERROR(EINVAL);
         }
 
-        dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+        dialog = ff_ass_split_dialog(s->ass_ctx, ass);
         if (!dialog)
             return AVERROR(ENOMEM);
         s->alignment_applied = 0;
