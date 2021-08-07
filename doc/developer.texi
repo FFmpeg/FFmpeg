@@ -494,6 +494,22 @@ patch is inline or attached per mail.
 You can check @url{https://patchwork.ffmpeg.org}, if your patch does not show up, its mime type
 likely was wrong.
 
+@subheading Sending patches from email clients
+Using @code{git send-email} might not be desirable for everyone. The
+following trick allows to send patches via email clients in a safe
+way. It has been tested with Outlook and Thunderbird (with X-Unsent
+extension) and might work with other applications.
+
+Create your patch like this:
+
+@verbatim
+git format-patch -s -o "outputfolder" --add-header "X-Unsent: 1" --suffix .eml --to ffmpeg-devel@ffmpeg.org -1 1a2b3c4d
+@end verbatim
+
+Now you'll just need to open the eml file with the email application
+and execute 'Send'.
+
+@subheading Reviews
 Your patch will be reviewed on the mailing list. You will likely be asked
 to make some changes and are expected to send in an improved version that
 incorporates the requests from the review. This process may go through
