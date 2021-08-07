@@ -110,22 +110,6 @@ typedef struct ASSSplitContext ASSSplitContext;
 ASSSplitContext *ff_ass_split(const char *buf);
 
 /**
- * Split one or several ASS "Dialogue" lines from a string buffer and store
- * them in an already initialized context.
- *
- * @param ctx Context previously initialized by ff_ass_split().
- * @param buf String containing the ASS "Dialogue" lines.
- * @param cache Set to 1 to keep all the previously split ASSDialog in
- *              the context, or set to 0 to free all the previously split
- *              ASSDialog.
- * @param number If not NULL, the pointed integer will be set to the number
- *               of split ASSDialog.
- * @return Pointer to the first split ASSDialog.
- */
-ASSDialog *ff_ass_split_dialog(ASSSplitContext *ctx, const char *buf,
-                               int cache, int *number);
-
-/**
  * Free a dialogue obtained from ff_ass_split_dialog2().
  */
 void ff_ass_free_dialog(ASSDialog **dialogp);
