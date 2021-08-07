@@ -76,19 +76,6 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
     return AVERROR(ENOSYS);
 }
 
-int ff_qsv_level_to_mfx(enum AVCodecID codec_id, int level)
-{
-    if (level == FF_LEVEL_UNKNOWN)
-        return MFX_LEVEL_UNKNOWN;
-
-    switch (codec_id) {
-    case AV_CODEC_ID_HEVC:
-        return level / 3;
-    default:
-        return level;
-    }
-}
-
 static const struct {
     int mfx_iopattern;
     const char *desc;
