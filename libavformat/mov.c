@@ -3611,7 +3611,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
             if (ctts_data_old && ctts_index_old < ctts_count_old) {
                 curr_ctts = ctts_data_old[ctts_index_old].duration;
-                av_log(mov->fc, AV_LOG_DEBUG, "stts: %"PRId64" ctts: %"PRId64", ctts_index: %"PRId64", ctts_count: %"PRId64"\n",
+                av_log(mov->fc, AV_LOG_TRACE, "stts: %"PRId64" ctts: %"PRId64", ctts_index: %"PRId64", ctts_count: %"PRId64"\n",
                        curr_cts, curr_ctts, ctts_index_old, ctts_count_old);
                 curr_cts += curr_ctts;
                 ctts_sample_old++;
