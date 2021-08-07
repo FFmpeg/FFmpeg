@@ -81,7 +81,7 @@ struct voice_entry {
     void (*unregister_fn)(cst_voice *);
     cst_voice *voice;
     unsigned usage_count;
-} voice_entry;
+};
 
 #define MAKE_VOICE_STRUCTURE(voice_name) {             \
     .name          =                      #voice_name, \
