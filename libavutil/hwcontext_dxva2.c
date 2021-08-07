@@ -83,6 +83,7 @@ static const struct {
     { MKTAG('N', 'V', '1', '2'), AV_PIX_FMT_NV12 },
     { MKTAG('P', '0', '1', '0'), AV_PIX_FMT_P010 },
     { D3DFMT_P8,                 AV_PIX_FMT_PAL8 },
+    { D3DFMT_A8R8G8B8,           AV_PIX_FMT_BGRA },
 };
 
 DEFINE_GUID(video_decoder_service,   0xfc51a551, 0xd5e7, 0x11d9, 0xaf, 0x55, 0x00, 0x05, 0x4e, 0x43, 0xff, 0x02);
