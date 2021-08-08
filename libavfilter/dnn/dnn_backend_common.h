@@ -24,6 +24,7 @@
 #ifndef AVFILTER_DNN_DNN_BACKEND_COMMON_H
 #define AVFILTER_DNN_DNN_BACKEND_COMMON_H
 
+#include "queue.h"
 #include "../dnn_interface.h"
 #include "libavutil/thread.h"
 
@@ -121,5 +122,19 @@ DNNReturnType ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module);
  * @retval DNN_ERROR in case async inference cannot be started
  */
 DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module);
+
+/**
+ * Extract input and output frame from the Task Queue after
+ * asynchronous inference.
+ *
+ * @param task_queue pointer to the task queue of the backend
+ * @param in double pointer to the input frame
+ * @param out double pointer to the output frame
+ *
+ * @retval DAST_EMPTY_QUEUE if task queue is empty
+ * @retval DAST_NOT_READY if inference not completed yet.
+ * @retval DAST_SUCCESS if result successfully extracted
+ */
+DNNAsyncStatusType ff_dnn_get_async_result_common(Queue *task_queue, AVFrame **in, AVFrame **out);
 
 #endif

@@ -32,7 +32,6 @@
 #include "libavutil/avstring.h"
 #include "libavutil/detection_bbox.h"
 #include "../internal.h"
-#include "queue.h"
 #include "safe_queue.h"
 #include <c_api/ie_c_api.h>
 #include "dnn_backend_common.h"
@@ -883,22 +882,7 @@ DNNReturnType ff_dnn_execute_model_async_ov(const DNNModel *model, DNNExecBasePa
 DNNAsyncStatusType ff_dnn_get_async_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out)
 {
     OVModel *ov_model = model->model;
-    TaskItem *task = ff_queue_peek_front(ov_model->task_queue);
-
-    if (!task) {
-        return DAST_EMPTY_QUEUE;
-    }
-
-    if (task->inference_done != task->inference_todo) {
-        return DAST_NOT_READY;
-    }
-
-    *in = task->in_frame;
-    *out = task->out_frame;
-    ff_queue_pop_front(ov_model->task_queue);
-    av_freep(&task);
-
-    return DAST_SUCCESS;
+    return ff_dnn_get_async_result_common(ov_model->task_queue, in, out);
 }
 
 DNNReturnType ff_dnn_flush_ov(const DNNModel *model)
