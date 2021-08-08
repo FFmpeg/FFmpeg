@@ -69,3 +69,56 @@ DNNReturnType ff_dnn_fill_task(TaskItem *task, DNNExecBaseParams *exec_params, v
 
     return DNN_SUCCESS;
 }
+
+/**
+ * Thread routine for async execution.
+ * @param args pointer to DNNAsyncExecModule module
+ */
+static void *async_thread_routine(void *args)
+{
+    DNNAsyncExecModule *async_module = args;
+    void *request = async_module->args;
+
+    async_module->start_inference(request);
+    async_module->callback(request);
+    return NULL;
+}
+
+DNNReturnType ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module)
+{
+    if (!async_module) {
+        return DNN_ERROR;
+    }
+#if HAVE_PTHREAD_CANCEL
+    pthread_join(async_module->thread_id, NULL);
+#endif
+    async_module->start_inference = NULL;
+    async_module->callback = NULL;
+    async_module->args = NULL;
+    return DNN_SUCCESS;
+}
+
+DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module)
+{
+    int ret;
+
+    if (!async_module) {
+        av_log(ctx, AV_LOG_ERROR, "async_module is null when starting async inference.\n");
+        return DNN_ERROR;
+    }
+
+#if HAVE_PTHREAD_CANCEL
+    pthread_join(async_module->thread_id, NULL);
+    ret = pthread_create(&async_module->thread_id, NULL, async_thread_routine, async_module);
+    if (ret != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to start async inference.\n");
+        return DNN_ERROR;
+    }
+#else
+    if (async_module->start_inference(async_module->args) != DNN_SUCCESS) {
+        return DNN_ERROR;
+    }
+    async_module->callback(async_module->args);
+#endif
+    return DNN_SUCCESS;
+}
