@@ -137,4 +137,20 @@ DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_
  */
 DNNAsyncStatusType ff_dnn_get_async_result_common(Queue *task_queue, AVFrame **in, AVFrame **out);
 
+/**
+ * Allocate input and output frames and fill the Task
+ * with execution parameters.
+ *
+ * @param task pointer to the allocated task
+ * @param exec_params pointer to execution parameters
+ * @param backend_model void pointer to the backend model
+ * @param input_height height of input frame
+ * @param input_width width of input frame
+ * @param ctx pointer to the backend context
+ *
+ * @retval DNN_SUCCESS if successful
+ * @retval DNN_ERROR if allocation fails
+ */
+DNNReturnType ff_dnn_fill_gettingoutput_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int input_height, int input_width, void *ctx);
+
 #endif

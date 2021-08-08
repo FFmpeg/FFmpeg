@@ -310,35 +310,19 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
     DNNReturnType ret;
     TFModel *tf_model = model;
     TFContext *ctx = &tf_model->ctx;
-    AVFrame *in_frame = av_frame_alloc();
-    AVFrame *out_frame = NULL;
     TaskItem task;
     TFRequestItem *request;
+    DNNExecBaseParams exec_params = {
+        .input_name     = input_name,
+        .output_names   = &output_name,
+        .nb_output      = 1,
+        .in_frame       = NULL,
+        .out_frame      = NULL,
+    };
 
-    if (!in_frame) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for input frame\n");
-        ret = DNN_ERROR;
+    if (ff_dnn_fill_gettingoutput_task(&task, &exec_params, tf_model, input_height, input_width, ctx) != DNN_SUCCESS) {
         goto err;
     }
-
-    out_frame = av_frame_alloc();
-    if (!out_frame) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for output frame\n");
-        ret = DNN_ERROR;
-        goto err;
-    }
-
-    in_frame->width = input_width;
-    in_frame->height = input_height;
-
-    task.do_ioproc = 0;
-    task.async = 0;
-    task.input_name = input_name;
-    task.in_frame = in_frame;
-    task.output_names = &output_name;
-    task.out_frame = out_frame;
-    task.model = tf_model;
-    task.nb_output = 1;
 
     if (extract_inference_from_task(&task, tf_model->inference_queue) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
@@ -354,12 +338,12 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
     }
 
     ret = execute_model_tf(request, tf_model->inference_queue);
-    *output_width = out_frame->width;
-    *output_height = out_frame->height;
+    *output_width = task.out_frame->width;
+    *output_height = task.out_frame->height;
 
 err:
-    av_frame_free(&out_frame);
-    av_frame_free(&in_frame);
+    av_frame_free(&task.out_frame);
+    av_frame_free(&task.in_frame);
     return ret;
 }
 
