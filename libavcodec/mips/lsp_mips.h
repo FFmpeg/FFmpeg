@@ -54,6 +54,8 @@
 #ifndef AVCODEC_MIPS_LSP_MIPS_H
 #define AVCODEC_MIPS_LSP_MIPS_H
 
+#include "config.h"
+
 #if HAVE_MIPSFPU && HAVE_INLINE_ASM
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 #include "libavutil/attributes.h"

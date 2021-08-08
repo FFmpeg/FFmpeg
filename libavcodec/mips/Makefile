@@ -1,3 +1,7 @@
+ARCH_HEADERS                               = aacsbr_mips.h aacpsy_mips.h   \
+                                             cabac.h compute_antialias_fixed.h \
+                                             compute_antialias_float.h     \
+
 MIPSFPU-OBJS-$(CONFIG_AMRNB_DECODER)      += mips/acelp_filters_mips.o     \
                                              mips/celp_filters_mips.o      \
                                              mips/celp_math_mips.o         \

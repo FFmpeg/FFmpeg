@@ -21,6 +21,9 @@
 #ifndef AVCODEC_MIPS_VP9DSP_MIPS_H
 #define AVCODEC_MIPS_VP9DSP_MIPS_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #define VP9_8TAP_MIPS_MSA_FUNC(SIZE, type, type_idx)                         \
 void ff_put_8tap_##type##_##SIZE##h_msa(uint8_t *dst, ptrdiff_t dststride,   \
                                         const uint8_t *src,                  \
