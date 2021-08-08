@@ -971,6 +971,7 @@ int configure_filtergraph(FilterGraph *fg)
         fg->graph->nb_threads = filter_nbthreads;
 
         args[0] = 0;
+        e       = NULL;
         while ((e = av_dict_get(ost->sws_dict, "", e,
                                 AV_DICT_IGNORE_SUFFIX))) {
             av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
@@ -985,6 +986,7 @@ int configure_filtergraph(FilterGraph *fg)
         }
 
         args[0] = 0;
+        e       = NULL;
         while ((e = av_dict_get(ost->swr_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX))) {
             av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
@@ -994,6 +996,7 @@ int configure_filtergraph(FilterGraph *fg)
         av_opt_set(fg->graph, "aresample_swr_opts", args, 0);
 
         args[0] = '\0';
+        e       = NULL;
         while ((e = av_dict_get(fg->outputs[0]->ost->resample_opts, "", e,
                                 AV_DICT_IGNORE_SUFFIX))) {
             av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
