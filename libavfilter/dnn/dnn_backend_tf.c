@@ -95,6 +95,13 @@ static void free_buffer(void *data, size_t length)
     av_freep(&data);
 }
 
+/**
+ * Free the contents of TensorFlow inference request.
+ * It does not free the TFInferRequest instance.
+ *
+ * @param request pointer to TFInferRequest instance.
+ * NULL pointer is allowed.
+ */
 static void tf_free_request(TFInferRequest *request)
 {
     if (!request)
@@ -117,6 +124,12 @@ static void tf_free_request(TFInferRequest *request)
     }
 }
 
+/**
+ * Create a TensorFlow inference request. All properties
+ * are initially unallocated and set as NULL.
+ *
+ * @return pointer to the allocated TFInferRequest instance.
+ */
 static TFInferRequest *tf_create_inference_request(void)
 {
     TFInferRequest *infer_request = av_malloc(sizeof(TFInferRequest));
@@ -125,6 +138,38 @@ static TFInferRequest *tf_create_inference_request(void)
     infer_request->input_tensor = NULL;
     infer_request->output_tensors = NULL;
     return infer_request;
+}
+
+/**
+ * Start synchronous inference for the TensorFlow model.
+ *
+ * @param request pointer to the TFRequestItem for inference
+ * @retval DNN_SUCCESS if execution is successful
+ * @retval DNN_ERROR if execution fails
+ */
+static DNNReturnType tf_start_inference(void *args)
+{
+    TFRequestItem *request = args;
+    TFInferRequest *infer_request = request->infer_request;
+    InferenceItem *inference = request->inference;
+    TaskItem *task = inference->task;
+    TFModel *tf_model = task->model;
+
+    if (!request) {
+        av_log(&tf_model->ctx, AV_LOG_ERROR, "TFRequestItem is NULL\n");
+        return DNN_ERROR;
+    }
+
+    TF_SessionRun(tf_model->session, NULL,
+                  infer_request->tf_input, &infer_request->input_tensor, 1,
+                  infer_request->tf_outputs, infer_request->output_tensors,
+                  task->nb_output, NULL, 0, NULL,
+                  tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK) {
+        av_log(&tf_model->ctx, AV_LOG_ERROR, "%s", TF_Message(tf_model->status));
+        return DNN_ERROR;
+    }
+    return DNN_SUCCESS;
 }
 
 static DNNReturnType extract_inference_from_task(TaskItem *task, Queue *inference_queue)
