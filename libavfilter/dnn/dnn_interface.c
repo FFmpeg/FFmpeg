@@ -48,6 +48,9 @@ DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
     #if (CONFIG_LIBTENSORFLOW == 1)
         dnn_module->load_model = &ff_dnn_load_model_tf;
         dnn_module->execute_model = &ff_dnn_execute_model_tf;
+        dnn_module->execute_model_async = &ff_dnn_execute_model_async_tf;
+        dnn_module->get_async_result = &ff_dnn_get_async_result_tf;
+        dnn_module->flush = &ff_dnn_flush_tf;
         dnn_module->free_model = &ff_dnn_free_model_tf;
     #else
         av_freep(&dnn_module);
