@@ -75,6 +75,7 @@ typedef struct TFInferRequest {
 typedef struct TFRequestItem {
     TFInferRequest *infer_request;
     InferenceItem *inference;
+    TF_Status *status;
     DNNAsyncExecModule exec_module;
 } TFRequestItem;
 
@@ -165,9 +166,9 @@ static DNNReturnType tf_start_inference(void *args)
                   infer_request->tf_input, &infer_request->input_tensor, 1,
                   infer_request->tf_outputs, infer_request->output_tensors,
                   task->nb_output, NULL, 0, NULL,
-                  tf_model->status);
-    if (TF_GetCode(tf_model->status) != TF_OK) {
-        av_log(&tf_model->ctx, AV_LOG_ERROR, "%s", TF_Message(tf_model->status));
+                  request->status);
+    if (TF_GetCode(request->status) != TF_OK) {
+        av_log(&tf_model->ctx, AV_LOG_ERROR, "%s", TF_Message(request->status));
         return DNN_ERROR;
     }
     return DNN_SUCCESS;
@@ -187,6 +188,7 @@ static inline void destroy_request_item(TFRequestItem **arg) {
     tf_free_request(request->infer_request);
     av_freep(&request->infer_request);
     av_freep(&request->inference);
+    TF_DeleteStatus(request->status);
     ff_dnn_async_module_cleanup(&request->exec_module);
     av_freep(arg);
 }
@@ -906,6 +908,7 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_
             av_freep(&item);
             goto err;
         }
+        item->status = TF_NewStatus();
         item->exec_module.start_inference = &tf_start_inference;
         item->exec_module.callback = &infer_completion_callback;
         item->exec_module.args = item;
