@@ -135,6 +135,9 @@ static void tf_free_request(TFInferRequest *request)
 static TFInferRequest *tf_create_inference_request(void)
 {
     TFInferRequest *infer_request = av_malloc(sizeof(TFInferRequest));
+    if (!infer_request) {
+        return NULL;
+    }
     infer_request->tf_outputs = NULL;
     infer_request->tf_input = NULL;
     infer_request->input_tensor = NULL;
