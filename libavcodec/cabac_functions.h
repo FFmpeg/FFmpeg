@@ -30,6 +30,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
+#include "libavutil/intmath.h"
 #include "cabac.h"
 #include "config.h"
 
