@@ -23,6 +23,9 @@
 
 #include "dnn_backend_common.h"
 
+#define DNN_ASYNC_SUCCESS (void *)0
+#define DNN_ASYNC_FAIL (void *)-1
+
 int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func_type, DNNExecBaseParams *exec_params)
 {
     if (!exec_params) {
@@ -79,18 +82,25 @@ static void *async_thread_routine(void *args)
     DNNAsyncExecModule *async_module = args;
     void *request = async_module->args;
 
-    async_module->start_inference(request);
+    if (async_module->start_inference(request) != DNN_SUCCESS) {
+        return DNN_ASYNC_FAIL;
+    }
     async_module->callback(request);
-    return NULL;
+    return DNN_ASYNC_SUCCESS;
 }
 
 DNNReturnType ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module)
 {
+    void *status = 0;
     if (!async_module) {
         return DNN_ERROR;
     }
 #if HAVE_PTHREAD_CANCEL
-    pthread_join(async_module->thread_id, NULL);
+    pthread_join(async_module->thread_id, &status);
+    if (status == DNN_ASYNC_FAIL) {
+        av_log(NULL, AV_LOG_ERROR, "Last Inference Failed.\n");
+        return DNN_ERROR;
+    }
 #endif
     async_module->start_inference = NULL;
     async_module->callback = NULL;
@@ -101,6 +111,7 @@ DNNReturnType ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module)
 DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module)
 {
     int ret;
+    void *status = 0;
 
     if (!async_module) {
         av_log(ctx, AV_LOG_ERROR, "async_module is null when starting async inference.\n");
@@ -108,7 +119,11 @@ DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_
     }
 
 #if HAVE_PTHREAD_CANCEL
-    pthread_join(async_module->thread_id, NULL);
+    pthread_join(async_module->thread_id, &status);
+    if (status == DNN_ASYNC_FAIL) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to start inference as previous inference failed.\n");
+        return DNN_ERROR;
+    }
     ret = pthread_create(&async_module->thread_id, NULL, async_thread_routine, async_module);
     if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to start async inference.\n");

@@ -91,6 +91,7 @@ AVFILTER_DEFINE_CLASS(dnn_tensorflow);
 
 static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_queue);
 static void infer_completion_callback(void *args);
+static inline void destroy_request_item(TFRequestItem **arg);
 
 static void free_buffer(void *data, size_t length)
 {
@@ -172,6 +173,10 @@ static DNNReturnType tf_start_inference(void *args)
                   request->status);
     if (TF_GetCode(request->status) != TF_OK) {
         av_log(&tf_model->ctx, AV_LOG_ERROR, "%s", TF_Message(request->status));
+        tf_free_request(infer_request);
+        if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
+            destroy_request_item(&request);
+        }
         return DNN_ERROR;
     }
     return DNN_SUCCESS;
@@ -1095,7 +1100,10 @@ static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_q
     }
 
     if (task->async) {
-        return ff_dnn_start_inference_async(ctx, &request->exec_module);
+        if (ff_dnn_start_inference_async(ctx, &request->exec_module) != DNN_SUCCESS) {
+            goto err;
+        }
+        return DNN_SUCCESS;
     } else {
         if (tf_start_inference(request) != DNN_SUCCESS) {
             goto err;
