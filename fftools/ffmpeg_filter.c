@@ -969,6 +969,11 @@ int configure_filtergraph(FilterGraph *fg)
         AVDictionaryEntry *e = NULL;
 
         fg->graph->nb_threads = filter_nbthreads;
+        if (!fg->graph->nb_threads) {
+            e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
+            if (e)
+                av_opt_set(fg->graph, "threads", e->value, 0);
+        }
 
         args[0] = 0;
         e       = NULL;
@@ -1003,10 +1008,6 @@ int configure_filtergraph(FilterGraph *fg)
         }
         if (strlen(args))
             args[strlen(args) - 1] = '\0';
-
-        e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
-        if (e)
-            av_opt_set(fg->graph, "threads", e->value, 0);
     } else {
         fg->graph->nb_threads = filter_complex_nbthreads;
     }
