@@ -205,6 +205,12 @@ Defaults to @samp{unset}.
 Sets the genlock timing pixel offset on the used output.
 Defaults to @samp{unset}.
 
+@item link
+Sets the SDI video link configuration on the used output. Must be
+@samp{unset}, @samp{single} link SDI, @samp{dual} link SDI or @samp{quad} link
+SDI.
+Defaults to @samp{unset}.
+
 @end table
 
 @subsection Examples

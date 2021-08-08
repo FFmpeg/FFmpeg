@@ -214,6 +214,15 @@ int ff_decklink_set_configs(AVFormatContext *avctx,
         if (res != S_OK)
             av_log(avctx, AV_LOG_WARNING, "Setting timing offset failed.\n");
     }
+
+    if (direction == DIRECTION_OUT && ctx->link > 0) {
+        res = ctx->cfg->SetInt(bmdDeckLinkConfigSDIOutputLinkConfiguration, ctx->link);
+        if (res != S_OK)
+            av_log(avctx, AV_LOG_WARNING, "Setting link configuration failed.\n");
+        else
+            av_log(avctx, AV_LOG_VERBOSE, "Successfully set link configuration: 0x%x.\n", ctx->link);
+    }
+
     return 0;
 }
 

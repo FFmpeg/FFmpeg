@@ -131,6 +131,7 @@ struct decklink_ctx {
     int64_t teletext_lines;
     double preroll;
     int duplex_mode;
+    BMDLinkConfiguration link;
     DecklinkPtsSource audio_pts_source;
     DecklinkPtsSource video_pts_source;
     int draw_bars;
@@ -198,6 +199,13 @@ static const BMDTimecodeFormat decklink_timecode_format_map[] = {
 #else
     (BMDTimecodeFormat)0,
 #endif
+};
+
+static const BMDLinkConfiguration decklink_link_conf_map[] = {
+    (BMDLinkConfiguration)0,
+    bmdLinkConfigurationSingleLink,
+    bmdLinkConfigurationDualLink,
+    bmdLinkConfigurationQuadLink
 };
 
 int ff_decklink_set_configs(AVFormatContext *avctx, decklink_direction_t direction);
