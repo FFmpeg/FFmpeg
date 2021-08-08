@@ -833,6 +833,7 @@ static inline int find_start_code(const uint8_t *buf, int buf_size,
 int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup);
 
 int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src);
+int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture *src);
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 
 int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);

@@ -142,6 +142,50 @@ fail:
     return ret;
 }
 
+int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture *src)
+{
+    int ret, i;
+
+    if (!src->f || !src->f->buf[0]) {
+        ff_h264_unref_picture(h, dst);
+        return 0;
+    }
+
+    av_assert0(src->tf.f == src->f);
+
+    dst->tf.f = dst->f;
+    ff_thread_release_buffer(h->avctx, &dst->tf);
+    ret = ff_thread_ref_frame(&dst->tf, &src->tf);
+    if (ret < 0)
+        goto fail;
+
+    ret  = av_buffer_replace(&dst->qscale_table_buf, src->qscale_table_buf);
+    ret |= av_buffer_replace(&dst->mb_type_buf, src->mb_type_buf);
+    ret |= av_buffer_replace(&dst->pps_buf, src->pps_buf);
+    if (ret < 0)
+        goto fail;
+
+    for (i = 0; i < 2; i++) {
+        ret  = av_buffer_replace(&dst->motion_val_buf[i], src->motion_val_buf[i]);
+        ret |= av_buffer_replace(&dst->ref_index_buf[i], src->ref_index_buf[i]);
+        if (ret < 0)
+            goto fail;
+    }
+
+    ret = av_buffer_replace(&dst->hwaccel_priv_buf, src->hwaccel_priv_buf);
+    if (ret < 0)
+        goto fail;
+
+    dst->hwaccel_picture_private = src->hwaccel_picture_private;
+
+    h264_copy_picture_params(dst, src);
+
+    return 0;
+fail:
+    ff_h264_unref_picture(h, dst);
+    return ret;
+}
+
 void ff_h264_set_erpic(ERPicture *dst, H264Picture *src)
 {
 #if CONFIG_ERROR_RESILIENCE
