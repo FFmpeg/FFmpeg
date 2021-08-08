@@ -217,8 +217,14 @@ static void nvenc_map_preset(NvencContext *ctx)
 
 static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
 {
-#if NVENCAPI_CHECK_VERSION(11, 1)
+#if NVENCAPI_CHECK_VERSION(11, 2)
     const char *minver = "(unknown)";
+#elif NVENCAPI_CHECK_VERSION(11, 1)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "471.41";
+# else
+    const char *minver = "470.57.02";
+# endif
 #elif NVENCAPI_CHECK_VERSION(11, 0)
 # if defined(_WIN32) || defined(__CYGWIN__)
     const char *minver = "456.71";
