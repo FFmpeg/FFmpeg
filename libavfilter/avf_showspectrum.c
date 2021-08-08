@@ -1587,12 +1587,14 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
     if (av_audio_fifo_size(s->fifo) >= s->win_size ||
+        ff_inlink_queued_frames(inlink) > 0 ||
         ff_outlink_get_status(inlink) == AVERROR_EOF) {
         ff_filter_set_ready(ctx, 10);
         return 0;
     }
 
     if (ff_outlink_frame_wanted(outlink) && av_audio_fifo_size(s->fifo) < s->win_size &&
+        ff_inlink_queued_frames(inlink) == 0 &&
         ff_outlink_get_status(inlink) != AVERROR_EOF) {
         ff_inlink_request_frame(inlink);
         return 0;
