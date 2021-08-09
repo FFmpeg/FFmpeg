@@ -749,15 +749,6 @@ static av_cold void set_constqp(AVCodecContext *avctx)
             rc->constQP.qpIntra = av_clip(ctx->cqp * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
     }
 
-#ifdef NVENC_HAVE_QP_CHROMA_OFFSETS
-    rc->cbQPIndexOffset = ctx->qp_cb_offset;
-    rc->crQPIndexOffset = ctx->qp_cr_offset;
-#else
-    if (ctx->qp_cb_offset || ctx->qp_cr_offset) {
-        av_log(avctx, AV_LOG_WARNING, "Failed setting QP CB/CR offsets, SDK 11.1 or greater required at compile time.\n");
-    }
-#endif
-
     avctx->qmin = -1;
     avctx->qmax = -1;
 }
@@ -976,6 +967,14 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
         ctx->rc &= ~RC_MODE_DEPRECATED;
     }
+
+#ifdef NVENC_HAVE_QP_CHROMA_OFFSETS
+    ctx->encode_config.rcParams.cbQPIndexOffset = ctx->qp_cb_offset;
+    ctx->encode_config.rcParams.crQPIndexOffset = ctx->qp_cr_offset;
+#else
+    if (ctx->qp_cb_offset || ctx->qp_cr_offset)
+        av_log(avctx, AV_LOG_WARNING, "Failed setting QP CB/CR offsets, SDK 11.1 or greater required at compile time.\n");
+#endif
 
 #ifdef NVENC_HAVE_LDKFS
     if (ctx->ldkfs)
