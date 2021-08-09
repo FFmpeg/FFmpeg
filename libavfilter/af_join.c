@@ -238,7 +238,7 @@ static int join_query_formats(AVFilterContext *ctx)
     }
 
     if ((ret = ff_set_common_formats(ctx, ff_planar_sample_fmts())) < 0 ||
-        (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
+        (ret = ff_set_common_all_samplerates(ctx)) < 0)
         return ret;
 
     return 0;

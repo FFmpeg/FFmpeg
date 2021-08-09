@@ -76,7 +76,6 @@ static int query_formats(AVFilterContext *ctx)
     };
     AMergeContext *s = ctx->priv;
     int64_t inlayout[SWR_CH_MAX], outlayout = 0;
-    AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts;
     int i, ret, overlap = 0, nb_ch = 0;
 
@@ -129,8 +128,7 @@ static int query_formats(AVFilterContext *ctx)
                 if ((inlayout[i] >> c) & 1)
                     *(route[i]++) = out_ch_number++;
     }
-    formats = ff_make_format_list(packed_sample_fmts);
-    if ((ret = ff_set_common_formats(ctx, formats)) < 0)
+    if ((ret = ff_set_common_formats_from_list(ctx, packed_sample_fmts)) < 0)
         return ret;
     for (i = 0; i < s->nb_inputs; i++) {
         layouts = NULL;
@@ -145,7 +143,7 @@ static int query_formats(AVFilterContext *ctx)
     if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
         return ret;
 
-    return ff_set_common_samplerates(ctx, ff_all_samplerates());
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static int config_output(AVFilterLink *outlink)

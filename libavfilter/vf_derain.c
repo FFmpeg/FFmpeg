@@ -58,15 +58,12 @@ AVFILTER_DEFINE_CLASS(derain);
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats;
     const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_NONE
     };
 
-    formats = ff_make_format_list(pixel_fmts);
-
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)

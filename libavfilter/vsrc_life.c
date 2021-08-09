@@ -416,7 +416,6 @@ static int query_formats(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
     enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_NONE, AV_PIX_FMT_NONE };
-    AVFilterFormats *fmts_list;
 
     if (life->mold || memcmp(life-> life_color, "\xff\xff\xff", 3)
                    || memcmp(life->death_color, "\x00\x00\x00", 3)) {
@@ -427,8 +426,7 @@ static int query_formats(AVFilterContext *ctx)
         life->draw = fill_picture_monoblack;
     }
 
-    fmts_list = ff_make_format_list(pix_fmts);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static const AVFilterPad life_outputs[] = {

@@ -305,8 +305,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats, *rates = NULL;
-    AVFilterChannelLayouts *layouts = NULL;
+    AVFilterFormats *formats;
     int ret, i;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
@@ -315,11 +314,8 @@ static int query_formats(AVFilterContext *ctx)
             return ret;
 
         if (ctx->inputs[i]->type == AVMEDIA_TYPE_AUDIO) {
-            rates = ff_all_samplerates();
-            if ((ret = ff_set_common_samplerates(ctx, rates)) < 0)
-                return ret;
-            layouts = ff_all_channel_counts();
-            if ((ret = ff_set_common_channel_layouts(ctx, layouts)) < 0)
+            if ((ret = ff_set_common_all_samplerates   (ctx)) < 0 ||
+                (ret = ff_set_common_all_channel_counts(ctx)) < 0)
                 return ret;
         }
     }

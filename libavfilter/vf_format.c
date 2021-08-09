@@ -129,12 +129,8 @@ static av_cold int init(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     FormatContext *s = ctx->priv;
-    AVFilterFormats *formats = ff_make_format_list(s->formats);
 
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, s->formats);
 }
 
 

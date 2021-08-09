@@ -497,7 +497,6 @@ static int query_formats(AVFilterContext *ctx)
     if (!select->do_scene_detect) {
         return ff_default_query_formats(ctx);
     } else {
-        int ret;
         static const enum AVPixelFormat pix_fmts[] = {
             AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24, AV_PIX_FMT_RGBA,
             AV_PIX_FMT_ABGR, AV_PIX_FMT_BGRA, AV_PIX_FMT_GRAY8,
@@ -506,15 +505,8 @@ static int query_formats(AVFilterContext *ctx)
             AV_PIX_FMT_YUV420P10,
             AV_PIX_FMT_NONE
         };
-        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-
-        if (!fmts_list)
-            return AVERROR(ENOMEM);
-        ret = ff_set_common_formats(ctx, fmts_list);
-        if (ret < 0)
-            return ret;
+        return ff_set_common_formats_from_list(ctx, pix_fmts);
     }
-    return 0;
 }
 
 DEFINE_OPTIONS(select, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);

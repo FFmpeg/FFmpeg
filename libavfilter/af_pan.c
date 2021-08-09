@@ -251,7 +251,6 @@ static int query_formats(AVFilterContext *ctx)
     PanContext *pan = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
     int ret;
 
@@ -260,8 +259,7 @@ static int query_formats(AVFilterContext *ctx)
     if ((ret = ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO))) < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    if ((ret = ff_set_common_samplerates(ctx, formats)) < 0)
+    if ((ret = ff_set_common_all_samplerates(ctx)) < 0)
         return ret;
 
     // inlink supports any channel layout

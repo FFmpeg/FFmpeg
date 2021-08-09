@@ -715,8 +715,6 @@ static int activate(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
-    AVFilterFormats *formats;
-    AVFilterChannelLayouts *layouts;
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_FLTP,
         AV_SAMPLE_FMT_NONE
@@ -729,21 +727,18 @@ static int query_formats(AVFilterContext *ctx)
 
     if (s->response) {
         AVFilterLink *videolink = ctx->outputs[1];
-        formats = ff_make_format_list(pix_fmts);
+        AVFilterFormats *formats = ff_make_format_list(pix_fmts);
         if ((ret = ff_formats_ref(formats, &videolink->incfg.formats)) < 0)
             return ret;
     }
 
-    layouts = ff_all_channel_counts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-
     if (s->ir_format) {
-        ret = ff_set_common_channel_layouts(ctx, layouts);
+        ret = ff_set_common_all_channel_counts(ctx);
         if (ret < 0)
             return ret;
     } else {
         AVFilterChannelLayouts *mono = NULL;
+        AVFilterChannelLayouts *layouts = ff_all_channel_counts();
 
         if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->outcfg.channel_layouts)) < 0)
             return ret;
@@ -759,12 +754,10 @@ static int query_formats(AVFilterContext *ctx)
         }
     }
 
-    formats = ff_make_format_list(sample_fmts);
-    if ((ret = ff_set_common_formats(ctx, formats)) < 0)
+    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static int config_output(AVFilterLink *outlink)

@@ -48,7 +48,7 @@ static int query_formats(AVFilterContext *ctx)
         (ret = ff_set_common_formats         (ctx     , formats            )) < 0 ||
         (ret = ff_add_channel_layout         (&layout , AV_CH_LAYOUT_STEREO)) < 0 ||
         (ret = ff_set_common_channel_layouts (ctx     , layout             )) < 0 ||
-        (ret = ff_set_common_samplerates     (ctx     , ff_all_samplerates())) < 0)
+        (ret = ff_set_common_all_samplerates (ctx                          )) < 0)
         return ret;
 
     return 0;

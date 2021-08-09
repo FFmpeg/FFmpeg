@@ -603,11 +603,11 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    if ((ret = ff_set_common_formats(ctx, ff_make_format_list(sample_fmts))) < 0 ||
-        (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
+    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0 ||
+        (ret = ff_set_common_all_samplerates(ctx)) < 0)
         return ret;
 
-    return ff_set_common_channel_layouts(ctx, ff_all_channel_counts());
+    return ff_set_common_all_channel_counts(ctx);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,

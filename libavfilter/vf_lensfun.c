@@ -197,8 +197,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     // Some of the functions provided by lensfun require pixels in RGB format
     static const enum AVPixelFormat fmts[] = {AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE};
-    AVFilterFormats *fmts_list = ff_make_format_list(fmts);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, fmts);
 }
 
 static float lanczos_kernel(float x)

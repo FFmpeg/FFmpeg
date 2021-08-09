@@ -117,8 +117,7 @@ static int npptranspose_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
     };
 
-    AVFilterFormats *pix_fmts = ff_make_format_list(pixel_formats);
-    return ff_set_common_formats(ctx, pix_fmts);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static int init_stage(NPPTransposeStageContext *stage, AVBufferRef *device_ctx)

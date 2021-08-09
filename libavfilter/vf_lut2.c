@@ -176,7 +176,7 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     if (s->tlut2 || !s->odepth)
-        return ff_set_common_formats(ctx, ff_make_format_list(all_pix_fmts));
+        return ff_set_common_formats_from_list(ctx, all_pix_fmts);
 
     ret = ff_formats_ref(ff_make_format_list(all_pix_fmts), &ctx->inputs[0]->outcfg.formats);
     if (ret < 0)

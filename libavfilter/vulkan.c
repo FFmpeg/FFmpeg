@@ -594,11 +594,8 @@ int ff_vk_filter_query_formats(AVFilterContext *avctx)
     static const enum AVPixelFormat pixel_formats[] = {
         AV_PIX_FMT_VULKAN, AV_PIX_FMT_NONE,
     };
-    AVFilterFormats *pix_fmts = ff_make_format_list(pixel_formats);
-    if (!pix_fmts)
-        return AVERROR(ENOMEM);
 
-    return ff_set_common_formats(avctx, pix_fmts);
+    return ff_set_common_formats_from_list(avctx, pixel_formats);
 }
 
 static int vulkan_filter_set_device(AVFilterContext *avctx,

@@ -91,10 +91,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
     if (!elbg->pal8) {
-        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-        if (!fmts_list)
-            return AVERROR(ENOMEM);
-        return ff_set_common_formats(ctx, fmts_list);
+        return ff_set_common_formats_from_list(ctx, pix_fmts);
     } else {
         static const enum AVPixelFormat pal8_fmt[] = {
             AV_PIX_FMT_PAL8,

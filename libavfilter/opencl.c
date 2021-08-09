@@ -31,13 +31,8 @@ int ff_opencl_filter_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_OPENCL,
         AV_PIX_FMT_NONE,
     };
-    AVFilterFormats *formats;
 
-    formats = ff_make_format_list(pix_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(avctx, formats);
+    return ff_set_common_formats_from_list(avctx, pix_fmts);
 }
 
 static int opencl_filter_set_device(AVFilterContext *avctx,

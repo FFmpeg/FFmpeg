@@ -423,9 +423,7 @@ static int overlay_cuda_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
     };
 
-    AVFilterFormats *pix_fmts = ff_make_format_list(pixel_formats);
-
-    return ff_set_common_formats(avctx, pix_fmts);
+    return ff_set_common_formats_from_list(avctx, pixel_formats);
 }
 
 /**

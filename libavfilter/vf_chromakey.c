@@ -331,14 +331,11 @@ static av_cold int query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
+    const enum AVPixelFormat *pix_fmts;
 
-    AVFilterFormats *formats = NULL;
+    pix_fmts = !strcmp(avctx->filter->name, "chromahold") ? hold_pixel_fmts : pixel_fmts;
 
-    formats = ff_make_format_list(!strcmp(avctx->filter->name, "chromahold") ? hold_pixel_fmts : pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(avctx, formats);
+    return ff_set_common_formats_from_list(avctx, pix_fmts);
 }
 
 static av_cold int config_input(AVFilterLink *inlink)

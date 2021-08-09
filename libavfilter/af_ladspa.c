@@ -657,42 +657,28 @@ static av_cold int init(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     LADSPAContext *s = ctx->priv;
-    AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts;
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE };
-    int ret;
-
-    formats = ff_make_format_list(sample_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_formats(ctx, formats);
+    int ret = ff_set_common_formats_from_list(ctx, sample_fmts);
     if (ret < 0)
         return ret;
 
     if (s->nb_inputs) {
-        formats = ff_all_samplerates();
-        if (!formats)
-            return AVERROR(ENOMEM);
-
-        ret = ff_set_common_samplerates(ctx, formats);
+        ret = ff_set_common_all_samplerates(ctx);
         if (ret < 0)
             return ret;
     } else {
         int sample_rates[] = { s->sample_rate, -1 };
 
-        ret = ff_set_common_samplerates(ctx, ff_make_format_list(sample_rates));
+        ret = ff_set_common_samplerates_from_list(ctx, sample_rates);
         if (ret < 0)
             return ret;
     }
 
     if (s->nb_inputs == 1 && s->nb_outputs == 1) {
         // We will instantiate multiple LADSPA_Handle, one over each channel
-        layouts = ff_all_channel_counts();
-        if (!layouts)
-            return AVERROR(ENOMEM);
-
-        ret = ff_set_common_channel_layouts(ctx, layouts);
+        ret = ff_set_common_all_channel_counts(ctx);
         if (ret < 0)
             return ret;
     } else if (s->nb_inputs == 2 && s->nb_outputs == 2) {

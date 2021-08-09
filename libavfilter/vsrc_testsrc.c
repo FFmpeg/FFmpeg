@@ -376,10 +376,7 @@ static int haldclutsrc_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE,
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int haldclutsrc_config_props(AVFilterLink *outlink)
@@ -659,10 +656,7 @@ static int test_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
@@ -1097,10 +1091,7 @@ static int rgbtest_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int rgbtest_config_props(AVFilterLink *outlink)
@@ -1274,10 +1265,7 @@ static int yuvtest_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int yuvtest_config_props(AVFilterLink *outlink)
@@ -1426,10 +1414,7 @@ static int smptebars_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE,
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static const AVFilterPad smptebars_outputs[] = {
@@ -1759,10 +1744,7 @@ static int allyuv_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
@@ -1836,10 +1818,7 @@ static int allrgb_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {

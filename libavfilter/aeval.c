@@ -246,28 +246,17 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
     int64_t chlayouts[] = { eval->chlayout ? eval->chlayout : FF_COUNT2LAYOUT(eval->nb_channels) , -1 };
     int sample_rates[] = { eval->sample_rate, -1 };
-    AVFilterFormats *formats;
-    AVFilterChannelLayouts *layouts;
     int ret;
 
-    formats = ff_make_format_list(sample_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_formats (ctx, formats);
+    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
     if (ret < 0)
         return ret;
 
-    layouts = ff_make_format64_list(chlayouts);
-    if (!layouts)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts_from_list(ctx, chlayouts);
     if (ret < 0)
         return ret;
 
-    formats = ff_make_format_list(sample_rates);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_samplerates_from_list(ctx, sample_rates);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -349,7 +338,6 @@ AVFILTER_DEFINE_CLASS(aeval);
 
 static int aeval_query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink  = ctx->outputs[0];
@@ -365,8 +353,7 @@ static int aeval_query_formats(AVFilterContext *ctx)
         return ret;
 
     if (eval->same_chlayout) {
-        layouts = ff_all_channel_counts();
-        if ((ret = ff_set_common_channel_layouts(ctx, layouts)) < 0)
+        if ((ret = ff_set_common_all_channel_counts(ctx)) < 0)
             return ret;
     } else {
         // outlink supports only requested output channel layout
@@ -379,12 +366,10 @@ static int aeval_query_formats(AVFilterContext *ctx)
             return ret;
     }
 
-    formats = ff_make_format_list(sample_fmts);
-    if ((ret = ff_set_common_formats(ctx, formats)) < 0)
+    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static int aeval_config_output(AVFilterLink *outlink)

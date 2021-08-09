@@ -283,7 +283,6 @@ static int query_formats(AVFilterContext *ctx)
 {
     Stereo3DContext *s = ctx->priv;
     const enum AVPixelFormat *pix_fmts;
-    AVFilterFormats *fmts_list;
 
     switch (s->out.format) {
     case ANAGLYPH_GM_COLOR:
@@ -306,10 +305,7 @@ static int query_formats(AVFilterContext *ctx)
         pix_fmts = other_pix_fmts;
     }
 
-    fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)

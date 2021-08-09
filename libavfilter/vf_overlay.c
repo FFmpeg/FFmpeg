@@ -255,7 +255,7 @@ static int query_formats(AVFilterContext *ctx)
         overlay_formats = overlay_pix_fmts_gbrp;
         break;
     case OVERLAY_FORMAT_AUTO:
-        return ff_set_common_formats(ctx, ff_make_format_list(alpha_pix_fmts));
+        return ff_set_common_formats_from_list(ctx, alpha_pix_fmts);
     default:
         av_assert0(0);
     }

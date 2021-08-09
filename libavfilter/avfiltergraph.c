@@ -362,7 +362,6 @@ static int filter_query_formats(AVFilterContext *ctx)
     int ret, i;
     AVFilterFormats *formats;
     AVFilterChannelLayouts *chlayouts;
-    AVFilterFormats *samplerates;
     enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
                             AVMEDIA_TYPE_VIDEO;
@@ -386,8 +385,7 @@ static int filter_query_formats(AVFilterContext *ctx)
     if ((ret = ff_set_common_formats(ctx, formats)) < 0)
         return ret;
     if (type == AVMEDIA_TYPE_AUDIO) {
-        samplerates = ff_all_samplerates();
-        if ((ret = ff_set_common_samplerates(ctx, samplerates)) < 0)
+        if ((ret = ff_set_common_all_samplerates(ctx)) < 0)
             return ret;
         chlayouts = ff_all_channel_layouts();
         if ((ret = ff_set_common_channel_layouts(ctx, chlayouts)) < 0)

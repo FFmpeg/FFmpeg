@@ -160,13 +160,8 @@ static int qsvscale_query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat pixel_formats[] = {
         AV_PIX_FMT_QSV, AV_PIX_FMT_NONE,
     };
-    AVFilterFormats *pix_fmts  = ff_make_format_list(pixel_formats);
-    int ret;
 
-    if ((ret = ff_set_common_formats(ctx, pix_fmts)) < 0)
-        return ret;
-
-    return 0;
+    return ff_set_common_formats_from_list(ctx, pixel_formats);
 }
 
 static int init_out_pool(AVFilterContext *ctx,

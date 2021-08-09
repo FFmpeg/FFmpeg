@@ -411,10 +411,7 @@ static int query_formats(AVFilterContext *ctx)
     // According to filter_design.txt, using ff_set_common_formats() this way
     // ensures the pixel formats of the input and output will be the same. That
     // saves a bit of effort possibly needing to handle format conversions.
-    AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 // At this point we know the pixel format used for both input and output.  We

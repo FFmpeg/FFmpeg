@@ -284,7 +284,7 @@ static int channelmap_query_formats(AVFilterContext *ctx)
     int ret;
 
     if ((ret = ff_set_common_formats    (ctx,  ff_planar_sample_fmts()))  < 0 ||
-        (ret = ff_set_common_samplerates (ctx             , ff_all_samplerates()                )) < 0 ||
+        (ret = ff_set_common_all_samplerates(ctx                              )) < 0 ||
         (ret = ff_add_channel_layout(&channel_layouts, s->output_layout)) < 0 ||
         (ret = ff_channel_layouts_ref(channel_layouts,
                                       &ctx->outputs[0]->incfg.channel_layouts)) < 0)

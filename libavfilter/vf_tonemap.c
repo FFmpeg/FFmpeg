@@ -79,7 +79,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static av_cold int init(AVFilterContext *ctx)

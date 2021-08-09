@@ -1648,8 +1648,7 @@ static int query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    return
-        ff_set_common_samplerates(ctx, ff_make_format_list(sample_rates) );
+    return ff_set_common_samplerates_from_list(ctx, sample_rates);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)

@@ -150,11 +150,8 @@ static int cudascale_query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat pixel_formats[] = {
         AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
     };
-    AVFilterFormats *pix_fmts = ff_make_format_list(pixel_formats);
-    if (!pix_fmts)
-        return AVERROR(ENOMEM);
 
-    return ff_set_common_formats(ctx, pix_fmts);
+    return ff_set_common_formats_from_list(ctx, pixel_formats);
 }
 
 static av_cold int init_hwframe_ctx(CUDAScaleContext *s, AVBufferRef *device_ctx, int width, int height)

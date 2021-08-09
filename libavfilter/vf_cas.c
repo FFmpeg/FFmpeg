@@ -230,13 +230,7 @@ static av_cold int query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *formats = NULL;
-
-    formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(avctx, formats);
+    return ff_set_common_formats_from_list(avctx, pixel_fmts);
 }
 
 static av_cold int config_input(AVFilterLink *inlink)

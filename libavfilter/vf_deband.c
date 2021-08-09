@@ -108,11 +108,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(s->coupling ? cpix_fmts : pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, s->coupling ? cpix_fmts : pix_fmts);
 }
 
 static float frand(int x, int y)

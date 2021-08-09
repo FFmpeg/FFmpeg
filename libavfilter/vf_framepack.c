@@ -82,10 +82,7 @@ static const enum AVPixelFormat formats_supported[] = {
 static int query_formats(AVFilterContext *ctx)
 {
     // this will ensure that formats are the same on all pads
-    AVFilterFormats *fmts_list = ff_make_format_list(formats_supported);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, formats_supported);
 }
 
 static av_cold void framepack_uninit(AVFilterContext *ctx)

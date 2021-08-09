@@ -164,9 +164,32 @@ AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts);
 av_warn_unused_result
 int ff_set_common_channel_layouts(AVFilterContext *ctx,
                                   AVFilterChannelLayouts *layouts);
+/**
+ * Equivalent to ff_set_common_channel_layouts(ctx, ff_make_format64_list(fmts))
+ */
+av_warn_unused_result
+int ff_set_common_channel_layouts_from_list(AVFilterContext *ctx,
+                                            const int64_t *fmts);
+/**
+ * Equivalent to ff_set_common_channel_layouts(ctx, ff_all_channel_counts())
+ */
+av_warn_unused_result
+int ff_set_common_all_channel_counts(AVFilterContext *ctx);
+
 av_warn_unused_result
 int ff_set_common_samplerates(AVFilterContext *ctx,
                               AVFilterFormats *samplerates);
+/**
+ * Equivalent to ff_set_common_samplerates(ctx, ff_make_format_list(samplerates))
+ */
+av_warn_unused_result
+int ff_set_common_samplerates_from_list(AVFilterContext *ctx,
+                                        const int *samplerates);
+/**
+ * Equivalent to ff_set_common_samplerates(ctx, ff_all_samplerates())
+ */
+av_warn_unused_result
+int ff_set_common_all_samplerates(AVFilterContext *ctx);
 
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -175,6 +198,12 @@ int ff_set_common_samplerates(AVFilterContext *ctx,
  */
 av_warn_unused_result
 int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+
+/**
+ * Equivalent to ff_set_common_formats(ctx, ff_make_format_list(fmts))
+ */
+av_warn_unused_result
+int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts);
 
 av_warn_unused_result
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout);

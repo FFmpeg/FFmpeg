@@ -189,7 +189,6 @@ AVFILTER_DEFINE_CLASS(agate);
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
-    AVFilterChannelLayouts *layouts;
     int ret;
 
     if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL)) < 0)
@@ -198,18 +197,11 @@ static int query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    layouts = ff_all_channel_counts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_all_channel_counts(ctx);
     if (ret < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -346,7 +338,6 @@ static int activate(AVFilterContext *ctx)
 
 static int scquery_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts = NULL;
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBL,
@@ -371,12 +362,10 @@ static int scquery_formats(AVFilterContext *ctx)
             return ret;
     }
 
-    formats = ff_make_format_list(sample_fmts);
-    if ((ret = ff_set_common_formats(ctx, formats)) < 0)
+    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static int scconfig_output(AVFilterLink *outlink)

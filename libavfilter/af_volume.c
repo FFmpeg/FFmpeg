@@ -132,8 +132,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     VolumeContext *vol = ctx->priv;
-    AVFilterFormats *formats = NULL;
-    AVFilterChannelLayouts *layouts;
     static const enum AVSampleFormat sample_fmts[][7] = {
         [PRECISION_FIXED] = {
             AV_SAMPLE_FMT_U8,
@@ -155,26 +153,15 @@ static int query_formats(AVFilterContext *ctx)
             AV_SAMPLE_FMT_NONE
         }
     };
-    int ret;
-
-    layouts = ff_all_channel_counts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_channel_layouts(ctx, layouts);
+    int ret = ff_set_common_all_channel_counts(ctx);
     if (ret < 0)
         return ret;
 
-    formats = ff_make_format_list(sample_fmts[vol->precision]);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats_from_list(ctx, sample_fmts[vol->precision]);
     if (ret < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    if (!formats)
-        return AVERROR(ENOMEM);
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static inline void scale_samples_u8(uint8_t *dst, const uint8_t *src,

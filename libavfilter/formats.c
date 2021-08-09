@@ -566,11 +566,33 @@ int ff_set_common_channel_layouts(AVFilterContext *ctx,
                        ff_channel_layouts_ref, ff_channel_layouts_unref);
 }
 
+int ff_set_common_channel_layouts_from_list(AVFilterContext *ctx,
+                                            const int64_t *fmts)
+{
+    return ff_set_common_channel_layouts(ctx, ff_make_format64_list(fmts));
+}
+
+int ff_set_common_all_channel_counts(AVFilterContext *ctx)
+{
+    return ff_set_common_channel_layouts(ctx, ff_all_channel_counts());
+}
+
 int ff_set_common_samplerates(AVFilterContext *ctx,
                               AVFilterFormats *samplerates)
 {
     SET_COMMON_FORMATS(ctx, samplerates,
                        ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_samplerates_from_list(AVFilterContext *ctx,
+                                        const int *samplerates)
+{
+    return ff_set_common_samplerates(ctx, ff_make_format_list(samplerates));
+}
+
+int ff_set_common_all_samplerates(AVFilterContext *ctx)
+{
+    return ff_set_common_samplerates(ctx, ff_all_samplerates());
 }
 
 /**
@@ -584,6 +606,11 @@ int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
                        ff_formats_ref, ff_formats_unref);
 }
 
+int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts)
+{
+    return ff_set_common_formats(ctx, ff_make_format_list(fmts));
+}
+
 int ff_default_query_formats(AVFilterContext *ctx)
 {
     int ret;
@@ -595,10 +622,10 @@ int ff_default_query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
     if (type == AVMEDIA_TYPE_AUDIO) {
-        ret = ff_set_common_channel_layouts(ctx, ff_all_channel_counts());
+        ret = ff_set_common_all_channel_counts(ctx);
         if (ret < 0)
             return ret;
-        ret = ff_set_common_samplerates(ctx, ff_all_samplerates());
+        ret = ff_set_common_all_samplerates(ctx);
         if (ret < 0)
             return ret;
     }
