@@ -211,6 +211,11 @@ Sets the SDI video link configuration on the used output. Must be
 SDI.
 Defaults to @samp{unset}.
 
+@item sqd
+Enable Square Division Quad Split mode for Quad-link SDI output.
+Must be @samp{unset}, @samp{true} or @samp{false}.
+Defaults to @option{unset}.
+
 @end table
 
 @subsection Examples

@@ -221,6 +221,13 @@ int ff_decklink_set_configs(AVFormatContext *avctx,
             av_log(avctx, AV_LOG_WARNING, "Setting link configuration failed.\n");
         else
             av_log(avctx, AV_LOG_VERBOSE, "Successfully set link configuration: 0x%x.\n", ctx->link);
+        if (ctx->link == bmdLinkConfigurationQuadLink && cctx->sqd >= 0) {
+            res = ctx->cfg->SetFlag(bmdDeckLinkConfigQuadLinkSDIVideoOutputSquareDivisionSplit, cctx->sqd);
+            if (res != S_OK)
+                av_log(avctx, AV_LOG_WARNING, "Setting SquareDivisionSplit failed.\n");
+            else
+                av_log(avctx, AV_LOG_VERBOSE, "Successfully set SquareDivisionSplit.\n");
+        }
     }
 
     return 0;
