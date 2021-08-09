@@ -230,6 +230,23 @@ int ff_decklink_set_configs(AVFormatContext *avctx,
         }
     }
 
+    if (direction == DIRECTION_OUT && cctx->level_a >= 0) {
+        DECKLINK_BOOL level_a_supported = false;
+
+        if (ctx->attr->GetFlag(BMDDeckLinkSupportsSMPTELevelAOutput, &level_a_supported) != S_OK)
+            level_a_supported = false;
+
+        if (level_a_supported) {
+            res = ctx->cfg->SetFlag(bmdDeckLinkConfigSMPTELevelAOutput, cctx->level_a);
+            if (res != S_OK)
+                av_log(avctx, AV_LOG_WARNING, "Setting SMPTE levelA failed.\n");
+            else
+                av_log(avctx, AV_LOG_VERBOSE, "Successfully set SMPTE levelA.\n");
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Unable to set SMPTE levelA mode, because it is not supported.\n");
+        }
+    }
+
     return 0;
 }
 

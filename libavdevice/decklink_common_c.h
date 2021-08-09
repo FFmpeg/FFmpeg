@@ -50,6 +50,7 @@ struct decklink_cctx {
     int duplex_mode;
     int link;
     int sqd;
+    int level_a;
     DecklinkPtsSource audio_pts_source;
     DecklinkPtsSource video_pts_source;
     int audio_input;

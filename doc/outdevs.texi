@@ -216,6 +216,11 @@ Enable Square Division Quad Split mode for Quad-link SDI output.
 Must be @samp{unset}, @samp{true} or @samp{false}.
 Defaults to @option{unset}.
 
+@item level_a
+Enable SMPTE Level A mode on the used output.
+Must be @samp{unset}, @samp{true} or @samp{false}.
+Defaults to @option{unset}.
+
 @end table
 
 @subsection Examples
