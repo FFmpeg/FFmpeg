@@ -712,12 +712,6 @@ static int libsrt_close(URLContext *h)
     return 0;
 }
 
-static int libsrt_get_file_handle(URLContext *h)
-{
-    SRTContext *s = h->priv_data;
-    return s->fd;
-}
-
 static const AVClass libsrt_class = {
     .class_name = "libsrt",
     .item_name  = av_default_item_name,
@@ -731,7 +725,6 @@ const URLProtocol ff_libsrt_protocol = {
     .url_read            = libsrt_read,
     .url_write           = libsrt_write,
     .url_close           = libsrt_close,
-    .url_get_file_handle = libsrt_get_file_handle,
     .priv_data_size      = sizeof(SRTContext),
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class     = &libsrt_class,
