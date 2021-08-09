@@ -659,10 +659,9 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 
     ret->nb_inputs = avfilter_pad_count(filter->inputs);
     if (ret->nb_inputs ) {
-        ret->input_pads   = av_malloc_array(ret->nb_inputs, sizeof(AVFilterPad));
+        ret->input_pads   = av_memdup(filter->inputs,  ret->nb_inputs  * sizeof(*filter->inputs));
         if (!ret->input_pads)
             goto err;
-        memcpy(ret->input_pads, filter->inputs, sizeof(AVFilterPad) * ret->nb_inputs);
         ret->inputs       = av_mallocz_array(ret->nb_inputs, sizeof(AVFilterLink*));
         if (!ret->inputs)
             goto err;
@@ -670,10 +669,9 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 
     ret->nb_outputs = avfilter_pad_count(filter->outputs);
     if (ret->nb_outputs) {
-        ret->output_pads  = av_malloc_array(ret->nb_outputs, sizeof(AVFilterPad));
+        ret->output_pads  = av_memdup(filter->outputs, ret->nb_outputs * sizeof(*filter->outputs));
         if (!ret->output_pads)
             goto err;
-        memcpy(ret->output_pads, filter->outputs, sizeof(AVFilterPad) * ret->nb_outputs);
         ret->outputs      = av_mallocz_array(ret->nb_outputs, sizeof(AVFilterLink*));
         if (!ret->outputs)
             goto err;
