@@ -260,10 +260,10 @@ static void twofish_decrypt(AVTWOFISH *cs, uint8_t *dst, const uint8_t *src, uin
         P[3] ^= AV_RL32(iv + 12);
         memcpy(iv, src, 16);
     }
-    AV_WL32(dst, P[2]);
-    AV_WL32(dst + 4, P[3]);
-    AV_WL32(dst + 8, P[0]);
-    AV_WL32(dst + 12, P[1]);
+    AV_WL32(dst, P[0]);
+    AV_WL32(dst + 4, P[1]);
+    AV_WL32(dst + 8, P[2]);
+    AV_WL32(dst + 12, P[3]);
 }
 
 av_cold int av_twofish_init(AVTWOFISH *cs, const uint8_t *key, int key_bits)

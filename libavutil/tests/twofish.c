@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     };
     uint8_t temp[32], iv[16], rpt[32] = {0};
     const int kbits[3] = {128, 192, 256};
-    int i, j, err = 0;
+    int i, j, k, err = 0;
     struct AVTWOFISH *cs;
     cs = av_twofish_alloc();
     if (!cs)
@@ -70,10 +70,19 @@ int main(int argc, char *argv[])
             memcpy(Key+16,Key,(kbits[j]-128) >> 3);
             memcpy(Key,rpt,16);
             memcpy(rpt,temp,16);
+            av_twofish_crypt(cs, temp, temp, 1, NULL, 1);
+            for (k = 0; k < 16; k++) {
+                // Need to compare to Key here, because the plaintext comes
+                // from rpt but was moved over to Key.
+                if (Key[k] != temp[k]) {
+                    av_log(NULL, AV_LOG_ERROR, "%d %02x %02x\n", k, Key[k], temp[k]);
+                    err = 1;
+                }
+            }
         }
         for (i = 0; i < 16; i++) {
-            if (rct[3 + j][i] != temp[i]) {
-                av_log(NULL, AV_LOG_ERROR, "%d %02x %02x\n", i, rct[3 + j][i], temp[i]);
+            if (rct[3 + j][i] != rpt[i]) {
+                av_log(NULL, AV_LOG_ERROR, "%d %02x %02x\n", i, rct[3 + j][i], rpt[i]);
                 err = 1;
             }
         }
