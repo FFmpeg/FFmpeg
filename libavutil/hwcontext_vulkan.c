@@ -3424,7 +3424,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
     }
 
     if (!from) {
-        /* Map, copy image to buffer, unmap */
+        /* Map, copy image TO buffer (which then goes to the VkImage), unmap */
         if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
             goto end;
 
@@ -3449,7 +3449,7 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
                              swf->width, swf->height, swf->format, from);
 
     if (from) {
-        /* Map, copy image to buffer, unmap */
+        /* Map, copy buffer (which came FROM the VkImage) to the frame, unmap */
         if ((err = map_buffers(dev_ctx, bufs, tmp.data, planes, 0)))
             goto end;
 
@@ -3459,10 +3459,10 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
 
             get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
 
-            av_image_copy_plane(swf->data[i], swf->linesize[i],
-                                (const uint8_t *)tmp.data[i], tmp.linesize[i],
-                                FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
-                                p_h);
+            av_image_copy_plane_uc_from(swf->data[i], swf->linesize[i],
+                                        (const uint8_t *)tmp.data[i], tmp.linesize[i],
+                                        FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
+                                        p_h);
         }
 
         if ((err = unmap_buffers(dev_ctx, bufs, planes, 1)))
