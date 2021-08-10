@@ -167,6 +167,8 @@ static int file_check(URLContext *h, int mask)
     return ret;
 }
 
+#if CONFIG_FILE_PROTOCOL
+
 static int file_delete(URLContext *h)
 {
 #if HAVE_UNISTD_H
@@ -202,8 +204,6 @@ static int file_move(URLContext *h_src, URLContext *h_dst)
 
     return 0;
 }
-
-#if CONFIG_FILE_PROTOCOL
 
 static int file_open(URLContext *h, const char *filename, int flags)
 {
