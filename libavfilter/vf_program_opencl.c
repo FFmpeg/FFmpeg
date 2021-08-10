@@ -367,6 +367,7 @@ const AVFilter ff_vf_program_opencl = {
     .description    = NULL_IF_CONFIG_SMALL("Filter video using an OpenCL program"),
     .priv_size      = sizeof(ProgramOpenCLContext),
     .priv_class     = &program_opencl_class,
+    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .preinit        = &program_opencl_framesync_preinit,
     .init           = &program_opencl_init,
     .uninit         = &program_opencl_uninit,
