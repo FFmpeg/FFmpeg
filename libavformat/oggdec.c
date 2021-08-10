@@ -251,7 +251,6 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     int idx         = ogg->nstreams;
     AVStream *st;
     struct ogg_stream *os;
-    size_t size;
 
     if (ogg->state) {
         av_log(s, AV_LOG_ERROR, "New streams are not supposed to be added "
@@ -260,8 +259,8 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     }
 
     /* Allocate and init a new Ogg Stream */
-    if (av_size_mult(ogg->nstreams + 1, sizeof(*ogg->streams), &size) < 0 ||
-        !(os = av_realloc(ogg->streams, size)))
+    if (!(os = av_realloc_array(ogg->streams, ogg->nstreams + 1,
+                                sizeof(*ogg->streams))))
         return AVERROR(ENOMEM);
     ogg->streams = os;
     os           = ogg->streams + idx;
