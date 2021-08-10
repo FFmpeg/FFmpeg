@@ -240,7 +240,7 @@ av_alloc_size(1, 2) void *av_malloc_array(size_t nmemb, size_t size);
 av_alloc_size(1, 2) void *av_mallocz_array(size_t nmemb, size_t size);
 
 /**
- * Non-inlined equivalent of av_mallocz_array().
+ * Equivalent of av_mallocz_array().
  *
  * Created for symmetry with the calloc() C function.
  */
