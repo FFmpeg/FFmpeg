@@ -74,6 +74,24 @@ void av_max_alloc(size_t max){
     atomic_store_explicit(&max_alloc_size, max, memory_order_relaxed);
 }
 
+static int size_mult(size_t a, size_t b, size_t *r)
+{
+    size_t t;
+
+#if (!defined(__INTEL_COMPILER) && AV_GCC_VERSION_AT_LEAST(5,1)) || AV_HAS_BUILTIN(__builtin_mul_overflow)
+    if (__builtin_mul_overflow(a, b, &t))
+        return AVERROR(EINVAL);
+#else
+    t = a * b;
+    /* Hack inspired from glibc: don't try the division if nelem and elsize
+     * are both less than sqrt(SIZE_MAX). */
+    if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
+        return AVERROR(EINVAL);
+#endif
+    *r = t;
+    return 0;
+}
+
 void *av_malloc(size_t size)
 {
     void *ptr = NULL;
@@ -154,7 +172,7 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
     size_t size;
     void *r;
 
-    if (av_size_mult(elsize, nelem, &size)) {
+    if (size_mult(elsize, nelem, &size)) {
         av_free(ptr);
         return NULL;
     }
@@ -188,7 +206,7 @@ int av_reallocp(void *ptr, size_t size)
 void *av_malloc_array(size_t nmemb, size_t size)
 {
     size_t result;
-    if (av_size_mult(nmemb, size, &result) < 0)
+    if (size_mult(nmemb, size, &result) < 0)
         return NULL;
     return av_malloc(result);
 }
@@ -196,7 +214,7 @@ void *av_malloc_array(size_t nmemb, size_t size)
 void *av_mallocz_array(size_t nmemb, size_t size)
 {
     size_t result;
-    if (av_size_mult(nmemb, size, &result) < 0)
+    if (size_mult(nmemb, size, &result) < 0)
         return NULL;
     return av_mallocz(result);
 }
@@ -204,7 +222,7 @@ void *av_mallocz_array(size_t nmemb, size_t size)
 void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 {
     size_t result;
-    if (av_size_mult(nmemb, size, &result) < 0)
+    if (size_mult(nmemb, size, &result) < 0)
         return NULL;
     return av_realloc(ptr, result);
 }
@@ -251,7 +269,7 @@ void *av_mallocz(size_t size)
 void *av_calloc(size_t nmemb, size_t size)
 {
     size_t result;
-    if (av_size_mult(nmemb, size, &result) < 0)
+    if (size_mult(nmemb, size, &result) < 0)
         return NULL;
     return av_mallocz(result);
 }
@@ -549,18 +567,5 @@ void av_fast_mallocz(void *ptr, unsigned int *size, size_t min_size)
 
 int av_size_mult(size_t a, size_t b, size_t *r)
 {
-    size_t t;
-
-#if (!defined(__INTEL_COMPILER) && AV_GCC_VERSION_AT_LEAST(5,1)) || AV_HAS_BUILTIN(__builtin_mul_overflow)
-    if (__builtin_mul_overflow(a, b, &t))
-        return AVERROR(EINVAL);
-#else
-    t = a * b;
-    /* Hack inspired from glibc: don't try the division if nelem and elsize
-     * are both less than sqrt(SIZE_MAX). */
-    if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
-        return AVERROR(EINVAL);
-#endif
-    *r = t;
-    return 0;
+    return size_mult(a, b, r);
 }
