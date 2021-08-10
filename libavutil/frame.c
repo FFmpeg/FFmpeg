@@ -479,6 +479,131 @@ fail:
     return ret;
 }
 
+int av_frame_replace(AVFrame *dst, const AVFrame *src)
+{
+    int ret = 0;
+
+    if (dst == src)
+        return AVERROR(EINVAL);
+
+    if (!src->buf[0]) {
+        av_frame_unref(dst);
+
+        /* duplicate the frame data if it's not refcounted */
+        if (   src->data[0] || src->data[1]
+            || src->data[2] || src->data[3])
+            return av_frame_ref(dst, src);
+
+        return av_frame_copy_props(dst, src);
+    }
+
+    dst->format         = src->format;
+    dst->width          = src->width;
+    dst->height         = src->height;
+    dst->nb_samples     = src->nb_samples;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    dst->channels       = src->channels;
+    dst->channel_layout = src->channel_layout;
+    if (!av_channel_layout_check(&src->ch_layout)) {
+        av_channel_layout_uninit(&dst->ch_layout);
+        if (src->channel_layout)
+            av_channel_layout_from_mask(&dst->ch_layout, src->channel_layout);
+        else {
+            dst->ch_layout.nb_channels = src->channels;
+            dst->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+        }
+    } else {
+#endif
+    ret = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
+    if (ret < 0)
+        goto fail;
+#if FF_API_OLD_CHANNEL_LAYOUT
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    wipe_side_data(dst);
+    av_dict_free(&dst->metadata);
+    ret = frame_copy_props(dst, src, 0);
+    if (ret < 0)
+        goto fail;
+
+    /* replace the buffers */
+    for (int i = 0; i < FF_ARRAY_ELEMS(src->buf); i++) {
+        ret = av_buffer_replace(&dst->buf[i], src->buf[i]);
+        if (ret < 0)
+            goto fail;
+    }
+
+    if (src->extended_buf) {
+        if (dst->nb_extended_buf != src->nb_extended_buf) {
+            int nb_extended_buf = FFMIN(dst->nb_extended_buf, src->nb_extended_buf);
+            void *tmp;
+
+            for (int i = nb_extended_buf; i < dst->nb_extended_buf; i++)
+                av_buffer_unref(&dst->extended_buf[i]);
+
+            tmp = av_realloc_array(dst->extended_buf, sizeof(*dst->extended_buf),
+                                   src->nb_extended_buf);
+            if (!tmp) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            dst->extended_buf = tmp;
+            dst->nb_extended_buf = src->nb_extended_buf;
+
+            memset(&dst->extended_buf[nb_extended_buf], 0,
+                   (src->nb_extended_buf - nb_extended_buf) * sizeof(*dst->extended_buf));
+        }
+
+        for (int i = 0; i < src->nb_extended_buf; i++) {
+            ret = av_buffer_replace(&dst->extended_buf[i], src->extended_buf[i]);
+            if (ret < 0)
+                goto fail;
+        }
+    } else if (dst->extended_buf) {
+        for (int i = 0; i < dst->nb_extended_buf; i++)
+            av_buffer_unref(&dst->extended_buf[i]);
+        av_freep(&dst->extended_buf);
+    }
+
+    ret = av_buffer_replace(&dst->hw_frames_ctx, src->hw_frames_ctx);
+    if (ret < 0)
+        goto fail;
+
+    if (dst->extended_data != dst->data)
+        av_freep(&dst->extended_data);
+
+    if (src->extended_data != src->data) {
+        int ch = dst->ch_layout.nb_channels;
+
+        if (!ch) {
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        if (ch > SIZE_MAX / sizeof(*dst->extended_data))
+            goto fail;
+
+        dst->extended_data = av_memdup(src->extended_data, sizeof(*dst->extended_data) * ch);
+        if (!dst->extended_data) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    } else
+        dst->extended_data = dst->data;
+
+    memcpy(dst->data,     src->data,     sizeof(src->data));
+    memcpy(dst->linesize, src->linesize, sizeof(src->linesize));
+
+    return 0;
+
+fail:
+    av_frame_unref(dst);
+    return ret;
+}
+
 AVFrame *av_frame_clone(const AVFrame *src)
 {
     AVFrame *ret = av_frame_alloc();

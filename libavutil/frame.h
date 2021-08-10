@@ -837,6 +837,19 @@ void av_frame_free(AVFrame **frame);
 int av_frame_ref(AVFrame *dst, const AVFrame *src);
 
 /**
+ * Ensure the destination frame refers to the same data described by the source
+ * frame, either by creating a new reference for each AVBufferRef from src if
+ * they differ from those in dst, by allocating new buffers and copying data if
+ * src is not reference counted, or by unrefencing it if src is empty.
+ *
+ * Frame properties on dst will be replaced by those from src.
+ *
+ * @return 0 on success, a negative AVERROR on error. On error, dst is
+ *         unreferenced.
+ */
+int av_frame_replace(AVFrame *dst, const AVFrame *src);
+
+/**
  * Create a new frame that references the same data as src.
  *
  * This is a shortcut for av_frame_alloc()+av_frame_ref().
