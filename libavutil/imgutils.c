@@ -356,9 +356,9 @@ static void image_copy_plane(uint8_t       *dst, ptrdiff_t dst_linesize,
     }
 }
 
-static void image_copy_plane_uc_from(uint8_t       *dst, ptrdiff_t dst_linesize,
-                                     const uint8_t *src, ptrdiff_t src_linesize,
-                                     ptrdiff_t bytewidth, int height)
+void av_image_copy_plane_uc_from(uint8_t *dst, ptrdiff_t dst_linesize,
+                                 const uint8_t *src, ptrdiff_t src_linesize,
+                                 ptrdiff_t bytewidth, int height)
 {
     int ret = -1;
 
@@ -440,7 +440,7 @@ void av_image_copy_uc_from(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4
                            enum AVPixelFormat pix_fmt, int width, int height)
 {
     image_copy(dst_data, dst_linesizes, src_data, src_linesizes, pix_fmt,
-               width, height, image_copy_plane_uc_from);
+               width, height, av_image_copy_plane_uc_from);
 }
 
 int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
