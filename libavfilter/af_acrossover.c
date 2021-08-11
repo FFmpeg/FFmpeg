@@ -191,10 +191,8 @@ static av_cold int init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         pad.name = name;
 
-        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
     return ret;
@@ -539,13 +537,9 @@ fail:
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioCrossoverContext *s = ctx->priv;
-    int i;
 
     av_freep(&s->fdsp);
     av_frame_free(&s->xover);
-
-    for (i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
 }
 
 static const AVFilterPad inputs[] = {
