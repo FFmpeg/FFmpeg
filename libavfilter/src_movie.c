@@ -306,10 +306,8 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         pad.config_props  = movie_config_output_props;
         pad.request_frame = movie_request_frame;
-        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
         if ( movie->st[i].st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             !movie->st[i].st->codecpar->channel_layout) {
             ret = guess_channel_layout(&movie->st[i], i, ctx);
@@ -334,7 +332,6 @@ static av_cold void movie_uninit(AVFilterContext *ctx)
     int i;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
-        av_freep(&ctx->output_pads[i].name);
         if (movie->st[i].st)
             avcodec_free_context(&movie->st[i].codec_ctx);
     }
