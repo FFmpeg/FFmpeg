@@ -138,9 +138,6 @@ const HWAccel hwaccels[] = {
 #if CONFIG_VIDEOTOOLBOX
     { "videotoolbox", videotoolbox_init, HWACCEL_VIDEOTOOLBOX, AV_PIX_FMT_VIDEOTOOLBOX },
 #endif
-#if CONFIG_LIBMFX
-    { "qsv",   qsv_init,   HWACCEL_QSV,   AV_PIX_FMT_QSV },
-#endif
     { 0 },
 };
 HWDevice *filter_hw_device;
@@ -571,6 +568,23 @@ static int opt_vaapi_device(void *optctx, const char *opt, const char *arg)
 }
 #endif
 
+#if CONFIG_QSV
+static int opt_qsv_device(void *optctx, const char *opt, const char *arg)
+{
+    const char *prefix = "qsv=__qsv_device:hw_any,child_device=";
+    int err;
+    char *tmp = av_asprintf("%s%s", prefix, arg);
+
+    if (!tmp)
+        return AVERROR(ENOMEM);
+
+    err = hw_device_init_from_string(tmp, NULL);
+    av_free(tmp);
+
+    return err;
+}
+#endif
+
 static int opt_init_hw_device(void *optctx, const char *opt, const char *arg)
 {
     if (!strcmp(arg, "list")) {
@@ -898,6 +912,12 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                     "with old commandlines. This behaviour is DEPRECATED and will be removed "
                     "in the future. Please explicitly set \"-hwaccel_output_format cuda\".\n");
                 ist->hwaccel_output_format = AV_PIX_FMT_CUDA;
+            } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "qsv")) {
+                av_log(NULL, AV_LOG_WARNING,
+                    "WARNING: defaulting hwaccel_output_format to qsv for compatibility "
+                    "with old commandlines. This behaviour is DEPRECATED and will be removed "
+                    "in the future. Please explicitly set \"-hwaccel_output_format qsv\".\n");
+                ist->hwaccel_output_format = AV_PIX_FMT_QSV;
             } else if (hwaccel_output_format) {
                 ist->hwaccel_output_format = av_get_pix_fmt(hwaccel_output_format);
                 if (ist->hwaccel_output_format == AV_PIX_FMT_NONE) {
@@ -3848,7 +3868,7 @@ const OptionDef options[] = {
 #endif
 
 #if CONFIG_QSV
-    { "qsv_device", HAS_ARG | OPT_STRING | OPT_EXPERT, { &qsv_device },
+    { "qsv_device", HAS_ARG | OPT_EXPERT, { .func_arg = opt_qsv_device },
         "set QSV hardware device (DirectX adapter index, DRM path or X11 display name)", "device"},
 #endif
 

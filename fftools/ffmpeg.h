@@ -61,7 +61,6 @@ enum HWAccelID {
     HWACCEL_AUTO,
     HWACCEL_GENERIC,
     HWACCEL_VIDEOTOOLBOX,
-    HWACCEL_QSV,
 };
 
 typedef struct HWAccel {
