@@ -167,16 +167,13 @@ static int parse_definition(AVFilterContext *ctx, int nb_pads, int is_input, int
         av_log(ctx, AV_LOG_DEBUG, "Add %s pad %s\n", padtype, pad.name);
 
         if (is_input) {
-            ret = ff_append_inpad(ctx, &pad);
+            ret = ff_append_inpad_free_name(ctx, &pad);
         } else {
             pad.config_props  = config_output;
-            ret = ff_append_outpad(ctx, &pad);
+            ret = ff_append_outpad_free_name(ctx, &pad);
         }
-
-        if (ret < 0) {
-            av_freep(&pad.name);
+        if (ret < 0)
             return ret;
-        }
     }
 
     return 0;
@@ -295,12 +292,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->map);
     av_freep(&s->frames);
     ff_framesync_uninit(&s->fs);
-
-    for (int i = 0; i < ctx->nb_inputs; i++)
-        av_freep(&ctx->input_pads[i].name);
-
-    for (int i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
 }
 
 static int query_formats(AVFilterContext *ctx)
