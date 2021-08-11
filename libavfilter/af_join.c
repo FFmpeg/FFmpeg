@@ -194,10 +194,8 @@ static av_cold int join_init(AVFilterContext *ctx)
         if (!pad.name)
             return AVERROR(ENOMEM);
 
-        if ((ret = ff_append_inpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
     return 0;
@@ -210,10 +208,6 @@ static av_cold void join_uninit(AVFilterContext *ctx)
 
     for (i = 0; i < s->inputs && s->input_frames; i++) {
         av_frame_free(&s->input_frames[i]);
-    }
-
-    for (i = 0; i < ctx->nb_inputs; i++) {
-        av_freep(&ctx->input_pads[i].name);
     }
 
     av_freep(&s->channels);
