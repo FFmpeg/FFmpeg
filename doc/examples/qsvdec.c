@@ -44,38 +44,10 @@
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 
-typedef struct DecodeContext {
-    AVBufferRef *hw_device_ref;
-} DecodeContext;
-
 static int get_format(AVCodecContext *avctx, const enum AVPixelFormat *pix_fmts)
 {
     while (*pix_fmts != AV_PIX_FMT_NONE) {
         if (*pix_fmts == AV_PIX_FMT_QSV) {
-            DecodeContext *decode = avctx->opaque;
-            AVHWFramesContext  *frames_ctx;
-            AVQSVFramesContext *frames_hwctx;
-            int ret;
-
-            /* create a pool of surfaces to be used by the decoder */
-            avctx->hw_frames_ctx = av_hwframe_ctx_alloc(decode->hw_device_ref);
-            if (!avctx->hw_frames_ctx)
-                return AV_PIX_FMT_NONE;
-            frames_ctx   = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-            frames_hwctx = frames_ctx->hwctx;
-
-            frames_ctx->format            = AV_PIX_FMT_QSV;
-            frames_ctx->sw_format         = avctx->sw_pix_fmt;
-            frames_ctx->width             = FFALIGN(avctx->coded_width,  32);
-            frames_ctx->height            = FFALIGN(avctx->coded_height, 32);
-            frames_ctx->initial_pool_size = 32;
-
-            frames_hwctx->frame_type = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
-
-            ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
-            if (ret < 0)
-                return AV_PIX_FMT_NONE;
-
             return AV_PIX_FMT_QSV;
         }
 
@@ -87,7 +59,7 @@ static int get_format(AVCodecContext *avctx, const enum AVPixelFormat *pix_fmts)
     return AV_PIX_FMT_NONE;
 }
 
-static int decode_packet(DecodeContext *decode, AVCodecContext *decoder_ctx,
+static int decode_packet(AVCodecContext *decoder_ctx,
                          AVFrame *frame, AVFrame *sw_frame,
                          AVPacket *pkt, AVIOContext *output_ctx)
 {
@@ -144,11 +116,11 @@ int main(int argc, char **argv)
     AVPacket pkt = { 0 };
     AVFrame *frame = NULL, *sw_frame = NULL;
 
-    DecodeContext decode = { NULL };
-
     AVIOContext *output_ctx = NULL;
 
     int ret, i;
+
+    AVBufferRef *device_ref = NULL;
 
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
@@ -177,7 +149,7 @@ int main(int argc, char **argv)
     }
 
     /* open the hardware device */
-    ret = av_hwdevice_ctx_create(&decode.hw_device_ref, AV_HWDEVICE_TYPE_QSV,
+    ret = av_hwdevice_ctx_create(&device_ref, AV_HWDEVICE_TYPE_QSV,
                                  "auto", NULL, 0);
     if (ret < 0) {
         fprintf(stderr, "Cannot open the hardware device\n");
@@ -209,7 +181,8 @@ int main(int argc, char **argv)
         decoder_ctx->extradata_size = video_st->codecpar->extradata_size;
     }
 
-    decoder_ctx->opaque      = &decode;
+
+    decoder_ctx->hw_device_ctx = av_buffer_ref(device_ref);
     decoder_ctx->get_format  = get_format;
 
     ret = avcodec_open2(decoder_ctx, NULL, NULL);
@@ -239,7 +212,7 @@ int main(int argc, char **argv)
             break;
 
         if (pkt.stream_index == video_st->index)
-            ret = decode_packet(&decode, decoder_ctx, frame, sw_frame, &pkt, output_ctx);
+            ret = decode_packet(decoder_ctx, frame, sw_frame, &pkt, output_ctx);
 
         av_packet_unref(&pkt);
     }
@@ -247,7 +220,7 @@ int main(int argc, char **argv)
     /* flush the decoder */
     pkt.data = NULL;
     pkt.size = 0;
-    ret = decode_packet(&decode, decoder_ctx, frame, sw_frame, &pkt, output_ctx);
+    ret = decode_packet(decoder_ctx, frame, sw_frame, &pkt, output_ctx);
 
 finish:
     if (ret < 0) {
@@ -263,7 +236,7 @@ finish:
 
     avcodec_free_context(&decoder_ctx);
 
-    av_buffer_unref(&decode.hw_device_ref);
+    av_buffer_unref(&device_ref);
 
     avio_close(output_ctx);
 
