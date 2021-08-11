@@ -352,21 +352,11 @@ static av_cold int init(AVFilterContext *ctx)
         pad.type = AVMEDIA_TYPE_VIDEO;
         pad.config_props = config_output;
 
-        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    int i;
-
-    for (i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
 }
 
 static const AVFilterPad extractplanes_inputs[] = {
@@ -384,7 +374,6 @@ const AVFilter ff_vf_extractplanes = {
     .priv_size     = sizeof(ExtractPlanesContext),
     .priv_class    = &extractplanes_class,
     .init          = init,
-    .uninit        = uninit,
     .query_formats = query_formats,
     FILTER_INPUTS(extractplanes_inputs),
     .outputs       = NULL,
@@ -408,7 +397,6 @@ const AVFilter ff_vf_alphaextract = {
                       "grayscale image component."),
     .priv_size      = sizeof(ExtractPlanesContext),
     .init           = init_alphaextract,
-    .uninit         = uninit,
     .query_formats  = query_formats,
     FILTER_INPUTS(extractplanes_inputs),
     .outputs        = NULL,
