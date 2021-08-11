@@ -93,6 +93,8 @@ static char *hw_device_default_name(enum AVHWDeviceType type)
 
 int hw_device_init_from_string(const char *arg, HWDevice **dev_out)
 {
+    // "type=name"
+    // "type=name,key=value,key2=value2"
     // "type=name:device,key=value,key2=value2"
     // "type:device,key=value,key2=value2"
     // -> av_hwdevice_ctx_create()
@@ -124,7 +126,7 @@ int hw_device_init_from_string(const char *arg, HWDevice **dev_out)
     }
 
     if (*p == '=') {
-        k = strcspn(p + 1, ":@");
+        k = strcspn(p + 1, ":@,");
 
         name = av_strndup(p + 1, k);
         if (!name) {
@@ -188,6 +190,18 @@ int hw_device_init_from_string(const char *arg, HWDevice **dev_out)
 
         err = av_hwdevice_ctx_create_derived(&device_ref, type,
                                              src->device_ref, 0);
+        if (err < 0)
+            goto fail;
+    } else if (*p == ',') {
+        err = av_dict_parse_string(&options, p + 1, "=", ",", 0);
+
+        if (err < 0) {
+            errmsg = "failed to parse options";
+            goto invalid;
+        }
+
+        err = av_hwdevice_ctx_create(&device_ref, type,
+                                     NULL, options, 0);
         if (err < 0)
             goto fail;
     } else {
