@@ -108,7 +108,7 @@ typedef struct MXFPartition {
 
 typedef struct MXFMetadataSet {
     UID uid;
-    MXFPartition *partition;
+    uint64_t partition_score;
     enum MXFMetadataSetType type;
 } MXFMetadataSet;
 
@@ -831,21 +831,25 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     return 0;
 }
 
-static int partition_score(MXFPartition *p)
+static uint64_t partition_score(MXFPartition *p)
 {
+    uint64_t score;
+    if (!p)
+        return 0;
     if (p->type == Footer)
-        return 5;
-    if (p->complete)
-        return 4;
-    if (p->closed)
-        return 3;
-    return 1;
+        score = 5;
+    else if (p->complete)
+        score = 4;
+    else if (p->closed)
+        score = 3;
+    else
+        score = 1;
+    return (score << 60) | ((uint64_t)p->this_partition >> 4);
 }
 
 static int mxf_add_metadata_set(MXFContext *mxf, MXFMetadataSet **metadata_set)
 {
     MXFMetadataSet **tmp;
-    MXFPartition *new_p = (*metadata_set)->partition;
     enum MXFMetadataSetType type = (*metadata_set)->type;
 
     // Index Table is special because it might be added manually without
@@ -854,10 +858,9 @@ static int mxf_add_metadata_set(MXFContext *mxf, MXFMetadataSet **metadata_set)
     if (type != IndexTableSegment) {
         for (int i = 0; i < mxf->metadata_sets_count; i++) {
             if (!memcmp((*metadata_set)->uid, mxf->metadata_sets[i]->uid, 16) && type == mxf->metadata_sets[i]->type) {
-                MXFPartition *old_p = mxf->metadata_sets[i]->partition;
-                int old_s = partition_score(old_p);
-                int new_s = partition_score(new_p);
-                if (old_s > new_s || old_s == new_s && old_p->this_partition > new_p->this_partition) {
+                uint64_t old_s = mxf->metadata_sets[i]->partition_score;
+                uint64_t new_s = (*metadata_set)->partition_score;
+                if (old_s > new_s) {
                      mxf_free_metadataset(metadata_set, 1);
                      return 0;
                 }
@@ -2894,7 +2897,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
 static int mxf_metadataset_init(MXFMetadataSet *ctx, enum MXFMetadataSetType type, MXFPartition *partition)
 {
     ctx->type = type;
-    ctx->partition = partition;
+    ctx->partition_score = partition_score(partition);
     switch (type){
     case MultipleDescriptor:
     case Descriptor:
