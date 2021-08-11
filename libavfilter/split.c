@@ -56,21 +56,11 @@ static av_cold int split_init(AVFilterContext *ctx)
         if (!pad.name)
             return AVERROR(ENOMEM);
 
-        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
     return 0;
-}
-
-static av_cold void split_uninit(AVFilterContext *ctx)
-{
-    int i;
-
-    for (i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -124,7 +114,6 @@ const AVFilter ff_vf_split = {
     .priv_size   = sizeof(SplitContext),
     .priv_class  = &split_class,
     .init        = split_init,
-    .uninit      = split_uninit,
     FILTER_INPUTS(avfilter_vf_split_inputs),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
@@ -144,7 +133,6 @@ const AVFilter ff_af_asplit = {
     .priv_size   = sizeof(SplitContext),
     .priv_class  = &asplit_class,
     .init        = split_init,
-    .uninit      = split_uninit,
     FILTER_INPUTS(avfilter_af_asplit_inputs),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
