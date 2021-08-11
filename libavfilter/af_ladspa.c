@@ -456,7 +456,7 @@ static av_cold int init(AVFilterContext *ctx)
     AVFilterPad pad = { NULL };
     char *p, *arg, *saveptr = NULL;
     unsigned long nb_ports;
-    int i, j = 0;
+    int i, j = 0, ret;
 
     if (!s->dl_name) {
         av_log(ctx, AV_LOG_ERROR, "No plugin name provided\n");
@@ -639,10 +639,8 @@ static av_cold int init(AVFilterContext *ctx)
 
         pad.filter_frame = filter_frame;
         pad.config_props = config_input;
-        if (ff_append_inpad(ctx, &pad) < 0) {
-            av_freep(&pad.name);
-            return AVERROR(ENOMEM);
-        }
+        if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
+            return ret;
     }
 
     av_log(ctx, AV_LOG_DEBUG, "ports: %lu\n", nb_ports);
@@ -750,9 +748,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->octlv);
     av_freep(&s->handles);
     av_freep(&s->ctl_needs_value);
-
-    if (ctx->nb_inputs)
-        av_freep(&ctx->input_pads[0].name);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
