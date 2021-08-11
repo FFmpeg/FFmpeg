@@ -393,7 +393,7 @@ static av_cold int init(AVFilterContext *ctx)
     const LilvPlugin *plugin;
     AVFilterPad pad = { NULL };
     LilvNode *uri;
-    int i;
+    int i, ret;
 
     s->world = lilv_world_new();
     if (!s->world)
@@ -464,10 +464,8 @@ static av_cold int init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
 
         pad.filter_frame = filter_frame;
-        if (ff_append_inpad(ctx, &pad) < 0) {
-            av_freep(&pad.name);
-            return AVERROR(ENOMEM);
-        }
+        if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
+            return ret;
     }
 
     return 0;
@@ -562,9 +560,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->maxes);
     av_freep(&s->controls);
     av_freep(&s->seq_out);
-
-    if (ctx->nb_inputs)
-        av_freep(&ctx->input_pads[0].name);
 }
 
 static const AVFilterPad lv2_outputs[] = {
