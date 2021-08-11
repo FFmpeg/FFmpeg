@@ -319,10 +319,8 @@ static av_cold int init(AVFilterContext *ctx)
                 else
                     pad.get_buffer.audio = get_audio_buffer;
                 pad.name = av_asprintf("in%d:%c%d", seg, "va"[type], str);
-                if ((ret = ff_append_inpad(ctx, &pad)) < 0) {
-                    av_freep(&pad.name);
+                if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
                     return ret;
-                }
             }
         }
     }
@@ -334,10 +332,8 @@ static av_cold int init(AVFilterContext *ctx)
                 .config_props  = config_output,
             };
             pad.name = av_asprintf("out:%c%d", "va"[type], str);
-            if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
-                av_freep(&pad.name);
+            if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
                 return ret;
-            }
         }
     }
 
@@ -351,12 +347,7 @@ static av_cold int init(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     ConcatContext *cat = ctx->priv;
-    unsigned i;
 
-    for (i = 0; i < ctx->nb_inputs; i++)
-        av_freep(&ctx->input_pads[i].name);
-    for (i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
     av_freep(&cat->in);
 }
 
