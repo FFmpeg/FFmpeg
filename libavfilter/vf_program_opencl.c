@@ -287,11 +287,9 @@ static av_cold int program_opencl_init(AVFilterContext *avctx)
 
             input.config_props = &ff_opencl_filter_config_input;
 
-            err = ff_append_inpad(avctx, &input);
-            if (err < 0) {
-                av_freep(&input.name);
+            err = ff_append_inpad_free_name(avctx, &input);
+            if (err < 0)
                 return err;
-            }
         }
     }
 
@@ -302,14 +300,11 @@ static av_cold void program_opencl_uninit(AVFilterContext *avctx)
 {
     ProgramOpenCLContext *ctx = avctx->priv;
     cl_int cle;
-    int i;
 
     if (ctx->nb_inputs > 0) {
         ff_framesync_uninit(&ctx->fs);
 
         av_freep(&ctx->frames);
-        for (i = 0; i < avctx->nb_inputs; i++)
-            av_freep(&avctx->input_pads[i].name);
     }
 
     if (ctx->kernel) {
