@@ -173,19 +173,11 @@ static av_cold int init(AVFilterContext *ctx)
         default:
             av_assert0(0);
         }
-        if ((ret = ff_append_inpad(ctx, &inpad)) < 0) {
-            av_freep(&inpad.name);
+        if ((ret = ff_append_inpad_free_name(ctx, &inpad)) < 0)
             return ret;
-        }
     }
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    for (int i = 0; i < ctx->nb_inputs; i++)
-        av_freep(&ctx->input_pads[i].name);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -242,7 +234,6 @@ const AVFilter ff_vf_interleave = {
     .description = NULL_IF_CONFIG_SMALL("Temporally interleave video inputs."),
     .priv_size   = sizeof(InterleaveContext),
     .init        = init,
-    .uninit      = uninit,
     .activate    = activate,
     FILTER_OUTPUTS(interleave_outputs),
     .priv_class  = &interleave_class,
@@ -269,7 +260,6 @@ const AVFilter ff_af_ainterleave = {
     .description = NULL_IF_CONFIG_SMALL("Temporally interleave audio inputs."),
     .priv_size   = sizeof(InterleaveContext),
     .init        = init,
-    .uninit      = uninit,
     .activate    = activate,
     FILTER_OUTPUTS(ainterleave_outputs),
     .priv_class  = &ainterleave_class,
