@@ -69,6 +69,11 @@ struct AVFilterPad {
 #define AVFILTERPAD_FLAG_NEEDS_WRITABLE                  (1 << 0)
 
     /**
+     * The pad's name is allocated and should be freed generically.
+     */
+#define AVFILTERPAD_FLAG_FREE_NAME                       (1 << 1)
+
+    /**
      * A combination of AVFILTERPAD_FLAG_* flags.
      */
     int flags;
@@ -231,9 +236,14 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
 
 /**
  * Append a new input/output pad to the filter's list of such pads.
+ *
+ * The *_free_name versions will set the AVFILTERPAD_FLAG_FREE_NAME flag
+ * ensuring that the name will be freed generically (even on insertion error).
  */
 int ff_append_inpad (AVFilterContext *f, AVFilterPad *p);
 int ff_append_outpad(AVFilterContext *f, AVFilterPad *p);
+int ff_append_inpad_free_name (AVFilterContext *f, AVFilterPad *p);
+int ff_append_outpad_free_name(AVFilterContext *f, AVFilterPad *p);
 
 /**
  * Request an input frame from the filter at the other end of the link.

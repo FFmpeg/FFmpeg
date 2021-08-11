@@ -123,8 +123,11 @@ static int append_pad(unsigned *count, AVFilterPad **pads,
         *pads  = newpads;
     if (newlinks)
         *links = newlinks;
-    if (!newpads || !newlinks)
+    if (!newpads || !newlinks) {
+        if (newpad->flags & AVFILTERPAD_FLAG_FREE_NAME)
+            av_freep(&newpad->name);
         return AVERROR(ENOMEM);
+    }
 
     memcpy(*pads + idx, newpad, sizeof(AVFilterPad));
     (*links)[idx] = NULL;
@@ -139,9 +142,21 @@ int ff_append_inpad(AVFilterContext *f, AVFilterPad *p)
     return append_pad(&f->nb_inputs, &f->input_pads, &f->inputs, p);
 }
 
+int ff_append_inpad_free_name(AVFilterContext *f, AVFilterPad *p)
+{
+    p->flags |= AVFILTERPAD_FLAG_FREE_NAME;
+    return ff_append_inpad(f, p);
+}
+
 int ff_append_outpad(AVFilterContext *f, AVFilterPad *p)
 {
     return append_pad(&f->nb_outputs, &f->output_pads, &f->outputs, p);
+}
+
+int ff_append_outpad_free_name(AVFilterContext *f, AVFilterPad *p)
+{
+    p->flags |= AVFILTERPAD_FLAG_FREE_NAME;
+    return ff_append_outpad(f, p);
 }
 
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
@@ -754,9 +769,13 @@ void avfilter_free(AVFilterContext *filter)
 
     for (i = 0; i < filter->nb_inputs; i++) {
         free_link(filter->inputs[i]);
+        if (filter->input_pads[i].flags  & AVFILTERPAD_FLAG_FREE_NAME)
+            av_freep(&filter->input_pads[i].name);
     }
     for (i = 0; i < filter->nb_outputs; i++) {
         free_link(filter->outputs[i]);
+        if (filter->output_pads[i].flags & AVFILTERPAD_FLAG_FREE_NAME)
+            av_freep(&filter->output_pads[i].name);
     }
 
     if (filter->filter->priv_class)
