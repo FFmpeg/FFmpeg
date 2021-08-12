@@ -538,6 +538,7 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
     return AVERROR(ENOSYS);
 }
 
+#if FF_API_PAD_COUNT
 int avfilter_pad_count(const AVFilterPad *pads)
 {
     const AVFilter *filter;
@@ -555,6 +556,7 @@ int avfilter_pad_count(const AVFilterPad *pads)
 
     av_assert0(!"AVFilterPad list not from a filter");
 }
+#endif
 
 unsigned avfilter_filter_pad_count(const AVFilter *filter, int is_output)
 {
