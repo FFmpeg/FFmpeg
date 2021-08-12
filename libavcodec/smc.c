@@ -73,12 +73,12 @@ typedef struct SmcContext {
     total_blocks--; \
     if (total_blocks < !!n_blocks) \
     { \
-        av_log(s->avctx, AV_LOG_INFO, "warning: block counter just went negative (this should not happen)\n"); \
-        return; \
+        av_log(s->avctx, AV_LOG_ERROR, "block counter just went negative (this should not happen)\n"); \
+        return AVERROR_INVALIDDATA; \
     } \
 }
 
-static void smc_decode_stream(SmcContext *s)
+static int smc_decode_stream(SmcContext *s)
 {
     int width = s->avctx->width;
     int height = s->avctx->height;
@@ -118,7 +118,7 @@ static void smc_decode_stream(SmcContext *s)
     bytestream2_skip(&s->gb, 1);
     chunk_size = bytestream2_get_be24(&s->gb);
     if (chunk_size != buf_size)
-        av_log(s->avctx, AV_LOG_INFO, "warning: MOV chunk size != encoded chunk size (%d != %d); using MOV chunk size\n",
+        av_log(s->avctx, AV_LOG_WARNING, "MOV chunk size != encoded chunk size (%d != %d); using MOV chunk size\n",
             chunk_size, buf_size);
 
     chunk_size = buf_size;
@@ -129,13 +129,13 @@ static void smc_decode_stream(SmcContext *s)
         /* sanity checks */
         /* make sure the row pointer hasn't gone wild */
         if (row_ptr >= image_size) {
-            av_log(s->avctx, AV_LOG_INFO, "SMC decoder just went out of bounds (row ptr = %d, height = %d)\n",
+            av_log(s->avctx, AV_LOG_ERROR, "just went out of bounds (row ptr = %d, height = %d)\n",
                 row_ptr, image_size);
-            return;
+            return AVERROR_INVALIDDATA;
         }
         if (bytestream2_get_bytes_left(&s->gb) < 1) {
             av_log(s->avctx, AV_LOG_ERROR, "input too small\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
 
         opcode = bytestream2_get_byte(&s->gb);
@@ -156,9 +156,9 @@ static void smc_decode_stream(SmcContext *s)
 
             /* sanity check */
             if ((row_ptr == 0) && (pixel_ptr == 0)) {
-                av_log(s->avctx, AV_LOG_INFO, "encountered repeat block opcode (%02X) but no blocks rendered yet\n",
+                av_log(s->avctx, AV_LOG_ERROR, "encountered repeat block opcode (%02X) but no blocks rendered yet\n",
                     opcode & 0xF0);
-                return;
+                return AVERROR_INVALIDDATA;
             }
 
             /* figure out where the previous block started */
@@ -190,9 +190,9 @@ static void smc_decode_stream(SmcContext *s)
 
             /* sanity check */
             if ((row_ptr == 0) && (pixel_ptr < 2 * 4)) {
-                av_log(s->avctx, AV_LOG_INFO, "encountered repeat block opcode (%02X) but not enough blocks rendered yet\n",
+                av_log(s->avctx, AV_LOG_ERROR, "encountered repeat block opcode (%02X) but not enough blocks rendered yet\n",
                     opcode & 0xF0);
-                return;
+                return AVERROR_INVALIDDATA;
             }
 
             /* figure out where the previous 2 blocks started */
@@ -409,7 +409,7 @@ static void smc_decode_stream(SmcContext *s)
         }
     }
 
-    return;
+    return 0;
 }
 
 static av_cold int smc_decode_init(AVCodecContext *avctx)
@@ -446,7 +446,9 @@ static int smc_decode_frame(AVCodecContext *avctx,
 
     s->frame->palette_has_changed = ff_copy_palette(s->pal, avpkt, avctx);
 
-    smc_decode_stream(s);
+    ret = smc_decode_stream(s);
+    if (ret < 0)
+        return ret;
 
     *got_frame      = 1;
     if ((ret = av_frame_ref(data, s->frame)) < 0)
