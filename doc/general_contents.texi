@@ -1018,7 +1018,7 @@ following image formats are supported:
 @item QuickTime 8BPS video   @tab     @tab  X
 @item QuickTime Animation (RLE) video  @tab  X  @tab  X
     @tab fourcc: 'rle '
-@item QuickTime Graphics (SMC)  @tab     @tab  X
+@item QuickTime Graphics (SMC)  @tab  X  @tab  X
     @tab fourcc: 'smc '
 @item QuickTime video (RPZA) @tab  X  @tab  X
     @tab fourcc: rpza

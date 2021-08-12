@@ -10,6 +10,7 @@ version <next>:
 - Concatf protocol
 - afwtdn audio filter
 - audio and video segment filters
+- Apple Graphics (SMC) encoder
 
 
 version 4.4:
