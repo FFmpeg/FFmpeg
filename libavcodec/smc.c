@@ -392,6 +392,7 @@ static void smc_decode_stream(SmcContext *s)
 
         /* 16-color block encoding (every pixel is a different color) */
         case 0xE0:
+        case 0xF0:
             n_blocks = (opcode & 0x0F) + 1;
 
             while (n_blocks--) {
@@ -404,10 +405,6 @@ static void smc_decode_stream(SmcContext *s)
                 }
                 ADVANCE_BLOCK();
             }
-            break;
-
-        case 0xF0:
-            avpriv_request_sample(s->avctx, "0xF0 opcode");
             break;
         }
     }
