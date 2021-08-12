@@ -1707,12 +1707,14 @@ int show_filters(void *optctx, const char *opt, const char *arg)
     while ((filter = av_filter_iterate(&opaque))) {
         descr_cur = descr;
         for (i = 0; i < 2; i++) {
+            unsigned nb_pads;
             if (i) {
                 *(descr_cur++) = '-';
                 *(descr_cur++) = '>';
             }
             pad = i ? filter->outputs : filter->inputs;
-            for (j = 0; pad && avfilter_pad_get_name(pad, j); j++) {
+            nb_pads = avfilter_pad_count(pad);
+            for (j = 0; j < nb_pads; j++) {
                 if (descr_cur >= descr + sizeof(descr) - 4)
                     break;
                 *(descr_cur++) = get_media_type_char(avfilter_pad_get_type(pad, j));
