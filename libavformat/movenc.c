@@ -5422,7 +5422,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             duration = track->start_dts + track->track_duration -
                        track->cluster[0].dts;
         if (mov->flags & FF_MOV_FLAG_SEPARATE_MOOF) {
-            if (!track->mdat_buf)
+            if (!track->entry)
                 continue;
             mdat_size = avio_tell(track->mdat_buf);
             moof_tracks = i;
