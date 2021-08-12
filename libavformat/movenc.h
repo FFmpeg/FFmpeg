@@ -138,7 +138,6 @@ typedef struct MOVTrack {
 
     AVIOContext *mdat_buf;
     int64_t     data_offset;
-    int64_t     frag_start;
     int         frag_discont;
     int         entries_flushed;
 
