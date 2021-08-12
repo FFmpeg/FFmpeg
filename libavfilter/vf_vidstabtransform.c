@@ -294,7 +294,6 @@ static const AVFilterPad avfilter_vf_vidstabtransform_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_vidstabtransform_outputs[] = {
@@ -302,7 +301,6 @@ static const AVFilterPad avfilter_vf_vidstabtransform_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_vidstabtransform = {
@@ -314,7 +312,7 @@ const AVFilter ff_vf_vidstabtransform = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avfilter_vf_vidstabtransform_inputs,
-    .outputs       = avfilter_vf_vidstabtransform_outputs,
+    FILTER_INPUTS(avfilter_vf_vidstabtransform_inputs),
+    FILTER_OUTPUTS(avfilter_vf_vidstabtransform_outputs),
     .priv_class    = &vidstabtransform_class,
 };

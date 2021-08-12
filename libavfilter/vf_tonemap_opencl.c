@@ -527,7 +527,6 @@ static const AVFilterPad tonemap_opencl_inputs[] = {
         .filter_frame = &tonemap_opencl_filter_frame,
         .config_props = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad tonemap_opencl_outputs[] = {
@@ -536,7 +535,6 @@ static const AVFilterPad tonemap_opencl_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = &tonemap_opencl_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_tonemap_opencl = {
@@ -547,7 +545,7 @@ const AVFilter ff_vf_tonemap_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &tonemap_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = tonemap_opencl_inputs,
-    .outputs        = tonemap_opencl_outputs,
+    FILTER_INPUTS(tonemap_opencl_inputs),
+    FILTER_OUTPUTS(tonemap_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -170,7 +170,6 @@ static const AVFilterPad alphamerge_inputs[] = {
         .name             = "alpha",
         .type             = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad alphamerge_outputs[] = {
@@ -179,7 +178,6 @@ static const AVFilterPad alphamerge_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 static const AVOption alphamerge_options[] = {
@@ -197,8 +195,8 @@ const AVFilter ff_vf_alphamerge = {
     .priv_class     = &alphamerge_class,
     .init           = init,
     .query_formats  = query_formats,
-    .inputs         = alphamerge_inputs,
-    .outputs        = alphamerge_outputs,
+    FILTER_INPUTS(alphamerge_inputs),
+    FILTER_OUTPUTS(alphamerge_outputs),
     .uninit         = uninit,
     .activate       = activate,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,

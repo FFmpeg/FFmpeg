@@ -577,7 +577,6 @@ static const AVFilterPad nppscale_inputs[] = {
         .type        = AVMEDIA_TYPE_VIDEO,
         .filter_frame = nppscale_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad nppscale_outputs[] = {
@@ -586,7 +585,6 @@ static const AVFilterPad nppscale_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = nppscale_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scale_npp = {
@@ -601,8 +599,8 @@ const AVFilter ff_vf_scale_npp = {
     .priv_size = sizeof(NPPScaleContext),
     .priv_class = &nppscale_class,
 
-    .inputs    = nppscale_inputs,
-    .outputs   = nppscale_outputs,
+    FILTER_INPUTS(nppscale_inputs),
+    FILTER_OUTPUTS(nppscale_outputs),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

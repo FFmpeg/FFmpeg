@@ -353,7 +353,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #if CONFIG_MIX_FILTER
@@ -365,7 +364,7 @@ const AVFilter ff_vf_mix = {
     .priv_size     = sizeof(MixContext),
     .priv_class    = &mix_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
+    FILTER_OUTPUTS(outputs),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
@@ -432,7 +431,6 @@ static const AVFilterPad inputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .filter_frame  = tmix_filter_frame,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(tmix);
@@ -443,8 +441,8 @@ const AVFilter ff_vf_tmix = {
     .priv_size     = sizeof(MixContext),
     .priv_class    = &tmix_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
-    .inputs        = inputs,
+    FILTER_OUTPUTS(outputs),
+    FILTER_INPUTS(inputs),
     .init          = init,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,

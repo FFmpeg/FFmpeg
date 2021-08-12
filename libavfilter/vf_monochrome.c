@@ -271,7 +271,6 @@ static const AVFilterPad monochrome_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad monochrome_outputs[] = {
@@ -279,7 +278,6 @@ static const AVFilterPad monochrome_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(MonochromeContext, x)
@@ -301,8 +299,8 @@ const AVFilter ff_vf_monochrome = {
     .priv_size     = sizeof(MonochromeContext),
     .priv_class    = &monochrome_class,
     .query_formats = query_formats,
-    .inputs        = monochrome_inputs,
-    .outputs       = monochrome_outputs,
+    FILTER_INPUTS(monochrome_inputs),
+    FILTER_OUTPUTS(monochrome_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

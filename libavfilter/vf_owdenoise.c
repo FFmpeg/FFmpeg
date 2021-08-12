@@ -351,7 +351,6 @@ static const AVFilterPad owdenoise_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad owdenoise_outputs[] = {
@@ -359,7 +358,6 @@ static const AVFilterPad owdenoise_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_owdenoise = {
@@ -368,8 +366,8 @@ const AVFilter ff_vf_owdenoise = {
     .priv_size     = sizeof(OWDenoiseContext),
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = owdenoise_inputs,
-    .outputs       = owdenoise_outputs,
+    FILTER_INPUTS(owdenoise_inputs),
+    FILTER_OUTPUTS(owdenoise_outputs),
     .priv_class    = &owdenoise_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

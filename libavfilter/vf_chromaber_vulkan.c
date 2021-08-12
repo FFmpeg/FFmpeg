@@ -321,7 +321,6 @@ static const AVFilterPad chromaber_vulkan_inputs[] = {
         .filter_frame = &chromaber_vulkan_filter_frame,
         .config_props = &ff_vk_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad chromaber_vulkan_outputs[] = {
@@ -330,7 +329,6 @@ static const AVFilterPad chromaber_vulkan_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_vk_filter_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_chromaber_vulkan = {
@@ -340,8 +338,8 @@ const AVFilter ff_vf_chromaber_vulkan = {
     .init           = &ff_vk_filter_init,
     .uninit         = &chromaber_vulkan_uninit,
     .query_formats  = &ff_vk_filter_query_formats,
-    .inputs         = chromaber_vulkan_inputs,
-    .outputs        = chromaber_vulkan_outputs,
+    FILTER_INPUTS(chromaber_vulkan_inputs),
+    FILTER_OUTPUTS(chromaber_vulkan_outputs),
     .priv_class     = &chromaber_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -240,7 +240,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = agate_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -248,7 +247,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_agate = {
@@ -257,8 +255,8 @@ const AVFilter ff_af_agate = {
     .query_formats  = query_formats,
     .priv_size      = sizeof(AudioGateContext),
     .priv_class     = &agate_class,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = ff_filter_process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
@@ -413,7 +411,6 @@ static const AVFilterPad sidechaingate_inputs[] = {
         .name           = "sidechain",
         .type           = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad sidechaingate_outputs[] = {
@@ -422,7 +419,6 @@ static const AVFilterPad sidechaingate_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = scconfig_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_sidechaingate = {
@@ -433,8 +429,8 @@ const AVFilter ff_af_sidechaingate = {
     .query_formats  = scquery_formats,
     .activate       = activate,
     .uninit         = uninit,
-    .inputs         = sidechaingate_inputs,
-    .outputs        = sidechaingate_outputs,
+    FILTER_INPUTS(sidechaingate_inputs),
+    FILTER_OUTPUTS(sidechaingate_outputs),
     .process_command = ff_filter_process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

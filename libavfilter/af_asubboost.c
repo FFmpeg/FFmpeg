@@ -221,7 +221,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -229,7 +228,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asubboost = {
@@ -239,8 +237,8 @@ const AVFilter ff_af_asubboost = {
     .priv_size      = sizeof(ASubBoostContext),
     .priv_class     = &asubboost_class,
     .uninit         = uninit,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                        AVFILTER_FLAG_SLICE_THREADS,

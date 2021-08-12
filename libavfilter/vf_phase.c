@@ -221,7 +221,6 @@ static const AVFilterPad phase_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad phase_outputs[] = {
@@ -229,7 +228,6 @@ static const AVFilterPad phase_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_phase = {
@@ -239,8 +237,8 @@ const AVFilter ff_vf_phase = {
     .priv_class    = &phase_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = phase_inputs,
-    .outputs       = phase_outputs,
+    FILTER_INPUTS(phase_inputs),
+    FILTER_OUTPUTS(phase_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

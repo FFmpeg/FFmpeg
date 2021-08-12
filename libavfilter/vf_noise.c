@@ -327,7 +327,6 @@ static const AVFilterPad noise_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad noise_outputs[] = {
@@ -335,7 +334,6 @@ static const AVFilterPad noise_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_noise = {
@@ -345,8 +343,8 @@ const AVFilter ff_vf_noise = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = noise_inputs,
-    .outputs       = noise_outputs,
+    FILTER_INPUTS(noise_inputs),
+    FILTER_OUTPUTS(noise_outputs),
     .priv_class    = &noise_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

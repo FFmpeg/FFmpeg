@@ -235,7 +235,6 @@ static const AVFilterPad avfilter_vf_hflip_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_hflip_outputs[] = {
@@ -243,7 +242,6 @@ static const AVFilterPad avfilter_vf_hflip_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_hflip = {
@@ -252,7 +250,7 @@ const AVFilter ff_vf_hflip = {
     .priv_size     = sizeof(FlipContext),
     .priv_class    = &hflip_class,
     .query_formats = query_formats,
-    .inputs        = avfilter_vf_hflip_inputs,
-    .outputs       = avfilter_vf_hflip_outputs,
+    FILTER_INPUTS(avfilter_vf_hflip_inputs),
+    FILTER_OUTPUTS(avfilter_vf_hflip_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

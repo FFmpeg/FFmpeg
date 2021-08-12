@@ -292,7 +292,6 @@ static const AVFilterPad gradients_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_gradients = {
@@ -302,7 +301,7 @@ const AVFilter ff_vsrc_gradients = {
     .priv_class    = &gradients_class,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = gradients_outputs,
+    FILTER_OUTPUTS(gradients_outputs),
     .activate      = activate,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -337,7 +337,6 @@ static const AVFilterPad alimiter_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad alimiter_outputs[] = {
@@ -345,7 +344,6 @@ static const AVFilterPad alimiter_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_alimiter = {
@@ -356,6 +354,6 @@ const AVFilter ff_af_alimiter = {
     .init           = init,
     .uninit         = uninit,
     .query_formats  = query_formats,
-    .inputs         = alimiter_inputs,
-    .outputs        = alimiter_outputs,
+    FILTER_INPUTS(alimiter_inputs),
+    FILTER_OUTPUTS(alimiter_outputs),
 };

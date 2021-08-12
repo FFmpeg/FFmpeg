@@ -112,7 +112,6 @@ static const AVFilterPad derain_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad derain_outputs[] = {
@@ -120,7 +119,6 @@ static const AVFilterPad derain_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_derain = {
@@ -130,8 +128,8 @@ const AVFilter ff_vf_derain = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = derain_inputs,
-    .outputs       = derain_outputs,
+    FILTER_INPUTS(derain_inputs),
+    FILTER_OUTPUTS(derain_outputs),
     .priv_class    = &derain_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

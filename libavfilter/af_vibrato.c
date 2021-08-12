@@ -174,7 +174,6 @@ static const AVFilterPad avfilter_af_vibrato_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_vibrato_outputs[] = {
@@ -182,7 +181,6 @@ static const AVFilterPad avfilter_af_vibrato_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_vibrato = {
@@ -192,6 +190,6 @@ const AVFilter ff_af_vibrato = {
     .priv_class    = &vibrato_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avfilter_af_vibrato_inputs,
-    .outputs       = avfilter_af_vibrato_outputs,
+    FILTER_INPUTS(avfilter_af_vibrato_inputs),
+    FILTER_OUTPUTS(avfilter_af_vibrato_outputs),
 };

@@ -1770,7 +1770,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -1779,7 +1778,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_surround = {
@@ -1791,7 +1789,7 @@ const AVFilter ff_af_surround = {
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags          = AVFILTER_FLAG_SLICE_THREADS,
 };

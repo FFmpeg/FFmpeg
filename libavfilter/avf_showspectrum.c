@@ -1654,7 +1654,6 @@ static const AVFilterPad showspectrum_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad showspectrum_outputs[] = {
@@ -1663,7 +1662,6 @@ static const AVFilterPad showspectrum_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_showspectrum = {
@@ -1672,8 +1670,8 @@ const AVFilter ff_avf_showspectrum = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowSpectrumContext),
-    .inputs        = showspectrum_inputs,
-    .outputs       = showspectrum_outputs,
+    FILTER_INPUTS(showspectrum_inputs),
+    FILTER_OUTPUTS(showspectrum_outputs),
     .activate      = activate,
     .priv_class    = &showspectrum_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
@@ -1838,7 +1836,6 @@ static const AVFilterPad showspectrumpic_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = showspectrumpic_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad showspectrumpic_outputs[] = {
@@ -1848,7 +1845,6 @@ static const AVFilterPad showspectrumpic_outputs[] = {
         .config_props  = config_output,
         .request_frame = showspectrumpic_request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_showspectrumpic = {
@@ -1857,8 +1853,8 @@ const AVFilter ff_avf_showspectrumpic = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowSpectrumContext),
-    .inputs        = showspectrumpic_inputs,
-    .outputs       = showspectrumpic_outputs,
+    FILTER_INPUTS(showspectrumpic_inputs),
+    FILTER_OUTPUTS(showspectrumpic_outputs),
     .priv_class    = &showspectrumpic_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

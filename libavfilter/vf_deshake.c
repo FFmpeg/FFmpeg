@@ -537,7 +537,6 @@ static const AVFilterPad deshake_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad deshake_outputs[] = {
@@ -545,7 +544,6 @@ static const AVFilterPad deshake_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_deshake = {
@@ -555,7 +553,7 @@ const AVFilter ff_vf_deshake = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = deshake_inputs,
-    .outputs       = deshake_outputs,
+    FILTER_INPUTS(deshake_inputs),
+    FILTER_OUTPUTS(deshake_outputs),
     .priv_class    = &deshake_class,
 };

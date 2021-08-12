@@ -371,7 +371,6 @@ static const AVFilterPad sidechaincompress_inputs[] = {
         .name           = "sidechain",
         .type           = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad sidechaincompress_outputs[] = {
@@ -380,7 +379,6 @@ static const AVFilterPad sidechaincompress_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_sidechaincompress = {
@@ -391,8 +389,8 @@ const AVFilter ff_af_sidechaincompress = {
     .query_formats  = query_formats,
     .activate       = activate,
     .uninit         = uninit,
-    .inputs         = sidechaincompress_inputs,
-    .outputs        = sidechaincompress_outputs,
+    FILTER_INPUTS(sidechaincompress_inputs),
+    FILTER_OUTPUTS(sidechaincompress_outputs),
     .process_command = process_command,
 };
 #endif  /* CONFIG_SIDECHAINCOMPRESS_FILTER */
@@ -454,7 +452,6 @@ static const AVFilterPad acompressor_inputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = acompressor_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad acompressor_outputs[] = {
@@ -463,7 +460,6 @@ static const AVFilterPad acompressor_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = compressor_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_acompressor = {
@@ -472,8 +468,8 @@ const AVFilter ff_af_acompressor = {
     .priv_size      = sizeof(SidechainCompressContext),
     .priv_class     = &acompressor_class,
     .query_formats  = acompressor_query_formats,
-    .inputs         = acompressor_inputs,
-    .outputs        = acompressor_outputs,
+    FILTER_INPUTS(acompressor_inputs),
+    FILTER_OUTPUTS(acompressor_outputs),
     .process_command = process_command,
 };
 #endif  /* CONFIG_ACOMPRESSOR_FILTER */

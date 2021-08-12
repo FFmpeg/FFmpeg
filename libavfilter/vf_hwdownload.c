@@ -180,7 +180,6 @@ static const AVFilterPad hwdownload_inputs[] = {
         .config_props = hwdownload_config_input,
         .filter_frame = hwdownload_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad hwdownload_outputs[] = {
@@ -189,7 +188,6 @@ static const AVFilterPad hwdownload_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = hwdownload_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_hwdownload = {
@@ -199,7 +197,7 @@ const AVFilter ff_vf_hwdownload = {
     .query_formats = hwdownload_query_formats,
     .priv_size     = sizeof(HWDownloadContext),
     .priv_class    = &hwdownload_class,
-    .inputs        = hwdownload_inputs,
-    .outputs       = hwdownload_outputs,
+    FILTER_INPUTS(hwdownload_inputs),
+    FILTER_OUTPUTS(hwdownload_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

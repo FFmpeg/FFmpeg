@@ -1518,7 +1518,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(AudioIIRContext, x)
@@ -1574,7 +1573,7 @@ const AVFilter ff_af_aiir = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = inputs,
+    FILTER_INPUTS(inputs),
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                      AVFILTER_FLAG_SLICE_THREADS,
 };

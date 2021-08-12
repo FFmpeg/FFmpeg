@@ -559,7 +559,6 @@ static const AVFilterPad estdif_inputs[] = {
         .filter_frame  = filter_frame,
         .config_props  = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad estdif_outputs[] = {
@@ -569,7 +568,6 @@ static const AVFilterPad estdif_outputs[] = {
         .config_props  = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_estdif = {
@@ -579,8 +577,8 @@ const AVFilter ff_vf_estdif = {
     .priv_class    = &estdif_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = estdif_inputs,
-    .outputs       = estdif_outputs,
+    FILTER_INPUTS(estdif_inputs),
+    FILTER_OUTPUTS(estdif_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

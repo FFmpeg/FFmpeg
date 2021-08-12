@@ -298,7 +298,6 @@ static const AVFilterPad maskfun_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad maskfun_outputs[] = {
@@ -306,7 +305,6 @@ static const AVFilterPad maskfun_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_maskfun = {
@@ -315,8 +313,8 @@ const AVFilter ff_vf_maskfun = {
     .priv_size     = sizeof(MaskFunContext),
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = maskfun_inputs,
-    .outputs       = maskfun_outputs,
+    FILTER_INPUTS(maskfun_inputs),
+    FILTER_OUTPUTS(maskfun_outputs),
     .priv_class    = &maskfun_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

@@ -944,7 +944,6 @@ static const AVFilterPad firequalizer_inputs[] = {
         .filter_frame   = filter_frame,
         .type           = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad firequalizer_outputs[] = {
@@ -953,7 +952,6 @@ static const AVFilterPad firequalizer_outputs[] = {
         .request_frame  = request_frame,
         .type           = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_firequalizer = {
@@ -963,7 +961,7 @@ const AVFilter ff_af_firequalizer = {
     .query_formats      = query_formats,
     .process_command    = process_command,
     .priv_size          = sizeof(FIREqualizerContext),
-    .inputs             = firequalizer_inputs,
-    .outputs            = firequalizer_outputs,
+    FILTER_INPUTS(firequalizer_inputs),
+    FILTER_OUTPUTS(firequalizer_outputs),
     .priv_class         = &firequalizer_class,
 };

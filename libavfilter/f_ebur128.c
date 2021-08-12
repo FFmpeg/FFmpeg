@@ -1017,7 +1017,6 @@ static const AVFilterPad ebur128_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_audio_input,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_ebur128 = {
@@ -1027,7 +1026,7 @@ const AVFilter ff_af_ebur128 = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = ebur128_inputs,
+    FILTER_INPUTS(ebur128_inputs),
     .outputs       = NULL,
     .priv_class    = &ebur128_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,

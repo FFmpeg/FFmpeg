@@ -269,7 +269,6 @@ static const AVFilterPad scale_vaapi_inputs[] = {
         .filter_frame = &scale_vaapi_filter_frame,
         .config_props = &ff_vaapi_vpp_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad scale_vaapi_outputs[] = {
@@ -278,7 +277,6 @@ static const AVFilterPad scale_vaapi_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &scale_vaapi_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scale_vaapi = {
@@ -288,8 +286,8 @@ const AVFilter ff_vf_scale_vaapi = {
     .init          = &scale_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     .query_formats = &ff_vaapi_vpp_query_formats,
-    .inputs        = scale_vaapi_inputs,
-    .outputs       = scale_vaapi_outputs,
+    FILTER_INPUTS(scale_vaapi_inputs),
+    FILTER_OUTPUTS(scale_vaapi_outputs),
     .priv_class    = &scale_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

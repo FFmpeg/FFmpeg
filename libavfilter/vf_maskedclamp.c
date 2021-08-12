@@ -304,7 +304,6 @@ static const AVFilterPad maskedclamp_inputs[] = {
         .name         = "bright",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad maskedclamp_outputs[] = {
@@ -313,7 +312,6 @@ static const AVFilterPad maskedclamp_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_maskedclamp = {
@@ -323,8 +321,8 @@ const AVFilter ff_vf_maskedclamp = {
     .uninit        = uninit,
     .activate      = activate,
     .query_formats = query_formats,
-    .inputs        = maskedclamp_inputs,
-    .outputs       = maskedclamp_outputs,
+    FILTER_INPUTS(maskedclamp_inputs),
+    FILTER_OUTPUTS(maskedclamp_outputs),
     .priv_class    = &maskedclamp_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,

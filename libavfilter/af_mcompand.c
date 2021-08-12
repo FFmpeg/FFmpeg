@@ -638,7 +638,6 @@ static const AVFilterPad mcompand_inputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad mcompand_outputs[] = {
@@ -648,7 +647,6 @@ static const AVFilterPad mcompand_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 
@@ -660,6 +658,6 @@ const AVFilter ff_af_mcompand = {
     .priv_size      = sizeof(MCompandContext),
     .priv_class     = &mcompand_class,
     .uninit         = uninit,
-    .inputs         = mcompand_inputs,
-    .outputs        = mcompand_outputs,
+    FILTER_INPUTS(mcompand_inputs),
+    FILTER_OUTPUTS(mcompand_outputs),
 };

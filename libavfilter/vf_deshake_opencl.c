@@ -2141,7 +2141,6 @@ static const AVFilterPad deshake_opencl_inputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad deshake_opencl_outputs[] = {
@@ -2150,7 +2149,6 @@ static const AVFilterPad deshake_opencl_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_opencl_filter_config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(DeshakeOpenCLContext, x)
@@ -2196,7 +2194,7 @@ const AVFilter ff_vf_deshake_opencl = {
     .uninit         = &deshake_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
     .activate       = activate,
-    .inputs         = deshake_opencl_inputs,
-    .outputs        = deshake_opencl_outputs,
+    FILTER_INPUTS(deshake_opencl_inputs),
+    FILTER_OUTPUTS(deshake_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE
 };

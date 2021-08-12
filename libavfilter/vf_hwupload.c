@@ -238,7 +238,6 @@ static const AVFilterPad hwupload_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = hwupload_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad hwupload_outputs[] = {
@@ -247,7 +246,6 @@ static const AVFilterPad hwupload_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = hwupload_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_hwupload = {
@@ -257,7 +255,7 @@ const AVFilter ff_vf_hwupload = {
     .query_formats = hwupload_query_formats,
     .priv_size     = sizeof(HWUploadContext),
     .priv_class    = &hwupload_class,
-    .inputs        = hwupload_inputs,
-    .outputs       = hwupload_outputs,
+    FILTER_INPUTS(hwupload_inputs),
+    FILTER_OUTPUTS(hwupload_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

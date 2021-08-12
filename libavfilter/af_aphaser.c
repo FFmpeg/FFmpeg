@@ -265,7 +265,6 @@ static const AVFilterPad aphaser_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad aphaser_outputs[] = {
@@ -274,7 +273,6 @@ static const AVFilterPad aphaser_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aphaser = {
@@ -284,7 +282,7 @@ const AVFilter ff_af_aphaser = {
     .priv_size     = sizeof(AudioPhaserContext),
     .init          = init,
     .uninit        = uninit,
-    .inputs        = aphaser_inputs,
-    .outputs       = aphaser_outputs,
+    FILTER_INPUTS(aphaser_inputs),
+    FILTER_OUTPUTS(aphaser_outputs),
     .priv_class    = &aphaser_class,
 };

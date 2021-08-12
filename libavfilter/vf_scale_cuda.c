@@ -625,7 +625,6 @@ static const AVFilterPad cudascale_inputs[] = {
         .filter_frame = cudascale_filter_frame,
         .get_buffer.video = cudascale_get_video_buffer,
     },
-    { NULL }
 };
 
 static const AVFilterPad cudascale_outputs[] = {
@@ -634,7 +633,6 @@ static const AVFilterPad cudascale_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = cudascale_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scale_cuda = {
@@ -648,8 +646,8 @@ const AVFilter ff_vf_scale_cuda = {
     .priv_size = sizeof(CUDAScaleContext),
     .priv_class = &cudascale_class,
 
-    .inputs    = cudascale_inputs,
-    .outputs   = cudascale_outputs,
+    FILTER_INPUTS(cudascale_inputs),
+    FILTER_OUTPUTS(cudascale_outputs),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

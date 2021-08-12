@@ -627,7 +627,6 @@ static const AVFilterPad vif_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_ref,
     },
-    { NULL }
 };
 
 static const AVFilterPad vif_outputs[] = {
@@ -636,7 +635,6 @@ static const AVFilterPad vif_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_vif = {
@@ -647,7 +645,7 @@ const AVFilter ff_vf_vif = {
     .priv_size     = sizeof(VIFContext),
     .priv_class    = &vif_class,
     .activate      = activate,
-    .inputs        = vif_inputs,
-    .outputs       = vif_outputs,
+    FILTER_INPUTS(vif_inputs),
+    FILTER_OUTPUTS(vif_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

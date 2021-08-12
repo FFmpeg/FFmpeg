@@ -438,7 +438,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -447,7 +446,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_datascope = {
@@ -456,8 +454,8 @@ const AVFilter ff_vf_datascope = {
     .priv_size     = sizeof(DatascopeContext),
     .priv_class    = &datascope_class,
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -728,7 +726,6 @@ static const AVFilterPad pixscope_inputs[] = {
         .filter_frame   = pixscope_filter_frame,
         .config_props   = pixscope_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad pixscope_outputs[] = {
@@ -736,7 +733,6 @@ static const AVFilterPad pixscope_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_pixscope = {
@@ -745,8 +741,8 @@ const AVFilter ff_vf_pixscope = {
     .priv_size     = sizeof(PixscopeContext),
     .priv_class    = &pixscope_class,
     .query_formats = query_formats,
-    .inputs        = pixscope_inputs,
-    .outputs       = pixscope_outputs,
+    FILTER_INPUTS(pixscope_inputs),
+    FILTER_OUTPUTS(pixscope_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = pixscope_process_command,
 };
@@ -1134,7 +1130,6 @@ static const AVFilterPad oscilloscope_inputs[] = {
         .filter_frame   = oscilloscope_filter_frame,
         .config_props   = oscilloscope_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad oscilloscope_outputs[] = {
@@ -1142,7 +1137,6 @@ static const AVFilterPad oscilloscope_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_oscilloscope = {
@@ -1152,8 +1146,8 @@ const AVFilter ff_vf_oscilloscope = {
     .priv_class    = &oscilloscope_class,
     .query_formats = query_formats,
     .uninit        = oscilloscope_uninit,
-    .inputs        = oscilloscope_inputs,
-    .outputs       = oscilloscope_outputs,
+    FILTER_INPUTS(oscilloscope_inputs),
+    FILTER_OUTPUTS(oscilloscope_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = oscilloscope_process_command,
 };

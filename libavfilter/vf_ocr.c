@@ -132,7 +132,6 @@ static const AVFilterPad ocr_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad ocr_outputs[] = {
@@ -140,7 +139,6 @@ static const AVFilterPad ocr_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_ocr = {
@@ -151,6 +149,6 @@ const AVFilter ff_vf_ocr = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = ocr_inputs,
-    .outputs       = ocr_outputs,
+    FILTER_INPUTS(ocr_inputs),
+    FILTER_OUTPUTS(ocr_outputs),
 };

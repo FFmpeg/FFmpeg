@@ -301,7 +301,6 @@ static const AVFilterPad colorlevels_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorlevels_outputs[] = {
@@ -309,7 +308,6 @@ static const AVFilterPad colorlevels_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_colorlevels = {
@@ -318,8 +316,8 @@ const AVFilter ff_vf_colorlevels = {
     .priv_size     = sizeof(ColorLevelsContext),
     .priv_class    = &colorlevels_class,
     .query_formats = query_formats,
-    .inputs        = colorlevels_inputs,
-    .outputs       = colorlevels_outputs,
+    FILTER_INPUTS(colorlevels_inputs),
+    FILTER_OUTPUTS(colorlevels_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

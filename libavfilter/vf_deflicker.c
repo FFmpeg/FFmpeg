@@ -451,7 +451,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -460,7 +459,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_deflicker = {
@@ -470,6 +468,6 @@ const AVFilter ff_vf_deflicker = {
     .priv_class    = &deflicker_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };

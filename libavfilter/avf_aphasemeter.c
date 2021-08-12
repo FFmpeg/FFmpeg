@@ -380,7 +380,6 @@ static const AVFilterPad inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_aphasemeter = {
@@ -390,7 +389,7 @@ const AVFilter ff_avf_aphasemeter = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AudioPhaseMeterContext),
-    .inputs        = inputs,
+    FILTER_INPUTS(inputs),
     .outputs       = NULL,
     .priv_class    = &aphasemeter_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,

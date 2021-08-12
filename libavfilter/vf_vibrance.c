@@ -344,7 +344,6 @@ static const AVFilterPad vibrance_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad vibrance_outputs[] = {
@@ -352,7 +351,6 @@ static const AVFilterPad vibrance_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(VibranceContext, x)
@@ -378,8 +376,8 @@ const AVFilter ff_vf_vibrance = {
     .priv_size     = sizeof(VibranceContext),
     .priv_class    = &vibrance_class,
     .query_formats = query_formats,
-    .inputs        = vibrance_inputs,
-    .outputs       = vibrance_outputs,
+    FILTER_INPUTS(vibrance_inputs),
+    FILTER_OUTPUTS(vibrance_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

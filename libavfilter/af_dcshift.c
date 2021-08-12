@@ -136,7 +136,6 @@ static const AVFilterPad dcshift_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad dcshift_outputs[] = {
@@ -144,7 +143,6 @@ static const AVFilterPad dcshift_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_dcshift = {
@@ -154,7 +152,7 @@ const AVFilter ff_af_dcshift = {
     .priv_size      = sizeof(DCShiftContext),
     .priv_class     = &dcshift_class,
     .init           = init,
-    .inputs         = dcshift_inputs,
-    .outputs        = dcshift_outputs,
+    FILTER_INPUTS(dcshift_inputs),
+    FILTER_OUTPUTS(dcshift_outputs),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

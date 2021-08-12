@@ -270,7 +270,6 @@ static const AVFilterPad maskedthreshold_inputs[] = {
         .name         = "reference",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad maskedthreshold_outputs[] = {
@@ -279,7 +278,6 @@ static const AVFilterPad maskedthreshold_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(maskedthreshold);
@@ -292,8 +290,8 @@ const AVFilter ff_vf_maskedthreshold = {
     .uninit        = uninit,
     .activate      = activate,
     .query_formats = query_formats,
-    .inputs        = maskedthreshold_inputs,
-    .outputs       = maskedthreshold_outputs,
+    FILTER_INPUTS(maskedthreshold_inputs),
+    FILTER_OUTPUTS(maskedthreshold_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

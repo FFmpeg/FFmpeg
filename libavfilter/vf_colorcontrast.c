@@ -362,7 +362,6 @@ static const AVFilterPad colorcontrast_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorcontrast_outputs[] = {
@@ -370,7 +369,6 @@ static const AVFilterPad colorcontrast_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ColorContrastContext, x)
@@ -395,8 +393,8 @@ const AVFilter ff_vf_colorcontrast = {
     .priv_size     = sizeof(ColorContrastContext),
     .priv_class    = &colorcontrast_class,
     .query_formats = query_formats,
-    .inputs        = colorcontrast_inputs,
-    .outputs       = colorcontrast_outputs,
+    FILTER_INPUTS(colorcontrast_inputs),
+    FILTER_OUTPUTS(colorcontrast_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -385,7 +385,6 @@ static const AVFilterPad gblur_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad gblur_outputs[] = {
@@ -393,7 +392,6 @@ static const AVFilterPad gblur_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_gblur = {
@@ -403,8 +401,8 @@ const AVFilter ff_vf_gblur = {
     .priv_class    = &gblur_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = gblur_inputs,
-    .outputs       = gblur_outputs,
+    FILTER_INPUTS(gblur_inputs),
+    FILTER_OUTPUTS(gblur_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -650,7 +650,6 @@ static const AVFilterPad qsvscale_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = qsvscale_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad qsvscale_outputs[] = {
@@ -659,7 +658,6 @@ static const AVFilterPad qsvscale_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = qsvscale_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scale_qsv = {
@@ -673,8 +671,8 @@ const AVFilter ff_vf_scale_qsv = {
     .priv_size = sizeof(QSVScaleContext),
     .priv_class = &qsvscale_class,
 
-    .inputs    = qsvscale_inputs,
-    .outputs   = qsvscale_outputs,
+    FILTER_INPUTS(qsvscale_inputs),
+    FILTER_OUTPUTS(qsvscale_outputs),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

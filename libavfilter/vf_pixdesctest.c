@@ -113,7 +113,6 @@ static const AVFilterPad avfilter_vf_pixdesctest_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_pixdesctest_outputs[] = {
@@ -121,7 +120,6 @@ static const AVFilterPad avfilter_vf_pixdesctest_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_pixdesctest = {
@@ -129,6 +127,6 @@ const AVFilter ff_vf_pixdesctest = {
     .description = NULL_IF_CONFIG_SMALL("Test pixel format definitions."),
     .priv_size   = sizeof(PixdescTestContext),
     .uninit      = uninit,
-    .inputs      = avfilter_vf_pixdesctest_inputs,
-    .outputs     = avfilter_vf_pixdesctest_outputs,
+    FILTER_INPUTS(avfilter_vf_pixdesctest_inputs),
+    FILTER_OUTPUTS(avfilter_vf_pixdesctest_outputs),
 };

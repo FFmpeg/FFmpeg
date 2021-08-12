@@ -195,7 +195,6 @@ static const AVFilterPad trim_inputs[] = {
         .filter_frame = trim_filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad trim_outputs[] = {
@@ -203,7 +202,6 @@ static const AVFilterPad trim_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_trim = {
@@ -212,8 +210,8 @@ const AVFilter ff_vf_trim = {
     .init        = init,
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &trim_class,
-    .inputs      = trim_inputs,
-    .outputs     = trim_outputs,
+    FILTER_INPUTS(trim_inputs),
+    FILTER_OUTPUTS(trim_outputs),
 };
 #endif // CONFIG_TRIM_FILTER
 
@@ -350,7 +348,6 @@ static const AVFilterPad atrim_inputs[] = {
         .filter_frame = atrim_filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad atrim_outputs[] = {
@@ -358,7 +355,6 @@ static const AVFilterPad atrim_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_atrim = {
@@ -367,7 +363,7 @@ const AVFilter ff_af_atrim = {
     .init        = init,
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &atrim_class,
-    .inputs      = atrim_inputs,
-    .outputs     = atrim_outputs,
+    FILTER_INPUTS(atrim_inputs),
+    FILTER_OUTPUTS(atrim_outputs),
 };
 #endif // CONFIG_ATRIM_FILTER

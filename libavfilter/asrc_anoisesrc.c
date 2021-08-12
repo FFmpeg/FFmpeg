@@ -230,7 +230,6 @@ static const AVFilterPad anoisesrc_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_anoisesrc = {
@@ -240,6 +239,6 @@ const AVFilter ff_asrc_anoisesrc = {
     .priv_size     = sizeof(ANoiseSrcContext),
     .inputs        = NULL,
     .activate      = activate,
-    .outputs       = anoisesrc_outputs,
+    FILTER_OUTPUTS(anoisesrc_outputs),
     .priv_class    = &anoisesrc_class,
 };

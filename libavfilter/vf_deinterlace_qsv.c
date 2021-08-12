@@ -576,7 +576,6 @@ static const AVFilterPad qsvdeint_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = qsvdeint_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad qsvdeint_outputs[] = {
@@ -586,7 +585,6 @@ static const AVFilterPad qsvdeint_outputs[] = {
         .config_props  = qsvdeint_config_props,
         .request_frame = qsvdeint_request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_deinterlace_qsv = {
@@ -599,8 +597,8 @@ const AVFilter ff_vf_deinterlace_qsv = {
     .priv_size = sizeof(QSVDeintContext),
     .priv_class = &qsvdeint_class,
 
-    .inputs    = qsvdeint_inputs,
-    .outputs   = qsvdeint_outputs,
+    FILTER_INPUTS(qsvdeint_inputs),
+    FILTER_OUTPUTS(qsvdeint_outputs),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

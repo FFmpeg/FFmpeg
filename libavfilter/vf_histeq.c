@@ -256,7 +256,6 @@ static const AVFilterPad histeq_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad histeq_outputs[] = {
@@ -264,7 +263,6 @@ static const AVFilterPad histeq_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_histeq = {
@@ -273,8 +271,8 @@ const AVFilter ff_vf_histeq = {
     .priv_size     = sizeof(HisteqContext),
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = histeq_inputs,
-    .outputs       = histeq_outputs,
+    FILTER_INPUTS(histeq_inputs),
+    FILTER_OUTPUTS(histeq_outputs),
     .priv_class    = &histeq_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

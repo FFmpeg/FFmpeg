@@ -750,7 +750,6 @@ static const AVFilterPad pullup_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad pullup_outputs[] = {
@@ -758,7 +757,6 @@ static const AVFilterPad pullup_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_pullup = {
@@ -768,6 +766,6 @@ const AVFilter ff_vf_pullup = {
     .priv_class    = &pullup_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = pullup_inputs,
-    .outputs       = pullup_outputs,
+    FILTER_INPUTS(pullup_inputs),
+    FILTER_OUTPUTS(pullup_outputs),
 };

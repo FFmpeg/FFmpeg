@@ -240,7 +240,6 @@ static const AVFilterPad silencedetect_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad silencedetect_outputs[] = {
@@ -248,7 +247,6 @@ static const AVFilterPad silencedetect_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_silencedetect = {
@@ -257,7 +255,7 @@ const AVFilter ff_af_silencedetect = {
     .priv_size     = sizeof(SilenceDetectContext),
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = silencedetect_inputs,
-    .outputs       = silencedetect_outputs,
+    FILTER_INPUTS(silencedetect_inputs),
+    FILTER_OUTPUTS(silencedetect_outputs),
     .priv_class    = &silencedetect_class,
 };

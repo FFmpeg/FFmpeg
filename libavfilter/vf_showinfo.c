@@ -661,7 +661,6 @@ static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
         .filter_frame     = filter_frame,
         .config_props     = config_props_in,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
@@ -670,14 +669,13 @@ static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props_out,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_showinfo = {
     .name        = "showinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
-    .inputs      = avfilter_vf_showinfo_inputs,
-    .outputs     = avfilter_vf_showinfo_outputs,
+    FILTER_INPUTS(avfilter_vf_showinfo_inputs),
+    FILTER_OUTPUTS(avfilter_vf_showinfo_outputs),
     .priv_size   = sizeof(ShowInfoContext),
     .priv_class  = &showinfo_class,
 };

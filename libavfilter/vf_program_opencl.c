@@ -359,7 +359,6 @@ static const AVFilterPad program_opencl_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = &program_opencl_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_program_opencl = {
@@ -374,7 +373,7 @@ const AVFilter ff_vf_program_opencl = {
     .query_formats  = &ff_opencl_filter_query_formats,
     .activate       = &program_opencl_activate,
     .inputs         = NULL,
-    .outputs        = program_opencl_outputs,
+    FILTER_OUTPUTS(program_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -413,7 +412,6 @@ static const AVFilterPad openclsrc_outputs[] = {
         .config_props  = &program_opencl_config_output,
         .request_frame = &program_opencl_request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_openclsrc = {
@@ -425,7 +423,7 @@ const AVFilter ff_vsrc_openclsrc = {
     .uninit         = &program_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
     .inputs         = NULL,
-    .outputs        = openclsrc_outputs,
+    FILTER_OUTPUTS(openclsrc_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 

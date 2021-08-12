@@ -342,7 +342,6 @@ static const AVFilterPad inputs[] = {
         .name         = "max",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -351,7 +350,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_threshold = {
@@ -362,8 +360,8 @@ const AVFilter ff_vf_threshold = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

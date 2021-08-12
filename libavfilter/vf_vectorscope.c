@@ -1575,7 +1575,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -1584,7 +1583,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_vectorscope = {
@@ -1594,6 +1592,6 @@ const AVFilter ff_vf_vectorscope = {
     .priv_class    = &vectorscope_class,
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };

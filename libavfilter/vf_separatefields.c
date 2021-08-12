@@ -161,7 +161,6 @@ static const AVFilterPad separatefields_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad separatefields_outputs[] = {
@@ -170,7 +169,6 @@ static const AVFilterPad separatefields_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_separatefields = {
@@ -179,6 +177,6 @@ const AVFilter ff_vf_separatefields = {
     .priv_size   = sizeof(SeparateFieldsContext),
     .activate    = activate,
     .uninit      = uninit,
-    .inputs      = separatefields_inputs,
-    .outputs     = separatefields_outputs,
+    FILTER_INPUTS(separatefields_inputs),
+    FILTER_OUTPUTS(separatefields_outputs),
 };

@@ -390,7 +390,6 @@ static const AVFilterPad identity_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_ref,
     },
-    { NULL }
 };
 
 static const AVFilterPad identity_outputs[] = {
@@ -399,7 +398,6 @@ static const AVFilterPad identity_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 static const AVOption options[] = {
@@ -421,8 +419,8 @@ const AVFilter ff_vf_identity = {
     .activate      = activate,
     .priv_size     = sizeof(IdentityContext),
     .priv_class    = &identity_class,
-    .inputs        = identity_inputs,
-    .outputs       = identity_outputs,
+    FILTER_INPUTS(identity_inputs),
+    FILTER_OUTPUTS(identity_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 
@@ -443,8 +441,8 @@ const AVFilter ff_vf_msad = {
     .activate      = activate,
     .priv_size     = sizeof(IdentityContext),
     .priv_class    = &msad_class,
-    .inputs        = identity_inputs,
-    .outputs       = identity_outputs,
+    FILTER_INPUTS(identity_inputs),
+    FILTER_OUTPUTS(identity_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 

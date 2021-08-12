@@ -346,7 +346,6 @@ static const AVFilterPad showspatial_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad showspatial_outputs[] = {
@@ -355,7 +354,6 @@ static const AVFilterPad showspatial_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_showspatial = {
@@ -364,8 +362,8 @@ const AVFilter ff_avf_showspatial = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowSpatialContext),
-    .inputs        = showspatial_inputs,
-    .outputs       = showspatial_outputs,
+    FILTER_INPUTS(showspatial_inputs),
+    FILTER_OUTPUTS(showspatial_outputs),
     .activate      = spatial_activate,
     .priv_class    = &showspatial_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,

@@ -236,7 +236,6 @@ static const AVFilterPad cover_rect_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad cover_rect_outputs[] = {
@@ -244,7 +243,6 @@ static const AVFilterPad cover_rect_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_cover_rect = {
@@ -254,7 +252,7 @@ const AVFilter ff_vf_cover_rect = {
     .init            = init,
     .uninit          = uninit,
     .query_formats   = query_formats,
-    .inputs          = cover_rect_inputs,
-    .outputs         = cover_rect_outputs,
+    FILTER_INPUTS(cover_rect_inputs),
+    FILTER_OUTPUTS(cover_rect_outputs),
     .priv_class      = &cover_rect_class,
 };

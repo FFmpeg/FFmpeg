@@ -800,7 +800,6 @@ static const AVFilterPad curves_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad curves_outputs[] = {
@@ -808,7 +807,6 @@ static const AVFilterPad curves_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_curves = {
@@ -818,8 +816,8 @@ const AVFilter ff_vf_curves = {
     .init          = curves_init,
     .uninit        = curves_uninit,
     .query_formats = query_formats,
-    .inputs        = curves_inputs,
-    .outputs       = curves_outputs,
+    FILTER_INPUTS(curves_inputs),
+    FILTER_OUTPUTS(curves_outputs),
     .priv_class    = &curves_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

@@ -178,7 +178,6 @@ static const AVFilterPad weave_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .filter_frame     = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad weave_outputs[] = {
@@ -187,7 +186,6 @@ static const AVFilterPad weave_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_weave = {
@@ -197,8 +195,8 @@ const AVFilter ff_vf_weave = {
     .priv_class    = &weave_class,
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = weave_inputs,
-    .outputs       = weave_outputs,
+    FILTER_INPUTS(weave_inputs),
+    FILTER_OUTPUTS(weave_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
 
@@ -223,7 +221,7 @@ const AVFilter ff_vf_doubleweave = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = weave_inputs,
-    .outputs       = weave_outputs,
+    FILTER_INPUTS(weave_inputs),
+    FILTER_OUTPUTS(weave_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

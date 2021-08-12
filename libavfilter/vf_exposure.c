@@ -103,7 +103,6 @@ static const AVFilterPad exposure_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad exposure_outputs[] = {
@@ -111,7 +110,6 @@ static const AVFilterPad exposure_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ExposureContext, x)
@@ -131,8 +129,8 @@ const AVFilter ff_vf_exposure = {
     .priv_size     = sizeof(ExposureContext),
     .priv_class    = &exposure_class,
     .query_formats = query_formats,
-    .inputs        = exposure_inputs,
-    .outputs       = exposure_outputs,
+    FILTER_INPUTS(exposure_inputs),
+    FILTER_OUTPUTS(exposure_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -302,7 +302,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -311,7 +310,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_shear = {
@@ -320,8 +318,8 @@ const AVFilter ff_vf_shear = {
     .priv_size       = sizeof(ShearContext),
     .init            = init,
     .query_formats   = query_formats,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .priv_class      = &shear_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

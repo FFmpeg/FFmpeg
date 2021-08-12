@@ -429,7 +429,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -437,7 +436,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(chromashift);
@@ -448,8 +446,8 @@ const AVFilter ff_vf_chromashift = {
     .priv_size     = sizeof(ChromaShiftContext),
     .priv_class    = &chromashift_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
-    .inputs        = inputs,
+    FILTER_OUTPUTS(outputs),
+    FILTER_INPUTS(inputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -477,8 +475,8 @@ const AVFilter ff_vf_rgbashift = {
     .priv_size     = sizeof(ChromaShiftContext),
     .priv_class    = &rgbashift_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
-    .inputs        = inputs,
+    FILTER_OUTPUTS(outputs),
+    FILTER_INPUTS(inputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

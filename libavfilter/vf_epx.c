@@ -260,7 +260,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -269,14 +268,13 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_epx = {
     .name          = "epx",
     .description   = NULL_IF_CONFIG_SMALL("Scale the input using EPX algorithm."),
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .query_formats = query_formats,
     .priv_size     = sizeof(EPXContext),
     .priv_class    = &epx_class,

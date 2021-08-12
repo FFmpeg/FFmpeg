@@ -923,7 +923,6 @@ static const AVFilterPad silenceremove_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad silenceremove_outputs[] = {
@@ -932,7 +931,6 @@ static const AVFilterPad silenceremove_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_silenceremove = {
@@ -943,6 +941,6 @@ const AVFilter ff_af_silenceremove = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = silenceremove_inputs,
-    .outputs       = silenceremove_outputs,
+    FILTER_INPUTS(silenceremove_inputs),
+    FILTER_OUTPUTS(silenceremove_outputs),
 };

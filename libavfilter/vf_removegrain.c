@@ -634,7 +634,6 @@ static const AVFilterPad removegrain_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad removegrain_outputs[] = {
@@ -642,7 +641,6 @@ static const AVFilterPad removegrain_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_removegrain = {
@@ -650,8 +648,8 @@ const AVFilter ff_vf_removegrain = {
     .description   = NULL_IF_CONFIG_SMALL("Remove grain."),
     .priv_size     = sizeof(RemoveGrainContext),
     .query_formats = query_formats,
-    .inputs        = removegrain_inputs,
-    .outputs       = removegrain_outputs,
+    FILTER_INPUTS(removegrain_inputs),
+    FILTER_OUTPUTS(removegrain_outputs),
     .priv_class    = &removegrain_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

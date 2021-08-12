@@ -174,7 +174,6 @@ static const AVFilterPad sr_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad sr_outputs[] = {
@@ -183,7 +182,6 @@ static const AVFilterPad sr_outputs[] = {
         .config_props = config_output,
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_sr = {
@@ -193,7 +191,7 @@ const AVFilter ff_vf_sr = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = sr_inputs,
-    .outputs       = sr_outputs,
+    FILTER_INPUTS(sr_inputs),
+    FILTER_OUTPUTS(sr_outputs),
     .priv_class    = &sr_class,
 };

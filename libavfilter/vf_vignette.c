@@ -327,7 +327,6 @@ static const AVFilterPad vignette_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad vignette_outputs[] = {
@@ -335,7 +334,6 @@ static const AVFilterPad vignette_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_vignette = {
@@ -345,8 +343,8 @@ const AVFilter ff_vf_vignette = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = vignette_inputs,
-    .outputs       = vignette_outputs,
+    FILTER_INPUTS(vignette_inputs),
+    FILTER_OUTPUTS(vignette_outputs),
     .priv_class    = &vignette_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

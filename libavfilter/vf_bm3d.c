@@ -1048,7 +1048,6 @@ static const AVFilterPad bm3d_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_bm3d = {
@@ -1060,7 +1059,7 @@ const AVFilter ff_vf_bm3d = {
     .activate      = activate,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = bm3d_outputs,
+    FILTER_OUTPUTS(bm3d_outputs),
     .priv_class    = &bm3d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |

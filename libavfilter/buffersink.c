@@ -331,7 +331,6 @@ static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsink_buffer = {
@@ -342,7 +341,7 @@ const AVFilter ff_vsink_buffer = {
     .init          = common_init,
     .query_formats = vsink_query_formats,
     .activate      = activate,
-    .inputs        = avfilter_vsink_buffer_inputs,
+    FILTER_INPUTS(avfilter_vsink_buffer_inputs),
     .outputs       = NULL,
 };
 
@@ -351,7 +350,6 @@ static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_asink_abuffer = {
@@ -362,6 +360,6 @@ const AVFilter ff_asink_abuffer = {
     .init          = common_init,
     .query_formats = asink_query_formats,
     .activate      = activate,
-    .inputs        = avfilter_asink_abuffer_inputs,
+    FILTER_INPUTS(avfilter_asink_abuffer_inputs),
     .outputs       = NULL,
 };

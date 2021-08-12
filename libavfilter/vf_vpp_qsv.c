@@ -600,7 +600,6 @@ static const AVFilterPad vpp_inputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad vpp_outputs[] = {
@@ -609,7 +608,6 @@ static const AVFilterPad vpp_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_vpp_qsv = {
@@ -619,8 +617,8 @@ const AVFilter ff_vf_vpp_qsv = {
     .query_formats = query_formats,
     .init          = vpp_init,
     .uninit        = vpp_uninit,
-    .inputs        = vpp_inputs,
-    .outputs       = vpp_outputs,
+    FILTER_INPUTS(vpp_inputs),
+    FILTER_OUTPUTS(vpp_outputs),
     .activate      = activate,
     .priv_class    = &vpp_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,

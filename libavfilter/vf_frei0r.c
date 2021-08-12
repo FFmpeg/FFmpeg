@@ -402,7 +402,6 @@ static const AVFilterPad avfilter_vf_frei0r_inputs[] = {
         .config_props = config_input_props,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_frei0r_outputs[] = {
@@ -410,7 +409,6 @@ static const AVFilterPad avfilter_vf_frei0r_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_frei0r = {
@@ -421,8 +419,8 @@ const AVFilter ff_vf_frei0r = {
     .uninit        = uninit,
     .priv_size     = sizeof(Frei0rContext),
     .priv_class    = &frei0r_class,
-    .inputs        = avfilter_vf_frei0r_inputs,
-    .outputs       = avfilter_vf_frei0r_outputs,
+    FILTER_INPUTS(avfilter_vf_frei0r_inputs),
+    FILTER_OUTPUTS(avfilter_vf_frei0r_outputs),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
@@ -498,7 +496,6 @@ static const AVFilterPad avfilter_vsrc_frei0r_src_outputs[] = {
         .request_frame = source_request_frame,
         .config_props  = source_config_props
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_frei0r_src = {
@@ -510,5 +507,5 @@ const AVFilter ff_vsrc_frei0r_src = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_frei0r_src_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_frei0r_src_outputs),
 };

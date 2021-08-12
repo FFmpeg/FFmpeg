@@ -209,7 +209,6 @@ static const AVFilterPad flanger_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad flanger_outputs[] = {
@@ -217,7 +216,6 @@ static const AVFilterPad flanger_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_flanger = {
@@ -228,6 +226,6 @@ const AVFilter ff_af_flanger = {
     .priv_class    = &flanger_class,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = flanger_inputs,
-    .outputs       = flanger_outputs,
+    FILTER_INPUTS(flanger_inputs),
+    FILTER_OUTPUTS(flanger_outputs),
 };

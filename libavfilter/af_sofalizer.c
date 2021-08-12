@@ -1095,7 +1095,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -1103,7 +1102,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_sofalizer = {
@@ -1115,7 +1113,7 @@ const AVFilter ff_af_sofalizer = {
     .activate      = activate,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

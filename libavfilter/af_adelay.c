@@ -326,7 +326,6 @@ static const AVFilterPad adelay_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad adelay_outputs[] = {
@@ -334,7 +333,6 @@ static const AVFilterPad adelay_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_adelay = {
@@ -345,7 +343,7 @@ const AVFilter ff_af_adelay = {
     .priv_class    = &adelay_class,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = adelay_inputs,
-    .outputs       = adelay_outputs,
+    FILTER_INPUTS(adelay_inputs),
+    FILTER_OUTPUTS(adelay_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

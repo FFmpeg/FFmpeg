@@ -387,7 +387,6 @@ static const AVFilterPad avfilter_af_channelmap_inputs[] = {
         .filter_frame   = channelmap_filter_frame,
         .config_props   = channelmap_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_channelmap_outputs[] = {
@@ -395,7 +394,6 @@ static const AVFilterPad avfilter_af_channelmap_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO
     },
-    { NULL }
 };
 
 const AVFilter ff_af_channelmap = {
@@ -405,6 +403,6 @@ const AVFilter ff_af_channelmap = {
     .query_formats = channelmap_query_formats,
     .priv_size     = sizeof(ChannelMapContext),
     .priv_class    = &channelmap_class,
-    .inputs        = avfilter_af_channelmap_inputs,
-    .outputs       = avfilter_af_channelmap_outputs,
+    FILTER_INPUTS(avfilter_af_channelmap_inputs),
+    FILTER_OUTPUTS(avfilter_af_channelmap_outputs),
 };

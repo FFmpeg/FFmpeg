@@ -428,7 +428,6 @@ static const AVFilterPad decimate_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_decimate = {
@@ -439,7 +438,7 @@ const AVFilter ff_vf_decimate = {
     .uninit        = decimate_uninit,
     .priv_size     = sizeof(DecimateContext),
     .query_formats = query_formats,
-    .outputs       = decimate_outputs,
+    FILTER_OUTPUTS(decimate_outputs),
     .priv_class    = &decimate_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

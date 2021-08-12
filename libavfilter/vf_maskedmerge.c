@@ -305,7 +305,6 @@ static const AVFilterPad maskedmerge_inputs[] = {
         .name         = "mask",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad maskedmerge_outputs[] = {
@@ -314,7 +313,6 @@ static const AVFilterPad maskedmerge_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_maskedmerge = {
@@ -324,8 +322,8 @@ const AVFilter ff_vf_maskedmerge = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = maskedmerge_inputs,
-    .outputs       = maskedmerge_outputs,
+    FILTER_INPUTS(maskedmerge_inputs),
+    FILTER_OUTPUTS(maskedmerge_outputs),
     .priv_class    = &maskedmerge_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,

@@ -466,7 +466,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -474,7 +473,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_afftfilt = {
@@ -482,8 +480,8 @@ const AVFilter ff_af_afftfilt = {
     .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to samples in frequency domain."),
     .priv_size       = sizeof(AFFTFiltContext),
     .priv_class      = &afftfilt_class,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .activate        = activate,
     .query_formats   = query_formats,
     .uninit          = uninit,

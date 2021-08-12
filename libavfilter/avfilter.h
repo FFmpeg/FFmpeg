@@ -71,8 +71,7 @@ typedef struct AVFilterFormats AVFilterFormats;
 typedef struct AVFilterChannelLayouts AVFilterChannelLayouts;
 
 /**
- * Get the number of elements in a NULL-terminated array of AVFilterPads (e.g.
- * AVFilter.inputs/outputs).
+ * Get the number of elements in an AVFilter's inputs or outputs array.
  */
 int avfilter_pad_count(const AVFilterPad *pads);
 
@@ -156,15 +155,16 @@ typedef struct AVFilter {
     const char *description;
 
     /**
-     * List of inputs, terminated by a zeroed element.
+     * List of static inputs.
      *
      * NULL if there are no (static) inputs. Instances of filters with
      * AVFILTER_FLAG_DYNAMIC_INPUTS set may have more inputs than present in
      * this list.
      */
     const AVFilterPad *inputs;
+
     /**
-     * List of outputs, terminated by a zeroed element.
+     * List of static outputs.
      *
      * NULL if there are no (static) outputs. Instances of filters with
      * AVFILTER_FLAG_DYNAMIC_OUTPUTS set may have more outputs than present in
@@ -194,6 +194,16 @@ typedef struct AVFilter {
      * New public fields should be added right above.
      *****************************************************************
      */
+
+    /**
+     * The number of entries in the list of inputs.
+     */
+    uint16_t nb_inputs;
+
+    /**
+     * The number of entries in the list of outputs.
+     */
+    uint16_t nb_outputs;
 
     /**
      * Filter pre-initialization function

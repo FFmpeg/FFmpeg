@@ -534,7 +534,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_inputy,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -543,7 +542,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = lut2_config_output,
     },
-    { NULL }
 };
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
@@ -570,8 +568,8 @@ const AVFilter ff_vf_lut2 = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
@@ -642,7 +640,6 @@ static const AVFilterPad tlut2_inputs[] = {
         .filter_frame  = tlut2_filter_frame,
         .config_props  = config_inputx,
     },
-    { NULL }
 };
 
 static const AVFilterPad tlut2_outputs[] = {
@@ -651,7 +648,6 @@ static const AVFilterPad tlut2_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_tlut2 = {
@@ -662,8 +658,8 @@ const AVFilter ff_vf_tlut2 = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = tlut2_inputs,
-    .outputs       = tlut2_outputs,
+    FILTER_INPUTS(tlut2_inputs),
+    FILTER_OUTPUTS(tlut2_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

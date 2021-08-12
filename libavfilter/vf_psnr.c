@@ -453,7 +453,6 @@ static const AVFilterPad psnr_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_ref,
     },
-    { NULL }
 };
 
 static const AVFilterPad psnr_outputs[] = {
@@ -462,7 +461,6 @@ static const AVFilterPad psnr_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_psnr = {
@@ -475,7 +473,7 @@ const AVFilter ff_vf_psnr = {
     .activate      = activate,
     .priv_size     = sizeof(PSNRContext),
     .priv_class    = &psnr_class,
-    .inputs        = psnr_inputs,
-    .outputs       = psnr_outputs,
+    FILTER_INPUTS(psnr_inputs),
+    FILTER_OUTPUTS(psnr_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

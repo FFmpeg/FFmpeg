@@ -162,7 +162,6 @@ static const AVFilterPad compensationdelay_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad compensationdelay_outputs[] = {
@@ -170,7 +169,6 @@ static const AVFilterPad compensationdelay_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_compensationdelay = {
@@ -180,6 +178,6 @@ const AVFilter ff_af_compensationdelay = {
     .priv_size     = sizeof(CompensationDelayContext),
     .priv_class    = &compensationdelay_class,
     .uninit        = uninit,
-    .inputs        = compensationdelay_inputs,
-    .outputs       = compensationdelay_outputs,
+    FILTER_INPUTS(compensationdelay_inputs),
+    FILTER_OUTPUTS(compensationdelay_outputs),
 };

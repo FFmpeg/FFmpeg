@@ -304,7 +304,6 @@ static const AVFilterPad avgblur_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avgblur_outputs[] = {
@@ -312,7 +311,6 @@ static const AVFilterPad avgblur_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_avgblur = {
@@ -322,8 +320,8 @@ const AVFilter ff_vf_avgblur = {
     .priv_class    = &avgblur_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avgblur_inputs,
-    .outputs       = avgblur_outputs,
+    FILTER_INPUTS(avgblur_inputs),
+    FILTER_OUTPUTS(avgblur_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

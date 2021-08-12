@@ -335,7 +335,6 @@ static const AVFilterPad eq_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad eq_outputs[] = {
@@ -343,7 +342,6 @@ static const AVFilterPad eq_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(EQContext, x)
@@ -379,8 +377,8 @@ const AVFilter ff_vf_eq = {
     .description     = NULL_IF_CONFIG_SMALL("Adjust brightness, contrast, gamma, and saturation."),
     .priv_size       = sizeof(EQContext),
     .priv_class      = &eq_class,
-    .inputs          = eq_inputs,
-    .outputs         = eq_outputs,
+    FILTER_INPUTS(eq_inputs),
+    FILTER_OUTPUTS(eq_outputs),
     .process_command = process_command,
     .query_formats   = query_formats,
     .init            = initialize,

@@ -539,7 +539,6 @@ static const AVFilterPad hqx_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad hqx_outputs[] = {
@@ -548,7 +547,6 @@ static const AVFilterPad hqx_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_hqx = {
@@ -557,8 +555,8 @@ const AVFilter ff_vf_hqx = {
     .priv_size     = sizeof(HQXContext),
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = hqx_inputs,
-    .outputs       = hqx_outputs,
+    FILTER_INPUTS(hqx_inputs),
+    FILTER_OUTPUTS(hqx_outputs),
     .priv_class    = &hqx_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

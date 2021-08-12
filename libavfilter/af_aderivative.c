@@ -163,7 +163,6 @@ static const AVFilterPad aderivative_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad aderivative_outputs[] = {
@@ -171,7 +170,6 @@ static const AVFilterPad aderivative_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aderivative = {
@@ -180,8 +178,8 @@ const AVFilter ff_af_aderivative = {
     .query_formats = query_formats,
     .priv_size     = sizeof(ADerivativeContext),
     .uninit        = uninit,
-    .inputs        = aderivative_inputs,
-    .outputs       = aderivative_outputs,
+    FILTER_INPUTS(aderivative_inputs),
+    FILTER_OUTPUTS(aderivative_outputs),
 };
 
 const AVFilter ff_af_aintegral = {
@@ -190,6 +188,6 @@ const AVFilter ff_af_aintegral = {
     .query_formats = query_formats,
     .priv_size     = sizeof(ADerivativeContext),
     .uninit        = uninit,
-    .inputs        = aderivative_inputs,
-    .outputs       = aderivative_outputs,
+    FILTER_INPUTS(aderivative_inputs),
+    FILTER_OUTPUTS(aderivative_outputs),
 };

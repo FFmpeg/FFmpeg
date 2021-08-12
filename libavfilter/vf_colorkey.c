@@ -179,7 +179,6 @@ static const AVFilterPad colorkey_inputs[] = {
         .flags        = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorkey_outputs[] = {
@@ -188,7 +187,6 @@ static const AVFilterPad colorkey_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ColorkeyContext, x)
@@ -212,8 +210,8 @@ const AVFilter ff_vf_colorkey = {
     .priv_class    = &colorkey_class,
     .query_formats = query_formats,
     .init          = init_filter,
-    .inputs        = colorkey_inputs,
-    .outputs       = colorkey_outputs,
+    FILTER_INPUTS(colorkey_inputs),
+    FILTER_OUTPUTS(colorkey_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
@@ -237,8 +235,8 @@ const AVFilter ff_vf_colorhold = {
     .priv_class    = &colorhold_class,
     .query_formats = query_formats,
     .init          = init_filter,
-    .inputs        = colorkey_inputs,
-    .outputs       = colorkey_outputs,
+    FILTER_INPUTS(colorkey_inputs),
+    FILTER_OUTPUTS(colorkey_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -351,7 +351,6 @@ static const AVFilterPad aecho_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad aecho_outputs[] = {
@@ -360,7 +359,6 @@ static const AVFilterPad aecho_outputs[] = {
         .config_props  = config_output,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aecho = {
@@ -372,6 +370,6 @@ const AVFilter ff_af_aecho = {
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = aecho_inputs,
-    .outputs       = aecho_outputs,
+    FILTER_INPUTS(aecho_inputs),
+    FILTER_OUTPUTS(aecho_outputs),
 };

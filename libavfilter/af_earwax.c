@@ -220,7 +220,6 @@ static const AVFilterPad earwax_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad earwax_outputs[] = {
@@ -228,7 +227,6 @@ static const AVFilterPad earwax_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_earwax = {
@@ -237,6 +235,6 @@ const AVFilter ff_af_earwax = {
     .query_formats  = query_formats,
     .priv_size      = sizeof(EarwaxContext),
     .uninit         = uninit,
-    .inputs         = earwax_inputs,
-    .outputs        = earwax_outputs,
+    FILTER_INPUTS(earwax_inputs),
+    FILTER_OUTPUTS(earwax_outputs),
 };

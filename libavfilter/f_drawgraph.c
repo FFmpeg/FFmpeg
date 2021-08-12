@@ -458,7 +458,6 @@ static const AVFilterPad drawgraph_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad drawgraph_outputs[] = {
@@ -468,7 +467,6 @@ static const AVFilterPad drawgraph_outputs[] = {
         .config_props = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_drawgraph = {
@@ -479,8 +477,8 @@ const AVFilter ff_vf_drawgraph = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = drawgraph_inputs,
-    .outputs       = drawgraph_outputs,
+    FILTER_INPUTS(drawgraph_inputs),
+    FILTER_OUTPUTS(drawgraph_outputs),
 };
 
 #endif // CONFIG_DRAWGRAPH_FILTER
@@ -496,7 +494,6 @@ static const AVFilterPad adrawgraph_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad adrawgraph_outputs[] = {
@@ -506,7 +503,6 @@ static const AVFilterPad adrawgraph_outputs[] = {
         .config_props = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_adrawgraph = {
@@ -517,7 +513,7 @@ const AVFilter ff_avf_adrawgraph = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = adrawgraph_inputs,
-    .outputs       = adrawgraph_outputs,
+    FILTER_INPUTS(adrawgraph_inputs),
+    FILTER_OUTPUTS(adrawgraph_outputs),
 };
 #endif // CONFIG_ADRAWGRAPH_FILTER

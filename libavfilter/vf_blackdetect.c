@@ -244,7 +244,6 @@ static const AVFilterPad blackdetect_inputs[] = {
         .config_props  = config_input,
         .filter_frame  = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad blackdetect_outputs[] = {
@@ -252,7 +251,6 @@ static const AVFilterPad blackdetect_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_blackdetect = {
@@ -260,8 +258,8 @@ const AVFilter ff_vf_blackdetect = {
     .description   = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
     .priv_size     = sizeof(BlackDetectContext),
     .query_formats = query_formats,
-    .inputs        = blackdetect_inputs,
-    .outputs       = blackdetect_outputs,
+    FILTER_INPUTS(blackdetect_inputs),
+    FILTER_OUTPUTS(blackdetect_outputs),
     .uninit        = uninit,
     .priv_class    = &blackdetect_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,

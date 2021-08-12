@@ -203,7 +203,6 @@ static const AVFilterPad inputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .filter_frame  = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -212,7 +211,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(lagfun);
@@ -224,8 +222,8 @@ const AVFilter ff_vf_lagfun = {
     .priv_class    = &lagfun_class,
     .query_formats = query_formats,
     .uninit        = uninit,
-    .outputs       = outputs,
-    .inputs        = inputs,
+    FILTER_OUTPUTS(outputs),
+    FILTER_INPUTS(inputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

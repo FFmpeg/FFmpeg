@@ -134,7 +134,6 @@ static const AVFilterPad despill_inputs[] = {
         .flags        = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad despill_outputs[] = {
@@ -143,7 +142,6 @@ static const AVFilterPad despill_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(DespillContext, x)
@@ -171,8 +169,8 @@ const AVFilter ff_vf_despill = {
     .priv_size     = sizeof(DespillContext),
     .priv_class    = &despill_class,
     .query_formats = query_formats,
-    .inputs        = despill_inputs,
-    .outputs       = despill_outputs,
+    FILTER_INPUTS(despill_inputs),
+    FILTER_OUTPUTS(despill_outputs),
     .process_command = ff_filter_process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -235,7 +235,6 @@ static const AVFilterPad interleave_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_interleave = {
@@ -245,7 +244,7 @@ const AVFilter ff_vf_interleave = {
     .init        = init,
     .uninit      = uninit,
     .activate    = activate,
-    .outputs     = interleave_outputs,
+    FILTER_OUTPUTS(interleave_outputs),
     .priv_class  = &interleave_class,
     .flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
@@ -263,7 +262,6 @@ static const AVFilterPad ainterleave_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_ainterleave = {
@@ -273,7 +271,7 @@ const AVFilter ff_af_ainterleave = {
     .init        = init,
     .uninit      = uninit,
     .activate    = activate,
-    .outputs     = ainterleave_outputs,
+    FILTER_OUTPUTS(ainterleave_outputs),
     .priv_class  = &ainterleave_class,
     .flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

@@ -380,7 +380,6 @@ static const AVFilterPad avfilter_vf_crop_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_crop_outputs[] = {
@@ -389,7 +388,6 @@ static const AVFilterPad avfilter_vf_crop_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_crop = {
@@ -399,7 +397,7 @@ const AVFilter ff_vf_crop = {
     .priv_class      = &crop_class,
     .query_formats   = query_formats,
     .uninit          = uninit,
-    .inputs          = avfilter_vf_crop_inputs,
-    .outputs         = avfilter_vf_crop_outputs,
+    FILTER_INPUTS(avfilter_vf_crop_inputs),
+    FILTER_OUTPUTS(avfilter_vf_crop_outputs),
     .process_command = process_command,
 };

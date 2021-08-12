@@ -208,7 +208,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -216,7 +215,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_deesser = {
@@ -226,7 +224,7 @@ const AVFilter ff_af_deesser = {
     .priv_size     = sizeof(DeesserContext),
     .priv_class    = &deesser_class,
     .uninit        = uninit,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

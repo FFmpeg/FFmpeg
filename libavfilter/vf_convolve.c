@@ -645,7 +645,6 @@ static const AVFilterPad convolve_inputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_input_impulse,
     },
-    { NULL }
 };
 
 static const AVFilterPad convolve_outputs[] = {
@@ -654,7 +653,6 @@ static const AVFilterPad convolve_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #if CONFIG_CONVOLVE_FILTER
@@ -671,8 +669,8 @@ const AVFilter ff_vf_convolve = {
     .activate      = activate,
     .priv_size     = sizeof(ConvolveContext),
     .priv_class    = &convolve_class,
-    .inputs        = convolve_inputs,
-    .outputs       = convolve_outputs,
+    FILTER_INPUTS(convolve_inputs),
+    FILTER_OUTPUTS(convolve_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 
@@ -701,8 +699,8 @@ const AVFilter ff_vf_deconvolve = {
     .activate      = activate,
     .priv_size     = sizeof(ConvolveContext),
     .priv_class    = &deconvolve_class,
-    .inputs        = convolve_inputs,
-    .outputs       = convolve_outputs,
+    FILTER_INPUTS(convolve_inputs),
+    FILTER_OUTPUTS(convolve_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 

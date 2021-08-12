@@ -367,7 +367,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -375,7 +374,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_afreqshift = {
@@ -385,8 +383,8 @@ const AVFilter ff_af_afreqshift = {
     .priv_size       = sizeof(AFreqShift),
     .priv_class      = &afreqshift_class,
     .uninit          = uninit,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -407,8 +405,8 @@ const AVFilter ff_af_aphaseshift = {
     .priv_size       = sizeof(AFreqShift),
     .priv_class      = &aphaseshift_class,
     .uninit          = uninit,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,

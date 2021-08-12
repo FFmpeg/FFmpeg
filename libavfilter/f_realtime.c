@@ -81,7 +81,6 @@ static const AVFilterPad avfilter_vf_realtime_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_realtime_outputs[] = {
@@ -89,7 +88,6 @@ static const AVFilterPad avfilter_vf_realtime_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_realtime = {
@@ -97,8 +95,8 @@ const AVFilter ff_vf_realtime = {
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
     .priv_size   = sizeof(RealtimeContext),
     .priv_class  = &realtime_class,
-    .inputs      = avfilter_vf_realtime_inputs,
-    .outputs     = avfilter_vf_realtime_outputs,
+    FILTER_INPUTS(avfilter_vf_realtime_inputs),
+    FILTER_OUTPUTS(avfilter_vf_realtime_outputs),
 };
 #endif /* CONFIG_REALTIME_FILTER */
 
@@ -113,7 +111,6 @@ static const AVFilterPad arealtime_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad arealtime_outputs[] = {
@@ -121,7 +118,6 @@ static const AVFilterPad arealtime_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_arealtime = {
@@ -129,7 +125,7 @@ const AVFilter ff_af_arealtime = {
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
     .priv_size   = sizeof(RealtimeContext),
     .priv_class  = &arealtime_class,
-    .inputs      = arealtime_inputs,
-    .outputs     = arealtime_outputs,
+    FILTER_INPUTS(arealtime_inputs),
+    FILTER_OUTPUTS(arealtime_outputs),
 };
 #endif /* CONFIG_AREALTIME_FILTER */

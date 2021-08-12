@@ -383,7 +383,6 @@ static const AVFilterPad avfilter_vf_hqdn3d_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 
@@ -392,7 +391,6 @@ static const AVFilterPad avfilter_vf_hqdn3d_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_hqdn3d = {
@@ -403,8 +401,8 @@ const AVFilter ff_vf_hqdn3d = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avfilter_vf_hqdn3d_inputs,
-    .outputs       = avfilter_vf_hqdn3d_outputs,
+    FILTER_INPUTS(avfilter_vf_hqdn3d_inputs),
+    FILTER_OUTPUTS(avfilter_vf_hqdn3d_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

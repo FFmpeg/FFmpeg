@@ -386,7 +386,6 @@ static const AVFilterPad avfilter_vf_transpose_inputs[] = {
         .get_buffer.video = get_video_buffer,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_transpose_outputs[] = {
@@ -395,7 +394,6 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
         .config_props = config_props_output,
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_transpose = {
@@ -404,7 +402,7 @@ const AVFilter ff_vf_transpose = {
     .priv_size     = sizeof(TransContext),
     .priv_class    = &transpose_class,
     .query_formats = query_formats,
-    .inputs        = avfilter_vf_transpose_inputs,
-    .outputs       = avfilter_vf_transpose_outputs,
+    FILTER_INPUTS(avfilter_vf_transpose_inputs),
+    FILTER_OUTPUTS(avfilter_vf_transpose_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

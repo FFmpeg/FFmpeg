@@ -434,7 +434,6 @@ static const AVFilterPad shufflepixels_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL },
 };
 
 static const AVFilterPad shufflepixels_outputs[] = {
@@ -443,7 +442,6 @@ static const AVFilterPad shufflepixels_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL },
 };
 
 const AVFilter ff_vf_shufflepixels = {
@@ -453,7 +451,7 @@ const AVFilter ff_vf_shufflepixels = {
     .priv_class    = &shufflepixels_class,
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = shufflepixels_inputs,
-    .outputs       = shufflepixels_outputs,
+    FILTER_INPUTS(shufflepixels_inputs),
+    FILTER_OUTPUTS(shufflepixels_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

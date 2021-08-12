@@ -277,7 +277,6 @@ static const AVFilterPad smartblur_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad smartblur_outputs[] = {
@@ -285,7 +284,6 @@ static const AVFilterPad smartblur_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_smartblur = {
@@ -295,8 +293,8 @@ const AVFilter ff_vf_smartblur = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = smartblur_inputs,
-    .outputs       = smartblur_outputs,
+    FILTER_INPUTS(smartblur_inputs),
+    FILTER_OUTPUTS(smartblur_outputs),
     .priv_class    = &smartblur_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

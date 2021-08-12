@@ -1037,7 +1037,6 @@ static const AVFilterPad fieldmatch_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_fieldmatch = {
@@ -1049,7 +1048,7 @@ const AVFilter ff_vf_fieldmatch = {
     .activate       = activate,
     .uninit         = fieldmatch_uninit,
     .inputs         = NULL,
-    .outputs        = fieldmatch_outputs,
+    FILTER_OUTPUTS(fieldmatch_outputs),
     .priv_class     = &fieldmatch_class,
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

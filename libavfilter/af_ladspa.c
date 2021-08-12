@@ -774,7 +774,6 @@ static const AVFilterPad ladspa_outputs[] = {
         .config_props  = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_ladspa = {
@@ -787,6 +786,6 @@ const AVFilter ff_af_ladspa = {
     .query_formats = query_formats,
     .process_command = process_command,
     .inputs        = 0,
-    .outputs       = ladspa_outputs,
+    FILTER_OUTPUTS(ladspa_outputs),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

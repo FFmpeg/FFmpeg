@@ -1057,7 +1057,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -1066,7 +1065,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_colorspace = {
@@ -1077,7 +1075,7 @@ const AVFilter ff_vf_colorspace = {
     .query_formats   = query_formats,
     .priv_size       = sizeof(ColorSpaceContext),
     .priv_class      = &colorspace_class,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

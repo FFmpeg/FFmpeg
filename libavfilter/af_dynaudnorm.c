@@ -844,7 +844,6 @@ static const AVFilterPad avfilter_af_dynaudnorm_inputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_dynaudnorm_outputs[] = {
@@ -852,7 +851,6 @@ static const AVFilterPad avfilter_af_dynaudnorm_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_dynaudnorm = {
@@ -863,8 +861,8 @@ const AVFilter ff_af_dynaudnorm = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = avfilter_af_dynaudnorm_inputs,
-    .outputs       = avfilter_af_dynaudnorm_outputs,
+    FILTER_INPUTS(avfilter_af_dynaudnorm_inputs),
+    FILTER_OUTPUTS(avfilter_af_dynaudnorm_outputs),
     .priv_class    = &dynaudnorm_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,

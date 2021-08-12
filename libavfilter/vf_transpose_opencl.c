@@ -260,7 +260,6 @@ static const AVFilterPad transpose_opencl_inputs[] = {
         .filter_frame = &transpose_opencl_filter_frame,
         .config_props = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad transpose_opencl_outputs[] = {
@@ -269,7 +268,6 @@ static const AVFilterPad transpose_opencl_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = &transpose_opencl_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_transpose_opencl = {
@@ -280,7 +278,7 @@ const AVFilter ff_vf_transpose_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &transpose_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = transpose_opencl_inputs,
-    .outputs        = transpose_opencl_outputs,
+    FILTER_INPUTS(transpose_opencl_inputs),
+    FILTER_OUTPUTS(transpose_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

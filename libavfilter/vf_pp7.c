@@ -387,7 +387,6 @@ static const AVFilterPad pp7_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad pp7_outputs[] = {
@@ -395,7 +394,6 @@ static const AVFilterPad pp7_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_pp7 = {
@@ -404,8 +402,8 @@ const AVFilter ff_vf_pp7 = {
     .priv_size       = sizeof(PP7Context),
     .uninit          = uninit,
     .query_formats   = query_formats,
-    .inputs          = pp7_inputs,
-    .outputs         = pp7_outputs,
+    FILTER_INPUTS(pp7_inputs),
+    FILTER_OUTPUTS(pp7_outputs),
     .priv_class      = &pp7_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

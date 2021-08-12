@@ -363,7 +363,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -371,7 +370,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_stereotools = {
@@ -381,8 +379,8 @@ const AVFilter ff_af_stereotools = {
     .priv_size      = sizeof(StereoToolsContext),
     .priv_class     = &stereotools_class,
     .uninit         = uninit,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

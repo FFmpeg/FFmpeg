@@ -371,7 +371,6 @@ static const AVFilterPad chromakey_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad chromakey_outputs[] = {
@@ -380,7 +379,6 @@ static const AVFilterPad chromakey_outputs[] = {
         .type           = AVMEDIA_TYPE_VIDEO,
         .config_props   = config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ChromakeyContext, x)
@@ -402,8 +400,8 @@ const AVFilter ff_vf_chromakey = {
     .priv_size     = sizeof(ChromakeyContext),
     .priv_class    = &chromakey_class,
     .query_formats = query_formats,
-    .inputs        = chromakey_inputs,
-    .outputs       = chromakey_outputs,
+    FILTER_INPUTS(chromakey_inputs),
+    FILTER_OUTPUTS(chromakey_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -424,7 +422,6 @@ static const AVFilterPad chromahold_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad chromahold_outputs[] = {
@@ -433,7 +430,6 @@ static const AVFilterPad chromahold_outputs[] = {
         .type           = AVMEDIA_TYPE_VIDEO,
         .config_props   = config_output,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(chromahold);
@@ -444,8 +440,8 @@ const AVFilter ff_vf_chromahold = {
     .priv_size     = sizeof(ChromakeyContext),
     .priv_class    = &chromahold_class,
     .query_formats = query_formats,
-    .inputs        = chromahold_inputs,
-    .outputs       = chromahold_outputs,
+    FILTER_INPUTS(chromahold_inputs),
+    FILTER_OUTPUTS(chromahold_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

@@ -402,7 +402,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #if CONFIG_HSTACK_FILTER
@@ -416,7 +415,7 @@ const AVFilter ff_vf_hstack = {
     .priv_size     = sizeof(StackContext),
     .priv_class    = &hstack_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
+    FILTER_OUTPUTS(outputs),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
@@ -436,7 +435,7 @@ const AVFilter ff_vf_vstack = {
     .priv_size     = sizeof(StackContext),
     .priv_class    = &vstack_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
+    FILTER_OUTPUTS(outputs),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
@@ -463,7 +462,7 @@ const AVFilter ff_vf_xstack = {
     .priv_size     = sizeof(StackContext),
     .priv_class    = &xstack_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
+    FILTER_OUTPUTS(outputs),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,

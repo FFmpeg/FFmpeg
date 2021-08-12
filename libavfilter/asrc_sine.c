@@ -253,7 +253,6 @@ static const AVFilterPad sine_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_sine = {
@@ -264,6 +263,6 @@ const AVFilter ff_asrc_sine = {
     .uninit        = uninit,
     .priv_size     = sizeof(SineContext),
     .inputs        = NULL,
-    .outputs       = sine_outputs,
+    FILTER_OUTPUTS(sine_outputs),
     .priv_class    = &sine_class,
 };

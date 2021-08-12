@@ -239,7 +239,6 @@ static const AVFilterPad elbg_inputs[] = {
         .config_props   = config_input,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad elbg_outputs[] = {
@@ -247,7 +246,6 @@ static const AVFilterPad elbg_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_elbg = {
@@ -258,6 +256,6 @@ const AVFilter ff_vf_elbg = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = elbg_inputs,
-    .outputs       = elbg_outputs,
+    FILTER_INPUTS(elbg_inputs),
+    FILTER_OUTPUTS(elbg_outputs),
 };

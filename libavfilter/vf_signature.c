@@ -755,7 +755,6 @@ static const AVFilterPad signature_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_signature = {
@@ -766,7 +765,7 @@ const AVFilter ff_vf_signature = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .outputs       = signature_outputs,
+    FILTER_OUTPUTS(signature_outputs),
     .inputs        = NULL,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

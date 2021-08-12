@@ -222,7 +222,6 @@ static const AVFilterPad misc_vaapi_inputs[] = {
         .filter_frame = &misc_vaapi_filter_frame,
         .config_props = &ff_vaapi_vpp_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad misc_vaapi_outputs[] = {
@@ -231,7 +230,6 @@ static const AVFilterPad misc_vaapi_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_vaapi_vpp_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_denoise_vaapi = {
@@ -241,8 +239,8 @@ const AVFilter ff_vf_denoise_vaapi = {
     .init          = &denoise_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     .query_formats = &ff_vaapi_vpp_query_formats,
-    .inputs        = misc_vaapi_inputs,
-    .outputs       = misc_vaapi_outputs,
+    FILTER_INPUTS(misc_vaapi_inputs),
+    FILTER_OUTPUTS(misc_vaapi_outputs),
     .priv_class    = &denoise_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
@@ -254,8 +252,8 @@ const AVFilter ff_vf_sharpness_vaapi = {
     .init          = &sharpness_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     .query_formats = &ff_vaapi_vpp_query_formats,
-    .inputs        = misc_vaapi_inputs,
-    .outputs       = misc_vaapi_outputs,
+    FILTER_INPUTS(misc_vaapi_inputs),
+    FILTER_OUTPUTS(misc_vaapi_outputs),
     .priv_class    = &sharpness_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

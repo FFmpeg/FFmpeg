@@ -411,7 +411,6 @@ static const AVFilterPad xfade_opencl_inputs[] = {
         .get_buffer.video = get_video_buffer,
         .config_props     = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad xfade_opencl_outputs[] = {
@@ -420,7 +419,6 @@ static const AVFilterPad xfade_opencl_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = &xfade_opencl_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_xfade_opencl = {
@@ -432,7 +430,7 @@ const AVFilter ff_vf_xfade_opencl = {
     .uninit          = &xfade_opencl_uninit,
     .query_formats   = &ff_opencl_filter_query_formats,
     .activate        = &xfade_opencl_activate,
-    .inputs          = xfade_opencl_inputs,
-    .outputs         = xfade_opencl_outputs,
+    FILTER_INPUTS(xfade_opencl_inputs),
+    FILTER_OUTPUTS(xfade_opencl_outputs),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

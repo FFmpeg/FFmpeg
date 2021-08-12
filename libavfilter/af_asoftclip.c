@@ -451,7 +451,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -459,7 +458,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asoftclip = {
@@ -468,8 +466,8 @@ const AVFilter ff_af_asoftclip = {
     .query_formats  = query_formats,
     .priv_size      = sizeof(ASoftClipContext),
     .priv_class     = &asoftclip_class,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .uninit         = uninit,
     .process_command = ff_filter_process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

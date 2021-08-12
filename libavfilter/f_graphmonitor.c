@@ -395,7 +395,6 @@ static const AVFilterPad graphmonitor_inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad graphmonitor_outputs[] = {
@@ -404,7 +403,6 @@ static const AVFilterPad graphmonitor_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_graphmonitor = {
@@ -414,8 +412,8 @@ const AVFilter ff_vf_graphmonitor = {
     .priv_class    = &graphmonitor_class,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = graphmonitor_inputs,
-    .outputs       = graphmonitor_outputs,
+    FILTER_INPUTS(graphmonitor_inputs),
+    FILTER_OUTPUTS(graphmonitor_outputs),
 };
 
 #endif // CONFIG_GRAPHMONITOR_FILTER
@@ -430,7 +428,6 @@ static const AVFilterPad agraphmonitor_inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad agraphmonitor_outputs[] = {
@@ -439,7 +436,6 @@ static const AVFilterPad agraphmonitor_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_agraphmonitor = {
@@ -449,7 +445,7 @@ const AVFilter ff_avf_agraphmonitor = {
     .priv_class    = &agraphmonitor_class,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = agraphmonitor_inputs,
-    .outputs       = agraphmonitor_outputs,
+    FILTER_INPUTS(agraphmonitor_inputs),
+    FILTER_OUTPUTS(agraphmonitor_outputs),
 };
 #endif // CONFIG_AGRAPHMONITOR_FILTER

@@ -669,7 +669,6 @@ static const AVFilterPad fftdnoiz_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad fftdnoiz_outputs[] = {
@@ -678,7 +677,6 @@ static const AVFilterPad fftdnoiz_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_fftdnoiz = {
@@ -688,8 +686,8 @@ const AVFilter ff_vf_fftdnoiz = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = fftdnoiz_inputs,
-    .outputs       = fftdnoiz_outputs,
+    FILTER_INPUTS(fftdnoiz_inputs),
+    FILTER_OUTPUTS(fftdnoiz_outputs),
     .priv_class    = &fftdnoiz_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

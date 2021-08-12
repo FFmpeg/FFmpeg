@@ -244,7 +244,6 @@ static const AVFilterPad addroi_inputs[] = {
         .config_props = addroi_config_input,
         .filter_frame = addroi_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad addroi_outputs[] = {
@@ -252,7 +251,6 @@ static const AVFilterPad addroi_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_addroi = {
@@ -264,6 +262,6 @@ const AVFilter ff_vf_addroi = {
     .priv_size   = sizeof(AddROIContext),
     .priv_class  = &addroi_class,
 
-    .inputs      = addroi_inputs,
-    .outputs     = addroi_outputs,
+    FILTER_INPUTS(addroi_inputs),
+    FILTER_OUTPUTS(addroi_outputs),
 };

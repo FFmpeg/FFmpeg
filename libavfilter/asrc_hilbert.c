@@ -171,7 +171,6 @@ static const AVFilterPad hilbert_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_hilbert = {
@@ -182,6 +181,6 @@ const AVFilter ff_asrc_hilbert = {
     .uninit        = uninit,
     .priv_size     = sizeof(HilbertContext),
     .inputs        = NULL,
-    .outputs       = hilbert_outputs,
+    FILTER_OUTPUTS(hilbert_outputs),
     .priv_class    = &hilbert_class,
 };

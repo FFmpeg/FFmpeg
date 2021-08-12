@@ -608,7 +608,6 @@ static const AVFilterPad vf_coreimage_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad vf_coreimage_outputs[] = {
@@ -616,7 +615,6 @@ static const AVFilterPad vf_coreimage_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad vsrc_coreimagesrc_outputs[] = {
@@ -626,7 +624,6 @@ static const AVFilterPad vsrc_coreimagesrc_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(CoreImageContext, x)
@@ -663,8 +660,8 @@ const AVFilter ff_vf_coreimage = {
     .uninit        = uninit,
     .priv_size     = sizeof(CoreImageContext),
     .priv_class    = &coreimage_class,
-    .inputs        = vf_coreimage_inputs,
-    .outputs       = vf_coreimage_outputs,
+    FILTER_INPUTS(vf_coreimage_inputs),
+    FILTER_OUTPUTS(vf_coreimage_outputs),
     .query_formats = query_formats,
 };
 
@@ -685,6 +682,6 @@ const AVFilter ff_vsrc_coreimagesrc = {
     .priv_size     = sizeof(CoreImageContext),
     .priv_class    = &coreimagesrc_class,
     .inputs        = NULL,
-    .outputs       = vsrc_coreimagesrc_outputs,
+    FILTER_OUTPUTS(vsrc_coreimagesrc_outputs),
     .query_formats = query_formats_src,
 };

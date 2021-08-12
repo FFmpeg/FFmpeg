@@ -415,7 +415,6 @@ static const AVFilterPad tmidequalizer_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad tmidequalizer_outputs[] = {
@@ -424,7 +423,6 @@ static const AVFilterPad tmidequalizer_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_tmidequalizer = {
@@ -433,8 +431,8 @@ const AVFilter ff_vf_tmidequalizer = {
     .priv_size     = sizeof(TMidEqualizerContext),
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = tmidequalizer_inputs,
-    .outputs       = tmidequalizer_outputs,
+    FILTER_INPUTS(tmidequalizer_inputs),
+    FILTER_OUTPUTS(tmidequalizer_outputs),
     .priv_class    = &tmidequalizer_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

@@ -179,7 +179,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -187,7 +186,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_entropy = {
@@ -196,8 +194,8 @@ const AVFilter ff_vf_entropy = {
     .priv_size      = sizeof(EntropyContext),
     .uninit         = uninit,
     .query_formats  = query_formats,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .priv_class     = &entropy_class,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

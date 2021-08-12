@@ -368,7 +368,6 @@ static const AVFilterPad bilateral_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad bilateral_outputs[] = {
@@ -376,7 +375,6 @@ static const AVFilterPad bilateral_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_bilateral = {
@@ -386,8 +384,8 @@ const AVFilter ff_vf_bilateral = {
     .priv_class    = &bilateral_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = bilateral_inputs,
-    .outputs       = bilateral_outputs,
+    FILTER_INPUTS(bilateral_inputs),
+    FILTER_OUTPUTS(bilateral_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

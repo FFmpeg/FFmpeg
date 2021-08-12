@@ -284,7 +284,6 @@ static const AVFilterPad inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -293,7 +292,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_fieldhint = {
@@ -304,6 +302,6 @@ const AVFilter ff_vf_fieldhint = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };

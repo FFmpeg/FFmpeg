@@ -263,7 +263,6 @@ static const AVFilterPad color_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = color_config_props,
     },
-    {  NULL }
 };
 
 const AVFilter ff_vsrc_color = {
@@ -276,7 +275,7 @@ const AVFilter ff_vsrc_color = {
     .activate        = activate,
     .query_formats   = color_query_formats,
     .inputs          = NULL,
-    .outputs         = color_outputs,
+    FILTER_OUTPUTS(color_outputs),
     .process_command = color_process_command,
 };
 
@@ -394,7 +393,6 @@ static const AVFilterPad haldclutsrc_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = haldclutsrc_config_props,
     },
-    {  NULL }
 };
 
 const AVFilter ff_vsrc_haldclutsrc = {
@@ -407,7 +405,7 @@ const AVFilter ff_vsrc_haldclutsrc = {
     .query_formats = haldclutsrc_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = haldclutsrc_outputs,
+    FILTER_OUTPUTS(haldclutsrc_outputs),
 };
 #endif /* CONFIG_HALDCLUTSRC_FILTER */
 
@@ -432,7 +430,6 @@ static const AVFilterPad nullsrc_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props,
     },
-    { NULL },
 };
 
 const AVFilter ff_vsrc_nullsrc = {
@@ -444,7 +441,7 @@ const AVFilter ff_vsrc_nullsrc = {
     .priv_size   = sizeof(TestSourceContext),
     .priv_class  = &nullsrc_class,
     .inputs      = NULL,
-    .outputs     = nullsrc_outputs,
+    FILTER_OUTPUTS(nullsrc_outputs),
 };
 
 #endif /* CONFIG_NULLSRC_FILTER */
@@ -665,7 +662,6 @@ static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_testsrc = {
@@ -678,7 +674,7 @@ const AVFilter ff_vsrc_testsrc = {
     .query_formats = test_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_testsrc_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_testsrc_outputs),
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
@@ -938,7 +934,6 @@ static const AVFilterPad avfilter_vsrc_testsrc2_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = test2_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_testsrc2 = {
@@ -951,7 +946,7 @@ const AVFilter ff_vsrc_testsrc2 = {
     .query_formats = test2_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_testsrc2_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_testsrc2_outputs),
 };
 
 #endif /* CONFIG_TESTSRC2_FILTER */
@@ -1110,7 +1105,6 @@ static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = rgbtest_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_rgbtestsrc = {
@@ -1123,7 +1117,7 @@ const AVFilter ff_vsrc_rgbtestsrc = {
     .query_formats = rgbtest_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_rgbtestsrc_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_rgbtestsrc_outputs),
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */
@@ -1283,7 +1277,6 @@ static const AVFilterPad avfilter_vsrc_yuvtestsrc_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = yuvtest_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_yuvtestsrc = {
@@ -1296,7 +1289,7 @@ const AVFilter ff_vsrc_yuvtestsrc = {
     .query_formats = yuvtest_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_yuvtestsrc_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_yuvtestsrc_outputs),
 };
 
 #endif /* CONFIG_YUVTESTSRC_FILTER */
@@ -1423,7 +1416,6 @@ static const AVFilterPad smptebars_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 #if CONFIG_PAL75BARS_FILTER
@@ -1470,7 +1462,7 @@ const AVFilter ff_vsrc_pal75bars = {
     .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = smptebars_outputs,
+    FILTER_OUTPUTS(smptebars_outputs),
 };
 
 #endif  /* CONFIG_PAL75BARS_FILTER */
@@ -1517,7 +1509,7 @@ const AVFilter ff_vsrc_pal100bars = {
     .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = smptebars_outputs,
+    FILTER_OUTPUTS(smptebars_outputs),
 };
 
 #endif  /* CONFIG_PAL100BARS_FILTER */
@@ -1585,7 +1577,7 @@ const AVFilter ff_vsrc_smptebars = {
     .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = smptebars_outputs,
+    FILTER_OUTPUTS(smptebars_outputs),
 };
 
 #endif  /* CONFIG_SMPTEBARS_FILTER */
@@ -1691,7 +1683,7 @@ const AVFilter ff_vsrc_smptehdbars = {
     .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = smptebars_outputs,
+    FILTER_OUTPUTS(smptebars_outputs),
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
@@ -1753,7 +1745,6 @@ static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_allyuv = {
@@ -1766,7 +1757,7 @@ const AVFilter ff_vsrc_allyuv = {
     .query_formats = allyuv_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_allyuv_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_allyuv_outputs),
 };
 
 #endif /* CONFIG_ALLYUV_FILTER */
@@ -1827,7 +1818,6 @@ static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = allrgb_config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_allrgb = {
@@ -1840,7 +1830,7 @@ const AVFilter ff_vsrc_allrgb = {
     .query_formats = allrgb_query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = avfilter_vsrc_allrgb_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_allrgb_outputs),
 };
 
 #endif /* CONFIG_ALLRGB_FILTER */

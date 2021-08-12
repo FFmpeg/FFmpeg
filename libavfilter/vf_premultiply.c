@@ -819,7 +819,6 @@ static const AVFilterPad premultiply_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #if CONFIG_PREMULTIPLY_FILTER
@@ -833,7 +832,7 @@ const AVFilter ff_vf_premultiply = {
     .query_formats = query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = premultiply_outputs,
+    FILTER_OUTPUTS(premultiply_outputs),
     .priv_class    = &premultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |
@@ -856,7 +855,7 @@ const AVFilter ff_vf_unpremultiply = {
     .query_formats = query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = premultiply_outputs,
+    FILTER_OUTPUTS(premultiply_outputs),
     .priv_class    = &unpremultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |

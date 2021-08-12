@@ -279,7 +279,6 @@ static const AVFilterPad adenorm_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad adenorm_outputs[] = {
@@ -288,7 +287,6 @@ static const AVFilterPad adenorm_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ADenormContext, x)
@@ -311,8 +309,8 @@ const AVFilter ff_af_adenorm = {
     .description     = NULL_IF_CONFIG_SMALL("Remedy denormals by adding extremely low-level noise."),
     .query_formats   = query_formats,
     .priv_size       = sizeof(ADenormContext),
-    .inputs          = adenorm_inputs,
-    .outputs         = adenorm_outputs,
+    FILTER_INPUTS(adenorm_inputs),
+    FILTER_OUTPUTS(adenorm_outputs),
     .priv_class      = &adenorm_class,
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

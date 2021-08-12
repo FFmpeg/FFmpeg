@@ -574,7 +574,6 @@ static const AVFilterPad lv2_outputs[] = {
         .config_props  = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_lv2 = {
@@ -586,6 +585,6 @@ const AVFilter ff_af_lv2 = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = 0,
-    .outputs       = lv2_outputs,
+    FILTER_OUTPUTS(lv2_outputs),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

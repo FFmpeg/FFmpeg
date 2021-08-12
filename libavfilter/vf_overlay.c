@@ -1094,7 +1094,6 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_overlay,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_overlay_outputs[] = {
@@ -1103,7 +1102,6 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_overlay = {
@@ -1117,8 +1115,8 @@ const AVFilter ff_vf_overlay = {
     .query_formats = query_formats,
     .activate      = activate,
     .process_command = process_command,
-    .inputs        = avfilter_vf_overlay_inputs,
-    .outputs       = avfilter_vf_overlay_outputs,
+    FILTER_INPUTS(avfilter_vf_overlay_inputs),
+    FILTER_OUTPUTS(avfilter_vf_overlay_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -385,7 +385,6 @@ static const AVFilterPad floodfill_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad floodfill_outputs[] = {
@@ -393,7 +392,6 @@ static const AVFilterPad floodfill_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(FloodfillContext, x)
@@ -422,7 +420,7 @@ const AVFilter ff_vf_floodfill = {
     .priv_class    = &floodfill_class,
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = floodfill_inputs,
-    .outputs       = floodfill_outputs,
+    FILTER_INPUTS(floodfill_inputs),
+    FILTER_OUTPUTS(floodfill_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

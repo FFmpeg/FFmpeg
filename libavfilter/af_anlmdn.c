@@ -388,7 +388,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -398,7 +397,6 @@ static const AVFilterPad outputs[] = {
         .config_props  = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_anlmdn = {
@@ -408,8 +406,8 @@ const AVFilter ff_af_anlmdn = {
     .priv_size     = sizeof(AudioNLMeansContext),
     .priv_class    = &anlmdn_class,
     .uninit        = uninit,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,

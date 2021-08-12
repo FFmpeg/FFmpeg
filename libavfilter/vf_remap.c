@@ -387,7 +387,6 @@ static const AVFilterPad remap_inputs[] = {
         .name         = "ymap",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad remap_outputs[] = {
@@ -396,7 +395,6 @@ static const AVFilterPad remap_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_remap = {
@@ -406,8 +404,8 @@ const AVFilter ff_vf_remap = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = remap_inputs,
-    .outputs       = remap_outputs,
+    FILTER_INPUTS(remap_inputs),
+    FILTER_OUTPUTS(remap_outputs),
     .priv_class    = &remap_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

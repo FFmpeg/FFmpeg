@@ -410,7 +410,6 @@ static const AVFilterPad xbr_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad xbr_outputs[] = {
@@ -419,14 +418,13 @@ static const AVFilterPad xbr_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_xbr = {
     .name          = "xbr",
     .description   = NULL_IF_CONFIG_SMALL("Scale the input using xBR algorithm."),
-    .inputs        = xbr_inputs,
-    .outputs       = xbr_outputs,
+    FILTER_INPUTS(xbr_inputs),
+    FILTER_OUTPUTS(xbr_outputs),
     .query_formats = query_formats,
     .priv_size     = sizeof(XBRContext),
     .priv_class    = &xbr_class,

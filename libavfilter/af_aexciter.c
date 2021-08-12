@@ -279,7 +279,6 @@ static const AVFilterPad avfilter_af_aexciter_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_aexciter_outputs[] = {
@@ -287,7 +286,6 @@ static const AVFilterPad avfilter_af_aexciter_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aexciter = {
@@ -297,8 +295,8 @@ const AVFilter ff_af_aexciter = {
     .priv_class    = &aexciter_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avfilter_af_aexciter_inputs,
-    .outputs       = avfilter_af_aexciter_outputs,
+    FILTER_INPUTS(avfilter_af_aexciter_inputs),
+    FILTER_OUTPUTS(avfilter_af_aexciter_outputs),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

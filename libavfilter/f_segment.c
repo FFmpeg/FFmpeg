@@ -277,7 +277,6 @@ static const AVFilterPad segment_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_segment = {
@@ -288,7 +287,7 @@ const AVFilter ff_vf_segment = {
     .priv_size   = sizeof(SegmentContext),
     .priv_class  = &segment_class,
     .activate    = activate,
-    .inputs      = segment_inputs,
+    FILTER_INPUTS(segment_inputs),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
@@ -317,7 +316,6 @@ static const AVFilterPad asegment_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asegment = {
@@ -328,7 +326,7 @@ const AVFilter ff_af_asegment = {
     .priv_size   = sizeof(SegmentContext),
     .priv_class  = &asegment_class,
     .activate    = activate,
-    .inputs      = asegment_inputs,
+    FILTER_INPUTS(asegment_inputs),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

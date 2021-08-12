@@ -1942,7 +1942,6 @@ static const AVFilterPad xfade_inputs[] = {
         .name          = "xfade",
         .type          = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad xfade_outputs[] = {
@@ -1951,7 +1950,6 @@ static const AVFilterPad xfade_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_xfade = {
@@ -1962,7 +1960,7 @@ const AVFilter ff_vf_xfade = {
     .query_formats = query_formats,
     .activate      = xfade_activate,
     .uninit        = uninit,
-    .inputs        = xfade_inputs,
-    .outputs       = xfade_outputs,
+    FILTER_INPUTS(xfade_inputs),
+    FILTER_OUTPUTS(xfade_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

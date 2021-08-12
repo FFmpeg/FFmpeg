@@ -452,7 +452,6 @@ static const AVFilterPad avfilter_af_volume_inputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_volume_outputs[] = {
@@ -461,7 +460,6 @@ static const AVFilterPad avfilter_af_volume_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_volume = {
@@ -472,8 +470,8 @@ const AVFilter ff_af_volume = {
     .priv_class     = &volume_class,
     .init           = init,
     .uninit         = uninit,
-    .inputs         = avfilter_af_volume_inputs,
-    .outputs        = avfilter_af_volume_outputs,
+    FILTER_INPUTS(avfilter_af_volume_inputs),
+    FILTER_OUTPUTS(avfilter_af_volume_outputs),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

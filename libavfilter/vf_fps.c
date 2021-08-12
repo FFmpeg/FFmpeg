@@ -370,7 +370,6 @@ static const AVFilterPad avfilter_vf_fps_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_fps_outputs[] = {
@@ -379,7 +378,6 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_fps = {
@@ -390,6 +388,6 @@ const AVFilter ff_vf_fps = {
     .priv_size   = sizeof(FPSContext),
     .priv_class  = &fps_class,
     .activate    = activate,
-    .inputs      = avfilter_vf_fps_inputs,
-    .outputs     = avfilter_vf_fps_outputs,
+    FILTER_INPUTS(avfilter_vf_fps_inputs),
+    FILTER_OUTPUTS(avfilter_vf_fps_outputs),
 };

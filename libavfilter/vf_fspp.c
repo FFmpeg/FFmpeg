@@ -653,7 +653,6 @@ static const AVFilterPad fspp_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad fspp_outputs[] = {
@@ -661,7 +660,6 @@ static const AVFilterPad fspp_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_fspp = {
@@ -670,8 +668,8 @@ const AVFilter ff_vf_fspp = {
     .priv_size       = sizeof(FSPPContext),
     .uninit          = uninit,
     .query_formats   = query_formats,
-    .inputs          = fspp_inputs,
-    .outputs         = fspp_outputs,
+    FILTER_INPUTS(fspp_inputs),
+    FILTER_OUTPUTS(fspp_outputs),
     .priv_class      = &fspp_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

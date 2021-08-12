@@ -709,7 +709,6 @@ static const AVFilterPad fillborders_inputs[] = {
         .config_props   = config_input,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad fillborders_outputs[] = {
@@ -717,7 +716,6 @@ static const AVFilterPad fillborders_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_fillborders = {
@@ -726,8 +724,8 @@ const AVFilter ff_vf_fillborders = {
     .priv_size     = sizeof(FillBordersContext),
     .priv_class    = &fillborders_class,
     .query_formats = query_formats,
-    .inputs        = fillborders_inputs,
-    .outputs       = fillborders_outputs,
+    FILTER_INPUTS(fillborders_inputs),
+    FILTER_OUTPUTS(fillborders_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

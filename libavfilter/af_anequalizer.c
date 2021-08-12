@@ -761,7 +761,6 @@ static const AVFilterPad inputs[] = {
         .config_props   = config_input,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_anequalizer = {
@@ -772,7 +771,7 @@ const AVFilter ff_af_anequalizer = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = inputs,
+    FILTER_INPUTS(inputs),
     .outputs       = NULL,
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |

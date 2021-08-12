@@ -580,13 +580,11 @@ static const AVFilterPad inputs[] = {
       .filter_frame = filter_frame,
       .config_props = config_props,
     },
-    { NULL }
 };
 static const AVFilterPad outputs[] = {
     { .name = "default",
       .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define DEFINE_LUT_FILTER(name_, description_)                          \
@@ -598,8 +596,8 @@ static const AVFilterPad outputs[] = {
         .init          = name_##_init,                                  \
         .uninit        = uninit,                                        \
         .query_formats = query_formats,                                 \
-        .inputs        = inputs,                                        \
-        .outputs       = outputs,                                       \
+        FILTER_INPUTS(inputs),                                          \
+        FILTER_OUTPUTS(outputs),                                        \
         .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |       \
                          AVFILTER_FLAG_SLICE_THREADS,                   \
         .process_command = process_command,                             \

@@ -413,7 +413,6 @@ static const AVFilterPad avfilter_vf_ocv_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_ocv_outputs[] = {
@@ -421,7 +420,6 @@ static const AVFilterPad avfilter_vf_ocv_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_ocv = {
@@ -432,6 +430,6 @@ const AVFilter ff_vf_ocv = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = avfilter_vf_ocv_inputs,
-    .outputs       = avfilter_vf_ocv_outputs,
+    FILTER_INPUTS(avfilter_vf_ocv_inputs),
+    FILTER_OUTPUTS(avfilter_vf_ocv_outputs),
 };

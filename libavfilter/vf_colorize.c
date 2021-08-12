@@ -263,7 +263,6 @@ static const AVFilterPad colorize_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorize_outputs[] = {
@@ -271,7 +270,6 @@ static const AVFilterPad colorize_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ColorizeContext, x)
@@ -293,8 +291,8 @@ const AVFilter ff_vf_colorize = {
     .priv_size     = sizeof(ColorizeContext),
     .priv_class    = &colorize_class,
     .query_formats = query_formats,
-    .inputs        = colorize_inputs,
-    .outputs       = colorize_outputs,
+    FILTER_INPUTS(colorize_inputs),
+    FILTER_OUTPUTS(colorize_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

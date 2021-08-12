@@ -896,7 +896,6 @@ static const AVFilterPad avfilter_af_loudnorm_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_loudnorm_outputs[] = {
@@ -905,7 +904,6 @@ static const AVFilterPad avfilter_af_loudnorm_outputs[] = {
         .request_frame = request_frame,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_loudnorm = {
@@ -916,6 +914,6 @@ const AVFilter ff_af_loudnorm = {
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = avfilter_af_loudnorm_inputs,
-    .outputs       = avfilter_af_loudnorm_outputs,
+    FILTER_INPUTS(avfilter_af_loudnorm_inputs),
+    FILTER_OUTPUTS(avfilter_af_loudnorm_outputs),
 };

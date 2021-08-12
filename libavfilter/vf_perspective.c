@@ -498,7 +498,6 @@ static const AVFilterPad perspective_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad perspective_outputs[] = {
@@ -506,7 +505,6 @@ static const AVFilterPad perspective_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_perspective = {
@@ -516,8 +514,8 @@ const AVFilter ff_vf_perspective = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = perspective_inputs,
-    .outputs       = perspective_outputs,
+    FILTER_INPUTS(perspective_inputs),
+    FILTER_OUTPUTS(perspective_outputs),
     .priv_class    = &perspective_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

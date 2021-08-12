@@ -151,7 +151,6 @@ static const AVFilterPad avfilter_vf_format_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_buffer.video = ff_null_get_video_buffer,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_format_outputs[] = {
@@ -159,7 +158,6 @@ static const AVFilterPad avfilter_vf_format_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_format = {
@@ -174,8 +172,8 @@ const AVFilter ff_vf_format = {
     .priv_size     = sizeof(FormatContext),
     .priv_class    = &format_class,
 
-    .inputs        = avfilter_vf_format_inputs,
-    .outputs       = avfilter_vf_format_outputs,
+    FILTER_INPUTS(avfilter_vf_format_inputs),
+    FILTER_OUTPUTS(avfilter_vf_format_outputs),
 };
 #endif /* CONFIG_FORMAT_FILTER */
 
@@ -190,7 +188,6 @@ static const AVFilterPad avfilter_vf_noformat_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_buffer.video = ff_null_get_video_buffer,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_noformat_outputs[] = {
@@ -198,7 +195,6 @@ static const AVFilterPad avfilter_vf_noformat_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_noformat = {
@@ -213,7 +209,7 @@ const AVFilter ff_vf_noformat = {
     .priv_size     = sizeof(FormatContext),
     .priv_class    = &noformat_class,
 
-    .inputs        = avfilter_vf_noformat_inputs,
-    .outputs       = avfilter_vf_noformat_outputs,
+    FILTER_INPUTS(avfilter_vf_noformat_inputs),
+    FILTER_OUTPUTS(avfilter_vf_noformat_outputs),
 };
 #endif /* CONFIG_NOFORMAT_FILTER */

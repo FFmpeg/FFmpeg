@@ -326,7 +326,6 @@ static const AVFilterPad superequalizer_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad superequalizer_outputs[] = {
@@ -335,7 +334,6 @@ static const AVFilterPad superequalizer_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -374,6 +372,6 @@ const AVFilter ff_af_superequalizer = {
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = superequalizer_inputs,
-    .outputs       = superequalizer_outputs,
+    FILTER_INPUTS(superequalizer_inputs),
+    FILTER_OUTPUTS(superequalizer_outputs),
 };

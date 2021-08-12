@@ -363,7 +363,6 @@ static const AVFilterPad deint_cuda_inputs[] = {
         .filter_frame  = ff_yadif_filter_frame,
         .config_props  = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad deint_cuda_outputs[] = {
@@ -373,7 +372,6 @@ static const AVFilterPad deint_cuda_outputs[] = {
         .request_frame = ff_yadif_request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_yadif_cuda = {
@@ -383,8 +381,8 @@ const AVFilter ff_vf_yadif_cuda = {
     .priv_class     = &yadif_cuda_class,
     .uninit         = deint_cuda_uninit,
     .query_formats  = deint_cuda_query_formats,
-    .inputs         = deint_cuda_inputs,
-    .outputs        = deint_cuda_outputs,
+    FILTER_INPUTS(deint_cuda_inputs),
+    FILTER_OUTPUTS(deint_cuda_outputs),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

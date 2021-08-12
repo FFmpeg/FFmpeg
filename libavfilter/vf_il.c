@@ -187,7 +187,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -195,7 +194,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_il = {
@@ -203,8 +201,8 @@ const AVFilter ff_vf_il = {
     .description   = NULL_IF_CONFIG_SMALL("Deinterleave or interleave fields."),
     .priv_size     = sizeof(IlContext),
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .priv_class    = &il_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,

@@ -292,7 +292,6 @@ static const AVFilterPad kerndeint_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad kerndeint_outputs[] = {
@@ -300,7 +299,6 @@ static const AVFilterPad kerndeint_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 
@@ -311,6 +309,6 @@ const AVFilter ff_vf_kerndeint = {
     .priv_class    = &kerndeint_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = kerndeint_inputs,
-    .outputs       = kerndeint_outputs,
+    FILTER_INPUTS(kerndeint_inputs),
+    FILTER_OUTPUTS(kerndeint_outputs),
 };

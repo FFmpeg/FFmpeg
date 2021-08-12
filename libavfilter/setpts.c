@@ -279,7 +279,6 @@ static const AVFilterPad avfilter_vf_setpts_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_setpts_outputs[] = {
@@ -287,7 +286,6 @@ static const AVFilterPad avfilter_vf_setpts_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_setpts = {
@@ -300,8 +298,8 @@ const AVFilter ff_vf_setpts = {
     .priv_size = sizeof(SetPTSContext),
     .priv_class = &setpts_class,
 
-    .inputs    = avfilter_vf_setpts_inputs,
-    .outputs   = avfilter_vf_setpts_outputs,
+    FILTER_INPUTS(avfilter_vf_setpts_inputs),
+    FILTER_OUTPUTS(avfilter_vf_setpts_outputs),
 };
 #endif /* CONFIG_SETPTS_FILTER */
 
@@ -319,7 +317,6 @@ static const AVFilterPad asetpts_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad asetpts_outputs[] = {
@@ -327,7 +324,6 @@ static const AVFilterPad asetpts_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asetpts = {
@@ -338,7 +334,7 @@ const AVFilter ff_af_asetpts = {
     .uninit      = uninit,
     .priv_size   = sizeof(SetPTSContext),
     .priv_class  = &asetpts_class,
-    .inputs      = asetpts_inputs,
-    .outputs     = asetpts_outputs,
+    FILTER_INPUTS(asetpts_inputs),
+    FILTER_OUTPUTS(asetpts_outputs),
 };
 #endif /* CONFIG_ASETPTS_FILTER */

@@ -579,7 +579,6 @@ static const AVFilterPad ssim_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_ref,
     },
-    { NULL }
 };
 
 static const AVFilterPad ssim_outputs[] = {
@@ -588,7 +587,6 @@ static const AVFilterPad ssim_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_ssim = {
@@ -601,7 +599,7 @@ const AVFilter ff_vf_ssim = {
     .activate      = activate,
     .priv_size     = sizeof(SSIMContext),
     .priv_class    = &ssim_class,
-    .inputs        = ssim_inputs,
-    .outputs       = ssim_outputs,
+    FILTER_INPUTS(ssim_inputs),
+    FILTER_OUTPUTS(ssim_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -726,7 +726,6 @@ static const AVFilterPad colorconstancy_inputs[] = {
         .config_props = config_props,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorconstancy_outputs[] = {
@@ -734,7 +733,6 @@ static const AVFilterPad colorconstancy_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #if CONFIG_GREYEDGE_FILTER
@@ -755,8 +753,8 @@ const AVFilter ff_vf_greyedge = {
     .priv_class    = &greyedge_class,
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = colorconstancy_inputs,
-    .outputs       = colorconstancy_outputs,
+    FILTER_INPUTS(colorconstancy_inputs),
+    FILTER_OUTPUTS(colorconstancy_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
 

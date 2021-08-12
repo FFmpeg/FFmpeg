@@ -134,7 +134,6 @@ static const AVFilterPad volumedetect_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad volumedetect_outputs[] = {
@@ -142,7 +141,6 @@ static const AVFilterPad volumedetect_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_volumedetect = {
@@ -151,6 +149,6 @@ const AVFilter ff_af_volumedetect = {
     .priv_size     = sizeof(VolDetectContext),
     .query_formats = query_formats,
     .uninit        = uninit,
-    .inputs        = volumedetect_inputs,
-    .outputs       = volumedetect_outputs,
+    FILTER_INPUTS(volumedetect_inputs),
+    FILTER_OUTPUTS(volumedetect_outputs),
 };

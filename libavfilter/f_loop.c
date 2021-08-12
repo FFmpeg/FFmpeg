@@ -269,7 +269,6 @@ static const AVFilterPad ainputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = aconfig_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad aoutputs[] = {
@@ -277,7 +276,6 @@ static const AVFilterPad aoutputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aloop = {
@@ -287,8 +285,8 @@ const AVFilter ff_af_aloop = {
     .priv_class    = &aloop_class,
     .activate      = aactivate,
     .uninit        = auninit,
-    .inputs        = ainputs,
-    .outputs       = aoutputs,
+    FILTER_INPUTS(ainputs),
+    FILTER_OUTPUTS(aoutputs),
 };
 #endif /* CONFIG_ALOOP_FILTER */
 
@@ -442,7 +440,6 @@ static const AVFilterPad inputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -450,7 +447,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_loop = {
@@ -461,7 +457,7 @@ const AVFilter ff_vf_loop = {
     .init        = init,
     .uninit      = uninit,
     .activate    = activate,
-    .inputs      = inputs,
-    .outputs     = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };
 #endif /* CONFIG_LOOP_FILTER */

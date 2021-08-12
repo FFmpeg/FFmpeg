@@ -121,7 +121,6 @@ static const AVFilterPad reverse_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad reverse_outputs[] = {
@@ -130,7 +129,6 @@ static const AVFilterPad reverse_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_reverse = {
@@ -139,8 +137,8 @@ const AVFilter ff_vf_reverse = {
     .priv_size   = sizeof(ReverseContext),
     .init        = init,
     .uninit      = uninit,
-    .inputs      = reverse_inputs,
-    .outputs     = reverse_outputs,
+    FILTER_INPUTS(reverse_inputs),
+    FILTER_OUTPUTS(reverse_outputs),
 };
 
 #endif /* CONFIG_REVERSE_FILTER */
@@ -272,7 +270,6 @@ static const AVFilterPad areverse_inputs[] = {
         .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad areverse_outputs[] = {
@@ -281,7 +278,6 @@ static const AVFilterPad areverse_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .request_frame = areverse_request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_areverse = {
@@ -291,8 +287,8 @@ const AVFilter ff_af_areverse = {
     .priv_size     = sizeof(ReverseContext),
     .init          = init,
     .uninit        = uninit,
-    .inputs        = areverse_inputs,
-    .outputs       = areverse_outputs,
+    FILTER_INPUTS(areverse_inputs),
+    FILTER_OUTPUTS(areverse_outputs),
 };
 
 #endif /* CONFIG_AREVERSE_FILTER */

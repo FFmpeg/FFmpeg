@@ -345,7 +345,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -353,7 +352,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asupercut = {
@@ -363,8 +361,8 @@ const AVFilter ff_af_asupercut = {
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asupercut_class,
     .uninit          = uninit,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -386,8 +384,8 @@ const AVFilter ff_af_asubcut = {
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asubcut_class,
     .uninit          = uninit,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -411,8 +409,8 @@ const AVFilter ff_af_asuperpass = {
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asuperpass_class,
     .uninit          = uninit,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -428,8 +426,8 @@ const AVFilter ff_af_asuperstop = {
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asuperstop_class,
     .uninit          = uninit,
-    .inputs          = inputs,
-    .outputs         = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,

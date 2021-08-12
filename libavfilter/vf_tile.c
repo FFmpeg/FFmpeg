@@ -272,7 +272,6 @@ static const AVFilterPad tile_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad tile_outputs[] = {
@@ -282,7 +281,6 @@ static const AVFilterPad tile_outputs[] = {
         .config_props  = config_props,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_tile = {
@@ -292,7 +290,7 @@ const AVFilter ff_vf_tile = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(TileContext),
-    .inputs        = tile_inputs,
-    .outputs       = tile_outputs,
+    FILTER_INPUTS(tile_inputs),
+    FILTER_OUTPUTS(tile_outputs),
     .priv_class    = &tile_class,
 };

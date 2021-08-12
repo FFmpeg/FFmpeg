@@ -210,7 +210,6 @@ static const AVFilterPad rubberband_inputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad rubberband_outputs[] = {
@@ -218,7 +217,6 @@ static const AVFilterPad rubberband_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_rubberband = {
@@ -229,7 +227,7 @@ const AVFilter ff_af_rubberband = {
     .priv_class    = &rubberband_class,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = rubberband_inputs,
-    .outputs       = rubberband_outputs,
+    FILTER_INPUTS(rubberband_inputs),
+    FILTER_OUTPUTS(rubberband_outputs),
     .process_command = process_command,
 };

@@ -100,7 +100,6 @@ static const AVFilterPad swapuv_inputs[] = {
         .get_buffer.video = get_video_buffer,
         .filter_frame     = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad swapuv_outputs[] = {
@@ -108,7 +107,6 @@ static const AVFilterPad swapuv_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_swapuv = {
@@ -117,7 +115,7 @@ const AVFilter ff_vf_swapuv = {
     .query_formats = query_formats,
     .priv_size     = sizeof(SwapUVContext),
     .priv_class    = &swapuv_class,
-    .inputs        = swapuv_inputs,
-    .outputs       = swapuv_outputs,
+    FILTER_INPUTS(swapuv_inputs),
+    FILTER_OUTPUTS(swapuv_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

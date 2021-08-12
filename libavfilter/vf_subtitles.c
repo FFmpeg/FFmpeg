@@ -202,7 +202,6 @@ static const AVFilterPad ass_inputs[] = {
         .filter_frame     = filter_frame,
         .config_props     = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad ass_outputs[] = {
@@ -210,7 +209,6 @@ static const AVFilterPad ass_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #if CONFIG_ASS_FILTER
@@ -254,8 +252,8 @@ const AVFilter ff_vf_ass = {
     .init          = init_ass,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = ass_inputs,
-    .outputs       = ass_outputs,
+    FILTER_INPUTS(ass_inputs),
+    FILTER_OUTPUTS(ass_outputs),
     .priv_class    = &ass_class,
 };
 #endif
@@ -488,8 +486,8 @@ const AVFilter ff_vf_subtitles = {
     .init          = init_subtitles,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = ass_inputs,
-    .outputs       = ass_outputs,
+    FILTER_INPUTS(ass_inputs),
+    FILTER_OUTPUTS(ass_outputs),
     .priv_class    = &subtitles_class,
 };
 #endif

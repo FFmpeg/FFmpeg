@@ -304,7 +304,6 @@ static const AVFilterPad codecview_inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad codecview_outputs[] = {
@@ -312,7 +311,6 @@ static const AVFilterPad codecview_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_codecview = {
@@ -320,8 +318,8 @@ const AVFilter ff_vf_codecview = {
     .description   = NULL_IF_CONFIG_SMALL("Visualize information about some codecs."),
     .priv_size     = sizeof(CodecViewContext),
     .query_formats = query_formats,
-    .inputs        = codecview_inputs,
-    .outputs       = codecview_outputs,
+    FILTER_INPUTS(codecview_inputs),
+    FILTER_OUTPUTS(codecview_outputs),
     .priv_class    = &codecview_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

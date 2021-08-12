@@ -172,7 +172,6 @@ static const AVFilterPad untile_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad untile_outputs[] = {
@@ -181,7 +180,6 @@ static const AVFilterPad untile_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_untile = {
@@ -192,7 +190,7 @@ const AVFilter ff_vf_untile = {
     .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(UntileContext),
-    .inputs        = untile_inputs,
-    .outputs       = untile_outputs,
+    FILTER_INPUTS(untile_inputs),
+    FILTER_OUTPUTS(untile_outputs),
     .priv_class    = &untile_class,
 };

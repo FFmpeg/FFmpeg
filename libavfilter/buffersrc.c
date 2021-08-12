@@ -434,7 +434,6 @@ static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_buffer = {
@@ -447,7 +446,7 @@ const AVFilter ff_vsrc_buffer = {
     .uninit    = uninit,
 
     .inputs    = NULL,
-    .outputs   = avfilter_vsrc_buffer_outputs,
+    FILTER_OUTPUTS(avfilter_vsrc_buffer_outputs),
     .priv_class = &buffer_class,
 };
 
@@ -458,7 +457,6 @@ static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_abuffer = {
@@ -471,6 +469,6 @@ const AVFilter ff_asrc_abuffer = {
     .uninit    = uninit,
 
     .inputs    = NULL,
-    .outputs   = avfilter_asrc_abuffer_outputs,
+    FILTER_OUTPUTS(avfilter_asrc_abuffer_outputs),
     .priv_class = &abuffer_class,
 };

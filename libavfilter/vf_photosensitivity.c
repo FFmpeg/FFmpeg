@@ -317,7 +317,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -325,7 +324,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_photosensitivity = {
@@ -335,6 +333,6 @@ const AVFilter ff_vf_photosensitivity = {
     .priv_class    = &photosensitivity_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };

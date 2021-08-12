@@ -300,7 +300,6 @@ static const AVFilterPad overlay_opencl_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad overlay_opencl_outputs[] = {
@@ -309,7 +308,6 @@ static const AVFilterPad overlay_opencl_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = &overlay_opencl_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_overlay_opencl = {
@@ -321,7 +319,7 @@ const AVFilter ff_vf_overlay_opencl = {
     .uninit          = &overlay_opencl_uninit,
     .query_formats   = &ff_opencl_filter_query_formats,
     .activate        = &overlay_opencl_activate,
-    .inputs          = overlay_opencl_inputs,
-    .outputs         = overlay_opencl_outputs,
+    FILTER_INPUTS(overlay_opencl_inputs),
+    FILTER_OUTPUTS(overlay_opencl_outputs),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

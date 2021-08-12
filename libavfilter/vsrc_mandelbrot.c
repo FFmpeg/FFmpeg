@@ -413,7 +413,6 @@ static const AVFilterPad mandelbrot_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_mandelbrot = {
@@ -425,5 +424,5 @@ const AVFilter ff_vsrc_mandelbrot = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = mandelbrot_outputs,
+    FILTER_OUTPUTS(mandelbrot_outputs),
 };

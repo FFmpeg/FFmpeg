@@ -384,7 +384,6 @@ static const AVFilterPad inputs[] = {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -393,7 +392,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(dedot);
@@ -406,7 +404,7 @@ const AVFilter ff_vf_dedot = {
     .query_formats = query_formats,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

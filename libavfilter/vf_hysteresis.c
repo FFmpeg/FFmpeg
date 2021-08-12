@@ -362,7 +362,6 @@ static const AVFilterPad hysteresis_inputs[] = {
         .name         = "alt",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad hysteresis_outputs[] = {
@@ -371,7 +370,6 @@ static const AVFilterPad hysteresis_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_hysteresis = {
@@ -382,8 +380,8 @@ const AVFilter ff_vf_hysteresis = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .activate      = activate,
-    .inputs        = hysteresis_inputs,
-    .outputs       = hysteresis_outputs,
+    FILTER_INPUTS(hysteresis_inputs),
+    FILTER_OUTPUTS(hysteresis_outputs),
     .priv_class    = &hysteresis_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

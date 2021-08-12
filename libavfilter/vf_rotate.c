@@ -585,7 +585,6 @@ static const AVFilterPad rotate_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad rotate_outputs[] = {
@@ -594,7 +593,6 @@ static const AVFilterPad rotate_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_rotate = {
@@ -605,8 +603,8 @@ const AVFilter ff_vf_rotate = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .process_command = process_command,
-    .inputs        = rotate_inputs,
-    .outputs       = rotate_outputs,
+    FILTER_INPUTS(rotate_inputs),
+    FILTER_OUTPUTS(rotate_outputs),
     .priv_class    = &rotate_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

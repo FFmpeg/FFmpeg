@@ -512,7 +512,6 @@ static const AVFilterPad scale_vulkan_inputs[] = {
         .filter_frame = &scale_vulkan_filter_frame,
         .config_props = &ff_vk_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad scale_vulkan_outputs[] = {
@@ -521,7 +520,6 @@ static const AVFilterPad scale_vulkan_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &scale_vulkan_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scale_vulkan = {
@@ -531,8 +529,8 @@ const AVFilter ff_vf_scale_vulkan = {
     .init           = &ff_vk_filter_init,
     .uninit         = &scale_vulkan_uninit,
     .query_formats  = &ff_vk_filter_query_formats,
-    .inputs         = scale_vulkan_inputs,
-    .outputs        = scale_vulkan_outputs,
+    FILTER_INPUTS(scale_vulkan_inputs),
+    FILTER_OUTPUTS(scale_vulkan_outputs),
     .priv_class     = &scale_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

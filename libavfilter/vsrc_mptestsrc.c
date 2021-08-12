@@ -351,7 +351,6 @@ static const AVFilterPad mptestsrc_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_mptestsrc = {
@@ -362,5 +361,5 @@ const AVFilter ff_vsrc_mptestsrc = {
     .init          = init,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = mptestsrc_outputs,
+    FILTER_OUTPUTS(mptestsrc_outputs),
 };

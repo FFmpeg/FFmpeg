@@ -156,7 +156,6 @@ static const AVFilterPad asr_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad asr_outputs[] = {
@@ -164,7 +163,6 @@ static const AVFilterPad asr_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asr = {
@@ -175,6 +173,6 @@ const AVFilter ff_af_asr = {
     .init          = asr_init,
     .uninit        = asr_uninit,
     .query_formats = query_formats,
-    .inputs        = asr_inputs,
-    .outputs       = asr_outputs,
+    FILTER_INPUTS(asr_inputs),
+    FILTER_OUTPUTS(asr_outputs),
 };

@@ -326,7 +326,6 @@ static const AVFilterPad inputs[] = {
         .name = "axcorrelate1",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -335,7 +334,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -359,6 +357,6 @@ const AVFilter ff_af_axcorrelate = {
     .query_formats  = query_formats,
     .activate       = activate,
     .uninit         = uninit,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };

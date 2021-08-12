@@ -435,7 +435,6 @@ static const AVFilterPad pan_inputs[] = {
         .config_props = config_props,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad pan_outputs[] = {
@@ -443,7 +442,6 @@ static const AVFilterPad pan_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_pan = {
@@ -454,6 +452,6 @@ const AVFilter ff_af_pan = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = pan_inputs,
-    .outputs       = pan_outputs,
+    FILTER_INPUTS(pan_inputs),
+    FILTER_OUTPUTS(pan_outputs),
 };

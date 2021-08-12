@@ -1173,7 +1173,6 @@ static const AVFilterPad atempo_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 static const AVFilterPad atempo_outputs[] = {
@@ -1182,7 +1181,6 @@ static const AVFilterPad atempo_outputs[] = {
         .request_frame = request_frame,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_atempo = {
@@ -1194,6 +1192,6 @@ const AVFilter ff_af_atempo = {
     .process_command = process_command,
     .priv_size       = sizeof(ATempoContext),
     .priv_class      = &atempo_class,
-    .inputs          = atempo_inputs,
-    .outputs         = atempo_outputs,
+    FILTER_INPUTS(atempo_inputs),
+    FILTER_OUTPUTS(atempo_outputs),
 };

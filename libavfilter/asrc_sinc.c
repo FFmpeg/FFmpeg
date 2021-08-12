@@ -408,7 +408,6 @@ static const AVFilterPad sinc_outputs[] = {
         .config_props  = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -440,5 +439,5 @@ const AVFilter ff_asrc_sinc = {
     .query_formats = query_formats,
     .uninit        = uninit,
     .inputs        = NULL,
-    .outputs       = sinc_outputs,
+    FILTER_OUTPUTS(sinc_outputs),
 };

@@ -321,7 +321,6 @@ static const AVFilterPad cellauto_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_cellauto = {
@@ -333,5 +332,5 @@ const AVFilter ff_vsrc_cellauto = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = cellauto_outputs,
+    FILTER_OUTPUTS(cellauto_outputs),
 };

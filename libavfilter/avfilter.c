@@ -540,14 +540,20 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
 
 int avfilter_pad_count(const AVFilterPad *pads)
 {
-    int count;
+    const AVFilter *filter;
+    void *opaque = NULL;
 
     if (!pads)
         return 0;
 
-    for (count = 0; pads->name; count++)
-        pads++;
-    return count;
+    while (filter = av_filter_iterate(&opaque)) {
+        if (pads == filter->inputs)
+            return filter->nb_inputs;
+        if (pads == filter->outputs)
+            return filter->nb_outputs;
+    }
+
+    av_assert0(!"AVFilterPad list not from a filter");
 }
 
 static const char *default_filter_name(void *filter_ctx)
@@ -650,7 +656,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         goto err;
     ret->internal->execute = default_execute;
 
-    ret->nb_inputs = avfilter_pad_count(filter->inputs);
+    ret->nb_inputs  = filter->nb_inputs;
     if (ret->nb_inputs ) {
         ret->input_pads   = av_memdup(filter->inputs,  ret->nb_inputs  * sizeof(*filter->inputs));
         if (!ret->input_pads)
@@ -660,7 +666,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
             goto err;
     }
 
-    ret->nb_outputs = avfilter_pad_count(filter->outputs);
+    ret->nb_outputs = filter->nb_outputs;
     if (ret->nb_outputs) {
         ret->output_pads  = av_memdup(filter->outputs, ret->nb_outputs * sizeof(*filter->outputs));
         if (!ret->output_pads)

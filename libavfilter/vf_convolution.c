@@ -890,7 +890,6 @@ static const AVFilterPad convolution_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad convolution_outputs[] = {
@@ -898,7 +897,6 @@ static const AVFilterPad convolution_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #if CONFIG_CONVOLUTION_FILTER
@@ -910,8 +908,8 @@ const AVFilter ff_vf_convolution = {
     .priv_class    = &convolution_class,
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = convolution_inputs,
-    .outputs       = convolution_outputs,
+    FILTER_INPUTS(convolution_inputs),
+    FILTER_OUTPUTS(convolution_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -939,8 +937,8 @@ const AVFilter ff_vf_prewitt = {
     .priv_class    = &prewitt_class,
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = convolution_inputs,
-    .outputs       = convolution_outputs,
+    FILTER_INPUTS(convolution_inputs),
+    FILTER_OUTPUTS(convolution_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -959,8 +957,8 @@ const AVFilter ff_vf_sobel = {
     .priv_class    = &sobel_class,
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = convolution_inputs,
-    .outputs       = convolution_outputs,
+    FILTER_INPUTS(convolution_inputs),
+    FILTER_OUTPUTS(convolution_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -979,8 +977,8 @@ const AVFilter ff_vf_roberts = {
     .priv_class    = &roberts_class,
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = convolution_inputs,
-    .outputs       = convolution_outputs,
+    FILTER_INPUTS(convolution_inputs),
+    FILTER_OUTPUTS(convolution_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -999,8 +997,8 @@ const AVFilter ff_vf_kirsch = {
     .priv_class    = &kirsch_class,
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = convolution_inputs,
-    .outputs       = convolution_outputs,
+    FILTER_INPUTS(convolution_inputs),
+    FILTER_OUTPUTS(convolution_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

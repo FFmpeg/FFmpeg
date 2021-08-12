@@ -193,7 +193,6 @@ static const AVFilterPad tpad_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad tpad_outputs[] = {
@@ -201,7 +200,6 @@ static const AVFilterPad tpad_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_tpad = {
@@ -212,6 +210,6 @@ const AVFilter ff_vf_tpad = {
     .query_formats = query_formats,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = tpad_inputs,
-    .outputs       = tpad_outputs,
+    FILTER_INPUTS(tpad_inputs),
+    FILTER_OUTPUTS(tpad_outputs),
 };

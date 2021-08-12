@@ -759,7 +759,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_headphone = {
@@ -772,6 +771,6 @@ const AVFilter ff_af_headphone = {
     .query_formats = query_formats,
     .activate      = activate,
     .inputs        = NULL,
-    .outputs       = outputs,
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

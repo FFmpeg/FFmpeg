@@ -327,7 +327,6 @@ static const AVFilterPad convolution_opencl_inputs[] = {
         .filter_frame = &convolution_opencl_filter_frame,
         .config_props = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad convolution_opencl_outputs[] = {
@@ -336,7 +335,6 @@ static const AVFilterPad convolution_opencl_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_opencl_filter_config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ConvolutionOpenCLContext, x)
@@ -370,8 +368,8 @@ const AVFilter ff_vf_convolution_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = convolution_opencl_inputs,
-    .outputs        = convolution_opencl_outputs,
+    FILTER_INPUTS(convolution_opencl_inputs),
+    FILTER_OUTPUTS(convolution_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -396,8 +394,8 @@ const AVFilter ff_vf_sobel_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = convolution_opencl_inputs,
-    .outputs        = convolution_opencl_outputs,
+    FILTER_INPUTS(convolution_opencl_inputs),
+    FILTER_OUTPUTS(convolution_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -422,8 +420,8 @@ const AVFilter ff_vf_prewitt_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = convolution_opencl_inputs,
-    .outputs        = convolution_opencl_outputs,
+    FILTER_INPUTS(convolution_opencl_inputs),
+    FILTER_OUTPUTS(convolution_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -448,8 +446,8 @@ const AVFilter ff_vf_roberts_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = convolution_opencl_inputs,
-    .outputs        = convolution_opencl_outputs,
+    FILTER_INPUTS(convolution_opencl_inputs),
+    FILTER_OUTPUTS(convolution_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 

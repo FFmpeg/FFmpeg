@@ -273,7 +273,6 @@ static const AVFilterPad median_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad median_outputs[] = {
@@ -281,7 +280,6 @@ static const AVFilterPad median_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_median = {
@@ -291,8 +289,8 @@ const AVFilter ff_vf_median = {
     .priv_class    = &median_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = median_inputs,
-    .outputs       = median_outputs,
+    FILTER_INPUTS(median_inputs),
+    FILTER_OUTPUTS(median_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

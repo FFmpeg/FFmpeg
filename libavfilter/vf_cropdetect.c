@@ -260,7 +260,6 @@ static const AVFilterPad avfilter_vf_cropdetect_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
@@ -268,7 +267,6 @@ static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_cropdetect = {
@@ -278,7 +276,7 @@ const AVFilter ff_vf_cropdetect = {
     .priv_class    = &cropdetect_class,
     .init          = init,
     .query_formats = query_formats,
-    .inputs        = avfilter_vf_cropdetect_inputs,
-    .outputs       = avfilter_vf_cropdetect_outputs,
+    FILTER_INPUTS(avfilter_vf_cropdetect_inputs),
+    FILTER_OUTPUTS(avfilter_vf_cropdetect_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

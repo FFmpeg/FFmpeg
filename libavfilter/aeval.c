@@ -307,7 +307,6 @@ static const AVFilterPad aevalsrc_outputs[] = {
         .config_props  = config_props,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_aevalsrc = {
@@ -318,7 +317,7 @@ const AVFilter ff_asrc_aevalsrc = {
     .uninit        = uninit,
     .priv_size     = sizeof(EvalContext),
     .inputs        = NULL,
-    .outputs       = aevalsrc_outputs,
+    FILTER_OUTPUTS(aevalsrc_outputs),
     .priv_class    = &aevalsrc_class,
 };
 
@@ -445,7 +444,6 @@ static const AVFilterPad aeval_inputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad aeval_outputs[] = {
@@ -454,7 +452,6 @@ static const AVFilterPad aeval_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = aeval_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aeval = {
@@ -464,8 +461,8 @@ const AVFilter ff_af_aeval = {
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(EvalContext),
-    .inputs        = aeval_inputs,
-    .outputs       = aeval_outputs,
+    FILTER_INPUTS(aeval_inputs),
+    FILTER_OUTPUTS(aeval_outputs),
     .priv_class    = &aeval_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

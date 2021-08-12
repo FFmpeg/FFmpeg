@@ -342,7 +342,6 @@ static const AVFilterPad neighbor_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad neighbor_outputs[] = {
@@ -350,7 +349,6 @@ static const AVFilterPad neighbor_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(NContext, x)
@@ -365,8 +363,8 @@ const AVFilter ff_vf_##name_ = {                                   \
     .priv_size     = sizeof(NContext),                       \
     .priv_class    = &name_##_class,                         \
     .query_formats = query_formats,                          \
-    .inputs        = neighbor_inputs,                        \
-    .outputs       = neighbor_outputs,                       \
+    FILTER_INPUTS(neighbor_inputs),                          \
+    FILTER_OUTPUTS(neighbor_outputs),                        \
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC| \
                      AVFILTER_FLAG_SLICE_THREADS,            \
     .process_command = ff_filter_process_command,            \

@@ -218,7 +218,6 @@ static const AVFilterPad sierpinski_outputs[] = {
         .request_frame = sierpinski_request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vsrc_sierpinski = {
@@ -228,6 +227,6 @@ const AVFilter ff_vsrc_sierpinski = {
     .priv_class    = &sierpinski_class,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = sierpinski_outputs,
+    FILTER_OUTPUTS(sierpinski_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

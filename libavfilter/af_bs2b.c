@@ -192,7 +192,6 @@ static const AVFilterPad bs2b_inputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad bs2b_outputs[] = {
@@ -201,7 +200,6 @@ static const AVFilterPad bs2b_outputs[] = {
         .type           = AVMEDIA_TYPE_AUDIO,
         .config_props   = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_bs2b = {
@@ -212,6 +210,6 @@ const AVFilter ff_af_bs2b = {
     .priv_class     = &bs2b_class,
     .init           = init,
     .uninit         = uninit,
-    .inputs         = bs2b_inputs,
-    .outputs        = bs2b_outputs,
+    FILTER_INPUTS(bs2b_inputs),
+    FILTER_OUTPUTS(bs2b_outputs),
 };

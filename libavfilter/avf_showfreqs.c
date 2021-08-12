@@ -552,7 +552,6 @@ static const AVFilterPad showfreqs_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad showfreqs_outputs[] = {
@@ -561,7 +560,6 @@ static const AVFilterPad showfreqs_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_showfreqs = {
@@ -572,7 +570,7 @@ const AVFilter ff_avf_showfreqs = {
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowFreqsContext),
     .activate      = activate,
-    .inputs        = showfreqs_inputs,
-    .outputs       = showfreqs_outputs,
+    FILTER_INPUTS(showfreqs_inputs),
+    FILTER_OUTPUTS(showfreqs_outputs),
     .priv_class    = &showfreqs_class,
 };

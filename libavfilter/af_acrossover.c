@@ -555,7 +555,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_acrossover = {
@@ -566,7 +565,7 @@ const AVFilter ff_af_acrossover = {
     .init           = init,
     .uninit         = uninit,
     .query_formats  = query_formats,
-    .inputs         = inputs,
+    FILTER_INPUTS(inputs),
     .outputs        = NULL,
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                       AVFILTER_FLAG_SLICE_THREADS,

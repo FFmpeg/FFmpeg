@@ -134,7 +134,6 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_anullsrc = {
@@ -144,7 +143,7 @@ const AVFilter ff_asrc_anullsrc = {
     .query_formats = query_formats,
     .priv_size     = sizeof(ANullContext),
     .inputs        = NULL,
-    .outputs       = avfilter_asrc_anullsrc_outputs,
+    FILTER_OUTPUTS(avfilter_asrc_anullsrc_outputs),
     .activate      = activate,
     .priv_class    = &anullsrc_class,
 };

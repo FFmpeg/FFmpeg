@@ -93,7 +93,6 @@ static const AVFilterPad vfrdet_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad vfrdet_outputs[] = {
@@ -101,7 +100,6 @@ static const AVFilterPad vfrdet_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_vfrdet = {
@@ -110,6 +108,6 @@ const AVFilter ff_vf_vfrdet = {
     .priv_size   = sizeof(VFRDETContext),
     .init        = init,
     .uninit      = uninit,
-    .inputs      = vfrdet_inputs,
-    .outputs     = vfrdet_outputs,
+    FILTER_INPUTS(vfrdet_inputs),
+    FILTER_OUTPUTS(vfrdet_outputs),
 };

@@ -542,7 +542,6 @@ static const AVFilterPad readeia608_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad readeia608_outputs[] = {
@@ -550,7 +549,6 @@ static const AVFilterPad readeia608_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_readeia608 = {
@@ -559,8 +557,8 @@ const AVFilter ff_vf_readeia608 = {
     .priv_size     = sizeof(ReadEIA608Context),
     .priv_class    = &readeia608_class,
     .query_formats = query_formats,
-    .inputs        = readeia608_inputs,
-    .outputs       = readeia608_outputs,
+    FILTER_INPUTS(readeia608_inputs),
+    FILTER_OUTPUTS(readeia608_outputs),
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

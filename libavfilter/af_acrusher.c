@@ -342,7 +342,6 @@ static const AVFilterPad avfilter_af_acrusher_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_acrusher_outputs[] = {
@@ -350,7 +349,6 @@ static const AVFilterPad avfilter_af_acrusher_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_acrusher = {
@@ -360,7 +358,7 @@ const AVFilter ff_af_acrusher = {
     .priv_class    = &acrusher_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avfilter_af_acrusher_inputs,
-    .outputs       = avfilter_af_acrusher_outputs,
+    FILTER_INPUTS(avfilter_af_acrusher_inputs),
+    FILTER_OUTPUTS(avfilter_af_acrusher_outputs),
     .process_command = process_command,
 };

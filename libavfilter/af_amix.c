@@ -634,7 +634,6 @@ static const AVFilterPad avfilter_af_amix_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_amix = {
@@ -647,7 +646,7 @@ const AVFilter ff_af_amix = {
     .activate       = activate,
     .query_formats  = query_formats,
     .inputs         = NULL,
-    .outputs        = avfilter_af_amix_outputs,
+    FILTER_OUTPUTS(avfilter_af_amix_outputs),
     .process_command = process_command,
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

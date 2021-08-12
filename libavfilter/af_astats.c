@@ -815,7 +815,6 @@ static const AVFilterPad astats_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad astats_outputs[] = {
@@ -824,7 +823,6 @@ static const AVFilterPad astats_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_astats = {
@@ -834,7 +832,7 @@ const AVFilter ff_af_astats = {
     .priv_size     = sizeof(AudioStatsContext),
     .priv_class    = &astats_class,
     .uninit        = uninit,
-    .inputs        = astats_inputs,
-    .outputs       = astats_outputs,
+    FILTER_INPUTS(astats_inputs),
+    FILTER_OUTPUTS(astats_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

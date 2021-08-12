@@ -141,6 +141,12 @@ static av_always_inline int ff_filter_execute(AVFilterContext *ctx, avfilter_act
     return ctx->internal->execute(ctx, func, arg, ret, nb_jobs);
 }
 
+#define FILTER_INOUTPADS(inout, array) \
+       .inout        = array, \
+       .nb_ ## inout = FF_ARRAY_ELEMS(array)
+#define FILTER_INPUTS(array) FILTER_INOUTPADS(inputs, (array))
+#define FILTER_OUTPUTS(array) FILTER_INOUTPADS(outputs, (array))
+
 /**
  * Tell if an integer is contained in the provided -1-terminated list of integers.
  * This is useful for determining (for instance) if an AVPixelFormat is in an

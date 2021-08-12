@@ -441,7 +441,6 @@ static const AVFilterPad avfilter_vf_pad_inputs[] = {
         .get_buffer.video = get_video_buffer,
         .filter_frame     = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_pad_outputs[] = {
@@ -450,7 +449,6 @@ static const AVFilterPad avfilter_vf_pad_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_pad = {
@@ -459,6 +457,6 @@ const AVFilter ff_vf_pad = {
     .priv_size     = sizeof(PadContext),
     .priv_class    = &pad_class,
     .query_formats = query_formats,
-    .inputs        = avfilter_vf_pad_inputs,
-    .outputs       = avfilter_vf_pad_outputs,
+    FILTER_INPUTS(avfilter_vf_pad_inputs),
+    FILTER_OUTPUTS(avfilter_vf_pad_outputs),
 };

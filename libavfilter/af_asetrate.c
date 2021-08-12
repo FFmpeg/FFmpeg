@@ -94,7 +94,6 @@ static const AVFilterPad asetrate_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad asetrate_outputs[] = {
@@ -103,7 +102,6 @@ static const AVFilterPad asetrate_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_asetrate = {
@@ -112,7 +110,7 @@ const AVFilter ff_af_asetrate = {
                                           "altering the data."),
     .query_formats = query_formats,
     .priv_size     = sizeof(ASetRateContext),
-    .inputs        = asetrate_inputs,
-    .outputs       = asetrate_outputs,
+    FILTER_INPUTS(asetrate_inputs),
+    FILTER_OUTPUTS(asetrate_outputs),
     .priv_class    = &asetrate_class,
 };

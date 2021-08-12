@@ -201,7 +201,6 @@ static const AVFilterPad drmeter_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad drmeter_outputs[] = {
@@ -210,7 +209,6 @@ static const AVFilterPad drmeter_outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_drmeter = {
@@ -220,6 +218,6 @@ const AVFilter ff_af_drmeter = {
     .priv_size     = sizeof(DRMeterContext),
     .priv_class    = &drmeter_class,
     .uninit        = uninit,
-    .inputs        = drmeter_inputs,
-    .outputs       = drmeter_outputs,
+    FILTER_INPUTS(drmeter_inputs),
+    FILTER_OUTPUTS(drmeter_outputs),
 };

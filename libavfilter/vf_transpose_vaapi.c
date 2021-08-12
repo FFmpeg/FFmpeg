@@ -260,7 +260,6 @@ static const AVFilterPad transpose_vaapi_inputs[] = {
         .get_buffer.video = get_video_buffer,
         .config_props = &ff_vaapi_vpp_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad transpose_vaapi_outputs[] = {
@@ -269,7 +268,6 @@ static const AVFilterPad transpose_vaapi_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &transpose_vaapi_vpp_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_transpose_vaapi = {
@@ -279,8 +277,8 @@ const AVFilter ff_vf_transpose_vaapi = {
     .init           = &transpose_vaapi_init,
     .uninit         = &ff_vaapi_vpp_ctx_uninit,
     .query_formats  = &ff_vaapi_vpp_query_formats,
-    .inputs         = transpose_vaapi_inputs,
-    .outputs        = transpose_vaapi_outputs,
+    FILTER_INPUTS(transpose_vaapi_inputs),
+    FILTER_OUTPUTS(transpose_vaapi_outputs),
     .priv_class     = &transpose_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

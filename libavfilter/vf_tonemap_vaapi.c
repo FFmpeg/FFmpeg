@@ -391,7 +391,6 @@ static const AVFilterPad tonemap_vaapi_inputs[] = {
         .filter_frame = &tonemap_vaapi_filter_frame,
         .config_props = &ff_vaapi_vpp_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad tonemap_vaapi_outputs[] = {
@@ -400,7 +399,6 @@ static const AVFilterPad tonemap_vaapi_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_vaapi_vpp_config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_tonemap_vaapi = {
@@ -410,8 +408,8 @@ const AVFilter ff_vf_tonemap_vaapi = {
     .init           = &tonemap_vaapi_init,
     .uninit         = &ff_vaapi_vpp_ctx_uninit,
     .query_formats  = &ff_vaapi_vpp_query_formats,
-    .inputs         = tonemap_vaapi_inputs,
-    .outputs        = tonemap_vaapi_outputs,
+    FILTER_INPUTS(tonemap_vaapi_inputs),
+    FILTER_OUTPUTS(tonemap_vaapi_outputs),
     .priv_class     = &tonemap_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

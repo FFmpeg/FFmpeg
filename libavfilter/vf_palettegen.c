@@ -557,7 +557,6 @@ static const AVFilterPad palettegen_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad palettegen_outputs[] = {
@@ -567,7 +566,6 @@ static const AVFilterPad palettegen_outputs[] = {
         .config_props  = config_output,
         .request_frame = request_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_palettegen = {
@@ -576,7 +574,7 @@ const AVFilter ff_vf_palettegen = {
     .priv_size     = sizeof(PaletteGenContext),
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = palettegen_inputs,
-    .outputs       = palettegen_outputs,
+    FILTER_INPUTS(palettegen_inputs),
+    FILTER_OUTPUTS(palettegen_outputs),
     .priv_class    = &palettegen_class,
 };

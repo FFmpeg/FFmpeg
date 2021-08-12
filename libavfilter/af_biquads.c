@@ -839,7 +839,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -848,7 +847,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(BiquadsContext, x)
@@ -871,8 +869,8 @@ const AVFilter ff_af_##name_ = {                               \
     .init          = name_##_init,                       \
     .uninit        = uninit,                             \
     .query_formats = query_formats,                      \
-    .inputs        = inputs,                             \
-    .outputs       = outputs,                            \
+    FILTER_INPUTS(inputs),                               \
+    FILTER_OUTPUTS(outputs),                             \
     .priv_class    = &name_##_class,                     \
     .process_command = process_command,                  \
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \

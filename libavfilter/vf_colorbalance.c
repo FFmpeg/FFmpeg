@@ -425,7 +425,6 @@ static const AVFilterPad colorbalance_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorbalance_outputs[] = {
@@ -434,7 +433,6 @@ static const AVFilterPad colorbalance_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_colorbalance = {
@@ -443,8 +441,8 @@ const AVFilter ff_vf_colorbalance = {
     .priv_size     = sizeof(ColorBalanceContext),
     .priv_class    = &colorbalance_class,
     .query_formats = query_formats,
-    .inputs        = colorbalance_inputs,
-    .outputs       = colorbalance_outputs,
+    FILTER_INPUTS(colorbalance_inputs),
+    FILTER_OUTPUTS(colorbalance_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

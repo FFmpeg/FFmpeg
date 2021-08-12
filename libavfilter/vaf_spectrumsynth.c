@@ -532,7 +532,6 @@ static const AVFilterPad spectrumsynth_inputs[] = {
         .name         = "phase",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad spectrumsynth_outputs[] = {
@@ -541,7 +540,6 @@ static const AVFilterPad spectrumsynth_outputs[] = {
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vaf_spectrumsynth = {
@@ -551,7 +549,7 @@ const AVFilter ff_vaf_spectrumsynth = {
     .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(SpectrumSynthContext),
-    .inputs        = spectrumsynth_inputs,
-    .outputs       = spectrumsynth_outputs,
+    FILTER_INPUTS(spectrumsynth_inputs),
+    FILTER_OUTPUTS(spectrumsynth_outputs),
     .priv_class    = &spectrumsynth_class,
 };

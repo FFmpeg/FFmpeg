@@ -518,7 +518,6 @@ static const AVFilterPad dnn_detect_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 static const AVFilterPad dnn_detect_outputs[] = {
@@ -526,7 +525,6 @@ static const AVFilterPad dnn_detect_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_dnn_detect = {
@@ -536,8 +534,8 @@ const AVFilter ff_vf_dnn_detect = {
     .init          = dnn_detect_init,
     .uninit        = dnn_detect_uninit,
     .query_formats = dnn_detect_query_formats,
-    .inputs        = dnn_detect_inputs,
-    .outputs       = dnn_detect_outputs,
+    FILTER_INPUTS(dnn_detect_inputs),
+    FILTER_OUTPUTS(dnn_detect_outputs),
     .priv_class    = &dnn_detect_class,
     .activate      = dnn_detect_activate,
 };

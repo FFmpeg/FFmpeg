@@ -427,7 +427,6 @@ static const AVFilterPad framerate_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad framerate_outputs[] = {
@@ -436,7 +435,6 @@ static const AVFilterPad framerate_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_framerate = {
@@ -447,8 +445,8 @@ const AVFilter ff_vf_framerate = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = framerate_inputs,
-    .outputs       = framerate_outputs,
+    FILTER_INPUTS(framerate_inputs),
+    FILTER_OUTPUTS(framerate_outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .activate      = activate,
 };

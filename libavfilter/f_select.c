@@ -473,7 +473,6 @@ static const AVFilterPad avfilter_af_aselect_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aselect = {
@@ -482,7 +481,7 @@ const AVFilter ff_af_aselect = {
     .init        = aselect_init,
     .uninit      = uninit,
     .priv_size   = sizeof(SelectContext),
-    .inputs      = avfilter_af_aselect_inputs,
+    FILTER_INPUTS(avfilter_af_aselect_inputs),
     .priv_class  = &aselect_class,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
@@ -529,7 +528,6 @@ static const AVFilterPad avfilter_vf_select_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_select = {
@@ -540,7 +538,7 @@ const AVFilter ff_vf_select = {
     .query_formats = query_formats,
     .priv_size     = sizeof(SelectContext),
     .priv_class    = &select_class,
-    .inputs        = avfilter_vf_select_inputs,
+    FILTER_INPUTS(avfilter_vf_select_inputs),
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 #endif /* CONFIG_SELECT_FILTER */

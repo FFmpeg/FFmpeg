@@ -167,7 +167,6 @@ static const AVFilterPad repeatfields_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad repeatfields_outputs[] = {
@@ -175,7 +174,6 @@ static const AVFilterPad repeatfields_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_repeatfields = {
@@ -183,7 +181,7 @@ const AVFilter ff_vf_repeatfields = {
     .description   = NULL_IF_CONFIG_SMALL("Hard repeat fields based on MPEG repeat field flag."),
     .priv_size     = sizeof(RepeatFieldsContext),
     .uninit        = uninit,
-    .inputs        = repeatfields_inputs,
-    .outputs       = repeatfields_outputs,
+    FILTER_INPUTS(repeatfields_inputs),
+    FILTER_OUTPUTS(repeatfields_outputs),
     .query_formats = query_formats,
 };

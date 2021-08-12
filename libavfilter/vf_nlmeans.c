@@ -563,7 +563,6 @@ static const AVFilterPad nlmeans_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad nlmeans_outputs[] = {
@@ -571,7 +570,6 @@ static const AVFilterPad nlmeans_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_nlmeans = {
@@ -581,8 +579,8 @@ const AVFilter ff_vf_nlmeans = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = nlmeans_inputs,
-    .outputs       = nlmeans_outputs,
+    FILTER_INPUTS(nlmeans_inputs),
+    FILTER_OUTPUTS(nlmeans_outputs),
     .priv_class    = &nlmeans_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

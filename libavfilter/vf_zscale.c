@@ -914,7 +914,6 @@ static const AVFilterPad avfilter_vf_zscale_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_vf_zscale_outputs[] = {
@@ -923,7 +922,6 @@ static const AVFilterPad avfilter_vf_zscale_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_zscale = {
@@ -934,7 +932,7 @@ const AVFilter ff_vf_zscale = {
     .priv_size       = sizeof(ZScaleContext),
     .priv_class      = &zscale_class,
     .uninit          = uninit,
-    .inputs          = avfilter_vf_zscale_inputs,
-    .outputs         = avfilter_vf_zscale_outputs,
+    FILTER_INPUTS(avfilter_vf_zscale_inputs),
+    FILTER_OUTPUTS(avfilter_vf_zscale_outputs),
     .process_command = process_command,
 };

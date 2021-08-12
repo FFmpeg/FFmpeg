@@ -376,7 +376,6 @@ static const AVFilterPad avfilter_af_aemphasis_inputs[] = {
         .config_props = config_input,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad avfilter_af_aemphasis_outputs[] = {
@@ -384,7 +383,6 @@ static const AVFilterPad avfilter_af_aemphasis_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aemphasis = {
@@ -394,8 +392,8 @@ const AVFilter ff_af_aemphasis = {
     .priv_class    = &aemphasis_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = avfilter_af_aemphasis_inputs,
-    .outputs       = avfilter_af_aemphasis_outputs,
+    FILTER_INPUTS(avfilter_af_aemphasis_inputs),
+    FILTER_OUTPUTS(avfilter_af_aemphasis_outputs),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                      AVFILTER_FLAG_SLICE_THREADS,

@@ -741,7 +741,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -749,7 +748,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_adeclick = {
@@ -761,8 +759,8 @@ const AVFilter ff_af_adeclick = {
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 
@@ -797,7 +795,7 @@ const AVFilter ff_af_adeclip = {
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

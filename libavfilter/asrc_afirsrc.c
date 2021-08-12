@@ -301,7 +301,6 @@ static const AVFilterPad afirsrc_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_asrc_afirsrc = {
@@ -312,6 +311,6 @@ const AVFilter ff_asrc_afirsrc = {
     .uninit        = uninit,
     .priv_size     = sizeof(AudioFIRSourceContext),
     .inputs        = NULL,
-    .outputs       = afirsrc_outputs,
+    FILTER_OUTPUTS(afirsrc_outputs),
     .priv_class    = &afirsrc_class,
 };

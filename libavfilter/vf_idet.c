@@ -425,7 +425,6 @@ static const AVFilterPad idet_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad idet_outputs[] = {
@@ -434,7 +433,6 @@ static const AVFilterPad idet_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_idet = {
@@ -444,7 +442,7 @@ const AVFilter ff_vf_idet = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = idet_inputs,
-    .outputs       = idet_outputs,
+    FILTER_INPUTS(idet_inputs),
+    FILTER_OUTPUTS(idet_outputs),
     .priv_class    = &idet_class,
 };

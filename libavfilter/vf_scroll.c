@@ -197,7 +197,6 @@ static const AVFilterPad scroll_inputs[] = {
         .config_props   = config_input,
         .filter_frame   = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad scroll_outputs[] = {
@@ -205,7 +204,6 @@ static const AVFilterPad scroll_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scroll = {
@@ -214,8 +212,8 @@ const AVFilter ff_vf_scroll = {
     .priv_size     = sizeof(ScrollContext),
     .priv_class    = &scroll_class,
     .query_formats = query_formats,
-    .inputs        = scroll_inputs,
-    .outputs       = scroll_outputs,
+    FILTER_INPUTS(scroll_inputs),
+    FILTER_OUTPUTS(scroll_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

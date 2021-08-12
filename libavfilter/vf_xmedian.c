@@ -383,7 +383,6 @@ static const AVFilterPad outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 #if CONFIG_XMEDIAN_FILTER
@@ -395,7 +394,7 @@ const AVFilter ff_vf_xmedian = {
     .priv_size     = sizeof(XMedianContext),
     .priv_class    = &xmedian_class,
     .query_formats = query_formats,
-    .outputs       = outputs,
+    FILTER_OUTPUTS(outputs),
     .preinit       = xmedian_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
@@ -460,7 +459,6 @@ static const AVFilterPad tmedian_inputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .filter_frame  = tmedian_filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad tmedian_outputs[] = {
@@ -469,7 +467,6 @@ static const AVFilterPad tmedian_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(tmedian);
@@ -480,8 +477,8 @@ const AVFilter ff_vf_tmedian = {
     .priv_size     = sizeof(XMedianContext),
     .priv_class    = &tmedian_class,
     .query_formats = query_formats,
-    .inputs        = tmedian_inputs,
-    .outputs       = tmedian_outputs,
+    FILTER_INPUTS(tmedian_inputs),
+    FILTER_OUTPUTS(tmedian_outputs),
     .init          = init,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,

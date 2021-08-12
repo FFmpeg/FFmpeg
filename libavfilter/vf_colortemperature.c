@@ -328,7 +328,6 @@ static const AVFilterPad inputs[] = {
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -336,7 +335,6 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ColorTemperatureContext, x)
@@ -357,8 +355,8 @@ const AVFilter ff_vf_colortemperature = {
     .priv_size     = sizeof(ColorTemperatureContext),
     .priv_class    = &colortemperature_class,
     .query_formats = query_formats,
-    .inputs        = inputs,
-    .outputs       = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

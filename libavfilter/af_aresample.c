@@ -329,7 +329,6 @@ static const AVFilterPad aresample_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad aresample_outputs[] = {
@@ -339,7 +338,6 @@ static const AVFilterPad aresample_outputs[] = {
         .request_frame = request_frame,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aresample = {
@@ -350,6 +348,6 @@ const AVFilter ff_af_aresample = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AResampleContext),
     .priv_class    = &aresample_class,
-    .inputs        = aresample_inputs,
-    .outputs       = aresample_outputs,
+    FILTER_INPUTS(aresample_inputs),
+    FILTER_OUTPUTS(aresample_outputs),
 };

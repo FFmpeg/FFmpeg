@@ -1096,7 +1096,6 @@ static const AVFilterPad stereo3d_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad stereo3d_outputs[] = {
@@ -1105,7 +1104,6 @@ static const AVFilterPad stereo3d_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_stereo3d = {
@@ -1114,8 +1112,8 @@ const AVFilter ff_vf_stereo3d = {
     .priv_size     = sizeof(Stereo3DContext),
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = stereo3d_inputs,
-    .outputs       = stereo3d_outputs,
+    FILTER_INPUTS(stereo3d_inputs),
+    FILTER_OUTPUTS(stereo3d_outputs),
     .priv_class    = &stereo3d_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

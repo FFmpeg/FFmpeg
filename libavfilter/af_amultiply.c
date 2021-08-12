@@ -179,7 +179,6 @@ static const AVFilterPad inputs[] = {
         .name = "multiply1",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -188,7 +187,6 @@ static const AVFilterPad outputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_amultiply = {
@@ -199,6 +197,6 @@ const AVFilter ff_af_amultiply = {
     .uninit         = uninit,
     .activate       = activate,
     .query_formats  = query_formats,
-    .inputs         = inputs,
-    .outputs        = outputs,
+    FILTER_INPUTS(inputs),
+    FILTER_OUTPUTS(outputs),
 };

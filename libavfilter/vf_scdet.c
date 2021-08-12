@@ -196,7 +196,6 @@ static const AVFilterPad scdet_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad scdet_outputs[] = {
@@ -204,7 +203,6 @@ static const AVFilterPad scdet_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_scdet = {
@@ -214,7 +212,7 @@ const AVFilter ff_vf_scdet = {
     .priv_class    = &scdet_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = scdet_inputs,
-    .outputs       = scdet_outputs,
+    FILTER_INPUTS(scdet_inputs),
+    FILTER_OUTPUTS(scdet_outputs),
     .activate      = activate,
 };

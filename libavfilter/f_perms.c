@@ -122,7 +122,6 @@ static const AVFilterPad aperms_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad aperms_outputs[] = {
@@ -130,7 +129,6 @@ static const AVFilterPad aperms_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_aperms = {
@@ -138,8 +136,8 @@ const AVFilter ff_af_aperms = {
     .description = NULL_IF_CONFIG_SMALL("Set permissions for the output audio frame."),
     .init        = init,
     .priv_size   = sizeof(PermsContext),
-    .inputs      = aperms_inputs,
-    .outputs     = aperms_outputs,
+    FILTER_INPUTS(aperms_inputs),
+    FILTER_OUTPUTS(aperms_outputs),
     .priv_class  = &aperms_class,
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
@@ -156,7 +154,6 @@ static const AVFilterPad perms_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad perms_outputs[] = {
@@ -164,7 +161,6 @@ static const AVFilterPad perms_outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_perms = {
@@ -172,8 +168,8 @@ const AVFilter ff_vf_perms = {
     .description = NULL_IF_CONFIG_SMALL("Set permissions for the output video frame."),
     .init        = init,
     .priv_size   = sizeof(PermsContext),
-    .inputs      = perms_inputs,
-    .outputs     = perms_outputs,
+    FILTER_INPUTS(perms_inputs),
+    FILTER_OUTPUTS(perms_outputs),
     .priv_class  = &perms_class,
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

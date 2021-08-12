@@ -343,7 +343,6 @@ static const AVFilterPad lenscorrection_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad lenscorrection_outputs[] = {
@@ -352,7 +351,6 @@ static const AVFilterPad lenscorrection_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_lenscorrection = {
@@ -360,8 +358,8 @@ const AVFilter ff_vf_lenscorrection = {
     .description   = NULL_IF_CONFIG_SMALL("Rectify the image by correcting for lens distortion."),
     .priv_size     = sizeof(LenscorrectionCtx),
     .query_formats = query_formats,
-    .inputs        = lenscorrection_inputs,
-    .outputs       = lenscorrection_outputs,
+    FILTER_INPUTS(lenscorrection_inputs),
+    FILTER_OUTPUTS(lenscorrection_outputs),
     .priv_class    = &lenscorrection_class,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,

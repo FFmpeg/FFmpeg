@@ -376,7 +376,6 @@ static const AVFilterPad extractplanes_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_extractplanes = {
@@ -387,7 +386,7 @@ const AVFilter ff_vf_extractplanes = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = extractplanes_inputs,
+    FILTER_INPUTS(extractplanes_inputs),
     .outputs       = NULL,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
@@ -411,7 +410,7 @@ const AVFilter ff_vf_alphaextract = {
     .init           = init_alphaextract,
     .uninit         = uninit,
     .query_formats  = query_formats,
-    .inputs         = extractplanes_inputs,
+    FILTER_INPUTS(extractplanes_inputs),
     .outputs        = NULL,
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

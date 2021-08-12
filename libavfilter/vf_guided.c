@@ -486,7 +486,6 @@ static const AVFilterPad guided_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_guided = {
@@ -499,7 +498,7 @@ const AVFilter ff_vf_guided = {
     .priv_class      = &guided_class,
     .activate        = activate,
     .inputs          = NULL,
-    .outputs         = guided_outputs,
+    FILTER_OUTPUTS(guided_outputs),
     .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
                        AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,

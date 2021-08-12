@@ -138,7 +138,6 @@ static const AVFilterPad bbox_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad bbox_outputs[] = {
@@ -147,7 +146,6 @@ static const AVFilterPad bbox_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_bbox = {
@@ -156,8 +154,8 @@ const AVFilter ff_vf_bbox = {
     .priv_size     = sizeof(BBoxContext),
     .priv_class    = &bbox_class,
     .query_formats = query_formats,
-    .inputs        = bbox_inputs,
-    .outputs       = bbox_outputs,
+    FILTER_INPUTS(bbox_inputs),
+    FILTER_OUTPUTS(bbox_outputs),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,
 };

@@ -206,7 +206,6 @@ static const AVFilterPad colorkey_opencl_inputs[] = {
         .filter_frame = filter_frame,
         .config_props = &ff_opencl_filter_config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad colorkey_opencl_outputs[] = {
@@ -215,7 +214,6 @@ static const AVFilterPad colorkey_opencl_outputs[] = {
         .type = AVMEDIA_TYPE_VIDEO,
         .config_props = &ff_opencl_filter_config_output,
     },
-    { NULL }
 };
 
 #define OFFSET(x) offsetof(ColorkeyOpenCLContext, x)
@@ -238,7 +236,7 @@ const AVFilter ff_vf_colorkey_opencl = {
     .init           = &ff_opencl_filter_init,
     .uninit         = &colorkey_opencl_uninit,
     .query_formats  = &ff_opencl_filter_query_formats,
-    .inputs         = colorkey_opencl_inputs,
-    .outputs        = colorkey_opencl_outputs,
+    FILTER_INPUTS(colorkey_opencl_inputs),
+    FILTER_OUTPUTS(colorkey_opencl_outputs),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE
 };

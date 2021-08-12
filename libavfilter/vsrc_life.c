@@ -436,7 +436,6 @@ static const AVFilterPad life_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL}
 };
 
 const AVFilter ff_vsrc_life = {
@@ -448,5 +447,5 @@ const AVFilter ff_vsrc_life = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = NULL,
-    .outputs       = life_outputs,
+    FILTER_OUTPUTS(life_outputs),
 };

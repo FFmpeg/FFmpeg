@@ -1242,7 +1242,6 @@ static const AVFilterPad minterpolate_inputs[] = {
         .filter_frame  = filter_frame,
         .config_props  = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad minterpolate_outputs[] = {
@@ -1251,7 +1250,6 @@ static const AVFilterPad minterpolate_outputs[] = {
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_vf_minterpolate = {
@@ -1261,6 +1259,6 @@ const AVFilter ff_vf_minterpolate = {
     .priv_class    = &minterpolate_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = minterpolate_inputs,
-    .outputs       = minterpolate_outputs,
+    FILTER_INPUTS(minterpolate_inputs),
+    FILTER_OUTPUTS(minterpolate_outputs),
 };

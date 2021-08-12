@@ -403,7 +403,6 @@ static const AVFilterPad audiovectorscope_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
     },
-    { NULL }
 };
 
 static const AVFilterPad audiovectorscope_outputs[] = {
@@ -412,7 +411,6 @@ static const AVFilterPad audiovectorscope_outputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_avf_avectorscope = {
@@ -422,7 +420,7 @@ const AVFilter ff_avf_avectorscope = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AudioVectorScopeContext),
     .activate      = activate,
-    .inputs        = audiovectorscope_inputs,
-    .outputs       = audiovectorscope_outputs,
+    FILTER_INPUTS(audiovectorscope_inputs),
+    FILTER_OUTPUTS(audiovectorscope_outputs),
     .priv_class    = &avectorscope_class,
 };

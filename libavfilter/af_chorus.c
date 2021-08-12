@@ -343,7 +343,6 @@ static const AVFilterPad chorus_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL }
 };
 
 static const AVFilterPad chorus_outputs[] = {
@@ -353,7 +352,6 @@ static const AVFilterPad chorus_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_output,
     },
-    { NULL }
 };
 
 const AVFilter ff_af_chorus = {
@@ -364,6 +362,6 @@ const AVFilter ff_af_chorus = {
     .priv_class    = &chorus_class,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = chorus_inputs,
-    .outputs       = chorus_outputs,
+    FILTER_INPUTS(chorus_inputs),
+    FILTER_OUTPUTS(chorus_outputs),
 };
