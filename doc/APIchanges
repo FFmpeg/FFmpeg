@@ -14,6 +14,10 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-08-17 - xxxxxxxxxx - lavu 57.4.101 - opt.h
+  av_opt_copy() now guarantees that allocated src and dst options
+  don't alias each other even on error.
+
 2021-08-14 - xxxxxxxxxx - lavu 57.4.100 - imgutils.h
   Add av_image_copy_plane_uc_from()
 
