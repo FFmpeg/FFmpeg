@@ -344,8 +344,22 @@ Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp
 Defaults to @samp{2}.
 
 @item duplex_mode
-Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Sets the decklink device duplex/profile mode. Must be @samp{unset}, @samp{half}, @samp{full},
+@samp{one_sub_device_full}, @samp{one_sub_device_half}, @samp{two_sub_device_full},
+@samp{four_sub_device_half}
 Defaults to @samp{unset}.
+
+Note: DeckLink SDK 11.0 have replaced the duplex property by a profile property.
+For the DeckLink Duo 2 and DeckLink Quad 2, a profile is shared between any 2
+sub-devices that utilize the same connectors. For the DeckLink 8K Pro, a profile
+is shared between all 4 sub-devices. So DeckLink 8K Pro support four profiles.
+
+Valid profile modes for DeckLink 8K Pro(with DeckLink SDK >= 11.0):
+@samp{one_sub_device_full}, @samp{one_sub_device_half}, @samp{two_sub_device_full},
+@samp{four_sub_device_half}
+
+Valid profile modes for DeckLink Quad 2 and DeckLink Duo 2:
+@samp{half}, @samp{full}
 
 @item timecode_format
 Timecode type to include in the frame and video stream metadata. Must be

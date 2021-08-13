@@ -208,6 +208,17 @@ static const BMDLinkConfiguration decklink_link_conf_map[] = {
     bmdLinkConfigurationQuadLink
 };
 
+#if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
+static const BMDProfileID decklink_profile_id_map[] = {
+    (BMDProfileID)0,
+    bmdProfileTwoSubDevicesHalfDuplex,
+    bmdProfileOneSubDeviceFullDuplex,
+    bmdProfileOneSubDeviceHalfDuplex,
+    bmdProfileTwoSubDevicesFullDuplex,
+    bmdProfileFourSubDevicesHalfDuplex,
+};
+#endif
+
 int ff_decklink_set_configs(AVFormatContext *avctx, decklink_direction_t direction);
 int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb_num, int tb_den, enum AVFieldOrder field_order, decklink_direction_t direction = DIRECTION_OUT);
 int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction);

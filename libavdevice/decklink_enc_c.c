@@ -31,10 +31,20 @@ static const AVOption options[] = {
     { "list_devices", "use ffmpeg -sinks decklink instead", OFFSET(list_devices), AV_OPT_TYPE_BOOL, { .i64 = 0   }, 0, 1, ENC | AV_OPT_FLAG_DEPRECATED},
     { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, ENC },
     { "preroll"     , "video preroll in seconds", OFFSET(preroll     ), AV_OPT_TYPE_DOUBLE, { .dbl = 0.5 }, 0, 5, ENC },
+#if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
+    { "duplex_mode" , "duplex mode"             , OFFSET(duplex_mode ), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 5, ENC, "duplex_mode"},
+#else
     { "duplex_mode" , "duplex mode"             , OFFSET(duplex_mode ), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 2, ENC, "duplex_mode"},
+#endif
     { "unset"       ,  NULL                     , 0                   , AV_OPT_TYPE_CONST , { .i64 = 0   }, 0, 0, ENC, "duplex_mode"},
     { "half"        ,  NULL                     , 0                   , AV_OPT_TYPE_CONST , { .i64 = 1   }, 0, 0, ENC, "duplex_mode"},
     { "full"        ,  NULL                     , 0                   , AV_OPT_TYPE_CONST , { .i64 = 2   }, 0, 0, ENC, "duplex_mode"},
+#if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
+    { "one_sub_device_full",      NULL           ,0                   , AV_OPT_TYPE_CONST , { .i64 = 2   }, 0, 0, ENC, "duplex_mode"},
+    { "one_sub_device_half",      NULL           ,0                   , AV_OPT_TYPE_CONST , { .i64 = 3   }, 0, 0, ENC, "duplex_mode"},
+    { "two_sub_device_full",      NULL           ,0                   , AV_OPT_TYPE_CONST , { .i64 = 4   }, 0, 0, ENC, "duplex_mode"},
+    { "four_sub_device_half",     NULL           ,0                   , AV_OPT_TYPE_CONST , { .i64 = 5   }, 0, 0, ENC, "duplex_mode"},
+#endif
     { "link" ,         "single/dual/quad SDI link configuration", OFFSET(link), AV_OPT_TYPE_INT, { .i64 = 0   }, 0, 3, ENC, "link"},
     { "unset"       ,  NULL                     , 0                   , AV_OPT_TYPE_CONST , { .i64 = 0   }, 0, 0, ENC, "link"},
     { "single"      ,  NULL                     , 0                   , AV_OPT_TYPE_CONST , { .i64 = 1   }, 0, 0, ENC, "link"},
