@@ -52,9 +52,9 @@ typedef struct SmcContext {
     GetByteContext gb;
 
     /* SMC color tables */
-    unsigned char color_pairs[COLORS_PER_TABLE * CPAIR];
-    unsigned char color_quads[COLORS_PER_TABLE * CQUAD];
-    unsigned char color_octets[COLORS_PER_TABLE * COCTET];
+    uint8_t color_pairs[COLORS_PER_TABLE * CPAIR];
+    uint8_t color_quads[COLORS_PER_TABLE * CQUAD];
+    uint8_t color_octets[COLORS_PER_TABLE * COCTET];
 
     uint32_t pal[256];
 } SmcContext;
@@ -86,14 +86,14 @@ static int smc_decode_stream(SmcContext *s)
     int i;
     int chunk_size;
     int buf_size = bytestream2_size(&s->gb);
-    unsigned char opcode;
+    uint8_t opcode;
     int n_blocks;
     unsigned int color_flags;
     unsigned int color_flags_a;
     unsigned int color_flags_b;
     unsigned int flag_mask;
 
-    unsigned char * const pixels = s->frame->data[0];
+    uint8_t * const pixels = s->frame->data[0];
 
     int image_size = height * s->frame->linesize[0];
     int row_ptr = 0;
