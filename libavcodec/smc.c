@@ -138,7 +138,7 @@ static int smc_decode_stream(SmcContext *s)
             return AVERROR_INVALIDDATA;
         }
 
-        opcode = bytestream2_get_byte(&s->gb);
+        opcode = bytestream2_get_byteu(&s->gb);
         switch (opcode & 0xF0) {
         /* skip n blocks */
         case 0x00:
