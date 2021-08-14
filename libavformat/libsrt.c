@@ -529,7 +529,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
 {
     SRTContext *s = h->priv_data;
     const char * p;
-    char buf[256];
+    char buf[1024];
     int ret = 0;
 
     if (srt_startup() < 0) {
