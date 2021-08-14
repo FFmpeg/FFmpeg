@@ -114,7 +114,7 @@ end:
 int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     int i=0;
     ThreadContext *c;
-
+    AVCodecContext *thread_avctx = NULL;
 
     if(   !(avctx->thread_type & FF_THREAD_FRAME)
        || !(avctx->codec->capabilities & AV_CODEC_CAP_INTRA_ONLY))
@@ -190,13 +190,14 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     for(i=0; i<avctx->thread_count ; i++){
         AVDictionary *tmp = NULL;
         void *tmpv;
-        AVCodecContext *thread_avctx = avcodec_alloc_context3(avctx->codec);
+        thread_avctx = avcodec_alloc_context3(avctx->codec);
         if(!thread_avctx)
             goto fail;
         tmpv = thread_avctx->priv_data;
         *thread_avctx = *avctx;
         thread_avctx->priv_data = tmpv;
         thread_avctx->internal = NULL;
+        thread_avctx->hw_frames_ctx = NULL;
         memcpy(thread_avctx->priv_data, avctx->priv_data, avctx->codec->priv_data_size);
         thread_avctx->thread_count = 1;
         thread_avctx->active_thread_type &= ~FF_THREAD_FRAME;
@@ -219,6 +220,8 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     return 0;
 fail:
+    avcodec_close(thread_avctx);
+    av_freep(&thread_avctx);
     avctx->thread_count = i;
     av_log(avctx, AV_LOG_ERROR, "ff_frame_thread_encoder_init failed\n");
     ff_frame_thread_encoder_free(avctx);
