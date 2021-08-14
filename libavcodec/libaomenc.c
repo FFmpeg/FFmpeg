@@ -599,7 +599,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_INFO, "%s\n", aom_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", aom_codec_build_config());
 
-    if ((res = aom_codec_enc_config_default(iface, &enccfg, 0)) != AOM_CODEC_OK) {
+    if ((res = aom_codec_enc_config_default(iface, &enccfg, ctx->usage)) != AOM_CODEC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Failed to get config: %s\n",
                aom_codec_err_to_string(res));
         return AVERROR(EINVAL);
@@ -622,8 +622,6 @@ static av_cold int aom_init(AVCodecContext *avctx,
     enccfg.g_timebase.den = avctx->time_base.den;
     enccfg.g_threads      =
         FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
-
-    enccfg.g_usage        = ctx->usage;
 
     if (ctx->lag_in_frames >= 0)
         enccfg.g_lag_in_frames = ctx->lag_in_frames;
