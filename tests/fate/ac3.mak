@@ -11,9 +11,8 @@ FATE_AC3 += fate-ac3-4.0-downmix-mono
 fate-ac3-4.0-downmix-mono: CMD = pcm -request_channel_layout 4 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
 fate-ac3-4.0-downmix-mono: REF = $(SAMPLES)/ac3/millers_crossing_4.0_mono_v2.pcm
 
-#request_channel_layout 3 -> left channel + right channel
 FATE_AC3 += fate-ac3-4.0-downmix-stereo
-fate-ac3-4.0-downmix-stereo: CMD = pcm -request_channel_layout 3 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
+fate-ac3-4.0-downmix-stereo: CMD = pcm -request_channel_layout stereo -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
 fate-ac3-4.0-downmix-stereo: REF = $(SAMPLES)/ac3/millers_crossing_4.0_stereo_v2.pcm
 
 FATE_AC3 += fate-ac3-5.1
@@ -21,11 +20,11 @@ fate-ac3-5.1: CMD = pcm -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
 fate-ac3-5.1: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small_v2.pcm
 
 FATE_AC3 += fate-ac3-5.1-downmix-mono
-fate-ac3-5.1-downmix-mono: CMD = pcm -request_channel_layout 4 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
+fate-ac3-5.1-downmix-mono: CMD = pcm -request_channel_layout FC -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
 fate-ac3-5.1-downmix-mono: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small_mono_v2.pcm
 
 FATE_AC3 += fate-ac3-5.1-downmix-stereo
-fate-ac3-5.1-downmix-stereo: CMD = pcm -request_channel_layout 3 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
+fate-ac3-5.1-downmix-stereo: CMD = pcm -request_channel_layout 2c -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
 fate-ac3-5.1-downmix-stereo: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small_stereo_v2.pcm
 
 FATE_AC3 += fate-ac3-fixed-2.0
@@ -33,7 +32,7 @@ fate-ac3-fixed-2.0: CMD = pcm -c ac3_fixed -i $(TARGET_SAMPLES)/ac3/monsters_inc
 fate-ac3-fixed-2.0: REF = $(SAMPLES)/ac3/monsters_inc_2.0_192_small_v2.pcm
 
 FATE_AC3 += fate-ac3-fixed-4.0-downmix-mono
-fate-ac3-fixed-4.0-downmix-mono: CMD = pcm -c ac3_fixed -request_channel_layout 4 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
+fate-ac3-fixed-4.0-downmix-mono: CMD = pcm -c ac3_fixed -request_channel_layout mono -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
 fate-ac3-fixed-4.0-downmix-mono: REF = $(SAMPLES)/ac3/millers_crossing_4.0_mono_v2.pcm
 
 FATE_AC3 += fate-ac3-fixed-5.1-downmix-mono
