@@ -27,12 +27,19 @@
 #include "internal.h"
 #include "video.h"
 
+typedef enum AnalyzeMode {
+    MANUAL,
+    AVERAGE,
+    NB_ANALYZE
+} AnalyzeMode;
+
 typedef struct ColorCorrectContext {
     const AVClass *class;
 
     float rl, bl;
     float rh, bh;
     float saturation;
+    int analyze;
 
     int depth;
 
@@ -40,9 +47,79 @@ typedef struct ColorCorrectContext {
     int planeheight[4];
     int planewidth[4];
 
+    float (*analyzeret)[2];
+
+    int (*do_analyze)(AVFilterContext *s, void *arg,
+                      int jobnr, int nb_jobs);
     int (*do_slice)(AVFilterContext *s, void *arg,
                     int jobnr, int nb_jobs);
 } ColorCorrectContext;
+
+static int average_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorCorrectContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const int depth = s->depth;
+    const float max = (1 << depth) - 1;
+    const float imax = 1.f / max;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int ulinesize = frame->linesize[1];
+    const int vlinesize = frame->linesize[2];
+    const uint8_t *uptr = (const uint8_t *)frame->data[1] + slice_start * ulinesize;
+    const uint8_t *vptr = (const uint8_t *)frame->data[2] + slice_start * vlinesize;
+    int sum_u = 0, sum_v = 0;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            sum_u += uptr[x];
+            sum_v += vptr[x];
+        }
+
+        uptr += ulinesize;
+        vptr += vlinesize;
+    }
+
+    s->analyzeret[jobnr][0] = imax * sum_u / (float)((slice_end - slice_start) * width) - 0.5f;
+    s->analyzeret[jobnr][1] = imax * sum_v / (float)((slice_end - slice_start) * width) - 0.5f;
+
+    return 0;
+}
+
+static int average_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorCorrectContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const int depth = s->depth;
+    const float max = (1 << depth) - 1;
+    const float imax = 1.f / max;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int ulinesize = frame->linesize[1] / 2;
+    const int vlinesize = frame->linesize[2] / 2;
+    const uint16_t *uptr = (const uint16_t *)frame->data[1] + slice_start * ulinesize;
+    const uint16_t *vptr = (const uint16_t *)frame->data[2] + slice_start * vlinesize;
+    int64_t sum_u = 0, sum_v = 0;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            sum_u += uptr[x];
+            sum_v += vptr[x];
+        }
+
+        uptr += ulinesize;
+        vptr += vlinesize;
+    }
+
+    s->analyzeret[jobnr][0] = imax * sum_u / (float)((slice_end - slice_start) * width) - 0.5f;
+    s->analyzeret[jobnr][1] = imax * sum_v / (float)((slice_end - slice_start) * width) - 0.5f;
+
+    return 0;
+}
 
 #define PROCESS()                            \
     float y = yptr[x * chroma_w] * imax;     \
@@ -139,9 +216,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     ColorCorrectContext *s = ctx->priv;
+    const int nb_threads = FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx));
 
-    ff_filter_execute(ctx, s->do_slice, frame, NULL,
-                      FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
+    if (s->analyze) {
+        float bl = 0.f, rl = 0.f;
+
+        ff_filter_execute(ctx, s->do_analyze, frame, NULL, nb_threads);
+
+        for (int i = 0; i < nb_threads; i++) {
+            bl += s->analyzeret[i][0];
+            rl += s->analyzeret[i][0];
+        }
+
+        bl /= nb_threads;
+        rl /= nb_threads;
+
+        s->bl = -bl;
+        s->rl = -rl;
+    }
+
+    ff_filter_execute(ctx, s->do_slice, frame, NULL, nb_threads);
 
     return ff_filter_frame(ctx->outputs[0], frame);
 }
@@ -176,6 +270,20 @@ static av_cold int config_input(AVFilterLink *inlink)
     s->depth = desc->comp[0].depth;
     s->do_slice = s->depth <= 8 ? colorcorrect_slice8 : colorcorrect_slice16;
 
+    s->analyzeret = av_calloc(inlink->h, sizeof(*s->analyzeret));
+    if (!s->analyzeret)
+        return AVERROR(ENOMEM);
+
+    switch (s->analyze) {
+    case MANUAL:
+        break;
+    case AVERAGE:
+        s->do_analyze = s->depth <= 8 ? average_slice8 : average_slice16;
+        break;
+    default:
+        return AVERROR_BUG;
+    }
+
     s->chroma_w = 1 << desc->log2_chroma_w;
     s->chroma_h = 1 << desc->log2_chroma_h;
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
@@ -184,6 +292,13 @@ static av_cold int config_input(AVFilterLink *inlink)
     s->planewidth[0] = s->planewidth[3] = inlink->w;
 
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    ColorCorrectContext *s = ctx->priv;
+
+    av_freep(&s->analyzeret);
 }
 
 static const AVFilterPad colorcorrect_inputs[] = {
@@ -214,6 +329,9 @@ static const AVOption colorcorrect_options[] = {
     { "rh", "set the red highlight spot",           OFFSET(rh), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, VF },
     { "bh", "set the blue highlight spot",          OFFSET(bh), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, VF },
     { "saturation", "set the amount of saturation", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl=1}, -3, 3, VF },
+    { "analyze", "set the analyze mode",            OFFSET(analyze), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_ANALYZE, VF, "analyze" },
+    {   "manual",  "manually set options", 0, AV_OPT_TYPE_CONST, {.i64=MANUAL},  0, 0, VF, "analyze" },
+    {   "average", "use average pixels",   0, AV_OPT_TYPE_CONST, {.i64=AVERAGE}, 0, 0, VF, "analyze" },
     { NULL }
 };
 
@@ -225,6 +343,7 @@ const AVFilter ff_vf_colorcorrect = {
     .priv_size     = sizeof(ColorCorrectContext),
     .priv_class    = &colorcorrect_class,
     .query_formats = query_formats,
+    .uninit        = uninit,
     .inputs        = colorcorrect_inputs,
     .outputs       = colorcorrect_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,

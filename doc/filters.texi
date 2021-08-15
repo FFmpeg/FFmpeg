@@ -8224,6 +8224,11 @@ Default value is 0.
 @item saturation
 Set the amount of saturation. Allowed range is from -3.0 to 3.0.
 Default value is 1.
+
+@item analyze
+If set to anything other than @code{manual} it will analyze every frame and use derived
+parameters for filtering output frame. Can be @code{manual} or @code{average}.
+Default value is @code{manual}.
 @end table
 
 @subsection Commands
