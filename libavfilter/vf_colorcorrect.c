@@ -42,6 +42,7 @@ typedef struct ColorCorrectContext {
     int analyze;
 
     int depth;
+    float max, imax;
 
     int chroma_w, chroma_h;
     int planeheight[4];
@@ -59,9 +60,7 @@ static int average_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 {
     ColorCorrectContext *s = ctx->priv;
     AVFrame *frame = arg;
-    const int depth = s->depth;
-    const float max = (1 << depth) - 1;
-    const float imax = 1.f / max;
+    const float imax = s->imax;
     const int width = s->planewidth[1];
     const int height = s->planeheight[1];
     const int slice_start = (height * jobnr) / nb_jobs;
@@ -92,9 +91,7 @@ static int average_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 {
     ColorCorrectContext *s = ctx->priv;
     AVFrame *frame = arg;
-    const int depth = s->depth;
-    const float max = (1 << depth) - 1;
-    const float imax = 1.f / max;
+    const float imax = s->imax;
     const int width = s->planewidth[1];
     const int height = s->planeheight[1];
     const int slice_start = (height * jobnr) / nb_jobs;
@@ -134,9 +131,8 @@ static int colorcorrect_slice8(AVFilterContext *ctx, void *arg, int jobnr, int n
 {
     ColorCorrectContext *s = ctx->priv;
     AVFrame *frame = arg;
-    const int depth = s->depth;
-    const float max = (1 << depth) - 1;
-    const float imax = 1.f / max;
+    const float max = s->max;
+    const float imax = s->imax;
     const int chroma_w = s->chroma_w;
     const int chroma_h = s->chroma_h;
     const int width = s->planewidth[1];
@@ -176,8 +172,8 @@ static int colorcorrect_slice16(AVFilterContext *ctx, void *arg, int jobnr, int 
     ColorCorrectContext *s = ctx->priv;
     AVFrame *frame = arg;
     const int depth = s->depth;
-    const float max = (1 << depth) - 1;
-    const float imax = 1.f / max;
+    const float max = s->max;
+    const float imax = s->imax;
     const int chroma_w = s->chroma_w;
     const int chroma_h = s->chroma_h;
     const int width = s->planewidth[1];
@@ -268,6 +264,8 @@ static av_cold int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     s->depth = desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
+    s->imax = 1.f / s->max;
     s->do_slice = s->depth <= 8 ? colorcorrect_slice8 : colorcorrect_slice16;
 
     s->analyzeret = av_calloc(inlink->h, sizeof(*s->analyzeret));
