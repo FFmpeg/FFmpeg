@@ -295,21 +295,6 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, const char *nam
     return NULL;
 }
 
-static void sanitize_channel_layouts(void *log, AVFilterChannelLayouts *l)
-{
-    if (!l)
-        return;
-    if (l->nb_channel_layouts) {
-        if (l->all_layouts || l->all_counts)
-            av_log(log, AV_LOG_WARNING, "All layouts set on non-empty list\n");
-        l->all_layouts = l->all_counts = 0;
-    } else {
-        if (l->all_counts && !l->all_layouts)
-            av_log(log, AV_LOG_WARNING, "All counts without all layouts\n");
-        l->all_layouts = 1;
-    }
-}
-
 static int filter_link_check_formats(void *log, AVFilterLink *link, AVFilterFormatsConfig *cfg)
 {
     int ret;
@@ -359,7 +344,7 @@ static int filter_check_formats(AVFilterContext *ctx)
 
 static int filter_query_formats(AVFilterContext *ctx)
 {
-    int ret, i;
+    int ret;
     AVFilterFormats *formats;
     AVFilterChannelLayouts *chlayouts;
     enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
@@ -375,11 +360,6 @@ static int filter_query_formats(AVFilterContext *ctx)
     ret = filter_check_formats(ctx);
     if (ret < 0)
         return ret;
-
-    for (i = 0; i < ctx->nb_inputs; i++)
-        sanitize_channel_layouts(ctx, ctx->inputs[i]->outcfg.channel_layouts);
-    for (i = 0; i < ctx->nb_outputs; i++)
-        sanitize_channel_layouts(ctx, ctx->outputs[i]->incfg.channel_layouts);
 
     formats = ff_all_formats(type);
     if ((ret = ff_set_common_formats(ctx, formats)) < 0)
