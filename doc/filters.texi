@@ -26897,7 +26897,8 @@ Set scale gain for calculating intensity color values.
 Default value is @code{1}.
 
 @item data
-Set which data to display. Can be @code{magnitude}, default or @code{phase}.
+Set which data to display. Can be @code{magnitude}, default or @code{phase},
+or unwrapped phase: @code{uphase}.
 
 @item rotation
 Set color rotation, must be in [-1.0, 1.0] range.

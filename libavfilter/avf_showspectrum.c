@@ -26,6 +26,7 @@
  * (by Michael Niedermayer) and lavfi/avf_showwaves (by Stefano Sabatini).
  */
 
+#include <float.h>
 #include <math.h>
 
 #include "libavutil/tx.h"
@@ -45,7 +46,7 @@
 #include "window_func.h"
 
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
-enum DataMode     { D_MAGNITUDE, D_PHASE, NB_DMODES };
+enum DataMode     { D_MAGNITUDE, D_PHASE, D_UPHASE, NB_DMODES };
 enum FrequencyScale { F_LINEAR, F_LOG, NB_FSCALES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, FOURTHRT, FIFTHRT, NB_SCALES };
 enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, FRUIT, COOL, MAGMA, GREEN, VIRIDIS, PLASMA, CIVIDIS, TERRAIN, NB_CLMODES };
@@ -178,6 +179,7 @@ static const AVOption showspectrum_options[] = {
     { "data", "set data mode", OFFSET(data), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_DMODES-1, FLAGS, "data" },
         { "magnitude", NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_MAGNITUDE}, 0, 0, FLAGS, "data" },
         { "phase",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_PHASE},     0, 0, FLAGS, "data" },
+        { "uphase",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_UPHASE},    0, 0, FLAGS, "data" },
     { "rotation", "color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { "start", "start frequency", OFFSET(start), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
@@ -976,6 +978,7 @@ static float get_value(AVFilterContext *ctx, int ch, int y)
         /* get magnitude */
         a = magnitudes[y];
         break;
+    case D_UPHASE:
     case D_PHASE:
         /* get phase */
         a = phases[y];
@@ -1320,6 +1323,46 @@ static int calc_channel_phases(AVFilterContext *ctx, void *arg, int jobnr, int n
     return 0;
 }
 
+static void unwrap(float *x, int N, float tol, float *mi, float *ma)
+{
+    const float rng = 2.f * M_PI;
+    float prev_p = 0.f;
+    float max = -FLT_MAX;
+    float min = FLT_MAX;
+
+    for (int i = 0; i < N; i++) {
+        const float d = x[FFMIN(i + 1, N)] - x[i];
+        const float p = ceilf(fabsf(d) / rng) * rng * (((d < tol) > 0.f) - ((d > -tol) > 0.f));
+
+        x[i] += p + prev_p;
+        prev_p += p;
+        max = fmaxf(x[i], max);
+        min = fminf(x[i], min);
+    }
+
+    *mi = min;
+    *ma = max;
+}
+
+static int calc_channel_uphases(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ShowSpectrumContext *s = ctx->priv;
+    const int h = s->orientation == VERTICAL ? s->h : s->w;
+    const int ch = jobnr;
+    float *phases = s->phases[ch];
+    float min, max, scale;
+    int y;
+
+    for (y = 0; y < h; y++)
+        phases[y] = PHASE(y, ch);
+    unwrap(phases, h, M_PI, &min, &max);
+    scale = 1.f / (max - min + FLT_MIN);
+    for (y = 0; y < h; y++)
+        phases[y] = fabsf((phases[y] - min) * scale);
+
+    return 0;
+}
+
 static void acalc_magnitudes(ShowSpectrumContext *s)
 {
     const double w = s->win_scale * (s->scale == LOG ? s->win_scale : 1);
@@ -1550,6 +1593,9 @@ static int activate(AVFilterContext *ctx)
 
         if (s->data == D_PHASE)
             ctx->internal->execute(ctx, calc_channel_phases, NULL, NULL, s->nb_display_channels);
+
+        if (s->data == D_UPHASE)
+            ctx->internal->execute(ctx, calc_channel_uphases, NULL, NULL, s->nb_display_channels);
 
         ret = plot_spectrum_column(inlink, fin);
 
