@@ -36,12 +36,16 @@ typedef struct ColorCorrectContext {
 
     int depth;
 
+    int chroma_w, chroma_h;
+    int planeheight[4];
+    int planewidth[4];
+
     int (*do_slice)(AVFilterContext *s, void *arg,
                     int jobnr, int nb_jobs);
 } ColorCorrectContext;
 
 #define PROCESS()                            \
-    float y = yptr[x] * imax;                \
+    float y = yptr[x * chroma_w] * imax;     \
     float u = uptr[x] * imax - .5f;          \
     float v = vptr[x] * imax - .5f;          \
     float nu, nv;                            \
@@ -56,14 +60,16 @@ static int colorcorrect_slice8(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int depth = s->depth;
     const float max = (1 << depth) - 1;
     const float imax = 1.f / max;
-    const int width = frame->width;
-    const int height = frame->height;
+    const int chroma_w = s->chroma_w;
+    const int chroma_h = s->chroma_h;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
     const int ylinesize = frame->linesize[0];
     const int ulinesize = frame->linesize[1];
     const int vlinesize = frame->linesize[2];
-    uint8_t *yptr = frame->data[0] + slice_start * ylinesize;
+    uint8_t *yptr = frame->data[0] + slice_start * chroma_h * ylinesize;
     uint8_t *uptr = frame->data[1] + slice_start * ulinesize;
     uint8_t *vptr = frame->data[2] + slice_start * vlinesize;
     const float saturation = s->saturation;
@@ -80,7 +86,7 @@ static int colorcorrect_slice8(AVFilterContext *ctx, void *arg, int jobnr, int n
             vptr[x] = av_clip_uint8((nv + 0.5f) * max);
         }
 
-        yptr += ylinesize;
+        yptr += ylinesize * chroma_h;
         uptr += ulinesize;
         vptr += vlinesize;
     }
@@ -95,14 +101,16 @@ static int colorcorrect_slice16(AVFilterContext *ctx, void *arg, int jobnr, int 
     const int depth = s->depth;
     const float max = (1 << depth) - 1;
     const float imax = 1.f / max;
-    const int width = frame->width;
-    const int height = frame->height;
+    const int chroma_w = s->chroma_w;
+    const int chroma_h = s->chroma_h;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
     const int ylinesize = frame->linesize[0] / 2;
     const int ulinesize = frame->linesize[1] / 2;
     const int vlinesize = frame->linesize[2] / 2;
-    uint16_t *yptr = (uint16_t *)frame->data[0] + slice_start * ylinesize;
+    uint16_t *yptr = (uint16_t *)frame->data[0] + slice_start * chroma_h * ylinesize;
     uint16_t *uptr = (uint16_t *)frame->data[1] + slice_start * ulinesize;
     uint16_t *vptr = (uint16_t *)frame->data[2] + slice_start * vlinesize;
     const float saturation = s->saturation;
@@ -119,7 +127,7 @@ static int colorcorrect_slice16(AVFilterContext *ctx, void *arg, int jobnr, int 
             vptr[x] = av_clip_uintp2_c((nv + 0.5f) * max, depth);
         }
 
-        yptr += ylinesize;
+        yptr += ylinesize * chroma_h;
         uptr += ulinesize;
         vptr += vlinesize;
     }
@@ -133,7 +141,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     ColorCorrectContext *s = ctx->priv;
 
     ctx->internal->execute(ctx, s->do_slice, frame, NULL,
-                           FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+                           FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(ctx->outputs[0], frame);
 }
@@ -141,9 +149,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static av_cold int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16,
-        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUV420P9,   AV_PIX_FMT_YUV422P9,   AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10,  AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_YUV422P12,  AV_PIX_FMT_YUV440P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV444P14,  AV_PIX_FMT_YUV422P14,  AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16,  AV_PIX_FMT_YUV422P16,  AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P9,  AV_PIX_FMT_YUVA422P9,  AV_PIX_FMT_YUVA444P9,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
+        AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
 
@@ -158,6 +175,13 @@ static av_cold int config_input(AVFilterLink *inlink)
 
     s->depth = desc->comp[0].depth;
     s->do_slice = s->depth <= 8 ? colorcorrect_slice8 : colorcorrect_slice16;
+
+    s->chroma_w = 1 << desc->log2_chroma_w;
+    s->chroma_h = 1 << desc->log2_chroma_h;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0] = s->planewidth[3] = inlink->w;
 
     return 0;
 }
