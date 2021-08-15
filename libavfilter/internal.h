@@ -61,6 +61,19 @@ struct AVFilterPad {
     enum AVMediaType type;
 
     /**
+     * The filter expects writable frames from its input link,
+     * duplicating data buffers if needed.
+     *
+     * input pads only.
+     */
+#define AVFILTERPAD_FLAG_NEEDS_WRITABLE                  (1 << 0)
+
+    /**
+     * A combination of AVFILTERPAD_FLAG_* flags.
+     */
+    int flags;
+
+    /**
      * Callback functions to get a video/audio buffers. If NULL,
      * the filter system will use ff_default_get_video_buffer() for video
      * and ff_default_get_audio_buffer() for audio.
@@ -110,14 +123,6 @@ struct AVFilterPad {
      * and another value on error.
      */
     int (*config_props)(AVFilterLink *link);
-
-    /**
-     * The filter expects writable frames from its input link,
-     * duplicating data buffers if needed.
-     *
-     * input pads only.
-     */
-    int needs_writable;
 };
 
 struct AVFilterGraphInternal {

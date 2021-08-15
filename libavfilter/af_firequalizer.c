@@ -939,10 +939,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 static const AVFilterPad firequalizer_inputs[] = {
     {
         .name           = "default",
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .config_props   = config_input,
         .filter_frame   = filter_frame,
         .type           = AVMEDIA_TYPE_AUDIO,
-        .needs_writable = 1,
     },
     { NULL }
 };

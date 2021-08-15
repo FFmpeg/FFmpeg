@@ -950,7 +950,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     if (!(filter_frame = dst->filter_frame))
         filter_frame = default_filter_frame;
 
-    if (dst->needs_writable) {
+    if (dst->flags & AVFILTERPAD_FLAG_NEEDS_WRITABLE) {
         ret = ff_inlink_make_frame_writable(link, &frame);
         if (ret < 0)
             goto fail;

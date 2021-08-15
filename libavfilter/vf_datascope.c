@@ -1130,9 +1130,9 @@ static const AVFilterPad oscilloscope_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame   = oscilloscope_filter_frame,
         .config_props   = oscilloscope_config_input,
-        .needs_writable = 1,
     },
     { NULL }
 };

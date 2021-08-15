@@ -176,8 +176,8 @@ static const AVFilterPad colorkey_inputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
+        .flags        = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame = filter_frame,
-        .needs_writable = 1,
     },
     { NULL }
 };

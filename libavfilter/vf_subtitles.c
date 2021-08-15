@@ -198,9 +198,9 @@ static const AVFilterPad ass_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
+        .flags            = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame     = filter_frame,
         .config_props     = config_input,
-        .needs_writable   = 1,
     },
     { NULL }
 };

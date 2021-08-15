@@ -551,9 +551,9 @@ static const AVFilterPad avfilter_vf_fade_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .config_props   = config_input,
         .filter_frame   = filter_frame,
-        .needs_writable = 1,
     },
     { NULL }
 };
