@@ -44,9 +44,8 @@ typedef struct ColorCorrectContext {
     float y = yptr[x] * imax;                \
     float u = uptr[x] * imax - .5f;          \
     float v = vptr[x] * imax - .5f;          \
-    float ny, nu, nv;                        \
+    float nu, nv;                            \
                                              \
-    ny = y;                                  \
     nu = saturation * (u + y * bd + bl);     \
     nv = saturation * (v + y * rd + rl);
 
@@ -77,7 +76,6 @@ static int colorcorrect_slice8(AVFilterContext *ctx, void *arg, int jobnr, int n
         for (int x = 0; x < width; x++) {
             PROCESS()
 
-            yptr[x] = av_clip_uint8( ny         * max);
             uptr[x] = av_clip_uint8((nu + 0.5f) * max);
             vptr[x] = av_clip_uint8((nv + 0.5f) * max);
         }
@@ -117,7 +115,6 @@ static int colorcorrect_slice16(AVFilterContext *ctx, void *arg, int jobnr, int 
         for (int x = 0; x < width; x++) {
             PROCESS()
 
-            yptr[x] = av_clip_uintp2_c( ny         * max, depth);
             uptr[x] = av_clip_uintp2_c((nu + 0.5f) * max, depth);
             vptr[x] = av_clip_uintp2_c((nv + 0.5f) * max, depth);
         }
