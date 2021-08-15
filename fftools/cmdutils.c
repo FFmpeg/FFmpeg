@@ -1713,7 +1713,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                 *(descr_cur++) = '>';
             }
             pad = i ? filter->outputs : filter->inputs;
-            nb_pads = avfilter_pad_count(pad);
+            nb_pads = avfilter_filter_pad_count(filter, i);
             for (j = 0; j < nb_pads; j++) {
                 if (descr_cur >= descr + sizeof(descr) - 4)
                     break;
@@ -1949,7 +1949,7 @@ static void show_help_filter(const char *name)
         printf("    slice threading supported\n");
 
     printf("    Inputs:\n");
-    count = avfilter_pad_count(f->inputs);
+    count = avfilter_filter_pad_count(f, 0);
     for (i = 0; i < count; i++) {
         printf("       #%d: %s (%s)\n", i, avfilter_pad_get_name(f->inputs, i),
                media_type_string(avfilter_pad_get_type(f->inputs, i)));
@@ -1960,7 +1960,7 @@ static void show_help_filter(const char *name)
         printf("        none (source filter)\n");
 
     printf("    Outputs:\n");
-    count = avfilter_pad_count(f->outputs);
+    count = avfilter_filter_pad_count(f, 1);
     for (i = 0; i < count; i++) {
         printf("       #%d: %s (%s)\n", i, avfilter_pad_get_name(f->outputs, i),
                media_type_string(avfilter_pad_get_type(f->outputs, i)));
