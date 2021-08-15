@@ -129,9 +129,9 @@ av_warn_unused_result
 AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts);
 
 /**
- * A helper for query_formats() which sets all links to the same list of channel
- * layouts/sample rates. If there are no links hooked to this filter, the list
- * is freed.
+ * Helpers for query_formats() which set all free audio links to the same list
+ * of channel layouts/sample rates. If there are no links hooked to this list,
+ * the list is freed.
  */
 av_warn_unused_result
 int ff_set_common_channel_layouts(AVFilterContext *ctx,
