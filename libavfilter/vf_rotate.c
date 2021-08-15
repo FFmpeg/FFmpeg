@@ -548,8 +548,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                           .yprime = -(outh-1) * c / 2,
                           .plane = plane, .c = c, .s = s };
 
-
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(outh, ff_filter_get_nb_threads(ctx)));
     }
 
     av_frame_free(&in);

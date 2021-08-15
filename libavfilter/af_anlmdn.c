@@ -309,7 +309,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (ret < 0)
             break;
 
-        ctx->internal->execute(ctx, filter_channel, out, NULL, inlink->channels);
+        ff_filter_execute(ctx, filter_channel, out, NULL, inlink->channels);
 
         av_audio_fifo_drain(s->fifo, s->H);
 

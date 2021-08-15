@@ -150,8 +150,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     td.out = out, td.in = in;
-    ctx->internal->execute(ctx, weave_slice, &td, NULL, FFMIN(s->planeheight[1],
-                                                              ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, weave_slice, &td, NULL,
+                      FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
     out->interlaced_frame = 1;

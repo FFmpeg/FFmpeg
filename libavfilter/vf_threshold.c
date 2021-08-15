@@ -146,8 +146,8 @@ static int process_frame(FFFrameSync *fs)
         td.threshold = threshold;
         td.min = min;
         td.max = max;
-        ctx->internal->execute(ctx, filter_slice, &td, NULL,
-                               FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
     }
 
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);

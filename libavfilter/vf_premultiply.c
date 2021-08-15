@@ -635,8 +635,8 @@ static int filter_frame(AVFilterContext *ctx,
         td.d = *out;
         td.a = alpha;
         td.m = base;
-        ctx->internal->execute(ctx, premultiply_slice, &td, NULL, FFMIN(s->height[0],
-                                                                        ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, premultiply_slice, &td, NULL,
+                          FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
     }
 
     return 0;

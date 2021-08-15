@@ -191,7 +191,8 @@ static void draw_sierpinski(AVFilterContext *ctx, AVFrame *frame)
             s->pos_y--;
     }
 
-    ctx->internal->execute(ctx, s->draw_slice, frame, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->draw_slice, frame, NULL,
+                      FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 }
 
 static int sierpinski_request_frame(AVFilterLink *link)

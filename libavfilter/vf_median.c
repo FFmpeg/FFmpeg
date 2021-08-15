@@ -230,7 +230,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, s->nb_threads);
+    ff_filter_execute(ctx, filter_slice, &td, NULL, s->nb_threads);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

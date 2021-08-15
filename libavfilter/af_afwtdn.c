@@ -1060,7 +1060,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, s->filter_channel, &td, NULL, inlink->channels);
+    ff_filter_execute(ctx, s->filter_channel, &td, NULL, inlink->channels);
     if (s->need_profile)
         s->got_profile = 1;
 

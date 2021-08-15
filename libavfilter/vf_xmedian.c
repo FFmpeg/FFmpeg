@@ -253,7 +253,8 @@ static int process_frame(FFFrameSync *fs)
     if (!ctx->is_disabled) {
         td.in = in;
         td.out = out;
-        ctx->internal->execute(ctx, s->median_frames, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->median_frames, &td, NULL,
+                          FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
     }
 
     return ff_filter_frame(outlink, out);
@@ -440,7 +441,8 @@ static int tmedian_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.out = out;
     td.in = s->frames;
-    ctx->internal->execute(ctx, s->median_frames, &td, NULL, FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->median_frames, &td, NULL,
+                      FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, out);
 }

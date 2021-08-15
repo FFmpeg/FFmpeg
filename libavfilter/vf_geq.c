@@ -449,7 +449,8 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (geq->needs_sum[plane])
             calculate_sums(geq, plane, width, height);
 
-        ctx->internal->execute(ctx, slice_geq_filter, &td, NULL, FFMIN(height, nb_threads));
+        ff_filter_execute(ctx, slice_geq_filter, &td,
+                          NULL, FFMIN(height, nb_threads));
     }
 
     av_frame_free(&geq->picref);

@@ -615,8 +615,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memcpy(dst, src, s->planewidth[i]);
 
         td.in = in; td.out = out; td.plane = i;
-        ctx->internal->execute(ctx, filter_slice, &td, NULL,
-                               FFMIN(s->planeheight[i], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(s->planeheight[i], ff_filter_get_nb_threads(ctx)));
 
         src = in->data[i] + (s->planeheight[i] - 1) * in->linesize[i];
         dst = out->data[i] + (s->planeheight[i] - 1) * out->linesize[i];

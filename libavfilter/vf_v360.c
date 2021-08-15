@@ -4887,7 +4887,7 @@ static int config_output(AVFilterLink *outlink)
 
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
-    ctx->internal->execute(ctx, v360_slice, NULL, NULL, s->nb_threads);
+    ff_filter_execute(ctx, v360_slice, NULL, NULL, s->nb_threads);
 
     return 0;
 }
@@ -4910,7 +4910,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.in = in;
     td.out = out;
 
-    ctx->internal->execute(ctx, s->remap_slice, &td, NULL, s->nb_threads);
+    ff_filter_execute(ctx, s->remap_slice, &td, NULL, s->nb_threads);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

@@ -250,8 +250,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->level = exp(s->level_db / 20. * M_LN10);
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(inlink->channels,
-                                                            ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, filter_channels, &td, NULL,
+                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
 
     s->in_samples += in->nb_samples;
 

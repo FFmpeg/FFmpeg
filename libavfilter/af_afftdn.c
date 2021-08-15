@@ -1224,8 +1224,8 @@ static int output_frame(AVFilterLink *inlink)
 
     s->block_count++;
     td.in = in;
-    ctx->internal->execute(ctx, filter_channel, &td, NULL,
-                           FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, filter_channel, &td, NULL,
+                      FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
     out = ff_get_audio_buffer(outlink, s->sample_advance);
     if (!out) {

@@ -1586,7 +1586,7 @@ static int filter_frame(AVFilterLink *inlink)
     if (ret < 0)
         return ret;
 
-    ctx->internal->execute(ctx, fft_channel, NULL, NULL, inlink->channels);
+    ff_filter_execute(ctx, fft_channel, NULL, NULL, inlink->channels);
 
     s->filter(ctx);
 
@@ -1594,7 +1594,7 @@ static int filter_frame(AVFilterLink *inlink)
     if (!out)
         return AVERROR(ENOMEM);
 
-    ctx->internal->execute(ctx, ifft_channel, out, NULL, outlink->channels);
+    ff_filter_execute(ctx, ifft_channel, out, NULL, outlink->channels);
 
     out->pts = s->pts;
     if (s->pts != AV_NOPTS_VALUE)

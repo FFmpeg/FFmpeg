@@ -105,8 +105,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return ff_filter_frame(outlink, out);
     }
 
-    ctx->internal->execute(ctx, s->maskfun, frame, NULL,
-                           FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->maskfun, frame, NULL,
+                      FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, frame);
 }

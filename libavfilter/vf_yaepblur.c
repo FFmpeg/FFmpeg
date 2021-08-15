@@ -253,12 +253,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         td.height       = s->planeheight[plane];
         td.src          = in->data[plane];
         td.src_linesize = in->linesize[plane];
-        ctx->internal->execute(ctx, s->pre_calculate_row, &td, NULL, FFMIN(td.height, nb_threads));
-        ctx->internal->execute(ctx, pre_calculate_col, &td, NULL, FFMIN(td.width,  nb_threads));
+        ff_filter_execute(ctx, s->pre_calculate_row, &td, NULL,
+                          FFMIN(td.height, nb_threads));
+        ff_filter_execute(ctx, pre_calculate_col, &td, NULL,
+                          FFMIN(td.width,  nb_threads));
 
         td.dst          = out->data[plane];
         td.dst_linesize = out->linesize[plane];
-        ctx->internal->execute(ctx, s->filter_slice, &td, NULL, FFMIN(td.height, nb_threads));
+        ff_filter_execute(ctx, s->filter_slice, &td, NULL,
+                          FFMIN(td.height, nb_threads));
     }
 
     if (out != in)

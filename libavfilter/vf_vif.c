@@ -331,12 +331,12 @@ static int compute_vif2(AVFilterContext *ctx,
             td.src_stride = curr_ref_stride;
             td.dst_stride = w;
             td.temp = temp;
-            ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+            ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
             td.src = curr_main_scale;
             td.dst = mu2;
             td.src_stride = curr_main_stride;
-            ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+            ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
             vif_dec2(mu1, ref_scale, buf_valid_w, buf_valid_h, w, w);
             vif_dec2(mu2, main_scale, buf_valid_w, buf_valid_h, w, w);
@@ -361,12 +361,12 @@ static int compute_vif2(AVFilterContext *ctx,
         td.src_stride = curr_ref_stride;
         td.dst_stride = w;
         td.temp = temp;
-        ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+        ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
         td.src = curr_main_scale;
         td.dst = mu2;
         td.src_stride = curr_main_stride;
-        ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+        ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
         vif_xx_yy_xy(mu1, mu2, mu1_sq, mu2_sq, mu1_mu2, w, h);
 
@@ -375,16 +375,16 @@ static int compute_vif2(AVFilterContext *ctx,
         td.src = ref_sq;
         td.dst = ref_sq_filt;
         td.src_stride = w;
-        ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+        ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
         td.src = main_sq;
         td.dst = main_sq_filt;
         td.src_stride = w;
-        ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+        ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
         td.src = ref_main;
         td.dst = ref_main_filt;
-        ctx->internal->execute(ctx, vif_filter1d, &td, NULL, nb_threads);
+        ff_filter_execute(ctx, vif_filter1d, &td, NULL, nb_threads);
 
         vif_statistic(mu1_sq, mu2_sq, mu1_mu2, ref_sq_filt, main_sq_filt,
                       ref_main_filt, &num, &den, w, h);

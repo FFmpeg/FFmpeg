@@ -763,7 +763,7 @@ static int filter_frame(AVFilterContext *ctx, AVFrame **out, AVFrame *in, AVFram
         td.ref = ref->data[p];
         td.ref_linesize = ref->linesize[p];
         td.plane = p;
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, nb_jobs);
+        ff_filter_execute(ctx, filter_slice, &td, NULL, nb_jobs);
 
         s->do_output(s, (*out)->data[p], (*out)->linesize[p], p, nb_jobs);
     }

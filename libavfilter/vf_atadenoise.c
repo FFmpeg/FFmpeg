@@ -488,7 +488,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         }
 
         td.in = in; td.out = out;
-        ctx->internal->execute(ctx, s->filter_slice, &td, NULL,
+        ff_filter_execute(ctx, s->filter_slice, &td, NULL,
                                FFMIN3(s->planeheight[1],
                                       s->planeheight[2],
                                       ff_filter_get_nb_threads(ctx)));

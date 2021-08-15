@@ -250,16 +250,16 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
     t.dstStride = w;                                                                    \
     t.src = I;                                                                          \
     t.dst = meanI;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
+    ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
     t.src = II;                                                                         \
     t.dst = meanII;                                                                     \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
+    ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
     t.src = P;                                                                          \
     t.dst = meanP;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
+    ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
     t.src = IP;                                                                         \
     t.dst = meanIP;                                                                     \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
+    ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
                                                                                         \
     for (int i = 0;i < h;i++) {                                                         \
       for (int j = 0;j < w;j++) {                                                       \
@@ -273,10 +273,10 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
                                                                                         \
     t.src = A;                                                                          \
     t.dst = meanA;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
+    ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
     t.src = B;                                                                          \
     t.dst = meanB;                                                                      \
-    ctx->internal->execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));          \
+    ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
                                                                                         \
     for (int i = 0;i < height;i++) {                                                    \
       for (int j = 0;j < width;j++) {                                                   \

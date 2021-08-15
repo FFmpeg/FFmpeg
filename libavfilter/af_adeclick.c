@@ -576,7 +576,7 @@ static int filter_frame(AVFilterLink *inlink)
         goto fail;
 
     td.out = out;
-    ret = ctx->internal->execute(ctx, filter_channel, &td, NULL, inlink->channels);
+    ret = ff_filter_execute(ctx, filter_channel, &td, NULL, inlink->channels);
     if (ret < 0)
         goto fail;
 

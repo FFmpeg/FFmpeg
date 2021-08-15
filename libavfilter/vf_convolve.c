@@ -472,8 +472,10 @@ static int do_convolve(FFFrameSync *fs)
         td.hdata = s->fft_hdata[plane];
         td.vdata = s->fft_vdata[plane];
 
-        ctx->internal->execute(ctx, fft_horizontal, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
-        ctx->internal->execute(ctx, fft_vertical, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, fft_horizontal, &td, NULL,
+                          FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, fft_vertical, &td, NULL,
+                          FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
         if ((!s->impulse && !s->got_impulse[plane]) || s->impulse) {
             if (s->depth == 8) {
@@ -498,8 +500,10 @@ static int do_convolve(FFFrameSync *fs)
             td.hdata = s->fft_hdata_impulse[plane];
             td.vdata = s->fft_vdata_impulse[plane];
 
-            ctx->internal->execute(ctx, fft_horizontal, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
-            ctx->internal->execute(ctx, fft_vertical, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, fft_horizontal, &td, NULL,
+                              FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, fft_vertical, &td, NULL,
+                              FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
             s->got_impulse[plane] = 1;
         }
@@ -507,13 +511,16 @@ static int do_convolve(FFFrameSync *fs)
         td.hdata = input;
         td.vdata = filter;
 
-        ctx->internal->execute(ctx, s->filter, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->filter, &td, NULL,
+                          FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
         td.hdata = s->fft_hdata[plane];
         td.vdata = s->fft_vdata[plane];
 
-        ctx->internal->execute(ctx, ifft_vertical, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
-        ctx->internal->execute(ctx, ifft_horizontal, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, ifft_vertical, &td, NULL,
+                          FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, ifft_horizontal, &td, NULL,
+                          FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
         get_output(s, s->fft_hdata[plane], mainpic, w, h, n, plane, 1.f / (n * n));
     }

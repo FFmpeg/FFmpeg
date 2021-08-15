@@ -132,6 +132,12 @@ struct AVFilterInternal {
     avfilter_execute_func *execute;
 };
 
+static av_always_inline int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,
+                                              void *arg, int *ret, int nb_jobs)
+{
+    return ctx->internal->execute(ctx, func, arg, ret, nb_jobs);
+}
+
 /**
  * Tell if an integer is contained in the provided -1-terminated list of integers.
  * This is useful for determining (for instance) if an AVPixelFormat is in an

@@ -455,8 +455,8 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
                 compute_ssd_integral_image(&s->dsp, s->ii, s->ii_lz_32,
                                            src, src_linesize,
                                            offx, offy, e, w, h);
-                ctx->internal->execute(ctx, nlmeans_slice, &td, NULL,
-                                       FFMIN(td.endy - td.starty, ff_filter_get_nb_threads(ctx)));
+                ff_filter_execute(ctx, nlmeans_slice, &td, NULL,
+                                  FFMIN(td.endy - td.starty, ff_filter_get_nb_threads(ctx)));
             }
         }
     }

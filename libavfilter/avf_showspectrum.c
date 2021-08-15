@@ -1412,7 +1412,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     /* initialize buffer for combining to black */
     clear_combine_buffer(s, z);
 
-    ctx->internal->execute(ctx, s->plot_channel, NULL, NULL, s->nb_display_channels);
+    ff_filter_execute(ctx, s->plot_channel, NULL, NULL, s->nb_display_channels);
 
     for (y = 0; y < z * 3; y++) {
         for (x = 0; x < s->nb_display_channels; x++) {
@@ -1586,16 +1586,16 @@ static int activate(AVFilterContext *ctx)
 
         av_assert0(fin->nb_samples == s->win_size);
 
-        ctx->internal->execute(ctx, run_channel_fft, fin, NULL, s->nb_display_channels);
+        ff_filter_execute(ctx, run_channel_fft, fin, NULL, s->nb_display_channels);
 
         if (s->data == D_MAGNITUDE)
-            ctx->internal->execute(ctx, calc_channel_magnitudes, NULL, NULL, s->nb_display_channels);
+            ff_filter_execute(ctx, calc_channel_magnitudes, NULL, NULL, s->nb_display_channels);
 
         if (s->data == D_PHASE)
-            ctx->internal->execute(ctx, calc_channel_phases, NULL, NULL, s->nb_display_channels);
+            ff_filter_execute(ctx, calc_channel_phases, NULL, NULL, s->nb_display_channels);
 
         if (s->data == D_UPHASE)
-            ctx->internal->execute(ctx, calc_channel_uphases, NULL, NULL, s->nb_display_channels);
+            ff_filter_execute(ctx, calc_channel_uphases, NULL, NULL, s->nb_display_channels);
 
         ret = plot_spectrum_column(inlink, fin);
 
@@ -1792,7 +1792,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                 }
             }
 
-            ctx->internal->execute(ctx, run_channel_fft, fin, NULL, s->nb_display_channels);
+            ff_filter_execute(ctx, run_channel_fft, fin, NULL, s->nb_display_channels);
             acalc_magnitudes(s);
 
             consumed += spf;

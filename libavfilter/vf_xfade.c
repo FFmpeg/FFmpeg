@@ -1830,7 +1830,8 @@ static int xfade_frame(AVFilterContext *ctx, AVFrame *a, AVFrame *b)
     av_frame_copy_props(out, a);
 
     td.xf[0] = a, td.xf[1] = b, td.out = out, td.progress = progress;
-    ctx->internal->execute(ctx, xfade_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, xfade_slice, &td, NULL,
+                      FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     out->pts = s->pts;
 

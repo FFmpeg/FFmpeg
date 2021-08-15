@@ -264,7 +264,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         td.out = out;
         td.in = s->frames;
-        ctx->internal->execute(ctx, amplify_frame, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, amplify_frame, &td, NULL,
+                          FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
     } else {
         out = av_frame_clone(s->frames[s->radius]);
         if (!out)

@@ -277,8 +277,8 @@ static int activate(AVFilterContext *ctx)
         frame->sample_aspect_ratio = (AVRational) {1, 1};
         frame->pts = s->pts++;
 
-        ctx->internal->execute(ctx, s->draw_slice, frame, NULL,
-                               FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->draw_slice, frame, NULL,
+                          FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
         return ff_filter_frame(outlink, frame);
     }

@@ -279,7 +279,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         td.h     = h;
         td.plane = i;
 
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
     if (yadif->current_field == YADIF_FIELD_END) {
         yadif->current_field = YADIF_FIELD_NORMAL;

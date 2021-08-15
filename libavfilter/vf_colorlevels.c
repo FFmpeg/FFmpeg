@@ -286,8 +286,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         break;
     }
 
-    ctx->internal->execute(ctx, s->colorlevels_slice, &td, NULL,
-                           FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->colorlevels_slice, &td, NULL,
+                      FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (in != out)
         av_frame_free(&in);

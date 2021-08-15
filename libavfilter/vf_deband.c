@@ -422,9 +422,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, s->deband, &td, NULL, FFMIN3(s->planeheight[1],
-                                                             s->planeheight[2],
-                                                             ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->deband, &td, NULL,
+                      FFMIN3(s->planeheight[1], s->planeheight[2],
+                             ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

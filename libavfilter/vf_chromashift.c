@@ -359,10 +359,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                             in->data[0], in->linesize[0],
                             s->linesize[0], s->height[0]);
     }
-    ctx->internal->execute(ctx, s->filter_slice, out, NULL,
-                           FFMIN3(s->height[1],
-                                  s->height[2],
-                                  ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->filter_slice, out, NULL,
+                      FFMIN3(s->height[1],
+                             s->height[2],
+                             ff_filter_get_nb_threads(ctx)));
     s->in = NULL;
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

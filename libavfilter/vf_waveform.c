@@ -3416,7 +3416,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             td.component = k;
             td.offset_y = offset_y;
             td.offset_x = offset_x;
-            ctx->internal->execute(ctx, s->waveform_slice, &td, NULL, ff_filter_get_nb_threads(ctx));
+            ff_filter_execute(ctx, s->waveform_slice, &td, NULL,
+                              ff_filter_get_nb_threads(ctx));
             switch (s->filter) {
             case LOWPASS:
                 if (s->bits <= 8)

@@ -188,8 +188,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     BlackDetectContext *s = ctx->priv;
     double picture_black_ratio = 0;
 
-    ctx->internal->execute(ctx, black_counter, picref, NULL,
-                           FFMIN(inlink->h, s->nb_threads));
+    ff_filter_execute(ctx, black_counter, picref, NULL,
+                      FFMIN(inlink->h, s->nb_threads));
 
     for (int i = 0; i < s->nb_threads; i++)
         s->nb_black_pixels += s->counter[i];

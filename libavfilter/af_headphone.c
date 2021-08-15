@@ -341,9 +341,9 @@ static int headphone_frame(HeadphoneContext *s, AVFrame *in, AVFilterLink *outli
     td.temp_afft = s->temp_afft;
 
     if (s->type == TIME_DOMAIN) {
-        ctx->internal->execute(ctx, headphone_convolute, &td, NULL, 2);
+        ff_filter_execute(ctx, headphone_convolute, &td, NULL, 2);
     } else {
-        ctx->internal->execute(ctx, headphone_fast_convolute, &td, NULL, 2);
+        ff_filter_execute(ctx, headphone_fast_convolute, &td, NULL, 2);
     }
     emms_c();
 

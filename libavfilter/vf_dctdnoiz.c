@@ -745,7 +745,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             .src = s->cbuf[0][plane],
             .dst = s->cbuf[1][plane],
         };
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, s->nb_threads);
+        ff_filter_execute(ctx, filter_slice, &td, NULL, s->nb_threads);
     }
     s->color_correlation(out->data, out->linesize[0],
                          s->cbuf[1], s->p_linesize,

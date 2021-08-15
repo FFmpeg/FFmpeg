@@ -275,7 +275,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     td.in = in;
     td.desc = desc;
     td.peak = peak;
-    ctx->internal->execute(ctx, tonemap_slice, &td, NULL, FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, tonemap_slice, &td, NULL,
+                      FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
 
     /* copy/generate alpha if needed */
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA && odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {

@@ -337,7 +337,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.out = out;
     td.direct = direct;
     /* one thread per plane */
-    ctx->internal->execute(ctx, do_denoise, &td, NULL, 3);
+    ff_filter_execute(ctx, do_denoise, &td, NULL, 3);
 
     if (ctx->is_disabled) {
         av_frame_free(&out);

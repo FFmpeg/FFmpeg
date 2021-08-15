@@ -203,8 +203,8 @@ static int activate(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         }
 
-        ctx->internal->execute(ctx, process_channels, out, NULL, FFMIN(ctx->outputs[0]->channels,
-                                                                       ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, process_channels, out, NULL,
+                          FFMIN(ctx->outputs[0]->channels, ff_filter_get_nb_threads(ctx)));
 
         out->pts = s->frame[0]->pts;
 

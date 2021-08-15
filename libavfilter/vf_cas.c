@@ -193,8 +193,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     s->in = in;
-    ctx->internal->execute(ctx, s->do_slice, out, NULL,
-                           FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->do_slice, out, NULL,
+                      FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
     av_frame_free(&in);
     s->in = NULL;
 

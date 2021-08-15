@@ -225,8 +225,8 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
     if (s->pts == AV_NOPTS_VALUE)
         s->pts = in->pts;
     s->in = in;
-    ctx->internal->execute(ctx, fir_channels, out, NULL, FFMIN(outlink->channels,
-                                                               ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, fir_channels, out, NULL,
+                      FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
     out->pts = s->pts;
     if (s->pts != AV_NOPTS_VALUE)

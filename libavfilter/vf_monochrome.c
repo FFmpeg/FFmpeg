@@ -214,10 +214,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterContext *ctx = inlink->dst;
     MonochromeContext *s = ctx->priv;
 
-    ctx->internal->execute(ctx, s->do_slice, frame, NULL,
-                           FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
-    ctx->internal->execute(ctx, s->clear_uv, frame, NULL,
-                           FFMIN(frame->height >> s->subh, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->do_slice, frame, NULL,
+                      FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->clear_uv, frame, NULL,
+                      FFMIN(frame->height >> s->subh, ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(ctx->outputs[0], frame);
 }

@@ -471,8 +471,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ReadEIA608Context *s = ctx->priv;
     int nb_found;
 
-    ctx->internal->execute(ctx, extract_lines, in, NULL, FFMIN(FFMAX(s->end - s->start + 1, 1),
-                                                               ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, extract_lines, in, NULL,
+                      FFMIN(FFMAX(s->end - s->start + 1, 1), ff_filter_get_nb_threads(ctx)));
 
     nb_found = 0;
     for (int i = 0; i < s->end - s->start + 1; i++) {

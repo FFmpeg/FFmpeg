@@ -400,8 +400,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         td.out = s->frame;
         td.nb_samples = av_sample_fmt_is_planar(in->format) ? ret : ret * in->channels;
         td.channels = channels;
-        ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(channels,
-                                                                ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_channels, &td, NULL,
+                          FFMIN(channels, ff_filter_get_nb_threads(ctx)));
 
         ret = swr_convert(s->down_ctx, (uint8_t**)out->extended_data, out->nb_samples,
                           (const uint8_t **)s->frame->extended_data, ret);
@@ -419,8 +419,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         td.out = out;
         td.nb_samples = nb_samples;
         td.channels = channels;
-        ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(channels,
-                                                                ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_channels, &td, NULL,
+                          FFMIN(channels, ff_filter_get_nb_threads(ctx)));
     }
 
     if (out != in)

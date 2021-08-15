@@ -191,8 +191,8 @@ static int process_frame(FFFrameSync *fs)
         td.ref = ref;
         td.dst = out;
 
-        ctx->internal->execute(ctx, threshold_slice, &td, NULL, FFMIN(s->planeheight[2],
-                                                                ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, threshold_slice, &td, NULL,
+                          FFMIN(s->planeheight[2], ff_filter_get_nb_threads(ctx)));
     }
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 

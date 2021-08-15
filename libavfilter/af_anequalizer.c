@@ -730,8 +730,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AVFilterLink *outlink = ctx->outputs[0];
 
     if (!ctx->is_disabled)
-        ctx->internal->execute(ctx, filter_channels, buf, NULL, FFMIN(inlink->channels,
-                                                                ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_channels, buf, NULL,
+                          FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
 
     if (s->draw_curves) {
         AVFrame *clone;

@@ -179,7 +179,8 @@ static int process_frame(FFFrameSync *fs)
         ff_fill_rectangle(&s->draw, &s->color, out->data, out->linesize,
                           0, 0, outlink->w, outlink->h);
 
-    ctx->internal->execute(ctx, process_slice, out, NULL, FFMIN(s->nb_inputs, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, process_slice, out, NULL,
+                      FFMIN(s->nb_inputs, ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, out);
 }

@@ -196,7 +196,8 @@ static int do_identity(FFFrameSync *fs)
         td.planeheight[c] = s->planeheight[c];
     }
 
-    ctx->internal->execute(ctx, s->filter_slice, &td, NULL, FFMIN(s->planeheight[1], s->nb_threads));
+    ff_filter_execute(ctx, s->filter_slice, &td, NULL,
+                      FFMIN(s->planeheight[1], s->nb_threads));
 
     for (int j = 0; j < s->nb_threads; j++) {
         for (int c = 0; c < s->nb_components; c++)

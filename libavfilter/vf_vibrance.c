@@ -285,8 +285,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     VibranceContext *s = avctx->priv;
     int res;
 
-    if (res = avctx->internal->execute(avctx, s->do_slice, frame, NULL,
-                                       FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
+    if (res = ff_filter_execute(avctx, s->do_slice, frame, NULL,
+                                FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
         return res;
 
     return ff_filter_frame(avctx->outputs[0], frame);

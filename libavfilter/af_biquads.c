@@ -797,7 +797,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     td.in = buf;
     td.out = out_buf;
-    ctx->internal->execute(ctx, filter_channel, &td, NULL, FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, filter_channel, &td, NULL,
+                      FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
     for (ch = 0; ch < outlink->channels; ch++) {
         if (s->cache[ch].clippings > 0)

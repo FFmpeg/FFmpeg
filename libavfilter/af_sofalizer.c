@@ -604,9 +604,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.temp_afft = s->temp_afft;
 
     if (s->type == TIME_DOMAIN) {
-        ctx->internal->execute(ctx, sofalizer_convolute, &td, NULL, 2);
+        ff_filter_execute(ctx, sofalizer_convolute, &td, NULL, 2);
     } else if (s->type == FREQUENCY_DOMAIN) {
-        ctx->internal->execute(ctx, sofalizer_fast_convolute, &td, NULL, 2);
+        ff_filter_execute(ctx, sofalizer_fast_convolute, &td, NULL, 2);
     }
     emms_c();
 

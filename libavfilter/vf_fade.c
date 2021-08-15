@@ -493,20 +493,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     if (s->factor < UINT16_MAX) {
         if (s->alpha) {
-            ctx->internal->execute(ctx, s->filter_slice_alpha, frame, NULL,
-                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, s->filter_slice_alpha, frame, NULL,
+                              FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else if (s->is_rgb && !s->black_fade) {
-            ctx->internal->execute(ctx, filter_slice_rgb, frame, NULL,
-                                   FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, filter_slice_rgb, frame, NULL,
+                              FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else {
             /* luma, or rgb plane in case of black */
-            ctx->internal->execute(ctx, s->filter_slice_luma, frame, NULL,
-                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, s->filter_slice_luma, frame, NULL,
+                              FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
             if (frame->data[1] && frame->data[2] && !s->is_rgb) {
                 /* chroma planes */
-                ctx->internal->execute(ctx, s->filter_slice_chroma, frame, NULL,
-                                    FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+                ff_filter_execute(ctx, s->filter_slice_chroma, frame, NULL,
+                                  FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
             }
         }
     }

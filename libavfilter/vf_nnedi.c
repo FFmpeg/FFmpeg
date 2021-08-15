@@ -671,7 +671,8 @@ static int get_frame(AVFilterContext *ctx, int is_second)
     dst->interlaced_frame = 0;
     dst->pts = s->pts;
 
-    ctx->internal->execute(ctx, filter_slice, dst, NULL, FFMIN(s->planeheight[1] / 2, s->nb_threads));
+    ff_filter_execute(ctx, filter_slice, dst, NULL,
+                      FFMIN(s->planeheight[1] / 2, s->nb_threads));
 
     if (s->field == -2 || s->field > 1)
         s->field_n = !s->field_n;

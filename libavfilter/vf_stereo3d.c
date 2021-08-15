@@ -937,8 +937,8 @@ copy:
             ThreadData td;
 
             td.ileft = ileft; td.iright = iright; td.out = out;
-            ctx->internal->execute(ctx, filter_slice, &td, NULL,
-                                   FFMIN(s->out.height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, filter_slice, &td, NULL,
+                              FFMIN(s->out.height, ff_filter_get_nb_threads(ctx)));
         }
         break;
     }

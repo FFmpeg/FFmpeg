@@ -164,7 +164,8 @@ static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         td.height = plane_h[i];
         td.dst_stride = out->linesize[i];
         td.src_stride = in->linesize[i];
-        ctx->internal->execute(ctx, s->unsharp_slice, &td, NULL, FFMIN(plane_h[i], s->nb_threads));
+        ff_filter_execute(ctx, s->unsharp_slice, &td, NULL,
+                          FFMIN(plane_h[i], s->nb_threads));
     }
     return 0;
 }

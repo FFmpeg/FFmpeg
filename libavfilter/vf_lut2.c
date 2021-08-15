@@ -316,7 +316,8 @@ static int process_frame(FFFrameSync *fs)
         td.out  = out;
         td.srcx = srcx;
         td.srcy = srcy;
-        ctx->internal->execute(ctx, s->lut2, &td, NULL, FFMIN(s->heightx[1], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->lut2, &td, NULL,
+                          FFMIN(s->heightx[1], ff_filter_get_nb_threads(ctx)));
     }
 
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
@@ -613,7 +614,8 @@ static int tlut2_filter_frame(AVFilterLink *inlink, AVFrame *frame)
             td.out  = out;
             td.srcx = frame;
             td.srcy = s->prev_frame;
-            ctx->internal->execute(ctx, s->lut2, &td, NULL, FFMIN(s->heightx[1], ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, s->lut2, &td, NULL,
+                              FFMIN(s->heightx[1], ff_filter_get_nb_threads(ctx)));
         }
         av_frame_free(&s->prev_frame);
         s->prev_frame = frame;

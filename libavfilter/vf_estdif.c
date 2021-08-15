@@ -441,8 +441,8 @@ static int filter(AVFilterContext *ctx, int is_second, AVFrame *in)
     out->pts = s->pts;
 
     td.out = out; td.in = in;
-    ctx->internal->execute(ctx, deinterlace_slice, &td, NULL,
-                           FFMIN(s->planeheight[1] / 2, s->nb_threads));
+    ff_filter_execute(ctx, deinterlace_slice, &td, NULL,
+                      FFMIN(s->planeheight[1] / 2, s->nb_threads));
 
     if (s->mode)
         s->field = !s->field;

@@ -1401,7 +1401,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, s->iir_channel, &td, NULL, outlink->channels);
+    ff_filter_execute(ctx, s->iir_channel, &td, NULL, outlink->channels);
 
     for (ch = 0; ch < outlink->channels; ch++) {
         if (s->iir[ch].clippings > 0)

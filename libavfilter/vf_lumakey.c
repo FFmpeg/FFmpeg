@@ -138,7 +138,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     if (ret = av_frame_make_writable(frame))
         return ret;
 
-    if (ret = ctx->internal->execute(ctx, s->do_lumakey_slice, frame, NULL, FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
+    if (ret = ff_filter_execute(ctx, s->do_lumakey_slice, frame, NULL,
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
         return ret;
 
     return ff_filter_frame(ctx->outputs[0], frame);

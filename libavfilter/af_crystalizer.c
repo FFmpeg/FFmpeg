@@ -398,8 +398,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.channels = in->channels;
     td.mult = ctx->is_disabled ? 0.f : s->mult;
     td.clip = s->clip;
-    ctx->internal->execute(ctx, s->filter, &td, NULL, FFMIN(inlink->channels,
-                                                            ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->filter, &td, NULL,
+                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

@@ -128,8 +128,8 @@ static void scroll(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     s->pos_h[0] = s->pos_h[3] = h_pos * s->bytes;
 
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, scroll_slice, &td, NULL,
-                           FFMIN(out->height, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, scroll_slice, &td, NULL,
+                      FFMIN(out->height, ff_filter_get_nb_threads(ctx)));
 
     s->h_pos += s->h_speed * in->width;
     s->v_pos += s->v_speed * in->height;
