@@ -58,9 +58,7 @@ static int query_formats(AVFilterContext *ctx)
                 (ret = ff_add_format(&formats, pix_fmt)) < 0)
                 return ret;
         }
-        if ((ret = ff_formats_ref(formats, &ctx->inputs[0]->outcfg.formats)) < 0 ||
-            (ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
-            return ret;
+        return ff_set_common_formats(ctx, formats);
     }
 
     return 0;
