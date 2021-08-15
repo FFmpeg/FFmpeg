@@ -623,7 +623,7 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 }
 
 #define SET_COMMON_FORMATS(ctx, fmts, ref_fn, unref_fn)             \
-    int count = 0, i;                                               \
+    int i;                                                          \
                                                                     \
     if (!fmts)                                                      \
         return AVERROR(ENOMEM);                                     \
@@ -634,7 +634,6 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
             if (ret < 0) {                                          \
                 return ret;                                         \
             }                                                       \
-            count++;                                                \
         }                                                           \
     }                                                               \
     for (i = 0; i < ctx->nb_outputs; i++) {                         \
@@ -643,13 +642,11 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
             if (ret < 0) {                                          \
                 return ret;                                         \
             }                                                       \
-            count++;                                                \
         }                                                           \
     }                                                               \
                                                                     \
-    if (!count) {                                                   \
+    if (!fmts->refcount)                                            \
         unref_fn(&fmts);                                            \
-    }                                                               \
                                                                     \
     return 0;
 
