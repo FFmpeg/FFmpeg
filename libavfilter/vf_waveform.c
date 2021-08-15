@@ -36,6 +36,12 @@ typedef struct ThreadData {
     int offset_x;
 } ThreadData;
 
+enum FitMode {
+    FM_NONE,
+    FM_SIZE,
+    NB_FITMODES
+};
+
 enum FilterType {
     LOWPASS,
     FLAT,
@@ -113,6 +119,7 @@ typedef struct WaveformContext {
     int            rgb;
     float          ftint[2];
     int            tint[2];
+    int            fitmode;
 
     int (*waveform_slice)(AVFilterContext *ctx, void *arg,
                           int jobnr, int nb_jobs);
@@ -184,6 +191,10 @@ static const AVOption waveform_options[] = {
     { "t0",    "set 1st tint", OFFSET(ftint[0]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
     { "tint1", "set 2nd tint", OFFSET(ftint[1]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
     { "t1",    "set 2nd tint", OFFSET(ftint[1]), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS},
+    { "fitmode", "set fit mode", OFFSET(fitmode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_FITMODES-1, FLAGS, "fitmode" },
+    { "fm", "set fit mode", OFFSET(fitmode), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_FITMODES-1, FLAGS, "fitmode" },
+        { "none", NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_NONE}, 0, 0, FLAGS, "fitmode" },
+        { "size", NULL, 0, AV_OPT_TYPE_CONST, {.i64=FM_SIZE}, 0, 0, FLAGS, "fitmode" },
     { NULL }
 };
 
@@ -3357,7 +3368,20 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    outlink->sample_aspect_ratio = (AVRational){1,1};
+    switch (s->fitmode) {
+    case FM_NONE:
+        outlink->sample_aspect_ratio = (AVRational){ 1, 1 };
+        break;
+    case FM_SIZE:
+        if (s->mode)
+            outlink->sample_aspect_ratio = (AVRational){ s->size * comp, inlink->h };
+        else
+            outlink->sample_aspect_ratio = (AVRational){ inlink->w, s->size * comp };
+        break;
+    }
+
+    av_reduce(&outlink->sample_aspect_ratio.num, &outlink->sample_aspect_ratio.den,
+               outlink->sample_aspect_ratio.num,  outlink->sample_aspect_ratio.den, INT_MAX);
 
     return 0;
 }
@@ -3461,6 +3485,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->graticulef(s, out);
 
     av_frame_free(&in);
+    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
     return ff_filter_frame(outlink, out);
 }
 

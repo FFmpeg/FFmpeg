@@ -22115,6 +22115,19 @@ Set background opacity.
 Set tint for output.
 Only used with lowpass filter and when display is not overlay and input
 pixel formats are not RGB.
+
+@item fitmode, fm
+Set sample aspect ratio of video output frames.
+Can be used to configure waveform so it is not
+streched too much in one of directions.
+
+@table @samp
+@item none
+Set sample aspect ration to 1/1.
+@item size
+Set sample aspect ratio to match input size of video
+@end table
+Default is @samp{none}.
 @end table
 
 @section weave, doubleweave
