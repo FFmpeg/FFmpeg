@@ -556,6 +556,11 @@ int avfilter_pad_count(const AVFilterPad *pads)
     av_assert0(!"AVFilterPad list not from a filter");
 }
 
+unsigned avfilter_filter_pad_count(const AVFilter *filter, int is_output)
+{
+    return is_output ? filter->nb_outputs : filter->nb_inputs;
+}
+
 static const char *default_filter_name(void *filter_ctx)
 {
     AVFilterContext *ctx = filter_ctx;

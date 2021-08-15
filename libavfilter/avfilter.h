@@ -326,6 +326,11 @@ typedef struct AVFilter {
 } AVFilter;
 
 /**
+ * Get the number of elements in an AVFilter's inputs or outputs array.
+ */
+unsigned avfilter_filter_pad_count(const AVFilter *filter, int is_output);
+
+/**
  * Process multiple parts of the frame concurrently.
  */
 #define AVFILTER_THREAD_SLICE (1 << 0)
