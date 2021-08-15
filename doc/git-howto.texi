@@ -217,15 +217,45 @@ git config --global core.editor
 or set by one of the following environment variables:
 @var{GIT_EDITOR}, @var{VISUAL} or @var{EDITOR}.
 
-Log messages should be concise but descriptive. Explain why you made a change,
-what you did will be obvious from the changes themselves most of the time.
-Saying just "bug fix" or "10l" is bad. Remember that people of varying skill
-levels look at and educate themselves while reading through your code. Don't
-include filenames in log messages, Git provides that information.
+@section Writing a commit message
 
-Possibly make the commit message have a terse, descriptive first line, an
-empty line and then a full description. The first line will be used to name
+Log messages should be concise but descriptive.
+
+The first line must contain the context, a colon and a very short
+summary of what the commit does. Details can be added, if necessary,
+separated by an empty line. These details should not exceed 60-72 characters
+per line, except when containing code.
+
+Example of a good commit message:
+
+@example
+avcodec/cbs: add a helper to read extradata within packet side data
+
+Using ff_cbs_read() on the raw buffer will not parse it as extradata,
+resulting in parsing errors for example when handling ISOBMFF avcC.
+This helper works around that.
+@end example
+
+@example
+ptr might be NULL
+@end example
+
+If the summary on the first line is not enough, in the body of the message,
+explain why you made a change, what you did will be obvious from the changes
+themselves most of the time. Saying just "bug fix" or "10l" is bad. Remember
+that people of varying skill levels look at and educate themselves while
+reading through your code. Don't include filenames in log messages except in
+the context, Git provides that information.
+
+If the commit fixes a registered issue, state it in a separate line of the
+body: @code{Fix Trac ticket #42.}
+
+The first line will be used to name
 the patch by @command{git format-patch}.
+
+Common mistakes for the first line, as seen in @command{git log --oneline}
+include: missing context at the beginning; description of what the code did
+before the patch; line too long or wrapped to the second line.
 
 @section Preparing a patchset
 
