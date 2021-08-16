@@ -157,6 +157,11 @@ static void libdav1d_init_params(AVCodecContext *c, const Dav1dSequenceHeader *s
         if (seq->equal_picture_interval)
             c->ticks_per_frame = seq->num_ticks_per_picture;
     }
+
+   if (seq->film_grain_present)
+       c->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
+   else
+       c->properties &= ~FF_CODEC_PROPERTY_FILM_GRAIN;
 }
 
 static av_cold int libdav1d_parse_extradata(AVCodecContext *c)
