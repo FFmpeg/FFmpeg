@@ -306,7 +306,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         pad.config_props  = movie_config_output_props;
         pad.request_frame = movie_request_frame;
-        if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
+        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
             av_freep(&pad.name);
             return ret;
         }

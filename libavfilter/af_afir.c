@@ -836,7 +836,7 @@ static av_cold int init(AVFilterContext *ctx)
         .type = AVMEDIA_TYPE_AUDIO,
     };
 
-    ret = ff_insert_inpad(ctx, 0, &pad);
+    ret = ff_append_inpad(ctx, &pad);
     if (ret < 0)
         return ret;
 
@@ -849,7 +849,7 @@ static av_cold int init(AVFilterContext *ctx)
         if (!pad.name)
             return AVERROR(ENOMEM);
 
-        ret = ff_insert_inpad(ctx, n + 1, &pad);
+        ret = ff_append_inpad(ctx, &pad);
         if (ret < 0) {
             av_freep(&pad.name);
             return ret;
@@ -862,7 +862,7 @@ static av_cold int init(AVFilterContext *ctx)
         .config_props  = config_output,
     };
 
-    ret = ff_insert_outpad(ctx, 0, &pad);
+    ret = ff_append_outpad(ctx, &pad);
     if (ret < 0)
         return ret;
 
@@ -873,7 +873,7 @@ static av_cold int init(AVFilterContext *ctx)
             .config_props = config_video,
         };
 
-        ret = ff_insert_outpad(ctx, 1, &vpad);
+        ret = ff_append_outpad(ctx, &vpad);
         if (ret < 0)
             return ret;
     }

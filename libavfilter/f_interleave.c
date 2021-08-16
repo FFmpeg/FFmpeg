@@ -173,7 +173,7 @@ static av_cold int init(AVFilterContext *ctx)
         default:
             av_assert0(0);
         }
-        if ((ret = ff_insert_inpad(ctx, i, &inpad)) < 0) {
+        if ((ret = ff_append_inpad(ctx, &inpad)) < 0) {
             av_freep(&inpad.name);
             return ret;
         }

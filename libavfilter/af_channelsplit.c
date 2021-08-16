@@ -97,9 +97,8 @@ static av_cold int init(AVFilterContext *ctx)
             s->map[i] = ret;
         }
 
-        if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
+        if ((ret = ff_append_outpad(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
 fail:

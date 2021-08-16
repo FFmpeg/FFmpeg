@@ -167,10 +167,10 @@ static int parse_definition(AVFilterContext *ctx, int nb_pads, int is_input, int
         av_log(ctx, AV_LOG_DEBUG, "Add %s pad %s\n", padtype, pad.name);
 
         if (is_input) {
-            ret = ff_insert_inpad(ctx, i, &pad);
+            ret = ff_append_inpad(ctx, &pad);
         } else {
             pad.config_props  = config_output;
-            ret = ff_insert_outpad(ctx, i, &pad);
+            ret = ff_append_outpad(ctx, &pad);
         }
 
         if (ret < 0) {

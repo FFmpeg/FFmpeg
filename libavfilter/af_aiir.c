@@ -1473,7 +1473,7 @@ static av_cold int init(AVFilterContext *ctx)
         .config_props = config_output,
     };
 
-    ret = ff_insert_outpad(ctx, 0, &pad);
+    ret = ff_append_outpad(ctx, &pad);
     if (ret < 0)
         return ret;
 
@@ -1484,7 +1484,7 @@ static av_cold int init(AVFilterContext *ctx)
             .config_props = config_video,
         };
 
-        ret = ff_insert_outpad(ctx, 1, &vpad);
+        ret = ff_append_outpad(ctx, &vpad);
         if (ret < 0)
             return ret;
     }

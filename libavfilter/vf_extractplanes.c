@@ -352,7 +352,7 @@ static av_cold int init(AVFilterContext *ctx)
         pad.type = AVMEDIA_TYPE_VIDEO;
         pad.config_props = config_output;
 
-        if ((ret = ff_insert_outpad(ctx, ctx->nb_outputs, &pad)) < 0) {
+        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
             av_freep(&pad.name);
             return ret;
         }

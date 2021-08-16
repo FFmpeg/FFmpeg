@@ -639,7 +639,7 @@ static av_cold int init(AVFilterContext *ctx)
 
         pad.filter_frame = filter_frame;
         pad.config_props = config_input;
-        if (ff_insert_inpad(ctx, ctx->nb_inputs, &pad) < 0) {
+        if (ff_append_inpad(ctx, &pad) < 0) {
             av_freep(&pad.name);
             return AVERROR(ENOMEM);
         }

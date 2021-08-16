@@ -442,7 +442,7 @@ static av_cold int init(AVFilterContext *ctx)
     pad.name         = "source";
     pad.config_props = config_input;
 
-    if ((ret = ff_insert_inpad(ctx, 0, &pad)) < 0)
+    if ((ret = ff_append_inpad(ctx, &pad)) < 0)
         return ret;
 
     if (s->guidance == ON) {
@@ -450,7 +450,7 @@ static av_cold int init(AVFilterContext *ctx)
         pad.name         = "guidance";
         pad.config_props = NULL;
 
-        if ((ret = ff_insert_inpad(ctx, 1, &pad)) < 0)
+        if ((ret = ff_append_inpad(ctx, &pad)) < 0)
             return ret;
     }
 

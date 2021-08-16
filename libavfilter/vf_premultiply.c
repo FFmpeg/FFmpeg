@@ -790,7 +790,7 @@ static av_cold int init(AVFilterContext *ctx)
     pad.name         = "main";
     pad.config_props = config_input;
 
-    if ((ret = ff_insert_inpad(ctx, 0, &pad)) < 0)
+    if ((ret = ff_append_inpad(ctx, &pad)) < 0)
         return ret;
 
     if (!s->inplace) {
@@ -798,7 +798,7 @@ static av_cold int init(AVFilterContext *ctx)
         pad.name         = "alpha";
         pad.config_props = NULL;
 
-        if ((ret = ff_insert_inpad(ctx, 1, &pad)) < 0)
+        if ((ret = ff_append_inpad(ctx, &pad)) < 0)
             return ret;
     }
 

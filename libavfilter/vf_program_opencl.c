@@ -287,7 +287,7 @@ static av_cold int program_opencl_init(AVFilterContext *avctx)
 
             input.config_props = &ff_opencl_filter_config_input;
 
-            err = ff_insert_inpad(avctx, i, &input);
+            err = ff_append_inpad(avctx, &input);
             if (err < 0) {
                 av_freep(&input.name);
                 return err;
