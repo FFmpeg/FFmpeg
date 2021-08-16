@@ -155,12 +155,25 @@ int main(int argc, char **argv)
     for (i = 0; i < 25; i++) {
         fflush(stdout);
 
-        /* make sure the frame data is writable */
+        /* Make sure the frame data is writable.
+           On the first round, the frame is fresh from av_frame_get_buffer()
+           and therefore we know it is writable.
+           But on the next rounds, encode() will have called
+           avcodec_send_frame(), and the codec may have kept a reference to
+           the frame in its internal structures, that makes the frame
+           unwritable.
+           av_frame_make_writable() checks that and allocates a new buffer
+           for the frame only if necessary.
+         */
         ret = av_frame_make_writable(frame);
         if (ret < 0)
             exit(1);
 
-        /* prepare a dummy image */
+        /* Prepare a dummy image.
+           In real code, this is where you would have your own logic for
+           filling the frame. FFmpeg does not care what you put in the
+           frame.
+         */
         /* Y */
         for (y = 0; y < c->height; y++) {
             for (x = 0; x < c->width; x++) {
@@ -185,7 +198,12 @@ int main(int argc, char **argv)
     /* flush the encoder */
     encode(c, NULL, pkt, f);
 
-    /* add sequence end code to have a real MPEG file */
+    /* Add sequence end code to have a real MPEG file.
+       It makes only sense because this tiny examples writes packets
+       directly. This is called "elementary stream" and only works for some
+       codecs. To create a valid file, you usually need to write packets
+       into a proper file format or protocol; see muxing.c.
+     */
     if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
         fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
