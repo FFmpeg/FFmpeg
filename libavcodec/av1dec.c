@@ -575,6 +575,11 @@ static int set_context_with_sequence(AVCodecContext *avctx,
         break;
     }
 
+    if (seq->film_grain_params_present)
+        avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
+    else
+        avctx->properties &= ~FF_CODEC_PROPERTY_FILM_GRAIN;
+
     if (avctx->width != width || avctx->height != height) {
         int ret = ff_set_dimensions(avctx, width, height);
         if (ret < 0)
