@@ -670,10 +670,8 @@ static av_cold int init(AVFilterContext *ctx)
         };
         if (!name)
             return AVERROR(ENOMEM);
-        if ((ret = ff_append_inpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
     if (s->type == TIME_DOMAIN) {
@@ -729,9 +727,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->temp_afft[1]);
     av_freep(&s->data_hrtf[0]);
     av_freep(&s->data_hrtf[1]);
-
-    for (unsigned i = 1; i < ctx->nb_inputs; i++)
-        av_freep(&ctx->input_pads[i].name);
 }
 
 #define OFFSET(x) offsetof(HeadphoneContext, x)
