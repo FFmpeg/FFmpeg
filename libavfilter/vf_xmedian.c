@@ -39,7 +39,7 @@ typedef struct XMedianContext {
     int planes;
     float percentile;
 
-    int tmedian;
+    int xmedian;
     int radius;
     int index;
     int depth;
@@ -92,15 +92,9 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx)
 {
     XMedianContext *s = ctx->priv;
-    int ret;
 
-    s->tmedian = !strcmp(ctx->filter->name, "tmedian");
-
-    if (!s->tmedian) {
-        s->radius = s->nb_inputs / 2;
-    } else {
+    if (!s->xmedian)
         s->nb_inputs = s->radius * 2 + 1;
-    }
 
     if (s->nb_inputs & 1)
         s->index = s->radius * 2.f * s->percentile;
@@ -109,18 +103,6 @@ static av_cold int init(AVFilterContext *ctx)
     s->frames = av_calloc(s->nb_inputs, sizeof(*s->frames));
     if (!s->frames)
         return AVERROR(ENOMEM);
-
-    for (int i = 0; i < s->nb_inputs && !s->tmedian; i++) {
-        AVFilterPad pad = { 0 };
-
-        pad.type = AVMEDIA_TYPE_VIDEO;
-        pad.name = av_asprintf("input%d", i);
-        if (!pad.name)
-            return AVERROR(ENOMEM);
-
-        if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
-            return ret;
-    }
 
     return 0;
 }
@@ -270,7 +252,7 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int i, ret;
 
-    for (int i = 1; i < s->nb_inputs && !s->tmedian; i++) {
+    for (int i = 1; i < s->nb_inputs && s->xmedian; i++) {
         if (ctx->inputs[i]->h != height || ctx->inputs[i]->w != width) {
             av_log(ctx, AV_LOG_ERROR, "Input %d size (%dx%d) does not match input %d size (%dx%d).\n", i, ctx->inputs[i]->w, ctx->inputs[i]->h, 0, width, height);
             return AVERROR(EINVAL);
@@ -297,7 +279,7 @@ static int config_output(AVFilterLink *outlink)
     s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
     s->height[0] = s->height[3] = inlink->h;
 
-    if (s->tmedian)
+    if (!s->xmedian)
         return 0;
 
     outlink->w          = width;
@@ -333,7 +315,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     ff_framesync_uninit(&s->fs);
 
-    for (int i = 0; i < s->nb_frames && s->frames && s->tmedian; i++)
+    for (int i = 0; i < s->nb_frames && s->frames && !s->xmedian; i++)
         av_frame_free(&s->frames[i]);
     av_freep(&s->frames);
 }
@@ -362,6 +344,31 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return 0;
 }
 
+#if CONFIG_XMEDIAN_FILTER
+static av_cold int xmedian_init(AVFilterContext *ctx)
+{
+    XMedianContext *s = ctx->priv;
+    int ret;
+
+    s->xmedian = 1;
+
+    s->radius = s->nb_inputs / 2;
+
+    for (int i = 0; i < s->nb_inputs; i++) {
+        AVFilterPad pad = { 0 };
+
+        pad.type = AVMEDIA_TYPE_VIDEO;
+        pad.name = av_asprintf("input%d", i);
+        if (!pad.name)
+            return AVERROR(ENOMEM);
+
+        if ((ret = ff_append_inpad_free_name(ctx, &pad)) < 0)
+            return ret;
+    }
+
+    return init(ctx);
+}
+
 #define OFFSET(x) offsetof(XMedianContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 #define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
@@ -381,7 +388,6 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-#if CONFIG_XMEDIAN_FILTER
 FRAMESYNC_DEFINE_CLASS(xmedian, XMedianContext, fs);
 
 const AVFilter ff_vf_xmedian = {
@@ -392,7 +398,7 @@ const AVFilter ff_vf_xmedian = {
     .query_formats = query_formats,
     FILTER_OUTPUTS(outputs),
     .preinit       = xmedian_framesync_preinit,
-    .init          = init,
+    .init          = xmedian_init,
     .uninit        = uninit,
     .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
