@@ -181,10 +181,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 
     ctx->params->vui.bEnableVideoSignalTypePresentFlag = 1;
 
-    ctx->params->vui.bEnableVideoFullRangeFlag = avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
-                                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
-                                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
-                                                 avctx->color_range == AVCOL_RANGE_JPEG;
+    if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED)
+        ctx->params->vui.bEnableVideoFullRangeFlag =
+            avctx->color_range == AVCOL_RANGE_JPEG;
+    else
+        ctx->params->vui.bEnableVideoFullRangeFlag =
+            (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_RGB) ||
+            avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
+            avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
+            avctx->pix_fmt == AV_PIX_FMT_YUVJ444P;
 
     if ((avctx->color_primaries <= AVCOL_PRI_SMPTE432 &&
          avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
