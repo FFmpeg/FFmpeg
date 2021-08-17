@@ -1068,7 +1068,6 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
         av_frame_free(&buf);
         return ret;
     }
-    buf->pts = frame0->pts;
 
     p = 0;
     for (i = 0; i < nb_frames; i++) {
