@@ -43,13 +43,14 @@
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {
-    int off = offsetof(H264Picture, tf) + sizeof(pic->tf);
+    int off = offsetof(H264Picture, tf_grain) + sizeof(pic->tf_grain);
     int i;
 
     if (!pic->f || !pic->f->buf[0])
         return;
 
     ff_thread_release_buffer(h->avctx, &pic->tf);
+    ff_thread_release_buffer(h->avctx, &pic->tf_grain);
     av_buffer_unref(&pic->hwaccel_priv_buf);
 
     av_buffer_unref(&pic->qscale_table_buf);
@@ -93,6 +94,7 @@ static void h264_copy_picture_params(H264Picture *dst, const H264Picture *src)
     dst->mb_width      = src->mb_width;
     dst->mb_height     = src->mb_height;
     dst->mb_stride     = src->mb_stride;
+    dst->needs_fg      = src->needs_fg;
 }
 
 int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
@@ -107,6 +109,14 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
         goto fail;
+
+    if (src->needs_fg) {
+        av_assert0(src->tf_grain.f == src->f_grain);
+        dst->tf_grain.f = dst->f_grain;
+        ret = ff_thread_ref_frame(&dst->tf_grain, &src->tf_grain);
+        if (ret < 0)
+            goto fail;
+    }
 
     dst->qscale_table_buf = av_buffer_ref(src->qscale_table_buf);
     dst->mb_type_buf      = av_buffer_ref(src->mb_type_buf);
@@ -158,6 +168,15 @@ int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture 
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
         goto fail;
+
+    if (src->needs_fg) {
+        av_assert0(src->tf_grain.f == src->f_grain);
+        dst->tf_grain.f = dst->f_grain;
+        ff_thread_release_buffer(h->avctx, &dst->tf_grain);
+        ret = ff_thread_ref_frame(&dst->tf_grain, &src->tf_grain);
+        if (ret < 0)
+            goto fail;
+    }
 
     ret  = av_buffer_replace(&dst->qscale_table_buf, src->qscale_table_buf);
     ret |= av_buffer_replace(&dst->mb_type_buf, src->mb_type_buf);
@@ -212,6 +231,7 @@ void ff_h264_set_erpic(ERPicture *dst, H264Picture *src)
 int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
 {
     AVCodecContext *const avctx = h->avctx;
+    H264Picture *cur = h->cur_pic_ptr;
     int err = 0;
     h->mb_y = 0;
 
@@ -230,10 +250,21 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
         if (err < 0)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
+    } else if (!in_setup && cur->needs_fg) {
+        AVFrameSideData *sd = av_frame_get_side_data(cur->f, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+        av_assert0(sd); // always present if `cur->needs_fg`
+        err = ff_h274_apply_film_grain(cur->f_grain, cur->f, &h->h274db,
+                                       (AVFilmGrainParams *) sd->data);
+        if (err < 0) {
+            av_log(h->avctx, AV_LOG_WARNING, "Failed synthesizing film "
+                   "grain, ignoring: %s\n", av_err2str(err));
+            cur->needs_fg = 0;
+            err = 0;
+        }
     }
 
     if (!in_setup && !h->droppable)
-        ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
+        ff_thread_report_progress(&cur->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
     emms_c();
 

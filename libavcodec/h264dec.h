@@ -43,6 +43,7 @@
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
+#include "h274.h"
 #include "internal.h"
 #include "mpegutils.h"
 #include "parser.h"
@@ -130,6 +131,9 @@ typedef struct H264Picture {
     AVFrame *f;
     ThreadFrame tf;
 
+    AVFrame *f_grain;
+    ThreadFrame tf_grain;
+
     AVBufferRef *qscale_table_buf;
     int8_t *qscale_table;
 
@@ -162,6 +166,7 @@ typedef struct H264Picture {
     int recovered;          ///< picture at IDR or recovery point + recovery count
     int invalid_gap;
     int sei_recovery_frame_cnt;
+    int needs_fg;           ///< whether picture needs film grain synthesis (see `f_grain`)
 
     AVBufferRef *pps_buf;
     const PPS   *pps;
@@ -349,6 +354,7 @@ typedef struct H264Context {
     H264DSPContext h264dsp;
     H264ChromaContext h264chroma;
     H264QpelContext h264qpel;
+    H274FilmGrainDatabase h274db;
 
     H264Picture DPB[H264_MAX_PICTURE_COUNT];
     H264Picture *cur_pic_ptr;

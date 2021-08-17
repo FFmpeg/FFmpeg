@@ -275,9 +275,22 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
     return 0;
 }
 
+static int h264_init_pic(H264Picture *pic)
+{
+    pic->f = av_frame_alloc();
+    if (!pic->f)
+        return AVERROR(ENOMEM);
+
+    pic->f_grain = av_frame_alloc();
+    if (!pic->f_grain)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static int h264_init_context(AVCodecContext *avctx, H264Context *h)
 {
-    int i;
+    int i, ret;
 
     h->avctx                 = avctx;
     h->cur_chroma_format_idc = -1;
@@ -308,23 +321,27 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     }
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-        h->DPB[i].f = av_frame_alloc();
-        if (!h->DPB[i].f)
-            return AVERROR(ENOMEM);
+        if ((ret = h264_init_pic(&h->DPB[i])) < 0)
+            return ret;
     }
 
-    h->cur_pic.f = av_frame_alloc();
-    if (!h->cur_pic.f)
-        return AVERROR(ENOMEM);
+    if ((ret = h264_init_pic(&h->cur_pic)) < 0)
+        return ret;
 
-    h->last_pic_for_ec.f = av_frame_alloc();
-    if (!h->last_pic_for_ec.f)
-        return AVERROR(ENOMEM);
+    if ((ret = h264_init_pic(&h->last_pic_for_ec)) < 0)
+        return ret;
 
     for (i = 0; i < h->nb_slice_ctx; i++)
         h->slice_ctx[i].h264 = h;
 
     return 0;
+}
+
+static void h264_free_pic(H264Context *h, H264Picture *pic)
+{
+    ff_h264_unref_picture(h, pic);
+    av_frame_free(&pic->f);
+    av_frame_free(&pic->f_grain);
 }
 
 static av_cold int h264_decode_end(AVCodecContext *avctx)
@@ -336,8 +353,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     ff_h264_free_tables(h);
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-        ff_h264_unref_picture(h, &h->DPB[i]);
-        av_frame_free(&h->DPB[i].f);
+        h264_free_pic(h, &h->DPB[i]);
     }
     memset(h->delayed_pic, 0, sizeof(h->delayed_pic));
 
@@ -351,10 +367,8 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
 
     ff_h2645_packet_uninit(&h->pkt);
 
-    ff_h264_unref_picture(h, &h->cur_pic);
-    av_frame_free(&h->cur_pic.f);
-    ff_h264_unref_picture(h, &h->last_pic_for_ec);
-    av_frame_free(&h->last_pic_for_ec.f);
+    h264_free_pic(h, &h->cur_pic);
+    h264_free_pic(h, &h->last_pic_for_ec);
 
     return 0;
 }
@@ -837,11 +851,13 @@ static int h264_export_enc_params(AVFrame *f, H264Picture *p)
 
 static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 {
-    AVFrame *src = srcp->f;
     int ret;
 
-    ret = av_frame_ref(dst, src);
+    ret = av_frame_ref(dst, srcp->needs_fg ? srcp->f_grain : srcp->f);
     if (ret < 0)
+        return ret;
+
+    if (srcp->needs_fg && (ret = av_frame_copy_props(dst, srcp->f)) < 0)
         return ret;
 
     av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(&h->sei.frame_packing), 0);
@@ -854,6 +870,9 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
         if (ret < 0)
             goto fail;
     }
+
+    if (!(h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))
+        av_frame_remove_side_data(dst, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
 
     return 0;
 fail:
