@@ -137,10 +137,8 @@ static av_cold int init(AVFilterContext *ctx, enum AVMediaType type)
         if (!pad.name)
             return AVERROR(ENOMEM);
 
-        if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
-            av_freep(&pad.name);
+        if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
     return 0;
@@ -245,9 +243,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     SegmentContext *s = ctx->priv;
 
     av_freep(&s->points);
-
-    for (unsigned i = 0; i < ctx->nb_outputs; i++)
-        av_freep(&ctx->output_pads[i].name);
 }
 
 #define OFFSET(x) offsetof(SegmentContext, x)
