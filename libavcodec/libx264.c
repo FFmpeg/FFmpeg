@@ -857,10 +857,12 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.i_slice_count  = avctx->slices;
 
-    x4->params.vui.b_fullrange = avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
-                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
-                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
-                                 avctx->color_range == AVCOL_RANGE_JPEG;
+    if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED)
+        x4->params.vui.b_fullrange = avctx->color_range == AVCOL_RANGE_JPEG;
+    else if (avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
+             avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
+             avctx->pix_fmt == AV_PIX_FMT_YUVJ444P)
+        x4->params.vui.b_fullrange = 1;
 
     if (avctx->colorspace != AVCOL_SPC_UNSPECIFIED)
         x4->params.vui.i_colmatrix = avctx->colorspace;
