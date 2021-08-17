@@ -404,7 +404,7 @@ static const AVFilterPad hwmap_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = hwmap_get_buffer,
+        .get_buffer.video = hwmap_get_buffer,
         .filter_frame     = hwmap_filter_frame,
     },
     { NULL }

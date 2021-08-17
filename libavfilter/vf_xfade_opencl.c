@@ -402,13 +402,13 @@ static const AVFilterPad xfade_opencl_inputs[] = {
     {
         .name             = "main",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = get_video_buffer,
+        .get_buffer.video = get_video_buffer,
         .config_props     = &ff_opencl_filter_config_input,
     },
     {
         .name             = "xfade",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = get_video_buffer,
+        .get_buffer.video = get_video_buffer,
         .config_props     = &ff_opencl_filter_config_input,
     },
     { NULL }

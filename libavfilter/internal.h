@@ -61,20 +61,18 @@ struct AVFilterPad {
     enum AVMediaType type;
 
     /**
-     * Callback function to get a video buffer. If NULL, the filter system will
-     * use ff_default_get_video_buffer().
+     * Callback functions to get a video/audio buffers. If NULL,
+     * the filter system will use ff_default_get_video_buffer() for video
+     * and ff_default_get_audio_buffer() for audio.
      *
-     * Input video pads only.
-     */
-    AVFrame *(*get_video_buffer)(AVFilterLink *link, int w, int h);
-
-    /**
-     * Callback function to get an audio buffer. If NULL, the filter system will
-     * use ff_default_get_audio_buffer().
+     * The state of the union is determined by type.
      *
-     * Input audio pads only.
+     * Input pads only.
      */
-    AVFrame *(*get_audio_buffer)(AVFilterLink *link, int nb_samples);
+    union {
+        AVFrame *(*video)(AVFilterLink *link, int w, int h);
+        AVFrame *(*audio)(AVFilterLink *link, int nb_samples);
+    } get_buffer;
 
     /**
      * Filtering callback. This is where a filter receives a frame with

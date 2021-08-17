@@ -623,7 +623,7 @@ static const AVFilterPad cudascale_inputs[] = {
         .name        = "default",
         .type        = AVMEDIA_TYPE_VIDEO,
         .filter_frame = cudascale_filter_frame,
-        .get_video_buffer = cudascale_get_video_buffer,
+        .get_buffer.video = cudascale_get_video_buffer,
     },
     { NULL }
 };
