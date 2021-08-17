@@ -25715,7 +25715,7 @@ Split input audio stream into three output audio streams, starting at start of i
 and storing that in 1st output audio stream, then following at 60th second and storing than in 2nd
 output audio stream, and last after 150th second of input audio stream store in 3rd output audio stream:
 @example
-asegment=timestamps="60 | 150"
+asegment=timestamps="60|150"
 @end example
 
 @end itemize
