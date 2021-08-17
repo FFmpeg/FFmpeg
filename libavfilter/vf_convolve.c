@@ -23,7 +23,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 
 #include "avfilter.h"
 #include "formats.h"
@@ -37,18 +37,24 @@ typedef struct ConvolveContext {
     const AVClass *class;
     FFFrameSync fs;
 
-    FFTContext *fft[4][MAX_THREADS];
-    FFTContext *ifft[4][MAX_THREADS];
+    AVTXContext *fft[4][MAX_THREADS];
+    AVTXContext *ifft[4][MAX_THREADS];
 
-    int fft_bits[4];
+    av_tx_fn tx_fn[4];
+    av_tx_fn itx_fn[4];
+
     int fft_len[4];
     int planewidth[4];
     int planeheight[4];
 
-    FFTComplex *fft_hdata[4];
-    FFTComplex *fft_vdata[4];
-    FFTComplex *fft_hdata_impulse[4];
-    FFTComplex *fft_vdata_impulse[4];
+    AVComplexFloat *fft_hdata_in[4];
+    AVComplexFloat *fft_vdata_in[4];
+    AVComplexFloat *fft_hdata_out[4];
+    AVComplexFloat *fft_vdata_out[4];
+    AVComplexFloat *fft_hdata_impulse_in[4];
+    AVComplexFloat *fft_vdata_impulse_in[4];
+    AVComplexFloat *fft_hdata_impulse_out[4];
+    AVComplexFloat *fft_vdata_impulse_out[4];
 
     int depth;
     int planes;
@@ -102,7 +108,7 @@ static int config_input_main(AVFilterLink *inlink)
 {
     ConvolveContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int fft_bits, i;
+    int i;
 
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0] = s->planewidth[3] = inlink->w;
@@ -117,21 +123,30 @@ static int config_input_main(AVFilterLink *inlink)
         int h = s->planeheight[i];
         int n = FFMAX(w, h);
 
-        for (fft_bits = 1; 1 << fft_bits < n; fft_bits++);
+        s->fft_len[i] = 1 << (av_log2(2 * n - 1));
 
-        s->fft_bits[i] = fft_bits;
-        s->fft_len[i] = 1 << s->fft_bits[i];
-
-        if (!(s->fft_hdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_hdata_in[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_vdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_hdata_out[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_hdata_impulse[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_vdata_in[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_vdata_impulse[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_vdata_out[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->fft_hdata_impulse_in[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->fft_vdata_impulse_in[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->fft_hdata_impulse_out[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->fft_vdata_impulse_out[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(AVComplexFloat))))
             return AVERROR(ENOMEM);
     }
 
@@ -156,7 +171,8 @@ static int config_input_impulse(AVFilterLink *inlink)
 }
 
 typedef struct ThreadData {
-    FFTComplex *hdata, *vdata;
+    AVComplexFloat *hdata_in, *vdata_in;
+    AVComplexFloat *hdata_out, *vdata_out;
     int plane, n;
 } ThreadData;
 
@@ -164,7 +180,8 @@ static int fft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 {
     ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
-    FFTComplex *hdata = td->hdata;
+    AVComplexFloat *hdata_in = td->hdata_in;
+    AVComplexFloat *hdata_out = td->hdata_out;
     const int plane = td->plane;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
@@ -172,14 +189,13 @@ static int fft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     int y;
 
     for (y = start; y < end; y++) {
-        av_fft_permute(s->fft[plane][jobnr], hdata + y * n);
-        av_fft_calc(s->fft[plane][jobnr], hdata + y * n);
+        s->tx_fn[plane](s->fft[plane][jobnr], hdata_out + y * n, hdata_in + y * n, sizeof(float));
     }
 
     return 0;
 }
 
-static void get_input(ConvolveContext *s, FFTComplex *fft_hdata,
+static void get_input(ConvolveContext *s, AVComplexFloat *fft_hdata,
                       AVFrame *in, int w, int h, int n, int plane, float scale)
 {
     const int iw = (n - w) / 2, ih = (n - h) / 2;
@@ -258,8 +274,9 @@ static int fft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
-    FFTComplex *hdata = td->hdata;
-    FFTComplex *vdata = td->vdata;
+    AVComplexFloat *hdata = td->hdata_out;
+    AVComplexFloat *vdata_in = td->vdata_in;
+    AVComplexFloat *vdata_out = td->vdata_out;
     const int plane = td->plane;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
@@ -268,12 +285,11 @@ static int fft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
     for (y = start; y < end; y++) {
         for (x = 0; x < n; x++) {
-            vdata[y * n + x].re = hdata[x * n + y].re;
-            vdata[y * n + x].im = hdata[x * n + y].im;
+            vdata_in[y * n + x].re = hdata[x * n + y].re;
+            vdata_in[y * n + x].im = hdata[x * n + y].im;
         }
 
-        av_fft_permute(s->fft[plane][jobnr], vdata + y * n);
-        av_fft_calc(s->fft[plane][jobnr], vdata + y * n);
+        s->tx_fn[plane](s->fft[plane][jobnr], vdata_out + y * n, vdata_in + y * n, sizeof(float));
     }
 
     return 0;
@@ -283,8 +299,9 @@ static int ifft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
 {
     ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
-    FFTComplex *hdata = td->hdata;
-    FFTComplex *vdata = td->vdata;
+    AVComplexFloat *hdata = td->hdata_out;
+    AVComplexFloat *vdata_out = td->vdata_out;
+    AVComplexFloat *vdata_in = td->vdata_in;
     const int plane = td->plane;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
@@ -292,12 +309,11 @@ static int ifft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     int y, x;
 
     for (y = start; y < end; y++) {
-        av_fft_permute(s->ifft[plane][jobnr], vdata + y * n);
-        av_fft_calc(s->ifft[plane][jobnr], vdata + y * n);
+        s->itx_fn[plane](s->ifft[plane][jobnr], vdata_out + y * n, vdata_in + y * n, sizeof(float));
 
         for (x = 0; x < n; x++) {
-            hdata[x * n + y].re = vdata[y * n + x].re;
-            hdata[x * n + y].im = vdata[y * n + x].im;
+            hdata[x * n + y].re = vdata_out[y * n + x].re;
+            hdata[x * n + y].im = vdata_out[y * n + x].im;
         }
     }
 
@@ -308,7 +324,8 @@ static int ifft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 {
     ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
-    FFTComplex *hdata = td->hdata;
+    AVComplexFloat *hdata_out = td->hdata_out;
+    AVComplexFloat *hdata_in = td->hdata_in;
     const int plane = td->plane;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
@@ -316,14 +333,13 @@ static int ifft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     int y;
 
     for (y = start; y < end; y++) {
-        av_fft_permute(s->ifft[plane][jobnr], hdata + y * n);
-        av_fft_calc(s->ifft[plane][jobnr], hdata + y * n);
+        s->itx_fn[plane](s->ifft[plane][jobnr], hdata_out + y * n, hdata_in + y * n, sizeof(float));
     }
 
     return 0;
 }
 
-static void get_output(ConvolveContext *s, FFTComplex *input, AVFrame *out,
+static void get_output(ConvolveContext *s, AVComplexFloat *input, AVFrame *out,
                        int w, int h, int n, int plane, float scale)
 {
     const int max = (1 << s->depth) - 1;
@@ -380,8 +396,8 @@ static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 {
     ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
-    FFTComplex *input = td->hdata;
-    FFTComplex *filter = td->vdata;
+    AVComplexFloat *input = td->hdata_in;
+    AVComplexFloat *filter = td->vdata_in;
     const float noise = s->noise;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
@@ -392,7 +408,7 @@ static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
         int yn = y * n;
 
         for (x = 0; x < n; x++) {
-            FFTSample re, im, ire, iim;
+            float re, im, ire, iim;
 
             re = input[yn + x].re;
             im = input[yn + x].im;
@@ -411,8 +427,8 @@ static int complex_divide(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 {
     ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
-    FFTComplex *input = td->hdata;
-    FFTComplex *filter = td->vdata;
+    AVComplexFloat *input = td->hdata_in;
+    AVComplexFloat *filter = td->vdata_in;
     const float noise = s->noise;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
@@ -423,7 +439,7 @@ static int complex_divide(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         int yn = y * n;
 
         for (x = 0; x < n; x++) {
-            FFTSample re, im, ire, iim, div;
+            float re, im, ire, iim, div;
 
             re = input[yn + x].re;
             im = input[yn + x].im;
@@ -454,8 +470,8 @@ static int do_convolve(FFFrameSync *fs)
         return ff_filter_frame(outlink, mainpic);
 
     for (plane = 0; plane < s->nb_planes; plane++) {
-        FFTComplex *filter = s->fft_vdata_impulse[plane];
-        FFTComplex *input = s->fft_vdata[plane];
+        AVComplexFloat *filter = s->fft_vdata_impulse_out[plane];
+        AVComplexFloat *input = s->fft_vdata_out[plane];
         const int n = s->fft_len[plane];
         const int w = s->planewidth[plane];
         const int h = s->planeheight[plane];
@@ -467,10 +483,12 @@ static int do_convolve(FFFrameSync *fs)
         }
 
         td.plane = plane, td.n = n;
-        get_input(s, s->fft_hdata[plane], mainpic, w, h, n, plane, 1.f);
+        get_input(s, s->fft_hdata_in[plane], mainpic, w, h, n, plane, 1.f);
 
-        td.hdata = s->fft_hdata[plane];
-        td.vdata = s->fft_vdata[plane];
+        td.hdata_in  = s->fft_hdata_in[plane];
+        td.vdata_in  = s->fft_vdata_in[plane];
+        td.hdata_out = s->fft_hdata_out[plane];
+        td.vdata_out = s->fft_vdata_out[plane];
 
         ff_filter_execute(ctx, fft_horizontal, &td, NULL,
                           FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
@@ -495,10 +513,12 @@ static int do_convolve(FFFrameSync *fs)
             }
             total = FFMAX(1, total);
 
-            get_input(s, s->fft_hdata_impulse[plane], impulsepic, w, h, n, plane, 1.f / total);
+            get_input(s, s->fft_hdata_impulse_in[plane], impulsepic, w, h, n, plane, 1.f / total);
 
-            td.hdata = s->fft_hdata_impulse[plane];
-            td.vdata = s->fft_vdata_impulse[plane];
+            td.hdata_in  = s->fft_hdata_impulse_in[plane];
+            td.vdata_in  = s->fft_vdata_impulse_in[plane];
+            td.hdata_out = s->fft_hdata_impulse_out[plane];
+            td.vdata_out = s->fft_vdata_impulse_out[plane];
 
             ff_filter_execute(ctx, fft_horizontal, &td, NULL,
                               FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
@@ -508,21 +528,27 @@ static int do_convolve(FFFrameSync *fs)
             s->got_impulse[plane] = 1;
         }
 
-        td.hdata = input;
-        td.vdata = filter;
+        td.hdata_in = input;
+        td.vdata_in = filter;
 
         ff_filter_execute(ctx, s->filter, &td, NULL,
                           FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
-        td.hdata = s->fft_hdata[plane];
-        td.vdata = s->fft_vdata[plane];
+        td.hdata_in  = s->fft_hdata_out[plane];
+        td.vdata_in  = s->fft_vdata_out[plane];
+        td.hdata_out = s->fft_hdata_in[plane];
+        td.vdata_out = s->fft_vdata_in[plane];
 
         ff_filter_execute(ctx, ifft_vertical, &td, NULL,
                           FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+
+        td.hdata_out = s->fft_hdata_out[plane];
+        td.hdata_in  = s->fft_hdata_in[plane];
+
         ff_filter_execute(ctx, ifft_horizontal, &td, NULL,
                           FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
-        get_output(s, s->fft_hdata[plane], mainpic, w, h, n, plane, 1.f / (n * n));
+        get_output(s, s->fft_hdata_out[plane], mainpic, w, h, n, plane, 1.f / (n * n));
     }
 
     return ff_filter_frame(outlink, mainpic);
@@ -550,10 +576,14 @@ static int config_output(AVFilterLink *outlink)
 
     for (i = 0; i < s->nb_planes; i++) {
         for (j = 0; j < MAX_THREADS; j++) {
-            s->fft[i][j]  = av_fft_init(s->fft_bits[i], 0);
-            s->ifft[i][j] = av_fft_init(s->fft_bits[i], 1);
-            if (!s->fft[i][j] || !s->ifft[i][j])
-                return AVERROR(ENOMEM);
+            float scale;
+
+            ret = av_tx_init(&s->fft[i][j], &s->tx_fn[i], AV_TX_FLOAT_FFT, 0, s->fft_len[i], &scale, 0);
+            if (ret < 0)
+                return ret;
+            ret = av_tx_init(&s->ifft[i][j], &s->itx_fn[i], AV_TX_FLOAT_FFT, 1, s->fft_len[i], &scale, 0);
+            if (ret < 0)
+                return ret;
         }
     }
 
@@ -587,16 +617,18 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i, j;
 
     for (i = 0; i < 4; i++) {
-        av_freep(&s->fft_hdata[i]);
-        av_freep(&s->fft_vdata[i]);
-        av_freep(&s->fft_hdata_impulse[i]);
-        av_freep(&s->fft_vdata_impulse[i]);
+        av_freep(&s->fft_hdata_in[i]);
+        av_freep(&s->fft_vdata_in[i]);
+        av_freep(&s->fft_hdata_out[i]);
+        av_freep(&s->fft_vdata_out[i]);
+        av_freep(&s->fft_hdata_impulse_in[i]);
+        av_freep(&s->fft_vdata_impulse_in[i]);
+        av_freep(&s->fft_hdata_impulse_out[i]);
+        av_freep(&s->fft_vdata_impulse_out[i]);
 
         for (j = 0; j < MAX_THREADS; j++) {
-            av_fft_end(s->fft[i][j]);
-            s->fft[i][j] = NULL;
-            av_fft_end(s->ifft[i][j]);
-            s->ifft[i][j] = NULL;
+            av_tx_uninit(&s->fft[i][j]);
+            av_tx_uninit(&s->ifft[i][j]);
         }
     }
 
