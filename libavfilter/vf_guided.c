@@ -110,19 +110,19 @@ static int box_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     w = (radius << 1) + 1;
     numPix = w * w;
     for (int i = slice_start;i < slice_end;i++) {
-      for (int j = 0;j < width;j++) {
-        float temp = 0.0;
-        for (int row = -radius;row <= radius;row++) {
-          for (int col = -radius;col <= radius;col++) {
-            int x = i + row;
-            int y = j + col;
-            x = (x < 0) ? 0 : (x >= height ? height - 1 : x);
-            y = (y < 0) ? 0 : (y >= width ? width - 1 : y);
-            temp += src[x * src_stride + y];
-          }
+        for (int j = 0;j < width;j++) {
+            float temp = 0.0;
+            for (int row = -radius;row <= radius;row++) {
+                for (int col = -radius;col <= radius;col++) {
+                    int x = i + row;
+                    int y = j + col;
+                    x = (x < 0) ? 0 : (x >= height ? height - 1 : x);
+                    y = (y < 0) ? 0 : (y >= width ? width - 1 : y);
+                    temp += src[x * src_stride + y];
+                }
+            }
+            dst[i * dst_stride + j] = temp / numPix;
         }
-        dst[i * dst_stride + j] = temp / numPix;
-      }
     }
     return 0;
 }
@@ -161,8 +161,7 @@ static int config_input(AVFilterLink *inlink)
 
     if (s->mode == BASIC) {
         s->sub = 1;
-    }
-    else if (s->mode == FAST) {
+    } else if (s->mode == FAST) {
         if (s->radius >= s->sub)
             s->radius = s->radius / s->sub;
         else {
@@ -235,13 +234,13 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
         goto end;                                                                       \
     }                                                                                   \
     for (int i = 0;i < h;i++) {                                                         \
-      for (int j = 0;j < w;j++) {                                                       \
-        int x = i * w + j;                                                              \
-        I[x]  = src[(i * src_stride + j) * sub] / maxval;                               \
-        II[x] = I[x] * I[x];                                                            \
-        P[x]  = srcRef[(i * src_ref_stride + j) * sub] / maxval;                        \
-        IP[x] = I[x] * P[x];                                                            \
-      }                                                                                 \
+        for (int j = 0;j < w;j++) {                                                     \
+            int x = i * w + j;                                                          \
+            I[x]  = src[(i * src_stride + j) * sub] / maxval;                           \
+            II[x] = I[x] * I[x];                                                        \
+            P[x]  = srcRef[(i * src_ref_stride + j) * sub] / maxval;                    \
+            IP[x] = I[x] * P[x];                                                        \
+        }                                                                               \
     }                                                                                   \
                                                                                         \
     t.width  = w;                                                                       \
@@ -262,13 +261,13 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
     ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
                                                                                         \
     for (int i = 0;i < h;i++) {                                                         \
-      for (int j = 0;j < w;j++) {                                                       \
-        int x = i * w + j;                                                              \
-        float varI = meanII[x] - (meanI[x] * meanI[x]);                                 \
-        float covIP = meanIP[x] - (meanI[x] * meanP[x]);                                \
-        A[x] = covIP / (varI + eps);                                                    \
-        B[x] = meanP[x] - A[x] * meanI[x];                                              \
-      }                                                                                 \
+        for (int j = 0;j < w;j++) {                                                     \
+            int x = i * w + j;                                                          \
+            float varI = meanII[x] - (meanI[x] * meanI[x]);                             \
+            float covIP = meanIP[x] - (meanI[x] * meanP[x]);                            \
+            A[x] = covIP / (varI + eps);                                                \
+            B[x] = meanP[x] - A[x] * meanI[x];                                          \
+        }                                                                               \
     }                                                                                   \
                                                                                         \
     t.src = A;                                                                          \
@@ -279,11 +278,11 @@ static int guided_##name(AVFilterContext *ctx, GuidedContext *s,                
     ff_filter_execute(ctx, s->box_slice, &t, NULL, FFMIN(h, nb_threads));               \
                                                                                         \
     for (int i = 0;i < height;i++) {                                                    \
-      for (int j = 0;j < width;j++) {                                                   \
-        int x = i / sub * w + j / sub;                                                  \
-        dst[i * dst_stride + j] = meanA[x] * src[i * src_stride + j] +                  \
-                                  meanB[x] * maxval;                                    \
-      }                                                                                 \
+        for (int j = 0;j < width;j++) {                                                 \
+            int x = i / sub * w + j / sub;                                              \
+            dst[i * dst_stride + j] = meanA[x] * src[i * src_stride + j] +              \
+                                      meanB[x] * maxval;                                \
+        }                                                                               \
     }                                                                                   \
 end:                                                                                    \
     av_freep(&I);                                                                       \
@@ -321,13 +320,13 @@ static int filter_frame(AVFilterContext *ctx, AVFrame **out, AVFrame *in, AVFram
             continue;
         }
         if (s->depth <= 8)
-           guided_byte(ctx, s, in->data[plane], ref->data[plane], (*out)->data[plane], s->radius, s->eps,
-                       s->planewidth[plane], s->planeheight[plane],
-                       in->linesize[plane], ref->linesize[plane], (*out)->linesize[plane], (1 << s->depth) - 1.f);
+            guided_byte(ctx, s, in->data[plane], ref->data[plane], (*out)->data[plane], s->radius, s->eps,
+                        s->planewidth[plane], s->planeheight[plane],
+                        in->linesize[plane], ref->linesize[plane], (*out)->linesize[plane], (1 << s->depth) - 1.f);
         else
-           guided_word(ctx, s, in->data[plane], ref->data[plane], (*out)->data[plane], s->radius, s->eps,
-                       s->planewidth[plane], s->planeheight[plane],
-                       in->linesize[plane] / 2, ref->linesize[plane] / 2, (*out)->linesize[plane] / 2, (1 << s->depth) - 1.f);
+            guided_word(ctx, s, in->data[plane], ref->data[plane], (*out)->data[plane], s->radius, s->eps,
+                        s->planewidth[plane], s->planeheight[plane],
+                        in->linesize[plane] / 2, ref->linesize[plane] / 2, (*out)->linesize[plane] / 2, (1 << s->depth) - 1.f);
     }
 
     return 0;
