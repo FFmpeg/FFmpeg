@@ -367,7 +367,7 @@ OBJS-$(CONFIG_H264_DECODER)            += h264dec.o h264_cabac.o h264_cavlc.o \
                                           h264_direct.o h264_loopfilter.o  \
                                           h264_mb.o h264_picture.o \
                                           h264_refs.o h264_sei.o \
-                                          h264_slice.o h264data.o
+                                          h264_slice.o h264data.o h274.o
 OBJS-$(CONFIG_H264_AMF_ENCODER)        += amfenc_h264.o
 OBJS-$(CONFIG_H264_CUVID_DECODER)      += cuviddec.o
 OBJS-$(CONFIG_H264_MEDIACODEC_DECODER) += mediacodecdec.o
