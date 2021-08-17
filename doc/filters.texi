@@ -8184,6 +8184,9 @@ means. For example, some MPEG based codecs export motion vectors through the
 The filter accepts the following option:
 
 @table @option
+@item block
+Display block partition structure using the luma plane.
+
 @item mv
 Set motion vectors to visualize.
 

@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/motion_vector.h"
 #include "libavutil/opt.h"
+#include "libavutil/video_enc_params.h"
 #include "avfilter.h"
 #include "qp_table.h"
 #include "internal.h"
@@ -52,6 +53,7 @@ typedef struct CodecViewContext {
     unsigned mv_type;
     int hsub, vsub;
     int qp;
+    int block;
 } CodecViewContext;
 
 #define OFFSET(x) offsetof(CodecViewContext, x)
@@ -73,6 +75,7 @@ static const AVOption codecview_options[] = {
         CONST("if", "I-frames", FRAME_TYPE_I, "frame_type"),
         CONST("pf", "P-frames", FRAME_TYPE_P, "frame_type"),
         CONST("bf", "B-frames", FRAME_TYPE_B, "frame_type"),
+    { "block",      "set block partitioning structure to visualize", OFFSET(block), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -210,6 +213,21 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
     draw_line(buf, sx, sy, ex, ey, w, h, stride, color);
 }
 
+static void draw_block_rectangle(uint8_t *buf, int sx, int sy, int w, int h, int stride, int color)
+{
+    for (int x = sx; x < sx + w; x++)
+        buf[x] = color;
+
+    for (int y = sy; y < sy + h; y++) {
+        buf[sx] = color;
+        buf[sx + w - 1] = color;
+        buf += stride;
+    }
+
+    for (int x = sx; x < sx + w; x++)
+        buf[x] = color;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -245,6 +263,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
         av_freep(&qp_table);
+    }
+
+    if (s->block) {
+        AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIDEO_ENC_PARAMS);
+        if (sd) {
+            AVVideoEncParams *par = (AVVideoEncParams*)sd->data;
+            const int stride = frame->linesize[0];
+
+            if (par->nb_blocks) {
+                for (int block_idx = 0; block_idx < par->nb_blocks; block_idx++) {
+                    AVVideoBlockParams *b = av_video_enc_params_block(par, block_idx);
+                    uint8_t *buf = frame->data[0] + b->src_y * stride;
+
+                    draw_block_rectangle(buf, b->src_x, b->src_y, b->w, b->h, stride, 100);
+                }
+            }
+        }
     }
 
     if (s->mv || s->mv_type) {
