@@ -485,6 +485,8 @@ static void h264_decode_flush(AVCodecContext *avctx)
 static int get_last_needed_nal(H264Context *h)
 {
     int nals_needed = 0;
+    int slice_type = 0;
+    int picture_intra_only = 1;
     int first_slice = 0;
     int i, ret;
 
@@ -516,10 +518,22 @@ static int get_last_needed_nal(H264Context *h)
                 !first_slice ||
                 first_slice != nal->type)
                 nals_needed = i;
+            slice_type = get_ue_golomb_31(&gb);
+            if (slice_type > 9) {
+                if (h->avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
+            }
+            if (slice_type > 4)
+                slice_type -= 5;
+
+            slice_type = ff_h264_golomb_to_pict_type[slice_type];
+            picture_intra_only &= (slice_type & 3) == AV_PICTURE_TYPE_I;
             if (!first_slice)
                 first_slice = nal->type;
         }
     }
+
+    h->picture_intra_only = picture_intra_only;
 
     return nals_needed;
 }

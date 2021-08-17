@@ -331,6 +331,7 @@ typedef struct H264SliceContext {
     int explicit_ref_marking;
 
     int frame_num;
+    int idr_pic_id;
     int poc_lsb;
     int delta_poc_bottom;
     int delta_poc[2];
@@ -383,6 +384,11 @@ typedef struct H264Context {
      * Set to 1 when the current picture is IDR, 0 otherwise.
      */
     int picture_idr;
+
+    /*
+     * Set to 1 when the current picture contains only I slices, 0 otherwise.
+     */
+    int picture_intra_only;
 
     int crop_left;
     int crop_right;
@@ -473,6 +479,7 @@ typedef struct H264Context {
     int last_pocs[MAX_DELAYED_PIC_COUNT];
     H264Picture *next_output_pic;
     int next_outputed_poc;
+    int poc_offset;         ///< PicOrderCnt_offset from SMPTE RDD-2006
 
     /**
      * memory management control operations buffer.

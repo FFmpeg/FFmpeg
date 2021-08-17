@@ -221,6 +221,9 @@ typedef struct AVFilmGrainParams {
 
     /**
      * Seed to use for the synthesis process, if the codec allows for it.
+     *
+     * @note For H.264, this refers to `pic_offset` as defined in
+     *       SMPTE RDD 5-2006.
      */
     uint64_t seed;
 
