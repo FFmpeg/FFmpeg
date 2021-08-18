@@ -731,17 +731,12 @@ static void load_colormap(PaletteUseContext *s)
     uint32_t last_color = 0;
     struct color_rect box;
 
-    /* disable transparent colors and dups */
-    qsort(s->palette, AVPALETTE_COUNT, sizeof(*s->palette), cmp_pal_entry);
-    // update transparency index:
     if (s->transparency_index >= 0) {
-        for (i = 0; i < AVPALETTE_COUNT; i++) {
-            if ((s->palette[i]>>24 & 0xff) == 0) {
-                s->transparency_index = i; // we are assuming at most one transparent color in palette
-                break;
-            }
-        }
+        FFSWAP(uint32_t, s->palette[s->transparency_index], s->palette[255]);
     }
+
+    /* disable transparent colors and dups */
+    qsort(s->palette, AVPALETTE_COUNT-(s->transparency_index >= 0), sizeof(*s->palette), cmp_pal_entry);
 
     for (i = 0; i < AVPALETTE_COUNT; i++) {
         const uint32_t c = s->palette[i];
