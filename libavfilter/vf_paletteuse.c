@@ -380,9 +380,9 @@ static av_always_inline int get_dst_color_err(PaletteUseContext *s,
     if (dstx < 0)
         return dstx;
     dstc = s->palette[dstx];
-    *er = r - (dstc >> 16 & 0xff);
-    *eg = g - (dstc >>  8 & 0xff);
-    *eb = b - (dstc       & 0xff);
+    *er = (int)r - (int)(dstc >> 16 & 0xff);
+    *eg = (int)g - (int)(dstc >>  8 & 0xff);
+    *eb = (int)b - (int)(dstc       & 0xff);
     return dstx;
 }
 
@@ -597,8 +597,8 @@ static int cmp_##name(const void *pa, const void *pb)   \
 {                                                       \
     const struct color *a = pa;                         \
     const struct color *b = pb;                         \
-    return   (a->value >> (8 * (3 - (pos))) & 0xff)     \
-           - (b->value >> (8 * (3 - (pos))) & 0xff);    \
+    return   (int)(a->value >> (8 * (3 - (pos))) & 0xff)     \
+           - (int)(b->value >> (8 * (3 - (pos))) & 0xff);    \
 }
 
 DECLARE_CMP_FUNC(a, 0)
@@ -704,7 +704,7 @@ static int colormap_insert(struct color_node *map,
     /* get the two boxes this node creates */
     box1 = box2 = *box;
     box1.max[component-1] = node->val[component];
-    box2.min[component-1] = node->val[component] + 1;
+    box2.min[component-1] = FFMIN(node->val[component] + 1, 255);
 
     node_left_id = colormap_insert(map, color_used, nb_used, palette, trans_thresh, &box1);
 
