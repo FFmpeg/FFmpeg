@@ -819,3 +819,258 @@ endfunc
         weight_func     16
         weight_func     8
         weight_func     4
+
+.macro  h264_loop_filter_start_10
+        cmp             w2,  #0
+        ldr             w6,  [x4]
+        ccmp            w3,  #0,  #0,  ne
+        lsl             w2,  w2,  #2
+        mov             v24.S[0], w6
+        lsl             w3,  w3,  #2
+        and             w8,  w6,  w6,  lsl #16
+        b.eq            1f
+        ands            w8,  w8,  w8,  lsl #8
+        b.ge            2f
+1:
+        ret
+2:
+.endm
+
+.macro h264_loop_filter_start_intra_10
+        orr             w4,  w2,  w3
+        cbnz            w4,  1f
+        ret
+1:
+        lsl             w2,  w2,  #2
+        lsl             w3,  w3,  #2
+        dup             v30.8h,   w2              // alpha
+        dup             v31.8h,   w3              // beta
+.endm
+
+.macro  h264_loop_filter_chroma_10
+        dup             v22.8h,  w2               // alpha
+        dup             v23.8h,  w3               // beta
+        uxtl            v24.8h,  v24.8b           // tc0
+
+        uabd            v26.8h,  v16.8h,  v0.8h   // abs(p0 - q0)
+        uabd            v28.8h,  v18.8h,  v16.8h  // abs(p1 - p0)
+        uabd            v30.8h,  v2.8h,   v0.8h   // abs(q1 - q0)
+        cmhi            v26.8h,  v22.8h,  v26.8h  // < alpha
+        cmhi            v28.8h,  v23.8h,  v28.8h  // < beta
+        cmhi            v30.8h,  v23.8h,  v30.8h  // < beta
+
+        and             v26.16b, v26.16b, v28.16b
+        mov             v4.16b,  v0.16b
+        sub             v4.8h,   v4.8h,   v16.8h
+        and             v26.16b, v26.16b, v30.16b
+        shl             v4.8h,   v4.8h,   #2
+        mov             x8, v26.d[0]
+        mov             x9, v26.d[1]
+        sli             v24.8h,  v24.8h,  #8
+        uxtl            v24.8h,  v24.8b
+        add             v4.8h,   v4.8h,   v18.8h
+        adds            x8,  x8,  x9
+        shl             v24.8h,  v24.8h,  #2
+
+        b.eq            9f
+
+        movi            v31.8h, #3                // (tc0 - 1) << (BIT_DEPTH - 8)) + 1
+        uqsub           v24.8h,  v24.8h,  v31.8h
+        sub             v4.8h,   v4.8h,   v2.8h
+        srshr           v4.8h,   v4.8h,   #3
+        smin            v4.8h,   v4.8h,   v24.8h
+        neg             v25.8h,  v24.8h
+        smax            v4.8h,   v4.8h,   v25.8h
+        and             v4.16b,  v4.16b,  v26.16b
+        add             v16.8h,  v16.8h,  v4.8h
+        sub             v0.8h,   v0.8h,   v4.8h
+
+        mvni            v4.8h,   #0xFC, lsl #8    // 1023 for clipping
+        movi            v5.8h,   #0
+        smin            v0.8h,   v0.8h,   v4.8h
+        smin            v16.8h,  v16.8h,  v4.8h
+        smax            v0.8h,   v0.8h,   v5.8h
+        smax            v16.8h,  v16.8h,  v5.8h
+.endm
+
+function ff_h264_v_loop_filter_chroma_neon_10, export=1
+        h264_loop_filter_start_10
+
+        mov             x10,  x0
+        sub             x0,  x0,  x1, lsl #1
+        ld1             {v18.8h}, [x0 ], x1
+        ld1             {v0.8h},  [x10], x1
+        ld1             {v16.8h}, [x0 ], x1
+        ld1             {v2.8h},  [x10]
+
+        h264_loop_filter_chroma_10
+
+        sub             x0,  x10,  x1, lsl #1
+        st1             {v16.8h}, [x0], x1
+        st1             {v0.8h},  [x0], x1
+9:
+        ret
+endfunc
+
+function ff_h264_h_loop_filter_chroma_neon_10, export=1
+        h264_loop_filter_start_10
+
+        sub             x0,  x0,  #4 // access the 2nd left pixel
+h_loop_filter_chroma420_10:
+        add             x10,  x0,  x1,  lsl #2
+        ld1             {v18.d}[0], [x0 ], x1
+        ld1             {v18.d}[1], [x10], x1
+        ld1             {v16.d}[0], [x0 ], x1
+        ld1             {v16.d}[1], [x10], x1
+        ld1             {v0.d}[0],  [x0 ], x1
+        ld1             {v0.d}[1],  [x10], x1
+        ld1             {v2.d}[0],  [x0 ], x1
+        ld1             {v2.d}[1],  [x10], x1
+
+        transpose_4x8H  v18, v16, v0, v2, v28, v29, v30, v31
+
+        h264_loop_filter_chroma_10
+
+        transpose_4x8H  v18, v16, v0, v2, v28, v29, v30, v31
+
+        sub             x0,  x10,  x1, lsl #3
+        st1             {v18.d}[0], [x0], x1
+        st1             {v16.d}[0], [x0], x1
+        st1             {v0.d}[0],  [x0], x1
+        st1             {v2.d}[0],  [x0], x1
+        st1             {v18.d}[1], [x0], x1
+        st1             {v16.d}[1], [x0], x1
+        st1             {v0.d}[1],  [x0], x1
+        st1             {v2.d}[1],  [x0], x1
+9:
+        ret
+endfunc
+
+function ff_h264_h_loop_filter_chroma422_neon_10, export=1
+        h264_loop_filter_start_10
+        add             x5,  x0,  x1
+        sub             x0,  x0,  #4
+        add             x1,  x1,  x1
+        mov             x7,  x30
+        bl              h_loop_filter_chroma420_10
+        mov             x30, x7
+        sub             x0,  x5,  #4
+        mov             v24.s[0], w6
+        b               h_loop_filter_chroma420_10
+endfunc
+
+.macro h264_loop_filter_chroma_intra_10
+       uabd            v26.8h,  v16.8h,  v17.8h  // abs(p0 - q0)
+       uabd            v27.8h,  v18.8h,  v16.8h  // abs(p1 - p0)
+       uabd            v28.8h,  v19.8h,  v17.8h  // abs(q1 - q0)
+       cmhi            v26.8h,  v30.8h,  v26.8h  // < alpha
+       cmhi            v27.8h,  v31.8h,  v27.8h  // < beta
+       cmhi            v28.8h,  v31.8h,  v28.8h  // < beta
+       and             v26.16b, v26.16b, v27.16b
+       and             v26.16b, v26.16b, v28.16b
+       mov             x2, v26.d[0]
+       mov             x3, v26.d[1]
+
+       shl             v4.8h,  v18.8h,  #1
+       shl             v6.8h,  v19.8h,  #1
+
+       adds            x2,  x2,  x3
+       b.eq            9f
+
+       add             v20.8h,  v16.8h,  v19.8h
+       add             v22.8h,  v17.8h,  v18.8h
+       add             v20.8h,  v20.8h,  v4.8h
+       add             v22.8h,  v22.8h,  v6.8h
+       urshr           v24.8h,  v20.8h,  #2
+       urshr           v25.8h,  v22.8h,  #2
+       bit             v16.16b, v24.16b, v26.16b
+       bit             v17.16b, v25.16b, v26.16b
+.endm
+
+function ff_h264_v_loop_filter_chroma_intra_neon_10, export=1
+       h264_loop_filter_start_intra_10
+       mov             x9,  x0
+       sub             x0,  x0,  x1, lsl #1
+       ld1             {v18.8h}, [x0], x1
+       ld1             {v17.8h}, [x9], x1
+       ld1             {v16.8h}, [x0], x1
+       ld1             {v19.8h}, [x9]
+
+       h264_loop_filter_chroma_intra_10
+
+       sub             x0,  x9,  x1, lsl #1
+       st1             {v16.8h}, [x0], x1
+       st1             {v17.8h}, [x0], x1
+
+9:
+       ret
+endfunc
+
+function ff_h264_h_loop_filter_chroma_mbaff_intra_neon_10, export=1
+       h264_loop_filter_start_intra_10
+
+       sub             x4,  x0,  #4
+       sub             x0,  x0,  #2
+       add             x9,  x4,  x1, lsl #1
+       ld1             {v18.8h}, [x4], x1
+       ld1             {v17.8h}, [x9], x1
+       ld1             {v16.8h}, [x4], x1
+       ld1             {v19.8h}, [x9], x1
+
+       transpose_4x8H v18, v16, v17, v19, v26, v27, v28, v29
+
+       h264_loop_filter_chroma_intra_10
+
+       st2             {v16.h,v17.h}[0], [x0], x1
+       st2             {v16.h,v17.h}[1], [x0], x1
+       st2             {v16.h,v17.h}[2], [x0], x1
+       st2             {v16.h,v17.h}[3], [x0], x1
+
+9:
+       ret
+endfunc
+
+function ff_h264_h_loop_filter_chroma_intra_neon_10, export=1
+       h264_loop_filter_start_intra_10
+       sub             x4,  x0,  #4
+       sub             x0,  x0,  #2
+h_loop_filter_chroma420_intra_10:
+       add             x9,  x4,  x1, lsl #2
+       ld1             {v18.4h},   [x4], x1
+       ld1             {v18.d}[1], [x9], x1
+       ld1             {v16.4h},   [x4], x1
+       ld1             {v16.d}[1], [x9], x1
+       ld1             {v17.4h},   [x4], x1
+       ld1             {v17.d}[1], [x9], x1
+       ld1             {v19.4h},   [x4], x1
+       ld1             {v19.d}[1], [x9], x1
+
+       transpose_4x8H v18, v16, v17, v19, v26, v27, v28, v29
+
+       h264_loop_filter_chroma_intra_10
+
+       st2             {v16.h,v17.h}[0], [x0], x1
+       st2             {v16.h,v17.h}[1], [x0], x1
+       st2             {v16.h,v17.h}[2], [x0], x1
+       st2             {v16.h,v17.h}[3], [x0], x1
+       st2             {v16.h,v17.h}[4], [x0], x1
+       st2             {v16.h,v17.h}[5], [x0], x1
+       st2             {v16.h,v17.h}[6], [x0], x1
+       st2             {v16.h,v17.h}[7], [x0], x1
+
+9:
+       ret
+endfunc
+
+function ff_h264_h_loop_filter_chroma422_intra_neon_10, export=1
+       h264_loop_filter_start_intra_10
+       sub             x4,  x0,  #4
+       add             x5,  x0,  x1, lsl #3
+       sub             x0,  x0,  #2
+       mov             x7,  x30
+       bl              h_loop_filter_chroma420_intra_10
+       mov             x4,  x9
+       sub             x0,  x5,  #2
+       mov             x30, x7
+       b               h_loop_filter_chroma420_intra_10
+endfunc
