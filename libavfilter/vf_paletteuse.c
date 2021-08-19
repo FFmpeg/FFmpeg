@@ -380,9 +380,13 @@ static av_always_inline int get_dst_color_err(PaletteUseContext *s,
     if (dstx < 0)
         return dstx;
     dstc = s->palette[dstx];
-    *er = (int)r - (int)(dstc >> 16 & 0xff);
-    *eg = (int)g - (int)(dstc >>  8 & 0xff);
-    *eb = (int)b - (int)(dstc       & 0xff);
+    if (dstx == s->transparency_index) {
+        *er = *eg = *eb = 0;
+    } else {
+        *er = (int)r - (int)(dstc >> 16 & 0xff);
+        *eg = (int)g - (int)(dstc >>  8 & 0xff);
+        *eb = (int)b - (int)(dstc       & 0xff);
+    }
     return dstx;
 }
 
