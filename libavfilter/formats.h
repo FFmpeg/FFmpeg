@@ -321,6 +321,91 @@ typedef struct AVFilterFormatMerger {
     int (*can_merge)(const void *a, const void *b);
 } AVFilterFormatsMerger;
 
+/**
+ * Callbacks and properties to describe the steps of a format negotiation.
+ *
+ * The steps are:
+ *
+ * 1. query_formats(): call the callbacks on all filter to set lists of
+ *                     supported formats.
+ *                     When links on a filter must eventually have the same
+ *                     format, the lists of supported formats are the same
+ *                     object in memory.
+ *                     See:
+ *                     http://www.normalesup.org/~george/articles/format_negotiation_in_libavfilter/#12
+ *
+ *
+ * 2. query_formats(): merge lists of supported formats or insert automatic
+ *                     conversion filters.
+ *                     Compute the intersection of the lists of supported
+ *                     formats on the ends of links. If it succeeds, replace
+ *                     both objects with the intersection everywhere they
+ *                     are referenced.
+ *                     If the intersection is empty, insert an automatic
+ *                     conversion filter.
+ *                     If several formats are negotiated at once (format,
+ *                     rate, layout), only merge if all three can be, since
+ *                     the conversion filter can convert all three at once.
+ *                     This process goes on as long as progress is made.
+ *                     See:
+ *                     http://www.normalesup.org/~george/articles/format_negotiation_in_libavfilter/#14
+ *                     http://www.normalesup.org/~george/articles/format_negotiation_in_libavfilter/#29
+ *
+ * 3. reduce_formats(): try to reduce format conversion within filters.
+ *                      For each link where there is only one supported
+ *                      formats on output, for each output of the connected
+ *                      filter, if the media type is the same and said
+ *                      format is supported, keep only this one.
+ *                      This process goes on as long as progress is made.
+ *                      Rationale: conversion filters will set a large list
+ *                      of supported formats on outputs but users will
+ *                      expect the output to be as close as possible as the
+ *                      input (examples: scale without changing the pixel
+ *                      format, resample without changint the layout).
+ *                      FIXME: this can probably be done by merging the
+ *                      input and output lists instead of re-implementing
+ *                      the logic.
+ *
+ * 4. swap_sample_fmts():
+ *    swap_samplerates():
+ *    swap_channel_layouts(): For each filter with an input with only one
+ *                            supported format, when outputs have several
+ *                            supported formats, put the best one with
+ *                            reference to the input at the beginning of the
+ *                            list, to prepare it for being picked up by
+ *                            pick_formats().
+ *                            The best format is the one that is most
+ *                            similar to the input while not losing too much
+ *                            information.
+ *                            This process need to run only once.
+ *                            FIXME: reduce_formats() operates on all inputs
+ *                            with a single format, swap_*() operates on the
+ *                            first one only: check if the difference makes
+ *                            sense.
+ *                            TODO: the swapping done for one filter can
+ *                            override the swapping done for another filter
+ *                            connected to the same list of formats, maybe
+ *                            it would be better to compute a total score
+ *                            for all connected filters and use the score to
+ *                            pick the format instead of just swapping.
+ *                            TODO: make the similarity logic available as
+ *                            public functions in libavutil.
+ *
+ * 5. pick_formats(): Choose one format from the lists of supported formats,
+ *                    use it for the link and reduce the list to a single
+ *                    element to force other filters connected to the same
+ *                    list to use it.
+ *                    First process all links where there is a single format
+ *                    and the output links of all filters with an input,
+ *                    trying to preserve similarity between input and
+ *                    outputs.
+ *                    Repeat as long as process is made.
+ *                    Then do a final run for the remaining filters.
+ *                    FIXME: the similarity logic (the ref argument to
+ *                    pick_format()) added in FFmpeg duplicates and
+ *                    overrides the swapping logic added in libav. Better
+ *                    merge them into a score system.
+ */
 typedef struct AVFilterNegotiation {
     unsigned nb_mergers;
     const AVFilterFormatsMerger *mergers;
