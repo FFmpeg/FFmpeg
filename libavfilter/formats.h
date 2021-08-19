@@ -322,7 +322,7 @@ typedef struct AVFilterFormatMerger {
 } AVFilterFormatsMerger;
 
 typedef struct AVFilterNegotiation {
-    unsigned nb;
+    unsigned nb_mergers;
     const AVFilterFormatsMerger *mergers;
     const char *conversion_filter;
     unsigned conversion_opts_offset;

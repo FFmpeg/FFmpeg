@@ -465,7 +465,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
             neg = ff_filter_get_negotiation(link);
             av_assert0(neg);
-            for (neg_step = 1; neg_step < neg->nb; neg_step++) {
+            for (neg_step = 1; neg_step < neg->nb_mergers; neg_step++) {
                 const AVFilterFormatsMerger *m = &neg->mergers[neg_step];
                 void *a = FF_FIELD_AT(void *, m->offset, link->incfg);
                 void *b = FF_FIELD_AT(void *, m->offset, link->outcfg);
@@ -474,7 +474,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     break;
                 }
             }
-            for (neg_step = 0; neg_step < neg->nb; neg_step++) {
+            for (neg_step = 0; neg_step < neg->nb_mergers; neg_step++) {
                 const AVFilterFormatsMerger *m = &neg->mergers[neg_step];
                 void *a = FF_FIELD_AT(void *, m->offset, link->incfg);
                 void *b = FF_FIELD_AT(void *, m->offset, link->outcfg);
@@ -542,7 +542,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     av_assert0(outlink-> incfg.channel_layouts->refcount > 0);
                     av_assert0(outlink->outcfg.channel_layouts->refcount > 0);
                 }
-                for (neg_step = 0; neg_step < neg->nb; neg_step++) {
+                for (neg_step = 0; neg_step < neg->nb_mergers; neg_step++) {
                     const AVFilterFormatsMerger *m = &neg->mergers[neg_step];
                     void *ia = FF_FIELD_AT(void *, m->offset, inlink->incfg);
                     void *ib = FF_FIELD_AT(void *, m->offset, inlink->outcfg);
