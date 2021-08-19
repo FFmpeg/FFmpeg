@@ -69,21 +69,6 @@ struct AVFilterFormats {
     struct AVFilterFormats ***refs; ///< references to this list
 };
 
-typedef struct AVFilterFormatMerger {
-    unsigned offset;
-    int (*merge)(void *a, void *b);
-    int (*can_merge)(const void *a, const void *b);
-} AVFilterFormatsMerger;
-
-typedef struct AVFilterNegotiation {
-    unsigned nb;
-    const AVFilterFormatsMerger *mergers;
-    const char *conversion_filter;
-    unsigned conversion_opts_offset;
-} AVFilterNegotiation;
-
-const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link);
-
 /**
  * A list of supported channel layouts.
  *
@@ -329,5 +314,20 @@ int ff_formats_check_sample_rates(void *log, const AVFilterFormats *fmts);
  * In particular, check for duplicates.
  */
 int ff_formats_check_channel_layouts(void *log, const AVFilterChannelLayouts *fmts);
+
+typedef struct AVFilterFormatMerger {
+    unsigned offset;
+    int (*merge)(void *a, void *b);
+    int (*can_merge)(const void *a, const void *b);
+} AVFilterFormatsMerger;
+
+typedef struct AVFilterNegotiation {
+    unsigned nb;
+    const AVFilterFormatsMerger *mergers;
+    const char *conversion_filter;
+    unsigned conversion_opts_offset;
+} AVFilterNegotiation;
+
+const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link);
 
 #endif /* AVFILTER_FORMATS_H */
