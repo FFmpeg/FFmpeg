@@ -22,18 +22,6 @@
 #include "neon.S"
 
 
-.macro transpose_4x8H r0, r1, r2, r3, t4, t5, t6, t7
-        trn1            \t4\().8h,  \r0\().8h,  \r1\().8h
-        trn2            \t5\().8h,  \r0\().8h,  \r1\().8h
-        trn1            \t6\().8h,  \r2\().8h,  \r3\().8h
-        trn2            \t7\().8h,  \r2\().8h,  \r3\().8h
-
-        trn1            \r0\().4s,  \t4\().4s,  \t6\().4s
-        trn2            \r2\().4s,  \t4\().4s,  \t6\().4s
-        trn1            \r1\().4s,  \t5\().4s,  \t7\().4s
-        trn2            \r3\().4s,  \t5\().4s,  \t7\().4s
-.endm
-
 // The input to and output from this macro is in the registers v16-v31,
 // and v0-v7 are used as scratch registers.
 // p7 = v16 .. p3 = v20, p0 = v23, q0 = v24, q3 = v27, q7 = v31

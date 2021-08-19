@@ -109,10 +109,23 @@
         trn2            \r5\().4H,  \r0\().4H,  \r1\().4H
         trn1            \r6\().4H,  \r2\().4H,  \r3\().4H
         trn2            \r7\().4H,  \r2\().4H,  \r3\().4H
+
         trn1            \r0\().2S,  \r4\().2S,  \r6\().2S
         trn2            \r2\().2S,  \r4\().2S,  \r6\().2S
         trn1            \r1\().2S,  \r5\().2S,  \r7\().2S
         trn2            \r3\().2S,  \r5\().2S,  \r7\().2S
+.endm
+
+.macro transpose_4x8H r0, r1, r2, r3, t4, t5, t6, t7
+        trn1            \t4\().8H,  \r0\().8H,  \r1\().8H
+        trn2            \t5\().8H,  \r0\().8H,  \r1\().8H
+        trn1            \t6\().8H,  \r2\().8H,  \r3\().8H
+        trn2            \t7\().8H,  \r2\().8H,  \r3\().8H
+
+        trn1            \r0\().4S,  \t4\().4S,  \t6\().4S
+        trn2            \r2\().4S,  \t4\().4S,  \t6\().4S
+        trn1            \r1\().4S,  \t5\().4S,  \t7\().4S
+        trn2            \r3\().4S,  \t5\().4S,  \t7\().4S
 .endm
 
 .macro  transpose_8x8H  r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
