@@ -244,9 +244,9 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
                     if (pairs[i].b[j] != pairs[k].b[l]) {
                         /* linear regression */
                         m = (pairs[k].b_pos[l]-pairs[i].b_pos[j]) / (k-i); /* good value between 0.0 - 2.0 */
-                        framerate = (int) m*30 + 0.5; /* round up to 0 - 60 */
+                        framerate = (int) (m*30 + 0.5); /* round up to 0 - 60 */
                         if (framerate>0 && framerate <= MAX_FRAMERATE) {
-                            offset = pairs[i].b_pos[j] - ((int) m*i + 0.5); /* only second part has to be rounded up */
+                            offset = pairs[i].b_pos[j] - ((int) (m*i + 0.5)); /* only second part has to be rounded up */
                             if (offset > -HOUGH_MAX_OFFSET && offset < HOUGH_MAX_OFFSET) {
                                 if (pairs[i].dist < pairs[k].dist) {
                                     if (pairs[i].dist < hspace[framerate-1][offset+HOUGH_MAX_OFFSET].dist) {
