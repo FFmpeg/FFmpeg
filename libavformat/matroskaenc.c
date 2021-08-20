@@ -1395,7 +1395,8 @@ static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
-    int i, ret, video_default_idx, audio_default_idx, subtitle_default_idx;
+    int video_default_idx = -1, audio_default_idx = -1, subtitle_default_idx = -1;
+    int i, ret;
 
     if (mkv->nb_attachments == s->nb_streams)
         return 0;
@@ -1405,11 +1406,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         return ret;
 
     if (mkv->default_mode != DEFAULT_MODE_PASSTHROUGH) {
-        int video_idx, audio_idx, subtitle_idx;
-
-        video_idx    = video_default_idx    =
-        audio_idx    = audio_default_idx    =
-        subtitle_idx = subtitle_default_idx = -1;
+        int video_idx = -1, audio_idx = -1, subtitle_idx = -1;
 
         for (i = s->nb_streams - 1; i >= 0; i--) {
             AVStream *st = s->streams[i];
@@ -1435,8 +1432,7 @@ static int mkv_write_tracks(AVFormatContext *s)
     }
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        int is_default = mkv->default_mode == DEFAULT_MODE_PASSTHROUGH ?
-                             st->disposition & AV_DISPOSITION_DEFAULT  :
+        int is_default = st->disposition & AV_DISPOSITION_DEFAULT ||
                              i == video_default_idx || i == audio_default_idx ||
                              i == subtitle_default_idx;
         ret = mkv_write_track(s, mkv, st, &mkv->tracks[i],
@@ -2823,8 +2819,8 @@ static const AVOption options[] = {
     { "flipped_raw_rgb", "Raw RGB bitmaps in VFW mode are stored bottom-up", OFFSET(flipped_raw_rgb), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "write_crc32", "write a CRC32 element inside every Level 1 element", OFFSET(write_crc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { "default_mode", "Controls how a track's FlagDefault is inferred", OFFSET(default_mode), AV_OPT_TYPE_INT, { .i64 = DEFAULT_MODE_INFER }, DEFAULT_MODE_INFER, DEFAULT_MODE_PASSTHROUGH, FLAGS, "default_mode" },
-    { "infer", "For each track type, mark the first track of disposition default as default; if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER }, 0, 0, FLAGS, "default_mode" },
-    { "infer_no_subs", "For each track type, mark the first track of disposition default as default; for audio and video: if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER_NO_SUBS }, 0, 0, FLAGS, "default_mode" },
+    { "infer", "For each track type, mark each track of disposition default as default; if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER }, 0, 0, FLAGS, "default_mode" },
+    { "infer_no_subs", "For each track type, mark each track of disposition default as default; for audio and video: if none exists, mark the first track as default.", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_INFER_NO_SUBS }, 0, 0, FLAGS, "default_mode" },
     { "passthrough", "Use the disposition flag as-is", 0, AV_OPT_TYPE_CONST, { .i64 = DEFAULT_MODE_PASSTHROUGH }, 0, 0, FLAGS, "default_mode" },
     { NULL },
 };

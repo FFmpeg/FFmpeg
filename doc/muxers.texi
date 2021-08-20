@@ -1567,12 +1567,12 @@ It influences which tracks players should play by default. The default mode
 is @samp{infer}.
 @table @samp
 @item infer
-In this mode, for each type of track (audio, video or subtitle), if there is
-a track with disposition default of this type, then the first such track
-(i.e. the one with the lowest index) will be marked as default; if no such
-track exists, the first track of this type will be marked as default instead
-(if existing). This ensures that the default flag is set in a sensible way even
-if the input originated from containers that lack the concept of default tracks.
+Every track with disposition default will have the FlagDefault set.
+Additionally, for each type of track (audio, video or subtitle), if no track
+with disposition default of this type exists, then the first track of this type
+will be marked as default (if existing). This ensures that the default flag
+is set in a sensible way even if the input originated from containers that
+lack the concept of default tracks.
 @item infer_no_subs
 This mode is the same as infer except that if no subtitle track with
 disposition default exists, no subtitle track will be marked as default.
