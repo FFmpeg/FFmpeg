@@ -281,6 +281,8 @@ extern const AVFilter ff_vf_histogram;
 extern const AVFilter ff_vf_hqdn3d;
 extern const AVFilter ff_vf_hqx;
 extern const AVFilter ff_vf_hstack;
+extern const AVFilter ff_vf_hsvhold;
+extern const AVFilter ff_vf_hsvkey;
 extern const AVFilter ff_vf_hue;
 extern const AVFilter ff_vf_hwdownload;
 extern const AVFilter ff_vf_hwmap;

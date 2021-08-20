@@ -11,6 +11,7 @@ version <next>:
 - afwtdn audio filter
 - audio and video segment filters
 - Apple Graphics (SMC) encoder
+- hsvkey and hsvhold video filters
 
 
 version 4.4:
