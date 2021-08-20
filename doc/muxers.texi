@@ -1564,7 +1564,7 @@ have no effect if it is not.
 @item default_mode
 This option controls how the FlagDefault of the output tracks will be set.
 It influences which tracks players should play by default. The default mode
-is @samp{infer}.
+is @samp{passthrough}.
 @table @samp
 @item infer
 Every track with disposition default will have the FlagDefault set.
