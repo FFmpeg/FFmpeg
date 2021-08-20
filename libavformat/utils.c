@@ -1802,7 +1802,7 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
     *pb = NULL;
 }
 
-int ff_is_http_proto(char *filename) {
+int ff_is_http_proto(const char *filename) {
     const char *proto = avio_find_protocol_name(filename);
     return proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
 }

@@ -907,7 +907,7 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
  * @param s AVFormatContext
  * @param filename URL or file name to open for writing
  */
-int ff_is_http_proto(char *filename);
+int ff_is_http_proto(const char *filename);
 
 /**
  * Parse creation_time in AVFormatContext metadata if exists and warn if the
