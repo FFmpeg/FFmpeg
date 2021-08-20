@@ -853,7 +853,7 @@ int opt_cpucount(void *optctx, const char *opt, const char *arg)
     int count;
 
     static const AVOption opts[] = {
-        {"count", NULL, 0, AV_OPT_TYPE_INT, { .i64 = -1}, -1, INT_MAX, NULL},
+        {"count", NULL, 0, AV_OPT_TYPE_INT, { .i64 = -1}, -1, INT_MAX},
         {NULL},
     };
     static const AVClass class = {
