@@ -202,7 +202,7 @@ static int init_out_pool(AVFilterContext *ctx,
     out_frames_ctx->sw_format         = out_format;
     out_frames_ctx->initial_pool_size = 4;
 
-    out_frames_hwctx->frame_type = in_frames_hwctx->frame_type;
+    out_frames_hwctx->frame_type = in_frames_hwctx->frame_type | MFX_MEMTYPE_FROM_VPPOUT;
 
     ret = ff_filter_init_hw_frames(ctx, outlink, 32);
     if (ret < 0)
