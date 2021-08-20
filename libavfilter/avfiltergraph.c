@@ -208,7 +208,7 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
  *
  * @return >= 0 in case of success, a negative value otherwise
  */
-static int graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
+static int graph_check_validity(AVFilterGraph *graph, void *log_ctx)
 {
     AVFilterContext *filt;
     int i, j;
@@ -246,7 +246,7 @@ static int graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
  *
  * @return >= 0 in case of success, a negative value otherwise
  */
-static int graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
+static int graph_config_links(AVFilterGraph *graph, void *log_ctx)
 {
     AVFilterContext *filt;
     int i, ret;
@@ -263,7 +263,7 @@ static int graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-static int graph_check_links(AVFilterGraph *graph, AVClass *log_ctx)
+static int graph_check_links(AVFilterGraph *graph, void *log_ctx)
 {
     AVFilterContext *f;
     AVFilterLink *l;
@@ -427,7 +427,7 @@ static int formats_declared(AVFilterContext *f)
  *          was made and the negotiation is stuck;
  *          a negative error code if some other error happened
  */
-static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
+static int query_formats(AVFilterGraph *graph, void *log_ctx)
 {
     int i, j, ret;
     int converter_count = 0;
@@ -1107,7 +1107,7 @@ static int pick_formats(AVFilterGraph *graph)
 /**
  * Configure the formats of all the links in the graph.
  */
-static int graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
+static int graph_config_formats(AVFilterGraph *graph, void *log_ctx)
 {
     int ret;
 
@@ -1135,8 +1135,7 @@ static int graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-static int graph_config_pointers(AVFilterGraph *graph,
-                                             AVClass *log_ctx)
+static int graph_config_pointers(AVFilterGraph *graph, void *log_ctx)
 {
     unsigned i, j;
     int sink_links_count = 0, n = 0;
