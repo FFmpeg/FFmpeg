@@ -1104,6 +1104,9 @@ device type:
 @item dxva2
 @var{device} is the number of the Direct3D 9 display adapter.
 
+@item d3d11va
+@var{device} is the number of the Direct3D 11 display adapter.
+
 @item vaapi
 @var{device} is either an X11 display name or a DRM render node.
 If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY})
@@ -1127,8 +1130,20 @@ If not specified, it will attempt to open the default X11 display (@emph{$DISPLA
 @end table
 If not specified, @samp{auto_any} is used.
 (Note that it may be easier to achieve the desired result for QSV by creating the
-platform-appropriate subdevice (@samp{dxva2} or @samp{vaapi}) and then deriving a
+platform-appropriate subdevice (@samp{dxva2} or @samp{d3d11va} or @samp{vaapi}) and then deriving a
 QSV device from that.)
+
+Alternatively, @samp{child_device_type} helps to choose platform-appropriate subdevice type.
+On Windows @samp{d3d11va} is used as default subdevice type.
+
+Examples:
+@table @emph
+@item -init_hw_device qsv:hw,child_device_type=d3d11va
+Choose the GPU subdevice with type @samp{d3d11va} and create QSV device with @samp{MFX_IMPL_HARDWARE}.
+
+@item -init_hw_device qsv:hw,child_device_type=dxva2
+Choose the GPU subdevice with type @samp{dxva2} and create QSV device with @samp{MFX_IMPL_HARDWARE}.
+@end table
 
 @item opencl
 @var{device} selects the platform and device as @emph{platform_index.device_index}.
@@ -1231,6 +1246,9 @@ Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 
 @item dxva2
 Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
+
+@item d3d11va
+Use D3D11VA (DirectX Video Acceleration) hardware acceleration.
 
 @item vaapi
 Use VAAPI (Video Acceleration API) hardware acceleration.
