@@ -281,7 +281,7 @@ static int strftime_expand(const char *fmt, char **dest)
     return r;
 }
 
-static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
+static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, const char *filename,
                           AVDictionary **options)
 {
     HLSContext *hls = s->priv_data;
