@@ -62,7 +62,7 @@
 
 typedef struct QSVMid {
     AVBufferRef *hw_frames_ref;
-    mfxHDL handle;
+    mfxHDLPair *handle_pair;
 
     AVFrame *locked_frame;
     AVFrame *hw_frame;
