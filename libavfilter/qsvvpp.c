@@ -527,7 +527,7 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
 
         s->out_mem_mode = IS_OPAQUE_MEMORY(s->in_mem_mode) ?
                           MFX_MEMTYPE_OPAQUE_FRAME :
-                          MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
+                          MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET | MFX_MEMTYPE_FROM_VPPOUT;
 
         out_frames_ctx   = (AVHWFramesContext *)out_frames_ref->data;
         out_frames_hwctx = out_frames_ctx->hwctx;
