@@ -72,6 +72,7 @@ static av_cold void load_functions(void)
 }
 
 typedef struct D3D11VAFramesContext {
+    int nb_surfaces;
     int nb_surfaces_used;
 
     DXGI_FORMAT format;
@@ -112,6 +113,8 @@ static void d3d11va_frames_uninit(AVHWFramesContext *ctx)
     if (s->staging_texture)
         ID3D11Texture2D_Release(s->staging_texture);
     s->staging_texture = NULL;
+
+    av_freep(&frames_hwctx->texture_infos);
 }
 
 static int d3d11va_frames_get_constraints(AVHWDeviceContext *ctx,
@@ -152,14 +155,20 @@ static void free_texture(void *opaque, uint8_t *data)
     av_free(data);
 }
 
-static AVBufferRef *wrap_texture_buf(ID3D11Texture2D *tex, int index)
+static AVBufferRef *wrap_texture_buf(AVHWFramesContext *ctx, ID3D11Texture2D *tex, int index)
 {
     AVBufferRef *buf;
-    AVD3D11FrameDescriptor *desc = av_mallocz(sizeof(*desc));
+    AVD3D11FrameDescriptor         *desc = av_mallocz(sizeof(*desc));
+    D3D11VAFramesContext              *s = ctx->internal->priv;
+    AVD3D11VAFramesContext *frames_hwctx = ctx->hwctx;
     if (!desc) {
         ID3D11Texture2D_Release(tex);
         return NULL;
     }
+
+    frames_hwctx->texture_infos[s->nb_surfaces_used].texture = tex;
+    frames_hwctx->texture_infos[s->nb_surfaces_used].index = index;
+    s->nb_surfaces_used++;
 
     desc->texture = tex;
     desc->index   = index;
@@ -199,7 +208,7 @@ static AVBufferRef *d3d11va_alloc_single(AVHWFramesContext *ctx)
         return NULL;
     }
 
-    return wrap_texture_buf(tex, 0);
+    return wrap_texture_buf(ctx, tex, 0);
 }
 
 static AVBufferRef *d3d11va_pool_alloc(void *opaque, size_t size)
@@ -220,7 +229,7 @@ static AVBufferRef *d3d11va_pool_alloc(void *opaque, size_t size)
     }
 
     ID3D11Texture2D_AddRef(hwctx->texture);
-    return wrap_texture_buf(hwctx->texture, s->nb_surfaces_used++);
+    return wrap_texture_buf(ctx, hwctx->texture, s->nb_surfaces_used);
 }
 
 static int d3d11va_frames_init(AVHWFramesContext *ctx)
@@ -267,13 +276,18 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
             av_log(ctx, AV_LOG_ERROR, "User-provided texture has mismatching parameters\n");
             return AVERROR(EINVAL);
         }
-    } else if (texDesc.ArraySize > 0) {
+    } else if (!(texDesc.BindFlags & D3D11_BIND_RENDER_TARGET) && texDesc.ArraySize > 0) {
         hr = ID3D11Device_CreateTexture2D(device_hwctx->device, &texDesc, NULL, &hwctx->texture);
         if (FAILED(hr)) {
             av_log(ctx, AV_LOG_ERROR, "Could not create the texture (%lx)\n", (long)hr);
             return AVERROR_UNKNOWN;
         }
     }
+
+    hwctx->texture_infos = av_mallocz_array(ctx->initial_pool_size, sizeof(*hwctx->texture_infos));
+    if (!hwctx->texture_infos)
+        return AVERROR(ENOMEM);
+    s->nb_surfaces = ctx->initial_pool_size;
 
     ctx->internal->pool_internal = av_buffer_pool_init2(sizeof(AVD3D11FrameDescriptor),
                                                         ctx, d3d11va_pool_alloc, NULL);

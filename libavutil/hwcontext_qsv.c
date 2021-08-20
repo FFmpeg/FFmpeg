@@ -120,6 +120,23 @@ static uint32_t qsv_fourcc_from_pix_fmt(enum AVPixelFormat pix_fmt)
     return 0;
 }
 
+#if CONFIG_D3D11VA
+static uint32_t qsv_get_d3d11va_bind_flags(int mem_type)
+{
+    uint32_t bind_flags = 0;
+
+    if ((mem_type & MFX_MEMTYPE_VIDEO_MEMORY_ENCODER_TARGET) && (mem_type & MFX_MEMTYPE_INTERNAL_FRAME))
+        bind_flags = D3D11_BIND_DECODER | D3D11_BIND_VIDEO_ENCODER;
+    else
+        bind_flags = D3D11_BIND_DECODER;
+
+    if ((MFX_MEMTYPE_FROM_VPPOUT & mem_type) || (MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET & mem_type))
+        bind_flags = D3D11_BIND_RENDER_TARGET;
+
+    return bind_flags;
+}
+#endif
+
 static int qsv_device_init(AVHWDeviceContext *ctx)
 {
     AVQSVDeviceContext *hwctx = ctx->hwctx;
@@ -295,12 +312,11 @@ static int qsv_init_child_ctx(AVHWFramesContext *ctx)
 #if CONFIG_D3D11VA
     if (child_device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
         AVD3D11VAFramesContext *child_frames_hwctx = child_frames_ctx->hwctx;
-        if (hwctx->frame_type & MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET)
-            child_frames_hwctx->BindFlags = D3D11_BIND_RENDER_TARGET;
-        else
-            child_frames_hwctx->BindFlags = D3D11_BIND_DECODER;
+        if (hwctx->frame_type == 0)
+            hwctx->frame_type = MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET;
         if (hwctx->frame_type & MFX_MEMTYPE_SHARED_RESOURCE)
             child_frames_hwctx->MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+        child_frames_hwctx->BindFlags = qsv_get_d3d11va_bind_flags(hwctx->frame_type);
     }
 #endif
 #if CONFIG_DXVA2
@@ -334,11 +350,11 @@ static int qsv_init_child_ctx(AVHWFramesContext *ctx)
     if (child_device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
         AVD3D11VAFramesContext *child_frames_hwctx = child_frames_ctx->hwctx;
         for (i = 0; i < ctx->initial_pool_size; i++) {
-            s->handle_pairs_internal[i].first = (mfxMemId)child_frames_hwctx->texture;
+            s->handle_pairs_internal[i].first = (mfxMemId)child_frames_hwctx->texture_infos[i].texture;
             if(child_frames_hwctx->BindFlags & D3D11_BIND_RENDER_TARGET) {
                 s->handle_pairs_internal[i].second = (mfxMemId)MFX_INFINITE;
             } else {
-                s->handle_pairs_internal[i].second = (mfxMemId)i;
+                s->handle_pairs_internal[i].second = (mfxMemId)child_frames_hwctx->texture_infos[i].index;
             }
             s->surfaces_internal[i].Data.MemId = (mfxMemId)&s->handle_pairs_internal[i];
         }
@@ -714,10 +730,7 @@ static int qsv_frames_derive_from(AVHWFramesContext *dst_ctx,
             dst_hwctx->texture = (ID3D11Texture2D*)pair->first;
             if (src_hwctx->frame_type & MFX_MEMTYPE_SHARED_RESOURCE)
                 dst_hwctx->MiscFlags = D3D11_RESOURCE_MISC_SHARED;
-            if (src_hwctx->frame_type == MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
-                dst_hwctx->BindFlags = D3D11_BIND_DECODER;
-            else
-                dst_hwctx->BindFlags = D3D11_BIND_RENDER_TARGET;
+            dst_hwctx->BindFlags = qsv_get_d3d11va_bind_flags(src_hwctx->frame_type);
         }
         break;
 #endif
@@ -1137,11 +1150,11 @@ static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
                 return AVERROR(ENOMEM);
             for (i = 0; i < src_ctx->initial_pool_size; i++) {
                 qsv_init_surface(dst_ctx, &s->surfaces_internal[i]);
-                s->handle_pairs_internal[i].first = (mfxMemId)src_hwctx->texture;
+                s->handle_pairs_internal[i].first = (mfxMemId)src_hwctx->texture_infos[i].texture;
                 if (src_hwctx->BindFlags & D3D11_BIND_RENDER_TARGET) {
                     s->handle_pairs_internal[i].second = (mfxMemId)MFX_INFINITE;
                 } else {
-                    s->handle_pairs_internal[i].second = (mfxMemId)i;
+                    s->handle_pairs_internal[i].second = (mfxMemId)src_hwctx->texture_infos[i].index;
                 }
                 s->surfaces_internal[i].Data.MemId = (mfxMemId)&s->handle_pairs_internal[i];
             }
