@@ -197,7 +197,7 @@ static int do_chromahold_slice(AVFilterContext *avctx, void *arg, int jobnr, int
             du = u - ctx->chromakey_uv[0];
             dv = v - ctx->chromakey_uv[1];
 
-            diff = sqrt((du * du + dv * dv) / (255.0 * 255.0));
+            diff = sqrt((du * du + dv * dv) / (255.0 * 255.0 * 2.0));
 
             alpha = diff > ctx->similarity;
             if (ctx->blend > 0.0001) {
@@ -236,7 +236,7 @@ static int do_chromahold16_slice(AVFilterContext *avctx, void *arg, int jobnr, i
             du = u - ctx->chromakey_uv[0];
             dv = v - ctx->chromakey_uv[1];
 
-            diff = sqrt((du * du + dv * dv) / (max * max));
+            diff = sqrt((du * du + dv * dv) / (max * max * 2.0));
 
             alpha = diff > ctx->similarity;
             if (ctx->blend > 0.0001) {
