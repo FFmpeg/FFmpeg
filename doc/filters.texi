@@ -8227,7 +8227,7 @@ Default value is 1.
 
 @item analyze
 If set to anything other than @code{manual} it will analyze every frame and use derived
-parameters for filtering output frame. Can be @code{manual} or @code{average}.
+parameters for filtering output frame. Can be @code{manual} or @code{average} or @code{minmax}.
 Default value is @code{manual}.
 @end table
 

@@ -30,6 +30,7 @@
 typedef enum AnalyzeMode {
     MANUAL,
     AVERAGE,
+    MINMAX,
     NB_ANALYZE
 } AnalyzeMode;
 
@@ -48,7 +49,7 @@ typedef struct ColorCorrectContext {
     int planeheight[4];
     int planewidth[4];
 
-    float (*analyzeret)[2];
+    float (*analyzeret)[4];
 
     int (*do_analyze)(AVFilterContext *s, void *arg,
                       int jobnr, int nb_jobs);
@@ -81,8 +82,8 @@ static int average_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         vptr += vlinesize;
     }
 
-    s->analyzeret[jobnr][0] = imax * sum_u / (float)((slice_end - slice_start) * width) - 0.5f;
-    s->analyzeret[jobnr][1] = imax * sum_v / (float)((slice_end - slice_start) * width) - 0.5f;
+    s->analyzeret[jobnr][0] = s->analyzeret[jobnr][2] = imax * sum_u / (float)((slice_end - slice_start) * width) - 0.5f;
+    s->analyzeret[jobnr][1] = s->analyzeret[jobnr][3] = imax * sum_v / (float)((slice_end - slice_start) * width) - 0.5f;
 
     return 0;
 }
@@ -112,8 +113,80 @@ static int average_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         vptr += vlinesize;
     }
 
-    s->analyzeret[jobnr][0] = imax * sum_u / (float)((slice_end - slice_start) * width) - 0.5f;
-    s->analyzeret[jobnr][1] = imax * sum_v / (float)((slice_end - slice_start) * width) - 0.5f;
+    s->analyzeret[jobnr][0] = s->analyzeret[jobnr][2] = imax * sum_u / (float)((slice_end - slice_start) * width) - 0.5f;
+    s->analyzeret[jobnr][1] = s->analyzeret[jobnr][3] = imax * sum_v / (float)((slice_end - slice_start) * width) - 0.5f;
+
+    return 0;
+}
+
+static int minmax_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorCorrectContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const float imax = s->imax;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int ulinesize = frame->linesize[1];
+    const int vlinesize = frame->linesize[2];
+    const uint8_t *uptr = (const uint8_t *)frame->data[1] + slice_start * ulinesize;
+    const uint8_t *vptr = (const uint8_t *)frame->data[2] + slice_start * vlinesize;
+    int min_u = 255, min_v = 255;
+    int max_u = 0, max_v = 0;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            min_u = FFMIN(min_u, uptr[x]);
+            min_v = FFMIN(min_v, vptr[x]);
+            max_u = FFMAX(max_u, uptr[x]);
+            max_v = FFMAX(max_v, vptr[x]);
+        }
+
+        uptr += ulinesize;
+        vptr += vlinesize;
+    }
+
+    s->analyzeret[jobnr][0] = imax * min_u - 0.5f;
+    s->analyzeret[jobnr][1] = imax * min_v - 0.5f;
+    s->analyzeret[jobnr][2] = imax * max_u - 0.5f;
+    s->analyzeret[jobnr][3] = imax * max_v - 0.5f;
+
+    return 0;
+}
+
+static int minmax_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorCorrectContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const float imax = s->imax;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int ulinesize = frame->linesize[1] / 2;
+    const int vlinesize = frame->linesize[2] / 2;
+    const uint16_t *uptr = (const uint16_t *)frame->data[1] + slice_start * ulinesize;
+    const uint16_t *vptr = (const uint16_t *)frame->data[2] + slice_start * vlinesize;
+    int min_u = INT_MAX, min_v = INT_MAX;
+    int max_u = INT_MIN, max_v = INT_MIN;
+
+    for (int y = slice_start; y < slice_end; y++) {
+        for (int x = 0; x < width; x++) {
+            min_u = FFMIN(min_u, uptr[x]);
+            min_v = FFMIN(min_v, vptr[x]);
+            max_u = FFMAX(max_u, uptr[x]);
+            max_v = FFMAX(max_v, vptr[x]);
+        }
+
+        uptr += ulinesize;
+        vptr += vlinesize;
+    }
+
+    s->analyzeret[jobnr][0] = imax * min_u - 0.5f;
+    s->analyzeret[jobnr][1] = imax * min_v - 0.5f;
+    s->analyzeret[jobnr][2] = imax * max_u - 0.5f;
+    s->analyzeret[jobnr][3] = imax * max_v - 0.5f;
 
     return 0;
 }
@@ -215,20 +288,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     const int nb_threads = FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx));
 
     if (s->analyze) {
-        float bl = 0.f, rl = 0.f;
+        float bl = 0.f, rl = 0.f, bh = 0.f, rh = 0.f;
 
         ff_filter_execute(ctx, s->do_analyze, frame, NULL, nb_threads);
 
         for (int i = 0; i < nb_threads; i++) {
             bl += s->analyzeret[i][0];
-            rl += s->analyzeret[i][0];
+            rl += s->analyzeret[i][1];
+            bh += s->analyzeret[i][2];
+            rh += s->analyzeret[i][3];
         }
 
         bl /= nb_threads;
         rl /= nb_threads;
+        bh /= nb_threads;
+        rh /= nb_threads;
 
         s->bl = -bl;
         s->rl = -rl;
+        s->bh = -bh;
+        s->rh = -rh;
     }
 
     ff_filter_execute(ctx, s->do_slice, frame, NULL, nb_threads);
@@ -277,6 +356,9 @@ static av_cold int config_input(AVFilterLink *inlink)
         break;
     case AVERAGE:
         s->do_analyze = s->depth <= 8 ? average_slice8 : average_slice16;
+        break;
+    case MINMAX:
+        s->do_analyze = s->depth <= 8 ? minmax_slice8  : minmax_slice16;
         break;
     default:
         return AVERROR_BUG;
@@ -327,9 +409,10 @@ static const AVOption colorcorrect_options[] = {
     { "rh", "set the red highlight spot",           OFFSET(rh), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, VF },
     { "bh", "set the blue highlight spot",          OFFSET(bh), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, VF },
     { "saturation", "set the amount of saturation", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl=1}, -3, 3, VF },
-    { "analyze", "set the analyze mode",            OFFSET(analyze), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_ANALYZE, VF, "analyze" },
+    { "analyze", "set the analyze mode",            OFFSET(analyze), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_ANALYZE-1, VF, "analyze" },
     {   "manual",  "manually set options", 0, AV_OPT_TYPE_CONST, {.i64=MANUAL},  0, 0, VF, "analyze" },
     {   "average", "use average pixels",   0, AV_OPT_TYPE_CONST, {.i64=AVERAGE}, 0, 0, VF, "analyze" },
+    {   "minmax",  "use minmax pixels",    0, AV_OPT_TYPE_CONST, {.i64=MINMAX},  0, 0, VF, "analyze" },
     { NULL }
 };
 
