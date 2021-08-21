@@ -27,6 +27,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct SincContext {
@@ -44,17 +45,22 @@ typedef struct SincContext {
     RDFTContext *rdft, *irdft;
 } SincContext;
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *outlink = ctx->outputs[0];
     SincContext *s = ctx->priv;
     const float *coeffs = s->coeffs;
     AVFrame *frame = NULL;
     int nb_samples;
 
+    if (!ff_outlink_frame_wanted(outlink))
+        return FFERROR_NOT_READY;
+
     nb_samples = FFMIN(s->nb_samples, s->n - s->pts);
-    if (nb_samples <= 0)
-        return AVERROR_EOF;
+    if (nb_samples <= 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
 
     if (!(frame = ff_get_audio_buffer(outlink, nb_samples)))
         return AVERROR(ENOMEM);
@@ -406,7 +412,6 @@ static const AVFilterPad sinc_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
 };
 
@@ -438,6 +443,7 @@ const AVFilter ff_asrc_sinc = {
     .priv_class    = &sinc_class,
     .query_formats = query_formats,
     .uninit        = uninit,
+    .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(sinc_outputs),
 };
