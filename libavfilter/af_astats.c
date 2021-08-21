@@ -82,7 +82,7 @@ typedef struct ChannelStats {
     uint64_t nb_infs;
     uint64_t nb_denormals;
     double *win_samples;
-    unsigned histogram[HISTOGRAM_SIZE];
+    uint64_t histogram[HISTOGRAM_SIZE];
     int win_pos;
     int max_index;
     double noise_floor;
@@ -109,7 +109,7 @@ typedef struct AudioStatsContext {
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption astats_options[] = {
-    { "length", "set the window length", OFFSET(time_constant), AV_OPT_TYPE_DOUBLE, {.dbl=.05}, .01, 10, FLAGS },
+    { "length", "set the window length", OFFSET(time_constant), AV_OPT_TYPE_DOUBLE, {.dbl=.05}, 0, 10, FLAGS },
     { "metadata", "inject metadata in the filtergraph", OFFSET(metadata), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "reset", "recalculate stats after this many frames", OFFSET(reset_count), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { "measure_perchannel", "only measure_perchannel these per-channel statistics", OFFSET(measure_perchannel), AV_OPT_TYPE_FLAGS, {.i64=MEASURE_ALL}, 0, UINT_MAX, FLAGS, "measure" },
@@ -213,7 +213,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->chstats)
         return AVERROR(ENOMEM);
 
-    s->tc_samples = 5 * s->time_constant * outlink->sample_rate + .5;
+    s->tc_samples = FFMAX(s->time_constant * outlink->sample_rate + .5, 1);
     s->nb_channels = outlink->channels;
 
     for (int i = 0; i < s->nb_channels; i++) {

@@ -2647,7 +2647,7 @@ It accepts the following option:
 @table @option
 @item length
 Short window length in seconds, used for peak and trough RMS measurement.
-Default is @code{0.05} (50 milliseconds). Allowed range is @code{[0.01 - 10]}.
+Default is @code{0.05} (50 milliseconds). Allowed range is @code{[0 - 10]}.
 
 @item metadata
 
