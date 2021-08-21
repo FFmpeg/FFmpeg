@@ -23,6 +23,10 @@ fate-cast5: libavutil/tests/cast5$(EXESUF)
 fate-cast5: CMD = run libavutil/tests/cast5$(EXESUF)
 fate-cast5: CMP = null
 
+FATE_LIBAVUTIL += fate-channel_layout
+fate-channel_layout: libavutil/tests/channel_layout$(EXESUF)
+fate-channel_layout: CMD = run libavutil/tests/channel_layout$(EXESUF)
+
 FATE_LIBAVUTIL += fate-audio_fifo
 fate-audio_fifo: libavutil/tests/audio_fifo$(EXESUF)
 fate-audio_fifo: CMD = run libavutil/tests/audio_fifo$(EXESUF)

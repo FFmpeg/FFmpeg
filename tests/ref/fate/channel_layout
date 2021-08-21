@@ -1,0 +1,109 @@
+Testing av_channel_name
+With AV_CHAN_FRONT_LEFT:                          FL
+With AV_CHAN_FRONT_RIGHT:                         FR
+With 63:                                       USR63
+Testing av_channel_description
+With AV_CHAN_FRONT_LEFT:                  front left
+With AV_CHAN_FRONT_RIGHT:                front right
+With 63:                                     user 63
+
+Testing av_channel_from_string
+With "FL":                                         0
+With "FR":                                         1
+With "USR63":                                     63
+
+==Native layouts==
+
+Testing av_channel_layout_from_string
+With "0x3f":                                     5.1
+With "63":                                       5.1
+With "6c":                                       5.1
+With "6C":                                6 channels
+With "6 channels":                        6 channels
+With "6 channels (FL+FR+FC+LFE+BL+BR)":          5.1
+With "FL+FR+FC+LFE+BL+BR":                       5.1
+With "5.1":                                      5.1
+With "FL+FR+USR63":         3 channels (FL+FR+USR63)
+With "FL+FR+FC+LFE+SL+SR":                 5.1(side)
+With "5.1(side)":                          5.1(side)
+
+Testing av_channel_layout_from_mask
+With AV_CH_LAYOUT_5POINT1:                 5.1(side)
+
+Testing av_channel_layout_channel_from_index
+On 5.1(side) layout with 0:                        0
+On 5.1(side) layout with 1:                        1
+On 5.1(side) layout with 2:                        2
+On 5.1(side) layout with 3:                        3
+On 5.1(side) layout with 4:                        9
+On 5.1(side) layout with 5:                       10
+On 5.1(side) layout with 6:                       -1
+
+Testing av_channel_layout_index_from_channel
+On 5.1(side) layout with AV_CHAN_FRONT_LEFT:       0
+On 5.1(side) layout with AV_CHAN_FRONT_RIGHT:      1
+On 5.1(side) layout with AV_CHAN_FRONT_CENTER:     2
+On 5.1(side) layout with AV_CHAN_LOW_FREQUENCY:    3
+On 5.1(side) layout with AV_CHAN_SIDE_LEFT:        4
+On 5.1(side) layout with AV_CHAN_SIDE_RIGHT:       5
+On 5.1(side) layout with AV_CHAN_BACK_CENTER:     -1
+
+Testing av_channel_layout_channel_from_string
+On 5.1(side) layout with "FL":                     0
+On 5.1(side) layout with "FR":                     1
+On 5.1(side) layout with "FC":                     2
+On 5.1(side) layout with "LFE":                    3
+On 5.1(side) layout with "SL":                     9
+On 5.1(side) layout with "SR":                    10
+On 5.1(side) layout with "BC":                    -1
+
+Testing av_channel_layout_index_from_string
+On 5.1(side) layout with "FL":                     0
+On 5.1(side) layout with "FR":                     1
+On 5.1(side) layout with "FC":                     2
+On 5.1(side) layout with "LFE":                    3
+On 5.1(side) layout with "SL":                     4
+On 5.1(side) layout with "SR":                     5
+On 5.1(side) layout with "BC":                    -1
+
+==Custom layouts==
+
+Testing av_channel_layout_from_string
+With "FL+FR+FC+BL+BR+LFE":    6 channels (FL+FR+FC+BL+BR+LFE)
+With "2 channels (FR+FL)":                 2 channels (FR+FL)
+With "FL@Foo+FR@Bar":              2 channels (FL@Foo+FR@Bar)
+With "FR+FL@Foo+USR63@Foo":  3 channels (FR+FL@Foo+USR63@Foo)
+
+Testing av_channel_layout_index_from_string
+On "FR+FL@Foo+USR63@Foo" layout with "FR":                  0
+On "FR+FL@Foo+USR63@Foo" layout with "FL":                  1
+On "FR+FL@Foo+USR63@Foo" layout with "USR63":               2
+On "FR+FL@Foo+USR63@Foo" layout with "Foo":                -1
+On "FR+FL@Foo+USR63@Foo" layout with "@Foo":                1
+On "FR+FL@Foo+USR63@Foo" layout with "FR@Foo":             -1
+On "FR+FL@Foo+USR63@Foo" layout with "FL@Foo":              1
+On "FR+FL@Foo+USR63@Foo" layout with "USR63@Foo":           2
+On "FR+FL@Foo+USR63@Foo" layout with "BC":                 -1
+
+Testing av_channel_layout_channel_from_string
+On "FR+FL@Foo+USR63@Foo" layout with "FR":                  1
+On "FR+FL@Foo+USR63@Foo" layout with "FL":                  0
+On "FR+FL@Foo+USR63@Foo" layout with "USR63":              63
+On "FR+FL@Foo+USR63@Foo" layout with "Foo":                -1
+On "FR+FL@Foo+USR63@Foo" layout with "@Foo":                0
+On "FR+FL@Foo+USR63@Foo" layout with "FR@Foo":             -1
+On "FR+FL@Foo+USR63@Foo" layout with "FL@Foo":              0
+On "FR+FL@Foo+USR63@Foo" layout with "USR63@Foo":          63
+On "FR+FL@Foo+USR63@Foo" layout with "BC":                 -1
+
+Testing av_channel_layout_index_from_channel
+On "FR+FL@Foo+USR63@Foo" layout with AV_CHAN_FRONT_RIGHT:   0
+On "FR+FL@Foo+USR63@Foo" layout with AV_CHAN_FRONT_LEFT:    1
+On "FR+FL@Foo+USR63@Foo" layout with 63:                    2
+On "FR+FL@Foo+USR63@Foo" layout with AV_CHAN_BACK_CENTER:  -1
+
+Testing av_channel_layout_channel_from_index
+On "FR+FL@Foo+USR63@Foo" layout with 0:                     1
+On "FR+FL@Foo+USR63@Foo" layout with 1:                     0
+On "FR+FL@Foo+USR63@Foo" layout with 2:                    63
+On "FR+FL@Foo+USR63@Foo" layout with 3:                    -1
