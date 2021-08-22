@@ -119,9 +119,13 @@ read_header:
                       8 * FFMIN(field_size, buf_end - buf_ptr - sos_offs));
         s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
         s->start_code = SOS;
-        ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL);
-        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
-            return ret;
+        if (avctx->skip_frame == AVDISCARD_ALL) {
+            skip_bits(&s->gb, get_bits_left(&s->gb));
+        } else {
+            ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL);
+            if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+                return ret;
+        }
     }
 
     if (s->interlaced) {
