@@ -2055,13 +2055,20 @@ static int orthographic_to_xyz(const V360Context *s,
     const float r = hypotf(x, y);
     const float theta = asinf(r);
 
-    vec[0] = x;
-    vec[1] = y;
     vec[2] = cosf(theta);
+    if (vec[2] > 0) {
+        vec[0] = x;
+        vec[1] = y;
 
-    normalize_vector(vec);
+        normalize_vector(vec);
+        return 1;
+    } else {
+        vec[0] = 0;
+        vec[1] = 0;
+        vec[2] = 1;
 
-    return 1;
+        return 0;
+    }
 }
 
 /**
