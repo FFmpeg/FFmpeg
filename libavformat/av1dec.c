@@ -22,7 +22,6 @@
 #include "config.h"
 
 #include "libavutil/common.h"
-#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "libavcodec/av1_parse.h"
 #include "libavcodec/bsf.h"
@@ -299,7 +298,6 @@ typedef struct ObuContext {
     const AVClass *class;
     AVBSFContext *bsf;
     AVRational framerate;
-    AVFifoBuffer *fifo;
 } ObuContext;
 
 //For low overhead obu, we can't foresee the obu size before we parsed the header.
@@ -372,9 +370,6 @@ static int obu_probe(const AVProbeData *p)
 static int obu_read_header(AVFormatContext *s)
 {
     ObuContext *c = s->priv_data;
-    c->fifo = av_fifo_alloc(MAX_OBU_HEADER_SIZE);
-    if (!c->fifo)
-        return AVERROR(ENOMEM);
     return read_header(s, &c->framerate, &c->bsf, c);
 }
 
@@ -383,37 +378,26 @@ static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
     ObuContext *c = s->priv_data;
     uint8_t header[MAX_OBU_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     int64_t obu_size;
-    int size = av_fifo_space(c->fifo);
+    int size;
     int ret, len, type;
 
-    av_fifo_generic_write(c->fifo, s->pb, size,
-                          (int (*)(void*, void*, int))avio_read);
-    size = av_fifo_size(c->fifo);
-    if (!size)
-        return 0;
-
-    av_fifo_generic_peek(c->fifo, header, size, NULL);
+    if ((ret = ffio_ensure_seekback(s->pb, MAX_OBU_HEADER_SIZE)) < 0)
+        return ret;
+    size = avio_read(s->pb, header, MAX_OBU_HEADER_SIZE);
+    if (size < 0)
+        return size;
 
     len = read_obu_with_size(header, size, &obu_size, &type);
     if (len < 0) {
         av_log(c, AV_LOG_ERROR, "Failed to read obu\n");
         return len;
     }
+    avio_seek(s->pb, -size, SEEK_CUR);
 
-    ret = av_new_packet(pkt, len);
-    if (ret < 0) {
-        av_log(c, AV_LOG_ERROR, "Failed to allocate packet for obu\n");
-        return ret;
-    }
-    size = FFMIN(size, len);
-    av_fifo_generic_read(c->fifo, pkt->data, size, NULL);
-    len -= size;
-    if (len > 0) {
-        ret = avio_read(s->pb, pkt->data + size, len);
-        if (ret != len) {
-            av_log(c, AV_LOG_ERROR, "Failed to read %d frome file\n", len);
-            return ret < 0 ? ret : AVERROR_INVALIDDATA;
-        }
+    ret = av_get_packet(s->pb, pkt, len);
+    if (ret != len) {
+        av_log(c, AV_LOG_ERROR, "Failed to get packet for obu\n");
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
     }
     return 0;
 }
@@ -425,7 +409,10 @@ static int obu_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while (1) {
         ret = obu_get_packet(s, pkt);
-        if (ret < 0)
+        /* In case of AVERROR_EOF we need to flush the BSF. Conveniently
+         * obu_get_packet() returns a blank pkt in this case which
+         * can be used to signal that the BSF should be flushed. */
+        if (ret < 0 && ret != AVERROR_EOF)
             return ret;
         ret = av_bsf_send_packet(c->bsf, pkt);
         if (ret < 0) {
@@ -448,7 +435,6 @@ static int obu_read_close(AVFormatContext *s)
 {
     ObuContext *c = s->priv_data;
 
-    av_fifo_freep(&c->fifo);
     av_bsf_free(&c->bsf);
     return 0;
 }
