@@ -738,6 +738,15 @@ scale:
     out->width  = outlink->w;
     out->height = outlink->h;
 
+    // Sanity check: If we've got the RGB/XYZ (identity) matrix configured, and
+    //               the output is no longer RGB, unset the matrix.
+    //               In theory this should be in swscale itself as the AVFrame
+    //               based API gets in, so that not every swscale API user has
+    //               to go through duplicating such sanity checks.
+    if (out->colorspace == AVCOL_SPC_RGB &&
+        !(av_pix_fmt_desc_get(out->format)->flags & AV_PIX_FMT_FLAG_RGB))
+        out->colorspace = AVCOL_SPC_UNSPECIFIED;
+
     if (scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
