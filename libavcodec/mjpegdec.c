@@ -1580,6 +1580,9 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
                 else
                     ret = decode_block_progressive(s, *block, last_nnz, s->ac_index[0],
                                                    quant_matrix, ss, se, Al, &EOBRUN);
+
+                if (ret >= 0 && get_bits_left(&s->gb) < 0)
+                    ret = AVERROR_INVALIDDATA;
                 if (ret < 0) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "error y=%d x=%d\n", mb_y, mb_x);
