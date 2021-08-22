@@ -390,6 +390,10 @@ static int obu_read_packet(AVFormatContext *s, AVPacket *pkt)
     AV1DemuxContext *const c = s->priv_data;
     int ret;
 
+    if (s->io_repositioned) {
+        av_bsf_flush(c->bsf);
+        s->io_repositioned = 0;
+    }
     while (1) {
         ret = obu_get_packet(s, pkt);
         /* In case of AVERROR_EOF we need to flush the BSF. Conveniently
