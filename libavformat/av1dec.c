@@ -428,7 +428,7 @@ const AVInputFormat ff_obu_demuxer = {
     .read_packet    = obu_read_packet,
     .read_close     = av1_read_close,
     .extensions     = "obu",
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
     .priv_class     = &av1_demuxer_class,
 };
 #endif
