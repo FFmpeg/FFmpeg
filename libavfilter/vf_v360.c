@@ -1373,6 +1373,11 @@ static void process_cube_coordinates(const V360Context *s,
     rotate_cube_face(new_uf, new_vf, s->in_cubemap_face_rotation[*face]);
 }
 
+static av_always_inline float rescale(int x, int s)
+{
+    return (2.f * x + 1.f) / s - 1.f;
+}
+
 /**
  * Calculate 3D coordinates on sphere for corresponding frame position in cubemap3x2 format.
  *
@@ -1402,8 +1407,8 @@ static int cube3x2_to_xyz(const V360Context *s,
     const int ewi = ceilf(ew * (u_face + 1)) - u_shift;
     const int ehi = ceilf(eh * (v_face + 1)) - v_shift;
 
-    const float uf = 2.f * (i - u_shift + 0.5f) / ewi - 1.f;
-    const float vf = 2.f * (j - v_shift + 0.5f) / ehi - 1.f;
+    const float uf = rescale(i - u_shift, ewi);
+    const float vf = rescale(j - v_shift, ehi);
 
     cube_to_xyz(s, uf, vf, face, vec, scalew, scaleh);
 
@@ -1526,8 +1531,8 @@ static int cube1x6_to_xyz(const V360Context *s,
     const int v_shift = ceilf(eh * face);
     const int ehi = ceilf(eh * (face + 1)) - v_shift;
 
-    const float uf = 2.f * (i           + 0.5f) / ew  - 1.f;
-    const float vf = 2.f * (j - v_shift + 0.5f) / ehi - 1.f;
+    const float uf = rescale(i, ew);
+    const float vf = rescale(j - v_shift, ehi);
 
     cube_to_xyz(s, uf, vf, face, vec, scalew, scaleh);
 
@@ -1559,8 +1564,8 @@ static int cube6x1_to_xyz(const V360Context *s,
     const int u_shift = ceilf(ew * face);
     const int ewi = ceilf(ew * (face + 1)) - u_shift;
 
-    const float uf = 2.f * (i - u_shift + 0.5f) / ewi - 1.f;
-    const float vf = 2.f * (j           + 0.5f) / eh  - 1.f;
+    const float uf = rescale(i - u_shift, ewi);
+    const float vf = rescale(j, eh);
 
     cube_to_xyz(s, uf, vf, face, vec, scalew, scaleh);
 
@@ -1758,8 +1763,8 @@ static int equirect_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * s->flat_range[0];
-    const float theta = ((2.f * j + 0.5f) / height - 1.f) * s->flat_range[1];
+    const float phi   = rescale(i, width)  * s->flat_range[0];
+    const float theta = rescale(j, height) * s->flat_range[1];
 
     const float sin_phi   = sinf(phi);
     const float cos_phi   = cosf(phi);
@@ -1787,8 +1792,8 @@ static int hequirect_to_xyz(const V360Context *s,
                             int i, int j, int width, int height,
                             float *vec)
 {
-    const float phi   = ((2.f * i + 0.5f) / width  - 1.f) * M_PI_2;
-    const float theta = ((2.f * j + 0.5f) / height - 1.f) * M_PI_2;
+    const float phi   = rescale(i, width)  * M_PI_2;
+    const float theta = rescale(j, height) * M_PI_2;
 
     const float sin_phi   = sinf(phi);
     const float cos_phi   = cosf(phi);
@@ -1833,8 +1838,8 @@ static int stereographic_to_xyz(const V360Context *s,
                                 int i, int j, int width, int height,
                                 float *vec)
 {
-    const float x = ((2.f * i + 1.f) / width  - 1.f) * s->flat_range[0];
-    const float y = ((2.f * j + 1.f) / height - 1.f) * s->flat_range[1];
+    const float x = rescale(i, width)  * s->flat_range[0];
+    const float y = rescale(j, height) * s->flat_range[1];
     const float r = hypotf(x, y);
     const float theta = atanf(r) * 2.f;
     const float sin_theta = sinf(theta);
@@ -1939,8 +1944,8 @@ static int equisolid_to_xyz(const V360Context *s,
                             int i, int j, int width, int height,
                             float *vec)
 {
-    const float x = ((2.f * i + 1.f) / width  - 1.f) * s->flat_range[0];
-    const float y = ((2.f * j + 1.f) / height - 1.f) * s->flat_range[1];
+    const float x = rescale(i, width)  * s->flat_range[0];
+    const float y = rescale(j, height) * s->flat_range[1];
     const float r = hypotf(x, y);
     const float theta = asinf(r) * 2.f;
     const float sin_theta = sinf(theta);
@@ -2045,8 +2050,8 @@ static int orthographic_to_xyz(const V360Context *s,
                                int i, int j, int width, int height,
                                float *vec)
 {
-    const float x = ((2.f * i + 1.f) / width  - 1.f) * s->flat_range[0];
-    const float y = ((2.f * j + 1.f) / height - 1.f) * s->flat_range[1];
+    const float x = rescale(i, width)  * s->flat_range[0];
+    const float y = rescale(j, height) * s->flat_range[1];
     const float r = hypotf(x, y);
     const float theta = asinf(r);
 
@@ -2155,8 +2160,8 @@ static int xyz_to_equirect(const V360Context *s,
     const float phi   = atan2f(vec[0], vec[2]);
     const float theta = asinf(vec[1]);
 
-    const float uf = (phi   / s->iflat_range[0] + 1.f) * width  / 2.f;
-    const float vf = (theta / s->iflat_range[1] + 1.f) * height / 2.f;
+    const float uf = (phi   / s->iflat_range[0] + 1.f) * width  / 2.f - 0.5f;
+    const float vf = (theta / s->iflat_range[1] + 1.f) * height / 2.f - 0.5f;
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2333,8 +2338,8 @@ static int mercator_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float phi = ((2.f * i + 1.f) / width  - 1.f) * M_PI + M_PI_2;
-    const float y   = ((2.f * j + 1.f) / height - 1.f) * M_PI;
+    const float phi = rescale(i, width)  * M_PI + M_PI_2;
+    const float y   = rescale(j, height) * M_PI;
     const float div = expf(2.f * y) + 1.f;
 
     const float sin_phi   = sinf(phi);
@@ -2401,8 +2406,8 @@ static int ball_to_xyz(const V360Context *s,
                        int i, int j, int width, int height,
                        float *vec)
 {
-    const float x = (2.f * i + 1.f) / width  - 1.f;
-    const float y = (2.f * j + 1.f) / height - 1.f;
+    const float x = rescale(i, width);
+    const float y = rescale(j, height);
     const float l = hypotf(x, y);
 
     if (l <= 1.f) {
@@ -2435,8 +2440,8 @@ static int hammer_to_xyz(const V360Context *s,
                          int i, int j, int width, int height,
                          float *vec)
 {
-    const float x = ((2.f * i + 1.f) / width  - 1.f);
-    const float y = ((2.f * j + 1.f) / height - 1.f);
+    const float x = rescale(i, width);
+    const float y = rescale(j, height);
 
     const float xx = x * x;
     const float yy = y * y;
@@ -2515,8 +2520,8 @@ static int sinusoidal_to_xyz(const V360Context *s,
                              int i, int j, int width, int height,
                              float *vec)
 {
-    const float theta = ((2.f * j + 1.f) / height - 1.f) * M_PI_2;
-    const float phi   = ((2.f * i + 1.f) / width  - 1.f) * M_PI / cosf(theta);
+    const float theta = rescale(j, height) * M_PI_2;
+    const float phi   = rescale(i, width)  * M_PI / cosf(theta);
 
     const float sin_phi   = sinf(phi);
     const float cos_phi   = cosf(phi);
@@ -2820,8 +2825,8 @@ static int flat_to_xyz(const V360Context *s,
                        int i, int j, int width, int height,
                        float *vec)
 {
-    const float l_x = s->flat_range[0] * ((2.f * i + 0.5f) / width  - 1.f);
-    const float l_y = s->flat_range[1] * ((2.f * j + 0.5f) / height - 1.f);
+    const float l_x = s->flat_range[0] * rescale(i, width);
+    const float l_y = s->flat_range[1] * rescale(j, height);
 
     vec[0] = l_x;
     vec[1] = l_y;
@@ -2863,8 +2868,8 @@ static int fisheye_to_xyz(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec)
 {
-    const float uf = s->flat_range[0] * ((2.f * i) / width  - 1.f);
-    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / height - 1.f);
+    const float uf = s->flat_range[0] * rescale(i, width);
+    const float vf = s->flat_range[1] * rescale(j, height);
 
     const float phi   = atan2f(vf, uf);
     const float theta = M_PI_2 * (1.f - hypotf(uf, vf));
@@ -2959,8 +2964,8 @@ static int pannini_to_xyz(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec)
 {
-    const float uf = ((2.f * i + 1.f) / width  - 1.f);
-    const float vf = ((2.f * j + 1.f) / height - 1.f);
+    const float uf = rescale(i, width);
+    const float vf = rescale(j, height);
 
     const float d = s->h_fov;
     const float k = uf * uf / ((d + 1.f) * (d + 1.f));
@@ -3004,8 +3009,8 @@ static int xyz_to_pannini(const V360Context *s,
     const float x = S * sinf(phi);
     const float y = S * tanf(theta);
 
-    const float uf = (x + 1.f) * width  / 2.f;
-    const float vf = (y + 1.f) * height / 2.f;
+    const float uf = (x + 1.f) * width  / 2.f - 0.5f;
+    const float vf = (y + 1.f) * height / 2.f - 0.5f;
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -3056,8 +3061,8 @@ static int cylindrical_to_xyz(const V360Context *s,
                               int i, int j, int width, int height,
                               float *vec)
 {
-    const float uf = s->flat_range[0] * ((2.f * i + 1.f) / width  - 1.f);
-    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / height - 1.f);
+    const float uf = s->flat_range[0] * rescale(i, width);
+    const float vf = s->flat_range[1] * rescale(j, height);
 
     const float phi   = uf;
     const float theta = atanf(vf);
@@ -3183,8 +3188,8 @@ static int cylindricalea_to_xyz(const V360Context *s,
                                 int i, int j, int width, int height,
                                 float *vec)
 {
-    const float uf = s->flat_range[0] * ((2.f * i + 1.f) / width  - 1.f);
-    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / height - 1.f);
+    const float uf = s->flat_range[0] * rescale(i, width);
+    const float vf = s->flat_range[1] * rescale(j, height);
 
     const float phi   = uf;
     const float theta = asinf(vf);
@@ -3259,8 +3264,8 @@ static int perspective_to_xyz(const V360Context *s,
                               int i, int j, int width, int height,
                               float *vec)
 {
-    const float uf = ((2.f * i + 1.f) / width  - 1.f);
-    const float vf = ((2.f * j + 1.f) / height - 1.f);
+    const float uf = rescale(i, width);
+    const float vf = rescale(j, height);
     const float rh = hypotf(uf, vf);
     const float sinzz = 1.f - rh * rh;
     const float h = 1.f + s->v_fov;
@@ -3305,8 +3310,8 @@ static int tetrahedron_to_xyz(const V360Context *s,
                               int i, int j, int width, int height,
                               float *vec)
 {
-    const float uf = (float)i / width;
-    const float vf = (float)j / height;
+    const float uf = ((float)i + 0.5f) / width;
+    const float vf = ((float)j + 0.5f) / height;
 
     vec[0] = uf < 0.5f ? uf * 4.f - 1.f : 3.f - uf * 4.f;
     vec[1] = 1.f - vf * 2.f;
@@ -3394,8 +3399,8 @@ static int dfisheye_to_xyz(const V360Context *s,
     const int ei = i >= ew ? i - ew : i;
     const float m = i >= ew ? 1.f : -1.f;
 
-    const float uf = s->flat_range[0] * ((2.f * ei) / ew - 1.f);
-    const float vf = s->flat_range[1] * ((2.f * j + 1.f) / eh - 1.f);
+    const float uf = s->flat_range[0] * rescale(ei, ew);
+    const float vf = s->flat_range[1] * rescale(j,  eh);
 
     const float h     = hypotf(uf, vf);
     const float lh    = h > 0.f ? h : 1.f;
@@ -3488,8 +3493,8 @@ static int barrel_to_xyz(const V360Context *s,
         const int ew = 4 * width / 5;
         const int eh = height;
 
-        const float phi   = ((2.f * i) / ew - 1.f) * M_PI        / scale;
-        const float theta = ((2.f * j) / eh - 1.f) * theta_range / scale;
+        const float phi   = rescale(i, ew) * M_PI        / scale;
+        const float theta = rescale(j, eh) * theta_range / scale;
 
         const float sin_phi   = sinf(phi);
         const float cos_phi   = cosf(phi);
@@ -3506,8 +3511,8 @@ static int barrel_to_xyz(const V360Context *s,
         float uf, vf;
 
         if (j < eh) {   // UP
-            uf = 2.f * (i - 4 * ew) / ew - 1.f;
-            vf = 2.f * (j         ) / eh - 1.f;
+            uf = rescale(i - 4 * ew, ew);
+            vf = rescale(j,          eh);
 
             uf /= scale;
             vf /= scale;
@@ -3516,8 +3521,8 @@ static int barrel_to_xyz(const V360Context *s,
             l_y = -1.f;
             l_z =  vf;
         } else {            // DOWN
-            uf = 2.f * (i - 4 * ew) / ew - 1.f;
-            vf = 2.f * (j -     eh) / eh - 1.f;
+            uf = rescale(i - 4 * ew, ew);
+            vf = rescale(j -     eh, eh);
 
             uf /= scale;
             vf /= scale;
@@ -3937,8 +3942,8 @@ static int octahedron_to_xyz(const V360Context *s,
                              int i, int j, int width, int height,
                              float *vec)
 {
-    const float x = ((i + 0.5f) / width)  * 2.f - 1.f;
-    const float y = ((j + 0.5f) / height) * 2.f - 1.f;
+    const float x = rescale(i, width);
+    const float y = rescale(j, height);
     const float ax = fabsf(x);
     const float ay = fabsf(y);
 
