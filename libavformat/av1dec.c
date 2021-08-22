@@ -29,6 +29,14 @@
 #include "avio_internal.h"
 #include "internal.h"
 
+typedef struct AV1DemuxContext {
+    const AVClass *class;
+    AVBSFContext *bsf;
+    AVRational framerate;
+    uint32_t temporal_unit_size;
+    uint32_t frame_unit_size;
+} AV1DemuxContext;
+
 //return < 0 if we need more data
 static int get_score(int type, int *seq)
 {
@@ -48,14 +56,15 @@ static int get_score(int type, int *seq)
     return 0;
 }
 
-static int read_header(AVFormatContext *s, const AVRational *framerate, AVBSFContext **bsf, void *logctx)
+static int av1_read_header(AVFormatContext *s)
 {
+    AV1DemuxContext *const c = s->priv_data;
     const AVBitStreamFilter *filter = av_bsf_get_by_name("av1_frame_merge");
     AVStream *st;
     int ret;
 
     if (!filter) {
-        av_log(logctx, AV_LOG_ERROR, "av1_frame_merge bitstream filter "
+        av_log(s, AV_LOG_ERROR, "av1_frame_merge bitstream filter "
                "not found. This is a bug, please report it.\n");
         return AVERROR_BUG;
     }
@@ -68,35 +77,49 @@ static int read_header(AVFormatContext *s, const AVRational *framerate, AVBSFCon
     st->codecpar->codec_id = AV_CODEC_ID_AV1;
     st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-    st->internal->avctx->framerate = *framerate;
+    st->internal->avctx->framerate = c->framerate;
     // taken from rawvideo demuxers
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
-    ret = av_bsf_alloc(filter, bsf);
+    ret = av_bsf_alloc(filter, &c->bsf);
     if (ret < 0)
         return ret;
 
-    ret = avcodec_parameters_copy((*bsf)->par_in, st->codecpar);
+    ret = avcodec_parameters_copy(c->bsf->par_in, st->codecpar);
     if (ret < 0)
         return ret;
 
-    ret = av_bsf_init(*bsf);
+    ret = av_bsf_init(c->bsf);
     if (ret < 0)
         return ret;
 
     return 0;
 }
 
+static int av1_read_close(AVFormatContext *s)
+{
+    AV1DemuxContext *const c = s->priv_data;
+
+    av_bsf_free(&c->bsf);
+    return 0;
+}
+
 #define DEC AV_OPT_FLAG_DECODING_PARAM
+#define OFFSET(x) offsetof(AV1DemuxContext, x)
+static const AVOption av1_options[] = {
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
+    { NULL },
+};
+#undef OFFSET
+
+static const AVClass av1_demuxer_class = {
+    .class_name = "AV1 Annex B/low overhead OBU demuxer",
+    .item_name  = av_default_item_name,
+    .option     = av1_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 #if CONFIG_AV1_DEMUXER
-typedef struct AnnexBContext {
-    const AVClass *class;
-    AVBSFContext *bsf;
-    uint32_t temporal_unit_size;
-    uint32_t frame_unit_size;
-    AVRational framerate;
-} AnnexBContext;
 
 static int leb(AVIOContext *pb, uint32_t *len) {
     int more, i = 0;
@@ -193,15 +216,9 @@ static int annexb_probe(const AVProbeData *p)
     return 0;
 }
 
-static int annexb_read_header(AVFormatContext *s)
-{
-    AnnexBContext *c = s->priv_data;
-    return read_header(s, &c->framerate, &c->bsf, c);
-}
-
 static int annexb_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AnnexBContext *c = s->priv_data;
+    AV1DemuxContext *const c = s->priv_data;
     uint32_t obu_unit_size;
     int ret, len;
 
@@ -256,50 +273,22 @@ end:
     return ret;
 }
 
-static int annexb_read_close(AVFormatContext *s)
-{
-    AnnexBContext *c = s->priv_data;
-
-    av_bsf_free(&c->bsf);
-    return 0;
-}
-
-#define OFFSET(x) offsetof(AnnexBContext, x)
-static const AVOption annexb_options[] = {
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
-    { NULL },
-};
-#undef OFFSET
-
-static const AVClass annexb_demuxer_class = {
-    .class_name = "AV1 Annex B demuxer",
-    .item_name  = av_default_item_name,
-    .option     = annexb_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVInputFormat ff_av1_demuxer = {
     .name           = "av1",
     .long_name      = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
-    .priv_data_size = sizeof(AnnexBContext),
+    .priv_data_size = sizeof(AV1DemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = annexb_probe,
-    .read_header    = annexb_read_header,
+    .read_header    = av1_read_header,
     .read_packet    = annexb_read_packet,
-    .read_close     = annexb_read_close,
+    .read_close     = av1_read_close,
     .extensions     = "obu",
     .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &annexb_demuxer_class,
+    .priv_class     = &av1_demuxer_class,
 };
 #endif
 
 #if CONFIG_OBU_DEMUXER
-typedef struct ObuContext {
-    const AVClass *class;
-    AVBSFContext *bsf;
-    AVRational framerate;
-} ObuContext;
-
 //For low overhead obu, we can't foresee the obu size before we parsed the header.
 //So, we can't use parse_obu_header here, since it will check size <= buf_size
 //see c27c7b49dc for more details
@@ -367,15 +356,9 @@ static int obu_probe(const AVProbeData *p)
     return 0;
 }
 
-static int obu_read_header(AVFormatContext *s)
-{
-    ObuContext *c = s->priv_data;
-    return read_header(s, &c->framerate, &c->bsf, c);
-}
-
 static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ObuContext *c = s->priv_data;
+    AV1DemuxContext *const c = s->priv_data;
     uint8_t header[MAX_OBU_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     int64_t obu_size;
     int size;
@@ -404,7 +387,7 @@ static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int obu_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ObuContext *c = s->priv_data;
+    AV1DemuxContext *const c = s->priv_data;
     int ret;
 
     while (1) {
@@ -431,39 +414,17 @@ static int obu_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-static int obu_read_close(AVFormatContext *s)
-{
-    ObuContext *c = s->priv_data;
-
-    av_bsf_free(&c->bsf);
-    return 0;
-}
-
-#define OFFSET(x) offsetof(ObuContext, x)
-static const AVOption obu_options[] = {
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
-    { NULL },
-};
-#undef OFFSET
-
-static const AVClass obu_demuxer_class = {
-    .class_name = "AV1 low overhead OBU demuxer",
-    .item_name  = av_default_item_name,
-    .option     = obu_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const AVInputFormat ff_obu_demuxer = {
     .name           = "obu",
     .long_name      = NULL_IF_CONFIG_SMALL("AV1 low overhead OBU"),
-    .priv_data_size = sizeof(ObuContext),
+    .priv_data_size = sizeof(AV1DemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = obu_probe,
-    .read_header    = obu_read_header,
+    .read_header    = av1_read_header,
     .read_packet    = obu_read_packet,
-    .read_close     = obu_read_close,
+    .read_close     = av1_read_close,
     .extensions     = "obu",
     .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &obu_demuxer_class,
+    .priv_class     = &av1_demuxer_class,
 };
 #endif
