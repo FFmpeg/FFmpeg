@@ -2354,10 +2354,12 @@ static int seek_frame_generic(AVFormatContext *s, int stream_index,
             ie = &st->internal->index_entries[st->internal->nb_index_entries - 1];
             if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
                 return ret;
+            s->io_repositioned = 1;
             avpriv_update_cur_dts(s, st, ie->timestamp);
         } else {
             if ((ret = avio_seek(s->pb, s->internal->data_offset, SEEK_SET)) < 0)
                 return ret;
+            s->io_repositioned = 1;
         }
         av_packet_unref(pkt);
         for (;;) {
@@ -2392,6 +2394,7 @@ static int seek_frame_generic(AVFormatContext *s, int stream_index,
     ie = &st->internal->index_entries[index];
     if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
         return ret;
+    s->io_repositioned = 1;
     avpriv_update_cur_dts(s, st, ie->timestamp);
 
     return 0;
