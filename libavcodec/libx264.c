@@ -870,6 +870,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.vui.i_colorprim = avctx->color_primaries;
     if (avctx->color_trc != AVCOL_TRC_UNSPECIFIED)
         x4->params.vui.i_transfer  = avctx->color_trc;
+    if (avctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
+        x4->params.vui.i_chroma_loc = avctx->chroma_sample_location - 1;
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
