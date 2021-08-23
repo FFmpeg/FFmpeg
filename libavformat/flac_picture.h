@@ -26,6 +26,18 @@
 
 #define RETURN_ERROR(code) do { ret = (code); goto fail; } while (0)
 
-int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size, int truncate_workaround);
+/**
+ * Parse a FLAC METADATA_BLOCK_PICTURE
+ *
+ * @param s   AVFormatContext for logging and the attached picture stream.
+ * @param buf `*buf` points to the actual data which must be padded by
+ *            AV_INPUT_BUFFER_PADDING_SIZE bytes not counted in buf_size.
+ *            This function may take ownership of `*buf` and reset it.
+ * @param buf_size size of `*buf` (excluding padding)
+ * @param truncate_workaround If set, additional data may be read from s->pb if
+ *                            truncation has been detected.
+ */
+int ff_flac_parse_picture(AVFormatContext *s, uint8_t **buf, int buf_size,
+                          int truncate_workaround);
 
 #endif /* AVFORMAT_FLAC_PICTURE_H */

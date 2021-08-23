@@ -118,7 +118,7 @@ static int vorbis_parse_single_comment(AVFormatContext *as, AVDictionary **m,
      */
     if (!av_strcasecmp(t, "METADATA_BLOCK_PICTURE") && parse_picture) {
         int ret, len = AV_BASE64_DECODE_SIZE(vl);
-        uint8_t *pict = av_malloc(len);
+        uint8_t *pict = av_malloc(len + AV_INPUT_BUFFER_PADDING_SIZE);
 
         if (!pict) {
             av_log(as, AV_LOG_WARNING, "out-of-memory error. Skipping cover art block.\n");
@@ -126,7 +126,7 @@ static int vorbis_parse_single_comment(AVFormatContext *as, AVDictionary **m,
         }
         ret = av_base64_decode(pict, v, len);
         if (ret > 0)
-            ret = ff_flac_parse_picture(as, pict, ret, 0);
+            ret = ff_flac_parse_picture(as, &pict, ret, 0);
         av_freep(&pict);
         if (ret < 0) {
             av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");

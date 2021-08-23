@@ -29,12 +29,13 @@
 
 #define MAX_TRUNC_PICTURE_SIZE (500 * 1024 * 1024)
 
-int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size, int truncate_workaround)
+int ff_flac_parse_picture(AVFormatContext *s, uint8_t **bufp, int buf_size,
+                          int truncate_workaround)
 {
     const CodecMime *mime = ff_id3v2_mime_tags;
     enum AVCodecID id = AV_CODEC_ID_NONE;
     AVBufferRef *data = NULL;
-    uint8_t mimetype[64], *desc = NULL;
+    uint8_t mimetype[64], *desc = NULL, *buf = *bufp;
     GetByteContext g;
     AVStream *st;
     int width, height, ret = 0;
@@ -142,6 +143,15 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size, int tr
             goto fail;
         }
     }
+    if (trunclen == 0 && len >= buf_size - (buf_size >> 4)) {
+        data = av_buffer_create(buf, buf_size + AV_INPUT_BUFFER_PADDING_SIZE,
+                                av_buffer_default_free, NULL, 0);
+        if (!data)
+            RETURN_ERROR(AVERROR(ENOMEM));
+        *bufp = NULL;
+        data->data += bytestream2_tell(&g);
+        data->size  = len + AV_INPUT_BUFFER_PADDING_SIZE;
+    } else {
     if (!(data = av_buffer_alloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
         RETURN_ERROR(AVERROR(ENOMEM));
     }
@@ -154,6 +164,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size, int tr
         bytestream2_get_bufferu(&g, data->data, left);
         if (avio_read(s->pb, data->data + len - trunclen, trunclen) < trunclen)
             RETURN_ERROR(AVERROR_INVALIDDATA);
+    }
     }
     memset(data->data + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
