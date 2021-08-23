@@ -2799,6 +2799,7 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     MOVMuxContext *mov = s->priv_data;
     const char *hdlr, *descr = NULL, *hdlr_type = NULL;
     int64_t pos = avio_tell(pb);
+    size_t descr_len;
 
     hdlr      = "dhlr";
     hdlr_type = "url ";
@@ -2864,9 +2865,10 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     avio_wb32(pb, 0); /* reserved */
     avio_wb32(pb, 0); /* reserved */
     avio_wb32(pb, 0); /* reserved */
+    descr_len = strlen(descr);
     if (!track || track->mode == MODE_MOV)
-        avio_w8(pb, strlen(descr)); /* pascal string */
-    avio_write(pb, descr, strlen(descr)); /* handler description */
+        avio_w8(pb, descr_len); /* pascal string */
+    avio_write(pb, descr, descr_len); /* handler description */
     if (track && track->mode != MODE_MOV)
         avio_w8(pb, 0); /* c string */
     return update_size(pb, pos);
@@ -3539,21 +3541,22 @@ static int mov_write_itunes_hdlr_tag(AVIOContext *pb, MOVMuxContext *mov,
 /* helper function to write a data tag with the specified string as data */
 static int mov_write_string_data_tag(AVIOContext *pb, const char *data, int lang, int long_style)
 {
+    size_t data_len = strlen(data);
     if (long_style) {
-        int size = 16 + strlen(data);
+        int size = 16 + data_len;
         avio_wb32(pb, size); /* size */
         ffio_wfourcc(pb, "data");
         avio_wb32(pb, 1);
         avio_wb32(pb, 0);
-        avio_write(pb, data, strlen(data));
+        avio_write(pb, data, data_len);
         return size;
     } else {
+        avio_wb16(pb, data_len); /* string length */
         if (!lang)
             lang = ff_mov_iso639_to_lang("und", 1);
-        avio_wb16(pb, strlen(data)); /* string length */
         avio_wb16(pb, lang);
-        avio_write(pb, data, strlen(data));
-        return strlen(data) + 4;
+        avio_write(pb, data, data_len);
+        return data_len + 4;
     }
 }
 
@@ -3829,9 +3832,10 @@ static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* entry count */
 
     while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
-        avio_wb32(pb, strlen(t->key) + 8);
+        size_t key_len = strlen(t->key);
+        avio_wb32(pb, key_len + 8);
         ffio_wfourcc(pb, "mdta");
-        avio_write(pb, t->key, strlen(t->key));
+        avio_write(pb, t->key, key_len);
         count += 1;
     }
     curpos = avio_tell(pb);
