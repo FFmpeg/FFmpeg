@@ -26,16 +26,18 @@
 #include "audio.h"
 #include "formats.h"
 
-#define NB_COEFS 16
+#define MAX_NB_COEFFS 16
 
 typedef struct AFreqShift {
     const AVClass *class;
 
     double shift;
     double level;
+    int nb_coeffs;
+    int old_nb_coeffs;
 
-    double cd[NB_COEFS];
-    float cf[NB_COEFS];
+    double cd[MAX_NB_COEFFS * 2];
+    float cf[MAX_NB_COEFFS * 2];
 
     int64_t in_samples;
 
@@ -88,7 +90,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
         type xn1 = src[n], xn2 = src[n];                      \
         type I, Q;                                            \
                                                               \
-        for (int j = 0; j < NB_COEFS / 2; j++) {              \
+        for (int j = 0; j < s->nb_coeffs; j++) {              \
             I = c[j] * (xn1 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn1;                                      \
@@ -97,7 +99,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
             xn1 = I;                                          \
         }                                                     \
                                                               \
-        for (int j = NB_COEFS / 2; j < NB_COEFS; j++) {       \
+        for (int j = s->nb_coeffs; j < s->nb_coeffs*2; j++) { \
             Q = c[j] * (xn2 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn2;                                      \
@@ -105,7 +107,7 @@ static void pfilter_channel_## name(AVFilterContext *ctx,     \
             o1[j] = Q;                                        \
             xn2 = Q;                                          \
         }                                                     \
-        Q = o2[NB_COEFS - 1];                                 \
+        Q = o2[s->nb_coeffs * 2 - 1];                         \
                                                               \
         dst[n] = (I * cos_theta - Q * sin_theta) * level;     \
     }                                                         \
@@ -137,7 +139,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
         type xn1 = src[n], xn2 = src[n];                      \
         type I, Q, theta;                                     \
                                                               \
-        for (int j = 0; j < NB_COEFS / 2; j++) {              \
+        for (int j = 0; j < s->nb_coeffs; j++) {              \
             I = c[j] * (xn1 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn1;                                      \
@@ -146,7 +148,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
             xn1 = I;                                          \
         }                                                     \
                                                               \
-        for (int j = NB_COEFS / 2; j < NB_COEFS; j++) {       \
+        for (int j = s->nb_coeffs; j < s->nb_coeffs*2; j++) { \
             Q = c[j] * (xn2 + o2[j]) - i2[j];                 \
             i2[j] = i1[j];                                    \
             i1[j] = xn2;                                      \
@@ -154,7 +156,7 @@ static void ffilter_channel_## name(AVFilterContext *ctx,     \
             o1[j] = Q;                                        \
             xn2 = Q;                                          \
         }                                                     \
-        Q = o2[NB_COEFS - 1];                                 \
+        Q = o2[s->nb_coeffs * 2 - 1];                         \
                                                               \
         theta = 2. * M_PI * fmod(shift * (N + n) * ts, 1.);   \
         dst[n] = (I * cos(theta) - Q * sin(theta)) * level;   \
@@ -266,12 +268,14 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AFreqShift *s = ctx->priv;
 
-    compute_coefs(s->cd, s->cf, NB_COEFS, 2. * 20. / inlink->sample_rate);
+    if (s->old_nb_coeffs != s->nb_coeffs)
+        compute_coefs(s->cd, s->cf, s->nb_coeffs * 2, 2. * 20. / inlink->sample_rate);
+    s->old_nb_coeffs = s->nb_coeffs;
 
-    s->i1 = ff_get_audio_buffer(inlink, NB_COEFS);
-    s->o1 = ff_get_audio_buffer(inlink, NB_COEFS);
-    s->i2 = ff_get_audio_buffer(inlink, NB_COEFS);
-    s->o2 = ff_get_audio_buffer(inlink, NB_COEFS);
+    s->i1 = ff_get_audio_buffer(inlink, MAX_NB_COEFFS * 2);
+    s->o1 = ff_get_audio_buffer(inlink, MAX_NB_COEFFS * 2);
+    s->i2 = ff_get_audio_buffer(inlink, MAX_NB_COEFFS * 2);
+    s->o2 = ff_get_audio_buffer(inlink, MAX_NB_COEFFS * 2);
     if (!s->i1 || !s->o1 || !s->i2 || !s->o2)
         return AVERROR(ENOMEM);
 
@@ -355,6 +359,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 static const AVOption afreqshift_options[] = {
     { "shift", "set frequency shift", OFFSET(shift), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -INT_MAX, INT_MAX, FLAGS },
     { "level", "set output level",    OFFSET(level), AV_OPT_TYPE_DOUBLE, {.dbl=1},      0.0,     1.0, FLAGS },
+    { "order", "set filter order",    OFFSET(nb_coeffs),AV_OPT_TYPE_INT, {.i64=8},  1, MAX_NB_COEFFS, FLAGS },
     { NULL }
 };
 
@@ -393,6 +398,7 @@ const AVFilter ff_af_afreqshift = {
 static const AVOption aphaseshift_options[] = {
     { "shift", "set phase shift", OFFSET(shift), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -1.0, 1.0, FLAGS },
     { "level", "set output level",OFFSET(level), AV_OPT_TYPE_DOUBLE, {.dbl=1},  0.0, 1.0, FLAGS },
+    { "order", "set filter order",OFFSET(nb_coeffs), AV_OPT_TYPE_INT,{.i64=8},    1, MAX_NB_COEFFS, FLAGS },
     { NULL }
 };
 
