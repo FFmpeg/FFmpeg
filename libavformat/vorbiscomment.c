@@ -66,9 +66,10 @@ int ff_vorbiscomment_write(AVIOContext *pb, const AVDictionary *m,
                            const char *vendor_string,
                            AVChapter **chapters, unsigned int nb_chapters)
 {
+    size_t vendor_string_length = strlen(vendor_string);
     int cm_count = 0;
-    avio_wl32(pb, strlen(vendor_string));
-    avio_write(pb, vendor_string, strlen(vendor_string));
+    avio_wl32(pb, vendor_string_length);
+    avio_write(pb, vendor_string, vendor_string_length);
     if (chapters && nb_chapters) {
         for (int i = 0; i < nb_chapters; i++) {
             cm_count += av_dict_count(chapters[i]->metadata) + 1;
