@@ -130,9 +130,25 @@ extern const struct ogg_codec ff_theora_codec;
 extern const struct ogg_codec ff_vorbis_codec;
 extern const struct ogg_codec ff_vp8_codec;
 
+/**
+ * Parse Vorbis comments
+ *
+ * @note  The buffer will be temporarily modifed by this function,
+ *        so it needs to be writable. Furthermore it must be padded
+ *        by a single byte (not counted in size).
+ *        All changes will have been reverted upon return.
+ */
 int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m,
                       const uint8_t *buf, int size, int parse_picture);
 
+/**
+ * Parse Vorbis comments and add metadata to an AVStream
+ *
+ * @note  The buffer will be temporarily modifed by this function,
+ *        so it needs to be writable. Furthermore it must be padded
+ *        by a single byte (not counted in size).
+ *        All changes will have been reverted upon return.
+ */
 int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
                              const uint8_t *buf, int size);
 
