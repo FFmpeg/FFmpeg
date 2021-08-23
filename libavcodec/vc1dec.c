@@ -444,7 +444,9 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         // the last byte of the extradata is a version number, 1 for the
         // samples we can decode
 
-        init_get_bits(&gb, avctx->extradata, avctx->extradata_size*8);
+        ret = init_get_bits8(&gb, avctx->extradata, avctx->extradata_size);
+        if (ret < 0)
+            return ret;
 
         if ((ret = ff_vc1_decode_sequence_header(avctx, v, &gb)) < 0)
           return ret;
@@ -770,8 +772,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             buf_size2 = vc1_unescape_buffer(buf, buf_size, buf2);
         }
         init_get_bits(&s->gb, buf2, buf_size2*8);
-    } else
-        init_get_bits(&s->gb, buf, buf_size*8);
+    } else{
+        ret = init_get_bits8(&s->gb, buf, buf_size);
+        if (ret < 0)
+            return ret;
+    }
 
     if (v->res_sprite) {
         v->new_sprite  = !get_bits1(&s->gb);
