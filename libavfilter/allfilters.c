@@ -33,6 +33,7 @@ extern const AVFilter ff_af_acrossover;
 extern const AVFilter ff_af_acrusher;
 extern const AVFilter ff_af_adeclick;
 extern const AVFilter ff_af_adeclip;
+extern const AVFilter ff_af_adecorrelate;
 extern const AVFilter ff_af_adelay;
 extern const AVFilter ff_af_adenorm;
 extern const AVFilter ff_af_aderivative;

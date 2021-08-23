@@ -12,6 +12,7 @@ version <next>:
 - audio and video segment filters
 - Apple Graphics (SMC) encoder
 - hsvkey and hsvhold video filters
+- adecorrelate audio filter
 
 
 version 4.4:
