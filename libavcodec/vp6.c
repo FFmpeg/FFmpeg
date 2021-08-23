@@ -167,7 +167,9 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
         }
         if (s->use_huffman) {
             s->parse_coeff = vp6_parse_coeff_huffman;
-            init_get_bits(&s->gb, buf, buf_size<<3);
+            ret = init_get_bits8(&s->gb, buf, buf_size);
+            if (ret < 0)
+                return ret;
         } else {
             ret = ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
             if (ret < 0)
