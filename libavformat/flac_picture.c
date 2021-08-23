@@ -150,19 +150,18 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t **bufp, int buf_size,
         data->data += bytestream2_tell(&g);
         data->size  = len + AV_INPUT_BUFFER_PADDING_SIZE;
     } else {
-    if (!(data = av_buffer_alloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
-        return AVERROR(ENOMEM);
-    }
+        if (!(data = av_buffer_alloc(len + AV_INPUT_BUFFER_PADDING_SIZE)))
+            return AVERROR(ENOMEM);
 
-    if (trunclen == 0) {
-        bytestream2_get_bufferu(&g, data->data, len);
-    } else {
-        // If truncation was detected copy all data from block and read missing bytes
-        // not included in the block size
-        bytestream2_get_bufferu(&g, data->data, left);
-        if (avio_read(s->pb, data->data + len - trunclen, trunclen) < trunclen)
-            RETURN_ERROR(AVERROR_INVALIDDATA);
-    }
+        if (trunclen == 0) {
+            bytestream2_get_bufferu(&g, data->data, len);
+        } else {
+            // If truncation was detected copy all data from block and
+            // read missing bytes not included in the block size.
+            bytestream2_get_bufferu(&g, data->data, left);
+            if (avio_read(s->pb, data->data + len - trunclen, trunclen) < trunclen)
+                RETURN_ERROR(AVERROR_INVALIDDATA);
+        }
     }
     memset(data->data + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
