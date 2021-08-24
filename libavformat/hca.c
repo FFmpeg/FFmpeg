@@ -45,14 +45,14 @@ static int hca_read_header(AVFormatContext *s)
     uint32_t chunk;
     uint16_t version;
     uint32_t block_count;
-    uint16_t block_size;
+    uint16_t block_size, data_offset;
     int ret;
 
     avio_skip(pb, 4);
     version = avio_rb16(pb);
 
-    s->internal->data_offset = avio_rb16(pb);
-    if (s->internal->data_offset <= 8)
+    data_offset = avio_rb16(pb);
+    if (data_offset <= 8)
         return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
@@ -60,7 +60,7 @@ static int hca_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     par = st->codecpar;
-    ret = ff_alloc_extradata(par, s->internal->data_offset);
+    ret = ff_alloc_extradata(par, data_offset);
     if (ret < 0)
         return ret;
 
@@ -69,7 +69,7 @@ static int hca_read_header(AVFormatContext *s)
         return AVERROR(EIO);
     AV_WL32(par->extradata, MKTAG('H', 'C', 'A', 0));
     AV_WB16(par->extradata + 4, version);
-    AV_WB16(par->extradata + 6, s->internal->data_offset);
+    AV_WB16(par->extradata + 6, data_offset);
 
     bytestream2_init(&gb, par->extradata + 8, par->extradata_size - 8);
 
@@ -97,7 +97,7 @@ static int hca_read_header(AVFormatContext *s)
     par->block_align = block_size;
     st->duration = 1024 * block_count;
 
-    avio_seek(pb, s->internal->data_offset, SEEK_SET);
+    avio_seek(pb, data_offset, SEEK_SET);
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
 
     return 0;

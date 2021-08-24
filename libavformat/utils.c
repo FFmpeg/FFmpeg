@@ -135,7 +135,7 @@ void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type)
 
 void av_format_inject_global_side_data(AVFormatContext *s)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     si->inject_global_side_data = 1;
     for (unsigned i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -372,7 +372,7 @@ static int init_input(AVFormatContext *s, const char *filename,
 
 int avformat_queue_attached_pictures(AVFormatContext *s)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int ret;
     for (unsigned i = 0; i < s->nb_streams; i++)
         if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
@@ -459,14 +459,14 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
                         const AVInputFormat *fmt, AVDictionary **options)
 {
     AVFormatContext *s = *ps;
-    AVFormatInternal *si;
+    FFFormatContext *si;
     int ret = 0;
     AVDictionary *tmp = NULL;
     ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
     if (!s && !(s = avformat_alloc_context()))
         return AVERROR(ENOMEM);
-    si = s->internal;
+    si = ffformatcontext(s);
     if (!s->av_class) {
         av_log(NULL, AV_LOG_ERROR, "Input context has not been properly allocated by avformat_alloc_context() and is not NULL either\n");
         return AVERROR(EINVAL);
@@ -629,7 +629,7 @@ static void force_codec_ids(AVFormatContext *s, AVStream *st)
 
 static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
 
     if (st->internal->request_probe>0) {
         AVProbeData *pd = &st->internal->probe_data;
@@ -747,7 +747,7 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
 
 int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVStream *st;
     int err;
 
@@ -964,7 +964,7 @@ static int has_decode_delay_been_guessed(AVStream *st)
 
 static PacketList *get_next_pkt(AVFormatContext *s, AVStream *st, PacketList *pktl)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     if (pktl->next)
         return pktl->next;
     if (pktl == si->packet_buffer_end)
@@ -1045,7 +1045,7 @@ static void update_dts_from_pts(AVFormatContext *s, int stream_index,
 static void update_initial_timestamps(AVFormatContext *s, int stream_index,
                                       int64_t dts, int64_t pts, AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVStream *st       = s->streams[stream_index];
     PacketList *pktl = si->packet_buffer ? si->packet_buffer : si->parse_queue;
     PacketList *pktl_it;
@@ -1099,7 +1099,7 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
 static void update_initial_durations(AVFormatContext *s, AVStream *st,
                                      int stream_index, int64_t duration)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     PacketList *pktl = si->packet_buffer ? si->packet_buffer : si->parse_queue;
     int64_t cur_dts    = RELATIVE_TS_BASE;
 
@@ -1158,7 +1158,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                                AVCodecParserContext *pc, AVPacket *pkt,
                                int64_t next_dts, int64_t next_pts)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int num, den, presentation_delayed, delay;
     int64_t offset;
     AVRational duration;
@@ -1349,7 +1349,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 static int parse_packet(AVFormatContext *s, AVPacket *pkt,
                         int stream_index, int flush)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVPacket *out_pkt = si->parse_pkt;
     AVStream *st = s->streams[stream_index];
     uint8_t *data = pkt->data;
@@ -1463,7 +1463,7 @@ static int64_t ts_to_samples(AVStream *st, int64_t ts)
 
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int ret, got_packet = 0;
     AVDictionary *metadata = NULL;
 
@@ -1651,7 +1651,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     const int genpts = s->flags & AVFMT_FLAG_GENPTS;
     int eof = 0;
     int ret;
@@ -1751,7 +1751,7 @@ return_packet:
 /* XXX: suppress the packet queue */
 static void flush_packet_queue(AVFormatContext *s)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     avpriv_packet_list_free(&si->parse_queue,       &si->parse_queue_end);
     avpriv_packet_list_free(&si->packet_buffer,     &si->packet_buffer_end);
     avpriv_packet_list_free(&si->raw_packet_buffer, &si->raw_packet_buffer_end);
@@ -1800,7 +1800,7 @@ int av_find_default_stream_index(AVFormatContext *s)
 /** Flush the frame reader. */
 void ff_read_frame_flush(AVFormatContext *s)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
 
     flush_packet_queue(s);
 
@@ -2188,7 +2188,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int,
                                                 int64_t *, int64_t))
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int64_t pos, ts;
     int64_t start_pos;
     int no_change;
@@ -2291,7 +2291,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
 static int seek_frame_byte(AVFormatContext *s, int stream_index,
                            int64_t pos, int flags)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int64_t pos_min, pos_max;
 
     pos_min = si->data_offset;
@@ -2312,7 +2312,7 @@ static int seek_frame_byte(AVFormatContext *s, int stream_index,
 static int seek_frame_generic(AVFormatContext *s, int stream_index,
                               int64_t timestamp, int flags)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int index;
     int64_t ret;
     AVStream *st;
@@ -2648,7 +2648,7 @@ static void fill_all_stream_timings(AVFormatContext *ic)
 
 static void estimate_timings_from_bit_rate(AVFormatContext *ic)
 {
-    AVFormatInternal *const si = ic->internal;
+    FFFormatContext *const si = ffformatcontext(ic);
     int show_warning = 0;
 
     /* if bit_rate is already set, we believe it */
@@ -2705,7 +2705,7 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
 /* only usable for MPEG-PS streams */
 static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
 {
-    AVFormatInternal *const si = ic->internal;
+    FFFormatContext *const si = ffformatcontext(ic);
     AVPacket *const pkt = si->pkt;
     int num, den, read_size, ret;
     int found_duration = 0;
@@ -3454,7 +3454,7 @@ fail:
     return ret;
 }
 
-static int extract_extradata(AVFormatInternal *si, AVStream *st, const AVPacket *pkt)
+static int extract_extradata(FFFormatContext *si, AVStream *st, const AVPacket *pkt)
 {
     AVStreamInternal *sti = st->internal;
     AVPacket *pkt_ref = si->parse_pkt;
@@ -3518,7 +3518,7 @@ static int add_coded_side_data(AVStream *st, AVCodecContext *avctx)
 
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
-    AVFormatInternal *const si = ic->internal;
+    FFFormatContext *const si = ffformatcontext(ic);
     int count = 0, ret = 0;
     int64_t read_size;
     AVPacket *pkt1 = si->pkt;
@@ -4269,11 +4269,11 @@ void ff_free_stream(AVFormatContext *s, AVStream *st)
 
 void avformat_free_context(AVFormatContext *s)
 {
-    AVFormatInternal *si;
+    FFFormatContext *si;
 
     if (!s)
         return;
-    si = s->internal;
+    si = ffformatcontext(s);
 
     if (s->oformat && s->oformat->deinit && si->initialized)
         s->oformat->deinit(s);
@@ -4308,7 +4308,6 @@ void avformat_free_context(AVFormatContext *s)
     av_packet_free(&si->parse_pkt);
     av_freep(&s->streams);
     flush_packet_queue(s);
-    av_freep(&s->internal);
     av_freep(&s->url);
     av_free(s);
 }
@@ -4341,7 +4340,7 @@ void avformat_close_input(AVFormatContext **ps)
 
 AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVStream *st;
     AVStream **streams;
 
@@ -4454,7 +4453,7 @@ AVProgram *av_new_program(AVFormatContext *ac, int id)
 AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_base,
                               int64_t start, int64_t end, const char *title)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVChapter *chapter = NULL;
     int ret;
 

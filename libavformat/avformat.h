@@ -1090,8 +1090,6 @@ enum AVDurationEstimationMethod {
     AVFMT_DURATION_FROM_BITRATE ///< Duration estimated from bitrate (less accurate)
 };
 
-typedef struct AVFormatInternal AVFormatInternal;
-
 /**
  * Format I/O context.
  * New fields can be added to the end with minor version bumps.
@@ -1559,12 +1557,6 @@ typedef struct AVFormatContext {
      * - decoding: set by user
      */
     char *format_whitelist;
-
-    /**
-     * An opaque field for libavformat internal usage.
-     * Must not be accessed in any way by callers.
-     */
-    AVFormatInternal *internal;
 
     /**
      * IO repositioned flag.

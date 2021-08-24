@@ -177,7 +177,7 @@ static int codec2_read_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    s->internal->data_offset = CODEC2_HEADER_SIZE;
+    ffformatcontext(s)->data_offset = CODEC2_HEADER_SIZE;
 
     return codec2_read_header_common(s, st);
 }
@@ -255,7 +255,6 @@ static int codec2raw_read_header(AVFormatContext *s)
         return ret;
     }
 
-    s->internal->data_offset = 0;
     codec2_make_extradata(st->codecpar->extradata, c2->mode);
 
     return codec2_read_header_common(s, st);

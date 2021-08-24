@@ -69,7 +69,12 @@ typedef struct FFFrac {
 } FFFrac;
 
 
-struct AVFormatInternal {
+typedef struct FFFormatContext {
+    /**
+     * The public context.
+     */
+    AVFormatContext pub;
+
     /**
      * Number of streams relevant for interleaving.
      * Muxing only.
@@ -173,7 +178,12 @@ struct AVFormatInternal {
      * Set if chapter ids are strictly monotonic.
      */
     int chapter_ids_monotonic;
-};
+} FFFormatContext;
+
+static av_always_inline FFFormatContext *ffformatcontext(AVFormatContext *s)
+{
+    return (FFFormatContext*)s;
+}
 
 struct AVStreamInternal {
     /**

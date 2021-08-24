@@ -224,7 +224,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 
 static int init_muxer(AVFormatContext *s, AVDictionary **options)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVDictionary *tmp = NULL;
     const AVOutputFormat *of = s->oformat;
     AVDictionaryEntry *e;
@@ -434,7 +434,7 @@ static void flush_if_needed(AVFormatContext *s)
 
 static void deinit_muxer(AVFormatContext *s)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     if (s->oformat && s->oformat->deinit && si->initialized)
         s->oformat->deinit(s);
     si->initialized =
@@ -443,7 +443,7 @@ static void deinit_muxer(AVFormatContext *s)
 
 int avformat_init_output(AVFormatContext *s, AVDictionary **options)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int ret = 0;
 
     if ((ret = init_muxer(s, options)) < 0)
@@ -464,7 +464,7 @@ int avformat_init_output(AVFormatContext *s, AVDictionary **options)
 
 int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int already_initialized = si->initialized;
     int streams_already_initialized = si->streams_initialized;
     int ret = 0;
@@ -506,7 +506,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int delay = st->codecpar->video_delay;
     int frame_size;
 
@@ -640,7 +640,7 @@ static void guess_pkt_duration(AVFormatContext *s, AVStream *st, AVPacket *pkt)
  */
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVStream *const st = s->streams[pkt->stream_index];
     int ret;
 
@@ -791,7 +791,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                              int (*compare)(AVFormatContext *, const AVPacket *, const AVPacket *))
 {
     int ret;
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     PacketList **next_point, *this_pktl;
     AVStream *st = s->streams[pkt->stream_index];
     int chunked  = s->max_chunk_size || s->max_chunk_duration;
@@ -893,7 +893,7 @@ static int interleave_compare_dts(AVFormatContext *s, const AVPacket *next,
 int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int stream_count = 0;
     int noninterleaved_count = 0;
     int ret;
@@ -1022,7 +1022,7 @@ int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset
 
 const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     PacketList *pktl = si->packet_buffer;
     while (pktl) {
         if (pktl->pkt.stream_index == stream) {
@@ -1169,7 +1169,7 @@ static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleav
 
 int av_write_frame(AVFormatContext *s, AVPacket *in)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVPacket *pkt = si->pkt;
     int ret;
 
@@ -1233,7 +1233,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
 int av_write_trailer(AVFormatContext *s)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVPacket *const pkt = si->pkt;
     int ret1, ret = 0;
 
@@ -1325,7 +1325,7 @@ static void uncoded_frame_free(void *unused, uint8_t *data)
 static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
                                         AVFrame *frame, int interleaved)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     AVPacket *pkt = si->pkt;
 
     av_assert0(s->oformat);

@@ -3100,7 +3100,7 @@ static void mxf_deinit(AVFormatContext *s)
 
 static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    AVFormatInternal *const si = s->internal;
+    FFFormatContext *const si = ffformatcontext(s);
     int i, stream_count = 0;
 
     for (i = 0; i < s->nb_streams; i++)

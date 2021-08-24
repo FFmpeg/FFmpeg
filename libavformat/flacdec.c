@@ -258,7 +258,8 @@ static int flac_probe(const AVProbeData *p)
 static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,
                                              int64_t *ppos, int64_t pos_limit)
 {
-    AVPacket *pkt = s->internal->parse_pkt;
+    FFFormatContext *const si = ffformatcontext(s);
+    AVPacket *const pkt = si->parse_pkt;
     AVStream *st = s->streams[stream_index];
     AVCodecParserContext *parser;
     int ret;

@@ -1253,7 +1253,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             // if there is no mkv-specific codec ID, use VFW mode
             put_ebml_string(pb, MATROSKA_ID_CODECID, "V_MS/VFW/FOURCC");
             track->write_dts = 1;
-            s->internal->avoid_negative_ts_use_pts = 0;
+            ffformatcontext(s)->avoid_negative_ts_use_pts = 0;
         }
 
         subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
@@ -2653,6 +2653,7 @@ static uint64_t mkv_get_uid(const mkv_track *tracks, int i, AVLFG *c)
 
 static int mkv_init(struct AVFormatContext *s)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     MatroskaMuxContext *mkv = s->priv_data;
     AVLFG c;
     unsigned nb_tracks = 0;
@@ -2674,7 +2675,7 @@ static int mkv_init(struct AVFormatContext *s)
 
     if (s->avoid_negative_ts < 0) {
         s->avoid_negative_ts = 1;
-        s->internal->avoid_negative_ts_use_pts = 1;
+        si->avoid_negative_ts_use_pts = 1;
     }
 
     if (!strcmp(s->oformat->name, "webm")) {

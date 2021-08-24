@@ -644,7 +644,7 @@ static int ipmovie_read_header(AVFormatContext *s)
 
     if (chunk_type == CHUNK_VIDEO)
         ipmovie->audio_type = AV_CODEC_ID_NONE;  /* no audio */
-    else if (process_ipmovie_chunk(ipmovie, pb, s->internal->parse_pkt) != CHUNK_INIT_AUDIO) {
+    else if (process_ipmovie_chunk(ipmovie, pb, ffformatcontext(s)->parse_pkt) != CHUNK_INIT_AUDIO) {
         return AVERROR_INVALIDDATA;
     }
 

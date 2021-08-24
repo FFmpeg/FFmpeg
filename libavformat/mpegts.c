@@ -3070,7 +3070,7 @@ static int mpegts_read_header(AVFormatContext *s)
     int64_t pos, probesize = s->probesize;
     int64_t seekback = FFMAX(s->probesize, (int64_t)ts->resync_size + PROBE_PACKET_MAX_BUF);
 
-    s->internal->prefer_codec_framerate = 1;
+    ffformatcontext(s)->prefer_codec_framerate = 1;
 
     if (ffio_ensure_seekback(pb, seekback) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");

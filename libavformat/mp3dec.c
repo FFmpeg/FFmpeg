@@ -360,14 +360,15 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 
 static int mp3_read_header(AVFormatContext *s)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     MP3DecContext *mp3 = s->priv_data;
     AVStream *st;
     int64_t off;
     int ret;
     int i;
 
-    s->metadata = s->internal->id3v2_meta;
-    s->internal->id3v2_meta = NULL;
+    s->metadata = si->id3v2_meta;
+    si->id3v2_meta = NULL;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -546,6 +547,7 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
 static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
                     int flags)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     MP3DecContext *mp3 = s->priv_data;
     AVIndexEntry *ie, ie1;
     AVStream *st = s->streams[0];
@@ -555,8 +557,8 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 
     if (filesize <= 0) {
         int64_t size = avio_size(s->pb);
-        if (size > 0 && size > s->internal->data_offset)
-            filesize = size - s->internal->data_offset;
+        if (size > 0 && size > si->data_offset)
+            filesize = size - si->data_offset;
     }
 
     if (mp3->xing_toc && (mp3->usetoc || (fast_seek && !mp3->is_cbr))) {
@@ -577,7 +579,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         ie = &ie1;
         timestamp = av_clip64(timestamp, 0, st->duration);
         ie->timestamp = timestamp;
-        ie->pos       = av_rescale(timestamp, filesize, st->duration) + s->internal->data_offset;
+        ie->pos       = av_rescale(timestamp, filesize, st->duration) + si->data_offset;
     } else {
         return -1; // generic index code
     }
@@ -588,7 +590,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
 
     if (mp3->is_cbr && ie == &ie1 && mp3->frames) {
         int frame_duration = av_rescale(st->duration, 1, mp3->frames);
-        ie1.timestamp = frame_duration * av_rescale(best_pos - s->internal->data_offset, mp3->frames, mp3->header_filesize);
+        ie1.timestamp = frame_duration * av_rescale(best_pos - si->data_offset, mp3->frames, mp3->header_filesize);
     }
 
     avpriv_update_cur_dts(s, st, ie->timestamp);

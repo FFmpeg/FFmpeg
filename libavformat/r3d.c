@@ -160,6 +160,7 @@ static void r3d_read_reos(AVFormatContext *s)
 
 static int r3d_read_header(AVFormatContext *s)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     R3DContext *r3d = s->priv_data;
     Atom atom;
     int ret;
@@ -183,8 +184,8 @@ static int r3d_read_header(AVFormatContext *s)
     if (r3d->audio_channels)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    s->internal->data_offset = avio_tell(s->pb);
-    av_log(s, AV_LOG_TRACE, "data offset %#"PRIx64"\n", s->internal->data_offset);
+    si->data_offset = avio_tell(s->pb);
+    av_log(s, AV_LOG_TRACE, "data offset %#"PRIx64"\n", si->data_offset);
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
     // find REOB/REOF/REOS to load index
@@ -210,7 +211,7 @@ static int r3d_read_header(AVFormatContext *s)
     }
 
  out:
-    avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
+    avio_seek(s->pb, si->data_offset, SEEK_SET);
     return 0;
 }
 

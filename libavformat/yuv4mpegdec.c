@@ -255,7 +255,7 @@ static int yuv4_read_header(AVFormatContext *s)
     s->packet_size = av_image_get_buffer_size(st->codecpar->format, width, height, 1) + Y4M_FRAME_MAGIC_LEN;
     if ((int) s->packet_size < 0)
         return s->packet_size;
-    s->internal->data_offset = data_offset = avio_tell(pb);
+    ffformatcontext(s)->data_offset = data_offset = avio_tell(pb);
 
     st->duration = (avio_size(pb) - data_offset) / s->packet_size;
 
@@ -293,7 +293,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
         return s->pb->eof_reached ? AVERROR_EOF : AVERROR(EIO);
     }
     pkt->stream_index = 0;
-    pkt->pts = (off - s->internal->data_offset) / s->packet_size;
+    pkt->pts = (off - ffformatcontext(s)->data_offset) / s->packet_size;
     pkt->duration = 1;
     return 0;
 }
@@ -309,7 +309,7 @@ static int yuv4_read_seek(AVFormatContext *s, int stream_index,
         return -1;
     pos = pts * s->packet_size;
 
-    if (avio_seek(s->pb, pos + s->internal->data_offset, SEEK_SET) < 0)
+    if (avio_seek(s->pb, pos + ffformatcontext(s)->data_offset, SEEK_SET) < 0)
         return -1;
     return 0;
 }

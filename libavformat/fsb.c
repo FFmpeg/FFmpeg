@@ -156,7 +156,7 @@ static int fsb_read_header(AVFormatContext *s)
     }
 
     avio_skip(pb, offset - avio_tell(pb));
-    s->internal->data_offset = avio_tell(pb);
+    ffformatcontext(s)->data_offset = avio_tell(pb);
 
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
 

@@ -382,7 +382,7 @@ typedef struct MatroskaDemuxContext {
     /* byte position of the segment inside the stream */
     int64_t segment_start;
 
-    /* This packet coincides with AVFormatInternal.parse_pkt
+    /* This packet coincides with FFFormatContext.parse_pkt
      * and is not owned by us. */
     AVPacket *pkt;
 
@@ -2898,6 +2898,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
 static int matroska_read_header(AVFormatContext *s)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     MatroskaDemuxContext *matroska = s->priv_data;
     EbmlList *attachments_list = &matroska->attachments;
     EbmlList *chapters_list    = &matroska->chapters;
@@ -2944,7 +2945,7 @@ static int matroska_read_header(AVFormatContext *s)
     }
     ebml_free(ebml_syntax, &ebml);
 
-    matroska->pkt = s->internal->parse_pkt;
+    matroska->pkt = si->parse_pkt;
 
     /* The next thing is a segment. */
     pos = avio_tell(matroska->ctx->pb);
@@ -2961,7 +2962,7 @@ static int matroska_read_header(AVFormatContext *s)
     }
     /* Set data_offset as it might be needed later by seek_frame_generic. */
     if (matroska->current_id == MATROSKA_ID_CLUSTER)
-        s->internal->data_offset = avio_tell(matroska->ctx->pb) - 4;
+        si->data_offset = avio_tell(matroska->ctx->pb) - 4;
     matroska_execute_seekhead(matroska);
 
     if (!matroska->time_scale)

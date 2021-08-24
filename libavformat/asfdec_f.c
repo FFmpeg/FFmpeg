@@ -753,7 +753,7 @@ static int asf_read_header(AVFormatContext *s)
         } else {
             if (!s->keylen) {
                 if (!ff_guidcmp(&g, &ff_asf_content_encryption)) {
-                    AVPacket *pkt = s->internal->parse_pkt;
+                    AVPacket *const pkt = ffformatcontext(s)->parse_pkt;
                     unsigned int len;
                     av_log(s, AV_LOG_WARNING,
                            "DRM protected stream detected, decoding will likely fail!\n");
@@ -884,7 +884,7 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
         if (asf->no_resync_search)
             off = 3;
 //         else if (s->packet_size > 0 && !asf->uses_std_ecc)
-//             off = (avio_tell(pb) - s->internal->data_offset) % s->packet_size + 3;
+//             off = (avio_tell(pb) - ffformatcontext(s)->data_offset) % s->packet_size + 3;
 
         c = d = e = -1;
         while (off-- > 0) {
@@ -1429,6 +1429,7 @@ static int asf_read_close(AVFormatContext *s)
 static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
                             int64_t *ppos, int64_t pos_limit)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     ASFContext *asf     = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
     ASFStream *asf_st;
@@ -1441,9 +1442,9 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
         start_pos[i] = pos;
 
     if (s->packet_size > 0)
-        pos = (pos + s->packet_size - 1 - s->internal->data_offset) /
+        pos = (pos + s->packet_size - 1 - si->data_offset) /
               s->packet_size * s->packet_size +
-              s->internal->data_offset;
+              si->data_offset;
     *ppos = pos;
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
@@ -1525,7 +1526,7 @@ static int asf_build_simple_index(AVFormatContext *s, int stream_index)
         for (i = 0; i < ict; i++) {
             int pktnum        = avio_rl32(s->pb);
             int pktct         = avio_rl16(s->pb);
-            int64_t pos       = s->internal->data_offset + s->packet_size * (int64_t)pktnum;
+            int64_t pos       = ffformatcontext(s)->data_offset + s->packet_size * (int64_t)pktnum;
             int64_t index_pts = FFMAX(av_rescale(itime, i, 10000) - asf->hdr.preroll, 0);
 
             if (avio_feof(s->pb)) {
@@ -1573,7 +1574,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
     /* explicitly handle the case of seeking to 0 */
     if (!pts) {
         asf_reset_header(s);
-        avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
+        avio_seek(s->pb, ffformatcontext(s)->data_offset, SEEK_SET);
         return 0;
     }
 
