@@ -975,12 +975,13 @@ int configure_filtergraph(FilterGraph *fg)
                                 AV_DICT_IGNORE_SUFFIX))) {
             av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
         }
-        if (strlen(args))
+        if (strlen(args)) {
             args[strlen(args)-1] = 0;
 
-        if (!strncmp(args, "sws_flags=", 10)) {
-            // keep the 'flags=' part
-            fg->graph->scale_sws_opts = av_strdup(args+4);
+            if (!strncmp(args, "sws_flags=", 10)) {
+                // keep the 'flags=' part
+                fg->graph->scale_sws_opts = av_strdup(args+4);
+            }
         }
 
         args[0] = 0;
