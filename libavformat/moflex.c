@@ -233,7 +233,7 @@ static int moflex_read_sync(AVFormatContext *s)
             st->codecpar->width      = width;
             st->codecpar->height     = height;
             st->codecpar->sample_rate= sample_rate;
-            st->codecpar->channels   = channels;
+            st->codecpar->ch_layout.nb_channels = channels;
             st->priv_data            = av_packet_alloc();
             if (!st->priv_data)
                 return AVERROR(ENOMEM);
