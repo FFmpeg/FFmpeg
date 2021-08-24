@@ -1767,7 +1767,10 @@ static int mov_read_targa_y216(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     if (c->fc->nb_streams >= 1) {
-        AVCodecParameters *par = c->fc->streams[c->fc->nb_streams-1]->codecpar;
+        AVStream *const  st = c->fc->streams[c->fc->nb_streams - 1];
+        FFStream *const sti = ffstream(st);
+        AVCodecParameters *par = st->codecpar;
+
         if (par->codec_tag == MKTAG('A', 'V', 'i', 'n') &&
             par->codec_id == AV_CODEC_ID_H264 &&
             atom.size > 11) {
@@ -1794,8 +1797,7 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     return 0;
                 den *= 2;
             case 1:
-                c->fc->streams[c->fc->nb_streams-1]->internal->display_aspect_ratio.num = num;
-                c->fc->streams[c->fc->nb_streams-1]->internal->display_aspect_ratio.den = den;
+                sti->display_aspect_ratio = (AVRational){ num, den };
             default:
                 return 0;
             }
@@ -2198,7 +2200,7 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
             switch (st->codecpar->codec_id) {
             case AV_CODEC_ID_MP2:
             case AV_CODEC_ID_MP3:
-                st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+                ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
                 break;
             }
         }
@@ -2368,6 +2370,8 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
 static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
                                    AVStream *st, MOVStreamContext *sc)
 {
+    FFStream *const sti = ffstream(st);
+
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
         !st->codecpar->sample_rate && sc->time_scale > 1)
         st->codecpar->sample_rate = sc->time_scale;
@@ -2436,10 +2440,10 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     case AV_CODEC_ID_VC1:
     case AV_CODEC_ID_VP8:
     case AV_CODEC_ID_VP9:
-        st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+        sti->need_parsing = AVSTREAM_PARSE_FULL;
         break;
     case AV_CODEC_ID_AV1:
-        st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
+        sti->need_parsing = AVSTREAM_PARSE_HEADERS;
         break;
     default:
         break;
@@ -2768,12 +2772,14 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
+    FFStream *sti;
     MOVStreamContext *sc;
     unsigned int i, entries;
 
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
+    sti = ffstream(st);
     sc = st->priv_data;
 
     avio_r8(pb); /* version */
@@ -2785,8 +2791,8 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (!entries) {
         sc->keyframe_absent = 1;
-        if (!st->internal->need_parsing && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
+        if (!sti->need_parsing && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            sti->need_parsing = AVSTREAM_PARSE_HEADERS;
         return 0;
     }
     if (sc->keyframes)
@@ -3191,8 +3197,9 @@ static int find_prev_closest_index(AVStream *st,
                                    int64_t* ctts_sample)
 {
     MOVStreamContext *msc = st->priv_data;
-    AVIndexEntry *e_keep = st->internal->index_entries;
-    int nb_keep = st->internal->nb_index_entries;
+    FFStream *const sti = ffstream(st);
+    AVIndexEntry *e_keep = sti->index_entries;
+    int nb_keep = sti->nb_index_entries;
     int64_t i = 0;
     int64_t index_ctts_count;
 
@@ -3205,8 +3212,8 @@ static int find_prev_closest_index(AVStream *st,
         timestamp_pts -= msc->dts_shift;
     }
 
-    st->internal->index_entries = e_old;
-    st->internal->nb_index_entries = nb_old;
+    sti->index_entries    = e_old;
+    sti->nb_index_entries = nb_old;
     *index = av_index_search_timestamp(st, timestamp_pts, flag | AVSEEK_FLAG_BACKWARD);
 
     // Keep going backwards in the index entries until the timestamp is the same.
@@ -3259,14 +3266,14 @@ static int find_prev_closest_index(AVStream *st,
     }
 
     /* restore AVStream state*/
-    st->internal->index_entries = e_keep;
-    st->internal->nb_index_entries = nb_keep;
+    sti->index_entries    = e_keep;
+    sti->nb_index_entries = nb_keep;
     return *index >= 0 ? 0 : -1;
 }
 
 /**
- * Add index entry with the given values, to the end of st->internal->index_entries.
- * Returns the new size st->internal->index_entries if successful, else returns -1.
+ * Add index entry with the given values, to the end of ffstream(st)->index_entries.
+ * Returns the new size ffstream(st)->index_entries if successful, else returns -1.
  *
  * This function is similar to ff_add_index_entry in libavformat/utils.c
  * except that here we are always unconditionally adding an index entry to
@@ -3278,29 +3285,30 @@ static int find_prev_closest_index(AVStream *st,
 static int64_t add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
                                int size, int distance, int flags)
 {
+    FFStream *const sti = ffstream(st);
     AVIndexEntry *entries, *ie;
     int64_t index = -1;
-    const size_t min_size_needed = (st->internal->nb_index_entries + 1) * sizeof(AVIndexEntry);
+    const size_t min_size_needed = (sti->nb_index_entries + 1) * sizeof(AVIndexEntry);
 
     // Double the allocation each time, to lower memory fragmentation.
     // Another difference from ff_add_index_entry function.
     const size_t requested_size =
-        min_size_needed > st->internal->index_entries_allocated_size ?
-        FFMAX(min_size_needed, 2 * st->internal->index_entries_allocated_size) :
+        min_size_needed > sti->index_entries_allocated_size ?
+        FFMAX(min_size_needed, 2 * sti->index_entries_allocated_size) :
         min_size_needed;
 
-    if (st->internal->nb_index_entries + 1U >= UINT_MAX / sizeof(AVIndexEntry))
+    if (sti->nb_index_entries + 1U >= UINT_MAX / sizeof(AVIndexEntry))
         return -1;
 
-    entries = av_fast_realloc(st->internal->index_entries,
-                              &st->internal->index_entries_allocated_size,
+    entries = av_fast_realloc(sti->index_entries,
+                              &sti->index_entries_allocated_size,
                               requested_size);
     if (!entries)
         return -1;
 
-    st->internal->index_entries= entries;
+    sti->index_entries = entries;
 
-    index= st->internal->nb_index_entries++;
+    index = sti->nb_index_entries++;
     ie= &entries[index];
 
     ie->pos = pos;
@@ -3318,11 +3326,12 @@ static int64_t add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
 static void fix_index_entry_timestamps(AVStream* st, int end_index, int64_t end_ts,
                                        int64_t* frame_duration_buffer,
                                        int frame_duration_buffer_size) {
+    FFStream *const sti = ffstream(st);
     int i = 0;
-    av_assert0(end_index >= 0 && end_index <= st->internal->nb_index_entries);
+    av_assert0(end_index >= 0 && end_index <= sti->nb_index_entries);
     for (i = 0; i < frame_duration_buffer_size; i++) {
         end_ts -= frame_duration_buffer[frame_duration_buffer_size - 1 - i];
-        st->internal->index_entries[end_index - 1 - i].timestamp = end_ts;
+        sti->index_entries[end_index - 1 - i].timestamp = end_ts;
     }
 }
 
@@ -3361,7 +3370,7 @@ static int64_t add_ctts_entry(MOVStts** ctts_data, unsigned int* ctts_count, uns
 static void mov_estimate_video_delay(MOVContext *c, AVStream* st)
 {
     MOVStreamContext *msc = st->priv_data;
-    int ind;
+    FFStream *const sti = ffstream(st);
     int ctts_ind = 0;
     int ctts_sample = 0;
     int64_t pts_buf[MAX_REORDER_DELAY + 1]; // Circular buffer to sort pts.
@@ -3374,14 +3383,14 @@ static void mov_estimate_video_delay(MOVContext *c, AVStream* st)
     if (st->codecpar->video_delay <= 0 && msc->ctts_data &&
         st->codecpar->codec_id == AV_CODEC_ID_H264) {
         st->codecpar->video_delay = 0;
-        for (ind = 0; ind < st->internal->nb_index_entries && ctts_ind < msc->ctts_count; ++ind) {
+        for (int ind = 0; ind < sti->nb_index_entries && ctts_ind < msc->ctts_count; ++ind) {
             // Point j to the last elem of the buffer and insert the current pts there.
             j = buf_start;
             buf_start = (buf_start + 1);
             if (buf_start == MAX_REORDER_DELAY + 1)
                 buf_start = 0;
 
-            pts_buf[j] = st->internal->index_entries[ind].timestamp + msc->ctts_data[ctts_ind].duration;
+            pts_buf[j] = sti->index_entries[ind].timestamp + msc->ctts_data[ctts_ind].duration;
 
             // The timestamps that are already in the sorted buffer, and are greater than the
             // current pts, are exactly the timestamps that need to be buffered to output PTS
@@ -3461,7 +3470,7 @@ static void mov_current_sample_set(MOVStreamContext *sc, int current_sample)
 }
 
 /**
- * Fix st->internal->index_entries, so that it contains only the entries (and the entries
+ * Fix ffstream(st)->index_entries, so that it contains only the entries (and the entries
  * which are needed to decode them) that fall in the edit list time ranges.
  * Also fixes the timestamps of the index entries to match the timeline
  * specified the edit lists.
@@ -3469,8 +3478,9 @@ static void mov_current_sample_set(MOVStreamContext *sc, int current_sample)
 static void mov_fix_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *msc = st->priv_data;
-    AVIndexEntry *e_old = st->internal->index_entries;
-    int nb_old = st->internal->nb_index_entries;
+    FFStream *const sti = ffstream(st);
+    AVIndexEntry *e_old = sti->index_entries;
+    int nb_old = sti->nb_index_entries;
     const AVIndexEntry *e_old_end = e_old + nb_old;
     const AVIndexEntry *current = NULL;
     MOVStts *ctts_data_old = msc->ctts_data;
@@ -3497,7 +3507,6 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int first_non_zero_audio_edit = -1;
     int packet_skip_samples = 0;
     MOVIndexRange *current_index_range;
-    int i;
     int found_keyframe_after_edit = 0;
     int found_non_empty_edit = 0;
 
@@ -3515,9 +3524,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     current_index_range = msc->index_ranges - 1;
 
     // Clean AVStream from traces of old index
-    st->internal->index_entries = NULL;
-    st->internal->index_entries_allocated_size = 0;
-    st->internal->nb_index_entries = 0;
+    sti->index_entries = NULL;
+    sti->index_entries_allocated_size = 0;
+    sti->nb_index_entries = 0;
 
     // Clean ctts fields of MOVStreamContext
     msc->ctts_data = NULL;
@@ -3562,7 +3571,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
 
             if (first_non_zero_audio_edit > 0)
-                st->internal->skip_samples = msc->start_pad = 0;
+                sti->skip_samples = msc->start_pad = 0;
         }
 
         // While reordering frame index according to edit list we must handle properly
@@ -3637,7 +3646,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     curr_cts < edit_list_media_time && curr_cts + frame_duration > edit_list_media_time &&
                     first_non_zero_audio_edit > 0) {
                     packet_skip_samples = edit_list_media_time - curr_cts;
-                    st->internal->skip_samples += packet_skip_samples;
+                    sti->skip_samples += packet_skip_samples;
 
                     // Shift the index entry timestamp by packet_skip_samples to be correct.
                     edit_list_dts_counter -= packet_skip_samples;
@@ -3646,7 +3655,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         // Make timestamps strictly monotonically increasing for audio, by rewriting timestamps for
                         // discarded packets.
                         if (frame_duration_buffer) {
-                            fix_index_entry_timestamps(st, st->internal->nb_index_entries, edit_list_dts_counter,
+                            fix_index_entry_timestamps(st, sti->nb_index_entries, edit_list_dts_counter,
                                                        frame_duration_buffer, num_discarded_begin);
                             av_freep(&frame_duration_buffer);
                         }
@@ -3670,7 +3679,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         // Increment skip_samples for the first non-zero audio edit list
                         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                             first_non_zero_audio_edit > 0 && st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
-                            st->internal->skip_samples += frame_duration;
+                            sti->skip_samples += frame_duration;
                         }
                     }
                 }
@@ -3685,7 +3694,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     // Make timestamps strictly monotonically increasing by rewriting timestamps for
                     // discarded packets.
                     if (frame_duration_buffer) {
-                        fix_index_entry_timestamps(st, st->internal->nb_index_entries, edit_list_dts_counter,
+                        fix_index_entry_timestamps(st, sti->nb_index_entries, edit_list_dts_counter,
                                                    frame_duration_buffer, num_discarded_begin);
                         av_freep(&frame_duration_buffer);
                     }
@@ -3746,9 +3755,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (msc->min_corrected_pts > 0) {
             av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", msc->min_corrected_pts);
-            for (i = 0; i < st->internal->nb_index_entries; ++i) {
-                st->internal->index_entries[i].timestamp -= msc->min_corrected_pts;
-            }
+            for (int i = 0; i < sti->nb_index_entries; ++i)
+                sti->index_entries[i].timestamp -= msc->min_corrected_pts;
         }
     }
     // Start time should be equal to zero or the duration of any empty edits.
@@ -3756,7 +3764,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     // Update av stream length, if it ends up shorter than the track's media duration
     st->duration = FFMIN(st->duration, edit_list_dts_entry_end - start_dts);
-    msc->start_pad = st->internal->skip_samples;
+    msc->start_pad = sti->skip_samples;
 
     // Free the old index and the old CTTS structures
     av_free(e_old);
@@ -3773,6 +3781,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 static void mov_build_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
+    FFStream *const sti = ffstream(st);
     int64_t current_offset;
     int64_t current_dts = 0;
     unsigned int stts_index = 0;
@@ -3844,17 +3853,17 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         current_dts -= sc->dts_shift;
         last_dts     = current_dts;
 
-        if (!sc->sample_count || st->internal->nb_index_entries)
+        if (!sc->sample_count || sti->nb_index_entries)
             return;
-        if (sc->sample_count >= UINT_MAX / sizeof(*st->internal->index_entries) - st->internal->nb_index_entries)
+        if (sc->sample_count >= UINT_MAX / sizeof(*sti->index_entries) - sti->nb_index_entries)
             return;
-        if (av_reallocp_array(&st->internal->index_entries,
-                              st->internal->nb_index_entries + sc->sample_count,
-                              sizeof(*st->internal->index_entries)) < 0) {
-            st->internal->nb_index_entries = 0;
+        if (av_reallocp_array(&sti->index_entries,
+                              sti->nb_index_entries + sc->sample_count,
+                              sizeof(*sti->index_entries)) < 0) {
+            sti->nb_index_entries = 0;
             return;
         }
-        st->internal->index_entries_allocated_size = (st->internal->nb_index_entries + sc->sample_count) * sizeof(*st->internal->index_entries);
+        sti->index_entries_allocated_size = (sti->nb_index_entries + sc->sample_count) * sizeof(*sti->index_entries);
 
         if (ctts_data_old) {
             // Expand ctts entries such that we have a 1-1 mapping with samples
@@ -3937,7 +3946,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                         av_log(mov->fc, AV_LOG_ERROR, "Sample size %u is too large\n", sample_size);
                         return;
                     }
-                    e = &st->internal->index_entries[st->internal->nb_index_entries++];
+                    e = &sti->index_entries[sti->nb_index_entries++];
                     e->pos = current_offset;
                     e->timestamp = current_dts;
                     e->size = sample_size;
@@ -3946,7 +3955,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     av_log(mov->fc, AV_LOG_TRACE, "AVIndex stream %d, sample %u, offset %"PRIx64", dts %"PRId64", "
                             "size %u, distance %u, keyframe %d\n", st->index, current_sample,
                             current_offset, current_dts, sample_size, distance, keyframe);
-                    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->internal->nb_index_entries < 100)
+                    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sti->nb_index_entries < 100)
                         ff_rfps_add_frame(mov->fc, st, current_dts);
                 }
 
@@ -4018,15 +4027,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         }
 
         av_log(mov->fc, AV_LOG_TRACE, "chunk count %u\n", total);
-        if (total >= UINT_MAX / sizeof(*st->internal->index_entries) - st->internal->nb_index_entries)
+        if (total >= UINT_MAX / sizeof(*sti->index_entries) - sti->nb_index_entries)
             return;
-        if (av_reallocp_array(&st->internal->index_entries,
-                              st->internal->nb_index_entries + total,
-                              sizeof(*st->internal->index_entries)) < 0) {
-            st->internal->nb_index_entries = 0;
+        if (av_reallocp_array(&sti->index_entries,
+                              sti->nb_index_entries + total,
+                              sizeof(*sti->index_entries)) < 0) {
+            sti->nb_index_entries = 0;
             return;
         }
-        st->internal->index_entries_allocated_size = (st->internal->nb_index_entries + total) * sizeof(*st->internal->index_entries);
+        sti->index_entries_allocated_size = (sti->nb_index_entries + total) * sizeof(*sti->index_entries);
 
         // populate index
         for (i = 0; i < sc->chunk_count; i++) {
@@ -4061,7 +4070,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     }
                 }
 
-                if (st->internal->nb_index_entries >= total) {
+                if (sti->nb_index_entries >= total) {
                     av_log(mov->fc, AV_LOG_ERROR, "wrong chunk count %u\n", total);
                     return;
                 }
@@ -4069,7 +4078,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     av_log(mov->fc, AV_LOG_ERROR, "Sample size %u is too large\n", size);
                     return;
                 }
-                e = &st->internal->index_entries[st->internal->nb_index_entries++];
+                e = &sti->index_entries[sti->nb_index_entries++];
                 e->pos = current_offset;
                 e->timestamp = current_dts;
                 e->size = size;
@@ -4092,8 +4101,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     }
 
     // Update start time of the stream.
-    if (st->start_time == AV_NOPTS_VALUE && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->internal->nb_index_entries > 0) {
-        st->start_time = st->internal->index_entries[0].timestamp + sc->dts_shift;
+    if (st->start_time == AV_NOPTS_VALUE && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sti->nb_index_entries > 0) {
+        st->start_time = sti->index_entries[0].timestamp + sc->dts_shift;
         if (sc->ctts_data) {
             st->start_time += sc->ctts_data[0].duration;
         }
@@ -4328,7 +4337,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         && sc->stts_count > 3
         && sc->stts_count*10 > st->nb_frames
         && sc->time_scale == st->codecpar->sample_rate) {
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+            ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
     }
     /* Do not need those anymore. */
     av_freep(&sc->chunk_offsets);
@@ -4740,6 +4749,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVFragment *frag = &c->fragment;
     AVStream *st = NULL;
+    FFStream *sti = NULL;
     MOVStreamContext *sc;
     MOVStts *ctts_data;
     uint64_t offset;
@@ -4762,6 +4772,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < c->fc->nb_streams; i++) {
         if (c->fc->streams[i]->id == frag->track_id) {
             st = c->fc->streams[i];
+            sti = ffstream(st);
             break;
         }
     }
@@ -4779,7 +4790,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     // A valid index_entry means the trun for the fragment was read
     // and it's samples are in index_entries at the given position.
     // New index entries will be inserted before the index_entry found.
-    index_entry_pos = st->internal->nb_index_entries;
+    index_entry_pos = sti->nb_index_entries;
     for (i = c->frag_index.current + 1; i < c->frag_index.nb_items; i++) {
         frag_stream_info = get_frag_stream_info(&c->frag_index, i, frag->track_id);
         if (frag_stream_info && frag_stream_info->index_entry >= 0) {
@@ -4788,7 +4799,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
         }
     }
-    av_assert0(index_entry_pos <= st->internal->nb_index_entries);
+    av_assert0(index_entry_pos <= sti->nb_index_entries);
 
     avio_r8(pb); /* version */
     flags = avio_rb24(pb);
@@ -4839,22 +4850,22 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "first sample flags 0x%x\n", first_sample_flags);
 
     // realloc space for new index entries
-    if((uint64_t)st->internal->nb_index_entries + entries >= UINT_MAX / sizeof(AVIndexEntry)) {
-        entries = UINT_MAX / sizeof(AVIndexEntry) - st->internal->nb_index_entries;
+    if ((uint64_t)sti->nb_index_entries + entries >= UINT_MAX / sizeof(AVIndexEntry)) {
+        entries = UINT_MAX / sizeof(AVIndexEntry) - sti->nb_index_entries;
         av_log(c->fc, AV_LOG_ERROR, "Failed to add index entry\n");
     }
     if (entries == 0)
         return 0;
 
-    requested_size = (st->internal->nb_index_entries + entries) * sizeof(AVIndexEntry);
-    new_entries = av_fast_realloc(st->internal->index_entries,
-                                  &st->internal->index_entries_allocated_size,
+    requested_size = (sti->nb_index_entries + entries) * sizeof(AVIndexEntry);
+    new_entries = av_fast_realloc(sti->index_entries,
+                                  &sti->index_entries_allocated_size,
                                   requested_size);
     if (!new_entries)
         return AVERROR(ENOMEM);
-    st->internal->index_entries= new_entries;
+    sti->index_entries= new_entries;
 
-    requested_size = (st->internal->nb_index_entries + entries) * sizeof(*sc->ctts_data);
+    requested_size = (sti->nb_index_entries + entries) * sizeof(*sc->ctts_data);
     old_ctts_allocated_size = sc->ctts_allocated_size;
     ctts_data = av_fast_realloc(sc->ctts_data, &sc->ctts_allocated_size,
                                 requested_size);
@@ -4868,12 +4879,12 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     memset((uint8_t*)(sc->ctts_data) + old_ctts_allocated_size, 0,
            sc->ctts_allocated_size - old_ctts_allocated_size);
 
-    if (index_entry_pos < st->internal->nb_index_entries) {
+    if (index_entry_pos < sti->nb_index_entries) {
         // Make hole in index_entries and ctts_data for new samples
-        memmove(st->internal->index_entries + index_entry_pos + entries,
-                st->internal->index_entries + index_entry_pos,
-                sizeof(*st->internal->index_entries) *
-                (st->internal->nb_index_entries - index_entry_pos));
+        memmove(sti->index_entries + index_entry_pos + entries,
+                sti->index_entries + index_entry_pos,
+                sizeof(*sti->index_entries) *
+                (sti->nb_index_entries - index_entry_pos));
         memmove(sc->ctts_data + index_entry_pos + entries,
                 sc->ctts_data + index_entry_pos,
                 sizeof(*sc->ctts_data) * (sc->ctts_count - index_entry_pos));
@@ -4882,15 +4893,15 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
     }
 
-    st->internal->nb_index_entries += entries;
-    sc->ctts_count = st->internal->nb_index_entries;
+    sti->nb_index_entries += entries;
+    sc->ctts_count = sti->nb_index_entries;
 
     // Record the index_entry position in frag_index of this fragment
     if (frag_stream_info)
         frag_stream_info->index_entry = index_entry_pos;
 
     if (index_entry_pos > 0)
-        prev_dts = st->internal->index_entries[index_entry_pos-1].timestamp;
+        prev_dts = sti->index_entries[index_entry_pos-1].timestamp;
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         unsigned sample_size = frag->size;
@@ -4939,11 +4950,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (prev_dts >= dts)
             index_entry_flags |= AVINDEX_DISCARD_FRAME;
 
-        st->internal->index_entries[index_entry_pos].pos = offset;
-        st->internal->index_entries[index_entry_pos].timestamp = dts;
-        st->internal->index_entries[index_entry_pos].size= sample_size;
-        st->internal->index_entries[index_entry_pos].min_distance= distance;
-        st->internal->index_entries[index_entry_pos].flags = index_entry_flags;
+        sti->index_entries[index_entry_pos].pos   = offset;
+        sti->index_entries[index_entry_pos].timestamp = dts;
+        sti->index_entries[index_entry_pos].size  = sample_size;
+        sti->index_entries[index_entry_pos].min_distance = distance;
+        sti->index_entries[index_entry_pos].flags = index_entry_flags;
 
         sc->ctts_data[index_entry_pos].count = 1;
         sc->ctts_data[index_entry_pos].duration = ctts_duration;
@@ -4972,16 +4983,16 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         // EOF found before reading all entries.  Fix the hole this would
         // leave in index_entries and ctts_data
         int gap = entries - i;
-        memmove(st->internal->index_entries + index_entry_pos,
-                st->internal->index_entries + index_entry_pos + gap,
-                sizeof(*st->internal->index_entries) *
-                (st->internal->nb_index_entries - (index_entry_pos + gap)));
+        memmove(sti->index_entries + index_entry_pos,
+                sti->index_entries + index_entry_pos + gap,
+                sizeof(*sti->index_entries) *
+                (sti->nb_index_entries - (index_entry_pos + gap)));
         memmove(sc->ctts_data + index_entry_pos,
                 sc->ctts_data + index_entry_pos + gap,
                 sizeof(*sc->ctts_data) *
                 (sc->ctts_count - (index_entry_pos + gap)));
 
-        st->internal->nb_index_entries -= gap;
+        sti->nb_index_entries -= gap;
         sc->ctts_count -= gap;
         if (index_entry_pos < sc->current_sample) {
             sc->current_sample -= gap;
@@ -4994,11 +5005,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     // fragment that overlap with AVINDEX_DISCARD_FRAME
     prev_dts = AV_NOPTS_VALUE;
     if (index_entry_pos > 0)
-        prev_dts = st->internal->index_entries[index_entry_pos-1].timestamp;
-    for (i = index_entry_pos; i < st->internal->nb_index_entries; i++) {
-        if (prev_dts < st->internal->index_entries[i].timestamp)
+        prev_dts = sti->index_entries[index_entry_pos-1].timestamp;
+    for (int i = index_entry_pos; i < sti->nb_index_entries; i++) {
+        if (prev_dts < sti->index_entries[i].timestamp)
             break;
-        st->internal->index_entries[i].flags |= AVINDEX_DISCARD_FRAME;
+        sti->index_entries[i].flags |= AVINDEX_DISCARD_FRAME;
     }
 
     // If a hole was created to insert the new index_entries into,
@@ -7156,15 +7167,15 @@ static int mov_probe(const AVProbeData *p)
 static void mov_read_chapters(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
-    AVStream *st;
     MOVStreamContext *sc;
     int64_t cur_pos;
     int i, j;
     int chapter_track;
 
     for (j = 0; j < mov->nb_chapter_tracks; j++) {
+        AVStream *st = NULL;
+        FFStream *sti = NULL;
         chapter_track = mov->chapter_tracks[j];
-        st = NULL;
         for (i = 0; i < s->nb_streams; i++)
             if (s->streams[i]->id == chapter_track) {
                 st = s->streams[i];
@@ -7174,15 +7185,16 @@ static void mov_read_chapters(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "Referenced QT chapter track not found\n");
             continue;
         }
+        sti = ffstream(st);
 
         sc = st->priv_data;
         cur_pos = avio_tell(sc->pb);
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             st->disposition |= AV_DISPOSITION_ATTACHED_PIC | AV_DISPOSITION_TIMED_THUMBNAILS;
-            if (st->internal->nb_index_entries) {
+            if (sti->nb_index_entries) {
                 // Retrieve the first frame, if possible
-                AVIndexEntry *sample = &st->internal->index_entries[0];
+                AVIndexEntry *sample = &sti->index_entries[0];
                 if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
                     av_log(s, AV_LOG_ERROR, "Failed to retrieve first frame\n");
                     goto finish;
@@ -7195,9 +7207,9 @@ static void mov_read_chapters(AVFormatContext *s)
             st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
             st->codecpar->codec_id = AV_CODEC_ID_BIN_DATA;
             st->discard = AVDISCARD_ALL;
-            for (i = 0; i < st->internal->nb_index_entries; i++) {
-                AVIndexEntry *sample = &st->internal->index_entries[i];
-                int64_t end = i+1 < st->internal->nb_index_entries ? st->internal->index_entries[i+1].timestamp : st->duration;
+            for (int i = 0; i < sti->nb_index_entries; i++) {
+                AVIndexEntry *sample = &sti->index_entries[i];
+                int64_t end = i+1 < sti->nb_index_entries ? sti->index_entries[i+1].timestamp : st->duration;
                 uint8_t *title;
                 uint16_t ch;
                 int len, title_len;
@@ -7266,14 +7278,15 @@ static int parse_timecode_in_framenum_format(AVFormatContext *s, AVStream *st,
 static int mov_read_rtmd_track(AVFormatContext *s, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
+    FFStream *const sti = ffstream(st);
     char buf[AV_TIMECODE_STR_SIZE];
     int64_t cur_pos = avio_tell(sc->pb);
     int hh, mm, ss, ff, drop;
 
-    if (!st->internal->nb_index_entries)
+    if (!sti->nb_index_entries)
         return -1;
 
-    avio_seek(sc->pb, st->internal->index_entries->pos, SEEK_SET);
+    avio_seek(sc->pb, sti->index_entries->pos, SEEK_SET);
     avio_skip(s->pb, 13);
     hh = avio_r8(s->pb);
     mm = avio_r8(s->pb);
@@ -7291,14 +7304,15 @@ static int mov_read_rtmd_track(AVFormatContext *s, AVStream *st)
 static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
+    FFStream *const sti = ffstream(st);
     int flags = 0;
     int64_t cur_pos = avio_tell(sc->pb);
     uint32_t value;
 
-    if (!st->internal->nb_index_entries)
+    if (!sti->nb_index_entries)
         return -1;
 
-    avio_seek(sc->pb, st->internal->index_entries->pos, SEEK_SET);
+    avio_seek(sc->pb, sti->index_entries->pos, SEEK_SET);
     value = avio_rb32(s->pb);
 
     if (sc->tmcd_flags & 0x0001) flags |= AV_TIMECODE_FLAG_DROPFRAME;
@@ -7616,11 +7630,12 @@ static int mov_read_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        FFStream *const sti = ffstream(st);
         MOVStreamContext *sc = st->priv_data;
         fix_timescale(mov, sc);
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             st->codecpar->codec_id   == AV_CODEC_ID_AAC) {
-            st->internal->skip_samples = sc->start_pad;
+            sti->skip_samples = sc->start_pad;
         }
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sc->nb_frames_for_fps > 0 && sc->duration_for_fps > 0)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
@@ -7639,7 +7654,7 @@ static int mov_read_header(AVFormatContext *s)
             mov->handbrake_version <= 1000000*0 + 1000*10 + 2 &&  // 0.10.2
             st->codecpar->codec_id == AV_CODEC_ID_MP3) {
             av_log(s, AV_LOG_VERBOSE, "Forcing full parsing for mp3 stream\n");
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+            sti->need_parsing = AVSTREAM_PARSE_FULL;
         }
     }
 
@@ -7756,9 +7771,10 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
     int i;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *avst = s->streams[i];
+        FFStream *const avsti = ffstream(avst);
         MOVStreamContext *msc = avst->priv_data;
-        if (msc->pb && msc->current_sample < avst->internal->nb_index_entries) {
-            AVIndexEntry *current_sample = &avst->internal->index_entries[msc->current_sample];
+        if (msc->pb && msc->current_sample < avsti->nb_index_entries) {
+            AVIndexEntry *current_sample = &avsti->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             av_log(s, AV_LOG_TRACE, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && current_sample->pos < sample->pos) ||
@@ -7940,9 +7956,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                 sc->has_palette = 0;
             }
         }
-        if (st->codecpar->codec_id == AV_CODEC_ID_MP3 && !st->internal->need_parsing && pkt->size > 4) {
+        if (st->codecpar->codec_id == AV_CODEC_ID_MP3 && !ffstream(st)->need_parsing && pkt->size > 4) {
             if (ff_mpa_check_header(AV_RB32(pkt->data)) < 0)
-                st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+                ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
         }
     }
 
@@ -7961,8 +7977,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->ctts_sample = 0;
         }
     } else {
-        int64_t next_dts = (sc->current_sample < st->internal->nb_index_entries) ?
-            st->internal->index_entries[sc->current_sample].timestamp : st->duration;
+        int64_t next_dts = (sc->current_sample < ffstream(st)->nb_index_entries) ?
+            ffstream(st)->index_entries[sc->current_sample].timestamp : st->duration;
 
         if (next_dts >= pkt->dts)
             pkt->duration = next_dts - pkt->dts;
@@ -8030,6 +8046,7 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
 static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, int flags)
 {
     MOVStreamContext *sc = st->priv_data;
+    FFStream *const sti = ffstream(st);
     int sample, time_sample, ret;
     unsigned int i;
 
@@ -8043,7 +8060,7 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 
     sample = av_index_search_timestamp(st, timestamp, flags);
     av_log(s, AV_LOG_TRACE, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
-    if (sample < 0 && st->internal->nb_index_entries && timestamp < st->internal->index_entries[0].timestamp)
+    if (sample < 0 && sti->nb_index_entries && timestamp < sti->index_entries[0].timestamp)
         sample = 0;
     if (sample < 0) /* not sure what to do */
         return AVERROR_INVALIDDATA;
@@ -8084,8 +8101,9 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 static int64_t mov_get_skip_samples(AVStream *st, int sample)
 {
     MOVStreamContext *sc = st->priv_data;
-    int64_t first_ts = st->internal->index_entries[0].timestamp;
-    int64_t ts = st->internal->index_entries[sample].timestamp;
+    FFStream *const sti = ffstream(st);
+    int64_t first_ts = sti->index_entries[0].timestamp;
+    int64_t ts = sti->index_entries[sample].timestamp;
     int64_t off;
 
     if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
@@ -8101,6 +8119,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 {
     MOVContext *mc = s->priv_data;
     AVStream *st;
+    FFStream *sti;
     int sample;
     int i;
 
@@ -8108,18 +8127,20 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         return AVERROR_INVALIDDATA;
 
     st = s->streams[stream_index];
+    sti = ffstream(st);
     sample = mov_seek_stream(s, st, sample_time, flags);
     if (sample < 0)
         return sample;
 
     if (mc->seek_individually) {
         /* adjust seek timestamp to found sample timestamp */
-        int64_t seek_timestamp = st->internal->index_entries[sample].timestamp;
-        st->internal->skip_samples = mov_get_skip_samples(st, sample);
+        int64_t seek_timestamp = sti->index_entries[sample].timestamp;
+        sti->skip_samples = mov_get_skip_samples(st, sample);
 
         for (i = 0; i < s->nb_streams; i++) {
+            AVStream *const st  = s->streams[i];
+            FFStream *const sti = ffstream(st);
             int64_t timestamp;
-            st = s->streams[i];
 
             if (stream_index == i)
                 continue;
@@ -8127,7 +8148,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             timestamp = av_rescale_q(seek_timestamp, s->streams[stream_index]->time_base, st->time_base);
             sample = mov_seek_stream(s, st, timestamp, flags);
             if (sample >= 0)
-                st->internal->skip_samples = mov_get_skip_samples(st, sample);
+                sti->skip_samples = mov_get_skip_samples(st, sample);
         }
     } else {
         for (i = 0; i < s->nb_streams; i++) {

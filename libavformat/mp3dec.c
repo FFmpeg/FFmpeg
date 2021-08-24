@@ -160,6 +160,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
 #define LAST_BITS(k, n) ((k) & ((1 << (n)) - 1))
 #define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m) + 1))
 
+    FFStream *const sti = ffstream(st);
     uint16_t crc;
     uint32_t v;
 
@@ -256,13 +257,13 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
 
         mp3->start_pad = v>>12;
         mp3->  end_pad = v&4095;
-        st->internal->start_skip_samples = mp3->start_pad + 528 + 1;
+        sti->start_skip_samples = mp3->start_pad + 528 + 1;
         if (mp3->frames) {
-            st->internal->first_discard_sample = -mp3->end_pad + 528 + 1 + mp3->frames * (int64_t)spf;
-            st->internal->last_discard_sample = mp3->frames * (int64_t)spf;
+            sti->first_discard_sample = -mp3->end_pad + 528 + 1 + mp3->frames * (int64_t)spf;
+            sti->last_discard_sample = mp3->frames * (int64_t)spf;
         }
         if (!st->start_time)
-            st->start_time = av_rescale_q(st->internal->start_skip_samples,
+            st->start_time = av_rescale_q(sti->start_skip_samples,
                                             (AVRational){1, c->sample_rate},
                                             st->time_base);
         av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
@@ -363,6 +364,7 @@ static int mp3_read_header(AVFormatContext *s)
     FFFormatContext *const si = ffformatcontext(s);
     MP3DecContext *mp3 = s->priv_data;
     AVStream *st;
+    FFStream *sti;
     int64_t off;
     int ret;
     int i;
@@ -373,10 +375,11 @@ static int mp3_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    sti = ffstream(st);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_MP3;
-    st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+    sti->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     st->start_time = 0;
 
     // lcm of all mp3 sample rates
@@ -434,8 +437,8 @@ static int mp3_read_header(AVFormatContext *s)
 
     off = avio_tell(s->pb);
     // the seek index is relative to the end of the xing vbr headers
-    for (i = 0; i < st->internal->nb_index_entries; i++)
-        st->internal->index_entries[i].pos += off;
+    for (int i = 0; i < sti->nb_index_entries; i++)
+        sti->index_entries[i].pos += off;
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -551,6 +554,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     MP3DecContext *mp3 = s->priv_data;
     AVIndexEntry *ie, ie1;
     AVStream *st = s->streams[0];
+    FFStream *const sti = ffstream(st);
     int64_t best_pos;
     int fast_seek = s->flags & AVFMT_FLAG_FAST_SEEK;
     int64_t filesize = mp3->header_filesize;
@@ -571,7 +575,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
         if (ret < 0)
             return ret;
 
-        ie = &st->internal->index_entries[ret];
+        ie = &sti->index_entries[ret];
     } else if (fast_seek && st->duration > 0 && filesize > 0) {
         if (!mp3->is_cbr)
             av_log(s, AV_LOG_WARNING, "Using scaling to seek VBR MP3; may be imprecise.\n");

@@ -478,6 +478,7 @@ static int mpegps_read_packet(AVFormatContext *s,
 {
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
+    FFStream *sti;
     int len, startcode, i, es_type, ret;
     int pcm_dvd = 0;
     int request_probe= 0;
@@ -614,6 +615,7 @@ skip:
     st = avformat_new_stream(s, NULL);
     if (!st)
         goto skip;
+    sti = ffstream(st);
     st->id                = startcode;
     st->codecpar->codec_type = type;
     st->codecpar->codec_id   = codec_id;
@@ -623,8 +625,8 @@ skip:
         st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
         st->codecpar->sample_rate = 8000;
     }
-    st->internal->request_probe     = request_probe;
-    st->internal->need_parsing      = AVSTREAM_PARSE_FULL;
+    sti->request_probe = request_probe;
+    sti->need_parsing  = AVSTREAM_PARSE_FULL;
 
 found:
     if (st->discard >= AVDISCARD_ALL)

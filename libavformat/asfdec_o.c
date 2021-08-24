@@ -1513,13 +1513,15 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
                          int64_t timestamp, int flags)
 {
     ASFContext *asf = s->priv_data;
+    AVStream *const st = s->streams[stream_index];
+    FFStream *const sti = ffstream(st);
     int idx, ret;
 
-    if (s->streams[stream_index]->internal->nb_index_entries && asf->is_simple_index) {
-        idx = av_index_search_timestamp(s->streams[stream_index], timestamp, flags);
-        if (idx < 0 || idx >= s->streams[stream_index]->internal->nb_index_entries)
+    if (sti->nb_index_entries && asf->is_simple_index) {
+        idx = av_index_search_timestamp(st, timestamp, flags);
+        if (idx < 0 || idx >= sti->nb_index_entries)
             return AVERROR_INVALIDDATA;
-        avio_seek(s->pb, s->streams[stream_index]->internal->index_entries[idx].pos, SEEK_SET);
+        avio_seek(s->pb, sti->index_entries[idx].pos, SEEK_SET);
     } else {
         if ((ret = ff_seek_frame_binary(s, stream_index, timestamp, flags)) < 0)
             return ret;

@@ -1006,6 +1006,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         ff_nut_reset_ts(nut, *nus->time_base, pkt->dts);
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st   = s->streams[i];
+            FFStream *const sti = ffstream(st);
             int64_t dts_tb = av_rescale_rnd(pkt->dts,
                 nus->time_base->num * (int64_t)nut->stream[i].time_base->den,
                 nus->time_base->den * (int64_t)nut->stream[i].time_base->num,
@@ -1013,12 +1014,12 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             int index = av_index_search_timestamp(st, dts_tb,
                                                   AVSEEK_FLAG_BACKWARD);
             if (index >= 0) {
-                sp_pos = FFMIN(sp_pos, st->internal->index_entries[index].pos);
-                if (!nut->write_index && 2*index > st->internal->nb_index_entries) {
-                    memmove(st->internal->index_entries,
-                            st->internal->index_entries + index,
-                            sizeof(*st->internal->index_entries) * (st->internal->nb_index_entries - index));
-                    st->internal->nb_index_entries -=  index;
+                sp_pos = FFMIN(sp_pos, sti->index_entries[index].pos);
+                if (!nut->write_index && 2*index > sti->nb_index_entries) {
+                    memmove(sti->index_entries,
+                            sti->index_entries + index,
+                            sizeof(*sti->index_entries) * (sti->nb_index_entries - index));
+                    sti->nb_index_entries -=  index;
                 }
             }
         }

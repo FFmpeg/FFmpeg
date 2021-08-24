@@ -1794,7 +1794,7 @@ static int set_stream_info_from_input_stream(AVStream *st, struct playlist *pls,
         memcpy(dst_data, sd_src->data, sd_src->size);
     }
 
-    st->internal->need_context_update = 1;
+    ffstream(st)->need_context_update = 1;
 
     return 0;
 }

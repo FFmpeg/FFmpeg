@@ -61,6 +61,7 @@ static int av1_read_header(AVFormatContext *s)
     AV1DemuxContext *const c = s->priv_data;
     const AVBitStreamFilter *filter = av_bsf_get_by_name("av1_frame_merge");
     AVStream *st;
+    FFStream *sti;
     int ret;
 
     if (!filter) {
@@ -72,12 +73,13 @@ static int av1_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    sti = ffstream(st);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = AV_CODEC_ID_AV1;
-    st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
+    sti->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-    st->internal->avctx->framerate = c->framerate;
+    sti->avctx->framerate = c->framerate;
     // taken from rawvideo demuxers
     avpriv_set_pts_info(st, 64, 1, 1200000);
 

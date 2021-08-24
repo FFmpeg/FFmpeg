@@ -87,7 +87,8 @@ static int read_header(AVFormatContext *s)
     BinkDemuxContext *bink = s->priv_data;
     AVIOContext *pb = s->pb;
     uint32_t fps_num, fps_den;
-    AVStream *vst, *ast;
+    AVStream *const vst  = avformat_new_stream(s, NULL);
+    FFStream *const vsti = ffstream(vst);
     unsigned int i;
     uint32_t pos, next_pos;
     uint16_t flags;
@@ -97,7 +98,6 @@ static int read_header(AVFormatContext *s)
     uint32_t signature;
     uint8_t revision;
 
-    vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
 
@@ -175,7 +175,7 @@ static int read_header(AVFormatContext *s)
         avio_skip(pb, 4 * bink->num_audio_tracks); /* max decoded size */
 
         for (i = 0; i < bink->num_audio_tracks; i++) {
-            ast = avformat_new_stream(s, NULL);
+            AVStream *const ast = avformat_new_stream(s, NULL);
             if (!ast)
                 return AVERROR(ENOMEM);
             ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
@@ -225,8 +225,8 @@ static int read_header(AVFormatContext *s)
             return ret;
     }
 
-    if (vst->internal->index_entries)
-        avio_seek(pb, vst->internal->index_entries[0].pos + bink->smush_size, SEEK_SET);
+    if (vsti->index_entries)
+        avio_seek(pb, vsti->index_entries[0].pos + bink->smush_size, SEEK_SET);
     else
         avio_skip(pb, 4);
 
@@ -243,6 +243,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if (bink->current_track < 0) {
         int index_entry;
         AVStream *st = s->streams[0]; // stream 0 is video stream with index
+        FFStream *const sti = ffstream(st);
 
         if (bink->video_pts >= st->duration)
             return AVERROR_EOF;
@@ -256,8 +257,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
 
-        bink->remain_packet_size = st->internal->index_entries[index_entry].size;
-        bink->flags = st->internal->index_entries[index_entry].flags;
+        bink->remain_packet_size = sti->index_entries[index_entry].size;
+        bink->flags              = sti->index_entries[index_entry].flags;
         bink->current_track = 0;
     }
 
@@ -307,13 +308,14 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 {
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
+    FFStream *const vsti = ffstream(vst);
     int64_t ret;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return -1;
 
     /* seek to the first frame */
-    ret = avio_seek(s->pb, vst->internal->index_entries[0].pos + bink->smush_size, SEEK_SET);
+    ret = avio_seek(s->pb, vsti->index_entries[0].pos + bink->smush_size, SEEK_SET);
     if (ret < 0)
         return ret;
 

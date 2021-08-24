@@ -87,7 +87,7 @@ static int xvag_read_header(AVFormatContext *s)
     if (avio_rb16(s->pb) == 0xFFFB) {
         st->codecpar->codec_id    = AV_CODEC_ID_MP3;
         st->codecpar->block_align = 0x1000;
-        st->internal->need_parsing       = AVSTREAM_PARSE_FULL_RAW;
+        ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     }
 
     avio_skip(s->pb, -2);

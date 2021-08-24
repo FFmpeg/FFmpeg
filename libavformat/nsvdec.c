@@ -461,7 +461,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             st->codecpar->codec_tag = atag;
             st->codecpar->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
 
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL; /* for PCM we will read a chunk later and put correct info */
+            ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL; /* for PCM we will read a chunk later and put correct info */
 
             /* set timebase to common denominator of ms and framerate */
             avpriv_set_pts_info(st, 64, 1, framerate.num*1000);
@@ -609,7 +609,7 @@ null_chunk_retry:
             asize-=4;
             av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             if (fill_header) {
-                st[NSV_ST_AUDIO]->internal->need_parsing = AVSTREAM_PARSE_NONE; /* we know everything */
+                ffstream(st[NSV_ST_AUDIO])->need_parsing = AVSTREAM_PARSE_NONE; /* we know everything */
                 if (bps != 16) {
                     av_log(s, AV_LOG_TRACE, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
                 }
@@ -669,6 +669,7 @@ static int nsv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 {
     NSVContext *nsv = s->priv_data;
     AVStream *st = s->streams[stream_index];
+    FFStream *const sti = ffstream(st);
     NSVStream *nst = st->priv_data;
     int index;
 
@@ -676,10 +677,10 @@ static int nsv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     if(index < 0)
         return -1;
 
-    if (avio_seek(s->pb, st->internal->index_entries[index].pos, SEEK_SET) < 0)
+    if (avio_seek(s->pb, sti->index_entries[index].pos, SEEK_SET) < 0)
         return -1;
 
-    nst->frame_offset = st->internal->index_entries[index].timestamp;
+    nst->frame_offset = sti->index_entries[index].timestamp;
     nsv->state = NSV_UNSYNC;
     return 0;
 }

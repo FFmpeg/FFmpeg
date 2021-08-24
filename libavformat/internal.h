@@ -185,7 +185,12 @@ static av_always_inline FFFormatContext *ffformatcontext(AVFormatContext *s)
     return (FFFormatContext*)s;
 }
 
-struct AVStreamInternal {
+typedef struct FFStream {
+    /**
+     * The public context.
+     */
+    AVStream pub;
+
     /**
      * Set to 1 if the codec allows reordering, so pts can be different
      * from dts.
@@ -416,7 +421,17 @@ struct AVStreamInternal {
      */
     int64_t first_dts;
     int64_t cur_dts;
-};
+} FFStream;
+
+static av_always_inline FFStream *ffstream(AVStream *st)
+{
+    return (FFStream*)st;
+}
+
+static av_always_inline const FFStream *cffstream(const AVStream *st)
+{
+    return (FFStream*)st;
+}
 
 void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);
 

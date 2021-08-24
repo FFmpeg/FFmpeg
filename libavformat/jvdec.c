@@ -74,9 +74,9 @@ static int read_header(AVFormatContext *s)
     JVDemuxContext *jv = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *vst, *ast;
+    FFStream *asti;
     int64_t audio_pts = 0;
     int64_t offset;
-    int i;
 
     avio_skip(pb, 80);
 
@@ -84,6 +84,7 @@ static int read_header(AVFormatContext *s)
     vst = avformat_new_stream(s, NULL);
     if (!ast || !vst)
         return AVERROR(ENOMEM);
+    asti = ffstream(ast);
 
     vst->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
     vst->codecpar->codec_id    = AV_CODEC_ID_JV;
@@ -92,7 +93,7 @@ static int read_header(AVFormatContext *s)
     vst->codecpar->height      = avio_rl16(pb);
     vst->duration           =
     vst->nb_frames          =
-    ast->internal->nb_index_entries   = avio_rl16(pb);
+    asti->nb_index_entries  = avio_rl16(pb);
     avpriv_set_pts_info(vst, 64, avio_rl16(pb), 1000);
 
     avio_skip(pb, 4);
@@ -107,17 +108,17 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(pb, 10);
 
-    ast->internal->index_entries = av_malloc(ast->internal->nb_index_entries *
-                                   sizeof(*ast->internal->index_entries));
-    if (!ast->internal->index_entries)
+    asti->index_entries = av_malloc(asti->nb_index_entries *
+                                    sizeof(*asti->index_entries));
+    if (!asti->index_entries)
         return AVERROR(ENOMEM);
 
-    jv->frames = av_malloc(ast->internal->nb_index_entries * sizeof(JVFrame));
+    jv->frames = av_malloc(asti->nb_index_entries * sizeof(*jv->frames));
     if (!jv->frames)
         return AVERROR(ENOMEM);
-    offset = 0x68 + ast->internal->nb_index_entries * 16;
-    for (i = 0; i < ast->internal->nb_index_entries; i++) {
-        AVIndexEntry *e   = ast->internal->index_entries + i;
+    offset = 0x68 + asti->nb_index_entries * 16;
+    for (int i = 0; i < asti->nb_index_entries; i++) {
+        AVIndexEntry *e   = asti->index_entries + i;
         JVFrame      *jvf = jv->frames + i;
 
         /* total frame size including audio, video, palette data and padding */
@@ -162,10 +163,11 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     JVDemuxContext *jv = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *ast = s->streams[0];
+    FFStream *const asti = ffstream(ast);
     int ret;
 
-    while (!avio_feof(s->pb) && jv->pts < ast->internal->nb_index_entries) {
-        const AVIndexEntry *e   = ast->internal->index_entries + jv->pts;
+    while (!avio_feof(s->pb) && jv->pts < asti->nb_index_entries) {
+        const AVIndexEntry *const e = asti->index_entries + jv->pts;
         const JVFrame      *jvf = jv->frames + jv->pts;
 
         switch (jv->state) {
@@ -222,6 +224,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
 {
     JVDemuxContext *jv = s->priv_data;
     AVStream *ast = s->streams[0];
+    FFStream *const asti = ffstream(ast);
     int i;
 
     if (flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))
@@ -238,9 +241,9 @@ static int read_seek(AVFormatContext *s, int stream_index,
         return 0;
     }
 
-    if (i < 0 || i >= ast->internal->nb_index_entries)
+    if (i < 0 || i >= asti->nb_index_entries)
         return 0;
-    if (avio_seek(s->pb, ast->internal->index_entries[i].pos, SEEK_SET) < 0)
+    if (avio_seek(s->pb, asti->index_entries[i].pos, SEEK_SET) < 0)
         return -1;
 
     jv->state = JV_AUDIO;

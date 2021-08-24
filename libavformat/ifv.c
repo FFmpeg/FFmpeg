@@ -188,23 +188,26 @@ static int ifv_read_header(AVFormatContext *s)
 static int ifv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     IFVContext *ifv = s->priv_data;
-    AVStream *st;
     AVIndexEntry *ev, *ea, *e_next;
     int ret;
 
     ev = ea = e_next = NULL;
 
     if (ifv->next_video_index < ifv->total_vframes) {
-        st = s->streams[ifv->video_stream_index];
-        if (ifv->next_video_index < st->internal->nb_index_entries)
-            e_next = ev = &st->internal->index_entries[ifv->next_video_index];
+        AVStream *const st  = s->streams[ifv->video_stream_index];
+        FFStream *const sti = ffstream(st);
+
+        if (ifv->next_video_index < sti->nb_index_entries)
+            e_next = ev = &sti->index_entries[ifv->next_video_index];
     }
 
     if (ifv->is_audio_present &&
         ifv->next_audio_index < ifv->total_aframes) {
-        st = s->streams[ifv->audio_stream_index];
-        if (ifv->next_audio_index < st->internal->nb_index_entries) {
-            ea = &st->internal->index_entries[ifv->next_audio_index];
+        AVStream *const st  = s->streams[ifv->audio_stream_index];
+        FFStream *const sti = ffstream(st);
+
+        if (ifv->next_audio_index < sti->nb_index_entries) {
+            ea = &sti->index_entries[ifv->next_audio_index];
             if (!ev || ea->timestamp < ev->timestamp)
                 e_next = ea;
         }

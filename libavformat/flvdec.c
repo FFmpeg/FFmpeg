@@ -143,7 +143,7 @@ static void add_keyframes_index(AVFormatContext *s)
     av_assert0(flv->last_keyframe_stream_index <= s->nb_streams);
     stream = s->streams[flv->last_keyframe_stream_index];
 
-    if (stream->internal->nb_index_entries == 0) {
+    if (ffstream(stream)->nb_index_entries == 0) {
         for (i = 0; i < flv->keyframe_count; i++) {
             av_log(s, AV_LOG_TRACE, "keyframe filepositions = %"PRId64" times = %"PRId64"\n",
                    flv->keyframe_filepositions[i], flv->keyframe_times[i] * 1000);
@@ -272,7 +272,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
         break;
     case FLV_CODECID_MP3:
         apar->codec_id      = AV_CODEC_ID_MP3;
-        astream->internal->need_parsing = AVSTREAM_PARSE_FULL;
+        ffstream(astream)->need_parsing = AVSTREAM_PARSE_FULL;
         break;
     case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
         // in case metadata does not otherwise declare samplerate
@@ -329,6 +329,7 @@ static int flv_same_video_codec(AVCodecParameters *vpar, int flags)
 static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
                                int flv_codecid, int read)
 {
+    FFStream *const vstreami = ffstream(vstream);
     int ret = 0;
     AVCodecParameters *par = vstream->codecpar;
     enum AVCodecID old_codec_id = vstream->codecpar->codec_id;
@@ -363,7 +364,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
         break;
     case FLV_CODECID_H264:
         par->codec_id = AV_CODEC_ID_H264;
-        vstream->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
+        vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
         ret = 3;     // not 4, reading packet type will consume one byte
         break;
     case FLV_CODECID_MPEG4:
@@ -375,7 +376,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
         par->codec_tag = flv_codecid;
     }
 
-    if (!vstream->internal->need_context_update && par->codec_id != old_codec_id) {
+    if (!vstreami->need_context_update && par->codec_id != old_codec_id) {
         avpriv_request_sample(s, "Changing the codec id midstream");
         return AVERROR_PATCHWELCOME;
     }
@@ -815,7 +816,7 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 
     if ((ret = ff_get_extradata(s, st->codecpar, s->pb, size)) < 0)
         return ret;
-    st->internal->need_context_update = 1;
+    ffstream(st)->need_context_update = 1;
     return 0;
 }
 
@@ -837,17 +838,16 @@ static int flv_queue_extradata(FLVContext *flv, AVIOContext *pb, int stream,
 
 static void clear_index_entries(AVFormatContext *s, int64_t pos)
 {
-    int i, j, out;
     av_log(s, AV_LOG_WARNING,
            "Found invalid index entries, clearing the index.\n");
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        FFStream *const sti = ffstream(s->streams[i]);
+        int out = 0;
         /* Remove all index entries that point to >= pos */
-        out = 0;
-        for (j = 0; j < st->internal->nb_index_entries; j++)
-            if (st->internal->index_entries[j].pos < pos)
-                st->internal->index_entries[out++] = st->internal->index_entries[j];
-        st->internal->nb_index_entries = out;
+        for (int j = 0; j < sti->nb_index_entries; j++)
+            if (sti->index_entries[j].pos < pos)
+                sti->index_entries[out++] = sti->index_entries[j];
+        sti->nb_index_entries = out;
     }
 }
 

@@ -821,8 +821,6 @@ typedef struct AVIndexEntry {
  */
 #define AV_DISPOSITION_TIMED_THUMBNAILS  0x0800
 
-typedef struct AVStreamInternal AVStreamInternal;
-
 /**
  * To specify text track kind (different from subtitles default).
  */
@@ -1003,12 +1001,6 @@ typedef struct AVStream {
      *
      */
     int pts_wrap_bits;
-
-    /**
-     * An opaque field for libavformat internal usage.
-     * Must not be accessed in any way by callers.
-     */
-    AVStreamInternal *internal;
 } AVStream;
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);

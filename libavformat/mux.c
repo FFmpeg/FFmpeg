@@ -253,7 +253,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
 
     for (unsigned i = 0; i < s->nb_streams; i++) {
         AVStream          *const  st = s->streams[i];
-        AVStreamInternal  *const sti = st->internal;
+        FFStream          *const sti = ffstream(st);
         AVCodecParameters *const par = st->codecpar;
         const AVCodecDescriptor *desc;
 
@@ -386,7 +386,7 @@ static int init_pts(AVFormatContext *s)
     /* init PTS generation */
     for (unsigned i = 0; i < s->nb_streams; i++) {
         AVStream *const st = s->streams[i];
-        AVStreamInternal *const sti = st->internal;
+        FFStream *const sti = ffstream(st);
         int64_t den = AV_NOPTS_VALUE;
 
         switch (st->codecpar->codec_type) {
@@ -509,7 +509,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    AVStreamInternal *const sti = st->internal;
+    FFStream *const sti = ffstream(st);
     int delay = st->codecpar->video_delay;
     int frame_size;
 
@@ -645,7 +645,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FFFormatContext *const si = ffformatcontext(s);
     AVStream *const st = s->streams[pkt->stream_index];
-    AVStreamInternal *const sti = st->internal;
+    FFStream *const sti = ffstream(st);
     int ret;
 
     // If the timestamp offsetting below is adjusted, adjust
@@ -743,7 +743,7 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int prepare_input_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
-    AVStreamInternal *const sti = st->internal;
+    FFStream *const sti = ffstream(st);
 #if !FF_API_COMPUTE_PKT_FIELDS2
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
@@ -799,7 +799,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     FFFormatContext *const si = ffformatcontext(s);
     PacketList **next_point, *this_pktl;
     AVStream *st = s->streams[pkt->stream_index];
-    AVStreamInternal *const sti = st->internal;
+    FFStream *const sti = ffstream(st);
     int chunked  = s->max_chunk_size || s->max_chunk_duration;
 
     this_pktl    = av_malloc(sizeof(PacketList));
@@ -912,7 +912,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
     for (unsigned i = 0; i < s->nb_streams; i++) {
         const AVStream *const st  = s->streams[i];
-        const AVStreamInternal *const sti = st->internal;
+        const FFStream *const sti = cffstream(st);
         const AVCodecParameters *const par = st->codecpar;
         if (sti->last_in_packet_buffer) {
             ++stream_count;
@@ -939,7 +939,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
         for (unsigned i = 0; i < s->nb_streams; i++) {
             const AVStream *const st  = s->streams[i];
-            const AVStreamInternal *const sti = st->internal;
+            const FFStream *const sti = cffstream(st);
             const PacketList *last = sti->last_in_packet_buffer;
             int64_t last_dts;
 
@@ -977,7 +977,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
             PacketList *pktl = si->packet_buffer;
             AVPacket *const top_pkt = &pktl->pkt;
             AVStream *const st = s->streams[top_pkt->stream_index];
-            AVStreamInternal *const sti = st->internal;
+            FFStream *const sti = ffstream(st);
             int64_t top_dts = av_rescale_q(top_pkt->dts, st->time_base,
                                         AV_TIME_BASE_Q);
 
@@ -1000,7 +1000,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     if (stream_count && flush) {
         PacketList *pktl = si->packet_buffer;
         AVStream *const st = s->streams[pktl->pkt.stream_index];
-        AVStreamInternal *const sti = st->internal;
+        FFStream *const sti = ffstream(st);
 
         *out = pktl->pkt;
 
@@ -1026,7 +1026,7 @@ int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset
         return AVERROR(EINVAL);
 
     st = s->streams[stream_index];
-    *offset = st->internal->mux_ts_offset;
+    *offset = ffstream(st)->mux_ts_offset;
 
     if (s->output_ts_offset)
         *offset += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
@@ -1064,7 +1064,7 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
         return ff_interleave_packet_per_dts(s, out, in, flush);
 }
 
-static int check_bitstream(AVFormatContext *s, AVStreamInternal *sti, AVPacket *pkt)
+static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
 {
     int ret;
 
@@ -1128,7 +1128,7 @@ static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, 
 
 static int write_packets_from_bsfs(AVFormatContext *s, AVStream *st, AVPacket *pkt, int interleaved)
 {
-    AVStreamInternal *const sti = st->internal;
+    FFStream *const sti = ffstream(st);
     AVBSFContext *const bsfc = sti->bsfc;
     int ret;
 
@@ -1162,12 +1162,12 @@ static int write_packets_from_bsfs(AVFormatContext *s, AVStream *st, AVPacket *p
 static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleaved)
 {
     AVStream *st;
-    AVStreamInternal *sti;
+    FFStream *sti;
     int ret = check_packet(s, pkt);
     if (ret < 0)
         return ret;
     st = s->streams[pkt->stream_index];
-    sti = st->internal;
+    sti = ffstream(st);
 
     ret = prepare_input_packet(s, st, pkt);
     if (ret < 0)
@@ -1256,7 +1256,7 @@ int av_write_trailer(AVFormatContext *s)
 
     av_packet_unref(pkt);
     for (unsigned i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->internal->bsfc) {
+        if (ffstream(s->streams[i])->bsfc) {
             ret1 = write_packets_from_bsfs(s, s->streams[i], pkt, 1/*interleaved*/);
             if (ret1 < 0)
                 av_packet_unref(pkt);
@@ -1286,7 +1286,7 @@ int av_write_trailer(AVFormatContext *s)
        ret = s->pb ? s->pb->error : 0;
     for (unsigned i = 0; i < s->nb_streams; i++) {
         av_freep(&s->streams[i]->priv_data);
-        av_freep(&s->streams[i]->internal->index_entries);
+        av_freep(&ffstream(s->streams[i])->index_entries);
     }
     if (s->oformat->priv_class)
         av_opt_free(s->priv_data);

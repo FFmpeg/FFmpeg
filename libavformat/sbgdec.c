@@ -1409,6 +1409,7 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     char *buf = NULL;
     struct sbg_script script = { 0 };
     AVStream *st;
+    FFStream *sti;
     struct ws_intervals inter = { 0 };
 
     r = read_whole_file(avf->pb, sbg->max_file_size, &buf);
@@ -1442,6 +1443,7 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     st = avformat_new_stream(avf, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    sti = ffstream(st);
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id       = AV_CODEC_ID_FFWAVESYNTH;
     st->codecpar->channels       = 2;
@@ -1449,13 +1451,13 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     st->codecpar->sample_rate    = sbg->sample_rate;
     st->codecpar->frame_size     = sbg->frame_size;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-    st->internal->probe_packets = 0;
+    sti->probe_packets = 0;
     st->start_time    = av_rescale(script.start_ts,
                                    sbg->sample_rate, AV_TIME_BASE);
     st->duration      = script.end_ts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                         av_rescale(script.end_ts - script.start_ts,
                                    sbg->sample_rate, AV_TIME_BASE);
-    st->internal->cur_dts       = st->start_time;
+    sti->cur_dts      = st->start_time;
     r = encode_intervals(&script, st->codecpar, &inter);
     if (r < 0)
         goto fail;
@@ -1476,7 +1478,7 @@ static int sbg_read_packet(AVFormatContext *avf, AVPacket *packet)
     int64_t ts, end_ts;
     int ret;
 
-    ts = avf->streams[0]->internal->cur_dts;
+    ts = ffstream(avf->streams[0])->cur_dts;
     end_ts = ts + avf->streams[0]->codecpar->frame_size;
     if (avf->streams[0]->duration != AV_NOPTS_VALUE)
         end_ts = FFMIN(avf->streams[0]->start_time + avf->streams[0]->duration,
@@ -1499,7 +1501,7 @@ static int sbg_read_seek2(AVFormatContext *avf, int stream_index,
         return AVERROR(EINVAL);
     if (stream_index < 0)
         ts = av_rescale_q(ts, AV_TIME_BASE_Q, avf->streams[0]->time_base);
-    avf->streams[0]->internal->cur_dts = ts;
+    ffstream(avf->streams[0])->cur_dts = ts;
     return 0;
 }
 

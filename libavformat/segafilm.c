@@ -183,7 +183,7 @@ static int film_read_header(AVFormatContext *s)
         if (film->audio_type == AV_CODEC_ID_ADPCM_ADX) {
             st->codecpar->bits_per_coded_sample = 18 * 8 / 32;
             st->codecpar->block_align = st->codecpar->channels * 18;
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+            ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
         } else {
             st->codecpar->bits_per_coded_sample = film->audio_bits;
             st->codecpar->block_align = st->codecpar->channels *
@@ -315,7 +315,7 @@ static int film_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     if (ret < 0)
         return ret;
 
-    pos = avio_seek(s->pb, st->internal->index_entries[ret].pos, SEEK_SET);
+    pos = avio_seek(s->pb, ffstream(st)->index_entries[ret].pos, SEEK_SET);
     if (pos < 0)
         return pos;
 

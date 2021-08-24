@@ -79,7 +79,7 @@ int ff_pcm_read_seek(AVFormatContext *s,
     pos *= block_align;
 
     /* recompute exact position */
-    st->internal->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
+    ffstream(st)->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
     if ((ret = avio_seek(s->pb, pos + ffformatcontext(s)->data_offset, SEEK_SET)) < 0)
         return ret;
     return 0;

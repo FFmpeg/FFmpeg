@@ -285,13 +285,14 @@ static int cine_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     CineDemuxContext *cine = avctx->priv_data;
     AVStream *st = avctx->streams[0];
+    FFStream *const sti = ffstream(st);
     AVIOContext *pb = avctx->pb;
     int n, size, ret;
 
-    if (cine->pts >= st->internal->nb_index_entries)
+    if (cine->pts >= sti->nb_index_entries)
         return AVERROR_EOF;
 
-    avio_seek(pb, st->internal->index_entries[cine->pts].pos, SEEK_SET);
+    avio_seek(pb, sti->index_entries[cine->pts].pos, SEEK_SET);
     n = avio_rl32(pb);
     if (n < 8)
         return AVERROR_INVALIDDATA;

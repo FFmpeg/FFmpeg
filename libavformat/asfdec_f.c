@@ -299,6 +299,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
+    FFStream *sti;
     ASFStream *asf_st;
     ff_asf_guid g;
     enum AVMediaType type;
@@ -317,6 +318,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    sti = ffstream(st);
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     start_time     = asf->hdr.preroll;
 
@@ -378,13 +380,13 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         if (is_dvr_ms_audio) {
             // codec_id and codec_tag are unreliable in dvr_ms
             // files. Set them later by probing stream.
-            st->internal->request_probe    = 1;
+            sti->request_probe = 1;
             st->codecpar->codec_tag = 0;
         }
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC)
-            st->internal->need_parsing = AVSTREAM_PARSE_NONE;
+            sti->need_parsing = AVSTREAM_PARSE_NONE;
         else
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+            sti->need_parsing = AVSTREAM_PARSE_FULL;
         /* We have to init the frame size at some point .... */
         pos2 = avio_tell(pb);
         if (size >= (pos2 + 8 - pos1 + 24)) {
@@ -443,7 +445,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         st->codecpar->codec_tag = tag1;
         st->codecpar->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag1);
         if (tag1 == MKTAG('D', 'V', 'R', ' ')) {
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL;
+            sti->need_parsing = AVSTREAM_PARSE_FULL;
             /* issue658 contains wrong w/h and MS even puts a fake seq header
              * with wrong w/h in extradata while a correct one is in the stream.
              * maximum lameness */
@@ -453,9 +455,9 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             st->codecpar->extradata_size = 0;
         }
         if (st->codecpar->codec_id == AV_CODEC_ID_H264)
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+            sti->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
         if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4)
-            st->internal->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
+            sti->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     pos2 = avio_tell(pb);
     avio_skip(pb, size - (pos2 - pos1 + 24));
@@ -1557,6 +1559,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
 {
     ASFContext *asf = s->priv_data;
     AVStream *st    = s->streams[stream_index];
+    FFStream *const sti = ffstream(st);
     int ret = 0;
 
     if (s->packet_size <= 0)
@@ -1584,11 +1587,11 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
             asf->index_read = -1;
     }
 
-    if (asf->index_read > 0 && st->internal->index_entries) {
+    if (asf->index_read > 0 && sti->index_entries) {
         int index = av_index_search_timestamp(st, pts, flags);
         if (index >= 0) {
             /* find the position */
-            uint64_t pos = st->internal->index_entries[index].pos;
+            uint64_t pos = sti->index_entries[index].pos;
 
             /* do the seek */
             av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);

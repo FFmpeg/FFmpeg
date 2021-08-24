@@ -277,12 +277,14 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
 {
     TEDCaptionsDemuxer *tc = avf->priv_data;
     AVStream *st = avformat_new_stream(avf, NULL);
+    FFStream *sti;
     int ret, i;
     AVPacket *last;
 
     if (!st)
         return AVERROR(ENOMEM);
 
+    sti = ffstream(st);
     ret = parse_file(avf->pb, &tc->subs);
     if (ret < 0) {
         if (ret == AVERROR_INVALIDDATA)
@@ -298,10 +300,10 @@ static av_cold int tedcaptions_read_header(AVFormatContext *avf)
     st->codecpar->codec_type     = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id       = AV_CODEC_ID_TEXT;
     avpriv_set_pts_info(st, 64, 1, 1000);
-    st->internal->probe_packets = 0;
+    sti->probe_packets = 0;
     st->start_time    = 0;
     st->duration      = last->pts + last->duration;
-    st->internal->cur_dts       = 0;
+    sti->cur_dts      = 0;
 
     return 0;
 }

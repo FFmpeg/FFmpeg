@@ -434,7 +434,7 @@ static int ape_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     if (index < 0)
         return -1;
 
-    if ((ret = avio_seek(s->pb, st->internal->index_entries[index].pos, SEEK_SET)) < 0)
+    if ((ret = avio_seek(s->pb, ffstream(st)->index_entries[index].pos, SEEK_SET)) < 0)
         return ret;
     ape->currentframe = index;
     return 0;

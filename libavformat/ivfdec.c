@@ -56,7 +56,7 @@ static int read_header(AVFormatContext *s)
     st->duration          = avio_rl32(s->pb);
     avio_skip(s->pb, 4); // unused
 
-    st->internal->need_parsing      = AVSTREAM_PARSE_HEADERS;
+    ffstream(st)->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     if (!time_base.den || !time_base.num) {
         av_log(s, AV_LOG_ERROR, "Invalid frame rate\n");

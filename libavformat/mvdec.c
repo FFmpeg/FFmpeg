@@ -436,13 +436,14 @@ static int mv_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     MvContext *mv = avctx->priv_data;
     AVIOContext *pb = avctx->pb;
     AVStream *st = avctx->streams[mv->stream_index];
+    FFStream *const sti = ffstream(st);
     const AVIndexEntry *index;
     int frame = mv->frame[mv->stream_index];
     int64_t ret;
     uint64_t pos;
 
-    if (frame < st->internal->nb_index_entries) {
-        index = &st->internal->index_entries[frame];
+    if (frame < sti->nb_index_entries) {
+        index = &sti->index_entries[frame];
         pos   = avio_tell(pb);
         if (index->pos > pos)
             avio_skip(pb, index->pos - pos);

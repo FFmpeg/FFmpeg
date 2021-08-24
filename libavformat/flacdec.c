@@ -37,11 +37,10 @@ typedef struct FLACDecContext {
 
 static void reset_index_position(int64_t metadata_head_size, AVStream *st)
 {
+    FFStream *const sti = ffstream(st);
     /* the real seek index offset should be the size of metadata blocks with the offset in the frame blocks */
-    int i;
-    for(i=0; i<st->internal->nb_index_entries; i++) {
-        st->internal->index_entries[i].pos += metadata_head_size;
-    }
+    for (int i = 0; i < sti->nb_index_entries; i++)
+        sti->index_entries[i].pos += metadata_head_size;
 }
 
 static int flac_read_header(AVFormatContext *s)
@@ -55,7 +54,7 @@ static int flac_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_FLAC;
-    st->internal->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+    ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     /* the parameters will be extracted from the compressed bitstream */
 
     /* if fLaC marker is not found, assume there is no header */
@@ -287,7 +286,7 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
                 av_assert1(!pkt->size);
             }
         }
-        av_parser_parse2(parser, st->internal->avctx,
+        av_parser_parse2(parser, ffstream(st)->avctx,
                          &data, &size, pkt->data, pkt->size,
                          pkt->pts, pkt->dts, *ppos);
 
@@ -308,6 +307,8 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
 }
 
 static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {
+    AVStream *const st  = s->streams[0];
+    FFStream *const sti = ffstream(st);
     int index;
     int64_t pos;
     AVIndexEntry e;
@@ -317,11 +318,11 @@ static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
         return -1;
     }
 
-    index = av_index_search_timestamp(s->streams[0], timestamp, flags);
-    if(index<0 || index >= s->streams[0]->internal->nb_index_entries)
+    index = av_index_search_timestamp(st, timestamp, flags);
+    if (index < 0 || index >= sti->nb_index_entries)
         return -1;
 
-    e = s->streams[0]->internal->index_entries[index];
+    e   = sti->index_entries[index];
     pos = avio_seek(s->pb, e.pos, SEEK_SET);
     if (pos >= 0) {
         return 0;

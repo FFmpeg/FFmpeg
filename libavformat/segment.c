@@ -991,10 +991,10 @@ static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
     if (oc->oformat->check_bitstream) {
         int ret = oc->oformat->check_bitstream(oc, pkt);
         if (ret == 1) {
-            AVStream *st = s->streams[pkt->stream_index];
-            AVStream *ost = oc->streams[pkt->stream_index];
-            st->internal->bsfc = ost->internal->bsfc;
-            ost->internal->bsfc = NULL;
+            FFStream *const  sti = ffstream( s->streams[pkt->stream_index]);
+            FFStream *const osti = ffstream(oc->streams[pkt->stream_index]);
+             sti->bsfc = osti->bsfc;
+            osti->bsfc = NULL;
         }
         return ret;
     }

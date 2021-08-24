@@ -265,10 +265,11 @@ static int flic_read_seek(AVFormatContext *s, int stream_index,
 {
     FlicDemuxContext *flic = s->priv_data;
     AVStream *st = s->streams[stream_index];
+    FFStream *const sti = ffstream(st);
     int64_t pos, ts;
     int index;
 
-    if (!st->internal->index_entries || stream_index != flic->video_stream_index)
+    if (!sti->index_entries || stream_index != flic->video_stream_index)
         return -1;
 
     index = av_index_search_timestamp(st, pts, flags);
@@ -278,8 +279,8 @@ static int flic_read_seek(AVFormatContext *s, int stream_index,
     if (index < 0)
         return -1;
 
-    pos = st->internal->index_entries[index].pos;
-    ts  = st->internal->index_entries[index].timestamp;
+    pos = sti->index_entries[index].pos;
+    ts  = sti->index_entries[index].timestamp;
     flic->frame_number = ts;
     avio_seek(s->pb, pos, SEEK_SET);
     return 0;

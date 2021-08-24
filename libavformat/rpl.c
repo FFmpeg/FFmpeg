@@ -311,6 +311,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     RPLContext *rpl = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream* stream;
+    FFStream *sti;
     AVIndexEntry* index_entry;
     int ret;
 
@@ -320,11 +321,12 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     stream = s->streams[rpl->chunk_part];
+    sti    = ffstream(stream);
 
-    if (rpl->chunk_number >= stream->internal->nb_index_entries)
+    if (rpl->chunk_number >= sti->nb_index_entries)
         return AVERROR_EOF;
 
-    index_entry = &stream->internal->index_entries[rpl->chunk_number];
+    index_entry = &sti->index_entries[rpl->chunk_number];
 
     if (rpl->frame_in_part == 0) {
         if (avio_seek(pb, index_entry->pos, SEEK_SET) < 0)

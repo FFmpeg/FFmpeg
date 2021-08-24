@@ -204,7 +204,7 @@ static AVStream *create_new_audio_stream(AVFormatContext *s, int id, int info)
     }
     ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     ast->codecpar->codec_id   = ff_codec_get_id(swf_audio_codec_tags, info>>4 & 15);
-    ast->internal->need_parsing = AVSTREAM_PARSE_FULL;
+    ffstream(ast)->need_parsing = AVSTREAM_PARSE_FULL;
     sample_rate_code = info>>2 & 3;
     sample_size_code = info>>1 & 1;
     if (!sample_size_code && ast->codecpar->codec_id == AV_CODEC_ID_PCM_S16LE)
@@ -293,7 +293,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(ENOMEM);
             ast->duration = avio_rl32(pb); // number of samples
             if (((v>>4) & 15) == 2) { // MP3 sound data record
-                ast->internal->skip_samples = avio_rl16(pb);
+                ffstream(ast)->skip_samples = avio_rl16(pb);
                 len -= 2;
             }
             len -= 7;

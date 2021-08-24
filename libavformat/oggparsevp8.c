@@ -61,7 +61,7 @@ static int vp8_header(AVFormatContext *s, int idx)
         avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
         st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codecpar->codec_id   = AV_CODEC_ID_VP8;
-        st->internal->need_parsing      = AVSTREAM_PARSE_HEADERS;
+        ffstream(st)->need_parsing = AVSTREAM_PARSE_HEADERS;
         break;
     case 0x02:
         if (p[6] != 0x20)

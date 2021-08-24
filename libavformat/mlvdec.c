@@ -117,6 +117,7 @@ static void read_uint64(AVFormatContext *avctx, AVIOContext *pb, const char *tag
 
 static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int file)
 {
+    FFStream *const vsti = ffstream(vst), *const asti = ffstream(ast);
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb = mlv->pb[file];
     int ret;
@@ -189,12 +190,14 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             }
         } else if (vst && type == MKTAG('V', 'I', 'D', 'F') && size >= 4) {
             uint64_t pts = avio_rl32(pb);
-            ff_add_index_entry(&vst->internal->index_entries, &vst->internal->nb_index_entries, &vst->internal->index_entries_allocated_size,
+            ff_add_index_entry(&vsti->index_entries, &vsti->nb_index_entries,
+                               &vsti->index_entries_allocated_size,
                                avio_tell(pb) - 20, pts, file, 0, AVINDEX_KEYFRAME);
             size -= 4;
         } else if (ast && type == MKTAG('A', 'U', 'D', 'F') && size >= 4) {
             uint64_t pts = avio_rl32(pb);
-            ff_add_index_entry(&ast->internal->index_entries, &ast->internal->nb_index_entries, &ast->internal->index_entries_allocated_size,
+            ff_add_index_entry(&asti->index_entries, &asti->nb_index_entries,
+                               &asti->index_entries_allocated_size,
                                avio_tell(pb) - 20, pts, file, 0, AVINDEX_KEYFRAME);
             size -= 4;
         } else if (vst && type == MKTAG('W','B','A','L') && size >= 28) {
@@ -257,6 +260,7 @@ static int read_header(AVFormatContext *avctx)
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb = avctx->pb;
     AVStream *vst = NULL, *ast = NULL;
+    FFStream *vsti = NULL, *asti = NULL;
     int size, ret;
     unsigned nb_video_frames, nb_audio_frames;
     uint64_t guid;
@@ -285,6 +289,8 @@ static int read_header(AVFormatContext *avctx)
         vst = avformat_new_stream(avctx, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
+        vsti = ffstream(vst);
+
         vst->id = 0;
         vst->nb_frames = nb_video_frames;
         if ((mlv->class[0] & (MLV_CLASS_FLAG_DELTA|MLV_CLASS_FLAG_LZMA)))
@@ -316,6 +322,7 @@ static int read_header(AVFormatContext *avctx)
         ast = avformat_new_stream(avctx, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
+        asti = ffstream(ast);
         ast->id = 1;
         ast->nb_frames = nb_audio_frames;
         if ((mlv->class[1] & MLV_CLASS_FLAG_LZMA))
@@ -372,21 +379,21 @@ static int read_header(AVFormatContext *avctx)
     }
 
     if (vst)
-        vst->duration = vst->internal->nb_index_entries;
+        vst->duration = vsti->nb_index_entries;
     if (ast)
-        ast->duration = ast->internal->nb_index_entries;
+        ast->duration = asti->nb_index_entries;
 
-    if ((vst && !vst->internal->nb_index_entries) || (ast && !ast->internal->nb_index_entries)) {
+    if ((vst && !vsti->nb_index_entries) || (ast && !asti->nb_index_entries)) {
         av_log(avctx, AV_LOG_ERROR, "no index entries found\n");
         return AVERROR_INVALIDDATA;
     }
 
     if (vst && ast)
-        avio_seek(pb, FFMIN(vst->internal->index_entries[0].pos, ast->internal->index_entries[0].pos), SEEK_SET);
+        avio_seek(pb, FFMIN(vsti->index_entries[0].pos, asti->index_entries[0].pos), SEEK_SET);
     else if (vst)
-        avio_seek(pb, vst->internal->index_entries[0].pos, SEEK_SET);
+        avio_seek(pb, vsti->index_entries[0].pos, SEEK_SET);
     else if (ast)
-        avio_seek(pb, ast->internal->index_entries[0].pos, SEEK_SET);
+        avio_seek(pb, asti->index_entries[0].pos, SEEK_SET);
 
     return 0;
 }
@@ -396,6 +403,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     MlvContext *mlv = avctx->priv_data;
     AVIOContext *pb;
     AVStream *st;
+    FFStream *sti;
     int index, ret;
     unsigned int size, space;
 
@@ -403,6 +411,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
         return AVERROR_EOF;
 
     st = avctx->streams[mlv->stream_index];
+    sti = ffstream(st);
     if (mlv->pts >= st->duration)
         return AVERROR_EOF;
 
@@ -412,12 +421,12 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
-    pb = mlv->pb[st->internal->index_entries[index].size];
+    pb = mlv->pb[sti->index_entries[index].size];
     if (!pb) {
         ret = FFERROR_REDO;
         goto next_packet;
     }
-    avio_seek(pb, st->internal->index_entries[index].pos, SEEK_SET);
+    avio_seek(pb, sti->index_entries[index].pos, SEEK_SET);
 
     avio_skip(pb, 4); // blockType
     size = avio_rl32(pb);

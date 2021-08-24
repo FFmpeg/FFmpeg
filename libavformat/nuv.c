@@ -133,7 +133,7 @@ static int get_codec_data(AVFormatContext *s, AVIOContext *pb, AVStream *vst,
                 }
                 ast->codecpar->codec_id = id;
 
-                ast->internal->need_parsing = AVSTREAM_PARSE_FULL;
+                ffstream(ast)->need_parsing = AVSTREAM_PARSE_FULL;
             } else
                 avio_skip(pb, 4 * 4);
 

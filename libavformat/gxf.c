@@ -104,12 +104,14 @@ static int gxf_probe(const AVProbeData *p) {
 static int get_sindex(AVFormatContext *s, int id, int format) {
     int i;
     AVStream *st = NULL;
+    FFStream *sti;
     i = ff_find_stream_index(s, id);
     if (i >= 0)
         return i;
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+    sti = ffstream(st);
     st->id = id;
     switch (format) {
         case 3:
@@ -130,13 +132,13 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 20:
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codecpar->codec_id = AV_CODEC_ID_MPEG2VIDEO;
-            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
+            sti->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 22:
         case 23:
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codecpar->codec_id = AV_CODEC_ID_MPEG1VIDEO;
-            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
+            sti->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 9:
             st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -169,7 +171,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 29: /* AVCHD */
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codecpar->codec_id = AV_CODEC_ID_H264;
-            st->internal->need_parsing = AVSTREAM_PARSE_HEADERS;
+            sti->need_parsing = AVSTREAM_PARSE_HEADERS;
             break;
         // timecode tracks:
         case 7:
@@ -567,6 +569,7 @@ static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int
     uint64_t pos;
     uint64_t maxlen = 100 * 1024 * 1024;
     AVStream *st = s->streams[0];
+    FFStream *const sti = ffstream(st);
     int64_t start_time = s->streams[stream_index]->start_time;
     int64_t found;
     int idx;
@@ -575,9 +578,9 @@ static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int
                                     AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     if (idx < 0)
         return -1;
-    pos = st->internal->index_entries[idx].pos;
-    if (idx < st->internal->nb_index_entries - 2)
-        maxlen = st->internal->index_entries[idx + 2].pos - pos;
+    pos = sti->index_entries[idx].pos;
+    if (idx < sti->nb_index_entries - 2)
+        maxlen = sti->index_entries[idx + 2].pos - pos;
     maxlen = FFMAX(maxlen, 200 * 1024);
     res = avio_seek(s->pb, pos, SEEK_SET);
     if (res < 0)

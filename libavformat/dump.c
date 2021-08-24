@@ -508,6 +508,7 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
     char buf[256];
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     const AVStream *st = ic->streams[i];
+    const FFStream *const sti = cffstream(st);
     const AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
     const char *separator = ic->dump_separator;
     AVCodecContext *avctx;
@@ -524,12 +525,12 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
     }
 
     // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
-    avctx->properties   = st->internal->avctx->properties;
-    avctx->codec        = st->internal->avctx->codec;
-    avctx->qmin         = st->internal->avctx->qmin;
-    avctx->qmax         = st->internal->avctx->qmax;
-    avctx->coded_width  = st->internal->avctx->coded_width;
-    avctx->coded_height = st->internal->avctx->coded_height;
+    avctx->properties   = sti->avctx->properties;
+    avctx->codec        = sti->avctx->codec;
+    avctx->qmin         = sti->avctx->qmin;
+    avctx->qmax         = sti->avctx->qmax;
+    avctx->coded_width  = sti->avctx->coded_width;
+    avctx->coded_height = sti->avctx->coded_height;
 
     if (separator)
         av_opt_set(avctx, "dump_separator", separator, 0);
@@ -544,7 +545,7 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
         av_log(NULL, AV_LOG_INFO, "[0x%x]", st->id);
     if (lang)
         av_log(NULL, AV_LOG_INFO, "(%s)", lang->value);
-    av_log(NULL, AV_LOG_DEBUG, ", %d, %d/%d", st->internal->codec_info_nb_frames,
+    av_log(NULL, AV_LOG_DEBUG, ", %d, %d/%d", sti->codec_info_nb_frames,
            st->time_base.num, st->time_base.den);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
 

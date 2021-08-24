@@ -738,6 +738,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     int64_t delta;
     ConcatStream *cs;
     AVStream *st;
+    FFStream *sti;
 
     if (cat->eof)
         return AVERROR_EOF;
@@ -774,6 +775,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         return ret;
 
     st = cat->avf->streams[pkt->stream_index];
+    sti = ffstream(st);
     av_log(avf, AV_LOG_DEBUG, "file:%d stream:%d pts:%s pts_time:%s dts:%s dts_time:%s",
            (unsigned)(cat->cur_file - cat->files), pkt->stream_index,
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
@@ -802,8 +804,8 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         }
     }
 
-    if (cat->cur_file->duration == AV_NOPTS_VALUE && st->internal->cur_dts != AV_NOPTS_VALUE) {
-        int64_t next_dts = av_rescale_q(st->internal->cur_dts, st->time_base, AV_TIME_BASE_Q);
+    if (cat->cur_file->duration == AV_NOPTS_VALUE && sti->cur_dts != AV_NOPTS_VALUE) {
+        int64_t next_dts = av_rescale_q(sti->cur_dts, st->time_base, AV_TIME_BASE_Q);
         if (cat->cur_file->next_dts == AV_NOPTS_VALUE || next_dts > cat->cur_file->next_dts) {
             cat->cur_file->next_dts = next_dts;
         }
