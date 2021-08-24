@@ -130,6 +130,7 @@
 #define STREAM_TYPE_VIDEO_HEVC      0x24
 #define STREAM_TYPE_VIDEO_CAVS      0x42
 #define STREAM_TYPE_VIDEO_AVS2      0xd2
+#define STREAM_TYPE_VIDEO_AVS3      0xd4
 #define STREAM_TYPE_VIDEO_VC1       0xea
 #define STREAM_TYPE_VIDEO_DIRAC     0xd1
 
