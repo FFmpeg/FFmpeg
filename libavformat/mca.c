@@ -62,7 +62,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 0x4);      // skip the file magic
     version          = avio_rl16(s->pb);
     avio_skip(s->pb, 0x2);      // padding
-    par->channels    = avio_r8(s->pb);
+    par->ch_layout.nb_channels = avio_r8(s->pb);
     avio_skip(s->pb, 0x1);      // padding
     m->block_size    = avio_rl16(s->pb);
     nb_samples       = avio_rl32(s->pb);
@@ -85,7 +85,7 @@ static int read_header(AVFormatContext *s)
     st->duration = nb_samples;
 
     // sanity checks
-    if (!par->channels || par->sample_rate <= 0
+    if (!par->ch_layout.nb_channels || par->sample_rate <= 0
         || loop_start > loop_end || m->block_count < 1)
         return AVERROR_INVALIDDATA;
     if ((ret = av_dict_set_int(&s->metadata, "loop_start",
@@ -96,8 +96,8 @@ static int read_header(AVFormatContext *s)
                         av_rescale(loop_end, AV_TIME_BASE,
                                    par->sample_rate), 0)) < 0)
         return ret;
-    if ((32 + 4 + m->block_size) > (INT_MAX / par->channels) ||
-        (32 + 4 + m->block_size) * par->channels > INT_MAX - 8)
+    if ((32 + 4 + m->block_size) > (INT_MAX / par->ch_layout.nb_channels) ||
+        (32 + 4 + m->block_size) * par->ch_layout.nb_channels > INT_MAX - 8)
         return AVERROR_INVALIDDATA;
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
 
@@ -116,9 +116,9 @@ static int read_header(AVFormatContext *s)
         }
     } else if (version == 5) {
         // read data_start location from the header
-        if (0x30 * par->channels + 0x4 > header_size)
+        if (0x30 * par->ch_layout.nb_channels + 0x4 > header_size)
             return AVERROR_INVALIDDATA;
-        data_offset = header_size - 0x30 * par->channels - 0x4;
+        data_offset = header_size - 0x30 * par->ch_layout.nb_channels - 0x4;
         if ((ret_size = avio_seek(s->pb, data_offset, SEEK_SET)) < 0)
             return ret_size;
         m->data_start = avio_rl32(s->pb);
@@ -144,21 +144,21 @@ static int read_header(AVFormatContext *s)
     }
 
     // coefficient alignment = 0x30; metadata size = 0x14
-    if (0x30 * par->channels + nb_metadata * 0x14 > header_size)
+    if (0x30 * par->ch_layout.nb_channels + nb_metadata * 0x14 > header_size)
         return AVERROR_INVALIDDATA;
     coef_offset =
-        header_size - 0x30 * par->channels + nb_metadata * 0x14;
+        header_size - 0x30 * par->ch_layout.nb_channels + nb_metadata * 0x14;
 
     st->start_time = 0;
     par->codec_id = AV_CODEC_ID_ADPCM_THP_LE;
 
-    ret = ff_alloc_extradata(st->codecpar, 32 * par->channels);
+    ret = ff_alloc_extradata(st->codecpar, 32 * par->ch_layout.nb_channels);
     if (ret < 0)
         return ret;
 
     if ((ret_size = avio_seek(s->pb, coef_offset, SEEK_SET)) < 0)
         return ret_size;
-    for (ch = 0; ch < par->channels; ch++) {
+    for (ch = 0; ch < par->ch_layout.nb_channels; ch++) {
         if ((ret = ffio_read_size(s->pb, par->extradata + ch * 32, 32)) < 0)
             return ret;
         // 0x30 (alignment) - 0x20 (actual size, 32) = 0x10 (padding)
@@ -187,7 +187,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if (m->current_block > m->block_count)
         return AVERROR_EOF;
 
-    if ((ret = av_get_packet(s->pb, pkt, size * par->channels)) < 0)
+    if ((ret = av_get_packet(s->pb, pkt, size * par->ch_layout.nb_channels)) < 0)
         return ret;
     pkt->duration = samples;
     pkt->stream_index = 0;
@@ -208,7 +208,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     if (timestamp >= m->block_count)
         timestamp = m->block_count - 1;
     ret = avio_seek(s->pb, m->data_start + timestamp * m->block_size *
-                    st->codecpar->channels, SEEK_SET);
+                    st->codecpar->ch_layout.nb_channels, SEEK_SET);
     if (ret < 0)
         return ret;
 
