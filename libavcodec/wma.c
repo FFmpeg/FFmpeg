@@ -459,7 +459,7 @@ int ff_wma_run_level_decode(AVCodecContext *avctx, GetBitContext *gb,
                         if (get_bits1(gb)) {
                             av_log(avctx, AV_LOG_ERROR,
                                    "broken escape sequence\n");
-                            return -1;
+                            return AVERROR_INVALIDDATA;
                         } else
                             offset += get_bits(gb, frame_len_bits) + 4;
                     } else
@@ -477,7 +477,7 @@ int ff_wma_run_level_decode(AVCodecContext *avctx, GetBitContext *gb,
                offset,
                num_coefs
               );
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
