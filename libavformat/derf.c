@@ -38,6 +38,7 @@ static int derf_probe(const AVProbeData *p)
 static int derf_read_header(AVFormatContext *s)
 {
     unsigned data_size;
+    int channels;
     AVIOContext *pb = s->pb;
     AVCodecParameters *par;
     AVStream *st;
@@ -52,15 +53,12 @@ static int derf_read_header(AVFormatContext *s)
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = AV_CODEC_ID_DERF_DPCM;
     par->format      = AV_SAMPLE_FMT_S16;
-    par->channels    = avio_rl32(pb);
-    if (par->channels != 1 && par->channels != 2)
+    channels         = avio_rl32(pb);
+    if (channels != 1 && channels != 2)
         return AVERROR_INVALIDDATA;
-    if (par->channels == 1)
-        par->channel_layout = AV_CH_LAYOUT_MONO;
-    else if (par->channels == 2)
-        par->channel_layout = AV_CH_LAYOUT_STEREO;
+    av_channel_layout_default(&par->ch_layout, channels);
     data_size = avio_rl32(pb);
-    st->duration = data_size / par->channels;
+    st->duration = data_size / channels;
     par->sample_rate = 22050;
     par->block_align = 1;
 
