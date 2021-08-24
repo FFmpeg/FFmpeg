@@ -1392,6 +1392,8 @@ static int h264_export_frame_props(H264Context *h)
                sizeof(fgp->codec.h274.comp_model_value));
 
         fgc->present = !!fgc->repetition_period;
+
+        h->avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
     }
 
     if (h->sei.picture_timing.timecode_cnt > 0) {
