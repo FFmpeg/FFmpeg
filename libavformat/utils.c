@@ -1742,8 +1742,6 @@ return_packet:
 /* XXX: suppress the packet queue */
 static void flush_packet_queue(AVFormatContext *s)
 {
-    if (!s->internal)
-        return;
     avpriv_packet_list_free(&s->internal->parse_queue,       &s->internal->parse_queue_end);
     avpriv_packet_list_free(&s->internal->packet_buffer,     &s->internal->packet_buffer_end);
     avpriv_packet_list_free(&s->internal->raw_packet_buffer, &s->internal->raw_packet_buffer_end);
