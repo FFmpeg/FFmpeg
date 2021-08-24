@@ -244,9 +244,9 @@ static void amv_write_alist(AVFormatContext *s, AVCodecParameters *par)
     /* Bodge an (incorrect) WAVEFORMATEX (+2 pad bytes) */
     tag_str = ff_start_tag(pb, "strf");
     AV_WL16(buf +  0, 1);
-    AV_WL16(buf +  2, par->channels);
+    AV_WL16(buf +  2, par->ch_layout.nb_channels);
     AV_WL32(buf +  4, par->sample_rate);
-    AV_WL32(buf +  8, par->sample_rate * par->channels * 2);
+    AV_WL32(buf +  8, par->sample_rate * par->ch_layout.nb_channels * 2);
     AV_WL16(buf + 12, 2);
     AV_WL16(buf + 14, 16);
     AV_WL16(buf + 16, 0);
