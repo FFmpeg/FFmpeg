@@ -205,18 +205,12 @@ static int pp_bnk_read_header(AVFormatContext *s)
         par->codec_id               = AV_CODEC_ID_ADPCM_IMA_CUNNING;
         par->format                 = AV_SAMPLE_FMT_S16P;
 
-        if (ctx->is_music) {
-            par->channel_layout     = AV_CH_LAYOUT_STEREO;
-            par->channels           = 2;
-        } else {
-            par->channel_layout     = AV_CH_LAYOUT_MONO;
-            par->channels           = 1;
-        }
-
+        av_channel_layout_default(&par->ch_layout, ctx->is_music + 1);
         par->sample_rate            = hdr.sample_rate;
         par->bits_per_coded_sample  = 4;
         par->block_align            = 1;
-        par->bit_rate               = par->sample_rate * (int64_t)par->bits_per_coded_sample * par->channels;
+        par->bit_rate               = par->sample_rate * (int64_t)par->bits_per_coded_sample *
+                                      par->ch_layout.nb_channels;
 
         avpriv_set_pts_info(st, 64, 1, par->sample_rate);
         st->start_time              = 0;
