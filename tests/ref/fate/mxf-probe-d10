@@ -10,6 +10,7 @@ height=608
 coded_width=0
 coded_height=0
 closed_captions=0
+film_grain=0
 has_b_frames=0
 sample_aspect_ratio=152:135
 display_aspect_ratio=4:3

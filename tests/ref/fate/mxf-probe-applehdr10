@@ -10,6 +10,7 @@ height=720
 coded_width=1280
 coded_height=720
 closed_captions=0
+film_grain=0
 has_b_frames=0
 sample_aspect_ratio=1:1
 display_aspect_ratio=16:9
