@@ -1,0 +1,37 @@
+version: 2.1
+executors:
+  docker-publisher:
+    environment:
+      - IMAGE_NAME: turingvideo/ffmpeg
+      - DEFAULT_ENV: prod
+      - REMOTE_IMAGE_NAME: harbor.turingvideo.com/ffmpeg/ffmpeg
+    docker:
+      - image: circleci/alpine:3.7
+
+jobs:
+  build-docker-image:
+    executor: docker-publisher
+    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Build and Publish Docker image
+          command: |
+            IMAGE_TAG=${CIRCLE_TAG/v/''}
+            docker build -t $IMAGE_TAG .
+            echo "$HARBOR_PASS" | docker login -u "admin" https://harbor.turingvideo.com --password-stdin
+            docker tag $IMAGE_NAME.$DEFAULT_ENV:$IMAGE_TAG $REMOTE_IMAGE_NAME:$IMAGE_TAG
+            docker push $REMOTE_IMAGE_NAME:$IMAGE_TAG
+
+workflows:
+  version: 2
+  build-tags:
+    jobs:
+      - build-docker-image:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
