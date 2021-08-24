@@ -985,13 +985,16 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
 
     /** decode run level coded coefficients */
     if (cur_coeff < s->subframe_len) {
+        int ret;
+
         memset(&ci->coeffs[cur_coeff], 0,
                sizeof(*ci->coeffs) * (s->subframe_len - cur_coeff));
-        if (ff_wma_run_level_decode(s->avctx, &s->gb, vlc,
-                                    level, run, 1, ci->coeffs,
-                                    cur_coeff, s->subframe_len,
-                                    s->subframe_len, s->esc_len, 0))
-            return AVERROR_INVALIDDATA;
+        ret = ff_wma_run_level_decode(s->avctx, &s->gb, vlc,
+                                      level, run, 1, ci->coeffs,
+                                      cur_coeff, s->subframe_len,
+                                      s->subframe_len, s->esc_len, 0);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
