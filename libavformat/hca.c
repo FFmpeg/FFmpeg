@@ -79,7 +79,7 @@ static int hca_read_header(AVFormatContext *s)
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = AV_CODEC_ID_HCA;
     par->codec_tag   = 0;
-    par->channels    = bytestream2_get_byte(&gb);
+    st->codecpar->ch_layout.nb_channels = bytestream2_get_byte(&gb);
     par->sample_rate = bytestream2_get_be24(&gb);
     block_count      = bytestream2_get_be32(&gb);
     bytestream2_skip(&gb, 4);
