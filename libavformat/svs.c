@@ -53,8 +53,7 @@ static int svs_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id       = AV_CODEC_ID_ADPCM_PSX;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-    st->codecpar->channels       = 2;
+    st->codecpar->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     st->codecpar->sample_rate    = av_rescale_rnd(pitch, 48000, 4096, AV_ROUND_INF);
     st->codecpar->block_align    = 32;
     st->start_time               = 0;
