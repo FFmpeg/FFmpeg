@@ -76,8 +76,7 @@ static int simbiosis_imx_read_header(AVFormatContext *s)
     ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     ast->codecpar->codec_tag  = 0;
     ast->codecpar->codec_id   = AV_CODEC_ID_PCM_U8;
-    ast->codecpar->channels   = 1;
-    ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    ast->codecpar->ch_layout  = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     ast->codecpar->sample_rate = 22050;
     ast->start_time = 0;
 
