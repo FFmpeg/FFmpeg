@@ -142,6 +142,20 @@ const AVOutputFormat ff_avs2_muxer = {
 };
 #endif
 
+#if CONFIG_AVS3_MUXER
+const AVOutputFormat ff_avs3_muxer = {
+    .name              = "avs3",
+    .long_name         = NULL_IF_CONFIG_SMALL("AVS3-P2/IEEE1857.10"),
+    .extensions        = "avs3",
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_AVS3,
+    .init              = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+
 #if CONFIG_CAVSVIDEO_MUXER
 const AVOutputFormat ff_cavsvideo_muxer = {
     .name              = "cavsvideo",

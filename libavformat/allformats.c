@@ -88,6 +88,7 @@ extern const AVInputFormat  ff_avs_demuxer;
 extern const AVInputFormat  ff_avs2_demuxer;
 extern const AVOutputFormat ff_avs2_muxer;
 extern const AVInputFormat  ff_avs3_demuxer;
+extern const AVOutputFormat ff_avs3_muxer;
 extern const AVInputFormat  ff_bethsoftvid_demuxer;
 extern const AVInputFormat  ff_bfi_demuxer;
 extern const AVInputFormat  ff_bintext_demuxer;
