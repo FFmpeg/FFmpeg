@@ -588,6 +588,7 @@ int avfilter_pad_count(const AVFilterPad *pads)
     }
 
     av_assert0(!"AVFilterPad list not from a filter");
+    return AVERROR_BUG;
 }
 #endif
 
