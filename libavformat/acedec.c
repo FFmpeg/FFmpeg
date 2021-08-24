@@ -74,7 +74,7 @@ static int ace_read_header(AVFormatContext *s)
     st->start_time = 0;
     par = st->codecpar;
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
-    par->channels    = nb_channels;
+    par->ch_layout.nb_channels = nb_channels;
     par->sample_rate = rate;
     par->block_align = (codec == 4 ? 0x60 : codec == 5 ? 0x98 : 0xC0) * nb_channels;
     st->duration     = (size / par->block_align) * 1024LL;
@@ -85,7 +85,7 @@ static int ace_read_header(AVFormatContext *s)
         return ret;
 
     AV_WL16(st->codecpar->extradata, 1);
-    AV_WL16(st->codecpar->extradata+2, 2048 * par->channels);
+    AV_WL16(st->codecpar->extradata+2, 2048 * nb_channels);
     AV_WL16(st->codecpar->extradata+4, 0);
     AV_WL16(st->codecpar->extradata+6, codec == 4 ? 1 : 0);
     AV_WL16(st->codecpar->extradata+8, codec == 4 ? 1 : 0);
