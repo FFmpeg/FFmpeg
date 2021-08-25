@@ -35,6 +35,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
+#include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -4146,10 +4147,12 @@ static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
     MatroskaDemuxContext *matroska = s->priv_data;
     EbmlList *seekhead_list = &matroska->seekhead;
     MatroskaSeekhead *seekhead = seekhead_list->elem;
+    AVStream *const st = s->streams[0];
+    AVBPrint bprint;
     char *buf;
     int64_t cues_start = -1, cues_end = -1, before_pos, bandwidth;
     int i;
-    int end = 0;
+    int ret;
 
     // determine cues start and end positions
     for (i = 0; i < seekhead_list->nb_elem; i++)
@@ -4180,6 +4183,9 @@ static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
     // parse the cues
     matroska_parse_cues(matroska);
 
+    if (!st->internal->nb_index_entries)
+        return AVERROR_INVALIDDATA;
+
     // cues start
     av_dict_set_int(&s->streams[0]->metadata, CUES_START, cues_start, 0);
 
@@ -4199,22 +4205,19 @@ static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
     // check if all clusters start with key frames
     av_dict_set_int(&s->streams[0]->metadata, CLUSTER_KEYFRAME, webm_clusters_start_with_keyframe(s), 0);
 
-    // store cue point timestamps as a comma separated list for checking subsegment alignment in
-    // the muxer. assumes that each timestamp cannot be more than 20 characters long.
-    buf = av_malloc_array(s->streams[0]->internal->nb_index_entries, 20);
-    if (!buf) return -1;
-    strcpy(buf, "");
-    for (i = 0; i < s->streams[0]->internal->nb_index_entries; i++) {
-        int ret = snprintf(buf + end, 20,
-                           "%" PRId64"%s", s->streams[0]->internal->index_entries[i].timestamp,
-                           i != s->streams[0]->internal->nb_index_entries - 1 ? "," : "");
-        if (ret <= 0 || (ret == 20 && i ==  s->streams[0]->internal->nb_index_entries - 1)) {
-            av_log(s, AV_LOG_ERROR, "timestamp too long.\n");
-            av_free(buf);
-            return AVERROR_INVALIDDATA;
-        }
-        end += ret;
+    // Store cue point timestamps as a comma separated list
+    // for checking subsegment alignment in the muxer.
+    av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
+    for (int i = 0; i < st->internal->nb_index_entries; i++)
+        av_bprintf(&bprint, "%" PRId64",", st->internal->index_entries[i].timestamp);
+    if (!av_bprint_is_complete(&bprint)) {
+        av_bprint_finalize(&bprint, NULL);
+        return AVERROR(ENOMEM);
     }
+    // Remove the trailing ','
+    bprint.str[--bprint.len] = '\0';
+    if ((ret = av_bprint_finalize(&bprint, &buf)) < 0)
+        return ret;
     av_dict_set(&s->streams[0]->metadata, CUE_TIMESTAMPS,
                 buf, AV_DICT_DONT_STRDUP_VAL);
 
