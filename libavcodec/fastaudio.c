@@ -78,7 +78,7 @@ static av_cold int fastaudio_init(AVCodecContext *avctx)
     for (int i = 0; i < 8; i++)
         s->table[7][i] = i * 0.34f / 3.f - 0.2f;
 
-    s->ch = av_calloc(avctx->channels, sizeof(*s->ch));
+    s->ch = av_calloc(avctx->ch_layout.nb_channels, sizeof(*s->ch));
     if (!s->ch)
         return AVERROR(ENOMEM);
 
@@ -113,7 +113,7 @@ static int fastaudio_decode(AVCodecContext *avctx, void *data,
     int subframes;
     int ret;
 
-    subframes = pkt->size / (40 * avctx->channels);
+    subframes = pkt->size / (40 * avctx->ch_layout.nb_channels);
     frame->nb_samples = subframes * 256;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
@@ -121,7 +121,7 @@ static int fastaudio_decode(AVCodecContext *avctx, void *data,
     bytestream2_init(&gb, pkt->data, pkt->size);
 
     for (int subframe = 0; subframe < subframes; subframe++) {
-        for (int channel = 0; channel < avctx->channels; channel++) {
+        for (int channel = 0; channel < avctx->ch_layout.nb_channels; channel++) {
             ChannelItems *ch = &s->ch[channel];
             float result[256] = { 0 };
             unsigned src[10];
