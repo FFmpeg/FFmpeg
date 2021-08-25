@@ -30,6 +30,7 @@
 #include "../dnn_interface.h"
 #include "libavformat/avio.h"
 #include "libavutil/opt.h"
+#include "queue.h"
 
 /**
  * the enum value of DNNLayerType should not be changed,
@@ -126,6 +127,7 @@ typedef struct NativeModel{
     int32_t layers_num;
     DnnOperand *operands;
     int32_t operands_num;
+    Queue *inference_queue;
 } NativeModel;
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
