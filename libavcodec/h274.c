@@ -30,10 +30,6 @@
 
 #include "h274.h"
 
-// The code in this file has a lot of loops that vectorize very well, this is
-// about a 40% speedup for no obvious downside.
-#pragma GCC optimize("tree-vectorize")
-
 static const int8_t Gaussian_LUT[2048+256];
 static const uint32_t Seed_LUT[256];
 static const int8_t R64T[64][64];
