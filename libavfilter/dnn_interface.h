@@ -114,10 +114,8 @@ typedef struct DNNModule{
     DNNModel *(*load_model)(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
     DNNReturnType (*execute_model)(const DNNModel *model, DNNExecBaseParams *exec_params);
-    // Executes model with specified input and output asynchronously. Returns DNN_ERROR otherwise.
-    DNNReturnType (*execute_model_async)(const DNNModel *model, DNNExecBaseParams *exec_params);
     // Retrieve inference result.
-    DNNAsyncStatusType (*get_async_result)(const DNNModel *model, AVFrame **in, AVFrame **out);
+    DNNAsyncStatusType (*get_result)(const DNNModel *model, AVFrame **in, AVFrame **out);
     // Flush all the pending tasks.
     DNNReturnType (*flush)(const DNNModel *model);
     // Frees memory allocated for model.

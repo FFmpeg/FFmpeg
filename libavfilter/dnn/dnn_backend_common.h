@@ -29,7 +29,8 @@
 #include "libavutil/thread.h"
 
 #define DNN_BACKEND_COMMON_OPTIONS \
-    { "nireq",           "number of request",             OFFSET(options.nireq),           AV_OPT_TYPE_INT,    { .i64 = 0 },     0, INT_MAX, FLAGS },
+    { "nireq",           "number of request",             OFFSET(options.nireq),           AV_OPT_TYPE_INT,    { .i64 = 0 },     0, INT_MAX, FLAGS }, \
+    { "async",           "use DNN async inference",       OFFSET(options.async),           AV_OPT_TYPE_BOOL,   { .i64 = 1 },     0,       1, FLAGS },
 
 // one task for one function call from dnn interface
 typedef struct TaskItem {
@@ -135,7 +136,7 @@ DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_
  * @retval DAST_NOT_READY if inference not completed yet.
  * @retval DAST_SUCCESS if result successfully extracted
  */
-DNNAsyncStatusType ff_dnn_get_async_result_common(Queue *task_queue, AVFrame **in, AVFrame **out);
+DNNAsyncStatusType ff_dnn_get_result_common(Queue *task_queue, AVFrame **in, AVFrame **out);
 
 /**
  * Allocate input and output frames and fill the Task

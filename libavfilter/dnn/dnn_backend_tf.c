@@ -42,6 +42,7 @@
 
 typedef struct TFOptions{
     char *sess_config;
+    uint8_t async;
     uint32_t nireq;
 } TFOptions;
 
@@ -1061,7 +1062,7 @@ static void infer_completion_callback(void *args) {
             av_log(ctx, AV_LOG_ERROR, "Detect filter needs provide post proc\n");
             return;
         }
-        tf_model->model->detect_post_proc(task->out_frame, outputs, task->nb_output, tf_model->model->filter_ctx);
+        tf_model->model->detect_post_proc(task->in_frame, outputs, task->nb_output, tf_model->model->filter_ctx);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Tensorflow backend does not support this kind of dnn filter now\n");
@@ -1123,34 +1124,6 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *
 {
     TFModel *tf_model = model->model;
     TFContext *ctx = &tf_model->ctx;
-    TaskItem task;
-    TFRequestItem *request;
-
-    if (ff_check_exec_params(ctx, DNN_TF, model->func_type, exec_params) != 0) {
-        return DNN_ERROR;
-    }
-
-    if (ff_dnn_fill_task(&task, exec_params, tf_model, 0, 1) != DNN_SUCCESS) {
-        return DNN_ERROR;
-    }
-
-    if (extract_inference_from_task(&task, tf_model->inference_queue) != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
-        return DNN_ERROR;
-    }
-
-    request = ff_safe_queue_pop_front(tf_model->request_queue);
-    if (!request) {
-        av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
-        return DNN_ERROR;
-    }
-
-    return execute_model_tf(request, tf_model->inference_queue);
-}
-
-DNNReturnType ff_dnn_execute_model_async_tf(const DNNModel *model, DNNExecBaseParams *exec_params) {
-    TFModel *tf_model = model->model;
-    TFContext *ctx = &tf_model->ctx;
     TaskItem *task;
     TFRequestItem *request;
 
@@ -1164,7 +1137,7 @@ DNNReturnType ff_dnn_execute_model_async_tf(const DNNModel *model, DNNExecBasePa
         return DNN_ERROR;
     }
 
-    if (ff_dnn_fill_task(task, exec_params, tf_model, 1, 1) != DNN_SUCCESS) {
+    if (ff_dnn_fill_task(task, exec_params, tf_model, ctx->options.async, 1) != DNN_SUCCESS) {
         av_freep(&task);
         return DNN_ERROR;
     }
@@ -1188,10 +1161,10 @@ DNNReturnType ff_dnn_execute_model_async_tf(const DNNModel *model, DNNExecBasePa
     return execute_model_tf(request, tf_model->inference_queue);
 }
 
-DNNAsyncStatusType ff_dnn_get_async_result_tf(const DNNModel *model, AVFrame **in, AVFrame **out)
+DNNAsyncStatusType ff_dnn_get_result_tf(const DNNModel *model, AVFrame **in, AVFrame **out)
 {
     TFModel *tf_model = model->model;
-    return ff_dnn_get_async_result_common(tf_model->task_queue, in, out);
+    return ff_dnn_get_result_common(tf_model->task_queue, in, out);
 }
 
 DNNReturnType ff_dnn_flush_tf(const DNNModel *model)

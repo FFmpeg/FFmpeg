@@ -328,7 +328,7 @@ static int flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
+        async_state = ff_dnn_get_result(&ctx->dnnctx, &in_frame, &out_frame);
         if (out_frame) {
             if (isPlanarYUV(in_frame->format))
                 copy_uv_planes(ctx, out_frame, in_frame);
@@ -370,7 +370,7 @@ static int activate_async(AVFilterContext *filter_ctx)
                 return AVERROR(ENOMEM);
             }
             av_frame_copy_props(out, in);
-            if (ff_dnn_execute_model_async(&ctx->dnnctx, in, out) != DNN_SUCCESS) {
+            if (ff_dnn_execute_model(&ctx->dnnctx, in, out) != DNN_SUCCESS) {
                 return AVERROR(EIO);
             }
         }
@@ -380,7 +380,7 @@ static int activate_async(AVFilterContext *filter_ctx)
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
+        async_state = ff_dnn_get_result(&ctx->dnnctx, &in_frame, &out_frame);
         if (out_frame) {
             if (isPlanarYUV(in_frame->format))
                 copy_uv_planes(ctx, out_frame, in_frame);
@@ -410,7 +410,7 @@ static int activate_async(AVFilterContext *filter_ctx)
     return 0;
 }
 
-static int activate(AVFilterContext *filter_ctx)
+static av_unused int activate(AVFilterContext *filter_ctx)
 {
     DnnProcessingContext *ctx = filter_ctx->priv;
 
@@ -454,5 +454,5 @@ const AVFilter ff_vf_dnn_processing = {
     FILTER_INPUTS(dnn_processing_inputs),
     FILTER_OUTPUTS(dnn_processing_outputs),
     .priv_class    = &dnn_processing_class,
-    .activate      = activate,
+    .activate      = activate_async,
 };

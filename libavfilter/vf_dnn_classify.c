@@ -224,14 +224,13 @@ static int dnn_classify_flush_frame(AVFilterLink *outlink, int64_t pts, int64_t 
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
-        if (out_frame) {
-            av_assert0(in_frame == out_frame);
-            ret = ff_filter_frame(outlink, out_frame);
+        async_state = ff_dnn_get_result(&ctx->dnnctx, &in_frame, &out_frame);
+        if (async_state == DAST_SUCCESS) {
+            ret = ff_filter_frame(outlink, in_frame);
             if (ret < 0)
                 return ret;
             if (out_pts)
-                *out_pts = out_frame->pts + pts;
+                *out_pts = in_frame->pts + pts;
         }
         av_usleep(5000);
     } while (async_state >= DAST_NOT_READY);
@@ -258,7 +257,7 @@ static int dnn_classify_activate(AVFilterContext *filter_ctx)
         if (ret < 0)
             return ret;
         if (ret > 0) {
-            if (ff_dnn_execute_model_classification(&ctx->dnnctx, in, in, ctx->target) != DNN_SUCCESS) {
+            if (ff_dnn_execute_model_classification(&ctx->dnnctx, in, NULL, ctx->target) != DNN_SUCCESS) {
                 return AVERROR(EIO);
             }
         }
@@ -268,10 +267,9 @@ static int dnn_classify_activate(AVFilterContext *filter_ctx)
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
-        if (out_frame) {
-            av_assert0(in_frame == out_frame);
-            ret = ff_filter_frame(outlink, out_frame);
+        async_state = ff_dnn_get_result(&ctx->dnnctx, &in_frame, &out_frame);
+        if (async_state == DAST_SUCCESS) {
+            ret = ff_filter_frame(outlink, in_frame);
             if (ret < 0)
                 return ret;
             got_frame = 1;

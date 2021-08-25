@@ -424,14 +424,13 @@ static int dnn_detect_flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *o
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
-        if (out_frame) {
-            av_assert0(in_frame == out_frame);
-            ret = ff_filter_frame(outlink, out_frame);
+        async_state = ff_dnn_get_result(&ctx->dnnctx, &in_frame, &out_frame);
+        if (async_state == DAST_SUCCESS) {
+            ret = ff_filter_frame(outlink, in_frame);
             if (ret < 0)
                 return ret;
             if (out_pts)
-                *out_pts = out_frame->pts + pts;
+                *out_pts = in_frame->pts + pts;
         }
         av_usleep(5000);
     } while (async_state >= DAST_NOT_READY);
@@ -458,7 +457,7 @@ static int dnn_detect_activate_async(AVFilterContext *filter_ctx)
         if (ret < 0)
             return ret;
         if (ret > 0) {
-            if (ff_dnn_execute_model_async(&ctx->dnnctx, in, in) != DNN_SUCCESS) {
+            if (ff_dnn_execute_model(&ctx->dnnctx, in, NULL) != DNN_SUCCESS) {
                 return AVERROR(EIO);
             }
         }
@@ -468,10 +467,9 @@ static int dnn_detect_activate_async(AVFilterContext *filter_ctx)
     do {
         AVFrame *in_frame = NULL;
         AVFrame *out_frame = NULL;
-        async_state = ff_dnn_get_async_result(&ctx->dnnctx, &in_frame, &out_frame);
-        if (out_frame) {
-            av_assert0(in_frame == out_frame);
-            ret = ff_filter_frame(outlink, out_frame);
+        async_state = ff_dnn_get_result(&ctx->dnnctx, &in_frame, &out_frame);
+        if (async_state == DAST_SUCCESS) {
+            ret = ff_filter_frame(outlink, in_frame);
             if (ret < 0)
                 return ret;
             got_frame = 1;
@@ -496,7 +494,7 @@ static int dnn_detect_activate_async(AVFilterContext *filter_ctx)
     return 0;
 }
 
-static int dnn_detect_activate(AVFilterContext *filter_ctx)
+static av_unused int dnn_detect_activate(AVFilterContext *filter_ctx)
 {
     DnnDetectContext *ctx = filter_ctx->priv;
 
@@ -537,5 +535,5 @@ const AVFilter ff_vf_dnn_detect = {
     FILTER_INPUTS(dnn_detect_inputs),
     FILTER_OUTPUTS(dnn_detect_outputs),
     .priv_class    = &dnn_detect_class,
-    .activate      = dnn_detect_activate,
+    .activate      = dnn_detect_activate_async,
 };

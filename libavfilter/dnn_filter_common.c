@@ -84,11 +84,6 @@ int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *fil
         return AVERROR(EINVAL);
     }
 
-    if (!ctx->dnn_module->execute_model_async && ctx->async) {
-        ctx->async = 0;
-        av_log(filter_ctx, AV_LOG_WARNING, "this backend does not support async execution, roll back to sync.\n");
-    }
-
 #if !HAVE_PTHREAD_CANCEL
     if (ctx->async) {
         ctx->async = 0;
@@ -141,18 +136,6 @@ DNNReturnType ff_dnn_execute_model(DnnContext *ctx, AVFrame *in_frame, AVFrame *
     return (ctx->dnn_module->execute_model)(ctx->model, &exec_params);
 }
 
-DNNReturnType ff_dnn_execute_model_async(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame)
-{
-    DNNExecBaseParams exec_params = {
-        .input_name     = ctx->model_inputname,
-        .output_names   = (const char **)ctx->model_outputnames,
-        .nb_output      = ctx->nb_outputs,
-        .in_frame       = in_frame,
-        .out_frame      = out_frame,
-    };
-    return (ctx->dnn_module->execute_model_async)(ctx->model, &exec_params);
-}
-
 DNNReturnType ff_dnn_execute_model_classification(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame, const char *target)
 {
     DNNExecClassificationParams class_params = {
@@ -165,12 +148,12 @@ DNNReturnType ff_dnn_execute_model_classification(DnnContext *ctx, AVFrame *in_f
         },
         .target = target,
     };
-    return (ctx->dnn_module->execute_model_async)(ctx->model, &class_params.base);
+    return (ctx->dnn_module->execute_model)(ctx->model, &class_params.base);
 }
 
-DNNAsyncStatusType ff_dnn_get_async_result(DnnContext *ctx, AVFrame **in_frame, AVFrame **out_frame)
+DNNAsyncStatusType ff_dnn_get_result(DnnContext *ctx, AVFrame **in_frame, AVFrame **out_frame)
 {
-    return (ctx->dnn_module->get_async_result)(ctx->model, in_frame, out_frame);
+    return (ctx->dnn_module->get_result)(ctx->model, in_frame, out_frame);
 }
 
 DNNReturnType ff_dnn_flush(DnnContext *ctx)

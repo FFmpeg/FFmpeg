@@ -68,6 +68,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
+    DNNAsyncStatusType async_state = 0;
     AVFilterContext *ctx  = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     DRContext *dr_context = ctx->priv;
@@ -88,6 +89,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(EIO);
     }
+    do {
+        async_state = ff_dnn_get_result(&dr_context->dnnctx, &in, &out);
+    } while (async_state == DAST_NOT_READY);
+
+    if (async_state != DAST_SUCCESS)
+        return AVERROR(EINVAL);
 
     av_frame_free(&in);
 

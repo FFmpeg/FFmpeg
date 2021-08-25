@@ -38,7 +38,7 @@ int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func
         return AVERROR(EINVAL);
     }
 
-    if (!exec_params->out_frame) {
+    if (!exec_params->out_frame && func_type == DFT_PROCESS_FRAME) {
         av_log(ctx, AV_LOG_ERROR, "out frame is NULL when execute model.\n");
         return AVERROR(EINVAL);
     }
@@ -138,7 +138,7 @@ DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_
     return DNN_SUCCESS;
 }
 
-DNNAsyncStatusType ff_dnn_get_async_result_common(Queue *task_queue, AVFrame **in, AVFrame **out)
+DNNAsyncStatusType ff_dnn_get_result_common(Queue *task_queue, AVFrame **in, AVFrame **out)
 {
     TaskItem *task = ff_queue_peek_front(task_queue);
 
