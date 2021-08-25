@@ -46,7 +46,7 @@ typedef struct DnnContext {
     { "output",             "output name of the model",   OFFSET(model_outputnames_string), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },\
     { "backend_configs",    "backend configs",            OFFSET(backend_options),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },\
     { "options", "backend configs (deprecated, use backend_configs)", OFFSET(backend_options),  AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS | AV_OPT_FLAG_DEPRECATED},\
-    { "async",              "use DNN async inference",    OFFSET(async),            AV_OPT_TYPE_BOOL,      { .i64 = 1},     0, 1, FLAGS},
+    { "async",              "use DNN async inference (ignored, use backend_configs='async=1')",    OFFSET(async),            AV_OPT_TYPE_BOOL,      { .i64 = 1},     0, 1, FLAGS},
 
 
 int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx);

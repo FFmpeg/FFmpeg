@@ -10291,11 +10291,8 @@ and the second line is the name of label id 1, etc.
 The label id is considered as name if the label file is not provided.
 
 @item backend_configs
-Set the configs to be passed into backend
-
-@item async
-use DNN async execution if set (default: set),
-roll back to sync execution if the backend does not support async.
+Set the configs to be passed into backend. To use async execution, set async (default: set).
+Roll back to sync execution if the backend does not support async.
 
 @end table
 
@@ -10347,14 +10344,11 @@ Set the input name of the dnn network.
 Set the output name of the dnn network.
 
 @item backend_configs
-Set the configs to be passed into backend
+Set the configs to be passed into backend. To use async execution, set async (default: set).
+Roll back to sync execution if the backend does not support async.
 
 For tensorflow backend, you can set its configs with @option{sess_config} options,
 please use tools/python/tf_sess_config.py to get the configs of TensorFlow backend for your system.
-
-@item async
-use DNN async execution if set (default: set),
-roll back to sync execution if the backend does not support async.
 
 @end table
 
