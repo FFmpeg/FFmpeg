@@ -533,10 +533,8 @@ static int get_last_needed_nal(H264Context *h)
                 first_slice != nal->type)
                 nals_needed = i;
             slice_type = get_ue_golomb_31(&gb);
-            if (slice_type > 9) {
-                if (h->avctx->err_recognition & AV_EF_EXPLODE)
-                    return AVERROR_INVALIDDATA;
-            }
+            if (slice_type > 9)
+                slice_type = 0;
             if (slice_type > 4)
                 slice_type -= 5;
 
