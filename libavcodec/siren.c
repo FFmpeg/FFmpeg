@@ -398,8 +398,8 @@ static av_cold int siren_init(AVCodecContext *avctx)
     s->imdct_prev = s->imdct_buf[2];
     s->window     = s->imdct_buf[3];
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     s->rate_control_possibilities = 16;
