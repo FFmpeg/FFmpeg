@@ -288,7 +288,7 @@ static IMFSample *mf_a_avframe_to_sample(AVCodecContext *avctx, const AVFrame *f
     size_t bps;
     IMFSample *sample;
 
-    bps = av_get_bytes_per_sample(avctx->sample_fmt) * avctx->channels;
+    bps = av_get_bytes_per_sample(avctx->sample_fmt) * avctx->ch_layout.nb_channels;
     len = frame->nb_samples * bps;
 
     sample = ff_create_memory_sample(frame->data[0], len, c->in_info.cbAlignment);
@@ -536,7 +536,7 @@ static int64_t mf_enca_output_score(AVCodecContext *avctx, IMFMediaType *type)
         score |= 1LL << 32;
 
     hr = IMFAttributes_GetUINT32(type, &MF_MT_AUDIO_NUM_CHANNELS, &t);
-    if (!FAILED(hr) && t == avctx->channels)
+    if (!FAILED(hr) && t == avctx->ch_layout.nb_channels)
         score |= 2LL << 32;
 
     hr = IMFAttributes_GetGUID(type, &MF_MT_SUBTYPE, &tg);
@@ -591,7 +591,7 @@ static int64_t mf_enca_input_score(AVCodecContext *avctx, IMFMediaType *type)
         score |= 2;
 
     hr = IMFAttributes_GetUINT32(type, &MF_MT_AUDIO_NUM_CHANNELS, &t);
-    if (!FAILED(hr) && t == avctx->channels)
+    if (!FAILED(hr) && t == avctx->ch_layout.nb_channels)
         score |= 4;
 
     return score;
@@ -615,7 +615,7 @@ static int mf_enca_input_adjust(AVCodecContext *avctx, IMFMediaType *type)
     }
 
     hr = IMFAttributes_GetUINT32(type, &MF_MT_AUDIO_NUM_CHANNELS, &t);
-    if (FAILED(hr) || t != avctx->channels) {
+    if (FAILED(hr) || t != avctx->ch_layout.nb_channels) {
         av_log(avctx, AV_LOG_ERROR, "unsupported input channel number set\n");
         return AVERROR(EINVAL);
     }
