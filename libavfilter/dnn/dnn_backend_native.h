@@ -129,7 +129,7 @@ typedef struct NativeModel{
     DnnOperand *operands;
     int32_t operands_num;
     Queue *task_queue;
-    Queue *inference_queue;
+    Queue *lltask_queue;
 } NativeModel;
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);

@@ -58,7 +58,7 @@ typedef struct TFModel{
     TF_Session *session;
     TF_Status *status;
     SafeQueue *request_queue;
-    Queue *inference_queue;
+    Queue *lltask_queue;
     Queue *task_queue;
 } TFModel;
 
@@ -75,7 +75,7 @@ typedef struct TFInferRequest {
 
 typedef struct TFRequestItem {
     TFInferRequest *infer_request;
-    InferenceItem *inference;
+    LastLevelTaskItem *lltask;
     TF_Status *status;
     DNNAsyncExecModule exec_module;
 } TFRequestItem;
@@ -90,7 +90,7 @@ static const AVOption dnn_tensorflow_options[] = {
 
 AVFILTER_DEFINE_CLASS(dnn_tensorflow);
 
-static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_queue);
+static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *lltask_queue);
 static void infer_completion_callback(void *args);
 static inline void destroy_request_item(TFRequestItem **arg);
 
@@ -158,8 +158,8 @@ static DNNReturnType tf_start_inference(void *args)
 {
     TFRequestItem *request = args;
     TFInferRequest *infer_request = request->infer_request;
-    InferenceItem *inference = request->inference;
-    TaskItem *task = inference->task;
+    LastLevelTaskItem *lltask = request->lltask;
+    TaskItem *task = lltask->task;
     TFModel *tf_model = task->model;
 
     if (!request) {
@@ -196,27 +196,27 @@ static inline void destroy_request_item(TFRequestItem **arg) {
     request = *arg;
     tf_free_request(request->infer_request);
     av_freep(&request->infer_request);
-    av_freep(&request->inference);
+    av_freep(&request->lltask);
     TF_DeleteStatus(request->status);
     ff_dnn_async_module_cleanup(&request->exec_module);
     av_freep(arg);
 }
 
-static DNNReturnType extract_inference_from_task(TaskItem *task, Queue *inference_queue)
+static DNNReturnType extract_lltask_from_task(TaskItem *task, Queue *lltask_queue)
 {
     TFModel *tf_model = task->model;
     TFContext *ctx = &tf_model->ctx;
-    InferenceItem *inference = av_malloc(sizeof(*inference));
-    if (!inference) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to allocate space for InferenceItem\n");
+    LastLevelTaskItem *lltask = av_malloc(sizeof(*lltask));
+    if (!lltask) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to allocate space for LastLevelTaskItem\n");
         return DNN_ERROR;
     }
     task->inference_todo = 1;
     task->inference_done = 0;
-    inference->task = task;
-    if (ff_queue_push_back(inference_queue, inference) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to push back inference_queue.\n");
-        av_freep(&inference);
+    lltask->task = task;
+    if (ff_queue_push_back(lltask_queue, lltask) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to push back lltask_queue.\n");
+        av_freep(&lltask);
         return DNN_ERROR;
     }
     return DNN_SUCCESS;
@@ -333,7 +333,7 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
         goto err;
     }
 
-    if (extract_inference_from_task(&task, tf_model->inference_queue) != DNN_SUCCESS) {
+    if (extract_lltask_from_task(&task, tf_model->lltask_queue) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         ret = DNN_ERROR;
         goto err;
@@ -346,7 +346,7 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
         goto err;
     }
 
-    ret = execute_model_tf(request, tf_model->inference_queue);
+    ret = execute_model_tf(request, tf_model->lltask_queue);
     *output_width = task.out_frame->width;
     *output_height = task.out_frame->height;
 
@@ -901,7 +901,7 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_
         if (!item) {
             goto err;
         }
-        item->inference = NULL;
+        item->lltask = NULL;
         item->infer_request = tf_create_inference_request();
         if (!item->infer_request) {
             av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for TensorFlow inference request\n");
@@ -919,8 +919,8 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_
         }
     }
 
-    tf_model->inference_queue = ff_queue_create();
-    if (!tf_model->inference_queue) {
+    tf_model->lltask_queue = ff_queue_create();
+    if (!tf_model->lltask_queue) {
         goto err;
     }
 
@@ -944,15 +944,15 @@ err:
 
 static DNNReturnType fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
     DNNData input;
-    InferenceItem *inference;
+    LastLevelTaskItem *lltask;
     TaskItem *task;
     TFInferRequest *infer_request;
     TFContext *ctx = &tf_model->ctx;
 
-    inference = ff_queue_pop_front(tf_model->inference_queue);
-    av_assert0(inference);
-    task = inference->task;
-    request->inference = inference;
+    lltask = ff_queue_pop_front(tf_model->lltask_queue);
+    av_assert0(lltask);
+    task = lltask->task;
+    request->lltask = lltask;
 
     if (get_input_tf(tf_model, &input, task->input_name) != DNN_SUCCESS) {
         goto err;
@@ -1030,8 +1030,8 @@ err:
 
 static void infer_completion_callback(void *args) {
     TFRequestItem *request = args;
-    InferenceItem *inference = request->inference;
-    TaskItem *task = inference->task;
+    LastLevelTaskItem *lltask = request->lltask;
+    TaskItem *task = lltask->task;
     DNNData *outputs;
     TFInferRequest *infer_request = request->infer_request;
     TFModel *tf_model = task->model;
@@ -1086,20 +1086,20 @@ err:
     }
 }
 
-static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *inference_queue)
+static DNNReturnType execute_model_tf(TFRequestItem *request, Queue *lltask_queue)
 {
     TFModel *tf_model;
     TFContext *ctx;
-    InferenceItem *inference;
+    LastLevelTaskItem *lltask;
     TaskItem *task;
 
-    if (ff_queue_size(inference_queue) == 0) {
+    if (ff_queue_size(lltask_queue) == 0) {
         destroy_request_item(&request);
         return DNN_SUCCESS;
     }
 
-    inference = ff_queue_peek_front(inference_queue);
-    task = inference->task;
+    lltask = ff_queue_peek_front(lltask_queue);
+    task = lltask->task;
     tf_model = task->model;
     ctx = &tf_model->ctx;
 
@@ -1155,8 +1155,8 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *
         return DNN_ERROR;
     }
 
-    if (extract_inference_from_task(task, tf_model->inference_queue) != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
+    if (extract_lltask_from_task(task, tf_model->lltask_queue) != DNN_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         return DNN_ERROR;
     }
 
@@ -1165,7 +1165,7 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *
         av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
         return DNN_ERROR;
     }
-    return execute_model_tf(request, tf_model->inference_queue);
+    return execute_model_tf(request, tf_model->lltask_queue);
 }
 
 DNNAsyncStatusType ff_dnn_get_result_tf(const DNNModel *model, AVFrame **in, AVFrame **out)
@@ -1181,7 +1181,7 @@ DNNReturnType ff_dnn_flush_tf(const DNNModel *model)
     TFRequestItem *request;
     DNNReturnType ret;
 
-    if (ff_queue_size(tf_model->inference_queue) == 0) {
+    if (ff_queue_size(tf_model->lltask_queue) == 0) {
         // no pending task need to flush
         return DNN_SUCCESS;
     }
@@ -1216,11 +1216,11 @@ void ff_dnn_free_model_tf(DNNModel **model)
         }
         ff_safe_queue_destroy(tf_model->request_queue);
 
-        while (ff_queue_size(tf_model->inference_queue) != 0) {
-            InferenceItem *item = ff_queue_pop_front(tf_model->inference_queue);
+        while (ff_queue_size(tf_model->lltask_queue) != 0) {
+            LastLevelTaskItem *item = ff_queue_pop_front(tf_model->lltask_queue);
             av_freep(&item);
         }
-        ff_queue_destroy(tf_model->inference_queue);
+        ff_queue_destroy(tf_model->lltask_queue);
 
         while (ff_queue_size(tf_model->task_queue) != 0) {
             TaskItem *item = ff_queue_pop_front(tf_model->task_queue);

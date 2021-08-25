@@ -47,10 +47,10 @@ typedef struct TaskItem {
 } TaskItem;
 
 // one task might have multiple inferences
-typedef struct InferenceItem {
+typedef struct LastLevelTaskItem {
     TaskItem *task;
     uint32_t bbox_index;
-} InferenceItem;
+} LastLevelTaskItem;
 
 /**
  * Common Async Execution Mechanism for the DNN Backends.

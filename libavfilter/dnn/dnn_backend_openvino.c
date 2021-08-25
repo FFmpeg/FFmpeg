@@ -57,14 +57,14 @@ typedef struct OVModel{
     ie_executable_network_t *exe_network;
     SafeQueue *request_queue;   // holds OVRequestItem
     Queue *task_queue;          // holds TaskItem
-    Queue *inference_queue;     // holds InferenceItem
+    Queue *lltask_queue;     // holds LastLevelTaskItem
 } OVModel;
 
 // one request for one call to openvino
 typedef struct OVRequestItem {
     ie_infer_request_t *infer_request;
-    InferenceItem **inferences;
-    uint32_t inference_count;
+    LastLevelTaskItem **lltasks;
+    uint32_t lltask_count;
     ie_complete_call_back_t callback;
 } OVRequestItem;
 
@@ -121,12 +121,12 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, OVRequestItem *reque
     IEStatusCode status;
     DNNData input;
     ie_blob_t *input_blob = NULL;
-    InferenceItem *inference;
+    LastLevelTaskItem *lltask;
     TaskItem *task;
 
-    inference = ff_queue_peek_front(ov_model->inference_queue);
-    av_assert0(inference);
-    task = inference->task;
+    lltask = ff_queue_peek_front(ov_model->lltask_queue);
+    av_assert0(lltask);
+    task = lltask->task;
 
     status = ie_infer_request_get_blob(request->infer_request, task->input_name, &input_blob);
     if (status != OK) {
@@ -159,13 +159,13 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, OVRequestItem *reque
     input.order = DCO_BGR;
 
     for (int i = 0; i < ctx->options.batch_size; ++i) {
-        inference = ff_queue_pop_front(ov_model->inference_queue);
-        if (!inference) {
+        lltask = ff_queue_pop_front(ov_model->lltask_queue);
+        if (!lltask) {
             break;
         }
-        request->inferences[i] = inference;
-        request->inference_count = i + 1;
-        task = inference->task;
+        request->lltasks[i] = lltask;
+        request->lltask_count = i + 1;
+        task = lltask->task;
         switch (ov_model->model->func_type) {
         case DFT_PROCESS_FRAME:
             if (task->do_ioproc) {
@@ -180,7 +180,7 @@ static DNNReturnType fill_model_input_ov(OVModel *ov_model, OVRequestItem *reque
             ff_frame_to_dnn_detect(task->in_frame, &input, ctx);
             break;
         case DFT_ANALYTICS_CLASSIFY:
-            ff_frame_to_dnn_classify(task->in_frame, &input, inference->bbox_index, ctx);
+            ff_frame_to_dnn_classify(task->in_frame, &input, lltask->bbox_index, ctx);
             break;
         default:
             av_assert0(!"should not reach here");
@@ -200,8 +200,8 @@ static void infer_completion_callback(void *args)
     precision_e precision;
     IEStatusCode status;
     OVRequestItem *request = args;
-    InferenceItem *inference = request->inferences[0];
-    TaskItem *task = inference->task;
+    LastLevelTaskItem *lltask = request->lltasks[0];
+    TaskItem *task = lltask->task;
     OVModel *ov_model = task->model;
     SafeQueue *requestq = ov_model->request_queue;
     ie_blob_t *output_blob = NULL;
@@ -248,10 +248,10 @@ static void infer_completion_callback(void *args)
     output.dt       = precision_to_datatype(precision);
     output.data     = blob_buffer.buffer;
 
-    av_assert0(request->inference_count <= dims.dims[0]);
-    av_assert0(request->inference_count >= 1);
-    for (int i = 0; i < request->inference_count; ++i) {
-        task = request->inferences[i]->task;
+    av_assert0(request->lltask_count <= dims.dims[0]);
+    av_assert0(request->lltask_count >= 1);
+    for (int i = 0; i < request->lltask_count; ++i) {
+        task = request->lltasks[i]->task;
         task->inference_done++;
 
         switch (ov_model->model->func_type) {
@@ -279,20 +279,20 @@ static void infer_completion_callback(void *args)
                 av_log(ctx, AV_LOG_ERROR, "classify filter needs to provide post proc\n");
                 return;
             }
-            ov_model->model->classify_post_proc(task->in_frame, &output, request->inferences[i]->bbox_index, ov_model->model->filter_ctx);
+            ov_model->model->classify_post_proc(task->in_frame, &output, request->lltasks[i]->bbox_index, ov_model->model->filter_ctx);
             break;
         default:
             av_assert0(!"should not reach here");
             break;
         }
 
-        av_freep(&request->inferences[i]);
+        av_freep(&request->lltasks[i]);
         output.data = (uint8_t *)output.data
                       + output.width * output.height * output.channels * get_datatype_size(output.dt);
     }
     ie_blob_free(&output_blob);
 
-    request->inference_count = 0;
+    request->lltask_count = 0;
     if (ff_safe_queue_push_back(requestq, request) < 0) {
         ie_infer_request_free(&request->infer_request);
         av_freep(&request);
@@ -399,11 +399,11 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
             goto err;
         }
 
-        item->inferences = av_malloc_array(ctx->options.batch_size, sizeof(*item->inferences));
-        if (!item->inferences) {
+        item->lltasks = av_malloc_array(ctx->options.batch_size, sizeof(*item->lltasks));
+        if (!item->lltasks) {
             goto err;
         }
-        item->inference_count = 0;
+        item->lltask_count = 0;
     }
 
     ov_model->task_queue = ff_queue_create();
@@ -411,8 +411,8 @@ static DNNReturnType init_model_ov(OVModel *ov_model, const char *input_name, co
         goto err;
     }
 
-    ov_model->inference_queue = ff_queue_create();
-    if (!ov_model->inference_queue) {
+    ov_model->lltask_queue = ff_queue_create();
+    if (!ov_model->lltask_queue) {
         goto err;
     }
 
@@ -427,7 +427,7 @@ static DNNReturnType execute_model_ov(OVRequestItem *request, Queue *inferenceq)
 {
     IEStatusCode status;
     DNNReturnType ret;
-    InferenceItem *inference;
+    LastLevelTaskItem *lltask;
     TaskItem *task;
     OVContext *ctx;
     OVModel *ov_model;
@@ -438,8 +438,8 @@ static DNNReturnType execute_model_ov(OVRequestItem *request, Queue *inferenceq)
         return DNN_SUCCESS;
     }
 
-    inference = ff_queue_peek_front(inferenceq);
-    task = inference->task;
+    lltask = ff_queue_peek_front(inferenceq);
+    task = lltask->task;
     ov_model = task->model;
     ctx = &ov_model->ctx;
 
@@ -567,21 +567,21 @@ static int contain_valid_detection_bbox(AVFrame *frame)
     return 1;
 }
 
-static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, TaskItem *task, Queue *inference_queue, DNNExecBaseParams *exec_params)
+static DNNReturnType extract_lltask_from_task(DNNFunctionType func_type, TaskItem *task, Queue *lltask_queue, DNNExecBaseParams *exec_params)
 {
     switch (func_type) {
     case DFT_PROCESS_FRAME:
     case DFT_ANALYTICS_DETECT:
     {
-        InferenceItem *inference = av_malloc(sizeof(*inference));
-        if (!inference) {
+        LastLevelTaskItem *lltask = av_malloc(sizeof(*lltask));
+        if (!lltask) {
             return DNN_ERROR;
         }
         task->inference_todo = 1;
         task->inference_done = 0;
-        inference->task = task;
-        if (ff_queue_push_back(inference_queue, inference) < 0) {
-            av_freep(&inference);
+        lltask->task = task;
+        if (ff_queue_push_back(lltask_queue, lltask) < 0) {
+            av_freep(&lltask);
             return DNN_ERROR;
         }
         return DNN_SUCCESS;
@@ -604,7 +604,7 @@ static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, Task
         header = (const AVDetectionBBoxHeader *)sd->data;
 
         for (uint32_t i = 0; i < header->nb_bboxes; i++) {
-            InferenceItem *inference;
+            LastLevelTaskItem *lltask;
             const AVDetectionBBox *bbox = av_get_detection_bbox(header, i);
 
             if (params->target) {
@@ -613,15 +613,15 @@ static DNNReturnType extract_inference_from_task(DNNFunctionType func_type, Task
                 }
             }
 
-            inference = av_malloc(sizeof(*inference));
-            if (!inference) {
+            lltask = av_malloc(sizeof(*lltask));
+            if (!lltask) {
                 return DNN_ERROR;
             }
             task->inference_todo++;
-            inference->task = task;
-            inference->bbox_index = i;
-            if (ff_queue_push_back(inference_queue, inference) < 0) {
-                av_freep(&inference);
+            lltask->task = task;
+            lltask->bbox_index = i;
+            if (ff_queue_push_back(lltask_queue, lltask) < 0) {
+                av_freep(&lltask);
                 return DNN_ERROR;
             }
         }
@@ -679,8 +679,8 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
         return DNN_ERROR;
     }
 
-    if (extract_inference_from_task(ov_model->model->func_type, &task, ov_model->inference_queue, NULL) != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
+    if (extract_lltask_from_task(ov_model->model->func_type, &task, ov_model->lltask_queue, NULL) != DNN_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         ret = DNN_ERROR;
         goto err;
     }
@@ -692,7 +692,7 @@ static DNNReturnType get_output_ov(void *model, const char *input_name, int inpu
         goto err;
     }
 
-    ret = execute_model_ov(request, ov_model->inference_queue);
+    ret = execute_model_ov(request, ov_model->lltask_queue);
     *output_width = task.out_frame->width;
     *output_height = task.out_frame->height;
 err:
@@ -794,20 +794,20 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
         return DNN_ERROR;
     }
 
-    if (extract_inference_from_task(model->func_type, task, ov_model->inference_queue, exec_params) != DNN_SUCCESS) {
+    if (extract_lltask_from_task(model->func_type, task, ov_model->lltask_queue, exec_params) != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         return DNN_ERROR;
     }
 
     if (ctx->options.async) {
-        while (ff_queue_size(ov_model->inference_queue) >= ctx->options.batch_size) {
+        while (ff_queue_size(ov_model->lltask_queue) >= ctx->options.batch_size) {
             request = ff_safe_queue_pop_front(ov_model->request_queue);
             if (!request) {
                 av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
                 return DNN_ERROR;
             }
 
-            ret = execute_model_ov(request, ov_model->inference_queue);
+            ret = execute_model_ov(request, ov_model->lltask_queue);
             if (ret != DNN_SUCCESS) {
                 return ret;
             }
@@ -833,7 +833,7 @@ DNNReturnType ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *
             av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
             return DNN_ERROR;
         }
-        return execute_model_ov(request, ov_model->inference_queue);
+        return execute_model_ov(request, ov_model->lltask_queue);
     }
 }
 
@@ -851,7 +851,7 @@ DNNReturnType ff_dnn_flush_ov(const DNNModel *model)
     IEStatusCode status;
     DNNReturnType ret;
 
-    if (ff_queue_size(ov_model->inference_queue) == 0) {
+    if (ff_queue_size(ov_model->lltask_queue) == 0) {
         // no pending task need to flush
         return DNN_SUCCESS;
     }
@@ -890,16 +890,16 @@ void ff_dnn_free_model_ov(DNNModel **model)
             if (item && item->infer_request) {
                 ie_infer_request_free(&item->infer_request);
             }
-            av_freep(&item->inferences);
+            av_freep(&item->lltasks);
             av_freep(&item);
         }
         ff_safe_queue_destroy(ov_model->request_queue);
 
-        while (ff_queue_size(ov_model->inference_queue) != 0) {
-            InferenceItem *item = ff_queue_pop_front(ov_model->inference_queue);
+        while (ff_queue_size(ov_model->lltask_queue) != 0) {
+            LastLevelTaskItem *item = ff_queue_pop_front(ov_model->lltask_queue);
             av_freep(&item);
         }
-        ff_queue_destroy(ov_model->inference_queue);
+        ff_queue_destroy(ov_model->lltask_queue);
 
         while (ff_queue_size(ov_model->task_queue) != 0) {
             TaskItem *item = ff_queue_pop_front(ov_model->task_queue);

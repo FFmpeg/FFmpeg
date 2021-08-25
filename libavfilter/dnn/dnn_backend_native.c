@@ -46,25 +46,25 @@ static const AVClass dnn_native_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
-static DNNReturnType execute_model_native(Queue *inference_queue);
+static DNNReturnType execute_model_native(Queue *lltask_queue);
 
-static DNNReturnType extract_inference_from_task(TaskItem *task, Queue *inference_queue)
+static DNNReturnType extract_lltask_from_task(TaskItem *task, Queue *lltask_queue)
 {
     NativeModel *native_model = task->model;
     NativeContext *ctx = &native_model->ctx;
-    InferenceItem *inference = av_malloc(sizeof(*inference));
+    LastLevelTaskItem *lltask = av_malloc(sizeof(*lltask));
 
-    if (!inference) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to allocate space for InferenceItem\n");
+    if (!lltask) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to allocate space for LastLevelTaskItem\n");
         return DNN_ERROR;
     }
     task->inference_todo = 1;
     task->inference_done = 0;
-    inference->task = task;
+    lltask->task = task;
 
-    if (ff_queue_push_back(inference_queue, inference) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to push back inference_queue.\n");
-        av_freep(&inference);
+    if (ff_queue_push_back(lltask_queue, lltask) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to push back lltask_queue.\n");
+        av_freep(&lltask);
         return DNN_ERROR;
     }
     return DNN_SUCCESS;
@@ -116,13 +116,13 @@ static DNNReturnType get_output_native(void *model, const char *input_name, int 
         goto err;
     }
 
-    if (extract_inference_from_task(&task, native_model->inference_queue) != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
+    if (extract_lltask_from_task(&task, native_model->lltask_queue) != DNN_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         ret = DNN_ERROR;
         goto err;
     }
 
-    ret = execute_model_native(native_model->inference_queue);
+    ret = execute_model_native(native_model->lltask_queue);
     *output_width = task.out_frame->width;
     *output_height = task.out_frame->height;
 
@@ -223,8 +223,8 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename, DNNFunctionType f
         goto fail;
     }
 
-    native_model->inference_queue = ff_queue_create();
-    if (!native_model->inference_queue) {
+    native_model->lltask_queue = ff_queue_create();
+    if (!native_model->lltask_queue) {
         goto fail;
     }
 
@@ -297,24 +297,24 @@ fail:
     return NULL;
 }
 
-static DNNReturnType execute_model_native(Queue *inference_queue)
+static DNNReturnType execute_model_native(Queue *lltask_queue)
 {
     NativeModel *native_model = NULL;
     NativeContext *ctx = NULL;
     int32_t layer;
     DNNData input, output;
     DnnOperand *oprd = NULL;
-    InferenceItem *inference = NULL;
+    LastLevelTaskItem *lltask = NULL;
     TaskItem *task = NULL;
     DNNReturnType ret = 0;
 
-    inference = ff_queue_pop_front(inference_queue);
-    if (!inference) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to get inference item\n");
+    lltask = ff_queue_pop_front(lltask_queue);
+    if (!lltask) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to get LastLevelTaskItem\n");
         ret = DNN_ERROR;
         goto err;
     }
-    task = inference->task;
+    task = lltask->task;
     native_model = task->model;
     ctx = &native_model->ctx;
 
@@ -428,7 +428,7 @@ static DNNReturnType execute_model_native(Queue *inference_queue)
     }
     task->inference_done++;
 err:
-    av_freep(&inference);
+    av_freep(&lltask);
     return ret;
 }
 
@@ -459,26 +459,26 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNExecBasePara
         return DNN_ERROR;
     }
 
-    if (extract_inference_from_task(task, native_model->inference_queue) != DNN_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
+    if (extract_lltask_from_task(task, native_model->lltask_queue) != DNN_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         return DNN_ERROR;
     }
 
-    return execute_model_native(native_model->inference_queue);
+    return execute_model_native(native_model->lltask_queue);
 }
 
 DNNReturnType ff_dnn_flush_native(const DNNModel *model)
 {
     NativeModel *native_model = model->model;
 
-    if (ff_queue_size(native_model->inference_queue) == 0) {
+    if (ff_queue_size(native_model->lltask_queue) == 0) {
         // no pending task need to flush
         return DNN_SUCCESS;
     }
 
     // for now, use sync node with flush operation
     // Switch to async when it is supported
-    return execute_model_native(native_model->inference_queue);
+    return execute_model_native(native_model->lltask_queue);
 }
 
 DNNAsyncStatusType ff_dnn_get_result_native(const DNNModel *model, AVFrame **in, AVFrame **out)
@@ -536,11 +536,11 @@ void ff_dnn_free_model_native(DNNModel **model)
                 av_freep(&native_model->operands);
             }
 
-            while (ff_queue_size(native_model->inference_queue) != 0) {
-                InferenceItem *item = ff_queue_pop_front(native_model->inference_queue);
+            while (ff_queue_size(native_model->lltask_queue) != 0) {
+                LastLevelTaskItem *item = ff_queue_pop_front(native_model->lltask_queue);
                 av_freep(&item);
             }
-            ff_queue_destroy(native_model->inference_queue);
+            ff_queue_destroy(native_model->lltask_queue);
 
             while (ff_queue_size(native_model->task_queue) != 0) {
                 TaskItem *item = ff_queue_pop_front(native_model->task_queue);
