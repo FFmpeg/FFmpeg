@@ -9990,7 +9990,7 @@ Note that different backends use different file formats. TensorFlow and native
 backend can load files for only its format.
 @end table
 
-It can also be finished with @ref{dnn_processing} filter.
+To get full functionality (such as async execution), please use the @ref{dnn_processing} filter.
 
 @section deshake
 
@@ -19355,7 +19355,7 @@ Default value is @code{2}. Scale factor is necessary for SRCNN model, because it
 input upscaled using bicubic upscaling with proper scale factor.
 @end table
 
-This feature can also be finished with @ref{dnn_processing} filter.
+To get full functionality (such as async execution), please use the @ref{dnn_processing} filter.
 
 @section ssim
 
