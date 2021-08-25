@@ -31,6 +31,7 @@ typedef enum AnalyzeMode {
     MANUAL,
     AVERAGE,
     MINMAX,
+    MEDIAN,
     NB_ANALYZE
 } AnalyzeMode;
 
@@ -48,6 +49,9 @@ typedef struct ColorCorrectContext {
     int chroma_w, chroma_h;
     int planeheight[4];
     int planewidth[4];
+
+    unsigned *uhistogram;
+    unsigned *vhistogram;
 
     float (*analyzeret)[4];
 
@@ -191,6 +195,114 @@ static int minmax_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     return 0;
 }
 
+static int median_8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorCorrectContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const float imax = s->imax;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
+    const int ulinesize = frame->linesize[1];
+    const int vlinesize = frame->linesize[2];
+    const uint8_t *uptr = (const uint8_t *)frame->data[1];
+    const uint8_t *vptr = (const uint8_t *)frame->data[2];
+    unsigned *uhistogram = s->uhistogram;
+    unsigned *vhistogram = s->vhistogram;
+    const int half_size = width * height / 2;
+    int umedian = s->max, vmedian = s->max;
+    unsigned ucnt = 0, vcnt = 0;
+
+    memset(uhistogram, 0, sizeof(*uhistogram) * (s->max + 1));
+    memset(vhistogram, 0, sizeof(*vhistogram) * (s->max + 1));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            uhistogram[uptr[x]]++;
+            vhistogram[vptr[x]]++;
+        }
+
+        uptr += ulinesize;
+        vptr += vlinesize;
+    }
+
+    for (int i = 0; i < s->max + 1; i++) {
+        ucnt += uhistogram[i];
+        if (ucnt >= half_size) {
+            umedian = i;
+            break;
+        }
+    }
+
+    for (int i = 0; i < s->max + 1; i++) {
+        vcnt += vhistogram[i];
+        if (vcnt >= half_size) {
+            vmedian = i;
+            break;
+        }
+    }
+
+    s->analyzeret[0][0] = imax * umedian - 0.5f;
+    s->analyzeret[0][1] = imax * vmedian - 0.5f;
+    s->analyzeret[0][2] = imax * umedian - 0.5f;
+    s->analyzeret[0][3] = imax * vmedian - 0.5f;
+
+    return 0;
+}
+
+static int median_16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorCorrectContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const float imax = s->imax;
+    const int width = s->planewidth[1];
+    const int height = s->planeheight[1];
+    const int ulinesize = frame->linesize[1] / 2;
+    const int vlinesize = frame->linesize[2] / 2;
+    const uint16_t *uptr = (const uint16_t *)frame->data[1];
+    const uint16_t *vptr = (const uint16_t *)frame->data[2];
+    unsigned *uhistogram = s->uhistogram;
+    unsigned *vhistogram = s->vhistogram;
+    const int half_size = width * height / 2;
+    int umedian = s->max, vmedian = s->max;
+    unsigned ucnt = 0, vcnt = 0;
+
+    memset(uhistogram, 0, sizeof(*uhistogram) * (s->max + 1));
+    memset(vhistogram, 0, sizeof(*vhistogram) * (s->max + 1));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            uhistogram[uptr[x]]++;
+            vhistogram[vptr[x]]++;
+        }
+
+        uptr += ulinesize;
+        vptr += vlinesize;
+    }
+
+    for (int i = 0; i < s->max + 1; i++) {
+        ucnt += uhistogram[i];
+        if (ucnt >= half_size) {
+            umedian = i;
+            break;
+        }
+    }
+
+    for (int i = 0; i < s->max + 1; i++) {
+        vcnt += vhistogram[i];
+        if (vcnt >= half_size) {
+            vmedian = i;
+            break;
+        }
+    }
+
+    s->analyzeret[0][0] = imax * umedian - 0.5f;
+    s->analyzeret[0][1] = imax * vmedian - 0.5f;
+    s->analyzeret[0][2] = imax * umedian - 0.5f;
+    s->analyzeret[0][3] = imax * vmedian - 0.5f;
+
+    return 0;
+}
+
 #define PROCESS()                            \
     float y = yptr[x * chroma_w] * imax;     \
     float u = uptr[x] * imax - .5f;          \
@@ -285,24 +397,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     ColorCorrectContext *s = ctx->priv;
-    const int nb_threads = FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx));
+    const int nb_threads = s->analyze == MEDIAN ? 1 : FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx));
 
     if (s->analyze) {
+        const int nb_athreads = s->analyze == MEDIAN ? 1 : nb_threads;
         float bl = 0.f, rl = 0.f, bh = 0.f, rh = 0.f;
 
-        ff_filter_execute(ctx, s->do_analyze, frame, NULL, nb_threads);
+        ff_filter_execute(ctx, s->do_analyze, frame, NULL, nb_athreads);
 
-        for (int i = 0; i < nb_threads; i++) {
+        for (int i = 0; i < nb_athreads; i++) {
             bl += s->analyzeret[i][0];
             rl += s->analyzeret[i][1];
             bh += s->analyzeret[i][2];
             rh += s->analyzeret[i][3];
         }
 
-        bl /= nb_threads;
-        rl /= nb_threads;
-        bh /= nb_threads;
-        rh /= nb_threads;
+        bl /= nb_athreads;
+        rl /= nb_athreads;
+        bh /= nb_athreads;
+        rh /= nb_athreads;
 
         s->bl = -bl;
         s->rl = -rl;
@@ -347,6 +460,14 @@ static av_cold int config_input(AVFilterLink *inlink)
     s->imax = 1.f / s->max;
     s->do_slice = s->depth <= 8 ? colorcorrect_slice8 : colorcorrect_slice16;
 
+    s->uhistogram = av_calloc(s->max == 255 ? 256 : 65536, sizeof(*s->uhistogram));
+    if (!s->uhistogram)
+        return AVERROR(ENOMEM);
+
+    s->vhistogram = av_calloc(s->max == 255 ? 256 : 65536, sizeof(*s->vhistogram));
+    if (!s->vhistogram)
+        return AVERROR(ENOMEM);
+
     s->analyzeret = av_calloc(inlink->h, sizeof(*s->analyzeret));
     if (!s->analyzeret)
         return AVERROR(ENOMEM);
@@ -359,6 +480,9 @@ static av_cold int config_input(AVFilterLink *inlink)
         break;
     case MINMAX:
         s->do_analyze = s->depth <= 8 ? minmax_slice8  : minmax_slice16;
+        break;
+    case MEDIAN:
+        s->do_analyze = s->depth <= 8 ? median_8       : median_16;
         break;
     default:
         return AVERROR_BUG;
@@ -411,6 +535,7 @@ static const AVOption colorcorrect_options[] = {
     {   "manual",  "manually set options", 0, AV_OPT_TYPE_CONST, {.i64=MANUAL},  0, 0, VF, "analyze" },
     {   "average", "use average pixels",   0, AV_OPT_TYPE_CONST, {.i64=AVERAGE}, 0, 0, VF, "analyze" },
     {   "minmax",  "use minmax pixels",    0, AV_OPT_TYPE_CONST, {.i64=MINMAX},  0, 0, VF, "analyze" },
+    {   "median",  "use median pixels",    0, AV_OPT_TYPE_CONST, {.i64=MEDIAN},  0, 0, VF, "analyze" },
     { NULL }
 };
 
