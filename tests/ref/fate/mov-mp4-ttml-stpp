@@ -1,5 +1,5 @@
-2e7e01c821c111466e7a2844826b7f6d *tests/data/fate/sub-ttml-mp4-dfxp.mp4
-8519 tests/data/fate/sub-ttml-mp4-dfxp.mp4
+cbd2c7ff864a663b0d893deac5a0caec *tests/data/fate/mov-mp4-ttml-stpp.mp4
+8547 tests/data/fate/mov-mp4-ttml-stpp.mp4
 #tb 0: 1/1000
 #media_type 0: data
 #codec_id 0: none
@@ -27,8 +27,8 @@
         {
             "index": 0,
             "codec_type": "data",
-            "codec_tag_string": "dfxp",
-            "codec_tag": "0x70786664",
+            "codec_tag_string": "stpp",
+            "codec_tag": "0x70707473",
             "time_base": "1/1000",
             "start_time": "0.000000",
             "duration_ts": 68500,
