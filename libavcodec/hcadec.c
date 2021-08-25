@@ -114,7 +114,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
 
-    if (avctx->channels <= 0 || avctx->channels > 16)
+    if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > 16)
         return AVERROR(EINVAL);
 
     ret = init_get_bits8(gb, avctx->extradata, avctx->extradata_size);
@@ -194,7 +194,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!c->track_count)
         c->track_count = 1;
 
-    b = avctx->channels / c->track_count;
+    b = avctx->ch_layout.nb_channels / c->track_count;
     if (c->stereo_band_count && b > 1) {
         int8_t *x = r;
 
@@ -239,7 +239,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (c->base_band_count + c->stereo_band_count + (unsigned long)c->hfr_group_count > 128ULL)
         return AVERROR_INVALIDDATA;
 
-    for (int i = 0; i < avctx->channels; i++) {
+    for (int i = 0; i < avctx->ch_layout.nb_channels; i++) {
         c->ch[i].chan_type = r[i];
         c->ch[i].count     = c->base_band_count + ((r[i] != 2) ? c->stereo_band_count : 0);
         c->ch[i].hfr_scale = &c->ch[i].scale_factors[c->base_band_count + c->stereo_band_count];
@@ -413,20 +413,20 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     packed_noise_level = (get_bits(gb, 9) << 8) - get_bits(gb, 7);
 
-    for (ch = 0; ch < avctx->channels; ch++)
+    for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
         unpack(c, &c->ch[ch], c->hfr_group_count, packed_noise_level, c->ath);
 
     for (int i = 0; i < 8; i++) {
-        for (ch = 0; ch < avctx->channels; ch++)
+        for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
             dequantize_coefficients(c, &c->ch[ch]);
-        for (ch = 0; ch < avctx->channels; ch++)
+        for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
             reconstruct_hfr(c, &c->ch[ch], c->hfr_group_count, c->bands_per_hfr_group,
                             c->stereo_band_count + c->base_band_count, c->total_band_count);
-        for (ch = 0; ch < avctx->channels - 1; ch++)
+        for (ch = 0; ch < avctx->ch_layout.nb_channels - 1; ch++)
             apply_intensity_stereo(c, &c->ch[ch], &c->ch[ch+1], i,
                                    c->total_band_count - c->base_band_count,
                                    c->base_band_count, c->stereo_band_count);
-        for (ch = 0; ch < avctx->channels; ch++)
+        for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
             run_imdct(c, &c->ch[ch], i, samples[ch] + i * 128);
     }
 
