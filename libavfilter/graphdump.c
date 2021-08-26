@@ -159,8 +159,10 @@ char *avfilter_graph_dump(AVFilterGraph *graph, const char *options)
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_COUNT_ONLY);
     avfilter_graph_dump_to_buf(&buf, graph);
-    av_bprint_init(&buf, buf.len + 1, buf.len + 1);
+    dump = av_malloc(buf.len + 1);
+    if (!dump)
+        return NULL;
+    av_bprint_init_for_buffer(&buf, dump, buf.len + 1);
     avfilter_graph_dump_to_buf(&buf, graph);
-    av_bprint_finalize(&buf, &dump);
     return dump;
 }
