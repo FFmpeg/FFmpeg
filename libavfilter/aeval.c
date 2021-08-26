@@ -272,8 +272,10 @@ static int activate(AVFilterContext *ctx)
     if (!ff_outlink_frame_wanted(outlink))
         return FFERROR_NOT_READY;
 
-    if (eval->duration >= 0 && t >= eval->duration)
-        return AVERROR_EOF;
+    if (eval->duration >= 0 && t >= eval->duration) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, eval->pts);
+        return 0;
+    }
 
     if (eval->duration >= 0) {
         nb_samples = FFMIN(eval->nb_samples, av_rescale(eval->duration, eval->sample_rate, AV_TIME_BASE) - eval->pts);
