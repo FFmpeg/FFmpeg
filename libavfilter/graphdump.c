@@ -31,10 +31,12 @@ static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
 {
     char *format;
     char layout[64];
-    AVBPrint dummy_buffer = { 0 };
+    AVBPrint dummy_buffer;
 
-    if (!buf)
+    if (!buf) {
         buf = &dummy_buffer;
+        av_bprint_init(buf, 0, AV_BPRINT_SIZE_COUNT_ONLY);
+    }
     switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
             format = av_x_if_null(av_get_pix_fmt_name(link->format), "?");
