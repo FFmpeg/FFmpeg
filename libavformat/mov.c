@@ -4953,6 +4953,8 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 "size %u, distance %d, keyframe %d\n", st->index,
                 index_entry_pos, offset, dts, sample_size, distance, keyframe);
         distance++;
+        if (av_sat_add64(dts, sample_duration) != dts + (uint64_t)sample_duration)
+            return AVERROR_INVALIDDATA;
         dts += sample_duration;
         offset += sample_size;
         sc->data_size += sample_size;
