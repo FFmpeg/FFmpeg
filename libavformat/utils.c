@@ -4289,19 +4289,19 @@ static void free_stream(AVStream **pst)
     if (st->attached_pic.data)
         av_packet_unref(&st->attached_pic);
 
-        av_parser_close(sti->parser);
-        avcodec_free_context(&sti->avctx);
-        av_bsf_free(&sti->bsfc);
-        av_freep(&sti->priv_pts);
-        av_freep(&sti->index_entries);
-        av_freep(&sti->probe_data.buf);
+    av_parser_close(sti->parser);
+    avcodec_free_context(&sti->avctx);
+    av_bsf_free(&sti->bsfc);
+    av_freep(&sti->priv_pts);
+    av_freep(&sti->index_entries);
+    av_freep(&sti->probe_data.buf);
 
-        av_bsf_free(&sti->extract_extradata.bsf);
+    av_bsf_free(&sti->extract_extradata.bsf);
 
-        if (sti->info) {
-            av_freep(&sti->info->duration_error);
+    if (sti->info) {
+        av_freep(&sti->info->duration_error);
         av_freep(&sti->info);
-        }
+    }
 
     av_dict_free(&st->metadata);
     avcodec_parameters_free(&st->codecpar);
