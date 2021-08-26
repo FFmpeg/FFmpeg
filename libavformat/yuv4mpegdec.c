@@ -44,6 +44,7 @@ static int yuv4_read_header(AVFormatContext *s)
     enum AVFieldOrder field_order = AV_FIELD_UNKNOWN;
     enum AVColorRange color_range = AVCOL_RANGE_UNSPECIFIED;
     AVStream *st;
+    int64_t data_offset;
 
     for (i = 0; i < MAX_YUV4_HEADER; i++) {
         header[i] = avio_r8(pb);
@@ -254,9 +255,9 @@ static int yuv4_read_header(AVFormatContext *s)
     s->packet_size = av_image_get_buffer_size(st->codecpar->format, width, height, 1) + Y4M_FRAME_MAGIC_LEN;
     if ((int) s->packet_size < 0)
         return s->packet_size;
-    s->internal->data_offset = avio_tell(pb);
+    s->internal->data_offset = data_offset = avio_tell(pb);
 
-    st->duration = (avio_size(pb) - avio_tell(pb)) / s->packet_size;
+    st->duration = (avio_size(pb) - data_offset) / s->packet_size;
 
     return 0;
 }
