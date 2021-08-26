@@ -4340,8 +4340,6 @@ void avformat_close_input(AVFormatContext **ps)
         (s->flags & AVFMT_FLAG_CUSTOM_IO))
         pb = NULL;
 
-    flush_packet_queue(s);
-
     if (s->iformat)
         if (s->iformat->read_close)
             s->iformat->read_close(s);
