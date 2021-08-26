@@ -509,7 +509,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
-    int delay = FFMAX(st->codecpar->video_delay, st->internal->avctx->max_b_frames > 0);
+    int delay = st->codecpar->video_delay;
     int i;
     int frame_size;
 
