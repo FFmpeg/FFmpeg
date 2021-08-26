@@ -29,7 +29,7 @@
 
 static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
 {
-    char *format;
+    const char *format;
     AVBPrint dummy_buffer;
 
     if (!buf) {
