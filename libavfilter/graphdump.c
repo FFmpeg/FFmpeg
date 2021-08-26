@@ -30,7 +30,6 @@
 static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
 {
     char *format;
-    char layout[64];
     AVBPrint dummy_buffer;
 
     if (!buf) {
@@ -47,11 +46,11 @@ static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
             break;
 
         case AVMEDIA_TYPE_AUDIO:
-            av_get_channel_layout_string(layout, sizeof(layout),
-                                         link->channels, link->channel_layout);
             format = av_x_if_null(av_get_sample_fmt_name(link->format), "?");
-            av_bprintf(buf, "[%dHz %s:%s]",
-                       (int)link->sample_rate, format, layout);
+            av_bprintf(buf, "[%dHz %s:",
+                       (int)link->sample_rate, format);
+            av_bprint_channel_layout(buf, link->channels, link->channel_layout);
+            av_bprint_chars(buf, ']', 1);
             break;
 
         default:
