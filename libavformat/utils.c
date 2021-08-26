@@ -873,18 +873,18 @@ static int determinable_frame_size(AVCodecContext *avctx)
 /**
  * Return the frame duration in seconds. Return 0 if not available.
  */
-void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStream *st,
-                               AVCodecParserContext *pc, AVPacket *pkt)
+static void compute_frame_duration(AVFormatContext *s, int *pnum, int *pden,
+                                   AVStream *st, AVCodecParserContext *pc,
+                                   AVPacket *pkt)
 {
-    AVRational codec_framerate = s->iformat ? st->internal->avctx->framerate :
-                                              av_mul_q(av_inv_q(st->internal->avctx->time_base), (AVRational){1, st->internal->avctx->ticks_per_frame});
+    AVRational codec_framerate = st->internal->avctx->framerate;
     int frame_size, sample_rate;
 
     *pnum = 0;
     *pden = 0;
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (st->r_frame_rate.num && !pc && s->iformat) {
+        if (st->r_frame_rate.num && !pc) {
             *pnum = st->r_frame_rate.den;
             *pden = st->r_frame_rate.num;
         } else if (st->time_base.num * 1000LL > st->time_base.den) {
@@ -898,7 +898,6 @@ void ff_compute_frame_duration(AVFormatContext *s, int *pnum, int *pden, AVStrea
                       INT_MAX);
 
             if (pc && pc->repeat_pict) {
-                av_assert0(s->iformat); // this may be wrong for interlaced encoding but its not used for that case
                 av_reduce(pnum, pden,
                           (*pnum) * (1LL + pc->repeat_pict),
                           (*pden),
@@ -1225,7 +1224,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
     duration = av_mul_q((AVRational) {pkt->duration, 1}, st->time_base);
     if (pkt->duration <= 0) {
-        ff_compute_frame_duration(s, &num, &den, st, pc, pkt);
+        compute_frame_duration(s, &num, &den, st, pc, pkt);
         if (den && num) {
             duration = (AVRational) {num, den};
             pkt->duration = av_rescale_rnd(1,
@@ -2761,7 +2760,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 (st->start_time != AV_NOPTS_VALUE ||
                  st->internal->first_dts  != AV_NOPTS_VALUE)) {
                 if (pkt->duration == 0) {
-                    ff_compute_frame_duration(ic, &num, &den, st, st->internal->parser, pkt);
+                    compute_frame_duration(ic, &num, &den, st, st->internal->parser, pkt);
                     if (den && num) {
                         pkt->duration = av_rescale_rnd(1,
                                            num * (int64_t) st->time_base.den,
