@@ -3624,14 +3624,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             av_dict_free(&thread_opt);
     }
 
-    for (i = 0; i < ic->nb_streams; i++) {
-#if FF_API_R_FRAME_RATE
-        ic->streams[i]->internal->info->last_dts = AV_NOPTS_VALUE;
-#endif
-        ic->streams[i]->internal->info->fps_first_dts = AV_NOPTS_VALUE;
-        ic->streams[i]->internal->info->fps_last_dts  = AV_NOPTS_VALUE;
-    }
-
     read_size = 0;
     for (;;) {
         const AVPacket *pkt;
@@ -4379,7 +4371,6 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     st->internal->info = av_mallocz(sizeof(*st->internal->info));
     if (!st->internal->info)
         goto fail;
-    st->internal->info->last_dts = AV_NOPTS_VALUE;
 
     st->codecpar = avcodec_parameters_alloc();
     if (!st->codecpar)
