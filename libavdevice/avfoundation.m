@@ -693,6 +693,7 @@ static int get_audio_config(AVFormatContext *s)
     const AudioStreamBasicDescription *basic_desc = CMAudioFormatDescriptionGetStreamBasicDescription(format_desc);
 
     if (!basic_desc) {
+        unlock_frames(ctx);
         av_log(s, AV_LOG_ERROR, "audio format not available\n");
         return 1;
     }
@@ -731,6 +732,7 @@ static int get_audio_config(AVFormatContext *s)
         ctx->audio_packed) {
         stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
     } else {
+        unlock_frames(ctx);
         av_log(s, AV_LOG_ERROR, "audio format is not supported\n");
         return 1;
     }
@@ -740,6 +742,7 @@ static int get_audio_config(AVFormatContext *s)
         ctx->audio_buffer_size        = CMBlockBufferGetDataLength(block_buffer);
         ctx->audio_buffer             = av_malloc(ctx->audio_buffer_size);
         if (!ctx->audio_buffer) {
+            unlock_frames(ctx);
             av_log(s, AV_LOG_ERROR, "error allocating audio buffer\n");
             return 1;
         }
