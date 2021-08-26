@@ -4368,10 +4368,6 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     if (!st->internal)
         goto fail;
 
-    st->internal->info = av_mallocz(sizeof(*st->internal->info));
-    if (!st->internal->info)
-        goto fail;
-
     st->codecpar = avcodec_parameters_alloc();
     if (!st->codecpar)
         goto fail;
@@ -4381,6 +4377,16 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         goto fail;
 
     if (s->iformat) {
+        st->internal->info = av_mallocz(sizeof(*st->internal->info));
+        if (!st->internal->info)
+            goto fail;
+
+#if FF_API_R_FRAME_RATE
+        st->internal->info->last_dts      = AV_NOPTS_VALUE;
+#endif
+        st->internal->info->fps_first_dts = AV_NOPTS_VALUE;
+        st->internal->info->fps_last_dts  = AV_NOPTS_VALUE;
+
         /* default pts setting is MPEG-like */
         avpriv_set_pts_info(st, 33, 1, 90000);
         /* we set the current DTS to 0 so that formats without any timestamps
@@ -4406,12 +4412,6 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         st->internal->pts_buffer[i] = AV_NOPTS_VALUE;
 
     st->sample_aspect_ratio = (AVRational) { 0, 1 };
-
-#if FF_API_R_FRAME_RATE
-    st->internal->info->last_dts      = AV_NOPTS_VALUE;
-#endif
-    st->internal->info->fps_first_dts = AV_NOPTS_VALUE;
-    st->internal->info->fps_last_dts  = AV_NOPTS_VALUE;
 
     st->internal->inject_global_side_data = s->internal->inject_global_side_data;
 
