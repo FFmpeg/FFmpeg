@@ -600,7 +600,7 @@ static int push_single_pic(AVFilterLink *outlink)
             switch (showwaves->filter_mode) {
             case FILTER_AVERAGE:
                 for (ch = 0; ch < nb_channels; ch++)
-                    sum[ch] += abs(p[ch + i*nb_channels]) << 1;
+                    sum[ch] += abs(p[ch + i*nb_channels]);
                 break;
             case FILTER_PEAK:
                 for (ch = 0; ch < nb_channels; ch++)
