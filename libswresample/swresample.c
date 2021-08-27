@@ -56,6 +56,8 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     return 0;
 }
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
 struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
                                       int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
@@ -97,6 +99,58 @@ fail:
     swr_free(&s);
     return NULL;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+int swr_alloc_set_opts2(struct SwrContext **ps,
+                        AVChannelLayout *out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
+                        AVChannelLayout *in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
+                        int log_offset, void *log_ctx) {
+    struct SwrContext *s = *ps;
+    int ret;
+
+    if (!s) s = swr_alloc();
+    if (!s) return AVERROR(ENOMEM);
+
+    *ps = s;
+
+    s->log_level_offset = log_offset;
+    s->log_ctx = log_ctx;
+
+    if ((ret = av_opt_set_chlayout(s, "ochl", out_ch_layout, 0)) < 0)
+        goto fail;
+
+    if ((ret = av_opt_set_int(s, "osf", out_sample_fmt, 0)) < 0)
+        goto fail;
+
+    if ((ret = av_opt_set_int(s, "osr", out_sample_rate, 0)) < 0)
+        goto fail;
+
+    if ((ret = av_opt_set_chlayout(s, "ichl", in_ch_layout, 0)) < 0)
+        goto fail;
+
+    if ((ret = av_opt_set_int(s, "isf", in_sample_fmt, 0)) < 0)
+        goto fail;
+
+    if ((ret = av_opt_set_int(s, "isr", in_sample_rate, 0)) < 0)
+        goto fail;
+
+    av_opt_set_int(s, "uch", 0, 0);
+
+#if FF_API_OLD_CHANNEL_LAYOUT
+    // Clear old API values so they don't take precedence in swr_init()
+    av_opt_set_int(s, "icl", 0, 0);
+    av_opt_set_int(s, "ocl", 0, 0);
+    av_opt_set_int(s, "ich", 0, 0);
+    av_opt_set_int(s, "och", 0, 0);
+#endif
+
+    return 0;
+fail:
+    av_log(s, AV_LOG_ERROR, "Failed to set option\n");
+    swr_free(ps);
+    return ret;
+}
 
 static void set_audiodata_fmt(AudioData *a, enum AVSampleFormat fmt){
     a->fmt   = fmt;
@@ -125,6 +179,8 @@ static void clear_context(SwrContext *s){
     free_temp(&s->drop_temp);
     free_temp(&s->dither.noise);
     free_temp(&s->dither.temp);
+    av_channel_layout_uninit(&s->in_ch_layout);
+    av_channel_layout_uninit(&s->out_ch_layout);
     swri_audio_convert_free(&s-> in_convert);
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
@@ -138,6 +194,9 @@ av_cold void swr_free(SwrContext **ss){
     SwrContext *s= *ss;
     if(s){
         clear_context(s);
+        av_channel_layout_uninit(&s->user_in_chlayout);
+        av_channel_layout_uninit(&s->user_out_chlayout);
+
         if (s->resampler)
             s->resampler->free(&s->resample);
     }
@@ -172,25 +231,66 @@ av_cold int swr_init(struct SwrContext *s){
         av_log(s, AV_LOG_ERROR, "Requested output sample rate %d is invalid\n", s->out_sample_rate);
         return AVERROR(EINVAL);
     }
+    s->used_ch_count = s->user_used_ch_count;
+#if FF_API_OLD_CHANNEL_LAYOUT
     s->out.ch_count  = s-> user_out_ch_count;
     s-> in.ch_count  = s->  user_in_ch_count;
-    s->used_ch_count = s->user_used_ch_count;
 
-    s-> in_ch_layout = s-> user_in_ch_layout;
-    s->out_ch_layout = s->user_out_ch_layout;
+    // if the old/new fields are set inconsistently, prefer the old ones
+    if ((s->user_in_ch_count && s->user_in_ch_count != s->user_in_chlayout.nb_channels) ||
+        (s->user_in_ch_layout && (s->user_in_chlayout.order != AV_CHANNEL_ORDER_NATIVE ||
+                                  s->user_in_chlayout.u.mask != s->user_in_ch_layout))) {
+        av_channel_layout_uninit(&s->in_ch_layout);
+        if (s->user_in_ch_layout)
+            av_channel_layout_from_mask(&s->in_ch_layout, s->user_in_ch_layout);
+        else {
+            s->in_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            s->in_ch_layout.nb_channels = s->user_in_ch_count;
+        }
+    } else
+        av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
+
+    if ((s->user_out_ch_count && s->user_out_ch_count != s->user_out_chlayout.nb_channels) ||
+        (s->user_out_ch_layout && (s->user_out_chlayout.order != AV_CHANNEL_ORDER_NATIVE ||
+                                   s->user_out_chlayout.u.mask != s->user_out_ch_layout))) {
+        av_channel_layout_uninit(&s->out_ch_layout);
+        if (s->user_out_ch_layout)
+            av_channel_layout_from_mask(&s->out_ch_layout, s->user_out_ch_layout);
+        else {
+            s->out_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            s->out_ch_layout.nb_channels = s->user_out_ch_count;
+        }
+    } else
+        av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
+
+    if (!s->out.ch_count && !s->user_out_ch_layout)
+        s->out.ch_count  = s->out_ch_layout.nb_channels;
+    if (!s-> in.ch_count && !s-> user_in_ch_layout)
+        s-> in.ch_count  = s->in_ch_layout.nb_channels;
+#else
+    s->out.ch_count  = s-> user_out_chlayout.nb_channels;
+    s-> in.ch_count  = s->  user_in_chlayout.nb_channels;
+
+    ret  = av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
+    ret |= av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
+    if (ret < 0)
+        return ret;
+#endif
 
     s->int_sample_fmt= s->user_int_sample_fmt;
 
     s->dither.method = s->user_dither_method;
 
-    if(av_get_channel_layout_nb_channels(s-> in_ch_layout) > SWR_CH_MAX) {
-        av_log(s, AV_LOG_WARNING, "Input channel layout 0x%"PRIx64" is invalid or unsupported.\n", s-> in_ch_layout);
-        s->in_ch_layout = 0;
+    if (!av_channel_layout_check(&s->in_ch_layout) || s->in_ch_layout.nb_channels > SWR_CH_MAX) {
+        av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
+        av_log(s, AV_LOG_WARNING, "Input channel layout \"%s\" is invalid or unsupported.\n", l1);
+        av_channel_layout_uninit(&s->in_ch_layout);
     }
 
-    if(av_get_channel_layout_nb_channels(s->out_ch_layout) > SWR_CH_MAX) {
-        av_log(s, AV_LOG_WARNING, "Output channel layout 0x%"PRIx64" is invalid or unsupported.\n", s->out_ch_layout);
-        s->out_ch_layout = 0;
+    if (!av_channel_layout_check(&s->out_ch_layout) || s->out_ch_layout.nb_channels > SWR_CH_MAX) {
+        av_channel_layout_describe(&s->out_ch_layout, l2, sizeof(l2));
+        av_log(s, AV_LOG_WARNING, "Output channel layout \"%s\" is invalid or unsupported.\n", l2);
+        av_channel_layout_uninit(&s->out_ch_layout);
     }
 
     switch(s->engine){
@@ -206,17 +306,18 @@ av_cold int swr_init(struct SwrContext *s){
     if(!s->used_ch_count)
         s->used_ch_count= s->in.ch_count;
 
-    if(s->used_ch_count && s-> in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
+    if (s->used_ch_count && s->in_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->used_ch_count != s->in_ch_layout.nb_channels) {
         av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
-        s-> in_ch_layout= 0;
+        av_channel_layout_uninit(&s->in_ch_layout);
     }
 
-    if(!s-> in_ch_layout)
-        s-> in_ch_layout= av_get_default_channel_layout(s->used_ch_count);
-    if(!s->out_ch_layout)
-        s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
+    if (!s->in_ch_layout.nb_channels || s->in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+        av_channel_layout_default(&s->in_ch_layout, s->used_ch_count);
+    if (!s->out_ch_layout.nb_channels || s->out_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+        av_channel_layout_default(&s->out_ch_layout, s->out.ch_count);
 
-    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0 ||
+    s->rematrix = av_channel_layout_compare(&s->out_ch_layout, &s->in_ch_layout) ||
+                 s->rematrix_volume!=1.0 ||
                  s->rematrix_custom;
 
     if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
@@ -291,33 +392,36 @@ av_cold int swr_init(struct SwrContext *s){
 
 #define RSC 1 //FIXME finetune
     if(!s-> in.ch_count)
-        s-> in.ch_count= av_get_channel_layout_nb_channels(s-> in_ch_layout);
+        s-> in.ch_count = s->in_ch_layout.nb_channels;
     if(!s->used_ch_count)
         s->used_ch_count= s->in.ch_count;
     if(!s->out.ch_count)
-        s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
+        s->out.ch_count = s->out_ch_layout.nb_channels;
 
     if(!s-> in.ch_count){
-        av_assert0(!s->in_ch_layout);
+        av_assert0(s->in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC);
         av_log(s, AV_LOG_ERROR, "Input channel count and layout are unset\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
-    av_get_channel_layout_string(l1, sizeof(l1), s-> in.ch_count, s-> in_ch_layout);
-    av_get_channel_layout_string(l2, sizeof(l2), s->out.ch_count, s->out_ch_layout);
-    if (s->out_ch_layout && s->out.ch_count != av_get_channel_layout_nb_channels(s->out_ch_layout)) {
+#if FF_API_OLD_CHANNEL_LAYOUT
+    av_channel_layout_describe(&s->out_ch_layout, l1, sizeof(l1));
+    if (s->out_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->out.ch_count != s->out_ch_layout.nb_channels) {
         av_log(s, AV_LOG_ERROR, "Output channel layout %s mismatches specified channel count %d\n", l2, s->out.ch_count);
         ret = AVERROR(EINVAL);
         goto fail;
     }
-    if (s->in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s->in_ch_layout)) {
+#endif
+    av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
+    if (s->in_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->used_ch_count != s->in_ch_layout.nb_channels) {
         av_log(s, AV_LOG_ERROR, "Input channel layout %s mismatches specified channel count %d\n", l1, s->used_ch_count);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
-    if ((!s->out_ch_layout || !s->in_ch_layout) && s->used_ch_count != s->out.ch_count && !s->rematrix_custom) {
+    if ((   s->out_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC
+         || s-> in_ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) && s->used_ch_count != s->out.ch_count && !s->rematrix_custom) {
         av_log(s, AV_LOG_ERROR, "Rematrix is needed between %s and %s "
                "but there is not enough information to do it\n", l1, l2);
         ret = AVERROR(EINVAL);

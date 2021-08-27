@@ -34,12 +34,19 @@
 
 #define OFFSET(x) offsetof(SwrContext,x)
 #define PARAM AV_OPT_FLAG_AUDIO_PARAM
+#define DEPREC AV_OPT_FLAG_DEPRECATED
 
 static const AVOption options[]={
-{"ich"                  , "set input channel count"     , OFFSET(user_in_ch_count  ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM},
-{"in_channel_count"     , "set input channel count"     , OFFSET(user_in_ch_count  ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM},
-{"och"                  , "set output channel count"    , OFFSET(user_out_ch_count ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM},
-{"out_channel_count"    , "set output channel count"    , OFFSET(user_out_ch_count ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM},
+#if FF_API_OLD_CHANNEL_LAYOUT
+{"ich"                  , "set input channel count (Deprecated, use ichl)",
+                                                          OFFSET(user_in_ch_count  ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM|DEPREC},
+{"in_channel_count"     , "set input channel count (Deprecated, use in_chlayout)",
+                                                          OFFSET(user_in_ch_count  ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM|DEPREC},
+{"och"                  , "set output channel count (Deprecated, use ochl)",
+                                                          OFFSET(user_out_ch_count ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM|DEPREC},
+{"out_channel_count"    , "set output channel count (Deprecated, use out_chlayout)",
+                                                          OFFSET(user_out_ch_count ), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM|DEPREC},
+#endif
 {"uch"                  , "set used channel count"      , OFFSET(user_used_ch_count), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM},
 {"used_channel_count"   , "set used channel count"      , OFFSET(user_used_ch_count), AV_OPT_TYPE_INT, {.i64=0                    }, 0      , SWR_CH_MAX, PARAM},
 {"isr"                  , "set input sample rate"       , OFFSET( in_sample_rate), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , INT_MAX   , PARAM},
@@ -52,10 +59,20 @@ static const AVOption options[]={
 {"out_sample_fmt"       , "set output sample format"    , OFFSET(out_sample_fmt ), AV_OPT_TYPE_SAMPLE_FMT , {.i64=AV_SAMPLE_FMT_NONE}, -1   , INT_MAX, PARAM},
 {"tsf"                  , "set internal sample format"  , OFFSET(user_int_sample_fmt), AV_OPT_TYPE_SAMPLE_FMT , {.i64=AV_SAMPLE_FMT_NONE}, -1   , INT_MAX, PARAM},
 {"internal_sample_fmt"  , "set internal sample format"  , OFFSET(user_int_sample_fmt), AV_OPT_TYPE_SAMPLE_FMT , {.i64=AV_SAMPLE_FMT_NONE}, -1   , INT_MAX, PARAM},
-{"icl"                  , "set input channel layout"    , OFFSET(user_in_ch_layout ), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0           }, INT64_MIN, INT64_MAX , PARAM, "channel_layout"},
-{"in_channel_layout"    , "set input channel layout"    , OFFSET(user_in_ch_layout ), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0           }, INT64_MIN, INT64_MAX , PARAM, "channel_layout"},
-{"ocl"                  , "set output channel layout"   , OFFSET(user_out_ch_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0           }, INT64_MIN, INT64_MAX , PARAM, "channel_layout"},
-{"out_channel_layout"   , "set output channel layout"   , OFFSET(user_out_ch_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0           }, INT64_MIN, INT64_MAX , PARAM, "channel_layout"},
+#if FF_API_OLD_CHANNEL_LAYOUT
+{"icl"                  , "set input channel layout (Deprecated, use ichl)",
+                                                          OFFSET(user_in_ch_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0          }, INT64_MIN, INT64_MAX, PARAM|DEPREC, "channel_layout"},
+{"in_channel_layout"    , "set input channel layout (Deprecated, use in_chlayout)",
+                                                          OFFSET(user_in_ch_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0          }, INT64_MIN, INT64_MAX, PARAM|DEPREC, "channel_layout"},
+{"ocl"                  , "set output channel layout (Deprecated, use ochl)",
+                                                          OFFSET(user_out_ch_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0         }, INT64_MIN, INT64_MAX, PARAM|DEPREC, "channel_layout"},
+{"out_channel_layout"   , "set output channel layout (Deprecated, use out_chlayout)",
+                                                          OFFSET(user_out_ch_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=0         }, INT64_MIN, INT64_MAX, PARAM|DEPREC, "channel_layout"},
+#endif
+{"ichl"                 , "set input channel layout"    , OFFSET(user_in_chlayout ), AV_OPT_TYPE_CHLAYOUT, {.str=NULL             }, 0, 0 , PARAM, "chlayout"},
+{"in_chlayout"          , "set input channel layout"    , OFFSET(user_in_chlayout ), AV_OPT_TYPE_CHLAYOUT, {.str=NULL             }, 0, 0 , PARAM, "chlayout"},
+{"ochl"                 , "set output channel layout"   , OFFSET(user_out_chlayout), AV_OPT_TYPE_CHLAYOUT, {.str=NULL             }, 0, 0 , PARAM, "chlayout"},
+{"out_chlayout"         , "set output channel layout"   , OFFSET(user_out_chlayout), AV_OPT_TYPE_CHLAYOUT, {.str=NULL             }, 0, 0 , PARAM, "chlayout"},
 {"clev"                 , "set center mix level"        , OFFSET(clev           ), AV_OPT_TYPE_FLOAT, {.dbl=C_30DB                }, -32    , 32        , PARAM},
 {"center_mix_level"     , "set center mix level"        , OFFSET(clev           ), AV_OPT_TYPE_FLOAT, {.dbl=C_30DB                }, -32    , 32        , PARAM},
 {"slev"                 , "set surround mix level"      , OFFSET(slev           ), AV_OPT_TYPE_FLOAT, {.dbl=C_30DB                }, -32    , 32        , PARAM},

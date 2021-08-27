@@ -88,13 +88,16 @@ static void RENAME(mix8to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, inte
 }
 
 static RENAME(mix_any_func_type) *RENAME(get_mix_any_func)(SwrContext *s){
-    if(   s->out_ch_layout == AV_CH_LAYOUT_STEREO && (s->in_ch_layout == AV_CH_LAYOUT_5POINT1 || s->in_ch_layout == AV_CH_LAYOUT_5POINT1_BACK)
+    if (  !av_channel_layout_compare(&s->out_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)
+       && (   !av_channel_layout_compare(&s->in_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1)
+           || !av_channel_layout_compare(&s->in_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1_BACK))
        && s->matrix[0][2] == s->matrix[1][2] && s->matrix[0][3] == s->matrix[1][3]
        && !s->matrix[0][1] && !s->matrix[0][5] && !s->matrix[1][0] && !s->matrix[1][4]
     )
         return RENAME(mix6to2);
 
-    if(   s->out_ch_layout == AV_CH_LAYOUT_STEREO && s->in_ch_layout == AV_CH_LAYOUT_7POINT1
+    if (  !av_channel_layout_compare(&s->out_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)
+       && !av_channel_layout_compare(&s->in_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1)
        && s->matrix[0][2] == s->matrix[1][2] && s->matrix[0][3] == s->matrix[1][3]
        && !s->matrix[0][1] && !s->matrix[0][5] && !s->matrix[1][0] && !s->matrix[1][4]
        && !s->matrix[0][7] && !s->matrix[1][6]

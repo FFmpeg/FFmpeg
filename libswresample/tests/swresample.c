@@ -109,21 +109,21 @@ static const int rates[] = {
     48000,
 };
 
-static const uint64_t layouts[]={
-    AV_CH_LAYOUT_MONO                    ,
-    AV_CH_LAYOUT_STEREO                  ,
-    AV_CH_LAYOUT_2_1                     ,
-    AV_CH_LAYOUT_SURROUND                ,
-    AV_CH_LAYOUT_4POINT0                 ,
-    AV_CH_LAYOUT_2_2                     ,
-    AV_CH_LAYOUT_QUAD                    ,
-    AV_CH_LAYOUT_5POINT0                 ,
-    AV_CH_LAYOUT_5POINT1                 ,
-    AV_CH_LAYOUT_5POINT0_BACK            ,
-    AV_CH_LAYOUT_5POINT1_BACK            ,
-    AV_CH_LAYOUT_7POINT0                 ,
-    AV_CH_LAYOUT_7POINT1                 ,
-    AV_CH_LAYOUT_7POINT1_WIDE            ,
+static const AVChannelLayout layouts[]={
+    AV_CHANNEL_LAYOUT_MONO               ,
+    AV_CHANNEL_LAYOUT_STEREO             ,
+    AV_CHANNEL_LAYOUT_2_1                ,
+    AV_CHANNEL_LAYOUT_SURROUND           ,
+    AV_CHANNEL_LAYOUT_4POINT0            ,
+    AV_CHANNEL_LAYOUT_2_2                ,
+    AV_CHANNEL_LAYOUT_QUAD               ,
+    AV_CHANNEL_LAYOUT_5POINT0            ,
+    AV_CHANNEL_LAYOUT_5POINT1            ,
+    AV_CHANNEL_LAYOUT_5POINT0_BACK       ,
+    AV_CHANNEL_LAYOUT_5POINT1_BACK       ,
+    AV_CHANNEL_LAYOUT_7POINT0            ,
+    AV_CHANNEL_LAYOUT_7POINT1            ,
+    AV_CHANNEL_LAYOUT_7POINT1_WIDE       ,
 };
 
 static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleFormat format, int samples){
@@ -224,7 +224,7 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
 
 int main(int argc, char **argv){
     int in_sample_rate, out_sample_rate, ch ,i, flush_count;
-    uint64_t in_ch_layout, out_ch_layout;
+    AVChannelLayout in_ch_layout = { 0 }, out_ch_layout = { 0 };
     enum AVSampleFormat in_sample_fmt, out_sample_fmt;
     uint8_t array_in[SAMPLES*8*8];
     uint8_t array_mid[SAMPLES*8*8*3];
@@ -281,44 +281,38 @@ int main(int argc, char **argv){
         int in_ch_count;
         int out_count, mid_count, out_ch_count;
 
-        in_ch_layout    = layouts[vector % FF_ARRAY_ELEMS(layouts)]; vector /= FF_ARRAY_ELEMS(layouts);
-        out_ch_layout   = layouts[vector % FF_ARRAY_ELEMS(layouts)]; vector /= FF_ARRAY_ELEMS(layouts);
+        av_channel_layout_copy(&in_ch_layout,  &layouts[vector % FF_ARRAY_ELEMS(layouts)]); vector /= FF_ARRAY_ELEMS(layouts);
+        av_channel_layout_copy(&out_ch_layout, &layouts[vector % FF_ARRAY_ELEMS(layouts)]); vector /= FF_ARRAY_ELEMS(layouts);
         in_sample_fmt   = formats[vector % FF_ARRAY_ELEMS(formats)]; vector /= FF_ARRAY_ELEMS(formats);
         out_sample_fmt  = formats[vector % FF_ARRAY_ELEMS(formats)]; vector /= FF_ARRAY_ELEMS(formats);
         out_sample_rate = rates  [vector % FF_ARRAY_ELEMS(rates  )]; vector /= FF_ARRAY_ELEMS(rates);
         av_assert0(!vector);
 
         if(specific_test == 0){
-            if(out_sample_rate != in_sample_rate || in_ch_layout != out_ch_layout)
+            if(out_sample_rate != in_sample_rate || av_channel_layout_compare(&in_ch_layout, &out_ch_layout))
                 continue;
         }
 
-        in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
-        out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
-        av_get_channel_layout_string( in_layout_string, sizeof( in_layout_string),  in_ch_count,  in_ch_layout);
-        av_get_channel_layout_string(out_layout_string, sizeof(out_layout_string), out_ch_count, out_ch_layout);
+        in_ch_count= in_ch_layout.nb_channels;
+        out_ch_count= out_ch_layout.nb_channels;
+        av_channel_layout_describe(&in_ch_layout,   in_layout_string, sizeof( in_layout_string));
+        av_channel_layout_describe(&out_ch_layout, out_layout_string, sizeof(out_layout_string));
         fprintf(stderr, "TEST: %s->%s, rate:%5d->%5d, fmt:%s->%s\n",
                 in_layout_string, out_layout_string,
                 in_sample_rate, out_sample_rate,
                 av_get_sample_fmt_name(in_sample_fmt), av_get_sample_fmt_name(out_sample_fmt));
-        forw_ctx  = swr_alloc_set_opts(forw_ctx, out_ch_layout, out_sample_fmt,  out_sample_rate,
-                                                    in_ch_layout,  in_sample_fmt,  in_sample_rate,
-                                        0, 0);
-        backw_ctx = swr_alloc_set_opts(backw_ctx, in_ch_layout,  in_sample_fmt,             in_sample_rate,
-                                                    out_ch_layout, out_sample_fmt, out_sample_rate,
-                                        0, 0);
-        if(!forw_ctx) {
+        if (swr_alloc_set_opts2(&forw_ctx, &out_ch_layout, out_sample_fmt, out_sample_rate,
+                                           &in_ch_layout,   in_sample_fmt,  in_sample_rate,
+                                           0, 0) < 0) {
             fprintf(stderr, "Failed to init forw_cts\n");
             return 1;
         }
-        if(!backw_ctx) {
+        if (swr_alloc_set_opts2(&backw_ctx, &in_ch_layout,   in_sample_fmt,  in_sample_rate,
+                                            &out_ch_layout, out_sample_fmt, out_sample_rate,
+                                            0, 0) < 0) {
             fprintf(stderr, "Failed to init backw_ctx\n");
             return 1;
         }
-        if (uint_rand(rand_seed) % 3 == 0)
-            av_opt_set_int(forw_ctx, "ich", 0, 0);
-        if (uint_rand(rand_seed) % 3 == 0)
-            av_opt_set_int(forw_ctx, "och", 0, 0);
 
         if(swr_init( forw_ctx) < 0)
             fprintf(stderr, "swr_init(->) failed\n");
