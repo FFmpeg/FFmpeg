@@ -53,6 +53,8 @@
 typedef struct SubStream {
     /// Set if a valid restart header has been read. Otherwise the substream cannot be decoded.
     uint8_t     restart_seen;
+    /// Set if end of stream is encountered
+    uint8_t     end_of_stream;
 
     //@{
     /** restart header data */
@@ -1286,8 +1288,8 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
             else if (m->avctx->codec_id == AV_CODEC_ID_MLP    && shorten_by != 0xD234)
                 return AVERROR_INVALIDDATA;
 
-            if (substr == m->max_decoded_substream)
-                av_log(m->avctx, AV_LOG_INFO, "End of stream indicated.\n");
+            av_log(m->avctx, AV_LOG_DEBUG, "End of stream indicated.\n");
+            s->end_of_stream = 1;
         }
 
         if (substream_parity_present[substr]) {
@@ -1318,6 +1320,16 @@ next_substr:
 
     if ((ret = output_data(m, m->max_decoded_substream, data, got_frame_ptr)) < 0)
         return ret;
+
+    for (substr = 0; substr <= m->max_decoded_substream; substr++){
+        SubStream *s = &m->substream[substr];
+
+        if (s->end_of_stream) {
+            s->lossless_check_data = 0xffffffff;
+            s->end_of_stream = 0;
+            m->params_valid = 0;
+        }
+    }
 
     return length;
 
