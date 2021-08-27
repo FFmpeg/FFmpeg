@@ -3167,14 +3167,18 @@ static int compute_chapters_end(AVFormatContext *s)
 {
     unsigned int i;
     int64_t max_time = 0;
-    AVChapter **timetable = av_malloc(s->nb_chapters * sizeof(*timetable));
+    AVChapter **timetable;
 
-    if (!timetable)
-        return AVERROR(ENOMEM);
+    if (!s->nb_chapters)
+        return 0;
 
     if (s->duration > 0 && s->start_time < INT64_MAX - s->duration)
         max_time = s->duration +
                        ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time);
+
+    timetable = av_malloc(s->nb_chapters * sizeof(*timetable));
+    if (!timetable)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < s->nb_chapters; i++)
         timetable[i] = s->chapters[i];
