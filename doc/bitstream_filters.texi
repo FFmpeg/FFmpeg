@@ -81,7 +81,7 @@ Top-left position.
 @end table
 
 @item tick_rate
-Set the tick rate (@emph{num_units_in_display_tick / time_scale}) in
+Set the tick rate (@emph{time_scale / num_units_in_display_tick}) in
 the timing info in the sequence header.
 @item num_ticks_per_picture
 Set the number of ticks in each picture, to indicate that the stream
@@ -244,7 +244,7 @@ Set the chroma sample location in the stream (see H.264 section
 E.2.1 and figure E-1).
 
 @item tick_rate
-Set the tick rate (num_units_in_tick / time_scale) in the VUI
+Set the tick rate (time_scale / num_units_in_tick) in the VUI
 parameters.  This is the smallest time unit representable in the
 stream, and in many cases represents the field rate of the stream
 (double the frame rate).
@@ -352,8 +352,8 @@ Set the chroma sample location in the stream (see H.265 section
 E.3.1 and figure E.1).
 
 @item tick_rate
-Set the tick rate in the VPS and VUI parameters (num_units_in_tick /
-time_scale).  Combined with @option{num_ticks_poc_diff_one}, this can
+Set the tick rate in the VPS and VUI parameters (time_scale /
+num_units_in_tick). Combined with @option{num_ticks_poc_diff_one}, this can
 set a constant framerate in the stream.  Note that it is likely to be
 overridden by container parameters when the stream is in a container.
 

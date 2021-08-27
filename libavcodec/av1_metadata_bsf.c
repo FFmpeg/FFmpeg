@@ -194,7 +194,7 @@ static const AVOption av1_metadata_options[] = {
     { "colocated", "Top-left chroma sample position", 0, AV_OPT_TYPE_CONST,
         { .i64 = AV1_CSP_COLOCATED }, .flags = FLAGS, .unit = "csp" },
 
-    { "tick_rate", "Set display tick rate (num_units_in_display_tick / time_scale)",
+    { "tick_rate", "Set display tick rate (time_scale / num_units_in_display_tick)",
         OFFSET(tick_rate), AV_OPT_TYPE_RATIONAL,
         { .dbl = 0.0 }, 0, UINT_MAX, FLAGS },
     { "num_ticks_per_picture", "Set display ticks per picture for CFR streams",

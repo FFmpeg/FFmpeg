@@ -626,7 +626,7 @@ static const AVOption h264_metadata_options[] = {
         OFFSET(chroma_sample_loc_type), AV_OPT_TYPE_INT,
         { .i64 = -1 }, -1, 6, FLAGS },
 
-    { "tick_rate", "Set VUI tick rate (num_units_in_tick / time_scale)",
+    { "tick_rate", "Set VUI tick rate (time_scale / num_units_in_tick)",
         OFFSET(tick_rate), AV_OPT_TYPE_RATIONAL,
         { .dbl = 0.0 }, 0, UINT_MAX, FLAGS },
     { "fixed_frame_rate_flag", "Set VUI fixed frame rate flag",
