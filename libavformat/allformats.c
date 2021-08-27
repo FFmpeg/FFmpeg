@@ -305,6 +305,7 @@ extern const AVInputFormat  ff_nut_demuxer;
 extern const AVOutputFormat ff_nut_muxer;
 extern const AVInputFormat  ff_nuv_demuxer;
 extern const AVInputFormat  ff_obu_demuxer;
+extern const AVOutputFormat ff_obu_muxer;
 extern const AVOutputFormat ff_oga_muxer;
 extern const AVInputFormat  ff_ogg_demuxer;
 extern const AVOutputFormat ff_ogg_muxer;

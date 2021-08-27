@@ -453,6 +453,26 @@ const AVOutputFormat ff_mpeg2video_muxer = {
 };
 #endif
 
+#if CONFIG_OBU_MUXER
+static int obu_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    AVStream *st = s->streams[0];
+    return ff_stream_add_bitstream_filter(st, "av1_metadata", "td=insert");
+}
+
+const AVOutputFormat ff_obu_muxer = {
+    .name              = "obu",
+    .long_name         = NULL_IF_CONFIG_SMALL("AV1 low overhead OBU"),
+    .extensions        = "obu",
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_AV1,
+    .init              = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = obu_check_bitstream,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_RAWVIDEO_MUXER
 const AVOutputFormat ff_rawvideo_muxer = {
     .name              = "rawvideo",
