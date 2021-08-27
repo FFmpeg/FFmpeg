@@ -124,7 +124,7 @@ switch(format) {\
     case FORMAT_F32: s->reorder_func = alsa_reorder_f32_out_ ##layout;   break;\
 }
 
-static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout, int out)
+static av_cold int find_reorder_func(AlsaData *s, int codec_id, AVChannelLayout *layout, int out)
 {
     int format;
 
@@ -133,7 +133,8 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
         return AVERROR(ENOSYS);
 
     /* reordering is not needed for QUAD or 2_2 layout */
-    if (layout == AV_CH_LAYOUT_QUAD || layout == AV_CH_LAYOUT_2_2)
+    if (!av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_QUAD) ||
+        !av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_2_2))
         return 0;
 
     switch (codec_id) {
@@ -154,11 +155,13 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
     default:                 return AVERROR(ENOSYS);
     }
 
-    if      (layout == AV_CH_LAYOUT_5POINT0_BACK || layout == AV_CH_LAYOUT_5POINT0)
+    if (!av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0_BACK) ||
+        !av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0))
         PICK_REORDER(50)
-    else if (layout == AV_CH_LAYOUT_5POINT1_BACK || layout == AV_CH_LAYOUT_5POINT1)
+    else if (!av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1_BACK) ||
+             !av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1))
         PICK_REORDER(51)
-    else if (layout == AV_CH_LAYOUT_7POINT1)
+    else if (!av_channel_layout_compare(layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1))
         PICK_REORDER(71)
 
     return s->reorder_func ? 0 : AVERROR(ENOSYS);
@@ -169,13 +172,13 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
                          int channels, enum AVCodecID *codec_id)
 {
     AlsaData *s = ctx->priv_data;
+    AVChannelLayout *layout = &ctx->streams[0]->codecpar->ch_layout;
     const char *audio_device;
     int res, flags = 0;
     snd_pcm_format_t format;
     snd_pcm_t *h;
     snd_pcm_hw_params_t *hw_params;
     snd_pcm_uframes_t buffer_size, period_size;
-    uint64_t layout = ctx->streams[0]->codecpar->channel_layout;
 
     if (ctx->url[0] == 0) audio_device = "default";
     else                  audio_device = ctx->url;
@@ -271,10 +274,10 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
 
     snd_pcm_hw_params_free(hw_params);
 
-    if (channels > 2 && layout) {
+    if (channels > 2 && layout->order != AV_CHANNEL_ORDER_UNSPEC) {
         if (find_reorder_func(s, *codec_id, layout, mode == SND_PCM_STREAM_PLAYBACK) < 0) {
             char name[128];
-            av_get_channel_layout_string(name, sizeof(name), channels, layout);
+            av_channel_layout_describe(layout, name, sizeof(name));
             av_log(ctx, AV_LOG_WARNING, "ALSA channel layout unknown or unimplemented for %s %s.\n",
                    name, mode == SND_PCM_STREAM_PLAYBACK ? "playback" : "capture");
         }
