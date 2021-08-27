@@ -147,12 +147,12 @@ static void blend_normal_8bit(const uint8_t *top, ptrdiff_t top_linesize,
                               ptrdiff_t width, ptrdiff_t height,
                               FilterParams *param, double *values, int starty)
 {
-    const double opacity = param->opacity;
+    const float opacity = param->opacity;
     int i, j;
 
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
-            dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
+            dst[j] = top[j] * opacity + bottom[j] * (1.f - opacity);
         }
         dst    += dst_linesize;
         top    += top_linesize;
@@ -169,7 +169,7 @@ static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
     const uint16_t *top = (uint16_t*)_top;
     const uint16_t *bottom = (uint16_t*)_bottom;
     uint16_t *dst = (uint16_t*)_dst;
-    const double opacity = param->opacity;
+    const float opacity = param->opacity;
     int i, j;
     dst_linesize /= 2;
     top_linesize /= 2;
@@ -177,7 +177,7 @@ static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
 
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
-            dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
+            dst[j] = top[j] * opacity + bottom[j] * (1.f - opacity);
         }
         dst    += dst_linesize;
         top    += top_linesize;
@@ -194,7 +194,7 @@ static void blend_normal_32bit(const uint8_t *_top, ptrdiff_t top_linesize,
     const float *top = (float*)_top;
     const float *bottom = (float*)_bottom;
     float *dst = (float*)_dst;
-    const double opacity = param->opacity;
+    const float opacity = param->opacity;
     int i, j;
     dst_linesize /= 4;
     top_linesize /= 4;
@@ -202,7 +202,7 @@ static void blend_normal_32bit(const uint8_t *_top, ptrdiff_t top_linesize,
 
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
-            dst[j] = top[j] * opacity + bottom[j] * (1. - opacity);
+            dst[j] = top[j] * opacity + bottom[j] * (1.f - opacity);
         }
         dst    += dst_linesize;
         top    += top_linesize;
@@ -217,7 +217,7 @@ static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,    
                                  ptrdiff_t width, ptrdiff_t height,                \
                                  FilterParams *param, double *values, int starty) \
 {                                                                              \
-    double opacity = param->opacity;                                           \
+    const float opacity = param->opacity;                                      \
     int i, j;                                                                  \
                                                                                \
     for (i = 0; i < height; i++) {                                             \
@@ -240,7 +240,7 @@ static void blend_## name##_##depth##bit(const uint8_t *_top, ptrdiff_t top_line
     const uint16_t *top = (const uint16_t*)_top;                               \
     const uint16_t *bottom = (const uint16_t*)_bottom;                         \
     uint16_t *dst = (uint16_t*)_dst;                                           \
-    double opacity = param->opacity;                                           \
+    const float opacity = param->opacity;                                      \
     int i, j;                                                                  \
     dst_linesize /= 2;                                                         \
     top_linesize /= 2;                                                         \
@@ -266,7 +266,7 @@ static void blend_## name##_##depth##bit(const uint8_t *_top, ptrdiff_t top_line
     const float *top = (const float*)_top;                                     \
     const float *bottom = (const float*)_bottom;                               \
     float *dst = (float*)_dst;                                                 \
-    double opacity = param->opacity;                                           \
+    const float opacity = param->opacity;                                      \
     int i, j;                                                                  \
     dst_linesize /= 4;                                                         \
     top_linesize /= 4;                                                         \
