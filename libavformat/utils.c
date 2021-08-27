@@ -3160,7 +3160,7 @@ static int chapter_start_cmp(const void *p1, const void *p2)
     int delta = av_compare_ts(ch1->start, ch1->time_base, ch2->start, ch2->time_base);
     if (delta)
         return delta;
-    return (ch1 > ch2) - (ch1 < ch2);
+    return FFDIFFSIGN(ch1->id, ch2->id);
 }
 
 static int compute_chapters_end(AVFormatContext *s)
