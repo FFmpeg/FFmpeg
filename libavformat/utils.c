@@ -3176,12 +3176,9 @@ static int compute_chapters_end(AVFormatContext *s)
         max_time = s->duration +
                        ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time);
 
-    timetable = av_malloc(s->nb_chapters * sizeof(*timetable));
+    timetable = av_memdup(s->chapters, s->nb_chapters * sizeof(*timetable));
     if (!timetable)
         return AVERROR(ENOMEM);
-
-    for (i = 0; i < s->nb_chapters; i++)
-        timetable[i] = s->chapters[i];
     qsort(timetable, s->nb_chapters, sizeof(*timetable), chapter_start_cmp);
 
     for (i = 0; i < s->nb_chapters; i++)
