@@ -1618,6 +1618,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
     int buf_size       = avpkt->size;
     int num_bits_prev_frame;
     int packet_sequence_number;
+    int ret;
 
     *got_frame_ptr = 0;
 
@@ -1669,7 +1670,9 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
         s->buf_bit_size = buf_size << 3;
 
         /** parse packet header */
-        init_get_bits(gb, buf, s->buf_bit_size);
+        ret = init_get_bits8(gb, buf, buf_size);
+        if (ret < 0)
+            return ret;
         if (avctx->codec_id != AV_CODEC_ID_XMA2) {
             packet_sequence_number = get_bits(gb, 4);
             skip_bits(gb, 2);
@@ -1737,7 +1740,9 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
         }
 
         s->buf_bit_size = (avpkt->size - s->next_packet_start) << 3;
-        init_get_bits(gb, avpkt->data, s->buf_bit_size);
+        ret = init_get_bits8(gb, avpkt->data, avpkt->size - s->next_packet_start);
+        if (ret < 0)
+            return ret;
         skip_bits(gb, s->packet_offset);
         if (s->len_prefix && remaining_bits(s, gb) > s->log2_frame_size &&
             (frame_size = show_bits(gb, s->log2_frame_size)) &&
