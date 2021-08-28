@@ -345,6 +345,9 @@ static int dv_init_demux(AVFormatContext *s, DVDemuxContext *c)
     c->vst->codecpar->bit_rate   = 25000000;
     c->vst->start_time        = 0;
 
+    /* Audio streams are added later as they are encountered. */
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
+
     return 0;
 }
 
