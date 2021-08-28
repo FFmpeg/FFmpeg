@@ -14,6 +14,7 @@ version <next>:
 - hsvkey and hsvhold video filters
 - adecorrelate audio filter
 - atilt audio filter
+- grayworld video filter
 
 
 version 4.4:

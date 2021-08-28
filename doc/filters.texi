@@ -13091,6 +13091,18 @@ Set upper limit for video rate of output stream, Default value is @var{25}.
 This guarantee that output video frame rate will not be higher than this value.
 @end table
 
+@section grayworld
+A color constancy filter that applies color correction based on the grayworld assumption
+
+See: @url{https://www.researchgate.net/publication/275213614_A_New_Color_Correction_Method_for_Underwater_Imaging}
+
+The algorithm  uses linear light, so input
+data should be linearized beforehand (and possibly correctly tagged).
+
+@example
+ffmpeg -i INPUT -vf zscale=transfer=linear,grayworld,zscale=transfer=bt709,format=yuv420p OUTPUT
+@end example
+
 @section greyedge
 A color constancy variation filter which estimates scene illumination via grey edge algorithm
 and corrects the scene colors accordingly.
