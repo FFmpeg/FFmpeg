@@ -95,7 +95,7 @@ static int filter_flt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dst[c] = current + (current - prv[c]) * mult;
             prv[c] = current;
             if (clip) {
-                dst[c] = av_clipf(dst[c], -1, 1);
+                dst[c] = av_clipf(dst[c], -1.f, 1.f);
             }
 
             dst += channels;
@@ -114,7 +114,7 @@ static int filter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const void **s = td->s;
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
-    double mult = td->mult;
+    const double mult = td->mult;
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -131,7 +131,7 @@ static int filter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dst[c] = current + (current - prv[c]) * mult;
             prv[c] = current;
             if (clip) {
-                dst[c] = av_clipd(dst[c], -1, 1);
+                dst[c] = av_clipd(dst[c], -1., 1.);
             }
 
             dst += channels;
@@ -150,7 +150,7 @@ static int filter_fltp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const void **s = td->s;
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
-    float mult = td->mult;
+    const float mult = td->mult;
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -167,7 +167,7 @@ static int filter_fltp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dst[n] = current + (current - prv[0]) * mult;
             prv[0] = current;
             if (clip) {
-                dst[n] = av_clipf(dst[n], -1, 1);
+                dst[n] = av_clipf(dst[n], -1.f, 1.f);
             }
         }
     }
@@ -200,7 +200,7 @@ static int filter_dblp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             dst[n] = current + (current - prv[0]) * mult;
             prv[0] = current;
             if (clip) {
-                dst[n] = av_clipd(dst[n], -1, 1);
+                dst[n] = av_clipd(dst[n], -1., 1.);
             }
         }
     }
@@ -217,7 +217,7 @@ static int ifilter_flt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
     const float mult = -td->mult;
-    const float div = -td->mult + 1.f;
+    const float scale = 1.f / (mult + 1.f);
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -230,10 +230,10 @@ static int ifilter_flt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
         for (n = 0; n < nb_samples; n++) {
             float current = src[c];
-            dst[c] = (current + prv[c] * mult) / div;
+            dst[c] = (current + prv[c] * mult) * scale;
             prv[c] = dst[c];
             if (clip) {
-                dst[c] = av_clipf(dst[c], -1, 1);
+                dst[c] = av_clipf(dst[c], -1.f, 1.f);
             }
 
             dst += channels;
@@ -253,7 +253,7 @@ static int ifilter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
     const double mult = -td->mult;
-    const double div = -td->mult + 1.f;
+    const double scale = 1.0 / (mult + 1.0);
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -267,10 +267,10 @@ static int ifilter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         for (n = 0; n < nb_samples; n++) {
             double current = src[c];
 
-            dst[c] = (current + prv[c] * mult) / div;
+            dst[c] = (current + prv[c] * mult) * scale;
             prv[c] = dst[c];
             if (clip) {
-                dst[c] = av_clipd(dst[c], -1, 1);
+                dst[c] = av_clipd(dst[c], -1., 1.);
             }
 
             dst += channels;
@@ -290,7 +290,7 @@ static int ifilter_fltp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
     const float mult = -td->mult;
-    const float div = -td->mult + 1.f;
+    const float scale = 1.f / (mult + 1.f);
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -304,10 +304,10 @@ static int ifilter_fltp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         for (n = 0; n < nb_samples; n++) {
             float current = src[n];
 
-            dst[n] = (current + prv[0] * mult) / div;
+            dst[n] = (current + prv[0] * mult) * scale;
             prv[0] = dst[n];
             if (clip) {
-                dst[n] = av_clipf(dst[n], -1, 1);
+                dst[n] = av_clipf(dst[n], -1.f, 1.f);
             }
         }
     }
@@ -324,7 +324,7 @@ static int ifilter_dblp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int nb_samples = td->nb_samples;
     const int channels = td->channels;
     const double mult = -td->mult;
-    const double div = -td->mult + 1.f;
+    const double scale = 1.0 / (mult + 1.0);
     const int clip = td->clip;
     const int start = (channels * jobnr) / nb_jobs;
     const int end = (channels * (jobnr+1)) / nb_jobs;
@@ -338,10 +338,10 @@ static int ifilter_dblp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         for (n = 0; n < nb_samples; n++) {
             double current = src[n];
 
-            dst[n] = (current + prv[0] * mult) / div;
+            dst[n] = (current + prv[0] * mult) * scale;
             prv[0] = dst[n];
             if (clip) {
-                dst[n] = av_clipd(dst[n], -1, 1);
+                dst[n] = av_clipd(dst[n], -1., 1.);
             }
         }
     }
