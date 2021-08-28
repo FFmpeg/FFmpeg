@@ -321,6 +321,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     ThreadData td;
 
+    if (s->old_nb_coeffs != s->nb_coeffs)
+        compute_coefs(s->cd, s->cf, s->nb_coeffs * 2, 2. * 20. / inlink->sample_rate);
+    s->old_nb_coeffs = s->nb_coeffs;
+
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
