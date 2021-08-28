@@ -1330,6 +1330,18 @@ error:
     return AVERROR_INVALIDDATA;
 }
 
+static void mlp_decode_flush(AVCodecContext *avctx)
+{
+    MLPDecodeContext *m = avctx->priv_data;
+
+    m->params_valid = 0;
+    for (int substr = 0; substr <= m->max_decoded_substream; substr++){
+        SubStream *s = &m->substream[substr];
+
+        s->lossless_check_data = 0xffffffff;
+    }
+}
+
 #if CONFIG_MLP_DECODER
 const AVCodec ff_mlp_decoder = {
     .name           = "mlp",
@@ -1339,6 +1351,7 @@ const AVCodec ff_mlp_decoder = {
     .priv_data_size = sizeof(MLPDecodeContext),
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
+    .flush          = mlp_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
@@ -1352,6 +1365,7 @@ const AVCodec ff_truehd_decoder = {
     .priv_data_size = sizeof(MLPDecodeContext),
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
+    .flush          = mlp_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
