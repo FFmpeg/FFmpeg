@@ -125,6 +125,7 @@ static int activate(AVFilterContext *ctx)
 
     if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
+            pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);
             if (!s->pad_stop) {
                 ff_outlink_set_status(outlink, status, pts);
                 return 0;
