@@ -151,7 +151,7 @@ static int aptx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* get output buffer */
     frame->ch_layout.nb_channels = NB_CHANNELS;
     frame->format = AV_SAMPLE_FMT_S32P;
-    frame->nb_samples = 4 * avpkt->size / s->block_size;
+    frame->nb_samples = 4 * (avpkt->size / s->block_size);
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
