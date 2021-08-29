@@ -682,6 +682,10 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
             return 256 * (frame_bytes / 64);
         if (id == AV_CODEC_ID_RA_144)
             return 160 * (frame_bytes / 20);
+        if (id == AV_CODEC_ID_APTX)
+            return 4 * (frame_bytes / 4);
+        if (id == AV_CODEC_ID_APTX_HD)
+            return 4 * (frame_bytes / 6);
 
         if (bps > 0) {
             /* calc from frame_bytes and bits_per_coded_sample */
