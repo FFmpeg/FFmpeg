@@ -58,7 +58,6 @@ static int aptx_read_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_APTX;
     st->codecpar->bits_per_coded_sample = 4;
     st->codecpar->block_align = APTX_BLOCK_SIZE;
-    st->codecpar->frame_size = APTX_PACKET_SIZE;
     return 0;
 }
 
@@ -70,7 +69,6 @@ static int aptx_hd_read_header(AVFormatContext *s)
     st->codecpar->codec_id = AV_CODEC_ID_APTX_HD;
     st->codecpar->bits_per_coded_sample = 6;
     st->codecpar->block_align = APTX_HD_BLOCK_SIZE;
-    st->codecpar->frame_size = APTX_HD_PACKET_SIZE;
     return 0;
 }
 
