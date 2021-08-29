@@ -211,6 +211,19 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         ctx->params->vui.matrixCoeffs            = avctx->colorspace;
     }
 
+    // chroma sample location values are to be ignored in case of non-4:2:0
+    // according to the specification, so we only write them out in case of
+    // 4:2:0 (log2_chroma_{w,h} == 1).
+    ctx->params->vui.bEnableChromaLocInfoPresentFlag =
+        avctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED &&
+        desc->log2_chroma_w == 1 && desc->log2_chroma_h == 1;
+
+    if (ctx->params->vui.bEnableChromaLocInfoPresentFlag) {
+        ctx->params->vui.chromaSampleLocTypeTopField =
+        ctx->params->vui.chromaSampleLocTypeBottomField =
+            avctx->chroma_sample_location - 1;
+    }
+
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
         char sar[12];
         int sar_num, sar_den;
