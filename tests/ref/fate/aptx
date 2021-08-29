@@ -1,5 +1,5 @@
-b5d8a297c0e8d9854f19d9d3e8b82859 *tests/data/fate/aptx.aptx
-418950 tests/data/fate/aptx.aptx
+97dfd7f32d34fb74337c0f6c66e26e2d *tests/data/fate/aptx.aptx
+418952 tests/data/fate/aptx.aptx
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: pcm_s16le

@@ -1,5 +1,5 @@
-48ecaa81ee5adaaa62ed3ff6574b6666 *tests/data/fate/aptx-hd.aptx_hd
-628425 tests/data/fate/aptx-hd.aptx_hd
+6126e414af1acb193e24fdf33c7cac2e *tests/data/fate/aptx-hd.aptx_hd
+628428 tests/data/fate/aptx-hd.aptx_hd
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: pcm_s32le
