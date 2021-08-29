@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavcodec/flac.h"
 #include "avformat.h"
 #include "flac_picture.h"
@@ -191,6 +192,7 @@ static int flac_read_header(AVFormatContext *s)
                                "Invalid value of WAVEFORMATEXTENSIBLE_CHANNEL_MASK\n");
                     } else {
                         st->codecpar->channel_layout = mask;
+                        st->codecpar->channels       = av_get_channel_layout_nb_channels(mask);
                         av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", NULL, 0);
                     }
                 }
