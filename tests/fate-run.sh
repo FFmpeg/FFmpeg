@@ -232,12 +232,13 @@ transcode(){
     enc_opt=$4
     final_decode=$5
     ffprobe_opts=$7
+    additional_inputs=$8
     encfile="${outdir}/${test}.${enc_fmt}"
     test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
-    ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
-        -f $enc_fmt -y $tencfile || return
+    ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $additional_inputs \
+           $ENC_OPTS $enc_opt $FLAGS -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
