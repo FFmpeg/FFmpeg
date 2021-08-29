@@ -257,6 +257,9 @@ static av_cold int aptx_encode_init(AVCodecContext *avctx)
 
     ff_af_queue_init(avctx, &s->afq);
 
+    if (!avctx->frame_size || avctx->frame_size % 4)
+        avctx->frame_size = 1024;
+
     return ff_aptx_init(avctx);
 }
 
