@@ -124,9 +124,10 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
     AVCPBProperties *cpb_props = NULL;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int ret;
 
-    ctx->api = x265_api_get(av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth);
+    ctx->api = x265_api_get(desc->comp[0].depth);
     if (!ctx->api)
         ctx->api = x265_api_get(0);
 
@@ -186,7 +187,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
             avctx->color_range == AVCOL_RANGE_JPEG;
     else
         ctx->params->vui.bEnableVideoFullRangeFlag =
-            (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_RGB) ||
+            (desc->flags & AV_PIX_FMT_FLAG_RGB) ||
             avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
             avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
             avctx->pix_fmt == AV_PIX_FMT_YUVJ444P;
