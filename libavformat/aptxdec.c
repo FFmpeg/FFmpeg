@@ -74,12 +74,18 @@ static int aptx_hd_read_header(AVFormatContext *s)
 
 static int aptx_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    return av_get_packet(s->pb, pkt, APTX_PACKET_SIZE);
+    int ret = av_get_packet(s->pb, pkt, APTX_PACKET_SIZE);
+    if (ret >= 0 && !(ret % APTX_BLOCK_SIZE))
+        pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
+    return ret >= 0 ? 0 : ret;
 }
 
 static int aptx_hd_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    return av_get_packet(s->pb, pkt, APTX_HD_PACKET_SIZE);
+    int ret = av_get_packet(s->pb, pkt, APTX_HD_PACKET_SIZE);
+    if (ret >= 0 && !(ret % APTX_HD_BLOCK_SIZE))
+        pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
+    return ret >= 0 ? 0 : ret;
 }
 
 static const AVOption aptx_options[] = {
