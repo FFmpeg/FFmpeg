@@ -1,0 +1,15 @@
+48ecaa81ee5adaaa62ed3ff6574b6666 *tests/data/fate/aptx-hd.aptx_hd
+628425 tests/data/fate/aptx-hd.aptx_hd
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s32le
+#sample_rate 0: 44100
+#channel_layout_name 0: 2 channels
+0,          0,          0,     1024,     8192, 0xa99888c6
+0,       1536,       1536,     1024,     8192, 0xc3e03a3c
+0,       3072,       3072,     1024,     8192, 0x3f06e090
+0,       4608,       4608,     1024,     8192, 0x92fb18f3
+0,       6144,       6144,     1024,     8192, 0x3d5603a2
+0,       7680,       7680,     1024,     8192, 0xcc3d3101
+0,       9216,       9216,     1024,     8192, 0xbcc022ef
+0,      10752,      10752,      273,     2184, 0x9873af57

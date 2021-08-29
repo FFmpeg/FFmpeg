@@ -1,3 +1,10 @@
+FATE_SAMPLES_AUDIO-$(call TRANSCODE, APTX, APTX, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-aptx
+fate-aptx: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav aptx "-af aresample -c aptx" "-af aresample -c:a pcm_s16le -t 0.25" "" "" "-f aptx -sample_rate 44100"
+
+FATE_SAMPLES_AUDIO-$(call TRANSCODE, APTX_HD, APTX_HD, WAV_DEMUXER PCM_S16LE_DECODER \
+                          ARESAMPLE_FILTER PCM_S32LE_ENCODER) += fate-aptx-hd
+fate-aptx-hd: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav aptx_hd "-af aresample -c aptx_hd" "-af aresample -c:a pcm_s32le -t 0.25" "" "" "-f aptx_hd -sample_rate 44100"
+
 FATE_BINKAUDIO-$(call DEMDEC, BINK, BINKAUDIO_DCT) += fate-binkaudio-dct
 fate-binkaudio-dct: CMD = pcm -i $(TARGET_SAMPLES)/bink/binkaudio_dct.bik
 fate-binkaudio-dct: REF = $(SAMPLES)/bink/binkaudio_dct.pcm
