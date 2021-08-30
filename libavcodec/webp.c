@@ -181,7 +181,10 @@ typedef struct ImageContext {
     uint32_t *color_cache;              /* color cache data */
     int nb_huffman_groups;              /* number of huffman groups */
     HuffReader *huffman_groups;         /* reader for each huffman group */
-    int size_reduction;                 /* relative size compared to primary image, log2 */
+    /* relative size compared to primary image, log2.
+     * for IMAGE_ROLE_COLOR_INDEXING with <= 16 colors, this is log2 of the
+     * number of pixels per byte in the primary image (pixel packing) */
+    int size_reduction;
     int is_alpha_primary;
 } ImageContext;
 
@@ -205,7 +208,9 @@ typedef struct WebPContext {
 
     int nb_transforms;                  /* number of transforms */
     enum TransformType transforms[4];   /* transformations used in the image, in order */
-    int reduced_width;                  /* reduced width for index image, if applicable */
+    /* reduced width when using a color indexing transform with <= 16 colors (pixel packing)
+     * before pixels are unpacked, or same as width otherwise. */
+    int reduced_width;
     int nb_huffman_groups;              /* number of huffman groups in the primary image */
     ImageContext image[IMAGE_ROLE_NB];  /* image context for each role */
 } WebPContext;
@@ -425,13 +430,9 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
 static int decode_entropy_image(WebPContext *s)
 {
     ImageContext *img;
-    int ret, block_bits, width, blocks_w, blocks_h, x, y, max;
+    int ret, block_bits, blocks_w, blocks_h, x, y, max;
 
-    width = s->width;
-    if (s->reduced_width > 0)
-        width = s->reduced_width;
-
-    PARSE_BLOCK_SIZE(width, s->height);
+    PARSE_BLOCK_SIZE(s->reduced_width, s->height);
 
     ret = decode_entropy_coded_image(s, IMAGE_ROLE_ENTROPY, blocks_w, blocks_h);
     if (ret < 0)
@@ -460,7 +461,7 @@ static int parse_transform_predictor(WebPContext *s)
 {
     int block_bits, blocks_w, blocks_h, ret;
 
-    PARSE_BLOCK_SIZE(s->width, s->height);
+    PARSE_BLOCK_SIZE(s->reduced_width, s->height);
 
     ret = decode_entropy_coded_image(s, IMAGE_ROLE_PREDICTOR, blocks_w,
                                      blocks_h);
@@ -476,7 +477,7 @@ static int parse_transform_color(WebPContext *s)
 {
     int block_bits, blocks_w, blocks_h, ret;
 
-    PARSE_BLOCK_SIZE(s->width, s->height);
+    PARSE_BLOCK_SIZE(s->reduced_width, s->height);
 
     ret = decode_entropy_coded_image(s, IMAGE_ROLE_COLOR_TRANSFORM, blocks_w,
                                      blocks_h);
@@ -620,7 +621,7 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
     }
 
     width = img->frame->width;
-    if (role == IMAGE_ROLE_ARGB && s->reduced_width > 0)
+    if (role == IMAGE_ROLE_ARGB)
         width = s->reduced_width;
 
     x = 0; y = 0;
@@ -925,7 +926,7 @@ static int apply_predictor_transform(WebPContext *s)
     int x, y;
 
     for (y = 0; y < img->frame->height; y++) {
-        for (x = 0; x < img->frame->width; x++) {
+        for (x = 0; x < s->reduced_width; x++) {
             int tx = x >> pimg->size_reduction;
             int ty = y >> pimg->size_reduction;
             enum PredictionMode m = GET_PIXEL_COMP(pimg->frame, tx, ty, 2);
@@ -965,7 +966,7 @@ static int apply_color_transform(WebPContext *s)
     cimg = &s->image[IMAGE_ROLE_COLOR_TRANSFORM];
 
     for (y = 0; y < img->frame->height; y++) {
-        for (x = 0; x < img->frame->width; x++) {
+        for (x = 0; x < s->reduced_width; x++) {
             cx = x >> cimg->size_reduction;
             cy = y >> cimg->size_reduction;
             cp = GET_PIXEL(cimg->frame, cx, cy);
@@ -985,7 +986,7 @@ static int apply_subtract_green_transform(WebPContext *s)
     ImageContext *img = &s->image[IMAGE_ROLE_ARGB];
 
     for (y = 0; y < img->frame->height; y++) {
-        for (x = 0; x < img->frame->width; x++) {
+        for (x = 0; x < s->reduced_width; x++) {
             uint8_t *p = GET_PIXEL(img->frame, x, y);
             p[1] += p[2];
             p[3] += p[2];
@@ -1004,7 +1005,7 @@ static int apply_color_indexing_transform(WebPContext *s)
     img = &s->image[IMAGE_ROLE_ARGB];
     pal = &s->image[IMAGE_ROLE_COLOR_INDEXING];
 
-    if (pal->size_reduction > 0) {
+    if (pal->size_reduction > 0) { // undo pixel packing
         GetBitContext gb_g;
         uint8_t *line;
         int pixel_bits = 8 >> pal->size_reduction;
@@ -1030,6 +1031,7 @@ static int apply_color_indexing_transform(WebPContext *s)
             }
         }
         av_free(line);
+        s->reduced_width = s->width; // we are back to full size
     }
 
     // switch to local palette if it's worth initializing it
@@ -1126,7 +1128,7 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     /* parse transformations */
     s->nb_transforms = 0;
-    s->reduced_width = 0;
+    s->reduced_width = s->width;
     used = 0;
     while (get_bits1(&s->gb)) {
         enum TransformType transform = get_bits(&s->gb, 2);
