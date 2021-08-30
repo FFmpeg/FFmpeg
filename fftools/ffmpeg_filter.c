@@ -983,11 +983,7 @@ int configure_filtergraph(FilterGraph *fg)
         }
         if (strlen(args)) {
             args[strlen(args)-1] = 0;
-
-            if (!strncmp(args, "sws_flags=", 10)) {
-                // keep the 'flags=' part
-                fg->graph->scale_sws_opts = av_strdup(args+4);
-            }
+            fg->graph->scale_sws_opts = av_strdup(args);
         }
 
         args[0] = 0;
