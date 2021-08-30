@@ -103,7 +103,7 @@ typedef struct BestOffset {
 /** Number of possible codebooks (counting "no codebooks") */
 #define NUM_CODEBOOKS       4
 
-typedef struct {
+typedef struct MLPEncodeContext {
     AVCodecContext *avctx;
 
     int             num_substreams;         ///< Number of substreams contained within this stream.
@@ -129,7 +129,8 @@ typedef struct {
     int32_t        *write_buffer;           ///< Pointer to data currently being written to bitstream.
     int32_t        *sample_buffer;          ///< Pointer to current access unit samples.
     int32_t        *major_scratch_buffer;   ///< Scratch buffer big enough to fit all data for one entire major frame interval.
-    int32_t        *last_frame;             ///< Pointer to last frame with data to encode.
+    int32_t        last_frames;             ///< Signal last frames.
+    int32_t        last_index;
 
     int32_t        *lpc_sample_buffer;
 
@@ -200,6 +201,10 @@ typedef struct {
     DecodingParams *seq_decoding_params;
 
     unsigned int    max_codebook_search;
+
+    int             shorten_by;
+
+    int64_t         pts;
 
     LPCContext      lpc_ctx;
 } MLPEncodeContext;
@@ -1116,9 +1121,13 @@ static uint8_t *write_substrs(MLPEncodeContext *ctx, uint8_t *buf, int buf_size,
 
         rh->lossless_check_data ^= *lossless_check_data++;
 
-        if (ctx->last_frame == ctx->inout_buffer) {
-            /* TODO find a sample and implement shorten_by. */
-            put_bits(&pb, 32, END_OF_STREAM);
+        if (ctx->last_frames == 0 && ctx->shorten_by) {
+            if (ctx->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
+                put_bits(&pb, 16, END_OF_STREAM & 0xFFFF);
+                put_bits(&pb, 16, (ctx->shorten_by & 0x1FFF) | 0x2000);
+            } else {
+                put_bits(&pb, 32, END_OF_STREAM);
+            }
         }
 
         /* Data must be flushed for the checksum and parity to be correct;
@@ -2216,23 +2225,26 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int restart_frame, ret;
     uint8_t *data;
 
+    if (!frame && !ctx->last_frames--)
+        return 0;
+
     if ((ret = ff_alloc_packet(avctx, avpkt, 87500 * avctx->channels)) < 0)
         return ret;
 
-    /* add current frame to queue */
-    if ((ret = ff_af_queue_add(&ctx->afq, frame)) < 0)
-        return ret;
+    if (frame) {
+        /* add current frame to queue */
+        if ((ret = ff_af_queue_add(&ctx->afq, frame)) < 0)
+            return ret;
+        ctx->last_frames = ctx->max_restart_interval;
+        ctx->last_index = ctx->frame_index;
+    }
 
-    data = frame->data[0];
+    data = frame ? frame->data[0] : NULL;
 
     ctx->frame_index = avctx->frame_number % ctx->max_restart_interval;
 
     ctx->inout_buffer = ctx->major_inout_buffer
                       + ctx->frame_index * ctx->one_sample_buffer_size;
-
-    if (ctx->last_frame == ctx->inout_buffer) {
-        return 0;
-    }
 
     ctx->sample_buffer = ctx->major_scratch_buffer
                        + ctx->frame_index * ctx->one_sample_buffer_size;
@@ -2240,18 +2252,8 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ctx->write_buffer = ctx->inout_buffer;
 
     if (avctx->frame_number < ctx->max_restart_interval) {
-        if (data) {
+        if (data)
             goto input_and_return;
-        } else {
-            /* There are less frames than the requested major header interval.
-             * Update the context to reflect this.
-             */
-            ctx->max_restart_interval = avctx->frame_number;
-            ctx->frame_index = 0;
-
-            ctx->sample_buffer = ctx->major_scratch_buffer;
-            ctx->inout_buffer = ctx->major_inout_buffer;
-        }
     }
 
     if (ctx->frame_size[ctx->frame_index] > MAX_BLOCKSIZE) {
@@ -2278,14 +2280,13 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 input_and_return:
 
-    if (data) {
-        ctx->frame_size[ctx->frame_index] = avctx->frame_size;
-        ctx->next_major_frame_size += avctx->frame_size;
-        ctx->next_major_number_of_frames++;
+    if (frame)
+        ctx->shorten_by = avctx->frame_size - frame->nb_samples;
+    ctx->frame_size[ctx->frame_index] = avctx->frame_size;
+    ctx->next_major_frame_size += avctx->frame_size;
+    ctx->next_major_number_of_frames++;
+    if (data)
         input_data(ctx, data);
-    } else if (!ctx->last_frame) {
-        ctx->last_frame = ctx->inout_buffer;
-    }
 
     restart_frame = (ctx->frame_index + 1) % ctx->min_restart_interval;
 
@@ -2315,10 +2316,11 @@ input_and_return:
                                        (ctx->frame_index / ctx->min_restart_interval)*(ctx->sequence_size)*(ctx->num_substreams) +
                                        (ctx->seq_offset[seq_index])*(ctx->num_substreams);
 
-            for (index = 0; index < ctx->number_of_frames; index++) {
+            for (index = 0; index < ctx->number_of_frames; index++)
                 number_of_samples += ctx->frame_size[(ctx->starting_frame_index + index) % ctx->max_restart_interval];
-            }
             ctx->number_of_samples = number_of_samples;
+            if (!ctx->number_of_samples)
+                break;
 
             for (index = 0; index < ctx->seq_size[seq_index]; index++) {
                 clear_channel_params(ctx->seq_channel_params + index * ctx->avctx->channels, ctx->avctx->channels);
@@ -2343,8 +2345,16 @@ input_and_return:
 
 no_data_left:
 
-    ff_af_queue_remove(&ctx->afq, avctx->frame_size, &avpkt->pts,
-                       &avpkt->duration);
+    if (ctx->afq.frame_count > 0) {
+        ff_af_queue_remove(&ctx->afq, avctx->frame_size, &avpkt->pts,
+                           &avpkt->duration);
+        ctx->pts = avpkt->pts + avpkt->duration;
+    } else {
+        avpkt->pts = ctx->pts;
+        ctx->pts += avctx->frame_size;
+    }
+    if (!frame)
+        avctx->frame_number++;
     avpkt->size = bytes_written;
     *got_packet = 1;
     return 0;
@@ -2379,7 +2389,7 @@ const AVCodec ff_mlp_encoder = {
     .init                   = mlp_encode_init,
     .encode2                = mlp_encode_frame,
     .close                  = mlp_encode_close,
-    .capabilities           = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities           = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     .channel_layouts        = ff_mlp_channel_layouts,
@@ -2396,7 +2406,7 @@ const AVCodec ff_truehd_encoder = {
     .init                   = mlp_encode_init,
     .encode2                = mlp_encode_frame,
     .close                  = mlp_encode_close,
-    .capabilities           = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities           = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     .channel_layouts        = (const uint64_t[]) {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_5POINT1_BACK, 0},
