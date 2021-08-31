@@ -88,9 +88,11 @@ my $concat = "ffconcat version 1.0\n";
 $concat .= "\nstream\nexact_stream_id 0x1E0\n";
 for my $audio (@{$track->{audio}}) {
   $concat .= "\nstream\nexact_stream_id " . $audio->{streamid} . "\n";
+  $concat .= "stream_meta language " . $audio->{langcode} . "\n" if $audio->{langcode};
 }
 for my $subp (@{$track->{subp}}) {
   $concat .= "\nstream\nexact_stream_id " . $subp->{streamid} . "\n";
+  $concat .= "stream_meta language " . $subp->{langcode} . "\n" if $subp->{langcode};
 }
 for my $cell (@{$track->{cell}}) {
   my $off = $cell->{first_sector};
