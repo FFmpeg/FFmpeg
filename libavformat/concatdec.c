@@ -564,6 +564,9 @@ static int concat_parse_script(AVFormatContext *avf)
                 av_log(avf, AV_LOG_ERROR, "Line %d: failed to parse metadata string\n", line);
                 FAIL(AVERROR_INVALIDDATA);
             }
+            av_log(avf, AV_LOG_WARNING,
+                   "'file_packet_metadata key=value:key=value' is deprecated, "
+                   "use multiple 'file_packet_meta key value' instead\n");
             av_freep(&arg_str[0]);
             break;
 

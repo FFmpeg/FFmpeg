@@ -150,6 +150,7 @@ directive) will be reduced based on their specified Out point.
 Metadata of the packets of the file. The specified metadata will be set for
 each file packet. You can specify this directive multiple times to add multiple
 metadata entries.
+This directive is deprecated, use @code{file_packet_meta} instead.
 
 @item @code{file_packet_meta @var{key} @var{value}}
 Metadata of the packets of the file. The specified metadata will be set for
