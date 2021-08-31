@@ -92,6 +92,7 @@ for my $audio (@{$track->{audio}}) {
 }
 for my $subp (@{$track->{subp}}) {
   $concat .= "\nstream\nexact_stream_id " . $subp->{streamid} . "\n";
+  $concat .= "stream_codec dvd_subtitle\n";
   $concat .= "stream_meta language " . $subp->{langcode} . "\n" if $subp->{langcode};
 }
 for my $cell (@{$track->{cell}}) {
