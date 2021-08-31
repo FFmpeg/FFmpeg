@@ -408,7 +408,7 @@ static int concat_read_close(AVFormatContext *avf)
     return 0;
 }
 
-#define MAX_ARGS 2
+#define MAX_ARGS 3
 #define NEEDS_UNSAFE   (1 << 1)
 #define NEEDS_FILE     (1 << 1)
 #define NEEDS_STREAM   (1 << 2)
@@ -432,6 +432,7 @@ typedef enum ParseDirective {
    DIR_EXSID,
    DIR_STMETA,
    DIR_STCODEC,
+   DIR_CHAPTER,
 } ParseDirective;
 
 static const ParseSyntax syntax[] = {
@@ -447,6 +448,7 @@ static const ParseSyntax syntax[] = {
     [DIR_EXSID    ] = { "exact_stream_id",      "i",    NEEDS_STREAM },
     [DIR_STMETA   ] = { "stream_meta",          "ks",   NEEDS_STREAM },
     [DIR_STCODEC  ] = { "stream_codec",         "k",    NEEDS_STREAM },
+    [DIR_CHAPTER  ] = { "chapter",              "idd",  0 },
 };
 
 static int concat_parse_script(AVFormatContext *avf)
@@ -457,6 +459,7 @@ static int concat_parse_script(AVFormatContext *avf)
     uint8_t *cursor, *keyword;
     ConcatFile *file = NULL;
     AVStream *stream = NULL;
+    AVChapter *chapter = NULL;
     unsigned line = 0, arg;
     const ParseSyntax *dir;
     char *arg_kw[MAX_ARGS];
@@ -608,6 +611,13 @@ static int concat_parse_script(AVFormatContext *avf)
             stream->codecpar->codec_id = codec->id;
             break;
         }
+
+        case DIR_CHAPTER:
+            chapter = avpriv_new_chapter(avf, arg_int[0], AV_TIME_BASE_Q,
+                                         arg_int[1], arg_int[2], NULL);
+            if (!chapter)
+                return AVERROR(ENOMEM);
+            break;
 
         default:
             FAIL(AVERROR_BUG);

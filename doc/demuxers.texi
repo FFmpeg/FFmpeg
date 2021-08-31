@@ -184,6 +184,10 @@ Can be present multiple times.
 @item @code{stream_codec @var{value}}
 Codec for the stream.
 
+@item @code{cahpter @var{id} @var{start} @var{end}}
+Add a chapter. @var{id} is an unique identifier, possibly small and
+consecutive.
+
 @end table
 
 @subsection Options
