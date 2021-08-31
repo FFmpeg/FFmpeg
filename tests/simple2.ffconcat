@@ -2,8 +2,10 @@ ffconcat version 1.0
 
 stream    0
 exact_stream_id 257
+stream_meta dummy 'this is stream 0'
 stream    1
 exact_stream_id 256
+stream_meta dummy 'this is stream 1'
 
 file      %SRCFILE%
 
