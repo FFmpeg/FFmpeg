@@ -95,6 +95,12 @@ for my $subp (@{$track->{subp}}) {
   $concat .= "stream_codec dvd_subtitle\n";
   $concat .= "stream_meta language " . $subp->{langcode} . "\n" if $subp->{langcode};
 }
+my $chap_time = 0;
+for my $chap (@{$track->{chapter}}) {
+  $concat .= sprintf "\nchapter %d %.3f %.3f\n",
+    $chap->{ix}, $chap_time, $chap_time + $chap->{length};
+  $chap_time += $chap->{length};
+}
 for my $cell (@{$track->{cell}}) {
   my $off = $cell->{first_sector};
   die "Your lsdvd version does not print cell sectors.\n$lsdvd_message"
