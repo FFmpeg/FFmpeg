@@ -430,6 +430,7 @@ typedef enum ParseDirective {
    DIR_OPTION,
    DIR_STREAM,
    DIR_EXSID,
+   DIR_STMETA,
 } ParseDirective;
 
 static const ParseSyntax syntax[] = {
@@ -443,6 +444,7 @@ static const ParseSyntax syntax[] = {
     [DIR_OPTION   ] = { "option",               "ks",   NEEDS_FILE | NEEDS_UNSAFE },
     [DIR_STREAM   ] = { "stream",               "",     0 },
     [DIR_EXSID    ] = { "exact_stream_id",      "i",    NEEDS_STREAM },
+    [DIR_STMETA   ] = { "stream_meta",          "ks",   NEEDS_STREAM },
 };
 
 static int concat_parse_script(AVFormatContext *avf)
@@ -452,6 +454,7 @@ static int concat_parse_script(AVFormatContext *avf)
     AVBPrint bp;
     uint8_t *cursor, *keyword;
     ConcatFile *file = NULL;
+    AVStream *stream = NULL;
     unsigned line = 0, arg;
     const ParseSyntax *dir;
     char *arg_kw[MAX_ARGS];
@@ -578,12 +581,19 @@ static int concat_parse_script(AVFormatContext *avf)
             break;
 
         case DIR_STREAM:
-            if (!avformat_new_stream(avf, NULL))
+            stream = avformat_new_stream(avf, NULL);
+            if (!stream)
                 FAIL(AVERROR(ENOMEM));
             break;
 
         case DIR_EXSID:
-            avf->streams[avf->nb_streams - 1]->id = arg_int[0];
+            stream->id = arg_int[0];
+            break;
+        case DIR_STMETA:
+            ret = av_dict_set(&stream->metadata, arg_kw[0], arg_str[1], AV_DICT_DONT_STRDUP_VAL);
+            arg_str[1] = NULL;
+            if (ret < 0)
+                FAIL(ret);
             break;
 
         default:

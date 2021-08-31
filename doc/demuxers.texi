@@ -177,6 +177,10 @@ subfiles will be used.
 This is especially useful for MPEG-PS (VOB) files, where the order of the
 streams is not reliable.
 
+@item @code{stream_meta @var{key} @var{value}}
+Metadata for the stream.
+Can be present multiple times.
+
 @end table
 
 @subsection Options
