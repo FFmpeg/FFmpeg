@@ -432,6 +432,7 @@ typedef enum ParseDirective {
    DIR_EXSID,
    DIR_STMETA,
    DIR_STCODEC,
+   DIR_STEDATA,
    DIR_CHAPTER,
 } ParseDirective;
 
@@ -448,6 +449,7 @@ static const ParseSyntax syntax[] = {
     [DIR_EXSID    ] = { "exact_stream_id",      "i",    NEEDS_STREAM },
     [DIR_STMETA   ] = { "stream_meta",          "ks",   NEEDS_STREAM },
     [DIR_STCODEC  ] = { "stream_codec",         "k",    NEEDS_STREAM },
+    [DIR_STEDATA  ] = { "stream_extradata",     "k",    NEEDS_STREAM },
     [DIR_CHAPTER  ] = { "chapter",              "idd",  0 },
 };
 
@@ -609,6 +611,15 @@ static int concat_parse_script(AVFormatContext *avf)
             }
             stream->codecpar->codec_type = codec->type;
             stream->codecpar->codec_id = codec->id;
+            break;
+        }
+
+        case DIR_STEDATA: {
+            int size = ff_hex_to_data(NULL, arg_kw[0]);
+            ret = ff_alloc_extradata(stream->codecpar, size);
+            if (ret < 0)
+                FAIL(ret);
+            ff_hex_to_data(stream->codecpar->extradata, arg_kw[0]);
             break;
         }
 
