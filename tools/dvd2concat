@@ -94,6 +94,28 @@ for my $subp (@{$track->{subp}}) {
   $concat .= "\nstream\nexact_stream_id " . $subp->{streamid} . "\n";
   $concat .= "stream_codec dvd_subtitle\n";
   $concat .= "stream_meta language " . $subp->{langcode} . "\n" if $subp->{langcode};
+  my $extradata = "";
+  if ($track->{width} && $track->{height}) {
+    $extradata .= "size: " . $track->{width} . "x" . $track->{height} . "\n";
+  }
+  if (my $pal = $track->{palette}) {
+    my @pal;
+    for my $c (@$pal) {
+      # Adapted from mplayer/sub/vobsub.c
+      my $y = ((hex($c) >> 16) & 0xFF);
+      my $u = ((hex($c) >>  8) & 0xFF) - 128;
+      my $v = ((hex($c) >>  0) & 0xFF) - 128;
+      my ($r, $g, $b) = map { int($_ < 0 ? 0 : $_ > 255 ? 255 : $_) }
+        $y + 1.4022 * $u,
+        $y - 0.3456 * $u - 0.7145 * $v,
+        $y               + 1.7710 * $v;
+      push @pal, sprintf "%06x", ($r << 16) | ($g << 8) | $b;
+    }
+    $extradata .= "palette: " . join(", ", @pal) . "\n";
+  }
+  if ($extradata ne "") {
+    $concat .= "stream_extradata " . unpack("H*", $extradata);
+  }
 }
 my $chap_time = 0;
 for my $chap (@{$track->{chapter}}) {
