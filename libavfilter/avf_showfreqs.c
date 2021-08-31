@@ -165,7 +165,7 @@ static int config_output(AVFilterLink *outlink)
     av_freep(&s->fft_input);
     av_freep(&s->fft_data);
     av_freep(&s->avg_data);
-    s->nb_channels = inlink->channels;
+    s->nb_channels = inlink->ch_layout.nb_channels;
 
     s->fft_input = av_calloc(s->nb_channels, sizeof(*s->fft_input));
     if (!s->fft_input)
@@ -439,7 +439,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int offset = s->win_size - s->hop_size;
     int64_t pts = in->pts;
 
-    for (int ch = 0; ch < in->channels; ch++) {
+    for (int ch = 0; ch < in->ch_layout.nb_channels; ch++) {
         float *dst = (float *)s->window->extended_data[ch];
 
         memmove(dst, &dst[s->hop_size], offset * sizeof(float));

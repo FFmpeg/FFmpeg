@@ -146,7 +146,7 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
 {
     CompandContext *s    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    const int channels   = inlink->channels;
+    const int channels   = inlink->ch_layout.nb_channels;
     const int nb_samples = frame->nb_samples;
     AVFrame *out_frame;
     int chan, i;
@@ -192,7 +192,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
 {
     CompandContext *s    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    const int channels = inlink->channels;
+    const int channels = inlink->ch_layout.nb_channels;
     const int nb_samples = frame->nb_samples;
     int chan, i, av_uninit(dindex), oindex, av_uninit(count);
     AVFrame *out_frame   = NULL;
@@ -264,7 +264,7 @@ static int compand_drain(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     CompandContext *s    = ctx->priv;
-    const int channels   = outlink->channels;
+    const int channels   = outlink->ch_layout.nb_channels;
     AVFrame *frame       = NULL;
     int chan, i, dindex;
 
@@ -302,7 +302,7 @@ static int config_output(AVFilterLink *outlink)
     const int sample_rate = outlink->sample_rate;
     double radius         = s->curve_dB * M_LN10 / 20.0;
     char *p, *saveptr     = NULL;
-    const int channels    = outlink->channels;
+    const int channels    = outlink->ch_layout.nb_channels;
     int nb_attacks, nb_decays, nb_points;
     int new_nb_items, num;
     int i;
@@ -503,7 +503,13 @@ static int config_output(AVFilterLink *outlink)
 
     s->delay_frame->format         = outlink->format;
     s->delay_frame->nb_samples     = s->delay_samples;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     s->delay_frame->channel_layout = outlink->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if ((err = av_channel_layout_copy(&s->delay_frame->ch_layout, &outlink->ch_layout)) < 0)
+        return err;
 
     err = av_frame_get_buffer(s->delay_frame, 0);
     if (err)

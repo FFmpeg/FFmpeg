@@ -73,7 +73,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_NONE
     };
     AMergeContext *s = ctx->priv;
-    int64_t inlayout[SWR_CH_MAX], outlayout = 0;
+    AVChannelLayout *inlayout[SWR_CH_MAX] = { NULL }, outlayout = { 0 };
+    uint64_t outmask = 0;
     AVFilterChannelLayouts *layouts;
     int i, ret, overlap = 0, nb_ch = 0;
 
@@ -84,20 +85,21 @@ static int query_formats(AVFilterContext *ctx)
                    "No channel layout for input %d\n", i + 1);
             return AVERROR(EAGAIN);
         }
-        inlayout[i] = ctx->inputs[i]->incfg.channel_layouts->channel_layouts[0];
+        inlayout[i] = &ctx->inputs[i]->incfg.channel_layouts->channel_layouts[0];
         if (ctx->inputs[i]->incfg.channel_layouts->nb_channel_layouts > 1) {
             char buf[256];
-            av_get_channel_layout_string(buf, sizeof(buf), 0, inlayout[i]);
+            av_channel_layout_describe(inlayout[i], buf, sizeof(buf));
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
         }
         s->in[i].nb_ch = FF_LAYOUT2COUNT(inlayout[i]);
         if (s->in[i].nb_ch) {
             overlap++;
         } else {
-            s->in[i].nb_ch = av_get_channel_layout_nb_channels(inlayout[i]);
-            if (outlayout & inlayout[i])
+            s->in[i].nb_ch = inlayout[i]->nb_channels;
+            if (av_channel_layout_subset(inlayout[i], outmask))
                 overlap++;
-            outlayout |= inlayout[i];
+            outmask |= inlayout[i]->order == AV_CHANNEL_ORDER_NATIVE ?
+                       inlayout[i]->u.mask : 0;
         }
         nb_ch += s->in[i].nb_ch;
     }
@@ -111,19 +113,20 @@ static int query_formats(AVFilterContext *ctx)
                "output layout will be determined by the number of distinct input channels\n");
         for (i = 0; i < nb_ch; i++)
             s->route[i] = i;
-        outlayout = av_get_default_channel_layout(nb_ch);
-        if (!outlayout && nb_ch)
-            outlayout = 0xFFFFFFFFFFFFFFFFULL >> (64 - nb_ch);
+        av_channel_layout_default(&outlayout, nb_ch);
+        if (!KNOWN(&outlayout) && nb_ch)
+            av_channel_layout_from_mask(&outlayout, 0xFFFFFFFFFFFFFFFFULL >> (64 - nb_ch));
     } else {
         int *route[SWR_CH_MAX];
         int c, out_ch_number = 0;
 
+        av_channel_layout_from_mask(&outlayout, outmask);
         route[0] = s->route;
         for (i = 1; i < s->nb_inputs; i++)
             route[i] = route[i - 1] + s->in[i - 1].nb_ch;
         for (c = 0; c < 64; c++)
             for (i = 0; i < s->nb_inputs; i++)
-                if ((inlayout[i] >> c) & 1)
+                if (av_channel_layout_index_from_channel(inlayout[i], c) >= 0)
                     *(route[i]++) = out_ch_number++;
     }
     if ((ret = ff_set_common_formats_from_list(ctx, packed_sample_fmts)) < 0)
@@ -136,7 +139,7 @@ static int query_formats(AVFilterContext *ctx)
             return ret;
     }
     layouts = NULL;
-    if ((ret = ff_add_channel_layout(&layouts, outlayout)) < 0)
+    if ((ret = ff_add_channel_layout(&layouts, &outlayout)) < 0)
         return ret;
     if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
         return ret;
@@ -149,6 +152,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AMergeContext *s = ctx->priv;
     AVBPrint bp;
+    char buf[128];
     int i;
 
     s->bps = av_get_bytes_per_sample(ctx->outputs[0]->format);
@@ -157,10 +161,12 @@ static int config_output(AVFilterLink *outlink)
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     for (i = 0; i < s->nb_inputs; i++) {
         av_bprintf(&bp, "%sin%d:", i ? " + " : "", i);
-        av_bprint_channel_layout(&bp, -1, ctx->inputs[i]->channel_layout);
+        av_channel_layout_describe(&ctx->inputs[i]->ch_layout, buf, sizeof(buf));
+        av_bprintf(&bp, "%s", buf);
     }
     av_bprintf(&bp, " -> out:");
-    av_bprint_channel_layout(&bp, -1, ctx->outputs[0]->channel_layout);
+    av_channel_layout_describe(&ctx->outputs[0]->ch_layout, buf, sizeof(buf));
+    av_bprintf(&bp, "%s", buf);
     av_log(ctx, AV_LOG_VERBOSE, "%s\n", bp.str);
 
     return 0;
@@ -237,8 +243,14 @@ static int try_push_frame(AVFilterContext *ctx, int nb_samples)
     outbuf->pts = inbuf[0]->pts;
 
     outbuf->nb_samples     = nb_samples;
+    if ((ret = av_channel_layout_copy(&outbuf->ch_layout, &outlink->ch_layout)) < 0)
+        return ret;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     outbuf->channel_layout = outlink->channel_layout;
-    outbuf->channels       = outlink->channels;
+    outbuf->channels       = outlink->ch_layout.nb_channels;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     while (nb_samples) {
         /* Unroll the most common sample formats: speed +~350% for the loop,

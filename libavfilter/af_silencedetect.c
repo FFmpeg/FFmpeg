@@ -136,12 +136,12 @@ static void silencedetect_##name(SilenceDetectContext *s, AVFrame *insamples,   
                                  int nb_samples, int64_t nb_samples_notify,      \
                                  AVRational time_base)                           \
 {                                                                                \
-    const int channels = insamples->channels;                                    \
+    const int channels = insamples->ch_layout.nb_channels;                       \
     const type noise = s->noise;                                                 \
                                                                                  \
     nb_samples /= channels;                                                      \
     for (int i = 0; i < nb_samples; i++) {                                       \
-        for (int ch = 0; ch < insamples->channels; ch++) {                       \
+        for (int ch = 0; ch < insamples->ch_layout.nb_channels; ch++) {          \
             const type *p = (const type *)insamples->extended_data[ch];          \
             update(s, insamples, p[i] < noise && p[i] > -noise,                  \
                    channels * i + ch,                                            \
@@ -166,7 +166,7 @@ static int config_input(AVFilterLink *inlink)
     SilenceDetectContext *s = ctx->priv;
     int c;
 
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
     s->duration = av_rescale(s->duration, inlink->sample_rate, AV_TIME_BASE);
     s->independent_channels = s->mono ? s->channels : 1;
     s->nb_null_samples = av_calloc(s->independent_channels,
@@ -210,7 +210,7 @@ static int config_input(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     SilenceDetectContext *s         = inlink->dst->priv;
-    const int nb_channels           = inlink->channels;
+    const int nb_channels           = inlink->ch_layout.nb_channels;
     const int srate                 = inlink->sample_rate;
     const int nb_samples            = insamples->nb_samples     * nb_channels;
     const int64_t nb_samples_notify = s->duration * (s->mono ? 1 : nb_channels);

@@ -189,23 +189,24 @@ static int guess_channel_layout(MovieStream *st, int st_index, void *log_ctx)
 {
     AVCodecParameters *dec_par = st->st->codecpar;
     char buf[256];
-    int64_t chl = av_get_default_channel_layout(dec_par->channels);
+    AVChannelLayout chl = { 0 };
 
-    if (!chl) {
+    av_channel_layout_default(&chl, dec_par->ch_layout.nb_channels);
+
+    if (!KNOWN(&chl)) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Channel layout is not set in stream %d, and could not "
                "be guessed from the number of channels (%d)\n",
-               st_index, dec_par->channels);
+               st_index, dec_par->ch_layout.nb_channels);
         return AVERROR(EINVAL);
     }
 
-    av_get_channel_layout_string(buf, sizeof(buf), dec_par->channels, chl);
+    av_channel_layout_describe(&chl, buf, sizeof(buf));
     av_log(log_ctx, AV_LOG_WARNING,
            "Channel layout is not set in output stream %d, "
            "guessed channel layout is '%s'\n",
            st_index, buf);
-    dec_par->channel_layout = chl;
-    return 0;
+    return av_channel_layout_copy(&dec_par->ch_layout, &chl);
 }
 
 static av_cold int movie_common_init(AVFilterContext *ctx)
@@ -315,7 +316,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
         if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
         if ( movie->st[i].st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-            !movie->st[i].st->codecpar->channel_layout) {
+            !KNOWN(&movie->st[i].st->codecpar->ch_layout)) {
             ret = guess_channel_layout(&movie->st[i], i, ctx);
             if (ret < 0)
                 return ret;
@@ -351,7 +352,7 @@ static int movie_query_formats(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
     int list[] = { 0, -1 };
-    int64_t list64[] = { 0, -1 };
+    AVChannelLayout list64[] = { { 0 }, { 0 } };
     int i, ret;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
@@ -372,8 +373,8 @@ static int movie_query_formats(AVFilterContext *ctx)
             list[0] = c->sample_rate;
             if ((ret = ff_formats_ref(ff_make_format_list(list), &outlink->incfg.samplerates)) < 0)
                 return ret;
-            list64[0] = c->channel_layout;
-            if ((ret = ff_channel_layouts_ref(ff_make_format64_list(list64),
+            list64[0] = c->ch_layout;
+            if ((ret = ff_channel_layouts_ref(ff_make_channel_layout_list(list64),
                                    &outlink->incfg.channel_layouts)) < 0)
                 return ret;
             break;

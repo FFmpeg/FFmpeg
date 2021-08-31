@@ -203,7 +203,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
 
-    for (ch = 0; ch < in->channels; ch++) {
+    for (ch = 0; ch < in->ch_layout.nb_channels; ch++) {
         ptr = (float *)out->extended_data[ch];
         dst = (float *)s->out->extended_data[ch];
         src = (float *)in->extended_data[ch];

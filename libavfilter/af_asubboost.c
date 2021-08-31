@@ -76,7 +76,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->buffer = ff_get_audio_buffer(inlink, inlink->sample_rate / 10);
     s->w = ff_get_audio_buffer(inlink, 2);
-    s->write_pos = av_calloc(inlink->channels, sizeof(*s->write_pos));
+    s->write_pos = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->write_pos));
     if (!s->buffer || !s->w || !s->write_pos)
         return AVERROR(ENOMEM);
 
@@ -102,8 +102,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double b2 = s->b2;
     const double a1 = -s->a1;
     const double a2 = -s->a2;
-    const int start = (in->channels * jobnr) / nb_jobs;
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
     const int buffer_samples = s->buffer_samples;
 
     for (int ch = start; ch < end; ch++) {
@@ -153,7 +153,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in; td.out = out;
     ff_filter_execute(ctx, filter_channels, &td, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

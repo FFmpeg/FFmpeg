@@ -1037,14 +1037,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->padd_samples -= s->nb_samples - (in ? in->nb_samples: 0);
         if (in)
             av_samples_copy(new_in->extended_data, in->extended_data, 0, 0,
-                            in->nb_samples, in->channels, in->format);
+                            in->nb_samples, in->ch_layout.nb_channels, in->format);
         av_frame_free(&in);
         in = new_in;
     }
 
     td.in  = in;
     td.out = out;
-    ff_filter_execute(ctx, s->filter_channel, &td, NULL, inlink->channels);
+    ff_filter_execute(ctx, s->filter_channel, &td, NULL, inlink->ch_layout.nb_channels);
     if (s->need_profile)
         s->got_profile = 1;
 
@@ -1059,7 +1059,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         FF_FILTER_FORWARD_WANTED(outlink, inlink);
         return 0;
     } else if (s->drop_samples > 0) {
-        for (int ch = 0; ch < out->channels; ch++) {
+        for (int ch = 0; ch < out->ch_layout.nb_channels; ch++) {
             memmove(out->extended_data[ch],
                     out->extended_data[ch] + s->drop_samples * sizeof(double),
                     (in->nb_samples - s->drop_samples) * sizeof(double));
@@ -1164,7 +1164,7 @@ static int config_output(AVFilterLink *outlink)
         !s->new_stddev || !s->new_absmean)
         return AVERROR(ENOMEM);
 
-    s->channels = outlink->channels;
+    s->channels = outlink->ch_layout.nb_channels;
     s->overlap_length = max_left_ext(s->wavelet_length, s->levels);
     s->prev_length = s->overlap_length;
     s->drop_samples = s->overlap_length;

@@ -236,7 +236,7 @@ int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
 av_warn_unused_result
-int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
+int ff_parse_channel_layout(AVChannelLayout *ret, int *nret, const char *arg,
                             void *log_ctx);
 
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);

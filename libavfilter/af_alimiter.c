@@ -116,7 +116,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AudioLimiterContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     const double *src = (const double *)in->data[0];
-    const int channels = inlink->channels;
+    const int channels = inlink->ch_layout.nb_channels;
     const int buffer_size = s->buffer_size;
     double *dst, *buffer = s->buffer;
     const double release = s->release;
@@ -281,8 +281,8 @@ static int config_input(AVFilterLink *inlink)
     AudioLimiterContext *s = ctx->priv;
     int obuffer_size;
 
-    obuffer_size = inlink->sample_rate * inlink->channels * 100 / 1000. + inlink->channels;
-    if (obuffer_size < inlink->channels)
+    obuffer_size = inlink->sample_rate * inlink->ch_layout.nb_channels * 100 / 1000. + inlink->ch_layout.nb_channels;
+    if (obuffer_size < inlink->ch_layout.nb_channels)
         return AVERROR(EINVAL);
 
     s->buffer = av_calloc(obuffer_size, sizeof(*s->buffer));
@@ -292,8 +292,8 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     memset(s->nextpos, -1, obuffer_size * sizeof(*s->nextpos));
-    s->buffer_size = inlink->sample_rate * s->attack * inlink->channels;
-    s->buffer_size -= s->buffer_size % inlink->channels;
+    s->buffer_size = inlink->sample_rate * s->attack * inlink->ch_layout.nb_channels;
+    s->buffer_size -= s->buffer_size % inlink->ch_layout.nb_channels;
 
     if (s->buffer_size <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Attack is too small.\n");

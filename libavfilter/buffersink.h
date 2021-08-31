@@ -46,27 +46,26 @@
  * - av_buffersink_get_h(),
  * - av_buffersink_get_sample_aspect_ratio(),
  * - av_buffersink_get_channels(),
- * - av_buffersink_get_channel_layout(),
+ * - av_buffersink_get_ch_layout(),
  * - av_buffersink_get_sample_rate().
+ *
+ * The layout returned by av_buffersink_get_ch_layout() must de uninitialized
+ * by the caller.
  *
  * The format can be constrained by setting options, using av_opt_set() and
  * related functions with the AV_OPT_SEARCH_CHILDREN flag.
  *  - pix_fmts (int list),
  *  - sample_fmts (int list),
  *  - sample_rates (int list),
- *  - channel_layouts (int64_t),
+ *  - ch_layouts (string),
  *  - channel_counts (int list),
  *  - all_channel_counts (bool).
  * Most of these options are of type binary, and should be set using
  * av_opt_set_int_list() or av_opt_set_bin(). If they are not set, all
  * corresponding formats are accepted.
  *
- * As a special case, if neither channel_layouts nor channel_counts is set,
- * all valid channel layouts are accepted, but channel counts without a
- * layout are not, unless all_channel_counts is set.
- * Also, channel_layouts must not contain a channel layout already accepted
- * by a value in channel_counts; for example, if channel_counts contains 2,
- * then channel_layouts must not contain stereo.
+ * As a special case, if ch_layouts is not set, all valid channel layouts are
+ * accepted except for UNSPEC layouts, unless all_channel_counts is set.
  */
 
 /**
@@ -156,7 +155,12 @@ int              av_buffersink_get_h                   (const AVFilterContext *c
 AVRational       av_buffersink_get_sample_aspect_ratio (const AVFilterContext *ctx);
 
 int              av_buffersink_get_channels            (const AVFilterContext *ctx);
+#if FF_API_OLD_CHANNEL_LAYOUT
+attribute_deprecated
 uint64_t         av_buffersink_get_channel_layout      (const AVFilterContext *ctx);
+#endif
+int              av_buffersink_get_ch_layout           (const AVFilterContext *ctx,
+                                                        AVChannelLayout *ch_layout);
 int              av_buffersink_get_sample_rate         (const AVFilterContext *ctx);
 
 AVBufferRef *    av_buffersink_get_hw_frames_ctx       (const AVFilterContext *ctx);

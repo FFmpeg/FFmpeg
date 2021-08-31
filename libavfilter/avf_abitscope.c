@@ -107,7 +107,7 @@ static int config_input(AVFilterLink *inlink)
     char *colors, *saveptr = NULL;
 
     s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
-    s->nb_channels = inlink->channels;
+    s->nb_channels = inlink->ch_layout.nb_channels;
     s->depth = inlink->format == AV_SAMPLE_FMT_S16P ? 16 : 32;
 
     s->fg = av_malloc_array(s->nb_channels, 4 * sizeof(*s->fg));
@@ -148,9 +148,9 @@ static int config_output(AVFilterLink *outlink)
 }
 
 #define BARS(type, depth, one)                                              \
-    for (int ch = 0; ch < inlink->channels; ch++) {                         \
+    for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {            \
         const type *in = (const type *)insamples->extended_data[ch];        \
-        const int w = outpicref->width / inlink->channels;                  \
+        const int w = outpicref->width / inlink->ch_layout.nb_channels;     \
         const int h = outpicref->height / depth;                            \
         const uint32_t color = AV_RN32(&s->fg[4 * ch]);                     \
                                                                             \
@@ -175,8 +175,8 @@ static int config_output(AVFilterLink *outlink)
     }
 
 #define DO_TRACE(type, depth, one)                                          \
-    for (int ch = 0; ch < inlink->channels; ch++) {                         \
-        const int w = outpicref->width / inlink->channels;                  \
+    for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {            \
+        const int w = outpicref->width / inlink->ch_layout.nb_channels;     \
         const type *in = (const type *)insamples->extended_data[ch];        \
         const int wb = w / depth;                                           \
         int wv;                                                             \

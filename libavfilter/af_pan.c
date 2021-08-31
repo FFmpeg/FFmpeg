@@ -42,7 +42,7 @@
 typedef struct PanContext {
     const AVClass *class;
     char *args;
-    int64_t out_channel_layout;
+    AVChannelLayout out_channel_layout;
     double gain[MAX_CHANNELS][MAX_CHANNELS];
     int64_t need_renorm;
     int need_renumber;
@@ -65,23 +65,15 @@ static void skip_spaces(char **arg)
 static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
 {
     char buf[8];
-    int len, i, channel_id = 0;
-    int64_t layout, layout0;
+    int len, channel_id = 0;
 
     skip_spaces(arg);
     /* try to parse a channel name, e.g. "FL" */
     if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
-        layout0 = layout = av_get_channel_layout(buf);
-        /* channel_id <- first set bit in layout */
-        for (i = 32; i > 0; i >>= 1) {
-            if (layout >= (int64_t)1 << i) {
-                channel_id += i;
-                layout >>= i;
-            }
-        }
-        /* reject layouts that are not a single channel */
-        if (channel_id >= MAX_CHANNELS || layout0 != (int64_t)1 << channel_id)
-            return AVERROR(EINVAL);
+        channel_id = av_channel_from_string(buf);
+        if (channel_id < 0)
+            return channel_id;
+
         *rchannel = channel_id;
         *rnamed = 1;
         *arg += len;
@@ -137,17 +129,12 @@ static av_cold int init(AVFilterContext *ctx)
             goto fail;
         }
         if (named) {
-            if (!((pan->out_channel_layout >> out_ch_id) & 1)) {
+            if ((out_ch_id = av_channel_layout_index_from_channel(&pan->out_channel_layout, out_ch_id)) < 0) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Channel \"%.8s\" does not exist in the chosen layout\n", arg0);
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            /* get the channel number in the output channel layout:
-             * out_channel_layout & ((1 << out_ch_id) - 1) are all the
-             * channels that come before out_ch_id,
-             * so their count is the index of out_ch_id */
-            out_ch_id = av_get_channel_layout_nb_channels(pan->out_channel_layout & (((int64_t)1 << out_ch_id) - 1));
         }
         if (out_ch_id < 0 || out_ch_id >= pan->nb_output_channels) {
             av_log(ctx, AV_LOG_ERROR,
@@ -269,9 +256,7 @@ static int query_formats(AVFilterContext *ctx)
 
     // outlink supports only requested output channel layout
     layouts = NULL;
-    if ((ret = ff_add_channel_layout(&layouts,
-                          pan->out_channel_layout ? pan->out_channel_layout :
-                          FF_COUNT2LAYOUT(pan->nb_output_channels))) < 0)
+    if ((ret = ff_add_channel_layout(&layouts, &pan->out_channel_layout)) < 0)
         return ret;
     return ff_channel_layouts_ref(layouts, &outlink->incfg.channel_layouts);
 }
@@ -281,13 +266,13 @@ static int config_props(AVFilterLink *link)
     AVFilterContext *ctx = link->dst;
     PanContext *pan = ctx->priv;
     char buf[1024], *cur;
-    int i, j, k, r;
+    int i, j, k, r, ret;
     double t;
 
     if (pan->need_renumber) {
         // input channels were given by their name: renumber them
         for (i = j = 0; i < MAX_CHANNELS; i++) {
-            if ((link->channel_layout >> i) & 1) {
+            if (av_channel_layout_index_from_channel(&link->ch_layout, i) >= 0) {
                 for (k = 0; k < pan->nb_output_channels; k++)
                     pan->gain[k][j] = pan->gain[k][i];
                 j++;
@@ -297,7 +282,7 @@ static int config_props(AVFilterLink *link)
 
     // sanity check; can't be done in query_formats since the inlink
     // channel layout is unknown at that time
-    if (link->channels > MAX_CHANNELS ||
+    if (link->ch_layout.nb_channels > MAX_CHANNELS ||
         pan->nb_output_channels > MAX_CHANNELS) {
         av_log(ctx, AV_LOG_ERROR,
                "af_pan supports a maximum of %d channels. "
@@ -306,20 +291,12 @@ static int config_props(AVFilterLink *link)
     }
 
     // init libswresample context
-    pan->swr = swr_alloc_set_opts(pan->swr,
-                                  pan->out_channel_layout, link->format, link->sample_rate,
-                                  link->channel_layout,    link->format, link->sample_rate,
-                                  0, ctx);
-    if (!pan->swr)
+    ret = swr_alloc_set_opts2(&pan->swr,
+                              &pan->out_channel_layout, link->format, link->sample_rate,
+                              &link->ch_layout, link->format, link->sample_rate,
+                              0, ctx);
+    if (ret < 0)
         return AVERROR(ENOMEM);
-    if (!link->channel_layout) {
-        if (av_opt_set_int(pan->swr, "ich", link->channels, 0) < 0)
-            return AVERROR(EINVAL);
-    }
-    if (!pan->out_channel_layout) {
-        if (av_opt_set_int(pan->swr, "och", pan->nb_output_channels, 0) < 0)
-            return AVERROR(EINVAL);
-    }
 
     // gains are pure, init the channel mapping
     if (pan->pure_gains) {
@@ -327,7 +304,7 @@ static int config_props(AVFilterLink *link)
         // get channel map from the pure gains
         for (i = 0; i < pan->nb_output_channels; i++) {
             int ch_id = -1;
-            for (j = 0; j < link->channels; j++) {
+            for (j = 0; j < link->ch_layout.nb_channels; j++) {
                 if (pan->gain[i][j]) {
                     ch_id = j;
                     break;
@@ -336,7 +313,6 @@ static int config_props(AVFilterLink *link)
             pan->channel_map[i] = ch_id;
         }
 
-        av_opt_set_int(pan->swr, "icl", pan->out_channel_layout, 0);
         av_opt_set_int(pan->swr, "uch", pan->nb_output_channels, 0);
         swr_set_channel_mapping(pan->swr, pan->channel_map);
     } else {
@@ -345,7 +321,7 @@ static int config_props(AVFilterLink *link)
             if (!((pan->need_renorm >> i) & 1))
                 continue;
             t = 0;
-            for (j = 0; j < link->channels; j++)
+            for (j = 0; j < link->ch_layout.nb_channels; j++)
                 t += fabs(pan->gain[i][j]);
             if (t > -1E-5 && t < 1E-5) {
                 // t is almost 0 but not exactly, this is probably a mistake
@@ -354,11 +330,9 @@ static int config_props(AVFilterLink *link)
                            "Degenerate coefficients while renormalizing\n");
                 continue;
             }
-            for (j = 0; j < link->channels; j++)
+            for (j = 0; j < link->ch_layout.nb_channels; j++)
                 pan->gain[i][j] /= t;
         }
-        av_opt_set_int(pan->swr, "icl", link->channel_layout, 0);
-        av_opt_set_int(pan->swr, "ocl", pan->out_channel_layout, 0);
         swr_set_matrix(pan->swr, pan->gain[0], pan->gain[1] - pan->gain[0]);
     }
 
@@ -369,7 +343,7 @@ static int config_props(AVFilterLink *link)
     // summary
     for (i = 0; i < pan->nb_output_channels; i++) {
         cur = buf;
-        for (j = 0; j < link->channels; j++) {
+        for (j = 0; j < link->ch_layout.nb_channels; j++) {
             r = snprintf(cur, buf + sizeof(buf) - cur, "%s%.3g i%d",
                          j ? " + " : "", pan->gain[i][j], j);
             cur += FFMIN(buf + sizeof(buf) - cur, r);
@@ -405,8 +379,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     swr_convert(pan->swr, outsamples->extended_data, n,
                 (void *)insamples->extended_data, n);
     av_frame_copy_props(outsamples, insamples);
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     outsamples->channel_layout = outlink->channel_layout;
-    outsamples->channels = outlink->channels;
+    outsamples->channels = outlink->ch_layout.nb_channels;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if ((ret = av_channel_layout_copy(&outsamples->ch_layout, &outlink->ch_layout)) < 0)
+        return ret;
 
     ret = ff_filter_frame(outlink, outsamples);
     av_frame_free(&insamples);

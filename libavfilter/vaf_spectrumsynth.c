@@ -112,7 +112,7 @@ static int query_formats(AVFilterContext *ctx)
 
     formats = ff_make_format_list(sample_fmts);
     if ((ret = ff_formats_ref         (formats, &outlink->incfg.formats        )) < 0 ||
-        (ret = ff_add_channel_layout  (&layout, FF_COUNT2LAYOUT(s->channels))) < 0 ||
+        (ret = ff_add_channel_layout  (&layout, &FF_COUNT2LAYOUT(s->channels))) < 0 ||
         (ret = ff_channel_layouts_ref (layout , &outlink->incfg.channel_layouts)) < 0)
         return ret;
 

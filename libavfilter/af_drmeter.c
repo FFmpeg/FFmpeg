@@ -59,10 +59,10 @@ static int config_output(AVFilterLink *outlink)
 {
     DRMeterContext *s = outlink->src->priv;
 
-    s->chstats = av_calloc(sizeof(*s->chstats), outlink->channels);
+    s->chstats = av_calloc(sizeof(*s->chstats), outlink->ch_layout.nb_channels);
     if (!s->chstats)
         return AVERROR(ENOMEM);
-    s->nb_channels = outlink->channels;
+    s->nb_channels = outlink->ch_layout.nb_channels;
     s->tc_samples = s->time_constant * outlink->sample_rate + .5;
 
     return 0;

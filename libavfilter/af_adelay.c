@@ -187,10 +187,10 @@ static int config_input(AVFilterLink *inlink)
     char *p, *saveptr = NULL;
     int i;
 
-    s->chandelay = av_calloc(inlink->channels, sizeof(*s->chandelay));
+    s->chandelay = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->chandelay));
     if (!s->chandelay)
         return AVERROR(ENOMEM);
-    s->nb_delays = inlink->channels;
+    s->nb_delays = inlink->ch_layout.nb_channels;
     s->block_align = av_get_bytes_per_sample(inlink->format);
 
     p = s->delays;
@@ -371,7 +371,7 @@ static int activate(AVFilterContext *ctx)
 
         av_samples_set_silence(frame->extended_data, 0,
                                frame->nb_samples,
-                               outlink->channels,
+                               outlink->ch_layout.nb_channels,
                                frame->format);
 
         frame->pts = s->next_pts;
@@ -403,7 +403,7 @@ static int activate(AVFilterContext *ctx)
 
         av_samples_set_silence(frame->extended_data, 0,
                                frame->nb_samples,
-                               outlink->channels,
+                               outlink->ch_layout.nb_channels,
                                frame->format);
 
         frame->pts = s->next_pts;

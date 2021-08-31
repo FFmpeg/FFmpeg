@@ -758,8 +758,7 @@ static int draw_legend(AVFilterContext *ctx, uint64_t samples)
     uint8_t *dst;
     char chlayout_str[128];
 
-    av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), inlink->channels,
-                                 inlink->channel_layout);
+    av_channel_layout_describe(&inlink->ch_layout, chlayout_str, sizeof(chlayout_str));
 
     text = av_asprintf("%d Hz | %s", inlink->sample_rate, chlayout_str);
     if (!text)
@@ -1061,8 +1060,8 @@ static int config_output(AVFilterLink *outlink)
         outlink->h += s->start_y * 2;
     }
 
-    h = (s->mode == COMBINED || s->orientation == HORIZONTAL) ? s->h : s->h / inlink->channels;
-    w = (s->mode == COMBINED || s->orientation == VERTICAL)   ? s->w : s->w / inlink->channels;
+    h = (s->mode == COMBINED || s->orientation == HORIZONTAL) ? s->h : s->h / inlink->ch_layout.nb_channels;
+    w = (s->mode == COMBINED || s->orientation == VERTICAL)   ? s->w : s->w / inlink->ch_layout.nb_channels;
     s->channel_height = h;
     s->channel_width  = w;
 
@@ -1078,14 +1077,14 @@ static int config_output(AVFilterLink *outlink)
     s->buf_size = FFALIGN(s->win_size << (!!s->stop), av_cpu_max_align());
 
     if (!s->fft) {
-        s->fft = av_calloc(inlink->channels, sizeof(*s->fft));
+        s->fft = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->fft));
         if (!s->fft)
             return AVERROR(ENOMEM);
     }
 
     if (s->stop) {
         if (!s->ifft) {
-            s->ifft = av_calloc(inlink->channels, sizeof(*s->ifft));
+            s->ifft = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->ifft));
             if (!s->ifft)
                 return AVERROR(ENOMEM);
         }
@@ -1111,7 +1110,7 @@ static int config_output(AVFilterLink *outlink)
         }
         av_freep(&s->fft_data);
 
-        s->nb_display_channels = inlink->channels;
+        s->nb_display_channels = inlink->ch_layout.nb_channels;
         for (i = 0; i < s->nb_display_channels; i++) {
             float scale;
 
@@ -1728,7 +1727,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                     acc_samples += nb_samples;
                     av_samples_copy(fin->extended_data, cur_frame->extended_data,
                                     dst_offset, src_offset, nb_samples,
-                                    cur_frame->channels, AV_SAMPLE_FMT_FLTP);
+                                    cur_frame->ch_layout.nb_channels, AV_SAMPLE_FMT_FLTP);
                 }
 
                 src_offset += nb_samples;

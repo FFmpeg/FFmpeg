@@ -446,7 +446,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         double offset, offset_tp, true_peak;
 
         ff_ebur128_loudness_global(s->r128_in, &global);
-        for (c = 0; c < inlink->channels; c++) {
+        for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
             double tmp;
             ff_ebur128_sample_peak(s->r128_in, c, &tmp);
             if (c == 0 || tmp > true_peak)
@@ -462,11 +462,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     switch (s->frame_type) {
     case FIRST_FRAME:
         for (n = 0; n < in->nb_samples; n++) {
-            for (c = 0; c < inlink->channels; c++) {
+            for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
                 buf[s->buf_index + c] = src[c];
             }
-            src += inlink->channels;
-            s->buf_index += inlink->channels;
+            src += inlink->ch_layout.nb_channels;
+            s->buf_index += inlink->ch_layout.nb_channels;
         }
 
         ff_ebur128_loudness_shortterm(s->r128_in, &shortterm);
@@ -486,19 +486,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->buf_index =
         s->limiter_buf_index = 0;
 
-        for (n = 0; n < (s->limiter_buf_size / inlink->channels); n++) {
-            for (c = 0; c < inlink->channels; c++) {
+        for (n = 0; n < (s->limiter_buf_size / inlink->ch_layout.nb_channels); n++) {
+            for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
                 limiter_buf[s->limiter_buf_index + c] = buf[s->buf_index + c] * s->delta[s->index] * s->offset;
             }
-            s->limiter_buf_index += inlink->channels;
+            s->limiter_buf_index += inlink->ch_layout.nb_channels;
             if (s->limiter_buf_index >= s->limiter_buf_size)
                 s->limiter_buf_index -= s->limiter_buf_size;
 
-            s->buf_index += inlink->channels;
+            s->buf_index += inlink->ch_layout.nb_channels;
         }
 
         subframe_length = frame_size(inlink->sample_rate, 100);
-        true_peak_limiter(s, dst, subframe_length, inlink->channels);
+        true_peak_limiter(s, dst, subframe_length, inlink->ch_layout.nb_channels);
         ff_ebur128_add_frames_double(s->r128_out, dst, subframe_length);
 
         s->pts +=
@@ -514,29 +514,29 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         gain_next = gaussian_filter(s, s->index + 11 < 30 ? s->index + 11 : s->index + 11 - 30);
 
         for (n = 0; n < in->nb_samples; n++) {
-            for (c = 0; c < inlink->channels; c++) {
+            for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
                 buf[s->prev_buf_index + c] = src[c];
                 limiter_buf[s->limiter_buf_index + c] = buf[s->buf_index + c] * (gain + (((double) n / in->nb_samples) * (gain_next - gain))) * s->offset;
             }
-            src += inlink->channels;
+            src += inlink->ch_layout.nb_channels;
 
-            s->limiter_buf_index += inlink->channels;
+            s->limiter_buf_index += inlink->ch_layout.nb_channels;
             if (s->limiter_buf_index >= s->limiter_buf_size)
                 s->limiter_buf_index -= s->limiter_buf_size;
 
-            s->prev_buf_index += inlink->channels;
+            s->prev_buf_index += inlink->ch_layout.nb_channels;
             if (s->prev_buf_index >= s->buf_size)
                 s->prev_buf_index -= s->buf_size;
 
-            s->buf_index += inlink->channels;
+            s->buf_index += inlink->ch_layout.nb_channels;
             if (s->buf_index >= s->buf_size)
                 s->buf_index -= s->buf_size;
         }
 
-        subframe_length = (frame_size(inlink->sample_rate, 100) - in->nb_samples) * inlink->channels;
+        subframe_length = (frame_size(inlink->sample_rate, 100) - in->nb_samples) * inlink->ch_layout.nb_channels;
         s->limiter_buf_index = s->limiter_buf_index + subframe_length < s->limiter_buf_size ? s->limiter_buf_index + subframe_length : s->limiter_buf_index + subframe_length - s->limiter_buf_size;
 
-        true_peak_limiter(s, dst, in->nb_samples, inlink->channels);
+        true_peak_limiter(s, dst, in->nb_samples, inlink->ch_layout.nb_channels);
         ff_ebur128_add_frames_double(s->r128_out, dst, in->nb_samples);
 
         ff_ebur128_loudness_range(s->r128_in, &lra);
@@ -576,39 +576,39 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->limiter_buf_index = 0;
         src_index = 0;
 
-        for (n = 0; n < s->limiter_buf_size / inlink->channels; n++) {
-            for (c = 0; c < inlink->channels; c++) {
+        for (n = 0; n < s->limiter_buf_size / inlink->ch_layout.nb_channels; n++) {
+            for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
                 s->limiter_buf[s->limiter_buf_index + c] = src[src_index + c] * gain * s->offset;
             }
-            src_index += inlink->channels;
+            src_index += inlink->ch_layout.nb_channels;
 
-            s->limiter_buf_index += inlink->channels;
+            s->limiter_buf_index += inlink->ch_layout.nb_channels;
             if (s->limiter_buf_index >= s->limiter_buf_size)
                 s->limiter_buf_index -= s->limiter_buf_size;
         }
 
         subframe_length = frame_size(inlink->sample_rate, 100);
         for (i = 0; i < in->nb_samples / subframe_length; i++) {
-            true_peak_limiter(s, dst, subframe_length, inlink->channels);
+            true_peak_limiter(s, dst, subframe_length, inlink->ch_layout.nb_channels);
 
             for (n = 0; n < subframe_length; n++) {
-                for (c = 0; c < inlink->channels; c++) {
-                    if (src_index < (in->nb_samples * inlink->channels)) {
+                for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
+                    if (src_index < (in->nb_samples * inlink->ch_layout.nb_channels)) {
                         limiter_buf[s->limiter_buf_index + c] = src[src_index + c] * gain * s->offset;
                     } else {
                         limiter_buf[s->limiter_buf_index + c] = 0.;
                     }
                 }
 
-                if (src_index < (in->nb_samples * inlink->channels))
-                    src_index += inlink->channels;
+                if (src_index < (in->nb_samples * inlink->ch_layout.nb_channels))
+                    src_index += inlink->ch_layout.nb_channels;
 
-                s->limiter_buf_index += inlink->channels;
+                s->limiter_buf_index += inlink->ch_layout.nb_channels;
                 if (s->limiter_buf_index >= s->limiter_buf_size)
                     s->limiter_buf_index -= s->limiter_buf_size;
             }
 
-            dst += (subframe_length * inlink->channels);
+            dst += (subframe_length * inlink->ch_layout.nb_channels);
         }
 
         dst = (double *)out->data[0];
@@ -617,11 +617,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     case LINEAR_MODE:
         for (n = 0; n < in->nb_samples; n++) {
-            for (c = 0; c < inlink->channels; c++) {
+            for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
                 dst[c] = src[c] * s->offset;
             }
-            src += inlink->channels;
-            dst += inlink->channels;
+            src += inlink->ch_layout.nb_channels;
+            dst += inlink->ch_layout.nb_channels;
         }
 
         dst = (double *)out->data[0];
@@ -650,7 +650,7 @@ static int request_frame(AVFilterLink *outlink)
         int nb_samples, n, c, offset;
         AVFrame *frame;
 
-        nb_samples  = (s->buf_size / inlink->channels) - s->prev_nb_samples;
+        nb_samples  = (s->buf_size / inlink->ch_layout.nb_channels) - s->prev_nb_samples;
         nb_samples -= (frame_size(inlink->sample_rate, 100) - s->prev_nb_samples);
 
         frame = ff_get_audio_buffer(outlink, nb_samples);
@@ -661,16 +661,16 @@ static int request_frame(AVFilterLink *outlink)
         buf = s->buf;
         src = (double *)frame->data[0];
 
-        offset  = ((s->limiter_buf_size / inlink->channels) - s->prev_nb_samples) * inlink->channels;
-        offset -= (frame_size(inlink->sample_rate, 100) - s->prev_nb_samples) * inlink->channels;
+        offset  = ((s->limiter_buf_size / inlink->ch_layout.nb_channels) - s->prev_nb_samples) * inlink->ch_layout.nb_channels;
+        offset -= (frame_size(inlink->sample_rate, 100) - s->prev_nb_samples) * inlink->ch_layout.nb_channels;
         s->buf_index = s->buf_index - offset < 0 ? s->buf_index - offset + s->buf_size : s->buf_index - offset;
 
         for (n = 0; n < nb_samples; n++) {
-            for (c = 0; c < inlink->channels; c++) {
+            for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
                 src[c] = buf[s->buf_index + c];
             }
-            src += inlink->channels;
-            s->buf_index += inlink->channels;
+            src += inlink->ch_layout.nb_channels;
+            s->buf_index += inlink->ch_layout.nb_channels;
             if (s->buf_index >= s->buf_size)
                 s->buf_index -= s->buf_size;
         }
@@ -720,30 +720,30 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     LoudNormContext *s = ctx->priv;
 
-    s->r128_in = ff_ebur128_init(inlink->channels, inlink->sample_rate, 0, FF_EBUR128_MODE_I | FF_EBUR128_MODE_S | FF_EBUR128_MODE_LRA | FF_EBUR128_MODE_SAMPLE_PEAK);
+    s->r128_in = ff_ebur128_init(inlink->ch_layout.nb_channels, inlink->sample_rate, 0, FF_EBUR128_MODE_I | FF_EBUR128_MODE_S | FF_EBUR128_MODE_LRA | FF_EBUR128_MODE_SAMPLE_PEAK);
     if (!s->r128_in)
         return AVERROR(ENOMEM);
 
-    s->r128_out = ff_ebur128_init(inlink->channels, inlink->sample_rate, 0, FF_EBUR128_MODE_I | FF_EBUR128_MODE_S | FF_EBUR128_MODE_LRA | FF_EBUR128_MODE_SAMPLE_PEAK);
+    s->r128_out = ff_ebur128_init(inlink->ch_layout.nb_channels, inlink->sample_rate, 0, FF_EBUR128_MODE_I | FF_EBUR128_MODE_S | FF_EBUR128_MODE_LRA | FF_EBUR128_MODE_SAMPLE_PEAK);
     if (!s->r128_out)
         return AVERROR(ENOMEM);
 
-    if (inlink->channels == 1 && s->dual_mono) {
+    if (inlink->ch_layout.nb_channels == 1 && s->dual_mono) {
         ff_ebur128_set_channel(s->r128_in,  0, FF_EBUR128_DUAL_MONO);
         ff_ebur128_set_channel(s->r128_out, 0, FF_EBUR128_DUAL_MONO);
     }
 
-    s->buf_size = frame_size(inlink->sample_rate, 3000) * inlink->channels;
+    s->buf_size = frame_size(inlink->sample_rate, 3000) * inlink->ch_layout.nb_channels;
     s->buf = av_malloc_array(s->buf_size, sizeof(*s->buf));
     if (!s->buf)
         return AVERROR(ENOMEM);
 
-    s->limiter_buf_size = frame_size(inlink->sample_rate, 210) * inlink->channels;
+    s->limiter_buf_size = frame_size(inlink->sample_rate, 210) * inlink->ch_layout.nb_channels;
     s->limiter_buf = av_malloc_array(s->buf_size, sizeof(*s->limiter_buf));
     if (!s->limiter_buf)
         return AVERROR(ENOMEM);
 
-    s->prev_smp = av_malloc_array(inlink->channels, sizeof(*s->prev_smp));
+    s->prev_smp = av_malloc_array(inlink->ch_layout.nb_channels, sizeof(*s->prev_smp));
     if (!s->prev_smp)
         return AVERROR(ENOMEM);
 
@@ -758,7 +758,7 @@ static int config_input(AVFilterLink *inlink)
     s->buf_index =
     s->prev_buf_index =
     s->limiter_buf_index = 0;
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
     s->index = 1;
     s->limiter_state = OUT;
     s->offset = pow(10., s->offset / 20.);

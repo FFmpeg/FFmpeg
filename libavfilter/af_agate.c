@@ -150,19 +150,19 @@ static void gate(AudioGateContext *s,
     const double release_coeff = s->release_coeff;
     int n, c;
 
-    for (n = 0; n < nb_samples; n++, src += inlink->channels, dst += inlink->channels, scsrc += sclink->channels) {
+    for (n = 0; n < nb_samples; n++, src += inlink->ch_layout.nb_channels, dst += inlink->ch_layout.nb_channels, scsrc += sclink->ch_layout.nb_channels) {
         double abs_sample = fabs(scsrc[0] * level_sc), gain = 1.0;
         double factor;
         int detected;
 
         if (s->link == 1) {
-            for (c = 1; c < sclink->channels; c++)
+            for (c = 1; c < sclink->ch_layout.nb_channels; c++)
                 abs_sample = FFMAX(fabs(scsrc[c] * level_sc), abs_sample);
         } else {
-            for (c = 1; c < sclink->channels; c++)
+            for (c = 1; c < sclink->ch_layout.nb_channels; c++)
                 abs_sample += fabs(scsrc[c] * level_sc);
 
-            abs_sample /= sclink->channels;
+            abs_sample /= sclink->ch_layout.nb_channels;
         }
 
         if (s->detection)
@@ -181,7 +181,7 @@ static void gate(AudioGateContext *s,
                                s->range, s->mode);
 
         factor = ctx->is_disabled ? 1.f : level_in * gain * makeup;
-        for (c = 0; c < inlink->channels; c++)
+        for (c = 0; c < inlink->ch_layout.nb_channels; c++)
             dst[c] = src[c] * factor;
     }
 }
@@ -344,8 +344,8 @@ static int scconfig_output(AVFilterLink *outlink)
 
     outlink->time_base   = ctx->inputs[0]->time_base;
 
-    s->fifo[0] = av_audio_fifo_alloc(ctx->inputs[0]->format, ctx->inputs[0]->channels, 1024);
-    s->fifo[1] = av_audio_fifo_alloc(ctx->inputs[1]->format, ctx->inputs[1]->channels, 1024);
+    s->fifo[0] = av_audio_fifo_alloc(ctx->inputs[0]->format, ctx->inputs[0]->ch_layout.nb_channels, 1024);
+    s->fifo[1] = av_audio_fifo_alloc(ctx->inputs[1]->format, ctx->inputs[1]->ch_layout.nb_channels, 1024);
     if (!s->fifo[0] || !s->fifo[1])
         return AVERROR(ENOMEM);
 

@@ -38,7 +38,7 @@
 typedef struct ANullContext {
     const AVClass *class;
     char   *channel_layout_str;
-    uint64_t channel_layout;
+    AVChannelLayout ch_layout;
     char   *sample_rate_str;
     int     sample_rate;
     int64_t duration;
@@ -72,7 +72,7 @@ static av_cold int init(AVFilterContext *ctx)
                                      null->sample_rate_str, ctx)) < 0)
         return ret;
 
-    if ((ret = ff_parse_channel_layout(&null->channel_layout, NULL,
+    if ((ret = ff_parse_channel_layout(&null->ch_layout, NULL,
                                         null->channel_layout_str, ctx)) < 0)
         return ret;
 
@@ -82,7 +82,7 @@ static av_cold int init(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     ANullContext *null = ctx->priv;
-    int64_t chlayouts[] = { null->channel_layout, -1 };
+    const AVChannelLayout chlayouts[] = { null->ch_layout, { 0 } };
     int sample_rates[] = { null->sample_rate, -1 };
     int ret;
 
@@ -128,6 +128,12 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    ANullContext *s = ctx->priv;
+    av_channel_layout_uninit(&s->ch_layout);
+}
+
 static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
     {
         .name          = "default",
@@ -140,6 +146,7 @@ const AVFilter ff_asrc_anullsrc = {
     .name          = "anullsrc",
     .description   = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
     .init          = init,
+    .uninit        = uninit,
     .priv_size     = sizeof(ANullContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_asrc_anullsrc_outputs),

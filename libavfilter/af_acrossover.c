@@ -356,8 +356,8 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, int jobnr, i
     AudioCrossoverContext *s = ctx->priv;                                                   \
     AVFrame *in = arg;                                                           \
     AVFrame **frames = s->frames;                                                           \
-    const int start = (in->channels * jobnr) / nb_jobs;                                     \
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;                                   \
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;                        \
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;                      \
     const int nb_samples = in->nb_samples;                                                  \
     const int nb_outs = ctx->nb_outputs;                                                    \
     const int first_order = s->first_order;                                                 \
@@ -496,7 +496,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         goto fail;
 
     ff_filter_execute(ctx, s->filter_channels, in, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     for (int i = 0; i < ctx->nb_outputs; i++) {
         if (ff_outlink_get_status(ctx->outputs[i])) {

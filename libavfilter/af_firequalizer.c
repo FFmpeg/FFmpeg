@@ -607,14 +607,15 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     if (s->dumpfile && (!s->dump_buf || !s->analysis_rdft || !(dump_fp = fopen(s->dumpfile, "w"))))
         av_log(ctx, AV_LOG_WARNING, "dumping failed.\n");
 
-    vars[VAR_CHS] = inlink->channels;
-    vars[VAR_CHLAYOUT] = inlink->channel_layout;
+    vars[VAR_CHS] = inlink->ch_layout.nb_channels;
+    vars[VAR_CHLAYOUT] = inlink->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                         inlink->ch_layout.u.mask : 0;
     vars[VAR_SR] = inlink->sample_rate;
-    for (ch = 0; ch < inlink->channels; ch++) {
+    for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
         float *rdft_buf = s->kernel_tmp_buf + ch * s->rdft_len;
         double result;
         vars[VAR_CH] = ch;
-        vars[VAR_CHID] = av_channel_layout_extract_channel(inlink->channel_layout, ch);
+        vars[VAR_CHID] = av_channel_layout_channel_from_index(&inlink->ch_layout, ch);
         vars[VAR_F] = 0.0;
         if (xlog)
             vars[VAR_F] = log2(0.05 * vars[VAR_F]);
@@ -715,7 +716,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
             break;
     }
 
-    memcpy(s->kernel_buf, s->kernel_tmp_buf, (s->multi ? inlink->channels : 1) * s->rdft_len * sizeof(*s->kernel_buf));
+    memcpy(s->kernel_buf, s->kernel_tmp_buf, (s->multi ? inlink->ch_layout.nb_channels : 1) * s->rdft_len * sizeof(*s->kernel_buf));
     av_expr_free(gain_expr);
     if (dump_fp)
         fclose(dump_fp);
@@ -754,7 +755,7 @@ static int config_input(AVFilterLink *inlink)
     if (!(s->rdft = av_rdft_init(rdft_bits, DFT_R2C)) || !(s->irdft = av_rdft_init(rdft_bits, IDFT_C2R)))
         return AVERROR(ENOMEM);
 
-    if (s->fft2 && !s->multi && inlink->channels > 1 && !(s->fft_ctx = av_fft_init(rdft_bits, 0)))
+    if (s->fft2 && !s->multi && inlink->ch_layout.nb_channels > 1 && !(s->fft_ctx = av_fft_init(rdft_bits, 0)))
         return AVERROR(ENOMEM);
 
     if (s->min_phase) {
@@ -796,15 +797,15 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->analysis_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->analysis_buf));
-    s->kernel_tmp_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->channels : 1), sizeof(*s->kernel_tmp_buf));
-    s->kernel_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->channels : 1), sizeof(*s->kernel_buf));
-    s->conv_buf   = av_calloc(2 * s->rdft_len * inlink->channels, sizeof(*s->conv_buf));
-    s->conv_idx   = av_calloc(inlink->channels, sizeof(*s->conv_idx));
+    s->kernel_tmp_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->ch_layout.nb_channels : 1), sizeof(*s->kernel_tmp_buf));
+    s->kernel_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->ch_layout.nb_channels : 1), sizeof(*s->kernel_buf));
+    s->conv_buf   = av_calloc(2 * s->rdft_len * inlink->ch_layout.nb_channels, sizeof(*s->conv_buf));
+    s->conv_idx   = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->conv_idx));
     if (!s->analysis_buf || !s->kernel_tmp_buf || !s->kernel_buf || !s->conv_buf || !s->conv_idx)
         return AVERROR(ENOMEM);
 
     av_log(ctx, AV_LOG_DEBUG, "sample_rate = %d, channels = %d, analysis_rdft_len = %d, rdft_len = %d, fir_len = %d, nsamples_max = %d.\n",
-           inlink->sample_rate, inlink->channels, s->analysis_rdft_len, s->rdft_len, s->fir_len, s->nsamples_max);
+           inlink->sample_rate, inlink->ch_layout.nb_channels, s->analysis_rdft_len, s->rdft_len, s->fir_len, s->nsamples_max);
 
     if (s->fixed)
         inlink->min_samples = inlink->max_samples = s->nsamples_max;
@@ -819,19 +820,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int ch;
 
     if (!s->min_phase) {
-        for (ch = 0; ch + 1 < inlink->channels && s->fft_ctx; ch += 2) {
+        for (ch = 0; ch + 1 < inlink->ch_layout.nb_channels && s->fft_ctx; ch += 2) {
             fast_convolute2(s, s->kernel_buf, (FFTComplex *)(s->conv_buf + 2 * ch * s->rdft_len),
                             s->conv_idx + ch, (float *) frame->extended_data[ch],
                             (float *) frame->extended_data[ch+1], frame->nb_samples);
         }
 
-        for ( ; ch < inlink->channels; ch++) {
+        for ( ; ch < inlink->ch_layout.nb_channels; ch++) {
             fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
                         s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
                         (float *) frame->extended_data[ch], frame->nb_samples);
         }
     } else {
-        for (ch = 0; ch < inlink->channels; ch++) {
+        for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
             fast_convolute_nonlinear(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
                                      s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
                                      (float *) frame->extended_data[ch], frame->nb_samples);
@@ -861,7 +862,7 @@ static int request_frame(AVFilterLink *outlink)
         if (!frame)
             return AVERROR(ENOMEM);
 
-        av_samples_set_silence(frame->extended_data, 0, frame->nb_samples, outlink->channels, frame->format);
+        av_samples_set_silence(frame->extended_data, 0, frame->nb_samples, outlink->ch_layout.nb_channels, frame->format);
         frame->pts = s->next_pts;
         s->remaining -= frame->nb_samples;
         ret = filter_frame(ctx->inputs[0], frame);

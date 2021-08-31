@@ -73,7 +73,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     if (s->limitergain > 0) {
-        for (i = 0; i < inlink->channels; i++) {
+        for (i = 0; i < inlink->ch_layout.nb_channels; i++) {
             const int32_t *src = (int32_t *)in->extended_data[i];
             int32_t *dst = (int32_t *)out->extended_data[i];
 
@@ -98,7 +98,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
         }
     } else {
-        for (i = 0; i < inlink->channels; i++) {
+        for (i = 0; i < inlink->ch_layout.nb_channels; i++) {
             const int32_t *src = (int32_t *)in->extended_data[i];
             int32_t *dst = (int32_t *)out->extended_data[i];
 

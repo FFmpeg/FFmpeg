@@ -94,7 +94,7 @@ static int query_formats(AVFilterContext *ctx)
 
     formats = ff_make_format_list(sample_fmts);
     if ((ret = ff_formats_ref         (formats, &inlink->outcfg.formats        )) < 0 ||
-        (ret = ff_add_channel_layout  (&layout, AV_CH_LAYOUT_STEREO         )) < 0 ||
+        (ret = ff_add_channel_layout  (&layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) < 0 ||
         (ret = ff_channel_layouts_ref (layout , &inlink->outcfg.channel_layouts)) < 0)
         return ret;
 
@@ -190,7 +190,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base = av_inv_q(outlink->frame_rate);
 
     av_audio_fifo_free(s->fifo);
-    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, s->win_size);
+    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->ch_layout.nb_channels, s->win_size);
     if (!s->fifo)
         return AVERROR(ENOMEM);
     return 0;

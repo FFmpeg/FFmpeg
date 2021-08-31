@@ -135,7 +135,7 @@ static int config_input(AVFilterLink *inlink)
 
     if (s->rbs)
         rubberband_delete(s->rbs);
-    s->rbs = rubberband_new(inlink->sample_rate, inlink->channels, opts, 1. / s->tempo, s->pitch);
+    s->rbs = rubberband_new(inlink->sample_rate, inlink->ch_layout.nb_channels, opts, 1. / s->tempo, s->pitch);
     if (!s->rbs)
         return AVERROR(ENOMEM);
 

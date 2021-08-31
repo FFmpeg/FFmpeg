@@ -353,7 +353,7 @@ static int config_input(AVFilterLink *inlink)
     AudioRNNContext *s = ctx->priv;
     int ret = 0;
 
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
 
     if (!s->st)
         s->st = av_calloc(s->channels, sizeof(DenoiseState));
@@ -1413,8 +1413,8 @@ static int rnnoise_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int start = (out->channels * jobnr) / nb_jobs;
-    const int end = (out->channels * (jobnr+1)) / nb_jobs;
+    const int start = (out->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (out->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int ch = start; ch < end; ch++) {
         rnnoise_channel(s, &s->st[ch],
@@ -1442,7 +1442,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in; td.out = out;
     ff_filter_execute(ctx, rnnoise_channels, &td, NULL,
-                      FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

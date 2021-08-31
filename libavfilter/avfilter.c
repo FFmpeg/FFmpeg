@@ -204,6 +204,7 @@ void avfilter_link_free(AVFilterLink **link)
 
     ff_framequeue_free(&(*link)->fifo);
     ff_frame_pool_uninit((FFFramePool**)&(*link)->frame_pool);
+    av_channel_layout_uninit(&(*link)->ch_layout);
 
     av_freep(link);
 }
@@ -405,7 +406,7 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
                 end ? "\n" : "");
     } else {
         char buf[128];
-        av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
+        av_channel_layout_describe(&link->ch_layout, buf, sizeof(buf));
 
         ff_tlog(ctx,
                 "link[%p r:%d cl:%s fmt:%s %s->%s]%s",
@@ -1036,11 +1037,7 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
             av_log(link->dst, AV_LOG_ERROR, "Format change is not supported\n");
             goto error;
         }
-        if (frame->channels != link->channels) {
-            av_log(link->dst, AV_LOG_ERROR, "Channel count change is not supported\n");
-            goto error;
-        }
-        if (frame->channel_layout != link->channel_layout) {
+        if (av_channel_layout_compare(&frame->ch_layout, &link->ch_layout)) {
             av_log(link->dst, AV_LOG_ERROR, "Channel layout change is not supported\n");
             goto error;
         }
@@ -1117,7 +1114,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
     for (i = 0; i < nb_frames; i++) {
         frame = ff_framequeue_take(&link->fifo);
         av_samples_copy(buf->extended_data, frame->extended_data, p, 0,
-                        frame->nb_samples, link->channels, link->format);
+                        frame->nb_samples, link->ch_layout.nb_channels, link->format);
         p += frame->nb_samples;
         av_frame_free(&frame);
     }
@@ -1125,7 +1122,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
         unsigned n = nb_samples - p;
         frame = ff_framequeue_peek(&link->fifo, 0);
         av_samples_copy(buf->extended_data, frame->extended_data, p, 0, n,
-                        link->channels, link->format);
+                        link->ch_layout.nb_channels, link->format);
         ff_framequeue_skip_samples(&link->fifo, n, link->time_base);
     }
 

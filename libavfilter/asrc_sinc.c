@@ -76,7 +76,7 @@ static int activate(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     SincContext *s = ctx->priv;
-    static const int64_t chlayouts[] = { AV_CH_LAYOUT_MONO, -1 };
+    static const AVChannelLayout chlayouts[] = { AV_CHANNEL_LAYOUT_MONO, { 0 } };
     int sample_rates[] = { s->sample_rate, -1 };
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_FLT,
                                                        AV_SAMPLE_FMT_NONE };

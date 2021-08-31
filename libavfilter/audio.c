@@ -37,11 +37,15 @@ AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples)
 AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
     AVFrame *frame = NULL;
-    int channels = link->channels;
+    int channels = link->ch_layout.nb_channels;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     int channel_layout_nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
     int align = av_cpu_max_align();
 
     av_assert0(channels == channel_layout_nb_channels || !channel_layout_nb_channels);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (!link->frame_pool) {
         link->frame_pool = ff_frame_pool_audio_init(av_buffer_allocz, channels,
@@ -76,7 +80,16 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
         return NULL;
 
     frame->nb_samples = nb_samples;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->channel_layout = link->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (link->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC &&
+        av_channel_layout_copy(&frame->ch_layout, &link->ch_layout) < 0) {
+        av_frame_free(&frame);
+        return NULL;
+    }
     frame->sample_rate = link->sample_rate;
 
     av_samples_set_silence(frame->extended_data, 0, nb_samples, channels, link->format);

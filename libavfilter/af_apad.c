@@ -121,7 +121,7 @@ static int request_frame(AVFilterLink *outlink)
 
         av_samples_set_silence(outsamplesref->extended_data, 0,
                                n_out,
-                               outsamplesref->channels,
+                               outsamplesref->ch_layout.nb_channels,
                                outsamplesref->format);
 
         outsamplesref->pts = s->next_pts;

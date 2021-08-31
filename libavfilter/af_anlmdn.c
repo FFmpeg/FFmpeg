@@ -141,7 +141,7 @@ static int config_filter(AVFilterContext *ctx)
         if (new_cache) {
             if (s->cache)
                 av_samples_copy(new_cache->extended_data, s->cache->extended_data, 0, 0,
-                                s->cache->nb_samples, new_cache->channels, new_cache->format);
+                                s->cache->nb_samples, new_cache->ch_layout.nb_channels, new_cache->format);
             av_frame_free(&s->cache);
             s->cache = new_cache;
         } else {
@@ -156,7 +156,7 @@ static int config_filter(AVFilterContext *ctx)
         if (new_window) {
             if (s->window)
                 av_samples_copy(new_window->extended_data, s->window->extended_data, 0, 0,
-                                s->window->nb_samples, new_window->channels, new_window->format);
+                                s->window->nb_samples, new_window->ch_layout.nb_channels, new_window->format);
             av_frame_free(&s->window);
             s->window = new_window;
         } else {
@@ -285,7 +285,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->in = in;
-    ff_filter_execute(ctx, filter_channel, out, NULL, inlink->channels);
+    ff_filter_execute(ctx, filter_channel, out, NULL, inlink->ch_layout.nb_channels);
 
     if (out != in)
         av_frame_free(&in);

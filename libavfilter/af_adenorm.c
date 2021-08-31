@@ -200,8 +200,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     ThreadData *td = arg;
     AVFrame *out = td->out;
     AVFrame *in = td->in;
-    const int start = (in->channels * jobnr) / nb_jobs;
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int ch = start; ch < end; ch++) {
         s->filter(ctx, out->extended_data[ch],
@@ -234,7 +234,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->level = exp(s->level_db / 20. * M_LN10);
     td.in = in; td.out = out;
     ff_filter_execute(ctx, filter_channels, &td, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     s->in_samples += in->nb_samples;
 

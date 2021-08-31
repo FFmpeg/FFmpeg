@@ -81,7 +81,7 @@ static int config_output(AVFilterLink *outlink)
     float overlap, scale;
     int ret;
 
-    s->nb_channels = outlink->channels;
+    s->nb_channels = outlink->ch_layout.nb_channels;
     s->window_func_lut = av_realloc_f(s->window_func_lut, s->win_size,
                                       sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
@@ -471,7 +471,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     metadata = &out->metadata;
     ff_filter_execute(ctx, filter_channel, in, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     set_metadata(s, metadata);
 

@@ -177,7 +177,7 @@ static int config_output(AVFilterLink *outlink)
         av_log(outlink->src, AV_LOG_ERROR, "delay is too small\n");
         return AVERROR(EINVAL);
     }
-    s->delay_buffer = av_calloc(s->delay_buffer_length, sizeof(*s->delay_buffer) * inlink->channels);
+    s->delay_buffer = av_calloc(s->delay_buffer_length, sizeof(*s->delay_buffer) * inlink->ch_layout.nb_channels);
     s->modulation_buffer_length = inlink->sample_rate / s->speed + 0.5;
     s->modulation_buffer = av_malloc_array(s->modulation_buffer_length, sizeof(*s->modulation_buffer));
 
@@ -223,7 +223,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
     }
 
     s->phaser(s, inbuf->extended_data, outbuf->extended_data,
-              outbuf->nb_samples, outbuf->channels);
+              outbuf->nb_samples, outbuf->ch_layout.nb_channels);
 
     if (inbuf != outbuf)
         av_frame_free(&inbuf);

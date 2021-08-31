@@ -79,7 +79,8 @@ typedef struct DynamicAudioNormalizerContext {
     int channels;
     int sample_advance;
     int eof;
-    uint64_t channels_to_filter;
+    char *channels_to_filter;
+    AVChannelLayout ch_layout;
     int64_t pts;
 
     cqueue **gain_history_original;
@@ -116,8 +117,8 @@ static const AVOption dynaudnorm_options[] = {
     { "s",           "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
     { "threshold",   "set the threshold value",          OFFSET(threshold),         AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
     { "t",           "set the threshold value",          OFFSET(threshold),         AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
-    { "channels",    "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS },
-    { "h",           "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS },
+    { "channels",    "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_STRING, {.str="all"}, 0, 0, FLAGS },
+    { "h",           "set channels to filter",           OFFSET(channels_to_filter),AV_OPT_TYPE_STRING, {.str="all"}, 0, 0, FLAGS },
     { "overlap",     "set the frame overlap",            OFFSET(overlap),           AV_OPT_TYPE_DOUBLE, {.dbl=.0},     0.0,   1.0, FLAGS },
     { "o",           "set the frame overlap",            OFFSET(overlap),           AV_OPT_TYPE_DOUBLE, {.dbl=.0},     0.0,   1.0, FLAGS },
     { NULL }
@@ -128,13 +129,17 @@ AVFILTER_DEFINE_CLASS(dynaudnorm);
 static av_cold int init(AVFilterContext *ctx)
 {
     DynamicAudioNormalizerContext *s = ctx->priv;
+    int ret = 0;
 
     if (!(s->filter_size & 1)) {
         av_log(ctx, AV_LOG_WARNING, "filter size %d is invalid. Changing to an odd value.\n", s->filter_size);
         s->filter_size |= 1;
     }
 
-    return 0;
+    if (strcmp(s->channels_to_filter, "all"))
+        ret = av_channel_layout_from_string(&s->ch_layout, s->channels_to_filter);
+
+    return ret;
 }
 
 static inline int frame_size(int sample_rate, int frame_len_msec)
@@ -298,6 +303,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->weights);
 
+    av_channel_layout_uninit(&s->ch_layout);
+
     ff_bufqueue_discard_all(&s->queue);
 
     av_frame_free(&s->window);
@@ -310,17 +317,17 @@ static int config_input(AVFilterLink *inlink)
 
     uninit(ctx);
 
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
     s->frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
     av_log(ctx, AV_LOG_DEBUG, "frame len %d\n", s->frame_len);
 
-    s->prev_amplification_factor = av_malloc_array(inlink->channels, sizeof(*s->prev_amplification_factor));
-    s->dc_correction_value = av_calloc(inlink->channels, sizeof(*s->dc_correction_value));
-    s->compress_threshold = av_calloc(inlink->channels, sizeof(*s->compress_threshold));
-    s->gain_history_original = av_calloc(inlink->channels, sizeof(*s->gain_history_original));
-    s->gain_history_minimum = av_calloc(inlink->channels, sizeof(*s->gain_history_minimum));
-    s->gain_history_smoothed = av_calloc(inlink->channels, sizeof(*s->gain_history_smoothed));
-    s->threshold_history = av_calloc(inlink->channels, sizeof(*s->threshold_history));
+    s->prev_amplification_factor = av_malloc_array(inlink->ch_layout.nb_channels, sizeof(*s->prev_amplification_factor));
+    s->dc_correction_value = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->dc_correction_value));
+    s->compress_threshold = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->compress_threshold));
+    s->gain_history_original = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->gain_history_original));
+    s->gain_history_minimum = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->gain_history_minimum));
+    s->gain_history_smoothed = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->gain_history_smoothed));
+    s->threshold_history = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->threshold_history));
     s->weights = av_malloc_array(MAX_FILTER_SIZE, sizeof(*s->weights));
     s->is_enabled = cqueue_create(s->filter_size, MAX_FILTER_SIZE);
     if (!s->prev_amplification_factor || !s->dc_correction_value ||
@@ -330,7 +337,7 @@ static int config_input(AVFilterLink *inlink)
         !s->is_enabled || !s->weights)
         return AVERROR(ENOMEM);
 
-    for (int c = 0; c < inlink->channels; c++) {
+    for (int c = 0; c < inlink->ch_layout.nb_channels; c++) {
         s->prev_amplification_factor[c] = 1.0;
 
         s->gain_history_original[c] = cqueue_create(s->filter_size, MAX_FILTER_SIZE);
@@ -377,7 +384,7 @@ static double find_peak_magnitude(AVFrame *frame, int channel)
     double max = DBL_EPSILON;
 
     if (channel == -1) {
-        for (int c = 0; c < frame->channels; c++) {
+        for (int c = 0; c < frame->ch_layout.nb_channels; c++) {
             double *data_ptr = (double *)frame->extended_data[c];
 
             for (int i = 0; i < frame->nb_samples; i++)
@@ -398,7 +405,7 @@ static double compute_frame_rms(AVFrame *frame, int channel)
     double rms_value = 0.0;
 
     if (channel == -1) {
-        for (int c = 0; c < frame->channels; c++) {
+        for (int c = 0; c < frame->ch_layout.nb_channels; c++) {
             const double *data_ptr = (double *)frame->extended_data[c];
 
             for (int i = 0; i < frame->nb_samples; i++) {
@@ -406,7 +413,7 @@ static double compute_frame_rms(AVFrame *frame, int channel)
             }
         }
 
-        rms_value /= frame->nb_samples * frame->channels;
+        rms_value /= frame->nb_samples * frame->ch_layout.nb_channels;
     } else {
         const double *data_ptr = (double *)frame->extended_data[channel];
         for (int i = 0; i < frame->nb_samples; i++) {
@@ -526,7 +533,9 @@ static inline double update_value(double new, double old, double aggressiveness)
 
 static inline int bypass_channel(DynamicAudioNormalizerContext *s, AVFrame *frame, int ch)
 {
-    return !(av_channel_layout_extract_channel(frame->channel_layout, ch) & s->channels_to_filter);
+    enum AVChannel channel = av_channel_layout_channel_from_index(&frame->ch_layout, ch);
+
+    return av_channel_layout_index_from_channel(&s->ch_layout, channel) < 0;
 }
 
 static void perform_dc_correction(DynamicAudioNormalizerContext *s, AVFrame *frame)
@@ -702,7 +711,7 @@ static int analyze_frame(DynamicAudioNormalizerContext *s, AVFilterLink *outlink
         analyze_frame = s->window;
     } else {
         av_samples_copy(s->window->extended_data, (*frame)->extended_data, 0, 0,
-                        s->frame_len, (*frame)->channels, (*frame)->format);
+                        s->frame_len, (*frame)->ch_layout.nb_channels, (*frame)->format);
         analyze_frame = *frame;
     }
 

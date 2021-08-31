@@ -57,7 +57,7 @@ typedef struct EvalContext {
     const AVClass *class;
     char *sample_rate_str;
     int sample_rate;
-    int64_t chlayout;
+    AVChannelLayout chlayout;
     char *chlayout_str;
     int nb_channels;            ///< number of output channels
     int nb_in_channels;         ///< number of input channels
@@ -70,7 +70,6 @@ typedef struct EvalContext {
     uint64_t n;
     double var_values[VAR_VARS_NB];
     double *channel_values;
-    int64_t out_channel_layout;
 } EvalContext;
 
 static double val(void *priv, double ch)
@@ -181,7 +180,7 @@ static av_cold int init(AVFilterContext *ctx)
             if (ret < 0)
                 return ret;
 
-            ret = parse_channel_expressions(ctx, av_get_channel_layout_nb_channels(eval->chlayout));
+            ret = parse_channel_expressions(ctx, eval->chlayout.nb_channels);
             if (ret < 0)
                 return ret;
         }
@@ -190,8 +189,8 @@ static av_cold int init(AVFilterContext *ctx)
         if ((ret = parse_channel_expressions(ctx, -1)) < 0)
             return ret;
 
-        eval->chlayout = av_get_default_channel_layout(eval->nb_channels);
-        if (!eval->chlayout && eval->nb_channels <= 0) {
+        av_channel_layout_default(&eval->chlayout, eval->nb_channels);
+        if (eval->nb_channels <= 0) {
             av_log(ctx, AV_LOG_ERROR, "Invalid number of channels '%d' provided\n",
                    eval->nb_channels);
             return AVERROR(EINVAL);
@@ -217,6 +216,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
     av_freep(&eval->expr);
     av_freep(&eval->channel_values);
+    av_channel_layout_uninit(&eval->chlayout);
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -229,9 +229,9 @@ static int config_props(AVFilterLink *outlink)
 
     eval->var_values[VAR_S] = eval->sample_rate;
     eval->var_values[VAR_NB_IN_CHANNELS] = NAN;
-    eval->var_values[VAR_NB_OUT_CHANNELS] = outlink->channels;
+    eval->var_values[VAR_NB_OUT_CHANNELS] = outlink->ch_layout.nb_channels;
 
-    av_get_channel_layout_string(buf, sizeof(buf), 0, eval->chlayout);
+    av_channel_layout_describe(&eval->chlayout, buf, sizeof(buf));
 
     av_log(outlink->src, AV_LOG_VERBOSE,
            "sample_rate:%d chlayout:%s duration:%"PRId64"\n",
@@ -244,7 +244,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
-    int64_t chlayouts[] = { eval->chlayout ? eval->chlayout : FF_COUNT2LAYOUT(eval->nb_channels) , -1 };
+    AVChannelLayout chlayouts[] = { eval->chlayout.nb_channels ? eval->chlayout : FF_COUNT2LAYOUT(eval->nb_channels), { 0 } };
     int sample_rates[] = { eval->sample_rate, -1 };
     int ret;
 
@@ -365,9 +365,7 @@ static int aeval_query_formats(AVFilterContext *ctx)
     } else {
         // outlink supports only requested output channel layout
         layouts = NULL;
-        if ((ret = ff_add_channel_layout(&layouts,
-                              eval->out_channel_layout ? eval->out_channel_layout :
-                              FF_COUNT2LAYOUT(eval->nb_channels))) < 0)
+        if ((ret = ff_add_channel_layout(&layouts, &FF_COUNT2LAYOUT(eval->nb_channels))) < 0)
             return ret;
         if ((ret = ff_channel_layouts_ref(layouts, &outlink->incfg.channel_layouts)) < 0)
             return ret;
@@ -387,20 +385,21 @@ static int aeval_config_output(AVFilterLink *outlink)
     int ret;
 
     if (eval->same_chlayout) {
-        eval->chlayout = inlink->channel_layout;
+        if ((ret = av_channel_layout_copy(&eval->chlayout, &inlink->ch_layout)) < 0)
+            return ret;
 
-        if ((ret = parse_channel_expressions(ctx, inlink->channels)) < 0)
+        if ((ret = parse_channel_expressions(ctx, inlink->ch_layout.nb_channels)) < 0)
             return ret;
     }
 
     eval->n = 0;
-    eval->nb_in_channels = eval->var_values[VAR_NB_IN_CHANNELS] = inlink->channels;
-    eval->var_values[VAR_NB_OUT_CHANNELS] = outlink->channels;
+    eval->nb_in_channels = eval->var_values[VAR_NB_IN_CHANNELS] = inlink->ch_layout.nb_channels;
+    eval->var_values[VAR_NB_OUT_CHANNELS] = outlink->ch_layout.nb_channels;
     eval->var_values[VAR_S] = inlink->sample_rate;
     eval->var_values[VAR_T] = NAN;
 
     eval->channel_values = av_realloc_f(eval->channel_values,
-                                        inlink->channels, sizeof(*eval->channel_values));
+                                        inlink->ch_layout.nb_channels, sizeof(*eval->channel_values));
     if (!eval->channel_values)
         return AVERROR(ENOMEM);
 
@@ -430,10 +429,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         eval->var_values[VAR_N] = eval->n;
         eval->var_values[VAR_T] = t0 + i * (double)1/inlink->sample_rate;
 
-        for (j = 0; j < inlink->channels; j++)
+        for (j = 0; j < inlink->ch_layout.nb_channels; j++)
             eval->channel_values[j] = *((double *) in->extended_data[j] + i);
 
-        for (j = 0; j < outlink->channels; j++) {
+        for (j = 0; j < outlink->ch_layout.nb_channels; j++) {
             eval->var_values[VAR_CH] = j;
             *((double *) out->extended_data[j] + i) =
                 av_expr_eval(eval->expr[j], eval->var_values, eval);

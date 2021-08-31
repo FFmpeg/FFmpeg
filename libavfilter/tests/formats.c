@@ -97,6 +97,7 @@ const int64_t avfilter_all_channel_layouts[] = {
 
 int main(void)
 {
+    AVChannelLayout layout = { 0 };
     const int64_t *cl;
     char buf[512];
     int i;
@@ -124,17 +125,19 @@ int main(void)
     };
 
     for (cl = avfilter_all_channel_layouts; *cl != -1; cl++) {
-        av_get_channel_layout_string(buf, sizeof(buf), -1, *cl);
+        av_channel_layout_from_mask(&layout, *cl);
+        av_channel_layout_describe(&layout, buf, sizeof(buf));
         printf("%s\n", buf);
+        av_channel_layout_uninit(&layout);
     }
 
     for ( i = 0; i<FF_ARRAY_ELEMS(teststrings); i++) {
-        int64_t layout = -1;
         int count = -1;
         int ret;
+        av_channel_layout_uninit(&layout);
         ret = ff_parse_channel_layout(&layout, &count, teststrings[i], NULL);
 
-        printf ("%d = ff_parse_channel_layout(%016"PRIX64", %2d, %s);\n", ret ? -1 : 0, layout, count, teststrings[i]);
+        printf ("%d = ff_parse_channel_layout(%016"PRIX64", %2d, %s);\n", ret ? -1 : 0, layout.order == AV_CHANNEL_ORDER_NATIVE ? layout.u.mask : 0, count, teststrings[i]);
     }
 
     return 0;

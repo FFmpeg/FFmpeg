@@ -103,7 +103,7 @@ static void draw_curves(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *out
 
     memset(out->data[0], 0, s->h * out->linesize[0]);
 
-    for (ch = 0; ch < inlink->channels; ch++) {
+    for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
         uint8_t fg[4] = { 0xff, 0xff, 0xff, 0xff };
         int prev_v = -1;
         double f;
@@ -577,8 +577,8 @@ static int config_input(AVFilterLink *inlink)
     if (!args)
         return AVERROR(ENOMEM);
 
-    s->nb_allocated = 32 * inlink->channels;
-    s->filters = av_calloc(inlink->channels, 32 * sizeof(*s->filters));
+    s->nb_allocated = 32 * inlink->ch_layout.nb_channels;
+    s->filters = av_calloc(inlink->ch_layout.nb_channels, 32 * sizeof(*s->filters));
     if (!s->filters) {
         s->nb_allocated = 0;
         av_free(args);
@@ -610,7 +610,7 @@ static int config_input(AVFilterLink *inlink)
             s->filters[s->nb_filters].ignore = 1;
 
         if (s->filters[s->nb_filters].channel < 0 ||
-            s->filters[s->nb_filters].channel >= inlink->channels)
+            s->filters[s->nb_filters].channel >= inlink->ch_layout.nb_channels)
             s->filters[s->nb_filters].ignore = 1;
 
         s->filters[s->nb_filters].type = av_clip(s->filters[s->nb_filters].type, 0, NB_TYPES - 1);
@@ -698,8 +698,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg,
 {
     AudioNEqualizerContext *s = ctx->priv;
     AVFrame *buf = arg;
-    const int start = (buf->channels * jobnr) / nb_jobs;
-    const int end = (buf->channels * (jobnr+1)) / nb_jobs;
+    const int start = (buf->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (buf->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int i = 0; i < s->nb_filters; i++) {
         EqualizatorFilter *f = &s->filters[i];
@@ -731,7 +731,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if (!ctx->is_disabled)
         ff_filter_execute(ctx, filter_channels, buf, NULL,
-                          FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                          FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     if (s->draw_curves) {
         AVFrame *clone;

@@ -70,8 +70,8 @@ static int aconfig_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     LoopContext *s  = ctx->priv;
 
-    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, 8192);
-    s->left = av_audio_fifo_alloc(inlink->format, inlink->channels, 8192);
+    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->ch_layout.nb_channels, 8192);
+    s->left = av_audio_fifo_alloc(inlink->format, inlink->ch_layout.nb_channels, 8192);
     if (!s->fifo || !s->left)
         return AVERROR(ENOMEM);
 

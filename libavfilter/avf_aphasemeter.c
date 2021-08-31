@@ -101,7 +101,7 @@ static int query_formats(AVFilterContext *ctx)
     formats = ff_make_format_list(sample_fmts);
     if ((ret = ff_formats_ref         (formats, &inlink->outcfg.formats        )) < 0 ||
         (ret = ff_formats_ref         (formats, &outlink->incfg.formats        )) < 0 ||
-        (ret = ff_add_channel_layout  (&layout, AV_CH_LAYOUT_STEREO         )) < 0 ||
+        (ret = ff_add_channel_layout  (&layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO )) < 0 ||
         (ret = ff_channel_layouts_ref (layout , &inlink->outcfg.channel_layouts)) < 0 ||
         (ret = ff_channel_layouts_ref (layout , &outlink->incfg.channel_layouts)) < 0)
         return ret;

@@ -210,8 +210,8 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, \
     ThreadData *td = arg;                                           \
     AVFrame *out = td->out;                                         \
     AVFrame *in = td->in;                                           \
-    const int start = (in->channels * jobnr) / nb_jobs;             \
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;           \
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs; \
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs; \
     const double level = s->level;                                  \
                                                                     \
     for (int ch = start; ch < end; ch++) {                          \
@@ -286,7 +286,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in; td.out = out;
     ff_filter_execute(ctx, s->filter_channels, &td, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

@@ -104,7 +104,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    if (ff_add_channel_layout(&layouts, AV_CH_LAYOUT_STEREO) != 0)
+    if (ff_add_channel_layout(&layouts, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) != 0)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);
     if (ret < 0)

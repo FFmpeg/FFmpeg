@@ -263,7 +263,7 @@ static int send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
         if (!buf)
             return AVERROR(ENOMEM);
         av_samples_set_silence(buf->extended_data, 0, frame_nb_samples,
-                               outlink->channels, outlink->format);
+                               outlink->ch_layout.nb_channels, outlink->format);
         buf->pts = base_pts + av_rescale_q(sent, rate_tb, outlink->time_base);
         ret = ff_filter_frame(outlink, buf);
         if (ret < 0)

@@ -41,7 +41,7 @@ static void sdr(AVFilterContext *ctx, const AVFrame *u, const AVFrame *v)
 {
     AudioSDRContext *s = ctx->priv;
 
-    for (int ch = 0; ch < u->channels; ch++) {
+    for (int ch = 0; ch < u->ch_layout.nb_channels; ch++) {
         const double *const us = (double *)u->extended_data[ch];
         const double *const vs = (double *)v->extended_data[ch];
         double sum_uv = s->sum_uv[ch];
@@ -117,10 +117,10 @@ static int config_output(AVFilterLink *outlink)
 
     s->pts = AV_NOPTS_VALUE;
 
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
 
-    s->sum_u  = av_calloc(outlink->channels, sizeof(*s->sum_u));
-    s->sum_uv = av_calloc(outlink->channels, sizeof(*s->sum_uv));
+    s->sum_u  = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->sum_u));
+    s->sum_uv = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->sum_uv));
     if (!s->sum_u || !s->sum_uv)
         return AVERROR(ENOMEM);
 

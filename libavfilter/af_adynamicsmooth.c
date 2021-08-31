@@ -63,7 +63,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    for (int ch = 0; ch < out->channels; ch++) {
+    for (int ch = 0; ch < out->ch_layout.nb_channels; ch++) {
         const double *src = (const double *)in->extended_data[ch];
         double *dst = (double *)out->extended_data[ch];
         double *coeffs = (double *)s->coeffs->extended_data[ch];

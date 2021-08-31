@@ -1263,35 +1263,35 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     int ch, ret, i;
 
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
     s->iir = av_calloc(s->channels, sizeof(*s->iir));
     if (!s->iir)
         return AVERROR(ENOMEM);
 
-    ret = read_gains(ctx, s->g_str, inlink->channels);
+    ret = read_gains(ctx, s->g_str, inlink->ch_layout.nb_channels);
     if (ret < 0)
         return ret;
 
-    ret = read_channels(ctx, inlink->channels, s->a_str, 0);
+    ret = read_channels(ctx, inlink->ch_layout.nb_channels, s->a_str, 0);
     if (ret < 0)
         return ret;
 
-    ret = read_channels(ctx, inlink->channels, s->b_str, 1);
+    ret = read_channels(ctx, inlink->ch_layout.nb_channels, s->b_str, 1);
     if (ret < 0)
         return ret;
 
     if (s->format == -1) {
-        convert_sf2tf(ctx, inlink->channels);
+        convert_sf2tf(ctx, inlink->ch_layout.nb_channels);
         s->format = 0;
     } else if (s->format == 2) {
-        convert_pr2zp(ctx, inlink->channels);
+        convert_pr2zp(ctx, inlink->ch_layout.nb_channels);
     } else if (s->format == 3) {
-        convert_pd2zp(ctx, inlink->channels);
+        convert_pd2zp(ctx, inlink->ch_layout.nb_channels);
     } else if (s->format == 4) {
-        convert_sp2zp(ctx, inlink->channels);
+        convert_sp2zp(ctx, inlink->ch_layout.nb_channels);
     }
     if (s->format > 0) {
-        check_stability(ctx, inlink->channels);
+        check_stability(ctx, inlink->ch_layout.nb_channels);
     }
 
     av_frame_free(&s->video);
@@ -1309,7 +1309,7 @@ static int config_output(AVFilterLink *outlink)
     if (s->format > 0 && s->process == 0) {
         av_log(ctx, AV_LOG_WARNING, "Direct processsing is not recommended for zp coefficients format.\n");
 
-        ret = convert_zp2tf(ctx, inlink->channels);
+        ret = convert_zp2tf(ctx, inlink->ch_layout.nb_channels);
         if (ret < 0)
             return ret;
     } else if (s->format == -2 && s->process > 0) {
@@ -1322,21 +1322,21 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "Parallel processing is not implemented for transfer function.\n");
         return AVERROR_PATCHWELCOME;
     } else if (s->format > 0 && s->process == 1) {
-        ret = decompose_zp2biquads(ctx, inlink->channels);
+        ret = decompose_zp2biquads(ctx, inlink->ch_layout.nb_channels);
         if (ret < 0)
             return ret;
     } else if (s->format > 0 && s->process == 2) {
         if (s->precision > 1)
             av_log(ctx, AV_LOG_WARNING, "Parallel processing is not recommended for fixed-point precisions.\n");
-        ret = decompose_zp2biquads(ctx, inlink->channels);
+        ret = decompose_zp2biquads(ctx, inlink->ch_layout.nb_channels);
         if (ret < 0)
             return ret;
-        ret = convert_serial2parallel(ctx, inlink->channels);
+        ret = convert_serial2parallel(ctx, inlink->ch_layout.nb_channels);
         if (ret < 0)
             return ret;
     }
 
-    for (ch = 0; s->format == -2 && ch < inlink->channels; ch++) {
+    for (ch = 0; s->format == -2 && ch < inlink->ch_layout.nb_channels; ch++) {
         IIRChannel *iir = &s->iir[ch];
 
         if (iir->nb_ab[0] != iir->nb_ab[1] + 1) {
@@ -1345,7 +1345,7 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    for (ch = 0; s->format == 0 && ch < inlink->channels; ch++) {
+    for (ch = 0; s->format == 0 && ch < inlink->ch_layout.nb_channels; ch++) {
         IIRChannel *iir = &s->iir[ch];
 
         for (i = 1; i < iir->nb_ab[0]; i++) {
@@ -1401,9 +1401,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ff_filter_execute(ctx, s->iir_channel, &td, NULL, outlink->channels);
+    ff_filter_execute(ctx, s->iir_channel, &td, NULL, outlink->ch_layout.nb_channels);
 
-    for (ch = 0; ch < outlink->channels; ch++) {
+    for (ch = 0; ch < outlink->ch_layout.nb_channels; ch++) {
         if (s->iir[ch].clippings > 0)
             av_log(ctx, AV_LOG_WARNING, "Channel %d clipping %d times. Please reduce gain.\n",
                    ch, s->iir[ch].clippings);

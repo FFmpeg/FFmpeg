@@ -157,8 +157,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double tqfactor = s->tqfactor;
     const double fg = tan(M_PI * tfrequency / sample_rate);
     const double dg = tan(M_PI * dfrequency / sample_rate);
-    const int start = (in->channels * jobnr) / nb_jobs;
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
     const int mode = s->mode;
     const double knee = s->knee;
     const double slew = s->slew;
@@ -245,7 +245,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.in = in;
     td.out = out;
     ff_filter_execute(ctx, filter_channels, &td, NULL,
-                     FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
+                     FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

@@ -415,7 +415,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowWavesContext *showwaves = ctx->priv;
-    int nb_channels = inlink->channels;
+    int nb_channels = inlink->ch_layout.nb_channels;
     char *colors, *saveptr = NULL;
     uint8_t x;
     int ch;
@@ -551,7 +551,7 @@ inline static int push_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowWavesContext *showwaves = outlink->src->priv;
-    int nb_channels = inlink->channels;
+    int nb_channels = inlink->ch_layout.nb_channels;
     int ret, i;
 
     ret = ff_filter_frame(outlink, showwaves->outpicref);
@@ -572,7 +572,7 @@ static int push_single_pic(AVFilterLink *outlink)
     int64_t last_column_samples = column_max_samples + remaining_samples;
     AVFrame *out = showwaves->outpicref;
     struct frame_node *node;
-    const int nb_channels = inlink->channels;
+    const int nb_channels = inlink->ch_layout.nb_channels;
     const int ch_height = showwaves->split_channels ? outlink->h / nb_channels : outlink->h;
     const int linesize = out->linesize[0];
     const int pixstep = showwaves->pixstep;
@@ -661,7 +661,7 @@ static int alloc_out_frame(ShowWavesContext *showwaves, const int16_t *p,
             return AVERROR(ENOMEM);
         out->width  = outlink->w;
         out->height = outlink->h;
-        out->pts = in->pts + av_rescale_q((p - (int16_t *)in->data[0]) / inlink->channels,
+        out->pts = in->pts + av_rescale_q((p - (int16_t *)in->data[0]) / inlink->ch_layout.nb_channels,
                                           av_make_q(1, inlink->sample_rate),
                                           outlink->time_base);
         for (j = 0; j < outlink->h; j++)
@@ -692,7 +692,7 @@ static int showwaves_filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     const int nb_samples = insamples->nb_samples;
     AVFrame *outpicref = showwaves->outpicref;
     int16_t *p = (int16_t *)insamples->data[0];
-    int nb_channels = inlink->channels;
+    int nb_channels = inlink->ch_layout.nb_channels;
     int i, j, ret = 0;
     const int pixstep = showwaves->pixstep;
     const int n = showwaves->n;
@@ -820,7 +820,7 @@ static int showwavespic_config_input(AVFilterLink *inlink)
     ShowWavesContext *showwaves = ctx->priv;
 
     if (showwaves->single_pic) {
-        showwaves->sum = av_calloc(inlink->channels, sizeof(*showwaves->sum));
+        showwaves->sum = av_calloc(inlink->ch_layout.nb_channels, sizeof(*showwaves->sum));
         if (!showwaves->sum)
             return AVERROR(ENOMEM);
     }

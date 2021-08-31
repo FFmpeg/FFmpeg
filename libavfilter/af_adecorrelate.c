@@ -131,12 +131,12 @@ static int config_input(AVFilterLink *inlink)
         s->seed = av_get_random_seed();
     av_lfg_init(&s->c, s->seed);
 
-    s->nb_channels = inlink->channels;
-    s->ap = av_calloc(inlink->channels, sizeof(*s->ap));
+    s->nb_channels = inlink->ch_layout.nb_channels;
+    s->ap = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->ap));
     if (!s->ap)
         return AVERROR(ENOMEM);
 
-    for (int i = 0; i < inlink->channels; i++) {
+    for (int i = 0; i < inlink->ch_layout.nb_channels; i++) {
         for (int j = 0; j < s->stages; j++) {
             ret = ap_init(&s->ap[i][j], inlink->sample_rate,
                           (double)av_lfg_get(&s->c) / 0xffffffff * 2.2917e-3 + 0.83333e-3);
@@ -160,8 +160,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     ThreadData *td = arg;
     AVFrame *out = td->out;
     AVFrame *in = td->in;
-    const int start = (in->channels * jobnr) / nb_jobs;
-    const int end = (in->channels * (jobnr+1)) / nb_jobs;
+    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int ch = start; ch < end; ch++)
         s->filter_channel(ctx, ch, in, out);
@@ -189,7 +189,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in; td.out = out;
     ff_filter_execute(ctx, filter_channels, &td, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

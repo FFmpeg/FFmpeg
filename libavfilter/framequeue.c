@@ -134,10 +134,10 @@ void ff_framequeue_skip_samples(FFFrameQueue *fq, size_t samples, AVRational tim
     b = bucket(fq, 0);
     av_assert1(samples < b->frame->nb_samples);
     planar = av_sample_fmt_is_planar(b->frame->format);
-    planes = planar ? b->frame->channels : 1;
+    planes = planar ? b->frame->ch_layout.nb_channels : 1;
     bytes = samples * av_get_bytes_per_sample(b->frame->format);
     if (!planar)
-        bytes *= b->frame->channels;
+        bytes *= b->frame->ch_layout.nb_channels;
     if (b->frame->pts != AV_NOPTS_VALUE)
         b->frame->pts += av_rescale_q(samples, av_make_q(1, b->frame->sample_rate), time_base);
     b->frame->nb_samples -= samples;

@@ -161,7 +161,7 @@ static int config_output(AVFilterLink *outlink)
     float sum_in_volume = 1.0;
     int n;
 
-    s->channels = outlink->channels;
+    s->channels = outlink->ch_layout.nb_channels;
 
     for (n = 0; n < s->num_chorus; n++) {
         int samples = (int) ((s->delays[n] + s->depths[n]) * outlink->sample_rate / 1000.0);
@@ -184,15 +184,15 @@ static int config_output(AVFilterLink *outlink)
     if (s->in_gain * (sum_in_volume) > 1.0 / s->out_gain)
         av_log(ctx, AV_LOG_WARNING, "output gain can cause saturation or clipping of output\n");
 
-    s->counter = av_calloc(outlink->channels, sizeof(*s->counter));
+    s->counter = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->counter));
     if (!s->counter)
         return AVERROR(ENOMEM);
 
-    s->phase = av_calloc(outlink->channels, sizeof(*s->phase));
+    s->phase = av_calloc(outlink->ch_layout.nb_channels, sizeof(*s->phase));
     if (!s->phase)
         return AVERROR(ENOMEM);
 
-    for (n = 0; n < outlink->channels; n++) {
+    for (n = 0; n < outlink->ch_layout.nb_channels; n++) {
         s->phase[n] = av_calloc(s->num_chorus, sizeof(int));
         if (!s->phase[n])
             return AVERROR(ENOMEM);
@@ -201,7 +201,7 @@ static int config_output(AVFilterLink *outlink)
     s->fade_out = s->max_samples;
 
     return av_samples_alloc_array_and_samples(&s->chorusbuf, NULL,
-                                              outlink->channels,
+                                              outlink->ch_layout.nb_channels,
                                               s->max_samples,
                                               outlink->format, 0);
 }
@@ -226,7 +226,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         av_frame_copy_props(out_frame, frame);
     }
 
-    for (c = 0; c < inlink->channels; c++) {
+    for (c = 0; c < inlink->ch_layout.nb_channels; c++) {
         const float *src = (const float *)frame->extended_data[c];
         float *dst = (float *)out_frame->extended_data[c];
         float *chorusbuf = (float *)s->chorusbuf[c];
@@ -280,7 +280,7 @@ static int request_frame(AVFilterLink *outlink)
 
         av_samples_set_silence(frame->extended_data, 0,
                                frame->nb_samples,
-                               outlink->channels,
+                               outlink->ch_layout.nb_channels,
                                frame->format);
 
         frame->pts = s->next_pts;

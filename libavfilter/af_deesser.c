@@ -73,11 +73,11 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     DeesserContext *s = ctx->priv;
 
-    s->chan = av_calloc(inlink->channels, sizeof(*s->chan));
+    s->chan = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->chan));
     if (!s->chan)
         return AVERROR(ENOMEM);
 
-    for (int i = 0; i < inlink->channels; i++) {
+    for (int i = 0; i < inlink->ch_layout.nb_channels; i++) {
         DeesserChannel *chan = &s->chan[i];
 
         chan->ratioA = chan->ratioB = 1.0;
@@ -104,7 +104,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    for (int ch = 0; ch < inlink->channels; ch++) {
+    for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
         DeesserChannel *dec = &s->chan[ch];
         double *src = (double *)in->extended_data[ch];
         double *dst = (double *)out->extended_data[ch];

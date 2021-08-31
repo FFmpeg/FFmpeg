@@ -151,7 +151,7 @@ static int config_input(AVFilterLink *inlink)
     s->efifo = av_audio_fifo_alloc(inlink->format, 1, s->window_size);
     if (!s->efifo)
         return AVERROR(ENOMEM);
-    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, s->window_size);
+    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->ch_layout.nb_channels, s->window_size);
     if (!s->fifo)
         return AVERROR(ENOMEM);
     s->overlap_skip = s->method ? (s->window_size - s->hop_size) / 2 : 0;
@@ -160,12 +160,12 @@ static int config_input(AVFilterLink *inlink)
                             s->overlap_skip);
     }
 
-    s->nb_channels = inlink->channels;
-    s->chan = av_calloc(inlink->channels, sizeof(*s->chan));
+    s->nb_channels = inlink->ch_layout.nb_channels;
+    s->chan = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->chan));
     if (!s->chan)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < inlink->channels; i++) {
+    for (i = 0; i < inlink->ch_layout.nb_channels; i++) {
         DeclickChannel *c = &s->chan[i];
 
         c->detection = av_calloc(s->window_size, sizeof(*c->detection));
@@ -557,11 +557,11 @@ static int filter_frame(AVFilterLink *inlink)
         goto fail;
 
     td.out = out;
-    ret = ff_filter_execute(ctx, filter_channel, &td, NULL, inlink->channels);
+    ret = ff_filter_execute(ctx, filter_channel, &td, NULL, inlink->ch_layout.nb_channels);
     if (ret < 0)
         goto fail;
 
-    for (ch = 0; ch < s->in->channels; ch++) {
+    for (ch = 0; ch < s->in->ch_layout.nb_channels; ch++) {
         double *is = (double *)s->is->extended_data[ch];
 
         for (j = 0; j < s->hop_size; j++) {
@@ -580,7 +580,7 @@ static int filter_frame(AVFilterLink *inlink)
     s->pts += av_rescale_q(s->hop_size, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     s->detected_errors += detected_errors;
-    s->nb_samples += out->nb_samples * inlink->channels;
+    s->nb_samples += out->nb_samples * inlink->ch_layout.nb_channels;
 
     ret = ff_filter_frame(outlink, out);
     if (ret < 0)

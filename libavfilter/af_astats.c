@@ -194,12 +194,12 @@ static int config_output(AVFilterLink *outlink)
 {
     AudioStatsContext *s = outlink->src->priv;
 
-    s->chstats = av_calloc(sizeof(*s->chstats), outlink->channels);
+    s->chstats = av_calloc(sizeof(*s->chstats), outlink->ch_layout.nb_channels);
     if (!s->chstats)
         return AVERROR(ENOMEM);
 
     s->tc_samples = FFMAX(s->time_constant * outlink->sample_rate + .5, 1);
-    s->nb_channels = outlink->channels;
+    s->nb_channels = outlink->ch_layout.nb_channels;
 
     for (int i = 0; i < s->nb_channels; i++) {
         ChannelStats *p = &s->chstats[i];
@@ -584,8 +584,8 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     const uint8_t * const * const data = (const uint8_t * const *)buf->extended_data;
     const int channels = s->nb_channels;
     const int samples = buf->nb_samples;
-    const int start = (buf->channels * jobnr) / nb_jobs;
-    const int end = (buf->channels * (jobnr+1)) / nb_jobs;
+    const int start = (buf->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (buf->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBLP:
@@ -638,7 +638,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
 
     ff_filter_execute(ctx, filter_channel, buf, NULL,
-                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(inlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     if (s->metadata)
         set_metadata(s, metadata);

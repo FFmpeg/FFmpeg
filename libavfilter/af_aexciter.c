@@ -195,7 +195,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     dst = (double *)out->data[0];
     for (int n = 0; n < in->nb_samples; n++) {
-        for (int c = 0; c < inlink->channels; c++) {
+        for (int c = 0; c < inlink->ch_layout.nb_channels; c++) {
             double sample = src[c] * level_in;
 
             sample = distortion_process(s, &s->cp[c], sample);
@@ -208,8 +208,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 dst[c] = sample;
         }
 
-        src += inlink->channels;
-        dst += inlink->channels;
+        src += inlink->ch_layout.nb_channels;
+        dst += inlink->ch_layout.nb_channels;
     }
 
     if (in != out)
@@ -231,11 +231,11 @@ static int config_input(AVFilterLink *inlink)
     AExciterContext *s = ctx->priv;
 
     if (!s->cp)
-        s->cp = av_calloc(inlink->channels, sizeof(*s->cp));
+        s->cp = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->cp));
     if (!s->cp)
         return AVERROR(ENOMEM);
 
-    for (int i = 0; i < inlink->channels; i++)
+    for (int i = 0; i < inlink->ch_layout.nb_channels; i++)
         set_params(&s->cp[i], s->blend, s->drive, inlink->sample_rate,
                    s->freq, s->ceil);
 

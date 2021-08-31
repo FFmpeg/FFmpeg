@@ -156,8 +156,8 @@ static int process_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 {
     AudioNLMSContext *s = ctx->priv;
     AVFrame *out = arg;
-    const int start = (out->channels * jobnr) / nb_jobs;
-    const int end = (out->channels * (jobnr+1)) / nb_jobs;
+    const int start = (out->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (out->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int c = start; c < end; c++) {
         const float *input = (const float *)s->frame[0]->extended_data[c];
@@ -208,7 +208,7 @@ static int activate(AVFilterContext *ctx)
         }
 
         ff_filter_execute(ctx, process_channels, out, NULL,
-                          FFMIN(ctx->outputs[0]->channels, ff_filter_get_nb_threads(ctx)));
+                          FFMIN(ctx->outputs[0]->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
         out->pts = s->frame[0]->pts;
 

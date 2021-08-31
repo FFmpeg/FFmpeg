@@ -289,7 +289,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if ((!s->type && (cur_sample + nb_samples < s->start_sample)) ||
         ( s->type && (s->start_sample + s->nb_samples < cur_sample))) {
         av_samples_set_silence(out_buf->extended_data, 0, nb_samples,
-                               out_buf->channels, out_buf->format);
+                               out_buf->ch_layout.nb_channels, out_buf->format);
     } else {
         int64_t start;
 
@@ -299,7 +299,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             start = s->start_sample + s->nb_samples - cur_sample;
 
         s->fade_samples(out_buf->extended_data, buf->extended_data,
-                        nb_samples, buf->channels,
+                        nb_samples, buf->ch_layout.nb_channels,
                         s->type ? -1 : 1, start,
                         s->nb_samples, s->curve);
     }
@@ -502,7 +502,7 @@ static int activate(AVFilterContext *ctx)
 
             s->crossfade_samples(out->extended_data, cf[0]->extended_data,
                                  cf[1]->extended_data,
-                                 s->nb_samples, out->channels,
+                                 s->nb_samples, out->ch_layout.nb_channels,
                                  s->curve, s->curve2);
             out->pts = s->pts;
             s->pts += av_rescale_q(s->nb_samples,
@@ -523,7 +523,7 @@ static int activate(AVFilterContext *ctx)
             }
 
             s->fade_samples(out->extended_data, cf[0]->extended_data, s->nb_samples,
-                            outlink->channels, -1, s->nb_samples - 1, s->nb_samples, s->curve);
+                            outlink->ch_layout.nb_channels, -1, s->nb_samples - 1, s->nb_samples, s->curve);
             out->pts = s->pts;
             s->pts += av_rescale_q(s->nb_samples,
                 (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
@@ -543,7 +543,7 @@ static int activate(AVFilterContext *ctx)
             }
 
             s->fade_samples(out->extended_data, cf[1]->extended_data, s->nb_samples,
-                            outlink->channels, 1, 0, s->nb_samples, s->curve2);
+                            outlink->ch_layout.nb_channels, 1, 0, s->nb_samples, s->curve2);
             out->pts = s->pts;
             s->pts += av_rescale_q(s->nb_samples,
                 (AVRational){ 1, outlink->sample_rate }, outlink->time_base);

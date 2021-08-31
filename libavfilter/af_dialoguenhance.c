@@ -72,9 +72,9 @@ static int query_formats(AVFilterContext *ctx)
 
     if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_FLTP )) < 0 ||
         (ret = ff_set_common_formats         (ctx     , formats            )) < 0 ||
-        (ret = ff_add_channel_layout         (&in_layout , AV_CH_LAYOUT_STEREO)) < 0 ||
+        (ret = ff_add_channel_layout         (&in_layout , &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) < 0 ||
         (ret = ff_channel_layouts_ref(in_layout, &ctx->inputs[0]->outcfg.channel_layouts)) < 0 ||
-        (ret = ff_add_channel_layout         (&out_layout , AV_CH_LAYOUT_SURROUND)) < 0 ||
+        (ret = ff_add_channel_layout         (&out_layout , &(AVChannelLayout)AV_CHANNEL_LAYOUT_SURROUND)) < 0 ||
         (ret = ff_channel_layouts_ref(out_layout, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
         return ret;
 

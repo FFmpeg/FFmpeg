@@ -1018,7 +1018,7 @@ static int config_props(AVFilterLink *inlink)
     enum AVSampleFormat format = inlink->format;
     int sample_rate = (int)inlink->sample_rate;
 
-    return yae_reset(atempo, format, sample_rate, inlink->channels);
+    return yae_reset(atempo, format, sample_rate, inlink->ch_layout.nb_channels);
 }
 
 static int push_samples(ATempoContext *atempo,

@@ -244,7 +244,7 @@ static int config_input(AVFilterLink *inlink)
 
     generate_spread_table(s);
 
-    s->channels = inlink->channels;
+    s->channels = inlink->ch_layout.nb_channels;
 
     s->tx_ctx = av_calloc(s->channels, sizeof(*s->tx_ctx));
     s->itx_ctx = av_calloc(s->channels, sizeof(*s->itx_ctx));
@@ -532,8 +532,8 @@ static int psy_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     AudioPsyClipContext *s = ctx->priv;
     AVFrame *out = arg;
-    const int start = (out->channels * jobnr) / nb_jobs;
-    const int end = (out->channels * (jobnr+1)) / nb_jobs;
+    const int start = (out->ch_layout.nb_channels * jobnr) / nb_jobs;
+    const int end = (out->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int ch = start; ch < end; ch++)
         psy_channel(ctx, s->in, out, ch);
@@ -557,7 +557,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->in = in;
     ff_filter_execute(ctx, psy_channels, out, NULL,
-                      FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
+                      FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
     out->pts = in->pts;
     out->nb_samples = in->nb_samples;

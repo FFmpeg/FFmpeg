@@ -118,8 +118,12 @@ static int config_output(AVFilterLink *outlink)
         break;
     case AVMEDIA_TYPE_AUDIO:
         outlink->sample_rate    = inlink->sample_rate;
-        outlink->channels       = inlink->channels;
+        outlink->ch_layout.nb_channels       = inlink->ch_layout.nb_channels;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
         outlink->channel_layout = inlink->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         break;
     }
 

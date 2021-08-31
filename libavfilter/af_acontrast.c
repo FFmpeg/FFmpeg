@@ -152,7 +152,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->filter((void **)out->extended_data, (const void **)in->extended_data,
-              in->nb_samples, in->channels, s->contrast / 750);
+              in->nb_samples, in->ch_layout.nb_channels, s->contrast / 750);
 
     if (out != in)
         av_frame_free(&in);
