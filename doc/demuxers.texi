@@ -151,6 +151,11 @@ Metadata of the packets of the file. The specified metadata will be set for
 each file packet. You can specify this directive multiple times to add multiple
 metadata entries.
 
+@item @code{file_packet_meta @var{key} @var{value}}
+Metadata of the packets of the file. The specified metadata will be set for
+each file packet. You can specify this directive multiple times to add multiple
+metadata entries.
+
 @item @code{option @var{key} @var{value}}
 Option to access, open and probe the file.
 Can be present multiple times.

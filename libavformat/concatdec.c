@@ -425,6 +425,7 @@ typedef enum ParseDirective {
    DIR_DURATION,
    DIR_INPOINT,
    DIR_OUTPOINT,
+   DIR_FPMETA,
    DIR_FPMETAS,
    DIR_OPTION,
    DIR_STREAM,
@@ -437,6 +438,7 @@ static const ParseSyntax syntax[] = {
     [DIR_DURATION ] = { "duration",             "d",    NEEDS_FILE },
     [DIR_INPOINT  ] = { "inpoint",              "d",    NEEDS_FILE },
     [DIR_OUTPOINT ] = { "outpoint",             "d",    NEEDS_FILE },
+    [DIR_FPMETA   ] = { "file_packet_meta",     "ks",   NEEDS_FILE },
     [DIR_FPMETAS  ] = { "file_packet_metadata", "s",    NEEDS_FILE },
     [DIR_OPTION   ] = { "option",               "ks",   NEEDS_FILE | NEEDS_UNSAFE },
     [DIR_STREAM   ] = { "stream",               "",     0 },
@@ -548,6 +550,13 @@ static int concat_parse_script(AVFormatContext *avf)
 
         case DIR_OUTPOINT:
             file->outpoint = arg_int[0];
+            break;
+
+        case DIR_FPMETA:
+            ret = av_dict_set(&file->metadata, arg_kw[0], arg_str[1], AV_DICT_DONT_STRDUP_VAL);
+            arg_str[1] = NULL;
+            if (ret < 0)
+                FAIL(ret);
             break;
 
         case DIR_FPMETAS:
