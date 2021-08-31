@@ -89,8 +89,7 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
                 d = frame->data[0] + yl * frame->linesize[0];
                 if (s->nb_planes == 1 &&
                     run*pixels_per_value >= s->width &&
-                    pixels_per_value < s->width &&
-                    s->width % pixels_per_value == 0
+                    pixels_per_value < (s->width / pixels_per_value * pixels_per_value)
                     ) {
                     for (; xl < pixels_per_value; xl ++) {
                         j = (j < bits_per_plane ? 8 : j) - bits_per_plane;
@@ -98,7 +97,7 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
                     }
                     av_memcpy_backptr(d+xl, pixels_per_value, s->width - xl);
                     run -= s->width / pixels_per_value;
-                    xl = s->width;
+                    xl = s->width / pixels_per_value * pixels_per_value;
                 }
             }
         }
