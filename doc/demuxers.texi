@@ -181,6 +181,9 @@ streams is not reliable.
 Metadata for the stream.
 Can be present multiple times.
 
+@item @code{stream_codec @var{value}}
+Codec for the stream.
+
 @end table
 
 @subsection Options

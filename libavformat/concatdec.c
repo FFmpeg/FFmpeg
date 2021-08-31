@@ -431,6 +431,7 @@ typedef enum ParseDirective {
    DIR_STREAM,
    DIR_EXSID,
    DIR_STMETA,
+   DIR_STCODEC,
 } ParseDirective;
 
 static const ParseSyntax syntax[] = {
@@ -445,6 +446,7 @@ static const ParseSyntax syntax[] = {
     [DIR_STREAM   ] = { "stream",               "",     0 },
     [DIR_EXSID    ] = { "exact_stream_id",      "i",    NEEDS_STREAM },
     [DIR_STMETA   ] = { "stream_meta",          "ks",   NEEDS_STREAM },
+    [DIR_STCODEC  ] = { "stream_codec",         "k",    NEEDS_STREAM },
 };
 
 static int concat_parse_script(AVFormatContext *avf)
@@ -595,6 +597,17 @@ static int concat_parse_script(AVFormatContext *avf)
             if (ret < 0)
                 FAIL(ret);
             break;
+
+        case DIR_STCODEC: {
+            const AVCodecDescriptor *codec = avcodec_descriptor_get_by_name(arg_kw[0]);
+            if (!codec) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: codec '%s' not found\n", line, arg_kw[0]);
+                FAIL(AVERROR_DECODER_NOT_FOUND);
+            }
+            stream->codecpar->codec_type = codec->type;
+            stream->codecpar->codec_id = codec->id;
+            break;
+        }
 
         default:
             FAIL(AVERROR_BUG);
