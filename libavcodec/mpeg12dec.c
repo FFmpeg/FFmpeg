@@ -1538,6 +1538,10 @@ static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->mpeg_f_code[0][1] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][1] = get_bits(&s->gb, 4);
+    s->mpeg_f_code[0][0] += !s->mpeg_f_code[0][0];
+    s->mpeg_f_code[0][1] += !s->mpeg_f_code[0][1];
+    s->mpeg_f_code[1][0] += !s->mpeg_f_code[1][0];
+    s->mpeg_f_code[1][1] += !s->mpeg_f_code[1][1];
     if (!s->pict_type && s1->mpeg_enc_ctx_allocated) {
         av_log(s->avctx, AV_LOG_ERROR, "Missing picture start code\n");
         if (s->avctx->err_recognition & AV_EF_EXPLODE)
@@ -1553,10 +1557,6 @@ static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
         s->current_picture.f->pict_type = s->pict_type;
         s->current_picture.f->key_frame = s->pict_type == AV_PICTURE_TYPE_I;
     }
-    s->mpeg_f_code[0][0] += !s->mpeg_f_code[0][0];
-    s->mpeg_f_code[0][1] += !s->mpeg_f_code[0][1];
-    s->mpeg_f_code[1][0] += !s->mpeg_f_code[1][0];
-    s->mpeg_f_code[1][1] += !s->mpeg_f_code[1][1];
 
     s->intra_dc_precision         = get_bits(&s->gb, 2);
     s->picture_structure          = get_bits(&s->gb, 2);
