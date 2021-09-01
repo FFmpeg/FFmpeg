@@ -506,7 +506,8 @@ void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
  *
  * @param dst the muxer to write the packet to
  * @param dst_stream the stream index within dst to write the packet to
- * @param pkt the packet to be written
+ * @param pkt the packet to be written. It will be returned blank when
+ *            av_interleaved_write_frame() is used, unchanged otherwise.
  * @param src the muxer the packet originally was intended for
  * @param interleave 0->use av_write_frame, 1->av_interleaved_write_frame
  * @return the value av_write_frame returned

@@ -643,12 +643,12 @@ static void guess_pkt_duration(AVFormatContext *s, AVStream *st, AVPacket *pkt)
  */
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    AVStream *const st = s->streams[pkt->stream_index];
     int ret;
 
     // If the timestamp offsetting below is adjusted, adjust
     // ff_interleaved_peek similarly.
     if (s->output_ts_offset) {
-        AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
 
         if (pkt->dts != AV_NOPTS_VALUE)
@@ -658,7 +658,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (s->avoid_negative_ts > 0) {
-        AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = st->internal->mux_ts_offset;
         int64_t ts = s->internal->avoid_negative_ts_use_pts ? pkt->pts : pkt->dts;
 
@@ -719,7 +718,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (ret >= 0)
-        s->streams[pkt->stream_index]->nb_frames++;
+        st->nb_frames++;
 
     return ret;
 }
@@ -1192,6 +1191,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *in)
         pkt = in;
     } else {
         /* We don't own in, so we have to make sure not to modify it.
+         * (ff_write_chained() relies on this fact.)
          * The following avoids copying in's data unnecessarily.
          * Copying side data is unavoidable as a bitstream filter
          * may change it, e.g. free it on errors. */
@@ -1291,21 +1291,30 @@ int av_get_output_timestamp(struct AVFormatContext *s, int stream,
 int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
                      AVFormatContext *src, int interleave)
 {
-    AVPacket local_pkt;
+    int64_t pts = pkt->pts, dts = pkt->dts, duration = pkt->duration;
+    int stream_index = pkt->stream_index;
+    AVRational time_base = pkt->time_base;
     int ret;
 
-    local_pkt = *pkt;
-    local_pkt.stream_index = dst_stream;
+    pkt->stream_index = dst_stream;
 
-    av_packet_rescale_ts(&local_pkt,
-                         src->streams[pkt->stream_index]->time_base,
+    av_packet_rescale_ts(pkt,
+                         src->streams[stream_index]->time_base,
                          dst->streams[dst_stream]->time_base);
 
-    if (interleave) ret = av_interleaved_write_frame(dst, &local_pkt);
-    else            ret = av_write_frame(dst, &local_pkt);
-    pkt->buf = local_pkt.buf;
-    pkt->side_data       = local_pkt.side_data;
-    pkt->side_data_elems = local_pkt.side_data_elems;
+    if (!interleave) {
+        ret = av_write_frame(dst, pkt);
+        /* We only have to backup and restore the fields that
+         * we changed ourselves, because av_write_frame() does not
+         * modify the packet given to it. */
+        pkt->pts          = pts;
+        pkt->dts          = dts;
+        pkt->duration     = duration;
+        pkt->stream_index = stream_index;
+        pkt->time_base    = time_base;
+    } else
+        ret = av_interleaved_write_frame(dst, pkt);
+
     return ret;
 }
 

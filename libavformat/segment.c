@@ -952,7 +952,9 @@ calc_times:
                            seg->initial_offset || seg->reset_timestamps || seg->avf->oformat->interleave_packet);
 
 fail:
-    if (pkt->stream_index == seg->reference_stream_index) {
+    /* Use st->index here as the packet returned from ff_write_chained()
+     * is blank if interleaving has been used. */
+    if (st->index == seg->reference_stream_index) {
         seg->frame_count++;
         seg->segment_frame_count++;
     }
