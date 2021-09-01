@@ -2236,7 +2236,7 @@ static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
     }
 
     for (i = 0; i < device_list->nb_devices; i++) {
-        printf("%s %s [%s]\n", device_list->default_device == i ? "*" : " ",
+        printf("%c %s [%s]\n", device_list->default_device == i ? '*' : ' ',
                device_list->devices[i]->device_name, device_list->devices[i]->device_description);
     }
 
@@ -2260,7 +2260,7 @@ static int print_device_sinks(const AVOutputFormat *fmt, AVDictionary *opts)
     }
 
     for (i = 0; i < device_list->nb_devices; i++) {
-        printf("%s %s [%s]\n", device_list->default_device == i ? "*" : " ",
+        printf("%c %s [%s]\n", device_list->default_device == i ? '*' : ' ',
                device_list->devices[i]->device_name, device_list->devices[i]->device_description);
     }
 
