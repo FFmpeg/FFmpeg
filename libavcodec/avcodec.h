@@ -2927,7 +2927,7 @@ typedef struct AVCodecParserContext {
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
-    int codec_ids[5]; /* several codec IDs are permitted */
+    int codec_ids[7]; /* several codec IDs are permitted */
     int priv_data_size;
     int (*parser_init)(AVCodecParserContext *s);
     /* This callback never returns an error, a negative value means that

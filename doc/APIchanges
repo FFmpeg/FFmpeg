@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-09-02 - xxxxxxxxxx - lavc 59.7.100 - avcodec.h
+  Incremented the number of elements of AVCodecParser.codec_ids to seven.
+
 2021-08-24 - xxxxxxxxxx - lavc 59.6.100 - avcodec.h
   Add FF_CODEC_PROPERTY_FILM_GRAIN
 

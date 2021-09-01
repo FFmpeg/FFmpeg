@@ -46,7 +46,9 @@ AVCodecParserContext *av_parser_init(int codec_id)
             parser->codec_ids[1] == codec_id ||
             parser->codec_ids[2] == codec_id ||
             parser->codec_ids[3] == codec_id ||
-            parser->codec_ids[4] == codec_id)
+            parser->codec_ids[4] == codec_id ||
+            parser->codec_ids[5] == codec_id ||
+            parser->codec_ids[6] == codec_id)
             goto found;
     }
     return NULL;
@@ -127,7 +129,9 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
                avctx->codec_id == s->parser->codec_ids[1] ||
                avctx->codec_id == s->parser->codec_ids[2] ||
                avctx->codec_id == s->parser->codec_ids[3] ||
-               avctx->codec_id == s->parser->codec_ids[4]);
+               avctx->codec_id == s->parser->codec_ids[4] ||
+               avctx->codec_id == s->parser->codec_ids[5] ||
+               avctx->codec_id == s->parser->codec_ids[6]);
 
     if (!(s->flags & PARSER_FLAG_FETCHED_OFFSET)) {
         s->next_frame_offset =
