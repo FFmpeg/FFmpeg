@@ -1345,9 +1345,9 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             break;
         last_name = name;
 
-        printf(" %s%s %-15s %s\n",
-               decode ? "D" : " ",
-               encode ? "E" : " ",
+        printf(" %c%c %-15s %s\n",
+               decode ? 'D' : ' ',
+               encode ? 'E' : ' ',
                name,
             long_name ? long_name:" ");
     }
