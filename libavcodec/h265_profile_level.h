@@ -25,7 +25,7 @@
 
 
 typedef struct H265LevelDescriptor {
-    const char *name;
+    char        name[4];    // Large enough for all current levels like "4.1"
     uint8_t     level_idc;
 
     // Table A.6.
