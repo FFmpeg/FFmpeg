@@ -790,7 +790,7 @@ static int decode_frame_header(AVCodecContext *avctx,
         if (s->td) {
             for (i = 0; i < s->active_tile_cols; i++)
                 vp9_tile_data_free(&s->td[i]);
-            av_free(s->td);
+            av_freep(&s->td);
         }
 
         s->s.h.tiling.tile_cols = 1 << s->s.h.tiling.log2_tile_cols;
