@@ -29,6 +29,8 @@
  * @see doc/multithreading.txt
  */
 
+#include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "pthread_internal.h"
@@ -85,4 +87,40 @@ void ff_thread_free(AVCodecContext *avctx)
         ff_frame_thread_free(avctx, avctx->thread_count);
     else
         ff_slice_thread_free(avctx);
+}
+
+av_cold void ff_pthread_free(void *obj, const unsigned offsets[])
+{
+    unsigned cnt = *(unsigned*)((char*)obj + offsets[0]);
+    const unsigned *cur_offset = offsets;
+
+    *(unsigned*)((char*)obj + offsets[0]) = 0;
+
+    for (; *(++cur_offset) != THREAD_SENTINEL && cnt; cnt--)
+        pthread_mutex_destroy((pthread_mutex_t*)((char*)obj + *cur_offset));
+    for (; *(++cur_offset) != THREAD_SENTINEL && cnt; cnt--)
+        pthread_cond_destroy ((pthread_cond_t *)((char*)obj + *cur_offset));
+}
+
+av_cold int ff_pthread_init(void *obj, const unsigned offsets[])
+{
+    const unsigned *cur_offset = offsets;
+    unsigned cnt = 0;
+    int err;
+
+#define PTHREAD_INIT_LOOP(type)                                               \
+    for (; *(++cur_offset) != THREAD_SENTINEL; cnt++) {                       \
+        pthread_ ## type ## _t *dst = (void*)((char*)obj + *cur_offset);      \
+        err = pthread_ ## type ## _init(dst, NULL);                           \
+        if (err) {                                                            \
+            err = AVERROR(err);                                               \
+            goto fail;                                                        \
+        }                                                                     \
+    }
+    PTHREAD_INIT_LOOP(mutex)
+    PTHREAD_INIT_LOOP(cond)
+
+fail:
+    *(unsigned*)((char*)obj + offsets[0]) = cnt;
+    return err;
 }

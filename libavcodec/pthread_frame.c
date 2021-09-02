@@ -680,58 +680,17 @@ static void park_frame_worker_threads(FrameThreadContext *fctx, int thread_count
     async_lock(fctx);
 }
 
-#define SENTINEL 0 // This forbids putting a mutex/condition variable at the front.
-#define OFFSET_ARRAY(...) __VA_ARGS__, SENTINEL
-#define DEFINE_OFFSET_ARRAY(type, name, mutexes, conds)                       \
-static const unsigned name ## _offsets[] = { offsetof(type, pthread_init_cnt),\
-                                             OFFSET_ARRAY mutexes,            \
-                                             OFFSET_ARRAY conds }
-
 #define OFF(member) offsetof(FrameThreadContext, member)
-DEFINE_OFFSET_ARRAY(FrameThreadContext, thread_ctx,
+DEFINE_OFFSET_ARRAY(FrameThreadContext, thread_ctx, pthread_init_cnt,
                     (OFF(buffer_mutex), OFF(hwaccel_mutex), OFF(async_mutex)),
                     (OFF(async_cond)));
 #undef OFF
 
 #define OFF(member) offsetof(PerThreadContext, member)
-DEFINE_OFFSET_ARRAY(PerThreadContext, per_thread,
+DEFINE_OFFSET_ARRAY(PerThreadContext, per_thread, pthread_init_cnt,
                     (OFF(progress_mutex), OFF(mutex)),
                     (OFF(input_cond), OFF(progress_cond), OFF(output_cond)));
 #undef OFF
-
-static av_cold void free_pthread(void *obj, const unsigned offsets[])
-{
-    unsigned cnt = *(unsigned*)((char*)obj + offsets[0]);
-    const unsigned *cur_offset = offsets;
-
-    for (; *(++cur_offset) != SENTINEL && cnt; cnt--)
-        pthread_mutex_destroy((pthread_mutex_t*)((char*)obj + *cur_offset));
-    for (; *(++cur_offset) != SENTINEL && cnt; cnt--)
-        pthread_cond_destroy ((pthread_cond_t *)((char*)obj + *cur_offset));
-}
-
-static av_cold int init_pthread(void *obj, const unsigned offsets[])
-{
-    const unsigned *cur_offset = offsets;
-    unsigned cnt = 0;
-    int err;
-
-#define PTHREAD_INIT_LOOP(type)                                               \
-    for (; *(++cur_offset) != SENTINEL; cnt++) {                              \
-        pthread_ ## type ## _t *dst = (void*)((char*)obj + *cur_offset);      \
-        err = pthread_ ## type ## _init(dst, NULL);                           \
-        if (err) {                                                            \
-            err = AVERROR(err);                                               \
-            goto fail;                                                        \
-        }                                                                     \
-    }
-    PTHREAD_INIT_LOOP(mutex)
-    PTHREAD_INIT_LOOP(cond)
-
-fail:
-    *(unsigned*)((char*)obj + offsets[0]) = cnt;
-    return err;
-}
 
 void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
 {
@@ -792,14 +751,14 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
 
         av_frame_free(&p->frame);
 
-        free_pthread(p, per_thread_offsets);
+        ff_pthread_free(p, per_thread_offsets);
         av_packet_free(&p->avpkt);
 
         av_freep(&p->avctx);
     }
 
     av_freep(&fctx->threads);
-    free_pthread(fctx, thread_ctx_offsets);
+    ff_pthread_free(fctx, thread_ctx_offsets);
 
     av_freep(&avctx->internal->thread_ctx);
 }
@@ -845,7 +804,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
         }
     }
 
-    err = init_pthread(p, per_thread_offsets);
+    err = ff_pthread_init(p, per_thread_offsets);
     if (err < 0)
         return err;
 
@@ -906,9 +865,9 @@ int ff_frame_thread_init(AVCodecContext *avctx)
     if (!fctx)
         return AVERROR(ENOMEM);
 
-    err = init_pthread(fctx, thread_ctx_offsets);
+    err = ff_pthread_init(fctx, thread_ctx_offsets);
     if (err < 0) {
-        free_pthread(fctx, thread_ctx_offsets);
+        ff_pthread_free(fctx, thread_ctx_offsets);
         av_freep(&avctx->internal->thread_ctx);
         return err;
     }
