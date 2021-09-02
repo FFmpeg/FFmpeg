@@ -130,7 +130,7 @@ end:
     return NULL;
 }
 
-int ff_frame_thread_encoder_init(AVCodecContext *avctx)
+av_cold int ff_frame_thread_encoder_init(AVCodecContext *avctx)
 {
     int i=0;
     ThreadContext *c;
@@ -253,7 +253,8 @@ fail:
     return ret;
 }
 
-void ff_frame_thread_encoder_free(AVCodecContext *avctx){
+av_cold void ff_frame_thread_encoder_free(AVCodecContext *avctx)
+{
     ThreadContext *c= avctx->internal->frame_thread_encoder;
 
     /* In case initializing the mutexes/condition variables failed,
