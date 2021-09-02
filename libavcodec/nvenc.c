@@ -548,6 +548,19 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+#ifndef NVENC_HAVE_HEVC_CONSTRAINED_ENCODING
+    if (ctx->constrained_encoding && avctx->codec->id == AV_CODEC_ID_HEVC) {
+        av_log(avctx, AV_LOG_WARNING, "HEVC constrained encoding needs SDK 10.0 at build time\n");
+        return AVERROR(ENOSYS);
+    }
+#endif
+
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING);
+    if(ctx->constrained_encoding && ret <= 0) {
+        av_log(avctx, AV_LOG_WARNING, "Constrained encoding not supported by the device\n");
+        return AVERROR(ENOSYS);
+    }
+
     ctx->support_dyn_bitrate = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE);
 
     return 0;
@@ -1104,6 +1117,9 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
 #endif
     }
 
+    if (ctx->constrained_encoding)
+        h264->enableConstrainedEncoding = 1;
+
     h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
     h264->outputAUD     = ctx->aud;
@@ -1212,6 +1228,11 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->singleSliceIntraRefresh = ctx->single_slice_intra_refresh;
 #endif
     }
+
+#ifdef NVENC_HAVE_HEVC_CONSTRAINED_ENCODING
+    if (ctx->constrained_encoding)
+        hevc->enableConstrainedEncoding = 1;
+#endif
 
     hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
