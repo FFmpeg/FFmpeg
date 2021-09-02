@@ -328,7 +328,7 @@ static int read_header(AVFormatContext *s)
             break;
         }
 
-        if (size > 0) {
+        if (size > 0 && (pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             if (pos > INT64_MAX - size)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, FFMAX(0, pos + size - avio_tell(pb)));
