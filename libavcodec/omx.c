@@ -596,45 +596,45 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
 
 static av_cold void cleanup(OMXCodecContext *s)
 {
-    int i, executing;
+    int executing;
 
     /* If the mutexes/condition variables have not been properly initialized,
      * nothing has been initialized and locking the mutex might be unsafe. */
     if (s->mutex_cond_inited_cnt == NB_MUTEX_CONDS) {
-    pthread_mutex_lock(&s->state_mutex);
-    executing = s->state == OMX_StateExecuting;
-    pthread_mutex_unlock(&s->state_mutex);
+        pthread_mutex_lock(&s->state_mutex);
+        executing = s->state == OMX_StateExecuting;
+        pthread_mutex_unlock(&s->state_mutex);
 
-    if (executing) {
-        OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateIdle, NULL);
-        wait_for_state(s, OMX_StateIdle);
-        OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateLoaded, NULL);
-        for (i = 0; i < s->num_in_buffers; i++) {
-            OMX_BUFFERHEADERTYPE *buffer = get_buffer(&s->input_mutex, &s->input_cond,
-                                                      &s->num_free_in_buffers, s->free_in_buffers, 1);
-            if (s->input_zerocopy)
-                buffer->pBuffer = NULL;
-            OMX_FreeBuffer(s->handle, s->in_port, buffer);
+        if (executing) {
+            OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateIdle, NULL);
+            wait_for_state(s, OMX_StateIdle);
+            OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateLoaded, NULL);
+            for (int i = 0; i < s->num_in_buffers; i++) {
+                OMX_BUFFERHEADERTYPE *buffer = get_buffer(&s->input_mutex, &s->input_cond,
+                                                        &s->num_free_in_buffers, s->free_in_buffers, 1);
+                if (s->input_zerocopy)
+                    buffer->pBuffer = NULL;
+                OMX_FreeBuffer(s->handle, s->in_port, buffer);
+            }
+            for (int i = 0; i < s->num_out_buffers; i++) {
+                OMX_BUFFERHEADERTYPE *buffer = get_buffer(&s->output_mutex, &s->output_cond,
+                                                        &s->num_done_out_buffers, s->done_out_buffers, 1);
+                OMX_FreeBuffer(s->handle, s->out_port, buffer);
+            }
+            wait_for_state(s, OMX_StateLoaded);
         }
-        for (i = 0; i < s->num_out_buffers; i++) {
-            OMX_BUFFERHEADERTYPE *buffer = get_buffer(&s->output_mutex, &s->output_cond,
-                                                      &s->num_done_out_buffers, s->done_out_buffers, 1);
-            OMX_FreeBuffer(s->handle, s->out_port, buffer);
+        if (s->handle) {
+            s->omx_context->ptr_FreeHandle(s->handle);
+            s->handle = NULL;
         }
-        wait_for_state(s, OMX_StateLoaded);
-    }
-    if (s->handle) {
-        s->omx_context->ptr_FreeHandle(s->handle);
-        s->handle = NULL;
-    }
 
-    omx_deinit(s->omx_context);
-    s->omx_context = NULL;
-    av_freep(&s->in_buffer_headers);
-    av_freep(&s->out_buffer_headers);
-    av_freep(&s->free_in_buffers);
-    av_freep(&s->done_out_buffers);
-    av_freep(&s->output_buf);
+        omx_deinit(s->omx_context);
+        s->omx_context = NULL;
+        av_freep(&s->in_buffer_headers);
+        av_freep(&s->out_buffer_headers);
+        av_freep(&s->free_in_buffers);
+        av_freep(&s->done_out_buffers);
+        av_freep(&s->output_buf);
     }
     ff_pthread_free(s, omx_codec_context_offsets);
 }
