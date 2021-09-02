@@ -62,11 +62,8 @@ static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
             av_freep(&s->entries);
 
         s->entries = av_malloc_array(n, sizeof(atomic_int));
-
-        if (!s->entries) {
-            av_freep(&s->entries);
+        if (!s->entries)
             return AVERROR(ENOMEM);
-        }
 
         for (i  = 0; i < n; i++)
             atomic_init(&s->entries[i], 0);
