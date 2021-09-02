@@ -27,6 +27,8 @@
 #include "internal.h"
 #include "profiles.h"
 #include "thread.h"
+#include "pthread_internal.h"
+
 #include "videodsp.h"
 #include "vp56.h"
 #include "vp9.h"
@@ -39,6 +41,10 @@
 #define VP9_SYNCCODE 0x498342
 
 #if HAVE_THREADS
+DEFINE_OFFSET_ARRAY(VP9Context, vp9_context, pthread_init_cnt,
+                    (offsetof(VP9Context, progress_mutex)),
+                    (offsetof(VP9Context, progress_cond)));
+
 static void vp9_free_entries(AVCodecContext *avctx) {
     VP9Context *s = avctx->priv_data;
 
@@ -1248,10 +1254,7 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
     free_buffers(s);
     vp9_free_entries(avctx);
 #if HAVE_THREADS
-    if (avctx->active_thread_type & FF_THREAD_SLICE) {
-        pthread_mutex_destroy(&s->progress_mutex);
-        pthread_cond_destroy(&s->progress_cond);
-    }
+    ff_pthread_free(s, vp9_context_offsets);
 #endif
     av_freep(&s->td);
     return 0;
@@ -1794,14 +1797,16 @@ static void vp9_decode_flush(AVCodecContext *avctx)
 static av_cold int vp9_decode_init(AVCodecContext *avctx)
 {
     VP9Context *s = avctx->priv_data;
+    int ret;
 
     s->last_bpp = 0;
     s->s.h.filter.sharpness = -1;
 
 #if HAVE_THREADS
     if (avctx->active_thread_type & FF_THREAD_SLICE) {
-        pthread_mutex_init(&s->progress_mutex, NULL);
-        pthread_cond_init(&s->progress_cond, NULL);
+        ret = ff_pthread_init(s, vp9_context_offsets);
+        if (ret < 0)
+            return ret;
     }
 #endif
 
