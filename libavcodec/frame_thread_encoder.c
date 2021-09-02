@@ -250,21 +250,19 @@ fail:
 }
 
 void ff_frame_thread_encoder_free(AVCodecContext *avctx){
-    int i;
     ThreadContext *c= avctx->internal->frame_thread_encoder;
 
     /* In case initializing the mutexes/condition variables failed,
      * they must not be used. In this case the thread_count is zero
      * as no thread has been initialized yet. */
     if (avctx->thread_count > 0) {
-    pthread_mutex_lock(&c->task_fifo_mutex);
-    atomic_store(&c->exit, 1);
-    pthread_cond_broadcast(&c->task_fifo_cond);
-    pthread_mutex_unlock(&c->task_fifo_mutex);
+        pthread_mutex_lock(&c->task_fifo_mutex);
+        atomic_store(&c->exit, 1);
+        pthread_cond_broadcast(&c->task_fifo_cond);
+        pthread_mutex_unlock(&c->task_fifo_mutex);
 
-    for (i=0; i<avctx->thread_count; i++) {
-         pthread_join(c->worker[i], NULL);
-    }
+        for (int i = 0; i < avctx->thread_count; i++)
+            pthread_join(c->worker[i], NULL);
     }
 
     for (unsigned i = 0; i < c->max_tasks; i++) {
