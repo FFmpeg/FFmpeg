@@ -45,14 +45,6 @@ DEFINE_OFFSET_ARRAY(VP9Context, vp9_context, pthread_init_cnt,
                     (offsetof(VP9Context, progress_mutex)),
                     (offsetof(VP9Context, progress_cond)));
 
-static void vp9_free_entries(AVCodecContext *avctx) {
-    VP9Context *s = avctx->priv_data;
-
-    if (avctx->active_thread_type & FF_THREAD_SLICE)  {
-        av_freep(&s->entries);
-    }
-}
-
 static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
     VP9Context *s = avctx->priv_data;
     int i;
@@ -88,7 +80,6 @@ static void vp9_await_tile_progress(VP9Context *s, int field, int n) {
     pthread_mutex_unlock(&s->progress_mutex);
 }
 #else
-static void vp9_free_entries(AVCodecContext *avctx) {}
 static int vp9_alloc_entries(AVCodecContext *avctx, int n) { return 0; }
 #endif
 
@@ -794,7 +785,6 @@ static int decode_frame_header(AVCodecContext *avctx,
         }
 
         s->s.h.tiling.tile_cols = 1 << s->s.h.tiling.log2_tile_cols;
-        vp9_free_entries(avctx);
         s->active_tile_cols = avctx->active_thread_type == FF_THREAD_SLICE ?
                               s->s.h.tiling.tile_cols : 1;
         vp9_alloc_entries(avctx, s->sb_rows);
@@ -1249,8 +1239,8 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
     }
 
     free_buffers(s);
-    vp9_free_entries(avctx);
 #if HAVE_THREADS
+    av_freep(&s->entries);
     ff_pthread_free(s, vp9_context_offsets);
 #endif
     av_freep(&s->td);
