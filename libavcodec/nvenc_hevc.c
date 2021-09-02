@@ -171,6 +171,8 @@ static const AVOption options[] = {
                                                             OFFSET(extra_sei),    AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "intra-refresh","Use Periodic Intra Refresh instead of IDR frames",
                                                             OFFSET(intra_refresh),AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
+    { "single-slice-intra-refresh", "Use single slice intra refresh",
+                                                            OFFSET(single_slice_intra_refresh), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 

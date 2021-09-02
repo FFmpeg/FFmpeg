@@ -529,8 +529,21 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 #endif
 
+#ifdef NVENC_HAVE_SINGLE_SLICE_INTRA_REFRESH
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SINGLE_SLICE_INTRA_REFRESH);
+    if(ctx->single_slice_intra_refresh && ret <= 0) {
+        av_log(avctx, AV_LOG_WARNING, "Single slice intra refresh not supported by the device\n");
+        return AVERROR(ENOSYS);
+    }
+#else
+    if(ctx->single_slice_intra_refresh) {
+        av_log(avctx, AV_LOG_WARNING, "Single slice intra refresh needs SDK 11.1 at build time\n");
+        return AVERROR(ENOSYS);
+    }
+#endif
+
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_INTRA_REFRESH);
-    if(ctx->intra_refresh && ret <= 0) {
+    if((ctx->intra_refresh || ctx->single_slice_intra_refresh) && ret <= 0) {
         av_log(avctx, AV_LOG_WARNING, "Intra refresh not supported by the device\n");
         return AVERROR(ENOSYS);
     }
@@ -1086,6 +1099,9 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         h264->enableIntraRefresh = 1;
         h264->intraRefreshPeriod = avctx->gop_size;
         h264->intraRefreshCnt = avctx->gop_size - 1;
+#ifdef NVENC_HAVE_SINGLE_SLICE_INTRA_REFRESH
+        h264->singleSliceIntraRefresh = ctx->single_slice_intra_refresh;
+#endif
     }
 
     h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
@@ -1192,6 +1208,9 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->enableIntraRefresh = 1;
         hevc->intraRefreshPeriod = avctx->gop_size;
         hevc->intraRefreshCnt = avctx->gop_size - 1;
+#ifdef NVENC_HAVE_SINGLE_SLICE_INTRA_REFRESH
+        hevc->singleSliceIntraRefresh = ctx->single_slice_intra_refresh;
+#endif
     }
 
     hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
@@ -1390,6 +1409,10 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
         ctx->encode_config.frameIntervalP = 0;
         ctx->encode_config.gopLength = 1;
     }
+
+    /* force to enable intra refresh */
+    if(ctx->single_slice_intra_refresh)
+        ctx->intra_refresh = 1;
 
     if (ctx->intra_refresh)
         ctx->encode_config.gopLength = NVENC_INFINITE_GOPLENGTH;
