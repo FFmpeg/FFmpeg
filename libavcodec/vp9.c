@@ -43,8 +43,6 @@ static void vp9_free_entries(AVCodecContext *avctx) {
     VP9Context *s = avctx->priv_data;
 
     if (avctx->active_thread_type & FF_THREAD_SLICE)  {
-        pthread_mutex_destroy(&s->progress_mutex);
-        pthread_cond_destroy(&s->progress_cond);
         av_freep(&s->entries);
     }
 }
@@ -66,9 +64,6 @@ static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
 
         for (i  = 0; i < n; i++)
             atomic_init(&s->entries[i], 0);
-
-        pthread_mutex_init(&s->progress_mutex, NULL);
-        pthread_cond_init(&s->progress_cond, NULL);
     }
     return 0;
 }
@@ -1252,6 +1247,12 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
 
     free_buffers(s);
     vp9_free_entries(avctx);
+#if HAVE_THREADS
+    if (avctx->active_thread_type & FF_THREAD_SLICE) {
+        pthread_mutex_destroy(&s->progress_mutex);
+        pthread_cond_destroy(&s->progress_cond);
+    }
+#endif
     av_freep(&s->td);
     return 0;
 }
@@ -1796,6 +1797,13 @@ static av_cold int vp9_decode_init(AVCodecContext *avctx)
 
     s->last_bpp = 0;
     s->s.h.filter.sharpness = -1;
+
+#if HAVE_THREADS
+    if (avctx->active_thread_type & FF_THREAD_SLICE) {
+        pthread_mutex_init(&s->progress_mutex, NULL);
+        pthread_cond_init(&s->progress_cond, NULL);
+    }
+#endif
 
     for (int i = 0; i < 3; i++) {
         s->s.frames[i].tf.f = av_frame_alloc();
