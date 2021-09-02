@@ -202,15 +202,19 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx)
     c->max_tasks = avctx->thread_count + 2;
     for (unsigned j = 0; j < c->max_tasks; j++) {
         if (!(c->tasks[j].indata  = av_frame_alloc()) ||
-            !(c->tasks[j].outdata = av_packet_alloc()))
+            !(c->tasks[j].outdata = av_packet_alloc())) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
     }
 
     for(i=0; i<avctx->thread_count ; i++){
         void *tmpv;
         thread_avctx = avcodec_alloc_context3(avctx->codec);
-        if(!thread_avctx)
+        if (!thread_avctx) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
         tmpv = thread_avctx->priv_data;
         *thread_avctx = *avctx;
         thread_avctx->priv_data = tmpv;
@@ -227,11 +231,12 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx)
         thread_avctx->thread_count = 1;
         thread_avctx->active_thread_type &= ~FF_THREAD_FRAME;
 
-        if (avcodec_open2(thread_avctx, avctx->codec, NULL) < 0)
+        if ((ret = avcodec_open2(thread_avctx, avctx->codec, NULL)) < 0)
             goto fail;
         av_assert0(!thread_avctx->internal->frame_thread_encoder);
         thread_avctx->internal->frame_thread_encoder = c;
-        if(pthread_create(&c->worker[i], NULL, worker, thread_avctx)) {
+        if ((ret = pthread_create(&c->worker[i], NULL, worker, thread_avctx))) {
+            ret = AVERROR(ret);
             goto fail;
         }
     }
@@ -245,7 +250,7 @@ fail:
     avctx->thread_count = i;
     av_log(avctx, AV_LOG_ERROR, "ff_frame_thread_encoder_init failed\n");
     ff_frame_thread_encoder_free(avctx);
-    return -1;
+    return ret;
 }
 
 void ff_frame_thread_encoder_free(AVCodecContext *avctx){
