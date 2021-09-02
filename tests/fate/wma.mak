@@ -11,6 +11,7 @@ fate-wmapro-5.1: SIZE_TOLERANCE = 24576
 FATE_WMAPRO-$(call DEMDEC, MOV, WMAPRO) += fate-wmapro-ism
 fate-wmapro-ism: CMD = pcm -i $(TARGET_SAMPLES)/isom/vc1-wmapro.ism -vn
 fate-wmapro-ism: REF = $(SAMPLES)/isom/vc1-wmapro.pcm
+fate-wmapro-ism: SIZE_TOLERANCE = 4784
 
 $(FATE_WMAPRO-yes): CMP = oneoff
 
