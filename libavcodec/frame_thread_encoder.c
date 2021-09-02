@@ -200,14 +200,13 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx)
     atomic_init(&c->exit, 0);
 
     c->max_tasks = avctx->thread_count + 2;
-    for (unsigned i = 0; i < c->max_tasks; i++) {
-        if (!(c->tasks[i].indata  = av_frame_alloc()) ||
-            !(c->tasks[i].outdata = av_packet_alloc()))
+    for (unsigned j = 0; j < c->max_tasks; j++) {
+        if (!(c->tasks[j].indata  = av_frame_alloc()) ||
+            !(c->tasks[j].outdata = av_packet_alloc()))
             goto fail;
     }
 
     for(i=0; i<avctx->thread_count ; i++){
-        int ret;
         void *tmpv;
         thread_avctx = avcodec_alloc_context3(avctx->codec);
         if(!thread_avctx)
@@ -221,7 +220,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx)
         if (ret < 0)
             goto fail;
         if (avctx->codec->priv_class) {
-            int ret = av_opt_copy(thread_avctx->priv_data, avctx->priv_data);
+            ret = av_opt_copy(thread_avctx->priv_data, avctx->priv_data);
             if (ret < 0)
                 goto fail;
         }
