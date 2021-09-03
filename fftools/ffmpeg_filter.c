@@ -995,15 +995,6 @@ int configure_filtergraph(FilterGraph *fg)
         if (strlen(args))
             args[strlen(args)-1] = 0;
         av_opt_set(fg->graph, "aresample_swr_opts", args, 0);
-
-        args[0] = '\0';
-        e       = NULL;
-        while ((e = av_dict_get(fg->outputs[0]->ost->resample_opts, "", e,
-                                AV_DICT_IGNORE_SUFFIX))) {
-            av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
-        }
-        if (strlen(args))
-            args[strlen(args) - 1] = '\0';
     } else {
         fg->graph->nb_threads = filter_complex_nbthreads;
     }
