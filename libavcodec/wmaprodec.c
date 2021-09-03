@@ -574,7 +574,8 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
     if (avctx->debug & FF_DEBUG_BITSTREAM)
         dump_context(s);
 
-    avctx->channel_layout = channel_mask;
+    if (avctx->codec_id == AV_CODEC_ID_WMAPRO)
+        avctx->channel_layout = channel_mask;
 
     ff_thread_once(&init_static_once, decode_init_static);
 
@@ -1936,8 +1937,9 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
 
     /* get stream config */
-    if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size == 34) { /* XMA2WAVEFORMATEX */
-        s->num_streams = (avctx->channels + 1) / 2;
+    if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size >= 34) { /* XMA2WAVEFORMATEX */
+        s->num_streams = AV_RL16(avctx->extradata);
+        avctx->channel_layout = AV_RL32(avctx->extradata + 2);
     } else if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size >= 2) { /* XMA2WAVEFORMAT */
         s->num_streams = avctx->extradata[1];
         if (avctx->extradata_size != (32 + ((avctx->extradata[0]==3)?0:8) + 4*s->num_streams)) {
