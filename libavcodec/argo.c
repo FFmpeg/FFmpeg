@@ -58,7 +58,7 @@ static int decode_pal8(AVCodecContext *avctx, uint32_t *pal)
         return AVERROR_INVALIDDATA;
 
     for (int i = 0; i < count; i++)
-        pal[start + i] = (0xFF << 24U) | bytestream2_get_be24u(gb);
+        pal[start + i] = (0xFFU << 24) | bytestream2_get_be24u(gb);
 
     return 0;
 }
