@@ -156,8 +156,8 @@ function \type\()_h264_qpel8_h_lowpass_neon
         lowpass_8       d0,  d1,  d16, d17, d0,  d16
   .ifc \type,avg
         vld1.8          {d2},     [r0,:64], r3
-        vrhadd.u8       d0,  d0,  d2
         vld1.8          {d3},     [r0,:64]
+        vrhadd.u8       d0,  d0,  d2
         vrhadd.u8       d16, d16, d3
         sub             r0,  r0,  r3
   .endif
@@ -196,9 +196,8 @@ function \type\()_h264_qpel8_h_lowpass_l2_neon
         vrhadd.u8       q0,  q0,  q14
   .ifc \type,avg
         vld1.8          {d2},      [r0,:64], r2
-        vrhadd.u8       d0,  d0,  d2
         vld1.8          {d3},      [r0,:64]
-        vrhadd.u8       d1,  d1,  d3
+        vrhadd.u8       q0,  q0,  q1
         sub             r0,  r0,  r2
   .endif
         vst1.8          {d0},      [r0,:64], r2
@@ -266,20 +265,20 @@ function \type\()_h264_qpel8_v_lowpass_neon
 
   .ifc \type,avg
         vld1.8          {d9},  [r0,:64], r2
-        vrhadd.u8       d8,  d8,  d9
         vld1.8          {d11}, [r0,:64], r2
-        vrhadd.u8       d10, d10, d11
         vld1.8          {d13}, [r0,:64], r2
-        vrhadd.u8       d12, d12, d13
+        vrhadd.u8       d8,  d8,  d9
         vld1.8          {d15}, [r0,:64], r2
-        vrhadd.u8       d14, d14, d15
+        vrhadd.u8       d10, d10, d11
         vld1.8          {d23}, [r0,:64], r2
-        vrhadd.u8       d22, d22, d23
+        vrhadd.u8       d12, d12, d13
         vld1.8          {d25}, [r0,:64], r2
-        vrhadd.u8       d24, d24, d25
+        vrhadd.u8       d14, d14, d15
         vld1.8          {d27}, [r0,:64], r2
-        vrhadd.u8       d26, d26, d27
+        vrhadd.u8       d22, d22, d23
         vld1.8          {d29}, [r0,:64], r2
+        vrhadd.u8       d24, d24, d25
+        vrhadd.u8       d26, d26, d27
         vrhadd.u8       d28, d28, d29
         sub             r0,  r0,  r2,  lsl #3
   .endif
@@ -355,20 +354,20 @@ function \type\()_h264_qpel8_v_lowpass_l2_neon
 
   .ifc \type,avg
         vld1.8          {d16}, [r0,:64], r3
+        vld1.8          {d17}, [r0,:64], r3
         vrhadd.u8       d0,  d0,  d16
-        vld1.8          {d17}, [r0,:64], r3
+        vld1.8          {d16}, [r0,:64], r3
         vrhadd.u8       d1,  d1,  d17
-        vld1.8          {d16}, [r0,:64], r3
+        vld1.8          {d17}, [r0,:64], r3
         vrhadd.u8       d2,  d2,  d16
-        vld1.8          {d17}, [r0,:64], r3
+        vld1.8          {d16}, [r0,:64], r3
         vrhadd.u8       d3,  d3,  d17
-        vld1.8          {d16}, [r0,:64], r3
+        vld1.8          {d17}, [r0,:64], r3
         vrhadd.u8       d4,  d4,  d16
-        vld1.8          {d17}, [r0,:64], r3
-        vrhadd.u8       d5,  d5,  d17
         vld1.8          {d16}, [r0,:64], r3
-        vrhadd.u8       d10, d10, d16
+        vrhadd.u8       d5,  d5,  d17
         vld1.8          {d17}, [r0,:64], r3
+        vrhadd.u8       d10, d10, d16
         vrhadd.u8       d11, d11, d17
         sub             r0,  r0,  r3,  lsl #3
   .endif
@@ -461,21 +460,17 @@ function \type\()_h264_qpel8_hv_lowpass_neon
         bl              put_h264_qpel8_hv_lowpass_neon_top
   .ifc \type,avg
         vld1.8          {d0},      [r0,:64], r2
-        vrhadd.u8       d12, d12, d0
         vld1.8          {d1},      [r0,:64], r2
-        vrhadd.u8       d13, d13, d1
         vld1.8          {d2},      [r0,:64], r2
-        vrhadd.u8       d14, d14, d2
         vld1.8          {d3},      [r0,:64], r2
-        vrhadd.u8       d15, d15, d3
+        vrhadd.u8       q6,  q6,  q0
         vld1.8          {d4},      [r0,:64], r2
-        vrhadd.u8       d8,  d8,  d4
         vld1.8          {d5},      [r0,:64], r2
-        vrhadd.u8       d9,  d9,  d5
+        vrhadd.u8       q7,  q7,  q1
         vld1.8          {d6},      [r0,:64], r2
-        vrhadd.u8       d10, d10, d6
         vld1.8          {d7},      [r0,:64], r2
-        vrhadd.u8       d11, d11, d7
+        vrhadd.u8       q4,  q4,  q2
+        vrhadd.u8       q5,  q5,  q3
         sub             r0,  r0,  r2,  lsl #3
   .endif
 
@@ -511,21 +506,17 @@ function \type\()_h264_qpel8_hv_lowpass_l2_neon
         vrhadd.u8       q3,  q3,  q5
   .ifc \type,avg
         vld1.8          {d16},     [r0,:64], r3
-        vrhadd.u8       d0,  d0,  d16
         vld1.8          {d17},     [r0,:64], r3
-        vrhadd.u8       d1,  d1,  d17
         vld1.8          {d18},     [r0,:64], r3
-        vrhadd.u8       d2,  d2,  d18
         vld1.8          {d19},     [r0,:64], r3
-        vrhadd.u8       d3,  d3,  d19
+        vrhadd.u8       q0,  q0,  q8
         vld1.8          {d20},     [r0,:64], r3
-        vrhadd.u8       d4,  d4,  d20
         vld1.8          {d21},     [r0,:64], r3
-        vrhadd.u8       d5,  d5,  d21
+        vrhadd.u8       q1,  q1,  q9
         vld1.8          {d22},     [r0,:64], r3
-        vrhadd.u8       d6,  d6,  d22
         vld1.8          {d23},     [r0,:64], r3
-        vrhadd.u8       d7,  d7,  d23
+        vrhadd.u8       q2,  q2,  q10
+        vrhadd.u8       q3,  q3,  q11
         sub             r0,  r0,  r3,  lsl #3
   .endif
         vst1.8          {d0},      [r0,:64], r3

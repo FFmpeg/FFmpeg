@@ -169,8 +169,8 @@ function \type\()_h264_qpel8_h_lowpass_neon
         lowpass_8       v28, v29, v16, v17, v28, v16
   .ifc \type,avg
         ld1             {v2.8B},    [x0], x3
-        urhadd          v28.8B, v28.8B,  v2.8B
         ld1             {v3.8B},    [x0]
+        urhadd          v28.8B, v28.8B,  v2.8B
         urhadd          v16.8B, v16.8B, v3.8B
         sub             x0,  x0,  x3
   .endif
@@ -210,8 +210,8 @@ function \type\()_h264_qpel8_h_lowpass_l2_neon
         urhadd          v27.8B, v27.8B, v29.8B
   .ifc \type,avg
         ld1             {v2.8B},      [x0], x2
-        urhadd          v26.8B, v26.8B, v2.8B
         ld1             {v3.8B},      [x0]
+        urhadd          v26.8B, v26.8B, v2.8B
         urhadd          v27.8B, v27.8B, v3.8B
         sub             x0,  x0,  x2
   .endif
@@ -281,20 +281,20 @@ function \type\()_h264_qpel8_v_lowpass_neon
 
   .ifc \type,avg
         ld1             {v24.8B},  [x0], x2
-        urhadd          v16.8B, v16.8B, v24.8B
         ld1             {v25.8B}, [x0], x2
-        urhadd          v17.8B, v17.8B, v25.8B
         ld1             {v26.8B}, [x0], x2
-        urhadd          v18.8B, v18.8B, v26.8B
+        urhadd          v16.8B, v16.8B, v24.8B
         ld1             {v27.8B}, [x0], x2
-        urhadd          v19.8B, v19.8B, v27.8B
+        urhadd          v17.8B, v17.8B, v25.8B
         ld1             {v28.8B}, [x0], x2
-        urhadd          v20.8B, v20.8B, v28.8B
+        urhadd          v18.8B, v18.8B, v26.8B
         ld1             {v29.8B}, [x0], x2
-        urhadd          v21.8B, v21.8B, v29.8B
+        urhadd          v19.8B, v19.8B, v27.8B
         ld1             {v30.8B}, [x0], x2
-        urhadd          v22.8B, v22.8B, v30.8B
+        urhadd          v20.8B, v20.8B, v28.8B
         ld1             {v31.8B}, [x0], x2
+        urhadd          v21.8B, v21.8B, v29.8B
+        urhadd          v22.8B, v22.8B, v30.8B
         urhadd          v23.8B, v23.8B, v31.8B
         sub             x0,  x0,  x2,  lsl #3
   .endif
@@ -375,20 +375,20 @@ function \type\()_h264_qpel8_v_lowpass_l2_neon
 
   .ifc \type,avg
         ld1             {v24.8B}, [x0], x3
-        urhadd          v16.8B, v16.8B, v24.8B
         ld1             {v25.8B}, [x0], x3
-        urhadd          v17.8B, v17.8B, v25.8B
         ld1             {v26.8B}, [x0], x3
-        urhadd          v18.8B, v18.8B, v26.8B
+        urhadd          v16.8B, v16.8B, v24.8B
         ld1             {v27.8B}, [x0], x3
-        urhadd          v19.8B, v19.8B, v27.8B
+        urhadd          v17.8B, v17.8B, v25.8B
         ld1             {v28.8B}, [x0], x3
-        urhadd          v20.8B, v20.8B, v28.8B
+        urhadd          v18.8B, v18.8B, v26.8B
         ld1             {v29.8B}, [x0], x3
-        urhadd          v21.8B, v21.8B, v29.8B
+        urhadd          v19.8B, v19.8B, v27.8B
         ld1             {v30.8B}, [x0], x3
-        urhadd          v22.8B, v22.8B, v30.8B
+        urhadd          v20.8B, v20.8B, v28.8B
         ld1             {v31.8B}, [x0], x3
+        urhadd          v21.8B, v21.8B, v29.8B
+        urhadd          v22.8B, v22.8B, v30.8B
         urhadd          v23.8B, v23.8B, v31.8B
         sub             x0,  x0,  x3,  lsl #3
   .endif
@@ -458,20 +458,20 @@ function \type\()_h264_qpel8_hv_lowpass_neon
         bl              put_h264_qpel8_hv_lowpass_neon_top
   .ifc \type,avg
         ld1             {v0.8B},      [x0], x2
-        urhadd          v16.8B, v16.8B, v0.8B
         ld1             {v1.8B},      [x0], x2
-        urhadd          v17.8B, v17.8B, v1.8B
         ld1             {v2.8B},      [x0], x2
-        urhadd          v18.8B, v18.8B, v2.8B
+        urhadd          v16.8B, v16.8B, v0.8B
         ld1             {v3.8B},      [x0], x2
-        urhadd          v19.8B, v19.8B, v3.8B
+        urhadd          v17.8B, v17.8B, v1.8B
         ld1             {v4.8B},      [x0], x2
-        urhadd          v20.8B, v20.8B, v4.8B
+        urhadd          v18.8B, v18.8B, v2.8B
         ld1             {v5.8B},      [x0], x2
-        urhadd          v21.8B, v21.8B, v5.8B
+        urhadd          v19.8B, v19.8B, v3.8B
         ld1             {v6.8B},      [x0], x2
-        urhadd          v22.8B, v22.8B, v6.8B
+        urhadd          v20.8B, v20.8B, v4.8B
         ld1             {v7.8B},      [x0], x2
+        urhadd          v21.8B, v21.8B, v5.8B
+        urhadd          v22.8B, v22.8B, v6.8B
         urhadd          v23.8B, v23.8B, v7.8B
         sub             x0,  x0,  x2,  lsl #3
   .endif
@@ -511,20 +511,20 @@ function \type\()_h264_qpel8_hv_lowpass_l2_neon
         urhadd          v7.8B,  v7.8B,  v23.8B
   .ifc \type,avg
         ld1             {v16.8B},     [x0], x3
-        urhadd          v0.8B,  v0.8B,  v16.8B
         ld1             {v17.8B},     [x0], x3
-        urhadd          v1.8B,  v1.8B,  v17.8B
         ld1             {v18.8B},     [x0], x3
-        urhadd          v2.8B,  v2.8B,  v18.8B
+        urhadd          v0.8B,  v0.8B,  v16.8B
         ld1             {v19.8B},     [x0], x3
-        urhadd          v3.8B,  v3.8B,  v19.8B
+        urhadd          v1.8B,  v1.8B,  v17.8B
         ld1             {v20.8B},     [x0], x3
-        urhadd          v4.8B,  v4.8B,  v20.8B
+        urhadd          v2.8B,  v2.8B,  v18.8B
         ld1             {v21.8B},     [x0], x3
-        urhadd          v5.8B,  v5.8B,  v21.8B
+        urhadd          v3.8B,  v3.8B,  v19.8B
         ld1             {v22.8B},     [x0], x3
-        urhadd          v6.8B,  v6.8B,  v22.8B
+        urhadd          v4.8B,  v4.8B,  v20.8B
         ld1             {v23.8B},     [x0], x3
+        urhadd          v5.8B,  v5.8B,  v21.8B
+        urhadd          v6.8B,  v6.8B,  v22.8B
         urhadd          v7.8B,  v7.8B,  v23.8B
         sub             x0,  x0,  x3,  lsl #3
   .endif
