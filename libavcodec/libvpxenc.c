@@ -385,9 +385,20 @@ static av_cold int codecctl_int(AVCodecContext *avctx,
         snprintf(buf, sizeof(buf), "Failed to set %s codec control",
                  ctlidstr[id]);
         log_encoder_error(avctx, buf);
+        return AVERROR(EINVAL);
     }
 
-    return res == VPX_CODEC_OK ? 0 : AVERROR(EINVAL);
+    if (ctx->is_alpha) {
+        int res_alpha = vpx_codec_control(&ctx->encoder_alpha, id, val);
+        if (res_alpha != VPX_CODEC_OK) {
+            snprintf(buf, sizeof(buf), "Failed to set %s alpha codec control",
+                     ctlidstr[id]);
+            log_encoder_error(avctx, buf);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
 }
 
 #if VPX_ENCODER_ABI_VERSION >= 12
@@ -407,9 +418,20 @@ static av_cold int codecctl_intp(AVCodecContext *avctx,
         snprintf(buf, sizeof(buf), "Failed to set %s codec control",
                  ctlidstr[id]);
         log_encoder_error(avctx, buf);
+        return AVERROR(EINVAL);
     }
 
-    return res == VPX_CODEC_OK ? 0 : AVERROR(EINVAL);
+    if (ctx->is_alpha) {
+        int res_alpha = vpx_codec_control(&ctx->encoder_alpha, id, val);
+        if (res_alpha != VPX_CODEC_OK) {
+            snprintf(buf, sizeof(buf), "Failed to set %s alpha codec control",
+                     ctlidstr[id]);
+            log_encoder_error(avctx, buf);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
 }
 #endif
 
