@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     AVCodecContext *decoder_ctx = NULL;
     const AVCodec *decoder;
 
-    AVPacket pkt = { 0 };
+    AVPacket *pkt = NULL;
     AVFrame *frame = NULL, *sw_frame = NULL;
 
     AVIOContext *output_ctx = NULL;
@@ -200,27 +200,26 @@ int main(int argc, char **argv)
 
     frame    = av_frame_alloc();
     sw_frame = av_frame_alloc();
-    if (!frame || !sw_frame) {
+    pkt      = av_packet_alloc();
+    if (!frame || !sw_frame || !pkt) {
         ret = AVERROR(ENOMEM);
         goto finish;
     }
 
     /* actual decoding */
     while (ret >= 0) {
-        ret = av_read_frame(input_ctx, &pkt);
+        ret = av_read_frame(input_ctx, pkt);
         if (ret < 0)
             break;
 
-        if (pkt.stream_index == video_st->index)
-            ret = decode_packet(decoder_ctx, frame, sw_frame, &pkt, output_ctx);
+        if (pkt->stream_index == video_st->index)
+            ret = decode_packet(decoder_ctx, frame, sw_frame, pkt, output_ctx);
 
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
     }
 
     /* flush the decoder */
-    pkt.data = NULL;
-    pkt.size = 0;
-    ret = decode_packet(decoder_ctx, frame, sw_frame, &pkt, output_ctx);
+    ret = decode_packet(decoder_ctx, frame, sw_frame, NULL, output_ctx);
 
 finish:
     if (ret < 0) {
@@ -233,6 +232,7 @@ finish:
 
     av_frame_free(&frame);
     av_frame_free(&sw_frame);
+    av_packet_free(&pkt);
 
     avcodec_free_context(&decoder_ctx);
 
