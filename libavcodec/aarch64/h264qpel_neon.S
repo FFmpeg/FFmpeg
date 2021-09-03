@@ -58,6 +58,24 @@
   .endif
 .endm
 
+//trashes v0-v4
+.macro  lowpass_8_v     r0,  r1,  r2,  r3,  r4,  r5,  r6,  d0,  d1,  narrow=1
+        uaddl           v2.8H,      \r2\().8B, \r3\().8B
+        uaddl           v0.8H,      \r3\().8B, \r4\().8B
+        uaddl           v4.8H,      \r1\().8B, \r4\().8B
+        uaddl           v1.8H,      \r2\().8B, \r5\().8B
+        uaddl           \d0\().8H,  \r0\().8B, \r5\().8B
+        uaddl           \d1\().8H,  \r1\().8B, \r6\().8B
+        mla             \d0\().8H,  v2.8H,     v6.H[1]
+        mls             \d0\().8H,  v4.8H,     v6.H[0]
+        mla             \d1\().8H,  v0.8H,     v6.H[1]
+        mls             \d1\().8H,  v1.8H,     v6.H[0]
+  .if \narrow
+        sqrshrun        \d0\().8B,  \d0\().8H, #5
+        sqrshrun        \d1\().8B,  \d1\().8H, #5
+  .endif
+.endm
+
 //trashes v0-v5, v7, v30-v31
 .macro  lowpass_8H      r0,  r1
         ext             v0.16B,     \r0\().16B, \r0\().16B, #2
@@ -100,18 +118,13 @@
 .endm
 
 // trashed v0-v7
-.macro  lowpass_8.16    r0,  r1,  r2
-        ext             v1.16B,     \r0\().16B, \r1\().16B, #4
-        ext             v0.16B,     \r0\().16B, \r1\().16B, #6
-        saddl           v5.4S,      v1.4H,      v0.4H
-        ext             v2.16B,     \r0\().16B, \r1\().16B, #2
-        saddl2          v1.4S,      v1.8H,      v0.8H
-        ext             v3.16B,     \r0\().16B, \r1\().16B, #8
-        saddl           v6.4S,      v2.4H,      v3.4H
-        ext             \r1\().16B, \r0\().16B, \r1\().16B, #10
-        saddl2          v2.4S,      v2.8H,      v3.8H
-        saddl           v0.4S,      \r0\().4H,  \r1\().4H
-        saddl2          v4.4S,      \r0\().8H,  \r1\().8H
+.macro  lowpass_8.16    r0,  r1,  r2,  r3,  r4,  r5
+        saddl           v5.4S,      \r2\().4H,  \r3\().4H
+        saddl2          v1.4S,      \r2\().8H,  \r3\().8H
+        saddl           v6.4S,      \r1\().4H,  \r4\().4H
+        saddl2          v2.4S,      \r1\().8H,  \r4\().8H
+        saddl           v0.4S,      \r0\().4H,  \r5\().4H
+        saddl2          v4.4S,      \r0\().8H,  \r5\().8H
 
         shl             v3.4S,  v5.4S,  #4
         shl             v5.4S,  v5.4S,  #2
@@ -134,7 +147,7 @@
         rshrn           v5.4H,  v5.4S,  #10
         rshrn2          v5.8H,  v1.4S,  #10
 
-        sqxtun          \r2\().8B,  v5.8H
+        sqxtun          \r0\().8B,  v5.8H
 .endm
 
 function put_h264_qpel16_h_lowpass_neon_packed
@@ -258,27 +271,23 @@ endfunc
 
 function \type\()_h264_qpel8_v_lowpass_neon
         ld1             {v16.8B}, [x1], x3
-        ld1             {v18.8B}, [x1], x3
-        ld1             {v20.8B}, [x1], x3
-        ld1             {v22.8B}, [x1], x3
-        ld1             {v24.8B}, [x1], x3
-        ld1             {v26.8B}, [x1], x3
-        ld1             {v28.8B}, [x1], x3
-        ld1             {v30.8B}, [x1], x3
         ld1             {v17.8B}, [x1], x3
+        ld1             {v18.8B}, [x1], x3
         ld1             {v19.8B}, [x1], x3
+        ld1             {v20.8B}, [x1], x3
         ld1             {v21.8B}, [x1], x3
+        ld1             {v22.8B}, [x1], x3
         ld1             {v23.8B}, [x1], x3
-        ld1             {v25.8B}, [x1]
+        ld1             {v24.8B}, [x1], x3
+        ld1             {v25.8B}, [x1], x3
+        ld1             {v26.8B}, [x1], x3
+        ld1             {v27.8B}, [x1], x3
+        ld1             {v28.8B}, [x1]
 
-        transpose_8x8B  v16, v18, v20, v22, v24, v26, v28, v30, v0,  v1
-        transpose_8x8B  v17, v19, v21, v23, v25, v27, v29, v31, v0,  v1
-        lowpass_8       v16, v17, v18, v19, v16, v17
-        lowpass_8       v20, v21, v22, v23, v18, v19
-        lowpass_8       v24, v25, v26, v27, v20, v21
-        lowpass_8       v28, v29, v30, v31, v22, v23
-        transpose_8x8B  v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
-
+        lowpass_8_v     v16, v17, v18, v19, v20, v21, v22, v16, v17
+        lowpass_8_v     v18, v19, v20, v21, v22, v23, v24, v18, v19
+        lowpass_8_v     v20, v21, v22, v23, v24, v25, v26, v20, v21
+        lowpass_8_v     v22, v23, v24, v25, v26, v27, v28, v22, v23
   .ifc \type,avg
         ld1             {v24.8B},  [x0], x2
         ld1             {v25.8B}, [x0], x2
@@ -335,26 +344,23 @@ endfunc
 
 function \type\()_h264_qpel8_v_lowpass_l2_neon
         ld1             {v16.8B}, [x1], x3
-        ld1             {v18.8B}, [x1], x3
-        ld1             {v20.8B}, [x1], x3
-        ld1             {v22.8B}, [x1], x3
-        ld1             {v24.8B}, [x1], x3
-        ld1             {v26.8B}, [x1], x3
-        ld1             {v28.8B}, [x1], x3
-        ld1             {v30.8B}, [x1], x3
         ld1             {v17.8B}, [x1], x3
+        ld1             {v18.8B}, [x1], x3
         ld1             {v19.8B}, [x1], x3
+        ld1             {v20.8B}, [x1], x3
         ld1             {v21.8B}, [x1], x3
+        ld1             {v22.8B}, [x1], x3
         ld1             {v23.8B}, [x1], x3
-        ld1             {v25.8B}, [x1]
+        ld1             {v24.8B}, [x1], x3
+        ld1             {v25.8B}, [x1], x3
+        ld1             {v26.8B}, [x1], x3
+        ld1             {v27.8B}, [x1], x3
+        ld1             {v28.8B}, [x1]
 
-        transpose_8x8B  v16, v18, v20, v22, v24, v26, v28, v30, v0,  v1
-        transpose_8x8B  v17, v19, v21, v23, v25, v27, v29, v31, v0,  v1
-        lowpass_8       v16, v17, v18, v19, v16, v17
-        lowpass_8       v20, v21, v22, v23, v18, v19
-        lowpass_8       v24, v25, v26, v27, v20, v21
-        lowpass_8       v28, v29, v30, v31, v22, v23
-        transpose_8x8B  v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
+        lowpass_8_v     v16, v17, v18, v19, v20, v21, v22, v16, v17
+        lowpass_8_v     v18, v19, v20, v21, v22, v23, v24, v18, v19
+        lowpass_8_v     v20, v21, v22, v23, v24, v25, v26, v20, v21
+        lowpass_8_v     v22, v23, v24, v25, v26, v27, v28, v22, v23
 
         ld1             {v24.8B},  [x12], x2
         ld1             {v25.8B},  [x12], x2
@@ -432,22 +438,17 @@ function put_h264_qpel8_hv_lowpass_neon_top
         lowpass_8H      v26, v27
         lowpass_8H      v28, v29
 
-        transpose_8x8H  v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
-        transpose_8x8H  v24, v25, v26, v27, v28, v29, v30, v31, v0,  v1
+        lowpass_8.16    v16, v17, v18, v19, v20, v21
+        lowpass_8.16    v17, v18, v19, v20, v21, v22
 
-        lowpass_8.16    v16, v24, v16
-        lowpass_8.16    v17, v25, v17
+        lowpass_8.16    v18, v19, v20, v21, v22, v23
+        lowpass_8.16    v19, v20, v21, v22, v23, v24
 
-        lowpass_8.16    v18, v26, v18
-        lowpass_8.16    v19, v27, v19
+        lowpass_8.16    v20, v21, v22, v23, v24, v25
+        lowpass_8.16    v21, v22, v23, v24, v25, v26
 
-        lowpass_8.16    v20, v28, v20
-        lowpass_8.16    v21, v29, v21
-
-        lowpass_8.16    v22, v30, v22
-        lowpass_8.16    v23, v31, v23
-
-        transpose_8x8B v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
+        lowpass_8.16    v22, v23, v24, v25, v26, v27
+        lowpass_8.16    v23, v24, v25, v26, v27, v28
 
         ret
 endfunc
