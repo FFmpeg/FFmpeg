@@ -133,7 +133,7 @@ end:
 
 const AVCodecParser ff_pnm_parser = {
     .codec_ids      = { AV_CODEC_ID_PGM, AV_CODEC_ID_PGMYUV, AV_CODEC_ID_PPM,
-                        AV_CODEC_ID_PBM, AV_CODEC_ID_PAM },
+                        AV_CODEC_ID_PBM, AV_CODEC_ID_PAM, AV_CODEC_ID_PFM },
     .priv_data_size = sizeof(PNMParseContext),
     .parser_parse   = pnm_parse,
     .parser_close   = ff_parse_close,
