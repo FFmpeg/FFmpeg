@@ -1955,7 +1955,7 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
 
     /* get stream config */
-    if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size >= 34) { /* XMA2WAVEFORMATEX */
+    if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size == 34) { /* XMA2WAVEFORMATEX */
         s->num_streams = AV_RL16(avctx->extradata);
         avctx->channel_layout = AV_RL32(avctx->extradata + 2);
     } else if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size >= 2) { /* XMA2WAVEFORMAT */
