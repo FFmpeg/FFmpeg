@@ -228,6 +228,15 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     if (dav1d->operating_point >= 0)
         s.operating_point = dav1d->operating_point;
 
+#if FF_DAV1D_VERSION_AT_LEAST(6,0)
+    if (dav1d->frame_threads || dav1d->tile_threads)
+        s.n_threads = FFMAX(dav1d->frame_threads, dav1d->tile_threads);
+    else
+        s.n_threads = FFMIN(threads, DAV1D_MAX_THREADS);
+    s.max_frame_delay = (c->flags & AV_CODEC_FLAG_LOW_DELAY) ? 1 : s.n_threads;
+    av_log(c, AV_LOG_DEBUG, "Using %d threads, %d max_frame_delay\n",
+           s.n_threads, s.max_frame_delay);
+#else
     s.n_tile_threads = dav1d->tile_threads
                      ? dav1d->tile_threads
                      : FFMIN(floor(sqrt(threads)), DAV1D_MAX_TILE_THREADS);
@@ -236,6 +245,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
                       : FFMIN(ceil(threads / s.n_tile_threads), DAV1D_MAX_FRAME_THREADS);
     av_log(c, AV_LOG_DEBUG, "Using %d frame threads, %d tile threads\n",
            s.n_frame_threads, s.n_tile_threads);
+#endif
 
     res = libdav1d_parse_extradata(c);
     if (res < 0)
@@ -519,11 +529,18 @@ static av_cold int libdav1d_close(AVCodecContext *c)
     return 0;
 }
 
+#ifndef DAV1D_MAX_FRAME_THREADS
+#define DAV1D_MAX_FRAME_THREADS DAV1D_MAX_THREADS
+#endif
+#ifndef DAV1D_MAX_TILE_THREADS
+#define DAV1D_MAX_TILE_THREADS DAV1D_MAX_THREADS
+#endif
+
 #define OFFSET(x) offsetof(Libdav1dContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption libdav1d_options[] = {
-    { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_TILE_THREADS, VD },
-    { "framethreads", "Frame threads", OFFSET(frame_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_THREADS, VD },
+    { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_TILE_THREADS, VD | AV_OPT_FLAG_DEPRECATED },
+    { "framethreads", "Frame threads", OFFSET(frame_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_THREADS, VD | AV_OPT_FLAG_DEPRECATED },
     { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VD | AV_OPT_FLAG_DEPRECATED },
     { "oppoint",  "Select an operating point of the scalable bitstream", OFFSET(operating_point), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 31, VD },
     { "alllayers", "Output all spatial layers", OFFSET(all_layers), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
