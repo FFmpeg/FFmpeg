@@ -169,7 +169,7 @@ int qp_hist           = 0;
 int stdin_interaction = 1;
 int frame_bits_per_raw_sample = 0;
 float max_error_rate  = 2.0/3;
-int filter_nbthreads = 0;
+char *filter_nbthreads;
 int filter_complex_nbthreads = 0;
 int vstats_version = 2;
 int auto_conversion_filters = 1;
@@ -262,6 +262,13 @@ static AVDictionary *strip_specifiers(AVDictionary *dict)
             *p = ':';
     }
     return ret;
+}
+
+static int opt_filter_threads(void *optctx, const char *opt, const char *arg)
+{
+    av_free(filter_nbthreads);
+    filter_nbthreads = av_strdup(arg);
+    return 0;
 }
 
 static int opt_abort_on(void *optctx, const char *opt, const char *arg)
@@ -3618,7 +3625,7 @@ const OptionDef options[] = {
         "set profile", "profile" },
     { "filter",         HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(filters) },
         "set stream filtergraph", "filter_graph" },
-    { "filter_threads",  HAS_ARG | OPT_INT,                          { &filter_nbthreads },
+    { "filter_threads", HAS_ARG,                                     { .func_arg = opt_filter_threads },
         "number of non-complex filter threads" },
     { "filter_script",  HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(filter_scripts) },
         "read stream filtergraph description from a file", "filename" },

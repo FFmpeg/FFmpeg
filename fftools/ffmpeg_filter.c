@@ -968,8 +968,11 @@ int configure_filtergraph(FilterGraph *fg)
         char args[512];
         AVDictionaryEntry *e = NULL;
 
-        fg->graph->nb_threads = filter_nbthreads;
-        if (!fg->graph->nb_threads) {
+        if (filter_nbthreads) {
+            ret = av_opt_set(fg->graph, "threads", filter_nbthreads, 0);
+            if (ret < 0)
+                goto fail;
+        } else {
             e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
             if (e)
                 av_opt_set(fg->graph, "threads", e->value, 0);
