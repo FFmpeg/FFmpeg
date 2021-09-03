@@ -663,14 +663,6 @@ void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
     char name[16];\
     snprintf(name, sizeof(name), "%d", rate);
 
-#define GET_CH_LAYOUT_NAME(ch_layout)\
-    char name[16];\
-    snprintf(name, sizeof(name), "0x%"PRIx64, ch_layout);
-
-#define GET_CH_LAYOUT_DESC(ch_layout)\
-    char name[128];\
-    av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
-
 double get_rotation(int32_t *displaymatrix);
 
 #endif /* FFTOOLS_CMDUTILS_H */

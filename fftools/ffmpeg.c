@@ -551,6 +551,7 @@ static void ffmpeg_cleanup(int ret)
 
             avfilter_inout_free(&ofilter->out_tmp);
             av_freep(&ofilter->name);
+            av_channel_layout_uninit(&ofilter->ch_layout);
             av_freep(&fg->outputs[j]);
         }
         av_freep(&fg->outputs);
@@ -1532,7 +1533,7 @@ static int reap_filters(int flush)
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
-                    enc->channels != filtered_frame->channels) {
+                    enc->ch_layout.nb_channels != filtered_frame->ch_layout.nb_channels) {
                     av_log(NULL, AV_LOG_ERROR,
                            "Audio filter graph output is not normalized and encoder does not support parameter changes\n");
                     break;
@@ -1878,17 +1879,22 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         print_final_stats(total_size);
 }
 
-static void ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par)
+static int ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par)
 {
+    int ret;
+
     // We never got any input. Set a fake format, which will
     // come from libavformat.
     ifilter->format                 = par->format;
     ifilter->sample_rate            = par->sample_rate;
-    ifilter->channels               = par->channels;
-    ifilter->channel_layout         = par->channel_layout;
     ifilter->width                  = par->width;
     ifilter->height                 = par->height;
     ifilter->sample_aspect_ratio    = par->sample_aspect_ratio;
+    ret = av_channel_layout_copy(&ifilter->ch_layout, &par->ch_layout);
+    if (ret < 0)
+        return ret;
+
+    return 0;
 }
 
 static void flush_encoders(void)
@@ -1916,8 +1922,11 @@ static void flush_encoders(void)
                 int x;
                 for (x = 0; x < fg->nb_inputs; x++) {
                     InputFilter *ifilter = fg->inputs[x];
-                    if (ifilter->format < 0)
-                        ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
+                    if (ifilter->format < 0 &&
+                        ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar) < 0) {
+                        av_log(NULL, AV_LOG_ERROR, "Error copying paramerets from input stream\n");
+                        exit_program(1);
+                    }
                 }
 
                 if (!ifilter_has_all_input_formats(fg))
@@ -2093,16 +2102,15 @@ int guess_input_channel_layout(InputStream *ist)
 {
     AVCodecContext *dec = ist->dec_ctx;
 
-    if (!dec->channel_layout) {
+    if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
         char layout_name[256];
 
-        if (dec->channels > ist->guess_layout_max)
+        if (dec->ch_layout.nb_channels > ist->guess_layout_max)
             return 0;
-        dec->channel_layout = av_get_default_channel_layout(dec->channels);
-        if (!dec->channel_layout)
+        av_channel_layout_default(&dec->ch_layout, dec->ch_layout.nb_channels);
+        if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
             return 0;
-        av_get_channel_layout_string(layout_name, sizeof(layout_name),
-                                     dec->channels, dec->channel_layout);
+        av_channel_layout_describe(&dec->ch_layout, layout_name, sizeof(layout_name));
         av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Input Stream "
                "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
     }
@@ -2155,8 +2163,7 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_ref
     switch (ifilter->ist->st->codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         need_reinit |= ifilter->sample_rate    != frame->sample_rate ||
-                       ifilter->channels       != frame->channels ||
-                       ifilter->channel_layout != frame->channel_layout;
+                       av_channel_layout_compare(&ifilter->ch_layout, &frame->ch_layout);
         break;
     case AVMEDIA_TYPE_VIDEO:
         need_reinit |= ifilter->width  != frame->width ||
@@ -2232,8 +2239,11 @@ static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
             return ret;
     } else {
         // the filtergraph was never configured
-        if (ifilter->format < 0)
-            ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
+        if (ifilter->format < 0) {
+            ret = ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
+            if (ret < 0)
+                return ret;
+        }
         if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
             av_log(NULL, AV_LOG_ERROR, "Cannot determine format of input stream %d:%d after EOF\n", ifilter->ist->file_index, ifilter->ist->st->index);
             return AVERROR_INVALIDDATA;
@@ -3306,8 +3316,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     case AVMEDIA_TYPE_AUDIO:
         enc_ctx->sample_fmt     = av_buffersink_get_format(ost->filter->filter);
         enc_ctx->sample_rate    = av_buffersink_get_sample_rate(ost->filter->filter);
-        enc_ctx->channel_layout = av_buffersink_get_channel_layout(ost->filter->filter);
-        enc_ctx->channels       = av_buffersink_get_channels(ost->filter->filter);
+        ret = av_buffersink_get_ch_layout(ost->filter->filter, &enc_ctx->ch_layout);
+        if (ret < 0)
+            return ret;
 
         if (ost->bits_per_raw_sample)
             enc_ctx->bits_per_raw_sample = ost->bits_per_raw_sample;

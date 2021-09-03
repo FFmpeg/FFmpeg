@@ -721,20 +721,28 @@ FL+FR+FC+BL+BR+BC+SL+SR+WL+WR+TBL+TBR+TBC+TFC+TFL+TFR
 DL+DR
 @end table
 
-A custom channel layout can be specified as a sequence of terms, separated by
-'+' or '|'. Each term can be:
+A custom channel layout can be specified as a sequence of terms, separated by '+'.
+Each term can be:
 @itemize
+@item
+the name of a single channel (e.g. @samp{FL}, @samp{FR}, @samp{FC}, @samp{LFE}, etc.),
+each optionally containing a custom name after a '@@', (e.g. @samp{FL@@Left},
+@samp{FR@@Right}, @samp{FC@@Center}, @samp{LFE@@Low_Frequency}, etc.)
+@end itemize
+
+A standard channel layout can be specified by the following:
+@itemize
+@item
+the name of a single channel (e.g. @samp{FL}, @samp{FR}, @samp{FC}, @samp{LFE}, etc.)
+
 @item
 the name of a standard channel layout (e.g. @samp{mono},
 @samp{stereo}, @samp{4.0}, @samp{quad}, @samp{5.0}, etc.)
 
 @item
-the name of a single channel (e.g. @samp{FL}, @samp{FR}, @samp{FC}, @samp{LFE}, etc.)
-
-@item
 a number of channels, in decimal, followed by 'c', yielding the default channel
 layout for that number of channels (see the function
-@code{av_get_default_channel_layout}). Note that not all channel counts have a
+@code{av_channel_layout_default}). Note that not all channel counts have a
 default layout.
 
 @item
@@ -751,7 +759,7 @@ Before libavutil version 53 the trailing character "c" to specify a number of
 channels was optional, but now it is required, while a channel layout mask can
 also be specified as a decimal number (if and only if not followed by "c" or "C").
 
-See also the function @code{av_get_channel_layout} defined in
+See also the function @code{av_channel_layout_from_string} defined in
 @file{libavutil/channel_layout.h}.
 @c man end SYNTAX
 

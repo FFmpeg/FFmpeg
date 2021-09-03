@@ -1470,8 +1470,19 @@ static void print_codec(const AVCodec *c)
                           GET_SAMPLE_RATE_NAME);
     PRINT_CODEC_SUPPORTED(c, sample_fmts, enum AVSampleFormat, "sample formats",
                           AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME);
-    PRINT_CODEC_SUPPORTED(c, channel_layouts, uint64_t, "channel layouts",
-                          0, GET_CH_LAYOUT_DESC);
+
+    if (c->ch_layouts) {
+        const AVChannelLayout *p = c->ch_layouts;
+
+        printf("    Supported channel layouts:");
+        while (p->nb_channels) {
+            char name[128];
+            av_channel_layout_describe(p, name, sizeof(name));
+            printf(" %s", name);
+            p++;
+        }
+        printf("\n");
+    }
 
     if (c->priv_class) {
         show_help_children(c->priv_class,
@@ -1784,29 +1795,30 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 
 int show_layouts(void *optctx, const char *opt, const char *arg)
 {
+    const AVChannelLayout *ch_layout;
+    void *iter = NULL;
+    char buf[128], buf2[128];
     int i = 0;
-    uint64_t layout, j;
-    const char *name, *descr;
 
     printf("Individual channels:\n"
            "NAME           DESCRIPTION\n");
     for (i = 0; i < 63; i++) {
-        name = av_get_channel_name((uint64_t)1 << i);
-        if (!name)
+        av_channel_name(buf, sizeof(buf), i);
+        if (!strcmp(buf, "?"))
             continue;
-        descr = av_get_channel_description((uint64_t)1 << i);
-        printf("%-14s %s\n", name, descr);
+        av_channel_description(buf2, sizeof(buf2), i);
+        printf("%-14s %s\n", buf, buf2);
     }
     printf("\nStandard channel layouts:\n"
            "NAME           DECOMPOSITION\n");
-    for (i = 0; !av_get_standard_channel_layout(i, &layout, &name); i++) {
-        if (name) {
-            printf("%-14s ", name);
-            for (j = 1; j; j <<= 1)
-                if ((layout & j))
-                    printf("%s%s", (layout & (j - 1)) ? "+" : "", av_get_channel_name(j));
+    while (ch_layout = av_channel_layout_standard(&iter)) {
+            av_channel_layout_describe(ch_layout, buf, sizeof(buf));
+            av_channel_name(buf2, sizeof(buf2), i);
+            printf("%-14s ", buf);
+            for (i = 0; i < 63; i++)
+                if (av_channel_layout_index_from_channel(ch_layout, i) >= 0)
+                    printf("%s%s", i ? "+" : "", buf2);
             printf("\n");
-        }
     }
     return 0;
 }
