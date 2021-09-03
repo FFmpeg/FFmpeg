@@ -39,6 +39,7 @@ typedef struct InterplayACMContext {
     GetBitContext gb;
     uint8_t *bitstream;
     int max_framesize;
+    uint64_t max_samples;
     int bitstream_size;
     int bitstream_index;
 
@@ -83,6 +84,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    s->max_samples = AV_RL32(avctx->extradata + 4) / avctx->channels;
+    if (s->max_samples == 0)
+        s->max_samples = UINT64_MAX;
     s->level = AV_RL16(avctx->extradata + 12) & 0xf;
     s->rows  = AV_RL16(avctx->extradata + 12) >>  4;
     s->cols  = 1 << s->level;
@@ -581,7 +585,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = init_get_bits8(gb, buf, buf_size)) < 0)
         return ret;
 
-    frame->nb_samples = s->block_len / avctx->channels;
+    frame->nb_samples = FFMIN(s->block_len / avctx->channels, s->max_samples);
+    s->max_samples -= FFMIN(frame->nb_samples, s->max_samples);
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
@@ -606,9 +611,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->bitstream_size) {
+    if (s->bitstream_size > 0) {
         s->bitstream_index += n;
-        s->bitstream_size  -= n;
+        s->bitstream_size  -= FFMIN(s->bitstream_size, n);
         return input_buf_size;
     }
     return n;
