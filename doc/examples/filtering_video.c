@@ -210,7 +210,7 @@ static void display_frame(const AVFrame *frame, AVRational time_base)
 int main(int argc, char **argv)
 {
     int ret;
-    AVPacket packet;
+    AVPacket *packet;
     AVFrame *frame;
     AVFrame *filt_frame;
 
@@ -221,8 +221,9 @@ int main(int argc, char **argv)
 
     frame = av_frame_alloc();
     filt_frame = av_frame_alloc();
-    if (!frame || !filt_frame) {
-        perror("Could not allocate frame");
+    packet = av_packet_alloc();
+    if (!frame || !filt_frame || !packet) {
+        fprintf(stderr, "Could not allocate frame or packet\n");
         exit(1);
     }
 
@@ -233,11 +234,11 @@ int main(int argc, char **argv)
 
     /* read all packets */
     while (1) {
-        if ((ret = av_read_frame(fmt_ctx, &packet)) < 0)
+        if ((ret = av_read_frame(fmt_ctx, packet)) < 0)
             break;
 
-        if (packet.stream_index == video_stream_index) {
-            ret = avcodec_send_packet(dec_ctx, &packet);
+        if (packet->stream_index == video_stream_index) {
+            ret = avcodec_send_packet(dec_ctx, packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error while sending a packet to the decoder\n");
                 break;
@@ -273,7 +274,7 @@ int main(int argc, char **argv)
                 av_frame_unref(frame);
             }
         }
-        av_packet_unref(&packet);
+        av_packet_unref(packet);
     }
 end:
     avfilter_graph_free(&filter_graph);
@@ -281,6 +282,7 @@ end:
     avformat_close_input(&fmt_ctx);
     av_frame_free(&frame);
     av_frame_free(&filt_frame);
+    av_packet_free(&packet);
 
     if (ret < 0 && ret != AVERROR_EOF) {
         fprintf(stderr, "Error occurred: %s\n", av_err2str(ret));
