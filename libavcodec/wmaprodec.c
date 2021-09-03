@@ -252,6 +252,7 @@ typedef struct XMADecodeCtx {
     AVAudioFifo *samples[2][XMA_MAX_STREAMS];
     int start_channel[XMA_MAX_STREAMS];
     int trim_start, trim_end;
+    int flushed;
 } XMADecodeCtx;
 
 /**
@@ -1830,7 +1831,7 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
     XMADecodeCtx *s = avctx->priv_data;
     int got_stream_frame_ptr = 0;
     AVFrame *frame = data;
-    int i, ret, eof = 1;
+    int i, ret = 0, eof = 0;
 
     if (!s->frames[s->current_stream]->data[0]) {
         avctx->internal->skip_samples = 64;
@@ -1845,8 +1846,23 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
             return ret;
     }
     /* decode current stream packet */
-    ret = decode_packet(avctx, &s->xma[s->current_stream], s->frames[s->current_stream],
-                        &got_stream_frame_ptr, avpkt);
+    if (!s->xma[s->current_stream].eof_done) {
+        ret = decode_packet(avctx, &s->xma[s->current_stream], s->frames[s->current_stream],
+                            &got_stream_frame_ptr, avpkt);
+    }
+
+    if (!avpkt->size) {
+        eof = 1;
+
+        for (i = 0; i < s->num_streams; i++) {
+            if (!s->xma[i].eof_done) {
+                ret = decode_packet(avctx, &s->xma[i], s->frames[i],
+                                    &got_stream_frame_ptr, avpkt);
+            }
+
+            eof &= s->xma[i].eof_done;
+        }
+    }
 
     if (s->xma[0].trim_start)
         s->trim_start = s->xma[0].trim_start;
@@ -1893,18 +1909,20 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
 
         /* all other streams skip next packet */
         for (i = 0; i < s->num_streams; i++) {
-            eof &= s->xma[i].eof_done;
             s->xma[i].skip_packets = FFMAX(0, s->xma[i].skip_packets - 1);
             nb_samples = FFMIN(nb_samples, av_audio_fifo_size(s->samples[0][i]));
         }
 
+        if (!eof && avpkt->size)
+            nb_samples -= FFMIN(nb_samples, 4096);
+
         /* copy samples from buffer to output if possible */
-        if (nb_samples > 8192 || eof || !avpkt->size) {
+        if ((nb_samples > 0 || eof || !avpkt->size) && !s->flushed) {
             int bret;
 
-            if (!avpkt->size) {
-                nb_samples -= s->trim_end + s->trim_start - 128 - 64;
-                s->trim_end = s->trim_start = 0;
+            if (eof) {
+                nb_samples -= av_clip(s->trim_end + s->trim_start - 128 - 64, 0, nb_samples);
+                s->flushed = 1;
             }
 
             frame->nb_samples = nb_samples;
@@ -1921,7 +1939,7 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
                     av_audio_fifo_read(s->samples[1][i], right, nb_samples);
             }
 
-            *got_frame_ptr = 1;
+            *got_frame_ptr = nb_samples > 0;
         }
     }
 
@@ -2051,6 +2069,7 @@ static void xma_flush(AVCodecContext *avctx)
         flush(&s->xma[i]);
 
     s->current_stream = 0;
+    s->flushed = 0;
 }
 
 /**
