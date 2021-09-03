@@ -298,6 +298,12 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
             h_align = 4;
         }
         break;
+    case AV_PIX_FMT_BGR0:
+        if (s->codec_id == AV_CODEC_ID_ARGO) {
+            w_align = 4;
+            h_align = 4;
+        }
+        break;
     default:
         break;
     }
