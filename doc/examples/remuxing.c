@@ -156,9 +156,7 @@ int main(int argc, char **argv)
         log_packet(ifmt_ctx, &pkt, "in");
 
         /* copy packet */
-        pkt.pts = av_rescale_q_rnd(pkt.pts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-        pkt.dts = av_rescale_q_rnd(pkt.dts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-        pkt.duration = av_rescale_q(pkt.duration, in_stream->time_base, out_stream->time_base);
+        av_packet_rescale_ts(&pkt, in_stream->time_base, out_stream->time_base);
         pkt.pos = -1;
         log_packet(ofmt_ctx, &pkt, "out");
 
