@@ -787,6 +787,13 @@ static int prepare_input_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     if (sti->is_intra_only)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
+    if (!pkt->data && !pkt->side_data_elems) {
+        /* Such empty packets signal EOS for the BSF API; so sanitize
+         * the packet by allocating data of size 0 (+ padding). */
+        av_buffer_unref(&pkt->buf);
+        return av_packet_make_refcounted(pkt);
+    }
+
     return 0;
 }
 
