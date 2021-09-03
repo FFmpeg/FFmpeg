@@ -124,7 +124,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
 int main(int argc, char **argv)
 {
     int ret = 0;
-    AVPacket pkt = { 0 };
+    AVPacket *pkt = NULL;
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <video>\n", argv[0]);
@@ -159,13 +159,20 @@ int main(int argc, char **argv)
         goto end;
     }
 
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        fprintf(stderr, "Could not allocate AVPacket\n");
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
     printf("framenum,source,blockw,blockh,srcx,srcy,dstx,dsty,flags\n");
 
     /* read frames from the file */
-    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
-        if (pkt.stream_index == video_stream_idx)
-            ret = decode_packet(&pkt);
-        av_packet_unref(&pkt);
+    while (av_read_frame(fmt_ctx, pkt) >= 0) {
+        if (pkt->stream_index == video_stream_idx)
+            ret = decode_packet(pkt);
+        av_packet_unref(pkt);
         if (ret < 0)
             break;
     }
@@ -177,5 +184,6 @@ end:
     avcodec_free_context(&video_dec_ctx);
     avformat_close_input(&fmt_ctx);
     av_frame_free(&frame);
+    av_packet_free(&pkt);
     return ret < 0;
 }
