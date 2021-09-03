@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     AVStream *video = NULL;
     AVCodecContext *decoder_ctx = NULL;
     const AVCodec *decoder = NULL;
-    AVPacket packet;
+    AVPacket *packet = NULL;
     enum AVHWDeviceType type;
     int i;
 
@@ -169,6 +169,12 @@ int main(int argc, char *argv[])
         while((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
             fprintf(stderr, " %s", av_hwdevice_get_type_name(type));
         fprintf(stderr, "\n");
+        return -1;
+    }
+
+    packet = av_packet_alloc();
+    if (!packet) {
+        fprintf(stderr, "Failed to allocate AVPacket\n");
         return -1;
     }
 
@@ -227,23 +233,21 @@ int main(int argc, char *argv[])
 
     /* actual decoding and dump the raw data */
     while (ret >= 0) {
-        if ((ret = av_read_frame(input_ctx, &packet)) < 0)
+        if ((ret = av_read_frame(input_ctx, packet)) < 0)
             break;
 
-        if (video_stream == packet.stream_index)
-            ret = decode_write(decoder_ctx, &packet);
+        if (video_stream == packet->stream_index)
+            ret = decode_write(decoder_ctx, packet);
 
-        av_packet_unref(&packet);
+        av_packet_unref(packet);
     }
 
     /* flush the decoder */
-    packet.data = NULL;
-    packet.size = 0;
-    ret = decode_write(decoder_ctx, &packet);
-    av_packet_unref(&packet);
+    ret = decode_write(decoder_ctx, NULL);
 
     if (output_file)
         fclose(output_file);
+    av_packet_free(&packet);
     avcodec_free_context(&decoder_ctx);
     avformat_close_input(&input_ctx);
     av_buffer_unref(&hw_device_ctx);
