@@ -760,7 +760,37 @@ static int siren_decode(AVCodecContext *avctx, void *data,
             frame_error = 1;
     }
 
-    skip_bits(gb, s->checksum_bits);
+    if ((avctx->err_recognition & AV_EF_CRCCHECK) && s->checksum_bits) {
+        static const uint16_t ChecksumTable[4] = {0x7F80, 0x7878, 0x6666, 0x5555};
+        int wpf, checksum, sum, calculated_checksum, temp1;
+
+        checksum = get_bits(gb, s->checksum_bits);
+
+        wpf = bits_per_frame / 16;
+        sum = 0;
+        for (int i = 0; i < wpf - 1; i++)
+            sum ^= AV_RB16(avpkt->data + i * 2) << (i % 15);
+        sum ^= (AV_RB16(avpkt->data + (wpf - 1) * 2) & ~checksum) << ((wpf - 1) % 15);
+        sum = (sum >> 15) ^ (sum & 0x7FFF);
+
+        calculated_checksum = 0;
+        for (int i = 0; i < 4; i++) {
+            temp1 = ChecksumTable[i] & sum;
+
+            for (int j = 8; j > 0; j >>= 1)
+                temp1 ^= temp1 >> j;
+
+            calculated_checksum <<= 1;
+            calculated_checksum |= temp1 & 1;
+        }
+
+        if (checksum != calculated_checksum) {
+            av_log(avctx, AV_LOG_WARNING, "Invalid checksum\n");
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
+            frame_error = 1;
+        }
+    }
 
     if (frame_error) {
         memcpy(s->imdct_in, s->backup_frame, number_of_valid_coefs * sizeof(float));
