@@ -28,6 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intmath.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/thread.h"
 #include "mlp.h"
@@ -1303,13 +1304,11 @@ static void input_to_sample_buffer(MLPEncodeContext *ctx)
 /** Counts the number of trailing zeroes in a value */
 static int number_trailing_zeroes(int32_t sample)
 {
-    int bits;
-
-    for (bits = 0; bits < 24 && !(sample & (1<<bits)); bits++);
+    int bits = ff_ctz(sample);
 
     /* All samples are 0. TODO Return previous quant_step_size to avoid
      * writing a new header. */
-    if (bits == 24)
+    if (bits >= 24)
         return 0;
 
     return bits;
