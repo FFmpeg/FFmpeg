@@ -73,6 +73,7 @@ typedef struct SubStream {
     uint64_t    mask;
     /// The matrix encoding mode for this substream
     enum AVMatrixEncoding matrix_encoding;
+    enum AVMatrixEncoding prev_matrix_encoding;
 
     /// Channel coding parameters for channels in the substream
     ChannelParams channel_params[MAX_CHANNELS];
@@ -1123,8 +1124,12 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
                                                     is32);
 
     /* Update matrix encoding side data */
-    if ((ret = ff_side_data_update_matrix_encoding(frame, s->matrix_encoding)) < 0)
-        return ret;
+    if (s->matrix_encoding != s->prev_matrix_encoding) {
+        if ((ret = ff_side_data_update_matrix_encoding(frame, s->matrix_encoding)) < 0)
+            return ret;
+
+        s->prev_matrix_encoding = s->matrix_encoding;
+    }
 
     *got_frame_ptr = 1;
 
@@ -1353,6 +1358,7 @@ static void mlp_decode_flush(AVCodecContext *avctx)
         SubStream *s = &m->substream[substr];
 
         s->lossless_check_data = 0xffffffff;
+        s->prev_matrix_encoding = 0;
     }
 }
 
