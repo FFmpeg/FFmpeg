@@ -501,7 +501,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     MLPEncodeContext *ctx = avctx->priv_data;
     unsigned int substr, index;
     unsigned int sum = 0;
-    unsigned int size;
+    size_t size;
     int ret;
 
     ctx->avctx = avctx;
@@ -595,8 +595,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     /* TODO Let user pass parameters for LPC filter. */
 
     size = avctx->frame_size * ctx->max_restart_interval;
-
-    ctx->lpc_sample_buffer = av_malloc_array(size, sizeof(int32_t));
+    ctx->lpc_sample_buffer = av_calloc(size, sizeof(*ctx->lpc_sample_buffer));
     if (!ctx->lpc_sample_buffer) {
         av_log(avctx, AV_LOG_ERROR,
                "Not enough memory for buffering samples.\n");
@@ -604,15 +603,14 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     }
 
     size = ctx->one_sample_buffer_size * ctx->max_restart_interval;
-
-    ctx->major_scratch_buffer = av_malloc_array(size, sizeof(int32_t));
+    ctx->major_scratch_buffer = av_calloc(size, sizeof(*ctx->major_scratch_buffer));
     if (!ctx->major_scratch_buffer) {
         av_log(avctx, AV_LOG_ERROR,
                "Not enough memory for buffering samples.\n");
         return AVERROR(ENOMEM);
     }
 
-    ctx->major_inout_buffer = av_malloc_array(size, sizeof(int32_t));
+    ctx->major_inout_buffer = av_calloc(size, sizeof(*ctx->major_inout_buffer));
     if (!ctx->major_inout_buffer) {
         av_log(avctx, AV_LOG_ERROR,
                "Not enough memory for buffering samples.\n");
@@ -683,20 +681,17 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         ctx->summary_info = 0;
     }
 
-    size = sizeof(unsigned int) * ctx->max_restart_interval;
-
-    ctx->frame_size = av_malloc(size);
+    size = ctx->max_restart_interval;
+    ctx->frame_size = av_calloc(size, sizeof(*ctx->frame_size));
     if (!ctx->frame_size)
         return AVERROR(ENOMEM);
 
-    ctx->max_output_bits = av_malloc(size);
+    ctx->max_output_bits = av_calloc(size, sizeof(*ctx->max_output_bits));
     if (!ctx->max_output_bits)
         return AVERROR(ENOMEM);
 
-    size = sizeof(int32_t)
-         * ctx->num_substreams * ctx->max_restart_interval;
-
-    ctx->lossless_check_data = av_malloc(size);
+    size = ctx->num_substreams * ctx->max_restart_interval;
+    ctx->lossless_check_data = av_calloc(size, sizeof(*ctx->lossless_check_data));
     if (!ctx->lossless_check_data)
         return AVERROR(ENOMEM);
 
@@ -706,18 +701,16 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         sum += ctx->seq_size[index];
     }
     ctx->sequence_size = sum;
-    size = sizeof(ChannelParams)
-         * ctx->restart_intervals * ctx->sequence_size * ctx->avctx->channels;
-    ctx->channel_params = av_malloc(size);
+    size = ctx->restart_intervals * ctx->sequence_size * ctx->avctx->channels;
+    ctx->channel_params = av_calloc(size, sizeof(*ctx->channel_params));
     if (!ctx->channel_params) {
         av_log(avctx, AV_LOG_ERROR,
                "Not enough memory for analysis context.\n");
         return AVERROR(ENOMEM);
     }
 
-    size = sizeof(DecodingParams)
-         * ctx->restart_intervals * ctx->sequence_size * ctx->num_substreams;
-    ctx->decoding_params = av_malloc(size);
+    size = ctx->restart_intervals * ctx->sequence_size * ctx->num_substreams;
+    ctx->decoding_params = av_calloc(size, sizeof(*ctx->decoding_params));
     if (!ctx->decoding_params) {
         av_log(avctx, AV_LOG_ERROR,
                "Not enough memory for analysis context.\n");
