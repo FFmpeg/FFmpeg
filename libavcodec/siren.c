@@ -359,11 +359,13 @@ static const float noise_category6[21] = {
 typedef struct SirenContext {
     GetBitContext gb;
 
+    int microsoft;
     int rate_control_possibilities;
     int esf_adjustment;
     int number_of_regions;
     int scale_factor;
     int sample_rate_bits;
+    int checksum_bits;
 
     unsigned dw1, dw2, dw3, dw4;
 
@@ -420,6 +422,15 @@ static av_cold int siren_init(AVCodecContext *avctx)
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
+
+    s->microsoft = avctx->codec->id == AV_CODEC_ID_MSNSIREN;
+    if (s->microsoft) {
+        s->esf_adjustment = -2;
+        s->number_of_regions = 14;
+        s->scale_factor = 1;
+        s->sample_rate_bits = 2;
+        s->checksum_bits = 4;
+    }
 
     return av_tx_init(&s->tx_ctx, &s->tx_fn, AV_TX_FLOAT_MDCT, 1, FRAME_SIZE, &scale, 0);
 }
@@ -626,6 +637,20 @@ static int decode_vector(SirenContext *s, int number_of_regions,
 
         coefs_ptr = coefs + (region * REGION_SIZE);
 
+        if (category == 5 && s->microsoft) {
+            i = 0;
+            for (j = 0; j < REGION_SIZE; j++) {
+                if (*coefs_ptr != 0) {
+                    i++;
+                    if (fabs(*coefs_ptr) > 2.0 * decoder_standard_deviation[region]) {
+                        i += 3;
+                    }
+                }
+                coefs_ptr++;
+            }
+
+            noise = decoder_standard_deviation[region] * noise_category5[i];
+        } else
         if (category == 5 || category == 6) {
             i = 0;
             for (j = 0; j < REGION_SIZE; j++) {
@@ -675,9 +700,21 @@ static int siren_decode(AVCodecContext *avctx, void *data,
     AVFrame *frame = data;
     int ret, number_of_valid_coefs = 20 * s->number_of_regions;
     int frame_error = 0, rate_control = 0;
+    int bits_per_frame;
 
+    if (s->microsoft) {
+        bits_per_frame  = avctx->sample_rate / 50;
+
+        if (avpkt->size < bits_per_frame / 8)
+            return AVERROR_INVALIDDATA;
+
+        if ((ret = init_get_bits(gb, avpkt->data, bits_per_frame - s->checksum_bits)) < 0)
+            return ret;
+    } else
     if ((ret = init_get_bits8(gb, avpkt->data, avpkt->size)) < 0)
         return ret;
+
+    skip_bits(gb, s->sample_rate_bits);
 
     decode_envelope(s, gb, s->number_of_regions,
                     s->decoder_standard_deviation,
@@ -697,7 +734,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
     ret = decode_vector(s, s->number_of_regions, get_bits_left(gb),
                         s->decoder_standard_deviation, s->power_categories,
                         s->imdct_in, s->scale_factor);
-    if (ret < 0)
+    if (ret < 0 && !s->microsoft)
         return ret;
 
     if (get_bits_left(gb) > 0) {
@@ -714,6 +751,8 @@ static int siren_decode(AVCodecContext *avctx, void *data,
             s->absolute_region_power_index[i] < -31)
             frame_error = 1;
     }
+
+    skip_bits(gb, s->checksum_bits);
 
     if (frame_error) {
         memcpy(s->imdct_in, s->backup_frame, number_of_valid_coefs * sizeof(float));
@@ -738,7 +777,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
-    return avpkt->size;
+    return s->microsoft ? bits_per_frame / 8 : avpkt->size;
 }
 
 static av_cold void siren_flush(AVCodecContext *avctx)
@@ -766,6 +805,22 @@ const AVCodec ff_siren_decoder = {
     .priv_data_size = sizeof(SirenContext),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_SIREN,
+    .init           = siren_init,
+    .close          = siren_close,
+    .decode         = siren_decode,
+    .flush          = siren_flush,
+    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+                      AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
+};
+
+const AVCodec ff_msnsiren_decoder = {
+    .name           = "msnsiren",
+    .long_name      = NULL_IF_CONFIG_SMALL("MSN Siren"),
+    .priv_data_size = sizeof(SirenContext),
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = AV_CODEC_ID_MSNSIREN,
     .init           = siren_init,
     .close          = siren_close,
     .decode         = siren_decode,

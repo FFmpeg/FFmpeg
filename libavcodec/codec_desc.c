@@ -3222,6 +3222,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("MobiClip FastAudio"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_MSNSIREN,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "msnsiren",
+        .long_name = NULL_IF_CONFIG_SMALL("MSN Siren"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {

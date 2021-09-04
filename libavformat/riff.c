@@ -560,6 +560,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_DVAUDIO,         0x0215 },
     { AV_CODEC_ID_DVAUDIO,         0x0216 },
     { AV_CODEC_ID_ATRAC3,          0x0270 },
+    { AV_CODEC_ID_MSNSIREN,        0x028E },
     { AV_CODEC_ID_ADPCM_G722,      0x028F },
     { AV_CODEC_ID_IMC,             0x0401 },
     { AV_CODEC_ID_IAC,             0x0402 },

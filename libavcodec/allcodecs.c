@@ -479,6 +479,7 @@ extern const AVCodec ff_mp3on4float_decoder;
 extern const AVCodec ff_mp3on4_decoder;
 extern const AVCodec ff_mpc7_decoder;
 extern const AVCodec ff_mpc8_decoder;
+extern const AVCodec ff_msnsiren_decoder;
 extern const AVCodec ff_nellymoser_encoder;
 extern const AVCodec ff_nellymoser_decoder;
 extern const AVCodec ff_on2avc_decoder;
