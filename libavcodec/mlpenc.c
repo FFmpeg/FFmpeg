@@ -200,6 +200,8 @@ typedef struct MLPEncodeContext {
     ChannelParams  *seq_channel_params;
     DecodingParams *seq_decoding_params;
 
+    int32_t *filter_state_buffer[NUM_FILTERS];
+
     unsigned int    max_codebook_search;
 
     int             shorten_by;
@@ -734,6 +736,13 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "Not enough memory for LPC context.\n");
         return ret;
+    }
+
+    for (int i = 0; i < NUM_FILTERS; i++) {
+        ctx->filter_state_buffer[i] = av_calloc(avctx->frame_size * ctx->max_restart_interval,
+                                                sizeof(*ctx->filter_state_buffer[0]));
+        if (!ctx->filter_state_buffer[i])
+            return AVERROR(ENOMEM);
     }
 
     ff_af_queue_init(avctx, &ctx->afq);
@@ -1812,7 +1821,6 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
 {
     FilterParams *fp[NUM_FILTERS] = { &ctx->cur_channel_params[channel].filter_params[FIR],
                                       &ctx->cur_channel_params[channel].filter_params[IIR], };
-    int32_t *filter_state_buffer[NUM_FILTERS] = { NULL };
     int32_t mask = MSB_MASK(ctx->cur_decoding_params->quant_step_size[channel]);
     int32_t *sample_buffer = ctx->sample_buffer + channel;
     unsigned int number_of_samples = ctx->number_of_samples;
@@ -1820,20 +1828,9 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
     int filter;
     int i, ret = 0;
 
-    for (i = 0; i < NUM_FILTERS; i++) {
-        unsigned int size = ctx->number_of_samples;
-        filter_state_buffer[i] = av_malloc(size*sizeof(int32_t));
-        if (!filter_state_buffer[i]) {
-            av_log(ctx->avctx, AV_LOG_ERROR,
-                   "Not enough memory for applying filters.\n");
-            ret = AVERROR(ENOMEM);
-            goto free_and_return;
-        }
-    }
-
     for (i = 0; i < 8; i++) {
-        filter_state_buffer[FIR][i] = *sample_buffer;
-        filter_state_buffer[IIR][i] = *sample_buffer;
+        ctx->filter_state_buffer[FIR][i] = *sample_buffer;
+        ctx->filter_state_buffer[IIR][i] = *sample_buffer;
 
         sample_buffer += ctx->num_channels;
     }
@@ -1847,7 +1844,7 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
         for (filter = 0; filter < NUM_FILTERS; filter++) {
             int32_t *fcoeff = ctx->cur_channel_params[channel].coeff[filter];
             for (order = 0; order < fp[filter]->order; order++)
-                accum += (int64_t)filter_state_buffer[filter][i - 1 - order] *
+                accum += (int64_t)ctx->filter_state_buffer[filter][i - 1 - order] *
                          fcoeff[order];
         }
 
@@ -1856,25 +1853,20 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
 
         if (residual < SAMPLE_MIN(24) || residual > SAMPLE_MAX(24)) {
             ret = AVERROR_INVALIDDATA;
-            goto free_and_return;
+            return ret;
         }
 
-        filter_state_buffer[FIR][i] = sample;
-        filter_state_buffer[IIR][i] = (int32_t) residual;
+        ctx->filter_state_buffer[FIR][i] = sample;
+        ctx->filter_state_buffer[IIR][i] = (int32_t) residual;
 
         sample_buffer += ctx->num_channels;
     }
 
     sample_buffer = ctx->sample_buffer + channel;
     for (i = 0; i < number_of_samples; i++) {
-        *sample_buffer = filter_state_buffer[IIR][i];
+        *sample_buffer = ctx->filter_state_buffer[IIR][i];
 
         sample_buffer += ctx->num_channels;
-    }
-
-free_and_return:
-    for (i = 0; i < NUM_FILTERS; i++) {
-        av_freep(&filter_state_buffer[i]);
     }
 
     return ret;
@@ -2368,6 +2360,9 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
     av_freep(&ctx->frame_size);
     av_freep(&ctx->max_output_bits);
     ff_af_queue_close(&ctx->afq);
+
+    for (int i = 0; i < NUM_FILTERS; i++)
+        av_freep(&ctx->filter_state_buffer[i]);
 
     return 0;
 }
