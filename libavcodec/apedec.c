@@ -859,8 +859,8 @@ static av_always_inline int filter_3800(APEPredictor *p,
         return predictionA;
     }
     d2 =  p->buf[delayA];
-    d1 = (p->buf[delayA] - p->buf[delayA - 1]) * 2U;
-    d0 =  p->buf[delayA] + ((p->buf[delayA - 2] - p->buf[delayA - 1]) * 8U);
+    d1 = (p->buf[delayA] - (unsigned)p->buf[delayA - 1]) * 2;
+    d0 =  p->buf[delayA] + ((p->buf[delayA - 2] - (unsigned)p->buf[delayA - 1]) * 8);
     d3 =  p->buf[delayB] * 2U - p->buf[delayB - 1];
     d4 =  p->buf[delayB];
 
