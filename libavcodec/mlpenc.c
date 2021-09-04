@@ -130,7 +130,6 @@ typedef struct MLPEncodeContext {
     int32_t        *sample_buffer;          ///< Pointer to current access unit samples.
     int32_t        *major_scratch_buffer;   ///< Scratch buffer big enough to fit all data for one entire major frame interval.
     int32_t        last_frames;             ///< Signal last frames.
-    int32_t        last_index;
 
     int32_t        *lpc_sample_buffer;
 
@@ -2203,7 +2202,6 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if ((ret = ff_af_queue_add(&ctx->afq, frame)) < 0)
             return ret;
         ctx->last_frames = ctx->max_restart_interval;
-        ctx->last_index = ctx->frame_index;
     }
 
     data = frame ? frame->data[0] : NULL;
