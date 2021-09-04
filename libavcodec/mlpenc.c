@@ -1939,10 +1939,7 @@ static void clear_path_counter(PathCounter *path_counter)
 
 static int compare_best_offset(const BestOffset *prev, const BestOffset *cur)
 {
-    if (prev->lsb_bits != cur->lsb_bits)
-        return 1;
-
-    return 0;
+    return prev->lsb_bits != cur->lsb_bits;
 }
 
 static int best_codebook_path_cost(MLPEncodeContext *ctx, unsigned int channel,
