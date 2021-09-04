@@ -598,26 +598,17 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
 
     size = avctx->frame_size * ctx->max_restart_interval;
     ctx->lpc_sample_buffer = av_calloc(size, sizeof(*ctx->lpc_sample_buffer));
-    if (!ctx->lpc_sample_buffer) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Not enough memory for buffering samples.\n");
+    if (!ctx->lpc_sample_buffer)
         return AVERROR(ENOMEM);
-    }
 
     size = ctx->one_sample_buffer_size * ctx->max_restart_interval;
     ctx->major_scratch_buffer = av_calloc(size, sizeof(*ctx->major_scratch_buffer));
-    if (!ctx->major_scratch_buffer) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Not enough memory for buffering samples.\n");
+    if (!ctx->major_scratch_buffer)
         return AVERROR(ENOMEM);
-    }
 
     ctx->major_inout_buffer = av_calloc(size, sizeof(*ctx->major_inout_buffer));
-    if (!ctx->major_inout_buffer) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Not enough memory for buffering samples.\n");
+    if (!ctx->major_inout_buffer)
         return AVERROR(ENOMEM);
-    }
 
     ctx->num_substreams = 1; // TODO: change this after adding multi-channel support for TrueHD
 
@@ -705,19 +696,13 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     ctx->sequence_size = sum;
     size = ctx->restart_intervals * ctx->sequence_size * ctx->avctx->channels;
     ctx->channel_params = av_calloc(size, sizeof(*ctx->channel_params));
-    if (!ctx->channel_params) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Not enough memory for analysis context.\n");
+    if (!ctx->channel_params)
         return AVERROR(ENOMEM);
-    }
 
     size = ctx->restart_intervals * ctx->sequence_size * ctx->num_substreams;
     ctx->decoding_params = av_calloc(size, sizeof(*ctx->decoding_params));
-    if (!ctx->decoding_params) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Not enough memory for analysis context.\n");
+    if (!ctx->decoding_params)
         return AVERROR(ENOMEM);
-    }
 
     for (substr = 0; substr < ctx->num_substreams; substr++) {
         RestartHeader  *rh = &ctx->restart_header [substr];
@@ -732,11 +717,8 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     }
 
     if ((ret = ff_lpc_init(&ctx->lpc_ctx, ctx->number_of_samples,
-                    MLP_MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON)) < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Not enough memory for LPC context.\n");
+                    MLP_MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON)) < 0)
         return ret;
-    }
 
     for (int i = 0; i < NUM_FILTERS; i++) {
         ctx->filter_state_buffer[i] = av_calloc(avctx->frame_size * ctx->max_restart_interval,
