@@ -698,7 +698,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
     SirenContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     AVFrame *frame = data;
-    int ret, number_of_valid_coefs = 20 * s->number_of_regions;
+    int ret, number_of_valid_coefs = REGION_SIZE * s->number_of_regions;
     int frame_error = 0, rate_control = 0;
     int bits_per_frame;
 
@@ -765,7 +765,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    for (int i = 0; i < 320; i += 2)
+    for (int i = 0; i < FRAME_SIZE; i += 2)
         s->imdct_in[i] *= -1;
 
     s->tx_fn(s->tx_ctx, s->imdct_out, s->imdct_in, sizeof(float));
