@@ -568,7 +568,7 @@ static int get_dw(SirenContext *s)
 }
 
 static int decode_vector(SirenContext *s, int number_of_regions,
-                         int number_of_available_bits, float *decoder_standard_deviation,
+                         float *decoder_standard_deviation,
                          int *power_categories, float *coefs, int scale_factor)
 {
     GetBitContext *gb = &s->gb;
@@ -731,7 +731,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
     for (int i = 0; i < rate_control; i++)
         s->power_categories[s->category_balance[i]]++;
 
-    ret = decode_vector(s, s->number_of_regions, get_bits_left(gb),
+    ret = decode_vector(s, s->number_of_regions,
                         s->decoder_standard_deviation, s->power_categories,
                         s->imdct_in, s->scale_factor);
     if (ret < 0 && !s->microsoft)
