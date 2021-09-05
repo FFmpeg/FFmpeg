@@ -1178,8 +1178,8 @@ static void write_frame_headers(MLPEncodeContext *ctx, uint8_t *frame_header,
 }
 
 /** Writes an entire access unit to the bitstream. */
-static unsigned int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
-                                      int buf_size, int restart_frame)
+static int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
+                             int buf_size, int restart_frame)
 {
     uint16_t substream_data_len[MAX_SUBSTREAMS];
     uint8_t *buf1, *buf0 = buf;
@@ -2183,7 +2183,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                             const AVFrame *frame, int *got_packet)
 {
     MLPEncodeContext *ctx = avctx->priv_data;
-    unsigned int bytes_written = 0;
+    int bytes_written = 0;
     int restart_frame, ret;
     uint8_t *data;
 
@@ -2316,8 +2316,14 @@ no_data_left:
     }
     if (!frame)
         avctx->frame_number++;
-    avpkt->size = bytes_written;
-    *got_packet = 1;
+
+    if (bytes_written > 0) {
+        avpkt->size = bytes_written;
+        *got_packet = 1;
+    } else {
+        *got_packet = 0;
+    }
+
     return 0;
 }
 
