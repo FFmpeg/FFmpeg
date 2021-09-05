@@ -565,11 +565,11 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         if (s2 < 0)
             continue;
 
-        if ((ret = av_packet_ref(&pkt2, pkt)) < 0)
-            if (!ret_all) {
+        if ((ret = av_packet_ref(&pkt2, pkt)) < 0) {
+            if (!ret_all)
                 ret_all = ret;
-                continue;
-            }
+            continue;
+        }
         bsfs = tee->slaves[i].bsfs[s2];
         pkt2.stream_index = s2;
 
