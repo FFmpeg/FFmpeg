@@ -1292,6 +1292,7 @@ int av_write_trailer(AVFormatContext *s)
     if (s->oformat->priv_class)
         av_opt_free(s->priv_data);
     av_freep(&s->priv_data);
+    av_packet_unref(si->pkt);
     return ret;
 }
 

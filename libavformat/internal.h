@@ -121,7 +121,9 @@ typedef struct FFFormatContext {
     AVPacket *parse_pkt;
 
     /**
-     * Used to hold temporary packets.
+     * Used to hold temporary packets for the generic demuxing code.
+     * When muxing, it may be used by muxers to hold packets (even
+     * permanent ones).
      */
     AVPacket *pkt;
     /**
