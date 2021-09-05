@@ -575,6 +575,7 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
 
         ret = av_bsf_send_packet(bsfs, &pkt2);
         if (ret < 0) {
+            av_packet_unref(&pkt2);
             av_log(avf, AV_LOG_ERROR, "Error while sending packet to bitstream filter: %s\n",
                    av_err2str(ret));
             ret = tee_process_slave_failure(avf, i, ret);
