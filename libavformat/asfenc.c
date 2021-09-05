@@ -239,19 +239,16 @@ static const AVCodecTag *const asf_codec_tags[] = {
 
 #define PREROLL_TIME 3100
 
-static void put_str16(AVIOContext *s, const char *tag)
+static void put_str16(AVIOContext *s, AVIOContext *dyn_buf, const char *tag)
 {
+    uint8_t *buf;
     int len;
-    uint8_t *pb;
-    AVIOContext *dyn_buf;
-    if (avio_open_dyn_buf(&dyn_buf) < 0)
-        return;
 
     avio_put_str16le(dyn_buf, tag);
-    len = avio_close_dyn_buf(dyn_buf, &pb);
+    len = avio_get_dyn_buf(dyn_buf, &buf);
     avio_wl16(s, len);
-    avio_write(s, pb, len);
-    av_freep(&pb);
+    avio_write(s, buf, len);
+    ffio_reset_dyn_buf(dyn_buf);
 }
 
 static int64_t put_header(AVIOContext *pb, const ff_asf_guid *g)
@@ -316,7 +313,7 @@ static int32_t get_send_time(ASFContext *asf, int64_t pres_time, uint64_t *offse
     return send_time / 10000;
 }
 
-static int asf_write_markers(AVFormatContext *s)
+static void asf_write_markers(AVFormatContext *s, AVIOContext *dyn_buf)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -334,14 +331,11 @@ static int asf_write_markers(AVFormatContext *s)
         int64_t pres_time = av_rescale_q(c->start, c->time_base, scale);
         uint64_t offset;
         int32_t send_time = get_send_time(asf, pres_time, &offset);
-        int len = 0, ret;
+        int len = 0;
         uint8_t *buf;
-        AVIOContext *dyn_buf;
         if (t) {
-            if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
-                return ret;
             avio_put_str16le(dyn_buf, t->value);
-            len = avio_close_dyn_buf(dyn_buf, &buf);
+            len = avio_get_dyn_buf(dyn_buf, &buf);
         }
         avio_wl64(pb, offset);            // offset of the packet with send_time
         avio_wl64(pb, pres_time + PREROLL_TIME * 10000); // presentation time
@@ -351,11 +345,10 @@ static int asf_write_markers(AVFormatContext *s)
         avio_wl32(pb, len / 2);           // marker desc length in WCHARS!
         if (t) {
             avio_write(pb, buf, len);     // marker desc
-            av_freep(&buf);
+            ffio_reset_dyn_buf(dyn_buf);
         }
     }
     end_header(pb, hpos);
-    return 0;
 }
 
 /* write the header (used two times if non streamed) */
@@ -363,13 +356,13 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
                              int64_t data_chunk_size)
 {
     ASFContext *asf = s->priv_data;
-    AVIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb, *dyn_buf;
     AVDictionaryEntry *tags[5];
     int header_size, extra_size, extra_size2, wav_extra_size;
     int has_title, has_aspect_ratio = 0;
     int metadata_count;
     int64_t header_offset, cur_pos, hpos;
-    int bit_rate;
+    int bit_rate, ret;
     int64_t duration;
     int audio_language_counts[128] = { 0 };
 
@@ -553,14 +546,13 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     }
     end_header(pb, hpos);
 
+    if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+        return ret;
+
     /* title and other info */
     if (has_title) {
-        int len, ret;
         uint8_t *buf;
-        AVIOContext *dyn_buf;
-
-        if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
-            return ret;
+        int len;
 
         hpos = put_header(pb, &ff_asf_comment_header);
 
@@ -568,9 +560,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             len = tags[n] ? avio_put_str16le(dyn_buf, tags[n]->value) : 0;
             avio_wl16(pb, len);
         }
-        len = avio_close_dyn_buf(dyn_buf, &buf);
+        len = avio_get_dyn_buf(dyn_buf, &buf);
         avio_write(pb, buf, len);
-        av_freep(&buf);
+        ffio_reset_dyn_buf(dyn_buf);
         end_header(pb, hpos);
     }
     if (metadata_count) {
@@ -578,17 +570,15 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         hpos = put_header(pb, &ff_asf_extended_content_header);
         avio_wl16(pb, metadata_count);
         while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-            put_str16(pb, tag->key);
+            put_str16(pb, dyn_buf, tag->key);
             avio_wl16(pb, 0);
-            put_str16(pb, tag->value);
+            put_str16(pb, dyn_buf, tag->value);
         }
         end_header(pb, hpos);
     }
     /* chapters using ASF markers */
     if (!asf->is_streamed && s->nb_chapters) {
-        int ret;
-        if ((ret = asf_write_markers(s)) < 0)
-            return ret;
+        asf_write_markers(s, dyn_buf);
     }
     /* stream headers */
     for (unsigned n = 0; n < s->nb_streams; n++) {
@@ -633,7 +623,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             int wavsize = ff_put_wav_header(s, pb, par, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
 
             if (wavsize < 0)
-                return -1;
+                goto fail;
             if (wavsize != extra_size) {
                 cur_pos = avio_tell(pb);
                 avio_seek(pb, es_pos, SEEK_SET);
@@ -686,19 +676,15 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             desc = codec_desc ? codec_desc->name : NULL;
 
         if (desc) {
-            AVIOContext *dyn_buf;
             uint8_t *buf;
-            int len, ret;
-
-            if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
-                return ret;
+            int len;
 
             avio_put_str16le(dyn_buf, desc);
-            len = avio_close_dyn_buf(dyn_buf, &buf);
+            len = avio_get_dyn_buf(dyn_buf, &buf);
             avio_wl16(pb, len / 2); // "number of characters" = length in bytes / 2
 
             avio_write(pb, buf, len);
-            av_freep(&buf);
+            ffio_reset_dyn_buf(dyn_buf);
         } else
             avio_wl16(pb, 0);
 
@@ -713,7 +699,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             avio_wl32(pb, par->codec_tag);
         }
         if (!par->codec_tag)
-            return -1;
+            goto fail;
     }
     end_header(pb, hpos);
 
@@ -744,7 +730,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     avio_wl64(pb, asf->nb_packets); /* nb packets */
     avio_w8(pb, 1); /* ??? */
     avio_w8(pb, 1); /* ??? */
+    ffio_free_dyn_buf(&dyn_buf);
     return 0;
+fail:
+    ffio_free_dyn_buf(&dyn_buf);
+    return -1;
 }
 
 static int asf_write_header(AVFormatContext *s)
