@@ -206,8 +206,6 @@ typedef struct MLPEncodeContext {
 
     int             shorten_by;
 
-    int64_t         pts;
-
     LPCContext      lpc_ctx;
 } MLPEncodeContext;
 
@@ -2300,18 +2298,13 @@ input_and_return:
 
 no_data_left:
 
-    if (ctx->afq.frame_count > 0) {
-        ff_af_queue_remove(&ctx->afq, avctx->frame_size, &avpkt->pts,
-                           &avpkt->duration);
-        ctx->pts = avpkt->pts + avpkt->duration;
-    } else {
-        avpkt->pts = ctx->pts;
-        ctx->pts += avctx->frame_size;
-    }
     if (!frame)
         avctx->frame_number++;
 
     if (bytes_written > 0) {
+        ff_af_queue_remove(&ctx->afq, avctx->frame_size, &avpkt->pts,
+                           &avpkt->duration);
+
         avpkt->size = bytes_written;
         *got_packet = 1;
     } else {
