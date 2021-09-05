@@ -540,7 +540,7 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
     TeeContext *tee = avf->priv_data;
     AVFormatContext *avf2;
     AVBSFContext *bsfs;
-    AVPacket pkt2;
+    AVPacket *const pkt2 = ffformatcontext(avf)->pkt;
     int ret_all = 0, ret;
     unsigned i, s;
     int s2;
@@ -565,17 +565,17 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         if (s2 < 0)
             continue;
 
-        if ((ret = av_packet_ref(&pkt2, pkt)) < 0) {
+        if ((ret = av_packet_ref(pkt2, pkt)) < 0) {
             if (!ret_all)
                 ret_all = ret;
             continue;
         }
         bsfs = tee->slaves[i].bsfs[s2];
-        pkt2.stream_index = s2;
+        pkt2->stream_index = s2;
 
-        ret = av_bsf_send_packet(bsfs, &pkt2);
+        ret = av_bsf_send_packet(bsfs, pkt2);
         if (ret < 0) {
-            av_packet_unref(&pkt2);
+            av_packet_unref(pkt2);
             av_log(avf, AV_LOG_ERROR, "Error while sending packet to bitstream filter: %s\n",
                    av_err2str(ret));
             ret = tee_process_slave_failure(avf, i, ret);
@@ -584,7 +584,7 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         }
 
         while(1) {
-            ret = av_bsf_receive_packet(bsfs, &pkt2);
+            ret = av_bsf_receive_packet(bsfs, pkt2);
             if (ret == AVERROR(EAGAIN)) {
                 ret = 0;
                 break;
@@ -592,9 +592,9 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
                 break;
             }
 
-            av_packet_rescale_ts(&pkt2, bsfs->time_base_out,
+            av_packet_rescale_ts(pkt2, bsfs->time_base_out,
                                  avf2->streams[s2]->time_base);
-            ret = av_interleaved_write_frame(avf2, &pkt2);
+            ret = av_interleaved_write_frame(avf2, pkt2);
             if (ret < 0)
                 break;
         };
