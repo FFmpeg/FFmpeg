@@ -1186,16 +1186,11 @@ static int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
     unsigned int substr;
     int total_length;
 
-    if (buf_size < 4)
-        return AVERROR(EINVAL);
-
     /* Frame header will be written at the end. */
     buf      += 4;
     buf_size -= 4;
 
     if (restart_frame) {
-        if (buf_size < 28)
-            return AVERROR(EINVAL);
         write_major_sync(ctx, buf, buf_size);
         buf      += 28;
         buf_size -= 28;
