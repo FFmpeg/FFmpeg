@@ -552,6 +552,10 @@ static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt,
     data_ptr = pkt->data;
     end_ptr = pkt->data + length;
     buf_ptr = pkt->data + 4; /* skip SMPTE 331M header */
+
+    if (st->codecpar->channels > 8)
+        return AVERROR_INVALIDDATA;
+
     for (; end_ptr - buf_ptr >= st->codecpar->channels * 4; ) {
         for (i = 0; i < st->codecpar->channels; i++) {
             uint32_t sample = bytestream_get_le32(&buf_ptr);
