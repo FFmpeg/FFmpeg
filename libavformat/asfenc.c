@@ -760,8 +760,6 @@ static int asf_write_header(AVFormatContext *s)
      * data_size - asf->data_offset at the moment this function is done.
      * It is needed to use asf as a streamable format. */
     if (asf_write_header1(s, 0, DATA_HEADER_SIZE) < 0) {
-        //av_free(asf);
-        av_freep(&asf->index_ptr);
         return -1;
     }
 
@@ -1101,8 +1099,14 @@ static int asf_write_trailer(AVFormatContext *s)
         asf_write_header1(s, file_size, data_size - asf->data_offset);
     }
 
-    av_freep(&asf->index_ptr);
     return 0;
+}
+
+static void asf_deinit(AVFormatContext *s)
+{
+    ASFContext *const asf = s->priv_data;
+
+    av_freep(&asf->index_ptr);
 }
 
 static const AVOption asf_options[] = {
@@ -1132,6 +1136,7 @@ const AVOutputFormat ff_asf_muxer = {
     .flags          = AVFMT_GLOBALHEADER,
     .codec_tag      = asf_codec_tags,
     .priv_class        = &asf_muxer_class,
+    .deinit         = asf_deinit,
 };
 #endif /* CONFIG_ASF_MUXER */
 
@@ -1150,5 +1155,6 @@ const AVOutputFormat ff_asf_stream_muxer = {
     .flags          = AVFMT_GLOBALHEADER,
     .codec_tag      = asf_codec_tags,
     .priv_class     = &asf_muxer_class,
+    .deinit         = asf_deinit,
 };
 #endif /* CONFIG_ASF_STREAM_MUXER */
