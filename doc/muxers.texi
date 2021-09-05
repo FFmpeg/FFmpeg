@@ -2169,6 +2169,10 @@ ITU-T H.262 / MPEG-2 Part 2 video.
 
 Extensions: m2v
 
+@subsection obu
+
+AV1 low overhead Open Bitstream Units muxer. Temporal delimiter OBUs will be inserted in all temporal units of the stream.
+
 @subsection rawvideo
 
 Raw uncompressed video.
