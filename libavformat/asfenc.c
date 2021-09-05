@@ -622,8 +622,10 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             /* WAVEFORMATEX header */
             int wavsize = ff_put_wav_header(s, pb, par, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
 
-            if (wavsize < 0)
+            if (wavsize < 0) {
+                ret = wavsize;
                 goto fail;
+            }
             if (wavsize != extra_size) {
                 cur_pos = avio_tell(pb);
                 avio_seek(pb, es_pos, SEEK_SET);
@@ -698,8 +700,10 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             avio_wl16(pb, 4);
             avio_wl32(pb, par->codec_tag);
         }
-        if (!par->codec_tag)
+        if (!par->codec_tag) {
+            ret = AVERROR(EINVAL);
             goto fail;
+        }
     }
     end_header(pb, hpos);
 
@@ -730,16 +734,16 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     avio_wl64(pb, asf->nb_packets); /* nb packets */
     avio_w8(pb, 1); /* ??? */
     avio_w8(pb, 1); /* ??? */
-    ffio_free_dyn_buf(&dyn_buf);
-    return 0;
+    ret = 0;
 fail:
     ffio_free_dyn_buf(&dyn_buf);
-    return -1;
+    return ret;
 }
 
 static int asf_write_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
+    int ret;
 
     s->packet_size  = asf->packet_size;
     s->max_interleave_delta = 0;
@@ -759,9 +763,8 @@ static int asf_write_header(AVFormatContext *s)
     /* the data-chunk-size has to be 50 (DATA_HEADER_SIZE), which is
      * data_size - asf->data_offset at the moment this function is done.
      * It is needed to use asf as a streamable format. */
-    if (asf_write_header1(s, 0, DATA_HEADER_SIZE) < 0) {
-        return -1;
-    }
+    if ((ret = asf_write_header1(s, 0, DATA_HEADER_SIZE)) < 0)
+        return ret;
 
     asf->packet_nb_payloads     = 0;
     asf->packet_timestamp_start = -1;
