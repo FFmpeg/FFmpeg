@@ -1188,7 +1188,7 @@ static int write_packets_common(AVFormatContext *s, AVPacket *pkt, int interleav
 int av_write_frame(AVFormatContext *s, AVPacket *in)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    AVPacket *pkt = si->pkt;
+    AVPacket *pkt = si->parse_pkt;
     int ret;
 
     if (!in) {
@@ -1252,7 +1252,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 int av_write_trailer(AVFormatContext *s)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    AVPacket *const pkt = si->pkt;
+    AVPacket *const pkt = si->parse_pkt;
     int ret1, ret = 0;
 
     av_packet_unref(pkt);
@@ -1344,7 +1344,7 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
                                         AVFrame *frame, int interleaved)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    AVPacket *pkt = si->pkt;
+    AVPacket *pkt = si->parse_pkt;
 
     av_assert0(s->oformat);
     if (!s->oformat->write_uncoded_frame) {
