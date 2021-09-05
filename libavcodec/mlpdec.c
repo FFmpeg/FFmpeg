@@ -391,7 +391,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
      * substream is Stereo. Subsequent substreams' layouts are indicated in the
      * major sync. */
     if (m->avctx->codec_id == AV_CODEC_ID_MLP) {
-        if (mh.stream_type != 0xbb) {
+        if (mh.stream_type != SYNC_MLP) {
             avpriv_request_sample(m->avctx,
                         "unexpected stream_type %X in MLP",
                         mh.stream_type);
@@ -401,7 +401,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
             m->substream[0].mask = AV_CH_LAYOUT_STEREO;
         m->substream[substr].mask = mh.channel_layout_mlp;
     } else {
-        if (mh.stream_type != 0xba) {
+        if (mh.stream_type != SYNC_TRUEHD) {
             avpriv_request_sample(m->avctx,
                         "unexpected stream_type %X in !MLP",
                         mh.stream_type);

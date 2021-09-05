@@ -215,9 +215,6 @@ static const BestOffset restart_best_offset[NUM_CODEBOOKS] = {{0}};
 #define SYNC_MAJOR      0xf8726f
 #define MAJOR_SYNC_INFO_SIGNATURE   0xB752
 
-#define SYNC_MLP        0xbb
-#define SYNC_TRUEHD     0xba
-
 /* must be set for DVD-A */
 #define FLAGS_DVDA      0x4000
 /* FIFO delay must be constant */

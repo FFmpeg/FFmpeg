@@ -24,6 +24,9 @@
 
 #include <stdint.h>
 
+#define SYNC_MLP        0xbb
+#define SYNC_TRUEHD     0xba
+
 /** Last possible matrix channel for each codec */
 #define MAX_MATRIX_CHANNEL_MLP      5
 #define MAX_MATRIX_CHANNEL_TRUEHD   7
