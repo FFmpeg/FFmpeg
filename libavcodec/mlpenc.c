@@ -2300,7 +2300,8 @@ input_and_return:
         ff_af_queue_remove(&ctx->afq, avctx->frame_size, &avpkt->pts,
                            &avpkt->duration);
 
-        avpkt->size = bytes_written;
+        av_shrink_packet(avpkt, bytes_written);
+
         *got_packet = 1;
     } else {
         *got_packet = 0;
