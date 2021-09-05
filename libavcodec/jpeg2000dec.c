@@ -2360,6 +2360,8 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                    atom_size >= 16) {
             uint32_t atom2_size, atom2, atom2_end;
             do {
+                if (bytestream2_get_bytes_left(&s->g) < 8)
+                    break;
                 atom2_size = bytestream2_get_be32u(&s->g);
                 atom2      = bytestream2_get_be32u(&s->g);
                 atom2_end  = bytestream2_tell(&s->g) + atom2_size - 8;
