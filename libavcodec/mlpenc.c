@@ -2290,13 +2290,8 @@ input_and_return:
             ctx->next_major_frame_size = 0;
             ctx->major_number_of_frames = ctx->next_major_number_of_frames;
             ctx->next_major_number_of_frames = 0;
-
-            if (!ctx->major_frame_size)
-                goto no_data_left;
         }
     }
-
-no_data_left:
 
     if (!frame)
         avctx->frame_number++;
