@@ -339,7 +339,7 @@ static int compare_decoding_params(MLPEncodeContext *ctx)
 
         if (prev_cp->codebook    != cp->codebook  ||
             prev_cp->huff_lsbs   != cp->huff_lsbs  )
-            retval |= 0x1;
+            retval |= PARAM_PRESENT;
     }
 
     return retval;
