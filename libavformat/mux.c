@@ -903,8 +903,8 @@ static int interleave_compare_dts(AVFormatContext *s, const AVPacket *next,
     return comp > 0;
 }
 
-int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
-                                 AVPacket *pkt, int flush)
+int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
+                                 int flush, int has_packet)
 {
     FFFormatContext *const si = ffformatcontext(s);
     int stream_count = 0;
@@ -912,7 +912,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     int ret;
     int eof = flush;
 
-    if (pkt) {
+    if (has_packet) {
         if ((ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts)) < 0)
             return ret;
     }
@@ -1009,7 +1009,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
         AVStream *const st = s->streams[pktl->pkt.stream_index];
         FFStream *const sti = ffstream(st);
 
-        *out = pktl->pkt;
+        *pkt = pktl->pkt;
 
         si->packet_buffer = pktl->next;
         if (!si->packet_buffer)
@@ -1055,20 +1055,16 @@ const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
 }
 
 /**
- * Interleave an AVPacket correctly so it can be muxed.
- * @param out the interleaved packet will be output here
- * @param in the input packet; will always be blank on return if not NULL
- * @param flush 1 if no further packets are available as input and all
- *              remaining packets should be output
- * @return 1 if a packet was output, 0 if no packet could be output,
- *         < 0 if an error occurred
+ * A wrapper around AVOutputFormat.interleave_packet.
+ * See its documentation for details.
  */
-static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, int flush)
+static int interleave_packet(AVFormatContext *s, AVPacket *pkt,
+                             int flush, int has_packet)
 {
     if (s->oformat->interleave_packet) {
-        return s->oformat->interleave_packet(s, out, in, flush);
+        return s->oformat->interleave_packet(s, pkt, flush, has_packet);
     } else
-        return ff_interleave_packet_per_dts(s, out, in, flush);
+        return ff_interleave_packet_per_dts(s, pkt, flush, has_packet);
 }
 
 static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
@@ -1090,20 +1086,18 @@ static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
     return 1;
 }
 
-static int interleaved_write_packet(AVFormatContext *s, AVPacket *pkt, int flush)
+static int interleaved_write_packet(AVFormatContext *s, AVPacket *pkt,
+                                    int flush, int has_packet)
 {
     for (;; ) {
-        AVPacket opkt;
-        int ret = interleave_packet(s, &opkt, pkt, flush);
+        int ret = interleave_packet(s, pkt, flush, has_packet);
         if (ret <= 0)
             return ret;
 
-        pkt = NULL;
+        has_packet = 0;
 
-        ret = write_packet(s, &opkt);
-
-        av_packet_unref(&opkt);
-
+        ret = write_packet(s, pkt);
+        av_packet_unref(pkt);
         if (ret < 0)
             return ret;
     }
@@ -1127,7 +1121,7 @@ static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, 
     if (interleaved) {
         if (pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             return AVERROR(EINVAL);
-        return interleaved_write_packet(s, pkt, 0);
+        return interleaved_write_packet(s, pkt, 0, 1);
     } else {
         return write_packet(s, pkt);
     }
@@ -1251,7 +1245,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
         return ret;
     } else {
         av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame FLUSH\n");
-        return interleaved_write_packet(s, NULL, 1/*flush*/);
+        return interleaved_write_packet(s, ffformatcontext(s)->parse_pkt, 1/*flush*/, 0);
     }
 }
 
@@ -1271,7 +1265,7 @@ int av_write_trailer(AVFormatContext *s)
                 ret = ret1;
         }
     }
-    ret1 = interleaved_write_packet(s, NULL, 1);
+    ret1 = interleaved_write_packet(s, pkt, 1, 0);
     if (ret >= 0)
         ret = ret1;
 

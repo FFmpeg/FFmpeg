@@ -553,9 +553,21 @@ typedef struct AVOutputFormat {
     /**
      * A format-specific function for interleavement.
      * If unset, packets will be interleaved by dts.
+     *
+     * @param s           An AVFormatContext for output. pkt will be added to
+     *                    resp. taken from its packet buffer.
+     * @param[in,out] pkt A packet to be interleaved if has_packet is set;
+     *                    also used to return packets. If no packet is returned
+     *                    (e.g. on error), pkt is blank on return.
+     * @param flush       1 if no further packets are available as input and
+     *                    all remaining packets should be output.
+     * @param has_packet  If set, pkt contains a packet to be interleaved
+     *                    on input; otherwise pkt is blank on input.
+     * @return 1 if a packet was output, 0 if no packet could be output,
+     *         < 0 if an error occurred
      */
-    int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
-                             AVPacket *in, int flush);
+    int (*interleave_packet)(struct AVFormatContext *s, AVPacket *pkt,
+                             int flush, int has_packet);
     /**
      * Test if the given codec can be stored in this container.
      *

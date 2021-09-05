@@ -992,10 +992,11 @@ static int gxf_compare_field_nb(AVFormatContext *s, const AVPacket *next,
         (field_nb[1] == field_nb[0] && sc[1]->order > sc[0]->order);
 }
 
-static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
+static int gxf_interleave_packet(AVFormatContext *s, AVPacket *pkt,
+                                 int flush, int has_packet)
 {
     int ret;
-    if (pkt) {
+    if (has_packet) {
         AVStream *st = s->streams[pkt->stream_index];
         GXFStreamContext *sc = st->priv_data;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
@@ -1006,7 +1007,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
         if ((ret = ff_interleave_add_packet(s, pkt, gxf_compare_field_nb)) < 0)
             return ret;
     }
-    return ff_interleave_packet_per_dts(s, out, NULL, flush);
+    return ff_interleave_packet_per_dts(s, pkt, flush, 0);
 }
 
 const AVOutputFormat ff_gxf_muxer = {
