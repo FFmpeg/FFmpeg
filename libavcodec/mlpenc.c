@@ -143,7 +143,6 @@ typedef struct MLPEncodeContext {
     int32_t        *lossless_check_data;    ///< Array with lossless_check_data for each access unit.
 
     unsigned int   *max_output_bits;        ///< largest output bit-depth
-    unsigned int   *frame_size;             ///< Array with number of samples/channel in each access unit.
     unsigned int    frame_index;            ///< Index of current frame being encoded.
 
     unsigned int    one_sample_buffer_size; ///< Number of samples*channel for one access unit.
@@ -673,10 +672,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     }
 
     size = ctx->max_restart_interval;
-    ctx->frame_size = av_calloc(size, sizeof(*ctx->frame_size));
-    if (!ctx->frame_size)
-        return AVERROR(ENOMEM);
-
     ctx->max_output_bits = av_calloc(size, sizeof(*ctx->max_output_bits));
     if (!ctx->max_output_bits)
         return AVERROR(ENOMEM);
@@ -1237,7 +1232,7 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
         unsigned int channel;
         int i;
 
-        for (i = 0; i < ctx->frame_size[ctx->frame_index]; i++) {
+        for (i = 0; i < ctx->avctx->frame_size; i++) {
             for (channel = 0; channel <= rh->max_channel; channel++) {
                 uint32_t abs_sample;
                 int32_t sample;
@@ -1281,7 +1276,7 @@ static void input_to_sample_buffer(MLPEncodeContext *ctx)
         int32_t *input_buffer = ctx->inout_buffer + cur_index * ctx->one_sample_buffer_size;
         unsigned int i, channel;
 
-        for (i = 0; i < ctx->frame_size[cur_index]; i++) {
+        for (i = 0; i < ctx->avctx->frame_size; i++) {
             for (channel = 0; channel < ctx->avctx->channels; channel++)
                 *sample_buffer++ = *input_buffer++;
             sample_buffer += 2; /* noise_channels */
@@ -2125,7 +2120,7 @@ static void analyze_sample_buffer(MLPEncodeContext *ctx)
          */
         for (index = 0; index < ctx->number_of_frames; index++) {
             DecodingParams *dp = seq_dp + (index + 1)*(ctx->num_substreams) + substr;
-            dp->blocksize = ctx->frame_size[index];
+            dp->blocksize = ctx->avctx->frame_size;
         }
         /* The official encoder seems to always encode a filter state subblock
          * even if there are no filters. TODO check if it is possible to skip
@@ -2209,12 +2204,6 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             goto input_and_return;
     }
 
-    if (ctx->frame_size[ctx->frame_index] > MAX_BLOCKSIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid frame size (%d > %d)\n",
-               ctx->frame_size[ctx->frame_index], MAX_BLOCKSIZE);
-        return AVERROR_INVALIDDATA;
-    }
-
     restart_frame = !ctx->frame_index;
 
     if (restart_frame) {
@@ -2228,14 +2217,13 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     bytes_written = write_access_unit(ctx, avpkt->data, avpkt->size, restart_frame);
 
-    ctx->timestamp += ctx->frame_size[ctx->frame_index];
-    ctx->dts       += ctx->frame_size[ctx->frame_index];
+    ctx->timestamp += avctx->frame_size;
+    ctx->dts       += avctx->frame_size;
 
 input_and_return:
 
     if (frame)
         ctx->shorten_by = avctx->frame_size - frame->nb_samples;
-    ctx->frame_size[ctx->frame_index] = avctx->frame_size;
     ctx->next_major_frame_size += avctx->frame_size;
     ctx->next_major_number_of_frames++;
     if (data)
@@ -2249,7 +2237,7 @@ input_and_return:
         for (seq_index = 0;
              seq_index < ctx->restart_intervals && (seq_index * ctx->min_restart_interval) <= ctx->avctx->frame_number;
              seq_index++) {
-            unsigned int number_of_samples = 0;
+            unsigned int number_of_samples;
             unsigned int index;
 
             ctx->sample_buffer = ctx->major_scratch_buffer;
@@ -2269,11 +2257,8 @@ input_and_return:
                                        (ctx->frame_index / ctx->min_restart_interval)*(ctx->sequence_size)*(ctx->num_substreams) +
                                        (ctx->seq_offset[seq_index])*(ctx->num_substreams);
 
-            for (index = 0; index < ctx->number_of_frames; index++)
-                number_of_samples += ctx->frame_size[(ctx->starting_frame_index + index) % ctx->max_restart_interval];
+            number_of_samples = avctx->frame_size * ctx->number_of_frames;
             ctx->number_of_samples = number_of_samples;
-            if (!ctx->number_of_samples)
-                break;
 
             for (index = 0; index < ctx->seq_size[seq_index]; index++) {
                 clear_channel_params(ctx->seq_channel_params + index * ctx->avctx->channels, ctx->avctx->channels);
@@ -2322,7 +2307,6 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
     av_freep(&ctx->lpc_sample_buffer);
     av_freep(&ctx->decoding_params);
     av_freep(&ctx->channel_params);
-    av_freep(&ctx->frame_size);
     av_freep(&ctx->max_output_bits);
     ff_af_queue_close(&ctx->afq);
 
