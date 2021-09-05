@@ -22,12 +22,12 @@
  * frei0r wrapper
  */
 
-#include <dlfcn.h>
 #include <frei0r.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "config.h"
+#include "compat/w32dlfcn.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
