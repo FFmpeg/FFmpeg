@@ -1210,8 +1210,6 @@ int av_write_frame(AVFormatContext *s, AVPacket *in)
          * The following avoids copying in's data unnecessarily.
          * Copying side data is unavoidable as a bitstream filter
          * may change it, e.g. free it on errors. */
-        av_packet_unref(pkt);
-        pkt->buf  = NULL;
         pkt->data = in->data;
         pkt->size = in->size;
         ret = av_packet_copy_props(pkt, in);
@@ -1255,10 +1253,11 @@ int av_write_trailer(AVFormatContext *s)
     AVPacket *const pkt = si->parse_pkt;
     int ret1, ret = 0;
 
-    av_packet_unref(pkt);
     for (unsigned i = 0; i < s->nb_streams; i++) {
-        if (ffstream(s->streams[i])->bsfc) {
-            ret1 = write_packets_from_bsfs(s, s->streams[i], pkt, 1/*interleaved*/);
+        AVStream *const st  = s->streams[i];
+        FFStream *const sti = ffstream(st);
+        if (sti->bsfc) {
+            ret1 = write_packets_from_bsfs(s, st, pkt, 1/*interleaved*/);
             if (ret1 < 0)
                 av_packet_unref(pkt);
             if (ret >= 0)
@@ -1361,7 +1360,6 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
 
         if (!framep)
             goto fail;
-        av_packet_unref(pkt);
         pkt->buf = av_buffer_create((void *)framep, bufsize,
                                    uncoded_frame_free, NULL, 0);
         if (!pkt->buf) {
