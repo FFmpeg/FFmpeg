@@ -742,7 +742,7 @@ const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
-const AVCodecHWConfigInternal *const ff_h263_hw_config_list[] = {
+static const AVCodecHWConfigInternal *const h263_hw_config_list[] = {
 #if CONFIG_H263_VAAPI_HWACCEL
     HWACCEL_VAAPI(h263),
 #endif
@@ -773,7 +773,7 @@ const AVCodec ff_h263_decoder = {
     .flush          = ff_mpeg_flush,
     .max_lowres     = 3,
     .pix_fmts       = ff_h263_hwaccel_pixfmt_list_420,
-    .hw_configs     = ff_h263_hw_config_list,
+    .hw_configs     = h263_hw_config_list,
 };
 
 const AVCodec ff_h263p_decoder = {
@@ -791,5 +791,5 @@ const AVCodec ff_h263p_decoder = {
     .flush          = ff_mpeg_flush,
     .max_lowres     = 3,
     .pix_fmts       = ff_h263_hwaccel_pixfmt_list_420,
-    .hw_configs     = ff_h263_hw_config_list,
+    .hw_configs     = h263_hw_config_list,
 };
