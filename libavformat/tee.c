@@ -98,15 +98,15 @@ static inline int parse_slave_failure_policy_option(const char *opt, TeeSlave *t
 
 static int parse_slave_fifo_policy(const char *use_fifo, TeeSlave *tee_slave)
 {
-        /*TODO - change this to use proper function for parsing boolean
-         *       options when there is one */
-        if (av_match_name(use_fifo, "true,y,yes,enable,enabled,on,1")) {
-            tee_slave->use_fifo = 1;
-        } else if (av_match_name(use_fifo, "false,n,no,disable,disabled,off,0")) {
-            tee_slave->use_fifo = 0;
-        } else {
-            return AVERROR(EINVAL);
-        }
+    /*TODO - change this to use proper function for parsing boolean
+     *       options when there is one */
+    if (av_match_name(use_fifo, "true,y,yes,enable,enabled,on,1")) {
+        tee_slave->use_fifo = 1;
+    } else if (av_match_name(use_fifo, "false,n,no,disable,disabled,off,0")) {
+        tee_slave->use_fifo = 0;
+    } else {
+        return AVERROR(EINVAL);
+    }
     return 0;
 }
 
