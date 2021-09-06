@@ -18,6 +18,8 @@
 
 #include <string.h>
 
+#include "config.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -544,5 +546,10 @@ end:
 
 int av_bsf_get_null_filter(AVBSFContext **bsf)
 {
+#if CONFIG_NULL_BSF
+    extern const AVBitStreamFilter ff_null_bsf;
+    return av_bsf_alloc(&ff_null_bsf, bsf);
+#else
     return av_bsf_alloc(&list_bsf, bsf);
+#endif
 }
