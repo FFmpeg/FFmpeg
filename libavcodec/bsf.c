@@ -394,7 +394,7 @@ static const AVClass bsf_list_class = {
         .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVBitStreamFilter ff_list_bsf = {
+static const AVBitStreamFilter list_bsf = {
         .name           = "bsf_list",
         .priv_data_size = sizeof(BSFListContext),
         .priv_class     = &bsf_list_class,
@@ -490,7 +490,7 @@ int av_bsf_list_finalize(AVBSFList **lst, AVBSFContext **bsf)
         goto end;
     }
 
-    ret = av_bsf_alloc(&ff_list_bsf, bsf);
+    ret = av_bsf_alloc(&list_bsf, bsf);
     if (ret < 0)
         return ret;
 
@@ -544,5 +544,5 @@ end:
 
 int av_bsf_get_null_filter(AVBSFContext **bsf)
 {
-    return av_bsf_alloc(&ff_list_bsf, bsf);
+    return av_bsf_alloc(&list_bsf, bsf);
 }
