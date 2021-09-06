@@ -169,11 +169,11 @@ typedef struct MLPEncodeContext {
     BestOffset      best_offset[MAJOR_HEADER_INTERVAL+1][MAX_CHANNELS][NUM_CODEBOOKS];
 
     DecodingParams *decoding_params;
-    RestartHeader   restart_header [MAX_SUBSTREAMS];
+    RestartHeader   restart_header;
 
     ChannelParams   major_channel_params[MAJOR_HEADER_INTERVAL+1][MAX_CHANNELS];       ///< ChannelParams to be written to bitstream.
-    DecodingParams  major_decoding_params[MAJOR_HEADER_INTERVAL+1][MAX_SUBSTREAMS];    ///< DecodingParams to be written to bitstream.
-    int             major_params_changed[MAJOR_HEADER_INTERVAL+1][MAX_SUBSTREAMS];     ///< params_changed to be written to bitstream.
+    DecodingParams  major_decoding_params[MAJOR_HEADER_INTERVAL+1];                    ///< DecodingParams to be written to bitstream.
+    int             major_params_changed[MAJOR_HEADER_INTERVAL+1];                     ///< params_changed to be written to bitstream.
 
     unsigned int    major_cur_subblock_index;
     unsigned int    major_filter_state_subblock;
@@ -375,11 +375,10 @@ static void copy_matrix_params(MatrixParams *dst, MatrixParams *src)
     }
 }
 
-static void copy_restart_frame_params(MLPEncodeContext *ctx,
-                                      unsigned int substr)
+static void copy_restart_frame_params(MLPEncodeContext *ctx)
 {
     for (unsigned int index = 0; index < ctx->number_of_subblocks; index++) {
-        DecodingParams *dp = ctx->seq_decoding_params + index*(ctx->num_substreams) + substr;
+        DecodingParams *dp = ctx->seq_decoding_params + index;
 
         copy_matrix_params(&dp->matrix_params, &ctx->cur_decoding_params->matrix_params);
 
@@ -397,17 +396,15 @@ static void copy_restart_frame_params(MLPEncodeContext *ctx,
 }
 
 /** Clears a DecodingParams struct the way it should be after a restart header. */
-static void clear_decoding_params(DecodingParams decoding_params[MAX_SUBSTREAMS], int num_substreams)
+static void clear_decoding_params(DecodingParams *decoding_params)
 {
-    for (unsigned substr = 0; substr < num_substreams; substr++) {
-        DecodingParams *dp = &decoding_params[substr];
+    DecodingParams *dp = decoding_params;
 
-        dp->param_presence_flags   = 0xff;
-        dp->blocksize              = 8;
+    dp->param_presence_flags   = 0xff;
+    dp->blocksize              = 8;
 
-        memset(&dp->matrix_params , 0, sizeof(MatrixParams       ));
-        memset(dp->quant_step_size, 0, sizeof(dp->quant_step_size));
-    }
+    memset(&dp->matrix_params , 0, sizeof(MatrixParams       ));
+    memset(dp->quant_step_size, 0, sizeof(dp->quant_step_size));
 }
 
 /** Clears a ChannelParams struct the way it should be after a restart header. */
@@ -426,26 +423,23 @@ static void clear_channel_params(ChannelParams channel_params[MAX_CHANNELS], int
 }
 
 /** Sets default vales in our encoder for a DecodingParams struct. */
-static void default_decoding_params(MLPEncodeContext *ctx,
-     DecodingParams decoding_params[MAX_SUBSTREAMS])
+static void default_decoding_params(MLPEncodeContext *ctx, DecodingParams *decoding_params)
 {
-    clear_decoding_params(decoding_params, ctx->num_substreams);
+    DecodingParams *dp = decoding_params;
+    uint8_t param_presence_flags = 0;
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        DecodingParams *dp = &decoding_params[substr];
-        uint8_t param_presence_flags = 0;
+    clear_decoding_params(decoding_params);
 
-        param_presence_flags |= PARAM_BLOCKSIZE;
-        param_presence_flags |= PARAM_MATRIX;
-        param_presence_flags |= PARAM_OUTSHIFT;
-        param_presence_flags |= PARAM_QUANTSTEP;
-        param_presence_flags |= PARAM_FIR;
-/*      param_presence_flags |= PARAM_IIR; */
-        param_presence_flags |= PARAM_HUFFOFFSET;
-        param_presence_flags |= PARAM_PRESENT;
+    param_presence_flags |= PARAM_BLOCKSIZE;
+    param_presence_flags |= PARAM_MATRIX;
+    param_presence_flags |= PARAM_OUTSHIFT;
+    param_presence_flags |= PARAM_QUANTSTEP;
+    param_presence_flags |= PARAM_FIR;
+  /*param_presence_flags |= PARAM_IIR; */
+    param_presence_flags |= PARAM_HUFFOFFSET;
+    param_presence_flags |= PARAM_PRESENT;
 
-        dp->param_presence_flags = param_presence_flags;
-    }
+    dp->param_presence_flags = param_presence_flags;
 }
 
 /****************************************************************************/
@@ -475,7 +469,7 @@ static int mlp_peak_bitrate(int peak_bitrate, int sample_rate)
 static av_cold void mlp_encode_init_static(void)
 {
     clear_channel_params (restart_channel_params,  MAX_CHANNELS);
-    clear_decoding_params(restart_decoding_params, MAX_SUBSTREAMS);
+    clear_decoding_params(restart_decoding_params);
     ff_mlp_init_crc();
 }
 
@@ -660,7 +654,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     if (!ctx->max_output_bits)
         return AVERROR(ENOMEM);
 
-    size = ctx->num_substreams * ctx->max_restart_interval;
+    size = ctx->max_restart_interval;
     ctx->lossless_check_data = av_calloc(size, sizeof(*ctx->lossless_check_data));
     if (!ctx->lossless_check_data)
         return AVERROR(ENOMEM);
@@ -676,22 +670,20 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     if (!ctx->channel_params)
         return AVERROR(ENOMEM);
 
-    size = ctx->restart_intervals * ctx->sequence_size * ctx->num_substreams;
+    size = ctx->restart_intervals * ctx->sequence_size;
     ctx->decoding_params = av_calloc(size, sizeof(*ctx->decoding_params));
     if (!ctx->decoding_params)
         return AVERROR(ENOMEM);
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        RestartHeader  *rh = &ctx->restart_header [substr];
+    RestartHeader  *rh = &ctx->restart_header;
 
-        /* TODO see if noisegen_seed is really worth it. */
-        rh->noisegen_seed      = 0;
+    /* TODO see if noisegen_seed is really worth it. */
+    rh->noisegen_seed      = 0;
 
-        rh->min_channel        = 0;
-        rh->max_channel        = avctx->channels - 1;
-        /* FIXME: this works for 1 and 2 channels, but check for more */
-        rh->max_matrix_channel = rh->max_channel;
-    }
+    rh->min_channel        = 0;
+    rh->max_channel        = avctx->channels - 1;
+    /* FIXME: this works for 1 and 2 channels, but check for more */
+    rh->max_matrix_channel = rh->max_channel;
 
     if ((ret = ff_lpc_init(&ctx->lpc_ctx, ctx->number_of_samples,
                     MLP_MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON)) < 0)
@@ -1012,93 +1004,89 @@ static void write_block_data(MLPEncodeContext *ctx, PutBitContext *pb)
     ctx->write_buffer = sample_buffer;
 }
 
-/** Writes the substreams data to the bitstream. */
-static uint8_t *write_substrs(MLPEncodeContext *ctx, uint8_t *buf, int buf_size,
-                              int restart_frame,
-                              uint16_t substream_data_len[MAX_SUBSTREAMS])
+/** Writes the substream data to the bitstream. */
+static uint8_t *write_substr(MLPEncodeContext *ctx, uint8_t *buf, int buf_size,
+                             int restart_frame,
+                             uint16_t substream_data_len[MAX_SUBSTREAMS])
 {
     int32_t *lossless_check_data = ctx->lossless_check_data;
+    unsigned int cur_subblock_index = ctx->major_cur_subblock_index;
+    unsigned int num_subblocks = ctx->major_filter_state_subblock;
+    RestartHeader  *rh = &ctx->restart_header;
+    int substr_restart_frame = restart_frame;
+    uint8_t parity, checksum;
+    PutBitContext pb;
+    int params_changed;
     int end = 0;
 
-    lossless_check_data += ctx->frame_index * ctx->num_substreams;
+    lossless_check_data += ctx->frame_index;
+    ctx->cur_restart_header = rh;
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        unsigned int cur_subblock_index = ctx->major_cur_subblock_index;
-        unsigned int num_subblocks = ctx->major_filter_state_subblock;
-        RestartHeader  *rh = &ctx->restart_header [substr];
-        int substr_restart_frame = restart_frame;
-        uint8_t parity, checksum;
-        PutBitContext pb;
-        int params_changed;
+    init_put_bits(&pb, buf, buf_size);
 
-        ctx->cur_restart_header = rh;
+    for (unsigned int subblock = 0; subblock <= num_subblocks; subblock++) {
+        unsigned int subblock_index;
 
-        init_put_bits(&pb, buf, buf_size);
+        subblock_index = cur_subblock_index++;
 
-        for (unsigned int subblock = 0; subblock <= num_subblocks; subblock++) {
-            unsigned int subblock_index;
+        ctx->cur_decoding_params = &ctx->major_decoding_params[subblock_index];
+        ctx->cur_channel_params = ctx->major_channel_params[subblock_index];
 
-            subblock_index = cur_subblock_index++;
+        params_changed = ctx->major_params_changed[subblock_index];
 
-            ctx->cur_decoding_params = &ctx->major_decoding_params[subblock_index][substr];
-            ctx->cur_channel_params = ctx->major_channel_params[subblock_index];
+        if (substr_restart_frame || params_changed) {
+            put_bits(&pb, 1, 1);
 
-            params_changed = ctx->major_params_changed[subblock_index][substr];
-
-            if (substr_restart_frame || params_changed) {
+            if (substr_restart_frame) {
                 put_bits(&pb, 1, 1);
 
-                if (substr_restart_frame) {
-                    put_bits(&pb, 1, 1);
-
-                    write_restart_header(ctx, &pb);
-                    rh->lossless_check_data = 0;
-                } else {
-                    put_bits(&pb, 1, 0);
-                }
-
-                write_decoding_params(ctx, &pb, params_changed);
+                write_restart_header(ctx, &pb);
+                rh->lossless_check_data = 0;
             } else {
                 put_bits(&pb, 1, 0);
             }
 
-            write_block_data(ctx, &pb);
-
-            put_bits(&pb, 1, !substr_restart_frame);
-
-            substr_restart_frame = 0;
+            write_decoding_params(ctx, &pb, params_changed);
+        } else {
+            put_bits(&pb, 1, 0);
         }
 
-        put_bits(&pb, (-put_bits_count(&pb)) & 15, 0);
+        write_block_data(ctx, &pb);
 
-        rh->lossless_check_data ^= *lossless_check_data++;
+        put_bits(&pb, 1, !substr_restart_frame);
 
-        if (ctx->last_frames == 0 && ctx->shorten_by) {
-            if (ctx->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
-                put_bits(&pb, 16, END_OF_STREAM & 0xFFFF);
-                put_bits(&pb, 16, (ctx->shorten_by & 0x1FFF) | 0x2000);
-            } else {
-                put_bits(&pb, 32, END_OF_STREAM);
-            }
-        }
-
-        /* Data must be flushed for the checksum and parity to be correct;
-         * notice that we already are word-aligned here. */
-        flush_put_bits(&pb);
-
-        parity   = ff_mlp_calculate_parity(buf, put_bytes_output(&pb)) ^ 0xa9;
-        checksum = ff_mlp_checksum8       (buf, put_bytes_output(&pb));
-
-        put_bits(&pb, 8, parity  );
-        put_bits(&pb, 8, checksum);
-
-        flush_put_bits(&pb);
-
-        end += put_bytes_output(&pb);
-        substream_data_len[substr] = end;
-
-        buf += put_bytes_output(&pb);
+        substr_restart_frame = 0;
     }
+
+    put_bits(&pb, (-put_bits_count(&pb)) & 15, 0);
+
+    rh->lossless_check_data ^= *lossless_check_data++;
+
+    if (ctx->last_frames == 0 && ctx->shorten_by) {
+        if (ctx->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
+            put_bits(&pb, 16, END_OF_STREAM & 0xFFFF);
+            put_bits(&pb, 16, (ctx->shorten_by & 0x1FFF) | 0x2000);
+        } else {
+            put_bits(&pb, 32, END_OF_STREAM);
+        }
+    }
+
+    /* Data must be flushed for the checksum and parity to be correct;
+     * notice that we already are word-aligned here. */
+    flush_put_bits(&pb);
+
+    parity   = ff_mlp_calculate_parity(buf, put_bytes_output(&pb)) ^ 0xa9;
+    checksum = ff_mlp_checksum8       (buf, put_bytes_output(&pb));
+
+    put_bits(&pb, 8, parity  );
+    put_bits(&pb, 8, checksum);
+
+    flush_put_bits(&pb);
+
+    end += put_bytes_output(&pb);
+    substream_data_len[0] = end;
+
+    buf += put_bytes_output(&pb);
 
     ctx->major_cur_subblock_index += ctx->major_filter_state_subblock + 1;
     ctx->major_filter_state_subblock = 0;
@@ -1110,7 +1098,7 @@ static uint8_t *write_substrs(MLPEncodeContext *ctx, uint8_t *buf, int buf_size,
 static void write_frame_headers(MLPEncodeContext *ctx, uint8_t *frame_header,
                                 uint8_t *substream_headers, unsigned int length,
                                 int restart_frame,
-                                uint16_t substream_data_len[MAX_SUBSTREAMS])
+                                uint16_t substream_data_len[1])
 {
     uint16_t access_unit_header = 0;
     uint16_t parity_nibble = 0;
@@ -1170,7 +1158,7 @@ static int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
         buf_size -= 2;
     }
 
-    buf = write_substrs(ctx, buf, buf_size, restart_frame, substream_data_len);
+    buf = write_substr(ctx, buf, buf_size, restart_frame, &substream_data_len[0]);
 
     total_length = buf - buf0;
 
@@ -1193,38 +1181,35 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
     int32_t *lossless_check_data = ctx->lossless_check_data;
     const int32_t *samples_32 = (const int32_t *) samples;
     const int16_t *samples_16 = (const int16_t *) samples;
+    RestartHeader *rh = &ctx->restart_header;
+    int32_t *sample_buffer = ctx->inout_buffer;
+    int32_t temp_lossless_check_data = 0;
+    uint32_t greatest = 0;
 
-    lossless_check_data += ctx->frame_index * ctx->num_substreams;
+    lossless_check_data += ctx->frame_index;
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        RestartHeader  *rh = &ctx->restart_header [substr];
-        int32_t *sample_buffer = ctx->inout_buffer;
-        int32_t temp_lossless_check_data = 0;
-        uint32_t greatest = 0;
+    for (int i = 0; i < ctx->avctx->frame_size; i++) {
+        for (unsigned int channel = 0; channel <= rh->max_channel; channel++) {
+            uint32_t abs_sample;
+            int32_t sample;
 
-        for (int i = 0; i < ctx->avctx->frame_size; i++) {
-            for (unsigned int channel = 0; channel <= rh->max_channel; channel++) {
-                uint32_t abs_sample;
-                int32_t sample;
+            sample = is24 ? *samples_32++ >> 8 : *samples_16++ * 256;
 
-                sample = is24 ? *samples_32++ >> 8 : *samples_16++ * 256;
+            /* TODO Find out if number_sbits can be used for negative values. */
+            abs_sample = FFABS(sample);
+            if (greatest < abs_sample)
+                greatest = abs_sample;
 
-                /* TODO Find out if number_sbits can be used for negative values. */
-                abs_sample = FFABS(sample);
-                if (greatest < abs_sample)
-                    greatest = abs_sample;
-
-                temp_lossless_check_data ^= (sample & 0x00ffffff) << channel;
-                *sample_buffer++ = sample;
-            }
-
-            sample_buffer += 2; /* noise channels */
+            temp_lossless_check_data ^= (sample & 0x00ffffff) << channel;
+            *sample_buffer++ = sample;
         }
 
-        ctx->max_output_bits[ctx->frame_index] = number_sbits(greatest);
-
-        *lossless_check_data++ = temp_lossless_check_data;
+        sample_buffer += 2; /* noise channels */
     }
+
+    ctx->max_output_bits[ctx->frame_index] = number_sbits(greatest);
+
+    *lossless_check_data++ = temp_lossless_check_data;
 }
 
 /** Wrapper function for inputting data in two different bit-depths. */
@@ -1985,25 +1970,22 @@ static void set_major_params(MLPEncodeContext *ctx)
     RestartHeader *rh = ctx->cur_restart_header;
     uint8_t max_huff_lsbs = 0;
     uint8_t max_output_bits = 0;
+    DecodingParams *seq_dp = (DecodingParams *) ctx->decoding_params+
+        (ctx->restart_intervals - 1)*(ctx->sequence_size)*(ctx->avctx->channels) +
+        (ctx->seq_offset[ctx->restart_intervals - 1])*(ctx->avctx->channels);
+    ChannelParams *seq_cp = (ChannelParams *) ctx->channel_params +
+        (ctx->restart_intervals - 1)*(ctx->sequence_size)*(ctx->avctx->channels) +
+        (ctx->seq_offset[ctx->restart_intervals - 1])*(ctx->avctx->channels);
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        DecodingParams *seq_dp = (DecodingParams *) ctx->decoding_params+
-                                 (ctx->restart_intervals - 1)*(ctx->sequence_size)*(ctx->avctx->channels) +
-                                 (ctx->seq_offset[ctx->restart_intervals - 1])*(ctx->avctx->channels);
-
-        ChannelParams *seq_cp = (ChannelParams *) ctx->channel_params +
-                                (ctx->restart_intervals - 1)*(ctx->sequence_size)*(ctx->avctx->channels) +
-                                (ctx->seq_offset[ctx->restart_intervals - 1])*(ctx->avctx->channels);
-        for (unsigned int index = 0; index < ctx->seq_size[ctx->restart_intervals-1]; index++) {
-            memcpy(&ctx->major_decoding_params[index][substr], seq_dp + index*(ctx->num_substreams) + substr, sizeof(DecodingParams));
-            for (unsigned int channel = 0; channel < ctx->avctx->channels; channel++) {
-                uint8_t huff_lsbs = (seq_cp + index*(ctx->avctx->channels) + channel)->huff_lsbs;
-                if (max_huff_lsbs < huff_lsbs)
-                    max_huff_lsbs = huff_lsbs;
-                memcpy(&ctx->major_channel_params[index][channel],
-                       (seq_cp + index*(ctx->avctx->channels) + channel),
-                       sizeof(ChannelParams));
-            }
+    for (unsigned int index = 0; index < ctx->seq_size[ctx->restart_intervals-1]; index++) {
+        memcpy(&ctx->major_decoding_params[index], seq_dp + index, sizeof(DecodingParams));
+        for (unsigned int channel = 0; channel < ctx->avctx->channels; channel++) {
+            uint8_t huff_lsbs = (seq_cp + index*(ctx->avctx->channels) + channel)->huff_lsbs;
+            if (max_huff_lsbs < huff_lsbs)
+                max_huff_lsbs = huff_lsbs;
+            memcpy(&ctx->major_channel_params[index][channel],
+                   (seq_cp + index*(ctx->avctx->channels) + channel),
+                   sizeof(ChannelParams));
         }
     }
 
@@ -2014,22 +1996,19 @@ static void set_major_params(MLPEncodeContext *ctx)
             max_output_bits = ctx->max_output_bits[index];
     rh->max_output_bits = max_output_bits;
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
+    ctx->cur_restart_header = &ctx->restart_header;
 
-        ctx->cur_restart_header = &ctx->restart_header[substr];
+    ctx->prev_decoding_params = restart_decoding_params;
+    ctx->prev_channel_params = restart_channel_params;
 
-        ctx->prev_decoding_params = &restart_decoding_params[substr];
-        ctx->prev_channel_params = restart_channel_params;
+    for (unsigned int index = 0; index < MAJOR_HEADER_INTERVAL + 1; index++) {
+        ctx->cur_decoding_params = &ctx->major_decoding_params[index];
+        ctx->cur_channel_params = ctx->major_channel_params[index];
 
-        for (unsigned int index = 0; index < MAJOR_HEADER_INTERVAL + 1; index++) {
-            ctx->cur_decoding_params = &ctx->major_decoding_params[index][substr];
-            ctx->cur_channel_params = ctx->major_channel_params[index];
+        ctx->major_params_changed[index] = compare_decoding_params(ctx);
 
-            ctx->major_params_changed[index][substr] = compare_decoding_params(ctx);
-
-            ctx->prev_decoding_params = ctx->cur_decoding_params;
-            ctx->prev_channel_params = ctx->cur_channel_params;
-        }
+        ctx->prev_decoding_params = ctx->cur_decoding_params;
+        ctx->prev_channel_params = ctx->cur_channel_params;
     }
 
     ctx->major_number_of_subblocks = ctx->number_of_subblocks;
@@ -2042,44 +2021,42 @@ static void analyze_sample_buffer(MLPEncodeContext *ctx)
     ChannelParams *seq_cp = ctx->seq_channel_params;
     DecodingParams *seq_dp = ctx->seq_decoding_params;
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        ctx->cur_restart_header = &ctx->restart_header[substr];
-        ctx->cur_decoding_params = seq_dp + 1*(ctx->num_substreams) + substr;
-        ctx->cur_channel_params = seq_cp + 1*(ctx->avctx->channels);
+    ctx->cur_restart_header = &ctx->restart_header;
+    ctx->cur_decoding_params = seq_dp + 1;
+    ctx->cur_channel_params = seq_cp + ctx->avctx->channels;
 
-        determine_quant_step_size(ctx);
-        generate_2_noise_channels(ctx);
-        lossless_matrix_coeffs   (ctx);
-        rematrix_channels        (ctx);
-        determine_filters        (ctx);
-        apply_filters            (ctx);
+    determine_quant_step_size(ctx);
+    generate_2_noise_channels(ctx);
+    lossless_matrix_coeffs   (ctx);
+    rematrix_channels        (ctx);
+    determine_filters        (ctx);
+    apply_filters            (ctx);
 
-        copy_restart_frame_params(ctx, substr);
+    copy_restart_frame_params(ctx);
 
-        /* Copy frame_size from frames 0...max to decoding_params 1...max + 1
-         * decoding_params[0] is for the filter state subblock.
-         */
-        for (unsigned int index = 0; index < ctx->number_of_frames; index++) {
-            DecodingParams *dp = seq_dp + (index + 1)*(ctx->num_substreams) + substr;
-            dp->blocksize = ctx->avctx->frame_size;
-        }
-        /* The official encoder seems to always encode a filter state subblock
-         * even if there are no filters. TODO check if it is possible to skip
-         * the filter state subblock for no filters.
-         */
-        (seq_dp + substr)->blocksize  = 8;
-        (seq_dp + 1*(ctx->num_substreams) + substr)->blocksize -= 8;
-
-        for (unsigned int index = 0; index < ctx->number_of_subblocks; index++) {
-                ctx->cur_decoding_params = seq_dp + index*(ctx->num_substreams) + substr;
-                ctx->cur_channel_params = seq_cp + index*(ctx->avctx->channels);
-                ctx->cur_best_offset = ctx->best_offset[index];
-                determine_bits(ctx);
-                ctx->sample_buffer += ctx->cur_decoding_params->blocksize * ctx->num_channels;
-        }
-
-        set_best_codebook(ctx);
+    /* Copy frame_size from frames 0...max to decoding_params 1...max + 1
+     * decoding_params[0] is for the filter state subblock.
+     */
+    for (unsigned int index = 0; index < ctx->number_of_frames; index++) {
+        DecodingParams *dp = seq_dp + (index + 1);
+        dp->blocksize = ctx->avctx->frame_size;
     }
+    /* The official encoder seems to always encode a filter state subblock
+     * even if there are no filters. TODO check if it is possible to skip
+     * the filter state subblock for no filters.
+     */
+    (seq_dp + 0)->blocksize  = 8;
+    (seq_dp + 1)->blocksize -= 8;
+
+    for (unsigned int index = 0; index < ctx->number_of_subblocks; index++) {
+        ctx->cur_decoding_params = seq_dp + index;
+        ctx->cur_channel_params = seq_cp + index*(ctx->avctx->channels);
+        ctx->cur_best_offset = ctx->best_offset[index];
+        determine_bits(ctx);
+        ctx->sample_buffer += ctx->cur_decoding_params->blocksize * ctx->num_channels;
+    }
+
+    set_best_codebook(ctx);
 }
 
 static void process_major_frame(MLPEncodeContext *ctx)
@@ -2090,17 +2067,15 @@ static void process_major_frame(MLPEncodeContext *ctx)
     ctx->number_of_frames = ctx->major_number_of_frames;
     ctx->number_of_samples = ctx->major_frame_size;
 
-    for (unsigned int substr = 0; substr < ctx->num_substreams; substr++) {
-        ctx->cur_restart_header = &ctx->restart_header[substr];
+    ctx->cur_restart_header = &ctx->restart_header;
 
-        ctx->cur_decoding_params = &ctx->major_decoding_params[1][substr];
-        ctx->cur_channel_params = ctx->major_channel_params[1];
+    ctx->cur_decoding_params = &ctx->major_decoding_params[1];
+    ctx->cur_channel_params = ctx->major_channel_params[1];
 
-        generate_2_noise_channels(ctx);
-        rematrix_channels        (ctx);
+    generate_2_noise_channels(ctx);
+    rematrix_channels        (ctx);
 
-        apply_filters(ctx);
-    }
+    apply_filters(ctx);
 }
 
 /****************************************************************************/
@@ -2190,15 +2165,15 @@ input_and_return:
                                       (ctx->seq_offset[seq_index])*(ctx->avctx->channels);
 
             ctx->seq_decoding_params = (DecodingParams *) ctx->decoding_params +
-                                       (ctx->frame_index / ctx->min_restart_interval)*(ctx->sequence_size)*(ctx->num_substreams) +
-                                       (ctx->seq_offset[seq_index])*(ctx->num_substreams);
+                                       (ctx->frame_index / ctx->min_restart_interval)*(ctx->sequence_size) +
+                                       (ctx->seq_offset[seq_index]);
 
             number_of_samples = avctx->frame_size * ctx->number_of_frames;
             ctx->number_of_samples = number_of_samples;
 
             for (unsigned int index = 0; index < ctx->seq_size[seq_index]; index++) {
                 clear_channel_params(ctx->seq_channel_params + index * ctx->avctx->channels, ctx->avctx->channels);
-                default_decoding_params(ctx, ctx->seq_decoding_params + index*(ctx->num_substreams));
+                default_decoding_params(ctx, ctx->seq_decoding_params + index);
             }
 
             input_to_sample_buffer(ctx);
