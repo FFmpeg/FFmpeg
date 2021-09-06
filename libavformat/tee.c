@@ -124,6 +124,7 @@ static int close_slave(TeeSlave *tee_slave)
     unsigned i;
     int ret = 0;
 
+    av_dict_free(&tee_slave->fifo_options);
     avf = tee_slave->avf;
     if (!avf)
         return 0;
@@ -229,6 +230,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 
         av_dict_free(&options);
         options = tee_slave->fifo_options;
+        tee_slave->fifo_options = NULL;
     }
     ret = avformat_alloc_output_context2(&avf2, NULL,
                                          tee_slave->use_fifo ? "fifo" :format, filename);
