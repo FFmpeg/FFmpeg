@@ -96,12 +96,8 @@ static inline int parse_slave_failure_policy_option(const char *opt, TeeSlave *t
     return AVERROR(EINVAL);
 }
 
-static int parse_slave_fifo_options(const char *use_fifo,
-                                    const char *fifo_options, TeeSlave *tee_slave)
+static int parse_slave_fifo_policy(const char *use_fifo, TeeSlave *tee_slave)
 {
-    int ret = 0;
-
-    if (use_fifo) {
         /*TODO - change this to use proper function for parsing boolean
          *       options when there is one */
         if (av_match_name(use_fifo, "true,y,yes,enable,enabled,on,1")) {
@@ -111,12 +107,12 @@ static int parse_slave_fifo_options(const char *use_fifo,
         } else {
             return AVERROR(EINVAL);
         }
-    }
+    return 0;
+}
 
-    if (fifo_options)
-        ret = av_dict_parse_string(&tee_slave->fifo_options, fifo_options, "=", ":", 0);
-
-    return ret;
+static int parse_slave_fifo_options(const char *fifo_options, TeeSlave *tee_slave)
+{
+    return av_dict_parse_string(&tee_slave->fifo_options, fifo_options, "=", ":", 0);
 }
 
 static int close_slave(TeeSlave *tee_slave)
@@ -174,37 +170,36 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     if ((ret = ff_tee_parse_slave_options(avf, slave, &options, &filename)) < 0)
         return ret;
 
-#define STEAL_OPTION(option, field) do {                                \
+#define CONSUME_OPTION(option, field, action) do {                      \
         if ((entry = av_dict_get(options, option, NULL, 0))) {          \
             field = entry->value;                                       \
-            entry->value = NULL; /* prevent it from being freed */      \
+            { action }                                                  \
             av_dict_set(&options, option, NULL, 0);                     \
         }                                                               \
     } while (0)
+#define STEAL_OPTION(option, field)                                     \
+    CONSUME_OPTION(option, field,                                       \
+                   entry->value = NULL; /* prevent it from being freed */)
+#define PROCESS_OPTION(option, field, function, on_error)               \
+    CONSUME_OPTION(option, field, if ((ret = function) < 0) { { on_error } goto end; })
 
     STEAL_OPTION("f", format);
     STEAL_OPTION("select", select);
-    STEAL_OPTION("onfail", on_fail);
-    STEAL_OPTION("use_fifo", use_fifo);
-    STEAL_OPTION("fifo_options", fifo_options_str);
+    PROCESS_OPTION("onfail", on_fail,
+                   parse_slave_failure_policy_option(on_fail, tee_slave),
+                   av_log(avf, AV_LOG_ERROR, "Invalid onfail option value, "
+                          "valid options are 'abort' and 'ignore'\n"););
+    PROCESS_OPTION("use_fifo", use_fifo,
+                   parse_slave_fifo_policy(use_fifo, tee_slave),
+                   av_log(avf, AV_LOG_ERROR, "Error parsing fifo options: %s\n",
+                          av_err2str(ret)););
+    PROCESS_OPTION("fifo_options", fifo_options_str,
+                   parse_slave_fifo_options(fifo_options_str, tee_slave), ;);
     entry = NULL;
     while ((entry = av_dict_get(options, "bsfs", entry, AV_DICT_IGNORE_SUFFIX))) {
         /* trim out strlen("bsfs") characters from key */
         av_dict_set(&bsf_options, entry->key + 4, entry->value, 0);
         av_dict_set(&options, entry->key, NULL, 0);
-    }
-
-    ret = parse_slave_failure_policy_option(on_fail, tee_slave);
-    if (ret < 0) {
-        av_log(avf, AV_LOG_ERROR,
-               "Invalid onfail option value, valid options are 'abort' and 'ignore'\n");
-        goto end;
-    }
-
-    ret = parse_slave_fifo_options(use_fifo, fifo_options_str, tee_slave);
-    if (ret < 0) {
-        av_log(avf, AV_LOG_ERROR, "Error parsing fifo options: %s\n", av_err2str(ret));
-        goto end;
     }
 
     if (tee_slave->use_fifo) {
@@ -405,9 +400,6 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 end:
     av_free(format);
     av_free(select);
-    av_free(on_fail);
-    av_free(use_fifo);
-    av_free(fifo_options_str);
     av_dict_free(&options);
     av_dict_free(&bsf_options);
     av_freep(&tmp_select);
