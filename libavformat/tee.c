@@ -403,6 +403,8 @@ end:
     av_free(format);
     av_free(select);
     av_free(on_fail);
+    av_free(use_fifo);
+    av_free(fifo_options_str);
     av_dict_free(&options);
     av_dict_free(&bsf_options);
     av_freep(&tmp_select);
