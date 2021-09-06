@@ -34,7 +34,7 @@ static void error(const char *err)
     exit(1);
 }
 
-static AVBitStreamFilter *f = NULL;
+static const AVBitStreamFilter *f = NULL;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
@@ -52,7 +52,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 #ifdef FFMPEG_BSF
 #define BSF_SYMBOL0(BSF) ff_##BSF##_bsf
 #define BSF_SYMBOL(BSF) BSF_SYMBOL0(BSF)
-        extern AVBitStreamFilter BSF_SYMBOL(FFMPEG_BSF);
+        extern const AVBitStreamFilter BSF_SYMBOL(FFMPEG_BSF);
         f = &BSF_SYMBOL(FFMPEG_BSF);
 #endif
         av_log_set_level(AV_LOG_PANIC);
