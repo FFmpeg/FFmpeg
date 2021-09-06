@@ -1249,6 +1249,12 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
 
     for (substr = 0; substr <= m->max_decoded_substream; substr++) {
         SubStream *s = &m->substream[substr];
+
+        if (substr != m->max_decoded_substream &&
+            m->substream[m->max_decoded_substream].min_channel == 0 &&
+            m->substream[m->max_decoded_substream].max_channel == avctx->channels - 1)
+            goto skip_substr;
+
         init_get_bits(&gb, buf, substream_data_len[substr] * 8);
 
         m->matrix_changed = 0;
@@ -1322,6 +1328,7 @@ next_substr:
             av_log(m->avctx, AV_LOG_ERROR,
                    "No restart header present in substream %d.\n", substr);
 
+skip_substr:
         buf += substream_data_len[substr];
     }
 
