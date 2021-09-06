@@ -315,6 +315,28 @@ int ff_cbs_read(CodedBitstreamContext *ctx,
                          data, size, 0);
 }
 
+/**
+ * Allocate a new internal data buffer of the given size in the unit.
+ *
+ * The data buffer will have input padding.
+ */
+static int cbs_alloc_unit_data(CodedBitstreamUnit *unit,
+                               size_t size)
+{
+    av_assert0(!unit->data && !unit->data_ref);
+
+    unit->data_ref = av_buffer_alloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!unit->data_ref)
+        return AVERROR(ENOMEM);
+
+    unit->data      = unit->data_ref->data;
+    unit->data_size = size;
+
+    memset(unit->data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+    return 0;
+}
+
 static int cbs_write_unit_data(CodedBitstreamContext *ctx,
                                CodedBitstreamUnit *unit)
 {
@@ -360,7 +382,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
 
     flush_put_bits(&pbc);
 
-    ret = ff_cbs_alloc_unit_data(unit, put_bytes_output(&pbc));
+    ret = cbs_alloc_unit_data(unit, put_bytes_output(&pbc));
     if (ret < 0)
         return ret;
 
@@ -689,23 +711,6 @@ int ff_cbs_alloc_unit_content(CodedBitstreamUnit *unit,
         av_freep(&unit->content);
         return AVERROR(ENOMEM);
     }
-
-    return 0;
-}
-
-int ff_cbs_alloc_unit_data(CodedBitstreamUnit *unit,
-                           size_t size)
-{
-    av_assert0(!unit->data && !unit->data_ref);
-
-    unit->data_ref = av_buffer_alloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!unit->data_ref)
-        return AVERROR(ENOMEM);
-
-    unit->data      = unit->data_ref->data;
-    unit->data_size = size;
-
-    memset(unit->data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;
 }
