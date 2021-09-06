@@ -462,7 +462,7 @@ static void spatial_compose53i_dy(DWTCompose *cs, IDWTELEM *buffer,
     cs->y  += 2;
 }
 
-void ff_snow_horizontal_compose97i(IDWTELEM *b, IDWTELEM *temp, int width)
+static void snow_horizontal_compose97i(IDWTELEM *b, IDWTELEM *temp, int width)
 {
     const int w2 = (width + 1) >> 1;
     int x;
@@ -526,9 +526,9 @@ static void vertical_compose97iL1(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
         b1[i] -= (W_DM * (b0[i] + b2[i]) + W_DO) >> W_DS;
 }
 
-void ff_snow_vertical_compose97i(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
-                                 IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5,
-                                 int width)
+static void snow_vertical_compose97i(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
+                                     IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5,
+                                     int width)
 {
     int i;
 
@@ -625,9 +625,9 @@ static void spatial_compose97i_dy(DWTCompose *cs, IDWTELEM *buffer,
         vertical_compose97iH0(b0, b1, b2, width);
 
     if (y - 1 < (unsigned)height)
-        ff_snow_horizontal_compose97i(b0, temp, width);
+        snow_horizontal_compose97i(b0, temp, width);
     if (y + 0 < (unsigned)height)
-        ff_snow_horizontal_compose97i(b1, temp, width);
+        snow_horizontal_compose97i(b1, temp, width);
 
     cs->b0  = b2;
     cs->b1  = b3;
@@ -849,8 +849,8 @@ av_cold void ff_dsputil_init_dwt(MECmpContext *c)
 
 av_cold void ff_dwt_init(SnowDWTContext *c)
 {
-    c->vertical_compose97i   = ff_snow_vertical_compose97i;
-    c->horizontal_compose97i = ff_snow_horizontal_compose97i;
+    c->vertical_compose97i   = snow_vertical_compose97i;
+    c->horizontal_compose97i = snow_horizontal_compose97i;
     c->inner_add_yblock      = ff_snow_inner_add_yblock;
 
     if (HAVE_MMX)
