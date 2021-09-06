@@ -39,8 +39,7 @@
 
 /* tag tree routines */
 
-/* allocate the memory for tag tree */
-int32_t ff_tag_tree_size(int w, int h)
+static int32_t tag_tree_size(int w, int h)
 {
     int64_t res = 0;
     while (w > 1 || h > 1) {
@@ -52,13 +51,14 @@ int32_t ff_tag_tree_size(int w, int h)
     return (int32_t)(res + 1);
 }
 
+/* allocate the memory for tag tree */
 static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
 {
     int pw = w, ph = h;
     Jpeg2000TgtNode *res, *t, *t2;
     int32_t tt_size;
 
-    tt_size = ff_tag_tree_size(w, h);
+    tt_size = tag_tree_size(w, h);
 
     t = res = av_mallocz_array(tt_size, sizeof(*t));
     if (!res)
@@ -85,7 +85,7 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
 
 void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h, int val)
 {
-    int i, siz = ff_tag_tree_size(w, h);
+    int i, siz = tag_tree_size(w, h);
 
     for (i = 0; i < siz; i++) {
         t[i].val = val;
