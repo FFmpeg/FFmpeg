@@ -18925,6 +18925,23 @@ Keep the same colorspace property (default).
 @end table
 @end table
 
+@section sharpen_npp
+Use the NVIDIA Performance Primitives (libnpp) to perform image sharpening with
+border control.
+
+The following additional options are accepted:
+@table @option
+
+@item border_type
+Type of sampling to be used ad frame borders. One of the following:
+@table @option
+
+@item replicate
+Replicate pixel values.
+
+@end table
+@end table
+
 @section shear
 Apply shear transform to input video.
 

@@ -408,6 +408,7 @@ extern const AVFilter ff_vf_setpts;
 extern const AVFilter ff_vf_setrange;
 extern const AVFilter ff_vf_setsar;
 extern const AVFilter ff_vf_settb;
+extern const AVFilter ff_vf_sharpen_npp;
 extern const AVFilter ff_vf_sharpness_vaapi;
 extern const AVFilter ff_vf_shear;
 extern const AVFilter ff_vf_showinfo;
