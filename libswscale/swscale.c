@@ -1160,9 +1160,9 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
         return ret;
     }
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(dst) && c->frame_dst->data[i]; i++) {
-        dst[i] = c->frame_dst->data[i] +
-                 c->frame_dst->linesize[i] * (slice_start >> c->chrDstVSubSample);
+    for (int i = 0; i < FF_ARRAY_ELEMS(dst); i++) {
+        ptrdiff_t offset = c->frame_dst->linesize[i] * (slice_start >> c->chrDstVSubSample);
+        dst[i] = FF_PTR_ADD(c->frame_dst->data[i], offset);
     }
 
     return scale_internal(c, (const uint8_t * const *)c->frame_src->data,
