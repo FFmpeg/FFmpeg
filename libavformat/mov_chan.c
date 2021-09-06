@@ -451,7 +451,14 @@ static const struct {
     { AV_CODEC_ID_NONE,    NULL                    },
 };
 
-uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
+/**
+ * Get the channel layout for the specified channel layout tag.
+ *
+ * @param[in]  tag     channel layout tag
+ * @param[out] bitmap  channel bitmap (only used if needed)
+ * @return             channel layout
+ */
+static uint64_t mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
 {
     int i, channels;
     const struct MovChannelLayoutMap *layout_map;
@@ -591,7 +598,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         if (label_mask)
             st->codecpar->channel_layout = label_mask;
     } else
-        st->codecpar->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
+        st->codecpar->channel_layout = mov_get_channel_layout(layout_tag, bitmap);
     avio_skip(pb, size - 12);
 
     return 0;
