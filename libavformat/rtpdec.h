@@ -191,16 +191,6 @@ struct RTPDemuxContext {
 };
 
 /**
- * Iterate over all registered rtp dynamic protocol handlers.
- *
- * @param opaque a pointer where libavformat will store the iteration state. Must
- *               point to NULL to start the iteration.
- *
- * @return the next registered rtp dynamic protocol handler or NULL when the iteration is
- *         finished
- */
-const RTPDynamicProtocolHandler *ff_rtp_handler_iterate(void **opaque);
-/**
  * Find a registered rtp dynamic protocol handler with the specified name.
  *
  * @param name name of the requested rtp dynamic protocol handler
