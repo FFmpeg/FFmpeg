@@ -102,7 +102,7 @@ int ff_raw_subtitle_read_header(AVFormatContext *s)
     return 0;
 }
 
-int ff_raw_data_read_header(AVFormatContext *s)
+static int raw_data_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
@@ -148,7 +148,7 @@ const AVClass ff_raw_demuxer_class = {
 const AVInputFormat ff_data_demuxer = {
     .name           = "data",
     .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
-    .read_header    = ff_raw_data_read_header,
+    .read_header    = raw_data_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .raw_codec_id   = AV_CODEC_ID_NONE,
     .flags          = AVFMT_NOTIMESTAMPS,

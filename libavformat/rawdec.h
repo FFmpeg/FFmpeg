@@ -49,8 +49,6 @@ int ff_raw_video_read_header(AVFormatContext *s);
 
 int ff_raw_subtitle_read_header(AVFormatContext *s);
 
-int ff_raw_data_read_header(AVFormatContext *s);
-
 #define FF_DEF_RAWVIDEO_DEMUXER2(shortname, longname, probe, ext, id, flag)\
 const AVInputFormat ff_ ## shortname ## _demuxer = {\
     .name           = #shortname,\
