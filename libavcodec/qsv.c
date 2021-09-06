@@ -147,7 +147,10 @@ static const struct {
     { MFX_WRN_INCOMPATIBLE_AUDIO_PARAM, 0,               "incompatible audio parameters"        },
 };
 
-int ff_qsv_map_error(mfxStatus mfx_err, const char **desc)
+/**
+ * Convert a libmfx error code into an FFmpeg error code.
+ */
+static int qsv_map_error(mfxStatus mfx_err, const char **desc)
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(qsv_errors); i++) {
@@ -166,8 +169,7 @@ int ff_qsv_print_error(void *log_ctx, mfxStatus err,
                        const char *error_string)
 {
     const char *desc;
-    int ret;
-    ret = ff_qsv_map_error(err, &desc);
+    int ret = qsv_map_error(err, &desc);
     av_log(log_ctx, AV_LOG_ERROR, "%s: %s (%d)\n", error_string, desc, err);
     return ret;
 }
@@ -176,8 +178,7 @@ int ff_qsv_print_warning(void *log_ctx, mfxStatus err,
                          const char *warning_string)
 {
     const char *desc;
-    int ret;
-    ret = ff_qsv_map_error(err, &desc);
+    int ret = qsv_map_error(err, &desc);
     av_log(log_ctx, AV_LOG_WARNING, "%s: %s (%d)\n", warning_string, desc, err);
     return ret;
 }
