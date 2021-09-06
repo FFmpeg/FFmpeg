@@ -230,6 +230,7 @@ typedef struct NvencContext
     int multipass;
     int ldkfs;
     int extra_sei;
+    int intra_refresh;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

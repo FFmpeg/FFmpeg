@@ -529,6 +529,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 #endif
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_INTRA_REFRESH);
+    if(ctx->intra_refresh && ret <= 0) {
+        av_log(avctx, AV_LOG_WARNING, "Intra refresh not supported by the device\n");
+        return AVERROR(ENOSYS);
+    }
+
     ctx->support_dyn_bitrate = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE);
 
     return 0;
@@ -1076,6 +1082,12 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     h264->sliceMode = 3;
     h264->sliceModeData = avctx->slices > 0 ? avctx->slices : 1;
 
+    if (ctx->intra_refresh) {
+        h264->enableIntraRefresh = 1;
+        h264->intraRefreshPeriod = avctx->gop_size;
+        h264->intraRefreshCnt = avctx->gop_size - 1;
+    }
+
     h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
     h264->outputAUD     = ctx->aud;
@@ -1084,8 +1096,11 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         /* 0 means "let the hardware decide" */
         h264->maxNumRefFrames = ctx->dpb_size;
     }
-    if (avctx->gop_size >= 0) {
-        h264->idrPeriod = cc->gopLength;
+
+    if (ctx->intra_refresh) {
+        h264->idrPeriod = NVENC_INFINITE_GOPLENGTH;
+    } else if (avctx->gop_size >= 0) {
+        h264->idrPeriod = avctx->gop_size;
     }
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
@@ -1173,6 +1188,12 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     hevc->sliceMode = 3;
     hevc->sliceModeData = avctx->slices > 0 ? avctx->slices : 1;
 
+    if (ctx->intra_refresh) {
+        hevc->enableIntraRefresh = 1;
+        hevc->intraRefreshPeriod = avctx->gop_size;
+        hevc->intraRefreshCnt = avctx->gop_size - 1;
+    }
+
     hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
     hevc->outputAUD     = ctx->aud;
@@ -1181,8 +1202,11 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         /* 0 means "let the hardware decide" */
         hevc->maxNumRefFramesInDPB = ctx->dpb_size;
     }
-    if (avctx->gop_size >= 0) {
-        hevc->idrPeriod = cc->gopLength;
+
+    if (ctx->intra_refresh) {
+        hevc->idrPeriod = NVENC_INFINITE_GOPLENGTH;
+    } else if (avctx->gop_size >= 0) {
+        hevc->idrPeriod = avctx->gop_size;
     }
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
@@ -1366,6 +1390,9 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
         ctx->encode_config.frameIntervalP = 0;
         ctx->encode_config.gopLength = 1;
     }
+
+    if (ctx->intra_refresh)
+        ctx->encode_config.gopLength = NVENC_INFINITE_GOPLENGTH;
 
     nvenc_recalc_surfaces(avctx);
 
