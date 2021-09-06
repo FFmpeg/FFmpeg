@@ -18494,6 +18494,7 @@ scale_cuda=passthrough=0
 @end example
 @end itemize
 
+@anchor{scale_npp}
 @section scale_npp
 
 Use the NVIDIA Performance Primitives (libnpp) to perform scaling and/or pixel
@@ -18570,6 +18571,61 @@ This option can be handy if you need to have a video fit within or exceed
 a defined resolution using @option{force_original_aspect_ratio} but also have
 encoder restrictions on width or height divisibility.
 
+@item eval
+Specify when to evaluate @var{width} and @var{height} expression. It accepts the following values:
+
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization or when a command is processed.
+
+@item frame
+Evaluate expressions for each incoming frame.
+
+@end table
+
+@end table
+
+The values of the @option{w} and @option{h} options are expressions
+containing the following constants:
+
+@table @var
+@item in_w
+@item in_h
+The input width and height
+
+@item iw
+@item ih
+These are the same as @var{in_w} and @var{in_h}.
+
+@item out_w
+@item out_h
+The output (scaled) width and height
+
+@item ow
+@item oh
+These are the same as @var{out_w} and @var{out_h}
+
+@item a
+The same as @var{iw} / @var{ih}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+The input display aspect ratio. Calculated from @code{(iw / ih) * sar}.
+
+@item n
+The (sequential) number of the input frame, starting from 0.
+Only available with @code{eval=frame}.
+
+@item t
+The presentation timestamp of the input frame, expressed as a number of
+seconds. Only available with @code{eval=frame}.
+
+@item pos
+The position (byte offset) of the frame in the input stream, or NaN if
+this information is unavailable and/or meaningless (for example in case of synthetic video).
+Only available with @code{eval=frame}.
 @end table
 
 @section scale2ref
@@ -18644,6 +18700,61 @@ The command accepts the same syntax of the corresponding option.
 If the specified expression is not valid, it is kept at its current
 value.
 @end table
+
+@section scale2ref_npp
+
+Use the NVIDIA Performance Primitives (libnpp) to scale (resize) the input
+video, based on a reference video.
+
+See the @ref{scale_npp} filter for available options, scale2ref_npp supports the same
+but uses the reference video instead of the main input as basis. scale2ref_npp
+also supports the following additional constants for the @option{w} and
+@option{h} options:
+
+@table @var
+@item main_w
+@item main_h
+The main input video's width and height
+
+@item main_a
+The same as @var{main_w} / @var{main_h}
+
+@item main_sar
+The main input video's sample aspect ratio
+
+@item main_dar, mdar
+The main input video's display aspect ratio. Calculated from
+@code{(main_w / main_h) * main_sar}.
+
+@item main_n
+The (sequential) number of the main input frame, starting from 0.
+Only available with @code{eval=frame}.
+
+@item main_t
+The presentation timestamp of the main input frame, expressed as a number of
+seconds. Only available with @code{eval=frame}.
+
+@item main_pos
+The position (byte offset) of the frame in the main input stream, or NaN if
+this information is unavailable and/or meaningless (for example in case of synthetic video).
+Only available with @code{eval=frame}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Scale a subtitle stream (b) to match the main video (a) in size before overlaying
+@example
+'scale2ref_npp[b][a];[a][b]overlay_cuda'
+@end example
+
+@item
+Scale a logo to 1/10th the height of a video, while preserving its display aspect ratio.
+@example
+[logo-in][video-in]scale2ref_npp=w=oh*mdar:h=ih/10[logo-out][video-out]
+@end example
+@end itemize
 
 @section scharr
 Apply scharr operator to input video stream.
