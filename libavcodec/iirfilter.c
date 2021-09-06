@@ -287,10 +287,21 @@ void ff_iir_filter(const struct FFIIRFilterCoeffs *c,
     }
 }
 
-void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *c,
-                       struct FFIIRFilterState *s, int size,
-                       const float *src, ptrdiff_t sstep,
-                       float *dst, ptrdiff_t dstep)
+/**
+ * Perform IIR filtering on floating-point input samples.
+ *
+ * @param coeffs pointer to filter coefficients
+ * @param state  pointer to filter state
+ * @param size   input length
+ * @param src    source samples
+ * @param sstep  source stride
+ * @param dst    filtered samples (destination may be the same as input)
+ * @param dstep  destination stride
+ */
+static void iir_filter_flt(const struct FFIIRFilterCoeffs *c,
+                           struct FFIIRFilterState *s, int size,
+                           const float *src, ptrdiff_t sstep,
+                           float *dst, ptrdiff_t dstep)
 {
     if (c->order == 2) {
         FILTER_O2(float, FLT)
@@ -317,7 +328,7 @@ av_cold void ff_iir_filter_free_coeffsp(struct FFIIRFilterCoeffs **coeffsp)
 }
 
 void ff_iir_filter_init(FFIIRFilterContext *f) {
-    f->filter_flt = ff_iir_filter_flt;
+    f->filter_flt = iir_filter_flt;
 
     if (HAVE_MIPSFPU)
         ff_iir_filter_init_mips(f);
