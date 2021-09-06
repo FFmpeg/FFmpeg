@@ -55,7 +55,6 @@ void ff_mqc_initenc(MqcState *mqc, uint8_t *bp);
 void ff_mqc_encode(MqcState *mqc, uint8_t *cxstate, int d);
 
 /** flush the encoder [returns number of bytes encoded] */
-int ff_mqc_flush(MqcState *mqc);
 int ff_mqc_flush_to(MqcState *mqc, uint8_t *dst, int *dst_len);
 
 /* decoder */
