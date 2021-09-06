@@ -48,6 +48,7 @@ struct DVPacket {
     int      stream_index;
     int      flags;
     int64_t  pos;
+    int64_t  duration;
 };
 
 struct DVDemuxContext {
@@ -276,6 +277,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             c->audio_pkt[i].stream_index = c->ast[i]->index;
             c->audio_pkt[i].flags       |= AV_PKT_FLAG_KEY;
             c->audio_pkt[i].pts          = AV_NOPTS_VALUE;
+            c->audio_pkt[i].duration     = 0;
             c->audio_pkt[i].pos          = -1;
         }
         c->ast[i]->codecpar->sample_rate    = dv_audio_frequency[freq];
@@ -374,6 +376,7 @@ int avpriv_dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
             pkt->stream_index = c->audio_pkt[i].stream_index;
             pkt->flags        = c->audio_pkt[i].flags;
             pkt->pts          = c->audio_pkt[i].pts;
+            pkt->duration     = c->audio_pkt[i].duration;
             pkt->pos          = c->audio_pkt[i].pos;
 
             c->audio_pkt[i].size = 0;
@@ -404,6 +407,7 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
         c->audio_pkt[i].pos  = pos;
         c->audio_pkt[i].size = size;
         c->audio_pkt[i].pts  = (c->sys->height == 720) ? (c->frames & ~1) : c->frames;
+        c->audio_pkt[i].duration = 1;
         ppcm[i] = c->audio_buf[i];
     }
     if (c->ach)
