@@ -3725,7 +3725,6 @@ cws2fws_extralibs="zlib_extralibs"
 # libraries, in any order
 avcodec_deps="avutil"
 avcodec_suggest="libm"
-avcodec_select="null_bsf"
 avdevice_deps="avformat avcodec avutil"
 avdevice_suggest="libm"
 avfilter_deps="avutil"

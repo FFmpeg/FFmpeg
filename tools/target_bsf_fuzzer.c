@@ -54,16 +54,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 #define BSF_SYMBOL(BSF) BSF_SYMBOL0(BSF)
         extern AVBitStreamFilter BSF_SYMBOL(FFMPEG_BSF);
         f = &BSF_SYMBOL(FFMPEG_BSF);
-#else
-        extern AVBitStreamFilter ff_null_bsf;
-        f = &ff_null_bsf;
 #endif
         av_log_set_level(AV_LOG_PANIC);
     }
 
-    res = av_bsf_alloc(f, &bsf);
+    res = f ? av_bsf_alloc(f, &bsf) : av_bsf_get_null_filter(&bsf);
     if (res < 0)
         error("Failed memory allocation");
+    f = bsf->filter;
 
     if (size > 1024) {
         GetByteContext gbc;
