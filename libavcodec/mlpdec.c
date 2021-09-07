@@ -922,7 +922,7 @@ fail:
     return ret;
 }
 
-#define MSB_MASK(bits)  (-1u << (bits))
+#define MSB_MASK(bits)  (-(1 << (bits)))
 
 /** Generate PCM samples using the prediction filters and residual values
  *  read from the data stream, and update the filter state. */
