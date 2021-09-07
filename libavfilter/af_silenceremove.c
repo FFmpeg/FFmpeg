@@ -462,53 +462,53 @@ static int config_input(AVFilterLink *inlink)
     case AV_SAMPLE_FMT_DBL:
         s->copy = copy_double;
         switch (s->detection) {
-            case D_PEAK:
-                s->update = update_peak_double;
-                s->compute = compute_peak_double;
-                break;
-            case D_RMS:
-                s->update = update_rms_double;
-                s->compute = compute_rms_double;
-                break;
+        case D_PEAK:
+            s->update = update_peak_double;
+            s->compute = compute_peak_double;
+            break;
+        case D_RMS:
+            s->update = update_rms_double;
+            s->compute = compute_rms_double;
+            break;
         }
         break;
     case AV_SAMPLE_FMT_FLT:
         s->copy = copy_float;
         switch (s->detection) {
-            case D_PEAK:
-                s->update = update_peak_float;
-                s->compute = compute_peak_float;
-                break;
-            case D_RMS:
-                s->update = update_rms_float;
-                s->compute = compute_rms_float;
-                break;
+        case D_PEAK:
+            s->update = update_peak_float;
+            s->compute = compute_peak_float;
+            break;
+        case D_RMS:
+            s->update = update_rms_float;
+            s->compute = compute_rms_float;
+            break;
         }
         break;
     case AV_SAMPLE_FMT_DBLP:
         s->copy = copy_doublep;
         switch (s->detection) {
-            case D_PEAK:
-                s->update = update_peak_doublep;
-                s->compute = compute_peak_doublep;
-                break;
-            case D_RMS:
-                s->update = update_rms_doublep;
-                s->compute = compute_rms_doublep;
-                break;
+        case D_PEAK:
+            s->update = update_peak_doublep;
+            s->compute = compute_peak_doublep;
+            break;
+        case D_RMS:
+            s->update = update_rms_doublep;
+            s->compute = compute_rms_doublep;
+            break;
         }
         break;
     case AV_SAMPLE_FMT_FLTP:
         s->copy = copy_floatp;
         switch (s->detection) {
-            case D_PEAK:
-                s->update = update_peak_floatp;
-                s->compute = compute_peak_floatp;
-                break;
-            case D_RMS:
-                s->update = update_rms_floatp;
-                s->compute = compute_rms_floatp;
-                break;
+        case D_PEAK:
+            s->update = update_peak_floatp;
+            s->compute = compute_peak_floatp;
+            break;
+        case D_RMS:
+            s->update = update_rms_floatp;
+            s->compute = compute_rms_floatp;
+            break;
         }
         break;
     default:
