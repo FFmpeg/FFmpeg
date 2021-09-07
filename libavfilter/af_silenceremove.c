@@ -511,6 +511,8 @@ static int config_input(AVFilterLink *inlink)
                 break;
         }
         break;
+    default:
+        return AVERROR_BUG;
     }
 
     return 0;
@@ -847,6 +849,8 @@ silence_copy_flush:
     case SILENCE_STOP:
 silence_stop:
         break;
+    default:
+        ret = AVERROR_BUG;
     }
 
     av_frame_free(&in);
