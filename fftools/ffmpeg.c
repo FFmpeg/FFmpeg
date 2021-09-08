@@ -535,6 +535,7 @@ static void ffmpeg_cleanup(int ret)
                 av_frame_free(&frame);
             }
             av_fifo_freep(&ifilter->frame_queue);
+            av_freep(&ifilter->displaymatrix);
             if (ist->sub2video.sub_queue) {
                 while (av_fifo_size(ist->sub2video.sub_queue)) {
                     AVSubtitle sub;
@@ -2183,6 +2184,7 @@ static int ifilter_has_all_input_formats(FilterGraph *fg)
 static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 {
     FilterGraph *fg = ifilter->graph;
+    AVFrameSideData *sd;
     int need_reinit, ret, i;
 
     /* determine if the parameters for this input changed */
@@ -2205,6 +2207,12 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
     if (!!ifilter->hw_frames_ctx != !!frame->hw_frames_ctx ||
         (ifilter->hw_frames_ctx && ifilter->hw_frames_ctx->data != frame->hw_frames_ctx->data))
+        need_reinit = 1;
+
+    if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX)) {
+        if (!ifilter->displaymatrix || memcmp(sd->data, ifilter->displaymatrix, sizeof(int32_t) * 9))
+            need_reinit = 1;
+    } else if (ifilter->displaymatrix)
         need_reinit = 1;
 
     if (need_reinit) {

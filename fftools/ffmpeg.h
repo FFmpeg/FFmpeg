@@ -258,6 +258,7 @@ typedef struct InputFilter {
     uint64_t channel_layout;
 
     AVBufferRef *hw_frames_ctx;
+    int32_t *displaymatrix;
 
     int eof;
 } InputFilter;
