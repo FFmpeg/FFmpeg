@@ -1417,10 +1417,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
                         const AVFrame *frame)
 {
     AVPacket new_pkt = { 0 };
-    mfxBitstream *bs;
+    mfxBitstream *bs = NULL;
 #if QSV_VERSION_ATLEAST(1, 26)
-    mfxExtAVCEncodedFrameInfo *enc_info;
-    mfxExtBuffer **enc_buf;
+    mfxExtAVCEncodedFrameInfo *enc_info = NULL;
+    mfxExtBuffer **enc_buf = NULL;
 #endif
 
     mfxFrameSurface1 *surf = NULL;
@@ -1454,10 +1454,8 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     }
 
     bs = av_mallocz(sizeof(*bs));
-    if (!bs) {
-        av_packet_unref(&new_pkt);
-        return AVERROR(ENOMEM);
-    }
+    if (!bs)
+        goto nomem;
     bs->Data      = new_pkt.data;
     bs->MaxLength = new_pkt.size;
 
@@ -1465,14 +1463,14 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         enc_info = av_mallocz(sizeof(*enc_info));
         if (!enc_info)
-            return AVERROR(ENOMEM);
+            goto nomem;
 
         enc_info->Header.BufferId = MFX_EXTBUFF_ENCODED_FRAME_INFO;
         enc_info->Header.BufferSz = sizeof (*enc_info);
         bs->NumExtParam = 1;
         enc_buf = av_mallocz(sizeof(mfxExtBuffer *));
         if (!enc_buf)
-            return AVERROR(ENOMEM);
+            goto nomem;
         enc_buf[0] = (mfxExtBuffer *)enc_info;
 
         bs->ExtParam = enc_buf;
@@ -1484,17 +1482,8 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     }
 
     sync = av_mallocz(sizeof(*sync));
-    if (!sync) {
-        av_freep(&bs);
- #if QSV_VERSION_ATLEAST(1, 26)
-        if (avctx->codec_id == AV_CODEC_ID_H264) {
-            av_freep(&enc_info);
-            av_freep(&enc_buf);
-        }
- #endif
-        av_packet_unref(&new_pkt);
-        return AVERROR(ENOMEM);
-    }
+    if (!sync)
+        goto nomem;
 
     do {
         ret = MFXVideoENCODE_EncodeFrameAsync(q->session, enc_ctrl, surf, bs, sync);
@@ -1506,27 +1495,22 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         ff_qsv_print_warning(avctx, ret, "Warning during encoding");
 
     if (ret < 0) {
-        av_packet_unref(&new_pkt);
-        av_freep(&bs);
-#if QSV_VERSION_ATLEAST(1, 26)
-        if (avctx->codec_id == AV_CODEC_ID_H264) {
-            av_freep(&enc_info);
-            av_freep(&enc_buf);
-        }
-#endif
-        av_freep(&sync);
-        return (ret == MFX_ERR_MORE_DATA) ?
+        ret = (ret == MFX_ERR_MORE_DATA) ?
                0 : ff_qsv_print_error(avctx, ret, "Error during encoding");
+        goto free;
     }
 
     if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame->interlaced_frame)
         print_interlace_msg(avctx, q);
+
+    ret = 0;
 
     if (*sync) {
         av_fifo_generic_write(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
         av_fifo_generic_write(q->async_fifo, &sync,    sizeof(sync),    NULL);
         av_fifo_generic_write(q->async_fifo, &bs,      sizeof(bs),    NULL);
     } else {
+free:
         av_freep(&sync);
         av_packet_unref(&new_pkt);
         av_freep(&bs);
@@ -1538,7 +1522,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 #endif
     }
 
-    return 0;
+    return ret;
+nomem:
+    ret = AVERROR(ENOMEM);
+    goto free;
 }
 
 int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
