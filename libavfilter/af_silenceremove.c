@@ -178,6 +178,7 @@ static double compute_peak_double(SilenceRemoveContext *s, AVFrame *frame, int c
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmax(new_sum, 0.);
     new_sum += fabs(sample);
 
     return new_sum / s->window_duration;
@@ -191,6 +192,7 @@ static void update_peak_double(SilenceRemoveContext *s, AVFrame *frame, int ch, 
     double *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
     s->sum -= *wsample;
+    s->sum  = fmax(s->sum, 0.);
     *wsample = fabs(sample);
     s->sum += *wsample;
 }
@@ -205,6 +207,7 @@ static double compute_peak_float(SilenceRemoveContext *s, AVFrame *frame, int ch
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmaxf(new_sum, 0.f);
     new_sum += fabsf(sample);
 
     return new_sum / s->window_duration;
@@ -218,6 +221,7 @@ static void update_peak_float(SilenceRemoveContext *s, AVFrame *frame, int ch, i
     float *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
     s->sum -= *wsample;
+    s->sum  = fmaxf(s->sum, 0.f);
     *wsample = fabsf(sample);
     s->sum += *wsample;
 }
@@ -232,6 +236,7 @@ static double compute_rms_double(SilenceRemoveContext *s, AVFrame *frame, int ch
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmax(new_sum, 0.);
     new_sum += sample * sample;
 
     av_assert2(new_sum >= 0.);
@@ -246,6 +251,7 @@ static void update_rms_double(SilenceRemoveContext *s, AVFrame *frame, int ch, i
     double *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
     s->sum -= *wsample;
+    s->sum  = fmax(s->sum, 0.);
     *wsample = sample * sample;
     s->sum += *wsample;
 }
@@ -260,6 +266,7 @@ static double compute_rms_float(SilenceRemoveContext *s, AVFrame *frame, int ch,
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmaxf(new_sum, 0.f);
     new_sum += sample * sample;
 
     av_assert2(new_sum >= 0.f);
@@ -274,6 +281,7 @@ static void update_rms_float(SilenceRemoveContext *s, AVFrame *frame, int ch, in
     float *wsample = &wsamples[frame->channels * s->window_offset + ch];
 
     s->sum -= *wsample;
+    s->sum  = fmaxf(s->sum, 0.f);
     *wsample = sample * sample;
     s->sum += *wsample;
 }
@@ -288,6 +296,7 @@ static double compute_peak_doublep(SilenceRemoveContext *s, AVFrame *frame, int 
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmax(new_sum, 0.);
     new_sum += fabs(sample);
 
     return new_sum / s->window_duration;
@@ -301,6 +310,7 @@ static void update_peak_doublep(SilenceRemoveContext *s, AVFrame *frame, int ch,
     double *wsample = &wsamples[s->window_offset];
 
     s->sum -= *wsample;
+    s->sum  = fmax(s->sum, 0.);
     *wsample = fabs(sample);
     s->sum += *wsample;
 }
@@ -315,6 +325,7 @@ static double compute_peak_floatp(SilenceRemoveContext *s, AVFrame *frame, int c
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmaxf(new_sum, 0.f);
     new_sum += fabsf(sample);
 
     return new_sum / s->window_duration;
@@ -328,6 +339,7 @@ static void update_peak_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch, 
     float *wsample = &wsamples[s->window_offset];
 
     s->sum -= *wsample;
+    s->sum  = fmaxf(s->sum, 0.f);
     *wsample = fabsf(sample);
     s->sum += *wsample;
 }
@@ -342,6 +354,7 @@ static double compute_rms_doublep(SilenceRemoveContext *s, AVFrame *frame, int c
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmax(new_sum, 0.);
     new_sum += sample * sample;
 
     av_assert2(new_sum >= 0.);
@@ -356,6 +369,7 @@ static void update_rms_doublep(SilenceRemoveContext *s, AVFrame *frame, int ch, 
     double *wsample = &wsamples[s->window_offset];
 
     s->sum -= *wsample;
+    s->sum  = fmax(s->sum, 0.);
     *wsample = sample * sample;
     s->sum += *wsample;
 }
@@ -370,6 +384,7 @@ static double compute_rms_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch
 
     new_sum  = s->sum;
     new_sum -= wsample;
+    new_sum  = fmaxf(new_sum, 0.f);
     new_sum += sample * sample;
 
     av_assert2(new_sum >= 0.f);
@@ -384,6 +399,7 @@ static void update_rms_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch, i
     float *wsample = &wsamples[s->window_offset];
 
     s->sum -= *wsample;
+    s->sum  = fmaxf(s->sum, 0.f);
     *wsample = sample * sample;
     s->sum += *wsample;
 }
