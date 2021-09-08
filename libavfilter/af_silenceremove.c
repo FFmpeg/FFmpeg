@@ -93,6 +93,8 @@ typedef struct SilenceRemoveContext {
     int64_t window_duration;
     double sum;
 
+    int threshold;
+    int one_period;
     int restart;
     int64_t next_pts;
 
@@ -107,14 +109,14 @@ typedef struct SilenceRemoveContext {
 #define AF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_AUDIO_PARAM
 
 static const AVOption silenceremove_options[] = {
-    { "start_periods",   NULL,                                                 OFFSET(start_periods),       AV_OPT_TYPE_INT,      {.i64=0},     0,      9000, AF },
+    { "start_periods",   "set periods of silence parts to skip from start",    OFFSET(start_periods),       AV_OPT_TYPE_INT,      {.i64=0},     0,      9000, AF },
     { "start_duration",  "set start duration of non-silence part",             OFFSET(start_duration_opt),  AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "start_threshold", "set threshold for start silence detection",          OFFSET(start_threshold),     AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "start_silence",   "set start duration of silence part to keep",         OFFSET(start_silence_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "start_mode",      "set which channel will trigger trimming from start", OFFSET(start_mode),          AV_OPT_TYPE_INT,      {.i64=T_ANY}, T_ANY, T_ALL, AF, "mode" },
     {   "any",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=T_ANY}, 0,         0, AF, "mode" },
     {   "all",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=T_ALL}, 0,         0, AF, "mode" },
-    { "stop_periods",    NULL,                                                 OFFSET(stop_periods),        AV_OPT_TYPE_INT,      {.i64=0}, -9000,      9000, AF },
+    { "stop_periods",    "set periods of silence parts to skip from end",      OFFSET(stop_periods),        AV_OPT_TYPE_INT,      {.i64=0}, -9000,      9000, AF },
     { "stop_duration",   "set stop duration of non-silence part",              OFFSET(stop_duration_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "stop_threshold",  "set threshold for stop silence detection",           OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "stop_silence",    "set stop duration of silence part to keep",          OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
@@ -430,6 +432,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     SilenceRemoveContext *s = ctx->priv;
 
+    s->threshold = -1;
     s->next_pts = AV_NOPTS_VALUE;
     s->window_duration = av_rescale(s->window_duration_opt, inlink->sample_rate,
                                    AV_TIME_BASE);
@@ -603,8 +606,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     SilenceRemoveContext *s = ctx->priv;
-    int i, j, threshold, ret = 0;
     int nbs, nb_samples_read, nb_samples_written;
+    int i, j, threshold, ret = 0;
     AVFrame *out;
 
     nb_samples_read = nb_samples_written = 0;
@@ -632,6 +635,10 @@ silence_trim:
                 }
             }
 
+            if (s->threshold >= 0)
+                s->one_period = s->threshold != threshold;
+            s->threshold = threshold;
+
             if (threshold) {
                 for (j = 0; j < outlink->channels; j++) {
                     s->update(s, in, j, nb_samples_read);
@@ -645,7 +652,8 @@ silence_trim:
                 nb_samples_read++;
 
                 if (s->start_holdoff_end >= s->start_duration) {
-                    if (++s->start_found_periods >= s->start_periods) {
+                    s->start_found_periods += s->one_period;
+                    if (s->start_found_periods >= s->start_periods) {
                         s->mode = SILENCE_TRIM_FLUSH;
                         goto silence_trim_flush;
                     }
@@ -757,6 +765,10 @@ silence_copy:
                     }
                 }
 
+                if (s->threshold >= 0)
+                    s->one_period = s->threshold != threshold;
+                s->threshold = threshold;
+
                 if (threshold && s->stop_holdoff_end && !s->stop_silence) {
                     s->mode = SILENCE_COPY_FLUSH;
                     flush(s, out, outlink, &nb_samples_written, &ret, 0);
@@ -793,7 +805,8 @@ silence_copy:
                     s->stop_holdoff_end++;
 
                     if (s->stop_holdoff_end >= s->stop_duration) {
-                        if (++s->stop_found_periods >= s->stop_periods) {
+                        s->stop_found_periods += s->one_period;
+                        if (s->stop_found_periods >= s->stop_periods) {
                             s->stop_holdoff_offset = 0;
                             s->stop_holdoff_end = 0;
 
