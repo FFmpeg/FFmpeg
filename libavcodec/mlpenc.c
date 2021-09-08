@@ -476,6 +476,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     MLPEncodeContext *ctx = avctx->priv_data;
+    RestartHeader *const rh = &ctx->restart_header;
     unsigned int sum = 0;
     size_t size;
     int ret;
@@ -673,8 +674,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     ctx->decoding_params = av_calloc(size, sizeof(*ctx->decoding_params));
     if (!ctx->decoding_params)
         return AVERROR(ENOMEM);
-
-    RestartHeader  *rh = &ctx->restart_header;
 
     /* TODO see if noisegen_seed is really worth it. */
     rh->noisegen_seed      = 0;
