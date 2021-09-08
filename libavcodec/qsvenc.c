@@ -1590,23 +1590,7 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         av_freep(&bs);
         av_freep(&sync);
 
-        if (pkt->data) {
-            if (pkt->size < new_pkt.size) {
-                av_log(avctx, AV_LOG_ERROR, "Submitted buffer not large enough: %d < %d\n",
-                       pkt->size, new_pkt.size);
-                av_packet_unref(&new_pkt);
-                return AVERROR(EINVAL);
-            }
-
-            memcpy(pkt->data, new_pkt.data, new_pkt.size);
-            pkt->size = new_pkt.size;
-
-            ret = av_packet_copy_props(pkt, &new_pkt);
-            av_packet_unref(&new_pkt);
-            if (ret < 0)
-                return ret;
-        } else
-            *pkt = new_pkt;
+        av_packet_move_ref(pkt, &new_pkt);
 
         *got_packet = 1;
     }
