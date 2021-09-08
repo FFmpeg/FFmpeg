@@ -30,6 +30,7 @@
  * MJPEG decoder.
  */
 
+#include "libavutil/display.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
@@ -2406,6 +2407,7 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     int i, index;
     int ret = 0;
     int is16bit;
+    AVDictionaryEntry *e = NULL;
 
     s->force_pal8 = 0;
 
@@ -2861,6 +2863,57 @@ the_end:
         for (i = 0; i < s->iccnum; i++) {
             memcpy(sd->data + offset, s->iccentries[i].data, s->iccentries[i].length);
             offset += s->iccentries[i].length;
+        }
+    }
+
+    if (e = av_dict_get(s->exif_metadata, "Orientation", e, AV_DICT_IGNORE_SUFFIX)) {
+        char *value = e->value + strspn(e->value, " \n\t\r"), *endptr;
+        int orientation = strtol(value, &endptr, 0);
+
+        if (!*endptr) {
+            AVFrameSideData *sd = NULL;
+
+            if (orientation >= 2 && orientation <= 8) {
+                int32_t *matrix;
+
+                sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
+                if (!sd) {
+                    av_log(s->avctx, AV_LOG_ERROR, "Could not allocate frame side data\n");
+                    return AVERROR(ENOMEM);
+                }
+
+                matrix = (int32_t *)sd->data;
+
+                switch (orientation) {
+                case 2:
+                    av_display_rotation_set(matrix, 0.0);
+                    av_display_matrix_flip(matrix, 1, 0);
+                    break;
+                case 3:
+                    av_display_rotation_set(matrix, 180.0);
+                    break;
+                case 4:
+                    av_display_rotation_set(matrix, 180.0);
+                    av_display_matrix_flip(matrix, 1, 0);
+                    break;
+                case 5:
+                    av_display_rotation_set(matrix, 90.0);
+                    av_display_matrix_flip(matrix, 0, 1);
+                    break;
+                case 6:
+                    av_display_rotation_set(matrix, 90.0);
+                    break;
+                case 7:
+                    av_display_rotation_set(matrix, -90.0);
+                    av_display_matrix_flip(matrix, 0, 1);
+                    break;
+                case 8:
+                    av_display_rotation_set(matrix, -90.0);
+                    break;
+                default:
+                    av_assert0(0);
+                }
+            }
         }
     }
 
