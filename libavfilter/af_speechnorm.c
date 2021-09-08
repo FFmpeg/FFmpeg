@@ -315,7 +315,7 @@ static void filter_channels_## name (AVFilterContext *ctx,                      
             av_assert0(size > 0);                                               \
             gain = cc->gain_state;                                              \
             consume_pi(cc, size);                                               \
-            for (int i = n; i < n + size; i++)                                  \
+            for (int i = n; !ctx->is_disabled && i < n + size; i++)             \
                 dst[i] *= gain;                                                 \
             n += size;                                                          \
         }                                                                       \
@@ -375,7 +375,7 @@ static void filter_link_channels_## name (AVFilterContext *ctx,                 
             if (cc->bypass)                                                     \
                 continue;                                                       \
                                                                                 \
-            for (int i = n; i < n + min_size; i++) {                            \
+            for (int i = n; !ctx->is_disabled && i < n + min_size; i++) {       \
                 ptype g = tlerp(s->prev_gain, gain, (i - n) / (ptype)min_size); \
                 dst[i] *= g;                                                    \
             }                                                                   \
@@ -568,5 +568,6 @@ const AVFilter ff_af_speechnorm = {
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,
 };
