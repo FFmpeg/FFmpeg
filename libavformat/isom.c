@@ -185,7 +185,7 @@ static const char mov_mdhd_language_map[][4] = {
        "",    /*  92 Nyanja */
     "mlg",    /*  93 Malagasy */
     "epo",    /*  94 Esperanto */
-       "",    /*  95  */
+    "enm",    /*  95 English Middle */
        "",    /*  96  */
        "",    /*  97  */
        "",    /*  98  */
