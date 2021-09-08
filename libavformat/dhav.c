@@ -47,6 +47,7 @@ typedef struct DHAVContext {
 } DHAVContext;
 
 typedef struct DHAVStream {
+    int64_t last_frame_number;
     int64_t last_timestamp;
     int64_t last_time;
     int64_t pts;
@@ -314,6 +315,8 @@ static int64_t get_pts(AVFormatContext *s, int stream_index)
 
         if (diff < 0)
             diff += 65535;
+        if (diff == 0)
+            diff = av_rescale(dhav->frame_number - dst->last_frame_number, 1000, dhav->frame_rate);
         dst->pts += diff;
     } else {
         dst->pts = t * 1000LL;
@@ -321,6 +324,7 @@ static int64_t get_pts(AVFormatContext *s, int stream_index)
 
     dst->last_time = t;
     dst->last_timestamp = dhav->timestamp;
+    dst->last_frame_number = dhav->frame_number;
 
     return dst->pts;
 }
