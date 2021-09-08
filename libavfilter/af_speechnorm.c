@@ -410,7 +410,9 @@ static int filter_frame(AVFilterContext *ctx)
 
         in = ff_bufqueue_get(&s->queue);
 
-        av_frame_make_writable(in);
+        ret = av_frame_make_writable(in);
+        if (ret < 0)
+            return ret;
 
         s->filter_channels[s->link](ctx, in, in->nb_samples);
 
