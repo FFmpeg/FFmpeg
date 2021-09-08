@@ -23,6 +23,7 @@
 
 #include <float.h> /* DBL_MAX */
 
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "audio.h"
@@ -233,6 +234,7 @@ static double compute_rms_double(SilenceRemoveContext *s, AVFrame *frame, int ch
     new_sum -= wsample;
     new_sum += sample * sample;
 
+    av_assert2(new_sum >= 0.);
     return sqrt(new_sum / s->window_duration);
 }
 
@@ -260,6 +262,7 @@ static double compute_rms_float(SilenceRemoveContext *s, AVFrame *frame, int ch,
     new_sum -= wsample;
     new_sum += sample * sample;
 
+    av_assert2(new_sum >= 0.f);
     return sqrtf(new_sum / s->window_duration);
 }
 
@@ -341,6 +344,7 @@ static double compute_rms_doublep(SilenceRemoveContext *s, AVFrame *frame, int c
     new_sum -= wsample;
     new_sum += sample * sample;
 
+    av_assert2(new_sum >= 0.);
     return sqrt(new_sum / s->window_duration);
 }
 
@@ -368,6 +372,7 @@ static double compute_rms_floatp(SilenceRemoveContext *s, AVFrame *frame, int ch
     new_sum -= wsample;
     new_sum += sample * sample;
 
+    av_assert2(new_sum >= 0.f);
     return sqrtf(new_sum / s->window_duration);
 }
 
