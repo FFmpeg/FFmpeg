@@ -23,6 +23,7 @@
 
 #include <float.h> /* DBL_MAX */
 
+#include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
@@ -103,6 +104,8 @@ typedef struct SilenceRemoveContext {
     double (*compute)(struct SilenceRemoveContext *s, AVFrame *frame, int ch, int offset);
     void (*copy)(struct SilenceRemoveContext *s, AVFrame *out, AVFrame *in,
                  int ch, int out_offset, int in_offset);
+
+    AVAudioFifo *fifo;
 } SilenceRemoveContext;
 
 #define OFFSET(x) offsetof(SilenceRemoveContext, x)
@@ -542,12 +545,16 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR_BUG;
     }
 
+    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, 1024);
+    if (!s->fifo)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
 static void flush(SilenceRemoveContext *s,
                   AVFrame *out, AVFilterLink *outlink,
-                  int *nb_samples_written, int *ret, int flush_silence)
+                  int *nb_samples_written, int flush_silence)
 {
     AVFrame *silence;
 
@@ -559,22 +566,18 @@ static void flush(SilenceRemoveContext *s,
                                     (AVRational){1, outlink->sample_rate},
                                     outlink->time_base);
 
-        *ret = ff_filter_frame(outlink, out);
-        if (*ret < 0)
-            return;
+        av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
         *nb_samples_written = 0;
-    } else {
-        av_frame_free(&out);
     }
+
+    av_frame_free(&out);
 
     if (s->stop_silence_end <= 0 || !flush_silence)
         return;
 
     silence = ff_get_audio_buffer(outlink, s->stop_silence_end);
-    if (!silence) {
-        *ret = AVERROR(ENOMEM);
+    if (!silence)
         return;
-    }
 
     if (s->stop_silence_offset < s->stop_silence_end) {
         av_samples_copy(silence->extended_data, s->stop_silence_hold->extended_data, 0,
@@ -598,7 +601,8 @@ static void flush(SilenceRemoveContext *s,
                                 (AVRational){1, outlink->sample_rate},
                                 outlink->time_base);
 
-    *ret = ff_filter_frame(outlink, silence);
+    av_audio_fifo_write(s->fifo, (void **)silence->extended_data, silence->nb_samples);
+    av_frame_free(&silence);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -727,7 +731,8 @@ silence_trim_flush:
 
         s->start_holdoff_offset += nbs;
 
-        ret = ff_filter_frame(outlink, out);
+        av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
+        av_frame_free(&out);
 
         if (s->start_holdoff_offset == s->start_holdoff_end) {
             s->start_holdoff_offset = 0;
@@ -771,7 +776,7 @@ silence_copy:
 
                 if (threshold && s->stop_holdoff_end && !s->stop_silence) {
                     s->mode = SILENCE_COPY_FLUSH;
-                    flush(s, out, outlink, &nb_samples_written, &ret, 0);
+                    flush(s, out, outlink, &nb_samples_written, 0);
                     goto silence_copy_flush;
                 } else if (threshold) {
                     for (j = 0; j < outlink->channels; j++) {
@@ -812,7 +817,7 @@ silence_copy:
 
                             if (!s->restart) {
                                 s->mode = SILENCE_STOP;
-                                flush(s, out, outlink, &nb_samples_written, &ret, 1);
+                                flush(s, out, outlink, &nb_samples_written, 1);
                                 goto silence_stop;
                             } else {
                                 s->stop_found_periods = 0;
@@ -823,17 +828,17 @@ silence_copy:
                                 s->start_silence_end = 0;
                                 clear_window(s);
                                 s->mode = SILENCE_TRIM;
-                                flush(s, out, outlink, &nb_samples_written, &ret, 1);
+                                flush(s, out, outlink, &nb_samples_written, 1);
                                 goto silence_trim;
                             }
                         }
                         s->mode = SILENCE_COPY_FLUSH;
-                        flush(s, out, outlink, &nb_samples_written, &ret, 0);
+                        flush(s, out, outlink, &nb_samples_written, 0);
                         goto silence_copy_flush;
                     }
                 }
             }
-            flush(s, out, outlink, &nb_samples_written, &ret, 0);
+            flush(s, out, outlink, &nb_samples_written, 0);
         } else {
             av_samples_copy(out->extended_data, in->extended_data,
                             nb_samples_written,
@@ -845,7 +850,8 @@ silence_copy:
                                         (AVRational){1, outlink->sample_rate},
                                         outlink->time_base);
 
-            ret = ff_filter_frame(outlink, out);
+            av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
+            av_frame_free(&out);
         }
         break;
 
@@ -872,7 +878,8 @@ silence_copy_flush:
                                     (AVRational){1, outlink->sample_rate},
                                     outlink->time_base);
 
-        ret = ff_filter_frame(outlink, out);
+        av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
+        av_frame_free(&out);
 
         if (s->stop_holdoff_offset == s->stop_holdoff_end) {
             s->stop_holdoff_offset = 0;
@@ -891,6 +898,16 @@ silence_stop:
     }
 
     av_frame_free(&in);
+
+    if (av_audio_fifo_size(s->fifo) > 0) {
+        out = ff_get_audio_buffer(outlink, av_audio_fifo_size(s->fifo));
+        if (!out)
+            return AVERROR(ENOMEM);
+
+        av_audio_fifo_read(s->fifo, (void **)out->extended_data, out->nb_samples);
+        out->pts = s->next_pts;
+        ret = ff_filter_frame(outlink, out);
+    }
 
     return ret;
 }
@@ -955,6 +972,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->stop_holdoff);
     av_frame_free(&s->stop_silence_hold);
     av_frame_free(&s->window);
+
+    av_audio_fifo_free(s->fifo);
+    s->fifo = NULL;
 }
 
 static const AVFilterPad silenceremove_inputs[] = {
