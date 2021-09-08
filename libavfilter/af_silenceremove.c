@@ -792,15 +792,18 @@ silence_copy:
                 } else if (!threshold) {
                     for (j = 0; j < outlink->channels; j++) {
                         s->update(s, in, j, nb_samples_read);
-                        if (s->stop_silence) {
+                        if (s->stop_silence)
                             s->copy(s, s->stop_silence_hold, in, j, s->stop_silence_offset, nb_samples_read);
-                            s->stop_silence_end = FFMIN(s->stop_silence_end + 1, s->stop_silence);
-                            if (s->stop_silence_offset >= s->stop_silence) {
-                                s->stop_silence_offset = 0;
-                            }
-                        }
 
                         s->copy(s, s->stop_holdoff, in, j, s->stop_holdoff_end, nb_samples_read);
+                    }
+
+                    if (s->stop_silence) {
+                        s->stop_silence_offset++;
+                        s->stop_silence_end = FFMIN(s->stop_silence_end + 1, s->stop_silence);
+                        if (s->stop_silence_offset >= s->stop_silence) {
+                            s->stop_silence_offset = 0;
+                        }
                     }
 
                     s->window_offset++;
