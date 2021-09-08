@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.4.1:
+- avcodec/utils: don't return negative values in av_get_audio_frame_duration()
 - avcodec/jpeg2000dec: Check that atom header is within bytsetream
 - avcodec/apedec: Fix 2 integer overflows in filter_3800()
 - avcodec/xpmdec: Move allocations down after more error checks
