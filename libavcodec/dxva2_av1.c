@@ -73,7 +73,7 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     pp->max_height = seq->max_frame_height_minus_1 + 1;
 
     pp->CurrPicTextureIndex = ff_dxva2_get_surface_index(avctx, ctx, h->cur_frame.tf.f);
-    pp->superres_denom      = frame_header->use_superres ? frame_header->coded_denom : AV1_SUPERRES_NUM;
+    pp->superres_denom      = frame_header->use_superres ? frame_header->coded_denom + AV1_SUPERRES_DENOM_MIN : AV1_SUPERRES_NUM;
     pp->bitdepth            = get_bit_depth_from_seq(seq);
     pp->seq_profile         = seq->seq_profile;
 
