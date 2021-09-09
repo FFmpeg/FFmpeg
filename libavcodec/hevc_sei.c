@@ -52,9 +52,13 @@ static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s, GetBitCont
     return 0;
 }
 
-static int decode_nal_sei_mastering_display_info(HEVCSEIMasteringDisplay *s, GetBitContext *gb)
+static int decode_nal_sei_mastering_display_info(HEVCSEIMasteringDisplay *s, GetBitContext *gb, int size)
 {
     int i;
+
+    if (size < 24)
+        return AVERROR_INVALIDDATA;
+
     // Mastering primaries
     for (i = 0; i < 3; i++) {
         s->display_primaries[i][0] = get_bits(gb, 16);
@@ -67,23 +71,32 @@ static int decode_nal_sei_mastering_display_info(HEVCSEIMasteringDisplay *s, Get
     // Max and min luminance of mastering display
     s->max_luminance = get_bits_long(gb, 32);
     s->min_luminance = get_bits_long(gb, 32);
+    size -= 24;
 
     // As this SEI message comes before the first frame that references it,
     // initialize the flag to 2 and decrement on IRAP access unit so it
     // persists for the coded video sequence (e.g., between two IRAPs)
     s->present = 2;
+
+    skip_bits_long(gb, 8 * size);
     return 0;
 }
 
-static int decode_nal_sei_content_light_info(HEVCSEIContentLight *s, GetBitContext *gb)
+static int decode_nal_sei_content_light_info(HEVCSEIContentLight *s, GetBitContext *gb, int size)
 {
+    if (size < 4)
+        return AVERROR_INVALIDDATA;
+
     // Max and average light levels
     s->max_content_light_level     = get_bits(gb, 16);
     s->max_pic_average_light_level = get_bits(gb, 16);
+    size -= 4;
     // As this SEI message comes before the first frame that references it,
     // initialize the flag to 2 and decrement on IRAP access unit so it
     // persists for the coded video sequence (e.g., between two IRAPs)
     s->present = 2;
+
+    skip_bits_long(gb, 8 * size);
     return  0;
 }
 
@@ -342,10 +355,16 @@ static int decode_nal_sei_active_parameter_sets(HEVCSEI *s, GetBitContext *gb, v
     return 0;
 }
 
-static int decode_nal_sei_alternative_transfer(HEVCSEIAlternativeTransfer *s, GetBitContext *gb)
+static int decode_nal_sei_alternative_transfer(HEVCSEIAlternativeTransfer *s, GetBitContext *gb, int size)
 {
+    if (size < 1)
+        return AVERROR_INVALIDDATA;
+
     s->present = 1;
     s->preferred_transfer_characteristics = get_bits(gb, 8);
+    size--;
+
+    skip_bits_long(gb, 8 * size);
     return 0;
 }
 
@@ -451,9 +470,9 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
     case SEI_TYPE_PIC_TIMING:
         return decode_nal_sei_pic_timing(s, gb, ps, logctx, size);
     case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
-        return decode_nal_sei_mastering_display_info(&s->mastering_display, gb);
+        return decode_nal_sei_mastering_display_info(&s->mastering_display, gb, size);
     case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
-        return decode_nal_sei_content_light_info(&s->content_light, gb);
+        return decode_nal_sei_content_light_info(&s->content_light, gb, size);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
@@ -461,7 +480,7 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
     case SEI_TYPE_USER_DATA_UNREGISTERED:
         return decode_nal_sei_user_data_unregistered(&s->unregistered, gb, size);
     case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
-        return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gb);
+        return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gb, size);
     case SEI_TYPE_TIME_CODE:
         return decode_nal_sei_timecode(&s->timecode, gb);
     case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
