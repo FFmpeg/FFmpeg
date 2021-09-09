@@ -384,7 +384,7 @@ static int mp3_read_header(AVFormatContext *s)
     ffiocontext(s->pb)->maxsize = -1;
     off = avio_tell(s->pb);
 
-    if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
+    if (!av_dict_count(s->metadata))
         ff_id3v1_read(s);
 
     if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
