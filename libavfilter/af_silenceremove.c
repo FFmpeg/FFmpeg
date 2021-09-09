@@ -561,11 +561,6 @@ static void flush(SilenceRemoveContext *s,
     if (*nb_samples_written) {
         out->nb_samples = *nb_samples_written;
 
-        out->pts = s->next_pts;
-        s->next_pts += av_rescale_q(out->nb_samples,
-                                    (AVRational){1, outlink->sample_rate},
-                                    outlink->time_base);
-
         av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
         *nb_samples_written = 0;
     }
@@ -595,11 +590,6 @@ static void flush(SilenceRemoveContext *s,
 
     s->stop_silence_offset = 0;
     s->stop_silence_end = 0;
-
-    silence->pts = s->next_pts;
-    s->next_pts += av_rescale_q(silence->nb_samples,
-                                (AVRational){1, outlink->sample_rate},
-                                outlink->time_base);
 
     av_audio_fifo_write(s->fifo, (void **)silence->extended_data, silence->nb_samples);
     av_frame_free(&silence);
@@ -724,11 +714,6 @@ silence_trim_flush:
                         s->start_holdoff_offset, nbs,
                         outlink->channels, outlink->format);
 
-        out->pts = s->next_pts;
-        s->next_pts += av_rescale_q(out->nb_samples,
-                                    (AVRational){1, outlink->sample_rate},
-                                    outlink->time_base);
-
         s->start_holdoff_offset += nbs;
 
         av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
@@ -848,11 +833,6 @@ silence_copy:
                             nb_samples_read, nbs,
                             outlink->channels, outlink->format);
 
-            out->pts = s->next_pts;
-            s->next_pts += av_rescale_q(out->nb_samples,
-                                        (AVRational){1, outlink->sample_rate},
-                                        outlink->time_base);
-
             av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
             av_frame_free(&out);
         }
@@ -875,11 +855,6 @@ silence_copy_flush:
                         outlink->channels, outlink->format);
 
         s->stop_holdoff_offset += nbs;
-
-        out->pts = s->next_pts;
-        s->next_pts += av_rescale_q(out->nb_samples,
-                                    (AVRational){1, outlink->sample_rate},
-                                    outlink->time_base);
 
         av_audio_fifo_write(s->fifo, (void **)out->extended_data, out->nb_samples);
         av_frame_free(&out);
@@ -909,6 +884,10 @@ silence_stop:
 
         av_audio_fifo_read(s->fifo, (void **)out->extended_data, out->nb_samples);
         out->pts = s->next_pts;
+        s->next_pts += av_rescale_q(out->nb_samples,
+                                    (AVRational){1, outlink->sample_rate},
+                                    outlink->time_base);
+
         ret = ff_filter_frame(outlink, out);
     }
 
