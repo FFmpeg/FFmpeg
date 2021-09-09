@@ -171,7 +171,8 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     MP3DecContext *mp3 = s->priv_data;
     static const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     uint64_t fsize = avio_size(s->pb);
-    fsize = fsize >= avio_tell(s->pb) ? fsize - avio_tell(s->pb) : 0;
+    int64_t pos = avio_tell(s->pb);
+    fsize = fsize >= pos ? fsize - pos : 0;
 
     /* Check for Xing / Info tag */
     avio_skip(s->pb, xing_offtbl[c->lsf == 1][c->nb_channels == 1]);
@@ -430,9 +431,10 @@ static int mp3_read_header(AVFormatContext *s)
             return ret;
     }
 
+    off = avio_tell(s->pb);
     // the seek index is relative to the end of the xing vbr headers
     for (i = 0; i < st->internal->nb_index_entries; i++)
-        st->internal->index_entries[i].pos += avio_tell(s->pb);
+        st->internal->index_entries[i].pos += off;
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
