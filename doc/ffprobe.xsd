@@ -269,10 +269,6 @@
       <xsd:attribute name="program_id"           type="xsd:int"    use="required"/>
       <xsd:attribute name="program_num"          type="xsd:int"    use="required"/>
       <xsd:attribute name="nb_streams"           type="xsd:int"    use="required"/>
-      <xsd:attribute name="start_time"           type="xsd:float"/>
-      <xsd:attribute name="start_pts"            type="xsd:long"/>
-      <xsd:attribute name="end_time"             type="xsd:float"/>
-      <xsd:attribute name="end_pts"              type="xsd:long"/>
       <xsd:attribute name="pmt_pid"              type="xsd:int"    use="required"/>
       <xsd:attribute name="pcr_pid"              type="xsd:int"    use="required"/>
     </xsd:complexType>
