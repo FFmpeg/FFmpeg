@@ -54,11 +54,11 @@ static const AVOption maskedminmax_options[] = {
     { NULL }
 };
 
-static av_cold int init(AVFilterContext *ctx)
+static av_cold int maskedmin_init(AVFilterContext *ctx)
 {
     MaskedMinMaxContext *s = ctx->priv;
 
-    s->maskedmin = !strcmp(ctx->filter->name, "maskedmin");
+    s->maskedmin = 1;
 
     return 0;
 }
@@ -331,7 +331,7 @@ const AVFilter ff_vf_maskedmin = {
     .description   = NULL_IF_CONFIG_SMALL("Apply filtering with minimum difference of two streams."),
     .priv_class    = &maskedmin_class,
     .priv_size     = sizeof(MaskedMinMaxContext),
-    .init          = init,
+    .init          = maskedmin_init,
     .uninit        = uninit,
     .activate      = activate,
     .query_formats = query_formats,
@@ -349,7 +349,6 @@ const AVFilter ff_vf_maskedmax = {
     .description   = NULL_IF_CONFIG_SMALL("Apply filtering with maximum difference of two streams."),
     .priv_class    = &maskedmax_class,
     .priv_size     = sizeof(MaskedMinMaxContext),
-    .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .query_formats = query_formats,
