@@ -84,6 +84,8 @@ static const AVOption drawgraph_options[] = {
     { NULL }
 };
 
+AVFILTER_DEFINE_CLASS_EXT(drawgraph, "(a)drawgraph", drawgraph_options);
+
 static const char *const var_names[] = {   "MAX",   "MIN",   "VAL", NULL };
 enum                                   { VAR_MAX, VAR_MIN, VAR_VAL, VAR_VARS_NB };
 
@@ -450,8 +452,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 #if CONFIG_DRAWGRAPH_FILTER
 
-AVFILTER_DEFINE_CLASS(drawgraph);
-
 static const AVFilterPad drawgraph_inputs[] = {
     {
         .name         = "default",
@@ -485,9 +485,6 @@ const AVFilter ff_vf_drawgraph = {
 
 #if CONFIG_ADRAWGRAPH_FILTER
 
-#define adrawgraph_options drawgraph_options
-AVFILTER_DEFINE_CLASS(adrawgraph);
-
 static const AVFilterPad adrawgraph_inputs[] = {
     {
         .name         = "default",
@@ -508,8 +505,8 @@ static const AVFilterPad adrawgraph_outputs[] = {
 const AVFilter ff_avf_adrawgraph = {
     .name          = "adrawgraph",
     .description   = NULL_IF_CONFIG_SMALL("Draw a graph using input audio metadata."),
+    .priv_class    = &drawgraph_class,
     .priv_size     = sizeof(DrawGraphContext),
-    .priv_class    = &adrawgraph_class,
     .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
