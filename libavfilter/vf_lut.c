@@ -607,13 +607,10 @@ AVFILTER_DEFINE_CLASS_EXT(lut, "lut/lutyuv/lutrgb", options);
 
 #if CONFIG_LUT_FILTER
 
-static int lut_init(AVFilterContext *ctx)
-{
-    return 0;
-}
-
+#define lut_init NULL
 DEFINE_LUT_FILTER(lut, "Compute and apply a lookup table to the RGB/YUV input video.",
                   lut);
+#undef lut_init
 #endif
 
 #if CONFIG_LUTYUV_FILTER
