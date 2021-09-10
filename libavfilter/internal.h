@@ -278,14 +278,16 @@ int ff_append_outpad_free_name(AVFilterContext *f, AVFilterPad *p);
  */
 int ff_request_frame(AVFilterLink *link);
 
-#define AVFILTER_DEFINE_CLASS(fname)            \
-    static const AVClass fname##_class = {      \
-        .class_name = #fname,                   \
+#define AVFILTER_DEFINE_CLASS_EXT(name, desc, options) \
+    static const AVClass name##_class = {       \
+        .class_name = desc,                     \
         .item_name  = av_default_item_name,     \
-        .option     = fname##_options,          \
+        .option     = options,                  \
         .version    = LIBAVUTIL_VERSION_INT,    \
         .category   = AV_CLASS_CATEGORY_FILTER, \
     }
+#define AVFILTER_DEFINE_CLASS(fname) \
+    AVFILTER_DEFINE_CLASS_EXT(fname, #fname, fname##_options)
 
 /**
  * Find the index of a link.
