@@ -18,6 +18,7 @@ version <next>:
 - AV1 Low overhead bitstream format muxer
 - swscale slice threading
 - MSN Siren decoder
+- scharr video filter
 
 
 version 4.4:

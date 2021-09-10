@@ -18349,6 +18349,27 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section scharr
+Apply scharr operator to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+
+@item delta
+Set value which will be added to filtered result.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section scroll
 Scroll input video horizontally and/or vertically by constant speed.
 
