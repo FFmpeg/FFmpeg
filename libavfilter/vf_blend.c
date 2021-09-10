@@ -943,8 +943,7 @@ static int tblend_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return 0;
 }
 
-#define tblend_options blend_options
-AVFILTER_DEFINE_CLASS(tblend);
+AVFILTER_DEFINE_CLASS_EXT(tblend, "tblend", blend_options);
 
 static const AVFilterPad tblend_inputs[] = {
     {
