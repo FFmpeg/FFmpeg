@@ -386,9 +386,9 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-#if CONFIG_GRAPHMONITOR_FILTER
+AVFILTER_DEFINE_CLASS_EXT(graphmonitor, "(a)graphmonitor", graphmonitor_options);
 
-AVFILTER_DEFINE_CLASS(graphmonitor);
+#if CONFIG_GRAPHMONITOR_FILTER
 
 static const AVFilterPad graphmonitor_inputs[] = {
     {
@@ -420,9 +420,6 @@ const AVFilter ff_vf_graphmonitor = {
 
 #if CONFIG_AGRAPHMONITOR_FILTER
 
-#define agraphmonitor_options graphmonitor_options
-AVFILTER_DEFINE_CLASS(agraphmonitor);
-
 static const AVFilterPad agraphmonitor_inputs[] = {
     {
         .name = "default",
@@ -441,8 +438,8 @@ static const AVFilterPad agraphmonitor_outputs[] = {
 const AVFilter ff_avf_agraphmonitor = {
     .name          = "agraphmonitor",
     .description   = NULL_IF_CONFIG_SMALL("Show various filtergraph stats."),
+    .priv_class    = &graphmonitor_class,
     .priv_size     = sizeof(GraphMonitorContext),
-    .priv_class    = &agraphmonitor_class,
     .query_formats = query_formats,
     .activate      = activate,
     FILTER_INPUTS(agraphmonitor_inputs),
