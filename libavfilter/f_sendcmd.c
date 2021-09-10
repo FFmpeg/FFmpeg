@@ -572,10 +572,9 @@ end:
     return AVERROR(ENOSYS);
 }
 
-#if CONFIG_SENDCMD_FILTER
+AVFILTER_DEFINE_CLASS_EXT(sendcmd, "(a)sendcmd", options);
 
-#define sendcmd_options options
-AVFILTER_DEFINE_CLASS(sendcmd);
+#if CONFIG_SENDCMD_FILTER
 
 static const AVFilterPad sendcmd_inputs[] = {
     {
@@ -607,9 +606,6 @@ const AVFilter ff_vf_sendcmd = {
 
 #if CONFIG_ASENDCMD_FILTER
 
-#define asendcmd_options options
-AVFILTER_DEFINE_CLASS(asendcmd);
-
 static const AVFilterPad asendcmd_inputs[] = {
     {
         .name         = "default",
@@ -628,12 +624,12 @@ static const AVFilterPad asendcmd_outputs[] = {
 const AVFilter ff_af_asendcmd = {
     .name        = "asendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
+    .priv_class  = &sendcmd_class,
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(SendCmdContext),
     FILTER_INPUTS(asendcmd_inputs),
     FILTER_OUTPUTS(asendcmd_outputs),
-    .priv_class  = &asendcmd_class,
 };
 
 #endif
