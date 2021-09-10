@@ -653,7 +653,7 @@ static void compute_frame_duration(AVFormatContext *s, int *pnum, int *pden,
     *pden = 0;
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (st->r_frame_rate.num && !pc) {
+        if (st->r_frame_rate.num && (!pc || !codec_framerate.num)) {
             *pnum = st->r_frame_rate.den;
             *pden = st->r_frame_rate.num;
         } else if (st->time_base.num * 1000LL > st->time_base.den) {
