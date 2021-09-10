@@ -409,10 +409,9 @@ const AVFilter ff_vsrc_haldclutsrc = {
 };
 #endif /* CONFIG_HALDCLUTSRC_FILTER */
 
-#if CONFIG_NULLSRC_FILTER
+AVFILTER_DEFINE_CLASS_EXT(nullsrc_yuvtestsrc, "nullsrc/yuvtestsrc", options);
 
-#define nullsrc_options options
-AVFILTER_DEFINE_CLASS(nullsrc);
+#if CONFIG_NULLSRC_FILTER
 
 static void nullsrc_fill_picture(AVFilterContext *ctx, AVFrame *picref) { }
 
@@ -435,11 +434,11 @@ static const AVFilterPad nullsrc_outputs[] = {
 const AVFilter ff_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
+    .priv_class  = &nullsrc_yuvtestsrc_class,
     .init        = nullsrc_init,
     .uninit      = uninit,
     .activate    = activate,
     .priv_size   = sizeof(TestSourceContext),
-    .priv_class  = &nullsrc_class,
     .inputs      = NULL,
     FILTER_OUTPUTS(nullsrc_outputs),
 };
@@ -1124,9 +1123,6 @@ const AVFilter ff_vsrc_rgbtestsrc = {
 
 #if CONFIG_YUVTESTSRC_FILTER
 
-#define yuvtestsrc_options options
-AVFILTER_DEFINE_CLASS(yuvtestsrc);
-
 static void yuvtest_fill_picture8(AVFilterContext *ctx, AVFrame *frame)
 {
     int x, y, w = frame->width, h = frame->height / 3;
@@ -1283,7 +1279,7 @@ const AVFilter ff_vsrc_yuvtestsrc = {
     .name          = "yuvtestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate YUV test pattern."),
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &yuvtestsrc_class,
+    .priv_class    = &nullsrc_yuvtestsrc_class,
     .init          = yuvtest_init,
     .uninit        = uninit,
     .query_formats = yuvtest_query_formats,
@@ -1418,10 +1414,9 @@ static const AVFilterPad smptebars_outputs[] = {
     },
 };
 
-#if CONFIG_PAL75BARS_FILTER
+AVFILTER_DEFINE_CLASS_EXT(palbars, "pal(75|100)bars", options);
 
-#define pal75bars_options options
-AVFILTER_DEFINE_CLASS(pal75bars);
+#if CONFIG_PAL75BARS_FILTER
 
 static void pal75bars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
@@ -1455,8 +1450,8 @@ static av_cold int pal75bars_init(AVFilterContext *ctx)
 const AVFilter ff_vsrc_pal75bars = {
     .name          = "pal75bars",
     .description   = NULL_IF_CONFIG_SMALL("Generate PAL 75% color bars."),
+    .priv_class    = &palbars_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &pal75bars_class,
     .init          = pal75bars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
@@ -1468,9 +1463,6 @@ const AVFilter ff_vsrc_pal75bars = {
 #endif  /* CONFIG_PAL75BARS_FILTER */
 
 #if CONFIG_PAL100BARS_FILTER
-
-#define pal100bars_options options
-AVFILTER_DEFINE_CLASS(pal100bars);
 
 static void pal100bars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
@@ -1502,8 +1494,8 @@ static av_cold int pal100bars_init(AVFilterContext *ctx)
 const AVFilter ff_vsrc_pal100bars = {
     .name          = "pal100bars",
     .description   = NULL_IF_CONFIG_SMALL("Generate PAL 100% color bars."),
+    .priv_class    = &palbars_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &pal100bars_class,
     .init          = pal100bars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
@@ -1514,10 +1506,9 @@ const AVFilter ff_vsrc_pal100bars = {
 
 #endif  /* CONFIG_PAL100BARS_FILTER */
 
-#if CONFIG_SMPTEBARS_FILTER
+AVFILTER_DEFINE_CLASS_EXT(smptebars, "smpte(hd)bars", options);
 
-#define smptebars_options options
-AVFILTER_DEFINE_CLASS(smptebars);
+#if CONFIG_SMPTEBARS_FILTER
 
 static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
@@ -1583,9 +1574,6 @@ const AVFilter ff_vsrc_smptebars = {
 #endif  /* CONFIG_SMPTEBARS_FILTER */
 
 #if CONFIG_SMPTEHDBARS_FILTER
-
-#define smptehdbars_options options
-AVFILTER_DEFINE_CLASS(smptehdbars);
 
 static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
@@ -1676,8 +1664,8 @@ static av_cold int smptehdbars_init(AVFilterContext *ctx)
 const AVFilter ff_vsrc_smptehdbars = {
     .name          = "smptehdbars",
     .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE HD color bars."),
+    .priv_class    = &smptebars_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &smptehdbars_class,
     .init          = smptehdbars_init,
     .uninit        = uninit,
     .query_formats = smptebars_query_formats,
@@ -1689,10 +1677,10 @@ const AVFilter ff_vsrc_smptehdbars = {
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
 #endif  /* CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER */
 
-#if CONFIG_ALLYUV_FILTER
+AVFILTER_DEFINE_CLASS_EXT(allyuv_allrgb, "allyuv/allrgb",
+                          &options[NOSIZE_OPTIONS_OFFSET]);
 
-#define allyuv_options &options[NOSIZE_OPTIONS_OFFSET]
-AVFILTER_DEFINE_CLASS(allyuv);
+#if CONFIG_ALLYUV_FILTER
 
 static void allyuv_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
@@ -1751,7 +1739,7 @@ const AVFilter ff_vsrc_allyuv = {
     .name          = "allyuv",
     .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &allyuv_class,
+    .priv_class    = &allyuv_allrgb_class,
     .init          = allyuv_init,
     .uninit        = uninit,
     .query_formats = allyuv_query_formats,
@@ -1763,9 +1751,6 @@ const AVFilter ff_vsrc_allyuv = {
 #endif /* CONFIG_ALLYUV_FILTER */
 
 #if CONFIG_ALLRGB_FILTER
-
-#define allrgb_options &options[NOSIZE_OPTIONS_OFFSET]
-AVFILTER_DEFINE_CLASS(allrgb);
 
 static void allrgb_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
@@ -1824,7 +1809,7 @@ const AVFilter ff_vsrc_allrgb = {
     .name          = "allrgb",
     .description   = NULL_IF_CONFIG_SMALL("Generate all RGB colors."),
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &allrgb_class,
+    .priv_class    = &allyuv_allrgb_class,
     .init          = allrgb_init,
     .uninit        = uninit,
     .query_formats = allrgb_query_formats,
