@@ -812,7 +812,7 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
                            const char *args)
 {
     const AVOption *o = NULL;
-    int ret, count = 0;
+    int ret;
     char *av_uninit(parsed_key), *av_uninit(value);
     const char *key;
     int offset= -1;
@@ -875,10 +875,9 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 
         av_free(value);
         av_free(parsed_key);
-        count++;
     }
 
-    return count;
+    return 0;
 }
 
 int ff_filter_process_command(AVFilterContext *ctx, const char *cmd,
