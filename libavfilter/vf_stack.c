@@ -390,6 +390,8 @@ static const AVOption stack_options[] = {
     { NULL },
 };
 
+AVFILTER_DEFINE_CLASS_EXT(stack, "(h|v)stack", stack_options);
+
 static const AVFilterPad outputs[] = {
     {
         .name          = "default",
@@ -400,14 +402,11 @@ static const AVFilterPad outputs[] = {
 
 #if CONFIG_HSTACK_FILTER
 
-#define hstack_options stack_options
-AVFILTER_DEFINE_CLASS(hstack);
-
 const AVFilter ff_vf_hstack = {
     .name          = "hstack",
     .description   = NULL_IF_CONFIG_SMALL("Stack video inputs horizontally."),
+    .priv_class    = &stack_class,
     .priv_size     = sizeof(StackContext),
-    .priv_class    = &hstack_class,
     .query_formats = query_formats,
     FILTER_OUTPUTS(outputs),
     .init          = init,
@@ -420,14 +419,11 @@ const AVFilter ff_vf_hstack = {
 
 #if CONFIG_VSTACK_FILTER
 
-#define vstack_options stack_options
-AVFILTER_DEFINE_CLASS(vstack);
-
 const AVFilter ff_vf_vstack = {
     .name          = "vstack",
     .description   = NULL_IF_CONFIG_SMALL("Stack video inputs vertically."),
+    .priv_class    = &stack_class,
     .priv_size     = sizeof(StackContext),
-    .priv_class    = &vstack_class,
     .query_formats = query_formats,
     FILTER_OUTPUTS(outputs),
     .init          = init,
