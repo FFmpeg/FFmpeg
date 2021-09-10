@@ -60,8 +60,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-#define premultiply_options options
-AVFILTER_DEFINE_CLASS(premultiply);
+AVFILTER_DEFINE_CLASS_EXT(premultiply, "(un)premultiply", options);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -843,12 +842,10 @@ const AVFilter ff_vf_premultiply = {
 
 #if CONFIG_UNPREMULTIPLY_FILTER
 
-#define unpremultiply_options options
-AVFILTER_DEFINE_CLASS(unpremultiply);
-
 const AVFilter ff_vf_unpremultiply = {
     .name          = "unpremultiply",
     .description   = NULL_IF_CONFIG_SMALL("UnPreMultiply first stream with first plane of second stream."),
+    .priv_class    = &premultiply_class,
     .priv_size     = sizeof(PreMultiplyContext),
     .init          = init,
     .uninit        = uninit,
@@ -856,7 +853,6 @@ const AVFilter ff_vf_unpremultiply = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(premultiply_outputs),
-    .priv_class    = &unpremultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |
                      AVFILTER_FLAG_SLICE_THREADS,
