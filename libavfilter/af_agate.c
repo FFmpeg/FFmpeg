@@ -86,6 +86,8 @@ static const AVOption options[] = {
     { NULL }
 };
 
+AVFILTER_DEFINE_CLASS_EXT(agate_sidechaingate, "agate/sidechaingate", options);
+
 static int agate_config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -183,9 +185,6 @@ static void gate(AudioGateContext *s,
 
 #if CONFIG_AGATE_FILTER
 
-#define agate_options options
-AVFILTER_DEFINE_CLASS(agate);
-
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
@@ -252,9 +251,9 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_agate = {
     .name           = "agate",
     .description    = NULL_IF_CONFIG_SMALL("Audio gate."),
+    .priv_class     = &agate_sidechaingate_class,
     .query_formats  = query_formats,
     .priv_size      = sizeof(AudioGateContext),
-    .priv_class     = &agate_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     .process_command = ff_filter_process_command,
@@ -264,9 +263,6 @@ const AVFilter ff_af_agate = {
 #endif /* CONFIG_AGATE_FILTER */
 
 #if CONFIG_SIDECHAINGATE_FILTER
-
-#define sidechaingate_options options
-AVFILTER_DEFINE_CLASS(sidechaingate);
 
 static int activate(AVFilterContext *ctx)
 {
@@ -424,8 +420,8 @@ static const AVFilterPad sidechaingate_outputs[] = {
 const AVFilter ff_af_sidechaingate = {
     .name           = "sidechaingate",
     .description    = NULL_IF_CONFIG_SMALL("Audio sidechain gate."),
+    .priv_class     = &agate_sidechaingate_class,
     .priv_size      = sizeof(AudioGateContext),
-    .priv_class     = &sidechaingate_class,
     .query_formats  = scquery_formats,
     .activate       = activate,
     .uninit         = uninit,
