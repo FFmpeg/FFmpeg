@@ -853,8 +853,7 @@ static const AVFilterPad outputs[] = {
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
-#define DEFINE_BIQUAD_FILTER(name_, description_)                       \
-AVFILTER_DEFINE_CLASS(name_);                                           \
+#define DEFINE_BIQUAD_FILTER_2(name_, description_, priv_class_)        \
 static av_cold int name_##_init(AVFilterContext *ctx)                   \
 {                                                                       \
     BiquadsContext *s = ctx->priv;                                      \
@@ -865,16 +864,20 @@ static av_cold int name_##_init(AVFilterContext *ctx)                   \
 const AVFilter ff_af_##name_ = {                               \
     .name          = #name_,                             \
     .description   = NULL_IF_CONFIG_SMALL(description_), \
+    .priv_class    = &priv_class_##_class,               \
     .priv_size     = sizeof(BiquadsContext),             \
     .init          = name_##_init,                       \
     .uninit        = uninit,                             \
     .query_formats = query_formats,                      \
     FILTER_INPUTS(inputs),                               \
     FILTER_OUTPUTS(outputs),                             \
-    .priv_class    = &name_##_class,                     \
     .process_command = process_command,                  \
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \
 }
+
+#define DEFINE_BIQUAD_FILTER(name, description)                         \
+    AVFILTER_DEFINE_CLASS(name);                                        \
+    DEFINE_BIQUAD_FILTER_2(name, description, name)
 
 #if CONFIG_EQUALIZER_FILTER
 static const AVOption equalizer_options[] = {
@@ -954,14 +957,13 @@ static const AVOption bass_lowshelf_options[] = {
     {NULL}
 };
 
+AVFILTER_DEFINE_CLASS_EXT(bass_lowshelf, "bass/lowshelf", bass_lowshelf_options);
 #if CONFIG_BASS_FILTER
-#define bass_options bass_lowshelf_options
-DEFINE_BIQUAD_FILTER(bass, "Boost or cut lower frequencies.");
+DEFINE_BIQUAD_FILTER_2(bass, "Boost or cut lower frequencies.", bass_lowshelf);
 #endif  /* CONFIG_BASS_FILTER */
 
 #if CONFIG_LOWSHELF_FILTER
-#define lowshelf_options bass_lowshelf_options
-DEFINE_BIQUAD_FILTER(lowshelf, "Apply a low shelf filter.");
+DEFINE_BIQUAD_FILTER_2(lowshelf, "Apply a low shelf filter.", bass_lowshelf);
 #endif  /* CONFIG_LOWSHELF_FILTER */
 #endif  /* CONFIG_BASS_FILTER || CONFIG LOWSHELF_FILTER */
 #if CONFIG_TREBLE_FILTER || CONFIG_HIGHSHELF_FILTER
@@ -1003,14 +1005,15 @@ static const AVOption treble_highshelf_options[] = {
     {NULL}
 };
 
+AVFILTER_DEFINE_CLASS_EXT(treble_highshelf, "treble/highshelf",
+                          treble_highshelf_options);
+
 #if CONFIG_TREBLE_FILTER
-#define treble_options treble_highshelf_options
-DEFINE_BIQUAD_FILTER(treble, "Boost or cut upper frequencies.");
+DEFINE_BIQUAD_FILTER_2(treble, "Boost or cut upper frequencies.", treble_highshelf);
 #endif  /* CONFIG_TREBLE_FILTER */
 
 #if CONFIG_HIGHSHELF_FILTER
-#define highshelf_options treble_highshelf_options
-DEFINE_BIQUAD_FILTER(highshelf, "Apply a high shelf filter.");
+DEFINE_BIQUAD_FILTER_2(highshelf, "Apply a high shelf filter.", treble_highshelf);
 #endif  /* CONFIG_HIGHSHELF_FILTER */
 #endif  /* CONFIG_TREBLE_FILTER || CONFIG_HIGHSHELF_FILTER */
 #if CONFIG_BANDPASS_FILTER
