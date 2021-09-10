@@ -71,9 +71,9 @@ static const AVOption options[] = {
     { NULL }
 };
 
+AVFILTER_DEFINE_CLASS_EXT(realtime, "(a)realtime", options);
+
 #if CONFIG_REALTIME_FILTER
-#define realtime_options options
-AVFILTER_DEFINE_CLASS(realtime);
 
 static const AVFilterPad avfilter_vf_realtime_inputs[] = {
     {
@@ -102,9 +102,6 @@ const AVFilter ff_vf_realtime = {
 
 #if CONFIG_AREALTIME_FILTER
 
-#define arealtime_options options
-AVFILTER_DEFINE_CLASS(arealtime);
-
 static const AVFilterPad arealtime_inputs[] = {
     {
         .name         = "default",
@@ -123,8 +120,8 @@ static const AVFilterPad arealtime_outputs[] = {
 const AVFilter ff_af_arealtime = {
     .name        = "arealtime",
     .description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
+    .priv_class  = &realtime_class,
     .priv_size   = sizeof(RealtimeContext),
-    .priv_class  = &arealtime_class,
     FILTER_INPUTS(arealtime_inputs),
     FILTER_OUTPUTS(arealtime_outputs),
 };
