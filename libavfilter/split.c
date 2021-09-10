@@ -94,11 +94,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-#define split_options options
-AVFILTER_DEFINE_CLASS(split);
-
-#define asplit_options options
-AVFILTER_DEFINE_CLASS(asplit);
+AVFILTER_DEFINE_CLASS_EXT(split, "(a)split", options);
 
 static const AVFilterPad avfilter_vf_split_inputs[] = {
     {
@@ -130,8 +126,8 @@ static const AVFilterPad avfilter_af_asplit_inputs[] = {
 const AVFilter ff_af_asplit = {
     .name        = "asplit",
     .description = NULL_IF_CONFIG_SMALL("Pass on the audio input to N audio outputs."),
+    .priv_class  = &split_class,
     .priv_size   = sizeof(SplitContext),
-    .priv_class  = &asplit_class,
     .init        = split_init,
     FILTER_INPUTS(avfilter_af_asplit_inputs),
     .outputs     = NULL,
