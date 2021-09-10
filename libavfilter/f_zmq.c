@@ -203,10 +203,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
     return ff_filter_frame(ctx->outputs[0], ref);
 }
 
-#if CONFIG_ZMQ_FILTER
+AVFILTER_DEFINE_CLASS_EXT(zmq, "(a)zmq", options);
 
-#define zmq_options options
-AVFILTER_DEFINE_CLASS(zmq);
+#if CONFIG_ZMQ_FILTER
 
 static const AVFilterPad zmq_inputs[] = {
     {
@@ -238,9 +237,6 @@ const AVFilter ff_vf_zmq = {
 
 #if CONFIG_AZMQ_FILTER
 
-#define azmq_options options
-AVFILTER_DEFINE_CLASS(azmq);
-
 static const AVFilterPad azmq_inputs[] = {
     {
         .name         = "default",
@@ -259,12 +255,12 @@ static const AVFilterPad azmq_outputs[] = {
 const AVFilter ff_af_azmq = {
     .name        = "azmq",
     .description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
+    .priv_class  = &zmq_class,
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(ZMQContext),
     FILTER_INPUTS(azmq_inputs),
     FILTER_OUTPUTS(azmq_outputs),
-    .priv_class  = &azmq_class,
 };
 
 #endif
