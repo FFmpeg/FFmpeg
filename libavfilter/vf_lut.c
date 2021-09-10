@@ -587,12 +587,12 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-#define DEFINE_LUT_FILTER(name_, description_)                          \
+#define DEFINE_LUT_FILTER(name_, description_, priv_class_)             \
     const AVFilter ff_vf_##name_ = {                                    \
         .name          = #name_,                                        \
         .description   = NULL_IF_CONFIG_SMALL(description_),            \
+        .priv_class    = &priv_class_ ## _class,                        \
         .priv_size     = sizeof(LutContext),                            \
-        .priv_class    = &name_ ## _class,                              \
         .init          = name_##_init,                                  \
         .uninit        = uninit,                                        \
         .query_formats = query_formats,                                 \
@@ -603,23 +603,20 @@ static const AVFilterPad outputs[] = {
         .process_command = process_command,                             \
     }
 
-#if CONFIG_LUT_FILTER
+AVFILTER_DEFINE_CLASS_EXT(lut, "lut/lutyuv/lutrgb", options);
 
-#define lut_options options
-AVFILTER_DEFINE_CLASS(lut);
+#if CONFIG_LUT_FILTER
 
 static int lut_init(AVFilterContext *ctx)
 {
     return 0;
 }
 
-DEFINE_LUT_FILTER(lut, "Compute and apply a lookup table to the RGB/YUV input video.");
+DEFINE_LUT_FILTER(lut, "Compute and apply a lookup table to the RGB/YUV input video.",
+                  lut);
 #endif
 
 #if CONFIG_LUTYUV_FILTER
-
-#define lutyuv_options options
-AVFILTER_DEFINE_CLASS(lutyuv);
 
 static av_cold int lutyuv_init(AVFilterContext *ctx)
 {
@@ -630,13 +627,11 @@ static av_cold int lutyuv_init(AVFilterContext *ctx)
     return 0;
 }
 
-DEFINE_LUT_FILTER(lutyuv, "Compute and apply a lookup table to the YUV input video.");
+DEFINE_LUT_FILTER(lutyuv, "Compute and apply a lookup table to the YUV input video.",
+                  lut);
 #endif
 
 #if CONFIG_LUTRGB_FILTER
-
-#define lutrgb_options options
-AVFILTER_DEFINE_CLASS(lutrgb);
 
 static av_cold int lutrgb_init(AVFilterContext *ctx)
 {
@@ -647,7 +642,8 @@ static av_cold int lutrgb_init(AVFilterContext *ctx)
     return 0;
 }
 
-DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input video.");
+DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input video.",
+                  lut);
 #endif
 
 #if CONFIG_NEGATE_FILTER
@@ -673,6 +669,6 @@ static av_cold int negate_init(AVFilterContext *ctx)
     return 0;
 }
 
-DEFINE_LUT_FILTER(negate, "Negate input video.");
+DEFINE_LUT_FILTER(negate, "Negate input video.", negate);
 
 #endif
