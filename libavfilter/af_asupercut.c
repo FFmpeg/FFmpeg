@@ -399,15 +399,15 @@ static const AVOption asuperpass_asuperstop_options[] = {
     { NULL }
 };
 
-#define asuperpass_options asuperpass_asuperstop_options
-AVFILTER_DEFINE_CLASS(asuperpass);
+AVFILTER_DEFINE_CLASS_EXT(asuperpass_asuperstop, "asuperpass/asuperstop",
+                          asuperpass_asuperstop_options);
 
 const AVFilter ff_af_asuperpass = {
     .name            = "asuperpass",
     .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-pass filter."),
+    .priv_class      = &asuperpass_asuperstop_class,
     .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
-    .priv_class      = &asuperpass_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
@@ -416,15 +416,12 @@ const AVFilter ff_af_asuperpass = {
                        AVFILTER_FLAG_SLICE_THREADS,
 };
 
-#define asuperstop_options asuperpass_asuperstop_options
-AVFILTER_DEFINE_CLASS(asuperstop);
-
 const AVFilter ff_af_asuperstop = {
     .name            = "asuperstop",
     .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-stop filter."),
+    .priv_class      = &asuperpass_asuperstop_class,
     .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
-    .priv_class      = &asuperstop_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
