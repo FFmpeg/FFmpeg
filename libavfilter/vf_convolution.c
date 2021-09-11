@@ -974,23 +974,23 @@ const AVFilter ff_vf_convolution = {
 
 #endif /* CONFIG_CONVOLUTION_FILTER */
 
-static const AVOption prewitt_roberts_sobel_options[] = {
+static const AVOption common_options[] = {
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
     { "scale",  "set scale",            OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0,  65535, FLAGS},
     { "delta",  "set delta",            OFFSET(delta), AV_OPT_TYPE_FLOAT, {.dbl=0}, -65535, 65535, FLAGS},
     { NULL }
 };
 
-#if CONFIG_PREWITT_FILTER
+AVFILTER_DEFINE_CLASS_EXT(common, "kirsch/prewitt/roberts/scharr/sobel",
+                          common_options);
 
-#define prewitt_options prewitt_roberts_sobel_options
-AVFILTER_DEFINE_CLASS(prewitt);
+#if CONFIG_PREWITT_FILTER
 
 const AVFilter ff_vf_prewitt = {
     .name          = "prewitt",
     .description   = NULL_IF_CONFIG_SMALL("Apply prewitt operator."),
     .priv_size     = sizeof(ConvolutionContext),
-    .priv_class    = &prewitt_class,
+    .priv_class    = &common_class,
     .init          = init,
     .query_formats = query_formats,
     FILTER_INPUTS(convolution_inputs),
@@ -1003,14 +1003,11 @@ const AVFilter ff_vf_prewitt = {
 
 #if CONFIG_SOBEL_FILTER
 
-#define sobel_options prewitt_roberts_sobel_options
-AVFILTER_DEFINE_CLASS(sobel);
-
 const AVFilter ff_vf_sobel = {
     .name          = "sobel",
     .description   = NULL_IF_CONFIG_SMALL("Apply sobel operator."),
     .priv_size     = sizeof(ConvolutionContext),
-    .priv_class    = &sobel_class,
+    .priv_class    = &common_class,
     .init          = init,
     .query_formats = query_formats,
     FILTER_INPUTS(convolution_inputs),
@@ -1023,14 +1020,11 @@ const AVFilter ff_vf_sobel = {
 
 #if CONFIG_ROBERTS_FILTER
 
-#define roberts_options prewitt_roberts_sobel_options
-AVFILTER_DEFINE_CLASS(roberts);
-
 const AVFilter ff_vf_roberts = {
     .name          = "roberts",
     .description   = NULL_IF_CONFIG_SMALL("Apply roberts cross operator."),
     .priv_size     = sizeof(ConvolutionContext),
-    .priv_class    = &roberts_class,
+    .priv_class    = &common_class,
     .init          = init,
     .query_formats = query_formats,
     FILTER_INPUTS(convolution_inputs),
@@ -1043,14 +1037,11 @@ const AVFilter ff_vf_roberts = {
 
 #if CONFIG_KIRSCH_FILTER
 
-#define kirsch_options prewitt_roberts_sobel_options
-AVFILTER_DEFINE_CLASS(kirsch);
-
 const AVFilter ff_vf_kirsch = {
     .name          = "kirsch",
     .description   = NULL_IF_CONFIG_SMALL("Apply kirsch operator."),
     .priv_size     = sizeof(ConvolutionContext),
-    .priv_class    = &kirsch_class,
+    .priv_class    = &common_class,
     .init          = init,
     .query_formats = query_formats,
     FILTER_INPUTS(convolution_inputs),
@@ -1063,14 +1054,11 @@ const AVFilter ff_vf_kirsch = {
 
 #if CONFIG_SCHARR_FILTER
 
-#define scharr_options prewitt_roberts_sobel_options
-AVFILTER_DEFINE_CLASS(scharr);
-
 const AVFilter ff_vf_scharr = {
     .name          = "scharr",
     .description   = NULL_IF_CONFIG_SMALL("Apply scharr operator."),
     .priv_size     = sizeof(ConvolutionContext),
-    .priv_class    = &scharr_class,
+    .priv_class    = &common_class,
     .init          = init,
     .query_formats = query_formats,
     FILTER_INPUTS(convolution_inputs),
