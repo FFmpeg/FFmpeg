@@ -2693,6 +2693,7 @@ Flat_factor
 Peak_count
 Noise_floor
 Noise_floor_count
+Entropy
 Bit_depth
 Dynamic_range
 Zero_crossings
@@ -2717,6 +2718,7 @@ Flat_factor
 Peak_count
 Noise_floor
 Noise_floor_count
+Entropy
 Bit_depth
 Number_of_samples
 Number_of_NaNs
@@ -2794,6 +2796,9 @@ Minimum local peak measured in dBFS over a short window.
 @item Noise floor count
 Number of occasions (not the number of samples) that the signal attained
 @var{Noise floor}.
+
+@item Entropy
+Entropy measured across whole audio. Entropy of value near 1.0 is typically measured for white noise.
 
 @item Bit depth
 Overall bit depth of audio. Number of bits used for each sample.

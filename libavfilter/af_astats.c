@@ -57,6 +57,7 @@
 #define MEASURE_NUMBER_OF_DENORMALS     (1 << 21)
 #define MEASURE_NOISE_FLOOR             (1 << 22)
 #define MEASURE_NOISE_FLOOR_COUNT       (1 << 23)
+#define MEASURE_ENTROPY                 (1 << 24)
 
 #define MEASURE_MINMAXPEAK              (MEASURE_MIN_LEVEL | MEASURE_MAX_LEVEL | MEASURE_PEAK_LEVEL)
 
@@ -83,9 +84,11 @@ typedef struct ChannelStats {
     uint64_t nb_denormals;
     double *win_samples;
     uint64_t histogram[HISTOGRAM_SIZE];
+    uint64_t ehistogram[HISTOGRAM_SIZE];
     int win_pos;
     int max_index;
     double noise_floor;
+    double entropy;
 } ChannelStats;
 
 typedef struct AudioStatsContext {
@@ -135,6 +138,7 @@ static const AVOption astats_options[] = {
       { "Zero_crossings_rate"       , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ZERO_CROSSINGS_RATE }, 0, 0, FLAGS, "measure" },
       { "Noise_floor"               , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NOISE_FLOOR         }, 0, 0, FLAGS, "measure" },
       { "Noise_floor_count"         , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NOISE_FLOOR_COUNT   }, 0, 0, FLAGS, "measure" },
+      { "Entropy"                   , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_ENTROPY             }, 0, 0, FLAGS, "measure" },
       { "Number_of_samples"         , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NUMBER_OF_SAMPLES   }, 0, 0, FLAGS, "measure" },
       { "Number_of_NaNs"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NUMBER_OF_NANS      }, 0, 0, FLAGS, "measure" },
       { "Number_of_Infs"            , "", 0, AV_OPT_TYPE_CONST, {.i64=MEASURE_NUMBER_OF_INFS      }, 0, 0, FLAGS, "measure" },
@@ -199,9 +203,11 @@ static void reset_stats(AudioStatsContext *s)
         p->last = NAN;
         p->noise_floor = NAN;
         p->noise_floor_count = 0;
+        p->entropy = 0;
         p->win_pos = 0;
         memset(p->win_samples, 0, s->tc_samples * sizeof(*p->win_samples));
         memset(p->histogram, 0, sizeof(p->histogram));
+        memset(p->ehistogram, 0, sizeof(p->ehistogram));
     }
 }
 
@@ -252,6 +258,20 @@ static void bit_depth(AudioStatsContext *s, uint64_t mask, uint64_t imask, AVRat
     for (; result; --result, mask >>= 1)
         if (mask & 1)
             depth->num++;
+}
+
+static double calc_entropy(AudioStatsContext *s, ChannelStats *p)
+{
+    double entropy = 0.;
+
+    for (int i = 0; i < HISTOGRAM_SIZE; i++) {
+        double entry = p->ehistogram[i] / ((double)p->nb_samples);
+
+        if (entry > 1e-8)
+            entropy += entry * log2(entry);
+    }
+
+    return -entropy / log2(HISTOGRAM_SIZE);
 }
 
 static inline void update_minmax(AudioStatsContext *s, ChannelStats *p, double d)
@@ -319,6 +339,7 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
     index = av_clip(lrint(av_clipd(FFABS(nd), 0.0, 1.0) * HISTOGRAM_MAX), 0, HISTOGRAM_MAX);
     p->max_index = FFMAX(p->max_index, index);
     p->histogram[index]++;
+    p->ehistogram[index]++;
     if (!isnan(p->noise_floor))
         p->histogram[av_clip(lrint(av_clipd(FFABS(drop), 0.0, 1.0) * HISTOGRAM_MAX), 0, HISTOGRAM_MAX)]--;
     p->win_pos++;
@@ -406,6 +427,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
            sigma_x = 0,
            sigma_x2 = 0,
            noise_floor = 0,
+           entropy = 0,
            min_sigma_x2 = DBL_MAX,
            max_sigma_x2 =-DBL_MAX;
     AVRational depth;
@@ -431,6 +453,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         sigma_x2 += p->sigma_x2;
         noise_floor = FFMAX(noise_floor, p->noise_floor);
         noise_floor_count += p->noise_floor_count;
+        p->entropy = calc_entropy(s, p);
+        entropy += p->entropy;
         min_count += p->min_count;
         max_count += p->max_count;
         min_runs += p->min_runs;
@@ -476,6 +500,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
             set_meta(metadata, c + 1, "Noise_floor", "%f", LINEAR_TO_DB(p->noise_floor));
         if (s->measure_perchannel & MEASURE_NOISE_FLOOR_COUNT)
             set_meta(metadata, c + 1, "Noise_floor_count", "%f", p->noise_floor_count);
+        if (s->measure_perchannel & MEASURE_ENTROPY)
+            set_meta(metadata, c + 1, "Entropy", "%f", p->entropy);
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
             bit_depth(s, p->mask, p->imask, &depth);
             set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
@@ -525,6 +551,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, 0, "Overall.Noise_floor", "%f", LINEAR_TO_DB(noise_floor));
     if (s->measure_overall & MEASURE_NOISE_FLOOR_COUNT)
         set_meta(metadata, 0, "Overall.Noise_floor_count", "%f", noise_floor_count / (double)s->nb_channels);
+    if (s->measure_overall & MEASURE_ENTROPY)
+        set_meta(metadata, 0, "Overall.Entropy", "%f", entropy / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
         bit_depth(s, mask, imask, &depth);
         set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth.num);
@@ -655,6 +683,7 @@ static void print_stats(AVFilterContext *ctx)
            sigma_x = 0,
            sigma_x2 = 0,
            noise_floor = 0,
+           entropy = 0,
            min_sigma_x2 = DBL_MAX,
            max_sigma_x2 =-DBL_MAX;
     AVRational depth;
@@ -679,6 +708,8 @@ static void print_stats(AVFilterContext *ctx)
         sigma_x += p->sigma_x;
         sigma_x2 += p->sigma_x2;
         noise_floor = FFMAX(noise_floor, p->noise_floor);
+        p->entropy = calc_entropy(s, p);
+        entropy += p->entropy;
         min_count += p->min_count;
         max_count += p->max_count;
         noise_floor_count += p->noise_floor_count;
@@ -728,6 +759,8 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Noise floor dB: %f\n", LINEAR_TO_DB(p->noise_floor));
         if (s->measure_perchannel & MEASURE_NOISE_FLOOR_COUNT)
             av_log(ctx, AV_LOG_INFO, "Noise floor count: %"PRId64"\n", p->noise_floor_count);
+        if (s->measure_perchannel & MEASURE_ENTROPY)
+            av_log(ctx, AV_LOG_INFO, "Entropy: %f\n", p->entropy);
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
             bit_depth(s, p->mask, p->imask, &depth);
             av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
@@ -779,6 +812,8 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Noise floor dB: %f\n", LINEAR_TO_DB(noise_floor));
     if (s->measure_overall & MEASURE_NOISE_FLOOR_COUNT)
         av_log(ctx, AV_LOG_INFO, "Noise floor count: %f\n", noise_floor_count / (double)s->nb_channels);
+    if (s->measure_overall & MEASURE_ENTROPY)
+        av_log(ctx, AV_LOG_INFO, "Entropy: %f\n", entropy / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
         bit_depth(s, mask, imask, &depth);
         av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
