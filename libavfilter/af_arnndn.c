@@ -351,7 +351,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioRNNContext *s = ctx->priv;
-    int ret;
+    int ret = 0;
 
     s->channels = inlink->channels;
 
@@ -387,7 +387,7 @@ static int config_input(AVFilterLink *inlink)
             return ret;
     }
 
-    return 0;
+    return ret;
 }
 
 static void biquad(float *y, float mem[2], const float *x,
