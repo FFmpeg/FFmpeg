@@ -651,9 +651,11 @@ static const AVFilterPad convolve_outputs[] = {
     },
 };
 
+FRAMESYNC_AUXILIARY_FUNCS(convolve, ConvolveContext, fs)
+
 #if CONFIG_CONVOLVE_FILTER
 
-FRAMESYNC_DEFINE_CLASS(convolve, ConvolveContext, fs);
+FRAMESYNC_DEFINE_PURE_CLASS(convolve, "convolve", convolve, convolve_options);
 
 const AVFilter ff_vf_convolve = {
     .name          = "convolve",
@@ -683,12 +685,12 @@ static const AVOption deconvolve_options[] = {
     { NULL },
 };
 
-FRAMESYNC_DEFINE_CLASS(deconvolve, ConvolveContext, fs);
+FRAMESYNC_DEFINE_PURE_CLASS(deconvolve, "deconvolve", convolve, deconvolve_options);
 
 const AVFilter ff_vf_deconvolve = {
     .name          = "deconvolve",
     .description   = NULL_IF_CONFIG_SMALL("Deconvolve first video stream with second video stream."),
-    .preinit       = deconvolve_framesync_preinit,
+    .preinit       = convolve_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
