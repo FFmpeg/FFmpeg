@@ -207,6 +207,8 @@ static int activate(AVFilterContext *ctx)
         }
         ret = ff_inlink_consume_samples(inlink, 1, max_samples, &frame);
         break;
+    default:
+        return AVERROR_BUG;
     }
 
     if (ret > 0) {
