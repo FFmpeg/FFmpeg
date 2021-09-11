@@ -682,7 +682,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int order, field, i, match, sc = 0, ret = 0;
     const int *fxo;
     AVFrame *gen_frames[] = { NULL, NULL, NULL, NULL, NULL };
-    AVFrame *dst;
+    AVFrame *dst = NULL;
 
     /* update frames queue(s) */
 #define SLIDING_FRAME_WINDOW(prv, src, nxt) do {                \
