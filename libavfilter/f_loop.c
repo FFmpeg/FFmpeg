@@ -93,7 +93,7 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
     AVFilterLink *outlink = ctx->outputs[0];
     LoopContext *s = ctx->priv;
     AVFrame *out;
-    int ret, i = 0;
+    int ret = 0, i = 0;
 
     while (s->loop != 0 && i < nb_samples) {
         out = ff_get_audio_buffer(outlink, FFMIN(nb_samples, s->nb_samples - s->current_sample));
