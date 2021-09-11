@@ -26,7 +26,6 @@
 
 #include <string.h>
 
-#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "hflip.h"
@@ -37,12 +36,6 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
-
-static const AVOption hflip_options[] = {
-    { NULL }
-};
-
-AVFILTER_DEFINE_CLASS(hflip);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -155,7 +148,6 @@ const AVFilter ff_vf_hflip = {
     .name          = "hflip",
     .description   = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
     .priv_size     = sizeof(FlipContext),
-    .priv_class    = &hflip_class,
     FILTER_INPUTS(avfilter_vf_hflip_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC(query_formats),

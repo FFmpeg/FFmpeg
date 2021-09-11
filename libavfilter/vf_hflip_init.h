@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
 #include "hflip.h"
 
