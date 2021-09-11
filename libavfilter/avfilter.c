@@ -844,6 +844,7 @@ int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
 
     while (*args) {
         const char *shorthand = NULL;
+        int additional_flags  = 0;
 
         if (priv_class)
             o = av_opt_next(&priv_class, o);
@@ -869,7 +870,7 @@ int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
             args++;
         if (parsed_key) {
             key = parsed_key;
-
+            additional_flags = AV_DICT_DONT_STRDUP_KEY;
             /* discard all remaining shorthand */
             if (priv_class)
                 while ((o = av_opt_next(&priv_class, o)));
@@ -879,10 +880,8 @@ int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
 
         av_log(logctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
 
-        av_dict_set(options, key, value, AV_DICT_MULTIKEY);
-
-        av_free(value);
-        av_free(parsed_key);
+        av_dict_set(options, key, value,
+                    additional_flags | AV_DICT_DONT_STRDUP_VAL | AV_DICT_MULTIKEY);
     }
 
     return 0;
