@@ -1033,13 +1033,12 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
     double temp[15];
     double sum = 0.0, d1;
     float new_noise_floor;
-    int i, n;
+    int i = 0, n;
 
     for (int m = 0; m < 15; m++)
         temp[m] = sample_noise[m];
 
     if (new_profile) {
-        i = 0;
         for (int m = 0; m < 5; m++) {
             sum = 0.0;
             for (n = 0; n < 15; n++)
