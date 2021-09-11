@@ -846,9 +846,7 @@ int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
         const char *shorthand = NULL;
         int additional_flags  = 0;
 
-        if (priv_class)
-            o = av_opt_next(&priv_class, o);
-        if (o) {
+        if (priv_class && (o = av_opt_next(&priv_class, o))) {
             if (o->type == AV_OPT_TYPE_CONST || o->offset == offset)
                 continue;
             offset = o->offset;
@@ -871,9 +869,7 @@ int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
         if (parsed_key) {
             key = parsed_key;
             additional_flags = AV_DICT_DONT_STRDUP_KEY;
-            /* discard all remaining shorthand */
-            if (priv_class)
-                while ((o = av_opt_next(&priv_class, o)));
+            priv_class = NULL; /* reject all remaining shorthand */
         } else {
             key = shorthand;
         }
