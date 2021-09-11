@@ -1261,13 +1261,22 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return config_input(ctx->inputs[0]);
 }
 
+#if CONFIG_LUT3D_FILTER || CONFIG_HALDCLUT_FILTER
+
+/* These options are shared between several filters;
+ * &lut3d_haldclut_options[COMMON_OPTIONS_OFFSET] must always
+ * point to the first of the COMMON_OPTIONS. */
+#define COMMON_OPTIONS_OFFSET CONFIG_LUT3D_FILTER
+static const AVOption lut3d_haldclut_options[] = {
 #if CONFIG_LUT3D_FILTER
-static const AVOption lut3d_options[] = {
     { "file", "set 3D LUT file name", OFFSET(file), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+#endif
     COMMON_OPTIONS
 };
 
-AVFILTER_DEFINE_CLASS(lut3d);
+#if CONFIG_LUT3D_FILTER
+
+AVFILTER_DEFINE_CLASS_EXT(lut3d, "lut3d", lut3d_haldclut_options);
 
 static av_cold int lut3d_init(AVFilterContext *ctx)
 {
@@ -1588,11 +1597,8 @@ static av_cold void haldclut_uninit(AVFilterContext *ctx)
     av_freep(&lut3d->lut);
 }
 
-static const AVOption haldclut_options[] = {
-    COMMON_OPTIONS
-};
-
-FRAMESYNC_DEFINE_CLASS(haldclut, LUT3DContext, fs);
+FRAMESYNC_DEFINE_CLASS_EXT(haldclut, LUT3DContext, fs,
+                           &lut3d_haldclut_options[COMMON_OPTIONS_OFFSET]);
 
 static const AVFilterPad haldclut_inputs[] = {
     {
@@ -1630,6 +1636,8 @@ const AVFilter ff_vf_haldclut = {
     .process_command = process_command,
 };
 #endif
+
+#endif /* CONFIG_LUT3D_FILTER || CONFIG_HALDCLUT_FILTER */
 
 #if CONFIG_LUT1D_FILTER
 
