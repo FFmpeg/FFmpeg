@@ -304,8 +304,8 @@ static void calculate_mask_curve(AudioPsyClipContext *s,
         mask_curve[i] = 0;
 
     for (int i = 0; i < s->num_psy_bins; i++) {
+        int base_idx, start_bin, end_bin, table_idx;
         float magnitude;
-        int table_idx;
         int range[2];
 
         if (i == 0) {
@@ -322,9 +322,9 @@ static void calculate_mask_curve(AudioPsyClipContext *s,
         table_idx = s->spread_table_index[i];
         range[0] = s->spread_table_range[table_idx][0];
         range[1] = s->spread_table_range[table_idx][1];
-        int base_idx = table_idx * s->num_psy_bins;
-        int start_bin = FFMAX(0, i + range[0]);
-        int end_bin = FFMIN(s->num_psy_bins, i + range[1]);
+        base_idx = table_idx * s->num_psy_bins;
+        start_bin = FFMAX(0, i + range[0]);
+        end_bin = FFMIN(s->num_psy_bins, i + range[1]);
 
         for (int j = start_bin; j < end_bin; j++)
             mask_curve[j] += s->spread_table[base_idx + s->num_psy_bins / 2 + j - i] * magnitude;
