@@ -974,8 +974,6 @@ const AVFilter ff_vf_convolution = {
 
 #endif /* CONFIG_CONVOLUTION_FILTER */
 
-#if CONFIG_PREWITT_FILTER || CONFIG_ROBERTS_FILTER || CONFIG_SOBEL_FILTER
-
 static const AVOption prewitt_roberts_sobel_options[] = {
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
     { "scale",  "set scale",            OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0,  65535, FLAGS},
@@ -1082,5 +1080,3 @@ const AVFilter ff_vf_scharr = {
 };
 
 #endif /* CONFIG_SCHARR_FILTER */
-
-#endif /* CONFIG_PREWITT_FILTER || CONFIG_ROBERTS_FILTER || CONFIG_SOBEL_FILTER || CONFIG_SCHARR_FILTER */
