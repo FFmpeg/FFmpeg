@@ -388,8 +388,16 @@ static av_cold int init_alphaextract(AVFilterContext *ctx)
 
     s->requested_planes = PLANE_A;
 
-    return init(ctx);
+    return 0;
 }
+
+static const AVFilterPad alphaextract_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+    },
+};
 
 const AVFilter ff_vf_alphaextract = {
     .name           = "alphaextract",
@@ -399,7 +407,6 @@ const AVFilter ff_vf_alphaextract = {
     .init           = init_alphaextract,
     .query_formats  = query_formats,
     FILTER_INPUTS(extractplanes_inputs),
-    .outputs        = NULL,
-    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    FILTER_OUTPUTS(alphaextract_outputs),
 };
 #endif  /* CONFIG_ALPHAEXTRACT_FILTER */
