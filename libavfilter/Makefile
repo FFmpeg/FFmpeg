@@ -81,6 +81,7 @@ OBJS-$(CONFIG_AREALTIME_FILTER)              += f_realtime.o
 OBJS-$(CONFIG_ARESAMPLE_FILTER)              += af_aresample.o
 OBJS-$(CONFIG_AREVERSE_FILTER)               += f_reverse.o
 OBJS-$(CONFIG_ARNNDN_FILTER)                 += af_arnndn.o
+OBJS-$(CONFIG_ASDR_FILTER)                   += af_asdr.o
 OBJS-$(CONFIG_ASEGMENT_FILTER)               += f_segment.o
 OBJS-$(CONFIG_ASELECT_FILTER)                += f_select.o
 OBJS-$(CONFIG_ASENDCMD_FILTER)               += f_sendcmd.o

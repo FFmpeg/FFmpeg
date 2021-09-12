@@ -2556,6 +2556,13 @@ noise removed from input signal.
 
 This filter supports the all above options as @ref{commands}.
 
+@section asdr
+Measure Audio Signal-to-Distortion Ratio.
+
+This filter takes two audio streams for input, and outputs first
+audio stream.
+Results are in dB per channel at end of either input.
+
 @section asetnsamples
 
 Set the number of samples per each output audio frame.
