@@ -22440,6 +22440,7 @@ Set one of available transition effects:
 @item wipebr
 @item squeezeh
 @item squeezev
+@item zoomin
 @end table
 Default transition effect is fade.
 

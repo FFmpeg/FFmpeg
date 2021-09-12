@@ -73,6 +73,7 @@ enum XFadeTransitions {
     WIPEBR,
     SQUEEZEH,
     SQUEEZEV,
+    ZOOMIN,
     NB_TRANSITIONS,
 };
 
@@ -196,6 +197,7 @@ static const AVOption xfade_options[] = {
     {   "wipebr",     "wipe br transition",     0, AV_OPT_TYPE_CONST, {.i64=WIPEBR},     0, 0, FLAGS, "transition" },
     {   "squeezeh",   "squeeze h transition",   0, AV_OPT_TYPE_CONST, {.i64=SQUEEZEH},   0, 0, FLAGS, "transition" },
     {   "squeezev",   "squeeze v transition",   0, AV_OPT_TYPE_CONST, {.i64=SQUEEZEV},   0, 0, FLAGS, "transition" },
+    {   "zoomin",     "zoom in transition",     0, AV_OPT_TYPE_CONST, {.i64=ZOOMIN},     0, 0, FLAGS, "transition" },
     { "duration", "set cross fade duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64=1000000}, 0, 60000000, FLAGS },
     { "offset",   "set cross fade start relative to first input stream", OFFSET(offset), AV_OPT_TYPE_DURATION, {.i64=0}, INT64_MIN, INT64_MAX, FLAGS },
     { "expr",   "set expression for custom transition", OFFSET(custom_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -1629,6 +1631,50 @@ static void squeezev##name##_transition(AVFilterContext *ctx,                   
 SQUEEZEV_TRANSITION(8, uint8_t, 1)
 SQUEEZEV_TRANSITION(16, uint16_t, 2)
 
+static void zoom(float *u, float *v, float amount)
+{
+    *u = 0.5f + ((*u - 0.5f) * amount);
+    *v = 0.5f + ((*v - 0.5f) * amount);
+}
+
+#define ZOOMIN_TRANSITION(name, type, div)                                           \
+static void zoomin##name##_transition(AVFilterContext *ctx,                          \
+                            const AVFrame *a, const AVFrame *b, AVFrame *out,        \
+                            float progress,                                          \
+                            int slice_start, int slice_end, int jobnr)               \
+{                                                                                    \
+    XFadeContext *s = ctx->priv;                                                     \
+    const float w = out->width;                                                      \
+    const float h = out->height;                                                     \
+    const float zf = smoothstep(0.5f, 1.f, progress);                                \
+                                                                                     \
+    for (int p = 0; p < s->nb_planes; p++) {                                         \
+        const type *xf0 = (const type *)(a->data[p]);                                \
+        const type *xf1 = (const type *)(b->data[p] + slice_start * b->linesize[p]); \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
+                                                                                     \
+        for (int y = slice_start; y < slice_end; y++) {                              \
+            for (int x = 0; x < w; x++) {                                            \
+                float zv, u, v;                                                      \
+                int iu, iv;                                                          \
+                                                                                     \
+                u = x / w;                                                           \
+                v = y / h;                                                           \
+                zoom(&u, &v, zf);                                                    \
+                iu = ceilf(u * (w - 1));                                             \
+                iv = ceilf(v * (h - 1));                                             \
+                zv = xf0[iu + iv * a->linesize[p] / div];                            \
+                dst[x] = mix(zv, xf1[x], smoothstep(0.f, 0.5f, progress));           \
+            }                                                                        \
+            dst += out->linesize[p] / div;                                           \
+            xf1 += b->linesize[p] / div;                                             \
+        }                                                                            \
+    }                                                                                \
+}
+
+ZOOMIN_TRANSITION(8, uint8_t, 1)
+ZOOMIN_TRANSITION(16, uint16_t, 2)
+
 static inline double getpix(void *priv, double x, double y, int plane, int nb)
 {
     XFadeContext *s = priv;
@@ -1778,6 +1824,7 @@ static int config_output(AVFilterLink *outlink)
     case WIPEBR:     s->transitionf = s->depth <= 8 ? wipebr8_transition     : wipebr16_transition;     break;
     case SQUEEZEH:   s->transitionf = s->depth <= 8 ? squeezeh8_transition   : squeezeh16_transition;   break;
     case SQUEEZEV:   s->transitionf = s->depth <= 8 ? squeezev8_transition   : squeezev16_transition;   break;
+    case ZOOMIN:     s->transitionf = s->depth <= 8 ? zoomin8_transition     : zoomin16_transition;     break;
     }
 
     if (s->transition == CUSTOM) {
