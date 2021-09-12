@@ -74,9 +74,9 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v,
 
     // 64x64 inverse integer transform
     for (int y = 0; y < 64; y++) {
-        for (int x = 0; x < 64; x++) {
+        for (int x = 0; x <= freq_h; x++) {
             int32_t sum = 0;
-            for (int p = 0; p < 64; p++)
+            for (int p = 0; p <= freq_v; p++)
                 sum += R64T[y][p] * out[x][p];
             tmp[y][x] = (sum + 128) >> 8;
         }
@@ -85,7 +85,7 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v,
     for (int y = 0; y < 64; y++) {
         for (int x = 0; x < 64; x++) {
             int32_t sum = 0;
-            for (int p = 0; p < 64; p++)
+            for (int p = 0; p <= freq_h; p++)
                 sum += tmp[y][p] * R64T[x][p]; // R64T^T = R64
             // Renormalize and clip to [-127, 127]
             out[y][x] = av_clip((sum + 128) >> 8, -127, 127);
