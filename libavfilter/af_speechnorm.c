@@ -416,7 +416,8 @@ static int filter_frame(AVFilterContext *ctx)
 
         s->filter_channels[s->link](ctx, in, in->nb_samples);
 
-        s->pts = in->pts + in->nb_samples;
+        s->pts = in->pts + av_rescale_q(in->nb_samples, av_make_q(1, outlink->sample_rate),
+                                        outlink->time_base);
 
         return ff_filter_frame(outlink, in);
     }
