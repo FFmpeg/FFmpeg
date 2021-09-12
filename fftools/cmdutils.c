@@ -1399,8 +1399,6 @@ static void print_codec(const AVCodec *c)
         printf("horizband ");
     if (c->capabilities & AV_CODEC_CAP_DR1)
         printf("dr1 ");
-    if (c->capabilities & AV_CODEC_CAP_TRUNCATED)
-        printf("trunc ");
     if (c->capabilities & AV_CODEC_CAP_DELAY)
         printf("delay ");
     if (c->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME)
