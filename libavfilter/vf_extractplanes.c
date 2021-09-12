@@ -387,6 +387,7 @@ static av_cold int init_alphaextract(AVFilterContext *ctx)
     ExtractPlanesContext *s = ctx->priv;
 
     s->requested_planes = PLANE_A;
+    s->map[0] = 3;
 
     return 0;
 }
