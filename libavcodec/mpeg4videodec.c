@@ -550,7 +550,7 @@ int ff_mpeg4_decode_studio_slice_header(Mpeg4DecContext *ctx)
     unsigned vlc_len;
     uint16_t mb_num;
 
-    if (get_bits_left(gb) >= 32 && get_bits_long(gb, 32) == SLICE_START_CODE) {
+    if (get_bits_left(gb) >= 32 && get_bits_long(gb, 32) == SLICE_STARTCODE) {
         vlc_len = av_log2(s->mb_width * s->mb_height) + 1;
         mb_num = get_bits(gb, vlc_len);
 

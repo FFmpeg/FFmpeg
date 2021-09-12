@@ -217,11 +217,11 @@ int ff_h263_resync(MpegEncContext *s){
     if(s->codec_id==AV_CODEC_ID_MPEG4 && s->studio_profile) {
         align_get_bits(&s->gb);
 
-        while (get_bits_left(&s->gb) >= 32 && show_bits_long(&s->gb, 32) != SLICE_START_CODE) {
+        while (get_bits_left(&s->gb) >= 32 && show_bits_long(&s->gb, 32) != SLICE_STARTCODE) {
             get_bits(&s->gb, 8);
         }
 
-        if (get_bits_left(&s->gb) >= 32 && show_bits_long(&s->gb, 32) == SLICE_START_CODE)
+        if (get_bits_left(&s->gb) >= 32 && show_bits_long(&s->gb, 32) == SLICE_STARTCODE)
             return get_bits_count(&s->gb);
         else
             return -1;
