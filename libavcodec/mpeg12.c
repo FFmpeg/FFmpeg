@@ -168,6 +168,7 @@ av_cold void ff_mpeg12_init_vlcs(void)
     ff_thread_once(&init_static_once, mpeg12_init_vlcs);
 }
 
+#if FF_API_FLAG_TRUNCATED
 /**
  * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
@@ -231,6 +232,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
     pc->state = state;
     return END_NOT_FOUND;
 }
+#endif
 
 #define MAX_INDEX (64 - 1)
 

@@ -70,7 +70,9 @@ int ff_mpeg1_decode_block_intra(GetBitContext *gb,
                                 int16_t *block, int index, int qscale);
 
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
+#if FF_API_FLAG_TRUNCATED
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
+#endif
 
 void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],

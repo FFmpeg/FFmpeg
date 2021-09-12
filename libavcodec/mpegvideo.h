@@ -49,7 +49,9 @@
 #include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
+#if FF_API_FLAG_TRUNCATED
 #include "parser.h"
+#endif
 #include "mpegutils.h"
 #include "mpeg12data.h"
 #include "qpeldsp.h"
