@@ -1825,6 +1825,7 @@ static int config_output(AVFilterLink *outlink)
     case SQUEEZEH:   s->transitionf = s->depth <= 8 ? squeezeh8_transition   : squeezeh16_transition;   break;
     case SQUEEZEV:   s->transitionf = s->depth <= 8 ? squeezev8_transition   : squeezev16_transition;   break;
     case ZOOMIN:     s->transitionf = s->depth <= 8 ? zoomin8_transition     : zoomin16_transition;     break;
+    default: return AVERROR_BUG;
     }
 
     if (s->transition == CUSTOM) {
