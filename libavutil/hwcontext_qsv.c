@@ -781,7 +781,11 @@ static int qsv_map_from(AVHWFramesContext *ctx,
     case AV_HWDEVICE_TYPE_VAAPI:
     {
         mfxHDLPair *pair = (mfxHDLPair*)surf->Data.MemId;
-        child_data = pair->first;
+        /* pair->first is *VASurfaceID while data[3] in vaapi frame is VASurfaceID, so
+         * we need this casting for vaapi.
+         * Add intptr_t to force cast from VASurfaceID(uint) type to pointer(long) type
+         * to avoid compile warning */
+        child_data = (uint8_t*)(intptr_t)*(VASurfaceID*)pair->first;
         break;
     }
 #endif
