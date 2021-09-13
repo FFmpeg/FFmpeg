@@ -1857,13 +1857,14 @@ typedef struct AVCodecContext {
      */
     AVBufferRef *hw_frames_ctx;
 
+#if FF_API_SUB_TEXT_FORMAT
     /**
-     * Control the form of AVSubtitle.rects[N]->ass
-     * - decoding: set by user
-     * - encoding: unused
+     * @deprecated unused
      */
+    attribute_deprecated
     int sub_text_format;
 #define FF_SUB_TEXT_FMT_ASS              0
+#endif
 
     /**
      * Audio only. The amount of padding (in samples) appended by the encoder to
