@@ -1231,7 +1231,7 @@ following image formats are supported:
 @item GSM Microsoft variant  @tab  E  @tab  X
     @tab encoding supported through external library libgsm
 @item IAC (Indeo Audio Coder)  @tab     @tab  X
-@item iLBC (Internet Low Bitrate Codec) @tab  E  @tab  E
+@item iLBC (Internet Low Bitrate Codec) @tab  E  @tab  EX
     @tab encoding and decoding supported through external library libilbc
 @item IMC (Intel Music Coder)  @tab     @tab  X
 @item Interplay ACM            @tab     @tab  X
@@ -1303,7 +1303,7 @@ following image formats are supported:
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
-@item Speex                  @tab  E  @tab  E
+@item Speex                  @tab  E  @tab  EX
     @tab supported through external library libspeex
 @item TAK (Tom's lossless Audio Kompressor)  @tab     @tab  X
 @item True Audio (TTA)       @tab  X  @tab  X

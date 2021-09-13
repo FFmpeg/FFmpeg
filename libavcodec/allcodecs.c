@@ -308,6 +308,7 @@ extern const AVCodec ff_snow_decoder;
 extern const AVCodec ff_sp5x_decoder;
 extern const AVCodec ff_speedhq_decoder;
 extern const AVCodec ff_speedhq_encoder;
+extern const AVCodec ff_speex_decoder;
 extern const AVCodec ff_srgc_decoder;
 extern const AVCodec ff_sunrast_encoder;
 extern const AVCodec ff_sunrast_decoder;
