@@ -491,8 +491,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_dict_set(&in->metadata, key, value, 0);
 
         snprintf(key, sizeof(key), "lavfi.readeia608.%d.line", nb_found);
-        snprintf(value, sizeof(value), "%d", scan->nb_line);
-        av_dict_set(&in->metadata, key, value, 0);
+        av_dict_set_int(&in->metadata, key, scan->nb_line, 0);
 
         nb_found++;
     }
