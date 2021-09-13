@@ -395,7 +395,6 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     }
     if (ass->charenc)
         av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
-    av_dict_set(&codec_opts, "sub_text_format", "ass", 0);
 
     dec_ctx = avcodec_alloc_context3(dec);
     if (!dec_ctx) {
