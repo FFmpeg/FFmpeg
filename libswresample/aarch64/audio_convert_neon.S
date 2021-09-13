@@ -23,6 +23,7 @@
 #include "libavutil/aarch64/asm.S"
 
 function swri_oldapi_conv_flt_to_s16_neon, export=1
+oldapi_conv_flt_to_s16_neon:
         subs            x2,  x2,  #8
         ld1             {v0.4s}, [x1],  #16
         fcvtzs          v4.4s,  v0.4s,  #31
@@ -67,6 +68,7 @@ function swri_oldapi_conv_flt_to_s16_neon, export=1
 endfunc
 
 function swri_oldapi_conv_fltp_to_s16_2ch_neon, export=1
+oldapi_conv_fltp_to_s16_2ch_neon:
         ldp             x4,  x5,  [x1]
         subs            x2,  x2,  #8
         ld1             {v0.4s},  [x4], #16
@@ -131,10 +133,10 @@ endfunc
 
 function swri_oldapi_conv_fltp_to_s16_nch_neon, export=1
         cmp             w3,  #2
-        b.eq            X(swri_oldapi_conv_fltp_to_s16_2ch_neon)
+        b.eq            oldapi_conv_fltp_to_s16_2ch_neon
         b.gt            1f
         ldr             x1,  [x1]
-        b               X(swri_oldapi_conv_flt_to_s16_neon)
+        b               oldapi_conv_flt_to_s16_neon
 1:
         cmp             w3,  #4
         lsl             x12, x3,  #1
