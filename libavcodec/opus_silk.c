@@ -198,7 +198,8 @@ static inline int silk_is_lpc_stable(const int16_t lpc[16], int order)
     }
 }
 
-static void silk_lsp2poly(const int32_t lsp[16], int32_t pol[16], int half_order)
+static void silk_lsp2poly(const int32_t lsp[/* 2 * half_order - 1 */],
+                          int32_t pol[/* half_order + 1 */], int half_order)
 {
     int i, j;
 
