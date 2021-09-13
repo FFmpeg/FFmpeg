@@ -1635,7 +1635,7 @@ int av_opt_set_dict2(void *obj, AVDictionary **options, int search_flags)
 {
     AVDictionaryEntry *t = NULL;
     AVDictionary    *tmp = NULL;
-    int ret = 0;
+    int ret;
 
     if (!options)
         return 0;
@@ -1649,11 +1649,10 @@ int av_opt_set_dict2(void *obj, AVDictionary **options, int search_flags)
             av_dict_free(&tmp);
             return ret;
         }
-        ret = 0;
     }
     av_dict_free(options);
     *options = tmp;
-    return ret;
+    return 0;
 }
 
 int av_opt_set_dict(void *obj, AVDictionary **options)
