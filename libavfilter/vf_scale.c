@@ -967,7 +967,7 @@ static const AVOption scale_options[] = {
 };
 
 static const AVClass scale_class = {
-    .class_name       = "scale",
+    .class_name       = "scale(2ref)",
     .item_name        = av_default_item_name,
     .option           = scale_options,
     .version          = LIBAVUTIL_VERSION_INT,
@@ -1002,15 +1002,6 @@ const AVFilter ff_vf_scale = {
     FILTER_INPUTS(avfilter_vf_scale_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale_outputs),
     .process_command = process_command,
-};
-
-static const AVClass scale2ref_class = {
-    .class_name       = "scale2ref",
-    .item_name        = av_default_item_name,
-    .option           = scale_options,
-    .version          = LIBAVUTIL_VERSION_INT,
-    .category         = AV_CLASS_CATEGORY_FILTER,
-    .child_class_iterate = child_class_iterate,
 };
 
 static const AVFilterPad avfilter_vf_scale2ref_inputs[] = {
@@ -1048,7 +1039,7 @@ const AVFilter ff_vf_scale2ref = {
     .uninit          = uninit,
     .query_formats   = query_formats,
     .priv_size       = sizeof(ScaleContext),
-    .priv_class      = &scale2ref_class,
+    .priv_class      = &scale_class,
     FILTER_INPUTS(avfilter_vf_scale2ref_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale2ref_outputs),
     .process_command = process_command,
