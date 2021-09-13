@@ -338,6 +338,12 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int bps = desc->comp[0].depth;
 
+    s->store_slice = store_slice_c;
+    switch (s->mode) {
+    case MODE_HARD: s->requantize = hardthresh_c; break;
+    case MODE_SOFT: s->requantize = softthresh_c; break;
+    }
+
     av_opt_set_int(s->dct, "bits_per_sample", bps, 0);
     avcodec_dct_init(s->dct);
 
@@ -451,30 +457,14 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return AVERROR(ENOSYS);
 }
 
-static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
+static av_cold int preinit(AVFilterContext *ctx)
 {
     SPPContext *s = ctx->priv;
-    int ret;
 
     s->dct = avcodec_dct_alloc();
     if (!s->dct)
         return AVERROR(ENOMEM);
 
-    if (opts) {
-        AVDictionaryEntry *e = NULL;
-
-        while ((e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-            if ((ret = av_opt_set(s->dct, e->key, e->value, 0)) < 0)
-                return ret;
-        }
-        av_dict_free(opts);
-    }
-
-    s->store_slice = store_slice_c;
-    switch (s->mode) {
-    case MODE_HARD: s->requantize = hardthresh_c; break;
-    case MODE_SOFT: s->requantize = softthresh_c; break;
-    }
     return 0;
 }
 
@@ -508,7 +498,7 @@ const AVFilter ff_vf_spp = {
     .name            = "spp",
     .description     = NULL_IF_CONFIG_SMALL("Apply a simple post processing filter."),
     .priv_size       = sizeof(SPPContext),
-    .init_dict       = init_dict,
+    .preinit         = preinit,
     .uninit          = uninit,
     .query_formats   = query_formats,
     FILTER_INPUTS(spp_inputs),
