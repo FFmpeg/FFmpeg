@@ -128,7 +128,7 @@ typedef struct ZScaleContext {
     enum AVChromaLocation in_chromal, out_chromal;
 } ZScaleContext;
 
-static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
+static av_cold int init(AVFilterContext *ctx)
 {
     ZScaleContext *s = ctx->priv;
     int ret;
@@ -938,7 +938,7 @@ static const AVFilterPad avfilter_vf_zscale_outputs[] = {
 const AVFilter ff_vf_zscale = {
     .name            = "zscale",
     .description     = NULL_IF_CONFIG_SMALL("Apply resizing, colorspace and bit depth conversion."),
-    .init_dict       = init_dict,
+    .init            = init,
     .query_formats   = query_formats,
     .priv_size       = sizeof(ZScaleContext),
     .priv_class      = &zscale_class,
