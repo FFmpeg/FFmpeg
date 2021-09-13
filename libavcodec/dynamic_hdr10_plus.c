@@ -76,7 +76,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
     }
 
     if (get_bits_left(gb) < 28)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     s->targeted_system_display_maximum_luminance =
         (AVRational){get_bits_long(gb, 27), luminance_den};
@@ -85,7 +85,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
     if (s->targeted_system_display_actual_peak_luminance_flag) {
         int rows, cols;
         if (get_bits_left(gb) < 10)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         rows = get_bits(gb, 5);
         cols = get_bits(gb, 5);
         if (((rows < 2) || (rows > 25)) || ((cols < 2) || (cols > 25))) {
@@ -95,7 +95,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
         s->num_cols_targeted_system_display_actual_peak_luminance = cols;
 
         if (get_bits_left(gb) < (rows * cols * 4))
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -107,7 +107,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
     for (int w = 0; w < s->num_windows; w++) {
         AVHDRPlusColorTransformParams *params = &s->params[w];
         if (get_bits_left(gb) < (3 * 17 + 17 + 4))
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
 
         for (int i = 0; i < 3; i++) {
             params->maxscl[i] =
@@ -119,7 +119,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
 
         if (get_bits_left(gb) <
             (params->num_distribution_maxrgb_percentiles * 24))
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
 
         for (int i = 0; i < params->num_distribution_maxrgb_percentiles; i++) {
             params->distribution_maxrgb[i].percentage = get_bits(gb, 7);
@@ -128,17 +128,17 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
         }
 
         if (get_bits_left(gb) < 10)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
 
         params->fraction_bright_pixels = (AVRational){get_bits(gb, 10), fraction_pixel_den};
     }
     if (get_bits_left(gb) < 1)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     s->mastering_display_actual_peak_luminance_flag = get_bits1(gb);
     if (s->mastering_display_actual_peak_luminance_flag) {
         int rows, cols;
         if (get_bits_left(gb) < 10)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         rows = get_bits(gb, 5);
         cols = get_bits(gb, 5);
         if (((rows < 2) || (rows > 25)) || ((cols < 2) || (cols > 25))) {
@@ -148,7 +148,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
         s->num_cols_mastering_display_actual_peak_luminance = cols;
 
         if (get_bits_left(gb) < (rows * cols * 4))
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -161,12 +161,12 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
     for (int w = 0; w < s->num_windows; w++) {
         AVHDRPlusColorTransformParams *params = &s->params[w];
         if (get_bits_left(gb) < 1)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
 
         params->tone_mapping_flag = get_bits1(gb);
         if (params->tone_mapping_flag) {
             if (get_bits_left(gb) < 28)
-                return AVERROR(EINVAL);
+                return AVERROR_INVALIDDATA;
 
             params->knee_point_x =
                 (AVRational){get_bits(gb, 12), knee_point_den};
@@ -175,7 +175,7 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
             params->num_bezier_curve_anchors = get_bits(gb, 4);
 
             if (get_bits_left(gb) < (params->num_bezier_curve_anchors * 10))
-                return AVERROR(EINVAL);
+                return AVERROR_INVALIDDATA;
 
             for (int i = 0; i < params->num_bezier_curve_anchors; i++) {
                 params->bezier_curve_anchors[i] =
@@ -184,11 +184,11 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
         }
 
         if (get_bits_left(gb) < 1)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         params->color_saturation_mapping_flag = get_bits1(gb);
         if (params->color_saturation_mapping_flag) {
             if (get_bits_left(gb) < 6)
-                return AVERROR(EINVAL);
+                return AVERROR_INVALIDDATA;
             params->color_saturation_weight =
                 (AVRational){get_bits(gb, 6), saturation_weight_den};
         }
