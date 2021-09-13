@@ -43,31 +43,16 @@ typedef struct AResampleContext {
     int more_data;
 } AResampleContext;
 
-static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
+static av_cold int preinit(AVFilterContext *ctx)
 {
     AResampleContext *aresample = ctx->priv;
-    int ret = 0;
 
     aresample->next_pts = AV_NOPTS_VALUE;
     aresample->swr = swr_alloc();
-    if (!aresample->swr) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
+    if (!aresample->swr)
+        return AVERROR(ENOMEM);
 
-    if (opts) {
-        AVDictionaryEntry *e = NULL;
-
-        while ((e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-            if ((ret = av_opt_set(aresample->swr, e->key, e->value, 0)) < 0)
-                goto end;
-        }
-        av_dict_free(opts);
-    }
-    if (aresample->sample_rate_arg > 0)
-        av_opt_set_int(aresample->swr, "osr", aresample->sample_rate_arg, 0);
-end:
-    return ret;
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -90,6 +75,8 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *in_layouts, *out_layouts;
     int ret;
 
+    if (aresample->sample_rate_arg > 0)
+        av_opt_set_int(aresample->swr, "osr", aresample->sample_rate_arg, 0);
     av_opt_get_sample_fmt(aresample->swr, "osf", 0, &out_format);
     av_opt_get_int(aresample->swr, "osr", 0, &out_rate);
     av_opt_get_int(aresample->swr, "ocl", 0, &out_layout);
@@ -343,7 +330,7 @@ static const AVFilterPad aresample_outputs[] = {
 const AVFilter ff_af_aresample = {
     .name          = "aresample",
     .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
-    .init_dict     = init_dict,
+    .preinit       = preinit,
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AResampleContext),
