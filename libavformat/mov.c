@@ -5485,6 +5485,11 @@ static int mov_read_clli(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
+    if (sc->coll){
+        av_log(c->fc, AV_LOG_WARNING, "Ignoring duplicate CLLI/COLL\n");
+        return 0;
+    }
+
     sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
     if (!sc->coll)
         return AVERROR(ENOMEM);
