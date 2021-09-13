@@ -93,7 +93,8 @@ DECLARE_ALIGNED(8, static const uint8_t, ldither)[8][8] = {
     { 42,  26,  38,  22,  41,  25,  37,  21 },
 };
 
-static const uint8_t offset[127][2] = {
+static const uint8_t offset[128][2] = {
+    {0,0},                                                  // unused
     {0,0},
     {0,0}, {4,4},                                           // quality = 1
     {0,0}, {2,2}, {6,4}, {4,6},                             // quality = 2
@@ -283,8 +284,8 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
                 qp = FFMAX(1, ff_norm_qscale(qp, p->qscale_type));
             }
             for (i = 0; i < count; i++) {
-                const int x1 = x + offset[i + count - 1][0];
-                const int y1 = y + offset[i + count - 1][1];
+                const int x1 = x + offset[i + count][0];
+                const int y1 = y + offset[i + count][1];
                 const int index = x1 + y1*linesize;
                 p->dct->get_pixels_unaligned(block, p->src + sample_bytes*index, sample_bytes*linesize);
                 p->dct->fdct(block);
