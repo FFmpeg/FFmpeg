@@ -142,7 +142,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             m->in_codestream = 0;
         } else if (m->in_codestream && (state & 0xFFFF) == 0xFF90) { // Are we in tile part header?
             m->read_tp = 8;
-        } else if (pc->frame_start_found && info_marker((state & 0xFFFF0000)>>16) && m->in_codestream) {
+        } else if (pc->frame_start_found && info_marker((state & 0xFFFF0000)>>16) && m->in_codestream && (state & 0xFFFF)) {
             // Calculate number of bytes to skip to get to end of the next marker.
             m->skip_bytes = (state & 0xFFFF)-1;
 
