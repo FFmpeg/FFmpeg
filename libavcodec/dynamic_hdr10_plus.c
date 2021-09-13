@@ -40,10 +40,10 @@ int ff_parse_itu_t_t35_to_dynamic_hdr10_plus(AVDynamicHDRPlus *s, const uint8_t 
     if (ret < 0)
         return ret;
 
-    s->application_version = get_bits(gb, 8);
-
-    if (get_bits_left(gb) < 2)
+    if (get_bits_left(gb) < 10)
         return AVERROR_INVALIDDATA;
+
+    s->application_version = get_bits(gb, 8);
     s->num_windows = get_bits(gb, 2);
 
     if (s->num_windows < 1 || s->num_windows > 3) {
