@@ -250,7 +250,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
         if (err < 0)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
-    } else if (!in_setup && cur->needs_fg) {
+    } else if (!in_setup && cur->needs_fg && (!FIELD_PICTURE(h) || !h->first_field)) {
         AVFrameSideData *sd = av_frame_get_side_data(cur->f, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
         av_assert0(sd); // always present if `cur->needs_fg`
         err = ff_h274_apply_film_grain(cur->f_grain, cur->f, &h->h274db,
