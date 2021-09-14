@@ -250,8 +250,8 @@ int ff_h274_apply_film_grain(AVFrame *out_frame, const AVFrame *in_frame,
             // Adaptation for 4:2:0 chroma subsampling
             for (int i = 0; i < h274.num_intensity_intervals[c]; i++) {
                 h274.comp_model_value[c][i][0] >>= 1;
-                h274.comp_model_value[c][i][1] <<= 1;
-                h274.comp_model_value[c][i][2] <<= 1;
+                h274.comp_model_value[c][i][1] *= 2;
+                h274.comp_model_value[c][i][2] *= 2;
             }
         }
 
