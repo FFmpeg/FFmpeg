@@ -735,6 +735,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 bytestream2_skip(&g2, chunk_size - 6);
             } else {
 
+                if (bytestream2_get_bytes_left(&g2) < 2 * s->avctx->width * s->avctx->height )
+                    return AVERROR_INVALIDDATA;
                 for (y_ptr = 0; y_ptr < s->frame->linesize[0] * s->avctx->height;
                      y_ptr += s->frame->linesize[0]) {
 
