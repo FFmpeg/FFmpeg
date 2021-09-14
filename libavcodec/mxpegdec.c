@@ -195,6 +195,9 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
     int start_code;
     int ret;
 
+    if (avctx->skip_frame == AVDISCARD_ALL)
+        return AVERROR_PATCHWELCOME;
+
     buf_ptr = buf;
     buf_end = buf + buf_size;
     jpg->got_picture = 0;
