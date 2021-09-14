@@ -205,7 +205,7 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4
         vsample[2] = hsample[2] =
         vsample[3] = hsample[3] = 1;
     } else if (avctx->pix_fmt == AV_PIX_FMT_YUV444P || avctx->pix_fmt == AV_PIX_FMT_YUVJ444P) {
-        vsample[0] = vsample[1] = vsample[2] = 2;
+        vsample[0] = vsample[1] = vsample[2] = 1;
         hsample[0] = hsample[1] = hsample[2] = 1;
     } else {
         vsample[0] = 2;
