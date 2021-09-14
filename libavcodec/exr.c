@@ -2253,7 +2253,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     // allocate thread data, used for non EXR_RAW compression types
-    s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
+    s->thread_data = av_calloc(avctx->thread_count, sizeof(*s->thread_data));
     if (!s->thread_data)
         return AVERROR(ENOMEM);
 

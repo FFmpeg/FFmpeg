@@ -460,7 +460,7 @@ static av_cold int libx265_encode_set_roi(libx265Context *ctx, const AVFrame *fr
             }
             nb_rois = sd->size / roi_size;
 
-            qoffsets = av_mallocz_array(mbx * mby, sizeof(*qoffsets));
+            qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
             if (!qoffsets)
                 return AVERROR(ENOMEM);
 

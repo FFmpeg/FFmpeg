@@ -461,7 +461,7 @@ static av_cold int init(AVFilterContext *fctx)
         av_log(ctx, AV_LOG_DEBUG, "Filter count: %i\n", ctx->num_filters);
 
         // allocate CIFilter array
-        ctx->filters = av_mallocz_array(ctx->num_filters, sizeof(CIFilter*));
+        ctx->filters = av_calloc(ctx->num_filters, sizeof(CIFilter*));
         if (!ctx->filters) {
             av_log(ctx, AV_LOG_ERROR, "Could not allocate filter array.\n");
             return AVERROR(ENOMEM);

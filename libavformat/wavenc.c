@@ -174,8 +174,8 @@ static av_cold int peak_init_writer(AVFormatContext *s)
         return AVERROR(ERANGE);
     wav->size_increment = par->channels * wav->peak_bps * wav->peak_ppv;
 
-    wav->peak_maxpos = av_mallocz_array(par->channels, sizeof(*wav->peak_maxpos));
-    wav->peak_maxneg = av_mallocz_array(par->channels, sizeof(*wav->peak_maxneg));
+    wav->peak_maxpos = av_calloc(par->channels, sizeof(*wav->peak_maxpos));
+    wav->peak_maxneg = av_calloc(par->channels, sizeof(*wav->peak_maxneg));
     if (!wav->peak_maxpos || !wav->peak_maxneg)
         goto nomem;
 

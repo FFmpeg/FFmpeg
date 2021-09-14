@@ -1206,8 +1206,8 @@ static int context_init_threaded(SwsContext *c,
 
     c->nb_threads = ret;
 
-    c->slice_ctx = av_mallocz_array(c->nb_threads, sizeof(*c->slice_ctx));
-    c->slice_err = av_mallocz_array(c->nb_threads, sizeof(*c->slice_err));
+    c->slice_ctx = av_calloc(c->nb_threads, sizeof(*c->slice_ctx));
+    c->slice_err = av_calloc(c->nb_threads, sizeof(*c->slice_err));
     if (!c->slice_ctx || !c->slice_err)
         return AVERROR(ENOMEM);
 

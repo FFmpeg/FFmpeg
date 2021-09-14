@@ -295,7 +295,7 @@ static int ism_write_header(AVFormatContext *s)
         return AVERROR_MUXER_NOT_FOUND;
     }
 
-    c->streams = av_mallocz_array(s->nb_streams, sizeof(*c->streams));
+    c->streams = av_calloc(s->nb_streams, sizeof(*c->streams));
     if (!c->streams) {
         return AVERROR(ENOMEM);
     }

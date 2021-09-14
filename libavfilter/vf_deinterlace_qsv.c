@@ -233,8 +233,8 @@ static int init_out_session(AVFilterContext *ctx)
     s->ext_buffers[s->num_ext_buffers++] = (mfxExtBuffer *)&s->deint_conf;
 
     if (opaque) {
-        s->surface_ptrs = av_mallocz_array(hw_frames_hwctx->nb_surfaces,
-                                           sizeof(*s->surface_ptrs));
+        s->surface_ptrs = av_calloc(hw_frames_hwctx->nb_surfaces,
+                                    sizeof(*s->surface_ptrs));
         if (!s->surface_ptrs)
             return AVERROR(ENOMEM);
         for (i = 0; i < hw_frames_hwctx->nb_surfaces; i++)
@@ -263,8 +263,8 @@ static int init_out_session(AVFilterContext *ctx)
             .Free   = frame_free,
         };
 
-        s->mem_ids = av_mallocz_array(hw_frames_hwctx->nb_surfaces,
-                                      sizeof(*s->mem_ids));
+        s->mem_ids = av_calloc(hw_frames_hwctx->nb_surfaces,
+                               sizeof(*s->mem_ids));
         if (!s->mem_ids)
             return AVERROR(ENOMEM);
         for (i = 0; i < hw_frames_hwctx->nb_surfaces; i++)

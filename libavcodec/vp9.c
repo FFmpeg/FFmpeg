@@ -793,7 +793,7 @@ static int decode_frame_header(AVCodecContext *avctx,
         } else {
             n_range_coders = s->s.h.tiling.tile_cols;
         }
-        s->td = av_mallocz_array(s->active_tile_cols, sizeof(VP9TileData) +
+        s->td = av_calloc(s->active_tile_cols, sizeof(VP9TileData) +
                                  n_range_coders * sizeof(VP56RangeCoder));
         if (!s->td)
             return AVERROR(ENOMEM);

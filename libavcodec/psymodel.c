@@ -35,8 +35,8 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     int i, j, k = 0;
 
     ctx->avctx = avctx;
-    ctx->ch        = av_mallocz_array(sizeof(ctx->ch[0]), avctx->channels * 2);
-    ctx->group     = av_mallocz_array(sizeof(ctx->group[0]), num_groups);
+    ctx->ch        = av_calloc(avctx->channels, 2 * sizeof(ctx->ch[0]));
+    ctx->group     = av_calloc(num_groups, sizeof(ctx->group[0]));
     ctx->bands     = av_malloc_array (sizeof(ctx->bands[0]),      num_lens);
     ctx->num_bands = av_malloc_array (sizeof(ctx->num_bands[0]),  num_lens);
     ctx->cutoff    = avctx->cutoff;
@@ -120,7 +120,7 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
                                                  FF_FILTER_MODE_LOWPASS, FILT_ORDER,
                                                  cutoff_coeff, 0.0, 0.0);
         if (ctx->fcoeffs) {
-            ctx->fstate = av_mallocz_array(sizeof(ctx->fstate[0]), avctx->channels);
+            ctx->fstate = av_calloc(avctx->channels, sizeof(ctx->fstate[0]));
             if (!ctx->fstate) {
                 av_free(ctx->fcoeffs);
                 av_free(ctx);

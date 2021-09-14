@@ -232,7 +232,7 @@ FFEBUR128State *ff_ebur128_init(unsigned int channels,
     CHECK_ERROR(errcode, 0, free_internal)
 
     st->d->sample_peak =
-        (double *) av_mallocz_array(channels, sizeof(*st->d->sample_peak));
+        (double *) av_calloc(channels, sizeof(*st->d->sample_peak));
     CHECK_ERROR(!st->d->sample_peak, 0, free_channel_map)
 
     st->samplerate = samplerate;
@@ -253,8 +253,8 @@ FFEBUR128State *ff_ebur128_init(unsigned int channels,
             - (st->d->audio_data_frames % st->d->samples_in_100ms);
     }
     st->d->audio_data =
-        (double *) av_mallocz_array(st->d->audio_data_frames,
-                                    st->channels * sizeof(*st->d->audio_data));
+        (double *) av_calloc(st->d->audio_data_frames,
+                             st->channels * sizeof(*st->d->audio_data));
     CHECK_ERROR(!st->d->audio_data, 0, free_sample_peak)
 
     ebur128_init_filter(st);

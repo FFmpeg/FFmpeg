@@ -106,7 +106,7 @@ static int ico_write_header(AVFormatContext *s)
         avio_skip(pb, 16);
     }
 
-    ico->images = av_mallocz_array(ico->nb_images, sizeof(IcoMuxContext));
+    ico->images = av_calloc(ico->nb_images, sizeof(*ico->images));
     if (!ico->images)
         return AVERROR(ENOMEM);
 

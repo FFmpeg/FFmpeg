@@ -427,7 +427,7 @@ static int config_output(AVFilterLink *outlink)
         showwaves->n = FFMAX(1, av_rescale_q(inlink->sample_rate, av_make_q(1, showwaves->w), showwaves->rate));
 
     showwaves->buf_idx = 0;
-    if (!(showwaves->buf_idy = av_mallocz_array(nb_channels, sizeof(*showwaves->buf_idy)))) {
+    if (!FF_ALLOCZ_TYPED_ARRAY(showwaves->buf_idy, nb_channels)) {
         av_log(ctx, AV_LOG_ERROR, "Could not allocate showwaves buffer\n");
         return AVERROR(ENOMEM);
     }
@@ -820,7 +820,7 @@ static int showwavespic_config_input(AVFilterLink *inlink)
     ShowWavesContext *showwaves = ctx->priv;
 
     if (showwaves->single_pic) {
-        showwaves->sum = av_mallocz_array(inlink->channels, sizeof(*showwaves->sum));
+        showwaves->sum = av_calloc(inlink->channels, sizeof(*showwaves->sum));
         if (!showwaves->sum)
             return AVERROR(ENOMEM);
     }

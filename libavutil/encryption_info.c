@@ -48,7 +48,7 @@ AVEncryptionInfo *av_encryption_info_alloc(uint32_t subsample_count, uint32_t ke
     info->key_id_size = key_id_size;
     info->iv = av_mallocz(iv_size);
     info->iv_size = iv_size;
-    info->subsamples = av_mallocz_array(subsample_count, sizeof(*info->subsamples));
+    info->subsamples = av_calloc(subsample_count, sizeof(*info->subsamples));
     info->subsample_count = subsample_count;
 
     // Allow info->subsamples to be NULL if there are no subsamples.
@@ -185,7 +185,7 @@ AVEncryptionInitInfo *av_encryption_init_info_alloc(
 
     info->system_id = av_mallocz(system_id_size);
     info->system_id_size = system_id_size;
-    info->key_ids = key_id_size ? av_mallocz_array(num_key_ids, sizeof(*info->key_ids)) : NULL;
+    info->key_ids = key_id_size ? av_calloc(num_key_ids, sizeof(*info->key_ids)) : NULL;
     info->num_key_ids = num_key_ids;
     info->key_id_size = key_id_size;
     info->data = av_mallocz(data_size);

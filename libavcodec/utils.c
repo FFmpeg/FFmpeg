@@ -379,8 +379,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 
     planar = av_sample_fmt_is_planar(sample_fmt);
     if (planar && nb_channels > AV_NUM_DATA_POINTERS) {
-        if (!(frame->extended_data = av_mallocz_array(nb_channels,
-                                                sizeof(*frame->extended_data))))
+        if (!FF_ALLOCZ_TYPED_ARRAY(frame->extended_data, nb_channels))
             return AVERROR(ENOMEM);
     } else {
         frame->extended_data = frame->data;

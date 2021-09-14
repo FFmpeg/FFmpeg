@@ -99,8 +99,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->bs_width  = (width  >> 2) + 1;
     s->bs_height = (height >> 2) + 1;
 
-    s->sao           = av_mallocz_array(ctb_count, sizeof(*s->sao));
-    s->deblock       = av_mallocz_array(ctb_count, sizeof(*s->deblock));
+    s->sao           = av_calloc(ctb_count, sizeof(*s->sao));
+    s->deblock       = av_calloc(ctb_count, sizeof(*s->deblock));
     if (!s->sao || !s->deblock)
         goto fail;
 
@@ -123,8 +123,8 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     if (!s->qp_y_tab || !s->filter_slice_edges || !s->tab_slice_address)
         goto fail;
 
-    s->horizontal_bs = av_mallocz_array(s->bs_width, s->bs_height);
-    s->vertical_bs   = av_mallocz_array(s->bs_width, s->bs_height);
+    s->horizontal_bs = av_calloc(s->bs_width, s->bs_height);
+    s->vertical_bs   = av_calloc(s->bs_width, s->bs_height);
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
 

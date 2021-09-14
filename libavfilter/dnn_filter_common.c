@@ -29,7 +29,7 @@ static char **separate_output_names(const char *expr, const char *val_sep, int *
         return NULL;
     }
 
-    parsed_vals = av_mallocz_array(MAX_SUPPORTED_OUTPUTS_NB, sizeof(*parsed_vals));
+    parsed_vals = av_calloc(MAX_SUPPORTED_OUTPUTS_NB, sizeof(*parsed_vals));
     if (!parsed_vals) {
         return NULL;
     }

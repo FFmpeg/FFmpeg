@@ -46,12 +46,12 @@ void checkasm_check_nlmeans(void)
         const int ii_w = w + e*2;
         const int ii_h = h + e*2;
         const int ii_lz_32 = FFALIGN(ii_w + 1, 4);
-        uint32_t *ii_orig_ref = av_mallocz_array(ii_h + 1, ii_lz_32 * sizeof(*ii_orig_ref));
+        uint32_t *ii_orig_ref = av_calloc(ii_h + 1, ii_lz_32 * sizeof(*ii_orig_ref));
         uint32_t *ii_ref = ii_orig_ref + ii_lz_32 + 1;
-        uint32_t *ii_orig_new = av_mallocz_array(ii_h + 1, ii_lz_32 * sizeof(*ii_orig_new));
+        uint32_t *ii_orig_new = av_calloc(ii_h + 1, ii_lz_32 * sizeof(*ii_orig_new));
         uint32_t *ii_new = ii_orig_new + ii_lz_32 + 1;
         const int src_lz = FFALIGN(w, 16);
-        uint8_t *src = av_mallocz_array(h, src_lz);
+        uint8_t *src = av_calloc(h, src_lz);
 
         declare_func(void, uint32_t *dst, ptrdiff_t dst_linesize_32,
                      const uint8_t *s1, ptrdiff_t linesize1,

@@ -581,8 +581,8 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
                    img->color_cache_bits);
             return AVERROR_INVALIDDATA;
         }
-        img->color_cache = av_mallocz_array(1 << img->color_cache_bits,
-                                            sizeof(*img->color_cache));
+        img->color_cache = av_calloc(1 << img->color_cache_bits,
+                                     sizeof(*img->color_cache));
         if (!img->color_cache)
             return AVERROR(ENOMEM);
     } else {
@@ -596,9 +596,9 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
             return ret;
         img->nb_huffman_groups = s->nb_huffman_groups;
     }
-    img->huffman_groups = av_mallocz_array(img->nb_huffman_groups *
-                                           HUFFMAN_CODES_PER_META_CODE,
-                                           sizeof(*img->huffman_groups));
+    img->huffman_groups = av_calloc(img->nb_huffman_groups,
+                                    HUFFMAN_CODES_PER_META_CODE *
+                                    sizeof(*img->huffman_groups));
     if (!img->huffman_groups)
         return AVERROR(ENOMEM);
 

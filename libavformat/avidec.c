@@ -1674,7 +1674,7 @@ static int check_stream_max_drift(AVFormatContext *s)
 {
     int64_t min_pos, pos;
     int i;
-    int *idx = av_mallocz_array(s->nb_streams, sizeof(*idx));
+    int *idx = av_calloc(s->nb_streams, sizeof(*idx));
     if (!idx)
         return AVERROR(ENOMEM);
     for (min_pos = pos = 0; min_pos != INT64_MAX; pos = min_pos + 1LU) {

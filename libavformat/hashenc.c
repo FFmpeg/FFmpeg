@@ -84,7 +84,7 @@ static int hash_init(struct AVFormatContext *s)
     int res;
     struct HashContext *c = s->priv_data;
     c->per_stream = 0;
-    c->hashes = av_mallocz_array(1, sizeof(*c->hashes));
+    c->hashes = av_mallocz(sizeof(*c->hashes));
     if (!c->hashes)
         return AVERROR(ENOMEM);
     res = av_hash_alloc(&c->hashes[0], c->hash_name);
@@ -101,7 +101,7 @@ static int streamhash_init(struct AVFormatContext *s)
     int res, i;
     struct HashContext *c = s->priv_data;
     c->per_stream = 1;
-    c->hashes = av_mallocz_array(s->nb_streams, sizeof(*c->hashes));
+    c->hashes = av_calloc(s->nb_streams, sizeof(*c->hashes));
     if (!c->hashes)
         return AVERROR(ENOMEM);
     for (i = 0; i < s->nb_streams; i++) {
@@ -254,7 +254,7 @@ static int framehash_init(struct AVFormatContext *s)
     int res;
     struct HashContext *c = s->priv_data;
     c->per_stream = 0;
-    c->hashes = av_mallocz_array(1, sizeof(*c->hashes));
+    c->hashes = av_mallocz(sizeof(*c->hashes));
     if (!c->hashes)
         return AVERROR(ENOMEM);
     res = av_hash_alloc(&c->hashes[0], c->hash_name);

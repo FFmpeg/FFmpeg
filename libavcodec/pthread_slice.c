@@ -211,7 +211,7 @@ int ff_alloc_entries(AVCodecContext *avctx, int count)
         }
 
         p->thread_count  = avctx->thread_count;
-        p->entries       = av_mallocz_array(count, sizeof(int));
+        p->entries       = av_calloc(count, sizeof(*p->entries));
 
         if (!p->progress_mutex) {
             p->progress_mutex = av_malloc_array(p->thread_count, sizeof(pthread_mutex_t));

@@ -123,7 +123,7 @@ static int init_pattern_from_string(AVFilterContext *ctx)
         s->h = (double)s->w * M_PHI;
     }
 
-    s->buf = av_mallocz_array(sizeof(uint8_t) * s->w, s->h);
+    s->buf = av_calloc(s->w, s->h * sizeof(*s->buf));
     if (!s->buf)
         return AVERROR(ENOMEM);
 
@@ -183,7 +183,7 @@ static av_cold int init(AVFilterContext *ctx)
         /* fill the first row randomly */
         int i;
 
-        s->buf = av_mallocz_array(sizeof(uint8_t) * s->w, s->h);
+        s->buf = av_calloc(s->w, s->h * sizeof(*s->buf));
         if (!s->buf)
             return AVERROR(ENOMEM);
         if (s->random_seed == -1)

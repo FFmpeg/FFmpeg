@@ -169,7 +169,8 @@ static int config_input(AVFilterLink *inlink)
     s->channels = inlink->channels;
     s->duration = av_rescale(s->duration, inlink->sample_rate, AV_TIME_BASE);
     s->independent_channels = s->mono ? s->channels : 1;
-    s->nb_null_samples = av_mallocz_array(sizeof(*s->nb_null_samples), s->independent_channels);
+    s->nb_null_samples = av_calloc(s->independent_channels,
+                                   sizeof(*s->nb_null_samples));
     if (!s->nb_null_samples)
         return AVERROR(ENOMEM);
     s->start = av_malloc_array(sizeof(*s->start), s->independent_channels);

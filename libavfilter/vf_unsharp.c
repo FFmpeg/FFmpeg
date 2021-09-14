@@ -229,7 +229,7 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
            effect, effect_type, fp->msize_x, fp->msize_y, fp->amount / 65535.0);
 
     fp->sr = av_malloc_array((MAX_MATRIX_SIZE - 1) * s->nb_threads, sizeof(uint32_t));
-    fp->sc = av_mallocz_array(2 * fp->steps_y * s->nb_threads, sizeof(uint32_t *));
+    fp->sc = av_calloc(fp->steps_y * s->nb_threads, 2 * sizeof(*fp->sc));
     if (!fp->sr || !fp->sc)
         return AVERROR(ENOMEM);
 

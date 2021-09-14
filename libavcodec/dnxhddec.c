@@ -103,7 +103,7 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
     avctx->coded_width  = FFALIGN(avctx->width,  16);
     avctx->coded_height = FFALIGN(avctx->height, 16);
 
-    ctx->rows = av_mallocz_array(avctx->thread_count, sizeof(RowContext));
+    ctx->rows = av_calloc(avctx->thread_count, sizeof(*ctx->rows));
     if (!ctx->rows)
         return AVERROR(ENOMEM);
 

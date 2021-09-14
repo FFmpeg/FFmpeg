@@ -342,7 +342,7 @@ static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
     }
     fieldlength = avio_rb32(f);
     track->chunks  = avio_rb32(f);
-    track->offsets = av_mallocz_array(track->chunks, sizeof(*track->offsets));
+    track->offsets = av_calloc(track->chunks, sizeof(*track->offsets));
     if (!track->offsets) {
         track->chunks = 0;
         ret = AVERROR(ENOMEM);

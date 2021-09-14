@@ -2687,7 +2687,7 @@ static int mkv_init(struct AVFormatContext *s)
     mkv->cur_audio_pkt = av_packet_alloc();
     if (!mkv->cur_audio_pkt)
         return AVERROR(ENOMEM);
-    mkv->tracks = av_mallocz_array(s->nb_streams, sizeof(*mkv->tracks));
+    mkv->tracks = av_calloc(s->nb_streams, sizeof(*mkv->tracks));
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
 

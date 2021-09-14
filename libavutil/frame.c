@@ -210,9 +210,9 @@ static int get_audio_buffer(AVFrame *frame, int align)
     }
 
     if (planes > AV_NUM_DATA_POINTERS) {
-        frame->extended_data = av_mallocz_array(planes,
+        frame->extended_data = av_calloc(planes,
                                           sizeof(*frame->extended_data));
-        frame->extended_buf  = av_mallocz_array((planes - AV_NUM_DATA_POINTERS),
+        frame->extended_buf  = av_calloc(planes - AV_NUM_DATA_POINTERS,
                                           sizeof(*frame->extended_buf));
         if (!frame->extended_data || !frame->extended_buf) {
             av_freep(&frame->extended_data);
@@ -367,8 +367,8 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     }
 
     if (src->extended_buf) {
-        dst->extended_buf = av_mallocz_array(sizeof(*dst->extended_buf),
-                                       src->nb_extended_buf);
+        dst->extended_buf = av_calloc(src->nb_extended_buf,
+                                      sizeof(*dst->extended_buf));
         if (!dst->extended_buf) {
             ret = AVERROR(ENOMEM);
             goto fail;

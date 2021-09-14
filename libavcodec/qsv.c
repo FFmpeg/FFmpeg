@@ -452,7 +452,7 @@ static AVBufferRef *qsv_create_mids(AVBufferRef *hw_frames_ref)
     if (!hw_frames_ref1)
         return NULL;
 
-    mids = av_mallocz_array(nb_surfaces, sizeof(*mids));
+    mids = av_calloc(nb_surfaces, sizeof(*mids));
     if (!mids) {
         av_buffer_unref(&hw_frames_ref1);
         return NULL;
@@ -487,7 +487,7 @@ static int qsv_setup_mids(mfxFrameAllocResponse *resp, AVBufferRef *hw_frames_re
     // the allocated size of the array is two larger than the number of
     // surfaces, we store the references to the frames context and the
     // QSVMid array there
-    resp->mids = av_mallocz_array(nb_surfaces + 2, sizeof(*resp->mids));
+    resp->mids = av_calloc(nb_surfaces + 2, sizeof(*resp->mids));
     if (!resp->mids)
         return AVERROR(ENOMEM);
 

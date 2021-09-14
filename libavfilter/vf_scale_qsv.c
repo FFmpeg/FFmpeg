@@ -343,16 +343,16 @@ static int init_out_session(AVFilterContext *ctx)
     memset(&par, 0, sizeof(par));
 
     if (opaque) {
-        s->surface_ptrs_in = av_mallocz_array(in_frames_hwctx->nb_surfaces,
-                                              sizeof(*s->surface_ptrs_in));
+        s->surface_ptrs_in = av_calloc(in_frames_hwctx->nb_surfaces,
+                                       sizeof(*s->surface_ptrs_in));
         if (!s->surface_ptrs_in)
             return AVERROR(ENOMEM);
         for (i = 0; i < in_frames_hwctx->nb_surfaces; i++)
             s->surface_ptrs_in[i] = in_frames_hwctx->surfaces + i;
         s->nb_surface_ptrs_in = in_frames_hwctx->nb_surfaces;
 
-        s->surface_ptrs_out = av_mallocz_array(out_frames_hwctx->nb_surfaces,
-                                               sizeof(*s->surface_ptrs_out));
+        s->surface_ptrs_out = av_calloc(out_frames_hwctx->nb_surfaces,
+                                        sizeof(*s->surface_ptrs_out));
         if (!s->surface_ptrs_out)
             return AVERROR(ENOMEM);
         for (i = 0; i < out_frames_hwctx->nb_surfaces; i++)
@@ -383,16 +383,16 @@ static int init_out_session(AVFilterContext *ctx)
             .Free   = frame_free,
         };
 
-        s->mem_ids_in = av_mallocz_array(in_frames_hwctx->nb_surfaces,
-                                         sizeof(*s->mem_ids_in));
+        s->mem_ids_in = av_calloc(in_frames_hwctx->nb_surfaces,
+                                  sizeof(*s->mem_ids_in));
         if (!s->mem_ids_in)
             return AVERROR(ENOMEM);
         for (i = 0; i < in_frames_hwctx->nb_surfaces; i++)
             s->mem_ids_in[i] = in_frames_hwctx->surfaces[i].Data.MemId;
         s->nb_mem_ids_in = in_frames_hwctx->nb_surfaces;
 
-        s->mem_ids_out = av_mallocz_array(out_frames_hwctx->nb_surfaces,
-                                          sizeof(*s->mem_ids_out));
+        s->mem_ids_out = av_calloc(out_frames_hwctx->nb_surfaces,
+                                   sizeof(*s->mem_ids_out));
         if (!s->mem_ids_out)
             return AVERROR(ENOMEM);
         for (i = 0; i < out_frames_hwctx->nb_surfaces; i++)

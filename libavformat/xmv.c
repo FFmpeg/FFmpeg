@@ -175,7 +175,7 @@ static int xmv_read_header(AVFormatContext *s)
 
     avio_skip(pb, 2); /* Unknown (padding?) */
 
-    xmv->audio = av_mallocz_array(xmv->audio_track_count, sizeof(XMVAudioPacket));
+    xmv->audio = av_calloc(xmv->audio_track_count, sizeof(*xmv->audio));
     if (!xmv->audio)
         return AVERROR(ENOMEM);
 

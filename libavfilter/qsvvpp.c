@@ -499,8 +499,8 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
 
         s->in_mem_mode = in_frames_hwctx->frame_type;
 
-        s->surface_ptrs_in = av_mallocz_array(in_frames_hwctx->nb_surfaces,
-                                              sizeof(*s->surface_ptrs_in));
+        s->surface_ptrs_in = av_calloc(in_frames_hwctx->nb_surfaces,
+                                       sizeof(*s->surface_ptrs_in));
         if (!s->surface_ptrs_in)
             return AVERROR(ENOMEM);
 
@@ -548,8 +548,8 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
             return ret;
         }
 
-        s->surface_ptrs_out = av_mallocz_array(out_frames_hwctx->nb_surfaces,
-                                               sizeof(*s->surface_ptrs_out));
+        s->surface_ptrs_out = av_calloc(out_frames_hwctx->nb_surfaces,
+                                        sizeof(*s->surface_ptrs_out));
         if (!s->surface_ptrs_out) {
             av_buffer_unref(&out_frames_ref);
             return AVERROR(ENOMEM);
@@ -672,7 +672,7 @@ int ff_qsvvpp_create(AVFilterContext *avctx, QSVVPPContext **vpp, QSVVPPParam *p
     if (ret < 0)
         goto failed;
 
-    s->frame_infos = av_mallocz_array(avctx->nb_inputs, sizeof(*s->frame_infos));
+    s->frame_infos = av_calloc(avctx->nb_inputs, sizeof(*s->frame_infos));
     if (!s->frame_infos) {
         ret = AVERROR(ENOMEM);
         goto failed;
@@ -708,7 +708,7 @@ int ff_qsvvpp_create(AVFilterContext *avctx, QSVVPPContext **vpp, QSVVPPParam *p
 
     if (IS_OPAQUE_MEMORY(s->in_mem_mode) || IS_OPAQUE_MEMORY(s->out_mem_mode)) {
         s->nb_ext_buffers = param->num_ext_buf + 1;
-        s->ext_buffers = av_mallocz_array(s->nb_ext_buffers, sizeof(*s->ext_buffers));
+        s->ext_buffers = av_calloc(s->nb_ext_buffers, sizeof(*s->ext_buffers));
         if (!s->ext_buffers) {
             ret = AVERROR(ENOMEM);
             goto failed;

@@ -1588,7 +1588,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->geotag_count = 0;
             return -1;
         }
-        s->geotags = av_mallocz_array(s->geotag_count, sizeof(TiffGeoTag));
+        s->geotags = av_calloc(s->geotag_count, sizeof(*s->geotags));
         if (!s->geotags) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             s->geotag_count = 0;

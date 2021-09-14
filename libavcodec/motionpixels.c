@@ -80,10 +80,10 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
 
     mp->avctx = avctx;
     ff_bswapdsp_init(&mp->bdsp);
-    mp->changes_map = av_mallocz_array(avctx->width, h4);
+    mp->changes_map = av_calloc(avctx->width, h4);
     mp->offset_bits_len = av_log2(avctx->width * avctx->height) + 1;
-    mp->vpt = av_mallocz_array(avctx->height, sizeof(YuvPixel));
-    mp->hpt = av_mallocz_array(h4 / 4, w4 / 4 * sizeof(YuvPixel));
+    mp->vpt = av_calloc(avctx->height, sizeof(*mp->vpt));
+    mp->hpt = av_calloc(h4 / 4, w4 / 4 * sizeof(*mp->hpt));
     if (!mp->changes_map || !mp->vpt || !mp->hpt)
         return AVERROR(ENOMEM);
     avctx->pix_fmt = AV_PIX_FMT_RGB555;

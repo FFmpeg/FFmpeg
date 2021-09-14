@@ -116,7 +116,7 @@ static int set_gauss(AVFilterContext *ctx)
     int i;
 
     for (i = 0; i <= difford; ++i) {
-        s->gauss[i] = av_mallocz_array(filtersize, sizeof(*s->gauss[i]));
+        s->gauss[i] = av_calloc(filtersize, sizeof(*s->gauss[i]));
         if (!s->gauss[i]) {
             for (; i >= 0; --i) {
                 av_freep(&s->gauss[i]);
@@ -219,7 +219,8 @@ static int setup_derivative_buffers(AVFilterContext* ctx, ThreadData *td)
     av_log(ctx, AV_LOG_TRACE, "Allocating %d buffer(s) for grey edge.\n", nb_buff);
     for (b = 0; b <= nb_buff; ++b) { // We need difford + 1 buffers
         for (p = 0; p < NUM_PLANES; ++p) {
-            td->data[b][p] = av_mallocz_array(s->planeheight[p] * s->planewidth[p], sizeof(*td->data[b][p]));
+            td->data[b][p] = av_calloc(s->planeheight[p] * s->planewidth[p],
+                                       sizeof(*td->data[b][p]));
             if (!td->data[b][p]) {
                 cleanup_derivative_buffers(td, b + 1, p);
                 return AVERROR(ENOMEM);

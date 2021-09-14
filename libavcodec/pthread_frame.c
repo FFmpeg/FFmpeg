@@ -878,7 +878,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
     if (codec->type == AVMEDIA_TYPE_VIDEO)
         avctx->delay = src->thread_count - 1;
 
-    fctx->threads = av_mallocz_array(thread_count, sizeof(PerThreadContext));
+    fctx->threads = av_calloc(thread_count, sizeof(*fctx->threads));
     if (!fctx->threads) {
         err = AVERROR(ENOMEM);
         goto error;

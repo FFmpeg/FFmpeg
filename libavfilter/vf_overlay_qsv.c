@@ -325,8 +325,8 @@ static int overlay_qsv_init(AVFilterContext *ctx)
     vpp->comp_conf.Header.BufferId = MFX_EXTBUFF_VPP_COMPOSITE;
     vpp->comp_conf.Header.BufferSz = sizeof(vpp->comp_conf);
     vpp->comp_conf.NumInputStream  = ctx->nb_inputs;
-    vpp->comp_conf.InputStream     = av_mallocz_array(ctx->nb_inputs,
-                                                      sizeof(*vpp->comp_conf.InputStream));
+    vpp->comp_conf.InputStream     = av_calloc(ctx->nb_inputs,
+                                               sizeof(*vpp->comp_conf.InputStream));
     if (!vpp->comp_conf.InputStream)
         return AVERROR(ENOMEM);
 

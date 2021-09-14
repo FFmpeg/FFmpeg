@@ -72,7 +72,7 @@ static int open_input_file(const char *filename)
         return ret;
     }
 
-    stream_ctx = av_mallocz_array(ifmt_ctx->nb_streams, sizeof(*stream_ctx));
+    stream_ctx = av_calloc(ifmt_ctx->nb_streams, sizeof(*stream_ctx));
     if (!stream_ctx)
         return AVERROR(ENOMEM);
 

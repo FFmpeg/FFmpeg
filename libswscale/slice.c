@@ -91,7 +91,7 @@ static int alloc_slice(SwsSlice *s, enum AVPixelFormat fmt, int lumLines, int ch
 
     for (i = 0; i < 4; ++i) {
         int n = size[i] * ( ring == 0 ? 1 : 3);
-        s->plane[i].line = av_mallocz_array(sizeof(uint8_t*), n);
+        s->plane[i].line = av_calloc(n, sizeof(*s->plane[i].line));
         if (!s->plane[i].line)
             return AVERROR(ENOMEM);
 
@@ -284,10 +284,10 @@ int ff_init_filters(SwsContext * c)
 
 
 
-    c->desc = av_mallocz_array(sizeof(SwsFilterDescriptor), c->numDesc);
+    c->desc  = av_calloc(c->numDesc,  sizeof(*c->desc));
     if (!c->desc)
         return AVERROR(ENOMEM);
-    c->slice = av_mallocz_array(sizeof(SwsSlice), c->numSlice);
+    c->slice = av_calloc(c->numSlice, sizeof(*c->slice));
     if (!c->slice) {
         res = AVERROR(ENOMEM);
         goto cleanup;

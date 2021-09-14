@@ -21,7 +21,7 @@
 #include "mlz.h"
 
 av_cold void ff_mlz_init_dict(void* context, MLZ *mlz) {
-    mlz->dict = av_mallocz_array(TABLE_SIZE, sizeof(*mlz->dict));
+    mlz->dict = av_mallocz(TABLE_SIZE * sizeof(*mlz->dict));
 
     mlz->flush_code            = FLUSH_CODE;
     mlz->current_dic_index_max = DIC_INDEX_INIT;

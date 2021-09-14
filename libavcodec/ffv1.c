@@ -80,7 +80,7 @@ av_cold int ff_ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
                 return AVERROR(ENOMEM);
         } else {
             if (!p->vlc_state) {
-                p->vlc_state = av_mallocz_array(p->context_count, sizeof(VlcState));
+                p->vlc_state = av_calloc(p->context_count, sizeof(*p->vlc_state));
                 if (!p->vlc_state)
                     return AVERROR(ENOMEM);
                 for (i = 0; i < p->context_count; i++) {

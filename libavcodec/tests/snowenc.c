@@ -37,8 +37,8 @@ int main(void){
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
 
-    s.temp_dwt_buffer  = av_mallocz_array(width, sizeof(DWTELEM));
-    s.temp_idwt_buffer = av_mallocz_array(width, sizeof(IDWTELEM));
+    s.temp_dwt_buffer  = av_calloc(width, sizeof(*s.temp_dwt_buffer));
+    s.temp_idwt_buffer = av_calloc(width, sizeof(*s.temp_idwt_buffer));
 
     if (!s.temp_dwt_buffer || !s.temp_idwt_buffer) {
         fprintf(stderr, "Failed to allocate memory\n");

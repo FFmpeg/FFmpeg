@@ -42,7 +42,7 @@ static inline HMODULE win32_dlopen(const char *name)
         DWORD pathlen;
         if (utf8towchar(name, &name_w))
             goto exit;
-        path = (wchar_t *)av_mallocz_array(MAX_PATH, sizeof(wchar_t));
+        path = (wchar_t *)av_calloc(MAX_PATH, sizeof(wchar_t));
         // Try local directory first
         pathlen = GetModuleFileNameW(NULL, path, MAX_PATH);
         pathlen = wcsrchr(path, '\\') - path;

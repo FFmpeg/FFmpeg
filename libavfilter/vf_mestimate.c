@@ -100,7 +100,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
 
     for (i = 0; i < 3; i++) {
-        s->mv_table[i] = av_mallocz_array(s->b_count, sizeof(*s->mv_table[0]));
+        s->mv_table[i] = av_calloc(s->b_count, sizeof(*s->mv_table[0]));
         if (!s->mv_table[i])
             return AVERROR(ENOMEM);
     }

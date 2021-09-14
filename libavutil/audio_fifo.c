@@ -75,7 +75,7 @@ AVAudioFifo *av_audio_fifo_alloc(enum AVSampleFormat sample_fmt, int channels,
     af->sample_size = buf_size / nb_samples;
     af->nb_buffers  = av_sample_fmt_is_planar(sample_fmt) ? channels : 1;
 
-    af->buf = av_mallocz_array(af->nb_buffers, sizeof(*af->buf));
+    af->buf = av_calloc(af->nb_buffers, sizeof(*af->buf));
     if (!af->buf)
         goto error;
 

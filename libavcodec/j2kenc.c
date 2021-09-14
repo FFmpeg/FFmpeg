@@ -468,11 +468,11 @@ static int init_tiles(Jpeg2000EncoderContext *s)
         for (tilex = 0; tilex < s->numXtiles; tilex++, tileno++){
             Jpeg2000Tile *tile = s->tile + tileno;
 
-            tile->comp = av_mallocz_array(s->ncomponents, sizeof(Jpeg2000Component));
+            tile->comp = av_calloc(s->ncomponents, sizeof(*tile->comp));
             if (!tile->comp)
                 return AVERROR(ENOMEM);
 
-            tile->layer_rates = av_mallocz_array(s->nlayers, sizeof(*tile->layer_rates));
+            tile->layer_rates = av_calloc(s->nlayers, sizeof(*tile->layer_rates));
             if (!tile->layer_rates)
                 return AVERROR(ENOMEM);
 

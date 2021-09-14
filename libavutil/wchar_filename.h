@@ -32,7 +32,7 @@ static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
         *filename_w = NULL;
         return 0;
     }
-    *filename_w = (wchar_t *)av_mallocz_array(num_chars, sizeof(wchar_t));
+    *filename_w = (wchar_t *)av_calloc(num_chars, sizeof(wchar_t));
     if (!*filename_w) {
         errno = ENOMEM;
         return -1;

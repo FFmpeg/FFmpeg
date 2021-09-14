@@ -1006,7 +1006,7 @@ static DNNReturnType fill_model_input_tf(TFModel *tf_model, TFRequestItem *reque
         goto err;
     }
 
-    infer_request->output_tensors = av_mallocz_array(task->nb_output, sizeof(*infer_request->output_tensors));
+    infer_request->output_tensors = av_calloc(task->nb_output, sizeof(*infer_request->output_tensors));
     if (!infer_request->output_tensors) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for output tensor\n");
         goto err;

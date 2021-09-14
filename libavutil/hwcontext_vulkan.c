@@ -804,13 +804,13 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
         goto end;
     }
 
-    prop = av_mallocz_array(num, sizeof(*prop));
+    prop = av_calloc(num, sizeof(*prop));
     if (!prop) {
         err = AVERROR(ENOMEM);
         goto end;
     }
 
-    idp = av_mallocz_array(num, sizeof(*idp));
+    idp = av_calloc(num, sizeof(*idp));
     if (!idp) {
         err = AVERROR(ENOMEM);
         goto end;

@@ -179,8 +179,8 @@ static int dxva2_init_pool(AVHWFramesContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    s->surfaces_internal = av_mallocz_array(ctx->initial_pool_size,
-                                            sizeof(*s->surfaces_internal));
+    s->surfaces_internal = av_calloc(ctx->initial_pool_size,
+                                     sizeof(*s->surfaces_internal));
     if (!s->surfaces_internal)
         return AVERROR(ENOMEM);
 

@@ -478,7 +478,7 @@ static int config_input_ref(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     for (int t = 0; t < s->nb_threads; t++) {
-        s->temp[t] = av_mallocz_array(2 * SUM_LEN(inlink->w), (desc->comp[0].depth > 8) ? sizeof(int64_t[4]) : sizeof(int[4]));
+        s->temp[t] = av_calloc(2 * SUM_LEN(inlink->w), (desc->comp[0].depth > 8) ? sizeof(int64_t[4]) : sizeof(int[4]));
         if (!s->temp[t])
             return AVERROR(ENOMEM);
     }

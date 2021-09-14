@@ -2277,19 +2277,19 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
 
     /* superblock_coding is used by unpack_superblocks (VP3/Theora) and vp4_unpack_macroblocks (VP4) */
     s->superblock_coding = av_mallocz(FFMAX(s->superblock_count, s->yuv_macroblock_count));
-    s->all_fragments     = av_mallocz_array(s->fragment_count, sizeof(Vp3Fragment));
+    s->all_fragments     = av_calloc(s->fragment_count, sizeof(*s->all_fragments));
 
-    s-> kf_coded_fragment_list = av_mallocz_array(s->fragment_count, sizeof(int));
-    s->nkf_coded_fragment_list = av_mallocz_array(s->fragment_count, sizeof(int));
+    s-> kf_coded_fragment_list = av_calloc(s->fragment_count, sizeof(int));
+    s->nkf_coded_fragment_list = av_calloc(s->fragment_count, sizeof(int));
     memset(s-> num_kf_coded_fragment, -1, sizeof(s-> num_kf_coded_fragment));
 
-    s->dct_tokens_base = av_mallocz_array(s->fragment_count,
-                                          64 * sizeof(*s->dct_tokens_base));
-    s->motion_val[0] = av_mallocz_array(y_fragment_count, sizeof(*s->motion_val[0]));
-    s->motion_val[1] = av_mallocz_array(c_fragment_count, sizeof(*s->motion_val[1]));
+    s->dct_tokens_base = av_calloc(s->fragment_count,
+                                   64 * sizeof(*s->dct_tokens_base));
+    s->motion_val[0] = av_calloc(y_fragment_count, sizeof(*s->motion_val[0]));
+    s->motion_val[1] = av_calloc(c_fragment_count, sizeof(*s->motion_val[1]));
 
     /* work out the block mapping tables */
-    s->superblock_fragments = av_mallocz_array(s->superblock_count, 16 * sizeof(int));
+    s->superblock_fragments = av_calloc(s->superblock_count, 16 * sizeof(int));
     s->macroblock_coding    = av_mallocz(s->macroblock_count + 1);
 
     s->dc_pred_row = av_malloc_array(s->y_superblock_width * 4, sizeof(*s->dc_pred_row));

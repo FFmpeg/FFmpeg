@@ -1181,8 +1181,8 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         AVQSVContext *qsv = avctx->hwaccel_context;
         int i, j;
 
-        q->extparam = av_mallocz_array(qsv->nb_ext_buffers + q->nb_extparam_internal,
-                                       sizeof(*q->extparam));
+        q->extparam = av_calloc(qsv->nb_ext_buffers + q->nb_extparam_internal,
+                                sizeof(*q->extparam));
         if (!q->extparam)
             return AVERROR(ENOMEM);
 

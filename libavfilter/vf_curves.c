@@ -666,7 +666,7 @@ static int config_input(AVFilterLink *inlink)
 
     for (i = 0; i < NB_COMP + 1; i++) {
         if (!curves->graph[i])
-            curves->graph[i] = av_mallocz_array(curves->lut_size, sizeof(*curves->graph[0]));
+            curves->graph[i] = av_calloc(curves->lut_size, sizeof(*curves->graph[0]));
         if (!curves->graph[i])
             return AVERROR(ENOMEM);
         ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i], curves->lut_size);

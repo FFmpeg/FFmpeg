@@ -313,7 +313,7 @@ av_cold int ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes, cons
     planes[1].num_bands = planes[2].num_bands = cfg->chroma_bands;
 
     for (p = 0; p < 3; p++) {
-        planes[p].bands = av_mallocz_array(planes[p].num_bands, sizeof(IVIBandDesc));
+        planes[p].bands = av_calloc(planes[p].num_bands, sizeof(*planes[p].bands));
         if (!planes[p].bands)
             return AVERROR(ENOMEM);
 
@@ -372,7 +372,7 @@ static int ivi_init_tiles(const IVIBandDesc *band, IVITile *ref_tile,
                                               band->mb_size);
 
             av_freep(&tile->mbs);
-            tile->mbs = av_mallocz_array(tile->num_MBs, sizeof(IVIMbInfo));
+            tile->mbs = av_calloc(tile->num_MBs, sizeof(*tile->mbs));
             if (!tile->mbs)
                 return AVERROR(ENOMEM);
 
@@ -428,7 +428,7 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes,
             band->num_tiles = x_tiles * y_tiles;
 
             av_freep(&band->tiles);
-            band->tiles = av_mallocz_array(band->num_tiles, sizeof(IVITile));
+            band->tiles = av_calloc(band->num_tiles, sizeof(*band->tiles));
             if (!band->tiles) {
                 band->num_tiles = 0;
                 return AVERROR(ENOMEM);

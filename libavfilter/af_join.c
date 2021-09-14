@@ -172,9 +172,9 @@ static av_cold int join_init(AVFilterContext *ctx)
     }
 
     s->nb_channels  = av_get_channel_layout_nb_channels(s->channel_layout);
-    s->channels     = av_mallocz_array(s->nb_channels, sizeof(*s->channels));
-    s->buffers      = av_mallocz_array(s->nb_channels, sizeof(*s->buffers));
-    s->input_frames = av_mallocz_array(s->inputs, sizeof(*s->input_frames));
+    s->channels     = av_calloc(s->nb_channels, sizeof(*s->channels));
+    s->buffers      = av_calloc(s->nb_channels, sizeof(*s->buffers));
+    s->input_frames = av_calloc(s->inputs, sizeof(*s->input_frames));
     if (!s->channels || !s->buffers|| !s->input_frames)
         return AVERROR(ENOMEM);
 
@@ -283,7 +283,7 @@ static int join_config_output(AVFilterLink *outlink)
     int i, ret = 0;
 
     /* initialize inputs to user-specified mappings */
-    if (!(inputs = av_mallocz_array(ctx->nb_inputs, sizeof(*inputs))))
+    if (!(inputs = av_calloc(ctx->nb_inputs, sizeof(*inputs))))
         return AVERROR(ENOMEM);
     for (i = 0; i < s->nb_channels; i++) {
         ChannelMap *ch = &s->channels[i];
@@ -383,7 +383,7 @@ static int try_push_frame(AVFilterContext *ctx)
     if (!frame)
         return AVERROR(ENOMEM);
     if (s->nb_channels > FF_ARRAY_ELEMS(frame->data)) {
-        frame->extended_data = av_mallocz_array(s->nb_channels,
+        frame->extended_data = av_calloc(s->nb_channels,
                                           sizeof(*frame->extended_data));
         if (!frame->extended_data) {
             ret = AVERROR(ENOMEM);
@@ -417,8 +417,8 @@ static int try_push_frame(AVFilterContext *ctx)
     /* create references to the buffers we copied to output */
     if (nb_buffers > FF_ARRAY_ELEMS(frame->buf)) {
         frame->nb_extended_buf = nb_buffers - FF_ARRAY_ELEMS(frame->buf);
-        frame->extended_buf = av_mallocz_array(frame->nb_extended_buf,
-                                               sizeof(*frame->extended_buf));
+        frame->extended_buf = av_calloc(frame->nb_extended_buf,
+                                        sizeof(*frame->extended_buf));
         if (!frame->extended_buf) {
             frame->nb_extended_buf = 0;
             ret = AVERROR(ENOMEM);

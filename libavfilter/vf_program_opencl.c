@@ -271,8 +271,7 @@ static av_cold int program_opencl_init(AVFilterContext *avctx)
     } else {
         int i;
 
-        ctx->frames = av_mallocz_array(ctx->nb_inputs,
-                                       sizeof(*ctx->frames));
+        ctx->frames = av_calloc(ctx->nb_inputs, sizeof(*ctx->frames));
         if (!ctx->frames)
             return AVERROR(ENOMEM);
 

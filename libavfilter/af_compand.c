@@ -344,9 +344,9 @@ static int config_output(AVFilterLink *outlink)
 
     uninit(ctx);
 
-    s->channels = av_mallocz_array(channels, sizeof(*s->channels));
+    s->channels = av_calloc(channels, sizeof(*s->channels));
     s->nb_segments = (nb_points + 4) * 2;
-    s->segments = av_mallocz_array(s->nb_segments, sizeof(*s->segments));
+    s->segments = av_calloc(s->nb_segments, sizeof(*s->segments));
 
     if (!s->channels || !s->segments) {
         uninit(ctx);

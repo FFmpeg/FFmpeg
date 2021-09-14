@@ -397,7 +397,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
                     }
                     nb_rois = sd->size / roi_size;
 
-                    qoffsets = av_mallocz_array(mbx * mby, sizeof(*qoffsets));
+                    qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
                     if (!qoffsets)
                         return AVERROR(ENOMEM);
 

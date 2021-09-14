@@ -634,7 +634,7 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
         return ret;
 
     /* allocate and init each independent decoder */
-    c->streams = av_mallocz_array(c->nb_streams, sizeof(*c->streams));
+    c->streams = av_calloc(c->nb_streams, sizeof(*c->streams));
     if (!c->streams) {
         c->nb_streams = 0;
         return AVERROR(ENOMEM);

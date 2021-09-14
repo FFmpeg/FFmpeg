@@ -1364,7 +1364,7 @@ static int get_buffer(AVCodecContext *avctx, SVQ3Frame *pic)
         goto fail;
 
     if (!s->edge_emu_buffer) {
-        s->edge_emu_buffer = av_mallocz_array(pic->f->linesize[0], 17);
+        s->edge_emu_buffer = av_calloc(pic->f->linesize[0], 17);
         if (!s->edge_emu_buffer)
             return AVERROR(ENOMEM);
     }

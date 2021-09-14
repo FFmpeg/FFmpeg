@@ -257,7 +257,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->frame_list)
         return AVERROR(ENOMEM);
 
-    s->fifos = av_mallocz_array(s->nb_inputs, sizeof(*s->fifos));
+    s->fifos = av_calloc(s->nb_inputs, sizeof(*s->fifos));
     if (!s->fifos)
         return AVERROR(ENOMEM);
 
@@ -274,8 +274,8 @@ static int config_output(AVFilterLink *outlink)
     memset(s->input_state, INPUT_ON, s->nb_inputs);
     s->active_inputs = s->nb_inputs;
 
-    s->input_scale = av_mallocz_array(s->nb_inputs, sizeof(*s->input_scale));
-    s->scale_norm  = av_mallocz_array(s->nb_inputs, sizeof(*s->scale_norm));
+    s->input_scale = av_calloc(s->nb_inputs, sizeof(*s->input_scale));
+    s->scale_norm  = av_calloc(s->nb_inputs, sizeof(*s->scale_norm));
     if (!s->input_scale || !s->scale_norm)
         return AVERROR(ENOMEM);
     for (i = 0; i < s->nb_inputs; i++)
@@ -561,7 +561,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
-    s->weights = av_mallocz_array(s->nb_inputs, sizeof(*s->weights));
+    s->weights = av_calloc(s->nb_inputs, sizeof(*s->weights));
     if (!s->weights)
         return AVERROR(ENOMEM);
 

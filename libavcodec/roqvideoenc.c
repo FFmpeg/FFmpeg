@@ -1003,13 +1003,13 @@ static av_cold int roq_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     enc->this_motion4 =
-        av_mallocz_array(roq->width * roq->height / 16, sizeof(motion_vect));
+        av_calloc(roq->width * roq->height / 16, sizeof(*enc->this_motion4));
 
     enc->last_motion4 =
         av_malloc_array (roq->width * roq->height / 16, sizeof(motion_vect));
 
     enc->this_motion8 =
-        av_mallocz_array(roq->width * roq->height / 64, sizeof(motion_vect));
+        av_calloc(roq->width * roq->height / 64, sizeof(*enc->this_motion8));
 
     enc->last_motion8 =
         av_malloc_array (roq->width * roq->height / 64, sizeof(motion_vect));

@@ -312,7 +312,7 @@ static int config_input(AVFilterLink *inlink)
     s->ii_lz_32 = FFALIGN(s->ii_w + 1, 4);
 
     // "+1" is for the space of the top 0-line
-    s->ii_orig = av_mallocz_array(s->ii_h + 1, s->ii_lz_32 * sizeof(*s->ii_orig));
+    s->ii_orig = av_calloc(s->ii_h + 1, s->ii_lz_32 * sizeof(*s->ii_orig));
     if (!s->ii_orig)
         return AVERROR(ENOMEM);
 

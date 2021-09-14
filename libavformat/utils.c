@@ -612,8 +612,8 @@ int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src)
 
     /* Copy side data if present */
     if (src->nb_side_data) {
-        dst->side_data = av_mallocz_array(src->nb_side_data,
-                                          sizeof(AVPacketSideData));
+        dst->side_data = av_calloc(src->nb_side_data,
+                                   sizeof(*dst->side_data));
         if (!dst->side_data)
             return AVERROR(ENOMEM);
         dst->nb_side_data = src->nb_side_data;

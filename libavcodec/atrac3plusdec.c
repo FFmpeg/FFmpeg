@@ -175,7 +175,7 @@ static av_cold int atrac3p_decode_init(AVCodecContext *avctx)
 
     ctx->my_channel_layout = avctx->channel_layout;
 
-    ctx->ch_units = av_mallocz_array(ctx->num_channel_blocks, sizeof(*ctx->ch_units));
+    ctx->ch_units = av_calloc(ctx->num_channel_blocks, sizeof(*ctx->ch_units));
     ctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     if (!ctx->ch_units || !ctx->fdsp) {

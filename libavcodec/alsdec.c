@@ -2059,7 +2059,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->shift_lsbs      = av_malloc_array(num_buffers, sizeof(*ctx->shift_lsbs));
     ctx->opt_order       = av_malloc_array(num_buffers, sizeof(*ctx->opt_order));
     ctx->store_prev_samples = av_malloc_array(num_buffers, sizeof(*ctx->store_prev_samples));
-    ctx->use_ltp         = av_mallocz_array(num_buffers, sizeof(*ctx->use_ltp));
+    ctx->use_ltp         = av_calloc(num_buffers, sizeof(*ctx->use_ltp));
     ctx->ltp_lag         = av_malloc_array(num_buffers, sizeof(*ctx->ltp_lag));
     ctx->ltp_gain        = av_malloc_array(num_buffers, sizeof(*ctx->ltp_gain));
     ctx->ltp_gain_buffer = av_malloc_array(num_buffers * 5, sizeof(*ctx->ltp_gain_buffer));
@@ -2078,10 +2078,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     // allocate and assign channel data buffer for mcc mode
     if (sconf->mc_coding) {
-        ctx->chan_data_buffer  = av_mallocz_array(num_buffers * num_buffers,
-                                                 sizeof(*ctx->chan_data_buffer));
-        ctx->chan_data         = av_mallocz_array(num_buffers,
-                                                 sizeof(*ctx->chan_data));
+        ctx->chan_data_buffer  = av_calloc(num_buffers * num_buffers,
+                                           sizeof(*ctx->chan_data_buffer));
+        ctx->chan_data         = av_calloc(num_buffers, sizeof(*ctx->chan_data));
         ctx->reverted_channels = av_malloc_array(num_buffers,
                                                  sizeof(*ctx->reverted_channels));
 
@@ -2102,7 +2101,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     channel_size      = sconf->frame_length + sconf->max_order;
 
     ctx->prev_raw_samples = av_malloc_array(sconf->max_order, sizeof(*ctx->prev_raw_samples));
-    ctx->raw_buffer       = av_mallocz_array(avctx->channels * channel_size, sizeof(*ctx->raw_buffer));
+    ctx->raw_buffer       = av_calloc(avctx->channels * channel_size, sizeof(*ctx->raw_buffer));
     ctx->raw_samples      = av_malloc_array(avctx->channels, sizeof(*ctx->raw_samples));
 
     if (sconf->floating) {
@@ -2110,7 +2109,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->shift_value       = av_malloc_array(avctx->channels, sizeof(*ctx->shift_value));
         ctx->last_shift_value  = av_malloc_array(avctx->channels, sizeof(*ctx->last_shift_value));
         ctx->last_acf_mantissa = av_malloc_array(avctx->channels, sizeof(*ctx->last_acf_mantissa));
-        ctx->raw_mantissa      = av_mallocz_array(avctx->channels, sizeof(*ctx->raw_mantissa));
+        ctx->raw_mantissa      = av_calloc(avctx->channels, sizeof(*ctx->raw_mantissa));
 
         ctx->larray = av_malloc_array(ctx->cur_frame_length * 4, sizeof(*ctx->larray));
         ctx->nbits  = av_malloc_array(ctx->cur_frame_length, sizeof(*ctx->nbits));
@@ -2127,7 +2126,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ff_mlz_flush_dict(ctx->mlz);
 
         for (c = 0; c < avctx->channels; ++c) {
-            ctx->raw_mantissa[c] = av_mallocz_array(ctx->cur_frame_length, sizeof(**ctx->raw_mantissa));
+            ctx->raw_mantissa[c] = av_calloc(ctx->cur_frame_length, sizeof(**ctx->raw_mantissa));
         }
     }
 

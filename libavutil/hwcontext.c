@@ -308,7 +308,7 @@ static int hwframe_pool_prealloc(AVBufferRef *ref)
     AVFrame **frames;
     int i, ret = 0;
 
-    frames = av_mallocz_array(ctx->initial_pool_size, sizeof(*frames));
+    frames = av_calloc(ctx->initial_pool_size, sizeof(*frames));
     if (!frames)
         return AVERROR(ENOMEM);
 

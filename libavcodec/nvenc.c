@@ -1578,7 +1578,7 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx)
     NvencContext *ctx = avctx->priv_data;
     int i, res = 0, res2;
 
-    ctx->surfaces = av_mallocz_array(ctx->nb_surfaces, sizeof(*ctx->surfaces));
+    ctx->surfaces = av_calloc(ctx->nb_surfaces, sizeof(*ctx->surfaces));
     if (!ctx->surfaces)
         return AVERROR(ENOMEM);
 

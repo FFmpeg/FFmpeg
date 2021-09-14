@@ -1004,7 +1004,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     q->vector_fmul = fdsp->vector_fmul;
     av_free(fdsp);
 
-    q->units = av_mallocz_array(avctx->channels, sizeof(*q->units));
+    q->units = av_calloc(avctx->channels, sizeof(*q->units));
     if (!q->units)
         return AVERROR(ENOMEM);
 

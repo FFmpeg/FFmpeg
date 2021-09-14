@@ -764,7 +764,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     }
     if (sub->num_rects > 0) {
 
-        sub->rects = av_mallocz_array(sizeof(*sub->rects), sub->num_rects);
+        sub->rects = av_calloc(sub->num_rects, sizeof(*sub->rects));
         if (!sub->rects) {
             ret = AVERROR(ENOMEM);
             goto fail;

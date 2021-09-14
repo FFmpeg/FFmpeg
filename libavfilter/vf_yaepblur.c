@@ -294,11 +294,11 @@ static int config_input(AVFilterLink *inlink)
 
     // padding one row on the top, and padding one col on the left, that is why + 1 below
     s->sat_linesize = inlink->w + 1;
-    s->sat = av_mallocz_array(inlink->h + 1, s->sat_linesize*sizeof(*s->sat));
+    s->sat = av_calloc(inlink->h + 1, s->sat_linesize * sizeof(*s->sat));
     if (!s->sat)
         return AVERROR(ENOMEM);
 
-    s->square_sat = av_mallocz_array(inlink->h + 1, s->sat_linesize*sizeof(*s->square_sat));
+    s->square_sat = av_calloc(inlink->h + 1, s->sat_linesize * sizeof(*s->square_sat));
     if (!s->square_sat)
         return AVERROR(ENOMEM);
 

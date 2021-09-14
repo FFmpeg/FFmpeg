@@ -347,7 +347,7 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     if (!x4->enc)
         return AVERROR_EXTERNAL;
 
-    if (!(x4->pts_buffer = av_mallocz_array((avctx->max_b_frames+1), sizeof(*x4->pts_buffer))))
+    if (!FF_ALLOCZ_TYPED_ARRAY(x4->pts_buffer, avctx->max_b_frames + 1))
         return AVERROR(ENOMEM);
 
     /* TAG: Do we have GLOBAL HEADER in AVS */

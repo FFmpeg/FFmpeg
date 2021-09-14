@@ -172,7 +172,7 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
         ret = AVERROR_INVALIDDATA;
         goto end;
     }
-    if (!(*values = av_mallocz_array(sizeof(int) * *rows, *cols))) {
+    if (!(*values = av_calloc(sizeof(int) * *rows, *cols))) {
         ret = AVERROR(ENOMEM);
         goto end;
     }

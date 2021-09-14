@@ -515,7 +515,7 @@ static int d3d11va_create_decoder(AVCodecContext *avctx)
     if (ret < 0)
         return AVERROR(EINVAL);
 
-    sctx->d3d11_views = av_mallocz_array(texdesc.ArraySize, sizeof(sctx->d3d11_views[0]));
+    sctx->d3d11_views = av_calloc(texdesc.ArraySize, sizeof(sctx->d3d11_views[0]));
     if (!sctx->d3d11_views)
         return AVERROR(ENOMEM);
     sctx->nb_d3d11_views = texdesc.ArraySize;

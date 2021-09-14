@@ -51,7 +51,7 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
             s->mix_1_1_simd = ff_mix_1_1_a_int16_sse2;
             s->mix_2_1_simd = ff_mix_2_1_a_int16_sse2;
         }
-        s->native_simd_matrix = av_mallocz_array(num,  2 * sizeof(int16_t));
+        s->native_simd_matrix = av_calloc(num,  2 * sizeof(int16_t));
         s->native_simd_one    = av_mallocz(2 * sizeof(int16_t));
         if (!s->native_simd_matrix || !s->native_simd_one)
             return AVERROR(ENOMEM);
@@ -78,7 +78,7 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
             s->mix_1_1_simd = ff_mix_1_1_a_float_avx;
             s->mix_2_1_simd = ff_mix_2_1_a_float_avx;
         }
-        s->native_simd_matrix = av_mallocz_array(num, sizeof(float));
+        s->native_simd_matrix = av_calloc(num, sizeof(float));
         s->native_simd_one = av_mallocz(sizeof(float));
         if (!s->native_simd_matrix || !s->native_simd_one)
             return AVERROR(ENOMEM);
