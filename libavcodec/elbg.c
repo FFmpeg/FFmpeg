@@ -332,42 +332,6 @@ static void do_shiftings(elbg_data *elbg)
         }
 }
 
-#define BIG_PRIME 433494437LL
-
-int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
-                 int numCB, int max_steps, int *closest_cb,
-                 AVLFG *rand_state)
-{
-    int i, k, ret = 0;
-
-    if (numpoints > 24*numCB) {
-        /* ELBG is very costly for a big number of points. So if we have a lot
-           of them, get a good initial codebook to save on iterations       */
-        int *temp_points = av_malloc_array(dim, (numpoints/8)*sizeof(int));
-        if (!temp_points)
-            return AVERROR(ENOMEM);
-        for (i=0; i<numpoints/8; i++) {
-            k = (i*BIG_PRIME) % numpoints;
-            memcpy(temp_points + i*dim, points + k*dim, dim*sizeof(int));
-        }
-
-        ret = avpriv_init_elbg(temp_points, dim, numpoints / 8, codebook,
-                               numCB, 2 * max_steps, closest_cb, rand_state);
-        if (ret < 0) {
-            av_freep(&temp_points);
-            return ret;
-        }
-        ret = avpriv_do_elbg(temp_points, dim, numpoints / 8, codebook,
-                             numCB, 2 * max_steps, closest_cb, rand_state);
-        av_free(temp_points);
-
-    } else  // If not, initialize the codebook with random positions
-        for (i=0; i < numCB; i++)
-            memcpy(codebook + i*dim, points + ((i*BIG_PRIME)%numpoints)*dim,
-                   dim*sizeof(int));
-    return ret;
-}
-
 int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
                 int numCB, int max_steps, int *closest_cb,
                 AVLFG *rand_state)
@@ -457,5 +421,40 @@ out:
     av_free(elbg->cells);
     av_free(elbg->utility_inc);
     av_free(elbg->scratchbuf);
+    return ret;
+}
+
+#define BIG_PRIME 433494437LL
+
+int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
+                     int num_cb, int max_steps, int *closest_cb,
+                     AVLFG *rand_state)
+{
+    int ret = 0;
+
+    if (numpoints > 24LL * num_cb) {
+        /* ELBG is very costly for a big number of points. So if we have a lot
+           of them, get a good initial codebook to save on iterations       */
+        int *temp_points = av_malloc_array(dim, (numpoints/8)*sizeof(*temp_points));
+        if (!temp_points)
+            return AVERROR(ENOMEM);
+        for (int i = 0; i < numpoints / 8; i++) {
+            int k = (i*BIG_PRIME) % numpoints;
+            memcpy(temp_points + i*dim, points + k*dim, dim * sizeof(*temp_points));
+        }
+
+        ret = avpriv_init_elbg(temp_points, dim, numpoints / 8, codebook,
+                               num_cb, 2 * max_steps, closest_cb, rand_state);
+        if (ret < 0) {
+            av_freep(&temp_points);
+            return ret;
+        }
+        ret = avpriv_do_elbg(temp_points, dim, numpoints / 8, codebook,
+                             num_cb, 2 * max_steps, closest_cb, rand_state);
+        av_free(temp_points);
+    } else  // If not, initialize the codebook with random positions
+        for (int i = 0; i < num_cb; i++)
+            memcpy(codebook + i * dim, points + ((i*BIG_PRIME)%numpoints)*dim,
+                   dim * sizeof(*codebook));
     return ret;
 }
