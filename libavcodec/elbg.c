@@ -43,10 +43,10 @@ typedef struct cell_s {
 /**
  * ELBG internal data
  */
-typedef struct elbg_data {
+typedef struct ELBGContext {
     int64_t error;
     int dim;
-    int numCB;
+    int num_cb;
     int *codebook;
     cell **cells;
     int64_t *utility;
@@ -55,7 +55,7 @@ typedef struct elbg_data {
     int *points;
     AVLFG *rand_state;
     int *scratchbuf;
-} elbg_data;
+} ELBGContext;
 
 static inline int distance_limited(int *a, int *b, int dim, int limit)
 {
@@ -80,7 +80,7 @@ static inline void vect_division(int *res, int *vect, int div, int dim)
 
 }
 
-static int eval_error_cell(elbg_data *elbg, int *centroid, cell *cells)
+static int eval_error_cell(ELBGContext *elbg, int *centroid, cell *cells)
 {
     int error=0;
     for (; cells; cells=cells->next)
@@ -89,11 +89,12 @@ static int eval_error_cell(elbg_data *elbg, int *centroid, cell *cells)
     return error;
 }
 
-static int get_closest_codebook(elbg_data *elbg, int index)
+static int get_closest_codebook(ELBGContext *elbg, int index)
 {
-    int i, pick=0, diff, diff_min = INT_MAX;
-    for (i=0; i<elbg->numCB; i++)
+    int pick = 0;
+    for (int i = 0, diff_min = INT_MAX; i < elbg->num_cb; i++)
         if (i != index) {
+            int diff;
             diff = distance_limited(elbg->codebook + i*elbg->dim, elbg->codebook + index*elbg->dim, elbg->dim, diff_min);
             if (diff < diff_min) {
                 pick = i;
@@ -103,17 +104,17 @@ static int get_closest_codebook(elbg_data *elbg, int index)
     return pick;
 }
 
-static int get_high_utility_cell(elbg_data *elbg)
+static int get_high_utility_cell(ELBGContext *elbg)
 {
     int i=0;
     /* Using linear search, do binary if it ever turns to be speed critical */
     uint64_t r;
 
-    if (elbg->utility_inc[elbg->numCB-1] < INT_MAX) {
-        r = av_lfg_get(elbg->rand_state) % (unsigned int)elbg->utility_inc[elbg->numCB-1] + 1;
+    if (elbg->utility_inc[elbg->num_cb - 1] < INT_MAX) {
+        r = av_lfg_get(elbg->rand_state) % (unsigned int)elbg->utility_inc[elbg->num_cb - 1] + 1;
     } else {
         r = av_lfg_get(elbg->rand_state);
-        r = (av_lfg_get(elbg->rand_state) + (r<<32)) % elbg->utility_inc[elbg->numCB-1] + 1;
+        r = (av_lfg_get(elbg->rand_state) + (r<<32)) % elbg->utility_inc[elbg->num_cb - 1] + 1;
     }
 
     while (elbg->utility_inc[i] < r) {
@@ -128,7 +129,7 @@ static int get_high_utility_cell(elbg_data *elbg)
 /**
  * Implementation of the simple LBG algorithm for just two codebooks
  */
-static int simple_lbg(elbg_data *elbg,
+static int simple_lbg(ELBGContext *elbg,
                       int dim,
                       int *centroid[3],
                       int newutility[3],
@@ -169,7 +170,7 @@ static int simple_lbg(elbg_data *elbg,
     return newutility[0] + newutility[1];
 }
 
-static void get_new_centroids(elbg_data *elbg, int huc, int *newcentroid_i,
+static void get_new_centroids(ELBGContext *elbg, int huc, int *newcentroid_i,
                               int *newcentroid_p)
 {
     cell *tempcell;
@@ -205,7 +206,7 @@ static void get_new_centroids(elbg_data *elbg, int huc, int *newcentroid_i,
  * @param indexes      {luc, huc, cluc}
  * @param newcentroid  A vector with the position of the new centroids
  */
-static void shift_codebook(elbg_data *elbg, int *indexes,
+static void shift_codebook(ELBGContext *elbg, int *indexes,
                            int *newcentroid[3])
 {
     cell *tempdata;
@@ -233,20 +234,19 @@ static void shift_codebook(elbg_data *elbg, int *indexes,
     }
 }
 
-static void evaluate_utility_inc(elbg_data *elbg)
+static void evaluate_utility_inc(ELBGContext *elbg)
 {
-    int i;
     int64_t inc=0;
 
-    for (i=0; i < elbg->numCB; i++) {
-        if (elbg->numCB*elbg->utility[i] > elbg->error)
+    for (int i = 0; i < elbg->num_cb; i++) {
+        if (elbg->num_cb * elbg->utility[i] > elbg->error)
             inc += elbg->utility[i];
         elbg->utility_inc[i] = inc;
     }
 }
 
 
-static void update_utility_and_n_cb(elbg_data *elbg, int idx, int newutility)
+static void update_utility_and_n_cb(ELBGContext *elbg, int idx, int newutility)
 {
     cell *tempcell;
 
@@ -262,7 +262,7 @@ static void update_utility_and_n_cb(elbg_data *elbg, int idx, int newutility)
  * @param elbg  Internal elbg data
  * @param idx   {luc (low utility cell, huc (high utility cell), cluc (closest cell to low utility cell)}
  */
-static void try_shift_candidate(elbg_data *elbg, int idx[3])
+static void try_shift_candidate(ELBGContext *elbg, int idx[3])
 {
     int j, k, cont=0;
     int64_t olderror=0, newerror;
@@ -313,15 +313,15 @@ static void try_shift_candidate(elbg_data *elbg, int idx[3])
 /**
  * Implementation of the ELBG block
  */
-static void do_shiftings(elbg_data *elbg)
+static void do_shiftings(ELBGContext *elbg)
 {
     int idx[3];
 
     evaluate_utility_inc(elbg);
 
-    for (idx[0]=0; idx[0] < elbg->numCB; idx[0]++)
-        if (elbg->numCB*elbg->utility[idx[0]] < elbg->error) {
-            if (elbg->utility_inc[elbg->numCB-1] == 0)
+    for (idx[0]=0; idx[0] < elbg->num_cb; idx[0]++)
+        if (elbg->num_cb * elbg->utility[idx[0]] < elbg->error) {
+            if (elbg->utility_inc[elbg->num_cb - 1] == 0)
                 return;
 
             idx[1] = get_high_utility_cell(elbg);
@@ -333,14 +333,14 @@ static void do_shiftings(elbg_data *elbg)
 }
 
 static int do_elbg(int *points, int dim, int numpoints, int *codebook,
-                int numCB, int max_steps, int *closest_cb,
+                   int num_cb, int max_steps, int *closest_cb,
                 AVLFG *rand_state)
 {
     int dist;
-    elbg_data elbg_d;
-    elbg_data *elbg = &elbg_d;
-    int i, j, k, steps = 0, ret = 0;
-    int *size_part = av_malloc_array(numCB, sizeof(int));
+    ELBGContext elbg_d;
+    ELBGContext *elbg = &elbg_d;
+    int i, j, steps = 0, ret = 0;
+    int *size_part = av_malloc_array(num_cb, sizeof(int));
     cell *list_buffer = av_malloc_array(numpoints, sizeof(cell));
     cell *free_cells;
     int best_dist, best_idx = 0;
@@ -348,13 +348,13 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
 
     elbg->error = INT64_MAX;
     elbg->dim = dim;
-    elbg->numCB = numCB;
+    elbg->num_cb = num_cb;
     elbg->codebook = codebook;
-    elbg->cells = av_malloc_array(numCB, sizeof(cell *));
-    elbg->utility = av_malloc_array(numCB, sizeof(*elbg->utility));
+    elbg->cells = av_malloc_array(num_cb, sizeof(cell *));
+    elbg->utility = av_malloc_array(num_cb, sizeof(*elbg->utility));
     elbg->nearest_cb = closest_cb;
     elbg->points = points;
-    elbg->utility_inc = av_malloc_array(numCB, sizeof(*elbg->utility_inc));
+    elbg->utility_inc = av_malloc_array(num_cb, sizeof(*elbg->utility_inc));
     elbg->scratchbuf = av_malloc_array(5*dim, sizeof(int));
 
     if (!size_part || !list_buffer || !elbg->cells ||
@@ -369,8 +369,8 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
         free_cells = list_buffer;
         last_error = elbg->error;
         steps++;
-        memset(elbg->utility, 0, numCB*sizeof(*elbg->utility));
-        memset(elbg->cells, 0, numCB*sizeof(cell *));
+        memset(elbg->utility, 0, num_cb * sizeof(*elbg->utility));
+        memset(elbg->cells,   0, num_cb * sizeof(*elbg->cells));
 
         elbg->error = 0;
 
@@ -378,7 +378,7 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
            costly part of the algorithm. */
         for (i=0; i < numpoints; i++) {
             best_dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + best_idx*elbg->dim, dim, INT_MAX);
-            for (k=0; k < elbg->numCB; k++) {
+            for (int k = 0; k < elbg->num_cb; k++) {
                 dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + k*elbg->dim, dim, best_dist);
                 if (dist < best_dist) {
                     best_dist = dist;
@@ -396,9 +396,9 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
 
         do_shiftings(elbg);
 
-        memset(size_part, 0, numCB*sizeof(int));
+        memset(size_part, 0, num_cb * sizeof(*size_part));
 
-        memset(elbg->codebook, 0, elbg->numCB*dim*sizeof(int));
+        memset(elbg->codebook, 0, elbg->num_cb * dim * sizeof(*elbg->codebook));
 
         for (i=0; i < numpoints; i++) {
             size_part[elbg->nearest_cb[i]]++;
@@ -407,7 +407,7 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
                     elbg->points[i*elbg->dim + j];
         }
 
-        for (i=0; i < elbg->numCB; i++)
+        for (int i = 0; i < elbg->num_cb; i++)
             vect_division(elbg->codebook + i*elbg->dim,
                           elbg->codebook + i*elbg->dim, size_part[i], elbg->dim);
 
@@ -428,7 +428,7 @@ out:
 
 /**
  * Initialize the codebook vector for the elbg algorithm.
- * If numpoints < 8*numCB this function fills codebook with random numbers.
+ * If numpoints <= 24 * num_cb this function fills codebook with random numbers.
  * If not, it calls do_elbg for a (smaller) random sample of the points in
  * points.
  * @return < 0 in case of error, 0 otherwise
@@ -451,13 +451,13 @@ static int init_elbg(int *points, int dim, int numpoints, int *codebook,
         }
 
         ret = init_elbg(temp_points, dim, numpoints / 8, codebook,
-                               num_cb, 2 * max_steps, closest_cb, rand_state);
+                        num_cb, 2 * max_steps, closest_cb, rand_state);
         if (ret < 0) {
             av_freep(&temp_points);
             return ret;
         }
         ret = do_elbg  (temp_points, dim, numpoints / 8, codebook,
-                             num_cb, 2 * max_steps, closest_cb, rand_state);
+                        num_cb, 2 * max_steps, closest_cb, rand_state);
         av_free(temp_points);
     } else  // If not, initialize the codebook with random positions
         for (int i = 0; i < num_cb; i++)
