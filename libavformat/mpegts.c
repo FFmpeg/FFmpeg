@@ -2355,10 +2355,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         av_log(ts->stream, AV_LOG_TRACE, "program tag: 0x%02x len=%d\n", tag, len);
 
-        if (len > program_info_length - 2)
+        program_info_length -= 2;
+        if (len > program_info_length)
             // something else is broken, exit the program_descriptors_loop
             break;
-        program_info_length -= len + 2;
+        program_info_length -= len;
         if (tag == IOD_DESCRIPTOR) {
             get8(&p, p_end); // scope
             get8(&p, p_end); // label
