@@ -333,10 +333,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             buf = pkt->data;
 
             /* calc optimal new charset + charmaps */
-            ret = avpriv_init_elbg(meta, 32, 1000 * c->mc_lifetime, best_cb,
-                               CHARSET_CHARS, 50, charmap, &c->randctx);
-            if (ret < 0)
-                return ret;
             ret = avpriv_do_elbg(meta, 32, 1000 * c->mc_lifetime, best_cb,
                              CHARSET_CHARS, 50, charmap, &c->randctx);
             if (ret < 0)

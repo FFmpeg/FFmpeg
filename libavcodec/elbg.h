@@ -42,16 +42,4 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
                int numCB, int num_steps, int *closest_cb,
                AVLFG *rand_state);
 
-/**
- * Initialize the **codebook vector for the elbg algorithm. If you have already
- * a codebook and you want to refine it, you shouldn't call this function.
- * If numpoints < 8*numCB this function fills **codebook with random numbers.
- * If not, it calls avpriv_do_elbg for a (smaller) random sample of the points in
- * **points. Get the same parameters as avpriv_do_elbg.
- * @return < 0 in case of error, 0 otherwise
- */
-int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
-                 int numCB, int num_steps, int *closest_cb,
-                 AVLFG *rand_state);
-
 #endif /* AVCODEC_ELBG_H */

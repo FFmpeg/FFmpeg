@@ -332,7 +332,7 @@ static void do_shiftings(elbg_data *elbg)
         }
 }
 
-int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
+static int do_elbg(int *points, int dim, int numpoints, int *codebook,
                 int numCB, int max_steps, int *closest_cb,
                 AVLFG *rand_state)
 {
@@ -426,7 +426,14 @@ out:
 
 #define BIG_PRIME 433494437LL
 
-int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
+/**
+ * Initialize the codebook vector for the elbg algorithm.
+ * If numpoints < 8*numCB this function fills codebook with random numbers.
+ * If not, it calls do_elbg for a (smaller) random sample of the points in
+ * points.
+ * @return < 0 in case of error, 0 otherwise
+ */
+static int init_elbg(int *points, int dim, int numpoints, int *codebook,
                      int num_cb, int max_steps, int *closest_cb,
                      AVLFG *rand_state)
 {
@@ -443,13 +450,13 @@ int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
             memcpy(temp_points + i*dim, points + k*dim, dim * sizeof(*temp_points));
         }
 
-        ret = avpriv_init_elbg(temp_points, dim, numpoints / 8, codebook,
+        ret = init_elbg(temp_points, dim, numpoints / 8, codebook,
                                num_cb, 2 * max_steps, closest_cb, rand_state);
         if (ret < 0) {
             av_freep(&temp_points);
             return ret;
         }
-        ret = avpriv_do_elbg(temp_points, dim, numpoints / 8, codebook,
+        ret = do_elbg  (temp_points, dim, numpoints / 8, codebook,
                              num_cb, 2 * max_steps, closest_cb, rand_state);
         av_free(temp_points);
     } else  // If not, initialize the codebook with random positions
@@ -457,4 +464,18 @@ int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
             memcpy(codebook + i * dim, points + ((i*BIG_PRIME)%numpoints)*dim,
                    dim * sizeof(*codebook));
     return ret;
+}
+
+int avpriv_do_elbg(int *points, int dim, int numpoints,
+                   int *codebook, int num_cb, int max_steps,
+                   int *closest_cb, AVLFG *rand_state)
+{
+    int ret;
+
+    ret = init_elbg(points, dim, numpoints, codebook,
+                    num_cb, max_steps, closest_cb, rand_state);
+    if (ret < 0)
+        return ret;
+    return do_elbg (points, dim, numpoints, codebook,
+                    num_cb, max_steps, closest_cb, rand_state);
 }

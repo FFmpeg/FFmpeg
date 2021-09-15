@@ -163,9 +163,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     /* compute the codebook */
-    avpriv_init_elbg(elbg->codeword, NB_COMPONENTS, elbg->codeword_length,
-                     elbg->codebook, elbg->codebook_length, elbg->max_steps_nb,
-                     elbg->codeword_closest_codebook_idxs, &elbg->lfg);
     avpriv_do_elbg(elbg->codeword, NB_COMPONENTS, elbg->codeword_length,
                    elbg->codebook, elbg->codebook_length, elbg->max_steps_nb,
                    elbg->codeword_closest_codebook_idxs, &elbg->lfg);
