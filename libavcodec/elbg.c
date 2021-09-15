@@ -332,30 +332,22 @@ static void do_shiftings(ELBGContext *elbg)
         }
 }
 
-static int do_elbg(int *points, int dim, int numpoints, int *codebook,
-                   int num_cb, int max_steps, int *closest_cb,
-                AVLFG *rand_state)
+static int do_elbg(ELBGContext *elbg, int *points, int numpoints,
+                   int max_steps)
 {
-    int dist;
-    ELBGContext elbg_d;
-    ELBGContext *elbg = &elbg_d;
     int i, j, steps = 0, ret = 0;
-    int *size_part = av_malloc_array(num_cb, sizeof(int));
+    int *size_part = av_malloc_array(elbg->num_cb, sizeof(int));
     cell *list_buffer = av_malloc_array(numpoints, sizeof(cell));
     cell *free_cells;
-    int best_dist, best_idx = 0;
+    int best_idx = 0;
     int64_t last_error;
 
     elbg->error = INT64_MAX;
-    elbg->dim = dim;
-    elbg->num_cb = num_cb;
-    elbg->codebook = codebook;
-    elbg->cells = av_malloc_array(num_cb, sizeof(cell *));
-    elbg->utility = av_malloc_array(num_cb, sizeof(*elbg->utility));
-    elbg->nearest_cb = closest_cb;
+    elbg->cells   = av_malloc_array(elbg->num_cb, sizeof(cell *));
+    elbg->utility = av_malloc_array(elbg->num_cb, sizeof(*elbg->utility));
     elbg->points = points;
-    elbg->utility_inc = av_malloc_array(num_cb, sizeof(*elbg->utility_inc));
-    elbg->scratchbuf = av_malloc_array(5*dim, sizeof(int));
+    elbg->utility_inc = av_malloc_array(elbg->num_cb, sizeof(*elbg->utility_inc));
+    elbg->scratchbuf = av_malloc_array(5 * elbg->dim, sizeof(int));
 
     if (!size_part || !list_buffer || !elbg->cells ||
         !elbg->utility || !elbg->utility_inc || !elbg->scratchbuf) {
@@ -363,23 +355,26 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
         goto out;
     }
 
-    elbg->rand_state = rand_state;
 
     do {
         free_cells = list_buffer;
         last_error = elbg->error;
         steps++;
-        memset(elbg->utility, 0, num_cb * sizeof(*elbg->utility));
-        memset(elbg->cells,   0, num_cb * sizeof(*elbg->cells));
+        memset(elbg->utility, 0, elbg->num_cb * sizeof(*elbg->utility));
+        memset(elbg->cells,   0, elbg->num_cb * sizeof(*elbg->cells));
 
         elbg->error = 0;
 
         /* This loop evaluate the actual Voronoi partition. It is the most
            costly part of the algorithm. */
         for (i=0; i < numpoints; i++) {
-            best_dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + best_idx*elbg->dim, dim, INT_MAX);
+            int best_dist = distance_limited(elbg->points   + i * elbg->dim,
+                                             elbg->codebook + best_idx * elbg->dim,
+                                             elbg->dim, INT_MAX);
             for (int k = 0; k < elbg->num_cb; k++) {
-                dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + k*elbg->dim, dim, best_dist);
+                int dist = distance_limited(elbg->points   + i * elbg->dim,
+                                            elbg->codebook + k * elbg->dim,
+                                            elbg->dim, best_dist);
                 if (dist < best_dist) {
                     best_dist = dist;
                     best_idx = k;
@@ -396,9 +391,9 @@ static int do_elbg(int *points, int dim, int numpoints, int *codebook,
 
         do_shiftings(elbg);
 
-        memset(size_part, 0, num_cb * sizeof(*size_part));
+        memset(size_part,      0, elbg->num_cb * sizeof(*size_part));
 
-        memset(elbg->codebook, 0, elbg->num_cb * dim * sizeof(*elbg->codebook));
+        memset(elbg->codebook, 0, elbg->num_cb * elbg->dim * sizeof(*elbg->codebook));
 
         for (i=0; i < numpoints; i++) {
             size_part[elbg->nearest_cb[i]]++;
@@ -433,13 +428,13 @@ out:
  * points.
  * @return < 0 in case of error, 0 otherwise
  */
-static int init_elbg(int *points, int dim, int numpoints, int *codebook,
-                     int num_cb, int max_steps, int *closest_cb,
-                     AVLFG *rand_state)
+static int init_elbg(ELBGContext *elbg, int *points, int numpoints,
+                     int max_steps)
 {
+    int dim = elbg->dim;
     int ret = 0;
 
-    if (numpoints > 24LL * num_cb) {
+    if (numpoints > 24LL * elbg->num_cb) {
         /* ELBG is very costly for a big number of points. So if we have a lot
            of them, get a good initial codebook to save on iterations       */
         int *temp_points = av_malloc_array(dim, (numpoints/8)*sizeof(*temp_points));
@@ -450,19 +445,17 @@ static int init_elbg(int *points, int dim, int numpoints, int *codebook,
             memcpy(temp_points + i*dim, points + k*dim, dim * sizeof(*temp_points));
         }
 
-        ret = init_elbg(temp_points, dim, numpoints / 8, codebook,
-                        num_cb, 2 * max_steps, closest_cb, rand_state);
+        ret = init_elbg(elbg, temp_points, numpoints / 8, 2 * max_steps);
         if (ret < 0) {
             av_freep(&temp_points);
             return ret;
         }
-        ret = do_elbg  (temp_points, dim, numpoints / 8, codebook,
-                        num_cb, 2 * max_steps, closest_cb, rand_state);
+        ret =   do_elbg(elbg, temp_points, numpoints / 8, 2 * max_steps);
         av_free(temp_points);
     } else  // If not, initialize the codebook with random positions
-        for (int i = 0; i < num_cb; i++)
-            memcpy(codebook + i * dim, points + ((i*BIG_PRIME)%numpoints)*dim,
-                   dim * sizeof(*codebook));
+        for (int i = 0; i < elbg->num_cb; i++)
+            memcpy(elbg->codebook + i * dim, points + ((i*BIG_PRIME)%numpoints)*dim,
+                   dim * sizeof(*elbg->codebook));
     return ret;
 }
 
@@ -477,12 +470,16 @@ int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
         return AVERROR(ENOMEM);
     *elbgp = elbg;
 
-    ret = init_elbg(points, dim, numpoints, codebook,
-                    num_cb, max_steps, closest_cb, rand_state);
+    elbg->nearest_cb = closest_cb;
+    elbg->rand_state = rand_state;
+    elbg->codebook   = codebook;
+    elbg->num_cb     = num_cb;
+    elbg->dim        = dim;
+
+    ret = init_elbg(elbg, points, numpoints, max_steps);
     if (ret < 0)
         return ret;
-    return do_elbg (points, dim, numpoints, codebook,
-                    num_cb, max_steps, closest_cb, rand_state);
+    return do_elbg (elbg, points, numpoints, max_steps);
 }
 
 av_cold void avpriv_elbg_free(ELBGContext **elbgp)
