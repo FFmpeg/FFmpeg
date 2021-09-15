@@ -35,6 +35,7 @@
 
 typedef struct ELBGFilterContext {
     const AVClass *class;
+    struct ELBGContext *ctx;
     AVLFG lfg;
     int64_t lfg_seed;
     int max_steps_nb;
@@ -163,7 +164,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     /* compute the codebook */
-    avpriv_do_elbg(elbg->codeword, NB_COMPONENTS, elbg->codeword_length,
+    avpriv_elbg_do(&elbg->ctx, elbg->codeword, NB_COMPONENTS, elbg->codeword_length,
                    elbg->codebook, elbg->codebook_length, elbg->max_steps_nb,
                    elbg->codeword_closest_codebook_idxs, &elbg->lfg);
 
@@ -222,6 +223,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     ELBGFilterContext *const elbg = ctx->priv;
+
+    avpriv_elbg_free(&elbg->ctx);
 
     av_freep(&elbg->codebook);
     av_freep(&elbg->codeword);

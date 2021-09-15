@@ -466,11 +466,16 @@ static int init_elbg(int *points, int dim, int numpoints, int *codebook,
     return ret;
 }
 
-int avpriv_do_elbg(int *points, int dim, int numpoints,
+int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
                    int *codebook, int num_cb, int max_steps,
                    int *closest_cb, AVLFG *rand_state)
 {
+    ELBGContext *const elbg = *elbgp ? *elbgp : av_mallocz(sizeof(*elbg));
     int ret;
+
+    if (!elbg)
+        return AVERROR(ENOMEM);
+    *elbgp = elbg;
 
     ret = init_elbg(points, dim, numpoints, codebook,
                     num_cb, max_steps, closest_cb, rand_state);
@@ -478,4 +483,9 @@ int avpriv_do_elbg(int *points, int dim, int numpoints,
         return ret;
     return do_elbg (points, dim, numpoints, codebook,
                     num_cb, max_steps, closest_cb, rand_state);
+}
+
+av_cold void avpriv_elbg_free(ELBGContext **elbgp)
+{
+    av_freep(elbgp);
 }

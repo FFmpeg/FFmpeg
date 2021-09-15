@@ -127,6 +127,7 @@ typedef struct CinepakEncContext {
     int min_min_strips;
     int max_max_strips;
     int strip_number_delta_range;
+    struct ELBGContext *elbg;
 } CinepakEncContext;
 
 #define OFFSET(x) offsetof(CinepakEncContext, x)
@@ -761,7 +762,8 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
     if (i < size)
         size = i;
 
-    avpriv_do_elbg(s->codebook_input, entry_size, i, codebook, size, 1, s->codebook_closest, &s->randctx);
+    avpriv_elbg_do(&s->elbg, s->codebook_input, entry_size, i, codebook,
+                   size, 1, s->codebook_closest, &s->randctx);
 
     // set up vq_data, which contains a single MB
     vq_data[0]     = vq_pict_buf;
@@ -1161,6 +1163,7 @@ static av_cold int cinepak_encode_end(AVCodecContext *avctx)
     CinepakEncContext *s = avctx->priv_data;
     int x;
 
+    avpriv_elbg_free(&s->elbg);
     av_frame_free(&s->last_frame);
     av_frame_free(&s->best_frame);
     av_frame_free(&s->scratch_frame);

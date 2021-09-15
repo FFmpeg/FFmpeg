@@ -43,6 +43,7 @@
 
 typedef struct A64Context {
     /* variables for multicolor modes */
+    struct ELBGContext *elbg;
     AVLFG randctx;
     int mc_lifetime;
     int mc_use_5col;
@@ -195,6 +196,9 @@ static void render_charset(AVCodecContext *avctx, uint8_t *charset,
 static av_cold int a64multi_close_encoder(AVCodecContext *avctx)
 {
     A64Context *c = avctx->priv_data;
+
+    avpriv_elbg_free(&c->elbg);
+
     av_freep(&c->mc_meta_charset);
     av_freep(&c->mc_best_cb);
     av_freep(&c->mc_charmap);
@@ -333,8 +337,8 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             buf = pkt->data;
 
             /* calc optimal new charset + charmaps */
-            ret = avpriv_do_elbg(meta, 32, 1000 * c->mc_lifetime, best_cb,
-                             CHARSET_CHARS, 50, charmap, &c->randctx);
+            ret = avpriv_elbg_do(&c->elbg, meta, 32, 1000 * c->mc_lifetime,
+                                 best_cb, CHARSET_CHARS, 50, charmap, &c->randctx);
             if (ret < 0)
                 return ret;
 
