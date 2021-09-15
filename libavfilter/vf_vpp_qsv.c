@@ -501,8 +501,8 @@ static int activate(AVFilterContext *ctx)
     VPPContext *s =ctx->priv;
     QSVVPPContext *qsv = s->qsv;
     AVFrame *in = NULL;
-    int ret, status;
-    int64_t pts;
+    int ret, status = 0;
+    int64_t pts = AV_NOPTS_VALUE;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
