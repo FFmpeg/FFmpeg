@@ -821,7 +821,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         char *next;
         char *discard_str = NULL;
         const AVClass *cc = avcodec_get_class();
-        const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL, 0, 0);
+        const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
+                                                  0, AV_OPT_SEARCH_FAKE_OBJ);
 
         if (!ist)
             exit_program(1);
