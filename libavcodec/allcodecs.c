@@ -134,6 +134,7 @@ extern const AVCodec ff_fraps_decoder;
 extern const AVCodec ff_frwu_decoder;
 extern const AVCodec ff_g2m_decoder;
 extern const AVCodec ff_gdv_decoder;
+extern const AVCodec ff_gem_decoder;
 extern const AVCodec ff_gif_encoder;
 extern const AVCodec ff_gif_decoder;
 extern const AVCodec ff_h261_encoder;

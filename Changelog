@@ -23,6 +23,7 @@ version <next>:
 - morpho video filter
 - amr parser
 - (a)latency filters
+- GEM Raster image decoder
 
 
 version 4.4:
