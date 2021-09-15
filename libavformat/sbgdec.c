@@ -965,6 +965,9 @@ static int expand_tseq(void *log, struct sbg_script *s, int *nb_ev_max,
                tseq->name_len, tseq->name);
         return AVERROR(EINVAL);
     }
+    if (t0 + (uint64_t)tseq->ts.t != av_sat_add64(t0, tseq->ts.t))
+        return AVERROR(EINVAL);
+
     t0 += tseq->ts.t;
     for (i = 0; i < s->nb_def; i++) {
         if (s->def[i].name_len == tseq->name_len &&
