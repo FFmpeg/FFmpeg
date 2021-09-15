@@ -1286,7 +1286,7 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
             absres = res < 0 ? -(unsigned)res : res;
             if (absres)
                 *f->adaptcoeffs = APESIGN(res) *
-                                  (8 << ((absres > f->avg * 3) + (absres > f->avg * 4 / 3)));
+                                  (8 << ((absres > f->avg * 3) + (absres > (f->avg + f->avg / 3))));
                 /* equivalent to the following code
                     if (absres <= f->avg * 4 / 3)
                         *f->adaptcoeffs = APESIGN(res) * 8;
