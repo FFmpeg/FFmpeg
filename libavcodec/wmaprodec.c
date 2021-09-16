@@ -1855,7 +1855,7 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
         eof = 1;
 
         for (i = 0; i < s->num_streams; i++) {
-            if (!s->xma[i].eof_done) {
+            if (!s->xma[i].eof_done && s->frames[i]->data[0]) {
                 ret = decode_packet(avctx, &s->xma[i], s->frames[i],
                                     &got_stream_frame_ptr, avpkt);
             }
