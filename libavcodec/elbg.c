@@ -53,6 +53,7 @@ typedef struct ELBGContext {
     int64_t *utility_inc;
     int *nearest_cb;
     int *points;
+    int *temp_points;
     int *size_part;
     AVLFG *rand_state;
     int *scratchbuf;
@@ -67,6 +68,7 @@ typedef struct ELBGContext {
     unsigned cells_allocated;
     unsigned scratchbuf_allocated;
     unsigned cell_buffer_allocated;
+    unsigned temp_points_allocated;
 } ELBGContext;
 
 static inline int distance_limited(int *a, int *b, int dim, int limit)
@@ -416,37 +418,29 @@ static void do_elbg(ELBGContext *elbg, int *points, int numpoints,
  * If numpoints <= 24 * num_cb this function fills codebook with random numbers.
  * If not, it calls do_elbg for a (smaller) random sample of the points in
  * points.
- * @return < 0 in case of error, 0 otherwise
  */
-static int init_elbg(ELBGContext *elbg, int *points, int numpoints,
-                     int max_steps)
+static void init_elbg(ELBGContext *elbg, int *points, int *temp_points,
+                      int numpoints, int max_steps)
 {
     int dim = elbg->dim;
-    int ret = 0;
 
     if (numpoints > 24LL * elbg->num_cb) {
         /* ELBG is very costly for a big number of points. So if we have a lot
            of them, get a good initial codebook to save on iterations       */
-        int *temp_points = av_malloc_array(dim, (numpoints/8)*sizeof(*temp_points));
-        if (!temp_points)
-            return AVERROR(ENOMEM);
         for (int i = 0; i < numpoints / 8; i++) {
             int k = (i*BIG_PRIME) % numpoints;
             memcpy(temp_points + i*dim, points + k*dim, dim * sizeof(*temp_points));
         }
 
-        ret = init_elbg(elbg, temp_points, numpoints / 8, 2 * max_steps);
-        if (ret < 0) {
-            av_freep(&temp_points);
-            return ret;
-        }
+        /* If anything is changed in the recursion parameters,
+         * the allocated size of temp_points will also need to be updated. */
+        init_elbg(elbg, temp_points, temp_points + numpoints / 8 * dim,
+                  numpoints / 8, 2 * max_steps);
         do_elbg(elbg, temp_points, numpoints / 8, 2 * max_steps);
-        av_free(temp_points);
     } else  // If not, initialize the codebook with random positions
         for (int i = 0; i < elbg->num_cb; i++)
             memcpy(elbg->codebook + i * dim, points + ((i*BIG_PRIME)%numpoints)*dim,
                    dim * sizeof(*elbg->codebook));
-    return 0;
 }
 
 int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
@@ -454,7 +448,6 @@ int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
                    int *closest_cb, AVLFG *rand_state)
 {
     ELBGContext *const elbg = *elbgp ? *elbgp : av_mallocz(sizeof(*elbg));
-    int ret;
 
     if (!elbg)
         return AVERROR(ENOMEM);
@@ -487,10 +480,18 @@ int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
     ALLOCATE_IF_NECESSARY(size_part,   num_cb,    1)
     ALLOCATE_IF_NECESSARY(cell_buffer, numpoints, 1)
     ALLOCATE_IF_NECESSARY(scratchbuf,  dim,       5)
+    if (numpoints > 24LL * elbg->num_cb) {
+        /* The first step in the recursion in init_elbg() needs a buffer with
+        * (numpoints / 8) * dim elements; the next step needs numpoints / 8 / 8
+        * * dim elements etc. The geometric series leads to an upper bound of
+        * numpoints / 8 * 8 / 7 * dim elements. */
+        uint64_t prod = dim * (uint64_t)(numpoints / 7U);
+        if (prod > INT_MAX)
+            return AVERROR(ERANGE);
+        ALLOCATE_IF_NECESSARY(temp_points, prod, 1)
+    }
 
-    ret = init_elbg(elbg, points, numpoints, max_steps);
-    if (ret < 0)
-        return ret;
+    init_elbg(elbg, points, elbg->temp_points, numpoints, max_steps);
     do_elbg (elbg, points, numpoints, max_steps);
     return 0;
 }
@@ -507,6 +508,7 @@ av_cold void avpriv_elbg_free(ELBGContext **elbgp)
     av_freep(&elbg->cells);
     av_freep(&elbg->utility_inc);
     av_freep(&elbg->scratchbuf);
+    av_freep(&elbg->temp_points);
 
     av_freep(elbgp);
 }
