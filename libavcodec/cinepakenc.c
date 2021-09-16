@@ -709,6 +709,7 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
     uint8_t vq_pict_buf[(MB_AREA * 3) / 2];
     uint8_t     *sub_data[4],     *vq_data[4];
     int      sub_linesize[4],  vq_linesize[4];
+    int ret;
 
     for (mbn = i = y = 0; y < h; y += MB_SIZE) {
         for (x = 0; x < s->w; x += MB_SIZE, ++mbn) {
@@ -762,8 +763,10 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
     if (i < size)
         size = i;
 
-    avpriv_elbg_do(&s->elbg, s->codebook_input, entry_size, i, codebook,
-                   size, 1, s->codebook_closest, &s->randctx);
+    ret = avpriv_elbg_do(&s->elbg, s->codebook_input, entry_size, i, codebook,
+                         size, 1, s->codebook_closest, &s->randctx);
+    if (ret < 0)
+        return ret;
 
     // set up vq_data, which contains a single MB
     vq_data[0]     = vq_pict_buf;
@@ -888,8 +891,10 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe,
                 if (mode == MODE_V1_ONLY) {
                     info.v1_size = v1_size;
                     // the size may shrink even before optimizations if the input is short:
-                    info.v1_size = quantize(s, h, data, linesize, 1,
-                                            &info, ENC_UNCERTAIN);
+                    if ((new_v1_size = quantize(s, h, data, linesize, 1,
+                                                &info, ENC_UNCERTAIN)) < 0)
+                        return new_v1_size;
+                    info.v1_size = new_v1_size;
                     if (info.v1_size < v1_size)
                         // too few eligible blocks, no sense in trying bigger sizes
                         v1enough = 1;
@@ -902,8 +907,11 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe,
 
                     if (mode == MODE_V1_V4) {
                         info.v4_size = v4_size;
-                        info.v4_size = quantize(s, h, data, linesize, 0,
-                                                &info, ENC_UNCERTAIN);
+                        new_v4_size = quantize(s, h, data, linesize, 0,
+                                               &info, ENC_UNCERTAIN);
+                        if (new_v4_size < 0)
+                            return new_v4_size;
+                        info.v4_size = new_v4_size;
                         if (info.v4_size < v4_size)
                             // too few eligible blocks, no sense in trying bigger sizes
                             v4enough = 1;
@@ -921,11 +929,15 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe,
                     // we assume we _may_ come here with more blocks to encode than before
                     info.v1_size = v1_size;
                     new_v1_size = quantize(s, h, data, linesize, 1, &info, ENC_V1);
+                    if (new_v1_size < 0)
+                        return new_v1_size;
                     if (new_v1_size < info.v1_size)
                         info.v1_size = new_v1_size;
                     // we assume we _may_ come here with more blocks to encode than before
                     info.v4_size = v4_size;
                     new_v4_size = quantize(s, h, data, linesize, 0, &info, ENC_V4);
+                    if (new_v4_size < 0)
+                        return new_v4_size;
                     if (new_v4_size < info.v4_size)
                         info.v4_size = new_v4_size;
                     // calculate the resulting score
@@ -942,12 +954,16 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe,
                         if (v1shrunk) {
                             info.v1_size = v1_size;
                             new_v1_size = quantize(s, h, data, linesize, 1, &info, ENC_V1);
+                            if (new_v1_size < 0)
+                                return new_v1_size;
                             if (new_v1_size < info.v1_size)
                                 info.v1_size = new_v1_size;
                         }
                         if (v4shrunk) {
                             info.v4_size = v4_size;
                             new_v4_size = quantize(s, h, data, linesize, 0, &info, ENC_V4);
+                            if (new_v4_size < 0)
+                                return new_v4_size;
                             if (new_v4_size < info.v4_size)
                                 info.v4_size = new_v4_size;
                         }
