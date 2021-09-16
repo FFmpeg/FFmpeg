@@ -142,7 +142,7 @@ static int config_input(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     ELBGFilterContext *const elbg = inlink->dst->priv;
-    int i, j, k;
+    int i, j, k, ret;
     uint8_t *p, *p0;
 
     const uint8_t r_idx  = elbg->rgba_map[R];
@@ -164,9 +164,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     /* compute the codebook */
-    avpriv_elbg_do(&elbg->ctx, elbg->codeword, NB_COMPONENTS, elbg->codeword_length,
-                   elbg->codebook, elbg->codebook_length, elbg->max_steps_nb,
-                   elbg->codeword_closest_codebook_idxs, &elbg->lfg);
+    ret = avpriv_elbg_do(&elbg->ctx, elbg->codeword, NB_COMPONENTS,
+                         elbg->codeword_length, elbg->codebook,
+                         elbg->codebook_length, elbg->max_steps_nb,
+                         elbg->codeword_closest_codebook_idxs, &elbg->lfg);
+    if (ret < 0) {
+        av_frame_free(&frame);
+        return ret;
+    }
 
     if (elbg->pal8) {
         AVFilterLink *outlink = inlink->dst->outputs[0];
