@@ -376,7 +376,6 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
     elbg_data elbg_d;
     elbg_data *elbg = &elbg_d;
     int i, j, k, steps = 0, ret = 0;
-    int *dist_cb = av_malloc_array(numpoints, sizeof(int));
     int *size_part = av_malloc_array(numCB, sizeof(int));
     cell *list_buffer = av_malloc_array(numpoints, sizeof(cell));
     cell *free_cells;
@@ -394,7 +393,7 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
     elbg->utility_inc = av_malloc_array(numCB, sizeof(*elbg->utility_inc));
     elbg->scratchbuf = av_malloc_array(5*dim, sizeof(int));
 
-    if (!dist_cb || !size_part || !list_buffer || !elbg->cells ||
+    if (!size_part || !list_buffer || !elbg->cells ||
         !elbg->utility || !elbg->utility_inc || !elbg->scratchbuf) {
         ret = AVERROR(ENOMEM);
         goto out;
@@ -423,9 +422,8 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
                 }
             }
             elbg->nearest_cb[i] = best_idx;
-            dist_cb[i] = best_dist;
-            elbg->error += dist_cb[i];
-            elbg->utility[elbg->nearest_cb[i]] += dist_cb[i];
+            elbg->error += best_dist;
+            elbg->utility[elbg->nearest_cb[i]] += best_dist;
             free_cells->index = i;
             free_cells->next = elbg->cells[elbg->nearest_cb[i]];
             elbg->cells[elbg->nearest_cb[i]] = free_cells;
@@ -453,7 +451,6 @@ int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
             (steps < max_steps));
 
 out:
-    av_free(dist_cb);
     av_free(size_part);
     av_free(elbg->utility);
     av_free(list_buffer);
