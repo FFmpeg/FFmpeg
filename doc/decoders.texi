@@ -76,13 +76,19 @@ The following options are supported by the libdav1d wrapper.
 
 @item framethreads
 Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
+This option is deprecated for libdav1d >= 1.0 and will be removed in the future. Use the
+global option @code{threads} instead.
 
 @item tilethreads
 Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
+This option is deprecated for libdav1d >= 1.0 and will be removed in the future. Use the
+global option @code{threads} instead.
 
 @item filmgrain
 Apply film grain to the decoded video if present in the bitstream. Defaults to the
 internal default of the library.
+This option is deprecated and will be removed in the future. See the global option
+@code{export_side_data} to export Film Grain parameters instead of applying it.
 
 @item oppoint
 Select an operating point of a scalable AV1 bitstream (0 - 31). Defaults to the
