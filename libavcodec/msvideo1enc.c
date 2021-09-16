@@ -119,7 +119,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             // try to find optimal value to fill whole 4x4 block
             score = 0;
             ret = avpriv_elbg_do(&c->elbg, c->block, 3, 16, c->avg,
-                                 1, 1, c->output, &c->rnd);
+                                 1, 1, c->output, &c->rnd, 0);
             if (ret < 0)
                 return ret;
             if(c->avg[0] == 1) // red component = 1 will be written as skip code
@@ -141,7 +141,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             // search for optimal filling of 2-color block
             score = 0;
             ret = avpriv_elbg_do(&c->elbg, c->block, 3, 16, c->codebook,
-                                 2, 1, c->output, &c->rnd);
+                                 2, 1, c->output, &c->rnd, 0);
             if (ret < 0)
                 return ret;
             // last output value should be always 1, swap codebooks if needed
@@ -170,7 +170,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             for(i = 0; i < 4; i++){
                 ret = avpriv_elbg_do(&c->elbg, c->block2 + i * 4 * 3, 3, 4,
                                      c->codebook2 + i * 2 * 3, 2, 1,
-                                     c->output2 + i * 4, &c->rnd);
+                                     c->output2 + i * 4, &c->rnd, 0);
                 if (ret < 0)
                     return ret;
             }

@@ -167,7 +167,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     ret = avpriv_elbg_do(&elbg->ctx, elbg->codeword, NB_COMPONENTS,
                          elbg->codeword_length, elbg->codebook,
                          elbg->codebook_length, elbg->max_steps_nb,
-                         elbg->codeword_closest_codebook_idxs, &elbg->lfg);
+                         elbg->codeword_closest_codebook_idxs, &elbg->lfg, 0);
     if (ret < 0) {
         av_frame_free(&frame);
         return ret;

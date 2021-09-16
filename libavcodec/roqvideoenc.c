@@ -826,7 +826,7 @@ static int generate_codebook(RoqEncContext *enc,
     int *closest_cb = enc->closest_cb;
 
     ret = avpriv_elbg_do(&enc->elbg, points, 6 * c_size, inputCount, codebook,
-                         cbsize, 1, closest_cb, &enc->randctx);
+                         cbsize, 1, closest_cb, &enc->randctx, 0);
     if (ret < 0)
         return ret;
 

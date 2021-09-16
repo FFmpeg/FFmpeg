@@ -445,7 +445,7 @@ static void init_elbg(ELBGContext *elbg, int *points, int *temp_points,
 
 int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
                    int *codebook, int num_cb, int max_steps,
-                   int *closest_cb, AVLFG *rand_state)
+                   int *closest_cb, AVLFG *rand_state, uintptr_t flags)
 {
     ELBGContext *const elbg = *elbgp ? *elbgp : av_mallocz(sizeof(*elbg));
 

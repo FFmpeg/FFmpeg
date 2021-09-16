@@ -764,7 +764,7 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
         size = i;
 
     ret = avpriv_elbg_do(&s->elbg, s->codebook_input, entry_size, i, codebook,
-                         size, 1, s->codebook_closest, &s->randctx);
+                         size, 1, s->codebook_closest, &s->randctx, 0);
     if (ret < 0)
         return ret;
 

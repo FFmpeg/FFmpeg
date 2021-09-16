@@ -21,6 +21,7 @@
 #ifndef AVCODEC_ELBG_H
 #define AVCODEC_ELBG_H
 
+#include <stdint.h>
 #include "libavutil/lfg.h"
 
 struct ELBGContext;
@@ -41,11 +42,12 @@ struct ELBGContext;
  * @param num_steps The maximum number of steps. One step is already a good compromise between time and quality.
  * @param closest_cb Return the closest codebook to each point. Must be allocated.
  * @param rand_state A random number generator state. Should be already initialized by av_lfg_init().
+ * @param flags Currently unused; must be set to 0.
  * @return < 0 in case of error, 0 otherwise
  */
 int avpriv_elbg_do(struct ELBGContext **ctx, int *points, int dim,
                    int numpoints, int *codebook, int num_cb, int num_steps,
-                   int *closest_cb, AVLFG *rand_state);
+                   int *closest_cb, AVLFG *rand_state, uintptr_t flags);
 
 /**
  * Free an ELBGContext and reset the pointer to it.
