@@ -524,9 +524,8 @@ cglobal horiz_slice, 4, 9, 9, ptr, width, height, steps, nu, bscale, x, y, step,
         cmp xq,        0
         jg .loop_x_scalar
 
-    OPTIMIZED_LOOP_STEP
-
     .bscale_scalar:
+        OPTIMIZED_LOOP_STEP
         sub ptrq, 4
         sub localbufq, mmsize
         mulps m3, m1
