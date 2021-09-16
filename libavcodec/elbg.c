@@ -53,8 +53,20 @@ typedef struct ELBGContext {
     int64_t *utility_inc;
     int *nearest_cb;
     int *points;
+    int *size_part;
     AVLFG *rand_state;
     int *scratchbuf;
+    cell *cell_buffer;
+
+    /* Sizes for the buffers above. Pointers without such a field
+     * are not allocated by us and only valid for the duration
+     * of a single call to avpriv_elbg_do(). */
+    unsigned utility_allocated;
+    unsigned utility_inc_allocated;
+    unsigned size_part_allocated;
+    unsigned cells_allocated;
+    unsigned scratchbuf_allocated;
+    unsigned cell_buffer_allocated;
 } ELBGContext;
 
 static inline int distance_limited(int *a, int *b, int dim, int limit)
@@ -332,32 +344,19 @@ static void do_shiftings(ELBGContext *elbg)
         }
 }
 
-static int do_elbg(ELBGContext *elbg, int *points, int numpoints,
-                   int max_steps)
+static void do_elbg(ELBGContext *elbg, int *points, int numpoints,
+                    int max_steps)
 {
-    int i, j, steps = 0, ret = 0;
-    int *size_part = av_malloc_array(elbg->num_cb, sizeof(int));
-    cell *list_buffer = av_malloc_array(numpoints, sizeof(cell));
-    cell *free_cells;
+    int *const size_part = elbg->size_part;
+    int i, j, steps = 0;
     int best_idx = 0;
     int64_t last_error;
 
     elbg->error = INT64_MAX;
-    elbg->cells   = av_malloc_array(elbg->num_cb, sizeof(cell *));
-    elbg->utility = av_malloc_array(elbg->num_cb, sizeof(*elbg->utility));
     elbg->points = points;
-    elbg->utility_inc = av_malloc_array(elbg->num_cb, sizeof(*elbg->utility_inc));
-    elbg->scratchbuf = av_malloc_array(5 * elbg->dim, sizeof(int));
-
-    if (!size_part || !list_buffer || !elbg->cells ||
-        !elbg->utility || !elbg->utility_inc || !elbg->scratchbuf) {
-        ret = AVERROR(ENOMEM);
-        goto out;
-    }
-
 
     do {
-        free_cells = list_buffer;
+        cell *free_cells = elbg->cell_buffer;
         last_error = elbg->error;
         steps++;
         memset(elbg->utility, 0, elbg->num_cb * sizeof(*elbg->utility));
@@ -408,15 +407,6 @@ static int do_elbg(ELBGContext *elbg, int *points, int numpoints,
 
     } while(((last_error - elbg->error) > DELTA_ERR_MAX*elbg->error) &&
             (steps < max_steps));
-
-out:
-    av_free(size_part);
-    av_free(elbg->utility);
-    av_free(list_buffer);
-    av_free(elbg->cells);
-    av_free(elbg->utility_inc);
-    av_free(elbg->scratchbuf);
-    return ret;
 }
 
 #define BIG_PRIME 433494437LL
@@ -450,13 +440,13 @@ static int init_elbg(ELBGContext *elbg, int *points, int numpoints,
             av_freep(&temp_points);
             return ret;
         }
-        ret =   do_elbg(elbg, temp_points, numpoints / 8, 2 * max_steps);
+        do_elbg(elbg, temp_points, numpoints / 8, 2 * max_steps);
         av_free(temp_points);
     } else  // If not, initialize the codebook with random positions
         for (int i = 0; i < elbg->num_cb; i++)
             memcpy(elbg->codebook + i * dim, points + ((i*BIG_PRIME)%numpoints)*dim,
                    dim * sizeof(*elbg->codebook));
-    return ret;
+    return 0;
 }
 
 int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
@@ -476,13 +466,47 @@ int avpriv_elbg_do(ELBGContext **elbgp, int *points, int dim, int numpoints,
     elbg->num_cb     = num_cb;
     elbg->dim        = dim;
 
+#define ALLOCATE_IF_NECESSARY(field, new_elements, multiplicator)            \
+    if (elbg->field ## _allocated < new_elements) {                          \
+        av_freep(&elbg->field);                                              \
+        elbg->field = av_malloc_array(new_elements,                          \
+                                      multiplicator * sizeof(*elbg->field)); \
+        if (!elbg->field) {                                                  \
+            elbg->field ## _allocated = 0;                                   \
+            return AVERROR(ENOMEM);                                          \
+        }                                                                    \
+        elbg->field ## _allocated = new_elements;                            \
+    }
+    /* Allocating the buffers for do_elbg() here once relies
+     * on their size being always the same even when do_elbg()
+     * is called from init_elbg(). It also relies on do_elbg()
+     * never calling itself recursively. */
+    ALLOCATE_IF_NECESSARY(cells,       num_cb,    1)
+    ALLOCATE_IF_NECESSARY(utility,     num_cb,    1)
+    ALLOCATE_IF_NECESSARY(utility_inc, num_cb,    1)
+    ALLOCATE_IF_NECESSARY(size_part,   num_cb,    1)
+    ALLOCATE_IF_NECESSARY(cell_buffer, numpoints, 1)
+    ALLOCATE_IF_NECESSARY(scratchbuf,  dim,       5)
+
     ret = init_elbg(elbg, points, numpoints, max_steps);
     if (ret < 0)
         return ret;
-    return do_elbg (elbg, points, numpoints, max_steps);
+    do_elbg (elbg, points, numpoints, max_steps);
+    return 0;
 }
 
 av_cold void avpriv_elbg_free(ELBGContext **elbgp)
 {
+    ELBGContext *elbg = *elbgp;
+    if (!elbg)
+        return;
+
+    av_freep(&elbg->size_part);
+    av_freep(&elbg->utility);
+    av_freep(&elbg->cell_buffer);
+    av_freep(&elbg->cells);
+    av_freep(&elbg->utility_inc);
+    av_freep(&elbg->scratchbuf);
+
     av_freep(elbgp);
 }
