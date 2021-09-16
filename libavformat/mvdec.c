@@ -387,7 +387,7 @@ static int mv_read_header(AVFormatContext *avctx)
             if (!ast)
                 return AVERROR(ENOMEM);
             ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-            if ((read_table(avctx, ast, parse_audio_var)) < 0)
+            if ((ret = read_table(avctx, ast, parse_audio_var)) < 0)
                 return ret;
             if (mv->acompression == 100 &&
                 mv->aformat == AUDIO_FORMAT_SIGNED &&
