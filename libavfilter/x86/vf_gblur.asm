@@ -455,11 +455,12 @@ cglobal horiz_slice, 4, 9, 9, ptr, width, height, steps, nu, bscale, x, y, step,
     mov nuq, localbufm
     DEFINE_ARGS buffer, width, height, steps, \
                 localbuf, x, y, step, stride, remain, ptr, mask
-    MOVSXDIFNIDN width, height, steps
 %else
     VBROADCASTSS    m0, xmm0 ; nu
     VBROADCASTSS    m1, xmm1 ; bscale
 %endif
+
+    MOVSXDIFNIDN width, height, steps
 
 %if cpuflag(avx512)
     vpbroadcastd    m2, widthd
@@ -861,11 +862,12 @@ cglobal verti_slice, 6, 12, 9, 0-mmsize*2, buffer, width, height, cbegin, cend, 
     VBROADCASTSS m1, bscalem
     DEFINE_ARGS buffer, width, height, cbegin, cend, \
                 steps, x, y, cwidth, step, ptr, stride
-    MOVSXDIFNIDN width, height, cbegin, cend, steps
 %else
     VBROADCASTSS m0, xmm0 ; nu
     VBROADCASTSS m1, xmm1 ; bscale
 %endif
+    MOVSXDIFNIDN width, height, cbegin, cend, steps
+
     mov cwidthq, cendq
     sub cwidthq, cbeginq
     lea strideq, [widthq * 4]
