@@ -145,7 +145,7 @@ void av_buffer_default_free(void *opaque, uint8_t *data);
  * @return a new AVBufferRef referring to the same AVBuffer as buf or NULL on
  * failure.
  */
-AVBufferRef *av_buffer_ref(AVBufferRef *buf);
+AVBufferRef *av_buffer_ref(const AVBufferRef *buf);
 
 /**
  * Free a given reference and automatically free the buffer if there are no more
@@ -212,7 +212,7 @@ int av_buffer_realloc(AVBufferRef **buf, size_t size);
  * @return 0 on success
  *         AVERROR(ENOMEM) on memory allocation failure.
  */
-int av_buffer_replace(AVBufferRef **dst, AVBufferRef *src);
+int av_buffer_replace(AVBufferRef **dst, const AVBufferRef *src);
 
 /**
  * @}
@@ -313,7 +313,7 @@ AVBufferRef *av_buffer_pool_get(AVBufferPool *pool);
  * therefore you have to use this function to access the original opaque
  * parameter of an allocated buffer.
  */
-void *av_buffer_pool_buffer_get_opaque(AVBufferRef *ref);
+void *av_buffer_pool_buffer_get_opaque(const AVBufferRef *ref);
 
 /**
  * @}

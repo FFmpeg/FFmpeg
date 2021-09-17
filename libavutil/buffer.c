@@ -90,7 +90,7 @@ AVBufferRef *av_buffer_allocz(size_t size)
     return ret;
 }
 
-AVBufferRef *av_buffer_ref(AVBufferRef *buf)
+AVBufferRef *av_buffer_ref(const AVBufferRef *buf)
 {
     AVBufferRef *ret = av_mallocz(sizeof(*ret));
 
@@ -216,7 +216,7 @@ int av_buffer_realloc(AVBufferRef **pbuf, size_t size)
     return 0;
 }
 
-int av_buffer_replace(AVBufferRef **pdst, AVBufferRef *src)
+int av_buffer_replace(AVBufferRef **pdst, const AVBufferRef *src)
 {
     AVBufferRef *dst = *pdst;
     AVBufferRef *tmp;
@@ -395,7 +395,7 @@ AVBufferRef *av_buffer_pool_get(AVBufferPool *pool)
     return ret;
 }
 
-void *av_buffer_pool_buffer_get_opaque(AVBufferRef *ref)
+void *av_buffer_pool_buffer_get_opaque(const AVBufferRef *ref)
 {
     BufferPoolEntry *buf = ref->buffer->opaque;
     av_assert0(buf);

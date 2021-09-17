@@ -14,6 +14,10 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-09-17 - xxxxxxxxxx - lavu 57.5.101 - buffer.h
+  Constified the input parameters in av_buffer_replace(), av_buffer_ref(),
+  and av_buffer_pool_buffer_get_opaque().
+
 2021-09-08 - xxxxxxxxxx - lavu 57.5.100 - hwcontext_d3d11va.h
   Add AVD3D11VAFramesContext.texture_infos
 
