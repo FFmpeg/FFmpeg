@@ -315,7 +315,7 @@ static int64_t get_pts(AVFormatContext *s, int stream_index)
 
         if (diff < 0)
             diff += 65535;
-        if (diff == 0)
+        if (diff == 0 && dhav->frame_rate)
             diff = av_rescale(dhav->frame_number - dst->last_frame_number, 1000, dhav->frame_rate);
         dst->pts += diff;
     } else {
