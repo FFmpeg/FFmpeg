@@ -5000,7 +5000,7 @@ elif enabled arm; then
         elif check_arm_arch 6ZK;      then echo armv6zk
         elif check_arm_arch 6T2;      then echo armv6t2
         elif check_arm_arch 7;        then echo armv7
-        elif check_arm_arch 7A  7_A;  then echo armv7-a
+        elif check_arm_arch 7A  7_A;  then echo armv7-a+fp
         elif check_arm_arch 7S;       then echo armv7-a
         elif check_arm_arch 7R  7_R;  then echo armv7-r
         elif check_arm_arch 7M  7_M;  then echo armv7-m
