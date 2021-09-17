@@ -857,7 +857,9 @@ static const AVCodec *find_codec_or_die(const char *name, enum AVMediaType type,
     return codec;
 }
 
-static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *st)
+static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *st,
+                                     enum HWAccelID hwaccel_id, enum AVHWDeviceType hwaccel_device_type)
+
 {
     char *codec_name = NULL;
 
@@ -868,8 +870,32 @@ static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVSt
         if (recast_media && st->codecpar->codec_type != codec->type)
             st->codecpar->codec_type = codec->type;
         return codec;
-    } else
+    } else {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+            hwaccel_id == HWACCEL_GENERIC &&
+            hwaccel_device_type != AV_HWDEVICE_TYPE_NONE) {
+            const AVCodec *c;
+            void *i = NULL;
+
+            while ((c = av_codec_iterate(&i))) {
+                const AVCodecHWConfig *config;
+
+                if (c->id != st->codecpar->codec_id ||
+                    !av_codec_is_decoder(c))
+                    continue;
+
+                for (int j = 0; config = avcodec_get_hw_config(c, j); j++) {
+                    if (config->device_type == hwaccel_device_type) {
+                        av_log(NULL, AV_LOG_VERBOSE, "Selecting decoder '%s' because of requested hwaccel method %s\n",
+                               c->name, av_hwdevice_get_type_name(hwaccel_device_type));
+                        return c;
+                    }
+                }
+            }
+        }
+
         return avcodec_find_decoder(st->codecpar->codec_id);
+    }
 }
 
 static int guess_input_channel_layout(InputStream *ist)
@@ -1003,7 +1029,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             ist->hwaccel_pix_fmt = AV_PIX_FMT_NONE;
         }
 
-        ist->dec = choose_decoder(o, ic, st);
+        ist->dec = choose_decoder(o, ic, st, ist->hwaccel_id, ist->hwaccel_device_type);
         ist->decoder_opts = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id, ic, st, ist->dec);
 
         ist->reinit_filters = -1;
@@ -1309,7 +1335,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
 
     /* apply forced codec ids */
     for (i = 0; i < ic->nb_streams; i++)
-        choose_decoder(o, ic, ic->streams[i]);
+        choose_decoder(o, ic, ic->streams[i], HWACCEL_NONE, AV_HWDEVICE_TYPE_NONE);
 
     if (find_stream_info) {
         AVDictionary **opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
