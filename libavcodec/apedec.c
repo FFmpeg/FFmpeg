@@ -879,7 +879,7 @@ static av_always_inline int filter_fast_3320(APEPredictor *p,
     }
 
     predictionA = p->buf[delayA] * 2U - p->buf[delayA - 1];
-    p->lastA[filter] = decoded + ((int32_t)(predictionA  * p->coeffsA[filter][0]) >> 9);
+    p->lastA[filter] = decoded + (unsigned)((int32_t)(predictionA  * p->coeffsA[filter][0]) >> 9);
 
     if ((decoded ^ predictionA) > 0)
         p->coeffsA[filter][0]++;
