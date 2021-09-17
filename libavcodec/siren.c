@@ -648,6 +648,10 @@ static int decode_vector(SirenContext *s, int number_of_regions,
                 }
                 coefs_ptr++;
             }
+            if (i >= FF_ARRAY_ELEMS(noise_category5)) {
+                error = 1;
+                break;
+            }
 
             noise = decoder_standard_deviation[region] * noise_category5[i];
         } else
