@@ -676,7 +676,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         out->color_primaries = (int)s->dst_format.color_primaries;
 
     if (s->range != -1)
-        out->color_range = (int)s->dst_format.pixel_range;
+        out->color_range = (int)s->dst_format.pixel_range + 1;
 
     if (s->trc != -1)
         out->color_trc = (int)s->dst_format.transfer_characteristics;
