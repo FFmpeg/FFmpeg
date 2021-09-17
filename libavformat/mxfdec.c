@@ -203,8 +203,8 @@ typedef struct MXFDescriptor {
     unsigned int color_range;
     unsigned int horiz_subsampling;
     unsigned int vert_subsampling;
-    UID *sub_descriptors_refs;
-    int sub_descriptors_count;
+    UID *file_descriptors_refs;
+    int file_descriptors_count;
     int linked_track_id;
     uint8_t *extradata;
     int extradata_size;
@@ -342,7 +342,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
         av_freep(&((MXFDescriptor *)*ctx)->extradata);
         av_freep(&((MXFDescriptor *)*ctx)->mastering);
         av_freep(&((MXFDescriptor *)*ctx)->coll);
-        av_freep(&((MXFDescriptor *)*ctx)->sub_descriptors_refs);
+        av_freep(&((MXFDescriptor *)*ctx)->file_descriptors_refs);
         break;
     case Sequence:
         av_freep(&((MXFSequence *)*ctx)->structural_components_refs);
@@ -1201,8 +1201,8 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
 
     switch(tag) {
     case 0x3F01:
-        return mxf_read_strong_ref_array(pb, &descriptor->sub_descriptors_refs,
-                                             &descriptor->sub_descriptors_count);
+        return mxf_read_strong_ref_array(pb, &descriptor->file_descriptors_refs,
+                                             &descriptor->file_descriptors_count);
     case 0x3002: /* ContainerDuration */
         descriptor->duration = avio_rb64(pb);
         break;
@@ -2071,22 +2071,22 @@ static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_ul, U
 
 static MXFDescriptor* mxf_resolve_multidescriptor(MXFContext *mxf, MXFDescriptor *descriptor, int track_id)
 {
-    MXFDescriptor *sub_descriptor = NULL;
+    MXFDescriptor *file_descriptor = NULL;
     int i;
 
     if (!descriptor)
         return NULL;
 
     if (descriptor->meta.type == MultipleDescriptor) {
-        for (i = 0; i < descriptor->sub_descriptors_count; i++) {
-            sub_descriptor = mxf_resolve_strong_ref(mxf, &descriptor->sub_descriptors_refs[i], Descriptor);
+        for (i = 0; i < descriptor->file_descriptors_count; i++) {
+            file_descriptor = mxf_resolve_strong_ref(mxf, &descriptor->file_descriptors_refs[i], Descriptor);
 
-            if (!sub_descriptor) {
-                av_log(mxf->fc, AV_LOG_ERROR, "could not resolve sub descriptor strong ref\n");
+            if (!file_descriptor) {
+                av_log(mxf->fc, AV_LOG_ERROR, "could not resolve file descriptor strong ref\n");
                 continue;
             }
-            if (sub_descriptor->linked_track_id == track_id) {
-                return sub_descriptor;
+            if (file_descriptor->linked_track_id == track_id) {
+                return file_descriptor;
             }
         }
     } else if (descriptor->meta.type == Descriptor)
