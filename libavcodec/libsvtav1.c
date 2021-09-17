@@ -210,7 +210,8 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->min_qp_allowed       = avctx->qmin;
     }
 
-    param->intra_refresh_type       = 2; /* Real keyframes only */
+    /* 2 = IDR, closed GOP, 1 = CRA, open GOP */
+    param->intra_refresh_type = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ? 2 : 1;
 
     if (svt_enc->la_depth >= 0)
         param->look_ahead_distance  = svt_enc->la_depth;
@@ -545,6 +546,7 @@ static const AVClass class = {
 
 static const AVCodecDefault eb_enc_defaults[] = {
     { "b",         "7M"    },
+    { "flags",     "+cgop" },
     { "g",         "-1"    },
     { "qmin",      "0"     },
     { "qmax",      "63"    },
