@@ -594,7 +594,7 @@ static int decode_vector(SirenContext *s, int number_of_regions,
             for (i = 0; i < number_of_vectors[category]; i++) {
                 index = 0;
                 do {
-                    if (get_bits_left(gb) <= 0) {
+                    if (get_bits_left(gb) - s->checksum_bits <= 0) {
                         error = 1;
                         break;
                     }
@@ -614,7 +614,7 @@ static int decode_vector(SirenContext *s, int number_of_regions,
                         index >>= index_table[category];
 
                         if (decoded_value) {
-                            if (get_bits_left(gb) <= 0) {
+                            if (get_bits_left(gb) - s->checksum_bits <= 0) {
                                 error = 1;
                                 break;
                             }
@@ -697,7 +697,7 @@ static int decode_vector(SirenContext *s, int number_of_regions,
         }
     }
 
-    return error == 1 ? AVERROR_INVALIDDATA : get_bits_left(gb);
+    return error == 1 ? AVERROR_INVALIDDATA : (get_bits_left(gb) - s->checksum_bits);
 }
 
 static int siren_decode(AVCodecContext *avctx, void *data,
@@ -716,7 +716,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
         if (avpkt->size < bits_per_frame / 8)
             return AVERROR_INVALIDDATA;
 
-        if ((ret = init_get_bits(gb, avpkt->data, bits_per_frame - s->checksum_bits)) < 0)
+        if ((ret = init_get_bits(gb, avpkt->data, bits_per_frame)) < 0)
             return ret;
     } else
     if ((ret = init_get_bits8(gb, avpkt->data, avpkt->size)) < 0)
@@ -730,7 +730,7 @@ static int siren_decode(AVCodecContext *avctx, void *data,
 
     rate_control = get_bits(gb, 4);
 
-    ret = categorize_regions(s->number_of_regions, get_bits_left(gb),
+    ret = categorize_regions(s->number_of_regions, get_bits_left(gb) - s->checksum_bits,
                              s->absolute_region_power_index, s->power_categories,
                              s->category_balance);
     if (ret < 0)
@@ -745,11 +745,11 @@ static int siren_decode(AVCodecContext *avctx, void *data,
     if (ret < 0 && !s->microsoft)
         return ret;
 
-    if (get_bits_left(gb) > 0) {
+    if (get_bits_left(gb) - s->checksum_bits > 0) {
         do {
             frame_error |= !get_bits1(gb);
-        } while (get_bits_left(gb) > 0);
-    } else if (get_bits_left(gb) < 0 &&
+        } while (get_bits_left(gb) - s->checksum_bits > 0);
+    } else if (get_bits_left(gb) - s->checksum_bits < 0 &&
                rate_control + 1 < s->rate_control_possibilities) {
         frame_error = 1;
     }
