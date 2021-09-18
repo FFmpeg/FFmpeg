@@ -1214,6 +1214,8 @@ static int context_init_threaded(SwsContext *c,
         if (!c->slice_ctx[i])
             return AVERROR(ENOMEM);
 
+        c->slice_ctx[i]->parent = c;
+
         ret = av_opt_copy((void*)c->slice_ctx[i], (void*)c);
         if (ret < 0)
             return ret;

@@ -91,6 +91,7 @@ const AVClass ff_sws_context_class = {
     .class_name = "SWScaler",
     .item_name  = sws_context_to_name,
     .option     = swscale_options,
+    .parent_log_context_offset = OFFSET(parent),
     .category   = AV_CLASS_CATEGORY_SWSCALER,
     .version    = LIBAVUTIL_VERSION_INT,
 };

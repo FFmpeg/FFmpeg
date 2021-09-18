@@ -301,6 +301,8 @@ typedef struct SwsContext {
      */
     const AVClass *av_class;
 
+    struct SwsContext *parent;
+
     AVSliceThread      *slicethread;
     struct SwsContext **slice_ctx;
     int                *slice_err;
