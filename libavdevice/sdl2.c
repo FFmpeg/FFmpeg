@@ -298,13 +298,14 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
      * case SDL_PIXELFORMAT_ARGB2101010:
      */
     case SDL_PIXELFORMAT_IYUV:
-    case SDL_PIXELFORMAT_YUY2:
-    case SDL_PIXELFORMAT_UYVY:
         ret = SDL_UpdateYUVTexture(sdl->texture, NULL,
                                    data[0], linesize[0],
                                    data[1], linesize[1],
                                    data[2], linesize[2]);
         break;
+
+    case SDL_PIXELFORMAT_YUY2:
+    case SDL_PIXELFORMAT_UYVY:
     case SDL_PIXELFORMAT_RGB332:
     case SDL_PIXELFORMAT_RGB444:
     case SDL_PIXELFORMAT_RGB555:
