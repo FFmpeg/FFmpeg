@@ -321,6 +321,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         }
     }
 
+#if ARCH_X86
     if (   (uintptr_t)dst[0]&15 || (uintptr_t)dst[1]&15 || (uintptr_t)dst[2]&15
         || (uintptr_t)src[0]&15 || (uintptr_t)src[1]&15 || (uintptr_t)src[2]&15
         || dstStride[0]&15 || dstStride[1]&15 || dstStride[2]&15 || dstStride[3]&15
@@ -333,6 +334,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speed loss\n");
         }
     }
+#endif
 
     if (scale_dst) {
         dstY         = dstSliceY;
