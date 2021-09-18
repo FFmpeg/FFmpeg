@@ -608,12 +608,16 @@ static int decode_vector(SirenContext *s, int number_of_regions,
 
                 index >>= 1;
 
-                if (error == 0 && get_bits_left(gb) >= 0) {
+                if (error == 0) {
                     for (j = 0; j < vector_dimension[category]; j++) {
                         decoded_value = mlt_quant[category][index & ((1 << index_table[category]) - 1)];
                         index >>= index_table[category];
 
                         if (decoded_value) {
+                            if (get_bits_left(gb) <= 0) {
+                                error = 1;
+                                break;
+                            }
                             if (!get_bits1(gb))
                                 decoded_value *= -decoder_standard_deviation[region];
                             else
