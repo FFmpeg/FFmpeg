@@ -407,6 +407,8 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
                         mh.stream_type);
             return AVERROR_PATCHWELCOME;
         }
+        if (mh.channel_modifier_thd_stream0 == THD_CH_MODIFIER_STEREO)
+            m->substream[0].mask = AV_CH_LAYOUT_STEREO;
         if ((substr = (mh.num_substreams > 1)))
             m->substream[0].mask = AV_CH_LAYOUT_STEREO;
         if (mh.num_substreams > 2)
@@ -414,7 +416,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
                 m->substream[2].mask = mh.channel_layout_thd_stream2;
             else
                 m->substream[2].mask = mh.channel_layout_thd_stream1;
-        m->substream[substr].mask = mh.channel_layout_thd_stream1;
+        m->substream[1].mask = mh.channel_layout_thd_stream1;
 
         if (m->avctx->channels<=2 && m->substream[substr].mask == AV_CH_LAYOUT_MONO && m->max_decoded_substream == 1) {
             av_log(m->avctx, AV_LOG_DEBUG, "Mono stream with 2 substreams, ignoring 2nd\n");
