@@ -21,6 +21,8 @@
 #ifndef SWSCALE_SWSCALE_INTERNAL_H
 #define SWSCALE_SWSCALE_INTERNAL_H
 
+#include <stdatomic.h>
+
 #include "config.h"
 #include "version.h"
 
@@ -672,6 +674,8 @@ typedef struct SwsContext {
     unsigned int xyz_scratch_allocated;
 
     unsigned int dst_slice_align;
+    atomic_int   stride_unaligned_warned;
+    atomic_int   data_unaligned_warned;
 } SwsContext;
 //FIXME check init (where 0)
 

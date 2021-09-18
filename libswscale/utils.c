@@ -1112,6 +1112,8 @@ SwsContext *sws_alloc_context(void)
     if (c) {
         c->av_class = &ff_sws_context_class;
         av_opt_set_defaults(c);
+        atomic_init(&c->stride_unaligned_warned, 0);
+        atomic_init(&c->data_unaligned_warned,   0);
     }
 
     return c;

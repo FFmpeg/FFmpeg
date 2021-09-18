@@ -312,12 +312,12 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
     if (dstStride[0]&15 || dstStride[1]&15 ||
         dstStride[2]&15 || dstStride[3]&15) {
-        static int warnedAlready = 0; // FIXME maybe move this into the context
-        if (flags & SWS_PRINT_INFO && !warnedAlready) {
+        SwsContext *const ctx = c->parent ? c->parent : c;
+        if (flags & SWS_PRINT_INFO &&
+            !atomic_exchange_explicit(&ctx->stride_unaligned_warned, 1, memory_order_relaxed)) {
             av_log(c, AV_LOG_WARNING,
                    "Warning: dstStride is not aligned!\n"
                    "         ->cannot do aligned memory accesses anymore\n");
-            warnedAlready = 1;
         }
     }
 
@@ -326,11 +326,11 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         || dstStride[0]&15 || dstStride[1]&15 || dstStride[2]&15 || dstStride[3]&15
         || srcStride[0]&15 || srcStride[1]&15 || srcStride[2]&15 || srcStride[3]&15
     ) {
-        static int warnedAlready=0;
+        SwsContext *const ctx = c->parent ? c->parent : c;
         int cpu_flags = av_get_cpu_flags();
-        if (HAVE_MMXEXT && (cpu_flags & AV_CPU_FLAG_SSE2) && !warnedAlready){
+        if (HAVE_MMXEXT && (cpu_flags & AV_CPU_FLAG_SSE2) &&
+            !atomic_exchange_explicit(&ctx->stride_unaligned_warned,1, memory_order_relaxed)) {
             av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speed loss\n");
-            warnedAlready=1;
         }
     }
 
