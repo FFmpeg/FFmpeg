@@ -944,7 +944,6 @@ static int finalize_frame(H264Context *h, AVFrame *dst, H264Picture *out, int *g
                                  out->mb_type,
                                  out->qscale_table,
                                  out->motion_val,
-                                 NULL,
                                  out->mb_width, out->mb_height, out->mb_stride, 1);
         }
     }

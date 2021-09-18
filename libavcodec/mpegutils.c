@@ -102,7 +102,6 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
 
 void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_table,
                          uint32_t *mbtype_table, int8_t *qscale_table, int16_t (*motion_val[2])[2],
-                         int *low_delay,
                          int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
     if ((avctx->export_side_data & AV_CODEC_EXPORT_DATA_MVS) && mbtype_table && motion_val[0]) {
