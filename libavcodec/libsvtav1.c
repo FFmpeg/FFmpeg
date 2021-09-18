@@ -520,7 +520,7 @@ static const AVOption options[] = {
 #undef LEVEL
 
     { "rc", "Bit rate control mode", OFFSET(rc_mode),
-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 3, VE , "rc"},
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, VE , "rc"},
         { "cqp", "Constant quantizer", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "rc" },
         { "vbr", "Variable Bit Rate, use a target bitrate for the entire stream", 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "rc" },
         { "cvbr", "Constrained Variable Bit Rate, use a target bitrate for each GOP", 0, AV_OPT_TYPE_CONST,{ .i64 = 2 },  INT_MIN, INT_MAX, VE, "rc" },
