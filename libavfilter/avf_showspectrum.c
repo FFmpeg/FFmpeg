@@ -645,54 +645,37 @@ static char *get_time(AVFilterContext *ctx, float seconds, int x)
     return units;
 }
 
-static float log_scale(const float value, const float min, const float max)
+static float log_scale(const float bin,
+                       const float bmin, const float bmax,
+                       const float min, const float max)
 {
-    if (value < min)
-        return min;
-    if (value > max)
-        return max;
+    return exp2f(((bin - bmin) / (bmax - bmin)) * (log2f(max) - log2f(min)) + log2f(min));
+}
 
-    {
-        const float b = logf(max / min) / (max - min);
-        const float a = max / expf(max * b);
-
-        return expf(value * b) * a;
+static float get_hz(const float bin, const float bmax,
+                    const float min, const float max,
+                    int fscale)
+{
+    switch (fscale) {
+    case F_LINEAR:
+        return min + (bin / bmax) * (max - min);
+    case F_LOG:
+        return min + log_scale(bin, 0, bmax, 20.f, max - min);
+    default:
+        return 0.f;
     }
 }
 
-static float get_log_hz(const int bin, const int num_bins, const float sample_rate)
+static float inv_log_scale(float bin,
+                           float bmin, float bmax,
+                           float min, float max)
 {
-    const float max_freq = sample_rate / 2;
-    const float hz_per_bin = max_freq / num_bins;
-    const float freq = hz_per_bin * bin;
-    const float scaled_freq = log_scale(freq + 1, 21, max_freq) - 1;
-
-    return num_bins * scaled_freq / max_freq;
+    return (min * exp2f((bin * (log2f(max) - log2f(20.f))) / bmax) + min) * bmax / max;
 }
 
-static float inv_log_scale(const float value, const float min, const float max)
+static float bin_pos(const int bin, const int num_bins, const float min, const float max)
 {
-    if (value < min)
-        return min;
-    if (value > max)
-        return max;
-
-    {
-        const float b = logf(max / min) / (max - min);
-        const float a = max / expf(max * b);
-
-        return logf(value / a) / b;
-    }
-}
-
-static float bin_pos(const int bin, const int num_bins, const float sample_rate)
-{
-    const float max_freq = sample_rate / 2;
-    const float hz_per_bin = max_freq / num_bins;
-    const float freq = hz_per_bin * bin;
-    const float scaled_freq = inv_log_scale(freq + 1, 21, max_freq) - 1;
-
-    return num_bins * scaled_freq / max_freq;
+    return inv_log_scale(bin, 0.f, num_bins, 20.f, max - min);
 }
 
 static float get_scale(AVFilterContext *ctx, int scale, float a)
@@ -835,8 +818,7 @@ static int draw_legend(AVFilterContext *ctx, int samples)
             }
             for (y = 0; y < h; y += 40) {
                 float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
-                float bin = s->fscale == F_LINEAR ? y : get_log_hz(y, h, inlink->sample_rate);
-                float hertz = s->start + bin * range / (float)h;
+                float hertz = get_hz(y, h, s->start, s->start + range, s->fscale);
                 char *units;
 
                 if (hertz == 0)
@@ -893,8 +875,7 @@ static int draw_legend(AVFilterContext *ctx, int samples)
             }
             for (x = 0; x < w - 79; x += 80) {
                 float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
-                float bin = s->fscale == F_LINEAR ? x : get_log_hz(x, w, inlink->sample_rate);
-                float hertz = s->start + bin * range / (float)w;
+                float hertz = get_hz(x, w, s->start, s->start + range, s->fscale);
                 char *units;
 
                 if (hertz == 0)
@@ -1019,29 +1000,26 @@ static int plot_channel_log(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     AVFilterLink *inlink = ctx->inputs[0];
     const int h = s->orientation == VERTICAL ? s->channel_height : s->channel_width;
     const int ch = jobnr;
-    float y, yf, uf, vf;
-    int yy = 0;
+    float yf, uf, vf;
 
     /* decide color range */
     color_range(s, ch, &yf, &uf, &vf);
 
     /* draw the channel */
-    for (y = 0; y < h && yy < h; yy++) {
-        float pos0 = bin_pos(yy+0, h, inlink->sample_rate);
-        float pos1 = bin_pos(yy+1, h, inlink->sample_rate);
-        float delta = pos1 - pos0;
+    for (int yy = 0; yy < h; yy++) {
+        float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
+        float pos = bin_pos(yy, h, s->start, s->start + range);
+        float delta = pos - floorf(pos);
         float a0, a1;
 
-        a0 = get_value(ctx, ch, yy+0);
-        a1 = get_value(ctx, ch, FFMIN(yy+1, h-1));
-        for (float j = pos0; j < pos1 && y + j - pos0 < h; j++) {
-            float row = (s->mode == COMBINED) ? av_clipf(y + j - pos0, 0, h - 1) : ch * h + av_clipf(y + j - pos0, 0, h - 1);
-            float *out = &s->color_buffer[ch][3 * lrintf(row)];
-            float lerpfrac = (j - pos0) / delta;
+        a0 = get_value(ctx, ch, av_clip(pos, 0, h-1));
+        a1 = get_value(ctx, ch, av_clip(pos+1, 0, h-1));
+        {
+            int row = (s->mode == COMBINED) ? yy : ch * h + yy;
+            float *out = &s->color_buffer[ch][3 * row];
 
-            pick_color(s, yf, uf, vf, lerpfrac * a1 + (1.f-lerpfrac) * a0, out);
+            pick_color(s, yf, uf, vf, delta * a1 + (1.f - delta) * a0, out);
         }
-        y += delta;
     }
 
     return 0;
