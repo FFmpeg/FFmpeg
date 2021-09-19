@@ -240,7 +240,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
             avio_rl32(pb);       /* size */
             duration = avio_rl32(pb);
 
-            if (avio_feof(pb))
+            if (avio_feof(pb) || offset > INT64_MAX - 8)
                 return AVERROR_INVALIDDATA;
 
             pos = avio_tell(pb);
