@@ -160,29 +160,38 @@ static void draw_line(AudioVectorScopeContext *s, int x0, int y0, int x1, int y1
     }
 }
 
-static void fade(AudioVectorScopeContext *s)
+static int fade(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    AudioVectorScopeContext *s = ctx->priv;
     const int linesize = s->outpicref->linesize[0];
-    int i, j;
+    const int height = s->outpicref->height;
+    const int slice_start = (height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
 
-    if (s->fade[0] = 255 && s->fade[1] == 255 && s->fade[2] == 255) {
-        for (int i = 0; i < s->outpicref->height; i++)
-            memset(s->outpicref->data[0] + i * s->outpicref->linesize[0], 0, s->outpicref->width * 4);
-        return;
+    if (s->fade[0] == 255 && s->fade[1] == 255 && s->fade[2] == 255) {
+        for (int i = slice_start; i < slice_end; i++)
+            memset(s->outpicref->data[0] + i * linesize, 0, s->outpicref->width * 4);
+        return 0;
     }
 
     if (s->fade[0] || s->fade[1] || s->fade[2]) {
-        uint8_t *d = s->outpicref->data[0];
-        for (i = 0; i < s->h; i++) {
-            for (j = 0; j < s->w*4; j+=4) {
-                d[j+0] = FFMAX(d[j+0] - s->fade[0], 0);
-                d[j+1] = FFMAX(d[j+1] - s->fade[1], 0);
-                d[j+2] = FFMAX(d[j+2] - s->fade[2], 0);
-                d[j+3] = FFMAX(d[j+3] - s->fade[3], 0);
+        uint8_t *d = s->outpicref->data[0] + slice_start * linesize;
+        for (int i = slice_start; i < slice_end; i++) {
+            for (int j = 0; j < s->w*4; j+=4) {
+                if (d[j+0])
+                    d[j+0] = FFMAX(d[j+0] - s->fade[0], 0);
+                if (d[j+1])
+                    d[j+1] = FFMAX(d[j+1] - s->fade[1], 0);
+                if (d[j+2])
+                    d[j+2] = FFMAX(d[j+2] - s->fade[2], 0);
+                if (d[j+3])
+                    d[j+3] = FFMAX(d[j+3] - s->fade[3], 0);
             }
             d += linesize;
         }
     }
+
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -265,7 +274,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
     s->outpicref->pts = insamples->pts;
 
-    fade(s);
+    ff_filter_execute(ctx, fade, NULL, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (zoom < 1) {
         float max = 0;
@@ -429,4 +438,5 @@ const AVFilter ff_avf_avectorscope = {
     FILTER_INPUTS(audiovectorscope_inputs),
     FILTER_OUTPUTS(audiovectorscope_outputs),
     .priv_class    = &avectorscope_class,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
