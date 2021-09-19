@@ -303,6 +303,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             av_assert2(0);
         }
 
+        switch (s->scale) {
+        case SQRT:
+            max = sqrtf(max);
+            break;
+        case CBRT:
+            max = cbrtf(max);
+            break;
+        case LOG:
+            max = logf(1 + max) / logf(2);
+            break;
+        }
+
         zoom = 1. / max;
     }
 
