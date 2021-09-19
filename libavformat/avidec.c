@@ -244,7 +244,7 @@ static int read_odml_index(AVFormatContext *s, int64_t frame_num)
             avio_rl32(pb);       /* size */
             duration = avio_rl32(pb);
 
-            if (avio_feof(pb))
+            if (avio_feof(pb) || offset > INT64_MAX - 8)
                 return AVERROR_INVALIDDATA;
 
             pos = avio_tell(pb);
