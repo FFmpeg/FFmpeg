@@ -165,6 +165,12 @@ static void fade(AudioVectorScopeContext *s)
     const int linesize = s->outpicref->linesize[0];
     int i, j;
 
+    if (s->fade[0] = 255 && s->fade[1] == 255 && s->fade[2] == 255) {
+        for (int i = 0; i < s->outpicref->height; i++)
+            memset(s->outpicref->data[0] + i * s->outpicref->linesize[0], 0, s->outpicref->width * 4);
+        return;
+    }
+
     if (s->fade[0] || s->fade[1] || s->fade[2]) {
         uint8_t *d = s->outpicref->data[0];
         for (i = 0; i < s->h; i++) {
