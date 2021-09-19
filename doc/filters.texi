@@ -25387,6 +25387,10 @@ ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the all above options as commands except options @code{size} and @code{rate}.
+
 @section bench, abench
 
 Benchmark part of a filtergraph.
