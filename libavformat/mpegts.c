@@ -1126,7 +1126,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
     PESContext *pes   = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
     const uint8_t *p;
-    int ret, len, code;
+    int ret, len;
 
     if (!ts->pkt)
         return 0;
@@ -1160,15 +1160,13 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 if (pes->header[0] == 0x00 && pes->header[1] == 0x00 &&
                     pes->header[2] == 0x01) {
                     /* it must be an MPEG-2 PES stream */
-                    code = pes->header[3] | 0x100;
-                    av_log(pes->stream, AV_LOG_TRACE, "pid=%x pes_code=%#x\n", pes->pid,
-                            code);
                     pes->stream_id = pes->header[3];
+                    av_log(pes->stream, AV_LOG_TRACE, "pid=%x stream_id=%#x\n", pes->pid, pes->stream_id);
 
                     if ((pes->st && pes->st->discard == AVDISCARD_ALL &&
                          (!pes->sub_st ||
                           pes->sub_st->discard == AVDISCARD_ALL)) ||
-                        code == 0x1be) /* padding_stream */
+                        pes->stream_id == STREAM_ID_PADDING_STREAM)
                         goto skip;
 
                     /* stream not present in PMT */
@@ -1196,10 +1194,13 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     if (!pes->buffer)
                         return AVERROR(ENOMEM);
 
-                    if (code != 0x1bc && code != 0x1bf && /* program_stream_map, private_stream_2 */
-                        code != 0x1f0 && code != 0x1f1 && /* ECM, EMM */
-                        code != 0x1ff && code != 0x1f2 && /* program_stream_directory, DSMCC_stream */
-                        code != 0x1f8) {                  /* ITU-T Rec. H.222.1 type E stream */
+                    if (pes->stream_id != STREAM_ID_PROGRAM_STREAM_MAP &&
+                        pes->stream_id != STREAM_ID_PRIVATE_STREAM_2 &&
+                        pes->stream_id != STREAM_ID_ECM_STREAM &&
+                        pes->stream_id != STREAM_ID_EMM_STREAM &&
+                        pes->stream_id != STREAM_ID_PROGRAM_STREAM_DIRECTORY &&
+                        pes->stream_id != STREAM_ID_DSMCC_STREAM &&
+                        pes->stream_id != STREAM_ID_TYPE_E_STREAM) {
                         FFStream *const pes_sti = ffstream(pes->st);
                         pes->state = MPEGTS_PESHEADER;
                         if (pes->st->codecpar->codec_id == AV_CODEC_ID_NONE && !pes_sti->request_probe) {
