@@ -728,7 +728,7 @@ static int FUNC(sps_scc_extension)(CodedBitstreamContext *ctx, RWContext *rw,
 
         flag(sps_palette_predictor_initializer_present_flag);
         if (current->sps_palette_predictor_initializer_present_flag) {
-            ue(sps_num_palette_predictor_initializer_minus1, 0, 128);
+            ue(sps_num_palette_predictor_initializer_minus1, 0, 127);
             for (comp = 0; comp < (current->chroma_format_idc ? 3 : 1); comp++) {
                 int bit_depth = comp == 0 ? current->bit_depth_luma_minus8 + 8
                                           : current->bit_depth_chroma_minus8 + 8;
