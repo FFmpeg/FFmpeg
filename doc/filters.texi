@@ -10257,6 +10257,7 @@ A number representing position of the first frame with respect to the telecine
 pattern. This is to be used if the stream is cut. The default value is @code{0}.
 @end table
 
+@anchor{dilation}
 @section dilation
 
 Apply dilation effect to the video.
@@ -11577,6 +11578,7 @@ value.
 
 @end table
 
+@anchor{erosion}
 @section erosion
 
 Apply erosion effect to the video.
@@ -15351,6 +15353,43 @@ Default value is 0.
 @subsection Commands
 
 This filter supports the all above options as @ref{commands}.
+
+@section morpho
+
+This filter allows to apply main morphological grayscale transforms,
+erode and dilate with arbitrary structures set in second input stream.
+
+Unlike naive implementation and much slower performance in @ref{erosion}
+and @ref{dilation} filters, when speed is critical @code{morpho} filter
+should be used instead.
+
+A description of accepted options follows,
+
+@table @option
+@item mode
+Set morphological transform to apply, can be:
+
+@table @samp
+@item erode
+@item dilate
+@item open
+@item close
+@end table
+Default is @code{erode}.
+
+@item planes
+Set planes to filter, by default all planes except alpha are filtered.
+
+@item structure
+Set which structure video frames will be processed from second input stream,
+can be @var{first} or @var{all}. Default is @var{all}.
+@end table
+
+The @code{morpho} filter also supports the @ref{framesync} options.
+
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
 
 @section mpdecimate
 

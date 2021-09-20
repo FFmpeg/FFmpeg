@@ -329,6 +329,7 @@ extern const AVFilter ff_vf_midequalizer;
 extern const AVFilter ff_vf_minterpolate;
 extern const AVFilter ff_vf_mix;
 extern const AVFilter ff_vf_monochrome;
+extern const AVFilter ff_vf_morpho;
 extern const AVFilter ff_vf_mpdecimate;
 extern const AVFilter ff_vf_msad;
 extern const AVFilter ff_vf_negate;

@@ -20,6 +20,7 @@ version <next>:
 - MSN Siren decoder
 - scharr video filter
 - apsyclip audio filter
+- morpho video filter
 
 
 version 4.4:
