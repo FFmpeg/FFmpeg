@@ -863,6 +863,11 @@ int64_t ff_read_line_to_bprint_overwrite(AVIOContext *s, AVBPrint *bp)
     return read_string_to_bprint_overwrite(s, bp, FFBPrintReadLine);
 }
 
+int64_t ff_read_string_to_bprint_overwrite(AVIOContext *s, AVBPrint *bp)
+{
+    return read_string_to_bprint_overwrite(s, bp, FFBPrintReadString);
+}
+
 int avio_get_str(AVIOContext *s, int maxlen, char *buf, int buflen)
 {
     int i;
