@@ -247,14 +247,21 @@ int64_t ff_read_line_to_bprint_overwrite(AVIOContext *s, struct AVBPrint *bp);
 
 /**
  * Read a whole null-terminated string of text from AVIOContext to an AVBPrint
- * buffer overwriting its contents. Stop reading after reaching a \\0 or
- * EOF.
+ * buffer overwriting its contents. Stop reading after reaching the maximum
+ * length, a \\0 or EOF.
  *
  * @param s the read-only AVIOContext
  * @param bp the AVBPrint buffer
+ * @param max_len the maximum length to be read from the AVIOContext.
+ *                Negative (< 0) values signal that there is no known maximum
+ *                length applicable. A maximum length of zero means that the
+ *                AVIOContext is not touched, and the function returns
+ *                with a read length of zero. In all cases the AVBprint
+ *                is cleared.
  * @return the length of the read string not including the terminating null,
  *         negative on error, or if the buffer becomes truncated.
  */
-int64_t ff_read_string_to_bprint_overwrite(AVIOContext *s, AVBPrint *bp);
+int64_t ff_read_string_to_bprint_overwrite(AVIOContext *s, struct AVBPrint *bp,
+                                           int64_t max_len);
 
 #endif /* AVFORMAT_AVIO_INTERNAL_H */
