@@ -968,10 +968,6 @@ static int config_output(AVFilterLink *outlink)
     if (s->ref) {
         ref = ctx->inputs[1];
 
-        if (src->format != ref->format) {
-            av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-            return AVERROR(EINVAL);
-        }
         if (src->w                       != ref->w ||
             src->h                       != ref->h) {
             av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
