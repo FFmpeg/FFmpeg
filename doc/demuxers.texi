@@ -187,7 +187,7 @@ Codec for the stream.
 @item @code{stream_extradata @var{hex_string}}
 Extradata for the string, encoded in hexadecimal.
 
-@item @code{cahpter @var{id} @var{start} @var{end}}
+@item @code{chapter @var{id} @var{start} @var{end}}
 Add a chapter. @var{id} is an unique identifier, possibly small and
 consecutive.
 
