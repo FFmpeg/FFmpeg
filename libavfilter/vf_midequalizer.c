@@ -305,11 +305,6 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
-    if (in0->format != in1->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
-
     outlink->w = in0->w;
     outlink->h = in0->h;
     outlink->sample_aspect_ratio = in0->sample_aspect_ratio;
