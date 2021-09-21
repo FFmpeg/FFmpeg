@@ -1358,8 +1358,8 @@ skip:
         case MPEGTS_PAYLOAD:
             do {
                 int max_packet_size = MAX_PES_PAYLOAD;
-                if (pes->PES_packet_length)
-                    max_packet_size = pes->PES_packet_length;
+                if (pes->PES_packet_length && pes->PES_packet_length + PES_START_SIZE > pes->pes_header_size)
+                    max_packet_size = pes->PES_packet_length + PES_START_SIZE - pes->pes_header_size;
 
                 if (pes->data_index > 0 &&
                     pes->data_index + buf_size > max_packet_size) {
