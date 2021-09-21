@@ -821,10 +821,6 @@ static int config_output(AVFilterLink *outlink)
     if (!s->tblend) {
         AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
 
-        if (toplink->format != bottomlink->format) {
-            av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-            return AVERROR(EINVAL);
-        }
         if (toplink->w != bottomlink->w || toplink->h != bottomlink->h) {
             av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
                    "(size %dx%d) do not match the corresponding "
