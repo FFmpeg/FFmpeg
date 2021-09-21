@@ -699,6 +699,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 {
     AVFilterContext *last_filter;
     const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
+    const AVPixFmtDescriptor *desc;
     InputStream *ist = ifilter->ist;
     InputFile     *f = input_files[ist->file_index];
     AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
@@ -756,7 +757,11 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     av_freep(&par);
     last_filter = ifilter->filter;
 
-    if (ist->autorotate) {
+    desc = av_pix_fmt_desc_get(ifilter->format);
+    av_assert0(desc);
+
+    // TODO: insert hwaccel enabled filters like transpose_vaapi into the graph
+    if (ist->autorotate && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
         int32_t *displaymatrix = ifilter->displaymatrix;
         double theta;
 
