@@ -323,15 +323,6 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     SidechainCompressContext *s = ctx->priv;
 
-    if (ctx->inputs[0]->sample_rate != ctx->inputs[1]->sample_rate) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Inputs must have the same sample rate "
-               "%d for in0 vs %d for in1\n",
-               ctx->inputs[0]->sample_rate, ctx->inputs[1]->sample_rate);
-        return AVERROR(EINVAL);
-    }
-
-    outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
 
     s->fifo[0] = av_audio_fifo_alloc(ctx->inputs[0]->format, ctx->inputs[0]->channels, 1024);
