@@ -253,12 +253,6 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
-    if (base->format != threshold->format ||
-        base->format != min->format ||
-        base->format != max->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
     if (base->w                       != threshold->w ||
         base->h                       != threshold->h ||
         base->w                       != min->w ||
