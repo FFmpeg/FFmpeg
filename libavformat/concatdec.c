@@ -627,7 +627,7 @@ static int concat_parse_script(AVFormatContext *avf)
             chapter = avpriv_new_chapter(avf, arg_int[0], AV_TIME_BASE_Q,
                                          arg_int[1], arg_int[2], NULL);
             if (!chapter)
-                return AVERROR(ENOMEM);
+                FAIL(ENOMEM);
             break;
 
         default:
