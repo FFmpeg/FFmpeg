@@ -235,12 +235,9 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
             }
         }
         if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-            /* NOTE: if we add any audio encoders which output non-keyframe packets,
-             *       this needs to be moved to the encoders, but for now we can do it
-             *       here to simplify things */
-            avpkt->flags |= AV_PKT_FLAG_KEY;
             avpkt->dts = avpkt->pts;
         }
+        avpkt->flags |= avci->intra_only_flag;
     }
 
     if (avci->draining && !got_packet)
@@ -553,6 +550,8 @@ int ff_encode_preinit(AVCodecContext *avctx)
         }
         avctx->sw_pix_fmt = frames_ctx->sw_format;
     }
+    if (avctx->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY)
+        avctx->internal->intra_only_flag = AV_PKT_FLAG_KEY;
 
     return 0;
 }
