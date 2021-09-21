@@ -2114,6 +2114,7 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     restart_frame = !ctx->frame_index;
 
     if (restart_frame) {
+        avpkt->flags |= AV_PKT_FLAG_KEY;
         set_major_params(ctx);
         if (ctx->min_restart_interval != ctx->max_restart_interval)
             process_major_frame(ctx);
