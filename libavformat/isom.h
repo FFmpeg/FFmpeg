@@ -237,6 +237,8 @@ typedef struct MOVStreamContext {
     int has_sidx;  // If there is an sidx entry for this stream.
     struct {
         struct AVAESCTR* aes_ctr;
+        struct AVAES *aes_ctx;
+        unsigned int frag_index_entry_base;
         unsigned int per_sample_iv_size;  // Either 0, 8, or 16.
         AVEncryptionInfo *default_encrypted_sample;
         MOVEncryptionIndex *encryption_index;

@@ -6598,14 +6598,13 @@ static int mov_read_dfla(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
+static int cenc_scheme_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
 {
     int i, ret;
-
-    if (sample->scheme != MKBETAG('c','e','n','c') || sample->crypt_byte_block != 0 || sample->skip_byte_block != 0) {
-        av_log(c->fc, AV_LOG_ERROR, "Only the 'cenc' encryption scheme is supported\n");
-        return AVERROR_PATCHWELCOME;
-    }
+    int bytes_of_protected_data;
+    int partially_encrypted_block_size;
+    uint8_t *partially_encrypted_block;
+    uint8_t block[16];
 
     if (!sc->cenc.aes_ctr) {
         /* initialize the cipher */
@@ -6628,6 +6627,8 @@ static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *s
         return 0;
     }
 
+    partially_encrypted_block_size = 0;
+
     for (i = 0; i < sample->subsample_count; i++) {
         if (sample->subsamples[i].bytes_of_clear_data + sample->subsamples[i].bytes_of_protected_data > size) {
             av_log(c->fc, AV_LOG_ERROR, "subsample size exceeds the packet size left\n");
@@ -6639,7 +6640,90 @@ static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *s
         size -= sample->subsamples[i].bytes_of_clear_data;
 
         /* decrypt the encrypted bytes */
-        av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, sample->subsamples[i].bytes_of_protected_data);
+
+        if (partially_encrypted_block_size) {
+            memcpy(block, partially_encrypted_block, partially_encrypted_block_size);
+            memcpy(block+partially_encrypted_block_size, input, 16-partially_encrypted_block_size);
+            av_aes_ctr_crypt(sc->cenc.aes_ctr, block, block, 16);
+            memcpy(partially_encrypted_block, block, partially_encrypted_block_size);
+            memcpy(input, block+partially_encrypted_block_size, 16-partially_encrypted_block_size);
+            input += 16-partially_encrypted_block_size;
+            size -= 16-partially_encrypted_block_size;
+            bytes_of_protected_data = sample->subsamples[i].bytes_of_protected_data - (16-partially_encrypted_block_size);
+        } else {
+            bytes_of_protected_data = sample->subsamples[i].bytes_of_protected_data;
+        }
+
+        if (i < sample->subsample_count-1) {
+            int num_of_encrypted_blocks = bytes_of_protected_data/16;
+            partially_encrypted_block_size = bytes_of_protected_data%16;
+            if (partially_encrypted_block_size)
+                partially_encrypted_block = input + 16*num_of_encrypted_blocks;
+            av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, 16*num_of_encrypted_blocks);
+        } else {
+            av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, bytes_of_protected_data);
+        }
+
+        input += bytes_of_protected_data;
+        size -= bytes_of_protected_data;
+    }
+
+    if (size > 0) {
+        av_log(c->fc, AV_LOG_ERROR, "leftover packet bytes after subsample processing\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
+static int cbc1_scheme_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
+{
+    int i, ret;
+    int num_of_encrypted_blocks;
+    uint8_t iv[16];
+
+    if (!sc->cenc.aes_ctx) {
+        /* initialize the cipher */
+        sc->cenc.aes_ctx = av_aes_alloc();
+        if (!sc->cenc.aes_ctx) {
+            return AVERROR(ENOMEM);
+        }
+
+        ret = av_aes_init(sc->cenc.aes_ctx, c->decryption_key, 16 * 8, 1);
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
+    memcpy(iv, sample->iv, 16);
+
+    /* whole-block full sample encryption */
+    if (!sample->subsample_count) {
+        /* decrypt the whole packet */
+        av_aes_crypt(sc->cenc.aes_ctx, input, input, size/16, iv, 1);
+        return 0;
+    }
+
+    for (i = 0; i < sample->subsample_count; i++) {
+        if (sample->subsamples[i].bytes_of_clear_data + sample->subsamples[i].bytes_of_protected_data > size) {
+            av_log(c->fc, AV_LOG_ERROR, "subsample size exceeds the packet size left\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (sample->subsamples[i].bytes_of_protected_data % 16) {
+            av_log(c->fc, AV_LOG_ERROR, "subsample BytesOfProtectedData is not a multiple of 16\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        /* skip the clear bytes */
+        input += sample->subsamples[i].bytes_of_clear_data;
+        size -= sample->subsamples[i].bytes_of_clear_data;
+
+        /* decrypt the encrypted bytes */
+        num_of_encrypted_blocks = sample->subsamples[i].bytes_of_protected_data/16;
+        if (num_of_encrypted_blocks > 0) {
+            av_aes_crypt(sc->cenc.aes_ctx, input, input, num_of_encrypted_blocks, iv, 1);
+        }
         input += sample->subsamples[i].bytes_of_protected_data;
         size -= sample->subsamples[i].bytes_of_protected_data;
     }
@@ -6650,6 +6734,153 @@ static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *s
     }
 
     return 0;
+}
+
+static int cens_scheme_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
+{
+    int i, ret, rem_bytes;
+    uint8_t *data;
+
+    if (!sc->cenc.aes_ctr) {
+        /* initialize the cipher */
+        sc->cenc.aes_ctr = av_aes_ctr_alloc();
+        if (!sc->cenc.aes_ctr) {
+            return AVERROR(ENOMEM);
+        }
+
+        ret = av_aes_ctr_init(sc->cenc.aes_ctr, c->decryption_key);
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
+    av_aes_ctr_set_full_iv(sc->cenc.aes_ctr, sample->iv);
+
+    /* whole-block full sample encryption */
+    if (!sample->subsample_count) {
+        /* decrypt the whole packet */
+        av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, size);
+        return 0;
+    } else if (!sample->crypt_byte_block && !sample->skip_byte_block) {
+        av_log(c->fc, AV_LOG_ERROR, "pattern encryption is not present in 'cens' scheme\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    for (i = 0; i < sample->subsample_count; i++) {
+        if (sample->subsamples[i].bytes_of_clear_data + sample->subsamples[i].bytes_of_protected_data > size) {
+            av_log(c->fc, AV_LOG_ERROR, "subsample size exceeds the packet size left\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        /* skip the clear bytes */
+        input += sample->subsamples[i].bytes_of_clear_data;
+        size -= sample->subsamples[i].bytes_of_clear_data;
+
+        /* decrypt the encrypted bytes */
+        data = input;
+        rem_bytes = sample->subsamples[i].bytes_of_protected_data;
+        while (rem_bytes > 0) {
+            if (rem_bytes < 16*sample->crypt_byte_block) {
+                break;
+            }
+            av_aes_ctr_crypt(sc->cenc.aes_ctr, data, data, 16*sample->crypt_byte_block);
+            data += 16*sample->crypt_byte_block;
+            rem_bytes -= 16*sample->crypt_byte_block;
+            data += FFMIN(16*sample->skip_byte_block, rem_bytes);
+            rem_bytes -= FFMIN(16*sample->skip_byte_block, rem_bytes);
+        }
+        input += sample->subsamples[i].bytes_of_protected_data;
+        size -= sample->subsamples[i].bytes_of_protected_data;
+    }
+
+    if (size > 0) {
+        av_log(c->fc, AV_LOG_ERROR, "leftover packet bytes after subsample processing\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
+static int cbcs_scheme_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
+{
+    int i, ret, rem_bytes;
+    uint8_t iv[16];
+    uint8_t *data;
+
+    if (!sc->cenc.aes_ctx) {
+        /* initialize the cipher */
+        sc->cenc.aes_ctx = av_aes_alloc();
+        if (!sc->cenc.aes_ctx) {
+            return AVERROR(ENOMEM);
+        }
+
+        ret = av_aes_init(sc->cenc.aes_ctx, c->decryption_key, 16 * 8, 1);
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
+    /* whole-block full sample encryption */
+    if (!sample->subsample_count) {
+        /* decrypt the whole packet */
+        memcpy(iv, sample->iv, 16);
+        av_aes_crypt(sc->cenc.aes_ctx, input, input, size/16, iv, 1);
+        return 0;
+    } else if (!sample->crypt_byte_block && !sample->skip_byte_block) {
+        av_log(c->fc, AV_LOG_ERROR, "pattern encryption is not present in 'cbcs' scheme\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    for (i = 0; i < sample->subsample_count; i++) {
+        if (sample->subsamples[i].bytes_of_clear_data + sample->subsamples[i].bytes_of_protected_data > size) {
+            av_log(c->fc, AV_LOG_ERROR, "subsample size exceeds the packet size left\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        /* skip the clear bytes */
+        input += sample->subsamples[i].bytes_of_clear_data;
+        size -= sample->subsamples[i].bytes_of_clear_data;
+
+        /* decrypt the encrypted bytes */
+        memcpy(iv, sample->iv, 16);
+        data = input;
+        rem_bytes = sample->subsamples[i].bytes_of_protected_data;
+        while (rem_bytes > 0) {
+            if (rem_bytes < 16*sample->crypt_byte_block) {
+                break;
+            }
+            av_aes_crypt(sc->cenc.aes_ctx, data, data, sample->crypt_byte_block, iv, 1);
+            data += 16*sample->crypt_byte_block;
+            rem_bytes -= 16*sample->crypt_byte_block;
+            data += FFMIN(16*sample->skip_byte_block, rem_bytes);
+            rem_bytes -= FFMIN(16*sample->skip_byte_block, rem_bytes);
+        }
+        input += sample->subsamples[i].bytes_of_protected_data;
+        size -= sample->subsamples[i].bytes_of_protected_data;
+    }
+
+    if (size > 0) {
+        av_log(c->fc, AV_LOG_ERROR, "leftover packet bytes after subsample processing\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
+static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
+{
+    if (sample->scheme == MKBETAG('c','e','n','c') && !sample->crypt_byte_block && !sample->skip_byte_block) {
+        return cenc_scheme_decrypt(c, sc, sample, input, size);
+    } else if (sample->scheme == MKBETAG('c','b','c','1') && !sample->crypt_byte_block && !sample->skip_byte_block) {
+        return cbc1_scheme_decrypt(c, sc, sample, input, size);
+    } else if (sample->scheme == MKBETAG('c','e','n','s')) {
+        return cens_scheme_decrypt(c, sc, sample, input, size);
+    } else if (sample->scheme == MKBETAG('c','b','c','s')) {
+        return cbcs_scheme_decrypt(c, sc, sample, input, size);
+    } else {
+        av_log(c->fc, AV_LOG_ERROR, "invalid encryption scheme\n");
+        return AVERROR_INVALIDDATA;
+    }
 }
 
 static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPacket *pkt, int current_index)
@@ -6666,7 +6897,9 @@ static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPa
         // Note this only supports encryption info in the first sample descriptor.
         if (mov->fragment.stsd_id == 1) {
             if (frag_stream_info->encryption_index) {
-                encrypted_index = current_index - frag_stream_info->index_entry;
+                if (!current_index && frag_stream_info->index_entry)
+                    sc->cenc.frag_index_entry_base = frag_stream_info->index_entry;
+                encrypted_index = current_index - (frag_stream_info->index_entry - sc->cenc.frag_index_entry_base);
                 encryption_index = frag_stream_info->encryption_index;
             } else {
                 encryption_index = sc->cenc.encryption_index;
