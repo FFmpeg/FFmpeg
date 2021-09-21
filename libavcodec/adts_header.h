@@ -34,6 +34,7 @@ typedef struct AACADTSHeaderInfo {
     uint8_t  sampling_index;
     uint8_t  chan_config;
     uint8_t  num_aac_frames;
+    uint32_t frame_length;
 } AACADTSHeaderInfo;
 
 /**
@@ -46,5 +47,19 @@ typedef struct AACADTSHeaderInfo {
  * element is invalid, or -4 if the bit rate element is invalid.
  */
 int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
+
+/**
+ * Parse the ADTS frame header contained in the buffer, which is
+ * the first 54 bits.
+ * @param[in]  buf  Pointer to buffer containing the first 54 bits of the frame.
+ * @param[in]  size Size of buffer containing the first 54 bits of the frame.
+ * @param[out] phdr Pointer to pointer to struct AACADTSHeaderInfo for which
+ * memory is allocated and header info is written into it. After using the header
+ * information, the allocated memory must be freed by using av_free.
+ * @return Returns 0 on success, -1 if there is a sync word mismatch,
+ * -2 if the version element is invalid, -3 if the sample rate
+ * element is invalid, or -4 if the bit rate element is invalid.
+ */
+int avpriv_adts_header_parse(AACADTSHeaderInfo **phdr, const uint8_t *buf, size_t size);
 
 #endif /* AVCODEC_ADTS_HEADER_H */

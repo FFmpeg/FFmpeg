@@ -66,6 +66,7 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     hdr->sample_rate    = avpriv_mpeg4audio_sample_rates[sr];
     hdr->samples        = (rdb + 1) * 1024;
     hdr->bit_rate       = size * 8 * hdr->sample_rate / hdr->samples;
+    hdr->frame_length   = size;
 
     return size;
 }
