@@ -208,10 +208,6 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
-    if (source->format != ref->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
     if (source->w != ref->w || source->h != ref->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
                "(size %dx%d) do not match the corresponding "
