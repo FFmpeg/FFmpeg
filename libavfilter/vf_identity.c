@@ -274,10 +274,6 @@ static int config_input_ref(AVFilterLink *inlink)
         av_log(ctx, AV_LOG_ERROR, "Width and height of input videos must be same.\n");
         return AVERROR(EINVAL);
     }
-    if (ctx->inputs[0]->format != ctx->inputs[1]->format) {
-        av_log(ctx, AV_LOG_ERROR, "Inputs must be of same pixel format.\n");
-        return AVERROR(EINVAL);
-    }
 
     s->is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
     s->comps[0] = s->is_rgb ? 'R' : 'Y' ;
