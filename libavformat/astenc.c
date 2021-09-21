@@ -118,9 +118,7 @@ static int ast_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wb32(pb, size); /* Block size */
 
     /* padding */
-    avio_wb64(pb, 0);
-    avio_wb64(pb, 0);
-    avio_wb64(pb, 0);
+    ffio_fill(pb, 0, 24);
 
     avio_write(pb, pkt->data, pkt->size);
 
