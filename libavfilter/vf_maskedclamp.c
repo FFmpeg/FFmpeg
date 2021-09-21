@@ -230,11 +230,6 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
-    if (base->format != dark->format ||
-        base->format != bright->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
     if (base->w != dark->w   || base->h != dark->h ||
         base->w != bright->w || base->h != bright->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
