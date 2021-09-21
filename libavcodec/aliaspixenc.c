@@ -96,7 +96,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Total length */
     av_shrink_packet(pkt, buf - pkt->data);
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;

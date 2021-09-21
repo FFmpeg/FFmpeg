@@ -81,7 +81,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         srcb_line += pic->linesize[1];
     }
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

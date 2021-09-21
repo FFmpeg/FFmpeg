@@ -795,7 +795,6 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     AV_WB32(pkt->data, compress_frame_size);/* update frame size */
-    pkt->flags |= AV_PKT_FLAG_KEY;
     pkt->size = compress_frame_size;
     *got_packet = 1;
 

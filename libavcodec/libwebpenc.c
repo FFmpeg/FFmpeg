@@ -63,7 +63,6 @@ static int libwebp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         goto end;
     memcpy(pkt->data, mw.mem, mw.size);
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
 end:

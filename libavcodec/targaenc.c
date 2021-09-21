@@ -172,7 +172,6 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     memcpy(out, "\0\0\0\0\0\0\0\0TRUEVISION-XFILE.", 26);
 
     pkt->size   = out + 26 - pkt->data;
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;

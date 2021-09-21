@@ -211,7 +211,6 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ptr += p->linesize[0];
     }
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

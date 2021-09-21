@@ -522,7 +522,6 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream2_seek_p(&pb, pos, SEEK_SET);
 
     pkt->size   = bytestream2_tell_p(&pb);
-    pkt->flags |= AV_PKT_FLAG_KEY;
 
     *got_packet = 1;
 

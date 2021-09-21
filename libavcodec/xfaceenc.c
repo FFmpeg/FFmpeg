@@ -206,7 +206,6 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     *(p++) = '\n';
     *(p++) = 0;
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;

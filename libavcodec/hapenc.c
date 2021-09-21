@@ -229,7 +229,6 @@ static int hap_encode(AVCodecContext *avctx, AVPacket *pkt,
     hap_write_frame_header(ctx, pkt->data, final_data_size + header_length);
 
     av_shrink_packet(pkt, final_data_size + header_length);
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

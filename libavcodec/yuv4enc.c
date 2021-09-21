@@ -55,7 +55,6 @@ static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         v +=     pic->linesize[2];
     }
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

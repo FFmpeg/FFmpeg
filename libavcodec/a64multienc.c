@@ -385,7 +385,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         c->next_pts         = AV_NOPTS_VALUE;
 
         av_assert0(pkt->size == req_size);
-        pkt->flags |= AV_PKT_FLAG_KEY;
         *got_packet = !!req_size;
     }
     return 0;

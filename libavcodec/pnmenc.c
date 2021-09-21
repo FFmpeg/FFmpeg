@@ -142,7 +142,6 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 ptr2 += p->linesize[2];
         }
     }
-    pkt->flags |= AV_PKT_FLAG_KEY;
     av_shrink_packet(pkt, bytestream - bytestream_start);
     *got_packet = 1;
 

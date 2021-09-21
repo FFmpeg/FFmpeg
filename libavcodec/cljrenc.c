@@ -91,7 +91,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     flush_put_bits(&pb);
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

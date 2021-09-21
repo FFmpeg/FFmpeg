@@ -70,7 +70,6 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         a += pic->linesize[3];
     }
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

@@ -616,11 +616,6 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     frame_info = c->frame_pred << 8;
     bytestream2_put_le32(&pb, frame_info);
 
-    /*
-     * At least currently Ut Video is IDR only.
-     * Set flags accordingly.
-     */
-    pkt->flags |= AV_PKT_FLAG_KEY;
     pkt->size   = bytestream2_tell_p(&pb);
 
     /* Packet should be done */

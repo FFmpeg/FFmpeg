@@ -71,7 +71,6 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf += snprintf(buf, 5, " };\n");
 
     pkt->size   = buf - pkt->data;
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

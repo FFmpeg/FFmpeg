@@ -76,7 +76,6 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
             AV_WB64(&pkt->data[8 * x], v << 48 | v >> 16);
         }
     }
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
 }

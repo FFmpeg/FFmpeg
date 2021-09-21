@@ -1136,7 +1136,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be32(&orig_buf, frame_size);
 
     pkt->size   = frame_size;
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;

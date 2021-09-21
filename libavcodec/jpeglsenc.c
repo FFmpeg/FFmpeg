@@ -415,7 +415,6 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
     emms_c();
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     av_shrink_packet(pkt, bytestream2_tell_p(&pb));
     *got_packet = 1;
     return 0;

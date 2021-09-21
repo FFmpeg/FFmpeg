@@ -271,7 +271,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     write32(buf + 16, size); /* file size */
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;

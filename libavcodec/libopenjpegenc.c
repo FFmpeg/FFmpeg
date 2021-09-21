@@ -708,7 +708,6 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     av_shrink_packet(pkt, writer.pos);
 
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     ret = 0;
 

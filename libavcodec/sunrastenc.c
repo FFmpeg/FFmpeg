@@ -189,7 +189,6 @@ static int sunrast_encode_frame(AVCodecContext *avctx,  AVPacket *avpkt,
         AV_WB32(&avpkt->data[16], s->length);
 
     *got_packet_ptr = 1;
-    avpkt->flags |= AV_PKT_FLAG_KEY;
     avpkt->size = bytestream2_tell_p(&s->p);
     return 0;
 }

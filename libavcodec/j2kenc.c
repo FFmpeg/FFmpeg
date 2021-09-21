@@ -1661,7 +1661,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     av_log(s->avctx, AV_LOG_DEBUG, "end\n");
     pkt->size = s->buf - s->buf_start;
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;

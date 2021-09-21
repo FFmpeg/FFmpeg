@@ -259,7 +259,6 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     flush_put_bits(&pb);
     pkt->size   = put_bits_ptr(&pb) - pb.buf;
-    pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;
