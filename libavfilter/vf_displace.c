@@ -311,11 +311,6 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
-    if (srclink->format != xlink->format ||
-        srclink->format != ylink->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
     if (srclink->w != xlink->w ||
         srclink->h != xlink->h ||
         srclink->w != ylink->w ||
