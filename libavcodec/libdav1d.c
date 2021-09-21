@@ -237,7 +237,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
         s.n_threads = FFMAX(dav1d->frame_threads, dav1d->tile_threads);
     else
         s.n_threads = FFMIN(threads, DAV1D_MAX_THREADS);
-    s.max_frame_delay = (c->flags & AV_CODEC_FLAG_LOW_DELAY) ? 1 : s.n_threads;
+    s.max_frame_delay = (c->flags & AV_CODEC_FLAG_LOW_DELAY) ? 1 : 0;
     av_log(c, AV_LOG_DEBUG, "Using %d threads, %d max_frame_delay\n",
            s.n_threads, s.max_frame_delay);
 #else
