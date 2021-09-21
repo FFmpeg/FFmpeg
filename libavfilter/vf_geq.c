@@ -250,9 +250,7 @@ static av_cold int geq_init(AVFilterContext *ctx)
     }
 
     if (!geq->expr_str[A]) {
-        char bps_string[8];
-        snprintf(bps_string, sizeof(bps_string), "%d", (1<<geq->bps) - 1);
-        geq->expr_str[A] = av_strdup(bps_string);
+        geq->expr_str[A] = av_asprintf("%d", (1<<geq->bps) - 1);
     }
     if (!geq->expr_str[G])
         geq->expr_str[G] = av_strdup("g(X,Y)");
