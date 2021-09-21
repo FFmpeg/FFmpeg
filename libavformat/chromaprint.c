@@ -47,8 +47,10 @@ typedef struct ChromaprintMuxContext {
 #endif
 } ChromaprintMuxContext;
 
-static void cleanup(ChromaprintMuxContext *cpr)
+static void deinit(AVFormatContext *s)
 {
+    ChromaprintMuxContext *const cpr = s->priv_data;
+
     if (cpr->ctx) {
         ff_lock_avformat();
         chromaprint_free(cpr->ctx);
@@ -107,7 +109,6 @@ static int write_header(AVFormatContext *s)
 
     return 0;
 fail:
-    cleanup(cpr);
     return AVERROR(EINVAL);
 }
 
@@ -156,7 +157,6 @@ fail:
         chromaprint_dealloc(fp);
     if (enc_fp)
         chromaprint_dealloc(enc_fp);
-    cleanup(cpr);
     return ret;
 }
 
@@ -187,6 +187,7 @@ const AVOutputFormat ff_chromaprint_muxer = {
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
+    .deinit            = deinit,
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class        = &chromaprint_class,
 };
