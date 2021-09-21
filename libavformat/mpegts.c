@@ -839,6 +839,15 @@ static const StreamType MISC_types[] = {
     { 0 },
 };
 
+/* HLS Sample Encryption Types  */
+static const StreamType HLS_SAMPLE_ENC_types[] = {
+    { 0xdb, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_H264},
+    { 0xcf, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AAC },
+    { 0xc1, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AC3 },
+    { 0xc2, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_EAC3},
+    { 0 },
+};
+
 static const StreamType REGD_types[] = {
     { MKTAG('d', 'r', 'a', 'c'), AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_DIRAC },
     { MKTAG('A', 'C', '-', '3'), AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AC3   },
@@ -950,6 +959,8 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     }
     if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
         mpegts_find_stream_type(st, pes->stream_type, MISC_types);
+    if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
+        mpegts_find_stream_type(st, pes->stream_type, HLS_SAMPLE_ENC_types);
     if (st->codecpar->codec_id == AV_CODEC_ID_NONE) {
         st->codecpar->codec_id  = old_codec_id;
         st->codecpar->codec_type = old_codec_type;
