@@ -228,11 +228,6 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int ret;
 
-    if (base->format != overlay->format ||
-        base->format != mask->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
     if (base->w != overlay->w || base->h != overlay->h ||
         base->w != mask->w    || base->h != mask->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
