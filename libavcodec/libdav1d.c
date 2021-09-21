@@ -207,7 +207,11 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dSettings s;
+#if FF_DAV1D_VERSION_AT_LEAST(6,0)
+    int threads = c->thread_count;
+#else
     int threads = (c->thread_count ? c->thread_count : av_cpu_count()) * 3 / 2;
+#endif
     int res;
 
     av_log(c, AV_LOG_INFO, "libdav1d %s\n", dav1d_version());
