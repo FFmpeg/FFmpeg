@@ -1717,10 +1717,6 @@ static int config_output(AVFilterLink *outlink)
     XFadeContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink0->format);
 
-    if (inlink0->format != inlink1->format) {
-        av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
-        return AVERROR(EINVAL);
-    }
     if (inlink0->w != inlink1->w || inlink0->h != inlink1->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
                "(size %dx%d) do not match the corresponding "
