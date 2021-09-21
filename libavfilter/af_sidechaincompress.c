@@ -298,29 +298,19 @@ static int activate(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterChannelLayouts *layouts = NULL;
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE
     };
-    int ret, i;
-
-    if (!ctx->inputs[0]->incfg.channel_layouts ||
-        !ctx->inputs[0]->incfg.channel_layouts->nb_channel_layouts) {
-        av_log(ctx, AV_LOG_WARNING,
-               "No channel layout for input 1\n");
-            return AVERROR(EAGAIN);
-    }
-
-    if ((ret = ff_add_channel_layout(&layouts, ctx->inputs[0]->incfg.channel_layouts->channel_layouts[0])) < 0 ||
-        (ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
+    int ret = ff_channel_layouts_ref(ff_all_channel_counts(),
+                                     &ctx->inputs[1]->outcfg.channel_layouts);
+    if (ret < 0)
         return ret;
 
-    for (i = 0; i < 2; i++) {
-        layouts = ff_all_channel_counts();
-        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->outcfg.channel_layouts)) < 0)
-            return ret;
-    }
+    /* This will link the channel properties of the main input and the output;
+     * it won't touch the second input as its channel_layouts is already set. */
+    if ((ret = ff_set_common_all_channel_counts(ctx)) < 0)
+        return ret;
 
     if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0)
         return ret;
@@ -343,8 +333,6 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
-    outlink->channel_layout = ctx->inputs[0]->channel_layout;
-    outlink->channels = ctx->inputs[0]->channels;
 
     s->fifo[0] = av_audio_fifo_alloc(ctx->inputs[0]->format, ctx->inputs[0]->channels, 1024);
     s->fifo[1] = av_audio_fifo_alloc(ctx->inputs[1]->format, ctx->inputs[1]->channels, 1024);
