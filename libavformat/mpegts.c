@@ -1189,11 +1189,6 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     if (!pes->total_size)
                         pes->total_size = MAX_PES_PAYLOAD;
 
-                    /* allocate pes buffer */
-                    pes->buffer = buffer_pool_get(ts, pes->total_size);
-                    if (!pes->buffer)
-                        return AVERROR(ENOMEM);
-
                     if (pes->stream_id != STREAM_ID_PROGRAM_STREAM_MAP &&
                         pes->stream_id != STREAM_ID_PRIVATE_STREAM_2 &&
                         pes->stream_id != STREAM_ID_ECM_STREAM &&
@@ -1364,16 +1359,13 @@ skip:
             }
             break;
         case MPEGTS_PAYLOAD:
-            if (pes->buffer) {
+            do {
                 if (pes->data_index > 0 &&
                     pes->data_index + buf_size > pes->total_size) {
                     ret = new_pes_packet(pes, ts->pkt);
                     if (ret < 0)
                         return ret;
                     pes->total_size = MAX_PES_PAYLOAD;
-                    pes->buffer = buffer_pool_get(ts, pes->total_size);
-                    if (!pes->buffer)
-                        return AVERROR(ENOMEM);
                     ts->stop_parse = 1;
                 } else if (pes->data_index == 0 &&
                            buf_size > pes->total_size) {
@@ -1381,6 +1373,13 @@ skip:
                     // not sure if this is legal in ts but see issue #2392
                     buf_size = pes->total_size;
                 }
+
+                if (!pes->buffer) {
+                    pes->buffer = buffer_pool_get(ts, pes->total_size);
+                    if (!pes->buffer)
+                        return AVERROR(ENOMEM);
+                }
+
                 memcpy(pes->buffer->data + pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
                 /* emit complete packets with known packet size
@@ -1392,10 +1391,11 @@ skip:
                     pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
                     ts->stop_parse = 1;
                     ret = new_pes_packet(pes, ts->pkt);
+                    pes->state = MPEGTS_SKIP;
                     if (ret < 0)
                         return ret;
                 }
-            }
+            } while (0);
             buf_size = 0;
             break;
         case MPEGTS_SKIP:
