@@ -31,6 +31,7 @@
 #include "libavcodec/codec_id.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 
 typedef struct {
     int offset;
@@ -119,7 +120,6 @@ static int ico_write_packet(AVFormatContext *s, AVPacket *pkt)
     IcoImage *image;
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
-    int i;
 
     if (ico->current_image >= ico->nb_images) {
         av_log(s, AV_LOG_ERROR, "ICO already contains %d images\n", ico->current_image);
@@ -150,8 +150,8 @@ static int ico_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_wl32(pb, AV_RL32(pkt->data + 22) * 2); // rewrite height as 2 * height
         avio_write(pb, pkt->data + 26, pkt->size - 26);
 
-        for (i = 0; i < par->height * (par->width + 7) / 8; ++i)
-            avio_w8(pb, 0x00); // Write bitmask (opaque)
+        // Write bitmask (opaque)
+        ffio_fill(pb, 0x00, par->height * (par->width + 7) / 8);
     }
 
     return 0;
