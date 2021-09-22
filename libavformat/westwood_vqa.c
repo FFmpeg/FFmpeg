@@ -48,10 +48,14 @@
 #define CINF_TAG MKBETAG('C', 'I', 'N', 'F')
 #define CINH_TAG MKBETAG('C', 'I', 'N', 'H')
 #define CIND_TAG MKBETAG('C', 'I', 'N', 'D')
+#define LINF_TAG MKBETAG('L', 'I', 'N', 'F')
 #define PINF_TAG MKBETAG('P', 'I', 'N', 'F')
 #define PINH_TAG MKBETAG('P', 'I', 'N', 'H')
 #define PIND_TAG MKBETAG('P', 'I', 'N', 'D')
 #define CMDS_TAG MKBETAG('C', 'M', 'D', 'S')
+#define SN2J_TAG MKBETAG('S', 'N', '2', 'J')
+#define VIEW_TAG MKBETAG('V', 'I', 'E', 'W')
+#define ZBUF_TAG MKBETAG('Z', 'B', 'U', 'F')
 
 #define VQA_HEADER_SIZE 0x2A
 #define VQA_PREAMBLE_SIZE 8
@@ -143,11 +147,14 @@ static int wsvqa_read_header(AVFormatContext *s)
         case CINF_TAG:
         case CINH_TAG:
         case CIND_TAG:
+        case LINF_TAG:
         case PINF_TAG:
         case PINH_TAG:
         case PIND_TAG:
         case FINF_TAG:
         case CMDS_TAG:
+        case VIEW_TAG:
+        case ZBUF_TAG:
             break;
 
         default:
@@ -292,6 +299,9 @@ static int wsvqa_read_packet(AVFormatContext *s,
         } else {
             switch(chunk_type){
             case CMDS_TAG:
+            case SN2J_TAG:
+            case VIEW_TAG:
+            case ZBUF_TAG:
                 break;
             default:
                 av_log(s, AV_LOG_INFO, "Skipping unknown chunk %s\n",
