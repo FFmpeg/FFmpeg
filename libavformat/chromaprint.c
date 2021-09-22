@@ -69,47 +69,45 @@ static int write_header(AVFormatContext *s)
 
     if (!cpr->ctx) {
         av_log(s, AV_LOG_ERROR, "Failed to create chromaprint context.\n");
-        return AVERROR(ENOMEM);
+        return AVERROR_EXTERNAL;
     }
 
     if (cpr->silence_threshold != -1) {
 #if CPR_VERSION_INT >= AV_VERSION_INT(0, 7, 0)
         if (!chromaprint_set_option(cpr->ctx, "silence_threshold", cpr->silence_threshold)) {
             av_log(s, AV_LOG_ERROR, "Failed to set silence threshold. Setting silence_threshold requires -algorithm 3 option.\n");
-            goto fail;
+            return AVERROR_EXTERNAL;
         }
 #else
         av_log(s, AV_LOG_ERROR, "Setting the silence threshold requires Chromaprint "
                                 "version 0.7.0 or later.\n");
-        goto fail;
+        return AVERROR(ENOSYS);
 #endif
     }
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Only one stream is supported\n");
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     st = s->streams[0];
 
     if (st->codecpar->channels > 2) {
         av_log(s, AV_LOG_ERROR, "Only up to 2 channels are supported\n");
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     if (st->codecpar->sample_rate < 1000) {
         av_log(s, AV_LOG_ERROR, "Sampling rate must be at least 1000\n");
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     if (!chromaprint_start(cpr->ctx, st->codecpar->sample_rate, st->codecpar->channels)) {
         av_log(s, AV_LOG_ERROR, "Failed to start chromaprint\n");
-        goto fail;
+        return AVERROR_EXTERNAL;
     }
 
     return 0;
-fail:
-    return AVERROR(EINVAL);
 }
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -124,7 +122,7 @@ static int write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     void *fp = NULL;
     char *enc_fp = NULL;
-    int size, enc_size, ret = AVERROR(EINVAL);
+    int size, enc_size, ret = AVERROR_EXTERNAL;
 
     if (!chromaprint_finish(cpr->ctx)) {
         av_log(s, AV_LOG_ERROR, "Failed to generate fingerprint\n");
