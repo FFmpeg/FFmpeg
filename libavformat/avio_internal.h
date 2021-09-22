@@ -100,7 +100,7 @@ void ffio_init_context(FFIOContext *s,
  */
 int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, const unsigned char **data);
 
-void ffio_fill(AVIOContext *s, int b, int count);
+void ffio_fill(AVIOContext *s, int b, int64_t count);
 
 static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
 {

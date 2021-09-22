@@ -201,7 +201,7 @@ void avio_w8(AVIOContext *s, int b)
         flush_buffer(s);
 }
 
-void ffio_fill(AVIOContext *s, int b, int count)
+void ffio_fill(AVIOContext *s, int b, int64_t count)
 {
     while (count > 0) {
         int len = FFMIN(s->buf_end - s->buf_ptr, count);
