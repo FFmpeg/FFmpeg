@@ -785,11 +785,9 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
             if (   ff_codec_get_id(ff_codec_movvideo_tags, par->codec_tag) == par->codec_id
                 && (!par->extradata_size || ff_codec_get_id(ff_codec_movvideo_tags, AV_RL32(par->extradata + 4)) != par->codec_id)
             ) {
-                int i;
                 avio_wb32(dyn_cp, 0x5a + par->extradata_size);
                 avio_wl32(dyn_cp, par->codec_tag);
-                for(i = 0; i < 0x5a - 8; i++)
-                    avio_w8(dyn_cp, 0);
+                ffio_fill(dyn_cp, 0, 0x5a - 8);
             }
             avio_write(dyn_cp, par->extradata, par->extradata_size);
         } else {
