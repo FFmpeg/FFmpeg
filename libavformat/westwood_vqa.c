@@ -1,6 +1,7 @@
 /*
  * Westwood Studios VQA Format Demuxer
- * Copyright (c) 2003 The FFmpeg project
+ * Copyright (c) 2003 Mike Melanson <melanson@pcisys.net>
+ * Copyright (c) 2021 Pekka Väänänen <pekka.vaananen@iki.fi>
  *
  * This file is part of FFmpeg.
  *
@@ -30,6 +31,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 #define FORM_TAG MKBETAG('F', 'O', 'R', 'M')
@@ -40,6 +42,7 @@
 #define SND1_TAG MKBETAG('S', 'N', 'D', '1')
 #define SND2_TAG MKBETAG('S', 'N', 'D', '2')
 #define VQFR_TAG MKBETAG('V', 'Q', 'F', 'R')
+#define VQFL_TAG MKBETAG('V', 'Q', 'F', 'L')
 
 /* don't know what these tags are for, but acknowledge their existence */
 #define CINF_TAG MKBETAG('C', 'I', 'N', 'F')
@@ -60,6 +63,8 @@ typedef struct WsVqaDemuxContext {
     int sample_rate;
     int audio_stream_index;
     int video_stream_index;
+    int64_t vqfl_chunk_pos;
+    int vqfl_chunk_size;
 } WsVqaDemuxContext;
 
 static int wsvqa_probe(const AVProbeData *p)
@@ -120,6 +125,8 @@ static int wsvqa_read_header(AVFormatContext *s)
     wsvqa->channels     = header[26];
     wsvqa->bps          = header[27];
     wsvqa->audio_stream_index = -1;
+    wsvqa->vqfl_chunk_pos     = 0;
+    wsvqa->vqfl_chunk_size    = 0;
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -172,7 +179,22 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
         skip_byte = chunk_size & 0x01;
 
-        if ((chunk_type == SND0_TAG) || (chunk_type == SND1_TAG) ||
+        if (chunk_type == VQFL_TAG) {
+            /* Each VQFL chunk carries only a codebook update inside which must be applied
+             * before the next VQFR is rendered. That's why we stash the VQFL offset here
+             * so it can be combined with the next VQFR packet. This way each packet
+             * includes a whole frame as expected. */
+            wsvqa->vqfl_chunk_pos = avio_tell(pb);
+            wsvqa->vqfl_chunk_size = (int)(chunk_size);
+            if (wsvqa->vqfl_chunk_size < 0 || wsvqa->vqfl_chunk_size > 3 * (1 << 20))
+                return AVERROR_INVALIDDATA;
+            /* We need a big seekback buffer because there can be SNxx, VIEW and ZBUF
+             * chunks (<512 KiB total) in the stream before we read VQFR (<256 KiB) and
+             * seek back here. */
+            ffio_ensure_seekback(pb, wsvqa->vqfl_chunk_size + (512 + 256) * 1024);
+            avio_skip(pb, chunk_size + skip_byte);
+            continue;
+        } else if ((chunk_type == SND0_TAG) || (chunk_type == SND1_TAG) ||
             (chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
 
             ret= av_get_packet(pb, pkt, chunk_size);
@@ -235,6 +257,28 @@ static int wsvqa_read_packet(AVFormatContext *s,
                 }
                 break;
             case VQFR_TAG:
+                /* if a new codebook is available inside an earlier a VQFL chunk then
+                 * append it to 'pkt' */
+                if (wsvqa->vqfl_chunk_size > 0) {
+                    int64_t current_pos = pkt->pos;
+
+                    if (avio_seek(pb, wsvqa->vqfl_chunk_pos, SEEK_SET) < 0)
+                        return AVERROR(EIO);
+
+                    /* the decoder expects chunks to be 16-bit aligned */
+                    if (wsvqa->vqfl_chunk_size % 2 == 1)
+                        wsvqa->vqfl_chunk_size++;
+
+                    if (av_append_packet(pb, pkt, wsvqa->vqfl_chunk_size) < 0)
+                        return AVERROR(EIO);
+
+                    if (avio_seek(pb, current_pos, SEEK_SET) < 0)
+                        return AVERROR(EIO);
+
+                    wsvqa->vqfl_chunk_pos = 0;
+                    wsvqa->vqfl_chunk_size = 0;
+                }
+
                 pkt->stream_index = wsvqa->video_stream_index;
                 pkt->duration = 1;
                 break;
