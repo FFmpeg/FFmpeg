@@ -191,10 +191,10 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
         if (par->codec_id == AV_CODEC_ID_EAC3) {
             ff_put_guid(pb, ff_get_codec_guid(par->codec_id, ff_codec_wav_guids));
         } else {
-        avio_wl32(pb, par->codec_tag);
-        avio_wl32(pb, 0x00100000);
-        avio_wl32(pb, 0xAA000080);
-        avio_wl32(pb, 0x719B3800);
+            avio_wl32(pb, par->codec_tag);
+            avio_wl32(pb, 0x00100000);
+            avio_wl32(pb, 0xAA000080);
+            avio_wl32(pb, 0x719B3800);
         }
     } else if ((flags & FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX) ||
                par->codec_tag != 0x0001 /* PCM */ ||
