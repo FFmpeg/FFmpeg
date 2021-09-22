@@ -110,7 +110,7 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
         if (profile_compatible(4) || profile_compatible(5) ||
             profile_compatible(6) || profile_compatible(7) ||
             profile_compatible(8) || profile_compatible(9) ||
-            profile_compatible(10)) {
+            profile_compatible(10) || profile_compatible(11)) {
             flag(general_max_12bit_constraint_flag);
             flag(general_max_10bit_constraint_flag);
             flag(general_max_8bit_constraint_flag);
@@ -122,7 +122,7 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
             flag(general_lower_bit_rate_constraint_flag);
 
             if (profile_compatible(5) || profile_compatible(9) ||
-                profile_compatible(10)) {
+                profile_compatible(10) || profile_compatible(11)) {
                 flag(general_max_14bit_constraint_flag);
                 fixed(24, general_reserved_zero_33bits, 0);
                 fixed( 9, general_reserved_zero_33bits, 0);
@@ -142,7 +142,8 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
 
         if (profile_compatible(1) || profile_compatible(2) ||
             profile_compatible(3) || profile_compatible(4) ||
-            profile_compatible(5) || profile_compatible(9)) {
+            profile_compatible(5) || profile_compatible(9) ||
+            profile_compatible(11)) {
             flag(general_inbld_flag);
         } else {
             fixed(1, general_reserved_zero_bit, 0);
@@ -181,7 +182,7 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
             if (profile_compatible(4) || profile_compatible(5) ||
                 profile_compatible(6) || profile_compatible(7) ||
                 profile_compatible(8) || profile_compatible(9) ||
-                profile_compatible(10)) {
+                profile_compatible(10) || profile_compatible(11)) {
                 flags(sub_layer_max_12bit_constraint_flag[i],        1, i);
                 flags(sub_layer_max_10bit_constraint_flag[i],        1, i);
                 flags(sub_layer_max_8bit_constraint_flag[i],         1, i);
@@ -192,7 +193,8 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
                 flags(sub_layer_one_picture_only_constraint_flag[i], 1, i);
                 flags(sub_layer_lower_bit_rate_constraint_flag[i],   1, i);
 
-                if (profile_compatible(5)) {
+                if (profile_compatible(5) || profile_compatible(9) ||
+                    profile_compatible(10) || profile_compatible(11)) {
                     flags(sub_layer_max_14bit_constraint_flag[i], 1, i);
                     fixed(24, sub_layer_reserved_zero_33bits, 0);
                     fixed( 9, sub_layer_reserved_zero_33bits, 0);
@@ -212,7 +214,8 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
 
             if (profile_compatible(1) || profile_compatible(2) ||
                 profile_compatible(3) || profile_compatible(4) ||
-                profile_compatible(5) || profile_compatible(9)) {
+                profile_compatible(5) || profile_compatible(9) ||
+                profile_compatible(11)) {
                 flags(sub_layer_inbld_flag[i], 1, i);
             } else {
                 fixed(1, sub_layer_reserved_zero_bit, 0);
