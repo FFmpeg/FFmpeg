@@ -1344,7 +1344,6 @@ static int mov_write_hvcc_tag(AVIOContext *pb, MOVTrack *track)
 /* also used by all avid codecs (dv, imx, meridien) and their variants */
 static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
 {
-    int i;
     int interlaced;
     int cid;
     int display_width = track->par->width;
@@ -1419,8 +1418,7 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
             avio_wb32(pb, 6); /* unknown */
     }
     /* padding */
-    for (i = 0; i < 10; i++)
-        avio_wb64(pb, 0);
+    ffio_fill(pb, 0, 10 * 8);
 
     return 0;
 }
@@ -1925,10 +1923,7 @@ static int mov_write_dvcc_dvvc_tag(AVFormatContext *s, AVIOContext *pb, AVDOVIDe
               dovi->bl_present_flag);
     avio_wb32(pb, (dovi->dv_bl_signal_compatibility_id << 28) | 0);
 
-    avio_wb32(pb, 0); /* reserved */
-    avio_wb32(pb, 0); /* reserved */
-    avio_wb32(pb, 0); /* reserved */
-    avio_wb32(pb, 0); /* reserved */
+    ffio_fill(pb, 0, 4 * 4); /* reserved */
     av_log(s, AV_LOG_DEBUG, "DOVI in %s box, version: %d.%d, profile: %d, level: %d, "
            "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
            dovi->dv_profile > 7 ? "dvvC" : "dvcC",
@@ -2159,9 +2154,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
             avio_wb32(pb, 0x200); /* Spatial Quality = normal */
         }
     } else {
-        avio_wb32(pb, 0); /* Reserved */
-        avio_wb32(pb, 0); /* Reserved */
-        avio_wb32(pb, 0); /* Reserved */
+        ffio_fill(pb, 0, 3 * 4); /* Reserved */
     }
     avio_wb16(pb, track->par->width); /* Video width */
     avio_wb16(pb, track->height); /* Video height */
@@ -3506,9 +3499,7 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 
     avio_wb32(pb, 0x00010000); /* reserved (preferred rate) 1.0 = normal */
     avio_wb16(pb, 0x0100); /* reserved (preferred volume) 1.0 = normal */
-    avio_wb16(pb, 0); /* reserved */
-    avio_wb32(pb, 0); /* reserved */
-    avio_wb32(pb, 0); /* reserved */
+    ffio_fill(pb, 0, 2 + 2 * 4); /* reserved */
 
     /* Matrix structure */
     write_matrix(pb, 1, 0, 0, 1, 0, 0);
@@ -4668,7 +4659,7 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_tfxd_tag(pb, track);
 
         if (mov->ism_lookahead) {
-            int i, size = 16 + 4 + 1 + 16 * mov->ism_lookahead;
+            int size = 16 + 4 + 1 + 16 * mov->ism_lookahead;
 
             if (track->nb_frag_info > 0) {
                 MOVFragmentInfo *info = &track->frag_info[track->nb_frag_info - 1];
@@ -4677,8 +4668,7 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
             }
             avio_wb32(pb, 8 + size);
             ffio_wfourcc(pb, "free");
-            for (i = 0; i < size; i++)
-                avio_w8(pb, 0);
+            ffio_fill(pb, 0, size);
         }
     }
 
