@@ -25,6 +25,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/timecode.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "gxf.h"
 
@@ -134,9 +135,7 @@ static int gxf_find_lines_index(AVStream *st)
 
 static void gxf_write_padding(AVIOContext *pb, int64_t to_pad)
 {
-    for (; to_pad > 0; to_pad--) {
-        avio_w8(pb, 0);
-    }
+    ffio_fill(pb, 0, to_pad);
 }
 
 static int64_t updatePacketSize(AVIOContext *pb, int64_t pos)
@@ -424,8 +423,7 @@ static int gxf_write_flt_packet(AVFormatContext *s)
             avio_wl32(pb, gxf->flt_entries[(i*fields_per_flt)>>1]);
     }
 
-    for (; i < 1000; i++)
-        avio_wl32(pb, 0);
+    ffio_fill(pb, 0, (1000 - i) * 4);
 
     return updatePacketSize(pb, pos);
 }
@@ -542,13 +540,7 @@ static int gxf_write_umf_media_mpeg(AVIOContext *pb, AVStream *st)
 static int gxf_write_umf_media_timecode(AVIOContext *pb, int drop)
 {
     avio_wl32(pb, drop); /* drop frame */
-    avio_wl32(pb, 0); /* reserved */
-    avio_wl32(pb, 0); /* reserved */
-    avio_wl32(pb, 0); /* reserved */
-    avio_wl32(pb, 0); /* reserved */
-    avio_wl32(pb, 0); /* reserved */
-    avio_wl32(pb, 0); /* reserved */
-    avio_wl32(pb, 0); /* reserved */
+    ffio_fill(pb, 0, 7 * 4); /* reserved */
     return 32;
 }
 
@@ -559,13 +551,7 @@ static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc, AVStrea
     if (st->codecpar->format == AV_PIX_FMT_YUV420P)
         dv_umf_data |= 0x20; /* marks as DVCAM instead of DVPRO */
     avio_wl32(pb, dv_umf_data);
-    avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
-    avio_wl32(pb, 0);
+    ffio_fill(pb, 0, 7 * 4);
     return 32;
 }
 
@@ -585,11 +571,10 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
     GXFContext *gxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t pos;
-    int i, j;
 
     pos = avio_tell(pb);
     gxf->umf_media_offset = pos - gxf->umf_start_offset;
-    for (i = 0; i <= s->nb_streams; ++i) {
+    for (unsigned i = 0; i <= s->nb_streams; ++i) {
         GXFStreamContext *sc;
         int64_t startpos, curpos;
 
@@ -609,8 +594,7 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         avio_wl32(pb, gxf->nb_fields); /* mark out */
         avio_write(pb, ES_NAME_PATTERN, strlen(ES_NAME_PATTERN));
         avio_wb16(pb, sc->media_info);
-        for (j = strlen(ES_NAME_PATTERN)+2; j < 88; j++)
-            avio_w8(pb, 0);
+        ffio_fill(pb, 0, 88 - (strlen(ES_NAME_PATTERN) + 2));
         avio_wl32(pb, sc->track_type);
         avio_wl32(pb, sc->sample_rate);
         avio_wl32(pb, sc->sample_size);
