@@ -838,8 +838,7 @@ static int put_payload_parsing_info(AVFormatContext *s,
     av_assert0(padsize >= 0);
 
     avio_w8(pb, ASF_PACKET_ERROR_CORRECTION_FLAGS);
-    for (int i = 0; i < ASF_PACKET_ERROR_CORRECTION_DATA_SIZE; i++)
-        avio_w8(pb, 0x0);
+    ffio_fill(pb, 0x0, ASF_PACKET_ERROR_CORRECTION_DATA_SIZE);
 
     if (asf->multi_payloads_present)
         iLengthTypeFlags |= ASF_PPI_FLAG_MULTIPLE_PAYLOADS_PRESENT;
