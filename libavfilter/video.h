@@ -33,8 +33,7 @@ AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h);
  *              be requested
  * @param w     the minimum width of the buffer to allocate
  * @param h     the minimum height of the buffer to allocate
- * @return      A reference to the buffer. This must be unreferenced with
- *              avfilter_unref_buffer when you are finished with it.
+ * @return      on success, an AVFrame owned by the caller, NULL on error
  */
 AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h);
 
