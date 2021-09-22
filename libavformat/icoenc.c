@@ -27,7 +27,6 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
 
-#include "libavcodec/codec_desc.h"
 #include "libavcodec/codec_id.h"
 
 #include "avformat.h"
@@ -66,8 +65,7 @@ static int ico_check_attributes(AVFormatContext *s, const AVCodecParameters *p)
             return AVERROR(EINVAL);
         }
     } else {
-        const AVCodecDescriptor *codesc = avcodec_descriptor_get(p->codec_id);
-        av_log(s, AV_LOG_ERROR, "Unsupported codec %s\n", codesc ? codesc->name : "");
+        av_log(s, AV_LOG_ERROR, "Unsupported codec %s\n", avcodec_get_name(p->codec_id));
         return AVERROR(EINVAL);
     }
 
