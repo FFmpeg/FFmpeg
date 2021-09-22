@@ -30,6 +30,7 @@
 #include "libavcodec/put_bits.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "mpeg.h"
 
@@ -598,7 +599,6 @@ static void put_padding_packet(AVFormatContext *ctx, AVIOContext *pb,
                                int packet_bytes)
 {
     MpegMuxContext *s = ctx->priv_data;
-    int i;
 
     avio_wb32(pb, PADDING_STREAM);
     avio_wb16(pb, packet_bytes - 6);
@@ -608,8 +608,7 @@ static void put_padding_packet(AVFormatContext *ctx, AVIOContext *pb,
     } else
         packet_bytes -= 6;
 
-    for (i = 0; i < packet_bytes; i++)
-        avio_w8(pb, 0xff);
+    ffio_fill(pb, 0xff, packet_bytes);
 }
 
 static int get_nb_frames(AVFormatContext *ctx, StreamInfo *stream, int len)
@@ -634,7 +633,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
     MpegMuxContext *s  = ctx->priv_data;
     StreamInfo *stream = ctx->streams[stream_index]->priv_data;
     uint8_t *buf_ptr;
-    int size, payload_size, startcode, id, stuffing_size, i, header_len;
+    int size, payload_size, startcode, id, stuffing_size, header_len;
     int packet_size;
     uint8_t buffer[128];
     int zero_trail_bytes = 0;
@@ -685,14 +684,12 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                     avio_wb32(ctx->pb, PRIVATE_STREAM_2);
                     avio_wb16(ctx->pb, 0x03d4);     // length
                     avio_w8(ctx->pb, 0x00);         // substream ID, 00=PCI
-                    for (i = 0; i < 979; i++)
-                        avio_w8(ctx->pb, 0x00);
+                    ffio_fill(ctx->pb, 0x00, 979);
 
                     avio_wb32(ctx->pb, PRIVATE_STREAM_2);
                     avio_wb16(ctx->pb, 0x03fa);     // length
                     avio_w8(ctx->pb, 0x01);         // substream ID, 01=DSI
-                    for (i = 0; i < 1017; i++)
-                        avio_w8(ctx->pb, 0x00);
+                    ffio_fill(ctx->pb, 0x00, 1017);
 
                     memset(buffer, 0, 128);
                     buf_ptr = buffer;
@@ -835,8 +832,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         avio_wb16(ctx->pb, packet_size);
 
         if (!s->is_mpeg2)
-            for (i = 0; i < stuffing_size; i++)
-                avio_w8(ctx->pb, 0xff);
+            ffio_fill(ctx->pb, 0xff, stuffing_size);
 
         if (s->is_mpeg2) {
             avio_w8(ctx->pb, 0x80); /* mpeg2 id */
@@ -891,8 +887,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
              * to prevent accidental generation of start codes. */
             avio_w8(ctx->pb, 0xff);
 
-            for (i = 0; i < stuffing_size; i++)
-                avio_w8(ctx->pb, 0xff);
+            ffio_fill(ctx->pb, 0xff, stuffing_size);
         }
 
         if (startcode == PRIVATE_STREAM_1) {
@@ -925,8 +920,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
     if (pad_packet_bytes > 0)
         put_padding_packet(ctx, ctx->pb, pad_packet_bytes);
 
-    for (i = 0; i < zero_trail_bytes; i++)
-        avio_w8(ctx->pb, 0x00);
+    ffio_fill(ctx->pb, 0x00, zero_trail_bytes);
 
     avio_write_marker(ctx->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 
@@ -950,10 +944,8 @@ static void put_vcd_padding_sector(AVFormatContext *ctx)
      * So a 0-sector it is... */
 
     MpegMuxContext *s = ctx->priv_data;
-    int i;
 
-    for (i = 0; i < s->packet_size; i++)
-        avio_w8(ctx->pb, 0);
+    ffio_fill(ctx->pb, 0, s->packet_size);
 
     s->vcd_padding_bytes_written += s->packet_size;
 
