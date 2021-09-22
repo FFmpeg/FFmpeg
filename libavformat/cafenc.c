@@ -213,7 +213,7 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_write(s->pb, pkt->data, pkt->size);
     if (!s->streams[0]->codecpar->block_align) {
         void *pkt_sizes = caf->pkt_sizes;
-        int i, alloc_size = caf->size_entries_used + 5;
+        int i, alloc_size = caf->size_entries_used + 5U;
         if (alloc_size < 0) {
             caf->pkt_sizes = NULL;
         } else {
@@ -257,7 +257,7 @@ static int caf_write_trailer(AVFormatContext *s)
             }
             avio_seek(pb, file_size, SEEK_SET);
             ffio_wfourcc(pb, "pakt");
-            avio_wb64(pb, caf->size_entries_used + 24);
+            avio_wb64(pb, caf->size_entries_used + 24U);
             avio_wb64(pb, caf->packets); ///< mNumberPackets
             avio_wb64(pb, caf->packets * packet_size); ///< mNumberValidFrames
             avio_wb32(pb, 0); ///< mPrimingFrames
