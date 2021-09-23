@@ -494,7 +494,7 @@ static int oma_read_header(AVFormatContext *s)
         AV_WL16(&edata[6],  jsflag);        // coding mode
         AV_WL16(&edata[8],  jsflag);        // coding mode
         AV_WL16(&edata[10], 1);             // always 1
-        // AV_WL16(&edata[12], 0);          // always 0
+        AV_WL16(&edata[12], 0);             // always 0
 
         avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
         break;
