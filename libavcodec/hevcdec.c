@@ -385,6 +385,9 @@ static int export_stream_params_from_sei(HEVCContext *s)
         avctx->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
     }
 
+    if (s->sei.film_grain_characteristics.present)
+        avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
+
     return 0;
 }
 
