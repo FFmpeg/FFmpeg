@@ -1,0 +1,17 @@
+51da69c384709ecfaec940bdecfbce9a *tests/data/fate/sub-jacosub-remux.jacosub
+1065 tests/data/fate/sub-jacosub-remux.jacosub
+#extradata 0:       15, 0x15a10293
+#tb 0: 1/100
+#media_type 0: subtitle
+#codec_id 0: jacosub
+0,         12,         12,      400,      152, 0xab022660
+0,        412,        412,      250,       60, 0xd3dc114d
+0,        512,        512,      210,       33, 0x778307d9
+0,        612,        612,      170,       50, 0x32990db4
+0,        812,        812,      300,      180, 0xc92530ed
+0,       1112,       1112,      250,      122, 0xbfc222a9
+0,       1362,       1362,      125,      111, 0x4c3a1dca
+0,       1487,       1487,      125,       52, 0x57a40f01
+0,       2242,       2242,      550,      122, 0xed8d20a2
+0,       7612,       7612,      500,       86, 0x530d1b76
+0,       7612,       7612,      500,       82, 0xc99119aa
