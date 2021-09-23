@@ -28,7 +28,6 @@
 
 typedef struct {
     int64_t data;
-    uint8_t *pkt_sizes;
     int size_buffer_size;
     int size_entries_used;
     int packets;
@@ -209,25 +208,26 @@ static int caf_write_header(AVFormatContext *s)
 static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CAFContext *caf = s->priv_data;
+    AVStream *const st = s->streams[0];
 
-    if (!s->streams[0]->codecpar->block_align) {
-        void *pkt_sizes;
+    if (!st->codecpar->block_align) {
+        uint8_t *pkt_sizes;
         int i, alloc_size = caf->size_entries_used + 5U;
         if (alloc_size < 0)
             return AVERROR(ERANGE);
 
-        pkt_sizes = av_fast_realloc(caf->pkt_sizes,
+        pkt_sizes = av_fast_realloc(st->priv_data,
                                     &caf->size_buffer_size,
                                     alloc_size);
         if (!pkt_sizes)
             return AVERROR(ENOMEM);
-        caf->pkt_sizes = pkt_sizes;
+        st->priv_data = pkt_sizes;
         for (i = 4; i > 0; i--) {
             unsigned top = pkt->size >> i * 7;
             if (top)
-                caf->pkt_sizes[caf->size_entries_used++] = 128 | top;
+                pkt_sizes[caf->size_entries_used++] = 128 | top;
         }
-        caf->pkt_sizes[caf->size_entries_used++] = pkt->size & 127;
+        pkt_sizes[caf->size_entries_used++] = pkt->size & 127;
         caf->packets++;
     }
     avio_write(s->pb, pkt->data, pkt->size);
@@ -238,7 +238,8 @@ static int caf_write_trailer(AVFormatContext *s)
 {
     CAFContext *caf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecParameters *par = s->streams[0]->codecpar;
+    AVStream *st = s->streams[0];
+    AVCodecParameters *par = st->codecpar;
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
@@ -253,10 +254,9 @@ static int caf_write_trailer(AVFormatContext *s)
             avio_wb64(pb, caf->packets * samples_per_packet(par->codec_id, par->channels, par->block_align)); ///< mNumberValidFrames
             avio_wb32(pb, 0); ///< mPrimingFrames
             avio_wb32(pb, 0); ///< mRemainderFrames
-            avio_write(pb, caf->pkt_sizes, caf->size_entries_used);
+            avio_write(pb, st->priv_data, caf->size_entries_used);
         }
     }
-    av_freep(&caf->pkt_sizes);
     return 0;
 }
 
