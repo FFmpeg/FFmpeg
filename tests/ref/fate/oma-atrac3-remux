@@ -1,0 +1,14 @@
+9f1825375316cb8d6109747def944856 *tests/data/fate/oma-atrac3-remux.oma
+50056 tests/data/fate/oma-atrac3-remux.oma
+#extradata 0:       14, 0x0aa600f2
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: atrac3
+#sample_rate 0: 44100
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+0,          0,          0,     1024,      384, 0xdfded1b5
+0,       1024,       1024,     1024,      384, 0xd8e3badd
+0,       2048,       2048,     1024,      384, 0xa316bdbb
+0,       3072,       3072,     1024,      384, 0xcea0ad2b
+0,       4096,       4096,     1024,      384, 0x88d7a98a

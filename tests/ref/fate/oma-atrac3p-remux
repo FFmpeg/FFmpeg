@@ -1,0 +1,18 @@
+0053481795d07598bf2e7d931dfc4fa3 *tests/data/fate/oma-atrac3p-remux.oma
+671783 tests/data/fate/oma-atrac3p-remux.oma
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: atrac3p
+#sample_rate 0: 44100
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+0,          0,          0,     2048,     1488, 0x69b7fad9
+0,       2048,       2048,     2048,     1488, 0x3c43fdb8
+0,       4096,       4096,     2048,     1488, 0xdcd2dbcc
+0,       6144,       6144,     2048,     1488, 0x5708e4bd
+0,       8192,       8192,     2048,     1488, 0xdc7bf8a7
+[FORMAT]
+TAG:title=noise
+TAG:time=16:00
+TAG:date=2021-09-23
+[/FORMAT]
