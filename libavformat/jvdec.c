@@ -36,8 +36,8 @@
 typedef struct JVFrame {
     int audio_size;    /**< audio packet size (bytes) */
     int video_size;    /**< video packet size (bytes) */
-    int palette_size;  /**< palette size (bytes) */
-    int video_type;    /**< per-frame video compression type */
+    uint16_t palette_size;  /**< palette size (bytes) */
+    uint8_t video_type;     /**< per-frame video compression type */
 } JVFrame;
 
 typedef struct JVDemuxContext {
