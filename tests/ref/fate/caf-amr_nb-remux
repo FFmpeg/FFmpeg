@@ -1,0 +1,19 @@
+a00bd18f70b66286e67d84f0df034a48 *tests/data/fate/caf-amr_nb-remux.caf
+4145 tests/data/fate/caf-amr_nb-remux.caf
+#extradata 0:       29, 0x6b3407d3
+#tb 0: 1/8000
+#media_type 0: audio
+#codec_id 0: amr_nb
+#sample_rate 0: 8000
+#channel_layout 0: 4
+#channel_layout_name 0: mono
+0,          0,          0,      160,       13, 0x2bf906f6
+0,        160,        160,      160,       13, 0x28bd0756
+0,        320,        320,      160,       13, 0x2b2706f7
+0,        480,        480,      160,       13, 0x370d0858
+0,        640,        640,      160,       13, 0x148a02de
+0,        800,        800,      160,       13, 0x201104b7
+0,        960,        960,      160,       13, 0x2e690704
+0,       1120,       1120,      160,       13, 0x2f640726
+0,       1280,       1280,      160,       13, 0x31af0767
+0,       1440,       1440,      160,       13, 0x273a060f

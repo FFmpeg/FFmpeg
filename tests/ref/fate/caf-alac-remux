@@ -1,0 +1,27 @@
+9ef40186fb3e24789df03f8c08110486 *tests/data/fate/caf-alac-remux.caf
+1292684 tests/data/fate/caf-alac-remux.caf
+#extradata 0:       36, 0x562b05d8
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: alac
+#sample_rate 0: 44100
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+0,          0,          0,        0,       32, 0xa0af0dfe
+0,       4096,       4096,        0,     6701, 0xa9ddc14e
+0,       8192,       8192,        0,     6639, 0x3ccda8d6
+[FORMAT]
+TAG:track=5/13
+TAG:minor_version=0
+TAG:compatible_brands=M4A mp42isom
+TAG:disc=1
+TAG:title=Inside
+TAG:compilation=1
+TAG:gapless_playback=0
+TAG:genre=Rock
+TAG:Encoding Params=vers
+TAG:iTunNORM= 000004DF 000004C2 00001E64 00001AB3 00000FB9 00000FB9 00006480 00006480 00000FB9 00000B52
+TAG:artist=Maxwell Strait
+TAG:album_artist=Maxwell Strait
+TAG:album=OpenMusic
+[/FORMAT]

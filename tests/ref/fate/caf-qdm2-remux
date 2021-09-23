@@ -1,0 +1,12 @@
+2b71d78aa6c9d13a3c0dbbbebe885227 *tests/data/fate/caf-qdm2-remux.caf
+51228 tests/data/fate/caf-qdm2-remux.caf
+#extradata 0:       64, 0x10d20603
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: qdm2
+#sample_rate 0: 44100
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+0,          0,          0,        0,      370, 0x4d1897fc
+0,       4096,       4096,        0,      370, 0xea999da0
+0,       8192,       8192,        0,      370, 0xca259462

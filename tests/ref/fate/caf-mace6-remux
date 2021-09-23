@@ -1,0 +1,20 @@
+23cdb127d4a7ab912611c2eb20909840 *tests/data/fate/caf-mace6-remux.caf
+11483 tests/data/fate/caf-mace6-remux.caf
+#tb 0: 1/22050
+#media_type 0: audio
+#codec_id 0: mace6
+#sample_rate 0: 22050
+#channel_layout 0: 4
+#channel_layout_name 0: mono
+0,          0,          0,        6,        1, 0x00900090
+0,          6,          6,        6,        1, 0x00870087
+0,         12,         12,        6,        1, 0x00ff00ff
+0,         18,         18,        6,        1, 0x00ff00ff
+0,         24,         24,        6,        1, 0x00ff00ff
+0,         30,         30,        6,        1, 0x00f800f8
+0,         36,         36,        6,        1, 0x00fe00fe
+0,         42,         42,        6,        1, 0x00d800d8
+0,         48,         48,        6,        1, 0x00f800f8
+0,         54,         54,        6,        1, 0x00fe00fe
+0,         60,         60,        6,        1, 0x00fe00fe
+0,         66,         66,        6,        1, 0x00df00df
