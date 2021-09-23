@@ -210,21 +210,18 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CAFContext *caf = s->priv_data;
 
-    avio_write(s->pb, pkt->data, pkt->size);
     if (!s->streams[0]->codecpar->block_align) {
-        void *pkt_sizes = caf->pkt_sizes;
+        void *pkt_sizes;
         int i, alloc_size = caf->size_entries_used + 5U;
-        if (alloc_size < 0) {
-            caf->pkt_sizes = NULL;
-        } else {
-            caf->pkt_sizes = av_fast_realloc(caf->pkt_sizes,
-                                             &caf->size_buffer_size,
-                                             alloc_size);
-        }
-        if (!caf->pkt_sizes) {
-            av_free(pkt_sizes);
+        if (alloc_size < 0)
+            return AVERROR(ERANGE);
+
+        pkt_sizes = av_fast_realloc(caf->pkt_sizes,
+                                    &caf->size_buffer_size,
+                                    alloc_size);
+        if (!pkt_sizes)
             return AVERROR(ENOMEM);
-        }
+        caf->pkt_sizes = pkt_sizes;
         for (i = 4; i > 0; i--) {
             unsigned top = pkt->size >> i * 7;
             if (top)
@@ -233,6 +230,7 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
         caf->pkt_sizes[caf->size_entries_used++] = pkt->size & 127;
         caf->packets++;
     }
+    avio_write(s->pb, pkt->data, pkt->size);
     return 0;
 }
 
@@ -256,7 +254,6 @@ static int caf_write_trailer(AVFormatContext *s)
             avio_wb32(pb, 0); ///< mPrimingFrames
             avio_wb32(pb, 0); ///< mRemainderFrames
             avio_write(pb, caf->pkt_sizes, caf->size_entries_used);
-            caf->size_buffer_size = 0;
         }
     }
     av_freep(&caf->pkt_sizes);
