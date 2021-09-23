@@ -296,8 +296,7 @@ static int64_t guess_correct_pts(AVCodecContext *ctx,
 static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, int64_t *discarded_samples)
 {
     AVCodecInternal   *avci = avctx->internal;
-    DecodeSimpleContext *ds = &avci->ds;
-    AVPacket           *pkt = ds->in_pkt;
+    AVPacket     *const pkt = avci->in_pkt;
     int got_frame, actual_got_frame;
     int ret;
 

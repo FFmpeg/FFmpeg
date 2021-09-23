@@ -112,10 +112,6 @@
 #   define STRIDE_ALIGN 8
 #endif
 
-typedef struct DecodeSimpleContext {
-    AVPacket *in_pkt;
-} DecodeSimpleContext;
-
 typedef struct EncodeSimpleContext {
     AVFrame *in_frame;
 } EncodeSimpleContext;
@@ -137,7 +133,15 @@ typedef struct AVCodecInternal {
 
     void *thread_ctx;
 
-    DecodeSimpleContext ds;
+    /**
+     * This packet is used to hold the packet given to decoders
+     * implementing the .decode API; it is unused by the generic
+     * code for decoders implementing the .receive_frame API and
+     * may be freely used (but not freed) by them with the caveat
+     * that the packet will be unreferenced generically in
+     * avcodec_flush_buffers().
+     */
+    AVPacket *in_pkt;
     AVBSFContext *bsf;
 
     /**
