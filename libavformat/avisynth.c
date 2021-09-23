@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbool.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 
@@ -76,6 +78,9 @@ typedef struct AviSynthLibrary {
     AVSC_DECLARE_FUNC(avs_get_row_size_p);
     AVSC_DECLARE_FUNC(avs_is_planar_rgb);
     AVSC_DECLARE_FUNC(avs_is_planar_rgba);
+    AVSC_DECLARE_FUNC(avs_get_frame_props_ro);
+    AVSC_DECLARE_FUNC(avs_prop_get_int);
+    AVSC_DECLARE_FUNC(avs_get_env_property);
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
 
@@ -153,6 +158,9 @@ static av_cold int avisynth_load_library(void)
     LOAD_AVS_FUNC(avs_get_row_size_p, 1);
     LOAD_AVS_FUNC(avs_is_planar_rgb, 1);
     LOAD_AVS_FUNC(avs_is_planar_rgba, 1);
+    LOAD_AVS_FUNC(avs_get_frame_props_ro, 1);
+    LOAD_AVS_FUNC(avs_prop_get_int, 1);
+    LOAD_AVS_FUNC(avs_get_env_property, 1);
 #undef LOAD_AVS_FUNC
 
     atexit(avisynth_atexit_handler);
@@ -236,6 +244,10 @@ static av_cold void avisynth_atexit_handler(void)
 static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 {
     AviSynthContext *avs = s->priv_data;
+    const AVS_Map *avsmap;
+    AVS_VideoFrame *frame;
+    int framedata, error;
+    bool frameprop;
     int planar = 0; // 0: packed, 1: YUV, 2: Y8, 3: Planar RGB, 4: YUVA, 5: Planar RGBA
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -250,19 +262,6 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     st->nb_frames         = avs->vi->num_frames;
     avpriv_set_pts_info(st, 32, avs->vi->fps_denominator, avs->vi->fps_numerator);
 
-
-    st->codecpar->field_order = AV_FIELD_UNKNOWN;
-    /* AviSynth works with frame-based video, detecting field order can
-     * only work when avs_is_field_based returns 'false'. */
-    av_log(s, AV_LOG_TRACE, "avs_is_field_based: %d\n", avs_is_field_based(avs->vi));
-    if (avs_is_field_based(avs->vi) == 0) {
-        if (avs_is_tff(avs->vi)) {
-            st->codecpar->field_order = AV_FIELD_TT;
-        }
-        else if (avs_is_bff(avs->vi)) {
-            st->codecpar->field_order = AV_FIELD_BB;
-        }
-    }
 
     switch (avs->vi->pixel_type) {
     /* 10~16-bit YUV pix_fmts (AviSynth+) */
@@ -499,6 +498,244 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         avs->n_planes = 1;
         avs->planes   = avs_planes_packed;
     }
+
+    /* Read AviSynth+'s frame properties to set additional info.
+     *
+     * Due to a bug preventing the C interface from accessing frame
+     * properties in earlier versions of interface version 8, only
+     * enable this if we detect version 8.1 at the minimum. */
+
+    if (!avs_library.avs_get_env_property) {
+        av_log(s, AV_LOG_TRACE, "%s\n",
+               "avs_get_env_property does not exist in AviSynth library; frame properties won't be checked.");
+        frameprop = false;
+    } else {
+        if (avs_library.avs_get_env_property(avs->env, AVS_AEP_INTERFACE_BUGFIX)) {
+            av_log(s, AV_LOG_TRACE, "%s\n", "Using interface version 8.1 or higher, reading frame properties.");
+            frameprop = true;
+        } else {
+            av_log(s, AV_LOG_TRACE, "%s\n", "Using interface version 8.0, need 8.1+ to read frame properties.");
+            frameprop = false;
+        }
+    }
+
+    if (frameprop = true) {
+
+        frame  = avs_library.avs_get_frame(avs->clip, framedata);
+        avsmap = avs_library.avs_get_frame_props_ro(avs->env, frame);
+
+        /* Field order */
+        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_FieldBased", 0, &error)) {
+        case 0:
+            st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
+            break;
+        case 1:
+            st->codecpar->field_order = AV_FIELD_BB;
+            break;
+        case 2:
+            st->codecpar->field_order = AV_FIELD_TT;
+            break;
+        default:
+            st->codecpar->field_order = AV_FIELD_UNKNOWN;
+        }
+
+        /* Color Range */
+        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ColorRange", 0, &error)) {
+        case 0:
+            st->codecpar->color_range = AVCOL_RANGE_JPEG;
+            break;
+        case 1:
+            st->codecpar->color_range = AVCOL_RANGE_MPEG;
+            break;
+        default:
+            st->codecpar->color_range = AVCOL_RANGE_UNSPECIFIED;
+        }
+
+        /* Color Primaries */
+        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Primaries", 0, &error)) {
+        case 1:
+            st->codecpar->color_primaries = AVCOL_PRI_BT709;
+            break;
+        case 2:
+            st->codecpar->color_primaries = AVCOL_PRI_UNSPECIFIED;
+            break;
+        case 4:
+            st->codecpar->color_primaries = AVCOL_PRI_BT470M;
+            break;
+        case 5:
+            st->codecpar->color_primaries = AVCOL_PRI_BT470BG;
+            break;
+        case 6:
+            st->codecpar->color_primaries = AVCOL_PRI_SMPTE170M;
+            break;
+        case 7:
+            st->codecpar->color_primaries = AVCOL_PRI_SMPTE240M;
+            break;
+        case 8:
+            st->codecpar->color_primaries = AVCOL_PRI_FILM;
+            break;
+        case 9:
+            st->codecpar->color_primaries = AVCOL_PRI_BT2020;
+            break;
+        case 10:
+            st->codecpar->color_primaries = AVCOL_PRI_SMPTE428;
+            break;
+        case 11:
+            st->codecpar->color_primaries = AVCOL_PRI_SMPTE431;
+            break;
+        case 12:
+            st->codecpar->color_primaries = AVCOL_PRI_SMPTE432;
+            break;
+        case 22:
+            st->codecpar->color_primaries = AVCOL_PRI_EBU3213;
+            break;
+        default:
+            st->codecpar->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        }
+
+        /* Color Transfer Characteristics */
+        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Transfer", 0, &error)) {
+        case 1:
+            st->codecpar->color_trc = AVCOL_TRC_BT709;
+            break;
+        case 2:
+            st->codecpar->color_trc = AVCOL_TRC_UNSPECIFIED;
+            break;
+        case 4:
+            st->codecpar->color_trc = AVCOL_TRC_GAMMA22;
+            break;
+        case 5:
+            st->codecpar->color_trc = AVCOL_TRC_GAMMA28;
+            break;
+        case 6:
+            st->codecpar->color_trc = AVCOL_TRC_SMPTE170M;
+            break;
+        case 7:
+            st->codecpar->color_trc = AVCOL_TRC_SMPTE240M;
+            break;
+        case 8:
+            st->codecpar->color_trc = AVCOL_TRC_LINEAR;
+            break;
+        case 9:
+            st->codecpar->color_trc = AVCOL_TRC_LOG;
+            break;
+        case 10:
+            st->codecpar->color_trc = AVCOL_TRC_LOG_SQRT;
+            break;
+        case 11:
+            st->codecpar->color_trc = AVCOL_TRC_IEC61966_2_4;
+            break;
+        case 12:
+            st->codecpar->color_trc = AVCOL_TRC_BT1361_ECG;
+            break;
+        case 13:
+            st->codecpar->color_trc = AVCOL_TRC_IEC61966_2_1;
+            break;
+        case 14:
+            st->codecpar->color_trc = AVCOL_TRC_BT2020_10;
+            break;
+        case 15:
+            st->codecpar->color_trc = AVCOL_TRC_BT2020_12;
+            break;
+        case 16:
+            st->codecpar->color_trc = AVCOL_TRC_SMPTE2084;
+            break;
+        case 17:
+            st->codecpar->color_trc = AVCOL_TRC_SMPTE428;
+            break;
+        case 18:
+            st->codecpar->color_trc = AVCOL_TRC_ARIB_STD_B67;
+            break;
+        default:
+            st->codecpar->color_trc = AVCOL_TRC_UNSPECIFIED;
+        }
+
+        /* Matrix coefficients */
+        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Matrix", 0, &error)) {
+        case 0:
+            st->codecpar->color_space = AVCOL_SPC_RGB;
+            break;
+        case 1:
+            st->codecpar->color_space = AVCOL_SPC_BT709;
+            break;
+        case 2:
+            st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
+            break;
+        case 4:
+            st->codecpar->color_space = AVCOL_SPC_FCC;
+            break;
+        case 5:
+            st->codecpar->color_space = AVCOL_SPC_BT470BG;
+            break;
+        case 6:
+            st->codecpar->color_space = AVCOL_SPC_SMPTE170M;
+            break;
+        case 7:
+            st->codecpar->color_space = AVCOL_SPC_SMPTE240M;
+            break;
+        case 8:
+            st->codecpar->color_space = AVCOL_SPC_YCGCO;
+            break;
+        case 9:
+            st->codecpar->color_space = AVCOL_SPC_BT2020_NCL;
+            break;
+        case 10:
+            st->codecpar->color_space = AVCOL_SPC_BT2020_CL;
+            break;
+        case 11:
+            st->codecpar->color_space = AVCOL_SPC_SMPTE2085;
+            break;
+        case 12:
+            st->codecpar->color_space = AVCOL_SPC_CHROMA_DERIVED_NCL;
+            break;
+        case 13:
+            st->codecpar->color_space = AVCOL_SPC_CHROMA_DERIVED_CL;
+            break;
+        case 14:
+            st->codecpar->color_space = AVCOL_SPC_ICTCP;
+            break;
+        default:
+            st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
+        }
+
+        /* Chroma Location */
+        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ChromaLocation", 0, &error)) {
+        case 0:
+            st->codecpar->chroma_location = AVCHROMA_LOC_LEFT;
+            break;
+        case 1:
+            st->codecpar->chroma_location = AVCHROMA_LOC_CENTER;
+            break;
+        case 2:
+            st->codecpar->chroma_location = AVCHROMA_LOC_TOPLEFT;
+            break;
+        case 3:
+            st->codecpar->chroma_location = AVCHROMA_LOC_TOP;
+            break;
+        case 4:
+            st->codecpar->chroma_location = AVCHROMA_LOC_BOTTOMLEFT;
+            break;
+        case 5:
+            st->codecpar->chroma_location = AVCHROMA_LOC_BOTTOM;
+            break;
+        default:
+            st->codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+        }
+    } else {
+        st->codecpar->field_order = AV_FIELD_UNKNOWN;
+        /* AviSynth works with frame-based video, detecting field order can
+         * only work when avs_is_field_based returns 'false'. */
+        av_log(s, AV_LOG_TRACE, "avs_is_field_based: %d\n", avs_is_field_based(avs->vi));
+        if (avs_is_field_based(avs->vi) == 0) {
+            if (avs_is_tff(avs->vi)) {
+                st->codecpar->field_order = AV_FIELD_TT;
+            }
+            else if (avs_is_bff(avs->vi)) {
+                st->codecpar->field_order = AV_FIELD_BB;
+            }
+        }
+    }
+
     return 0;
 }
 
