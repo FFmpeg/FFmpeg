@@ -90,6 +90,9 @@ typedef struct OpaqueList {
 typedef struct {
     AVClass *av_class;
     AVCodecContext *avctx;
+    /* This packet coincides with AVCodecInternal.in_pkt
+     * and is not owned by us. */
+    AVPacket *pkt;
     HANDLE dev;
 
     uint8_t is_70012;
@@ -328,6 +331,7 @@ static av_cold int init(AVCodecContext *avctx)
     /* Initialize the library */
     priv               = avctx->priv_data;
     priv->avctx        = avctx;
+    priv->pkt          = avctx->internal->in_pkt;
     priv->draining     = 0;
 
     subtype = id2subtype(priv, avctx->codec->id);
@@ -703,19 +707,19 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     BC_DTS_STATUS decoder_status = { 0, };
     CopyRet rec_ret;
     CHDContext *priv   = avctx->priv_data;
+    AVPacket *const pkt = priv->pkt;
     HANDLE dev         = priv->dev;
     int got_frame = 0;
     int ret = 0;
-    AVPacket pkt = {0};
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: receive_frame\n");
 
-    ret = ff_decode_get_packet(avctx, &pkt);
+    ret = ff_decode_get_packet(avctx, pkt);
     if (ret < 0 && ret != AVERROR_EOF) {
         return ret;
     }
 
-    while (pkt.size > DtsTxFreeSize(dev)) {
+    while (pkt->size > DtsTxFreeSize(dev)) {
         /*
          * Block until there is space in the buffer for the next packet.
          * We assume that the hardware will make forward progress at this
@@ -724,8 +728,8 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         av_log(avctx, AV_LOG_TRACE, "CrystalHD: Waiting for space in input buffer\n");
     }
 
-    ret = crystalhd_decode_packet(avctx, &pkt);
-    av_packet_unref(&pkt);
+    ret = crystalhd_decode_packet(avctx, pkt);
+    av_packet_unref(pkt);
     // crystalhd_is_buffer_full() should avoid this.
     if (ret == AVERROR(EAGAIN)) {
         ret = AVERROR_EXTERNAL;
