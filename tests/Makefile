@@ -173,6 +173,7 @@ include $(SRC_PATH)/tests/fate/mpeg4.mak
 include $(SRC_PATH)/tests/fate/mpegps.mak
 include $(SRC_PATH)/tests/fate/mpegts.mak
 include $(SRC_PATH)/tests/fate/mxf.mak
+include $(SRC_PATH)/tests/fate/oma.mak
 include $(SRC_PATH)/tests/fate/opus.mak
 include $(SRC_PATH)/tests/fate/pcm.mak
 include $(SRC_PATH)/tests/fate/pixfmt.mak

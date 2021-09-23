@@ -103,9 +103,6 @@ fate-oggopus-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/ogg/intro-partial.opus
 FATE_SAMPLES_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggvp8-demux
 fate-oggvp8-demux: CMD = framecrc -i $(TARGET_SAMPLES)/ogg/videotest.ogv -c:v copy
 
-FATE_SAMPLES_DEMUX-$(CONFIG_OMA_DEMUXER) += fate-oma-demux
-fate-oma-demux: CMD = crc -i $(TARGET_SAMPLES)/oma/01-Untitled-partial.oma -c:a copy
-
 FATE_SAMPLES_DEMUX-$(CONFIG_PAF_DEMUXER) += fate-paf-demux
 fate-paf-demux: CMD = framecrc -i $(TARGET_SAMPLES)/paf/hod1-partial.paf -c:v copy -c:a copy
 
