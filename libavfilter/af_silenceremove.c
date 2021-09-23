@@ -94,7 +94,6 @@ typedef struct SilenceRemoveContext {
     int64_t window_duration;
     double sum;
 
-    int threshold;
     int one_period;
     int restart;
     int64_t next_pts;
@@ -435,7 +434,6 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     SilenceRemoveContext *s = ctx->priv;
 
-    s->threshold = -1;
     s->next_pts = AV_NOPTS_VALUE;
     s->window_duration = av_rescale(s->window_duration_opt, inlink->sample_rate,
                                    AV_TIME_BASE);
@@ -629,10 +627,6 @@ silence_trim:
                 }
             }
 
-            if (s->threshold >= 0)
-                s->one_period = s->threshold != threshold;
-            s->threshold = threshold;
-
             if (threshold) {
                 for (j = 0; j < outlink->channels; j++) {
                     s->update(s, in, j, nb_samples_read);
@@ -646,7 +640,8 @@ silence_trim:
                 nb_samples_read++;
 
                 if (s->start_holdoff_end >= s->start_duration) {
-                    s->start_found_periods += s->one_period;
+                    s->start_found_periods += s->one_period >= 1;
+                    s->one_period = 0;
                     if (s->start_found_periods >= s->start_periods) {
                         s->mode = SILENCE_TRIM_FLUSH;
                         goto silence_trim_flush;
@@ -659,6 +654,7 @@ silence_trim:
                 }
             } else {
                 s->start_holdoff_end = 0;
+                s->one_period++;
 
                 for (j = 0; j < outlink->channels; j++) {
                     s->update(s, in, j, nb_samples_read);
@@ -755,13 +751,10 @@ silence_copy:
                     }
                 }
 
-                if (s->threshold >= 0)
-                    s->one_period = s->threshold != threshold;
-                s->threshold = threshold;
-
                 if (threshold && s->stop_holdoff_end && !s->stop_silence) {
                     s->mode = SILENCE_COPY_FLUSH;
                     flush(s, out, outlink, &nb_samples_written, 0);
+                    s->one_period++;
                     goto silence_copy_flush;
                 } else if (threshold) {
                     for (j = 0; j < outlink->channels; j++) {
@@ -774,6 +767,7 @@ silence_copy:
                         s->window_offset = 0;
                     nb_samples_read++;
                     nb_samples_written++;
+                    s->one_period++;
                 } else if (!threshold) {
                     for (j = 0; j < outlink->channels; j++) {
                         s->update(s, in, j, nb_samples_read);
@@ -798,7 +792,8 @@ silence_copy:
                     s->stop_holdoff_end++;
 
                     if (s->stop_holdoff_end >= s->stop_duration) {
-                        s->stop_found_periods += s->one_period;
+                        s->stop_found_periods += s->one_period >= 1;
+                        s->one_period = 0;
                         if (s->stop_found_periods >= s->stop_periods) {
                             s->stop_holdoff_offset = 0;
                             s->stop_holdoff_end = 0;
@@ -826,6 +821,7 @@ silence_copy:
                     }
                 }
             }
+            s->one_period++;
             flush(s, out, outlink, &nb_samples_written, 0);
         } else {
             av_samples_copy(out->extended_data, in->extended_data,
