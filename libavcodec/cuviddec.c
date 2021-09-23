@@ -53,6 +53,10 @@ typedef struct CuvidContext
     CUvideodecoder cudecoder;
     CUvideoparser cuparser;
 
+    /* This packet coincides with AVCodecInternal.in_pkt
+     * and is not owned by us. */
+    AVPacket *pkt;
+
     char *cu_gpu;
     int nb_surfaces;
     int drop_second_field;
@@ -466,12 +470,12 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 
     if (!cuvid_is_buffer_full(avctx)) {
-        AVPacket pkt = {0};
-        ret = ff_decode_get_packet(avctx, &pkt);
+        AVPacket *const pkt = ctx->pkt;
+        ret = ff_decode_get_packet(avctx, pkt);
         if (ret < 0 && ret != AVERROR_EOF)
             return ret;
-        ret = cuvid_decode_packet(avctx, &pkt);
-        av_packet_unref(&pkt);
+        ret = cuvid_decode_packet(avctx, pkt);
+        av_packet_unref(pkt);
         // cuvid_is_buffer_full() should avoid this.
         if (ret == AVERROR(EAGAIN))
             ret = AVERROR_EXTERNAL;
@@ -797,6 +801,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (probe_desc && probe_desc->nb_components)
         probed_bit_depth = probe_desc->comp[0].depth;
 
+    ctx->pkt = avctx->internal->in_pkt;
     // Accelerated transcoding scenarios with 'ffmpeg' require that the
     // pix_fmt be set to AV_PIX_FMT_CUDA early. The sw_pix_fmt, and the
     // pix_fmt for non-accelerated transcoding, do not need to be correct
