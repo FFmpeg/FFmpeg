@@ -390,9 +390,6 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
                    "that doesn't support it\n");
             return;
         }
-
-        // We haven't implemented flushing for frame-threaded encoders.
-        av_assert0(!(caps & AV_CODEC_CAP_FRAME_THREADS));
     }
 
     avci->draining      = 0;
