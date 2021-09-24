@@ -782,12 +782,10 @@ static int ffmmal_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     int got_frame = 0;
 
     if (avctx->extradata_size && !ctx->extradata_sent) {
-        AVPacket pkt = {0};
-        av_init_packet(&pkt);
-        pkt.data = avctx->extradata;
-        pkt.size = avctx->extradata_size;
+        avpkt->data = avctx->extradata;
+        avpkt->size = avctx->extradata_size;
         ctx->extradata_sent = 1;
-        if ((ret = ffmmal_add_packet(avctx, &pkt, 1)) < 0)
+        if ((ret = ffmmal_add_packet(avctx, avpkt, 1)) < 0)
             return ret;
     }
 
