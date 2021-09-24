@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 #include "libavcodec/codec.h"
 #include "libavcodec/codec_desc.h"
 
@@ -33,6 +34,25 @@ do {                                                            \
 } while (0)
 #define ERR(msg)           ERR_INTERNAL(msg, )
 #define ERR_EXT(msg, ...)  ERR_INTERNAL(msg, , __VA_ARGS__)
+
+static int priv_data_size_wrong(const AVCodec *codec)
+{
+    if (codec->priv_data_size < 0 ||
+        codec->priv_class && codec->priv_data_size < sizeof(AVClass*))
+        return 1;
+    if (!codec->priv_class || !codec->priv_class->option)
+        return 0;
+    for (const AVOption *opt = codec->priv_class->option; opt->name; opt++) {
+        if (opt->offset >= codec->priv_data_size ||
+            opt->type == AV_OPT_TYPE_CONST && opt->offset != 0 ||
+            opt->type != AV_OPT_TYPE_CONST && (opt->offset < sizeof(AVClass*) || opt->offset < 0)) {
+            AV_LOG("Option %s offset %d nonsensical\n",
+                   opt->name, opt->offset);
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int main(void){
     void *iter = NULL;
@@ -92,6 +112,9 @@ int main(void){
             if (!!codec->decode + !!codec->receive_frame != 1)
                 ERR("Decoder %s does not implement exactly one decode API.\n");
         }
+        if (priv_data_size_wrong(codec))
+            ERR_EXT("Private context of codec %s is impossibly-sized (size %d).",
+                    codec->priv_data_size);
         if (!(desc = avcodec_descriptor_get(codec->id))) {
             ERR("Codec %s lacks a corresponding descriptor\n");
         } else if (desc->type != codec->type)
