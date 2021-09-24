@@ -19,6 +19,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/codec.h"
 #include "libavcodec/codec_desc.h"
+#include "libavcodec/internal.h"
 
 static const char *get_type_string(enum AVMediaType type)
 {
@@ -78,11 +79,26 @@ int main(void){
             if (codec->channel_layouts || codec->sample_fmts ||
                 codec->supported_samplerates)
                 ERR("Non-audio codec %s has audio-only fields set\n");
+            if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME |
+                                       AV_CODEC_CAP_CHANNEL_CONF     |
+                                       AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
+                ERR("Non-audio codec %s has audio-only capabilities set\n");
         }
         if (codec->type != AVMEDIA_TYPE_VIDEO) {
             if (codec->pix_fmts || codec->supported_framerates)
                 ERR("Non-video codec %s has video-only fields set\n");
+            if (codec->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)
+                ERR("Non-video codec %s exports cropping\n");
         }
+        if (codec->caps_internal  & FF_CODEC_CAP_SLICE_THREAD_HAS_MF &&
+            !(codec->capabilities & AV_CODEC_CAP_SLICE_THREADS))
+            ERR("Codec %s wants mainfunction despite not being "
+                "slice-threading capable");
+        if (codec->caps_internal  & FF_CODEC_CAP_AUTO_THREADS &&
+            !(codec->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
+                                     AV_CODEC_CAP_SLICE_THREADS |
+                                     AV_CODEC_CAP_OTHER_THREADS)))
+            ERR("Codec %s has private-only threading support\n");
 
         is_decoder = av_codec_is_decoder(codec);
         is_encoder = av_codec_is_encoder(codec);
@@ -103,6 +119,19 @@ int main(void){
                     ret = 1;
                 }
             }
+            if (codec->caps_internal & (FF_CODEC_CAP_ALLOCATE_PROGRESS |
+                                        FF_CODEC_CAP_SETS_PKT_DTS |
+                                        FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
+                                        FF_CODEC_CAP_EXPORTS_CROPPING |
+                                        FF_CODEC_CAP_SETS_FRAME_PROPS) ||
+                codec->capabilities  & (AV_CODEC_CAP_AVOID_PROBING |
+                                        AV_CODEC_CAP_CHANNEL_CONF  |
+                                        AV_CODEC_CAP_DRAW_HORIZ_BAND |
+                                        AV_CODEC_CAP_SUBFRAMES))
+                ERR("Encoder %s has decoder-only capabilities set\n");
+            if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS &&
+                codec->capabilities & AV_CODEC_CAP_ENCODER_FLUSH)
+                ERR("Frame-threaded encoder %s claims to support flushing\n");
         } else {
             if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec->decode)
                 ERR("Subtitle decoder %s does not implement decode callback\n");
@@ -111,6 +140,15 @@ int main(void){
                     "yet decoder %s has it set\n");
             if (!!codec->decode + !!codec->receive_frame != 1)
                 ERR("Decoder %s does not implement exactly one decode API.\n");
+            if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME    |
+                                       AV_CODEC_CAP_VARIABLE_FRAME_SIZE |
+                                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |
+                                       AV_CODEC_CAP_ENCODER_FLUSH))
+                ERR("Decoder %s has encoder-only capabilities\n");
+            if (codec->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS &&
+                !(codec->capabilities & AV_CODEC_CAP_FRAME_THREADS))
+                ERR("Decoder %s wants allocated progress without supporting"
+                    "frame threads\n");
         }
         if (priv_data_size_wrong(codec))
             ERR_EXT("Private context of codec %s is impossibly-sized (size %d).",
