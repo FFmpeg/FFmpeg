@@ -122,10 +122,8 @@ typedef struct EncodeSimpleContext {
 
 typedef struct AVCodecInternal {
     /**
-     * Whether the parent AVCodecContext is a copy of the context which had
-     * init() called on it.
-     * This is used by multithreading - shared tables and picture pointers
-     * should be freed from the original context only.
+     * When using frame-threaded decoding, this field is set for the first
+     * worker thread (e.g. to decode extradata just once).
      */
     int is_copy;
 
