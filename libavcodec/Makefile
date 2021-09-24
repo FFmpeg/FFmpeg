@@ -1209,13 +1209,13 @@ SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += videotoolbox.h vt_internal.h
 SKIPHEADERS-$(CONFIG_V4L2_M2M)         += v4l2_buffers.h v4l2_context.h v4l2_m2m.h
 
-TESTPROGS = avpacket                                                    \
+TESTPROGS = avcodec                                                     \
+            avpacket                                                    \
             celp_math                                                   \
             codec_desc                                                  \
             htmlsubtitles                                               \
             jpeg2000dwt                                                 \
             mathops                                                    \
-            utils                                                       \
 
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
 TESTPROGS-$(CONFIG_DCT)                   += avfft
