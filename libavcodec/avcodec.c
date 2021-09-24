@@ -418,7 +418,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
-    if (av_codec_is_decoder(avctx->codec))
+    if (avci->bsf)
         av_bsf_flush(avci->bsf);
 }
 
