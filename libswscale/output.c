@@ -1603,7 +1603,7 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
 
         dest[i * 2 + 0] = r[Y1 + dr1] + g[Y1 + dg1] + b[Y1 + db1];
         dest[i * 2 + 1] = r[Y2 + dr2] + g[Y2 + dg2] + b[Y2 + db2];
-    } else if (target == AV_PIX_FMT_X2RGB10) {
+    } else if (target == AV_PIX_FMT_X2RGB10 || target == AV_PIX_FMT_X2BGR10) {
         uint32_t *dest = (uint32_t *) _dest;
         const uint32_t *r = (const uint32_t *) _r;
         const uint32_t *g = (const uint32_t *) _g;
@@ -1848,6 +1848,7 @@ YUV2RGBWRAPPER(yuv2rgb,,   8,    AV_PIX_FMT_RGB8,      0)
 YUV2RGBWRAPPER(yuv2rgb,,   4,    AV_PIX_FMT_RGB4,      0)
 YUV2RGBWRAPPER(yuv2rgb,,   4b,   AV_PIX_FMT_RGB4_BYTE, 0)
 YUV2RGBWRAPPER(yuv2, rgb, x2rgb10, AV_PIX_FMT_X2RGB10, 0)
+YUV2RGBWRAPPER(yuv2, rgb, x2bgr10, AV_PIX_FMT_X2BGR10, 0)
 
 static av_always_inline void yuv2rgb_write_full(SwsContext *c,
     uint8_t *dest, int i, int Y, int A, int U, int V,
@@ -2999,6 +3000,12 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             *yuv2packed1 = yuv2x2rgb10_1_c;
             *yuv2packed2 = yuv2x2rgb10_2_c;
             *yuv2packedX = yuv2x2rgb10_X_c;
+            break;
+        case AV_PIX_FMT_X2BGR10LE:
+        case AV_PIX_FMT_X2BGR10BE:
+            *yuv2packed1 = yuv2x2bgr10_1_c;
+            *yuv2packed2 = yuv2x2bgr10_2_c;
+            *yuv2packedX = yuv2x2bgr10_X_c;
             break;
         }
     }

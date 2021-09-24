@@ -783,6 +783,8 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
                       c->dstFormat == AV_PIX_FMT_RGB555LE  ||
                       c->dstFormat == AV_PIX_FMT_RGB444BE  ||
                       c->dstFormat == AV_PIX_FMT_RGB444LE  ||
+                      c->dstFormat == AV_PIX_FMT_X2RGB10BE ||
+                      c->dstFormat == AV_PIX_FMT_X2RGB10LE ||
                       c->dstFormat == AV_PIX_FMT_RGB8      ||
                       c->dstFormat == AV_PIX_FMT_RGB4      ||
                       c->dstFormat == AV_PIX_FMT_RGB4_BYTE ||
@@ -793,7 +795,8 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
                         c->dstFormat == AV_PIX_FMT_NE(BGR565LE, BGR565BE) ||
                         c->dstFormat == AV_PIX_FMT_NE(BGR555LE, BGR555BE) ||
                         c->dstFormat == AV_PIX_FMT_NE(BGR444LE, BGR444BE) ||
-                        c->dstFormat == AV_PIX_FMT_NE(X2RGB10LE, X2RGB10BE);
+                        c->dstFormat == AV_PIX_FMT_NE(X2RGB10LE, X2RGB10BE) ||
+                        c->dstFormat == AV_PIX_FMT_NE(X2BGR10LE, X2BGR10BE);
     const int bpp = c->dstFormatBpp;
     uint8_t *y_table;
     uint16_t *y_table16;
@@ -966,9 +969,9 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         fill_gv_table(c->table_gV, 1, cgv);
         break;
     case 30:
-        rbase = 20;
+        rbase = isRgb ? 20 : 0;
         gbase = 10;
-        bbase = 0;
+        bbase = isRgb ? 0 : 20;
         needAlpha = CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat);
         if (!needAlpha)
             abase = 30;
