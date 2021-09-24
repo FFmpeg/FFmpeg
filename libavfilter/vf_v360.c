@@ -1373,6 +1373,11 @@ static void process_cube_coordinates(const V360Context *s,
     rotate_cube_face(new_uf, new_vf, s->in_cubemap_face_rotation[*face]);
 }
 
+static av_always_inline float scale(float x, float s)
+{
+    return (0.5f * x + 0.5f) * s - 0.5f;
+}
+
 static av_always_inline float rescale(int x, int s)
 {
     return (2.f * x + 1.f) / s - 1.f;
@@ -1892,8 +1897,8 @@ static int xyz_to_stereographic(const V360Context *s,
     const float x = vec[0] * c / s->iflat_range[0];
     const float y = vec[1] * c / s->iflat_range[1];
 
-    const float uf = (x + 1.f) * width  / 2.f;
-    const float vf = (y + 1.f) * height / 2.f;
+    const float uf = scale(x, width);
+    const float vf = scale(y, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -1998,8 +2003,8 @@ static int xyz_to_equisolid(const V360Context *s,
     const float x = vec[0] * c / s->iflat_range[0];
     const float y = vec[1] * c / s->iflat_range[1];
 
-    const float uf = (x + 1.f) * width  / 2.f;
-    const float vf = (y + 1.f) * height / 2.f;
+    const float uf = scale(x, width);
+    const float vf = scale(y, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2110,8 +2115,8 @@ static int xyz_to_orthographic(const V360Context *s,
     const float x = vec[0] * c / s->iflat_range[0];
     const float y = vec[1] * c / s->iflat_range[1];
 
-    const float uf = (x + 1.f) * width  / 2.f;
-    const float vf = (y + 1.f) * height / 2.f;
+    const float uf = scale(x, width);
+    const float vf = scale(y, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2164,11 +2169,11 @@ static int xyz_to_equirect(const V360Context *s,
                            const float *vec, int width, int height,
                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float phi   = atan2f(vec[0], vec[2]);
-    const float theta = asinf(vec[1]);
+    const float phi   = atan2f(vec[0], vec[2]) / s->iflat_range[0];
+    const float theta = asinf(vec[1]) / s->iflat_range[1];
 
-    const float uf = (phi   / s->iflat_range[0] + 1.f) * width  / 2.f - 0.5f;
-    const float vf = (theta / s->iflat_range[1] + 1.f) * height / 2.f - 0.5f;
+    const float uf = scale(phi, width);
+    const float vf = scale(theta, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2205,11 +2210,11 @@ static int xyz_to_hequirect(const V360Context *s,
                             const float *vec, int width, int height,
                             int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float phi   = atan2f(vec[0], vec[2]);
-    const float theta = asinf(vec[1]);
+    const float phi   = atan2f(vec[0], vec[2]) / M_PI_2;
+    const float theta = asinf(vec[1]) / M_PI_2;
 
-    const float uf = (phi   / M_PI_2 + 1.f) * width  / 2.f;
-    const float vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+    const float uf = scale(phi, width);
+    const float vf = scale(theta, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2272,8 +2277,8 @@ static int xyz_to_flat(const V360Context *s,
     float vf = vec[1] * c / s->iflat_range[1];
     int visible, ui, vi;
 
-    uf = zf >= 0.f ? (uf + 1.f) * width  / 2.f : 0.f;
-    vf = zf >= 0.f ? (vf + 1.f) * height / 2.f : 0.f;
+    uf = zf >= 0.f ? scale(uf, width)  : 0.f;
+    vf = zf >= 0.f ? scale(vf, height) : 0.f;
 
     ui = floorf(uf);
     vi = floorf(vf);
@@ -2309,11 +2314,11 @@ static int xyz_to_mercator(const V360Context *s,
                            const float *vec, int width, int height,
                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float phi   = atan2f(vec[0], vec[2]);
-    const float theta = vec[1];
+    const float phi   = atan2f(vec[0], vec[2]) / M_PI;
+    const float theta = av_clipf(logf((1.f + vec[1]) / (1.f - vec[1])) / (2.f * M_PI), -1.f, 1.f);
 
-    const float uf = (phi / M_PI + 1.f) * width / 2.f;
-    const float vf = (av_clipf(logf((1.f + theta) / (1.f - theta)) / (2.f * M_PI), -1.f, 1.f) + 1.f) * height / 2.f;
+    const float uf = scale(phi, width);
+    const float vf = scale(theta, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2379,9 +2384,10 @@ static int xyz_to_ball(const V360Context *s,
 {
     const float l = hypotf(vec[0], vec[1]);
     const float r = sqrtf(1.f - vec[2]) / M_SQRT2;
+    const float d = l > 0.f ? l : 1.f;
 
-    const float uf = (1.f + r * vec[0] / (l > 0.f ? l : 1.f)) * width  * 0.5f;
-    const float vf = (1.f + r * vec[1] / (l > 0.f ? l : 1.f)) * height * 0.5f;
+    const float uf = scale(r * vec[0] / d, width);
+    const float vf = scale(r * vec[1] / d, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -2563,8 +2569,8 @@ static int xyz_to_sinusoidal(const V360Context *s,
     const float theta = asinf(vec[1]);
     const float phi   = atan2f(vec[0], vec[2]) * cosf(theta);
 
-    const float uf = (phi   / M_PI   + 1.f) * width  / 2.f;
-    const float vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+    const float uf = scale(phi / M_PI, width);
+    const float vf = scale(theta / M_PI_2, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -3016,8 +3022,8 @@ static int xyz_to_pannini(const V360Context *s,
     const float x = S * sinf(phi);
     const float y = S * tanf(theta);
 
-    const float uf = (x + 1.f) * width  / 2.f - 0.5f;
-    const float vf = (y + 1.f) * height / 2.f - 0.5f;
+    const float uf = scale(x, width);
+    const float vf = scale(y, height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -3124,8 +3130,8 @@ static int xyz_to_cylindrical(const V360Context *s,
     const float phi   = atan2f(vec[0], vec[2]) / s->iflat_range[0];
     const float theta = asinf(vec[1]);
 
-    const float uf = (phi + 1.f) * (width - 1) / 2.f;
-    const float vf = (tanf(theta) / s->iflat_range[1] + 1.f) * height / 2.f;
+    const float uf = scale(phi, width);
+    const float vf = scale(tanf(theta) / s->iflat_range[1], height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -3234,8 +3240,8 @@ static int xyz_to_cylindricalea(const V360Context *s,
     const float phi   = atan2f(vec[0], vec[2]) / s->iflat_range[0];
     const float theta = asinf(vec[1]);
 
-    const float uf = (phi + 1.f) * (width - 1) / 2.f;
-    const float vf = (sinf(theta) / s->iflat_range[1] + 1.f) * height / 2.f;
+    const float uf = scale(phi, width);
+    const float vf = scale(sinf(theta) / s->iflat_range[1], height);
 
     const int ui = floorf(uf);
     const int vi = floorf(vf);
@@ -3448,8 +3454,8 @@ static int xyz_to_dfisheye(const V360Context *s,
     const float lh    = h > 0.f ? h : 1.f;
     const float theta = acosf(fabsf(vec[2])) / M_PI;
 
-    float uf = (theta * (vec[0] / lh) / s->iflat_range[0] + 0.5f) * ew;
-    float vf = (theta * (vec[1] / lh) / s->iflat_range[1] + 0.5f) * eh;
+    float uf = scale(theta * (vec[0] / lh) / s->iflat_range[0], ew);
+    float vf = scale(theta * (vec[1] / lh) / s->iflat_range[1], eh);
 
     int ui, vi;
     int u_shift;
@@ -3998,11 +4004,8 @@ static int xyz_to_octahedron(const V360Context *s,
         uf = (1.f - fabsf(zf)) * FFSIGN(uf);
     }
 
-    uf = uf * 0.5f + 0.5f;
-    vf = vf * 0.5f + 0.5f;
-
-    uf *= width;
-    vf *= height;
+    uf = scale(uf, width);
+    vf = scale(vf, height);
 
     ui = floorf(uf);
     vi = floorf(vf);
