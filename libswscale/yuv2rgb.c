@@ -976,7 +976,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
         y_table32   = c->yuvTable;
         yb = -(384 << 16) - YUVRGB_TABLE_LUMA_HEADROOM*cy - oy;
         for (i = 0; i < table_plane_size; i++) {
-            unsigned yval = av_clip_uint8((yb + 0x8000) >> 16);
+            unsigned yval = av_clip_uintp2((yb + 0x8000) >> 14, 10);
             y_table32[i]= (yval << rbase) + (needAlpha ? 0 : (255u << abase));
             y_table32[i + table_plane_size] = yval << gbase;
             y_table32[i + 2 * table_plane_size] = yval << bbase;
