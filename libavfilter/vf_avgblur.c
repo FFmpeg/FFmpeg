@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -36,13 +37,15 @@ typedef struct AverageBlurContext {
     int planes;
 
     int depth;
+    int max;
+    int area;
     int planewidth[4];
     int planeheight[4];
-    float *buffer;
+    void *buffer;
+    uint16_t lut[256 * 256 * 256];
     int nb_planes;
 
-    int (*filter_horizontally)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
-    int (*filter_vertically)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
+    int (*filter[2])(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } AverageBlurContext;
 
 #define OFFSET(x) offsetof(AverageBlurContext, x)
@@ -60,124 +63,138 @@ AVFILTER_DEFINE_CLASS(avgblur);
 typedef struct ThreadData {
     int height;
     int width;
-    uint8_t *ptr;
-    int linesize;
+    const void *ptr;
+    void *dptr;
+    int linesize, dlinesize;
 } ThreadData;
 
-#define HORIZONTAL_FILTER(name, type)                                                         \
-static int filter_horizontally_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)\
-{                                                                                             \
-    AverageBlurContext *s = ctx->priv;                                                        \
-    ThreadData *td = arg;                                                                     \
-    const int height = td->height;                                                            \
-    const int width = td->width;                                                              \
-    const int slice_start = (height *  jobnr   ) / nb_jobs;                                   \
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;                                   \
-    const int radius = FFMIN(s->radius, width / 2);                                           \
-    const int linesize = td->linesize / sizeof(type);                                         \
-    float *buffer = s->buffer;                                                                \
-    const type *src;                                                                          \
-    float *ptr;                                                                               \
-    int y, x;                                                                                 \
-                                                                                              \
-    /* Filter horizontally along each row */                                                  \
-    for (y = slice_start; y < slice_end; y++) {                                               \
-        float acc = 0;                                                                        \
-        int count = 0;                                                                        \
-                                                                                              \
-        src = (const type *)td->ptr + linesize * y;                                           \
-        ptr = buffer + width * y;                                                             \
-                                                                                              \
-        for (x = 0; x < radius; x++) {                                                        \
-            acc += src[x];                                                                    \
-        }                                                                                     \
-        count += radius;                                                                      \
-                                                                                              \
-        for (x = 0; x <= radius; x++) {                                                       \
-            acc += src[x + radius];                                                           \
-            count++;                                                                          \
-            ptr[x] = acc / count;                                                             \
-        }                                                                                     \
-                                                                                              \
-        for (; x < width - radius; x++) {                                                     \
-            acc += src[x + radius] - src[x - radius - 1];                                     \
-            ptr[x] = acc / count;                                                             \
-        }                                                                                     \
-                                                                                              \
-        for (; x < width; x++) {                                                              \
-            acc -= src[x - radius];                                                           \
-            count--;                                                                          \
-            ptr[x] = acc / count;                                                             \
-        }                                                                                     \
-    }                                                                                         \
-                                                                                              \
-    return 0;                                                                                 \
+#define LUT_DIV(sum, area) (lut[(sum)])
+#define SLOW_DIV(sum, area) ((sum) / (area))
+
+#define FILTER(name, type, btype, lutunused, areaunused, lutdiv)                  \
+static int filter_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
+{                                                                                 \
+    AverageBlurContext *s = ctx->priv;                                            \
+    ThreadData *td = arg;                                                         \
+    areaunused const int area = s->area;                                          \
+    lutunused const uint16_t *lut = s->lut;                                       \
+    const int size_w = s->radius;                                                 \
+    const int size_h = s->radiusV;                                                \
+    btype *col_sum = (btype *)s->buffer + size_w;                                 \
+    const int dlinesize = td->dlinesize / sizeof(type);                           \
+    const int linesize = td->linesize / sizeof(type);                             \
+    const int height = td->height;                                                \
+    const int width = td->width;                                                  \
+    const type *src = td->ptr;                                                    \
+    type *dst = td->dptr;                                                         \
+    btype sum = 0;                                                                \
+                                                                                  \
+    for (int x = -size_w; x < 0; x++) {                                           \
+        sum = src[0] * size_h;                                                    \
+        for (int y = 0; y <= size_h; y++)                                         \
+            sum += src[y * linesize];                                             \
+        av_assert2(sum >= 0);                                                     \
+        col_sum[x] = sum;                                                         \
+    }                                                                             \
+                                                                                  \
+    for (int x = 0; x < width; x++) {                                             \
+        sum = src[x] * size_h;                                                    \
+        for (int y = 0; y <= size_h; y++)                                         \
+            sum += src[x + y * linesize];                                         \
+        av_assert2(sum >= 0);                                                     \
+        col_sum[x] = sum;                                                         \
+    }                                                                             \
+                                                                                  \
+    for (int x = width; x < width + size_w; x++) {                                \
+        sum = src[width - 1] * size_h;                                            \
+        for (int y = 0; y <= size_h; y++)                                         \
+            sum += src[width - 1 + y * linesize];                                 \
+        av_assert2(sum >= 0);                                                     \
+        col_sum[x] = sum;                                                         \
+    }                                                                             \
+                                                                                  \
+    sum = 0;                                                                      \
+    for (int x = -size_w; x <= size_w; x++)                                       \
+        sum += col_sum[x];                                                        \
+    av_assert2(sum >= 0);                                                         \
+    dst[0] = lutdiv(sum, area);                                                   \
+                                                                                  \
+    for (int x = 1; x < width; x++) {                                             \
+        sum = sum - col_sum[x - size_w - 1] + col_sum[x + size_w];                \
+        av_assert2(sum >= 0);                                                     \
+        dst[x] = lutdiv(sum, area);                                               \
+    }                                                                             \
+                                                                                  \
+    src = td->ptr;                                                                \
+    src += linesize;                                                              \
+    dst += dlinesize;                                                             \
+                                                                                  \
+    for (int y = 1; y < height; y++) {                                            \
+        const int syp = FFMIN(size_h, height - y - 1) * linesize;                 \
+        const int syn = FFMIN(y, size_h + 1) * linesize;                          \
+                                                                                  \
+        sum = 0;                                                                  \
+                                                                                  \
+        for (int x = -size_w; x < 0; x++)                                         \
+            col_sum[x] += src[0 + syp] - src[0 - syn];                            \
+                                                                                  \
+        for (int x = 0; x < width; x++)                                           \
+            col_sum[x] += src[x + syp] - src[x - syn];                            \
+                                                                                  \
+        for (int x = width; x < width + size_w; x++)                              \
+            col_sum[x] += src[width - 1 + syp] - src[width - 1 - syn];            \
+                                                                                  \
+        for (int x = -size_w; x <= size_w; x++)                                   \
+            sum += col_sum[x];                                                    \
+        av_assert2(sum >= 0);                                                     \
+        dst[0] = lutdiv(sum, area);                                               \
+                                                                                  \
+        for (int x = 1; x < width; x++) {                                         \
+            sum = sum - col_sum[x - size_w - 1] + col_sum[x + size_w];            \
+            av_assert2(sum >= 0);                                                 \
+            dst[x] = lutdiv(sum, area);                                           \
+        }                                                                         \
+                                                                                  \
+        src += linesize;                                                          \
+        dst += dlinesize;                                                         \
+    }                                                                             \
+                                                                                  \
+    return 0;                                                                     \
 }
 
-HORIZONTAL_FILTER(8, uint8_t)
-HORIZONTAL_FILTER(16, uint16_t)
+FILTER(lut8,   uint8_t,  int32_t, , av_unused, LUT_DIV)
+FILTER(lut16,  uint16_t, int64_t, , av_unused, LUT_DIV)
 
-#define VERTICAL_FILTER(name, type)                                                           \
-static int filter_vertically_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)  \
-{                                                                                             \
-    AverageBlurContext *s = ctx->priv;                                                        \
-    ThreadData *td = arg;                                                                     \
-    const int height = td->height;                                                            \
-    const int width = td->width;                                                              \
-    const int slice_start = (width *  jobnr   ) / nb_jobs;                                    \
-    const int slice_end   = (width * (jobnr+1)) / nb_jobs;                                    \
-    const int radius = FFMIN(s->radiusV, height / 2);                                         \
-    const int linesize = td->linesize / sizeof(type);                                         \
-    type *buffer = (type *)td->ptr;                                                           \
-    const float *src;                                                                         \
-    type *ptr;                                                                                \
-    int i, x;                                                                                 \
-                                                                                              \
-    /* Filter vertically along each column */                                                 \
-    for (x = slice_start; x < slice_end; x++) {                                               \
-        float acc = 0;                                                                        \
-        int count = 0;                                                                        \
-                                                                                              \
-        src = s->buffer + x;                                                                  \
-                                                                                              \
-        for (i = 0; i < radius; i++) {                                                        \
-            acc += src[0];                                                                    \
-            src += width;                                                                     \
-        }                                                                                     \
-        count += radius;                                                                      \
-                                                                                              \
-        src = s->buffer + x;                                                                  \
-        ptr = buffer + x;                                                                     \
-        for (i = 0; i + radius < height && i <= radius; i++) {                                \
-            acc += src[(i + radius) * width];                                                 \
-            count++;                                                                          \
-            ptr[i * linesize] = acc / count;                                                  \
-        }                                                                                     \
-                                                                                              \
-        for (; i < height - radius; i++) {                                                    \
-            acc += src[(i + radius) * width] - src[(i - radius - 1) * width];                 \
-            ptr[i * linesize] = acc / count;                                                  \
-        }                                                                                     \
-                                                                                              \
-        for (; i < height; i++) {                                                             \
-            acc -= src[(i - radius) * width];                                                 \
-            count--;                                                                          \
-            ptr[i * linesize] = acc / count;                                                  \
-        }                                                                                     \
-    }                                                                                         \
-                                                                                              \
-    return 0;                                                                                 \
+FILTER(slow8,  uint8_t,  int32_t, av_unused, , SLOW_DIV)
+FILTER(slow16, uint16_t, int64_t, av_unused, , SLOW_DIV)
+
+static void build_lut(AVFilterContext *ctx, int max)
+{
+    AverageBlurContext *s = ctx->priv;
+    const int area = (2 * s->radiusV + 1) * (2 * s->radius + 1);
+
+    s->area = area;
+    if (max * area >= FF_ARRAY_ELEMS(s->lut))
+        return;
+
+    for (int i = 0, j = 0, k = 0; i < max * area; i++, j++) {
+        if (j == area) {
+            k++;
+            j = 0;
+        }
+
+        s->lut[i] = k;
+    }
 }
-
-VERTICAL_FILTER(8, uint8_t)
-VERTICAL_FILTER(16, uint16_t)
 
 static int config_input(AVFilterLink *inlink)
 {
+    AVFilterContext *ctx = inlink->dst;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    AverageBlurContext *s = inlink->dst->priv;
+    AverageBlurContext *s = ctx->priv;
 
     s->depth = desc->comp[0].depth;
+    s->max = 1 << s->depth;
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0] = s->planewidth[3] = inlink->w;
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
@@ -185,21 +202,20 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    s->buffer = av_malloc_array(inlink->w, inlink->h * sizeof(*s->buffer));
+    s->buffer = av_calloc(inlink->w + (1024 * 2 + 1), 4 * ((s->depth + 7) / 8));
     if (!s->buffer)
         return AVERROR(ENOMEM);
 
-    if (s->radiusV <= 0) {
+    if (s->radiusV <= 0)
         s->radiusV = s->radius;
-    }
 
-    if (s->depth == 8) {
-        s->filter_horizontally = filter_horizontally_8;
-        s->filter_vertically = filter_vertically_8;
-    } else {
-        s->filter_horizontally = filter_horizontally_16;
-        s->filter_vertically = filter_vertically_16;
-    }
+    s->filter[0] = s->depth <= 8 ? filter_lut8  : filter_lut16;
+    s->filter[1] = s->depth <= 8 ? filter_slow8 : filter_slow16;
+
+    s->radius  = FFMIN(s->planewidth[1]  / 2, s->radius);
+    s->radiusV = FFMIN(s->planeheight[1] / 2, s->radiusV);
+
+    build_lut(ctx, s->max);
 
     return 0;
 }
@@ -209,19 +225,16 @@ static void averageiir2d(AVFilterContext *ctx, AVFrame *in, AVFrame *out, int pl
     AverageBlurContext *s = ctx->priv;
     const int width = s->planewidth[plane];
     const int height = s->planeheight[plane];
-    const int nb_threads = ff_filter_get_nb_threads(ctx);
+    const int slow = (s->max * s->area) >= FF_ARRAY_ELEMS(s->lut);
     ThreadData td;
 
     td.width = width;
     td.height = height;
     td.ptr = in->data[plane];
     td.linesize = in->linesize[plane];
-    ff_filter_execute(ctx, s->filter_horizontally, &td,
-                      NULL, FFMIN(height, nb_threads));
-    td.ptr = out->data[plane];
-    td.linesize = out->linesize[plane];
-    ff_filter_execute(ctx, s->filter_vertically, &td,
-                      NULL, FFMIN(width, nb_threads));
+    td.dptr = out->data[plane];
+    td.dlinesize = out->linesize[plane];
+    s->filter[slow](ctx, &td, 0, 0);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -259,16 +272,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int plane;
 
-    if (av_frame_is_writable(in)) {
-        out = in;
-    } else {
-        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!out) {
-            av_frame_free(&in);
-            return AVERROR(ENOMEM);
-        }
-        av_frame_copy_props(out, in);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
     }
+    av_frame_copy_props(out, in);
 
     for (plane = 0; plane < s->nb_planes; plane++) {
         const int height = s->planeheight[plane];
@@ -285,9 +294,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         averageiir2d(ctx, in, out, plane);
     }
 
-    if (out != in)
-        av_frame_free(&in);
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    AverageBlurContext *s = ctx->priv;
+    const int area = s->area;
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    if (s->radiusV <= 0)
+        s->radiusV = s->radius;
+
+    s->radius  = FFMIN(s->planewidth[1]  / 2, s->radius);
+    s->radiusV = FFMIN(s->planeheight[1] / 2, s->radiusV);
+
+    if (area != (2 * s->radiusV + 1) * (2 * s->radius + 1))
+        build_lut(ctx, s->max);
+
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -322,6 +353,6 @@ const AVFilter ff_vf_avgblur = {
     .query_formats = query_formats,
     FILTER_INPUTS(avgblur_inputs),
     FILTER_OUTPUTS(avgblur_outputs),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
-    .process_command = ff_filter_process_command,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = process_command,
 };
