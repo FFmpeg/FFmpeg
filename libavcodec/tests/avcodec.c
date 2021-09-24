@@ -16,7 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec.h"
+#include "libavcodec/codec_desc.h"
 
 static const char *get_type_string(enum AVMediaType type)
 {
@@ -39,6 +40,8 @@ int main(void){
     int ret = 0;
 
     while (codec = av_codec_iterate(&iter)) {
+        const AVCodecDescriptor *desc;
+
         if (!codec->name) {
             AV_LOG("Codec for format %s has no name\n",
                    avcodec_get_name(codec->id));
@@ -68,6 +71,12 @@ int main(void){
                 }
             }
         }
+        if (!(desc = avcodec_descriptor_get(codec->id))) {
+            ERR("Codec %s lacks a corresponding descriptor\n");
+        } else if (desc->type != codec->type)
+            ERR_EXT("The type of AVCodec %s and its AVCodecDescriptor differ: "
+                    "%s vs %s\n",
+                    get_type_string(codec->type), get_type_string(desc->type));
     }
     return ret;
 }
