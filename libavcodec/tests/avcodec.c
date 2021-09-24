@@ -41,6 +41,7 @@ int main(void){
 
     while (codec = av_codec_iterate(&iter)) {
         const AVCodecDescriptor *desc;
+        int is_decoder, is_encoder;
 
         if (!codec->name) {
             AV_LOG("Codec for format %s has no name\n",
@@ -63,13 +64,33 @@ int main(void){
                 ERR("Non-video codec %s has video-only fields set\n");
         }
 
-        if (av_codec_is_encoder(codec)) {
+        is_decoder = av_codec_is_decoder(codec);
+        is_encoder = av_codec_is_encoder(codec);
+        if (!!is_decoder + !!is_encoder != 1) {
+            ERR("Codec %s is decoder and encoder or neither.\n");
+            continue;
+        }
+        if (is_encoder) {
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE ^ !!codec->encode_sub)
+                ERR("Encoder %s is both subtitle encoder and not subtitle encoder.");
+            if (!!codec->encode_sub + !!codec->encode2 + !!codec->receive_packet != 1)
+                ERR("Encoder %s does not implement exactly one encode API.\n");
+            if (codec->update_thread_context || codec->update_thread_context_for_user || codec->bsfs)
+                ERR("Encoder %s has decoder-only thread functions or bsf.\n");
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (!codec->sample_fmts) {
                     av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
                     ret = 1;
                 }
             }
+        } else {
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec->decode)
+                ERR("Subtitle decoder %s does not implement decode callback\n");
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE && codec->bsfs)
+                ERR("Automatic bitstream filtering unsupported for subtitles; "
+                    "yet decoder %s has it set\n");
+            if (!!codec->decode + !!codec->receive_frame != 1)
+                ERR("Decoder %s does not implement exactly one decode API.\n");
         }
         if (!(desc = avcodec_descriptor_get(codec->id))) {
             ERR("Codec %s lacks a corresponding descriptor\n");
