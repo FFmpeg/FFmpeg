@@ -83,6 +83,8 @@ typedef struct MMALDecodeContext {
     // libavcodec API can't return new frames, and we have a logical deadlock.
     // This is avoided by queuing such buffers here.
     FFBufferEntry *waiting_buffers, *waiting_buffers_tail;
+    /* Packet used to hold received packets temporarily; not owned by us. */
+    AVPacket *pkt;
 
     int64_t packets_sent;
     atomic_int packets_buffered;
@@ -355,6 +357,8 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     MMAL_COMPONENT_T *decoder;
     int ret = 0;
 
+    ctx->pkt = avctx->internal->in_pkt;
+
     bcm_host_init();
 
     if (mmal_vc_init()) {
@@ -570,6 +574,7 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
 
 done:
     av_buffer_unref(&buf);
+    av_packet_unref(avpkt);
     return ret;
 }
 
@@ -654,6 +659,12 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
         av_image_copy(frame->data, frame->linesize, src, linesize,
                       avctx->pix_fmt, avctx->width, avctx->height);
     }
+
+    frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
+    frame->width  = avctx->width;
+    frame->width  = avctx->width;
+    frame->height = avctx->height;
+    frame->format = avctx->pix_fmt;
 
     frame->pts = buffer->pts == MMAL_TIME_UNKNOWN ? AV_NOPTS_VALUE : buffer->pts;
     frame->pkt_dts = AV_NOPTS_VALUE;
@@ -763,12 +774,12 @@ done:
     return ret;
 }
 
-static int ffmmal_decode(AVCodecContext *avctx, void *data, int *got_frame,
-                         AVPacket *avpkt)
+static int ffmmal_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     MMALDecodeContext *ctx = avctx->priv_data;
-    AVFrame *frame = data;
+    AVPacket *const avpkt = ctx->pkt;
     int ret = 0;
+    int got_frame = 0;
 
     if (avctx->extradata_size && !ctx->extradata_sent) {
         AVPacket pkt = {0};
@@ -780,7 +791,11 @@ static int ffmmal_decode(AVCodecContext *avctx, void *data, int *got_frame,
             return ret;
     }
 
-    if ((ret = ffmmal_add_packet(avctx, avpkt, 0)) < 0)
+    ret = ff_decode_get_packet(avctx, avpkt);
+    if (ret == 0) {
+        if ((ret = ffmmal_add_packet(avctx, avpkt, 0)) < 0)
+            return ret;
+    } else if (ret < 0 && !(ret == AVERROR(EAGAIN)))
         return ret;
 
     if ((ret = ffmmal_fill_input_port(avctx)) < 0)
@@ -789,7 +804,7 @@ static int ffmmal_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if ((ret = ffmmal_fill_output_port(avctx)) < 0)
         return ret;
 
-    if ((ret = ffmmal_read_frame(avctx, frame, got_frame)) < 0)
+    if ((ret = ffmmal_read_frame(avctx, frame, &got_frame)) < 0)
         return ret;
 
     // ffmmal_read_frame() can block for a while. Since the decoder is
@@ -801,7 +816,10 @@ static int ffmmal_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if ((ret = ffmmal_fill_input_port(avctx)) < 0)
         return ret;
 
-    return ret;
+    if (!got_frame && ret == 0)
+        return AVERROR(EAGAIN);
+    else
+        return ret;
 }
 
 static const AVCodecHWConfigInternal *const mmal_hw_configs[] = {
@@ -833,7 +851,7 @@ static const AVOption options[]={
         .priv_data_size = sizeof(MMALDecodeContext), \
         .init           = ffmmal_init_decoder, \
         .close          = ffmmal_close_decoder, \
-        .decode         = ffmmal_decode, \
+        .receive_frame  = ffmmal_receive_frame, \
         .flush          = ffmmal_flush, \
         .priv_class     = &ffmmal_##NAME##_dec_class, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
