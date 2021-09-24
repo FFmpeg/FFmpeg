@@ -57,6 +57,8 @@ isNBPS:
   nv20le
   p010be
   p010le
+  x2bgr10be
+  x2bgr10le
   x2rgb10be
   x2rgb10le
   xyz12be
@@ -143,6 +145,7 @@ isBE:
   rgb555be
   rgb565be
   rgba64be
+  x2bgr10be
   x2rgb10be
   xyz12be
   y210be
@@ -439,6 +442,8 @@ isRGB:
   rgb8
   rgba64be
   rgba64le
+  x2bgr10be
+  x2bgr10le
   x2rgb10be
   x2rgb10le
 
@@ -587,6 +592,8 @@ AnyRGB:
   rgb8
   rgba64be
   rgba64le
+  x2bgr10be
+  x2bgr10le
   x2rgb10be
   x2rgb10le
 
@@ -696,6 +703,8 @@ Packed:
   rgba64le
   uyvy422
   uyyvyy411
+  x2bgr10be
+  x2bgr10le
   x2rgb10be
   x2rgb10le
   xyz12be
@@ -862,6 +871,8 @@ PackedRGB:
   rgb8
   rgba64be
   rgba64le
+  x2bgr10be
+  x2bgr10le
   x2rgb10be
   x2rgb10le
 
