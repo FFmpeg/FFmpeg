@@ -1818,11 +1818,11 @@ static const AVOption options[] = {
     { "sop",           "SOP marker",        OFFSET(sop),           AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, },
     { "eph",           "EPH marker",        OFFSET(eph),           AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, },
     { "prog",          "Progression Order", OFFSET(prog),          AV_OPT_TYPE_INT,   { .i64 = 0           }, JPEG2000_PGOD_LRCP,         JPEG2000_PGOD_CPRL,           VE, "prog" },
-    { "lrcp",          NULL,                OFFSET(prog),          AV_OPT_TYPE_CONST,   { .i64 = JPEG2000_PGOD_LRCP           }, 0,         0,           VE, "prog" },
-    { "rlcp",          NULL,                OFFSET(prog),          AV_OPT_TYPE_CONST,   { .i64 = JPEG2000_PGOD_RLCP            }, 0,         0,           VE, "prog" },
-    { "rpcl",          NULL,                OFFSET(prog),          AV_OPT_TYPE_CONST,   { .i64 = JPEG2000_PGOD_RPCL            }, 0,         0,           VE, "prog" },
-    { "pcrl",          NULL,                OFFSET(prog),          AV_OPT_TYPE_CONST,   { .i64 = JPEG2000_PGOD_PCRL            }, 0,         0,           VE, "prog" },
-    { "cprl",          NULL,                OFFSET(prog),          AV_OPT_TYPE_CONST,   { .i64 = JPEG2000_PGOD_CPRL            }, 0,         0,           VE, "prog" },
+    { "lrcp",          NULL,                0,                     AV_OPT_TYPE_CONST,  { .i64 = JPEG2000_PGOD_LRCP }, 0,         0,           VE, "prog" },
+    { "rlcp",          NULL,                0,                     AV_OPT_TYPE_CONST,  { .i64 = JPEG2000_PGOD_RLCP }, 0,         0,           VE, "prog" },
+    { "rpcl",          NULL,                0,                     AV_OPT_TYPE_CONST,  { .i64 = JPEG2000_PGOD_RPCL }, 0,         0,           VE, "prog" },
+    { "pcrl",          NULL,                0,                     AV_OPT_TYPE_CONST,  { .i64 = JPEG2000_PGOD_PCRL }, 0,         0,           VE, "prog" },
+    { "cprl",          NULL,                0,                     AV_OPT_TYPE_CONST,  { .i64 = JPEG2000_PGOD_CPRL }, 0,         0,           VE, "prog" },
     { "layer_rates",   "Layer Rates",       OFFSET(lr_str),        AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     { NULL }
 };
