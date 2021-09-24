@@ -18,12 +18,48 @@
 
 #include "libavcodec/avcodec.h"
 
+static const char *get_type_string(enum AVMediaType type)
+{
+    const char *ret = av_get_media_type_string(type);
+    return ret ? ret : "unknown";
+}
+
+#define AV_LOG(...) av_log(NULL, AV_LOG_FATAL, __VA_ARGS__)
+#define ERR_INTERNAL(msg, ...)                                  \
+do {                                                            \
+    AV_LOG(msg, codec->name __VA_ARGS__);                       \
+    ret = 1;                                                    \
+} while (0)
+#define ERR(msg)           ERR_INTERNAL(msg, )
+#define ERR_EXT(msg, ...)  ERR_INTERNAL(msg, , __VA_ARGS__)
+
 int main(void){
     void *iter = NULL;
     const AVCodec *codec = NULL;
     int ret = 0;
 
     while (codec = av_codec_iterate(&iter)) {
+        if (!codec->name) {
+            AV_LOG("Codec for format %s has no name\n",
+                   avcodec_get_name(codec->id));
+            ret = 1;
+            continue;
+        }
+        if (codec->type != AVMEDIA_TYPE_VIDEO &&
+            codec->type != AVMEDIA_TYPE_AUDIO &&
+            codec->type != AVMEDIA_TYPE_SUBTITLE)
+            ERR_EXT("Codec %s has unsupported type %s\n",
+                    get_type_string(codec->type));
+        if (codec->type != AVMEDIA_TYPE_AUDIO) {
+            if (codec->channel_layouts || codec->sample_fmts ||
+                codec->supported_samplerates)
+                ERR("Non-audio codec %s has audio-only fields set\n");
+        }
+        if (codec->type != AVMEDIA_TYPE_VIDEO) {
+            if (codec->pix_fmts || codec->supported_framerates)
+                ERR("Non-video codec %s has video-only fields set\n");
+        }
+
         if (av_codec_is_encoder(codec)) {
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (!codec->sample_fmts) {
