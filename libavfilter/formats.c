@@ -435,11 +435,7 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     AVFilterFormats *ret = NULL;
 
     if (type == AVMEDIA_TYPE_VIDEO) {
-        const AVPixFmtDescriptor *desc = NULL;
-        while ((desc = av_pix_fmt_desc_next(desc))) {
-            if (ff_add_format(&ret, av_pix_fmt_desc_get_id(desc)) < 0)
-                return NULL;
-        }
+        return ff_formats_pixdesc_filter(0, 0);
     } else if (type == AVMEDIA_TYPE_AUDIO) {
         enum AVSampleFormat fmt = 0;
         while (av_get_sample_fmt_name(fmt)) {
