@@ -1463,10 +1463,10 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
 
     e = av_dict_get(opts, "child_device_type", NULL, 0);
     if (e) {
-        child_device_type = av_hwdevice_find_type_by_name(e ? e->value : NULL);
+        child_device_type = av_hwdevice_find_type_by_name(e->value);
         if (child_device_type == AV_HWDEVICE_TYPE_NONE) {
             av_log(ctx, AV_LOG_ERROR, "Unknown child device type "
-                   "\"%s\".\n", e ? e->value : NULL);
+                   "\"%s\".\n", e->value);
             return AVERROR(EINVAL);
         }
     } else if (CONFIG_VAAPI) {
