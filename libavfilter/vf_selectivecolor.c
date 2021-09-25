@@ -322,24 +322,31 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
     const int width  = in->width;                                                                       \
     const int slice_start = (height *  jobnr   ) / nb_jobs;                                             \
     const int slice_end   = (height * (jobnr+1)) / nb_jobs;                                             \
-    const int dst_linesize = out->linesize[0];                                                          \
-    const int src_linesize =  in->linesize[0];                                                          \
+    const int dst_linesize = out->linesize[0] / ((nbits + 7) / 8);                                      \
+    const int src_linesize =  in->linesize[0] / ((nbits + 7) / 8);                                      \
     const uint8_t roffset = s->rgba_map[R];                                                             \
     const uint8_t goffset = s->rgba_map[G];                                                             \
     const uint8_t boffset = s->rgba_map[B];                                                             \
     const uint8_t aoffset = s->rgba_map[A];                                                             \
+    uint##nbits##_t *dst = (uint##nbits##_t *)out->data[0] + slice_start * dst_linesize;                \
+    const uint##nbits##_t *src = (const uint##nbits##_t *)in->data[0] + slice_start * src_linesize;     \
+    const uint##nbits##_t *src_r = (const uint##nbits##_t *)src + roffset;                              \
+    const uint##nbits##_t *src_g = (const uint##nbits##_t *)src + goffset;                              \
+    const uint##nbits##_t *src_b = (const uint##nbits##_t *)src + boffset;                              \
+    const uint##nbits##_t *src_a = (const uint##nbits##_t *)src + aoffset;                              \
+    uint##nbits##_t *dst_r = (uint##nbits##_t *)dst + roffset;                                          \
+    uint##nbits##_t *dst_g = (uint##nbits##_t *)dst + goffset;                                          \
+    uint##nbits##_t *dst_b = (uint##nbits##_t *)dst + boffset;                                          \
+    uint##nbits##_t *dst_a = (uint##nbits##_t *)dst + aoffset;                                          \
     const int mid = 1<<(nbits-1);                                                                       \
     const int max = (1<<nbits)-1;                                                                       \
     const float scale = 1.f / max;                                                                      \
                                                                                                         \
     for (y = slice_start; y < slice_end; y++) {                                                         \
-        uint##nbits##_t       *dst = (      uint##nbits##_t *)(out->data[0] + y * dst_linesize);        \
-        const uint##nbits##_t *src = (const uint##nbits##_t *)( in->data[0] + y * src_linesize);        \
-                                                                                                        \
         for (x = 0; x < width * s->step; x += s->step) {                                                \
-            const int r = src[x + roffset];                                                             \
-            const int g = src[x + goffset];                                                             \
-            const int b = src[x + boffset];                                                             \
+            const int r = src_r[x];                                                                     \
+            const int g = src_g[x];                                                                     \
+            const int b = src_b[x];                                                                     \
             const int min_color = FFMIN3(r, g, b);                                                      \
             const int max_color = FFMAX3(r, g, b);                                                      \
             const int is_white   = (r > mid && g > mid && b > mid);                                     \
@@ -382,13 +389,23 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
             }                                                                                           \
                                                                                                         \
             if (!direct || adjust_r || adjust_g || adjust_b) {                                          \
-                dst[x + roffset] = av_clip_uint##nbits(r + adjust_r);                                   \
-                dst[x + goffset] = av_clip_uint##nbits(g + adjust_g);                                   \
-                dst[x + boffset] = av_clip_uint##nbits(b + adjust_b);                                   \
+                dst_r[x] = av_clip_uint##nbits(r + adjust_r);                                           \
+                dst_g[x] = av_clip_uint##nbits(g + adjust_g);                                           \
+                dst_b[x] = av_clip_uint##nbits(b + adjust_b);                                           \
                 if (!direct && s->step == 4)                                                            \
-                    dst[x + aoffset] = src[x + aoffset];                                                \
+                    dst_a[x] = src_a[x];                                                                \
             }                                                                                           \
         }                                                                                               \
+                                                                                                        \
+        src_r += src_linesize;                                                                          \
+        src_g += src_linesize;                                                                          \
+        src_b += src_linesize;                                                                          \
+        src_a += src_linesize;                                                                          \
+                                                                                                        \
+        dst_r += dst_linesize;                                                                          \
+        dst_g += dst_linesize;                                                                          \
+        dst_b += dst_linesize;                                                                          \
+        dst_a += dst_linesize;                                                                          \
     }                                                                                                   \
     return 0;                                                                                           \
 }
