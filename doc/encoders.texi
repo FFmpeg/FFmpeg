@@ -1750,12 +1750,30 @@ You need to explicitly configure the build with @code{--enable-libsvtav1}.
 @table @option
 @item profile
 Set the encoding profile.
+@table @samp
+@item main
+@item high
+@item professional
+@end table
 
 @item level
-Set the operating point level.
+Set the operating point level. For example: '4.0'
+
+@item hielevel
+Set the Hierarchical prediction levels.
+@table @samp
+@item 3level
+@item 4level
+This is the default.
+@end table
 
 @item tier
 Set the operating point tier.
+@table @samp
+@item main
+This is the default.
+@item high
+@end table
 
 @item rc
 Set the rate control mode to use.
