@@ -21,10 +21,11 @@
 AVDetectionBBoxHeader *av_detection_bbox_alloc(uint32_t nb_bboxes, size_t *out_size)
 {
     size_t size;
-    struct {
+    struct BBoxContext {
         AVDetectionBBoxHeader header;
         AVDetectionBBox boxes[1];
     } *ret;
+    const size_t bboxes_offset = offsetof(struct BBoxContext, boxes);
 
     size = sizeof(*ret);
     if (nb_bboxes - 1 > (SIZE_MAX - size) / sizeof(*ret->boxes))
@@ -37,7 +38,7 @@ AVDetectionBBoxHeader *av_detection_bbox_alloc(uint32_t nb_bboxes, size_t *out_s
 
     ret->header.nb_bboxes = nb_bboxes;
     ret->header.bbox_size = sizeof(*ret->boxes);
-    ret->header.bboxes_offset = (char *)&ret->boxes - (char *)&ret->header;
+    ret->header.bboxes_offset = bboxes_offset;
 
     if (out_size)
         *out_size = size;
