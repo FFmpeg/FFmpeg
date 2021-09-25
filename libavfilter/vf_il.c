@@ -83,15 +83,9 @@ AVFILTER_DEFINE_CLASS(il);
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats = NULL;
-    int ret;
+    int reject_flags = AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_HWACCEL;
 
-    ret = ff_formats_pixdesc_filter(&formats, 0,
-                                    AV_PIX_FMT_FLAG_PAL |
-                                    AV_PIX_FMT_FLAG_HWACCEL);
-    if (ret < 0)
-        return ret;
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, reject_flags));
 }
 
 static int config_input(AVFilterLink *inlink)

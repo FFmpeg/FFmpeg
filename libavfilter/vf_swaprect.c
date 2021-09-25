@@ -57,16 +57,11 @@ AVFILTER_DEFINE_CLASS(swaprect);
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *pix_fmts = NULL;
-    int ret;
+    int reject_flags = AV_PIX_FMT_FLAG_PAL     |
+                       AV_PIX_FMT_FLAG_HWACCEL |
+                       AV_PIX_FMT_FLAG_BITSTREAM;
 
-    ret = ff_formats_pixdesc_filter(&pix_fmts, 0, AV_PIX_FMT_FLAG_PAL     |
-                                                  AV_PIX_FMT_FLAG_HWACCEL |
-                                                  AV_PIX_FMT_FLAG_BITSTREAM);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_formats(ctx, pix_fmts);
+    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, reject_flags));
 }
 
 static const char *const var_names[] = {   "w",   "h",   "a",   "n",   "t",   "pos",   "sar",   "dar",        NULL };

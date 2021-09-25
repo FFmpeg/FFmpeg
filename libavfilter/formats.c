@@ -452,7 +452,7 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     return ret;
 }
 
-int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned rej)
+AVFilterFormats *ff_formats_pixdesc_filter(unsigned want, unsigned rej)
 {
     unsigned nb_formats, fmt, flags;
     AVFilterFormats *formats = NULL;
@@ -476,18 +476,17 @@ int ff_formats_pixdesc_filter(AVFilterFormats **rfmts, unsigned want, unsigned r
         }
         if (formats) {
             av_assert0(formats->nb_formats == nb_formats);
-            *rfmts = formats;
-            return 0;
+            return formats;
         }
         formats = av_mallocz(sizeof(*formats));
         if (!formats)
-            return AVERROR(ENOMEM);
+            return NULL;
         formats->nb_formats = nb_formats;
         if (nb_formats) {
             formats->formats = av_malloc_array(nb_formats, sizeof(*formats->formats));
             if (!formats->formats) {
                 av_freep(&formats);
-                return AVERROR(ENOMEM);
+                return NULL;
             }
         }
     }
