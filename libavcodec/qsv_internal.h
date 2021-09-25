@@ -76,6 +76,8 @@ typedef struct QSVFrame {
     mfxExtDecodedFrameInfo dec_info;
     mfxExtBuffer *ext_param;
 
+    mfxPayload *payloads[QSV_MAX_ENC_PAYLOAD]; ///< used for enc_ctrl.Payload
+
     int queued;
     int used;
 
