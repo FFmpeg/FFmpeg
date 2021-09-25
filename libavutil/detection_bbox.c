@@ -23,27 +23,29 @@ AVDetectionBBoxHeader *av_detection_bbox_alloc(uint32_t nb_bboxes, size_t *out_s
     size_t size;
     struct BBoxContext {
         AVDetectionBBoxHeader header;
-        AVDetectionBBox boxes[1];
-    } *ret;
+        AVDetectionBBox boxes;
+    };
     const size_t bboxes_offset = offsetof(struct BBoxContext, boxes);
+    const size_t bbox_size = sizeof(AVDetectionBBox);
+    AVDetectionBBoxHeader *header;
 
-    size = sizeof(*ret);
-    if (nb_bboxes - 1 > (SIZE_MAX - size) / sizeof(*ret->boxes))
+    size = bboxes_offset;
+    if (nb_bboxes > (SIZE_MAX - size) / bbox_size)
         return NULL;
-    size += sizeof(*ret->boxes) * (nb_bboxes - 1);
+    size += bbox_size * nb_bboxes;
 
-    ret = av_mallocz(size);
-    if (!ret)
+    header = av_mallocz(size);
+    if (!header)
         return NULL;
 
-    ret->header.nb_bboxes = nb_bboxes;
-    ret->header.bbox_size = sizeof(*ret->boxes);
-    ret->header.bboxes_offset = bboxes_offset;
+    header->nb_bboxes     = nb_bboxes;
+    header->bbox_size     = bbox_size;
+    header->bboxes_offset = bboxes_offset;
 
     if (out_size)
         *out_size = size;
 
-    return &ret->header;
+    return header;
 }
 
 AVDetectionBBoxHeader *av_detection_bbox_create_side_data(AVFrame *frame, uint32_t nb_bboxes)
