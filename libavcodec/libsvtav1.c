@@ -205,6 +205,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->frame_rate_denominator = avctx->time_base.num * avctx->ticks_per_frame;
     }
 
+    param->enable_tpl_la = !!param->rate_control_mode;
     if (param->rate_control_mode) {
         param->max_qp_allowed       = avctx->qmax;
         param->min_qp_allowed       = avctx->qmin;
