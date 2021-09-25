@@ -328,6 +328,9 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
     const uint8_t goffset = s->rgba_map[G];                                                             \
     const uint8_t boffset = s->rgba_map[B];                                                             \
     const uint8_t aoffset = s->rgba_map[A];                                                             \
+    const int mid = 1<<(nbits-1);                                                                       \
+    const int max = (1<<nbits)-1;                                                                       \
+    const float scale = 1.f / max;                                                                      \
                                                                                                         \
     for (y = slice_start; y < slice_end; y++) {                                                         \
         uint##nbits##_t       *dst = (      uint##nbits##_t *)(out->data[0] + y * dst_linesize);        \
@@ -339,10 +342,10 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
             const int b = src[x + boffset];                                                             \
             const int min_color = FFMIN3(r, g, b);                                                      \
             const int max_color = FFMAX3(r, g, b);                                                      \
-            const int is_white   = (r > 1<<(nbits-1) && g > 1<<(nbits-1) && b > 1<<(nbits-1));          \
+            const int is_white   = (r > mid && g > mid && b > mid);                                     \
             const int is_neutral = (r || g || b) &&                                                     \
-                                   (r != (1<<nbits)-1 || g != (1<<nbits)-1 || b != (1<<nbits)-1);       \
-            const int is_black   = (r < 1<<(nbits-1) && g < 1<<(nbits-1) && b < 1<<(nbits-1));          \
+                                   (r != max || g != max || b != max);                                  \
+            const int is_black   = (r < mid && g < mid && b < mid);                                     \
             const uint32_t range_flag = (r == max_color) << RANGE_REDS                                  \
                                       | (r == min_color) << RANGE_CYANS                                 \
                                       | (g == max_color) << RANGE_GREENS                                \
@@ -353,9 +356,9 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
                                       | is_neutral       << RANGE_NEUTRALS                              \
                                       | is_black         << RANGE_BLACKS;                               \
                                                                                                         \
-            const float rnorm = r * (1.f / ((1<<nbits)-1));                                             \
-            const float gnorm = g * (1.f / ((1<<nbits)-1));                                             \
-            const float bnorm = b * (1.f / ((1<<nbits)-1));                                             \
+            const float rnorm = r * scale;                                                              \
+            const float gnorm = g * scale;                                                              \
+            const float bnorm = b * scale;                                                              \
             int adjust_r = 0, adjust_g = 0, adjust_b = 0;                                               \
                                                                                                         \
             for (i = 0; i < s->nb_process_ranges; i++) {                                                \
