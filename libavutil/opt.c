@@ -1831,10 +1831,7 @@ int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key,
 {
     int ret;
     const AVClass *c = *(AVClass**)obj;
-    int (*callback)(AVOptionRanges **, void *obj, const char *key, int flags) = NULL;
-
-    if (c->version > (52 << 16 | 11 << 8))
-        callback = c->query_ranges;
+    int (*callback)(AVOptionRanges **, void *obj, const char *key, int flags) = c->query_ranges;
 
     if (!callback)
         callback = av_opt_query_ranges_default;
