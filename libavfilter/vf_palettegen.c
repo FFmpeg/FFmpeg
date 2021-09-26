@@ -266,7 +266,7 @@ static void write_palette(AVFilterContext *ctx, AVFrame *out)
             if (box_id < s->nb_boxes) {
                 pal[x] = s->boxes[box_id++].color;
                 if ((x || y) && pal[x] == last_color)
-                    av_log(ctx, AV_LOG_WARNING, "Dupped color: %08"PRIX32"\n", pal[x]);
+                    av_log(ctx, AV_LOG_WARNING, "Duped color: %08"PRIX32"\n", pal[x]);
                 last_color = pal[x];
             } else {
                 pal[x] = last_color; // pad with last color
@@ -438,7 +438,7 @@ static inline unsigned color_hash(uint32_t color, int use_alpha)
         return a << (NBITS * 3) | r << (NBITS * 2) | g << NBITS | b;
     }
 
-    return r<<(NBITS*2) | g<<NBITS | b;
+    return r << (NBITS * 2) | g << NBITS | b;
 }
 
 /**
