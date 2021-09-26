@@ -46,6 +46,7 @@ typedef struct ELBGFilterContext {
     int codebook_length;
     const AVPixFmtDescriptor *pix_desc;
     uint8_t rgba_map[4];
+    int use_alpha;
     int pal8;
 } ELBGFilterContext;
 
@@ -60,6 +61,7 @@ static const AVOption elbg_options[] = {
     { "seed", "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT64, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, UINT32_MAX, FLAGS },
     { "pal8", "set the pal8 output", OFFSET(pal8), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "use_alpha", "use alpha channel for mapping", OFFSET(use_alpha), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -105,7 +107,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-#define NB_COMPONENTS 3
+#define NB_COMPONENTS 4
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -138,6 +140,7 @@ static int config_input(AVFilterLink *inlink)
 #define R 0
 #define G 1
 #define B 2
+#define A 3
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
@@ -148,6 +151,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     const uint8_t r_idx  = elbg->rgba_map[R];
     const uint8_t g_idx  = elbg->rgba_map[G];
     const uint8_t b_idx  = elbg->rgba_map[B];
+    const uint8_t a_idx  = elbg->rgba_map[A];
 
     /* build the codeword */
     p0 = frame->data[0];
@@ -155,9 +159,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     for (i = 0; i < inlink->h; i++) {
         p = p0;
         for (j = 0; j < inlink->w; j++) {
-            elbg->codeword[k++] = p[r_idx];
-            elbg->codeword[k++] = p[g_idx];
             elbg->codeword[k++] = p[b_idx];
+            elbg->codeword[k++] = p[g_idx];
+            elbg->codeword[k++] = p[r_idx];
+            elbg->codeword[k++] = elbg->use_alpha ? p[a_idx] : 0xff;
             p += elbg->pix_desc->nb_components;
         }
         p0 += frame->linesize[0];
@@ -188,10 +193,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         p0 = (uint8_t *)out->data[0];
 
         for (i = 0; i < elbg->codebook_length; i++) {
-            pal[i] =  0xFFU                 << 24  |
-                     (elbg->codebook[i*3  ] << 16) |
-                     (elbg->codebook[i*3+1] <<  8) |
-                      elbg->codebook[i*3+2];
+            const int al =  elbg->use_alpha ? elbg->codebook[i*4+3] : 0xff;
+            pal[i] =  al                    << 24  |
+                     (elbg->codebook[i*4+2] << 16) |
+                     (elbg->codebook[i*4+1] <<  8) |
+                      elbg->codebook[i*4  ];
         }
 
         k = 0;
@@ -214,9 +220,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         p = p0;
         for (j = 0; j < inlink->w; j++) {
             int cb_idx = NB_COMPONENTS * elbg->codeword_closest_codebook_idxs[k++];
-            p[r_idx] = elbg->codebook[cb_idx];
+            p[b_idx] = elbg->codebook[cb_idx];
             p[g_idx] = elbg->codebook[cb_idx+1];
-            p[b_idx] = elbg->codebook[cb_idx+2];
+            p[r_idx] = elbg->codebook[cb_idx+2];
+            p[a_idx] = elbg->use_alpha ? elbg->codebook[cb_idx+3] : 0xFFu;
             p += elbg->pix_desc->nb_components;
         }
         p0 += frame->linesize[0];
