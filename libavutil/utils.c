@@ -37,10 +37,6 @@ const char *av_version_info(void)
 
 unsigned avutil_version(void)
 {
-    static int checks_done;
-    if (checks_done)
-        return LIBAVUTIL_VERSION_INT;
-
     av_assert0(AV_SAMPLE_FMT_DBLP == 9);
     av_assert0(AVMEDIA_TYPE_ATTACHMENT == 4);
     av_assert0(AV_PICTURE_TYPE_BI == 7);
@@ -58,7 +54,6 @@ unsigned avutil_version(void)
         av_log(NULL, AV_LOG_ERROR, "Libavutil has been linked to a broken llrint()\n");
     }
 
-    checks_done = 1;
     return LIBAVUTIL_VERSION_INT;
 }
 
