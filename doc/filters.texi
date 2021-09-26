@@ -8540,6 +8540,25 @@ Adjust red, green, blue and alpha output white point.
 Allowed ranges for options are @code{[0, 1.0]}. Defaults are @code{1}.
 
 Output levels allows manual selection of a constrained output level range.
+
+@item preserve
+Set preserve color mode. The accepted values are:
+@table @samp
+@item none
+Disable color preserving, this is default.
+@item lum
+Preserve luminance.
+@item max
+Preserve max value of RGB triplet.
+@item avg
+Preserve average value of RGB triplet.
+@item sum
+Preserve sum value of RGB triplet.
+@item nrm
+Preserve normalized value of RGB triplet.
+@item pwr
+Preserve power value of RGB triplet.
+@end table
 @end table
 
 @subsection Examples
