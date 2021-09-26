@@ -8379,8 +8379,27 @@ Default is @code{1} for @var{aa}, and @code{0} for @var{ar}, @var{ag} and @var{a
 
 Allowed ranges for options are @code{[-2.0, 2.0]}.
 
-@item pl
-Preserve lightness when changing colors. Allowed range is from @code{[0.0, 1.0]}.
+@item pc
+Set preserve color mode. The accepted values are:
+@table @samp
+@item none
+Disable color preserving, this is default.
+@item lum
+Preserve luminance.
+@item max
+Preserve max value of RGB triplet.
+@item avg
+Preserve average value of RGB triplet.
+@item sum
+Preserve sum value of RGB triplet.
+@item nrm
+Preserve normalized value of RGB triplet.
+@item pwr
+Preserve power value of RGB triplet.
+@end table
+
+@item pa
+Set the preserve color amount when changing colors. Allowed range is from @code{[0.0, 1.0]}.
 Default is @code{0.0}, thus disabled.
 @end table
 
