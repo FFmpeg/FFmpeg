@@ -100,23 +100,23 @@ static float get_component(float v, float l,
 {
     const float a = 4.f, b = 0.333f, scale = 0.7f;
 
-    s *= av_clipf((b - l) * a + 0.5f, 0, 1) * scale;
-    m *= av_clipf((l - b) * a + 0.5f, 0, 1) * av_clipf((1.0 - l - b) * a + 0.5f, 0, 1) * scale;
-    h *= av_clipf((l + b - 1) * a + 0.5f, 0, 1) * scale;
+    s *= av_clipf((b - l) * a + 0.5f, 0.f, 1.f) * scale;
+    m *= av_clipf((l - b) * a + 0.5f, 0.f, 1.f) * av_clipf((1.f - l - b) * a + 0.5f, 0.f, 1.f) * scale;
+    h *= av_clipf((l + b - 1) * a + 0.5f, 0.f, 1.f) * scale;
 
     v += s;
     v += m;
     v += h;
 
-    return av_clipf(v, 0, 1);
+    return av_clipf(v, 0.f, 1.f);
 }
 
 static float hfun(float n, float h, float s, float l)
 {
-    float a = s * FFMIN(l, 1. - l);
+    float a = s * FFMIN(l, 1.f - l);
     float k = fmodf(n + h / 30.f, 12.f);
 
-    return av_clipf(l - a * FFMAX(FFMIN3(k - 3.f, 9.f - k, 1), -1.f), 0, 1);
+    return av_clipf(l - a * FFMAX(FFMIN3(k - 3.f, 9.f - k, 1), -1.f), 0.f, 1.f);
 }
 
 static void preservel(float *r, float *g, float *b, float l)
@@ -125,31 +125,31 @@ static void preservel(float *r, float *g, float *b, float l)
     float min = FFMIN3(*r, *g, *b);
     float h, s;
 
-    l *= 0.5;
+    l *= 0.5f;
 
     if (*r == *g && *g == *b) {
-        h = 0.;
+        h = 0.f;
     } else if (max == *r) {
-        h = 60. * (0. + (*g - *b) / (max - min));
+        h = 60.f * (0.f + (*g - *b) / (max - min));
     } else if (max == *g) {
-        h = 60. * (2. + (*b - *r) / (max - min));
+        h = 60.f * (2.f + (*b - *r) / (max - min));
     } else if (max == *b) {
-        h = 60. * (4. + (*r - *g) / (max - min));
+        h = 60.f * (4.f + (*r - *g) / (max - min));
     } else {
-        h = 0.;
+        h = 0.f;
     }
-    if (h < 0.)
-        h += 360.;
+    if (h < 0.f)
+        h += 360.f;
 
-    if (max == 0. || min == 1.) {
-        s = 0.;
+    if (max == 1.f || min == 0.f) {
+        s = 0.f;
     } else {
-        s = (max - min) / (1. - FFABS(2. * l - 1));
+        s = (max - min) / (1.f - (FFABS(2.f * l - 1.f)));
     }
 
-    *r = hfun(0, h, s, l);
-    *g = hfun(8, h, s, l);
-    *b = hfun(4, h, s, l);
+    *r = hfun(0.f, h, s, l);
+    *g = hfun(8.f, h, s, l);
+    *b = hfun(4.f, h, s, l);
 }
 
 static int color_balance8_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
