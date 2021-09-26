@@ -7559,6 +7559,7 @@ Available values for component modes are:
 @item pinlight
 @item reflect
 @item screen
+@item softdifference
 @item softlight
 @item subtract
 @item vividlight

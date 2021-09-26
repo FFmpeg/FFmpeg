@@ -104,6 +104,7 @@ static const AVOption blend_options[] = {
     { "subtract",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SUBTRACT},   0, 0, FLAGS, "mode" },
     { "vividlight", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_VIVIDLIGHT}, 0, 0, FLAGS, "mode" },
     { "xor",        "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_XOR},        0, 0, FLAGS, "mode" },
+    { "softdifference","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SOFTDIFFERENCE}, 0, 0, FLAGS, "mode" },
     { "c0_expr",  "set color component #0 expression", OFFSET(params[0].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "c1_expr",  "set color component #1 expression", OFFSET(params[1].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "c2_expr",  "set color component #2 expression", OFFSET(params[2].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -322,6 +323,7 @@ DEFINE_BLEND8(or,         A | B)
 DEFINE_BLEND8(xor,        A ^ B)
 DEFINE_BLEND8(vividlight, (A < 128) ? BURN(2 * A, B) : DODGE(2 * (A - 128), B))
 DEFINE_BLEND8(linearlight,av_clip_uint8((B < 128) ? B + 2 * A - 255 : B + 2 * (A - 128)))
+DEFINE_BLEND8(softdifference,av_clip_uint8((A > B) ? (B == 255) ? 0 : (A - B) * 255 / (255 - B) : (B == 0) ? 0 : (B - A) * 255 / B))
 
 #undef MULTIPLY
 #undef SCREEN
@@ -365,6 +367,7 @@ DEFINE_BLEND16(or,         A | B, 16)
 DEFINE_BLEND16(xor,        A ^ B, 16)
 DEFINE_BLEND16(vividlight, (A < 32768) ? BURN(2 * A, B) : DODGE(2 * (A - 32768), B), 16)
 DEFINE_BLEND16(linearlight,av_clip_uint16((B < 32768) ? B + 2 * A - 65535 : B + 2 * (A - 32768)), 16)
+DEFINE_BLEND16(softdifference,av_clip_uint16((A > B) ? (B == 65535) ? 0 : (A - B) * 65535 / (65535 - B) : (B == 0) ? 0 : (B - A) * 65535 / B), 16)
 
 #undef MULTIPLY
 #undef SCREEN
@@ -408,6 +411,7 @@ DEFINE_BLEND16(or,         A | B, 10)
 DEFINE_BLEND16(xor,        A ^ B, 10)
 DEFINE_BLEND16(vividlight, (A < 512) ? BURN(2 * A, B) : DODGE(2 * (A - 512), B), 10)
 DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 512) ? B + 2 * A - 1023 : B + 2 * (A - 512), 10), 10)
+DEFINE_BLEND16(softdifference,(int)av_clip_uintp2((A > B) ? (B == 1023) ? 0 : (A - B) * 1023 / (1023 - B) : (B == 0) ? 0 : (B - A) * 1023 / B, 10), 10)
 
 #undef MULTIPLY
 #undef SCREEN
@@ -451,6 +455,7 @@ DEFINE_BLEND16(or,         A | B, 12)
 DEFINE_BLEND16(xor,        A ^ B, 12)
 DEFINE_BLEND16(vividlight, (A < 2048) ? BURN(2 * A, B) : DODGE(2 * (A - 2048), B), 12)
 DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 2048) ? B + 2 * A - 4095 : B + 2 * (A - 2048), 12), 12)
+DEFINE_BLEND16(softdifference,(int)av_clip_uintp2((A > B) ? (B == 4095) ? 0 : (A - B) * 4095 / (4095 - B) : (B == 0) ? 0 : (B - A) * 4095 / B, 12), 12)
 
 #undef MULTIPLY
 #undef SCREEN
@@ -494,6 +499,7 @@ DEFINE_BLEND16(or,         A | B, 9)
 DEFINE_BLEND16(xor,        A ^ B, 9)
 DEFINE_BLEND16(vividlight, (A < 256) ? BURN(2 * A, B) : DODGE(2 * (A - 256), B), 9)
 DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 256) ? B + 2 * A - 511 : B + 2 * (A - 256), 9), 9)
+DEFINE_BLEND16(softdifference,(int)av_clip_uintp2((A > B) ? (A - B) * 511 / (511 - B) : (B == 0) ? 0 : (B - A) * 511 / B, 9), 9)
 
 #undef MULTIPLY
 #undef SCREEN
@@ -537,6 +543,7 @@ DEFINE_BLEND32(or,         av_int2float(av_float2int(A) | av_float2int(B)), 32)
 DEFINE_BLEND32(xor,        av_int2float(av_float2int(A) ^ av_float2int(B)), 32)
 DEFINE_BLEND32(vividlight, (A < 0.5) ? BURN(2 * A, B) : DODGE(2 * (A - 0.5), B), 32)
 DEFINE_BLEND32(linearlight,(B < 0.5) ? B + 2 * A - 1.0 : B + 2 * (A - 0.5), 32)
+DEFINE_BLEND32(softdifference, (A > B) ? (B == 1.f) ? 0.f : (A - B) / (1.f - B) : (B == 0.f) ? 0.f : (B - A) / B, 32)
 
 #define DEFINE_BLEND_EXPR(type, name, div)                                     \
 static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,          \
@@ -733,6 +740,7 @@ static av_cold void init_blend_func_##depth##_##nbits##bit(FilterParams *param) 
     case BLEND_SUBTRACT:     param->blend = blend_subtract_##depth##bit;     break;   \
     case BLEND_VIVIDLIGHT:   param->blend = blend_vividlight_##depth##bit;   break;   \
     case BLEND_XOR:          param->blend = blend_xor_##depth##bit;          break;   \
+    case BLEND_SOFTDIFFERENCE:param->blend = blend_softdifference_##depth##bit; break;\
     }                                                                                 \
 }
 DEFINE_INIT_BLEND_FUNC(8, 8)
