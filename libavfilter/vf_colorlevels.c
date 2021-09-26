@@ -104,56 +104,74 @@ typedef struct ThreadData {
     int omin[4];
 } ThreadData;
 
-#define LOAD_COMMON                                             \
-    ColorLevelsContext *s = ctx->priv;                          \
-    const ThreadData *td = arg;                                 \
-    const int process_h = td->h;                                \
-    const int slice_start = (process_h *  jobnr   ) / nb_jobs;  \
-    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;  \
-    const uint8_t *srcrow = td->srcrow;                         \
-    uint8_t *dstrow = td->dstrow;                               \
-    const int step = s->step;
+#define DO_COMMON(type, clip)                                                   \
+    ColorLevelsContext *s = ctx->priv;                                          \
+    const ThreadData *td = arg;                                                 \
+    const int linesize = s->linesize;                                           \
+    const int step = s->step;                                                   \
+    const int process_h = td->h;                                                \
+    const int slice_start = (process_h *  jobnr   ) / nb_jobs;                  \
+    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;                  \
+    const int src_linesize = td->src_linesize / sizeof(type);                   \
+    const int dst_linesize = td->dst_linesize / sizeof(type);                   \
+    const type *srcrow = (const type *)td->srcrow + src_linesize * slice_start; \
+    type *dstrow = (type *)td->dstrow + dst_linesize * slice_start;             \
+    const uint8_t offset_r = s->rgba_map[R];                                    \
+    const uint8_t offset_g = s->rgba_map[G];                                    \
+    const uint8_t offset_b = s->rgba_map[B];                                    \
+    const uint8_t offset_a = s->rgba_map[A];                                    \
+    const int imin_r = td->imin[R];                                             \
+    const int imin_g = td->imin[G];                                             \
+    const int imin_b = td->imin[B];                                             \
+    const int imin_a = td->imin[A];                                             \
+    const int omin_r = td->omin[R];                                             \
+    const int omin_g = td->omin[G];                                             \
+    const int omin_b = td->omin[B];                                             \
+    const int omin_a = td->omin[A];                                             \
+    const float coeff_r = td->coeff[R];                                         \
+    const float coeff_g = td->coeff[G];                                         \
+    const float coeff_b = td->coeff[B];                                         \
+    const float coeff_a = td->coeff[A];                                         \
+    const type *src_r = srcrow + offset_r;                                      \
+    const type *src_g = srcrow + offset_g;                                      \
+    const type *src_b = srcrow + offset_b;                                      \
+    const type *src_a = srcrow + offset_a;                                      \
+    type *dst_r = dstrow + offset_r;                                            \
+    type *dst_g = dstrow + offset_g;                                            \
+    type *dst_b = dstrow + offset_b;                                            \
+    type *dst_a = dstrow + offset_a;                                            \
+                                                                                \
+    for (int y = slice_start; y < slice_end; y++) {                             \
+        for (int x = 0; x < linesize; x += step) {                              \
+            dst_r[x] = clip((src_r[x] - imin_r) * coeff_r + omin_r);            \
+            dst_g[x] = clip((src_g[x] - imin_g) * coeff_g + omin_g);            \
+            dst_b[x] = clip((src_b[x] - imin_b) * coeff_b + omin_b);            \
+        }                                                                       \
+                                                                                \
+        for (int x = 0; x < linesize && s->nb_comp == 4; x += step)             \
+            dst_a[x] = clip((src_a[x] - imin_a) * coeff_a + omin_a);            \
+                                                                                \
+        src_r += src_linesize;                                                  \
+        src_g += src_linesize;                                                  \
+        src_b += src_linesize;                                                  \
+        src_a += src_linesize;                                                  \
+                                                                                \
+        dst_r += dst_linesize;                                                  \
+        dst_g += dst_linesize;                                                  \
+        dst_b += dst_linesize;                                                  \
+        dst_a += dst_linesize;                                                  \
+    }
 
 static int colorlevels_slice_8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    LOAD_COMMON
-
-    for (int comp = 0; comp < s->nb_comp; comp++) {
-        const uint8_t offset = s->rgba_map[comp];
-        const int imin = td->imin[comp];
-        const int omin = td->omin[comp];
-        const float coeff = td->coeff[comp];
-
-        for (int y = slice_start; y < slice_end; y++) {
-            const uint8_t *src = srcrow + y * td->src_linesize;
-            uint8_t *dst = dstrow + y * td->dst_linesize;
-
-            for (int x = 0; x < s->linesize; x += step)
-                dst[x + offset] = av_clip_uint8((src[x + offset] - imin) * coeff + omin);
-        }
-    }
+    DO_COMMON(uint8_t, av_clip_uint8)
 
     return 0;
 }
 
 static int colorlevels_slice_16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    LOAD_COMMON
-
-    for (int comp = 0; comp < s->nb_comp; comp++) {
-        const uint8_t offset = s->rgba_map[comp];
-        const int imin = td->imin[comp];
-        const int omin = td->omin[comp];
-        const float coeff = td->coeff[comp];
-
-        for (int y = slice_start; y < slice_end; y++) {
-            const uint16_t *src = (const uint16_t *)(srcrow + y * td->src_linesize);
-            uint16_t *dst = (uint16_t *)(dstrow + y * td->dst_linesize);
-
-            for (int x = 0; x < s->linesize; x += step)
-                dst[x + offset] = av_clip_uint16((src[x + offset] - imin) * coeff + omin);
-        }
-    }
+    DO_COMMON(uint16_t, av_clip_uint16)
 
     return 0;
 }
