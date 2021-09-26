@@ -105,6 +105,7 @@ static const AVClass test_class = {
     .class_name = "TestContext",
     .item_name  = test_get_name,
     .option     = test_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
