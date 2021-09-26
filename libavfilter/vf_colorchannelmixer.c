@@ -145,10 +145,6 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
             const uint8_t bin = srcb[j];
             const uint8_t ain = have_alpha ? srca[j] : 0;
             int rout, gout, bout;
-            float lin;
-
-            if (pl)
-                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -164,6 +160,7 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
+                float lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
                 float frout = rout / sr;
                 float fgout = gout / sg;
                 float fbout = bout / sb;
@@ -231,10 +228,6 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
             const uint16_t bin = srcb[j];
             const uint16_t ain = have_alpha ? srca[j] : 0;
             int rout, gout, bout;
-            float lin;
-
-            if (pl)
-                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -250,6 +243,7 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
+                float lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
                 float frout = rout / sr;
                 float fgout = gout / sg;
                 float fbout = bout / sb;
@@ -418,10 +412,6 @@ static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void 
             const uint8_t bin = src[j + boffset];
             const uint8_t ain = src[j + aoffset];
             int rout, gout, bout;
-            float lin;
-
-            if (pl)
-                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -437,6 +427,7 @@ static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void 
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
+                float lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
                 float frout = rout / sr;
                 float fgout = gout / sg;
                 float fbout = bout / sb;
@@ -500,10 +491,6 @@ static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, voi
             const uint16_t bin = src[j + boffset];
             const uint16_t ain = src[j + aoffset];
             int rout, gout, bout;
-            float lin;
-
-            if (pl)
-                lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
 
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
@@ -519,6 +506,7 @@ static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, voi
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
 
             if (pl) {
+                float lin = FFMAX3(rin, gin, bin) + FFMIN3(rin, gin, bin);
                 float frout = rout / sr;
                 float fgout = gout / sg;
                 float fbout = bout / sb;
