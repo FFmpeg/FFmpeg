@@ -356,25 +356,19 @@ static int argo_asf_write_header(AVFormatContext *s)
         .num_chunks    = 1,
         .chunk_offset  = ASF_FILE_HEADER_SIZE
     };
+    const char *name = ctx->name, *end;
+    size_t len;
 
     /*
      * If the user specified a name, use it as is. Otherwise take the
      * basename and lop off the extension (if any).
      */
-    if (ctx->name) {
-        strncpy(fhdr.name, ctx->name, sizeof(fhdr.name));
+    if (name || !(end = strrchr((name = av_basename(s->url)), '.'))) {
+        len = strlen(name);
     } else {
-        const char *start = av_basename(s->url);
-        const char *end   = strrchr(start, '.');
-        size_t      len;
-
-        if (end)
-            len = end - start;
-        else
-            len = strlen(start);
-
-        memcpy(fhdr.name, start, FFMIN(len, sizeof(fhdr.name)));
+        len = end - name;
     }
+    memcpy(fhdr.name, name, FFMIN(len, sizeof(fhdr.name)));
 
     chdr.num_blocks    = 0;
     chdr.num_samples   = ASF_SAMPLE_COUNT;
