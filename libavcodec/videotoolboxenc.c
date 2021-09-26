@@ -1516,7 +1516,10 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     if (!status && has_b_frames_cfbool) {
         //Some devices don't output B-frames for main profile, even if requested.
         // HEVC has b-pyramid
-        vtctx->has_b_frames = (CFBooleanGetValue(has_b_frames_cfbool) && avctx->codec_id == AV_CODEC_ID_HEVC) ? 2 : 1;
+        if (CFBooleanGetValue(has_b_frames_cfbool))
+            vtctx->has_b_frames = avctx->codec_id == AV_CODEC_ID_HEVC ? 2 : 1;
+        else
+            vtctx->has_b_frames = 0;
         CFRelease(has_b_frames_cfbool);
     }
     avctx->has_b_frames = vtctx->has_b_frames;
