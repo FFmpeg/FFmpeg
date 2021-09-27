@@ -52,8 +52,6 @@ typedef struct ChromaShiftContext {
     int (*filter_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ChromaShiftContext;
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat yuv_pix_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ422P,AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ411P,
@@ -75,15 +73,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    const enum AVPixelFormat *pix_fmts;
-
-    if (!strcmp(ctx->filter->name, "rgbashift"))
-        pix_fmts = rgb_pix_fmts;
-    else
-        pix_fmts = yuv_pix_fmts;
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 #define DEFINE_SMEAR(depth, type, div)                                                    \
 static int smear_slice ## depth(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)  \
@@ -447,7 +436,7 @@ const AVFilter ff_vf_chromashift = {
     .priv_class    = &chromashift_class,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(yuv_pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -476,7 +465,7 @@ const AVFilter ff_vf_rgbashift = {
     .priv_class    = &rgbashift_class,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(rgb_pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
