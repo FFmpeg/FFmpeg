@@ -70,16 +70,6 @@ static const AVOption photosensitivity_options[] = {
 
 AVFILTER_DEFINE_CLASS(photosensitivity);
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_RGB24,
-        AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_NONE
-    };
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
-}
-
 typedef struct ThreadData_convert_frame
 {
     AVFrame *in;
@@ -334,5 +324,5 @@ const AVFilter ff_vf_photosensitivity = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS(AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24),
 };
