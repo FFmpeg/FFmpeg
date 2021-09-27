@@ -350,8 +350,6 @@ static av_cold void decimate_uninit(AVFilterContext *ctx)
     av_freep(&dm->clean_src);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
 #define PF_NOALPHA(suf) AV_PIX_FMT_YUV420##suf,  AV_PIX_FMT_YUV422##suf,  AV_PIX_FMT_YUV444##suf
 #define PF_ALPHA(suf)   AV_PIX_FMT_YUVA420##suf, AV_PIX_FMT_YUVA422##suf, AV_PIX_FMT_YUVA444##suf
@@ -365,8 +363,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -438,7 +434,7 @@ const AVFilter ff_vf_decimate = {
     .uninit        = decimate_uninit,
     .priv_size     = sizeof(DecimateContext),
     FILTER_OUTPUTS(decimate_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &decimate_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
