@@ -159,8 +159,6 @@ static av_cold int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static av_cold int query_formats(AVFilterContext *avctx)
-{
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_ARGB,
         AV_PIX_FMT_RGBA,
@@ -168,9 +166,6 @@ static av_cold int query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(avctx, pixel_fmts);
-}
 
 static const AVFilterPad colorkey_inputs[] = {
     {
@@ -211,7 +206,7 @@ const AVFilter ff_vf_colorkey = {
     .init          = init_filter,
     FILTER_INPUTS(colorkey_inputs),
     FILTER_OUTPUTS(colorkey_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
@@ -236,7 +231,7 @@ const AVFilter ff_vf_colorhold = {
     .init          = init_filter,
     FILTER_INPUTS(colorkey_inputs),
     FILTER_OUTPUTS(colorkey_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
