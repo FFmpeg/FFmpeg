@@ -53,23 +53,6 @@ static const AVOption drmeter_options[] = {
 
 AVFILTER_DEFINE_CLASS(drmeter);
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static int config_output(AVFilterLink *outlink)
 {
     DRMeterContext *s = outlink->src->priv;
@@ -219,5 +202,5 @@ const AVFilter ff_af_drmeter = {
     .uninit        = uninit,
     FILTER_INPUTS(drmeter_inputs),
     FILTER_OUTPUTS(drmeter_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT),
 };
