@@ -310,8 +310,6 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
     }
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV411P,
@@ -328,9 +326,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -503,7 +498,7 @@ const AVFilter ff_vf_spp = {
     .uninit          = uninit,
     FILTER_INPUTS(spp_inputs),
     FILTER_OUTPUTS(spp_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .process_command = process_command,
     .priv_class      = &spp_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
