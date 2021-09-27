@@ -107,8 +107,6 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
@@ -135,8 +133,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 typedef struct ThreadData {
     float *src, *dst;
@@ -687,7 +683,7 @@ const AVFilter ff_vf_fftdnoiz = {
     .uninit        = uninit,
     FILTER_INPUTS(fftdnoiz_inputs),
     FILTER_OUTPUTS(fftdnoiz_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &fftdnoiz_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
