@@ -93,8 +93,6 @@ static const AVOption phase_options[] = {
 
 AVFILTER_DEFINE_CLASS(phase);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_GRAY9,
@@ -124,9 +122,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -238,7 +233,7 @@ const AVFilter ff_vf_phase = {
     .uninit        = uninit,
     FILTER_INPUTS(phase_inputs),
     FILTER_OUTPUTS(phase_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
