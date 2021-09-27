@@ -285,8 +285,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
@@ -297,8 +295,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static inline int comp_adjust(int scale, float value, float adjust, float k, int correction_method)
 {
@@ -491,7 +487,7 @@ const AVFilter ff_vf_selectivecolor = {
     .priv_size     = sizeof(SelectiveColorContext),
     FILTER_INPUTS(selectivecolor_inputs),
     FILTER_OUTPUTS(selectivecolor_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &selectivecolor_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
