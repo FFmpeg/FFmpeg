@@ -301,25 +301,6 @@ static void calc_q_factors(int order, double *q)
         q[i] = 1. / (-2. * cos(M_PI * (2. * (i + 1) + n - 1.) / (2. * n)));
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret;
-
-    ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 #define BIQUAD_PROCESS(name, type)                             \
 static void biquad_process_## name(const type *const c,        \
                                    type *b,                    \
@@ -559,9 +540,9 @@ const AVFilter ff_af_acrossover = {
     .priv_class     = &acrossover_class,
     .init           = init,
     .uninit         = uninit,
-    FILTER_QUERY_FUNC(query_formats),
     FILTER_INPUTS(inputs),
     .outputs        = NULL,
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                       AVFILTER_FLAG_SLICE_THREADS,
 };
