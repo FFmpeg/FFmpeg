@@ -636,18 +636,6 @@ static void chromatic_adaptation(AVFilterContext *ctx, AVFrame *in, AVFrame *out
     ff_filter_execute(ctx, diagonal_transformation, &td, NULL, nb_jobs);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = {
-        // TODO: support more formats
-        // FIXME: error when saving to .jpg
-        AV_PIX_FMT_GBRP,
-        AV_PIX_FMT_NONE
-    };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -755,7 +743,9 @@ const AVFilter ff_vf_greyedge = {
     .uninit        = uninit,
     FILTER_INPUTS(colorconstancy_inputs),
     FILTER_OUTPUTS(colorconstancy_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    // TODO: support more formats
+    // FIXME: error when saving to .jpg
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRP),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
 
