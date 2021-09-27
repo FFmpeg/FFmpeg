@@ -369,7 +369,7 @@ const AVFilter ff_vf_convolution_opencl = {
     .uninit         = &convolution_opencl_uninit,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -395,7 +395,7 @@ const AVFilter ff_vf_sobel_opencl = {
     .uninit         = &convolution_opencl_uninit,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -421,7 +421,7 @@ const AVFilter ff_vf_prewitt_opencl = {
     .uninit         = &convolution_opencl_uninit,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -447,7 +447,7 @@ const AVFilter ff_vf_roberts_opencl = {
     .uninit         = &convolution_opencl_uninit,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 

@@ -367,7 +367,7 @@ const AVFilter ff_vf_program_opencl = {
     .activate       = &program_opencl_activate,
     .inputs         = NULL,
     FILTER_OUTPUTS(program_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -417,7 +417,7 @@ const AVFilter ff_vsrc_openclsrc = {
     .uninit         = &program_opencl_uninit,
     .inputs         = NULL,
     FILTER_OUTPUTS(openclsrc_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 

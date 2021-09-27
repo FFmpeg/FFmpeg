@@ -237,11 +237,6 @@ do {                                                                            
 #define CL_CREATE_BUFFER(ctx, buffer_name, size) CL_CREATE_BUFFER_FLAGS(ctx, buffer_name, 0, size, NULL)
 
 /**
- * Return that all inputs and outputs support only AV_PIX_FMT_OPENCL.
- */
-int ff_opencl_filter_query_formats(AVFilterContext *avctx);
-
-/**
  * Check that the input link contains a suitable hardware frames
  * context and extract the device from it.
  */

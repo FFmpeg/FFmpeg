@@ -405,6 +405,6 @@ const AVFilter ff_vf_unsharp_opencl = {
     .uninit         = &unsharp_opencl_uninit,
     FILTER_INPUTS(unsharp_opencl_inputs),
     FILTER_OUTPUTS(unsharp_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

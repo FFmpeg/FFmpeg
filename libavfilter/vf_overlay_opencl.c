@@ -320,6 +320,6 @@ const AVFilter ff_vf_overlay_opencl = {
     .activate        = &overlay_opencl_activate,
     FILTER_INPUTS(overlay_opencl_inputs),
     FILTER_OUTPUTS(overlay_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

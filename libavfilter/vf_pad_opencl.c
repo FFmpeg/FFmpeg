@@ -390,6 +390,6 @@ const AVFilter ff_vf_pad_opencl = {
     .uninit         = &pad_opencl_uninit,
     FILTER_INPUTS(pad_opencl_inputs),
     FILTER_OUTPUTS(pad_opencl_outputs),
-    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE
 };
