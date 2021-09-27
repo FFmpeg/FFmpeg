@@ -52,8 +52,6 @@ static const AVOption pullup_options[] = {
 
 AVFILTER_DEFINE_CLASS(pullup);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
         AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
@@ -63,9 +61,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 #define ABS(a) (((a) ^ ((a) >> 31)) - ((a) >> 31))
 
@@ -767,5 +762,5 @@ const AVFilter ff_vf_pullup = {
     .uninit        = uninit,
     FILTER_INPUTS(pullup_inputs),
     FILTER_OUTPUTS(pullup_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
 };
