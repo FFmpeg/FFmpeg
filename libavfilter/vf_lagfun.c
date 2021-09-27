@@ -44,8 +44,6 @@ typedef struct LagfunContext {
     int (*lagfun)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } LagfunContext;
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
@@ -67,8 +65,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
-}
 
 typedef struct ThreadData {
     AVFrame *in, *out;
@@ -223,7 +219,7 @@ const AVFilter ff_vf_lagfun = {
     .uninit        = uninit,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
