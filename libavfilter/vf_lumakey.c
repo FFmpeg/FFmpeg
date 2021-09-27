@@ -142,8 +142,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 
-static av_cold int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
@@ -152,9 +150,6 @@ static av_cold int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
-}
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
@@ -204,7 +199,7 @@ const AVFilter ff_vf_lumakey = {
     .priv_class    = &lumakey_class,
     FILTER_INPUTS(lumakey_inputs),
     FILTER_OUTPUTS(lumakey_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
