@@ -447,6 +447,8 @@ static int decode_envelope(SirenContext *s, GetBitContext *gb,
         int index = 0;
 
         do {
+            if (get_bits_left(gb) < 4)
+                return AVERROR_INVALIDDATA;
             index = differential_decoder_tree[i - 1][index][get_bits1(gb)];
         } while (index > 0);
 
@@ -724,9 +726,11 @@ static int siren_decode(AVCodecContext *avctx, void *data,
 
     skip_bits(gb, s->sample_rate_bits);
 
-    decode_envelope(s, gb, s->number_of_regions,
+    ret = decode_envelope(s, gb, s->number_of_regions,
                     s->decoder_standard_deviation,
                     s->absolute_region_power_index, s->esf_adjustment);
+    if (ret < 0)
+        return ret;
 
     rate_control = get_bits(gb, 4);
 
