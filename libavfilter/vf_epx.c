@@ -221,15 +221,10 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_NONE,
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -275,7 +270,7 @@ const AVFilter ff_vf_epx = {
     .description   = NULL_IF_CONFIG_SMALL("Scale the input using EPX algorithm."),
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_size     = sizeof(EPXContext),
     .priv_class    = &epx_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
