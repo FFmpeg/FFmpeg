@@ -66,8 +66,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&kerndeint->tmp_data[0]);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUYV422,
@@ -77,9 +75,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR0,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_props(AVFilterLink *inlink)
 {
@@ -310,5 +305,5 @@ const AVFilter ff_vf_kerndeint = {
     .uninit        = uninit,
     FILTER_INPUTS(kerndeint_inputs),
     FILTER_OUTPUTS(kerndeint_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
 };
