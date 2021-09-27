@@ -61,8 +61,6 @@ typedef struct DeblockContext {
                      int ath, int bth, int gth, int dth, int max);
 } DeblockContext;
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -84,8 +82,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
-}
 
 #define WEAK_HFILTER(name, type, ldiv)                                              \
 static void deblockh##name##_weak(uint8_t *dstp, ptrdiff_t dst_linesize, int block, \
@@ -417,7 +413,7 @@ const AVFilter ff_vf_deblock = {
     .priv_class    = &deblock_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };
