@@ -83,8 +83,6 @@ static void hmuladd(htype *dst, const htype *src, int f, int bins)
         dst[i] += f * src[i];
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -106,9 +104,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static void check_params(MedianContext *s, AVFilterLink *inlink)
 {
@@ -290,7 +285,7 @@ const AVFilter ff_vf_median = {
     .uninit        = uninit,
     FILTER_INPUTS(median_inputs),
     FILTER_OUTPUTS(median_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
