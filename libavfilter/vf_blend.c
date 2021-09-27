@@ -49,6 +49,10 @@
 #include "blend_modes.c"
 
 #undef DEPTH
+#define DEPTH 14
+#include "blend_modes.c"
+
+#undef DEPTH
 #define DEPTH 16
 #include "blend_modes.c"
 
@@ -331,6 +335,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
         AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16, AV_PIX_FMT_GRAY16,
@@ -397,6 +402,7 @@ DEFINE_INIT_BLEND_FUNC(8, 8)
 DEFINE_INIT_BLEND_FUNC(9, 16)
 DEFINE_INIT_BLEND_FUNC(10, 16)
 DEFINE_INIT_BLEND_FUNC(12, 16)
+DEFINE_INIT_BLEND_FUNC(14, 16)
 DEFINE_INIT_BLEND_FUNC(16, 16)
 DEFINE_INIT_BLEND_FUNC(32, 32)
 
@@ -414,6 +420,9 @@ void ff_blend_init(FilterParams *param, int depth)
         break;
     case 12:
         init_blend_func_12_16bit(param);
+        break;
+    case 14:
+        init_blend_func_14_16bit(param);
         break;
     case 16:
         init_blend_func_16_16bit(param);
