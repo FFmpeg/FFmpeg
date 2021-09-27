@@ -340,8 +340,6 @@ static av_cold int dnn_detect_init(AVFilterContext *context)
     return 0;
 }
 
-static int dnn_detect_query_formats(AVFilterContext *context)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAYF32,
@@ -350,8 +348,6 @@ static int dnn_detect_query_formats(AVFilterContext *context)
         AV_PIX_FMT_NV12,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(context, pix_fmts);
-}
 
 static int dnn_detect_flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
 {
@@ -466,7 +462,7 @@ const AVFilter ff_vf_dnn_detect = {
     .uninit        = dnn_detect_uninit,
     FILTER_INPUTS(dnn_detect_inputs),
     FILTER_OUTPUTS(dnn_detect_outputs),
-    FILTER_QUERY_FUNC(dnn_detect_query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &dnn_detect_class,
     .activate      = dnn_detect_activate,
 };
