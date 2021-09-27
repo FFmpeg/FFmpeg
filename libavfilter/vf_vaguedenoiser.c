@@ -105,8 +105,6 @@ static const float synthesis_high[9] = {
     -0.852698679009403f, 0.377402855612654f, 0.110624404418423f, -0.023849465019380f, -0.037828455506995f
 };
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
@@ -132,8 +130,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -614,6 +610,6 @@ const AVFilter ff_vf_vaguedenoiser = {
     .uninit        = uninit,
     FILTER_INPUTS(vaguedenoiser_inputs),
     FILTER_OUTPUTS(vaguedenoiser_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
