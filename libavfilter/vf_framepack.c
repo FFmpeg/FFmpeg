@@ -79,12 +79,6 @@ static const enum AVPixelFormat formats_supported[] = {
     AV_PIX_FMT_NONE
 };
 
-static int query_formats(AVFilterContext *ctx)
-{
-    // this will ensure that formats are the same on all pads
-    return ff_set_common_formats_from_list(ctx, formats_supported);
-}
-
 static av_cold void framepack_uninit(AVFilterContext *ctx)
 {
     FramepackContext *s = ctx->priv;
@@ -471,7 +465,7 @@ const AVFilter ff_vf_framepack = {
     .priv_class    = &framepack_class,
     FILTER_INPUTS(framepack_inputs),
     FILTER_OUTPUTS(framepack_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(formats_supported),
     .activate      = activate,
     .uninit        = framepack_uninit,
 };
