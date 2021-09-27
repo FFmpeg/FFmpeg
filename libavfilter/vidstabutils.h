@@ -25,6 +25,8 @@
 
 #include "avfilter.h"
 
+extern const enum AVPixelFormat ff_vidstab_pix_fmts[];
+
 /* Conversion routines between libav* and vid.stab */
 
 /**
