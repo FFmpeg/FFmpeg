@@ -412,15 +412,6 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_CUDA,
-        AV_PIX_FMT_NONE
-    };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static const AVFilterPad thumbnail_cuda_inputs[] = {
     {
         .name         = "default",
@@ -446,7 +437,7 @@ const AVFilter ff_vf_thumbnail_cuda = {
     .uninit        = uninit,
     FILTER_INPUTS(thumbnail_cuda_inputs),
     FILTER_OUTPUTS(thumbnail_cuda_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
     .priv_class    = &thumbnail_cuda_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
