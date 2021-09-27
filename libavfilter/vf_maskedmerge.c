@@ -37,8 +37,6 @@ static const AVOption maskedmerge_options[] = {
 
 AVFILTER_DEFINE_CLASS(maskedmerge);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -60,9 +58,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 typedef struct ThreadData {
     AVFrame *base, *overlay, *mask;
@@ -318,7 +313,7 @@ const AVFilter ff_vf_maskedmerge = {
     .activate      = activate,
     FILTER_INPUTS(maskedmerge_inputs),
     FILTER_OUTPUTS(maskedmerge_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &maskedmerge_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
