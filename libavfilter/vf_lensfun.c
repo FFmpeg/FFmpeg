@@ -193,13 +193,6 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    // Some of the functions provided by lensfun require pixels in RGB format
-    static const enum AVPixelFormat fmts[] = {AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE};
-    return ff_set_common_formats_from_list(ctx, fmts);
-}
-
 static float lanczos_kernel(float x)
 {
     if (x == 0.0f) {
@@ -536,7 +529,7 @@ const AVFilter ff_vf_lensfun = {
     .uninit        = uninit,
     FILTER_INPUTS(lensfun_inputs),
     FILTER_OUTPUTS(lensfun_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB24),
     .priv_class    = &lensfun_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
