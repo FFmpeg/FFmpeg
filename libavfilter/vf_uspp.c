@@ -293,8 +293,6 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
     }
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV420P,
@@ -304,9 +302,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -496,7 +491,7 @@ const AVFilter ff_vf_uspp = {
     .uninit          = uninit,
     FILTER_INPUTS(uspp_inputs),
     FILTER_OUTPUTS(uspp_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class      = &uspp_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
