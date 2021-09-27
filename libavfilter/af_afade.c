@@ -483,20 +483,18 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (ff_inlink_queued_samples(ctx->inputs[0]) > s->nb_samples) {
-        nb_samples = ff_inlink_queued_samples(ctx->inputs[0]) - s->nb_samples;
-        if (nb_samples > 0) {
-            ret = ff_inlink_consume_samples(ctx->inputs[0], nb_samples, nb_samples, &in);
-            if (ret < 0) {
-                return ret;
-            }
-        }
+    nb_samples = ff_inlink_queued_samples(ctx->inputs[0]);
+    if (nb_samples  > s->nb_samples) {
+        nb_samples -= s->nb_samples;
+        ret = ff_inlink_consume_samples(ctx->inputs[0], nb_samples, nb_samples, &in);
+        if (ret < 0)
+            return ret;
         in->pts = s->pts;
         s->pts += av_rescale_q(in->nb_samples,
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
         return ff_filter_frame(outlink, in);
-    } else if (ff_inlink_queued_samples(ctx->inputs[0]) >= s->nb_samples &&
-               ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples && s->cf0_eof) {
+    } else if (s->cf0_eof && nb_samples >= s->nb_samples &&
+               ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples) {
         if (s->overlap) {
             out = ff_get_audio_buffer(outlink, s->nb_samples);
             if (!out)
