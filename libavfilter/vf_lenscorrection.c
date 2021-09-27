@@ -175,8 +175,6 @@ static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
 BILINEAR(uint8_t, 8)
 BILINEAR(uint16_t, 16)
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
@@ -203,8 +201,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
@@ -359,7 +355,7 @@ const AVFilter ff_vf_lenscorrection = {
     .priv_size     = sizeof(LenscorrectionCtx),
     FILTER_INPUTS(lenscorrection_inputs),
     FILTER_OUTPUTS(lenscorrection_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &lenscorrection_class,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
