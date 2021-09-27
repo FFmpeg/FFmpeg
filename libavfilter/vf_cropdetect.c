@@ -44,8 +44,6 @@ typedef struct CropDetectContext {
     int max_outliers;
 } CropDetectContext;
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
@@ -62,9 +60,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA,    AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int checkline(void *ctx, const unsigned char *src, int stride, int len, int bpp)
 {
@@ -277,6 +272,6 @@ const AVFilter ff_vf_cropdetect = {
     .init          = init,
     FILTER_INPUTS(avfilter_vf_cropdetect_inputs),
     FILTER_OUTPUTS(avfilter_vf_cropdetect_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
