@@ -116,8 +116,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->histsat);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     // TODO: add more
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P,
@@ -133,9 +131,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV420P16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static AVFrame *alloc_frame(enum AVPixelFormat pixfmt, int w, int h)
 {
@@ -1015,7 +1010,7 @@ const AVFilter ff_vf_signalstats = {
     .priv_size     = sizeof(SignalstatsContext),
     FILTER_INPUTS(signalstats_inputs),
     FILTER_OUTPUTS(signalstats_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &signalstats_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
