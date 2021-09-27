@@ -87,8 +87,6 @@ static const AVRational standard_tbs[] = {
     {1001, 30000},
 };
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
@@ -102,9 +100,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, FULL_SCALE_YUVJ_FORMATS,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static void lowpass_line_c(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
                            ptrdiff_t mref, ptrdiff_t pref, int clip_max)
@@ -557,7 +552,7 @@ const AVFilter ff_vf_tinterlace = {
     .uninit        = uninit,
     FILTER_INPUTS(tinterlace_inputs),
     FILTER_OUTPUTS(tinterlace_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &tinterlace_class,
 };
 
@@ -570,6 +565,6 @@ const AVFilter ff_vf_interlace = {
     .uninit        = uninit,
     FILTER_INPUTS(tinterlace_inputs),
     FILTER_OUTPUTS(tinterlace_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &interlace_class,
 };
