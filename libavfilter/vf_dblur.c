@@ -112,8 +112,6 @@ static void diriir2d(AVFilterContext *ctx, int plane)
     filter_horizontally(ctx, width, height);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -135,9 +133,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -298,7 +293,7 @@ const AVFilter ff_vf_dblur = {
     .uninit        = uninit,
     FILTER_INPUTS(dblur_inputs),
     FILTER_OUTPUTS(dblur_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,
 };
