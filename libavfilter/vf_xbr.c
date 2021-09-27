@@ -340,15 +340,6 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_0RGB32, AV_PIX_FMT_NONE,
-    };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -425,7 +416,7 @@ const AVFilter ff_vf_xbr = {
     .description   = NULL_IF_CONFIG_SMALL("Scale the input using xBR algorithm."),
     FILTER_INPUTS(xbr_inputs),
     FILTER_OUTPUTS(xbr_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_0RGB32),
     .priv_size     = sizeof(XBRContext),
     .priv_class    = &xbr_class,
     .init          = init,
