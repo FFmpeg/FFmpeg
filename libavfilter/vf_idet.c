@@ -360,8 +360,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&idet->next);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV422P,
@@ -395,8 +393,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -443,6 +439,6 @@ const AVFilter ff_vf_idet = {
     .uninit        = uninit,
     FILTER_INPUTS(idet_inputs),
     FILTER_OUTPUTS(idet_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &idet_class,
 };
