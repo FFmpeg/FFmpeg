@@ -406,23 +406,6 @@ static int acompressor_filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int acompressor_query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_DBL,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static const AVFilterPad acompressor_inputs[] = {
     {
         .name           = "default",
@@ -446,7 +429,7 @@ const AVFilter ff_af_acompressor = {
     .priv_size      = sizeof(SidechainCompressContext),
     FILTER_INPUTS(acompressor_inputs),
     FILTER_OUTPUTS(acompressor_outputs),
-    FILTER_QUERY_FUNC(acompressor_query_formats),
+    FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = process_command,
 };
 #endif  /* CONFIG_ACOMPRESSOR_FILTER */
