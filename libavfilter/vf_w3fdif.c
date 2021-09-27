@@ -73,8 +73,6 @@ static const AVOption w3fdif_options[] = {
 
 AVFILTER_DEFINE_CLASS(w3fdif);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
@@ -100,9 +98,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP10,   AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static void filter_simple_low(int32_t *work_line,
                               uint8_t *in_lines_cur[2],
@@ -617,7 +612,7 @@ const AVFilter ff_vf_w3fdif = {
     .uninit        = uninit,
     FILTER_INPUTS(w3fdif_inputs),
     FILTER_OUTPUTS(w3fdif_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
