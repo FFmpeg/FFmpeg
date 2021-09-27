@@ -19,6 +19,10 @@
 #ifndef AVFILTER_PRESERVE_COLOR_H
 #define AVFILTER_PRESERVE_COLOR_H
 
+#include <math.h>
+
+#include "libavutil/macros.h"
+
 enum {
     P_NONE,
     P_LUM,
