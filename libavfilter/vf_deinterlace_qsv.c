@@ -103,15 +103,6 @@ static av_cold void qsvdeint_uninit(AVFilterContext *ctx)
     s->nb_surface_ptrs = 0;
 }
 
-static int qsvdeint_query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pixel_formats[] = {
-        AV_PIX_FMT_QSV, AV_PIX_FMT_NONE,
-    };
-
-    return ff_set_common_formats_from_list(ctx, pixel_formats);
-}
-
 static mfxStatus frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
                              mfxFrameAllocResponse *resp)
 {
@@ -604,7 +595,7 @@ const AVFilter ff_vf_deinterlace_qsv = {
 
     FILTER_INPUTS(qsvdeint_inputs),
     FILTER_OUTPUTS(qsvdeint_outputs),
-    FILTER_QUERY_FUNC(qsvdeint_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_QSV),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
