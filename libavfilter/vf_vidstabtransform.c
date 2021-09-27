@@ -121,12 +121,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     vsTransformationsCleanup(&tc->trans);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    return ff_set_common_formats_from_list(ctx, ff_vidstab_pix_fmts);
-}
-
-
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -304,6 +298,6 @@ const AVFilter ff_vf_vidstabtransform = {
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_vidstabtransform_inputs),
     FILTER_OUTPUTS(avfilter_vf_vidstabtransform_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(ff_vidstab_pix_fmts),
     .priv_class    = &vidstabtransform_class,
 };
