@@ -244,8 +244,6 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGBA,  AV_PIX_FMT_BGRA,
@@ -262,8 +260,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static const AVFilterPad thumbnail_inputs[] = {
     {
@@ -290,7 +286,7 @@ const AVFilter ff_vf_thumbnail = {
     .uninit        = uninit,
     FILTER_INPUTS(thumbnail_inputs),
     FILTER_OUTPUTS(thumbnail_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &thumbnail_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
