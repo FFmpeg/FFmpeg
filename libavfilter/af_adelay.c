@@ -61,24 +61,6 @@ static const AVOption adelay_options[] = {
 
 AVFILTER_DEFINE_CLASS(adelay);
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_U8P, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P,
-        AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 #define DELAY(name, type, fill)                                           \
 static void delay_channel_## name ##p(ChanDelay *d, int nb_samples,       \
                                       const uint8_t *ssrc, uint8_t *ddst) \
@@ -344,6 +326,7 @@ const AVFilter ff_af_adelay = {
     .uninit        = uninit,
     FILTER_INPUTS(adelay_inputs),
     FILTER_OUTPUTS(adelay_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_U8P, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P,
+                      AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
