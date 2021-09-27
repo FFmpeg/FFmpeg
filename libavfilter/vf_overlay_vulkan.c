@@ -482,7 +482,7 @@ const AVFilter ff_vf_overlay_vulkan = {
     .activate       = &overlay_vulkan_activate,
     FILTER_INPUTS(overlay_vulkan_inputs),
     FILTER_OUTPUTS(overlay_vulkan_outputs),
-    FILTER_QUERY_FUNC(&ff_vk_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .priv_class     = &overlay_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

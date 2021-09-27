@@ -404,7 +404,7 @@ const AVFilter ff_vf_avgblur_vulkan = {
     .uninit         = &avgblur_vulkan_uninit,
     FILTER_INPUTS(avgblur_vulkan_inputs),
     FILTER_OUTPUTS(avgblur_vulkan_outputs),
-    FILTER_QUERY_FUNC(&ff_vk_filter_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .priv_class     = &avgblur_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
