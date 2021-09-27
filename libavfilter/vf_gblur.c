@@ -215,8 +215,6 @@ static void gaussianiir2d(AVFilterContext *ctx, int plane)
                       NULL, FFMIN(width * height, nb_threads));
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -240,9 +238,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAYF32,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 void ff_gblur_init(GBlurContext *s)
 {
@@ -417,7 +412,7 @@ const AVFilter ff_vf_gblur = {
     .uninit        = uninit,
     FILTER_INPUTS(gblur_inputs),
     FILTER_OUTPUTS(gblur_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
