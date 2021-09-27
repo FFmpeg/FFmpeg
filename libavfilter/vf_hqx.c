@@ -461,12 +461,6 @@ HQX_FUNC(2)
 HQX_FUNC(3)
 HQX_FUNC(4)
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -556,7 +550,7 @@ const AVFilter ff_vf_hqx = {
     .init          = init,
     FILTER_INPUTS(hqx_inputs),
     FILTER_OUTPUTS(hqx_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB32),
     .priv_class    = &hqx_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
