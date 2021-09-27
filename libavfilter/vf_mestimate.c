@@ -67,8 +67,6 @@ static const AVOption mestimate_options[] = {
 
 AVFILTER_DEFINE_CLASS(mestimate);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
@@ -80,9 +78,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -370,5 +365,5 @@ const AVFilter ff_vf_mestimate = {
     .uninit        = uninit,
     FILTER_INPUTS(mestimate_inputs),
     FILTER_OUTPUTS(mestimate_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
 };
