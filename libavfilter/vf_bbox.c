@@ -46,8 +46,6 @@ static const AVOption bbox_options[] = {
 
 AVFILTER_DEFINE_CLASS(bbox);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
@@ -71,9 +69,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE,
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 #define SET_META(key, value) \
     av_dict_set_int(metadata, key, value, 0);
@@ -155,7 +150,7 @@ const AVFilter ff_vf_bbox = {
     .priv_class    = &bbox_class,
     FILTER_INPUTS(bbox_inputs),
     FILTER_OUTPUTS(bbox_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,
 };
