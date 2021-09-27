@@ -355,8 +355,6 @@ end:
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 
-static av_cold int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
@@ -367,9 +365,6 @@ static av_cold int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
-}
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
@@ -421,6 +416,6 @@ const AVFilter ff_vf_floodfill = {
     .uninit        = uninit,
     FILTER_INPUTS(floodfill_inputs),
     FILTER_OUTPUTS(floodfill_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
