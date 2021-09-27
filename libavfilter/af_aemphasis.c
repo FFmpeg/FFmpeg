@@ -151,23 +151,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static inline void set_highshelf_rbj(BiquadCoeffs *bq, double freq, double q, double peak, double sr)
 {
     double A = sqrt(peak);
@@ -393,7 +376,7 @@ const AVFilter ff_af_aemphasis = {
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_aemphasis_inputs),
     FILTER_OUTPUTS(avfilter_af_aemphasis_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                      AVFILTER_FLAG_SLICE_THREADS,
