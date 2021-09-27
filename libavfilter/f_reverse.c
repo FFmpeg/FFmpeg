@@ -145,19 +145,6 @@ const AVFilter ff_vf_reverse = {
 
 #if CONFIG_AREVERSE_FILTER
 
-static int query_formats(AVFilterContext *ctx)
-{
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO));
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static void reverse_samples_planar(AVFrame *out)
 {
     for (int p = 0; p < out->channels; p++) {
@@ -283,7 +270,6 @@ static const AVFilterPad areverse_outputs[] = {
 const AVFilter ff_af_areverse = {
     .name          = "areverse",
     .description   = NULL_IF_CONFIG_SMALL("Reverse an audio clip."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(ReverseContext),
     .init          = init,
     .uninit        = uninit,
