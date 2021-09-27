@@ -263,25 +263,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_DBL,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret;
-
-    ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     ACrusherContext *s = ctx->priv;
@@ -357,8 +338,8 @@ const AVFilter ff_af_acrusher = {
     .priv_size     = sizeof(ACrusherContext),
     .priv_class    = &acrusher_class,
     .uninit        = uninit,
-    FILTER_QUERY_FUNC(query_formats),
     FILTER_INPUTS(avfilter_af_acrusher_inputs),
     FILTER_OUTPUTS(avfilter_af_acrusher_outputs),
+    FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = process_command,
 };
