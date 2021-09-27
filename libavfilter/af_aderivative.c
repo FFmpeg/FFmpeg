@@ -27,29 +27,6 @@ typedef struct ADerivativeContext {
                    int nb_samples, int channels);
 } ADerivativeContext;
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat derivative_sample_fmts[] = {
-        AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLTP,
-        AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    static const enum AVSampleFormat integral_sample_fmts[] = {
-        AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_formats_from_list(ctx, strcmp(ctx->filter->name, "aintegral") ?
-                                              derivative_sample_fmts : integral_sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 #define DERIVATIVE(name, type)                                          \
 static void aderivative_## name ##p(void **d, void **p, const void **s, \
                                     int nb_samples, int channels)       \
@@ -179,7 +156,8 @@ const AVFilter ff_af_aderivative = {
     .uninit        = uninit,
     FILTER_INPUTS(aderivative_inputs),
     FILTER_OUTPUTS(aderivative_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLTP,
+                      AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_DBLP),
 };
 
 const AVFilter ff_af_aintegral = {
@@ -189,5 +167,5 @@ const AVFilter ff_af_aintegral = {
     .uninit        = uninit,
     FILTER_INPUTS(aderivative_inputs),
     FILTER_OUTPUTS(aderivative_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
 };
