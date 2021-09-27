@@ -993,8 +993,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     yae_release_buffers(atempo);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     // WSOLA necessitates an internal sliding window ring buffer
     // for incoming audio stream.
     //
@@ -1009,16 +1007,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE
     };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
 
 static int config_props(AVFilterLink *inlink)
 {
@@ -1193,5 +1181,5 @@ const AVFilter ff_af_atempo = {
     .priv_class      = &atempo_class,
     FILTER_INPUTS(atempo_inputs),
     FILTER_OUTPUTS(atempo_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
 };
