@@ -248,17 +248,11 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUV422P10LE, AV_PIX_FMT_YUV420P10LE,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 
 static int config_input_ref(AVFilterLink *inlink)
 {
@@ -367,5 +361,5 @@ const AVFilter ff_vf_libvmaf = {
     .priv_class    = &libvmaf_class,
     FILTER_INPUTS(libvmaf_inputs),
     FILTER_OUTPUTS(libvmaf_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
 };
