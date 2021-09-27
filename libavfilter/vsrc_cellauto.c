@@ -308,12 +308,6 @@ static int request_frame(AVFilterLink *outlink)
     return ff_filter_frame(outlink, picref);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static const AVFilterPad cellauto_outputs[] = {
     {
         .name          = "default",
@@ -332,5 +326,5 @@ const AVFilter ff_vsrc_cellauto = {
     .uninit        = uninit,
     .inputs        = NULL,
     FILTER_OUTPUTS(cellauto_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_MONOBLACK),
 };
