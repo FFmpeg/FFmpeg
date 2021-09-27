@@ -73,8 +73,6 @@ static const enum AVPixelFormat yuvj_formats[] = {
     YUVJ_FORMATS, AV_PIX_FMT_NONE
 };
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
@@ -97,9 +95,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -259,7 +254,7 @@ const AVFilter ff_vf_blackdetect = {
     .priv_size     = sizeof(BlackDetectContext),
     FILTER_INPUTS(blackdetect_inputs),
     FILTER_OUTPUTS(blackdetect_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .uninit        = uninit,
     .priv_class    = &blackdetect_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
