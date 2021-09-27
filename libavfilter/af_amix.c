@@ -589,22 +589,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->fdsp);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
-        AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret;
-
-    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0 ||
-        (ret = ff_set_common_all_samplerates(ctx)) < 0)
-        return ret;
-
-    return ff_set_common_all_channel_counts(ctx);
-}
-
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
@@ -641,7 +625,8 @@ const AVFilter ff_af_amix = {
     .activate       = activate,
     .inputs         = NULL,
     FILTER_OUTPUTS(avfilter_af_amix_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+                      AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
