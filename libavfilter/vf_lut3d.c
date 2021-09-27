@@ -1147,8 +1147,6 @@ static int set_identity_matrix(AVFilterContext *ctx, int size)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
@@ -1166,8 +1164,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -1366,7 +1362,7 @@ const AVFilter ff_vf_lut3d = {
     .uninit        = lut3d_uninit,
     FILTER_INPUTS(lut3d_inputs),
     FILTER_OUTPUTS(lut3d_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &lut3d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
@@ -1630,7 +1626,7 @@ const AVFilter ff_vf_haldclut = {
     .activate      = activate,
     FILTER_INPUTS(haldclut_inputs),
     FILTER_OUTPUTS(haldclut_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &haldclut_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
@@ -2293,7 +2289,7 @@ const AVFilter ff_vf_lut1d = {
     .init          = lut1d_init,
     FILTER_INPUTS(lut1d_inputs),
     FILTER_OUTPUTS(lut1d_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &lut1d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = lut1d_process_command,
