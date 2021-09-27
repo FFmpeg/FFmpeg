@@ -1507,8 +1507,8 @@ const AVFilter ff_vf_ciescope = {
     .description   = NULL_IF_CONFIG_SMALL("Video CIE scope."),
     .priv_size     = sizeof(CiescopeContext),
     .priv_class    = &ciescope_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

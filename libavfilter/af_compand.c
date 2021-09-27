@@ -574,11 +574,11 @@ const AVFilter ff_af_compand = {
     .name           = "compand",
     .description    = NULL_IF_CONFIG_SMALL(
             "Compress or expand audio dynamic range."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(CompandContext),
     .priv_class     = &compand_class,
     .init           = init,
     .uninit         = uninit,
     FILTER_INPUTS(compand_inputs),
     FILTER_OUTPUTS(compand_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

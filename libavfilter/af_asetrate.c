@@ -108,9 +108,9 @@ const AVFilter ff_af_asetrate = {
     .name          = "asetrate",
     .description   = NULL_IF_CONFIG_SMALL("Change the sample rate without "
                                           "altering the data."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(ASetRateContext),
     FILTER_INPUTS(asetrate_inputs),
     FILTER_OUTPUTS(asetrate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &asetrate_class,
 };

@@ -1053,9 +1053,9 @@ const AVFilter ff_vf_bm3d = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(bm3d_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &bm3d_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |

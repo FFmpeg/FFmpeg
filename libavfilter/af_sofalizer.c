@@ -1112,8 +1112,8 @@ const AVFilter ff_af_sofalizer = {
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

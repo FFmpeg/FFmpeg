@@ -235,8 +235,8 @@ const AVFilter ff_vf_colorkey_opencl = {
     .priv_class     = &colorkey_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &colorkey_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(colorkey_opencl_inputs),
     FILTER_OUTPUTS(colorkey_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE
 };

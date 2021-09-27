@@ -235,10 +235,10 @@ static const AVFilterPad anoisesrc_outputs[] = {
 const AVFilter ff_asrc_anoisesrc = {
     .name          = "anoisesrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate a noise audio signal."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(ANoiseSrcContext),
     .inputs        = NULL,
     .activate      = activate,
     FILTER_OUTPUTS(anoisesrc_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &anoisesrc_class,
 };

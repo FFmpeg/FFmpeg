@@ -213,9 +213,9 @@ const AVFilter ff_vf_bitplanenoise = {
     .name           = "bitplanenoise",
     .description    = NULL_IF_CONFIG_SMALL("Measure bit plane noise."),
     .priv_size      = sizeof(BPNContext),
-    .query_formats  = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class     = &bitplanenoise_class,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

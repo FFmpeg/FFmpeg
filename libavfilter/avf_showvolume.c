@@ -502,9 +502,9 @@ const AVFilter ff_avf_showvolume = {
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(ShowVolumeContext),
     FILTER_INPUTS(showvolume_inputs),
     FILTER_OUTPUTS(showvolume_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showvolume_class,
 };

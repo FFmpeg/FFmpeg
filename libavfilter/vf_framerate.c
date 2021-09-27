@@ -444,9 +444,9 @@ const AVFilter ff_vf_framerate = {
     .priv_class    = &framerate_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(framerate_inputs),
     FILTER_OUTPUTS(framerate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .activate      = activate,
 };

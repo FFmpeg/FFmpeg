@@ -165,8 +165,8 @@ const AVFilter ff_vf_shuffleplanes = {
     .description  = NULL_IF_CONFIG_SMALL("Shuffle video planes."),
     .priv_size    = sizeof(ShufflePlanesContext),
     .priv_class   = &shuffleplanes_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(shuffleplanes_inputs),
     FILTER_OUTPUTS(shuffleplanes_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

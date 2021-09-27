@@ -168,9 +168,9 @@ const AVFilter ff_vf_despill = {
     .description   = NULL_IF_CONFIG_SMALL("Despill video."),
     .priv_size     = sizeof(DespillContext),
     .priv_class    = &despill_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(despill_inputs),
     FILTER_OUTPUTS(despill_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = ff_filter_process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

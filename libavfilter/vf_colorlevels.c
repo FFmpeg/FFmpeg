@@ -386,9 +386,9 @@ const AVFilter ff_vf_colorlevels = {
     .description   = NULL_IF_CONFIG_SMALL("Adjust the color levels."),
     .priv_size     = sizeof(ColorLevelsContext),
     .priv_class    = &colorlevels_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(colorlevels_inputs),
     FILTER_OUTPUTS(colorlevels_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

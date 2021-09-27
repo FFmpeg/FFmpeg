@@ -290,9 +290,9 @@ const AVFilter ff_vf_colorize = {
     .description   = NULL_IF_CONFIG_SMALL("Overlay a solid color on the video stream."),
     .priv_size     = sizeof(ColorizeContext),
     .priv_class    = &colorize_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(colorize_inputs),
     FILTER_OUTPUTS(colorize_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

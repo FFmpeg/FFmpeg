@@ -296,9 +296,9 @@ const AVFilter ff_vf_mergeplanes = {
     .priv_class    = &mergeplanes_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(mergeplanes_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

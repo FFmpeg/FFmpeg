@@ -671,13 +671,14 @@ const AVFilter ff_vf_scale_qsv = {
 
     .init          = qsvscale_init,
     .uninit        = qsvscale_uninit,
-    .query_formats = qsvscale_query_formats,
 
     .priv_size = sizeof(QSVScaleContext),
     .priv_class = &qsvscale_class,
 
     FILTER_INPUTS(qsvscale_inputs),
     FILTER_OUTPUTS(qsvscale_outputs),
+
+    FILTER_QUERY_FUNC(qsvscale_query_formats),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

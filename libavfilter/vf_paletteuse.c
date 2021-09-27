@@ -1132,11 +1132,11 @@ const AVFilter ff_vf_paletteuse = {
     .name          = "paletteuse",
     .description   = NULL_IF_CONFIG_SMALL("Use a palette to downsample an input video stream."),
     .priv_size     = sizeof(PaletteUseContext),
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(paletteuse_inputs),
     FILTER_OUTPUTS(paletteuse_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &paletteuse_class,
 };

@@ -554,9 +554,9 @@ const AVFilter ff_vf_hqx = {
     .description   = NULL_IF_CONFIG_SMALL("Scale the input by 2, 3 or 4 using the hq*x magnification algorithm."),
     .priv_size     = sizeof(HQXContext),
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(hqx_inputs),
     FILTER_OUTPUTS(hqx_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &hqx_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

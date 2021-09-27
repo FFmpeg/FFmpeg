@@ -504,9 +504,9 @@ const AVFilter ff_vf_histogram = {
     .name          = "histogram",
     .description   = NULL_IF_CONFIG_SMALL("Compute and draw a histogram."),
     .priv_size     = sizeof(HistogramContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &histogram_class,
 };
 
@@ -546,9 +546,9 @@ const AVFilter ff_vf_thistogram = {
     .name          = "thistogram",
     .description   = NULL_IF_CONFIG_SMALL("Compute and draw a temporal histogram."),
     .priv_size     = sizeof(HistogramContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .uninit        = uninit,
     .priv_class    = &thistogram_class,
 };

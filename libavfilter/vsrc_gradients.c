@@ -299,9 +299,9 @@ const AVFilter ff_vsrc_gradients = {
     .description   = NULL_IF_CONFIG_SMALL("Draw a gradients."),
     .priv_size     = sizeof(GradientsContext),
     .priv_class    = &gradients_class,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(gradients_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate      = activate,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

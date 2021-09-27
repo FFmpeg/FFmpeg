@@ -489,9 +489,9 @@ const AVFilter ff_vf_geq = {
     .priv_size     = sizeof(GEQContext),
     .init          = geq_init,
     .uninit        = geq_uninit,
-    .query_formats = geq_query_formats,
     FILTER_INPUTS(geq_inputs),
     FILTER_OUTPUTS(geq_outputs),
+    FILTER_QUERY_FUNC(geq_query_formats),
     .priv_class    = &geq_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

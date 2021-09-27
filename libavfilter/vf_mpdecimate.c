@@ -244,7 +244,7 @@ const AVFilter ff_vf_mpdecimate = {
     .uninit        = uninit,
     .priv_size     = sizeof(DecimateContext),
     .priv_class    = &mpdecimate_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(mpdecimate_inputs),
     FILTER_OUTPUTS(mpdecimate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

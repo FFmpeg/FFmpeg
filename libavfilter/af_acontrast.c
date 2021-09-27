@@ -199,9 +199,9 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_acontrast = {
     .name           = "acontrast",
     .description    = NULL_IF_CONFIG_SMALL("Simple audio dynamic range compression/expansion filter."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(AudioContrastContext),
     .priv_class     = &acontrast_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

@@ -146,6 +146,45 @@ static av_always_inline int ff_filter_execute(AVFilterContext *ctx, avfilter_act
     return ctx->internal->execute(ctx, func, arg, ret, nb_jobs);
 }
 
+enum FilterFormatsState {
+    /**
+     * The default value meaning that this filter supports all formats
+     * and (for audio) sample rates and channel layouts/counts as long
+     * as these properties agree for all inputs and outputs.
+     * This state is only allowed in case all inputs and outputs actually
+     * have the same type.
+     * The union is unused in this state.
+     *
+     * This value must always be zero (for default static initialization).
+     */
+    FF_FILTER_FORMATS_PASSTHROUGH = 0,
+    FF_FILTER_FORMATS_QUERY_FUNC,       ///< formats.query active.
+    FF_FILTER_FORMATS_PIXFMT_LIST,      ///< formats.pixels_list active.
+    FF_FILTER_FORMATS_SAMPLEFMTS_LIST,  ///< formats.samples_list active.
+    FF_FILTER_FORMATS_SINGLE_PIXFMT,    ///< formats.pix_fmt active
+    FF_FILTER_FORMATS_SINGLE_SAMPLEFMT, ///< formats.sample_fmt active.
+};
+
+#define FILTER_QUERY_FUNC(func)        \
+        .formats.query_func   = func,  \
+        .formats_state        = FF_FILTER_FORMATS_QUERY_FUNC
+#define FILTER_PIXFMTS_ARRAY(array)    \
+        .formats.pixels_list  = array, \
+        .formats_state        = FF_FILTER_FORMATS_PIXFMT_LIST
+#define FILTER_SAMPLEFMTS_ARRAY(array) \
+        .formats.samples_list = array, \
+        .formats_state        = FF_FILTER_FORMATS_SAMPLEFMTS_LIST
+#define FILTER_PIXFMTS(...)            \
+    FILTER_PIXFMTS_ARRAY(((const enum AVPixelFormat []) { __VA_ARGS__, AV_PIX_FMT_NONE }))
+#define FILTER_SAMPLEFMTS(...)         \
+    FILTER_SAMPLEFMTS_ARRAY(((const enum AVSampleFormat[]) { __VA_ARGS__, AV_SAMPLE_FMT_NONE }))
+#define FILTER_SINGLE_PIXFMT(pix_fmt_)  \
+        .formats.pix_fmt = pix_fmt_,    \
+        .formats_state   = FF_FILTER_FORMATS_SINGLE_PIXFMT
+#define FILTER_SINGLE_SAMPLEFMT(sample_fmt_) \
+        .formats.sample_fmt = sample_fmt_,   \
+        .formats_state      = FF_FILTER_FORMATS_SINGLE_SAMPLEFMT
+
 #define FILTER_INOUTPADS(inout, array) \
        .inout        = array, \
        .nb_ ## inout = FF_ARRAY_ELEMS(array)

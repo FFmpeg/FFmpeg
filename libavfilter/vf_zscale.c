@@ -939,11 +939,11 @@ const AVFilter ff_vf_zscale = {
     .name            = "zscale",
     .description     = NULL_IF_CONFIG_SMALL("Apply resizing, colorspace and bit depth conversion."),
     .init            = init,
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ZScaleContext),
     .priv_class      = &zscale_class,
     .uninit          = uninit,
     FILTER_INPUTS(avfilter_vf_zscale_inputs),
     FILTER_OUTPUTS(avfilter_vf_zscale_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
 };

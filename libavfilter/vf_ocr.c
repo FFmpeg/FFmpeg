@@ -146,9 +146,9 @@ const AVFilter ff_vf_ocr = {
     .description   = NULL_IF_CONFIG_SMALL("Optical Character Recognition."),
     .priv_size     = sizeof(OCRContext),
     .priv_class    = &ocr_class,
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(ocr_inputs),
     FILTER_OUTPUTS(ocr_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

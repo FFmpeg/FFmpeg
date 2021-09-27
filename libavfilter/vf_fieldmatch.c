@@ -1042,13 +1042,13 @@ static const AVFilterPad fieldmatch_outputs[] = {
 const AVFilter ff_vf_fieldmatch = {
     .name           = "fieldmatch",
     .description    = NULL_IF_CONFIG_SMALL("Field matching for inverse telecine."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(FieldMatchContext),
     .init           = fieldmatch_init,
     .activate       = activate,
     .uninit         = fieldmatch_uninit,
     .inputs         = NULL,
     FILTER_OUTPUTS(fieldmatch_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class     = &fieldmatch_class,
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

@@ -210,8 +210,8 @@ const AVFilter ff_vf_vidstabdetect = {
     .priv_size     = sizeof(StabData),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_vf_vidstabdetect_inputs),
     FILTER_OUTPUTS(avfilter_vf_vidstabdetect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &vidstabdetect_class,
 };

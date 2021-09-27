@@ -387,10 +387,10 @@ const AVFilter ff_avf_aphasemeter = {
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to phase meter video output."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioPhaseMeterContext),
     FILTER_INPUTS(inputs),
     .outputs       = NULL,
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &aphasemeter_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

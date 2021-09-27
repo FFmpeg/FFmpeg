@@ -1025,9 +1025,9 @@ const AVFilter ff_af_ebur128 = {
     .priv_size     = sizeof(EBUR128Context),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(ebur128_inputs),
     .outputs       = NULL,
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &ebur128_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

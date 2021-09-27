@@ -193,10 +193,10 @@ const AVFilter ff_vf_hwdownload = {
     .name          = "hwdownload",
     .description   = NULL_IF_CONFIG_SMALL("Download a hardware frame to a normal frame"),
     .uninit        = hwdownload_uninit,
-    .query_formats = hwdownload_query_formats,
     .priv_size     = sizeof(HWDownloadContext),
     .priv_class    = &hwdownload_class,
     FILTER_INPUTS(hwdownload_inputs),
     FILTER_OUTPUTS(hwdownload_outputs),
+    FILTER_QUERY_FUNC(hwdownload_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

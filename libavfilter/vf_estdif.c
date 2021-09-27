@@ -576,9 +576,9 @@ const AVFilter ff_vf_estdif = {
     .priv_size     = sizeof(ESTDIFContext),
     .priv_class    = &estdif_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(estdif_inputs),
     FILTER_OUTPUTS(estdif_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

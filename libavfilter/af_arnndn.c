@@ -1608,7 +1608,6 @@ AVFILTER_DEFINE_CLASS(arnndn);
 const AVFilter ff_af_arnndn = {
     .name          = "arnndn",
     .description   = NULL_IF_CONFIG_SMALL("Reduce noise from speech using Recurrent Neural Networks."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioRNNContext),
     .priv_class    = &arnndn_class,
     .activate      = activate,
@@ -1616,6 +1615,7 @@ const AVFilter ff_af_arnndn = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,

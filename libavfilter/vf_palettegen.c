@@ -573,8 +573,8 @@ const AVFilter ff_vf_palettegen = {
     .description   = NULL_IF_CONFIG_SMALL("Find the optimal palette for a given stream."),
     .priv_size     = sizeof(PaletteGenContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(palettegen_inputs),
     FILTER_OUTPUTS(palettegen_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &palettegen_class,
 };

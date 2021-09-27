@@ -641,13 +641,14 @@ const AVFilter ff_vf_scale_cuda = {
 
     .init          = cudascale_init,
     .uninit        = cudascale_uninit,
-    .query_formats = cudascale_query_formats,
 
     .priv_size = sizeof(CUDAScaleContext),
     .priv_class = &cudascale_class,
 
     FILTER_INPUTS(cudascale_inputs),
     FILTER_OUTPUTS(cudascale_outputs),
+
+    FILTER_QUERY_FUNC(cudascale_query_formats),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

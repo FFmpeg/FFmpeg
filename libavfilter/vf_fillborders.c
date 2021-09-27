@@ -723,9 +723,9 @@ const AVFilter ff_vf_fillborders = {
     .description   = NULL_IF_CONFIG_SMALL("Fill borders of the input video."),
     .priv_size     = sizeof(FillBordersContext),
     .priv_class    = &fillborders_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(fillborders_inputs),
     FILTER_OUTPUTS(fillborders_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

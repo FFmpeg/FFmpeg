@@ -368,7 +368,7 @@ const AVFilter ff_vf_mestimate = {
     .priv_size     = sizeof(MEContext),
     .priv_class    = &mestimate_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(mestimate_inputs),
     FILTER_OUTPUTS(mestimate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

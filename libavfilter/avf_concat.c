@@ -449,12 +449,12 @@ const AVFilter ff_avf_concat = {
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(ConcatContext),
     .inputs        = NULL,
     .outputs       = NULL,
     .priv_class    = &concat_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
 };

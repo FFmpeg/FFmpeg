@@ -574,9 +574,9 @@ const AVFilter ff_vf_removelogo = {
     .priv_size     = sizeof(RemovelogoContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(removelogo_inputs),
     FILTER_OUTPUTS(removelogo_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &removelogo_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

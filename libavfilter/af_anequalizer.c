@@ -770,9 +770,9 @@ const AVFilter ff_af_anequalizer = {
     .priv_class    = &anequalizer_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     .outputs       = NULL,
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |

@@ -752,10 +752,10 @@ const AVFilter ff_vf_greyedge = {
     .description   = NULL_IF_CONFIG_SMALL("Estimates scene illumination by grey edge assumption."),
     .priv_size     = sizeof(ColorConstancyContext),
     .priv_class    = &greyedge_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(colorconstancy_inputs),
     FILTER_OUTPUTS(colorconstancy_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
 

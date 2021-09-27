@@ -337,9 +337,9 @@ const AVFilter ff_vf_chromaber_vulkan = {
     .priv_size      = sizeof(ChromaticAberrationVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &chromaber_vulkan_uninit,
-    .query_formats  = &ff_vk_filter_query_formats,
     FILTER_INPUTS(chromaber_vulkan_inputs),
     FILTER_OUTPUTS(chromaber_vulkan_outputs),
+    FILTER_QUERY_FUNC(&ff_vk_filter_query_formats),
     .priv_class     = &chromaber_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

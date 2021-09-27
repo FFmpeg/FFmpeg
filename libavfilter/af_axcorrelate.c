@@ -354,9 +354,9 @@ const AVFilter ff_af_axcorrelate = {
     .description    = NULL_IF_CONFIG_SMALL("Cross-correlate two audio streams."),
     .priv_size      = sizeof(AudioXCorrelateContext),
     .priv_class     = &axcorrelate_class,
-    .query_formats  = query_formats,
     .activate       = activate,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

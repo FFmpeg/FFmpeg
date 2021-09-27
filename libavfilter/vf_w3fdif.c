@@ -615,9 +615,9 @@ const AVFilter ff_vf_w3fdif = {
     .priv_size     = sizeof(W3FDIFContext),
     .priv_class    = &w3fdif_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(w3fdif_inputs),
     FILTER_OUTPUTS(w3fdif_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

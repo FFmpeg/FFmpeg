@@ -153,9 +153,9 @@ const AVFilter ff_vf_bbox = {
     .description   = NULL_IF_CONFIG_SMALL("Compute bounding box for each frame."),
     .priv_size     = sizeof(BBoxContext),
     .priv_class    = &bbox_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(bbox_inputs),
     FILTER_OUTPUTS(bbox_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,
 };

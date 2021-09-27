@@ -288,9 +288,9 @@ const AVFilter ff_vf_thumbnail = {
     .priv_size     = sizeof(ThumbContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(thumbnail_inputs),
     FILTER_OUTPUTS(thumbnail_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &thumbnail_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

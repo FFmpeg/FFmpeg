@@ -456,7 +456,7 @@ const AVFilter ff_vf_pad = {
     .description   = NULL_IF_CONFIG_SMALL("Pad the input video."),
     .priv_size     = sizeof(PadContext),
     .priv_class    = &pad_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_vf_pad_inputs),
     FILTER_OUTPUTS(avfilter_vf_pad_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

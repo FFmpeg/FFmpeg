@@ -500,11 +500,11 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_asoftclip = {
     .name           = "asoftclip",
     .description    = NULL_IF_CONFIG_SMALL("Audio Soft Clipper."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(ASoftClipContext),
     .priv_class     = &asoftclip_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .uninit         = uninit,
     .process_command = ff_filter_process_command,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

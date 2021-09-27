@@ -294,9 +294,9 @@ const AVFilter ff_af_aexciter = {
     .priv_size     = sizeof(AExciterContext),
     .priv_class    = &aexciter_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_af_aexciter_inputs),
     FILTER_OUTPUTS(avfilter_af_aexciter_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

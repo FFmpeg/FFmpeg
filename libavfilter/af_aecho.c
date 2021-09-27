@@ -364,7 +364,6 @@ static const AVFilterPad aecho_outputs[] = {
 const AVFilter ff_af_aecho = {
     .name          = "aecho",
     .description   = NULL_IF_CONFIG_SMALL("Add echoing to the audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioEchoContext),
     .priv_class    = &aecho_class,
     .init          = init,
@@ -372,4 +371,5 @@ const AVFilter ff_af_aecho = {
     .uninit        = uninit,
     FILTER_INPUTS(aecho_inputs),
     FILTER_OUTPUTS(aecho_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

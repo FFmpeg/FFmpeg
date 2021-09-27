@@ -598,13 +598,13 @@ const AVFilter ff_vf_deinterlace_qsv = {
     .description = NULL_IF_CONFIG_SMALL("QuickSync video deinterlacing"),
 
     .uninit        = qsvdeint_uninit,
-    .query_formats = qsvdeint_query_formats,
 
     .priv_size = sizeof(QSVDeintContext),
     .priv_class = &qsvdeint_class,
 
     FILTER_INPUTS(qsvdeint_inputs),
     FILTER_OUTPUTS(qsvdeint_outputs),
+    FILTER_QUERY_FUNC(qsvdeint_query_formats),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

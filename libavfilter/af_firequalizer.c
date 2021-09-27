@@ -958,10 +958,10 @@ const AVFilter ff_af_firequalizer = {
     .name               = "firequalizer",
     .description        = NULL_IF_CONFIG_SMALL("Finite Impulse Response Equalizer."),
     .uninit             = uninit,
-    .query_formats      = query_formats,
     .process_command    = process_command,
     .priv_size          = sizeof(FIREqualizerContext),
     FILTER_INPUTS(firequalizer_inputs),
     FILTER_OUTPUTS(firequalizer_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class         = &firequalizer_class,
 };

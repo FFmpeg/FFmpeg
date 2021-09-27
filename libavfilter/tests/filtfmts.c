@@ -137,8 +137,8 @@ int main(int argc, char **argv)
         filter_ctx->outputs[i] = link;
     }
 
-    if (filter->query_formats)
-        ret = filter->query_formats(filter_ctx);
+    if (filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC)
+        ret = filter->formats.query_func(filter_ctx);
     else
         ret = ff_default_query_formats(filter_ctx);
 

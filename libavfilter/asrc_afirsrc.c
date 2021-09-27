@@ -311,12 +311,12 @@ static const AVFilterPad afirsrc_outputs[] = {
 const AVFilter ff_asrc_afirsrc = {
     .name          = "afirsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate a FIR coefficients audio stream."),
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(AudioFIRSourceContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(afirsrc_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &afirsrc_class,
 };

@@ -278,11 +278,11 @@ static const AVFilterPad aphaser_outputs[] = {
 const AVFilter ff_af_aphaser = {
     .name          = "aphaser",
     .description   = NULL_IF_CONFIG_SMALL("Add a phasing effect to the audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioPhaserContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(aphaser_inputs),
     FILTER_OUTPUTS(aphaser_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &aphaser_class,
 };

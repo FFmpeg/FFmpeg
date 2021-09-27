@@ -249,8 +249,8 @@ const AVFilter ff_vf_hflip = {
     .description   = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
     .priv_size     = sizeof(FlipContext),
     .priv_class    = &hflip_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_vf_hflip_inputs),
     FILTER_OUTPUTS(avfilter_vf_hflip_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

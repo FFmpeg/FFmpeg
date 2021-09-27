@@ -375,9 +375,9 @@ const AVFilter ff_vf_vibrance = {
     .description   = NULL_IF_CONFIG_SMALL("Boost or alter saturation."),
     .priv_size     = sizeof(VibranceContext),
     .priv_class    = &vibrance_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(vibrance_inputs),
     FILTER_OUTPUTS(vibrance_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

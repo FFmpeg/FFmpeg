@@ -378,8 +378,8 @@ const AVFilter ff_vf_zoompan = {
     .priv_class    = &zoompan_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

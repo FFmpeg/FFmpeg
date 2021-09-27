@@ -349,7 +349,7 @@ static int filter_query_formats(AVFilterContext *ctx)
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
                             AVMEDIA_TYPE_VIDEO;
 
-    if ((ret = ctx->filter->query_formats(ctx)) < 0) {
+    if ((ret = ctx->filter->formats.query_func(ctx)) < 0) {
         if (ret != AVERROR(EAGAIN))
             av_log(ctx, AV_LOG_ERROR, "Query format failed for '%s': %s\n",
                    ctx->name, av_err2str(ret));
@@ -418,7 +418,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
         AVFilterContext *f = graph->filters[i];
         if (formats_declared(f))
             continue;
-        if (f->filter->query_formats)
+        if (f->filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC)
             ret = filter_query_formats(f);
         else
             ret = ff_default_query_formats(f);

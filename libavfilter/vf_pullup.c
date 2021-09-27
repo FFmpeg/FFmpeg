@@ -765,7 +765,7 @@ const AVFilter ff_vf_pullup = {
     .priv_size     = sizeof(PullupContext),
     .priv_class    = &pullup_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(pullup_inputs),
     FILTER_OUTPUTS(pullup_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

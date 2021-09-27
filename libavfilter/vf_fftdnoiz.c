@@ -685,9 +685,9 @@ const AVFilter ff_vf_fftdnoiz = {
     .priv_size     = sizeof(FFTdnoizContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(fftdnoiz_inputs),
     FILTER_OUTPUTS(fftdnoiz_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &fftdnoiz_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

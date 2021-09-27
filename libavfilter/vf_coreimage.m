@@ -629,7 +629,7 @@ const AVFilter ff_vf_coreimage = {
     .priv_class    = &coreimage_class,
     FILTER_INPUTS(vf_coreimage_inputs),
     FILTER_OUTPUTS(vf_coreimage_outputs),
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
 };
 
 // definitions for coreimagesrc video source
@@ -650,5 +650,5 @@ const AVFilter ff_vsrc_coreimagesrc = {
     .priv_class    = &coreimagesrc_class,
     .inputs        = NULL,
     FILTER_OUTPUTS(vsrc_coreimagesrc_outputs),
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
 };

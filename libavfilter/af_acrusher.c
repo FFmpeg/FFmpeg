@@ -357,7 +357,7 @@ const AVFilter ff_af_acrusher = {
     .priv_size     = sizeof(ACrusherContext),
     .priv_class    = &acrusher_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
     FILTER_INPUTS(avfilter_af_acrusher_inputs),
     FILTER_OUTPUTS(avfilter_af_acrusher_outputs),
     .process_command = process_command,

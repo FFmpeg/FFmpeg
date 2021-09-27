@@ -361,9 +361,9 @@ const AVFilter ff_vf_vmafmotion = {
     .description   = NULL_IF_CONFIG_SMALL("Calculate the VMAF Motion score."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(VMAFMotionContext),
     .priv_class    = &vmafmotion_class,
     FILTER_INPUTS(vmafmotion_inputs),
     FILTER_OUTPUTS(vmafmotion_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

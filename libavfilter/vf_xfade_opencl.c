@@ -428,9 +428,9 @@ const AVFilter ff_vf_xfade_opencl = {
     .priv_class      = &xfade_opencl_class,
     .init            = &ff_opencl_filter_init,
     .uninit          = &xfade_opencl_uninit,
-    .query_formats   = &ff_opencl_filter_query_formats,
     .activate        = &xfade_opencl_activate,
     FILTER_INPUTS(xfade_opencl_inputs),
     FILTER_OUTPUTS(xfade_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -196,7 +196,7 @@ const AVFilter ff_af_amultiply = {
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
-    .query_formats  = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

@@ -513,9 +513,9 @@ const AVFilter ff_vf_perspective = {
     .priv_size     = sizeof(PerspectiveContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(perspective_inputs),
     FILTER_OUTPUTS(perspective_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &perspective_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

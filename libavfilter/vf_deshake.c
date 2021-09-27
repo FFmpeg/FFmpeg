@@ -552,8 +552,8 @@ const AVFilter ff_vf_deshake = {
     .priv_size     = sizeof(DeshakeContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(deshake_inputs),
     FILTER_OUTPUTS(deshake_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &deshake_class,
 };

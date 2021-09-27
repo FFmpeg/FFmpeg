@@ -583,9 +583,9 @@ const AVFilter ff_vf_overlay_cuda = {
     .init            = &overlay_cuda_init,
     .uninit          = &overlay_cuda_uninit,
     .activate        = &overlay_cuda_activate,
-    .query_formats   = &overlay_cuda_query_formats,
     FILTER_INPUTS(overlay_cuda_inputs),
     FILTER_OUTPUTS(overlay_cuda_outputs),
+    FILTER_QUERY_FUNC(&overlay_cuda_query_formats),
     .preinit         = overlay_cuda_framesync_preinit,
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

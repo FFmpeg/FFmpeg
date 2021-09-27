@@ -380,9 +380,9 @@ const AVFilter ff_vf_yadif_cuda = {
     .priv_size      = sizeof(DeintCUDAContext),
     .priv_class     = &yadif_cuda_class,
     .uninit         = deint_cuda_uninit,
-    .query_formats  = deint_cuda_query_formats,
     FILTER_INPUTS(deint_cuda_inputs),
     FILTER_OUTPUTS(deint_cuda_outputs),
+    FILTER_QUERY_FUNC(deint_cuda_query_formats),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

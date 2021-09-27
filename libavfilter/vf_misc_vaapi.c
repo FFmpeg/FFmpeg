@@ -238,9 +238,9 @@ const AVFilter ff_vf_denoise_vaapi = {
     .priv_size     = sizeof(DenoiseVAAPIContext),
     .init          = &denoise_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
-    .query_formats = &ff_vaapi_vpp_query_formats,
     FILTER_INPUTS(misc_vaapi_inputs),
     FILTER_OUTPUTS(misc_vaapi_outputs),
+    FILTER_QUERY_FUNC(&ff_vaapi_vpp_query_formats),
     .priv_class    = &denoise_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
@@ -251,9 +251,9 @@ const AVFilter ff_vf_sharpness_vaapi = {
     .priv_size     = sizeof(SharpnessVAAPIContext),
     .init          = &sharpness_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
-    .query_formats = &ff_vaapi_vpp_query_formats,
     FILTER_INPUTS(misc_vaapi_inputs),
     FILTER_OUTPUTS(misc_vaapi_outputs),
+    FILTER_QUERY_FUNC(&ff_vaapi_vpp_query_formats),
     .priv_class    = &sharpness_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

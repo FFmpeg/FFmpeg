@@ -1188,10 +1188,10 @@ const AVFilter ff_af_atempo = {
     .description     = NULL_IF_CONFIG_SMALL("Adjust audio tempo."),
     .init            = init,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     .process_command = process_command,
     .priv_size       = sizeof(ATempoContext),
     .priv_class      = &atempo_class,
     FILTER_INPUTS(atempo_inputs),
     FILTER_OUTPUTS(atempo_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

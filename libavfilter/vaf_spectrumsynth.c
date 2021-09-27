@@ -546,10 +546,10 @@ const AVFilter ff_vaf_spectrumsynth = {
     .name          = "spectrumsynth",
     .description   = NULL_IF_CONFIG_SMALL("Convert input spectrum videos to audio output."),
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(SpectrumSynthContext),
     FILTER_INPUTS(spectrumsynth_inputs),
     FILTER_OUTPUTS(spectrumsynth_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &spectrumsynth_class,
 };

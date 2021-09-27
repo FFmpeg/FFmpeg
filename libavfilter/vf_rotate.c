@@ -601,10 +601,10 @@ const AVFilter ff_vf_rotate = {
     .priv_size     = sizeof(RotContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .process_command = process_command,
     FILTER_INPUTS(rotate_inputs),
     FILTER_OUTPUTS(rotate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &rotate_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

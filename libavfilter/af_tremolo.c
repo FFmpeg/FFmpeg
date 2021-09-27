@@ -151,7 +151,7 @@ const AVFilter ff_af_tremolo = {
     .priv_size     = sizeof(TremoloContext),
     .priv_class    = &tremolo_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_af_tremolo_inputs),
     FILTER_OUTPUTS(avfilter_af_tremolo_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

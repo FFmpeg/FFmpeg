@@ -2001,10 +2001,10 @@ const AVFilter ff_vf_xfade = {
     .description   = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
     .priv_size     = sizeof(XFadeContext),
     .priv_class    = &xfade_class,
-    .query_formats = query_formats,
     .activate      = xfade_activate,
     .uninit        = uninit,
     FILTER_INPUTS(xfade_inputs),
     FILTER_OUTPUTS(xfade_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

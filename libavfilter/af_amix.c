@@ -639,9 +639,9 @@ const AVFilter ff_af_amix = {
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
-    .query_formats  = query_formats,
     .inputs         = NULL,
     FILTER_OUTPUTS(avfilter_af_amix_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

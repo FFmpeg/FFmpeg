@@ -401,10 +401,10 @@ const AVFilter ff_vf_dedot = {
     .description   = NULL_IF_CONFIG_SMALL("Reduce cross-luminance and cross-color."),
     .priv_size     = sizeof(DedotContext),
     .priv_class    = &dedot_class,
-    .query_formats = query_formats,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

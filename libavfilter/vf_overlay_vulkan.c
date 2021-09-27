@@ -479,10 +479,10 @@ const AVFilter ff_vf_overlay_vulkan = {
     .priv_size      = sizeof(OverlayVulkanContext),
     .init           = &overlay_vulkan_init,
     .uninit         = &overlay_vulkan_uninit,
-    .query_formats  = &ff_vk_filter_query_formats,
     .activate       = &overlay_vulkan_activate,
     FILTER_INPUTS(overlay_vulkan_inputs),
     FILTER_OUTPUTS(overlay_vulkan_outputs),
+    FILTER_QUERY_FUNC(&ff_vk_filter_query_formats),
     .priv_class     = &overlay_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

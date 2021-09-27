@@ -366,11 +366,11 @@ const AVFilter ff_af_sidechaincompress = {
     .description    = NULL_IF_CONFIG_SMALL("Sidechain compressor."),
     .priv_class     = &sidechaincompress_acompressor_class,
     .priv_size      = sizeof(SidechainCompressContext),
-    .query_formats  = query_formats,
     .activate       = activate,
     .uninit         = uninit,
     FILTER_INPUTS(sidechaincompress_inputs),
     FILTER_OUTPUTS(sidechaincompress_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
 };
 #endif  /* CONFIG_SIDECHAINCOMPRESS_FILTER */
@@ -444,9 +444,9 @@ const AVFilter ff_af_acompressor = {
     .description    = NULL_IF_CONFIG_SMALL("Audio compressor."),
     .priv_class     = &sidechaincompress_acompressor_class,
     .priv_size      = sizeof(SidechainCompressContext),
-    .query_formats  = acompressor_query_formats,
     FILTER_INPUTS(acompressor_inputs),
     FILTER_OUTPUTS(acompressor_outputs),
+    FILTER_QUERY_FUNC(acompressor_query_formats),
     .process_command = process_command,
 };
 #endif  /* CONFIG_ACOMPRESSOR_FILTER */

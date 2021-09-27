@@ -449,9 +449,9 @@ const AVFilter ff_vf_shufflepixels = {
     .description   = NULL_IF_CONFIG_SMALL("Shuffle video pixels."),
     .priv_size     = sizeof(ShufflePixelsContext),
     .priv_class    = &shufflepixels_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(shufflepixels_inputs),
     FILTER_OUTPUTS(shufflepixels_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

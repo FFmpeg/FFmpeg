@@ -249,7 +249,7 @@ const AVFilter ff_af_apulsator = {
     .description   = NULL_IF_CONFIG_SMALL("Audio pulsator."),
     .priv_size     = sizeof(AudioPulsatorContext),
     .priv_class    = &apulsator_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

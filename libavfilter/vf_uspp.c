@@ -494,9 +494,9 @@ const AVFilter ff_vf_uspp = {
     .description     = NULL_IF_CONFIG_SMALL("Apply Ultra Simple / Slow Post-processing filter."),
     .priv_size       = sizeof(USPPContext),
     .uninit          = uninit,
-    .query_formats   = query_formats,
     FILTER_INPUTS(uspp_inputs),
     FILTER_OUTPUTS(uspp_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class      = &uspp_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

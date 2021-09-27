@@ -172,8 +172,8 @@ const AVFilter ff_af_channelsplit = {
     .priv_size      = sizeof(ChannelSplitContext),
     .priv_class     = &channelsplit_class,
     .init           = init,
-    .query_formats  = query_formats,
     FILTER_INPUTS(avfilter_af_channelsplit_inputs),
     .outputs        = NULL,
+    FILTER_QUERY_FUNC(query_formats),
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

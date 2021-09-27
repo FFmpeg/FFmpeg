@@ -222,8 +222,8 @@ const AVFilter ff_vf_freezedetect = {
     .priv_size     = sizeof(FreezeDetectContext),
     .priv_class    = &freezedetect_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(freezedetect_inputs),
     FILTER_OUTPUTS(freezedetect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate      = activate,
 };

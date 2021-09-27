@@ -208,9 +208,9 @@ const AVFilter ff_vf_tpad = {
     .description   = NULL_IF_CONFIG_SMALL("Temporarily pad video frames."),
     .priv_size     = sizeof(TPadContext),
     .priv_class    = &tpad_class,
-    .query_formats = query_formats,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(tpad_inputs),
     FILTER_OUTPUTS(tpad_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

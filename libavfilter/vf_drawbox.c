@@ -403,9 +403,9 @@ const AVFilter ff_vf_drawbox = {
     .priv_size     = sizeof(DrawBoxContext),
     .priv_class    = &drawbox_class,
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(drawbox_inputs),
     FILTER_OUTPUTS(drawbox_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
@@ -485,9 +485,9 @@ const AVFilter ff_vf_drawgrid = {
     .priv_size     = sizeof(DrawBoxContext),
     .priv_class    = &drawgrid_class,
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(drawgrid_inputs),
     FILTER_OUTPUTS(drawgrid_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

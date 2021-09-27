@@ -402,12 +402,12 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_anlmdn = {
     .name          = "anlmdn",
     .description   = NULL_IF_CONFIG_SMALL("Reduce broadband noise from stream using Non-Local Means."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioNLMeansContext),
     .priv_class    = &anlmdn_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,

@@ -1777,7 +1777,7 @@ const AVFilter ff_af_hdcd = {
     .priv_class    = &hdcd_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_af_hdcd_inputs),
     FILTER_OUTPUTS(avfilter_af_hdcd_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

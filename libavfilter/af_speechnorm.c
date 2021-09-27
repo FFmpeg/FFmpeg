@@ -574,13 +574,13 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_speechnorm = {
     .name            = "speechnorm",
     .description     = NULL_IF_CONFIG_SMALL("Speech Normalizer."),
-    .query_formats   = query_formats,
     .priv_size       = sizeof(SpeechNormalizerContext),
     .priv_class      = &speechnorm_class,
     .activate        = activate,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,
 };

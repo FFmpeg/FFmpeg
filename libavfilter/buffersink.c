@@ -339,10 +339,10 @@ const AVFilter ff_vsink_buffer = {
     .priv_size     = sizeof(BufferSinkContext),
     .priv_class    = &buffersink_class,
     .init          = common_init,
-    .query_formats = vsink_query_formats,
     .activate      = activate,
     FILTER_INPUTS(avfilter_vsink_buffer_inputs),
     .outputs       = NULL,
+    FILTER_QUERY_FUNC(vsink_query_formats),
 };
 
 static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
@@ -358,8 +358,8 @@ const AVFilter ff_asink_abuffer = {
     .priv_class    = &abuffersink_class,
     .priv_size     = sizeof(BufferSinkContext),
     .init          = common_init,
-    .query_formats = asink_query_formats,
     .activate      = activate,
     FILTER_INPUTS(avfilter_asink_abuffer_inputs),
     .outputs       = NULL,
+    FILTER_QUERY_FUNC(asink_query_formats),
 };

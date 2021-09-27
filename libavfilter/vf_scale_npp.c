@@ -594,13 +594,14 @@ const AVFilter ff_vf_scale_npp = {
 
     .init          = nppscale_init,
     .uninit        = nppscale_uninit,
-    .query_formats = nppscale_query_formats,
 
     .priv_size = sizeof(NPPScaleContext),
     .priv_class = &nppscale_class,
 
     FILTER_INPUTS(nppscale_inputs),
     FILTER_OUTPUTS(nppscale_outputs),
+
+    FILTER_QUERY_FUNC(nppscale_query_formats),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

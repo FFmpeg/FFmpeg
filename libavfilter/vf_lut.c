@@ -595,9 +595,9 @@ static const AVFilterPad outputs[] = {
         .priv_size     = sizeof(LutContext),                            \
         .init          = name_##_init,                                  \
         .uninit        = uninit,                                        \
-        .query_formats = query_formats,                                 \
         FILTER_INPUTS(inputs),                                          \
         FILTER_OUTPUTS(outputs),                                        \
+        FILTER_QUERY_FUNC(query_formats),                               \
         .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |       \
                          AVFILTER_FLAG_SLICE_THREADS,                   \
         .process_command = process_command,                             \

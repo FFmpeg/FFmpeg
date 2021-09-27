@@ -469,9 +469,9 @@ const AVFilter ff_vf_framepack = {
     .description   = NULL_IF_CONFIG_SMALL("Generate a frame packed stereoscopic video."),
     .priv_size     = sizeof(FramepackContext),
     .priv_class    = &framepack_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(framepack_inputs),
     FILTER_OUTPUTS(framepack_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate      = activate,
     .uninit        = framepack_uninit,
 };

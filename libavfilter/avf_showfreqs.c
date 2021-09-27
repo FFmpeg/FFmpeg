@@ -567,10 +567,10 @@ const AVFilter ff_avf_showfreqs = {
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a frequencies video output."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(ShowFreqsContext),
     .activate      = activate,
     FILTER_INPUTS(showfreqs_inputs),
     FILTER_OUTPUTS(showfreqs_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showfreqs_class,
 };

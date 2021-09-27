@@ -437,8 +437,8 @@ const AVFilter ff_vf_decimate = {
     .activate      = activate,
     .uninit        = decimate_uninit,
     .priv_size     = sizeof(DecimateContext),
-    .query_formats = query_formats,
     FILTER_OUTPUTS(decimate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &decimate_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

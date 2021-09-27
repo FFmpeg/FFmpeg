@@ -211,9 +211,9 @@ const AVFilter ff_vf_scroll = {
     .description   = NULL_IF_CONFIG_SMALL("Scroll input video."),
     .priv_size     = sizeof(ScrollContext),
     .priv_class    = &scroll_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(scroll_inputs),
     FILTER_OUTPUTS(scroll_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -220,11 +220,11 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_deesser = {
     .name          = "deesser",
     .description   = NULL_IF_CONFIG_SMALL("Apply de-essing to the audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(DeesserContext),
     .priv_class    = &deesser_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

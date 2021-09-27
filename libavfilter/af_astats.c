@@ -863,11 +863,11 @@ static const AVFilterPad astats_outputs[] = {
 const AVFilter ff_af_astats = {
     .name          = "astats",
     .description   = NULL_IF_CONFIG_SMALL("Show time domain statistics about audio frames."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioStatsContext),
     .priv_class    = &astats_class,
     .uninit        = uninit,
     FILTER_INPUTS(astats_inputs),
     FILTER_OUTPUTS(astats_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

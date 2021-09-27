@@ -329,9 +329,9 @@ const AVFilter ff_vf_grayworld = {
     .description   = NULL_IF_CONFIG_SMALL("Adjust white balance using LAB gray world algorithm"),
     .priv_size     = sizeof(GrayWorldContext),
     .priv_class    = &grayworld_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(grayworld_inputs),
     FILTER_OUTPUTS(grayworld_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .uninit        = uninit,
 };

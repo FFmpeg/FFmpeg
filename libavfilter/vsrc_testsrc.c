@@ -273,9 +273,9 @@ const AVFilter ff_vsrc_color = {
     .init            = color_init,
     .uninit          = uninit,
     .activate        = activate,
-    .query_formats   = color_query_formats,
     .inputs          = NULL,
     FILTER_OUTPUTS(color_outputs),
+    FILTER_QUERY_FUNC(color_query_formats),
     .process_command = color_process_command,
 };
 
@@ -402,10 +402,10 @@ const AVFilter ff_vsrc_haldclutsrc = {
     .priv_size     = sizeof(TestSourceContext),
     .init          = haldclutsrc_init,
     .uninit        = uninit,
-    .query_formats = haldclutsrc_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(haldclutsrc_outputs),
+    FILTER_QUERY_FUNC(haldclutsrc_query_formats),
 };
 #endif /* CONFIG_HALDCLUTSRC_FILTER */
 
@@ -670,10 +670,10 @@ const AVFilter ff_vsrc_testsrc = {
     .priv_class    = &testsrc_class,
     .init          = test_init,
     .uninit        = uninit,
-    .query_formats = test_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_testsrc_outputs),
+    FILTER_QUERY_FUNC(test_query_formats),
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
@@ -942,10 +942,10 @@ const AVFilter ff_vsrc_testsrc2 = {
     .priv_class    = &testsrc2_class,
     .init          = test2_init,
     .uninit        = uninit,
-    .query_formats = test2_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_testsrc2_outputs),
+    FILTER_QUERY_FUNC(test2_query_formats),
 };
 
 #endif /* CONFIG_TESTSRC2_FILTER */
@@ -1113,10 +1113,10 @@ const AVFilter ff_vsrc_rgbtestsrc = {
     .priv_class    = &rgbtestsrc_class,
     .init          = rgbtest_init,
     .uninit        = uninit,
-    .query_formats = rgbtest_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_rgbtestsrc_outputs),
+    FILTER_QUERY_FUNC(rgbtest_query_formats),
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */
@@ -1282,10 +1282,10 @@ const AVFilter ff_vsrc_yuvtestsrc = {
     .priv_class    = &nullsrc_yuvtestsrc_class,
     .init          = yuvtest_init,
     .uninit        = uninit,
-    .query_formats = yuvtest_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_yuvtestsrc_outputs),
+    FILTER_QUERY_FUNC(yuvtest_query_formats),
 };
 
 #endif /* CONFIG_YUVTESTSRC_FILTER */
@@ -1454,10 +1454,10 @@ const AVFilter ff_vsrc_pal75bars = {
     .priv_size     = sizeof(TestSourceContext),
     .init          = pal75bars_init,
     .uninit        = uninit,
-    .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_PAL75BARS_FILTER */
@@ -1498,10 +1498,10 @@ const AVFilter ff_vsrc_pal100bars = {
     .priv_size     = sizeof(TestSourceContext),
     .init          = pal100bars_init,
     .uninit        = uninit,
-    .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_PAL100BARS_FILTER */
@@ -1565,10 +1565,10 @@ const AVFilter ff_vsrc_smptebars = {
     .priv_class    = &smptebars_class,
     .init          = smptebars_init,
     .uninit        = uninit,
-    .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_SMPTEBARS_FILTER */
@@ -1668,10 +1668,10 @@ const AVFilter ff_vsrc_smptehdbars = {
     .priv_size     = sizeof(TestSourceContext),
     .init          = smptehdbars_init,
     .uninit        = uninit,
-    .query_formats = smptebars_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
@@ -1742,10 +1742,10 @@ const AVFilter ff_vsrc_allyuv = {
     .priv_class    = &allyuv_allrgb_class,
     .init          = allyuv_init,
     .uninit        = uninit,
-    .query_formats = allyuv_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_allyuv_outputs),
+    FILTER_QUERY_FUNC(allyuv_query_formats),
 };
 
 #endif /* CONFIG_ALLYUV_FILTER */
@@ -1812,10 +1812,10 @@ const AVFilter ff_vsrc_allrgb = {
     .priv_class    = &allyuv_allrgb_class,
     .init          = allrgb_init,
     .uninit        = uninit,
-    .query_formats = allrgb_query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_allrgb_outputs),
+    FILTER_QUERY_FUNC(allrgb_query_formats),
 };
 
 #endif /* CONFIG_ALLRGB_FILTER */

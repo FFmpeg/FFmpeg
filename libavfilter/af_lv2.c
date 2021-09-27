@@ -578,8 +578,8 @@ const AVFilter ff_af_lv2 = {
     .priv_class    = &lv2_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .inputs        = 0,
     FILTER_OUTPUTS(lv2_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

@@ -370,9 +370,9 @@ const AVFilter ff_vf_dnn_processing = {
     .priv_size     = sizeof(DnnProcessingContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(dnn_processing_inputs),
     FILTER_OUTPUTS(dnn_processing_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &dnn_processing_class,
     .activate      = activate,
 };

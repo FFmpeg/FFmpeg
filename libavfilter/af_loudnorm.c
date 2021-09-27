@@ -911,9 +911,9 @@ const AVFilter ff_af_loudnorm = {
     .description   = NULL_IF_CONFIG_SMALL("EBU R128 loudness normalization"),
     .priv_size     = sizeof(LoudNormContext),
     .priv_class    = &loudnorm_class,
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_loudnorm_inputs),
     FILTER_OUTPUTS(avfilter_af_loudnorm_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

@@ -434,8 +434,8 @@ const AVFilter ff_vf_nlmeans_opencl = {
     .priv_class     = &nlmeans_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &nlmeans_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(nlmeans_opencl_inputs),
     FILTER_OUTPUTS(nlmeans_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -402,9 +402,9 @@ const AVFilter ff_vf_avgblur_vulkan = {
     .priv_size      = sizeof(AvgBlurVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &avgblur_vulkan_uninit,
-    .query_formats  = &ff_vk_filter_query_formats,
     FILTER_INPUTS(avgblur_vulkan_inputs),
     FILTER_OUTPUTS(avgblur_vulkan_outputs),
+    FILTER_QUERY_FUNC(&ff_vk_filter_query_formats),
     .priv_class     = &avgblur_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

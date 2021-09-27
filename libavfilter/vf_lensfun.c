@@ -534,9 +534,9 @@ const AVFilter ff_vf_lensfun = {
     .priv_size     = sizeof(LensfunContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(lensfun_inputs),
     FILTER_OUTPUTS(lensfun_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &lensfun_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

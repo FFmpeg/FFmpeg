@@ -418,9 +418,9 @@ const AVFilter ff_vf_floodfill = {
     .description   = NULL_IF_CONFIG_SMALL("Fill area with same color with another color."),
     .priv_size     = sizeof(FloodfillContext),
     .priv_class    = &floodfill_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(floodfill_inputs),
     FILTER_OUTPUTS(floodfill_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -401,9 +401,9 @@ const AVFilter ff_vf_pp7 = {
     .description     = NULL_IF_CONFIG_SMALL("Apply Postprocessing 7 filter."),
     .priv_size       = sizeof(PP7Context),
     .uninit          = uninit,
-    .query_formats   = query_formats,
     FILTER_INPUTS(pp7_inputs),
     FILTER_OUTPUTS(pp7_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class      = &pp7_class,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

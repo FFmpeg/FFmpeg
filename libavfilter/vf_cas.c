@@ -283,9 +283,9 @@ const AVFilter ff_vf_cas = {
     .description   = NULL_IF_CONFIG_SMALL("Contrast Adaptive Sharpen."),
     .priv_size     = sizeof(CASContext),
     .priv_class    = &cas_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(cas_inputs),
     FILTER_OUTPUTS(cas_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

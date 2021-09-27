@@ -423,8 +423,8 @@ const AVFilter ff_vf_hwmap = {
     .uninit         = hwmap_uninit,
     .priv_size      = sizeof(HWMapContext),
     .priv_class     = &hwmap_class,
-    .query_formats  = hwmap_query_formats,
     FILTER_INPUTS(hwmap_inputs),
     FILTER_OUTPUTS(hwmap_outputs),
+    FILTER_QUERY_FUNC(hwmap_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

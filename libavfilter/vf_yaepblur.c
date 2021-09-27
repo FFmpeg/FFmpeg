@@ -342,9 +342,9 @@ const AVFilter ff_vf_yaepblur = {
     .priv_size       = sizeof(YAEPContext),
     .priv_class      = &yaepblur_class,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     FILTER_INPUTS(yaep_inputs),
     FILTER_OUTPUTS(yaep_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -306,9 +306,9 @@ const AVFilter ff_af_anlms = {
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
-    .query_formats  = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags          = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

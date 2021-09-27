@@ -216,10 +216,10 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_haas = {
     .name           = "haas",
     .description    = NULL_IF_CONFIG_SMALL("Apply Haas Stereo Enhancer."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(HaasContext),
     .priv_class     = &haas_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

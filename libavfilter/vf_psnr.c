@@ -465,11 +465,11 @@ const AVFilter ff_vf_psnr = {
     .preinit       = psnr_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(PSNRContext),
     .priv_class    = &psnr_class,
     FILTER_INPUTS(psnr_inputs),
     FILTER_OUTPUTS(psnr_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -365,9 +365,9 @@ const AVFilter ff_vf_owdenoise = {
     .description   = NULL_IF_CONFIG_SMALL("Denoise using wavelets."),
     .priv_size     = sizeof(OWDenoiseContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(owdenoise_inputs),
     FILTER_OUTPUTS(owdenoise_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &owdenoise_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

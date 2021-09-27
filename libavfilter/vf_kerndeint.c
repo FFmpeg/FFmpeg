@@ -308,7 +308,7 @@ const AVFilter ff_vf_kerndeint = {
     .priv_size     = sizeof(KerndeintContext),
     .priv_class    = &kerndeint_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(kerndeint_inputs),
     FILTER_OUTPUTS(kerndeint_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

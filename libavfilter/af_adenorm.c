@@ -307,10 +307,10 @@ AVFILTER_DEFINE_CLASS(adenorm);
 const AVFilter ff_af_adenorm = {
     .name            = "adenorm",
     .description     = NULL_IF_CONFIG_SMALL("Remedy denormals by adding extremely low-level noise."),
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ADenormContext),
     FILTER_INPUTS(adenorm_inputs),
     FILTER_OUTPUTS(adenorm_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class      = &adenorm_class,
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |

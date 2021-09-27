@@ -372,7 +372,7 @@ const AVFilter ff_vf_detelecine = {
     .priv_class    = &detelecine_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(detelecine_inputs),
     FILTER_OUTPUTS(detelecine_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

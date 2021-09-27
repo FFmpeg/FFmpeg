@@ -187,10 +187,10 @@ const AVFilter ff_vf_weave = {
     .description   = NULL_IF_CONFIG_SMALL("Weave input video fields into frames."),
     .priv_size     = sizeof(WeaveContext),
     .priv_class    = &weave_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(weave_inputs),
     FILTER_OUTPUTS(weave_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
 
@@ -209,10 +209,10 @@ const AVFilter ff_vf_doubleweave = {
     .description   = NULL_IF_CONFIG_SMALL("Weave input video fields into double number of frames."),
     .priv_class    = &weave_class,
     .priv_size     = sizeof(WeaveContext),
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(weave_inputs),
     FILTER_OUTPUTS(weave_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

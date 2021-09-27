@@ -359,7 +359,7 @@ const AVFilter ff_vsrc_mptestsrc = {
     .priv_size     = sizeof(MPTestContext),
     .priv_class    = &mptestsrc_class,
     .init          = init,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(mptestsrc_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

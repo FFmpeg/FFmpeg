@@ -760,8 +760,8 @@ const AVFilter ff_vf_signature = {
     .priv_class    = &signature_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_OUTPUTS(signature_outputs),
     .inputs        = NULL,
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

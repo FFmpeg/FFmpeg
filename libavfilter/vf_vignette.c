@@ -342,9 +342,9 @@ const AVFilter ff_vf_vignette = {
     .priv_size     = sizeof(VignetteContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(vignette_inputs),
     FILTER_OUTPUTS(vignette_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &vignette_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

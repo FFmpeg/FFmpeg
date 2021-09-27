@@ -270,9 +270,9 @@ const AVFilter ff_vf_histeq = {
     .description   = NULL_IF_CONFIG_SMALL("Apply global color histogram equalization."),
     .priv_size     = sizeof(HisteqContext),
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(histeq_inputs),
     FILTER_OUTPUTS(histeq_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &histeq_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

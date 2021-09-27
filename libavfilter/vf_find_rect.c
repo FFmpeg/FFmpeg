@@ -305,8 +305,8 @@ const AVFilter ff_vf_find_rect = {
     .priv_size       = sizeof(FOCContext),
     .init            = init,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     FILTER_INPUTS(foc_inputs),
     FILTER_OUTPUTS(foc_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class      = &find_rect_class,
 };

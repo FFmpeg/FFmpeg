@@ -427,9 +427,9 @@ const AVFilter ff_vf_ocv = {
     .description   = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
     .priv_size     = sizeof(OCVContext),
     .priv_class    = &ocv_class,
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_ocv_inputs),
     FILTER_OUTPUTS(avfilter_vf_ocv_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

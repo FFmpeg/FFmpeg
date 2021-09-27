@@ -211,8 +211,8 @@ const AVFilter ff_vf_scdet = {
     .priv_size     = sizeof(SCDetContext),
     .priv_class    = &scdet_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(scdet_inputs),
     FILTER_OUTPUTS(scdet_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate      = activate,
 };

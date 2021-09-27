@@ -400,9 +400,9 @@ const AVFilter ff_af_channelmap = {
     .name          = "channelmap",
     .description   = NULL_IF_CONFIG_SMALL("Remap audio channels."),
     .init          = channelmap_init,
-    .query_formats = channelmap_query_formats,
     .priv_size     = sizeof(ChannelMapContext),
     .priv_class    = &channelmap_class,
     FILTER_INPUTS(avfilter_af_channelmap_inputs),
     FILTER_OUTPUTS(avfilter_af_channelmap_outputs),
+    FILTER_QUERY_FUNC(channelmap_query_formats),
 };

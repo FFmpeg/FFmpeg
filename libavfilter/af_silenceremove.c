@@ -979,7 +979,7 @@ const AVFilter ff_af_silenceremove = {
     .priv_class    = &silenceremove_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(silenceremove_inputs),
     FILTER_OUTPUTS(silenceremove_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

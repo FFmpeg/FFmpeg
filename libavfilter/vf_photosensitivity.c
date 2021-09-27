@@ -332,7 +332,7 @@ const AVFilter ff_vf_photosensitivity = {
     .priv_size     = sizeof(PhotosensitivityContext),
     .priv_class    = &photosensitivity_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

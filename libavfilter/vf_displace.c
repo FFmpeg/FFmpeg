@@ -398,10 +398,10 @@ const AVFilter ff_vf_displace = {
     .description   = NULL_IF_CONFIG_SMALL("Displace pixels."),
     .priv_size     = sizeof(DisplaceContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     FILTER_INPUTS(displace_inputs),
     FILTER_OUTPUTS(displace_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &displace_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

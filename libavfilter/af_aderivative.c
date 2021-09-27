@@ -175,19 +175,19 @@ static const AVFilterPad aderivative_outputs[] = {
 const AVFilter ff_af_aderivative = {
     .name          = "aderivative",
     .description   = NULL_IF_CONFIG_SMALL("Compute derivative of input audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(ADerivativeContext),
     .uninit        = uninit,
     FILTER_INPUTS(aderivative_inputs),
     FILTER_OUTPUTS(aderivative_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };
 
 const AVFilter ff_af_aintegral = {
     .name          = "aintegral",
     .description   = NULL_IF_CONFIG_SMALL("Compute integral of input audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(ADerivativeContext),
     .uninit        = uninit,
     FILTER_INPUTS(aderivative_inputs),
     FILTER_OUTPUTS(aderivative_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

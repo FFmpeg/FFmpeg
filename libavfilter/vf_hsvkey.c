@@ -331,9 +331,9 @@ const AVFilter ff_vf_hsvkey = {
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain HSV range into transparency. Operates on YUV colors."),
     .priv_size     = sizeof(HSVKeyContext),
     .priv_class    = &hsvkey_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(hsvkey_inputs),
     FILTER_OUTPUTS(hsvkey_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
@@ -372,9 +372,9 @@ const AVFilter ff_vf_hsvhold = {
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain HSV range into gray."),
     .priv_size     = sizeof(HSVKeyContext),
     .priv_class    = &hsvhold_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(hsvhold_inputs),
     FILTER_OUTPUTS(hsvhold_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

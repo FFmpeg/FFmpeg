@@ -236,9 +236,9 @@ const AVFilter ff_vf_phase = {
     .priv_size     = sizeof(PhaseContext),
     .priv_class    = &phase_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(phase_inputs),
     FILTER_OUTPUTS(phase_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

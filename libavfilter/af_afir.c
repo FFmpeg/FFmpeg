@@ -942,7 +942,7 @@ const AVFilter ff_af_afir = {
     .description   = NULL_IF_CONFIG_SMALL("Apply Finite Impulse Response filter with supplied coefficients in additional stream(s)."),
     .priv_size     = sizeof(AudioFIRContext),
     .priv_class    = &afir_class,
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,

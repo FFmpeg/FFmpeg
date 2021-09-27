@@ -1024,9 +1024,9 @@ const AVFilter ff_vf_morpho = {
     .priv_class      = &morpho_class,
     .activate        = activate,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     FILTER_INPUTS(morpho_inputs),
     FILTER_OUTPUTS(morpho_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

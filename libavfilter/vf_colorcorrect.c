@@ -546,10 +546,10 @@ const AVFilter ff_vf_colorcorrect = {
     .description   = NULL_IF_CONFIG_SMALL("Adjust color white balance selectively for blacks and whites."),
     .priv_size     = sizeof(ColorCorrectContext),
     .priv_class    = &colorcorrect_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(colorcorrect_inputs),
     FILTER_OUTPUTS(colorcorrect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

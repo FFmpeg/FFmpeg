@@ -451,7 +451,7 @@ const AVFilter ff_af_pan = {
     .priv_class    = &pan_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(pan_inputs),
     FILTER_OUTPUTS(pan_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

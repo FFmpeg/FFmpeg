@@ -374,9 +374,9 @@ const AVFilter ff_vf_extractplanes = {
     .priv_size     = sizeof(ExtractPlanesContext),
     .priv_class    = &extractplanes_class,
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(extractplanes_inputs),
     .outputs       = NULL,
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 
@@ -406,8 +406,8 @@ const AVFilter ff_vf_alphaextract = {
                       "grayscale image component."),
     .priv_size      = sizeof(ExtractPlanesContext),
     .init           = init_alphaextract,
-    .query_formats  = query_formats,
     FILTER_INPUTS(extractplanes_inputs),
     FILTER_OUTPUTS(alphaextract_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };
 #endif  /* CONFIG_ALPHAEXTRACT_FILTER */

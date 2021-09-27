@@ -317,9 +317,9 @@ const AVFilter ff_vf_overlay_opencl = {
     .priv_class      = &overlay_opencl_class,
     .init            = &overlay_opencl_init,
     .uninit          = &overlay_opencl_uninit,
-    .query_formats   = &ff_opencl_filter_query_formats,
     .activate        = &overlay_opencl_activate,
     FILTER_INPUTS(overlay_opencl_inputs),
     FILTER_OUTPUTS(overlay_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

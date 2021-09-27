@@ -367,9 +367,9 @@ const AVFilter ff_vf_convolution_opencl = {
     .priv_class     = &convolution_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -393,9 +393,9 @@ const AVFilter ff_vf_sobel_opencl = {
     .priv_class     = &sobel_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -419,9 +419,9 @@ const AVFilter ff_vf_prewitt_opencl = {
     .priv_class     = &prewitt_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -445,9 +445,9 @@ const AVFilter ff_vf_roberts_opencl = {
     .priv_class     = &roberts_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &convolution_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(convolution_opencl_inputs),
     FILTER_OUTPUTS(convolution_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 

@@ -330,7 +330,7 @@ const AVFilter ff_vsrc_cellauto = {
     .priv_class    = &cellauto_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(cellauto_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

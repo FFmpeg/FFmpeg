@@ -176,11 +176,11 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_crossfeed = {
     .name           = "crossfeed",
     .description    = NULL_IF_CONFIG_SMALL("Apply headphone crossfeed filter."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(CrossfeedContext),
     .priv_class     = &crossfeed_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,
 };

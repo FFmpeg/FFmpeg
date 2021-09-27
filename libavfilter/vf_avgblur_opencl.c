@@ -345,9 +345,9 @@ const AVFilter ff_vf_avgblur_opencl = {
     .priv_class     = &avgblur_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &avgblur_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(avgblur_opencl_inputs),
     FILTER_OUTPUTS(avgblur_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -384,9 +384,9 @@ const AVFilter ff_vf_boxblur_opencl = {
     .priv_class     = &boxblur_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &avgblur_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(avgblur_opencl_inputs),
     FILTER_OUTPUTS(avgblur_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 

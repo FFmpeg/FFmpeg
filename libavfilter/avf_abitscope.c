@@ -261,10 +261,10 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_avf_abitscope = {
     .name          = "abitscope",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to audio bit scope video output."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioBitScopeContext),
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate      = activate,
     .priv_class    = &abitscope_class,
 };

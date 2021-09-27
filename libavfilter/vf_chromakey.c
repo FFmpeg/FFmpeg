@@ -399,9 +399,9 @@ const AVFilter ff_vf_chromakey = {
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on YUV colors."),
     .priv_size     = sizeof(ChromakeyContext),
     .priv_class    = &chromakey_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(chromakey_inputs),
     FILTER_OUTPUTS(chromakey_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -439,9 +439,9 @@ const AVFilter ff_vf_chromahold = {
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray."),
     .priv_size     = sizeof(ChromakeyContext),
     .priv_class    = &chromahold_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(chromahold_inputs),
     FILTER_OUTPUTS(chromahold_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

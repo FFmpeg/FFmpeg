@@ -156,12 +156,12 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_stereowiden = {
     .name           = "stereowiden",
     .description    = NULL_IF_CONFIG_SMALL("Apply stereo widening effect."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(StereoWidenContext),
     .priv_class     = &stereowiden_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

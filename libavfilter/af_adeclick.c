@@ -753,7 +753,6 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_adeclick = {
     .name          = "adeclick",
     .description   = NULL_IF_CONFIG_SMALL("Remove impulsive noise from input audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioDeclickContext),
     .priv_class    = &adeclick_class,
     .init          = init,
@@ -761,6 +760,7 @@ const AVFilter ff_af_adeclick = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 
@@ -789,7 +789,6 @@ AVFILTER_DEFINE_CLASS(adeclip);
 const AVFilter ff_af_adeclip = {
     .name          = "adeclip",
     .description   = NULL_IF_CONFIG_SMALL("Remove clipping from input audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioDeclickContext),
     .priv_class    = &adeclip_class,
     .init          = init,
@@ -797,5 +796,6 @@ const AVFilter ff_af_adeclip = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

@@ -205,11 +205,11 @@ static const AVFilterPad bs2b_outputs[] = {
 const AVFilter ff_af_bs2b = {
     .name           = "bs2b",
     .description    = NULL_IF_CONFIG_SMALL("Bauer stereo-to-binaural filter."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(Bs2bContext),
     .priv_class     = &bs2b_class,
     .init           = init,
     .uninit         = uninit,
     FILTER_INPUTS(bs2b_inputs),
     FILTER_OUTPUTS(bs2b_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

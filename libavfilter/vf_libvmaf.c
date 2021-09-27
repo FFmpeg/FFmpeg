@@ -362,10 +362,10 @@ const AVFilter ff_vf_libvmaf = {
     .preinit       = libvmaf_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(LIBVMAFContext),
     .priv_class    = &libvmaf_class,
     FILTER_INPUTS(libvmaf_inputs),
     FILTER_OUTPUTS(libvmaf_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

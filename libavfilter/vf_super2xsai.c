@@ -359,8 +359,8 @@ const AVFilter ff_vf_super2xsai = {
     .name          = "super2xsai",
     .description   = NULL_IF_CONFIG_SMALL("Scale the input by 2x using the Super2xSaI pixel art algorithm."),
     .priv_size     = sizeof(Super2xSaIContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(super2xsai_inputs),
     FILTER_OUTPUTS(super2xsai_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

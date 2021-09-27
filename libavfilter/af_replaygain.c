@@ -604,9 +604,9 @@ static const AVFilterPad replaygain_outputs[] = {
 const AVFilter ff_af_replaygain = {
     .name          = "replaygain",
     .description   = NULL_IF_CONFIG_SMALL("ReplayGain scanner."),
-    .query_formats = query_formats,
     .uninit        = uninit,
     .priv_size     = sizeof(ReplayGainContext),
     FILTER_INPUTS(replaygain_inputs),
     FILTER_OUTPUTS(replaygain_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

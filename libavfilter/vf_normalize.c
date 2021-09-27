@@ -531,9 +531,9 @@ const AVFilter ff_vf_normalize = {
     .priv_size     = sizeof(NormalizeContext),
     .priv_class    = &normalize_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

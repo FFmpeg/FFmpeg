@@ -338,12 +338,12 @@ static const AVFilterPad adelay_outputs[] = {
 const AVFilter ff_af_adelay = {
     .name          = "adelay",
     .description   = NULL_IF_CONFIG_SMALL("Delay one or more audio channels."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioDelayContext),
     .priv_class    = &adelay_class,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(adelay_inputs),
     FILTER_OUTPUTS(adelay_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

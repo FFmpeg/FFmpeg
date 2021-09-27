@@ -252,10 +252,10 @@ const AVFilter ff_vf_hwupload = {
     .name          = "hwupload",
     .description   = NULL_IF_CONFIG_SMALL("Upload a normal frame to a hardware frame"),
     .uninit        = hwupload_uninit,
-    .query_formats = hwupload_query_formats,
     .priv_size     = sizeof(HWUploadContext),
     .priv_class    = &hwupload_class,
     FILTER_INPUTS(hwupload_inputs),
     FILTER_OUTPUTS(hwupload_outputs),
+    FILTER_QUERY_FUNC(hwupload_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

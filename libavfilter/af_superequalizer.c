@@ -368,10 +368,10 @@ const AVFilter ff_af_superequalizer = {
     .description   = NULL_IF_CONFIG_SMALL("Apply 18 band equalization filter."),
     .priv_size     = sizeof(SuperEqualizerContext),
     .priv_class    = &superequalizer_class,
-    .query_formats = query_formats,
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(superequalizer_inputs),
     FILTER_OUTPUTS(superequalizer_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

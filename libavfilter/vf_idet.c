@@ -441,8 +441,8 @@ const AVFilter ff_vf_idet = {
     .priv_size     = sizeof(IDETContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(idet_inputs),
     FILTER_OUTPUTS(idet_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &idet_class,
 };

@@ -182,10 +182,10 @@ const AVFilter ff_vf_untile = {
     .description   = NULL_IF_CONFIG_SMALL("Untile a frame into a sequence of frames."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(UntileContext),
     FILTER_INPUTS(untile_inputs),
     FILTER_OUTPUTS(untile_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &untile_class,
 };

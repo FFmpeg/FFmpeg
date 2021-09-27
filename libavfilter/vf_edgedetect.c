@@ -431,9 +431,9 @@ const AVFilter ff_vf_edgedetect = {
     .priv_size     = sizeof(EdgeDetectContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(edgedetect_inputs),
     FILTER_OUTPUTS(edgedetect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &edgedetect_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

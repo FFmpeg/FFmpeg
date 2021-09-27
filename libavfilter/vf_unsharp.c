@@ -359,8 +359,8 @@ const AVFilter ff_vf_unsharp = {
     .priv_class    = &unsharp_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_vf_unsharp_inputs),
     FILTER_OUTPUTS(avfilter_vf_unsharp_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

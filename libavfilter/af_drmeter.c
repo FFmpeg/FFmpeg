@@ -214,10 +214,10 @@ static const AVFilterPad drmeter_outputs[] = {
 const AVFilter ff_af_drmeter = {
     .name          = "drmeter",
     .description   = NULL_IF_CONFIG_SMALL("Measure audio dynamic range."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(DRMeterContext),
     .priv_class    = &drmeter_class,
     .uninit        = uninit,
     FILTER_INPUTS(drmeter_inputs),
     FILTER_OUTPUTS(drmeter_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

@@ -425,7 +425,7 @@ const AVFilter ff_vf_xbr = {
     .description   = NULL_IF_CONFIG_SMALL("Scale the input using xBR algorithm."),
     FILTER_INPUTS(xbr_inputs),
     FILTER_OUTPUTS(xbr_outputs),
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
     .priv_size     = sizeof(XBRContext),
     .priv_class    = &xbr_class,
     .init          = init,

@@ -374,10 +374,10 @@ const AVFilter ff_vf_hysteresis = {
     .preinit       = hysteresis_framesync_preinit,
     .priv_size     = sizeof(HysteresisContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     FILTER_INPUTS(hysteresis_inputs),
     FILTER_OUTPUTS(hysteresis_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &hysteresis_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

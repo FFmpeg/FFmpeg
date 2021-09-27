@@ -275,12 +275,12 @@ static const AVFilterPad outputs[] = {
 AVFilter ff_af_atilt = {
     .name            = "atilt",
     .description     = NULL_IF_CONFIG_SMALL("Apply spectral tilt to audio."),
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ATiltContext),
     .priv_class      = &atilt_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,

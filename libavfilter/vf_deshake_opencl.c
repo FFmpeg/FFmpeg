@@ -2192,9 +2192,9 @@ const AVFilter ff_vf_deshake_opencl = {
     .priv_class     = &deshake_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &deshake_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     .activate       = activate,
     FILTER_INPUTS(deshake_opencl_inputs),
     FILTER_OUTPUTS(deshake_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE
 };

@@ -441,9 +441,9 @@ const AVFilter ff_asrc_sinc = {
     .description   = NULL_IF_CONFIG_SMALL("Generate a sinc kaiser-windowed low-pass, high-pass, band-pass, or band-reject FIR coefficients."),
     .priv_size     = sizeof(SincContext),
     .priv_class    = &sinc_class,
-    .query_formats = query_formats,
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(sinc_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

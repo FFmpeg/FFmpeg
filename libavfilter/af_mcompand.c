@@ -654,10 +654,10 @@ const AVFilter ff_af_mcompand = {
     .name           = "mcompand",
     .description    = NULL_IF_CONFIG_SMALL(
             "Multiband Compress or expand audio dynamic range."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(MCompandContext),
     .priv_class     = &mcompand_class,
     .uninit         = uninit,
     FILTER_INPUTS(mcompand_inputs),
     FILTER_OUTPUTS(mcompand_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

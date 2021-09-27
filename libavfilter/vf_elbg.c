@@ -265,9 +265,9 @@ const AVFilter ff_vf_elbg = {
     .description   = NULL_IF_CONFIG_SMALL("Apply posterize effect, using the ELBG algorithm."),
     .priv_size     = sizeof(ELBGFilterContext),
     .priv_class    = &elbg_class,
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(elbg_inputs),
     FILTER_OUTPUTS(elbg_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

@@ -445,9 +445,9 @@ const AVFilter ff_vf_chromashift = {
     .description   = NULL_IF_CONFIG_SMALL("Shift chroma."),
     .priv_size     = sizeof(ChromaShiftContext),
     .priv_class    = &chromashift_class,
-    .query_formats = query_formats,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -474,9 +474,9 @@ const AVFilter ff_vf_rgbashift = {
     .description   = NULL_IF_CONFIG_SMALL("Shift RGBA."),
     .priv_size     = sizeof(ChromaShiftContext),
     .priv_class    = &rgbashift_class,
-    .query_formats = query_formats,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

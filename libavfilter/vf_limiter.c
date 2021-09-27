@@ -261,9 +261,9 @@ const AVFilter ff_vf_limiter = {
     .priv_size     = sizeof(LimiterContext),
     .priv_class    = &limiter_class,
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

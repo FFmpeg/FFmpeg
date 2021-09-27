@@ -528,9 +528,9 @@ const AVFilter ff_vf_scale_vulkan = {
     .priv_size      = sizeof(ScaleVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &scale_vulkan_uninit,
-    .query_formats  = &ff_vk_filter_query_formats,
     FILTER_INPUTS(scale_vulkan_inputs),
     FILTER_OUTPUTS(scale_vulkan_outputs),
+    FILTER_QUERY_FUNC(&ff_vk_filter_query_formats),
     .priv_class     = &scale_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

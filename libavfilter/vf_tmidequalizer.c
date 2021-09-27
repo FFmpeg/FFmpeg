@@ -430,9 +430,9 @@ const AVFilter ff_vf_tmidequalizer = {
     .description   = NULL_IF_CONFIG_SMALL("Apply Temporal Midway Equalization."),
     .priv_size     = sizeof(TMidEqualizerContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(tmidequalizer_inputs),
     FILTER_OUTPUTS(tmidequalizer_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &tmidequalizer_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

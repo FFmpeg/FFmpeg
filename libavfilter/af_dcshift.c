@@ -148,11 +148,11 @@ static const AVFilterPad dcshift_outputs[] = {
 const AVFilter ff_af_dcshift = {
     .name           = "dcshift",
     .description    = NULL_IF_CONFIG_SMALL("Apply a DC shift to the audio."),
-    .query_formats  = query_formats,
     .priv_size      = sizeof(DCShiftContext),
     .priv_class     = &dcshift_class,
     .init           = init,
     FILTER_INPUTS(dcshift_inputs),
     FILTER_OUTPUTS(dcshift_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

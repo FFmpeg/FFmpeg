@@ -1111,9 +1111,9 @@ const AVFilter ff_vf_stereo3d = {
     .description   = NULL_IF_CONFIG_SMALL("Convert video stereoscopic 3D view."),
     .priv_size     = sizeof(Stereo3DContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(stereo3d_inputs),
     FILTER_OUTPUTS(stereo3d_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &stereo3d_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

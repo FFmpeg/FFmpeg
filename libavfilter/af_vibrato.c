@@ -189,7 +189,7 @@ const AVFilter ff_af_vibrato = {
     .priv_size     = sizeof(VibratoContext),
     .priv_class    = &vibrato_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_af_vibrato_inputs),
     FILTER_OUTPUTS(avfilter_af_vibrato_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

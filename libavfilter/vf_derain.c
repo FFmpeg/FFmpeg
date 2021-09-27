@@ -134,9 +134,9 @@ const AVFilter ff_vf_derain = {
     .priv_size     = sizeof(DRContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(derain_inputs),
     FILTER_OUTPUTS(derain_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &derain_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

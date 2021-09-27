@@ -778,11 +778,11 @@ const AVFilter ff_avf_showwaves = {
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a video output."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(ShowWavesContext),
     FILTER_INPUTS(showwaves_inputs),
     .activate      = activate,
     FILTER_OUTPUTS(showwaves_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showwaves_class,
 };
 
@@ -891,10 +891,10 @@ const AVFilter ff_avf_showwavespic = {
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a video output single picture."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(ShowWavesContext),
     FILTER_INPUTS(showwavespic_inputs),
     FILTER_OUTPUTS(showwavespic_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showwavespic_class,
 };
 

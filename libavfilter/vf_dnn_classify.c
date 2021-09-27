@@ -321,9 +321,9 @@ const AVFilter ff_vf_dnn_classify = {
     .priv_size     = sizeof(DnnClassifyContext),
     .init          = dnn_classify_init,
     .uninit        = dnn_classify_uninit,
-    .query_formats = dnn_classify_query_formats,
     FILTER_INPUTS(dnn_classify_inputs),
     FILTER_OUTPUTS(dnn_classify_outputs),
+    FILTER_QUERY_FUNC(dnn_classify_query_formats),
     .priv_class    = &dnn_classify_class,
     .activate      = dnn_classify_activate,
 };

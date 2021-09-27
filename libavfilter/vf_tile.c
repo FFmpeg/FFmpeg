@@ -288,9 +288,9 @@ const AVFilter ff_vf_tile = {
     .description   = NULL_IF_CONFIG_SMALL("Tile several successive frames together."),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(TileContext),
     FILTER_INPUTS(tile_inputs),
     FILTER_OUTPUTS(tile_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &tile_class,
 };

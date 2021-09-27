@@ -464,9 +464,9 @@ const AVFilter ff_vf_dnn_detect = {
     .priv_size     = sizeof(DnnDetectContext),
     .init          = dnn_detect_init,
     .uninit        = dnn_detect_uninit,
-    .query_formats = dnn_detect_query_formats,
     FILTER_INPUTS(dnn_detect_inputs),
     FILTER_OUTPUTS(dnn_detect_outputs),
+    FILTER_QUERY_FUNC(dnn_detect_query_formats),
     .priv_class    = &dnn_detect_class,
     .activate      = dnn_detect_activate,
 };

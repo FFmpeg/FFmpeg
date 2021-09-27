@@ -411,12 +411,12 @@ const AVFilter ff_vf_identity = {
     .preinit       = identity_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(IdentityContext),
     .priv_class    = &identity_class,
     FILTER_INPUTS(identity_inputs),
     FILTER_OUTPUTS(identity_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 
@@ -433,12 +433,12 @@ const AVFilter ff_vf_msad = {
     .preinit       = msad_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .priv_size     = sizeof(IdentityContext),
     .priv_class    = &msad_class,
     FILTER_INPUTS(identity_inputs),
     FILTER_OUTPUTS(identity_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 

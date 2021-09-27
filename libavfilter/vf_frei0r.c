@@ -414,13 +414,13 @@ static const AVFilterPad avfilter_vf_frei0r_outputs[] = {
 const AVFilter ff_vf_frei0r = {
     .name          = "frei0r",
     .description   = NULL_IF_CONFIG_SMALL("Apply a frei0r effect."),
-    .query_formats = query_formats,
     .init          = filter_init,
     .uninit        = uninit,
     .priv_size     = sizeof(Frei0rContext),
     .priv_class    = &frei0r_class,
     FILTER_INPUTS(avfilter_vf_frei0r_inputs),
     FILTER_OUTPUTS(avfilter_vf_frei0r_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
@@ -505,7 +505,7 @@ const AVFilter ff_vsrc_frei0r_src = {
     .priv_class    = &frei0r_src_class,
     .init          = source_init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_frei0r_src_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

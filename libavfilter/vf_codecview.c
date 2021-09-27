@@ -352,9 +352,9 @@ const AVFilter ff_vf_codecview = {
     .name          = "codecview",
     .description   = NULL_IF_CONFIG_SMALL("Visualize information about some codecs."),
     .priv_size     = sizeof(CodecViewContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(codecview_inputs),
     FILTER_OUTPUTS(codecview_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &codecview_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

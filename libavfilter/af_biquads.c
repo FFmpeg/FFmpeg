@@ -868,9 +868,9 @@ const AVFilter ff_af_##name_ = {                               \
     .priv_size     = sizeof(BiquadsContext),             \
     .init          = name_##_init,                       \
     .uninit        = uninit,                             \
-    .query_formats = query_formats,                      \
     FILTER_INPUTS(inputs),                               \
     FILTER_OUTPUTS(outputs),                             \
+    FILTER_QUERY_FUNC(query_formats),                    \
     .process_command = process_command,                  \
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \
 }

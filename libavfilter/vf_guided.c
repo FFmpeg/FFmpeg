@@ -488,12 +488,12 @@ const AVFilter ff_vf_guided = {
     .description     = NULL_IF_CONFIG_SMALL("Apply Guided filter."),
     .init            = init,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     .priv_size       = sizeof(GuidedContext),
     .priv_class      = &guided_class,
     .activate        = activate,
     .inputs          = NULL,
     FILTER_OUTPUTS(guided_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
                        AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,

@@ -249,5 +249,5 @@ const AVFilter ff_vf_readvitc = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     .init          = init,
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
 };

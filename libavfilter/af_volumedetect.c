@@ -147,8 +147,8 @@ const AVFilter ff_af_volumedetect = {
     .name          = "volumedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect audio volume."),
     .priv_size     = sizeof(VolDetectContext),
-    .query_formats = query_formats,
     .uninit        = uninit,
     FILTER_INPUTS(volumedetect_inputs),
     FILTER_OUTPUTS(volumedetect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

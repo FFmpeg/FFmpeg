@@ -422,7 +422,7 @@ const AVFilter ff_vsrc_mandelbrot = {
     .priv_class    = &mandelbrot_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(mandelbrot_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

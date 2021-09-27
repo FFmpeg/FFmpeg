@@ -140,10 +140,10 @@ const AVFilter ff_asrc_anullsrc = {
     .name          = "anullsrc",
     .description   = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
     .init          = init,
-    .query_formats = query_formats,
     .priv_size     = sizeof(ANullContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_asrc_anullsrc_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate      = activate,
     .priv_class    = &anullsrc_class,
 };

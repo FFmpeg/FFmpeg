@@ -285,9 +285,9 @@ const AVFilter ff_vf_maskedthreshold = {
     .priv_size     = sizeof(MaskedThresholdContext),
     .uninit        = uninit,
     .activate      = activate,
-    .query_formats = query_formats,
     FILTER_INPUTS(maskedthreshold_inputs),
     FILTER_OUTPUTS(maskedthreshold_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

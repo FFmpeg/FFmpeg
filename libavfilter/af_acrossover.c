@@ -559,7 +559,7 @@ const AVFilter ff_af_acrossover = {
     .priv_class     = &acrossover_class,
     .init           = init,
     .uninit         = uninit,
-    .query_formats  = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
     FILTER_INPUTS(inputs),
     .outputs        = NULL,
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS |

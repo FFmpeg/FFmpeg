@@ -507,9 +507,9 @@ const AVFilter ff_vf_colormatrix = {
     .description   = NULL_IF_CONFIG_SMALL("Convert color matrix."),
     .priv_size     = sizeof(ColorMatrixContext),
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(colormatrix_inputs),
     FILTER_OUTPUTS(colormatrix_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &colormatrix_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

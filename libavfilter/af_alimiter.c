@@ -353,7 +353,7 @@ const AVFilter ff_af_alimiter = {
     .priv_class     = &alimiter_class,
     .init           = init,
     .uninit         = uninit,
-    .query_formats  = query_formats,
     FILTER_INPUTS(alimiter_inputs),
     FILTER_OUTPUTS(alimiter_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

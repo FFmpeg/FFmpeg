@@ -357,12 +357,12 @@ static const AVFilterPad outputs[] = {
 const AVFilter ff_af_asupercut = {
     .name            = "asupercut",
     .description     = NULL_IF_CONFIG_SMALL("Cut super frequencies."),
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asupercut_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -380,12 +380,12 @@ AVFILTER_DEFINE_CLASS(asubcut);
 const AVFilter ff_af_asubcut = {
     .name            = "asubcut",
     .description     = NULL_IF_CONFIG_SMALL("Cut subwoofer frequencies."),
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
     .priv_class      = &asubcut_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -406,11 +406,11 @@ const AVFilter ff_af_asuperpass = {
     .name            = "asuperpass",
     .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-pass filter."),
     .priv_class      = &asuperpass_asuperstop_class,
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -420,11 +420,11 @@ const AVFilter ff_af_asuperstop = {
     .name            = "asuperstop",
     .description     = NULL_IF_CONFIG_SMALL("Apply high order Butterworth band-stop filter."),
     .priv_class      = &asuperpass_asuperstop_class,
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ASuperCutContext),
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,

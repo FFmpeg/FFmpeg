@@ -337,10 +337,10 @@ const AVFilter ff_af_amerge = {
     .priv_size     = sizeof(AMergeContext),
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(amerge_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &amerge_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

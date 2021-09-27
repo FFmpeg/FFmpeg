@@ -221,11 +221,11 @@ static const AVFilterPad flanger_outputs[] = {
 const AVFilter ff_af_flanger = {
     .name          = "flanger",
     .description   = NULL_IF_CONFIG_SMALL("Apply a flanging effect to the audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(FlangerContext),
     .priv_class    = &flanger_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(flanger_inputs),
     FILTER_OUTPUTS(flanger_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

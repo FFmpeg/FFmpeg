@@ -251,9 +251,9 @@ const AVFilter ff_vf_ass = {
     .priv_size     = sizeof(AssContext),
     .init          = init_ass,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ass_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &ass_class,
 };
 #endif
@@ -484,9 +484,9 @@ const AVFilter ff_vf_subtitles = {
     .priv_size     = sizeof(AssContext),
     .init          = init_subtitles,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ass_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &subtitles_class,
 };
 #endif

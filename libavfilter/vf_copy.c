@@ -77,5 +77,5 @@ const AVFilter ff_vf_copy = {
     .description = NULL_IF_CONFIG_SMALL("Copy the input video unchanged to the output."),
     FILTER_INPUTS(avfilter_vf_copy_inputs),
     FILTER_OUTPUTS(avfilter_vf_copy_outputs),
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
 };

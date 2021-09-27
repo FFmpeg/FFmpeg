@@ -440,9 +440,9 @@ const AVFilter ff_vf_colorbalance = {
     .description   = NULL_IF_CONFIG_SMALL("Adjust the color balance."),
     .priv_size     = sizeof(ColorBalanceContext),
     .priv_class    = &colorbalance_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(colorbalance_inputs),
     FILTER_OUTPUTS(colorbalance_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

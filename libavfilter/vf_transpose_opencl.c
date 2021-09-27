@@ -277,8 +277,8 @@ const AVFilter ff_vf_transpose_opencl = {
     .priv_class     = &transpose_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &transpose_opencl_uninit,
-    .query_formats  = &ff_opencl_filter_query_formats,
     FILTER_INPUTS(transpose_opencl_inputs),
     FILTER_OUTPUTS(transpose_opencl_outputs),
+    FILTER_QUERY_FUNC(&ff_opencl_filter_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

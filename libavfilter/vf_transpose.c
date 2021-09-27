@@ -401,8 +401,8 @@ const AVFilter ff_vf_transpose = {
     .description   = NULL_IF_CONFIG_SMALL("Transpose input video."),
     .priv_size     = sizeof(TransContext),
     .priv_class    = &transpose_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_vf_transpose_inputs),
     FILTER_OUTPUTS(avfilter_vf_transpose_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

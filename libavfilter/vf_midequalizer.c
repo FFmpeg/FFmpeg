@@ -373,10 +373,10 @@ const AVFilter ff_vf_midequalizer = {
     .description   = NULL_IF_CONFIG_SMALL("Apply Midway Equalization."),
     .priv_size     = sizeof(MidEqualizerContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     .activate      = activate,
     FILTER_INPUTS(midequalizer_inputs),
     FILTER_OUTPUTS(midequalizer_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &midequalizer_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

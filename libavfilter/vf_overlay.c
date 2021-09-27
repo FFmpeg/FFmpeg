@@ -1112,11 +1112,11 @@ const AVFilter ff_vf_overlay = {
     .uninit        = uninit,
     .priv_size     = sizeof(OverlayContext),
     .priv_class    = &overlay_class,
-    .query_formats = query_formats,
     .activate      = activate,
     .process_command = process_command,
     FILTER_INPUTS(avfilter_vf_overlay_inputs),
     FILTER_OUTPUTS(avfilter_vf_overlay_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -489,9 +489,9 @@ const AVFilter ff_vf_selectivecolor = {
     .name          = "selectivecolor",
     .description   = NULL_IF_CONFIG_SMALL("Apply CMYK adjustments to specific color ranges."),
     .priv_size     = sizeof(SelectiveColorContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(selectivecolor_inputs),
     FILTER_OUTPUTS(selectivecolor_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &selectivecolor_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

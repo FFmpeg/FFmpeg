@@ -391,9 +391,9 @@ const AVFilter ff_af_aemphasis = {
     .priv_size     = sizeof(AudioEmphasisContext),
     .priv_class    = &aemphasis_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_af_aemphasis_inputs),
     FILTER_OUTPUTS(avfilter_af_aemphasis_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                      AVFILTER_FLAG_SLICE_THREADS,

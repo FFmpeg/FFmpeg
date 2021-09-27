@@ -1258,7 +1258,7 @@ const AVFilter ff_vf_minterpolate = {
     .priv_size     = sizeof(MIContext),
     .priv_class    = &minterpolate_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(minterpolate_inputs),
     FILTER_OUTPUTS(minterpolate_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

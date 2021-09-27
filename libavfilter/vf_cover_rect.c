@@ -251,8 +251,8 @@ const AVFilter ff_vf_cover_rect = {
     .priv_size       = sizeof(CoverContext),
     .init            = init,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     FILTER_INPUTS(cover_rect_inputs),
     FILTER_OUTPUTS(cover_rect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class      = &cover_rect_class,
 };

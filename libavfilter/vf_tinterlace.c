@@ -555,9 +555,9 @@ const AVFilter ff_vf_tinterlace = {
     .description   = NULL_IF_CONFIG_SMALL("Perform temporal field interlacing."),
     .priv_size     = sizeof(TInterlaceContext),
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(tinterlace_inputs),
     FILTER_OUTPUTS(tinterlace_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &tinterlace_class,
 };
 
@@ -568,8 +568,8 @@ const AVFilter ff_vf_interlace = {
     .priv_size     = sizeof(TInterlaceContext),
     .init          = init_interlace,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(tinterlace_inputs),
     FILTER_OUTPUTS(tinterlace_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &interlace_class,
 };

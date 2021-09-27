@@ -647,9 +647,9 @@ const AVFilter ff_vf_removegrain = {
     .name          = "removegrain",
     .description   = NULL_IF_CONFIG_SMALL("Remove grain."),
     .priv_size     = sizeof(RemoveGrainContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(removegrain_inputs),
     FILTER_OUTPUTS(removegrain_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &removegrain_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

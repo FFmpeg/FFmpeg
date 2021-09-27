@@ -474,11 +474,11 @@ const AVFilter ff_vf_drawgraph = {
     .description   = NULL_IF_CONFIG_SMALL("Draw a graph using input video metadata."),
     .priv_size     = sizeof(DrawGraphContext),
     .priv_class    = &drawgraph_class,
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(drawgraph_inputs),
     FILTER_OUTPUTS(drawgraph_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };
 
 #endif // CONFIG_DRAWGRAPH_FILTER
@@ -507,10 +507,10 @@ const AVFilter ff_avf_adrawgraph = {
     .description   = NULL_IF_CONFIG_SMALL("Draw a graph using input audio metadata."),
     .priv_class    = &drawgraph_class,
     .priv_size     = sizeof(DrawGraphContext),
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(adrawgraph_inputs),
     FILTER_OUTPUTS(adrawgraph_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };
 #endif // CONFIG_ADRAWGRAPH_FILTER

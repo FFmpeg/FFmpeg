@@ -275,7 +275,7 @@ const AVFilter ff_vf_epx = {
     .description   = NULL_IF_CONFIG_SMALL("Scale the input using EPX algorithm."),
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    .query_formats = query_formats,
+    FILTER_QUERY_FUNC(query_formats),
     .priv_size     = sizeof(EPXContext),
     .priv_class    = &epx_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,

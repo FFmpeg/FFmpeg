@@ -453,9 +453,9 @@ const AVFilter ff_vf_datascope = {
     .description   = NULL_IF_CONFIG_SMALL("Video data analysis."),
     .priv_size     = sizeof(DatascopeContext),
     .priv_class    = &datascope_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -740,9 +740,9 @@ const AVFilter ff_vf_pixscope = {
     .description   = NULL_IF_CONFIG_SMALL("Pixel data analysis."),
     .priv_size     = sizeof(PixscopeContext),
     .priv_class    = &pixscope_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(pixscope_inputs),
     FILTER_OUTPUTS(pixscope_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = pixscope_process_command,
 };
@@ -1144,10 +1144,10 @@ const AVFilter ff_vf_oscilloscope = {
     .description   = NULL_IF_CONFIG_SMALL("2D Video Oscilloscope."),
     .priv_size     = sizeof(OscilloscopeContext),
     .priv_class    = &oscilloscope_class,
-    .query_formats = query_formats,
     .uninit        = oscilloscope_uninit,
     FILTER_INPUTS(oscilloscope_inputs),
     FILTER_OUTPUTS(oscilloscope_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = oscilloscope_process_command,
 };

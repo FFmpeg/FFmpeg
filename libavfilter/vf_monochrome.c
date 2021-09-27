@@ -298,9 +298,9 @@ const AVFilter ff_vf_monochrome = {
     .description   = NULL_IF_CONFIG_SMALL("Convert video to gray using custom color filter."),
     .priv_size     = sizeof(MonochromeContext),
     .priv_class    = &monochrome_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(monochrome_inputs),
     FILTER_OUTPUTS(monochrome_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

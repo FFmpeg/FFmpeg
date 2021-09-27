@@ -392,9 +392,9 @@ const AVFilter ff_vf_colorcontrast = {
     .description   = NULL_IF_CONFIG_SMALL("Adjust color contrast between RGB components."),
     .priv_size     = sizeof(ColorContrastContext),
     .priv_class    = &colorcontrast_class,
-    .query_formats = query_formats,
     FILTER_INPUTS(colorcontrast_inputs),
     FILTER_OUTPUTS(colorcontrast_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

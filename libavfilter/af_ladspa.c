@@ -778,9 +778,9 @@ const AVFilter ff_af_ladspa = {
     .priv_class    = &ladspa_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .process_command = process_command,
     .inputs        = 0,
     FILTER_OUTPUTS(ladspa_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

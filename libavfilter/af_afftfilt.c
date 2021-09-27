@@ -489,8 +489,8 @@ const AVFilter ff_af_afftfilt = {
     .priv_class      = &afftfilt_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .activate        = activate,
-    .query_formats   = query_formats,
     .uninit          = uninit,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

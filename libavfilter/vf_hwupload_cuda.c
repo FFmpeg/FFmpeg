@@ -188,13 +188,13 @@ const AVFilter ff_vf_hwupload_cuda = {
     .init      = cudaupload_init,
     .uninit    = cudaupload_uninit,
 
-    .query_formats = cudaupload_query_formats,
-
     .priv_size  = sizeof(CudaUploadContext),
     .priv_class = &cudaupload_class,
 
     FILTER_INPUTS(cudaupload_inputs),
     FILTER_OUTPUTS(cudaupload_outputs),
+
+    FILTER_QUERY_FUNC(cudaupload_query_formats),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

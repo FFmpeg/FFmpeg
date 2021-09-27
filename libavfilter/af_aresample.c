@@ -332,9 +332,9 @@ const AVFilter ff_af_aresample = {
     .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
     .preinit       = preinit,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(AResampleContext),
     .priv_class    = &aresample_class,
     FILTER_INPUTS(aresample_inputs),
     FILTER_OUTPUTS(aresample_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

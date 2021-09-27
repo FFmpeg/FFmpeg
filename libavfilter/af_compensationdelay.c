@@ -174,10 +174,10 @@ static const AVFilterPad compensationdelay_outputs[] = {
 const AVFilter ff_af_compensationdelay = {
     .name          = "compensationdelay",
     .description   = NULL_IF_CONFIG_SMALL("Audio Compensation Delay Line."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(CompensationDelayContext),
     .priv_class    = &compensationdelay_class,
     .uninit        = uninit,
     FILTER_INPUTS(compensationdelay_inputs),
     FILTER_OUTPUTS(compensationdelay_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };

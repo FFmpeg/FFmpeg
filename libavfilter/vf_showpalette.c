@@ -114,8 +114,8 @@ const AVFilter ff_vf_showpalette = {
     .name          = "showpalette",
     .description   = NULL_IF_CONFIG_SMALL("Display frame palette."),
     .priv_size     = sizeof(ShowPaletteContext),
-    .query_formats = query_formats,
     FILTER_INPUTS(showpalette_inputs),
     FILTER_OUTPUTS(showpalette_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &showpalette_class,
 };

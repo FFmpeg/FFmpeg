@@ -391,9 +391,9 @@ const AVFilter ff_vf_crop = {
     .description     = NULL_IF_CONFIG_SMALL("Crop the input video."),
     .priv_size       = sizeof(CropContext),
     .priv_class      = &crop_class,
-    .query_formats   = query_formats,
     .uninit          = uninit,
     FILTER_INPUTS(avfilter_vf_crop_inputs),
     FILTER_OUTPUTS(avfilter_vf_crop_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
 };

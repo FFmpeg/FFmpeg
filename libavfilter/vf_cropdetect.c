@@ -275,8 +275,8 @@ const AVFilter ff_vf_cropdetect = {
     .priv_size     = sizeof(CropDetectContext),
     .priv_class    = &cropdetect_class,
     .init          = init,
-    .query_formats = query_formats,
     FILTER_INPUTS(avfilter_vf_cropdetect_inputs),
     FILTER_OUTPUTS(avfilter_vf_cropdetect_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -353,11 +353,11 @@ static const AVFilterPad avfilter_af_afade_outputs[] = {
 const AVFilter ff_af_afade = {
     .name          = "afade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input audio."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioFadeContext),
     .init          = init,
     FILTER_INPUTS(avfilter_af_afade_inputs),
     FILTER_OUTPUTS(avfilter_af_afade_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &afade_class,
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
@@ -626,12 +626,12 @@ static const AVFilterPad avfilter_af_acrossfade_outputs[] = {
 const AVFilter ff_af_acrossfade = {
     .name          = "acrossfade",
     .description   = NULL_IF_CONFIG_SMALL("Cross fade two input audio streams."),
-    .query_formats = query_formats,
     .priv_size     = sizeof(AudioFadeContext),
     .activate      = activate,
     .priv_class    = &acrossfade_class,
     FILTER_INPUTS(avfilter_af_acrossfade_inputs),
     FILTER_OUTPUTS(avfilter_af_acrossfade_outputs),
+    FILTER_QUERY_FUNC(query_formats),
 };
 
 #endif /* CONFIG_ACROSSFADE_FILTER */

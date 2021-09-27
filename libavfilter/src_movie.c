@@ -641,7 +641,7 @@ const AVFilter ff_avsrc_movie = {
     .priv_class    = &movie_class,
     .init          = movie_common_init,
     .uninit        = movie_uninit,
-    .query_formats = movie_query_formats,
+    FILTER_QUERY_FUNC(movie_query_formats),
 
     .inputs    = NULL,
     .outputs   = NULL,
@@ -660,7 +660,7 @@ const AVFilter ff_avsrc_amovie = {
     .priv_size     = sizeof(MovieContext),
     .init          = movie_common_init,
     .uninit        = movie_uninit,
-    .query_formats = movie_query_formats,
+    FILTER_QUERY_FUNC(movie_query_formats),
 
     .inputs     = NULL,
     .outputs    = NULL,

@@ -541,8 +541,8 @@ const AVFilter ff_af_join = {
     .init           = join_init,
     .uninit         = join_uninit,
     .activate       = activate,
-    .query_formats  = join_query_formats,
     .inputs         = NULL,
     FILTER_OUTPUTS(avfilter_af_join_outputs),
+    FILTER_QUERY_FUNC(join_query_formats),
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

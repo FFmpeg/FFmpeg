@@ -383,9 +383,9 @@ const AVFilter ff_vf_bilateral = {
     .priv_size     = sizeof(BilateralContext),
     .priv_class    = &bilateral_class,
     .uninit        = uninit,
-    .query_formats = query_formats,
     FILTER_INPUTS(bilateral_inputs),
     FILTER_OUTPUTS(bilateral_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

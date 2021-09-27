@@ -225,8 +225,8 @@ const AVFilter ff_vsrc_sierpinski = {
     .description   = NULL_IF_CONFIG_SMALL("Render a Sierpinski fractal."),
     .priv_size     = sizeof(SierpinskiContext),
     .priv_class    = &sierpinski_class,
-    .query_formats = query_formats,
     .inputs        = NULL,
     FILTER_OUTPUTS(sierpinski_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

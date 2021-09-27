@@ -1012,10 +1012,10 @@ const AVFilter ff_vf_signalstats = {
     .description   = "Generate statistics from video analysis.",
     .init          = init,
     .uninit        = uninit,
-    .query_formats = query_formats,
     .priv_size     = sizeof(SignalstatsContext),
     FILTER_INPUTS(signalstats_inputs),
     FILTER_OUTPUTS(signalstats_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &signalstats_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

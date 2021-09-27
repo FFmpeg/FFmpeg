@@ -280,9 +280,9 @@ const AVFilter ff_vf_chromanr = {
     .description   = NULL_IF_CONFIG_SMALL("Reduce chrominance noise."),
     .priv_size     = sizeof(ChromaNRContext),
     .priv_class    = &chromanr_class,
-    .query_formats = query_formats,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
+    FILTER_QUERY_FUNC(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

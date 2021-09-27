@@ -996,11 +996,11 @@ const AVFilter ff_vf_scale = {
     .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format."),
     .init_dict       = init_dict,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ScaleContext),
     .priv_class      = &scale_class,
     FILTER_INPUTS(avfilter_vf_scale_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
 };
 
@@ -1037,10 +1037,10 @@ const AVFilter ff_vf_scale2ref = {
     .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format to the given reference."),
     .init_dict       = init_dict,
     .uninit          = uninit,
-    .query_formats   = query_formats,
     .priv_size       = sizeof(ScaleContext),
     .priv_class      = &scale_class,
     FILTER_INPUTS(avfilter_vf_scale2ref_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale2ref_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .process_command = process_command,
 };

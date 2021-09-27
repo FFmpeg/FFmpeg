@@ -181,12 +181,12 @@ static const AVFilterPad hilbert_outputs[] = {
 const AVFilter ff_asrc_hilbert = {
     .name          = "hilbert",
     .description   = NULL_IF_CONFIG_SMALL("Generate a Hilbert transform FIR coefficients."),
-    .query_formats = query_formats,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(HilbertContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(hilbert_outputs),
+    FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &hilbert_class,
 };
