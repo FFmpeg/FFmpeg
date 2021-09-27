@@ -90,8 +90,6 @@ static const AVOption colorchannelmixer_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorchannelmixer);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
@@ -108,9 +106,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static float lerpf(float v0, float v1, float f)
 {
@@ -782,7 +777,7 @@ const AVFilter ff_vf_colorchannelmixer = {
     .uninit        = uninit,
     FILTER_INPUTS(colorchannelmixer_inputs),
     FILTER_OUTPUTS(colorchannelmixer_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
