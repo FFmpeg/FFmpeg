@@ -117,8 +117,6 @@ typedef struct ThreadData {
     float progress;
 } ThreadData;
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_YUVJ444P,
@@ -137,9 +135,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
@@ -2005,6 +2000,6 @@ const AVFilter ff_vf_xfade = {
     .uninit        = uninit,
     FILTER_INPUTS(xfade_inputs),
     FILTER_OUTPUTS(xfade_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
