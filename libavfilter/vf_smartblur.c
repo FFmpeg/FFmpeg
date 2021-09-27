@@ -114,8 +114,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     sws_freeContext(s->chroma.filter_context);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
@@ -123,9 +121,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int flags)
 {
@@ -294,7 +289,7 @@ const AVFilter ff_vf_smartblur = {
     .uninit        = uninit,
     FILTER_INPUTS(smartblur_inputs),
     FILTER_OUTPUTS(smartblur_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &smartblur_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
