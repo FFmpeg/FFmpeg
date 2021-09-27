@@ -83,10 +83,12 @@ static int adts_aac_probe(const AVProbeData *p)
 static int adts_aac_resync(AVFormatContext *s)
 {
     uint16_t state;
+    int64_t start_pos = avio_tell(s->pb);
 
     // skip data until an ADTS frame is found
     state = avio_r8(s->pb);
-    while (!avio_feof(s->pb) && avio_tell(s->pb) < s->probesize) {
+    while (!avio_feof(s->pb) &&
+           (avio_tell(s->pb) - start_pos) < s->probesize) {
         state = (state << 8) | avio_r8(s->pb);
         if ((state >> 4) != 0xFFF)
             continue;
