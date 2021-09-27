@@ -146,16 +146,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->zyklus);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_0BGR32,
-        AV_PIX_FMT_NONE
-    };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->src;
@@ -424,5 +414,5 @@ const AVFilter ff_vsrc_mandelbrot = {
     .uninit        = uninit,
     .inputs        = NULL,
     FILTER_OUTPUTS(mandelbrot_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_0BGR32),
 };
