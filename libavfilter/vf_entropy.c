@@ -53,8 +53,6 @@ static const AVOption entropy_options[] = {
 
 AVFILTER_DEFINE_CLASS(entropy);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pixfmts[] = {
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV440P,
@@ -72,9 +70,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pixfmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -195,7 +190,7 @@ const AVFilter ff_vf_entropy = {
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixfmts),
     .priv_class     = &entropy_class,
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
