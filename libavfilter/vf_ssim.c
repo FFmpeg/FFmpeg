@@ -420,8 +420,6 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
@@ -434,9 +432,6 @@ static int query_formats(AVFilterContext *ctx)
         PF(P9), PF(P10), PF(P12), PF(P14), PF(P16),
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input_ref(AVFilterLink *inlink)
 {
@@ -596,6 +591,6 @@ const AVFilter ff_vf_ssim = {
     .priv_class    = &ssim_class,
     FILTER_INPUTS(ssim_inputs),
     FILTER_OUTPUTS(ssim_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
