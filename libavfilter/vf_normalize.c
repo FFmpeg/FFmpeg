@@ -386,10 +386,8 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
 // doc/writing_filters.txt for descriptions of what these interface functions
 // are expected to do.
 
-// Set the pixel formats that our filter supports. We should be able to process
+// The pixel formats that our filter supports. We should be able to process
 // any 8-bit RGB formats. 16-bit support might be useful one day.
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_BGR24,
@@ -408,11 +406,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    // According to filter_design.txt, using ff_set_common_formats() this way
-    // ensures the pixel formats of the input and output will be the same. That
-    // saves a bit of effort possibly needing to handle format conversions.
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
-}
 
 // At this point we know the pixel format used for both input and output.  We
 // can also access the frame rate of the input video and allocate some memory
@@ -533,7 +526,7 @@ const AVFilter ff_vf_normalize = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
