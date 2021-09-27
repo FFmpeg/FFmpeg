@@ -218,23 +218,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_DBL,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AExciterContext *s = ctx->priv;
@@ -296,7 +279,7 @@ const AVFilter ff_af_aexciter = {
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_aexciter_inputs),
     FILTER_OUTPUTS(avfilter_af_aexciter_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
