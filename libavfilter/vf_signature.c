@@ -69,8 +69,6 @@ static const AVOption signature_options[] = {
 
 AVFILTER_DEFINE_CLASS(signature);
 
-static int query_formats(AVFilterContext *ctx)
-{
     /* all formats with a separate gray value */
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8,
@@ -83,9 +81,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NV12, AV_PIX_FMT_NV21,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -762,6 +757,6 @@ const AVFilter ff_vf_signature = {
     .uninit        = uninit,
     FILTER_OUTPUTS(signature_outputs),
     .inputs        = NULL,
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
