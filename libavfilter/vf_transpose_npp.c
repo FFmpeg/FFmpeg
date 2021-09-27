@@ -111,15 +111,6 @@ static void npptranspose_uninit(AVFilterContext *ctx)
     av_frame_free(&s->tmp_frame);
 }
 
-static int npptranspose_query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pixel_formats[] = {
-        AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
-    };
-
-    return ff_set_common_formats_from_list(ctx, pixel_formats);
-}
-
 static int init_stage(NPPTransposeStageContext *stage, AVBufferRef *device_ctx)
 {
     AVBufferRef *out_ref = NULL;
@@ -479,6 +470,6 @@ const AVFilter ff_vf_transpose_npp = {
     .priv_class     = &npptranspose_class,
     FILTER_INPUTS(npptranspose_inputs),
     FILTER_OUTPUTS(npptranspose_outputs),
-    FILTER_QUERY_FUNC(npptranspose_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
