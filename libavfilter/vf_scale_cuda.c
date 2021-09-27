@@ -145,15 +145,6 @@ static av_cold void cudascale_uninit(AVFilterContext *ctx)
     av_frame_free(&s->tmp_frame);
 }
 
-static int cudascale_query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pixel_formats[] = {
-        AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
-    };
-
-    return ff_set_common_formats_from_list(ctx, pixel_formats);
-}
-
 static av_cold int init_hwframe_ctx(CUDAScaleContext *s, AVBufferRef *device_ctx, int width, int height)
 {
     AVBufferRef *out_ref = NULL;
@@ -648,7 +639,7 @@ const AVFilter ff_vf_scale_cuda = {
     FILTER_INPUTS(cudascale_inputs),
     FILTER_OUTPUTS(cudascale_outputs),
 
-    FILTER_QUERY_FUNC(cudascale_query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
