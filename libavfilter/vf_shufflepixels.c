@@ -56,8 +56,6 @@ typedef struct ShufflePixelsContext {
     int (*shuffle_pixels)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ShufflePixelsContext;
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
@@ -68,8 +66,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static void make_horizontal_map(AVFilterContext *ctx)
 {
@@ -452,6 +448,6 @@ const AVFilter ff_vf_shufflepixels = {
     .uninit        = uninit,
     FILTER_INPUTS(shufflepixels_inputs),
     FILTER_OUTPUTS(shufflepixels_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
