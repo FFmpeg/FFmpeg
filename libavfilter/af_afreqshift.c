@@ -49,23 +49,9 @@ typedef struct AFreqShift {
                            AVFrame *in, AVFrame *out);
 } AFreqShift;
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_FLTP,
-        AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
+static const enum AVSampleFormat sample_fmts[] = {
+    AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE
+};
 
 #define PFILTER(name, type, sin, cos, cc)                     \
 static void pfilter_channel_## name(AVFilterContext *ctx,     \
@@ -393,7 +379,7 @@ const AVFilter ff_af_afreqshift = {
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
@@ -416,7 +402,7 @@ const AVFilter ff_af_aphaseshift = {
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
