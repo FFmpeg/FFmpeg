@@ -57,8 +57,6 @@ enum CurveType { NONE = -1, TRI, QSIN, ESIN, HSIN, LOG, IPAR, QUA, CUB, SQU, CBR
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 #define TFLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
@@ -66,16 +64,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
 
 static double fade_gain(int curve, int64_t index, int64_t range)
 {
@@ -357,7 +345,7 @@ const AVFilter ff_af_afade = {
     .init          = init,
     FILTER_INPUTS(avfilter_af_afade_inputs),
     FILTER_OUTPUTS(avfilter_af_afade_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .priv_class    = &afade_class,
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
@@ -631,7 +619,7 @@ const AVFilter ff_af_acrossfade = {
     .priv_class    = &acrossfade_class,
     FILTER_INPUTS(avfilter_af_acrossfade_inputs),
     FILTER_OUTPUTS(avfilter_af_acrossfade_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
 };
 
 #endif /* CONFIG_ACROSSFADE_FILTER */
