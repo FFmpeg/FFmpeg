@@ -149,27 +149,6 @@ static const AVOption astats_options[] = {
 
 AVFILTER_DEFINE_CLASS(astats);
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
-        AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
-        AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
-        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
-        AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE
-    };
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
-}
-
 static void reset_stats(AudioStatsContext *s)
 {
     int c;
@@ -868,6 +847,10 @@ const AVFilter ff_af_astats = {
     .uninit        = uninit,
     FILTER_INPUTS(astats_inputs),
     FILTER_OUTPUTS(astats_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                      AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
+                      AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
+                      AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+                      AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
