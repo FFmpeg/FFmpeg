@@ -58,7 +58,7 @@ do {                                                                       \
  * If check is set, nothing is modified and it is only checked whether
  * the formats are compatible.
  * If empty_allowed is set and one of a,b->nb is zero, the lists are
- * merged; otherwise, it is treated as error.
+ * merged; otherwise, 0 (for nonmergeability) is returned.
  */
 #define MERGE_FORMATS(a, b, fmts, nb, type, check, empty_allowed)          \
 do {                                                                       \
