@@ -65,8 +65,6 @@ static av_cold int init(AVFilterContext *context)
     return ff_dnn_init(&ctx->dnnctx, DFT_PROCESS_FRAME, context);
 }
 
-static int query_formats(AVFilterContext *context)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAYF32,
@@ -75,8 +73,6 @@ static int query_formats(AVFilterContext *context)
         AV_PIX_FMT_NV12,
         AV_PIX_FMT_NONE
     };
-    return ff_set_common_formats_from_list(context, pix_fmts);
-}
 
 #define LOG_FORMAT_CHANNEL_MISMATCH()                       \
     av_log(ctx, AV_LOG_ERROR,                               \
@@ -372,7 +368,7 @@ const AVFilter ff_vf_dnn_processing = {
     .uninit        = uninit,
     FILTER_INPUTS(dnn_processing_inputs),
     FILTER_OUTPUTS(dnn_processing_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &dnn_processing_class,
     .activate      = activate,
 };
