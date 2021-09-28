@@ -34,6 +34,8 @@
 #include "thread.h"
 #include "lossless_videoencdsp.h"
 
+#define MAGICYUV_EXTRADATA_SIZE 32
+
 typedef enum Prediction {
     LEFT = 1,
     GRADIENT,
@@ -214,7 +216,7 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     case MEDIAN:   s->predict = median_predict;   break;
     }
 
-    avctx->extradata_size = 32;
+    avctx->extradata_size = MAGICYUV_EXTRADATA_SIZE;
 
     avctx->extradata = av_mallocz(avctx->extradata_size +
                                   AV_INPUT_BUFFER_PADDING_SIZE);
@@ -224,7 +226,7 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    bytestream2_init_writer(&pb, avctx->extradata, avctx->extradata_size);
+    bytestream2_init_writer(&pb, avctx->extradata, MAGICYUV_EXTRADATA_SIZE);
     bytestream2_put_le32(&pb, MKTAG('M', 'A', 'G', 'Y'));
     bytestream2_put_le32(&pb, 32);
     bytestream2_put_byte(&pb, 7);
