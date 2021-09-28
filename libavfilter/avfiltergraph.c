@@ -130,8 +130,8 @@ void avfilter_graph_free(AVFilterGraph **graph)
 
     av_freep(&(*graph)->sink_links);
 
-    av_freep(&(*graph)->scale_sws_opts);
-    av_freep(&(*graph)->aresample_swr_opts);
+    av_opt_free(*graph);
+
     av_freep(&(*graph)->filters);
     av_freep(&(*graph)->internal);
     av_freep(graph);
