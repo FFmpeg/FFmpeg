@@ -34,9 +34,15 @@
 #include "url.h"
 
 #include <librist/librist.h>
+#include <librist/version.h>
 
 // RIST_MAX_PACKET_SIZE - 28 minimum protocol overhead
 #define MAX_PAYLOAD_SIZE (10000-28)
+
+#define FF_LIBRIST_MAKE_VERSION(major, minor, patch) \
+    ((patch) + ((minor)* 0x100) + ((major) *0x10000))
+#define FF_LIBRIST_VERSION FF_LIBRIST_MAKE_VERSION(LIBRIST_API_VERSION_MAJOR, LIBRIST_API_VERSION_MINOR, LIBRIST_API_VERSION_PATCH)
+#define FF_LIBRIST_VERSION_41 FF_LIBRIST_MAKE_VERSION(4, 1, 0)
 
 typedef struct RISTContext {
     const AVClass *class;
@@ -146,7 +152,11 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     if (ret < 0)
         goto err;
 
+#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
     ret = rist_parse_address(uri, (const struct rist_peer_config **)&peer_config);
+#else
+    ret = rist_parse_address2(uri, &peer_config);
+#endif
     if (ret < 0)
         goto err;
 
@@ -187,10 +197,16 @@ err:
 static int librist_read(URLContext *h, uint8_t *buf, int size)
 {
     RISTContext *s = h->priv_data;
-    const struct rist_data_block *data_block;
     int ret;
 
+#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
+    const struct rist_data_block *data_block;
     ret = rist_receiver_data_read(s->ctx, &data_block, POLLING_TIME);
+#else
+    struct rist_data_block *data_block;
+    ret = rist_receiver_data_read2(s->ctx, &data_block, POLLING_TIME);
+#endif
+
     if (ret < 0)
         return risterr2ret(ret);
 
@@ -198,14 +214,21 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
         return AVERROR(EAGAIN);
 
     if (data_block->payload_len > MAX_PAYLOAD_SIZE) {
+#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
         rist_receiver_data_block_free((struct rist_data_block**)&data_block);
+#else
+        rist_receiver_data_block_free2(&data_block);
+#endif
         return AVERROR_EXTERNAL;
     }
 
     size = data_block->payload_len;
     memcpy(buf, data_block->payload, size);
+#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
     rist_receiver_data_block_free((struct rist_data_block**)&data_block);
-
+#else
+    rist_receiver_data_block_free2(&data_block);
+#endif
     return size;
 }
 
