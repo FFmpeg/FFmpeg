@@ -120,17 +120,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
 /*    case AV_PIX_FMT_RGB32:
         s->colorspace= 1;
         break;*/
-    default:
-        av_log(avctx, AV_LOG_ERROR, "pixel format not supported\n");
-        return AVERROR_PATCHWELCOME;
     }
 
     ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift,
                                            &s->chroma_v_shift);
-    if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "pixel format invalid or unknown\n");
+    if (ret)
         return ret;
-    }
 
     ff_set_cmp(&s->mecc, s->mecc.me_cmp, s->avctx->me_cmp);
     ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
