@@ -1325,7 +1325,32 @@ Set window size. Allowed range is from 16 to 131072.
 Default is @code{4096}
 
 @item win_func
-Set window function. Default is @code{hann}.
+Set window function.
+
+It accepts the following values:
+@table @samp
+@item rect
+@item bartlett
+@item hann, hanning
+@item hamming
+@item blackman
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@item lanczos
+@item gauss
+@item tukey
+@item dolph
+@item cauchy
+@item parzen
+@item poisson
+@item bohman
+@end table
+Default is @code{hann}.
 
 @item overlap
 Set window overlap. If set to 1, the recommended overlap for selected
