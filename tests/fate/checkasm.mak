@@ -18,6 +18,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-hevc_idct                                 \
                 fate-checkasm-hevc_pel                                  \
                 fate-checkasm-hevc_sao                                  \
+                fate-checkasm-huffyuvdsp                                \
                 fate-checkasm-jpeg2000dsp                               \
                 fate-checkasm-llviddsp                                  \
                 fate-checkasm-llviddspenc                               \
@@ -27,6 +28,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-synth_filter                              \
                 fate-checkasm-sw_rgb                                    \
                 fate-checkasm-sw_scale                                  \
+                fate-checkasm-utvideodsp                                \
                 fate-checkasm-v210dec                                   \
                 fate-checkasm-v210enc                                   \
                 fate-checkasm-vf_blend                                  \
@@ -34,6 +36,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-vf_eq                                     \
                 fate-checkasm-vf_gblur                                  \
                 fate-checkasm-vf_hflip                                  \
+                fate-checkasm-vf_nlmeans                                \
                 fate-checkasm-vf_threshold                              \
                 fate-checkasm-videodsp                                  \
                 fate-checkasm-vp8dsp                                    \
