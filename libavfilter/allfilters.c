@@ -290,6 +290,7 @@ extern const AVFilter ff_vf_hstack;
 extern const AVFilter ff_vf_hsvhold;
 extern const AVFilter ff_vf_hsvkey;
 extern const AVFilter ff_vf_hue;
+extern const AVFilter ff_vf_huesaturation;
 extern const AVFilter ff_vf_hwdownload;
 extern const AVFilter ff_vf_hwmap;
 extern const AVFilter ff_vf_hwupload;

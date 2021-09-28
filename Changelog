@@ -29,6 +29,7 @@ version <next>:
 - limitdiff video filter
 - xcorrelate video filter
 - varblur video filter
+- huesaturation video filter
 
 
 version 4.4:

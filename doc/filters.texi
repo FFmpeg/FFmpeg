@@ -13908,6 +13908,62 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section huesaturation
+Apply hue-saturation-intensity adjustments to input video stream.
+
+This filter operates in RGB colorspace.
+
+This filter accepts the following options:
+
+@table @option
+@item hue
+Set the hue shift in degrees to apply. Default is 0.
+Allowed range is from -180 to 180.
+
+@item saturation
+Set the saturation shift. Default is 0.
+Allowed range is from -1 to 1.
+
+@item intensity
+Set the intensity shift. Default is 0.
+Allowed range is from -1 to 1.
+
+@item colors
+Set which primary and complementary colors are going to be adjusted.
+This options is set by providing one or multiple values.
+This can select multiple colors at once. By default all colors are selected.
+@table @samp
+@item r
+Adjust reds.
+@item y
+Adjust yellows.
+@item g
+Adjust greens.
+@item c
+Adjust cyans.
+@item b
+Adjust blues.
+@item m
+Adjust magentas.
+@item a
+Adjust all colors.
+@end table
+
+@item strength
+Set strength of filtering. Allowed range is from 0 to 100.
+Default value is 1.
+
+@item rw, gw, bw
+Set weight for each RGB component. Allowed range is from 0 to 1.
+By default is set to 0.333, 0.334, 0.333.
+Those options are used in saturation and lightess processing.
+
+@item lightness
+Set preserving lightness, by default is disabled.
+Adjusting hues can change lightness from original RGB triplet,
+with this option enabled lightness is kept at same value.
+@end table
+
 @section hysteresis
 
 Grow first stream into second stream by connecting components.

@@ -305,6 +305,7 @@ OBJS-$(CONFIG_HSTACK_FILTER)                 += vf_stack.o framesync.o
 OBJS-$(CONFIG_HSVHOLD_FILTER)                += vf_hsvkey.o
 OBJS-$(CONFIG_HSVKEY_FILTER)                 += vf_hsvkey.o
 OBJS-$(CONFIG_HUE_FILTER)                    += vf_hue.o
+OBJS-$(CONFIG_HUESATURATION_FILTER)          += vf_huesaturation.o
 OBJS-$(CONFIG_HWDOWNLOAD_FILTER)             += vf_hwdownload.o
 OBJS-$(CONFIG_HWMAP_FILTER)                  += vf_hwmap.o
 OBJS-$(CONFIG_HWUPLOAD_CUDA_FILTER)          += vf_hwupload_cuda.o
