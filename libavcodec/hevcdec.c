@@ -2884,14 +2884,14 @@ static int set_side_data(HEVCContext *s)
         s->sei.timecode.num_clock_ts = 0;
     }
 
-    if (s->sei.film_grain_characteristics.present &&
-        (s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN)) {
+    if (s->sei.film_grain_characteristics.present) {
         HEVCSEIFilmGrainCharacteristics *fgc = &s->sei.film_grain_characteristics;
         AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(out);
         if (!fgp)
             return AVERROR(ENOMEM);
 
         fgp->type = AV_FILM_GRAIN_PARAMS_H274;
+        fgp->seed = s->ref->poc; /* no poc_offset in HEVC */
 
         fgp->codec.h274.model_id = fgc->model_id;
         if (fgc->separate_colour_description_present_flag) {
@@ -2986,6 +2986,18 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->ref->frame->key_frame = IS_IRAP(s);
 
+    s->ref->needs_fg = s->sei.film_grain_characteristics.present &&
+        !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
+        !s->avctx->hwaccel;
+
+    if (s->ref->needs_fg) {
+        s->ref->frame_grain->format = s->ref->frame->format;
+        s->ref->frame_grain->width = s->ref->frame->width;
+        s->ref->frame_grain->height = s->ref->frame->height;
+        if ((ret = ff_thread_get_buffer(s->avctx, &s->ref->tf_grain, 0)) < 0)
+            goto fail;
+    }
+
     ret = set_side_data(s);
     if (ret < 0)
         goto fail;
@@ -3010,6 +3022,28 @@ fail:
         ff_hevc_unref_frame(s, s->ref, ~0);
     s->ref = NULL;
     return ret;
+}
+
+static int hevc_frame_end(HEVCContext *s)
+{
+    HEVCFrame *out = s->ref;
+    const AVFrameSideData *sd;
+    int ret;
+
+    if (out->needs_fg) {
+        sd = av_frame_get_side_data(out->frame, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+        av_assert0(out->frame_grain->buf[0] && sd);
+        ret = ff_h274_apply_film_grain(out->frame_grain, out->frame, &s->h274db,
+                                       (AVFilmGrainParams *) sd->data);
+
+        if (ret < 0) {
+            av_log(s->avctx, AV_LOG_WARNING, "Failed synthesizing film "
+                   "grain, ignoring: %s\n", av_err2str(ret));
+            out->needs_fg = 0;
+        }
+    }
+
+    return 0;
 }
 
 static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
@@ -3170,6 +3204,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             else
                 ctb_addr_ts = hls_slice_data(s);
             if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
+                ret = hevc_frame_end(s);
+                if (ret < 0)
+                    goto fail;
                 s->is_decoded = 1;
             }
 
@@ -3429,6 +3466,13 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
     if (ret < 0)
         return ret;
 
+    if (src->needs_fg) {
+        ret = ff_thread_ref_frame(&dst->tf_grain, &src->tf_grain);
+        if (ret < 0)
+            return ret;
+        dst->needs_fg = 1;
+    }
+
     dst->tab_mvf_buf = av_buffer_ref(src->tab_mvf_buf);
     if (!dst->tab_mvf_buf)
         goto fail;
@@ -3481,6 +3525,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
         av_frame_free(&s->DPB[i].frame);
+        av_frame_free(&s->DPB[i].frame_grain);
     }
 
     ff_hevc_ps_uninit(&s->ps);
@@ -3534,6 +3579,11 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         if (!s->DPB[i].frame)
             goto fail;
         s->DPB[i].tf.f = s->DPB[i].frame;
+
+        s->DPB[i].frame_grain = av_frame_alloc();
+        if (!s->DPB[i].frame_grain)
+            goto fail;
+        s->DPB[i].tf_grain.f = s->DPB[i].frame_grain;
     }
 
     s->max_ra = INT_MAX;
