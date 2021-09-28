@@ -347,9 +347,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         c->fmt = ZMBV_FMT_32BPP;
         c->bypp = 4;
         break;
-    default:
-        av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
-        return AVERROR(EINVAL);
     }
 
     /* Entropy-based score tables for comparing blocks.
