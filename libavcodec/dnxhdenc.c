@@ -363,10 +363,6 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_GBRP10:
         ctx->bit_depth = 10;
         break;
-    default:
-        av_log(avctx, AV_LOG_ERROR,
-               "pixel format is incompatible with DNxHD\n");
-        return AVERROR(EINVAL);
     }
 
     if ((ctx->profile == FF_PROFILE_DNXHR_444 && (avctx->pix_fmt != AV_PIX_FMT_YUV444P10 &&
