@@ -68,9 +68,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         if (avctx->bits_per_raw_sample)
             s->bits_per_component = avctx->bits_per_raw_sample;
         break;
-    default:
-        av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
-        return -1;
     }
 
     return 0;
