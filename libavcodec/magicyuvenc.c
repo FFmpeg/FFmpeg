@@ -189,10 +189,6 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         avctx->codec_tag = MKTAG('M', '8', 'G', '0');
         s->format = 0x6b;
         break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format: %d\n",
-               avctx->pix_fmt);
-        return AVERROR_INVALIDDATA;
     }
 
     ff_llvidencdsp_init(&s->llvidencdsp);
