@@ -183,17 +183,15 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
         }
     }
 
+    filters = av_realloc_array(graph->filters, graph->nb_filters + 1, sizeof(*filters));
+    if (!filters)
+        return NULL;
+    graph->filters = filters;
+
     s = ff_filter_alloc(filter, name);
     if (!s)
         return NULL;
 
-    filters = av_realloc(graph->filters, sizeof(*filters) * (graph->nb_filters + 1));
-    if (!filters) {
-        avfilter_free(s);
-        return NULL;
-    }
-
-    graph->filters = filters;
     graph->filters[graph->nb_filters++] = s;
 
     s->graph = graph;
