@@ -154,8 +154,7 @@ int avfilter_graph_create_filter(AVFilterContext **filt_ctx, const AVFilter *fil
     return 0;
 
 fail:
-    if (*filt_ctx)
-        avfilter_free(*filt_ctx);
+    avfilter_free(*filt_ctx);
     *filt_ctx = NULL;
     return ret;
 }
