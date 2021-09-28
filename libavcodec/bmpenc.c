@@ -58,9 +58,6 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
     case AV_PIX_FMT_MONOBLACK:
         avctx->bits_per_coded_sample = 1;
         break;
-    default:
-        av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
-        return AVERROR(EINVAL);
     }
 
     return 0;
