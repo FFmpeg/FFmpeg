@@ -447,7 +447,7 @@ static int decode_envelope(SirenContext *s, GetBitContext *gb,
         int index = 0;
 
         do {
-            if (get_bits_left(gb) < 4)
+            if (get_bits_left(gb) < 4 + number_of_regions - i + s->checksum_bits)
                 return AVERROR_INVALIDDATA;
             index = differential_decoder_tree[i - 1][index][get_bits1(gb)];
         } while (index > 0);
