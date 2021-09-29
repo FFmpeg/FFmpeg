@@ -42,11 +42,11 @@ typedef struct FloodfillContext {
     int back, front;
     Points *points;
 
-    int (*is_same)(AVFrame *frame, int x, int y,
+    int (*is_same)(const AVFrame *frame, int x, int y,
                    unsigned s0, unsigned s1, unsigned s2, unsigned s3);
     void (*set_pixel)(AVFrame *frame, int x, int y,
                       unsigned d0, unsigned d1, unsigned d2, unsigned d3);
-    void (*pick_pixel)(AVFrame *frame, int x, int y,
+    void (*pick_pixel)(const AVFrame *frame, int x, int y,
                        int *s0, int *s1, int *s2, int *s3);
 } FloodfillContext;
 
@@ -57,7 +57,7 @@ static int is_inside(int x, int y, int w, int h)
     return 0;
 }
 
-static int is_same4(AVFrame *frame, int x, int y,
+static int is_same4(const AVFrame *frame, int x, int y,
                     unsigned s0, unsigned s1, unsigned s2, unsigned s3)
 {
     unsigned c0 = frame->data[0][y * frame->linesize[0] + x];
@@ -70,7 +70,7 @@ static int is_same4(AVFrame *frame, int x, int y,
     return 0;
 }
 
-static int is_same4_16(AVFrame *frame, int x, int y,
+static int is_same4_16(const AVFrame *frame, int x, int y,
                        unsigned s0, unsigned s1, unsigned s2, unsigned s3)
 {
     unsigned c0 = AV_RN16(frame->data[0] + y * frame->linesize[0] + 2 * x);
@@ -83,7 +83,7 @@ static int is_same4_16(AVFrame *frame, int x, int y,
     return 0;
 }
 
-static int is_same3(AVFrame *frame, int x, int y,
+static int is_same3(const AVFrame *frame, int x, int y,
                     unsigned s0, unsigned s1, unsigned s2, unsigned s3)
 {
     unsigned c0 = frame->data[0][y * frame->linesize[0] + x];
@@ -95,7 +95,7 @@ static int is_same3(AVFrame *frame, int x, int y,
     return 0;
 }
 
-static int is_same3_16(AVFrame *frame, int x, int y,
+static int is_same3_16(const AVFrame *frame, int x, int y,
                        unsigned s0, unsigned s1, unsigned s2, unsigned s3)
 {
     unsigned c0 = AV_RN16(frame->data[0] + y * frame->linesize[0] + 2 * x);
@@ -107,7 +107,7 @@ static int is_same3_16(AVFrame *frame, int x, int y,
     return 0;
 }
 
-static int is_same1(AVFrame *frame, int x, int y,
+static int is_same1(const AVFrame *frame, int x, int y,
                     unsigned s0, unsigned s1, unsigned s2, unsigned s3)
 {
     unsigned c0 = frame->data[0][y * frame->linesize[0] + x];
@@ -117,7 +117,7 @@ static int is_same1(AVFrame *frame, int x, int y,
     return 0;
 }
 
-static int is_same1_16(AVFrame *frame, int x, int y,
+static int is_same1_16(const AVFrame *frame, int x, int y,
                        unsigned s0, unsigned s1, unsigned s2, unsigned s3)
 {
     unsigned c0 = AV_RN16(frame->data[0] + y * frame->linesize[0] + 2 * x);
@@ -173,21 +173,21 @@ static void set_pixel4_16(AVFrame *frame, int x, int y,
     AV_WN16(frame->data[3] + y * frame->linesize[3] + 2 * x, d3);
 }
 
-static void pick_pixel1(AVFrame *frame, int x, int y,
+static void pick_pixel1(const AVFrame *frame, int x, int y,
                         int *s0, int *s1, int *s2, int *s3)
 {
     if (*s0 < 0)
         *s0 = frame->data[0][y * frame->linesize[0] + x];
 }
 
-static void pick_pixel1_16(AVFrame *frame, int x, int y,
+static void pick_pixel1_16(const AVFrame *frame, int x, int y,
                            int *s0, int *s1, int *s2, int *s3)
 {
     if (*s0 < 0)
         *s0 = AV_RN16(frame->data[0] + y * frame->linesize[0] + 2 * x);
 }
 
-static void pick_pixel3(AVFrame *frame, int x, int y,
+static void pick_pixel3(const AVFrame *frame, int x, int y,
                         int *s0, int *s1, int *s2, int *s3)
 {
     if (*s0 < 0)
@@ -198,7 +198,7 @@ static void pick_pixel3(AVFrame *frame, int x, int y,
         *s2 = frame->data[2][y * frame->linesize[2] + x];
 }
 
-static void pick_pixel3_16(AVFrame *frame, int x, int y,
+static void pick_pixel3_16(const AVFrame *frame, int x, int y,
                            int *s0, int *s1, int *s2, int *s3)
 {
     if (*s0 < 0)
@@ -209,7 +209,7 @@ static void pick_pixel3_16(AVFrame *frame, int x, int y,
         *s2 = AV_RN16(frame->data[2] + y * frame->linesize[2] + 2 * x);
 }
 
-static void pick_pixel4(AVFrame *frame, int x, int y,
+static void pick_pixel4(const AVFrame *frame, int x, int y,
                         int *s0, int *s1, int *s2, int *s3)
 {
     if (*s0 < 0)
@@ -222,7 +222,7 @@ static void pick_pixel4(AVFrame *frame, int x, int y,
         *s3 = frame->data[3][y * frame->linesize[3] + x];
 }
 
-static void pick_pixel4_16(AVFrame *frame, int x, int y,
+static void pick_pixel4_16(const AVFrame *frame, int x, int y,
                            int *s0, int *s1, int *s2, int *s3)
 {
     if (*s0 < 0)
