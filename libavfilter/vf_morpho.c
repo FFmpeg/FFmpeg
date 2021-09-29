@@ -49,8 +49,8 @@ typedef struct IPlane {
     int depth;
     int type_size;
 
-    void (*max)(uint8_t *c, const uint8_t *a, const uint8_t *b, int x);
-    void (*min)(uint8_t *c, const uint8_t *a, const uint8_t *b, int x);
+    void (*max_out_place)(uint8_t *c, const uint8_t *a, const uint8_t *b, int x);
+    void (*min_out_place)(uint8_t *c, const uint8_t *a, const uint8_t *b, int x);
     void (*max_in_place)(uint8_t *a, const uint8_t *b, int x);
     void (*min_in_place)(uint8_t *a, const uint8_t *b, int x);
 } IPlane;
@@ -304,7 +304,7 @@ static void compute_min_row(IPlane *f, LUT *Ty, chord_set *SE, int r, int y)
     for (int i = 1; i < SE->Lnum; i++) {
         int d = SE->R[i] - SE->R[i - 1];
 
-        f->min(Ty->arr[r][i] - Ty->pre_pad_x * f->type_size,
+        f->min_out_place(Ty->arr[r][i] - Ty->pre_pad_x * f->type_size,
             Ty->arr[r][i - 1] - Ty->pre_pad_x * f->type_size,
             Ty->arr[r][i - 1] + (d - Ty->pre_pad_x) * f->type_size,
             Ty->X + Ty->pre_pad_x - d);
@@ -358,7 +358,7 @@ static void compute_max_row(IPlane *f, LUT *Ty, chord_set *SE, int r, int y)
     for (int i = 1; i < SE->Lnum; i++) {
         int d = SE->R[i] - SE->R[i - 1];
 
-        f->max(Ty->arr[r][i] - Ty->pre_pad_x * f->type_size,
+        f->max_out_place(Ty->arr[r][i] - Ty->pre_pad_x * f->type_size,
             Ty->arr[r][i - 1] - Ty->pre_pad_x * f->type_size,
             Ty->arr[r][i - 1] + (d - Ty->pre_pad_x) * f->type_size,
             Ty->X + Ty->pre_pad_x - d);
@@ -685,8 +685,8 @@ static int read_iplane(IPlane *imp, const uint8_t *dst, int dst_linesize,
     imp->range = R;
     imp->depth = depth;
     imp->type_size = type_size;
-    imp->max = type_size == 1 ? max_fun : max16_fun;
-    imp->min = type_size == 1 ? min_fun : min16_fun;
+    imp->max_out_place = type_size == 1 ? max_fun : max16_fun;
+    imp->min_out_place = type_size == 1 ? min_fun : min16_fun;
     imp->max_in_place = type_size == 1 ? maxinplace_fun : maxinplace16_fun;
     imp->min_in_place = type_size == 1 ? mininplace_fun : mininplace16_fun;
 
