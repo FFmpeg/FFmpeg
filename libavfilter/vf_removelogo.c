@@ -203,12 +203,6 @@ static void convert_mask_to_strength_mask(uint8_t *data, int linesize,
     *max_mask_size = apply_mask_fudge_factor(current_pass + 1);
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
-
 static int load_mask(uint8_t **mask, int *w, int *h,
                      const char *filename, void *log_ctx)
 {
@@ -576,7 +570,7 @@ const AVFilter ff_vf_removelogo = {
     .uninit        = uninit,
     FILTER_INPUTS(removelogo_inputs),
     FILTER_OUTPUTS(removelogo_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_YUV420P),
     .priv_class    = &removelogo_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
