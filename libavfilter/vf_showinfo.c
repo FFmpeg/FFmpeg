@@ -147,10 +147,10 @@ static void dump_roi(AVFilterContext *ctx, const AVFrameSideData *sd)
     }
     nb_rois = sd->size / roi_size;
 
-    av_log(ctx, AV_LOG_INFO, "Regions Of Interest(RoI) information: ");
+    av_log(ctx, AV_LOG_INFO, "Regions Of Interest(ROI) information:\n");
     for (int i = 0; i < nb_rois; i++) {
         roi = (const AVRegionOfInterest *)(sd->data + roi_size * i);
-        av_log(ctx, AV_LOG_INFO, "index: %d, region: (%d, %d)/(%d, %d), qp offset: %d/%d.\n",
+        av_log(ctx, AV_LOG_INFO, "index: %d, region: (%d, %d) -> (%d, %d), qp offset: %d/%d.\n",
                i, roi->left, roi->top, roi->right, roi->bottom, roi->qoffset.num, roi->qoffset.den);
     }
 }
