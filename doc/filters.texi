@@ -7547,6 +7547,7 @@ Available values for component modes are:
 @item glow
 @item hardlight
 @item hardmix
+@item harmonic
 @item heat
 @item lighten
 @item linearlight
