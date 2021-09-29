@@ -134,6 +134,10 @@ static const AVOption blend_options[] = {
     { "softdifference","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SOFTDIFFERENCE}, 0, 0, FLAGS, "mode" },
     { "geometric",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GEOMETRIC},  0, 0, FLAGS, "mode" },
     { "harmonic",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARMONIC},   0, 0, FLAGS, "mode" },
+    { "bleach",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_BLEACH},     0, 0, FLAGS, "mode" },
+    { "stain",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_STAIN},      0, 0, FLAGS, "mode" },
+    { "interpolate","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_INTERPOLATE},0, 0, FLAGS, "mode" },
+    { "hardoverlay","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDOVERLAY},0, 0, FLAGS, "mode" },
     { "c0_expr",  "set color component #0 expression", OFFSET(params[0].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "c1_expr",  "set color component #1 expression", OFFSET(params[1].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "c2_expr",  "set color component #2 expression", OFFSET(params[2].expr_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
@@ -397,9 +401,13 @@ static av_cold void init_blend_func_##depth##_##nbits##bit(FilterParams *param) 
     case BLEND_SUBTRACT:     param->blend = blend_subtract_##depth##bit;     break;   \
     case BLEND_VIVIDLIGHT:   param->blend = blend_vividlight_##depth##bit;   break;   \
     case BLEND_XOR:          param->blend = blend_xor_##depth##bit;          break;   \
-    case BLEND_SOFTDIFFERENCE:param->blend = blend_softdifference_##depth##bit; break;\
+    case BLEND_SOFTDIFFERENCE:param->blend=blend_softdifference_##depth##bit;break;   \
     case BLEND_GEOMETRIC:    param->blend = blend_geometric_##depth##bit;    break;   \
     case BLEND_HARMONIC:     param->blend = blend_harmonic_##depth##bit;     break;   \
+    case BLEND_BLEACH:       param->blend = blend_bleach_##depth##bit;       break;   \
+    case BLEND_STAIN:        param->blend = blend_stain_##depth##bit;        break;   \
+    case BLEND_INTERPOLATE:  param->blend = blend_interpolate_##depth##bit;  break;   \
+    case BLEND_HARDOVERLAY:  param->blend = blend_hardoverlay_##depth##bit;  break;   \
     }                                                                                 \
 }
 DEFINE_INIT_BLEND_FUNC(8, 8)
