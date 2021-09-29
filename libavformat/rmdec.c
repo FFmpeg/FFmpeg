@@ -127,6 +127,10 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     uint32_t version;
     int ret;
 
+    // Duplicate tags
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+        return AVERROR_INVALIDDATA;
+
     /* ra type header */
     version = avio_rb16(pb); /* version */
     if (version == 3) {
