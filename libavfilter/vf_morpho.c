@@ -40,6 +40,8 @@ enum MorphModes {
     OPEN,
     CLOSE,
     GRADIENT,
+    TOPHAT,
+    BLACKHAT,
     NB_MODES
 };
 
@@ -52,6 +54,7 @@ typedef struct IPlane {
 
     void (*max_out_place)(uint8_t *c, const uint8_t *a, const uint8_t *b, int x);
     void (*min_out_place)(uint8_t *c, const uint8_t *a, const uint8_t *b, int x);
+    void (*diff_rin_place)(uint8_t *a, const uint8_t *b, int x);
     void (*max_in_place)(uint8_t *a, const uint8_t *b, int x);
     void (*min_in_place)(uint8_t *a, const uint8_t *b, int x);
     void (*diff_in_place)(uint8_t *a, const uint8_t *b, int x);
@@ -127,6 +130,8 @@ static const AVOption morpho_options[] = {
     { "open",   NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=OPEN},   0,  0, FLAGS, "mode" },
     { "close",  NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=CLOSE},  0,  0, FLAGS, "mode" },
     { "gradient",NULL,                                        0,                  AV_OPT_TYPE_CONST, {.i64=GRADIENT},0, 0, FLAGS, "mode" },
+    { "tophat",NULL,                                          0,                  AV_OPT_TYPE_CONST, {.i64=TOPHAT},  0, 0, FLAGS, "mode" },
+    { "blackhat",NULL,                                        0,                  AV_OPT_TYPE_CONST, {.i64=BLACKHAT},0, 0, FLAGS, "mode" },
     { "planes",  "set planes to filter",                      OFFSET(planes),     AV_OPT_TYPE_INT,   {.i64=7}, 0, 15, FLAGS },
     { "structure", "when to process structures",              OFFSET(structures), AV_OPT_TYPE_INT,   {.i64=1}, 0,  1, FLAGS, "str" },
     {   "first", "process only first structure, ignore rest", 0,                  AV_OPT_TYPE_CONST, {.i64=0}, 0,  0, FLAGS, "str" },
@@ -187,10 +192,16 @@ static void maxinplace_fun(uint8_t *a, const uint8_t *b, int x)
         a[i] = FFMAX(a[i], b[i]);
 }
 
+static void diff_fun(uint8_t *a, const uint8_t *b, int x)
+{
+    for (int i = 0; i < x; i++)
+        a[i] = FFMAX(b[i] - a[i], 0);
+}
+
 static void diffinplace_fun(uint8_t *a, const uint8_t *b, int x)
 {
     for (int i = 0; i < x; i++)
-        a[i] -= b[i];
+        a[i] = FFMAX(a[i] - b[i], 0);
 }
 
 static void min16_fun(uint8_t *cc, const uint8_t *aa, const uint8_t *bb, int x)
@@ -212,13 +223,22 @@ static void mininplace16_fun(uint8_t *aa, const uint8_t *bb, int x)
         a[i] = FFMIN(a[i], b[i]);
 }
 
+static void diff16_fun(uint8_t *aa, const uint8_t *bb, int x)
+{
+    const uint16_t *b = (const uint16_t *)bb;
+    uint16_t *a = (uint16_t *)aa;
+
+    for (int i = 0; i < x; i++)
+        a[i] = FFMAX(b[i] - a[i], 0);
+}
+
 static void diffinplace16_fun(uint8_t *aa, const uint8_t *bb, int x)
 {
     uint16_t *a = (uint16_t *)aa;
     const uint16_t *b = (const uint16_t *)bb;
 
     for (int i = 0; i < x; i++)
-        a[i] -= b[i];
+        a[i] = FFMAX(a[i] - b[i], 0);
 }
 
 static void max16_fun(uint8_t *cc, const uint8_t *aa, const uint8_t *bb, int x)
@@ -471,10 +491,16 @@ static int erode(IPlane *g, IPlane *f, chord_set *SE, LUT *Ty)
     return 0;
 }
 
-static void gradient(IPlane *g, IPlane *f)
+static void difference(IPlane *g, IPlane *f)
 {
     for (int y = 0; y < f->h; y++)
         f->diff_in_place(g->img[y], f->img[y], f->w);
+}
+
+static void difference2(IPlane *g, IPlane *f)
+{
+    for (int y = 0; y < f->h; y++)
+        f->diff_rin_place(g->img[y], f->img[y], f->w);
 }
 
 static int insert_chord_set(chord_set *chords, chord c)
@@ -711,6 +737,7 @@ static int read_iplane(IPlane *imp, const uint8_t *dst, int dst_linesize,
     imp->type_size = type_size;
     imp->max_out_place = type_size == 1 ? max_fun : max16_fun;
     imp->min_out_place = type_size == 1 ? min_fun : min16_fun;
+    imp->diff_rin_place = type_size == 1 ? diff_fun : diff16_fun;
     imp->max_in_place = type_size == 1 ? maxinplace_fun : maxinplace16_fun;
     imp->min_in_place = type_size == 1 ? mininplace_fun : mininplace16_fun;
     imp->diff_in_place = type_size == 1 ? diffinplace_fun : diffinplace16_fun;
@@ -867,7 +894,31 @@ copy:
             ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[1][p]);
             if (ret < 0)
                 return ret;
-            gradient(&s->g[p], &s->h[p]);
+            difference(&s->g[p], &s->h[p]);
+            break;
+        case TOPHAT:
+            ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
+            if (ret < 0)
+                break;
+            ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
+            if (ret < 0)
+                break;
+            ret = dilate(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[1][p]);
+            if (ret < 0)
+                break;
+            difference2(&s->g[p], &s->f[p]);
+            break;
+        case BLACKHAT:
+            ret = read_iplane(&s->h[p], s->temp->data[p], s->temp->linesize[p], width, height, 1, type_size, depth);
+            if (ret < 0)
+                break;
+            ret = dilate(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[0][p]);
+            if (ret < 0)
+                break;
+            ret = erode(&s->g[p], &s->h[p], &s->SE[p], &s->Ty[1][p]);
+            if (ret < 0)
+                break;
+            difference(&s->g[p], &s->f[p]);
             break;
         default:
             av_assert0(0);
