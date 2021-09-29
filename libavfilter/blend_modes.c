@@ -52,6 +52,7 @@
 #undef SCREEN
 #undef BURN
 #undef DODGE
+#undef GEOMETRIC
 #undef INT2FLOAT
 #undef FLOAT2INT
 #undef MDIV
@@ -61,6 +62,7 @@
 #define SCREEN(x, a, b)   (MAX - (x) * ((MAX - (a)) * (MAX - (b)) / MAX))
 #define BURN(a, b)        (((a) == 0) ? (a) : FFMAX(0, MAX - ((MAX - (b)) << DEPTH) / (a)))
 #define DODGE(a, b)       (((a) == MAX) ? (a) : FFMIN(MAX, (((b) << DEPTH) / (MAX - (a)))))
+#define GEOMETRIC(a, b)   (lrintf(sqrtf((unsigned)A * B)))
 #define INT2FLOAT(x)  (x)
 #define FLOAT2INT(x)  (x)
 #define MDIV (0.125f * (1 << DEPTH))
@@ -69,6 +71,7 @@
 #define SCREEN(x, a, b)   (1.0 - (x) * ((1.0 - (a)) * (1.0 - (b)) / 1.0))
 #define BURN(a, b)        (((a) <= 0.0) ? (a) : FFMAX(0.0, 1.0 - (1.0 - (b)) / (a)))
 #define DODGE(a, b)       (((a) >= 1.0) ? (a) : FFMIN(1.0, ((b) / (1.0 - (a)))))
+#define GEOMETRIC(a, b)   (sqrtf(fmaxf(A, 0) * fmaxf(B, 0)))
 #define INT2FLOAT(x) av_int2float(x)
 #define FLOAT2INT(x) av_float2int(x)
 #define MDIV 0.125f
@@ -140,3 +143,4 @@ fn(xor,        INT2FLOAT(FLOAT2INT(A) ^ FLOAT2INT(B)))
 fn(vividlight, (A < HALF) ? BURN(2 * A, B) : DODGE(2 * (A - HALF), B))
 fn(linearlight,CLIP((B < HALF) ? B + 2 * A - MAX : B + 2 * (A - HALF)))
 fn(softdifference,CLIP((A > B) ? (B == MAX) ? 0 : (A - B) * MAX / (MAX - B) : (B == 0) ? 0 : (B - A) * MAX / B))
+fn(geometric,  GEOMETRIC(A, B))

@@ -7543,6 +7543,7 @@ Available values for component modes are:
 @item freeze
 @item exclusion
 @item extremity
+@item geometric
 @item glow
 @item hardlight
 @item hardmix
