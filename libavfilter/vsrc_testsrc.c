@@ -363,15 +363,15 @@ static av_cold int haldclutsrc_init(AVFilterContext *ctx)
 }
 
 static const enum AVPixelFormat haldclutsrc_pix_fmts[] = {
-        AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
-        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
-        AV_PIX_FMT_NONE,
-    };
+    AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
+    AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
+    AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+    AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+    AV_PIX_FMT_NONE,
+};
 
 static int haldclutsrc_config_props(AVFilterLink *outlink)
 {
@@ -1227,12 +1227,12 @@ static av_cold int yuvtest_init(AVFilterContext *ctx)
 }
 
 static const enum AVPixelFormat yuvtest_pix_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
-        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
-        AV_PIX_FMT_YUV444P16,
-        AV_PIX_FMT_NONE
-    };
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
+    AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_NONE
+};
 
 static int yuvtest_config_props(AVFilterLink *outlink)
 {
@@ -1371,11 +1371,11 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 }
 
 static const enum AVPixelFormat smptebars_pix_fmts[] = {
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_NONE,
-    };
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_NONE,
+};
 
 static const AVFilterPad smptebars_outputs[] = {
     {

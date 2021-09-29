@@ -248,11 +248,11 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUV422P10LE, AV_PIX_FMT_YUV420P10LE,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUV422P10LE, AV_PIX_FMT_YUV420P10LE,
+    AV_PIX_FMT_NONE
+};
 
 static int config_input_ref(AVFilterLink *inlink)
 {

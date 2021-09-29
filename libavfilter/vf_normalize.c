@@ -388,24 +388,24 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
 
 // The pixel formats that our filter supports. We should be able to process
 // any 8-bit RGB formats. 16-bit support might be useful one day.
-    static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_RGB24,
-        AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_ARGB,
-        AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_0RGB,
-        AV_PIX_FMT_RGB0,
-        AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
-        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
-        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
-        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pixel_fmts[] = {
+    AV_PIX_FMT_RGB24,
+    AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_ARGB,
+    AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_0RGB,
+    AV_PIX_FMT_RGB0,
+    AV_PIX_FMT_0BGR,
+    AV_PIX_FMT_BGR0,
+    AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+    AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+    AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+    AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+    AV_PIX_FMT_NONE
+};
 
 // At this point we know the pixel format used for both input and output.  We
 // can also access the frame rate of the input video and allocate some memory

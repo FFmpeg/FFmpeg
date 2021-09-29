@@ -125,14 +125,14 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(s->y0_pexpr);
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_RGB24,   AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_RGB24,   AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_NONE
+};
 
 static double get_natural_factor(const VignetteContext *s, int x, int y)
 {

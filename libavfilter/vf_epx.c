@@ -221,10 +221,10 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_NONE,
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_NONE,
+};
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {

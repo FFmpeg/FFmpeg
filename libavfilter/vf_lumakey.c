@@ -142,14 +142,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 
-    static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
-        AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
-        AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA422P12,
-        AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pixel_fmts[] = {
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
+    AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+    AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA422P12,
+    AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
+    AV_PIX_FMT_NONE
+};
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)

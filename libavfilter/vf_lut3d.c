@@ -1147,23 +1147,23 @@ static int set_identity_matrix(AVFilterContext *ctx, int size)
     return 0;
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
-        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
-        AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_GBRP9,
-        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
-        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
-        AV_PIX_FMT_GBRP14,
-        AV_PIX_FMT_GBRP16,  AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
+    AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
+    AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+    AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+    AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
+    AV_PIX_FMT_GBRP9,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+    AV_PIX_FMT_GBRP14,
+    AV_PIX_FMT_GBRP16,  AV_PIX_FMT_GBRAP16,
+    AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
+    AV_PIX_FMT_NONE
+};
 
 static int config_input(AVFilterLink *inlink)
 {

@@ -248,19 +248,19 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(hue->saturation_pexpr);
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_YUVA444P,     AV_PIX_FMT_YUVA422P,
-        AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUV444P10,      AV_PIX_FMT_YUV422P10,
-        AV_PIX_FMT_YUV420P10,
-        AV_PIX_FMT_YUV440P10,
-        AV_PIX_FMT_YUVA444P10,     AV_PIX_FMT_YUVA422P10,
-        AV_PIX_FMT_YUVA420P10,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_YUVA444P,     AV_PIX_FMT_YUVA422P,
+    AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUV444P10,      AV_PIX_FMT_YUV422P10,
+    AV_PIX_FMT_YUV420P10,
+    AV_PIX_FMT_YUV440P10,
+    AV_PIX_FMT_YUVA444P10,     AV_PIX_FMT_YUVA422P10,
+    AV_PIX_FMT_YUVA420P10,
+    AV_PIX_FMT_NONE
+};
 
 static int config_props(AVFilterLink *inlink)
 {

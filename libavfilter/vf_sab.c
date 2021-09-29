@@ -55,14 +55,14 @@ typedef struct SabContext {
     unsigned int sws_flags;
 } SabContext;
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV410P,
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_NONE
+};
 
 #define RADIUS_MIN 0.1
 #define RADIUS_MAX 4.0

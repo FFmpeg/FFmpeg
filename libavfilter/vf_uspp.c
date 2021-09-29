@@ -293,15 +293,15 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
     }
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUVJ420P,
-        AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV410P,
+    AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUVJ420P,
+    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_NONE
+};
 
 static int config_input(AVFilterLink *inlink)
 {

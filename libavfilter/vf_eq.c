@@ -232,15 +232,15 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-    static const enum AVPixelFormat pixel_fmts_eq[] = {
-        AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pixel_fmts_eq[] = {
+    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_YUV410P,
+    AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_NONE
+};
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {

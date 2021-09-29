@@ -654,11 +654,11 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
-        AV_PIX_FMT_GBRP,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
+    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_NONE
+};
 
 typedef struct ThreadData {
     float *src, *dst;

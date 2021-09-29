@@ -65,14 +65,14 @@ static av_cold int init(AVFilterContext *context)
     return ff_dnn_init(&ctx->dnnctx, DFT_PROCESS_FRAME, context);
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAYF32,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAYF32,
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_NV12,
+    AV_PIX_FMT_NONE
+};
 
 #define LOG_FORMAT_CHANNEL_MISMATCH()                       \
     av_log(ctx, AV_LOG_ERROR,                               \

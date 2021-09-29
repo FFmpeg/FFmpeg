@@ -66,15 +66,15 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&kerndeint->tmp_data[0]);
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUYV422,
-        AV_PIX_FMT_ARGB, AV_PIX_FMT_0RGB,
-        AV_PIX_FMT_ABGR, AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB0,
-        AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUYV422,
+    AV_PIX_FMT_ARGB, AV_PIX_FMT_0RGB,
+    AV_PIX_FMT_ABGR, AV_PIX_FMT_0BGR,
+    AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB0,
+    AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR0,
+    AV_PIX_FMT_NONE
+};
 
 static int config_props(AVFilterLink *inlink)
 {

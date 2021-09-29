@@ -114,13 +114,13 @@ static av_cold int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-    static const enum AVPixelFormat pixel_fmts[] = {
-        AV_PIX_FMT_ARGB,
-        AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pixel_fmts[] = {
+    AV_PIX_FMT_ARGB,
+    AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_NONE
+};
 
 static const AVFilterPad despill_inputs[] = {
     {

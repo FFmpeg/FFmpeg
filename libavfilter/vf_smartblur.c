@@ -114,13 +114,13 @@ static av_cold void uninit(AVFilterContext *ctx)
     sws_freeContext(s->chroma.filter_context);
 }
 
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_NONE
-    };
+static const enum AVPixelFormat pix_fmts[] = {
+    AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
+    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_NONE
+};
 
 static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int flags)
 {

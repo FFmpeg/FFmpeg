@@ -284,26 +284,26 @@ typedef struct AVFilter {
      * See the documentation of enum FilterFormatsState in internal.h.
      */
     union {
-    /**
-     * Query formats supported by the filter on its inputs and outputs.
-     *
-     * This callback is called after the filter is initialized (so the inputs
-     * and outputs are fixed), shortly before the format negotiation. This
-     * callback may be called more than once.
-     *
-     * This callback must set AVFilterLink.outcfg.formats on every input link and
-     * AVFilterLink.incfg.formats on every output link to a list of pixel/sample
-     * formats that the filter supports on that link. For audio links, this
-     * filter must also set @ref AVFilterLink.incfg.samplerates "in_samplerates" /
-     * @ref AVFilterLink.outcfg.samplerates "out_samplerates" and
-     * @ref AVFilterLink.incfg.channel_layouts "in_channel_layouts" /
-     * @ref AVFilterLink.outcfg.channel_layouts "out_channel_layouts" analogously.
-     *
-     * This callback must never be NULL if the union is in this state.
-     *
-     * @return zero on success, a negative value corresponding to an
-     * AVERROR code otherwise
-     */
+        /**
+         * Query formats supported by the filter on its inputs and outputs.
+         *
+         * This callback is called after the filter is initialized (so the inputs
+         * and outputs are fixed), shortly before the format negotiation. This
+         * callback may be called more than once.
+         *
+         * This callback must set AVFilterLink.outcfg.formats on every input link
+         * and AVFilterLink.incfg.formats on every output link to a list of
+         * pixel/sample formats that the filter supports on that link. For audio
+         * links, this filter must also set @ref AVFilterLink.incfg.samplerates
+         * "in_samplerates" / @ref AVFilterLink.outcfg.samplerates "out_samplerates"
+         * and @ref AVFilterLink.incfg.channel_layouts "in_channel_layouts" /
+         * @ref AVFilterLink.outcfg.channel_layouts "out_channel_layouts" analogously.
+         *
+         * This callback must never be NULL if the union is in this state.
+         *
+         * @return zero on success, a negative value corresponding to an
+         * AVERROR code otherwise
+         */
         int (*query_func)(AVFilterContext *);
         /**
          * A pointer to an array of admissible pixel formats delimited
