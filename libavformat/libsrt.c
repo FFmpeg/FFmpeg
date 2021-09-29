@@ -530,7 +530,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "maxbw", p)) {
-            s->maxbw = strtoll(buf, NULL, 0);
+            s->maxbw = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "pbkeylen", p)) {
             s->pbkeylen = strtol(buf, NULL, 10);
