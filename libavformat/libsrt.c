@@ -397,10 +397,10 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "timeout", p)) {
-            s->rw_timeout = strtol(buf, NULL, 10);
+            s->rw_timeout = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "listen_timeout", p)) {
-            s->listen_timeout = strtol(buf, NULL, 10);
+            s->listen_timeout = strtoll(buf, NULL, 10);
         }
     }
     if (s->rw_timeout >= 0) {
@@ -566,19 +566,19 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             s->inputbw = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "oheadbw", p)) {
-            s->oheadbw = strtoll(buf, NULL, 10);
+            s->oheadbw = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "latency", p)) {
-            s->latency = strtol(buf, NULL, 10);
+            s->latency = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "tsbpddelay", p)) {
-            s->latency = strtol(buf, NULL, 10);
+            s->latency = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "rcvlatency", p)) {
-            s->rcvlatency = strtol(buf, NULL, 10);
+            s->rcvlatency = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "peerlatency", p)) {
-            s->peerlatency = strtol(buf, NULL, 10);
+            s->peerlatency = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "tlpktdrop", p)) {
             s->tlpktdrop = strtol(buf, NULL, 10);
@@ -587,7 +587,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             s->nakreport = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "connect_timeout", p)) {
-            s->connect_timeout = strtol(buf, NULL, 10);
+            s->connect_timeout = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "payload_size", p) ||
             av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
