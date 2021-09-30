@@ -29,11 +29,11 @@ Only mono files are supported.
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
+#include "rawdec.h"
 #include "rawenc.h"
 
-typedef struct {
-    uint64_t cumulated_size;
-    uint64_t block_count;
+typedef struct AMRContext {
+    FFRawDemuxerContext rawctx;
 } AMRContext;
 
 static const char AMR_header[]   = "#!AMR\n";
@@ -108,52 +108,8 @@ static int amr_read_header(AVFormatContext *s)
     st->codecpar->channels   = 1;
     st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-
-    return 0;
-}
-
-static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVCodecParameters *par = s->streams[0]->codecpar;
-    int read, size = 0, toc, mode;
-    int64_t pos = avio_tell(s->pb);
-    AMRContext *amr = s->priv_data;
-
-    if (avio_feof(s->pb)) {
-        return AVERROR_EOF;
-    }
-
-    // FIXME this is wrong, this should rather be in an AVParser
-    toc  = avio_r8(s->pb);
-    mode = (toc >> 3) & 0x0F;
-
-    if (par->codec_id == AV_CODEC_ID_AMR_NB) {
-        size = amrnb_packed_size[mode];
-    } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
-        size = amrwb_packed_size[mode];
-    }
-
-    if (!size || av_new_packet(pkt, size))
-        return AVERROR(EIO);
-
-    if (amr->cumulated_size < UINT64_MAX - size) {
-        amr->cumulated_size += size;
-        /* Both AMR formats have 50 frames per second */
-        s->streams[0]->codecpar->bit_rate = amr->cumulated_size / ++amr->block_count * 8 * 50;
-    }
-
-    pkt->stream_index = 0;
-    pkt->pos          = pos;
-    pkt->data[0]      = toc;
-    pkt->duration     = par->codec_id == AV_CODEC_ID_AMR_NB ? 160 : 320;
-    read              = avio_read(s->pb, pkt->data + 1, size - 1);
-
-    if (read != size - 1) {
-        if (read < 0)
-            return read;
-        return AVERROR(EIO);
-    }
 
     return 0;
 }
@@ -165,8 +121,9 @@ const AVInputFormat ff_amr_demuxer = {
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
-    .read_packet    = amr_read_packet,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
+    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 
@@ -210,6 +167,7 @@ static int amrnb_read_header(AVFormatContext *s)
     st->codecpar->channels       = 1;
     st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    ffstream(st)->need_parsing   = AVSTREAM_PARSE_FULL_RAW;
     avpriv_set_pts_info(st, 64, 1, 8000);
 
     return 0;
@@ -221,8 +179,9 @@ const AVInputFormat ff_amrnb_demuxer = {
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amrnb_probe,
     .read_header    = amrnb_read_header,
-    .read_packet    = amr_read_packet,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
+    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 
@@ -266,6 +225,7 @@ static int amrwb_read_header(AVFormatContext *s)
     st->codecpar->channels       = 1;
     st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    ffstream(st)->need_parsing   = AVSTREAM_PARSE_FULL_RAW;
     avpriv_set_pts_info(st, 64, 1, 16000);
 
     return 0;
@@ -277,8 +237,9 @@ const AVInputFormat ff_amrwb_demuxer = {
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amrwb_probe,
     .read_header    = amrwb_read_header,
-    .read_packet    = amr_read_packet,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
+    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 
