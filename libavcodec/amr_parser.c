@@ -39,8 +39,16 @@ typedef struct AMRParseContext {
     ParseContext pc;
     uint64_t cumulated_size;
     uint64_t block_count;
+    int current_channel;
     int remaining;
 } AMRParseContext;
+
+static av_cold int amr_parse_init(AVCodecParserContext *s1)
+{
+    AMRParseContext *s = s1->priv_data;
+    s->remaining = -1;
+    return 0;
+}
 
 static int amr_parse(AVCodecParserContext *s1,
                      AVCodecContext *avctx,
@@ -57,21 +65,34 @@ static int amr_parse(AVCodecParserContext *s1,
     if (s1->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
     } else {
-        if (s->remaining) {
-            next = s->remaining;
-        } else {
-            int mode = (buf[0] >> 3) & 0x0F;
+        int ch, offset = 0;
 
-            if (avctx->codec_id == AV_CODEC_ID_AMR_NB) {
-                next = amrnb_packed_size[mode];
-            } else if (avctx->codec_id == AV_CODEC_ID_AMR_WB) {
-                next = amrwb_packed_size[mode];
+        for (ch = s->current_channel; ch < avctx->channels; ch++) {
+            if (s->remaining >= 0) {
+                next = s->remaining;
+            } else {
+                int mode = (buf[offset] >> 3) & 0x0F;
+
+                if (avctx->codec_id == AV_CODEC_ID_AMR_NB) {
+                    next = amrnb_packed_size[mode];
+                } else if (avctx->codec_id == AV_CODEC_ID_AMR_WB) {
+                    next = amrwb_packed_size[mode];
+                }
+            }
+
+            offset += next;
+            if (offset >= buf_size) {
+                s->remaining = offset - buf_size;
+                next = END_NOT_FOUND;
+                break;
+            } else {
+                s->remaining = -1;
             }
         }
 
-        s->remaining = next - FFMIN(buf_size, next);
-        if (s->remaining)
-            next = END_NOT_FOUND;
+        s->current_channel = ch % avctx->channels;
+        if (s->remaining < 0)
+            next = offset;
 
         if (next != END_NOT_FOUND) {
             if (s->cumulated_size < UINT64_MAX - next) {
@@ -98,6 +119,7 @@ static int amr_parse(AVCodecParserContext *s1,
 const AVCodecParser ff_amr_parser = {
     .codec_ids      = { AV_CODEC_ID_AMR_NB, AV_CODEC_ID_AMR_WB },
     .priv_data_size = sizeof(AMRParseContext),
+    .parser_init    = amr_parse_init,
     .parser_parse   = amr_parse,
     .parser_close   = ff_parse_close,
 };

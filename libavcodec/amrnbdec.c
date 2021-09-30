@@ -145,6 +145,10 @@ typedef struct AMRContext {
 
 } AMRContext;
 
+typedef struct AMRChannelsContext {
+    AMRContext ch[2];
+} AMRChannelsContext;
+
 /** Double version of ff_weighted_vector_sumf() */
 static void weighted_vector_sumd(double *out, const double *in_a,
                                  const double *in_b, double weight_coeff_a,
@@ -159,20 +163,24 @@ static void weighted_vector_sumd(double *out, const double *in_a,
 
 static av_cold int amrnb_decode_init(AVCodecContext *avctx)
 {
-    AMRContext *p = avctx->priv_data;
+    AMRChannelsContext *s = avctx->priv_data;
     int i;
 
-    if (avctx->channels > 1) {
-        avpriv_report_missing_feature(avctx, "multi-channel AMR");
+    if (avctx->channels > 2) {
+        avpriv_report_missing_feature(avctx, ">2 channel AMR");
         return AVERROR_PATCHWELCOME;
     }
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    if (!avctx->channels) {
+        avctx->channels       = 1;
+        avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    }
     if (!avctx->sample_rate)
         avctx->sample_rate = 8000;
-    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
 
+    for (int ch = 0; ch < avctx->channels; ch++) {
+        AMRContext *p = &s->ch[ch];
     // p->excitation always points to the same position in p->excitation_buf
     p->excitation = &p->excitation_buf[PITCH_DELAY_MAX + LP_FILTER_ORDER + 1];
 
@@ -188,6 +196,7 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
     ff_acelp_vectors_init(&p->acelpv_ctx);
     ff_celp_filter_init(&p->celpf_ctx);
     ff_celp_math_init(&p->celpm_ctx);
+    }
 
     return 0;
 }
@@ -949,25 +958,30 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
 
-    AMRContext *p = avctx->priv_data;        // pointer to private data
+    AMRChannelsContext *s = avctx->priv_data;        // pointer to private data
     AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    float *buf_out;                          // pointer to the output data buffer
-    int i, subframe, ret;
-    float fixed_gain_factor;
-    AMRFixed fixed_sparse = {0};             // fixed vector up to anti-sparseness processing
-    float spare_vector[AMR_SUBFRAME_SIZE];   // extra stack space to hold result from anti-sparseness processing
-    float synth_fixed_gain;                  // the fixed gain that synthesis should use
-    const float *synth_fixed_vector;         // pointer to the fixed vector that synthesis should use
+    int ret;
 
     /* get output buffer */
     frame->nb_samples = AMR_BLOCK_SIZE;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    buf_out = (float *)frame->data[0];
+
+    for (int ch = 0; ch < avctx->channels; ch++) {
+        AMRContext *p = &s->ch[ch];
+        float fixed_gain_factor;
+        AMRFixed fixed_sparse = {0};             // fixed vector up to anti-sparseness processing
+        float spare_vector[AMR_SUBFRAME_SIZE];   // extra stack space to hold result from anti-sparseness processing
+        float synth_fixed_gain;                  // the fixed gain that synthesis should use
+        const float *synth_fixed_vector;         // pointer to the fixed vector that synthesis should use
+        float *buf_out = (float *)frame->extended_data[ch];
+        int channel_size;
+        int i, subframe;
 
     p->cur_frame_mode = unpack_bitstream(p, buf, buf_size);
+        channel_size = frame_sizes_nb[p->cur_frame_mode] + 1; // +7 for rounding and +8 for TOC
     if (p->cur_frame_mode == NO_DATA) {
         av_log(avctx, AV_LOG_ERROR, "Corrupt bitstream\n");
         return AVERROR_INVALIDDATA;
@@ -1072,11 +1086,13 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
      * qbar(n-1) rather than qbar(n) in section 6.1(4) equation 71. */
     p->acelpv_ctx.weighted_vector_sumf(p->lsf_avg, p->lsf_avg, p->lsf_q[3],
                             0.84, 0.16, LP_FILTER_ORDER);
+        buf += channel_size;
+        buf_size -= channel_size;
+    }
 
     *got_frame_ptr = 1;
 
-    /* return the amount of bytes consumed if everything was OK */
-    return frame_sizes_nb[p->cur_frame_mode] + 1; // +7 for rounding and +8 for TOC
+    return avpkt->size;
 }
 
 
@@ -1085,10 +1101,10 @@ const AVCodec ff_amrnb_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("AMR-NB (Adaptive Multi-Rate NarrowBand)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_AMR_NB,
-    .priv_data_size = sizeof(AMRContext),
+    .priv_data_size = sizeof(AMRChannelsContext),
     .init           = amrnb_decode_init,
     .decode         = amrnb_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
 };

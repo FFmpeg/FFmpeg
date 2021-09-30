@@ -21,13 +21,12 @@
 
 /*
 Write and read amr data according to RFC3267, http://www.ietf.org/rfc/rfc3267.txt?number=3267
-
-Only mono files are supported.
-
 */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rawdec.h"
 #include "rawenc.h"
@@ -36,8 +35,10 @@ typedef struct AMRContext {
     FFRawDemuxerContext rawctx;
 } AMRContext;
 
-static const char AMR_header[]   = "#!AMR\n";
-static const char AMRWB_header[] = "#!AMR-WB\n";
+static const uint8_t AMR_header[6]      = "#!AMR\x0a";
+static const uint8_t AMRMC_header[12]   = "#!AMR_MC1.0\x0a";
+static const uint8_t AMRWB_header[9]    = "#!AMR-WB\x0a";
+static const uint8_t AMRWBMC_header[15] = "#!AMR-WB_MC1.0\x0a";
 
 static const uint8_t amrnb_packed_size[16] = {
     13, 14, 16, 18, 20, 21, 27, 32, 6, 1, 1, 1, 1, 1, 1, 1
@@ -69,7 +70,7 @@ static int amr_probe(const AVProbeData *p)
 {
     // Only check for "#!AMR" which could be amr-wb, amr-nb.
     // This will also trigger multichannel files: "#!AMR_MC1.0\n" and
-    // "#!AMR-WB_MC1.0\n" (not supported)
+    // "#!AMR-WB_MC1.0\n"
 
     if (!memcmp(p->buf, AMR_header, 5))
         return AVPROBE_SCORE_MAX;
@@ -82,34 +83,59 @@ static int amr_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;
-    uint8_t header[9];
+    uint8_t header[19] = { 0 };
+    int read, back = 0, ret;
 
-    if (avio_read(pb, header, 6) != 6)
-        return AVERROR_INVALIDDATA;
+    ret = ffio_ensure_seekback(s->pb, sizeof(header));
+    if (ret < 0)
+        return ret;
+
+    read = avio_read(pb, header, sizeof(header));
+    if (read < 0)
+        return ret;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    if (memcmp(header, AMR_header, 6)) {
-        if (avio_read(pb, header + 6, 3) != 3)
-            return AVERROR_INVALIDDATA;
-        if (memcmp(header, AMRWB_header, 9)) {
-            return -1;
-        }
-
-        st->codecpar->codec_tag   = MKTAG('s', 'a', 'w', 'b');
-        st->codecpar->codec_id    = AV_CODEC_ID_AMR_WB;
-        st->codecpar->sample_rate = 16000;
-    } else {
+    if (!memcmp(header, AMR_header, sizeof(AMR_header))) {
         st->codecpar->codec_tag   = MKTAG('s', 'a', 'm', 'r');
         st->codecpar->codec_id    = AV_CODEC_ID_AMR_NB;
         st->codecpar->sample_rate = 8000;
+        st->codecpar->channels = 1;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+        back = read - sizeof(AMR_header);
+    } else if (!memcmp(header, AMRWB_header, sizeof(AMRWB_header))) {
+        st->codecpar->codec_tag   = MKTAG('s', 'a', 'w', 'b');
+        st->codecpar->codec_id    = AV_CODEC_ID_AMR_WB;
+        st->codecpar->sample_rate = 16000;
+        st->codecpar->channels = 1;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+        back = read - sizeof(AMRWB_header);
+    } else if (!memcmp(header, AMRMC_header, sizeof(AMRMC_header))) {
+        st->codecpar->codec_tag   = MKTAG('s', 'a', 'm', 'r');
+        st->codecpar->codec_id    = AV_CODEC_ID_AMR_NB;
+        st->codecpar->sample_rate = 8000;
+        st->codecpar->channels    = AV_RL32(header + 12);
+        back = read - 4 - sizeof(AMRMC_header);
+    } else if (!memcmp(header, AMRWBMC_header, sizeof(AMRWBMC_header))) {
+        st->codecpar->codec_tag   = MKTAG('s', 'a', 'w', 'b');
+        st->codecpar->codec_id    = AV_CODEC_ID_AMR_WB;
+        st->codecpar->sample_rate = 16000;
+        st->codecpar->channels    = AV_RL32(header + 15);
+        back = read - 4 - sizeof(AMRWBMC_header);
+    } else {
+        return AVERROR_INVALIDDATA;
     }
-    st->codecpar->channels   = 1;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+
+    if (st->codecpar->channels < 1)
+        return AVERROR_INVALIDDATA;
+
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+
+    if (back > 0)
+        avio_seek(pb, -back, SEEK_CUR);
 
     return 0;
 }

@@ -93,21 +93,30 @@ typedef struct AMRWBContext {
 
 } AMRWBContext;
 
+typedef struct AMRWBChannelsContext {
+    AMRWBContext ch[2];
+} AMRWBChannelsContext;
+
 static av_cold int amrwb_decode_init(AVCodecContext *avctx)
 {
-    AMRWBContext *ctx = avctx->priv_data;
+    AMRWBChannelsContext *s = avctx->priv_data;
     int i;
 
-    if (avctx->channels > 1) {
-        avpriv_report_missing_feature(avctx, "multi-channel AMR");
+    if (avctx->channels > 2) {
+        avpriv_report_missing_feature(avctx, ">2 channel AMR");
         return AVERROR_PATCHWELCOME;
     }
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    if (!avctx->channels) {
+        avctx->channels       = 1;
+        avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    }
     if (!avctx->sample_rate)
         avctx->sample_rate = 16000;
-    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
+
+    for (int ch = 0; ch < avctx->channels; ch++) {
+    AMRWBContext *ctx = &s->ch[ch];
 
     av_lfg_init(&ctx->prng, 1);
 
@@ -124,6 +133,7 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
     ff_acelp_vectors_init(&ctx->acelpv_ctx);
     ff_celp_filter_init(&ctx->celpf_ctx);
     ff_celp_math_init(&ctx->celpm_ctx);
+    }
 
     return 0;
 }
@@ -1094,13 +1104,21 @@ static void update_sub_state(AMRWBContext *ctx)
 static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
-    AMRWBContext *ctx  = avctx->priv_data;
+    AMRWBChannelsContext *s  = avctx->priv_data;
     AVFrame *frame     = data;
-    AMRWBFrame   *cf   = &ctx->frame;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
+    int sub, i, ret;
+
+    /* get output buffer */
+    frame->nb_samples = 4 * AMRWB_SFR_SIZE_16k;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+
+    for (int ch = 0; ch < avctx->channels; ch++) {
+    AMRWBContext *ctx  = &s->ch[ch];
+    AMRWBFrame   *cf   = &ctx->frame;
     int expected_fr_size, header_size;
-    float *buf_out;
     float spare_vector[AMRWB_SFR_SIZE];      // extra stack space to hold result from anti-sparseness processing
     float fixed_gain_factor;                 // fixed gain correction factor (gamma)
     float *synth_fixed_vector;               // pointer to the fixed vector that synthesis should use
@@ -1110,13 +1128,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     float hb_exc[AMRWB_SFR_SIZE_16k];        // excitation for the high frequency band
     float hb_samples[AMRWB_SFR_SIZE_16k];    // filtered high-band samples from synthesis
     float hb_gain;
-    int sub, i, ret;
-
-    /* get output buffer */
-    frame->nb_samples = 4 * AMRWB_SFR_SIZE_16k;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-    buf_out = (float *)frame->data[0];
+    float *buf_out = (float *)frame->extended_data[ch];
 
     header_size      = decode_mime_header(ctx, buf);
     expected_fr_size = ((cf_sizes_wb[ctx->fr_cur_mode] + 7) >> 3) + 1;
@@ -1127,9 +1139,10 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     if (ctx->fr_cur_mode == NO_DATA || !ctx->fr_quality) {
         /* The specification suggests a "random signal" and
            "a muting technique" to "gradually decrease the output level". */
-        av_samples_set_silence(&frame->data[0], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
-        *got_frame_ptr = 1;
-        return expected_fr_size;
+        av_samples_set_silence(&frame->extended_data[ch], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
+        buf += expected_fr_size;
+        buf_size -= expected_fr_size;
+        continue;
     }
     if (ctx->fr_cur_mode > MODE_SID) {
         av_log(avctx, AV_LOG_ERROR,
@@ -1270,9 +1283,13 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     memcpy(ctx->isp_sub4_past, ctx->isp[3], LP_ORDER * sizeof(ctx->isp[3][0]));
     memcpy(ctx->isf_past_final, ctx->isf_cur, LP_ORDER * sizeof(float));
 
+        buf += expected_fr_size;
+        buf_size -= expected_fr_size;
+    }
+
     *got_frame_ptr = 1;
 
-    return expected_fr_size;
+    return avpkt->size;
 }
 
 const AVCodec ff_amrwb_decoder = {
@@ -1280,7 +1297,7 @@ const AVCodec ff_amrwb_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("AMR-WB (Adaptive Multi-Rate WideBand)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_AMR_WB,
-    .priv_data_size = sizeof(AMRWBContext),
+    .priv_data_size = sizeof(AMRWBChannelsContext),
     .init           = amrwb_decode_init,
     .decode         = amrwb_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
