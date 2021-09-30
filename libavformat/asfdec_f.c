@@ -149,7 +149,7 @@ static const ff_asf_guid asf_audio_conceal_none = {
 };
 
 #define PRINT_IF_GUID(g, cmp) \
-    if (!ff_guidcmp(g, &cmp)) \
+    if (!ff_guidcmp(g, &(cmp))) \
         av_log(NULL, AV_LOG_TRACE, "(GUID: %s) ", # cmp)
 
 static void print_guid(ff_asf_guid *g)
