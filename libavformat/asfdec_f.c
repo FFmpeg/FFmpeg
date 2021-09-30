@@ -205,13 +205,13 @@ static int asf_probe(const AVProbeData *pd)
 static int get_value(AVIOContext *pb, int type, int type2_size)
 {
     switch (type) {
-    case 2:
+    case ASF_BOOL:
         return (type2_size == 32) ? avio_rl32(pb) : avio_rl16(pb);
-    case 3:
+    case ASF_DWORD:
         return avio_rl32(pb);
-    case 4:
+    case ASF_QWORD:
         return avio_rl64(pb);
-    case 5:
+    case ASF_WORD:
         return avio_rl16(pb);
     default:
         return INT_MIN;
