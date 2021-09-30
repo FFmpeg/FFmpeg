@@ -159,6 +159,17 @@ SHUFFLE_BYTES 1, 2, 3, 0
 SHUFFLE_BYTES 3, 0, 1, 2
 SHUFFLE_BYTES 3, 2, 1, 0
 
+%if ARCH_X86_64
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+SHUFFLE_BYTES 2, 1, 0, 3
+SHUFFLE_BYTES 0, 3, 2, 1
+SHUFFLE_BYTES 1, 2, 3, 0
+SHUFFLE_BYTES 3, 0, 1, 2
+SHUFFLE_BYTES 3, 2, 1, 0
+%endif
+%endif
+
 ;-----------------------------------------------------------------------------------------------
 ; uyvytoyuv422(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 ;              const uint8_t *src, int width, int height,

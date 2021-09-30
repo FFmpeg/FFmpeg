@@ -146,6 +146,12 @@ void ff_shuffle_bytes_3012_ssse3(const uint8_t *src, uint8_t *dst, int src_size)
 void ff_shuffle_bytes_3210_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
 
 #if ARCH_X86_64
+void ff_shuffle_bytes_2103_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_0321_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_1230_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3012_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3210_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+
 void ff_uyvytoyuv422_sse2(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                           const uint8_t *src, int width, int height,
                           int lumStride, int chromStride, int srcStride);
@@ -186,9 +192,16 @@ av_cold void rgb2rgb_init_x86(void)
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_ssse3;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_ssse3;
     }
-    if (EXTERNAL_AVX(cpu_flags)) {
 #if ARCH_X86_64
-        uyvytoyuv422 = ff_uyvytoyuv422_avx;
-#endif
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        shuffle_bytes_0321 = ff_shuffle_bytes_0321_avx2;
+        shuffle_bytes_2103 = ff_shuffle_bytes_2103_avx2;
+        shuffle_bytes_1230 = ff_shuffle_bytes_1230_avx2;
+        shuffle_bytes_3012 = ff_shuffle_bytes_3012_avx2;
+        shuffle_bytes_3210 = ff_shuffle_bytes_3210_avx2;
     }
+    if (EXTERNAL_AVX(cpu_flags)) {
+        uyvytoyuv422 = ff_uyvytoyuv422_avx;
+    }
+#endif
 }
