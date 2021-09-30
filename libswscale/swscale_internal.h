@@ -311,8 +311,8 @@ typedef struct SwsContext {
     int              nb_slice_ctx;
 
     // values passed to current sws_receive_slice() call
-    unsigned int dst_slice_start;
-    unsigned int dst_slice_height;
+    int dst_slice_start;
+    int dst_slice_height;
 
     /**
      * Note that src, dst, srcStride, dstStride will be copied in the
