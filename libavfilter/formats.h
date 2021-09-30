@@ -209,6 +209,12 @@ av_warn_unused_result
 AVFilterFormats *ff_make_format_list(const int *fmts);
 
 /**
+ * Equivalent to ff_make_format_list({const int[]}{ fmt, -1 })
+ */
+av_warn_unused_result
+AVFilterFormats *ff_make_formats_list_singleton(int fmt);
+
+/**
  * Add fmt to the list of media formats contained in *avff.
  * If *avff is NULL the function allocates the filter formats struct
  * and puts its pointer in *avff.

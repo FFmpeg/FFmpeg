@@ -431,6 +431,12 @@ int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout)
     return 0;
 }
 
+AVFilterFormats *ff_make_formats_list_singleton(int fmt)
+{
+    int fmts[2] = { fmt, -1 };
+    return ff_make_format_list(fmts);
+}
+
 AVFilterFormats *ff_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
