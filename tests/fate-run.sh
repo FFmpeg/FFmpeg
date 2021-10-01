@@ -178,7 +178,7 @@ pcm(){
 fmtstdout(){
     fmt=$1
     shift 1
-    ffmpeg -bitexact "$@" -f $fmt -
+    ffmpeg -bitexact "$@" -bitexact -f $fmt -
 }
 
 enc_dec_pcm(){
