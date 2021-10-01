@@ -109,19 +109,14 @@ static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
                        "Subtitle starts with '[', may cause problems with LRC format.\n");
             }
 
-            if(pkt->pts >= 0) {
-                avio_printf(s->pb, "[%02"PRId64":%02"PRId64".%02"PRId64"]",
-                            (pkt->pts / 6000),
-                            ((pkt->pts / 100) % 60),
-                            (pkt->pts % 100));
-            } else {
-                /* Offset feature of LRC can easily make pts negative,
-                 * we just output it directly and let the player drop it. */
-                avio_printf(s->pb, "[-%02"PRId64":%02"PRId64".%02"PRId64"]",
-                            (-pkt->pts) / 6000,
-                            ((-pkt->pts) / 100) % 60,
-                            (-pkt->pts) % 100);
-            }
+            /* Offset feature of LRC can easily make pts negative,
+             * we just output it directly and let the player drop it. */
+            avio_write(s->pb, "[-", 1 + (pkt->pts < 0));
+            avio_printf(s->pb, "%02"PRIu64":%02"PRIu64".%02"PRIu64"]",
+                        (FFABS64U(pkt->pts) / 6000),
+                        ((FFABS64U(pkt->pts) / 100) % 60),
+                        (FFABS64U(pkt->pts) % 100));
+
             avio_write(s->pb, line, size);
             avio_w8(s->pb, '\n');
             line = next_line;
