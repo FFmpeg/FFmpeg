@@ -88,8 +88,6 @@ static int scc_read_header(AVFormatContext *s)
                 break;
             continue;
         }
-                if (!strncmp(line, "Scenarist_SCC V1.0", 18))
-                    continue;
         if (av_sscanf(line, "%d:%d:%d%*[:;]%d", &hh, &mm, &ss, &fs) != 4)
             continue;
 
