@@ -2205,7 +2205,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
     InputStream  *ist;
     AVDictionary *unused_opts = NULL;
     AVDictionaryEntry *e = NULL;
-    int format_flags = 0;
 
     if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
         o->stop_time = INT64_MAX;
@@ -2250,13 +2249,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
 
     oc->interrupt_callback = int_cb;
 
-    e = av_dict_get(o->g->format_opts, "fflags", NULL, 0);
-    if (e) {
-        const AVOption *o = av_opt_find(oc, "fflags", NULL, 0, 0);
-        av_opt_eval_flags(oc, o, e->value, &format_flags);
-    }
     if (o->bitexact) {
-        format_flags |= AVFMT_FLAG_BITEXACT;
         oc->flags    |= AVFMT_FLAG_BITEXACT;
     }
 
