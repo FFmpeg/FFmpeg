@@ -100,7 +100,6 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
 
 static void body(uint32_t ABCD[4], const uint8_t *src, size_t nblocks)
 {
-    int i av_unused;
     const uint32_t *X;
     uint32_t a, b, c, d, t;
 
@@ -113,7 +112,7 @@ static void body(uint32_t ABCD[4], const uint8_t *src, size_t nblocks)
         X = (const uint32_t *)src + n * 16;
 
 #if CONFIG_SMALL
-        for (i = 0; i < 64; i++) {
+        for (int i = 0; i < 64; i++) {
             CORE(i, a, b, c, d);
             t = d;
             d = c;
