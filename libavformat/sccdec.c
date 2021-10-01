@@ -51,9 +51,9 @@ static int scc_probe(const AVProbeData *p)
 static int convert(uint8_t x)
 {
     if (x >= 'a')
-        x -= 87;
+        x -= 'a' - 10;
     else if (x >= 'A')
-        x -= 55;
+        x -= 'A' - 10;
     else
         x -= '0';
     return x;
