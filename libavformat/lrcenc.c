@@ -79,7 +79,7 @@ static int lrc_write_header(AVFormatContext *s)
         avio_printf(s->pb, "[%s:%s]\n",
                     metadata_item->key, metadata_item->value);
     }
-    avio_printf(s->pb, "\n");
+    avio_w8(s->pb, '\n');
     return 0;
 }
 

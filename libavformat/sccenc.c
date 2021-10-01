@@ -94,12 +94,12 @@ static int scc_write_packet(AVFormatContext *avf, AVPacket *pkt)
             scc->inside = 1;
         }
         if (scc->n > 0)
-            avio_printf(avf->pb, " ");
+            avio_w8(avf->pb, ' ');
         avio_printf(avf->pb, "%02x%02x", pkt->data[i + 1], pkt->data[i + 2]);
         scc->n++;
     }
     if (scc->inside && (scc->prev_h != h || scc->prev_m != m || scc->prev_s != s || scc->prev_f != f)) {
-        avio_printf(avf->pb, "\n");
+        avio_w8(avf->pb, '\n');
         scc->n = 0;
         scc->inside = 0;
     }
