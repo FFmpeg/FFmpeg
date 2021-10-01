@@ -84,33 +84,25 @@ static int lrc_write_header(AVFormatContext *s)
 static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     if(pkt->pts != AV_NOPTS_VALUE) {
-        char *data = av_malloc(pkt->size + 1);
-        char *line;
-        char *delim;
+        const uint8_t *line = pkt->data;
+        const uint8_t *end  = pkt->data + pkt->size;
 
-        if(!data) {
-            return AVERROR(ENOMEM);
-        }
-        memcpy(data, pkt->data, pkt->size);
-        data[pkt->size] = '\0';
-
-        for(delim = data + pkt->size - 1;
-            delim >= data && (delim[0] == '\n' || delim[0] == '\r'); delim--) {
-            delim[0] = '\0'; // Strip last empty lines
-        }
-        line = data;
-        while(line[0] == '\n' || line[0] == '\r') {
-            line++; // Skip first empty lines
+        while (end > line && (end[-1] == '\n' || end[-1] == '\r'))
+            end--;
+        if (line != end) {
+            while (line[0] == '\n' || line[0] == '\r')
+                line++; // Skip first empty lines
         }
 
         while(line) {
-            delim = strchr(line, '\n');
-            if(delim) {
-                if(delim > line && delim[-1] == '\r') {
-                    delim[-1] = '\0';
-                }
-                delim[0] = '\0';
-                delim++;
+            const uint8_t *next_line = memchr(line, '\n', end - line);
+            size_t size = end - line;
+
+            if (next_line) {
+                size = next_line - line;
+                if (next_line > line && next_line[-1] == '\r')
+                    size--;
+                next_line++;
             }
             if(line[0] == '[') {
                 av_log(s, AV_LOG_WARNING,
@@ -130,10 +122,10 @@ static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
                             ((-pkt->pts) / 100) % 60,
                             (-pkt->pts) % 100);
             }
-            avio_printf(s->pb, "%s\n", line);
-            line = delim;
+            avio_write(s->pb, line, size);
+            avio_w8(s->pb, '\n');
+            line = next_line;
         }
-        av_free(data);
     }
     return 0;
 }
