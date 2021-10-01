@@ -144,8 +144,6 @@ static const AVOption morpho_options[] = {
 
 FRAMESYNC_DEFINE_CLASS(morpho, MorphoContext, fs);
 
-static int query_formats(AVFilterContext *ctx)
-{
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -167,9 +165,6 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
-}
 
 static void min_fun(uint8_t *c, const uint8_t *a, const uint8_t *b, int x)
 {
@@ -1026,7 +1021,7 @@ const AVFilter ff_vf_morpho = {
     .uninit          = uninit,
     FILTER_INPUTS(morpho_inputs),
     FILTER_OUTPUTS(morpho_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
