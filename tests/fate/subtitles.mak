@@ -26,6 +26,9 @@ FATE_SUBTITLES-$(call DEMMUX, JACOSUB, JACOSUB) += fate-sub-jacosub-remux
 fate-sub-jacosub-remux: CMD = transcode jacosub $(TARGET_SAMPLES)/sub/JACOsub_capability_tester.jss jacosub "-map 0 -c copy" "-map 0 -c copy"
 fate-sub-jacosub-remux: CMP = diff
 
+FATE_SUBTITLES-$(call DEMMUX, LRC, LRC) += fate-sub-lrc-remux
+fate-sub-lrc-remux: CMD = fmtstdout lrc -i $(TARGET_SAMPLES)/sub/test-lrc.lrc
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, MICRODVD, MICRODVD) += fate-sub-microdvd
 fate-sub-microdvd: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/MicroDVD_capability_tester.sub
 
