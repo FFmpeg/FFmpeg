@@ -82,6 +82,7 @@ static int scc_read_header(AVFormatContext *s)
         char line[4096];
         int64_t pos, ts;
 
+        pos = ff_text_pos(&tr);
         len = ff_subtitles_read_line(&tr, line, sizeof(line));
         if (len <= 13) {
             if (ff_text_eof(&tr))
@@ -95,7 +96,6 @@ static int scc_read_header(AVFormatContext *s)
         if (sub)
             sub->duration = ts - sub->pts;
 
-        pos = ff_text_pos(&tr);
         lline = (char *)&line;
         lline += 12;
 
