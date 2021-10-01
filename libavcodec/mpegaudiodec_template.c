@@ -1638,7 +1638,6 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int len, ret;
-    int av_unused out_size;
 
     len = buf_size;
 
