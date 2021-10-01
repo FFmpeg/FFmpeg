@@ -3595,7 +3595,6 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
           for(x = startx, qp_index=0; x < endx; x+=BLOCK_SIZE, qp_index++){
             const int stride= dstStride;
-            av_unused uint8_t *tmpXchg;
             c.QP = c.QP_block[qp_index];
             c.nonBQP = c.nonBQP_block[qp_index];
             c.pQPb = c.pQPb_block[qp_index];
@@ -3668,9 +3667,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             srcBlock+=8;
 
 #if TEMPLATE_PP_MMX
-            tmpXchg= tempBlock1;
-            tempBlock1= tempBlock2;
-            tempBlock2 = tmpXchg;
+            FFSWAP(uint8_t *, tempBlock1, tempBlock2);
 #endif
           }
         }
