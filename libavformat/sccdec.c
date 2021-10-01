@@ -96,7 +96,7 @@ static int scc_read_header(AVFormatContext *s)
         if (sub)
             sub->duration = ts - sub->pts;
 
-        lline = (char *)&line;
+        lline  = line;
         lline += 12;
 
         for (i = 0; i < 4095; i += 3) {
