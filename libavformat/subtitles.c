@@ -418,6 +418,7 @@ ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size)
     size_t cur = 0;
     if (!size)
         return 0;
+    buf[0] = '\0';
     while (cur + 1 < size) {
         unsigned char c = ff_text_r8(tr);
         if (!c)
