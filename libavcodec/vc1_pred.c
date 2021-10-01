@@ -468,7 +468,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
 /** Predict and set motion vector for interlaced frame picture MBs
  */
 void ff_vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
-                          int mvn, int r_x, int r_y, uint8_t* is_intra, int dir)
+                          int mvn, int r_x, int r_y, int dir)
 {
     MpegEncContext *s = &v->s;
     int xy, wrap, off = 0;
