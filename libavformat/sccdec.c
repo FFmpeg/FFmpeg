@@ -117,8 +117,6 @@ static int scc_read_header(AVFormatContext *s)
             if (i > 12 && o1 == 0x94 && o2 == 0x20 && saveptr &&
                 (av_strncasecmp(saveptr, "942f", 4) && !av_strncasecmp(saveptr, "942c", 4))) {
 
-                out[i] = 0;
-
                 sub = ff_subtitles_queue_insert(&scc->q, out, i, 0);
                 if (!sub)
                     return AVERROR(ENOMEM);
@@ -135,8 +133,6 @@ static int scc_read_header(AVFormatContext *s)
             out[i+1] = o1;
             out[i+2] = o2;
         }
-
-        out[i] = 0;
 
         sub = ff_subtitles_queue_insert(&scc->q, out, i, 0);
         if (!sub)
