@@ -230,8 +230,6 @@ void ff_command_queue_pop(AVFilterContext *filter);
 
 char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms);
 
-void ff_tlog_ref(void *ctx, AVFrame *ref, int end);
-
 void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
 
 /**

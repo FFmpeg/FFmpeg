@@ -47,7 +47,7 @@
 #include "libavutil/ffversion.h"
 const char av_filter_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
-void ff_tlog_ref(void *ctx, AVFrame *ref, int end)
+static void tlog_ref(void *ctx, AVFrame *ref, int end)
 {
     ff_tlog(ctx,
             "ref[%p buf:%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
@@ -1018,7 +1018,7 @@ fail:
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     int ret;
-    FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1); ff_tlog(NULL, " "); ff_tlog_ref(NULL, frame, 1);
+    FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1); ff_tlog(NULL, " "); tlog_ref(NULL, frame, 1);
 
     /* Consistency checks */
     if (link->type == AVMEDIA_TYPE_VIDEO) {
