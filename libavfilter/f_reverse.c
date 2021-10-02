@@ -167,6 +167,12 @@ static void reverse_samples_planar(AVFrame *out)
                 FFSWAP(int32_t, dst[i], dst[j]);
         }
             break;
+        case AV_SAMPLE_FMT_S64P: {
+            int64_t *dst = (int64_t *)out->extended_data[p];
+            for (int i = 0, j = out->nb_samples - 1; i < j; i++, j--)
+                FFSWAP(int64_t, dst[i], dst[j]);
+        }
+            break;
         case AV_SAMPLE_FMT_FLTP: {
             float *dst = (float *)out->extended_data[p];
             for (int i = 0, j = out->nb_samples - 1; i < j; i++, j--)
@@ -207,6 +213,13 @@ static void reverse_samples_packed(AVFrame *out)
         for (int i = 0, j = out->nb_samples - 1; i < j; i++, j--)
             for (int p = 0; p < channels; p++)
                 FFSWAP(int32_t, dst[i * channels + p], dst[j * channels + p]);
+    }
+        break;
+    case AV_SAMPLE_FMT_S64: {
+        int64_t *dst = (int64_t *)out->extended_data[0];
+        for (int i = 0, j = out->nb_samples - 1; i < j; i++, j--)
+            for (int p = 0; p < channels; p++)
+                FFSWAP(int64_t, dst[i * channels + p], dst[j * channels + p]);
     }
         break;
     case AV_SAMPLE_FMT_FLT: {
