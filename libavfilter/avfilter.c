@@ -49,7 +49,6 @@ const char av_filter_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 void ff_tlog_ref(void *ctx, AVFrame *ref, int end)
 {
-    av_unused char buf[16];
     ff_tlog(ctx,
             "ref[%p buf:%p data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
             ref, ref->buf, ref->data[0],
