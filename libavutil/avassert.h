@@ -31,6 +31,7 @@
 #ifdef HAVE_AV_CONFIG_H
 #   include "config.h"
 #endif
+#include "attributes.h"
 #include "log.h"
 #include "macros.h"
 
@@ -74,5 +75,46 @@
  * This will av_assert0() that the cpu is not in MMX state on X86
  */
 void av_assert0_fpu(void);
+
+/**
+ * Asserts that are used as compiler optimization hints depending
+ * upon ASSERT_LEVEL and NBDEBUG.
+ *
+ * Undefined behaviour occurs if execution reaches a point marked
+ * with av_unreachable() or if a condition used with av_assume()
+ * is false.
+ *
+ * The condition used with av_assume() should not have side-effects
+ * and should be visible to the compiler.
+ */
+#if defined(ASSERT_LEVEL) ? ASSERT_LEVEL > 0 : !defined(HAVE_AV_CONFIG_H) && !defined(NDEBUG)
+#define av_unreachable(msg)                                             \
+do {                                                                    \
+    av_log(NULL, AV_LOG_PANIC,                                          \
+           "Reached supposedly unreachable code at %s:%d: %s\n",        \
+           __FILE__, __LINE__, msg);                                    \
+    abort();                                                            \
+} while (0)
+#define av_assume(cond) av_assert0(cond)
+#else
+#if AV_GCC_VERSION_AT_LEAST(4, 5) || AV_HAS_BUILTIN(__builtin_unreachable)
+#define av_unreachable(msg) __builtin_unreachable()
+#elif  defined(_MSC_VER)
+#define av_unreachable(msg) __assume(0)
+#define av_assume(cond)     __assume(cond)
+#elif __STDC_VERSION__ >= 202311L
+#include <stddef.h>
+#define av_unreachable(msg) unreachable()
+#else
+#define av_unreachable(msg) ((void)0)
+#endif
+
+#ifndef av_assume
+#define av_assume(cond) do { \
+    if (!(cond))             \
+        av_unreachable();    \
+} while (0)
+#endif
+#endif
 
 #endif /* AVUTIL_AVASSERT_H */
