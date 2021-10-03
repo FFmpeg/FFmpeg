@@ -556,7 +556,8 @@ static void decode_fixed_vector(float *fixed_vector, const uint16_t *pulse_hi,
                            ((int) pulse_hi[i] << 11), 4, 1);
         break;
     default:
-        av_assert2(0);
+        av_unreachable("Everything >= MODE_SID is impossible: MODE_SID is patchwelcome,"
+                       "> MODE_SID is invalid");
     }
 
     memset(fixed_vector, 0, sizeof(float) * AMRWB_SFR_SIZE);
