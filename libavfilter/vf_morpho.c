@@ -932,6 +932,7 @@ copy:
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
     return ff_filter_frame(outlink, out);
 fail:
+    av_frame_free(&out);
     av_frame_free(&in);
     return ret;
 }
