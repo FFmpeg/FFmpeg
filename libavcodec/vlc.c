@@ -42,6 +42,8 @@
 {                                                           \
     const uint8_t *ptr = (const uint8_t *)table + i * wrap; \
     switch(size) {                                          \
+    default:                                                \
+        av_unreachable("Only uint8/16/32_t are used");      \
     case 1:                                                 \
         v = *(const uint8_t *)ptr;                          \
         break;                                              \
@@ -49,8 +51,6 @@
         v = *(const uint16_t *)ptr;                         \
         break;                                              \
     case 4:                                                 \
-    default:                                                \
-        av_assert1(size == 4);                              \
         v = *(const uint32_t *)ptr;                         \
         break;                                              \
     }                                                       \
