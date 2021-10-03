@@ -722,6 +722,7 @@ static int decode_frame(AVCodecContext *avctx,
             break;
         default:
             bytestream2_skip(gb, size);
+            ret = 0;
         }
 
         if (ret < 0)
