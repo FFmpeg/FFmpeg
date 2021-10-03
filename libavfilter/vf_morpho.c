@@ -320,6 +320,7 @@ static int alloc_lut_if_necessary(LUT *Ty, IPlane *f, chord_set *SE,
 {
     if (Ty->I != SE->Lnum ||
         Ty->X != f->w ||
+        SE->minX < 0 && -SE->minX > Ty->pre_pad_x ||
         Ty->min_r != SE->minY ||
         Ty->max_r != SE->maxY + num - 1) {
         int ret;
