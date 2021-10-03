@@ -24,6 +24,7 @@
  * Ut Video encoder
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -143,9 +144,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         original_format  = UTVIDEO_444;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown pixel format: %d\n",
-               avctx->pix_fmt);
-        return AVERROR_INVALIDDATA;
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
 
     ff_bswapdsp_init(&c->bdsp);
