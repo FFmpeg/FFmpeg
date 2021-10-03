@@ -1165,6 +1165,7 @@ static int output_frame(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioFFTDeNoiseContext *s = ctx->priv;
+    const int output_mode = ctx->is_disabled ? IN_MODE : s->output_mode;
     AVFrame *out = NULL, *in = NULL;
     ThreadData td;
     int ret = 0;
@@ -1238,7 +1239,7 @@ static int output_frame(AVFilterLink *inlink)
         float *orig = (float *)in->extended_data[ch];
         float *dst = (float *)out->extended_data[ch];
 
-        switch (s->output_mode) {
+        switch (output_mode) {
         case IN_MODE:
             for (int m = 0; m < s->sample_advance; m++)
                 dst[m] = orig[m];
@@ -1419,6 +1420,6 @@ const AVFilter ff_af_afftdn = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     .process_command = process_command,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                        AVFILTER_FLAG_SLICE_THREADS,
 };
