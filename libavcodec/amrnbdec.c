@@ -981,7 +981,6 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
         int i, subframe;
 
         p->cur_frame_mode = unpack_bitstream(p, buf, buf_size);
-        channel_size = frame_sizes_nb[p->cur_frame_mode] + 1; // +7 for rounding and +8 for TOC
         if (p->cur_frame_mode == NO_DATA) {
             av_log(avctx, AV_LOG_ERROR, "Corrupt bitstream\n");
             return AVERROR_INVALIDDATA;
@@ -992,6 +991,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_PATCHWELCOME;
         }
 
+        channel_size = frame_sizes_nb[p->cur_frame_mode] + 1; // +7 for rounding and +8 for TOC
         if (p->cur_frame_mode == MODE_12k2) {
             lsf2lsp_5(p);
         } else
