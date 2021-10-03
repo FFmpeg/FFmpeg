@@ -315,6 +315,28 @@ static void free_lut(LUT *table)
     av_freep(&rp);
 }
 
+static int alloc_lut_if_necessary(LUT *Ty, IPlane *f, chord_set *SE,
+                                  int y, int num, enum MorphModes mode)
+{
+    if (Ty->I != SE->Lnum ||
+        Ty->X != f->w ||
+        Ty->min_r != SE->minY ||
+        Ty->max_r != SE->maxY + num - 1) {
+        int ret;
+
+        free_lut(Ty);
+
+        Ty->I = SE->Lnum;
+        Ty->X = f->w;
+        Ty->min_r = SE->minY;
+        Ty->max_r = SE->maxY + num - 1;
+        ret = alloc_lut(Ty, SE, f->type_size, mode);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 static void circular_swap(LUT *Ty)
 {
     /*
@@ -362,22 +384,9 @@ static void update_min_lut(IPlane *f, LUT *Ty, chord_set *SE, int y, int tid, in
 
 static int compute_min_lut(LUT *Ty, IPlane *f, chord_set *SE, int y, int num)
 {
-    if (Ty->I != SE->Lnum ||
-        Ty->X != f->w ||
-        Ty->min_r != SE->minY ||
-        Ty->max_r != SE->maxY + num - 1) {
-        int ret;
-
-        free_lut(Ty);
-
-        Ty->I = SE->Lnum;
-        Ty->X = f->w;
-        Ty->min_r = SE->minY;
-        Ty->max_r = SE->maxY + num - 1;
-        ret = alloc_lut(Ty, SE, f->type_size, ERODE);
-        if (ret < 0)
-            return ret;
-    }
+    int ret = alloc_lut_if_necessary(Ty, f, SE, y, num, ERODE);
+    if (ret < 0)
+        return ret;
 
     for (int r = Ty->min_r; r <= Ty->max_r; r++)
         compute_min_row(f, Ty, SE, r, y);
@@ -416,22 +425,9 @@ static void update_max_lut(IPlane *f, LUT *Ty, chord_set *SE, int y, int tid, in
 
 static int compute_max_lut(LUT *Ty, IPlane *f, chord_set *SE, int y, int num)
 {
-    if (Ty->I != SE->Lnum ||
-        Ty->X != f->w ||
-        Ty->min_r != SE->minY ||
-        Ty->max_r != SE->maxY + num - 1) {
-        int ret;
-
-        free_lut(Ty);
-
-        Ty->I = SE->Lnum;
-        Ty->X = f->w;
-        Ty->min_r = SE->minY;
-        Ty->max_r = SE->maxY + num - 1;
-        ret = alloc_lut(Ty, SE, f->type_size, DILATE);
-        if (ret < 0)
-            return ret;
-    }
+    int ret = alloc_lut_if_necessary(Ty, f, SE, y, num, DILATE);
+    if (ret < 0)
+        return ret;
 
     for (int r = Ty->min_r; r <= Ty->max_r; r++)
         compute_max_row(f, Ty, SE, r, y);
