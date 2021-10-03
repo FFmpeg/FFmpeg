@@ -822,7 +822,7 @@ static int do_morpho(FFFrameSync *fs)
         const int depth = s->depth;
         int type_size = s->type_size;
 
-        if (!(s->planes & (1 << p))) {
+        if (ctx->is_disabled || !(s->planes & (1 << p))) {
 copy:
             av_image_copy_plane(out->data[p] + 0 * out->linesize[p],
                 out->linesize[p],
@@ -1022,6 +1022,6 @@ const AVFilter ff_vf_morpho = {
     .query_formats   = query_formats,
     FILTER_INPUTS(morpho_inputs),
     FILTER_OUTPUTS(morpho_outputs),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
