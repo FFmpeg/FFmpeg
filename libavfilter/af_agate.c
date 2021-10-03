@@ -144,6 +144,7 @@ static void gate(AudioGateContext *s,
                  int nb_samples, double level_in, double level_sc,
                  AVFilterLink *inlink, AVFilterLink *sclink)
 {
+    AVFilterContext *ctx = inlink->dst;
     const double makeup = s->makeup;
     const double attack_coeff = s->attack_coeff;
     const double release_coeff = s->release_coeff;
@@ -151,6 +152,7 @@ static void gate(AudioGateContext *s,
 
     for (n = 0; n < nb_samples; n++, src += inlink->channels, dst += inlink->channels, scsrc += sclink->channels) {
         double abs_sample = fabs(scsrc[0] * level_sc), gain = 1.0;
+        double factor;
         int detected;
 
         if (s->link == 1) {
@@ -178,8 +180,9 @@ static void gate(AudioGateContext *s,
                                s->knee, s->knee_start, s->knee_stop,
                                s->range, s->mode);
 
+        factor = ctx->is_disabled ? 1.f : level_in * gain * makeup;
         for (c = 0; c < inlink->channels; c++)
-            dst[c] = src[c] * level_in * gain * makeup;
+            dst[c] = src[c] * factor;
     }
 }
 
@@ -407,6 +410,6 @@ const AVFilter ff_af_sidechaingate = {
     FILTER_INPUTS(sidechaingate_inputs),
     FILTER_OUTPUTS(sidechaingate_outputs),
     .process_command = ff_filter_process_command,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 #endif  /* CONFIG_SIDECHAINGATE_FILTER */
