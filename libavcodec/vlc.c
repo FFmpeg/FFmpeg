@@ -260,7 +260,7 @@ int ff_vlc_init_sparse(VLC *vlc, int nb_bits, int nb_codes,
     if (ret < 0)
         return ret;
 
-    av_assert0(symbols_size <= 2 || !symbols);
+    av_assert0(symbols_size <= 2U);
     j = 0;
 #define COPY(condition)\
     for (int i = 0; i < nb_codes; i++) {                                    \
