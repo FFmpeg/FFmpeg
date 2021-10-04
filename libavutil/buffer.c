@@ -341,9 +341,6 @@ static void pool_release_buffer(void *opaque, uint8_t *data)
     BufferPoolEntry *buf = opaque;
     AVBufferPool *pool = buf->pool;
 
-    if(CONFIG_MEMORY_POISONING)
-        memset(buf->data, FF_MEMORY_POISON, pool->size);
-
     ff_mutex_lock(&pool->mutex);
     buf->next = pool->pool;
     pool->pool = buf;
