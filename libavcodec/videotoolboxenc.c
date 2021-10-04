@@ -876,7 +876,7 @@ static int create_cv_pixel_buffer_info(AVCodecContext* avctx,
     width_num = CFNumberCreate(kCFAllocatorDefault,
                                kCFNumberSInt32Type,
                                &avctx->width);
-    if (!width_num) return AVERROR(ENOMEM);
+    if (!width_num) goto pbinfo_nomem;
 
     CFDictionarySetValue(pixel_buffer_info,
                          kCVPixelBufferWidthKey,
