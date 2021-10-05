@@ -32,43 +32,50 @@
 #include "libavfilter/formats.h"
 #include "libavfilter/internal.h"
 
+static void print_formats_internal(AVFilterLink **links, const AVFilterPad *pads,
+                                   unsigned nb, size_t fmts_cfg_offset,
+                                   const char *inout_string)
+{
+    for (unsigned i = 0; i < nb; i++) {
+        const AVFilterLink *const link = links[i];
+        const AVFilterFormatsConfig *const cfg = (AVFilterFormatsConfig*)((const char*)link + fmts_cfg_offset);
+        const char *pad_name = avfilter_pad_get_name(pads, i);
+
+        if (link->type == AVMEDIA_TYPE_VIDEO) {
+            const AVFilterFormats *const fmts = cfg->formats;
+            for (unsigned j = 0; j < fmts->nb_formats; j++) {
+                printf("%s[%u] %s: fmt:%s\n",
+                        inout_string, i, pad_name,
+                        av_get_pix_fmt_name(fmts->formats[j]));
+            }
+        } else if (link->type == AVMEDIA_TYPE_AUDIO) {
+            const AVFilterFormats *const fmts = cfg->formats;
+            const AVFilterChannelLayouts *const layouts = cfg->channel_layouts;
+
+            for (unsigned j = 0; j < fmts->nb_formats; j++)
+                printf("%s[%u] %s: fmt:%s\n",
+                       inout_string, i, pad_name,
+                       av_get_sample_fmt_name(fmts->formats[j]));
+
+            for (unsigned j = 0; j < layouts->nb_channel_layouts; j++) {
+                char buf[256];
+                av_get_channel_layout_string(buf, sizeof(buf), -1,
+                                             layouts->channel_layouts[j]);
+                printf("%s[%u] %s: chlayout:%s\n",
+                       inout_string, i, pad_name, buf);
+            }
+        }
+    }
+}
+
 static void print_formats(AVFilterContext *filter_ctx)
 {
-    int i, j;
-
-#define PRINT_FMTS(inout, outin, INOUT)                                 \
-    for (i = 0; i < filter_ctx->nb_##inout##puts; i++) {                     \
-        if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_VIDEO) {   \
-            AVFilterFormats *fmts =                                     \
-                filter_ctx->inout##puts[i]->outin##cfg.formats;            \
-            for (j = 0; j < fmts->nb_formats; j++)                    \
-                if(av_get_pix_fmt_name(fmts->formats[j]))               \
-                printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
-                       i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i),      \
-                       av_get_pix_fmt_name(fmts->formats[j]));          \
-        } else if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_AUDIO) { \
-            AVFilterFormats *fmts;                                      \
-            AVFilterChannelLayouts *layouts;                            \
-                                                                        \
-            fmts = filter_ctx->inout##puts[i]->outin##cfg.formats;         \
-            for (j = 0; j < fmts->nb_formats; j++)                    \
-                printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
-                       i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i),      \
-                       av_get_sample_fmt_name(fmts->formats[j]));       \
-                                                                        \
-            layouts = filter_ctx->inout##puts[i]->outin##cfg.channel_layouts; \
-            for (j = 0; j < layouts->nb_channel_layouts; j++) {                  \
-                char buf[256];                                          \
-                av_get_channel_layout_string(buf, sizeof(buf), -1,      \
-                                             layouts->channel_layouts[j]);         \
-                printf(#INOUT "PUT[%d] %s: chlayout:%s\n",              \
-                       i, avfilter_pad_get_name(filter_ctx->inout##put_pads, i), buf); \
-            }                                                           \
-        }                                                               \
-    }                                                                   \
-
-    PRINT_FMTS(in,  out, IN);
-    PRINT_FMTS(out, in,  OUT);
+    print_formats_internal(filter_ctx->inputs, filter_ctx->input_pads,
+                           filter_ctx->nb_inputs,
+                           offsetof(AVFilterLink, outcfg), "INPUT");
+    print_formats_internal(filter_ctx->outputs, filter_ctx->output_pads,
+                           filter_ctx->nb_outputs,
+                           offsetof(AVFilterLink, incfg), "OUTPUT");
 }
 
 int main(int argc, char **argv)
