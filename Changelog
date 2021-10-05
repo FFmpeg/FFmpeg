@@ -2,6 +2,31 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.4.1:
+- swscale/alphablend: Fix slice handling
+- avcodec/apedec: Fix integer overflow in filter_fast_3320()
+- avformat/mov: Fix last mfra check
+- avcodec/mxpegdec: Check for AVDISCARD_ALL
+- avcodec/flicvideo: Check remaining bytes in FLI*COPY
+- avcodec/utils: ARGO writes 4x4 blocks without regard to the image dimensions
+- avcodec/cbs_h265_syntax_template: Limit sps_num_palette_predictor_initializer_minus1 to 127
+- avcodec/snowdec: Maintain avmv buffer
+- avcodec/mpeg12dec: Do not put mpeg_f_code into an invalid state on error return
+- avcodec/mpegvideo_enc: Limit bitrate tolerance to the representable
+- avcodec/apedec: Fix integer overflow in intermediate
+- avformat/mvdec: Do not set invalid sample rate
+- avformat/sbgdec: Check for t0 overflow in expand_tseq()
+- avformat/rmdec: Use 64bit for intermediate for DEINT_ID_INT4
+- avformat/sbgdec: Check opt_duration and start for overflow
+- avcodec/exr: Fix undefined integer multiplication
+- avformat/mov: Check for duplicate clli
+- avformat/utils: Ignore negative duration in codec_info_duration computation
+- avformat/jacosubdec: Check for min in t overflow in get_shift()
+- avformat/mxfdec: check channel number in mxf_get_d10_aes3_packet()
+- (origin/release/4.4) avcodec/wmadec: handle run_level_decode error
+- avcodec/wma: Return specific error code
+- avcodec/dxva2_av1: fix superres_denom parameter
+- avcodec/libdav1d: fix compilation after recent libdav1d API changes
+- Changelog: update
 - avcodec/utils: don't return negative values in av_get_audio_frame_duration()
 - avcodec/jpeg2000dec: Check that atom header is within bytsetream
 - avcodec/apedec: Fix 2 integer overflows in filter_3800()
