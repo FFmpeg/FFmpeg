@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     pkt = av_packet_alloc();
     if (!pkt) {
         fprintf(stderr, "Could not allocate AVPacket\n");
-        goto end;
+        return 1;
     }
 
     if ((ret = avformat_open_input(&ifmt_ctx, in_filename, 0, 0)) < 0) {
