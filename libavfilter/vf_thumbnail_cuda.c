@@ -304,27 +304,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    int i;
     ThumbnailCudaContext *s = ctx->priv;
 
     if (s->hwctx) {
-    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
+        CudaFunctions *cu = s->hwctx->internal->cuda_dl;
 
-    if (s->data) {
-        CHECK_CU(cu->cuMemFree(s->data));
-        s->data = 0;
-    }
+        if (s->data) {
+            CHECK_CU(cu->cuMemFree(s->data));
+            s->data = 0;
+        }
 
-    if (s->cu_module) {
-        CHECK_CU(cu->cuModuleUnload(s->cu_module));
-        s->cu_module = NULL;
-    }
+        if (s->cu_module) {
+            CHECK_CU(cu->cuModuleUnload(s->cu_module));
+            s->cu_module = NULL;
+        }
     }
 
     if (s->frames) {
-    for (i = 0; i < s->n_frames && s->frames[i].buf; i++)
-        av_frame_free(&s->frames[i].buf);
-    av_freep(&s->frames);
+        for (int i = 0; i < s->n_frames && s->frames[i].buf; i++)
+            av_frame_free(&s->frames[i].buf);
+        av_freep(&s->frames);
     }
 }
 
