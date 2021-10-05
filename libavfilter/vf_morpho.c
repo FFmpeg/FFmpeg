@@ -892,7 +892,7 @@ copy:
                 break;
             ret = erode(&s->h[p], &s->f[p], &s->SE[p], &s->Ty[1][p]);
             if (ret < 0)
-                return ret;
+                break;
             difference(&s->g[p], &s->h[p]);
             break;
         case TOPHAT:
