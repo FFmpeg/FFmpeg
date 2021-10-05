@@ -306,6 +306,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
     ThumbnailCudaContext *s = ctx->priv;
+
+    if (s->hwctx) {
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
 
     if (s->data) {
@@ -317,10 +319,13 @@ static av_cold void uninit(AVFilterContext *ctx)
         CHECK_CU(cu->cuModuleUnload(s->cu_module));
         s->cu_module = NULL;
     }
+    }
 
+    if (s->frames) {
     for (i = 0; i < s->n_frames && s->frames[i].buf; i++)
         av_frame_free(&s->frames[i].buf);
     av_freep(&s->frames);
+    }
 }
 
 static int request_frame(AVFilterLink *link)
