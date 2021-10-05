@@ -43,7 +43,7 @@ static void print_formats_internal(AVFilterLink **links, const AVFilterPad *pads
 
         if (link->type == AVMEDIA_TYPE_VIDEO) {
             const AVFilterFormats *const fmts = cfg->formats;
-            for (unsigned j = 0; j < fmts->nb_formats; j++) {
+            for (unsigned j = 0; fmts && j < fmts->nb_formats; j++) {
                 printf("%s[%u] %s: fmt:%s\n",
                         inout_string, i, pad_name,
                         av_get_pix_fmt_name(fmts->formats[j]));
@@ -52,12 +52,12 @@ static void print_formats_internal(AVFilterLink **links, const AVFilterPad *pads
             const AVFilterFormats *const fmts = cfg->formats;
             const AVFilterChannelLayouts *const layouts = cfg->channel_layouts;
 
-            for (unsigned j = 0; j < fmts->nb_formats; j++)
+            for (unsigned j = 0; fmts && j < fmts->nb_formats; j++)
                 printf("%s[%u] %s: fmt:%s\n",
                        inout_string, i, pad_name,
                        av_get_sample_fmt_name(fmts->formats[j]));
 
-            for (unsigned j = 0; j < layouts->nb_channel_layouts; j++) {
+            for (unsigned j = 0; layouts && j < layouts->nb_channel_layouts; j++) {
                 char buf[256];
                 av_get_channel_layout_string(buf, sizeof(buf), -1,
                                              layouts->channel_layouts[j]);
