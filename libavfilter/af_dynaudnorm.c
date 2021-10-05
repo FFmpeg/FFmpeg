@@ -668,11 +668,13 @@ static void analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
     }
 }
 
-static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame, int enabled)
+static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *in,
+                          AVFrame *frame, int enabled)
 {
     int c, i;
 
     for (c = 0; c < s->channels; c++) {
+        const double *src_ptr = (const double *)in->extended_data[c];
         double *dst_ptr = (double *)frame->extended_data[c];
         double current_amplification_factor;
 
@@ -683,7 +685,7 @@ static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame, int 
                                                      current_amplification_factor, i,
                                                      frame->nb_samples);
 
-            dst_ptr[i] *= amplification_factor;
+            dst_ptr[i] = src_ptr[i] * amplification_factor;
         }
 
         s->prev_amplification_factor[c] = current_amplification_factor;
@@ -700,18 +702,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     while (((s->queue.available >= s->filter_size) ||
             (s->eof && s->queue.available)) &&
            !cqueue_empty(s->gain_history_smoothed[0])) {
-        AVFrame *out = ff_bufqueue_get(&s->queue);
+        AVFrame *in = ff_bufqueue_get(&s->queue);
+        AVFrame *out;
         double is_enabled;
 
         cqueue_dequeue(s->is_enabled, &is_enabled);
 
-        amplify_frame(s, out, is_enabled > 0.);
+        if (av_frame_is_writable(in)) {
+            out = in;
+        } else {
+            out = ff_get_audio_buffer(outlink, in->nb_samples);
+            if (!out) {
+                av_frame_free(&in);
+                return AVERROR(ENOMEM);
+            }
+            av_frame_copy_props(out, in);
+        }
+
+        amplify_frame(s, in, out, is_enabled > 0.);
         s->pts = out->pts + av_rescale_q(out->nb_samples, av_make_q(1, outlink->sample_rate),
                                          outlink->time_base);
+        if (out != in)
+            av_frame_free(&in);
         ret = ff_filter_frame(outlink, out);
     }
 
-    av_frame_make_writable(in);
     analyze_frame(s, in);
     if (!s->eof) {
         ff_bufqueue_add(ctx, &s->queue, in);
