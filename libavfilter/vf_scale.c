@@ -344,7 +344,6 @@ static int query_formats(AVFilterContext *ctx)
     enum AVPixelFormat pix_fmt;
     int ret;
 
-    if (ctx->inputs[0]) {
         const AVPixFmtDescriptor *desc = NULL;
         formats = NULL;
         while ((desc = av_pix_fmt_desc_next(desc))) {
@@ -357,9 +356,8 @@ static int query_formats(AVFilterContext *ctx)
         }
         if ((ret = ff_formats_ref(formats, &ctx->inputs[0]->outcfg.formats)) < 0)
             return ret;
-    }
-    if (ctx->outputs[0]) {
-        const AVPixFmtDescriptor *desc = NULL;
+
+        desc    = NULL;
         formats = NULL;
         while ((desc = av_pix_fmt_desc_next(desc))) {
             pix_fmt = av_pix_fmt_desc_get_id(desc);
@@ -371,7 +369,6 @@ static int query_formats(AVFilterContext *ctx)
         }
         if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
             return ret;
-    }
 
     return 0;
 }
