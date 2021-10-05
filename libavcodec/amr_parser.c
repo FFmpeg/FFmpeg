@@ -25,6 +25,7 @@
  * Splits packets into individual blocks.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "parser.h"
 
@@ -61,6 +62,11 @@ static int amr_parse(AVCodecParserContext *s1,
 
     *poutbuf_size = 0;
     *poutbuf = NULL;
+
+    if (!avctx->channels) {
+        avctx->channels       = 1;
+        avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    }
 
     if (s1->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
