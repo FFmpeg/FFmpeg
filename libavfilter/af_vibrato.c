@@ -157,11 +157,11 @@ static int config_input(AVFilterLink *inlink)
     int c;
     AVFilterContext *ctx = inlink->dst;
     VibratoContext *s = ctx->priv;
-    s->channels = inlink->channels;
 
     s->buf = av_calloc(inlink->channels, sizeof(*s->buf));
     if (!s->buf)
         return AVERROR(ENOMEM);
+    s->channels = inlink->channels;
     s->buf_size = lrint(inlink->sample_rate * 0.005 + 0.5);
     for (c = 0; c < s->channels; c++) {
         s->buf[c] = av_malloc_array(s->buf_size, sizeof(*s->buf[c]));
