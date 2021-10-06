@@ -1,10 +1,13 @@
 FATE_ALIASPIX += fate-aliaspix-bgr
-fate-aliaspix-bgr: CMD = framecrc -i $(TARGET_SAMPLES)/aliaspix/first.pix -pix_fmt bgr24
+fate-aliaspix-bgr: CMD = transcode alias_pix $(TARGET_SAMPLES)/aliaspix/first.pix image2 "-c alias_pix" "-map 0 -map 0 -pix_fmt:0 bgr24 -c:v:1 copy"
 
 FATE_ALIASPIX += fate-aliaspix-gray
-fate-aliaspix-gray: CMD = framecrc -i $(TARGET_SAMPLES)/aliaspix/firstgray.pix -pix_fmt gray
+fate-aliaspix-gray: CMD = transcode alias_pix $(TARGET_SAMPLES)/aliaspix/firstgray.pix image2 "-c alias_pix" "-map 0 -map 0 -pix_fmt:0 gray -c:v:1 copy"
 
-FATE_ALIASPIX-$(call DEMDEC, IMAGE2, ALIAS_PIX) += $(FATE_ALIASPIX)
+FATE_ALIASPIX-$(call ALLYES, FILE_PROTOCOL IMAGE2_ALIAS_PIX_DEMUXER \
+                             ALIAS_PIX_DECODER ALIAS_PIX_ENCODER    \
+                             IMAGE2_MUXER RAWVIDEO_ENCODER          \
+                             FRAMECRC_MUXER PIPE_PROTOCOL) += $(FATE_ALIASPIX)
 FATE_IMAGE += $(FATE_ALIASPIX-yes)
 fate-aliaspix: $(FATE_ALIASPIX-yes)
 

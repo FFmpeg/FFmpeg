@@ -1,6 +1,14 @@
+667513c8869eea09e1374a73eb21233c *tests/data/fate/aliaspix-bgr.image2
+63090 tests/data/fate/aliaspix-bgr.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 201x79
 #sar 0: 0/1
+#tb 1: 1/25
+#media_type 1: video
+#codec_id 1: alias_pix
+#dimensions 1: 201x79
+#sar 1: 0/1
 0,          0,          0,        1,    47637, 0xcb77368f
+1,          0,          0,        1,    63090, 0xe49bba3b
