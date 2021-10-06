@@ -1,6 +1,35 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.1.8:
+- swscale/alphablend: Fix slice handling
+- avcodec/mxpegdec: Check for AVDISCARD_ALL
+- avcodec/flicvideo: Check remaining bytes in FLI*COPY
+- avcodec/cbs_h265_syntax_template: Limit sps_num_palette_predictor_initializer_minus1 to 127
+- avcodec/mpeg12dec: Do not put mpeg_f_code into an invalid state on error return
+- avcodec/mpegvideo_enc: Limit bitrate tolerance to the representable
+- avcodec/apedec: Fix integer overflow in intermediate
+- avformat/mvdec: Do not set invalid sample rate
+- avformat/rmdec: Use 64bit for intermediate for DEINT_ID_INT4
+- avformat/mov: Check for duplicate clli
+- avformat/jacosubdec: Check for min in t overflow in get_shift()
+- avformat/mxfdec: check channel number in mxf_get_d10_aes3_packet()
+- avfilter/vf_bwdif: fix heap-buffer overflow
+- avfilter/vf_bm3d: fix heap-buffer overflows
+- avfilter/vf_floodfill: finish early if source and destination fill matches
+- avfilter/vf_edgedetect: fix heap-buffer overflow
+- avfilter/vf_w3fdif: deny processing small videos
+- avfilter/af_afade: fix heap-buffer overflow
+- avfilter/vf_colorconstancy: fix overreads in gauss array
+- avcodec/pngenc: remove monowhite from apng formats
+- avfilter/vf_datascope: fix heap buffer overflow
+- avfilter/vf_fieldmatch: fix heap-buffer overflow
+- avfilter/vf_fieldorder: fix heap-buffer overflow
+- avfilter/vf_bitplanenoise: fix overreads
+- avfilter/vf_edgedetect: check if height is big enough
+- avfilter/af_tremolo: fix heap-buffer overflow
+- avfilter/vf_neighbor: check if width is 1
+- avfilter/vf_avgblur: fix heap-buffer overflow
 
 version 4.1.7:
 - avcodec/utils: don't return negative values in av_get_audio_frame_duration()
