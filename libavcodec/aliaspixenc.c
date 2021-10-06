@@ -31,8 +31,8 @@
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
-    int width, height, bits_pixel, i, j, length, ret;
-    uint8_t *in_buf, *buf;
+    int width, height, bits_pixel, length, ret;
+    uint8_t *buf;
 
     width  = avctx->width;
     height = avctx->height;
@@ -66,15 +66,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be32(&buf, 0); /* X, Y offset */
     bytestream_put_be16(&buf, bits_pixel);
 
-    for (j = 0; j < height; j++) {
-        in_buf = frame->data[0] + frame->linesize[0] * j;
-        for (i = 0; i < width; ) {
+    for (int j = 0, bytes_pixel = bits_pixel >> 3; j < height; j++) {
+        const uint8_t *in_buf = frame->data[0] + frame->linesize[0] * j;
+        const uint8_t *const line_end = in_buf + bytes_pixel * width;
+        while (in_buf < line_end) {
             int count = 0;
             int pixel;
 
             if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
                 pixel = *in_buf;
-                while (count < 255 && count + i < width && pixel == *in_buf) {
+                while (count < 255 && in_buf < line_end && pixel == *in_buf) {
                     count++;
                     in_buf++;
                 }
@@ -82,7 +83,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream_put_byte(&buf, pixel);
             } else { /* AV_PIX_FMT_BGR24 */
                 pixel = AV_RB24(in_buf);
-                while (count < 255 && count + i < width &&
+                while (count < 255 && in_buf < line_end &&
                        pixel == AV_RB24(in_buf)) {
                     count++;
                     in_buf += 3;
@@ -90,7 +91,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream_put_byte(&buf, count);
                 bytestream_put_be24(&buf, pixel);
             }
-            i += count;
         }
     }
 
