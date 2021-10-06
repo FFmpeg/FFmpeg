@@ -31,72 +31,17 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
-#include "avfilter.h"
 #include "drawutils.h"
 #include "formats.h"
-#include "framesync.h"
 #include "internal.h"
 #include "video.h"
+#include "lut3d.h"
 
 #define R 0
 #define G 1
 #define B 2
 #define A 3
-
-enum interp_mode {
-    INTERPOLATE_NEAREST,
-    INTERPOLATE_TRILINEAR,
-    INTERPOLATE_TETRAHEDRAL,
-    INTERPOLATE_PYRAMID,
-    INTERPOLATE_PRISM,
-    NB_INTERP_MODE
-};
-
-struct rgbvec {
-    float r, g, b;
-};
-
-/* 3D LUT don't often go up to level 32, but it is common to have a Hald CLUT
- * of 512x512 (64x64x64) */
-#define MAX_LEVEL 256
-#define PRELUT_SIZE 65536
-
-typedef struct Lut3DPreLut {
-    int size;
-    float min[3];
-    float max[3];
-    float scale[3];
-    float* lut[3];
-} Lut3DPreLut;
-
-typedef struct LUT3DContext {
-    const AVClass *class;
-    int interpolation;          ///<interp_mode
-    char *file;
-    uint8_t rgba_map[4];
-    int step;
-    avfilter_action_func *interp;
-    struct rgbvec scale;
-    struct rgbvec *lut;
-    int lutsize;
-    int lutsize2;
-    Lut3DPreLut prelut;
-#if CONFIG_HALDCLUT_FILTER
-    uint8_t clut_rgba_map[4];
-    int clut_step;
-    int clut_bits;
-    int clut_planar;
-    int clut_float;
-    int clut_width;
-    FFFrameSync fs;
-#endif
-} LUT3DContext;
-
-typedef struct ThreadData {
-    AVFrame *in, *out;
-} ThreadData;
 
 #define OFFSET(x) offsetof(LUT3DContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -1201,6 +1146,10 @@ static int config_input(AVFilterLink *inlink)
     case INTERPOLATE_PRISM:       SET_FUNC(prism);          break;
     default:
         av_assert0(0);
+    }
+
+    if (ARCH_X86) {
+        ff_lut3d_init_x86(lut3d, desc);
     }
 
     return 0;
