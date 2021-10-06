@@ -124,11 +124,10 @@ static int parse_channel_expressions(AVFilterContext *ctx,
     }
 
 #define ADD_EXPRESSION(expr_) do {                                      \
-        if (!av_dynarray2_add((void **)&eval->expr, &eval->nb_channels, \
-                              sizeof(*eval->expr), NULL)) {             \
-            ret = AVERROR(ENOMEM);                                      \
+        ret = av_dynarray_add_nofree(&eval->expr,                       \
+                                     &eval->nb_channels, NULL);         \
+        if (ret < 0)                                                    \
             goto end;                                                   \
-        }                                                               \
         eval->expr[eval->nb_channels-1] = NULL;                         \
         ret = av_expr_parse(&eval->expr[eval->nb_channels - 1], expr_,  \
                             var_names, func1_names, func1,              \
