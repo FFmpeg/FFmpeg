@@ -3393,6 +3393,23 @@ static int xyz_to_tetrahedron(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing double fisheye input format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_dfisheye_in(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    s->iflat_range[0] = s->ih_fov / 360.f;
+    s->iflat_range[1] = s->iv_fov / 360.f;
+
+    return 0;
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in dual fisheye format.
  *
  * @param s filter private context
@@ -4514,7 +4531,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     case DUAL_FISHEYE:
         s->in_transform = xyz_to_dfisheye;
-        err = prepare_fisheye_in(ctx);
+        err = prepare_dfisheye_in(ctx);
         wf = w;
         hf = h;
         break;
