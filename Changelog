@@ -1,6 +1,342 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.3.3:
+ swscale/alphablend: Fix slice handling
+ avcodec/apedec: Fix integer overflow in filter_fast_3320()
+ avcodec/mxpegdec: Check for AVDISCARD_ALL
+ avcodec/flicvideo: Check remaining bytes in FLI*COPY
+ avcodec/cbs_h265_syntax_template: Limit sps_num_palette_predictor_initializer_minus1 to 127
+ avcodec/snowdec: Maintain avmv buffer
+ avcodec/mpeg12dec: Do not put mpeg_f_code into an invalid state on error return
+ avcodec/mpegvideo_enc: Limit bitrate tolerance to the representable
+ avcodec/apedec: Fix integer overflow in intermediate
+ avformat/mvdec: Do not set invalid sample rate
+ avformat/sbgdec: Check for t0 overflow in expand_tseq()
+ avformat/rmdec: Use 64bit for intermediate for DEINT_ID_INT4
+ avformat/sbgdec: Check opt_duration and start for overflow
+ avformat/mov: Check for duplicate clli
+ avformat/jacosubdec: Check for min in t overflow in get_shift()
+ avformat/mxfdec: check channel number in mxf_get_d10_aes3_packet()
+ avcodec/utils: don't return negative values in av_get_audio_frame_duration()
+ avcodec/jpeg2000dec: Check that atom header is within bytsetream
+ avcodec/apedec: Fix 2 integer overflows in filter_3800()
+ avcodec/xpmdec: Move allocations down after more error checks
+ avformat/mov: Check dts for overflow in mov_read_trun()
+ avformat/avidec: Use 64bit for frame number in odml index parsing
+ avcodec/mjpegbdec: Skip SOS on AVDISCARD_ALL as does mjpeg
+ avcodec/mjpegdec: Check for bits left in mjpeg_decode_scan_progressive_ac()
+ avformat/adtsenc: return value check for init_get_bits in adts_decode_extradata
+ avcodec/webp: Check available space in loop in decode_entropy_coded_image()
+ avcodec/h264dec: use picture parameters in ff_print_debug_info2()
+ avcodec/vc1dec: ff_print_debug_info() does not support WMV3 field_mode
+ avcodec/frame_thread_encoder: Free AVCodecContext structure on error during init
+ avcodec/faxcompr: Check for end of input in cmode == 1 in decode_group3_2d_line()
+ avcodec/vc1dec: Disable error concealment for *IMAGE
+ avcodec/sbrdsp_fixed: Fix negation overflow in sbr_neg_odd_64_c()
+ avformat/wtvdec: Check for EOF before seeking back in parse_media_type()
+ avformat/mpc8: Check first keyframe position for overflow
+ avformat/wavdec: Use 64bit in new_pos computation
+ avformat/sbgdec: Check for overflow in timestamp preparation
+ avformat/dsicin: Check packet size for overflow
+ avformat/dsfdec: Change order of operations in bitrate computation
+ avformat/bfi: check nframes
+ avformat/avidec: fix position overflow in avi_load_index()
+ avformat/asfdec_f: Check sizeX against padding
+ avformat/aiffdec: Check for size overflow in header parsing
+ avcodec/aaccoder: Add minimal bias in search_for_ms()
+ avformat/mov: Avoid undefined overflow in time_offset calculation
+ avfilter/af_drmeter: Check that there is data
+ avfilter/vf_fftdnoiz: Use lrintf() in export_row8()
+ avfilter/vf_mestimate: Check b_count
+ avformat/mov: do not ignore errors in mov_metadata_hmmt()
+ avformat/mxfdec: Check size for shrinking
+ avcodec/dnxhddec: check and propagate function return value
+ swscale/slice: Fix wrong return on error
+ avcodec/aacdec_template: Avoid some invalid values to be set by decode_audio_specific_config_gb()
+ swscale/slice: Check slice for allocation failure
+ avformat/matroskadec: Fix handling of huge default durations
+ avcodec/lpc: check for zero err in normalization in compute_lpc_coefs()
+ avformat/ftp: Check for av_strtok() failure
+ tools/cws2fws: Check read() for failure
+ avcodec/cpia: Fix missing src_size update
+ avcodec/clearvideo: Check tile_size to be not too large
+ avcodec/utils: Use 64bit for intermediate in AV_CODEC_ID_ADPCM_THP* duration calculation
+ avformat/rmdec: Check old_format len for overflow
+ avformat/realtextdec: Check the pts difference before using it for the duration computation
+ avformat/qcp: Avoid negative nb_rates
+ avformat/nutdec: Check tmp_size
+ avformat/msf: Check that channels doesnt overflow during extradata construction
+ avformat/mpc8: Check for position overflow in mpc8_handle_chunk()
+ avformat/iff: Use 64bit in duration computation
+ avformat/dxa: Check fps to be within the supported range more precissely
+ avcodec/iff: Only write palette to plane 1 if its PAL8
+ avformat/tta: Check for EOF in index reading loop
+ Update missed irc links
+ avformat/rpl: The associative law doesnt hold for signed integers in C
+ avcodec/faxcompr: Check available bits in decode_uncompressed()
+ avcodec/faxcompr: Check if bits are available before reading in cmode == 9 || cmode == 10
+ avformat/utils: check dts/duration to be representable before using them
+ avcodec/utils: do "calc from frame_bytes, channels, and block_align" in 64bit
+ avcodec/ttadata: Add sentinel at the end of ff_tta_shift_1
+ avformat/mov: Check for duplicate mdcv
+ avfilter/vf_dctdnoiz: Check threads
+ avfilter/vf_ciescope: Fix undefined behavior in rgb_to_xy() with black
+ avformat/rpl: Check for EOF and zero framesize
+ avcodec/vc2enc: Check for non negative slice bounds
+ avformat/rpl: Use 64bit in bitrate computation and check it
+ avcodec/svq1enc: Do not print debug RD value before it has been computed
+ avcodec/aacpsy: Check bandwidth
+ avcodec/aacenc: Do not divide by lambda_count if it is 0
+ avcodec/aacenc: Use FLT_EPSILON for lambda minimum
+ avformat/cinedec: Fix index_entries size check
+ avfilter/vf_yadif: Fix handing of tiny images
+ avfilter/vf_vmafmotion: Check dimensions
+ avformat/movenc: Check pal_size before use
+ avcodec/lpc: Avoid floating point division by 0
+ avcodec/aacpsy: Avoid floating point division by 0 of norm_fac
+ avcodec/aacenc: Avoid 0 lambda
+ avcodec/exr: x/ymax cannot be INT_MAX
+ avformat/avio: Check av_opt_copy() for failure
+ avcodec/clearvideo: Check for 0 tile_shift
+ avcodec/vc1: Check remaining bits in ff_vc1_parse_frame_header()
+ avformat/mov: Ignore duplicate CoLL
+ avformat/mov: Limit nb_chapter_tracks to input size
+ avformat/utils: Use 64bit earlier in r_frame_rate check
+ avcodec/alsdec: Fix decoding error with mono audio files
+ avformat/mvdec: Check sample rate in parse_audio_var()
+ avcodec/faxcompr: Check for end of bitstream in decode_group3_1d_line() and decode_group3_2d_line()
+ avcodec/utils: treat PAL8 for jpegs similar to other colorspaces
+ avcodec/jpeglsdec: Set alpha plane in PAL8 so image is not 100% transparent
+ avformat/asfdec_o: Use ff_get_extradata()
+ avformat/id3v2: Check end for overflow in id3v2_parse()
+ avformat/wtvdec: Improve size overflow checks in parse_chunks()
+ avcodec/faxcompr: Check remaining bits on error in decode_group3_1d_line()
+ avcodec/utils: Check ima wav duration for overflow
+ avcodec/rv10: Execute whole size check earlier for rv20
+ avformat/cafdec: Check channels
+ avcodec/dpx: Check bits_per_color earlier
+ avformat/mvi: Check audio_data_size to be non negative
+ avcodec/pnm_parser: Check image size addition for overflow
+ avcodec/h265_metadata_bsf: Check nb_units before accessing the first in h265_metadata_update_fragment()
+ avformat/rmdec: use larger intermediate type for audio_framesize * sub_packet_h check
+ avcodec/h264_slice: Check input SPS in ff_h264_update_thread_context()
+ avformat/mpc8: check for size overflow in mpc8_get_chunk_header()
+ avformat/mov: Do not zero memory that is written too or unused
+ avcodec/mpegvideo: Update chroma_?_shift in ff_mpv_common_frame_size_change()
+ avformat/mov: Ignore multiple STSC / STCO
+ avformat/utils: Extend overflow check in dts wrap in compute_pkt_fields()
+ avfilter/vf_scale: Fix adding 0 to NULL (which is UB) in scale_slice()
+ avutil/common: Add FF_PTR_ADD()
+ avformat/wtvdec: Check size in SBE2_STREAM_DESC_EVENT / stream2_guid
+ tools/target_dec_fuzzer: Adjust threshold for H264
+ avformat/cafdec: Do not build an index if all packets are the same
+ avformat/vividas: Use equals check with n in read_sb_block()
+ avcodec/sonic: Use unsigned temporary in predictor_calc_error()
+ avformat/jacosubdec: Use 64bit intermediate for start/end timestamp shift
+ avformat/flvdec: Check array entry number
+ avcodec/h264_slice: Check sps in h264_slice_header_init()
+ avformat/movenc: Avoid loosing cluster array on failure
+ avformat/avidec: Check for dv streams before using priv_data in parse ##dc/##wb
+ avformat/mov: Check sample size for overflow in mov_parse_stsd_audio()
+ avformat/sbgdec: Check for overflow in last loop in expand_timestamps()
+ avcodec/ffwavesynth: Avoid signed integer overflow in phi_at()
+ avcodec/mpeg4videoenc: Check extradata malloc()
+ avcodec/speedhq: Width < 8 is not supported
+ avformat/matroskadec: Check for EOF in resync loop
+ avcodec/utils: Use more bits for intermediate for AV_CODEC_ID_ADPCM_MS
+ avcodec/jpegls: Check A[Q] for overflow in ff_jpegls_update_state_regular()
+ avformat/voc_packet: prevent remaining size from becoming negative in ff_voc_get_packet()
+ avutil/timecode: Avoid fps overflow
+ avformat/mvi: Check audio size for more overflows
+ avcodec/flacdec: Avoid undefined shift in error case
+ avcodec/ffv1dec: Check if trailer is available
+ avcodec/4xm: Check pre_gb in decode_i_block()
+ avformat/mvdec: Allocate extradata only once
+ avcodec/dcadsp: Fix integer overflow in dmix_add_c()
+ avformat/flvdec: Check double before cast in parse_keyframes_index()
+ avformat/paf: Check for EOF before allocation in read_header()
+ avcodec/aacdec_template: Avoid undefined negation in imdct_and_windowing_eld()
+ avformat/lxfdec: Fix multiple integer overflows related to track_size
+ avcodec/exr: skip bottom clearing loop when its outside the image
+ avutil/parseutils: Check sign in av_parse_time()
+ avformat/aiffdec: Check that SSND is at least 8 bytes
+ avformat/dcstr: Check sample rate
+ avcodec/alsdec: Check bitstream input in read_block()
+ avformat/mov: Extend data_size check in mov_read_udta_string()
+ avformat/aadec: Check for EOF while reading chapters
+ avformat/voc_packet: Add a basic check on max_size
+ avformat/microdvddec: use 64bit for durations
+ avcodec/h264_slice: clear old slice POC values on parsing failure
+ avfilter/overlay_cuda: check av_buffer_ref result
+ avfilter/overlay_cuda: hold explicit reference to hw_device_ctx
+ avformat/url: add ff_make_absolulte_url2 to be able to test windows path cases
+ avformat/url: fix ff_make_absolute_url with Windows file paths
+ Revert "avcodec: Add FF_CODEC_CAP_INIT_CLEANUP"
+ fftools/ffplay: do not write out of rdft visualization texture
+ avfilter/overlay_cuda: fix framesync with embedded PGS subtitle
+ avcodec/mxpegdec: Fix memleaks upon init failure
+ avcodec/mjpegdec: Fix memleak upon init failure
+ avfilter/af_headphone: Fix stack buffer overflow
+ avfilter/af_headphone: Don't overrun array
+ avfilter/af_headphone: Fix segfault when using very short streams
+ avfilter/af_headphone: Check for the existence of samples
+ avfilter/af_headphone: Remove always true check
+ avfilter/af_headphone: Don't use uninitialized buffer in log message
+ avformat/segment: Fix error messages
+ avformat/segment: Free SegmentListEntries in deinit, not write_trailer
+ avformat/segment: Fix leak and invalid free of AVIOContext
+ avformat/segment: Fix leak of string on error
+ avformat/segment: Fix segfault when error happens and segment list is output
+ avformat/segment: Fix segfault on allocation error, avoid allocation
+ avformat/segment: Fix leak of duration/framenumber lists upon error
+ avformat/segment: Don't overwrite AVCodecParameters after init
+ avformat/dashdec: Reset pointer to NULL after freeing it
+ libavformat/dashdec: Fix issue with dash on Windows
+ avformat/dashdec: Fix memleak on allocation error, avoid allocation
+ avformat/dashdec: Fix memleaks on error to add representation to dynarray
+ avformat/dashdec: Fix leak of representation languages
+ avformat/dashdec: Fix leak of string on error when parsing representation
+ avformat/dashdec: Fix leak of representation on error
+ avformat/dashdec: Remove unused index of representation
+ avformat/dashdec: Fix memleaks upon read_header failure
+ avformat/dashdec: Check allocation of AVProgram
+ avformat/dashdec, hls: Update correct pointer to AVDictionary
+ avformat/dashdec: Fix leak of AVDictionary on error
+ avformat/dashdec: Free subtitle representations on exit
+ avformat/dashdec: Free strings as soon as they aren't needed anymore
+ avformat/dashdec: Don't overwrite and leak old initialization fragments
+ avformat/dashdec: Don't leave representation in inconsistent state on error
+ avformat/dashdec: Remove dead code
+ avformat/spdifenc: Fix leak upon error
+ avformat/wavenc: Fix leak and segfault on reallocation error
+ avformat/mpegenc: Avoid adding invalid packet to queue
+ avformat/mpegenc: Fix leak in case trailer is never written
+ avformat/mpegenc: Ensure packet queue stays valid
+ avformat/mxfenc: Never set codec_ul UID to NULL
+ avcodec/frame_thread_encoder: Fix segfault on allocation error
+ avformat/utils: Add av_assert1 to preclude NULL + len, len != 0
+ avformat/utils: Fix undefined NULL + 0
+ avcodec/g722enc: Validate parameters before using them
+ avcodec/g722enc: Cleanup generically on init failure
+ avcodec/opusdec: Return error upon error
+ avcodec/wavpack: Fix leak on init failure
+ avcodec/pthread_slice: Don't use static variable, fix race
+ avcodec/a64multienc: Fix memleak upon init failure
+ avformat/flacenc: Fix memleak when writing attached pictures fails
+ avcodec/mpeg12enc: Always initialize MPEG-2 intra VLC table lengths
+ avcodec/fft_template, fft_init_table: Make ff_fft_init() thread-safe
+ avformat/asfdec_o: Don't segfault with lots of attached pics
+ avcodec/mss4: Fix memleaks upon allocation error
+ avformat/apngdec: Fix size/overflow checks
+ avformat/apngdec: Return error for incomplete header
+ avformat/jacosubdec: Fix unintended fallthrough
+ avcodec/bitstream: Consistently treat symbol as VLC_TYPE
+ avcodec/vp3: Check allocations of VLCs
+ avcodec/vp3: Fix memleak upon init failure
+ avcodec/movtextenc: Fix undefined left shifts outside the range of int
+ avcodec/movtextenc: Fix memleak on (re)allocation error
+ avcodec/movtextenc: Don't presume every style to have a font
+ avcodec/movtextenc: Reset array counter after freeing array
+ avcodec/movtextenc: Fix potential use of uninitialized value
+ avcodec/movtextenc: fix writing to bytestream on BE arches
+ avcodec/movtextdec: Fix leaks on (re)allocation failure
+ avcodec/movtextdec: Simplify checking for invalid extradata
+ avcodec/movtextdec: Fix leaks of strings upon reallocation failure
+ avcodec/movtextdec: Reset counter of fonts when freeing them
+ avcodec/sheervideo: Don't leave context in inconsistent state upon error
+ avfilter/vf_minterpolate: Fix left shift of negative value
+ avfilter/vf_minterpolate: Reject too small dimensions
+ avformat/movenc: Don't forget to free fragment buffers
+ avformat/movenc: Free old vos_data before overwriting it
+ avformat/movenc: Fix segfault when remuxing rtp hint stream
+ avcodec/dvenc: Fix undefined left shift of negative numbers
+ avformat/movenc: Fix stack overflow when remuxing timecode tracks
+ avcodec/utils: Also free encoder extradata on avcodec_open2() error
+ avcodec/utils: Don't forget cleaning up when allocating priv_data fails
+ avcodec/utils: Improve check for freeing codec private options
+ swresample/audioconvert: Fix left shift of negative value
+ avcodec/utils: Only call codec->close if init has been called
+ avformat/movenc: Fix segfault upon allocation error
+ avformat/swfdec: Reorder allocations/initializations
+ avformat/swfdec: Fix memleaks on error
+ avformat/dashdec: Avoid double free on error
+ avformat/tedcaptionsdec: Fix leak of AVBPrint upon error
+ avformat/swfenc: Fix memleak upon write_header error
+ avformat/rmdec: Fix potential crash on allocation failure
+ avformat/rmdec: Actually return value < 0 on read_header failure
+ avformat/avidec: Fix memleak when error happens after creating DV stream
+ avcodec/mpegaudiodec_template: Check return value of subdecoder
+ avcodec/j2kenc: Fix leaks on init failure
+ avcodec/flashsv2enc: Check allocations for success before usage
+ avcodec/flashsvenc: Avoid allocation of buffer, fix memleak
+ avcodec/ac3enc_template: Don't free uninitialized pointers on error
+ avcodec/svq3: Fix segfault on allocation error, avoid allocations
+ avcodec/sonic: Fix leaks upon allocation errors
+ avcodec/qtrleenc: Fix memleak upon allocation failure
+ avcodec/ffv1enc: Fix memleaks on init failure
+ avcodec/ffv1: Fix segfaults on allocation error
+ avcodec/mlpenc: Fix memleak upon init failure
+ avcodec/indeo5: Fix memleaks upon allocation error
+ avcodec/ivi: Fix segfault on allocation error
+ avcodec/magicyuvenc: Fix memleak upon init failure
+ avcodec/gif: Fix leaks upon allocation error
+ avcodec/avrndec: Fix memleak on error
+ avcodec/avrndec: Check allocation for success
+ avcodec/atrac1: Check allocation of AVFloatDSPContext
+ avfilter/vf_subtitles: Fix leaks on failure
+ avfilter/vf_uspp: Fix potential leak of dict on error
+ avfilter/lavfutils: Fix memleak when avformat_find_stream_info() fails
+ avfilter/lavfutils: Don't use uninitialized pointers for freeing
+ avcodec/binkaudio: Don't use static storage for context-dependent data
+ avcodec/bink: Fix memleak upon init failure
+ avcodec/wnv1: Use LE bitstream reader, avoid copying packet, fix memleak
+ avcodec/truemotion2: Avoid duplicating array, fix memleak
+ avfilter/af_headphone: Fix leak of channel layouts list on error
+ avfilter/af_headphone: Fix segfault upon allocation failure
+ avfilter/vf_signature: Fix leak of string upon error
+ avfilter/vf_signature: Fix leak of inpads' names
+ avfilter/af_aiir: Fix segfault and leak upon allocation failure
+ avfilter/vf_premultiply: Fix leak of names of inpads
+ avfilter/af_anequalizer: Fix memleak when inserting pad fails
+ avfilter/af_amerge: Fix segfault upon allocation failure
+ avfilter/af_aformat: Add uninit function
+ avfilter/vf_hwdownload: Fix leak of formats list upon error
+ avfilter/formats: Fix double frees and memleaks on error
+ avfilter/af_channelmap: Fix double-free of AVFilterChannelLayouts on error
+ avfilter/vf_alphamerge: Fix double-free of AVFilterFormats on error
+ avfilter/vf_overlay: Fix double-free of AVFilterFormats on error
+ avfilter/vf_remap: Fix double-free of AVFilterFormats on error
+ avfilter/vf_showpalette: Fix double-free of AVFilterFormats on error
+ avfilter/af_amix: Fix double-free of AVFilterChannelLayouts on error
+ avfilter/af_amix: Don't needlessly reallocate table
+ avfilter/vf_vpp_qsv: Fix leak of AVFilterFormats on error
+ avfilter/vf_paletteuse: Fix leaks of AVFilterFormats on error
+ avfilter/graphparser: Fix memleak when linking filters fails
+ fftools/ffmpeg: Fix leak of AVFilterInOut in case of error
+ avfilter/graphparser: Check allocations for success
+ avfilter/graphparser: Don't set pointer to one beyond '\0' of string
+ avfilter/graphparser: Fix leaks when parsing inputs fails
+ avfilter/af_afir: Fix leak of AVFilterChannelLayout in case of error
+ avformat/mlvdec: Only store dimensions after having validated them
+ avformat/mlvdec: Don't leak open AVIOContexts on error
+ avformat/mlvdec: Check for existence of AVIOContext before using it
+ avformat/hls: Fix memleak when url is empty
+ avfilter/formats: Fix heap-buffer overflow when merging channel layouts
+ Revert "lavfi/avfiltergraph: add check before free the format"
+ avfilter/formats: Leave lists' ownership unchanged upon merge failure
+ avformat/mpegts: Don't leave context in inconsistent state upon error
+ avformat/sierravmd: Don't return packets for non-existing stream
+ avformat/vividas: Check allocation for success
+ avformat/vividas: Check return value before storing it in smaller type
+ avformat/webmdashenc: Avoid allocations, fix memleak
+ avformat/webmdashenc: Fix segfault when no filename is given when live
+ avformat/matroskadec: Avoid undefined pointer arithmetic
+ avformat/mxfdec: Fix memleak upon repeating tags
+ avformat/mxfdec: Fix memleak when parsing tag fails
+ avformat/mxfdec: Fix memleak when adding element to array fails
+
+
 version 4.3.2:
  avcodec/hapdec: Change compressed_offset to unsigned 32bit
  avformat/rmdec: Check codec_length without overflow
