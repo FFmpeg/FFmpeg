@@ -283,7 +283,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     W3FDIFContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int ret, i, depth;
+    int ret, i, depth, nb_threads;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
@@ -297,10 +297,11 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->nb_threads = ff_filter_get_nb_threads(ctx);
-    s->work_line = av_calloc(s->nb_threads, sizeof(*s->work_line));
+    nb_threads = ff_filter_get_nb_threads(ctx);
+    s->work_line = av_calloc(nb_threads, sizeof(*s->work_line));
     if (!s->work_line)
         return AVERROR(ENOMEM);
+    s->nb_threads = nb_threads;
 
     for (i = 0; i < s->nb_threads; i++) {
         s->work_line[i] = av_calloc(FFALIGN(s->linesize[0], 32), sizeof(*s->work_line[0]));
