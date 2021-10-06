@@ -27,6 +27,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -63,7 +64,9 @@ static const AVOption flite_options[] = {
 
 AVFILTER_DEFINE_CLASS(flite);
 
-static volatile int flite_inited = 0;
+static AVMutex flite_mutex = AV_MUTEX_INITIALIZER;
+
+static int flite_inited = 0;
 
 /* declare functions for all the supported voices */
 #define DECLARE_REGISTER_VOICE_FN(name) \
@@ -111,14 +114,19 @@ static int select_voice(struct voice_entry **entry_ret, const char *voice_name, 
     for (i = 0; i < FF_ARRAY_ELEMS(voice_entries); i++) {
         struct voice_entry *entry = &voice_entries[i];
         if (!strcmp(entry->name, voice_name)) {
+            cst_voice *voice;
+            pthread_mutex_lock(&flite_mutex);
             if (!entry->voice)
                 entry->voice = entry->register_fn(NULL);
-            if (!entry->voice) {
+            voice = entry->voice;
+            if (voice)
+                entry->usage_count++;
+            pthread_mutex_unlock(&flite_mutex);
+            if (!voice) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Could not register voice '%s'\n", voice_name);
                 return AVERROR_UNKNOWN;
             }
-            entry->usage_count++;
             *entry_ret = entry;
             return 0;
         }
@@ -141,12 +149,15 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR_EXIT;
     }
 
+    pthread_mutex_lock(&flite_mutex);
     if (!flite_inited) {
-        if (flite_init() < 0) {
-            av_log(ctx, AV_LOG_ERROR, "flite initialization failed\n");
-            return AVERROR_UNKNOWN;
-        }
-        flite_inited++;
+        if ((ret = flite_init()) >= 0)
+            flite_inited = 1;
+    }
+    pthread_mutex_unlock(&flite_mutex);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "flite initialization failed\n");
+        return AVERROR_EXTERNAL;
     }
 
     if ((ret = select_voice(&flite->voice_entry, flite->voice_str, ctx)) < 0)
@@ -197,10 +208,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     FliteContext *flite = ctx->priv;
 
     if (flite->voice_entry) {
+        pthread_mutex_lock(&flite_mutex);
         if (!--flite->voice_entry->usage_count) {
             flite->voice_entry->unregister_fn(flite->voice);
             flite->voice_entry->voice = NULL;
         }
+        pthread_mutex_unlock(&flite_mutex);
     }
     delete_wave(flite->wave);
     flite->wave = NULL;
