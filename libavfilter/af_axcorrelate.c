@@ -324,7 +324,7 @@ static const AVFilterPad outputs[] = {
 
 static const AVOption axcorrelate_options[] = {
     { "size", "set segment size", OFFSET(size), AV_OPT_TYPE_INT,   {.i64=256}, 2, 131072, AF },
-    { "algo", "set alghorithm",   OFFSET(algo), AV_OPT_TYPE_INT,   {.i64=0},   0,      1, AF, "algo" },
+    { "algo", "set algorithm",    OFFSET(algo), AV_OPT_TYPE_INT,   {.i64=0},   0,      1, AF, "algo" },
     { "slow", "slow algorithm",   0,            AV_OPT_TYPE_CONST, {.i64=0},   0,      0, AF, "algo" },
     { "fast", "fast algorithm",   0,            AV_OPT_TYPE_CONST, {.i64=1},   0,      0, AF, "algo" },
     { NULL }
