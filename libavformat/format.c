@@ -52,7 +52,7 @@ const AVOutputFormat *av_guess_format(const char *short_name, const char *filena
                                       const char *mime_type)
 {
     const AVOutputFormat *fmt = NULL;
-    AVOutputFormat *fmt_found = NULL;
+    const AVOutputFormat *fmt_found = NULL;
     void *i = 0;
     int score_max, score;
 
@@ -78,7 +78,7 @@ const AVOutputFormat *av_guess_format(const char *short_name, const char *filena
         }
         if (score > score_max) {
             score_max = score;
-            fmt_found = (AVOutputFormat*)fmt;
+            fmt_found = fmt;
         }
     }
     return fmt_found;
@@ -121,7 +121,7 @@ const AVInputFormat *av_find_input_format(const char *short_name)
     void *i = 0;
     while ((fmt = av_demuxer_iterate(&i)))
         if (av_match_name(short_name, fmt->name))
-            return (AVInputFormat*)fmt;
+            return fmt;
     return NULL;
 }
 
