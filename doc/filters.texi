@@ -14488,6 +14488,37 @@ ffmpeg -i main.mpg -i ref.mkv -lavfi "[0:v]settb=AVTB,setpts=PTS-STARTPTS[main];
 @end example
 @end itemize
 
+@section limitdiff
+Apply limited difference filter using second and optionally third video stream.
+
+The filter accepts the following options:
+
+@table @option
+@item threshold
+Set the threshold to use when allowing certain differences between video streams.
+Any absolute difference value lower or exact than this threshold will pick pixel components from
+first video stream.
+
+@item elasticity
+Set the elasticity of soft thresholding when processing video streams.
+This value multiplied with first one sets second threshold.
+Any absolute difference value greater or exact than second threshold will pick pixel components
+from second video stream. For values between those two threshold
+linear interpolation between first and second video stream will be used.
+
+@item reference
+Enable the reference (third) video stream processing. By default is disabled.
+If set, this video stream will be used for calculating absolute difference with first video
+stream.
+
+@item planes
+Specify which planes will be processed. Defaults to all available.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands} except option @samp{reference}.
+
 @section limiter
 
 Limits the pixel components values to the specified range [min, max].

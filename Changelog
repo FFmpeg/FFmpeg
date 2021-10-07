@@ -26,6 +26,7 @@ version <next>:
 - GEM Raster image decoder
 - asdr audio filter
 - speex decoder
+- limitdiff video filter
 
 
 version 4.4:
