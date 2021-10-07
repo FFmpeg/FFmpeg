@@ -481,12 +481,15 @@ static int nppscale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
         src        = s->stages[i].frame;
         last_stage = i;
     }
-
     if (last_stage < 0)
         return AVERROR_BUG;
+
     ret = av_hwframe_get_buffer(src->hw_frames_ctx, s->tmp_frame, 0);
     if (ret < 0)
         return ret;
+
+    s->tmp_frame->width  = src->width;
+    s->tmp_frame->height = src->height;
 
     av_frame_move_ref(out, src);
     av_frame_move_ref(src, s->tmp_frame);
