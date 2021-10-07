@@ -22563,6 +22563,24 @@ Set the scaling dimension: @code{2} for @code{2xBR}, @code{3} for
 Default is @code{3}.
 @end table
 
+@section xcorrelate
+Apply normalized cross-correlation between first and second input video stream.
+
+Second input video stream dimensions must be lower than first input video stream.
+
+The filter accepts the following options:
+
+@table @option
+@item planes
+Set which planes to process.
+
+@item secondary
+Set which secondary video frames will be processed from second input video stream,
+can be @var{first} or @var{all}. Default is @var{all}.
+@end table
+
+The @code{xcorrelate} filter also supports the @ref{framesync} options.
+
 @section xfade
 
 Apply cross fade from one input video stream to another input video stream.

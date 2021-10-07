@@ -27,6 +27,7 @@ version <next>:
 - asdr audio filter
 - speex decoder
 - limitdiff video filter
+- xcorrelate video filter
 
 
 version 4.4:
