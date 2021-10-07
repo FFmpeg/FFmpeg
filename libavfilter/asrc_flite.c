@@ -71,7 +71,7 @@ static int flite_inited = 0;
 /* declare functions for all the supported voices */
 #define DECLARE_REGISTER_VOICE_FN(name) \
     cst_voice *register_cmu_us_## name(const char *); \
-    void     unregister_cmu_us_## name(cst_voice *);
+    void     unregister_cmu_us_## name(cst_voice *)
 DECLARE_REGISTER_VOICE_FN(awb);
 DECLARE_REGISTER_VOICE_FN(kal);
 DECLARE_REGISTER_VOICE_FN(kal16);
