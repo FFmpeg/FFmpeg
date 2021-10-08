@@ -3154,7 +3154,7 @@ ffmpeg -i INPUT -af atrim=end_sample=1000
 @end itemize
 
 @section axcorrelate
-Calculate normalized cross-correlation between two input audio streams.
+Calculate normalized windowed cross-correlation between two input audio streams.
 
 Resulted samples are always between -1 and 1 inclusive.
 If result is 1 it means two input samples are highly correlated in that selected segment.
