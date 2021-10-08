@@ -354,7 +354,7 @@ static av_cold int ffat_create_decoder(AVCodecContext *avctx,
                 avctx->codec_id == AV_CODEC_ID_EAC3)) {
         AC3HeaderInfo hdr;
         GetBitContext gbc;
-        init_get_bits(&gbc, pkt->data, pkt->size);
+        init_get_bits8(&gbc, pkt->data, pkt->size);
         if (ff_ac3_parse_header(&gbc, &hdr) < 0)
             return AVERROR_INVALIDDATA;
         in_format.mSampleRate = hdr.sample_rate;
