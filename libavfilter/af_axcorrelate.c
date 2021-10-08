@@ -82,7 +82,7 @@ static float xcorrelate(const float *x, const float *y, float sumx, float sumy, 
     }
 
     num /= size;
-    den  = sqrtf((den0 * den1) / (size * size));
+    den  = sqrtf((den0 * den1) / size / size);
 
     return den <= 1e-6f ? 0.f : num / den;
 }
@@ -149,7 +149,7 @@ static int xcorrelate_fast(AVFilterContext *ctx, AVFrame *out, int available)
             float num, den;
 
             num = num_sum[0] / size;
-            den = sqrtf((den_sumx[0] * den_sumy[0]) / (size * size));
+            den = sqrtf((den_sumx[0] * den_sumy[0]) / size / size);
 
             dst[n] = den <= 1e-6f ? 0.f : num / den;
 
