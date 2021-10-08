@@ -333,7 +333,7 @@ static int avgblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     tmp = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
+    if (!tmp) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
