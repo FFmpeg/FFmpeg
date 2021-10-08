@@ -253,7 +253,7 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-AVFilter ff_af_atilt = {
+const AVFilter ff_af_atilt = {
     .name            = "atilt",
     .description     = NULL_IF_CONFIG_SMALL("Apply spectral tilt to audio."),
     .priv_size       = sizeof(ATiltContext),
