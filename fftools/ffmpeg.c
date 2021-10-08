@@ -1974,6 +1974,9 @@ static void flush_encoders(void)
             AVPacket *pkt = ost->pkt;
             int pkt_size;
 
+            if (!pkt)
+                break;
+
             switch (enc->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 desc   = "audio";
