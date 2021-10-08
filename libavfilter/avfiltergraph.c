@@ -520,14 +520,13 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
                     av_assert0(outlink-> incfg.channel_layouts->refcount > 0);
                     av_assert0(outlink->outcfg.channel_layouts->refcount > 0);
                 }
+#define MERGE(merger, link)                                                  \
+    ((merger)->merge(FF_FIELD_AT(void *, (merger)->offset, (link)->incfg),   \
+                     FF_FIELD_AT(void *, (merger)->offset, (link)->outcfg)))
                 for (neg_step = 0; neg_step < neg->nb_mergers; neg_step++) {
                     const AVFilterFormatsMerger *m = &neg->mergers[neg_step];
-                    void *ia = FF_FIELD_AT(void *, m->offset, inlink->incfg);
-                    void *ib = FF_FIELD_AT(void *, m->offset, inlink->outcfg);
-                    void *oa = FF_FIELD_AT(void *, m->offset, outlink->incfg);
-                    void *ob = FF_FIELD_AT(void *, m->offset, outlink->outcfg);
-                    if ((ret = m->merge(ia, ib)) <= 0 ||
-                        (ret = m->merge(oa, ob)) <= 0) {
+                    if ((ret = MERGE(m,  inlink)) <= 0 ||
+                        (ret = MERGE(m, outlink)) <= 0) {
                         if (ret < 0)
                             return ret;
                         av_log(log_ctx, AV_LOG_ERROR,
