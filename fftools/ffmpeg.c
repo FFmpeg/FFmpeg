@@ -1033,7 +1033,6 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
         goto error;
 
     while (1) {
-        av_packet_unref(pkt);
         ret = avcodec_receive_packet(enc, pkt);
         if (ret == AVERROR(EAGAIN))
             break;
@@ -1378,7 +1377,6 @@ static void do_video_out(OutputFile *of,
         av_frame_remove_side_data(in_picture, AV_FRAME_DATA_A53_CC);
 
         while (1) {
-            av_packet_unref(pkt);
             ret = avcodec_receive_packet(enc, pkt);
             update_benchmark("encode_video %d.%d", ost->file_index, ost->index);
             if (ret == AVERROR(EAGAIN))
@@ -1997,7 +1995,6 @@ static void flush_encoders(void)
 
             update_benchmark(NULL);
 
-            av_packet_unref(pkt);
             while ((ret = avcodec_receive_packet(enc, pkt)) == AVERROR(EAGAIN)) {
                 ret = avcodec_send_frame(enc, NULL);
                 if (ret < 0) {
