@@ -42,8 +42,9 @@ typedef struct AudioXCorrelateContext {
     AVFrame *num_sum;
     AVFrame *den_sum[2];
     int used;
+    int eof;
 
-    int (*xcorrelate)(AVFilterContext *ctx, AVFrame *out);
+    int (*xcorrelate)(AVFilterContext *ctx, AVFrame *out, int available);
 } AudioXCorrelateContext;
 
 static float mean_sum(const float *in, int size)
@@ -86,10 +87,10 @@ static float xcorrelate(const float *x, const float *y, float sumx, float sumy, 
     return den <= 1e-6f ? 0.f : num / den;
 }
 
-static int xcorrelate_slow(AVFilterContext *ctx, AVFrame *out)
+static int xcorrelate_slow(AVFilterContext *ctx, AVFrame *out, int available)
 {
     AudioXCorrelateContext *s = ctx->priv;
-    const int size = s->size;
+    const int size = FFMIN(available, s->size);
     int used;
 
     for (int ch = 0; ch < out->channels; ch++) {
@@ -107,22 +108,24 @@ static int xcorrelate_slow(AVFilterContext *ctx, AVFrame *out)
         }
 
         for (int n = 0; n < out->nb_samples; n++) {
+            const int idx = available <= s->size ? out->nb_samples - n - 1 : n + size;
+
             dst[n] = xcorrelate(x + n, y + n, sumx[0], sumy[0], size);
 
             sumx[0] -= x[n];
-            sumx[0] += x[n + size];
+            sumx[0] += x[idx];
             sumy[0] -= y[n];
-            sumy[0] += y[n + size];
+            sumy[0] += y[idx];
         }
     }
 
     return used;
 }
 
-static int xcorrelate_fast(AVFilterContext *ctx, AVFrame *out)
+static int xcorrelate_fast(AVFilterContext *ctx, AVFrame *out, int available)
 {
     AudioXCorrelateContext *s = ctx->priv;
-    const int size = s->size;
+    const int size = FFMIN(available, s->size);
     int used;
 
     for (int ch = 0; ch < out->channels; ch++) {
@@ -142,6 +145,7 @@ static int xcorrelate_fast(AVFilterContext *ctx, AVFrame *out)
         }
 
         for (int n = 0; n < out->nb_samples; n++) {
+            const int idx = available <= s->size ? out->nb_samples - n - 1 : n + size;
             float num, den;
 
             num = num_sum[0] / size;
@@ -150,13 +154,13 @@ static int xcorrelate_fast(AVFilterContext *ctx, AVFrame *out)
             dst[n] = den <= 1e-6f ? 0.f : num / den;
 
             num_sum[0]  -= x[n] * y[n];
-            num_sum[0]  += x[n + size] * y[n + size];
+            num_sum[0]  += x[idx] * y[idx];
             den_sumx[0] -= x[n] * x[n];
+            den_sumx[0] += x[idx] * x[idx];
             den_sumx[0]  = FFMAX(den_sumx[0], 0.f);
-            den_sumx[0] += x[n + size] * x[n + size];
             den_sumy[0] -= y[n] * y[n];
+            den_sumy[0] += y[idx] * y[idx];
             den_sumy[0]  = FFMAX(den_sumy[0], 0.f);
-            den_sumy[0] += y[n + size] * y[n + size];
         }
     }
 
@@ -187,8 +191,8 @@ static int activate(AVFilterContext *ctx)
     }
 
     available = FFMIN(av_audio_fifo_size(s->fifo[0]), av_audio_fifo_size(s->fifo[1]));
-    if (available > s->size) {
-        const int out_samples = available - s->size;
+    if (available > s->size || (s->eof && available > 0)) {
+        const int out_samples = s->eof ? available : available - s->size;
         AVFrame *out;
 
         if (!s->cache[0] || s->cache[0]->nb_samples < available) {
@@ -217,7 +221,7 @@ static int activate(AVFilterContext *ctx)
         if (!out)
             return AVERROR(ENOMEM);
 
-        s->used = s->xcorrelate(ctx, out);
+        s->used = s->xcorrelate(ctx, out, available);
 
         out->pts = s->pts;
         s->pts += out_samples;
@@ -228,20 +232,25 @@ static int activate(AVFilterContext *ctx)
         return ff_filter_frame(ctx->outputs[0], out);
     }
 
-    if (av_audio_fifo_size(s->fifo[0]) > s->size &&
-        av_audio_fifo_size(s->fifo[1]) > s->size) {
+    for (int i = 0; i < 2 && !s->eof; i++) {
+        if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts))
+            s->eof = 1;
+    }
+
+    if (s->eof &&
+        (av_audio_fifo_size(s->fifo[0]) <= 0 ||
+         av_audio_fifo_size(s->fifo[1]) <= 0)) {
+        ff_outlink_set_status(ctx->outputs[0], AVERROR_EOF, s->pts);
+        return 0;
+    }
+
+    if ((av_audio_fifo_size(s->fifo[0]) > s->size &&
+         av_audio_fifo_size(s->fifo[1]) > s->size) || s->eof) {
         ff_filter_set_ready(ctx, 10);
         return 0;
     }
 
-    for (int i = 0; i < 2; i++) {
-        if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {
-            ff_outlink_set_status(ctx->outputs[0], status, pts);
-            return 0;
-        }
-    }
-
-    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) && !s->eof) {
         for (int i = 0; i < 2; i++) {
             if (av_audio_fifo_size(s->fifo[i]) > s->size)
                 continue;
