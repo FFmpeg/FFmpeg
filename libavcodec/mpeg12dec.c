@@ -2265,7 +2265,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
         int cc_count = 0;
         int i, ret;
 
-        init_get_bits(&gb, p + 2, buf_size - 2);
+        init_get_bits8(&gb, p + 2, buf_size - 2);
         cc_count = get_bits(&gb, 5);
         if (cc_count > 0) {
             int old_size = s1->a53_buf_ref ? s1->a53_buf_ref->size : 0;
