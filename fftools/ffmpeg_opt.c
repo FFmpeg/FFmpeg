@@ -888,6 +888,10 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             exit_program(1);
         }
 
+        ist->pkt = av_packet_alloc();
+        if (!ist->pkt)
+            exit_program(1);
+
         if (o->bitexact)
             ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
@@ -1515,6 +1519,10 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding parameters.\n");
         exit_program(1);
     }
+
+    ost->pkt = av_packet_alloc();
+    if (!ost->pkt)
+        exit_program(1);
 
     if (ost->enc) {
         AVIOContext *s = NULL;
