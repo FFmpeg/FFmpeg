@@ -73,7 +73,7 @@ static void parse_avs3_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             GetBitContext gb;
             int profile, ratecode;
 
-            init_get_bits(&gb, buf + 4, buf_size - 4);
+            init_get_bits8(&gb, buf + 4, buf_size - 4);
 
             s->key_frame = 1;
             s->pict_type = AV_PICTURE_TYPE_I;
