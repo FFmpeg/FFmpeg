@@ -1378,7 +1378,7 @@ static av_always_inline float scale(float x, float s)
     return (0.5f * x + 0.5f) * s - 0.5f;
 }
 
-static av_always_inline float rescale(int x, int s)
+static av_always_inline float rescale(int x, float s)
 {
     return (2.f * x + 1.f) / s - 1.f;
 }
