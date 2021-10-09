@@ -45,8 +45,6 @@ static void caca_deinit(AVFormatContext *s)
 {
     CACAContext *c = s->priv_data;
 
-    av_freep(&c->window_title);
-
     if (c->display) {
         caca_free_display(c->display);
         c->display = NULL;
