@@ -41,7 +41,7 @@ typedef struct CACAContext {
     int             list_drivers;
 } CACAContext;
 
-static int caca_write_trailer(AVFormatContext *s)
+static void caca_deinit(AVFormatContext *s)
 {
     CACAContext *c = s->priv_data;
 
@@ -59,7 +59,6 @@ static int caca_write_trailer(AVFormatContext *s)
         caca_free_canvas(c->canvas);
         c->canvas = NULL;
     }
-    return 0;
 }
 
 static void list_drivers(CACAContext *c)
@@ -137,7 +136,7 @@ static int caca_write_header(AVFormatContext *s)
     if (!c->canvas) {
         ret = AVERROR(errno);
         av_log(s, AV_LOG_ERROR, "Failed to create canvas\n");
-        goto fail;
+        return ret;
     }
 
     bpp = av_get_bits_per_pixel(av_pix_fmt_desc_get(encctx->format));
@@ -147,7 +146,7 @@ static int caca_write_header(AVFormatContext *s)
     if (!c->dither) {
         ret =  AVERROR(errno);
         av_log(s, AV_LOG_ERROR, "Failed to create dither\n");
-        goto fail;
+        return ret;
     }
 
 #define CHECK_DITHER_OPT(opt) do {                                              \
@@ -155,7 +154,7 @@ static int caca_write_header(AVFormatContext *s)
         ret = AVERROR(errno);                                                   \
         av_log(s, AV_LOG_ERROR, "Failed to set value '%s' for option '%s'\n",   \
                c->opt, #opt);                                                   \
-        goto fail;                                                              \
+        return ret;                                                             \
     }                                                                           \
 } while (0)
 
@@ -169,7 +168,7 @@ static int caca_write_header(AVFormatContext *s)
         ret = AVERROR(errno);
         av_log(s, AV_LOG_ERROR, "Failed to create display\n");
         list_drivers(c);
-        goto fail;
+        return ret;
     }
 
     if (!c->window_width || !c->window_height) {
@@ -183,10 +182,6 @@ static int caca_write_header(AVFormatContext *s)
     caca_set_display_time(c->display, av_rescale_q(1, st->time_base, AV_TIME_BASE_Q));
 
     return 0;
-
-fail:
-    caca_write_trailer(s);
-    return ret;
 }
 
 static int caca_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -235,7 +230,7 @@ const AVOutputFormat ff_caca_muxer = {
     .video_codec    = AV_CODEC_ID_RAWVIDEO,
     .write_header   = caca_write_header,
     .write_packet   = caca_write_packet,
-    .write_trailer  = caca_write_trailer,
+    .deinit         = caca_deinit,
     .flags          = AVFMT_NOFILE,
     .priv_class     = &caca_class,
 };
