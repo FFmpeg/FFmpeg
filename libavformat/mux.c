@@ -334,6 +334,9 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             si->nb_interleaved_streams++;
     }
+    si->interleave_packet = of->interleave_packet;
+    if (!si->interleave_packet)
+        si->interleave_packet = ff_interleave_packet_per_dts;
 
     if (!s->priv_data && of->priv_data_size > 0) {
         s->priv_data = av_mallocz(of->priv_data_size);
@@ -1054,19 +1057,6 @@ const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
     return NULL;
 }
 
-/**
- * A wrapper around AVOutputFormat.interleave_packet.
- * See its documentation for details.
- */
-static int interleave_packet(AVFormatContext *s, AVPacket *pkt,
-                             int flush, int has_packet)
-{
-    if (s->oformat->interleave_packet) {
-        return s->oformat->interleave_packet(s, pkt, flush, has_packet);
-    } else
-        return ff_interleave_packet_per_dts(s, pkt, flush, has_packet);
-}
-
 static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
 {
     int ret;
@@ -1089,8 +1079,9 @@ static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
 static int interleaved_write_packet(AVFormatContext *s, AVPacket *pkt,
                                     int flush, int has_packet)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     for (;; ) {
-        int ret = interleave_packet(s, pkt, flush, has_packet);
+        int ret = si->interleave_packet(s, pkt, flush, has_packet);
         if (ret <= 0)
             return ret;
 

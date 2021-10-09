@@ -82,6 +82,12 @@ typedef struct FFFormatContext {
     int nb_interleaved_streams;
 
     /**
+     * The interleavement function in use. Always set for muxers.
+     */
+    int (*interleave_packet)(struct AVFormatContext *s, AVPacket *pkt,
+                             int flush, int has_packet);
+
+    /**
      * This buffer is only needed when packets were already buffered but
      * not decoded, for example to get the codec parameters in MPEG
      * streams.
