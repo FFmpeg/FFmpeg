@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
@@ -33,4 +34,5 @@ const AVOutputFormat ff_null_muxer = {
     .video_codec       = AV_CODEC_ID_WRAPPED_AVFRAME,
     .write_packet      = null_write_packet,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_NOFILE | AVFMT_NOTIMESTAMPS,
+    .interleave_packet = ff_interleave_packet_passthrough,
 };
