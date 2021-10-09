@@ -138,7 +138,7 @@ static int get_qPy(HEVCContext *s, int xC, int yC)
 static void copy_CTB(uint8_t *dst, const uint8_t *src, int width, int height,
                      ptrdiff_t stride_dst, ptrdiff_t stride_src)
 {
-int i, j;
+    int i, j;
 
     if (((intptr_t)dst | (intptr_t)src | stride_dst | stride_src) & 15) {
         for (i = 0; i < height; i++) {
@@ -319,18 +319,18 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
                            x_ctb, y_ctb);
             if (s->ps.pps->transquant_bypass_enable_flag ||
                 (s->ps.sps->pcm.loop_filter_disable_flag && s->ps.sps->pcm_enabled_flag)) {
-            dst = lc->edge_emu_buffer;
-            stride_dst = 2*MAX_PB_SIZE;
-            copy_CTB(dst, src, width << s->ps.sps->pixel_shift, height, stride_dst, stride_src);
-            s->hevcdsp.sao_band_filter[tab](src, dst, stride_src, stride_dst,
-                                            sao->offset_val[c_idx], sao->band_position[c_idx],
-                                            width, height);
-            restore_tqb_pixels(s, src, dst, stride_src, stride_dst,
-                               x, y, width, height, c_idx);
+                dst = lc->edge_emu_buffer;
+                stride_dst = 2*MAX_PB_SIZE;
+                copy_CTB(dst, src, width << s->ps.sps->pixel_shift, height, stride_dst, stride_src);
+                s->hevcdsp.sao_band_filter[tab](src, dst, stride_src, stride_dst,
+                                                sao->offset_val[c_idx], sao->band_position[c_idx],
+                                                width, height);
+                restore_tqb_pixels(s, src, dst, stride_src, stride_dst,
+                                   x, y, width, height, c_idx);
             } else {
-            s->hevcdsp.sao_band_filter[tab](src, src, stride_src, stride_src,
-                                            sao->offset_val[c_idx], sao->band_position[c_idx],
-                                            width, height);
+                s->hevcdsp.sao_band_filter[tab](src, src, stride_src, stride_src,
+                                                sao->offset_val[c_idx], sao->band_position[c_idx],
+                                                width, height);
             }
             sao->type_idx[c_idx] = SAO_APPLIED;
             break;
