@@ -46,9 +46,6 @@
 
 #define SHIFT_CTB_WPP 2
 
-//TODO: check if this is really the maximum
-#define MAX_TRANSFORM_DEPTH 5
-
 #define MAX_TB_SIZE 32
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
