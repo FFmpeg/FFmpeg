@@ -336,7 +336,9 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     }
     si->interleave_packet = of->interleave_packet;
     if (!si->interleave_packet)
-        si->interleave_packet = ff_interleave_packet_per_dts;
+        si->interleave_packet = si->nb_interleaved_streams > 1 ?
+                                    ff_interleave_packet_per_dts :
+                                    ff_interleave_packet_passthrough;
 
     if (!s->priv_data && of->priv_data_size > 0) {
         s->priv_data = av_mallocz(of->priv_data_size);
@@ -1026,6 +1028,12 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
     } else {
         return 0;
     }
+}
+
+int ff_interleave_packet_passthrough(AVFormatContext *s, AVPacket *pkt,
+                                     int flush, int has_packet)
+{
+    return has_packet;
 }
 
 int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset)
