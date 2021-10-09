@@ -296,7 +296,7 @@ static int write_picture(AVFormatContext *s, uint8_t *input_data[4],
 {
     XVContext *xv = s->priv_data;
     XvImage *img = xv->yuv_image;
-    uint8_t *data[3] = {
+    uint8_t *data[4] = {
         img->data + img->offsets[0],
         img->data + img->offsets[1],
         img->data + img->offsets[2]
