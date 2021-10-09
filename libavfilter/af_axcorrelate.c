@@ -47,125 +47,155 @@ typedef struct AudioXCorrelateContext {
     int (*xcorrelate)(AVFilterContext *ctx, AVFrame *out, int available);
 } AudioXCorrelateContext;
 
-static float mean_sum(const float *in, int size)
-{
-    float mean_sum = 0.f;
-
-    for (int i = 0; i < size; i++)
-        mean_sum += in[i];
-
-    return mean_sum;
+#define MEAN_SUM(suffix, type, zero)           \
+static type mean_sum_##suffix(const type *in,  \
+                              int size)        \
+{                                              \
+    type mean_sum = zero;                      \
+                                               \
+    for (int i = 0; i < size; i++)             \
+        mean_sum += in[i];                     \
+                                               \
+    return mean_sum;                           \
 }
 
-static float square_sum(const float *x, const float *y, int size)
-{
-    float square_sum = 0.f;
+MEAN_SUM(f, float,  0.f)
+MEAN_SUM(d, double, 0.0)
 
-    for (int i = 0; i < size; i++)
-        square_sum += x[i] * y[i];
-
-    return square_sum;
+#define SQUARE_SUM(suffix, type, zero)         \
+static type square_sum_##suffix(const type *x, \
+                        const type *y,         \
+                        int size)              \
+{                                              \
+    type square_sum = zero;                    \
+                                               \
+    for (int i = 0; i < size; i++)             \
+        square_sum += x[i] * y[i];             \
+                                               \
+    return square_sum;                         \
 }
 
-static float xcorrelate(const float *x, const float *y, float sumx, float sumy, int size)
-{
-    const float xm = sumx / size, ym = sumy / size;
-    float num = 0.f, den, den0 = 0.f, den1 = 0.f;
+SQUARE_SUM(f, float,  0.f)
+SQUARE_SUM(d, double, 0.0)
 
-    for (int i = 0; i < size; i++) {
-        float xd = x[i] - xm;
-        float yd = y[i] - ym;
-
-        num += xd * yd;
-        den0 += xd * xd;
-        den1 += yd * yd;
-    }
-
-    num /= size;
-    den  = sqrtf((den0 * den1) / size / size);
-
-    return den <= 1e-6f ? 0.f : num / den;
+#define XCORRELATE(suffix, type, zero, small, sqrtfun)\
+static type xcorrelate_##suffix(const type *x,       \
+                                const type *y,       \
+                                type sumx,           \
+                                type sumy, int size) \
+{                                                    \
+    const type xm = sumx / size, ym = sumy / size;   \
+    type num = zero, den, den0 = zero, den1 = zero;  \
+                                                     \
+    for (int i = 0; i < size; i++) {                 \
+        type xd = x[i] - xm;                         \
+        type yd = y[i] - ym;                         \
+                                                     \
+        num += xd * yd;                              \
+        den0 += xd * xd;                             \
+        den1 += yd * yd;                             \
+    }                                                \
+                                                     \
+    num /= size;                                     \
+    den  = sqrtfun((den0 * den1) / size / size);     \
+                                                     \
+    return den <= small ? zero : num / den;          \
 }
 
-static int xcorrelate_slow(AVFilterContext *ctx, AVFrame *out, int available)
-{
-    AudioXCorrelateContext *s = ctx->priv;
-    const int size = FFMIN(available, s->size);
-    int used;
+XCORRELATE(f, float,  0.f, 1e-6f, sqrtf)
+XCORRELATE(d, double, 0.0, 1e-9,  sqrt)
 
-    for (int ch = 0; ch < out->channels; ch++) {
-        const float *x = (const float *)s->cache[0]->extended_data[ch];
-        const float *y = (const float *)s->cache[1]->extended_data[ch];
-        float *sumx = (float *)s->mean_sum[0]->extended_data[ch];
-        float *sumy = (float *)s->mean_sum[1]->extended_data[ch];
-        float *dst = (float *)out->extended_data[ch];
-
-        used = s->used;
-        if (!used) {
-            sumx[0] = mean_sum(x, size);
-            sumy[0] = mean_sum(y, size);
-            used = 1;
-        }
-
-        for (int n = 0; n < out->nb_samples; n++) {
-            const int idx = available <= s->size ? out->nb_samples - n - 1 : n + size;
-
-            dst[n] = xcorrelate(x + n, y + n, sumx[0], sumy[0], size);
-
-            sumx[0] -= x[n];
-            sumx[0] += x[idx];
-            sumy[0] -= y[n];
-            sumy[0] += y[idx];
-        }
-    }
-
-    return used;
+#define XCORRELATE_SLOW(suffix, type)                     \
+static int xcorrelate_slow_##suffix(AVFilterContext *ctx, \
+                           AVFrame *out, int available)   \
+{                                                         \
+    AudioXCorrelateContext *s = ctx->priv;                \
+    const int size = FFMIN(available, s->size);           \
+    int used;                                             \
+                                                          \
+    for (int ch = 0; ch < out->channels; ch++) {          \
+        const type *x = (const type *)s->cache[0]->extended_data[ch]; \
+        const type *y = (const type *)s->cache[1]->extended_data[ch]; \
+        type *sumx = (type *)s->mean_sum[0]->extended_data[ch];       \
+        type *sumy = (type *)s->mean_sum[1]->extended_data[ch];       \
+        type *dst = (type *)out->extended_data[ch];                   \
+                                                          \
+        used = s->used;                                   \
+        if (!used) {                                      \
+            sumx[0] = mean_sum_##suffix(x, size);         \
+            sumy[0] = mean_sum_##suffix(y, size);         \
+            used = 1;                                     \
+        }                                                 \
+                                                          \
+        for (int n = 0; n < out->nb_samples; n++) {                                    \
+            const int idx = available <= s->size ? out->nb_samples - n - 1 : n + size; \
+                                                                                       \
+            dst[n] = xcorrelate_##suffix(x + n, y + n,      \
+                                         sumx[0], sumy[0],  \
+                                         size);             \
+                                                            \
+            sumx[0] -= x[n];     \
+            sumx[0] += x[idx];   \
+            sumy[0] -= y[n];     \
+            sumy[0] += y[idx];   \
+        }                        \
+    }                            \
+                                 \
+    return used;                 \
 }
 
-static int xcorrelate_fast(AVFilterContext *ctx, AVFrame *out, int available)
-{
-    AudioXCorrelateContext *s = ctx->priv;
-    const int size = FFMIN(available, s->size);
-    int used;
+XCORRELATE_SLOW(f, float)
+XCORRELATE_SLOW(d, double)
 
-    for (int ch = 0; ch < out->channels; ch++) {
-        const float *x = (const float *)s->cache[0]->extended_data[ch];
-        const float *y = (const float *)s->cache[1]->extended_data[ch];
-        float *num_sum = (float *)s->num_sum->extended_data[ch];
-        float *den_sumx = (float *)s->den_sum[0]->extended_data[ch];
-        float *den_sumy = (float *)s->den_sum[1]->extended_data[ch];
-        float *dst = (float *)out->extended_data[ch];
-
-        used = s->used;
-        if (!used) {
-            num_sum[0]  = square_sum(x, y, size);
-            den_sumx[0] = square_sum(x, x, size);
-            den_sumy[0] = square_sum(y, y, size);
-            used = 1;
-        }
-
-        for (int n = 0; n < out->nb_samples; n++) {
-            const int idx = available <= s->size ? out->nb_samples - n - 1 : n + size;
-            float num, den;
-
-            num = num_sum[0] / size;
-            den = sqrtf((den_sumx[0] * den_sumy[0]) / size / size);
-
-            dst[n] = den <= 1e-6f ? 0.f : num / den;
-
-            num_sum[0]  -= x[n] * y[n];
-            num_sum[0]  += x[idx] * y[idx];
-            den_sumx[0] -= x[n] * x[n];
-            den_sumx[0] += x[idx] * x[idx];
-            den_sumx[0]  = FFMAX(den_sumx[0], 0.f);
-            den_sumy[0] -= y[n] * y[n];
-            den_sumy[0] += y[idx] * y[idx];
-            den_sumy[0]  = FFMAX(den_sumy[0], 0.f);
-        }
-    }
-
-    return used;
+#define XCORRELATE_FAST(suffix, type, zero, small, sqrtfun)                    \
+static int xcorrelate_fast_##suffix(AVFilterContext *ctx, AVFrame *out,        \
+                                    int available)                             \
+{                                                                              \
+    AudioXCorrelateContext *s = ctx->priv;                                     \
+    const int size = FFMIN(available, s->size);                                \
+    int used;                                                                  \
+                                                                               \
+    for (int ch = 0; ch < out->channels; ch++) {                               \
+        const type *x = (const type *)s->cache[0]->extended_data[ch];          \
+        const type *y = (const type *)s->cache[1]->extended_data[ch];          \
+        type *num_sum = (type *)s->num_sum->extended_data[ch];                 \
+        type *den_sumx = (type *)s->den_sum[0]->extended_data[ch];             \
+        type *den_sumy = (type *)s->den_sum[1]->extended_data[ch];             \
+        type *dst = (type *)out->extended_data[ch];                            \
+                                                                               \
+        used = s->used;                                                        \
+        if (!used) {                                                           \
+            num_sum[0]  = square_sum_##suffix(x, y, size);                     \
+            den_sumx[0] = square_sum_##suffix(x, x, size);                     \
+            den_sumy[0] = square_sum_##suffix(y, y, size);                     \
+            used = 1;                                                          \
+        }                                                                      \
+                                                                               \
+        for (int n = 0; n < out->nb_samples; n++) {                                    \
+            const int idx = available <= s->size ? out->nb_samples - n - 1 : n + size; \
+            type num, den;                                                             \
+                                                                               \
+            num = num_sum[0] / size;                                           \
+            den = sqrtfun((den_sumx[0] * den_sumy[0]) / size / size);          \
+                                                                               \
+            dst[n] = den <= small ? zero : num / den;                          \
+                                                                               \
+            num_sum[0]  -= x[n] * y[n];                                        \
+            num_sum[0]  += x[idx] * y[idx];                                    \
+            den_sumx[0] -= x[n] * x[n];                                        \
+            den_sumx[0] += x[idx] * x[idx];                                    \
+            den_sumx[0]  = FFMAX(den_sumx[0], zero);                           \
+            den_sumy[0] -= y[n] * y[n];                                        \
+            den_sumy[0] += y[idx] * y[idx];                                    \
+            den_sumy[0]  = FFMAX(den_sumy[0], zero);                           \
+        }                                                                      \
+    }                                                                          \
+                                                                               \
+    return used;                                                               \
 }
+
+XCORRELATE_FAST(f, float,  0.f, 1e-6f, sqrtf)
+XCORRELATE_FAST(d, double, 0.0, 1e-9,  sqrt)
 
 static int activate(AVFilterContext *ctx)
 {
@@ -265,13 +295,10 @@ static int activate(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    AVFilterLink *inlink = ctx->inputs[0];
     AudioXCorrelateContext *s = ctx->priv;
 
     s->pts = AV_NOPTS_VALUE;
 
-    outlink->format = inlink->format;
-    outlink->channels = inlink->channels;
     s->fifo[0] = av_audio_fifo_alloc(outlink->format, outlink->channels, s->size);
     s->fifo[1] = av_audio_fifo_alloc(outlink->format, outlink->channels, s->size);
     if (!s->fifo[0] || !s->fifo[1])
@@ -287,8 +314,15 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     switch (s->algo) {
-    case 0: s->xcorrelate = xcorrelate_slow; break;
-    case 1: s->xcorrelate = xcorrelate_fast; break;
+    case 0: s->xcorrelate = xcorrelate_slow_f; break;
+    case 1: s->xcorrelate = xcorrelate_fast_f; break;
+    }
+
+    if (outlink->format == AV_SAMPLE_FMT_DBLP) {
+        switch (s->algo) {
+        case 0: s->xcorrelate = xcorrelate_slow_d; break;
+        case 1: s->xcorrelate = xcorrelate_fast_d; break;
+        }
     }
 
     return 0;
@@ -350,5 +384,5 @@ const AVFilter ff_af_axcorrelate = {
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_FLTP),
+    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
 };
