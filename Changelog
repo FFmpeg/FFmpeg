@@ -2,6 +2,23 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.4.9:
+ avformat/wavdec: Check smv_block_size
+ avformat/rmdec: Check for multiple audio_stream_info
+ avcodec/apedec: Use 64bit to avoid overflow
+ avcodec/apedec: Fix undefined integer overflow in long_filter_ehigh_3830()
+ oavformat/avidec: Check offset in odml
+ avformat/mpegts: use actually read packet size in mpegts_resync special case
+ swscale/alphablend: Fix slice handling
+ avcodec/mxpegdec: Check for AVDISCARD_ALL
+ avcodec/flicvideo: Check remaining bytes in FLI*COPY
+ avcodec/mpeg12dec: Do not put mpeg_f_code into an invalid state on error return
+ avcodec/mpegvideo_enc: Limit bitrate tolerance to the representable
+ avcodec/apedec: Fix integer overflow in intermediate
+ avformat/mvdec: Do not set invalid sample rate
+ avformat/rmdec: Use 64bit for intermediate for DEINT_ID_INT4
+ avformat/jacosubdec: Check for min in t overflow in get_shift()
+ avformat/mxfdec: check channel number in mxf_get_d10_aes3_packet()
+ avfilter/scale_npp: fix non-aligned output frame dimensions
  avcodec/utils: don't return negative values in av_get_audio_frame_duration()
  avcodec/jpeg2000dec: Check that atom header is within bytsetream
  avcodec/apedec: Fix 2 integer overflows in filter_3800()
