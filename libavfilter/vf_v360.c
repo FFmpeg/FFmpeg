@@ -1375,7 +1375,7 @@ static void process_cube_coordinates(const V360Context *s,
 
 static av_always_inline float scale(float x, float s)
 {
-    return (0.5f * x + 0.5f) * s - 0.5f;
+    return (0.5f * x + 0.5f) * (s - 1.f);
 }
 
 static av_always_inline float rescale(int x, float s)
@@ -3423,7 +3423,7 @@ static int dfisheye_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
-    const float ew = width / 2.f;
+    const float ew = width * 0.5f;
     const float eh = height;
 
     const int ei = i >= ew ? i - ew : i;
@@ -3464,7 +3464,7 @@ static int xyz_to_dfisheye(const V360Context *s,
                            const float *vec, int width, int height,
                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float ew = width / 2.f;
+    const float ew = (width - 1) * 0.5f;
     const float eh = height;
 
     const float h     = hypotf(vec[0], vec[1]);
