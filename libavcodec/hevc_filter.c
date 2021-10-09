@@ -25,10 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 
-#include "cabac_functions.h"
 #include "hevcdec.h"
-
-#include "bit_depth_template.c"
 
 #define LUMA 0
 #define CB 1
