@@ -119,7 +119,7 @@ static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
     bits--;
     if (bits < 0 || bits > 31) {
         *value = 0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     } else if (bits == 0) {
         *value = 0;
         return 0;
@@ -147,17 +147,17 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
     for (i = 1; i < 257; i++) {
         if (lag_decode_prob(gb, &rac->prob[i]) < 0) {
             av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability encountered.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if ((uint64_t)cumul_prob + rac->prob[i] > UINT_MAX) {
             av_log(rac->avctx, AV_LOG_ERROR, "Integer overflow encountered in cumulative probability calculation.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         cumul_prob += rac->prob[i];
         if (!rac->prob[i]) {
             if (lag_decode_prob(gb, &prob)) {
                 av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability run encountered.\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if (prob > 256 - i)
                 prob = 256 - i;
@@ -170,7 +170,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
 
     if (!cumul_prob) {
         av_log(rac->avctx, AV_LOG_ERROR, "All probabilities are 0!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (nnz == 1 && (show_bits_long(gb, 32) & 0xFFFFFF)) {
@@ -203,7 +203,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
         if (scaled_cumul_prob > cumulative_target) {
             av_log(rac->avctx, AV_LOG_ERROR,
                    "Scaled probabilities are larger than target!\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         scaled_cumul_prob = cumulative_target - scaled_cumul_prob;
@@ -459,8 +459,8 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
         if ((ret = init_get_bits8(&gb, src + offset, src_size - offset)) < 0)
             return ret;
 
-        if (lag_read_prob_header(&rac, &gb) < 0)
-            return -1;
+        if ((ret = lag_read_prob_header(&rac, &gb)) < 0)
+            return ret;
 
         ff_lag_rac_init(&rac, &gb, length - stride);
         for (i = 0; i < height; i++) {
@@ -507,7 +507,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
     } else {
         av_log(l->avctx, AV_LOG_ERROR,
                "Invalid zero run escape code! (%#x)\n", esc_count);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (l->avctx->pix_fmt != AV_PIX_FMT_YUV422P) {
@@ -547,7 +547,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     uint32_t offs[4];
     uint8_t *srcs[4];
     int i, j, planes = 3;
-    int ret;
+    int ret = 0;
 
     p->key_frame = 1;
     p->pict_type = AV_PICTURE_TYPE_I;
@@ -630,11 +630,14 @@ static int lag_decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             }
 
-        for (i = 0; i < planes; i++)
-            lag_decode_arith_plane(l, srcs[i],
+        for (i = 0; i < planes; i++) {
+            ret = lag_decode_arith_plane(l, srcs[i],
                                    avctx->width, avctx->height,
                                    -p->linesize[i], buf + offs[i],
                                    buf_size - offs[i]);
+            if (ret < 0)
+                return ret;
+        }
         for (i = 0; i < avctx->height; i++) {
             l->llviddsp.add_bytes(p->data[0] + i * p->linesize[0], p->data[1] + i * p->linesize[1], avctx->width);
             l->llviddsp.add_bytes(p->data[2] + i * p->linesize[2], p->data[1] + i * p->linesize[1], avctx->width);
@@ -658,13 +661,17 @@ static int lag_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        lag_decode_arith_plane(l, p->data[0], avctx->width, avctx->height,
+        ret = lag_decode_arith_plane(l, p->data[0], avctx->width, avctx->height,
                                p->linesize[0], buf + offset_ry,
                                buf_size - offset_ry);
-        lag_decode_arith_plane(l, p->data[1], (avctx->width + 1) / 2,
+        if (ret < 0)
+            return ret;
+        ret = lag_decode_arith_plane(l, p->data[1], (avctx->width + 1) / 2,
                                avctx->height, p->linesize[1],
                                buf + offset_gu, buf_size - offset_gu);
-        lag_decode_arith_plane(l, p->data[2], (avctx->width + 1) / 2,
+        if (ret < 0)
+            return ret;
+        ret = lag_decode_arith_plane(l, p->data[2], (avctx->width + 1) / 2,
                                avctx->height, p->linesize[2],
                                buf + offset_bv, buf_size - offset_bv);
         break;
@@ -682,13 +689,17 @@ static int lag_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        lag_decode_arith_plane(l, p->data[0], avctx->width, avctx->height,
+        ret = lag_decode_arith_plane(l, p->data[0], avctx->width, avctx->height,
                                p->linesize[0], buf + offset_ry,
                                buf_size - offset_ry);
-        lag_decode_arith_plane(l, p->data[2], (avctx->width + 1) / 2,
+        if (ret < 0)
+            return ret;
+        ret = lag_decode_arith_plane(l, p->data[2], (avctx->width + 1) / 2,
                                (avctx->height + 1) / 2, p->linesize[2],
                                buf + offset_gu, buf_size - offset_gu);
-        lag_decode_arith_plane(l, p->data[1], (avctx->width + 1) / 2,
+        if (ret < 0)
+            return ret;
+        ret = lag_decode_arith_plane(l, p->data[1], (avctx->width + 1) / 2,
                                (avctx->height + 1) / 2, p->linesize[1],
                                buf + offset_bv, buf_size - offset_bv);
         break;
@@ -697,6 +708,9 @@ static int lag_decode_frame(AVCodecContext *avctx,
                "Unsupported Lagarith frame type: %#"PRIx8"\n", frametype);
         return AVERROR_PATCHWELCOME;
     }
+
+    if (ret < 0)
+        return ret;
 
     *got_frame = 1;
 
