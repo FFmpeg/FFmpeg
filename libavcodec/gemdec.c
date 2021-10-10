@@ -101,6 +101,7 @@ static int gem_decode_frame(AVCodecContext *avctx,
     int row_width, pixel_size;
     State state = {.y = 0, .pl = 0, .x = 0, .vdup = 1};
     void (*put_lines)(AVCodecContext *avctx, int planes, int row_width, int pixel_size, State * state, uint8_t * row, AVFrame *p);
+    int width, height;
 
     if (buf_size <= 16)
         return AVERROR_INVALIDDATA;
@@ -114,8 +115,11 @@ static int gem_decode_frame(AVCodecContext *avctx,
     pattern_size = bytestream2_get_be16(&gb);
     avctx->sample_aspect_ratio.num = bytestream2_get_be16(&gb);
     avctx->sample_aspect_ratio.den = bytestream2_get_be16(&gb);
-    avctx->width  = bytestream2_get_be16(&gb);
-    avctx->height = bytestream2_get_be16(&gb);
+    width  = bytestream2_get_be16(&gb);
+    height = bytestream2_get_be16(&gb);
+    ret = ff_set_dimensions(avctx, width, height);
+    if (ret < 0)
+        return ret;
 
     row_width = (avctx->width + 7) / 8;
     put_lines = put_lines_bits;
