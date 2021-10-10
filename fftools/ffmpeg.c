@@ -2178,7 +2178,7 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 {
     FilterGraph *fg = ifilter->graph;
     AVFrameSideData *sd;
-    int need_reinit, ret, i;
+    int need_reinit, ret;
 
     /* determine if the parameters for this input changed */
     need_reinit = ifilter->format != frame->format;
@@ -2216,7 +2216,6 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
     /* (re)init the graph if possible, otherwise buffer the frame and return */
     if (need_reinit || !fg->graph) {
-        for (i = 0; i < fg->nb_inputs; i++) {
             if (!ifilter_has_all_input_formats(fg)) {
                 AVFrame *tmp = av_frame_clone(frame);
                 if (!tmp)
@@ -2233,7 +2232,6 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
                 av_fifo_generic_write(ifilter->frame_queue, &tmp, sizeof(tmp), NULL);
                 return 0;
             }
-        }
 
         ret = reap_filters(1);
         if (ret < 0 && ret != AVERROR_EOF) {
