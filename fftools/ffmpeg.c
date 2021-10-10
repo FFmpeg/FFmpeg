@@ -2216,22 +2216,22 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
     /* (re)init the graph if possible, otherwise buffer the frame and return */
     if (need_reinit || !fg->graph) {
-            if (!ifilter_has_all_input_formats(fg)) {
-                AVFrame *tmp = av_frame_clone(frame);
-                if (!tmp)
-                    return AVERROR(ENOMEM);
-                av_frame_unref(frame);
+        if (!ifilter_has_all_input_formats(fg)) {
+            AVFrame *tmp = av_frame_clone(frame);
+            if (!tmp)
+                return AVERROR(ENOMEM);
+            av_frame_unref(frame);
 
-                if (!av_fifo_space(ifilter->frame_queue)) {
-                    ret = av_fifo_realloc2(ifilter->frame_queue, 2 * av_fifo_size(ifilter->frame_queue));
-                    if (ret < 0) {
-                        av_frame_free(&tmp);
-                        return ret;
-                    }
+            if (!av_fifo_space(ifilter->frame_queue)) {
+                ret = av_fifo_realloc2(ifilter->frame_queue, 2 * av_fifo_size(ifilter->frame_queue));
+                if (ret < 0) {
+                    av_frame_free(&tmp);
+                    return ret;
                 }
-                av_fifo_generic_write(ifilter->frame_queue, &tmp, sizeof(tmp), NULL);
-                return 0;
             }
+            av_fifo_generic_write(ifilter->frame_queue, &tmp, sizeof(tmp), NULL);
+            return 0;
+        }
 
         ret = reap_filters(1);
         if (ret < 0 && ret != AVERROR_EOF) {
