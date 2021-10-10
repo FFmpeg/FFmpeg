@@ -1496,6 +1496,12 @@ when the old encryption key is decommissioned. Default is -1.
 -1 means auto (0x1000 in srt library). The range for
 this option is integers in the 0 - @code{INT_MAX}.
 
+@item snddropdelay=@var{microseconds}
+The sender's extra delay before dropping packets. This delay is
+added to the default drop delay time interval value.
+
+Special value -1: Do not drop packets on the sender at all.
+
 @item payload_size=@var{bytes}
 Sets the maximum declared size of a packet transferred
 during the single call to the sending function in Live
