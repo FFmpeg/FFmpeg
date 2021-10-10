@@ -6824,10 +6824,10 @@ enabled vdpau &&
 enabled crystalhd && check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
 
 if enabled vulkan; then
-    require_pkg_config_cpp vulkan "vulkan >= 1.1.97" "vulkan/vulkan.h" "defined VK_VERSION_1_1" ||
-        require_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_1"
+    require_pkg_config_cpp vulkan "vulkan >= 1.2.189" "vulkan/vulkan.h" "defined VK_VERSION_1_2" ||
+        require_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_2"
     # vulkan_lib should be removed once glslang filters are updated
-    check_pkg_config vulkan_lib "vulkan >= 1.1.97" "vulkan/vulkan.h" vkCreateInstance
+    check_pkg_config vulkan_lib "vulkan >= 1.2.189" "vulkan/vulkan.h" vkCreateInstance
 fi
 
 if enabled x86; then

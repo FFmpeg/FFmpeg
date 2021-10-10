@@ -50,7 +50,7 @@ typedef struct AVVulkanDeviceContext {
     PFN_vkGetInstanceProcAddr get_proc_addr;
 
     /**
-     * Vulkan instance. Must be at least version 1.1.
+     * Vulkan instance. Must be at least version 1.2.
      */
     VkInstance inst;
 
