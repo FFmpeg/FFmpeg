@@ -118,6 +118,11 @@ static int rfc4175_parse_fmtp(AVFormatContext *s, AVStream *stream,
             stream->codecpar->color_primaries = AVCOL_PRI_BT2020;
             stream->codecpar->color_space     = AVCOL_SPC_BT2020_NCL;
         }
+    } else if (!strncmp(attr, "RANGE", 5)) {
+        if (!strncmp(value, "NARROW", 6))
+            stream->codecpar->color_range = AVCOL_RANGE_MPEG;
+        else if (!strncmp(value, "FULL", 4))
+            stream->codecpar->color_range = AVCOL_RANGE_JPEG;
     }
 
     return 0;
