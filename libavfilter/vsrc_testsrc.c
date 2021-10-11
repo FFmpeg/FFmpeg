@@ -303,30 +303,20 @@ static void haldclutsrc_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     const uint8_t *data = frame->data[0];
     const int linesize  = frame->linesize[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const int depth = desc->comp[0].depth;
+    const int planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    const int planes = av_pix_fmt_count_planes(frame->format);
     uint8_t rgba_map[4];
 
     av_assert0(w == h && w == level*level*level);
 
     ff_fill_rgba_map(rgba_map, frame->format);
 
-    switch (frame->format) {
-    case AV_PIX_FMT_RGB48:
-    case AV_PIX_FMT_BGR48:
-    case AV_PIX_FMT_RGBA64:
-    case AV_PIX_FMT_BGRA64:
-        is16bit = 1;
-        alpha = 0xffff;
-        break;
-    case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_ARGB:
-    case AV_PIX_FMT_ABGR:
-        alpha = 0xff;
-        break;
-    }
+    alpha = (1 << depth) - 1;
+    is16bit = depth > 8;
 
     step  = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
-    scale = ((float)(1 << (8*(is16bit+1))) - 1) / (level*level - 1);
+    scale = ((float)alpha) / (level*level - 1);
 
 #define LOAD_CLUT(nbits) do {                                                   \
     uint##nbits##_t *dst = ((uint##nbits##_t *)(data + y*linesize)) + x*step;   \
@@ -337,14 +327,38 @@ static void haldclutsrc_fill_picture(AVFilterContext *ctx, AVFrame *frame)
         dst[rgba_map[3]] = alpha;                                               \
 } while (0)
 
+#define LOAD_CLUT_PLANAR(type, nbits) do {                                      \
+    type *dst = ((type *)(frame->data[2] + y*frame->linesize[2])) + x;          \
+    dst[0] = av_clip_uintp2(i * scale, nbits);                                  \
+    dst = ((type *)(frame->data[0] + y*frame->linesize[0])) + x;                \
+    dst[0] = av_clip_uintp2(j * scale, nbits);                                  \
+    dst = ((type *)(frame->data[1] + y*frame->linesize[1])) + x;                \
+    dst[0] = av_clip_uintp2(k * scale, nbits);                                  \
+    if (planes == 4) {                                                          \
+        dst = ((type *)(frame->data[3] + y*linesize)) + x;                      \
+        dst[0] = alpha;                                                         \
+    }                                                                           \
+} while (0)
+
     level *= level;
     for (k = 0; k < level; k++) {
         for (j = 0; j < level; j++) {
             for (i = 0; i < level; i++) {
-                if (!is16bit)
-                    LOAD_CLUT(8);
-                else
-                    LOAD_CLUT(16);
+                if (!planar) {
+                    if (!is16bit)
+                        LOAD_CLUT(8);
+                    else
+                        LOAD_CLUT(16);
+                } else {
+                    switch (depth) {
+                    case  8: LOAD_CLUT_PLANAR(uint8_t,  8); break;
+                    case  9: LOAD_CLUT_PLANAR(uint16_t, 9); break;
+                    case 10: LOAD_CLUT_PLANAR(uint16_t,10); break;
+                    case 12: LOAD_CLUT_PLANAR(uint16_t,12); break;
+                    case 14: LOAD_CLUT_PLANAR(uint16_t,14); break;
+                    case 16: LOAD_CLUT_PLANAR(uint16_t,16); break;
+                    }
+                }
                 if (++x == w) {
                     x = 0;
                     y++;
@@ -370,6 +384,12 @@ static const enum AVPixelFormat haldclutsrc_pix_fmts[] = {
     AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
     AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
     AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+    AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
+    AV_PIX_FMT_GBRP9,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+    AV_PIX_FMT_GBRP14,
+    AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_NONE,
 };
 
