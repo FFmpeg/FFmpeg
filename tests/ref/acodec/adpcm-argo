@@ -1,4 +1,4 @@
 14b2507d14e95c20bb7ae49b4fcbcbf1 *tests/data/fate/acodec-adpcm-argo.argo_asf
 281190 tests/data/fate/acodec-adpcm-argo.argo_asf
-cc5e5c695adeaebaa2b1f0df5ebd59ee *tests/data/fate/acodec-adpcm-argo.out.wav
+446f28460bdb7ff4361cf7d82ac22c3e *tests/data/fate/acodec-adpcm-argo.out.wav
 stddev: 1542.05 PSNR: 32.57 MAXDIFF:59667 bytes:  1058400/  1058432

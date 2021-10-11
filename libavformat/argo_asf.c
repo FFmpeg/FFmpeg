@@ -209,6 +209,8 @@ static int argo_asf_read_header(AVFormatContext *s)
 
     ff_argo_asf_parse_chunk_header(&asf->ckhdr, buf);
 
+    av_dict_set(&s->metadata, "title", asf->fhdr.name, 0);
+
     return ff_argo_asf_fill_stream(s, st, &asf->fhdr, &asf->ckhdr);
 }
 
