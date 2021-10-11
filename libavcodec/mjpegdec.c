@@ -127,9 +127,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         s->picture_ptr = s->picture;
     }
 
-    s->pkt = av_packet_alloc();
-    if (!s->pkt)
-        return AVERROR(ENOMEM);
+    s->pkt = avctx->internal->in_pkt;
 
     s->avctx = avctx;
     ff_blockdsp_init(&s->bdsp, avctx);
@@ -2959,8 +2957,6 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
         s->picture_ptr = NULL;
     } else if (s->picture_ptr)
         av_frame_unref(s->picture_ptr);
-
-    av_packet_free(&s->pkt);
 
     av_frame_free(&s->smv_frame);
 
