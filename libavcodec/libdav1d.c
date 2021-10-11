@@ -319,13 +319,13 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             av_packet_unref(pkt);
 
             if (c->reordered_opaque != AV_NOPTS_VALUE) {
-                uint8_t *reordered_opaque = av_malloc(sizeof(c->reordered_opaque));
+                uint8_t *reordered_opaque = av_memdup(&c->reordered_opaque,
+                                                      sizeof(c->reordered_opaque));
                 if (!reordered_opaque) {
                     dav1d_data_unref(data);
                     return AVERROR(ENOMEM);
                 }
 
-                memcpy(reordered_opaque, &c->reordered_opaque, sizeof(c->reordered_opaque));
                 res = dav1d_data_wrap_user_data(data, reordered_opaque,
                                                 libdav1d_user_data_free, reordered_opaque);
                 if (res < 0) {
