@@ -25,9 +25,11 @@
 #include "rtpdec_formats.h"
 #include "libavutil/avstring.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/parseutils.h"
 
 struct PayloadContext {
     char *sampling;
+    AVRational framerate;
     int depth;
     int width;
     int height;
@@ -69,6 +71,11 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
     stream->codecpar->bits_per_coded_sample = av_get_bits_per_pixel(desc);
     data->frame_size = data->width * data->height * data->pgroup / data->xinc;
 
+    if (data->framerate.den > 0) {
+        stream->avg_frame_rate = data->framerate;
+        stream->codecpar->bit_rate = data->frame_size * av_q2d(data->framerate) * 8;
+    }
+
     return 0;
 }
 
@@ -84,6 +91,10 @@ static int rfc4175_parse_fmtp(AVFormatContext *s, AVStream *stream,
         data->sampling = av_strdup(value);
     else if (!strncmp(attr, "depth", 5))
         data->depth = atoi(value);
+    else if (!strncmp(attr, "exactframerate", 14)) {
+        if (av_parse_video_rate(&data->framerate, value) < 0)
+            return AVERROR(EINVAL);
+    }
 
     return 0;
 }
