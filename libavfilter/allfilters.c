@@ -462,6 +462,7 @@ extern const AVFilter ff_vf_untile;
 extern const AVFilter ff_vf_uspp;
 extern const AVFilter ff_vf_v360;
 extern const AVFilter ff_vf_vaguedenoiser;
+extern const AVFilter ff_vf_varblur;
 extern const AVFilter ff_vf_vectorscope;
 extern const AVFilter ff_vf_vflip;
 extern const AVFilter ff_vf_vfrdet;

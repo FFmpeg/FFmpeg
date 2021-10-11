@@ -485,6 +485,7 @@ OBJS-$(CONFIG_UNTILE_FILTER)                 += vf_untile.o
 OBJS-$(CONFIG_USPP_FILTER)                   += vf_uspp.o qp_table.o
 OBJS-$(CONFIG_V360_FILTER)                   += vf_v360.o
 OBJS-$(CONFIG_VAGUEDENOISER_FILTER)          += vf_vaguedenoiser.o
+OBJS-$(CONFIG_VARBLUR_FILTER)                += vf_varblur.o framesync.o
 OBJS-$(CONFIG_VECTORSCOPE_FILTER)            += vf_vectorscope.o
 OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 OBJS-$(CONFIG_VFRDET_FILTER)                 += vf_vfrdet.o

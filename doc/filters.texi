@@ -21704,6 +21704,22 @@ Threshold used depends also on each decomposition coefficients.
 Default is universal.
 @end table
 
+@section varblur
+Apply variable blur filter by using 2nd video stream to set blur radius.
+
+This filter accepts the following options:
+
+@table @option
+@item min_r
+Set min allowed radius. By default is 0. Allowed range is from 0 to 254.
+@item max_r
+Set max allowed radius. By default is 8. Allowed range is from 1 to 255.
+@item planes
+Set which planes to process. By default all are used.
+@end table
+
+The @code{varblur} filter also supports the @ref{framesync} options.
+
 @section vectorscope
 
 Display 2 color component values in the two dimensional graph (which is called

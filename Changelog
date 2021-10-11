@@ -28,6 +28,7 @@ version <next>:
 - speex decoder
 - limitdiff video filter
 - xcorrelate video filter
+- varblur video filter
 
 
 version 4.4:
