@@ -94,6 +94,19 @@ static int rfc4175_parse_fmtp(AVFormatContext *s, AVStream *stream,
     else if (!strncmp(attr, "exactframerate", 14)) {
         if (av_parse_video_rate(&data->framerate, value) < 0)
             return AVERROR(EINVAL);
+    } else if (!strncmp(attr, "TCS", 3)) {
+        if (!strncmp(value, "SDR", 3))
+            stream->codecpar->color_trc = AVCOL_TRC_BT709;
+        else if (!strncmp(value, "PQ", 2))
+            stream->codecpar->color_trc = AVCOL_TRC_SMPTE2084;
+        else if (!strncmp(value, "HLG", 3))
+            stream->codecpar->color_trc = AVCOL_TRC_ARIB_STD_B67;
+        else if (!strncmp(value, "LINEAR", 6))
+            stream->codecpar->color_trc = AVCOL_TRC_LINEAR;
+        else if (!strncmp(value, "ST428-1", 7))
+            stream->codecpar->color_trc = AVCOL_TRC_SMPTEST428_1;
+        else
+            stream->codecpar->color_trc = AVCOL_TRC_UNSPECIFIED;
     }
 
     return 0;
