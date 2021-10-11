@@ -48,8 +48,10 @@ static int interp_##name##_##format##_##opt(AVFilterContext *ctx, void *arg, int
     DEFINE_INTERP_FUNC(tetrahedral, pf32, avx)
     DEFINE_INTERP_FUNC(tetrahedral, p16,  avx)
 #endif
+#if HAVE_SSE2_EXTERNAL
     DEFINE_INTERP_FUNC(tetrahedral, pf32, sse2)
     DEFINE_INTERP_FUNC(tetrahedral, p16,  sse2)
+#endif
 #endif
 
 
@@ -78,11 +80,13 @@ av_cold void ff_lut3d_init_x86(LUT3DContext *s, const AVPixFmtDescriptor *desc)
         }
 #endif
     } else if (EXTERNAL_SSE2(cpu_flags) && s->interpolation == INTERPOLATE_TETRAHEDRAL && planar) {
+#if HAVE_SSE2_EXTERNAL
         if (isfloat) {
             s->interp = interp_tetrahedral_pf32_sse2;
         } else if (depth == 16) {
             s->interp = interp_tetrahedral_p16_sse2;
         }
+#endif
     }
 #endif
 }
