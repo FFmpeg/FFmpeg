@@ -328,6 +328,9 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                     return res;
                 }
             }
+        } else if (res >= 0) {
+            av_packet_unref(&pkt);
+            return AVERROR(EAGAIN);
         }
     }
 
