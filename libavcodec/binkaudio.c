@@ -140,9 +140,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    s->pkt = av_packet_alloc();
-    if (!s->pkt)
-        return AVERROR(ENOMEM);
+    s->pkt = avctx->internal->in_pkt;
 
     return 0;
 }
@@ -277,8 +275,6 @@ static av_cold int decode_end(AVCodecContext *avctx)
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
         ff_dct_end(&s->trans.dct);
 
-    av_packet_free(&s->pkt);
-
     return 0;
 }
 
@@ -341,7 +337,8 @@ static void decode_flush(AVCodecContext *avctx)
 {
     BinkAudioContext *const s = avctx->priv_data;
 
-    av_packet_unref(s->pkt);
+    /* s->pkt coincides with avctx->internal->in_pkt
+     * and is unreferenced generically when flushing. */
     s->first = 1;
 }
 
