@@ -358,14 +358,22 @@ static int argo_asf_write_header(AVFormatContext *s)
         .num_chunks    = 1,
         .chunk_offset  = ASF_FILE_HEADER_SIZE
     };
-    const char *name = ctx->name, *end;
+    AVDictionaryEntry *t;
+    const char *name, *end;
     size_t len;
 
     /*
-     * If the user specified a name, use it as is. Otherwise take the
-     * basename and lop off the extension (if any).
+     * If the user specified a name, use it as is. Otherwise,
+     * try to use metadata (if present), then fall back to the
+     * filename (minus extension).
      */
-    if (name || !(end = strrchr((name = av_basename(s->url)), '.'))) {
+    if (ctx->name) {
+        name = ctx->name;
+        len  = strlen(ctx->name);
+    } else if ((t = av_dict_get(s->metadata, "title", NULL, 0))) {
+        name = t->value;
+        len  = strlen(t->value);
+    } else if (!(end = strrchr((name = av_basename(s->url)), '.'))) {
         len = strlen(name);
     } else {
         len = end - name;
