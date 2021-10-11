@@ -337,6 +337,14 @@ fail:
     return ret;
 }
 
+static void decode_flush(AVCodecContext *avctx)
+{
+    BinkAudioContext *const s = avctx->priv_data;
+
+    av_packet_unref(s->pkt);
+    s->first = 1;
+}
+
 const AVCodec ff_binkaudio_rdft_decoder = {
     .name           = "binkaudio_rdft",
     .long_name      = NULL_IF_CONFIG_SMALL("Bink Audio (RDFT)"),
@@ -344,6 +352,7 @@ const AVCodec ff_binkaudio_rdft_decoder = {
     .id             = AV_CODEC_ID_BINKAUDIO_RDFT,
     .priv_data_size = sizeof(BinkAudioContext),
     .init           = decode_init,
+    .flush          = decode_flush,
     .close          = decode_end,
     .receive_frame  = binkaudio_receive_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
@@ -357,6 +366,7 @@ const AVCodec ff_binkaudio_dct_decoder = {
     .id             = AV_CODEC_ID_BINKAUDIO_DCT,
     .priv_data_size = sizeof(BinkAudioContext),
     .init           = decode_init,
+    .flush          = decode_flush,
     .close          = decode_end,
     .receive_frame  = binkaudio_receive_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
