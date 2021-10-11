@@ -107,6 +107,17 @@ static int rfc4175_parse_fmtp(AVFormatContext *s, AVStream *stream,
             stream->codecpar->color_trc = AVCOL_TRC_SMPTEST428_1;
         else
             stream->codecpar->color_trc = AVCOL_TRC_UNSPECIFIED;
+    } else if (!strncmp(attr, "colorimetry", 11)) {
+        if (!strncmp(value, "BT601", 5)) {
+            stream->codecpar->color_primaries = AVCOL_PRI_BT470BG;
+            stream->codecpar->color_space     = AVCOL_SPC_BT470BG;
+        } else if (!strncmp(value, "BT709", 5)) {
+            stream->codecpar->color_primaries = AVCOL_PRI_BT709;
+            stream->codecpar->color_space     = AVCOL_SPC_BT709;
+        } else if (!strncmp(value, "BT2020", 6)) {
+            stream->codecpar->color_primaries = AVCOL_PRI_BT2020;
+            stream->codecpar->color_space     = AVCOL_SPC_BT2020_NCL;
+        }
     }
 
     return 0;
