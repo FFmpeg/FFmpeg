@@ -126,6 +126,9 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
     int err = 0;
     int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) && film_grain->apply_grain;
     uint8_t remap_lr_type[4] = {AV1_RESTORE_NONE, AV1_RESTORE_SWITCHABLE, AV1_RESTORE_WIENER, AV1_RESTORE_SGRPROJ};
+    uint8_t segmentation_feature_signed[AV1_SEG_LVL_MAX] = {1, 1, 1, 1, 1, 0, 0, 0};
+    uint8_t segmentation_feature_max[AV1_SEG_LVL_MAX] = {255, AV1_MAX_LOOP_FILTER,
+        AV1_MAX_LOOP_FILTER, AV1_MAX_LOOP_FILTER, AV1_MAX_LOOP_FILTER, 7 , 0 , 0 };
 
     bit_depth_idx = vaapi_av1_get_bit_depth_idx(avctx);
     if (bit_depth_idx < 0)
@@ -292,6 +295,17 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         pic_param.wm[i - 1].wmtype  = s->cur_frame.gm_type[i];
         for (int j = 0; j < 6; j++)
             pic_param.wm[i - 1].wmmat[j] = s->cur_frame.gm_params[i][j];
+    }
+    for (int i = 0; i < AV1_MAX_SEGMENTS; i++) {
+        for (int j = 0; j < AV1_SEG_LVL_MAX; j++) {
+            pic_param.seg_info.feature_mask[i] |= (frame_header->feature_enabled[i][j] << j);
+            if (segmentation_feature_signed[j])
+                pic_param.seg_info.feature_data[i][j] = av_clip(frame_header->feature_value[i][j],
+                    -segmentation_feature_max[j], segmentation_feature_max[j]);
+            else
+                pic_param.seg_info.feature_data[i][j] = av_clip(frame_header->feature_value[i][j],
+                    0, segmentation_feature_max[j]);
+        }
     }
     if (apply_grain) {
         for (int i = 0; i < film_grain->num_y_points; i++) {
