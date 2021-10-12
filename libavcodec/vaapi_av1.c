@@ -21,7 +21,27 @@
 #include "libavutil/pixdesc.h"
 #include "hwconfig.h"
 #include "vaapi_decode.h"
+#include "internal.h"
 #include "av1dec.h"
+
+typedef struct VAAPIAV1FrameRef {
+    ThreadFrame frame;
+    int valid;
+} VAAPIAV1FrameRef;
+
+typedef struct VAAPIAV1DecContext {
+    VAAPIDecodeContext base;
+
+    /**
+     * For film grain case, VAAPI generate 2 output for each frame,
+     * current_frame will not apply film grain, and will be used for
+     * references for next frames. Maintain the reference list without
+     * applying film grain here. And current_display_picture will be
+     * used to apply film grain and push to downstream.
+    */
+    VAAPIAV1FrameRef ref_tab[AV1_NUM_REF_FRAMES];
+    ThreadFrame tmp_frame;
+} VAAPIAV1DecContext;
 
 static VASurfaceID vaapi_av1_surface_id(AV1Frame *vf)
 {
@@ -49,6 +69,48 @@ static int8_t vaapi_av1_get_bit_depth_idx(AVCodecContext *avctx)
     return bit_depth == 8 ? 0 : bit_depth == 10 ? 1 : 2;
 }
 
+static int vaapi_av1_decode_init(AVCodecContext *avctx)
+{
+    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
+
+    ctx->tmp_frame.f = av_frame_alloc();
+    if (!ctx->tmp_frame.f) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to allocate frame.\n");
+        return AVERROR(ENOMEM);
+    }
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++) {
+        ctx->ref_tab[i].frame.f = av_frame_alloc();
+        if (!ctx->ref_tab[i].frame.f) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Failed to allocate reference table frame %d.\n", i);
+            return AVERROR(ENOMEM);
+        }
+        ctx->ref_tab[i].valid = 0;
+    }
+
+    return ff_vaapi_decode_init(avctx);
+}
+
+static int vaapi_av1_decode_uninit(AVCodecContext *avctx)
+{
+    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
+
+    if (ctx->tmp_frame.f->buf[0])
+        ff_thread_release_buffer(avctx, &ctx->tmp_frame);
+    av_frame_free(&ctx->tmp_frame.f);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++) {
+        if (ctx->ref_tab[i].frame.f->buf[0])
+            ff_thread_release_buffer(avctx, &ctx->ref_tab[i].frame);
+        av_frame_free(&ctx->ref_tab[i].frame.f);
+    }
+
+    return ff_vaapi_decode_uninit(avctx);
+}
+
+
 static int vaapi_av1_start_frame(AVCodecContext *avctx,
                                  av_unused const uint8_t *buffer,
                                  av_unused uint32_t size)
@@ -58,17 +120,27 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
     const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
     VAAPIDecodePicture *pic = s->cur_frame.hwaccel_picture_private;
+    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
     VADecPictureParameterBufferAV1 pic_param;
     int8_t bit_depth_idx;
     int err = 0;
     int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) && film_grain->apply_grain;
     uint8_t remap_lr_type[4] = {AV1_RESTORE_NONE, AV1_RESTORE_SWITCHABLE, AV1_RESTORE_WIENER, AV1_RESTORE_SGRPROJ};
 
-    pic->output_surface = vaapi_av1_surface_id(&s->cur_frame);
-
     bit_depth_idx = vaapi_av1_get_bit_depth_idx(avctx);
     if (bit_depth_idx < 0)
         goto fail;
+
+    if (apply_grain) {
+        if (ctx->tmp_frame.f->buf[0])
+            ff_thread_release_buffer(avctx, &ctx->tmp_frame);
+        err = ff_thread_get_buffer(avctx, &ctx->tmp_frame, AV_GET_BUFFER_FLAG_REF);
+        if (err < 0)
+            goto fail;
+        pic->output_surface = ff_vaapi_get_surface_id(ctx->tmp_frame.f);
+    } else {
+        pic->output_surface = vaapi_av1_surface_id(&s->cur_frame);
+    }
 
     memset(&pic_param, 0, sizeof(VADecPictureParameterBufferAV1));
     pic_param = (VADecPictureParameterBufferAV1) {
@@ -77,6 +149,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         .bit_depth_idx           = bit_depth_idx,
         .current_frame           = pic->output_surface,
         .current_display_picture = pic->output_surface,
+        .current_display_picture = vaapi_av1_surface_id(&s->cur_frame),
         .frame_width_minus1      = frame_header->frame_width_minus_1,
         .frame_height_minus1     = frame_header->frame_height_minus_1,
         .primary_ref_frame       = frame_header->primary_ref_frame,
@@ -185,7 +258,9 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         if (pic_param.pic_info_fields.bits.frame_type == AV1_FRAME_KEY)
             pic_param.ref_frame_map[i] = VA_INVALID_ID;
         else
-            pic_param.ref_frame_map[i] = vaapi_av1_surface_id(&s->ref[i]);
+            pic_param.ref_frame_map[i] = ctx->ref_tab[i].valid ?
+                                         ff_vaapi_get_surface_id(ctx->ref_tab[i].frame.f) :
+                                         vaapi_av1_surface_id(&s->ref[i]);
     }
     for (int i = 0; i < AV1_REFS_PER_FRAME; i++) {
         pic_param.ref_frame_idx[i] = frame_header->ref_frame_idx[i];
@@ -264,8 +339,34 @@ fail:
 static int vaapi_av1_end_frame(AVCodecContext *avctx)
 {
     const AV1DecContext *s = avctx->priv_data;
+    const AV1RawFrameHeader *header = s->raw_frame_header;
+    const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
     VAAPIDecodePicture *pic = s->cur_frame.hwaccel_picture_private;
-    return ff_vaapi_decode_issue(avctx, pic);
+    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
+
+    int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) && film_grain->apply_grain;
+    int ret;
+    ret = ff_vaapi_decode_issue(avctx, pic);
+    if (ret < 0)
+        return ret;
+
+    for (int i = 0; i < AV1_NUM_REF_FRAMES; i++) {
+        if (header->refresh_frame_flags & (1 << i)) {
+            if (ctx->ref_tab[i].frame.f->buf[0])
+                ff_thread_release_buffer(avctx, &ctx->ref_tab[i].frame);
+
+            if (apply_grain) {
+                ret = ff_thread_ref_frame(&ctx->ref_tab[i].frame, &ctx->tmp_frame);
+                if (ret < 0)
+                    return ret;
+                ctx->ref_tab[i].valid = 1;
+            } else {
+                ctx->ref_tab[i].valid = 0;
+            }
+        }
+    }
+
+    return 0;
 }
 
 static int vaapi_av1_decode_slice(AVCodecContext *avctx,
@@ -312,9 +413,9 @@ const AVHWAccel ff_av1_vaapi_hwaccel = {
     .end_frame            = vaapi_av1_end_frame,
     .decode_slice         = vaapi_av1_decode_slice,
     .frame_priv_data_size = sizeof(VAAPIDecodePicture),
-    .init                 = ff_vaapi_decode_init,
-    .uninit               = ff_vaapi_decode_uninit,
+    .init                 = vaapi_av1_decode_init,
+    .uninit               = vaapi_av1_decode_uninit,
     .frame_params         = ff_vaapi_common_frame_params,
-    .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .priv_data_size       = sizeof(VAAPIAV1DecContext),
     .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
