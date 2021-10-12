@@ -213,7 +213,8 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
             frame_header->height_in_sbs_minus_1[i];
     }
     for (int i = AV1_REF_FRAME_LAST; i <= AV1_REF_FRAME_ALTREF; i++) {
-        pic_param.wm[i - 1].wmtype = s->cur_frame.gm_type[i];
+        pic_param.wm[i - 1].invalid = s->cur_frame.gm_invalid[i];
+        pic_param.wm[i - 1].wmtype  = s->cur_frame.gm_type[i];
         for (int j = 0; j < 6; j++)
             pic_param.wm[i - 1].wmmat[j] = s->cur_frame.gm_params[i][j];
     }
