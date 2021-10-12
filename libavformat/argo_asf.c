@@ -52,8 +52,8 @@ void ff_argo_asf_parse_file_header(ArgoASFFileHeader *hdr, const uint8_t *buf)
     hdr->version_minor  = AV_RL16(buf + 6);
     hdr->num_chunks     = AV_RL32(buf + 8);
     hdr->chunk_offset   = AV_RL32(buf + 12);
-    for (int i = 0; i < FF_ARRAY_ELEMS(hdr->name); i++)
-        hdr->name[i]    = AV_RL8(buf + 16 + i);
+    memcpy(hdr->name, buf + 16, ASF_NAME_SIZE);
+    hdr->name[ASF_NAME_SIZE] = '\0';
 }
 
 int ff_argo_asf_validate_file_header(AVFormatContext *s, const ArgoASFFileHeader *hdr)
@@ -331,7 +331,7 @@ static void argo_asf_write_file_header(const ArgoASFFileHeader *fhdr, AVIOContex
     avio_wl16( pb, fhdr->version_minor);
     avio_wl32( pb, fhdr->num_chunks);
     avio_wl32( pb, fhdr->chunk_offset);
-    avio_write(pb, fhdr->name, sizeof(fhdr->name));
+    avio_write(pb, fhdr->name, ASF_NAME_SIZE);
 }
 
 static void argo_asf_write_chunk_header(const ArgoASFChunkHeader *ckhdr, AVIOContext *pb)
@@ -368,7 +368,7 @@ static int argo_asf_write_header(AVFormatContext *s)
     } else {
         len = end - name;
     }
-    memcpy(fhdr.name, name, FFMIN(len, sizeof(fhdr.name)));
+    memcpy(fhdr.name, name, FFMIN(len, ASF_NAME_SIZE));
 
     chdr.num_blocks    = 0;
     chdr.num_samples   = ASF_SAMPLE_COUNT;

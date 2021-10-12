@@ -33,6 +33,7 @@
 #define ASF_CHUNK_HEADER_SIZE   20
 #define ASF_SAMPLE_COUNT        32
 #define ASF_MIN_BUFFER_SIZE     FFMAX(ASF_FILE_HEADER_SIZE, ASF_CHUNK_HEADER_SIZE)
+#define ASF_NAME_SIZE           8
 
 typedef struct ArgoASFFileHeader {
     uint32_t    magic;          /*< Magic Number, {'A', 'S', 'F', '\0'} */
@@ -40,7 +41,7 @@ typedef struct ArgoASFFileHeader {
     uint16_t    version_minor;  /*< File Minor Version. */
     uint32_t    num_chunks;     /*< No. chunks in the file. */
     uint32_t    chunk_offset;   /*< Offset to the first chunk from the start of the file. */
-    int8_t      name[8];        /*< Name. */
+    char        name[ASF_NAME_SIZE + 1]; /*< Name, +1 for NULL-terminator. */
 } ArgoASFFileHeader;
 
 typedef struct ArgoASFChunkHeader {
