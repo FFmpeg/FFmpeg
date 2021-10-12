@@ -355,7 +355,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
         AV1_REF_FRAME_ALTREF2, AV1_REF_FRAME_ALTREF
     };
     int8_t ref_frame_idx[AV1_REFS_PER_FRAME], used_frame[AV1_NUM_REF_FRAMES];
-    int8_t shifted_order_hints[AV1_NUM_REF_FRAMES];
+    int16_t shifted_order_hints[AV1_NUM_REF_FRAMES];
     int cur_frame_hint, latest_order_hint, earliest_order_hint, ref;
     int i, j;
 
