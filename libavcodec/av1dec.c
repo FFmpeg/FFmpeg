@@ -28,6 +28,34 @@
 #include "internal.h"
 #include "profiles.h"
 
+/**< same with Div_Lut defined in spec 7.11.3.7 */
+static const uint16_t div_lut[AV1_DIV_LUT_NUM] = {
+  16384, 16320, 16257, 16194, 16132, 16070, 16009, 15948, 15888, 15828, 15768,
+  15709, 15650, 15592, 15534, 15477, 15420, 15364, 15308, 15252, 15197, 15142,
+  15087, 15033, 14980, 14926, 14873, 14821, 14769, 14717, 14665, 14614, 14564,
+  14513, 14463, 14413, 14364, 14315, 14266, 14218, 14170, 14122, 14075, 14028,
+  13981, 13935, 13888, 13843, 13797, 13752, 13707, 13662, 13618, 13574, 13530,
+  13487, 13443, 13400, 13358, 13315, 13273, 13231, 13190, 13148, 13107, 13066,
+  13026, 12985, 12945, 12906, 12866, 12827, 12788, 12749, 12710, 12672, 12633,
+  12596, 12558, 12520, 12483, 12446, 12409, 12373, 12336, 12300, 12264, 12228,
+  12193, 12157, 12122, 12087, 12053, 12018, 11984, 11950, 11916, 11882, 11848,
+  11815, 11782, 11749, 11716, 11683, 11651, 11619, 11586, 11555, 11523, 11491,
+  11460, 11429, 11398, 11367, 11336, 11305, 11275, 11245, 11215, 11185, 11155,
+  11125, 11096, 11067, 11038, 11009, 10980, 10951, 10923, 10894, 10866, 10838,
+  10810, 10782, 10755, 10727, 10700, 10673, 10645, 10618, 10592, 10565, 10538,
+  10512, 10486, 10460, 10434, 10408, 10382, 10356, 10331, 10305, 10280, 10255,
+  10230, 10205, 10180, 10156, 10131, 10107, 10082, 10058, 10034, 10010, 9986,
+  9963,  9939,  9916,  9892,  9869,  9846,  9823,  9800,  9777,  9754,  9732,
+  9709,  9687,  9664,  9642,  9620,  9598,  9576,  9554,  9533,  9511,  9489,
+  9468,  9447,  9425,  9404,  9383,  9362,  9341,  9321,  9300,  9279,  9259,
+  9239,  9218,  9198,  9178,  9158,  9138,  9118,  9098,  9079,  9059,  9039,
+  9020,  9001,  8981,  8962,  8943,  8924,  8905,  8886,  8867,  8849,  8830,
+  8812,  8793,  8775,  8756,  8738,  8720,  8702,  8684,  8666,  8648,  8630,
+  8613,  8595,  8577,  8560,  8542,  8525,  8508,  8490,  8473,  8456,  8439,
+  8422,  8405,  8389,  8372,  8355,  8339,  8322,  8306,  8289,  8273,  8257,
+  8240,  8224,  8208,  8192
+};
+
 static uint32_t inverse_recenter(int r, uint32_t v)
 {
     if (v > 2 * r)
@@ -97,6 +125,70 @@ static void read_global_param(AV1DecContext *s, int type, int ref, int idx)
                                        -mx, mx + 1, r) << prec_diff) + round;
 }
 
+static uint64_t round_two(uint64_t x, uint16_t n)
+{
+    if (n == 0)
+        return x;
+    return ((x + ((uint64_t)1 << (n - 1))) >> n);
+}
+
+static int64_t round_two_signed(int64_t x, uint16_t n)
+{
+    return ((x<0) ? -((int64_t)round_two(-x, n)) : (int64_t)round_two(x, n));
+}
+
+/**
+ * Resolve divisor process.
+ * see spec 7.11.3.7
+ */
+static int16_t resolve_divisor(uint32_t d, uint16_t *shift)
+{
+    int32_t e, f;
+
+    *shift = av_log2(d);
+    e = d - (1 << (*shift));
+    if (*shift > AV1_DIV_LUT_BITS)
+        f = round_two(e, *shift - AV1_DIV_LUT_BITS);
+    else
+        f = e << (AV1_DIV_LUT_BITS - (*shift));
+
+    *shift += AV1_DIV_LUT_PREC_BITS;
+
+    return div_lut[f];
+}
+
+/**
+ * check if global motion params is valid.
+ * see spec 7.11.3.6
+ */
+static uint8_t get_shear_params_valid(AV1DecContext *s, int idx)
+{
+    int16_t alpha, beta, gamma, delta, divf, divs;
+    int64_t v, w;
+    int32_t *param = &s->cur_frame.gm_params[idx][0];
+    if (param[2] < 0)
+        return 0;
+
+    alpha = av_clip_int16(param[2] - (1 << AV1_WARPEDMODEL_PREC_BITS));
+    beta  = av_clip_int16(param[3]);
+    divf  = resolve_divisor(abs(param[2]), &divs);
+    v     = (int64_t)param[4] * (1 << AV1_WARPEDMODEL_PREC_BITS);
+    w     = (int64_t)param[3] * param[4];
+    gamma = av_clip_int16((int)round_two_signed((v * divf), divs));
+    delta = av_clip_int16(param[5] - (int)round_two_signed((w * divf), divs) - (1 << AV1_WARPEDMODEL_PREC_BITS));
+
+    alpha = round_two_signed(alpha, AV1_WARP_PARAM_REDUCE_BITS) << AV1_WARP_PARAM_REDUCE_BITS;
+    beta  = round_two_signed(beta,  AV1_WARP_PARAM_REDUCE_BITS) << AV1_WARP_PARAM_REDUCE_BITS;
+    gamma = round_two_signed(gamma, AV1_WARP_PARAM_REDUCE_BITS) << AV1_WARP_PARAM_REDUCE_BITS;
+    delta = round_two_signed(delta, AV1_WARP_PARAM_REDUCE_BITS) << AV1_WARP_PARAM_REDUCE_BITS;
+
+    if ((4 * abs(alpha) + 7 * abs(beta)) >= (1 << AV1_WARPEDMODEL_PREC_BITS) ||
+        (4 * abs(gamma) + 4 * abs(delta)) >= (1 << AV1_WARPEDMODEL_PREC_BITS))
+        return 0;
+
+    return 1;
+}
+
 /**
 * update gm type/params, since cbs already implemented part of this funcation,
 * so we don't need to full implement spec.
@@ -143,6 +235,9 @@ static void global_motion_params(AV1DecContext *s)
         if (type >= AV1_WARP_MODEL_TRANSLATION) {
             read_global_param(s, type, ref, 0);
             read_global_param(s, type, ref, 1);
+        }
+        if (type <= AV1_WARP_MODEL_AFFINE) {
+            s->cur_frame.gm_invalid[ref] = !get_shear_params_valid(s, ref);
         }
     }
 }
@@ -509,6 +604,9 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
 
     dst->spatial_id = src->spatial_id;
     dst->temporal_id = src->temporal_id;
+    memcpy(dst->gm_invalid,
+           src->gm_invalid,
+           AV1_NUM_REF_FRAMES * sizeof(uint8_t));
     memcpy(dst->gm_type,
            src->gm_type,
            AV1_NUM_REF_FRAMES * sizeof(uint8_t));

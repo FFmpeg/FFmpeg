@@ -42,6 +42,7 @@ typedef struct AV1Frame {
     int temporal_id;
     int spatial_id;
 
+    uint8_t gm_invalid[AV1_NUM_REF_FRAMES];
     uint8_t gm_type[AV1_NUM_REF_FRAMES];
     int32_t gm_params[AV1_NUM_REF_FRAMES][6];
 
