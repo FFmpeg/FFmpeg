@@ -140,7 +140,7 @@ typedef void (*innovation_quant_func)(float *, float *,
 
 /** Innovation unquantization function */
 typedef void (*innovation_unquant_func)(float *, const void *, int,
-    GetBitContext *, int32_t *);
+    GetBitContext *, uint32_t *);
 
 typedef struct SpeexSubmode {
     int lbr_pitch; /**< Set to -1 for "normal" modes, otherwise encode pitch using
@@ -191,7 +191,7 @@ typedef struct DecoderState {
     /* This is used in packet loss concealment */
     int last_pitch; /**< Pitch of last correctly decoded frame */
     float last_pitch_gain; /**< Pitch gain of last correctly decoded frame */
-    int32_t seed; /** Seed used for random number generation */
+    uint32_t seed; /** Seed used for random number generation */
 
     int encode_submode;
     const SpeexSubmode *const *submodes; /**< Sub-mode data */
@@ -293,7 +293,7 @@ static void forced_pitch_unquant(float *exc, float *exc_out, int start, int end,
     gain_val[1] = pitch_coef;
 }
 
-static inline float speex_rand(float std, int32_t *seed)
+static inline float speex_rand(float std, uint32_t *seed)
 {
     const uint32_t jflone = 0x3f800000;
     const uint32_t jflmsk = 0x007fffff;
@@ -308,14 +308,14 @@ static inline float speex_rand(float std, int32_t *seed)
 }
 
 static void noise_codebook_unquant(float *exc, const void *par, int nsf,
-                                   GetBitContext *gb, int32_t *seed)
+                                   GetBitContext *gb, uint32_t *seed)
 {
     for (int i = 0; i < nsf; i++)
         exc[i] = speex_rand(1.f, seed);
 }
 
 static void split_cb_shape_sign_unquant(float *exc, const void *par, int nsf,
-                                        GetBitContext *gb, int32_t *seed)
+                                        GetBitContext *gb, uint32_t *seed)
 {
     int subvect_size, nb_subvect, have_sign, shape_bits;
     const SplitCodebookParams *params;
