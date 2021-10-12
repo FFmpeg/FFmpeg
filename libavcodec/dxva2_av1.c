@@ -139,7 +139,7 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
         pp->frame_refs[i].Index  = ref_frame->buf[0] ? ref_idx : 0xFF;
 
         /* Global Motion */
-        pp->frame_refs[i].wminvalid = (h->cur_frame.gm_type[AV1_REF_FRAME_LAST + i] == AV1_WARP_MODEL_IDENTITY);
+        pp->frame_refs[i].wminvalid = h->cur_frame.gm_invalid[AV1_REF_FRAME_LAST + i];
         pp->frame_refs[i].wmtype    = h->cur_frame.gm_type[AV1_REF_FRAME_LAST + i];
         for (j = 0; j < 6; ++j) {
              pp->frame_refs[i].wmmat[j] = h->cur_frame.gm_params[AV1_REF_FRAME_LAST + i][j];
