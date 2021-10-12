@@ -577,10 +577,10 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
         switch (avctx->codec_id) {
         case AV_CODEC_ID_H264:
         case AV_CODEC_ID_HEVC:
+        case AV_CODEC_ID_AV1:
             frames->initial_pool_size += 16;
             break;
         case AV_CODEC_ID_VP9:
-        case AV_CODEC_ID_AV1:
             frames->initial_pool_size += 8;
             break;
         case AV_CODEC_ID_VP8:
