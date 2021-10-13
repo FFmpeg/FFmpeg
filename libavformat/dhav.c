@@ -439,10 +439,11 @@ static int dhav_read_seek(AVFormatContext *s, int stream_index,
 
     if (index < 0)
         return -1;
+    pts = sti->index_entries[index].timestamp;
+    if (pts < timestamp)
+        return AVERROR(EAGAIN);
     if (avio_seek(s->pb, sti->index_entries[index].pos, SEEK_SET) < 0)
         return -1;
-
-    pts = sti->index_entries[index].timestamp;
 
     for (int n = 0; n < s->nb_streams; n++) {
         AVStream *st = s->streams[n];
@@ -465,5 +466,5 @@ const AVInputFormat ff_dhav_demuxer = {
     .read_packet    = dhav_read_packet,
     .read_seek      = dhav_read_seek,
     .extensions     = "dav",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_TS_DISCONT | AVFMT_TS_NONSTRICT,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_TS_DISCONT | AVFMT_TS_NONSTRICT | AVFMT_SEEK_TO_PTS,
 };
