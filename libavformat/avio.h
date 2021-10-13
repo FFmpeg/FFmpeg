@@ -290,7 +290,13 @@ typedef struct AVIOContext {
      */
     int ignore_boundary_point;
 
+#if FF_API_AVIOCONTEXT_WRITTEN
+    /**
+     * @deprecated field utilized privately by libavformat.
+     */
+    attribute_deprecated
     int64_t written;
+#endif
 
     /**
      * Maximum reached position before a backward seek in the write buffer,
