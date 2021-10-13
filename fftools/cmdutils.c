@@ -1754,7 +1754,7 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
            "..H.. = Hardware accelerated format\n"
            "...P. = Paletted format\n"
            "....B = Bitstream format\n"
-           "FLAGS NAME            NB_COMPONENTS BITS_PER_PIXEL\n"
+           "FLAGS NAME            NB_COMPONENTS BITS_PER_PIXEL BIT_DEPTHS\n"
            "-----\n");
 
 #if !CONFIG_SWSCALE
@@ -1764,7 +1764,7 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 
     while ((pix_desc = av_pix_fmt_desc_next(pix_desc))) {
         enum AVPixelFormat av_unused pix_fmt = av_pix_fmt_desc_get_id(pix_desc);
-        printf("%c%c%c%c%c %-16s       %d            %2d\n",
+        printf("%c%c%c%c%c %-16s       %d            %3d      %d",
                sws_isSupportedInput (pix_fmt)              ? 'I' : '.',
                sws_isSupportedOutput(pix_fmt)              ? 'O' : '.',
                pix_desc->flags & AV_PIX_FMT_FLAG_HWACCEL   ? 'H' : '.',
@@ -1772,7 +1772,12 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
                pix_desc->flags & AV_PIX_FMT_FLAG_BITSTREAM ? 'B' : '.',
                pix_desc->name,
                pix_desc->nb_components,
-               av_get_bits_per_pixel(pix_desc));
+               av_get_bits_per_pixel(pix_desc),
+               pix_desc->comp[0].depth);
+
+        for (unsigned i = 1; i < pix_desc->nb_components; i++)
+            printf("-%d", pix_desc->comp[i].depth);
+        printf("\n");
     }
     return 0;
 }
