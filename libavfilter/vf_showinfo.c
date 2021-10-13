@@ -221,7 +221,7 @@ static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
     av_log(ctx, AV_LOG_INFO, "num_windows: %d, ", hdr_plus->num_windows);
     for (int w = 1; w < hdr_plus->num_windows; w++) {
         AVHDRPlusColorTransformParams *params = &hdr_plus->params[w];
-        av_log(ctx, AV_LOG_INFO, "window %d { ", w);
+        av_log(ctx, AV_LOG_INFO, w > 1 ? ", window %d { " : "window %d { ", w);
         av_log(ctx, AV_LOG_INFO, "window_upper_left_corner: (%5.4f,%5.4f),",
                av_q2d(params->window_upper_left_corner_x),
                av_q2d(params->window_upper_left_corner_y));
@@ -242,7 +242,7 @@ static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
                params->semimajor_axis_external_ellipse);
         av_log(ctx, AV_LOG_INFO, "semiminor_axis_external_ellipse: %d, ",
                params->semiminor_axis_external_ellipse);
-        av_log(ctx, AV_LOG_INFO, "overlap_process_option: %d}, ",
+        av_log(ctx, AV_LOG_INFO, "overlap_process_option: %d}",
                params->overlap_process_option);
     }
     av_log(ctx, AV_LOG_INFO, "targeted_system_display_maximum_luminance: %9.4f, ",
@@ -252,7 +252,7 @@ static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
         for (int i = 0; i < hdr_plus->num_rows_targeted_system_display_actual_peak_luminance; i++) {
             av_log(ctx, AV_LOG_INFO, "(");
             for (int j = 0; j < hdr_plus->num_cols_targeted_system_display_actual_peak_luminance; j++) {
-                av_log(ctx, AV_LOG_INFO, "%5.4f,",
+                av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",
                        av_q2d(hdr_plus->targeted_system_display_actual_peak_luminance[i][j]));
             }
             av_log(ctx, AV_LOG_INFO, ")");
@@ -264,9 +264,9 @@ static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
         AVHDRPlusColorTransformParams *params = &hdr_plus->params[w];
         av_log(ctx, AV_LOG_INFO, "window %d {maxscl: {", w);
         for (int i = 0; i < 3; i++) {
-            av_log(ctx, AV_LOG_INFO, "%5.4f,",av_q2d(params->maxscl[i]));
+            av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",av_q2d(params->maxscl[i]));
         }
-        av_log(ctx, AV_LOG_INFO, "} average_maxrgb: %5.4f, ",
+        av_log(ctx, AV_LOG_INFO, "}, average_maxrgb: %5.4f, ",
                av_q2d(params->average_maxrgb));
         av_log(ctx, AV_LOG_INFO, "distribution_maxrgb: {");
         for (int i = 0; i < params->num_distribution_maxrgb_percentiles; i++) {
@@ -274,35 +274,35 @@ static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
                    params->distribution_maxrgb[i].percentage,
                    av_q2d(params->distribution_maxrgb[i].percentile));
         }
-        av_log(ctx, AV_LOG_INFO, "} fraction_bright_pixels: %5.4f, ",
+        av_log(ctx, AV_LOG_INFO, "}, fraction_bright_pixels: %5.4f",
                av_q2d(params->fraction_bright_pixels));
         if (params->tone_mapping_flag) {
-            av_log(ctx, AV_LOG_INFO, "knee_point: (%5.4f,%5.4f), ", av_q2d(params->knee_point_x), av_q2d(params->knee_point_y));
+            av_log(ctx, AV_LOG_INFO, ", knee_point: (%5.4f,%5.4f), ", av_q2d(params->knee_point_x), av_q2d(params->knee_point_y));
             av_log(ctx, AV_LOG_INFO, "bezier_curve_anchors: {");
             for (int i = 0; i < params->num_bezier_curve_anchors; i++) {
-                av_log(ctx, AV_LOG_INFO, "%5.4f,",
+                av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",
                        av_q2d(params->bezier_curve_anchors[i]));
             }
-            av_log(ctx, AV_LOG_INFO, "} ");
+            av_log(ctx, AV_LOG_INFO, "}");
         }
         if (params->color_saturation_mapping_flag) {
-            av_log(ctx, AV_LOG_INFO, "color_saturation_weight: %5.4f",
+            av_log(ctx, AV_LOG_INFO, ", color_saturation_weight: %5.4f",
                    av_q2d(params->color_saturation_weight));
         }
-        av_log(ctx, AV_LOG_INFO, "} ");
+        av_log(ctx, AV_LOG_INFO, "}");
     }
 
     if (hdr_plus->mastering_display_actual_peak_luminance_flag) {
-        av_log(ctx, AV_LOG_INFO, "mastering_display_actual_peak_luminance: {");
+        av_log(ctx, AV_LOG_INFO, ", mastering_display_actual_peak_luminance: {");
         for (int i = 0; i < hdr_plus->num_rows_mastering_display_actual_peak_luminance; i++) {
             av_log(ctx, AV_LOG_INFO, "(");
             for (int j = 0; j <  hdr_plus->num_cols_mastering_display_actual_peak_luminance; j++) {
-                av_log(ctx, AV_LOG_INFO, " %5.4f,",
+                av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",
                        av_q2d(hdr_plus->mastering_display_actual_peak_luminance[i][j]));
             }
             av_log(ctx, AV_LOG_INFO, ")");
         }
-        av_log(ctx, AV_LOG_INFO, "} ");
+        av_log(ctx, AV_LOG_INFO, "}");
     }
 }
 
