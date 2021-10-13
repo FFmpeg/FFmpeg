@@ -266,7 +266,7 @@ static int config_props(AVFilterLink *inlink)
 {
     FFTFILTContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc;
-    int rdft_hbits, rdft_vbits, i, plane;
+    int i, plane;
 
     desc = av_pix_fmt_desc_get(inlink->format);
     s->depth = desc->comp[0].depth;
@@ -282,9 +282,8 @@ static int config_props(AVFilterLink *inlink)
         int h = s->planeheight[i];
 
         /* RDFT - Array initialization for Horizontal pass*/
-        for (rdft_hbits = 1; 1 << rdft_hbits < w*10/9; rdft_hbits++);
-        s->rdft_hbits[i] = rdft_hbits;
-        s->rdft_hlen[i] = 1 << rdft_hbits;
+        s->rdft_hlen[i] = 1 << (32 - ff_clz(w));
+        s->rdft_hbits[i] = av_log2(s->rdft_hlen[i]);
         if (!(s->rdft_hdata[i] = av_malloc_array(h, s->rdft_hlen[i] * sizeof(FFTSample))))
             return AVERROR(ENOMEM);
 
@@ -294,9 +293,8 @@ static int config_props(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
 
         /* RDFT - Array initialization for Vertical pass*/
-        for (rdft_vbits = 1; 1 << rdft_vbits < h*10/9; rdft_vbits++);
-        s->rdft_vbits[i] = rdft_vbits;
-        s->rdft_vlen[i] = 1 << rdft_vbits;
+        s->rdft_vlen[i] = 1 << (32 - ff_clz(h));
+        s->rdft_vbits[i] = av_log2(s->rdft_vlen[i]);
         if (!(s->rdft_vdata[i] = av_malloc_array(s->rdft_hlen[i], s->rdft_vlen[i] * sizeof(FFTSample))))
             return AVERROR(ENOMEM);
 
