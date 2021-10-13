@@ -1173,7 +1173,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             av_log(av_log_obj, AV_LOG_INFO, "     %-15s ", opt->name);
         else
             av_log(av_log_obj, AV_LOG_INFO, "  %s%-17s ",
-                   (opt->flags & AV_OPT_FLAG_FILTERING_PARAM) ? "" : "-",
+                   (opt->flags & AV_OPT_FLAG_FILTERING_PARAM) ? " " : "-",
                    opt->name);
 
         switch (opt->type) {
