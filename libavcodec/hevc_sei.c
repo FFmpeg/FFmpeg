@@ -181,9 +181,6 @@ static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s, GetB
 {
     int ret;
 
-    if (size < 3)
-       return AVERROR_INVALIDDATA;
-
     ret = ff_parse_a53_cc(&s->buf_ref, gb->buffer + get_bits_count(gb) / 8, size);
 
     if (ret < 0)
