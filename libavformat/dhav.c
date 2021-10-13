@@ -239,16 +239,18 @@ static int64_t get_duration(AVFormatContext *s)
         return 0;
 
     avio_seek(s->pb, avio_size(s->pb) - 8, SEEK_SET);
-    if (avio_rl32(s->pb) == MKTAG('d','h','a','v')) {
-        int seek_back = avio_rl32(s->pb);
+    while (avio_tell(s->pb) > 12) {
+        if (avio_rl32(s->pb) == MKTAG('d','h','a','v')) {
+            int seek_back = avio_rl32(s->pb);
 
-        avio_seek(s->pb, -seek_back, SEEK_CUR);
-        read_chunk(s);
-        get_timeinfo(dhav->date, &timeinfo);
-        end = av_timegm(&timeinfo) * 1000LL;
-    } else {
-        avio_seek(s->pb, start_pos, SEEK_SET);
-        return 0;
+            avio_seek(s->pb, -seek_back, SEEK_CUR);
+            read_chunk(s);
+            get_timeinfo(dhav->date, &timeinfo);
+            end = av_timegm(&timeinfo) * 1000LL;
+            break;
+        } else {
+            avio_seek(s->pb, -12, SEEK_CUR);
+        }
     }
 
     avio_seek(s->pb, start_pos, SEEK_SET);
