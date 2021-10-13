@@ -164,8 +164,10 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
         if (ret < 0) {
             s->error = ret;
         } else {
-            if (s->pos + len > s->written)
-                s->written = s->pos + len;
+            if (s->pos + len > ctx->written_output_size) {
+                ctx->written_output_size = s->pos + len;
+                s->written = ctx->written_output_size;
+            }
         }
     }
     if (ctx->current_type == AVIO_DATA_MARKER_SYNC_POINT ||
@@ -337,13 +339,14 @@ int64_t avio_skip(AVIOContext *s, int64_t offset)
 
 int64_t avio_size(AVIOContext *s)
 {
+    FFIOContext *const ctx = ffiocontext(s);
     int64_t size;
 
     if (!s)
         return AVERROR(EINVAL);
 
-    if (s->written)
-        return s->written;
+    if (ctx->written_output_size)
+        return ctx->written_output_size;
 
     if (!s->seek)
         return AVERROR(ENOSYS);
