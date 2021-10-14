@@ -39,15 +39,17 @@ typedef struct HistogramContext {
     int            width;
     int            x_pos;
     int            mult;
+    int            mid;
     int            ncomp;
     int            dncomp;
-    uint8_t        bg_color[4];
-    uint8_t        fg_color[4];
+    uint8_t        bg_color[4][4];
+    uint8_t        fg_color[4][4];
     uint8_t        envelope_rgba[4];
     uint8_t        envelope_color[4];
     int            level_height;
     int            scale_height;
     int            display_mode;
+    int            colors_mode;
     int            levels_mode;
     const AVPixFmtDescriptor *desc, *odesc;
     int            components;
@@ -83,6 +85,15 @@ static const AVOption histogram_options[] = {
     { "f",         "set foreground opacity", OFFSET(fgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.7}, 0, 1, FLAGS},
     { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
     { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
+    { "colors_mode", "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 6, FLAGS, "colors_mode"},
+    { "l",           "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 6, FLAGS, "colors_mode"},
+        { "whiteonblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "colors_mode" },
+        { "blackonwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "colors_mode" },
+        { "whiteongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "colors_mode" },
+        { "blackongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, "colors_mode" },
+        { "coloronblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "colors_mode" },
+        { "coloronwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=5}, 0, 0, FLAGS, "colors_mode" },
+        { "colorongray" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=6}, 0, 0, FLAGS, "colors_mode" },
     { NULL }
 };
 
@@ -202,10 +213,19 @@ static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
 static const uint8_t white_yuva_color[4] = { 255, 127, 127, 255 };
 static const uint8_t white_gbrp_color[4] = { 255, 255, 255, 255 };
+static const uint8_t gray_color[4]       = { 127, 127, 127, 255 };
+static const uint8_t red_yuva_color[4]   = { 127, 127, 255, 255 };
+static const uint8_t red_gbrp_color[4]   = { 255,   0,   0, 255 };
+static const uint8_t green_yuva_color[4] = { 255, 127, 127, 255 };
+static const uint8_t igreen_yuva_color[4]= {   0, 127, 127, 255 };
+static const uint8_t green_gbrp_color[4] = {   0, 255,   0, 255 };
+static const uint8_t blue_yuva_color[4]  = { 127, 255, 127, 255 };
+static const uint8_t blue_gbrp_color[4]  = {   0,   0, 255, 255 };
 
 static int config_input(AVFilterLink *inlink)
 {
     HistogramContext *s = inlink->dst->priv;
+    int rgb = 0;
 
     s->desc  = av_pix_fmt_desc_get(inlink->format);
     s->ncomp = s->desc->nb_components;
@@ -220,14 +240,16 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
-        memcpy(s->bg_color, black_gbrp_color, 4);
-        memcpy(s->fg_color, white_gbrp_color, 4);
+        memcpy(s->bg_color[0], black_gbrp_color, 4);
+        memcpy(s->fg_color[0], white_gbrp_color, 4);
         s->start[0] = s->start[1] = s->start[2] = s->start[3] = 0;
         memcpy(s->envelope_color, s->envelope_rgba, 4);
+        rgb = 1;
         break;
     default:
-        memcpy(s->bg_color, black_yuva_color, 4);
-        memcpy(s->fg_color, white_yuva_color, 4);
+        s->mid = 127;
+        memcpy(s->bg_color[0], black_yuva_color, 4);
+        memcpy(s->fg_color[0], white_yuva_color, 4);
         s->start[0] = s->start[3] = 0;
         s->start[1] = s->start[2] = s->histogram_size / 2;
         s->envelope_color[0] = RGB_TO_Y_BT709(s->envelope_rgba[0], s->envelope_rgba[1], s->envelope_rgba[2]);
@@ -236,8 +258,67 @@ static int config_input(AVFilterLink *inlink)
         s->envelope_color[3] = s->envelope_rgba[3];
     }
 
-    s->fg_color[3] = s->fgopacity * 255;
-    s->bg_color[3] = s->bgopacity * 255;
+    for (int i = 1; i < 4; i++) {
+        memcpy(s->fg_color[i], s->fg_color[0], 4);
+        memcpy(s->bg_color[i], s->bg_color[0], 4);
+    }
+
+    if (s->display_mode) {
+        if (s->colors_mode == 1) {
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    FFSWAP(uint8_t, s->fg_color[i][j], s->bg_color[i][j]);
+        } else if (s->colors_mode == 2) {
+            for (int i = 0; i < 4; i++)
+                memcpy(s->bg_color[i], gray_color, 4);
+        } else if (s->colors_mode == 3) {
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    FFSWAP(uint8_t, s->fg_color[i][j], s->bg_color[i][j]);
+            for (int i = 0; i < 4; i++)
+                memcpy(s->bg_color[i], gray_color, 4);
+        } else if (s->colors_mode == 4) {
+            if (rgb) {
+                memcpy(s->fg_color[0], red_gbrp_color,   4);
+                memcpy(s->fg_color[1], green_gbrp_color, 4);
+                memcpy(s->fg_color[2], blue_gbrp_color,  4);
+            } else {
+                memcpy(s->fg_color[0], green_yuva_color, 4);
+                memcpy(s->fg_color[1], blue_yuva_color,  4);
+                memcpy(s->fg_color[2], red_yuva_color,   4);
+            }
+        } else if (s->colors_mode == 5) {
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    FFSWAP(uint8_t, s->fg_color[i][j], s->bg_color[i][j]);
+            if (rgb) {
+                memcpy(s->fg_color[0], red_gbrp_color,   4);
+                memcpy(s->fg_color[1], green_gbrp_color, 4);
+                memcpy(s->fg_color[2], blue_gbrp_color,  4);
+            } else {
+                memcpy(s->fg_color[0], igreen_yuva_color,4);
+                memcpy(s->fg_color[1], blue_yuva_color,  4);
+                memcpy(s->fg_color[2], red_yuva_color,   4);
+            }
+        } else if (s->colors_mode == 6) {
+            for (int i = 0; i < 4; i++)
+                memcpy(s->bg_color[i], gray_color, 4);
+            if (rgb) {
+                memcpy(s->fg_color[0], red_gbrp_color,   4);
+                memcpy(s->fg_color[1], green_gbrp_color, 4);
+                memcpy(s->fg_color[2], blue_gbrp_color,  4);
+            } else {
+                memcpy(s->fg_color[0], green_yuva_color, 4);
+                memcpy(s->fg_color[1], blue_yuva_color,  4);
+                memcpy(s->fg_color[2], red_yuva_color,   4);
+            }
+        }
+    }
+
+    for (int i = 0; i < 4; i++) {
+        s->fg_color[i][3] = s->fgopacity * 255;
+        s->bg_color[i][3] = s->bgopacity * 255;
+    }
 
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
@@ -303,7 +384,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 for (i = 0; i < dst_h ; i++)
                     memset(out->data[s->odesc->comp[k].plane] +
                            i * out->linesize[s->odesc->comp[k].plane],
-                           s->bg_color[k], dst_w);
+                           s->bg_color[0][k], dst_w);
             } else {
                 const int mult = s->mult;
 
@@ -311,7 +392,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     for (j = 0; j < dst_w; j++)
                         AV_WN16(out->data[s->odesc->comp[k].plane] +
                             i * out->linesize[s->odesc->comp[k].plane] + j * 2,
-                            s->bg_color[k] * mult);
+                            s->bg_color[0][k] * mult);
             }
         }
     }
@@ -321,6 +402,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         const int max_value = s->histogram_size - 1 - s->start[p];
         const int height = s->planeheight[p];
         const int width = s->planewidth[p];
+        const int mid = s->mid;
         double max_hval_log;
         unsigned max_hval = 0;
         int starty, startx;
@@ -430,26 +512,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     for (j = s->level_height - 1; j >= col_height; j--) {
                         if (s->display_mode) {
                             for (l = 0; l < s->dncomp; l++)
-                                out->data[l][(j + starty) * out->linesize[l] + startx + i] = s->fg_color[l];
+                                out->data[l][(j + starty) * out->linesize[l] + startx + i] = s->fg_color[p][l];
                         } else {
                             out->data[p][(j + starty) * out->linesize[p] + startx + i] = 255;
                         }
                     }
                     for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
-                        out->data[p][(j + starty) * out->linesize[p] + startx + i] = i;
+                        for (l = 0; l < s->dncomp; l++)
+                            out->data[l][(j + starty) * out->linesize[l] + startx + i] = p == l ? i : mid;
                 } else {
                     const int mult = s->mult;
 
                     for (j = s->level_height - 1; j >= col_height; j--) {
                         if (s->display_mode) {
                             for (l = 0; l < s->dncomp; l++)
-                                AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, s->fg_color[l] * mult);
+                                AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, s->fg_color[p][l] * mult);
                         } else {
                             AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, 255 * mult);
                         }
                     }
                     for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
-                        AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, i);
+                        for (l = 0; l < s->dncomp; l++)
+                            AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, p == l ? i : mid * mult);
                 }
             }
         }

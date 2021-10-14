@@ -13499,6 +13499,20 @@ Set foreground opacity. Default is @code{0.7}.
 
 @item bgopacity
 Set background opacity. Default is @code{0.5}.
+
+@item colors_mode
+Set colors mode.
+It accepts the following values:
+@table @samp
+@item whiteonblack
+@item blackonwhite
+@item whiteongray
+@item blackongray
+@item coloronblack
+@item coloronwhite
+@item colorongray
+@end table
+Default is @code{whiteonblack}.
 @end table
 
 @subsection Examples
