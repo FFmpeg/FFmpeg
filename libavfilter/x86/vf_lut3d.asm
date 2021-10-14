@@ -338,22 +338,22 @@ endstruc
     ; g> !r>g && g>b
     andnps m9, m13, m14
     BLEND m12, prev_g, next_g, m9
-    addps m10, m12
+    addps m10, m10, m12
 
     ; g< !g>b && r>g
     andnps m9, m14, m13
     BLEND m12, next_g, prev_g, m9
-    addps m11, m12
+    addps m11, m11, m12
 
     ; b> !g>b && b>r
     andnps m9, m14, m15
     BLEND m12, prev_b, next_b, m9
-    addps m10, m12
+    addps m10, m10, m12
 
     ; b< !b>r && g>b
     andnps m9, m15, m14
     BLEND m12, next_b, prev_b, m9
-    addps m11, m12
+    addps m11, m11, m12
 
     ; c000 m12;
     ADD3 m12, prev_r, prev_g, prev_b
