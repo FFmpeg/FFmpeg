@@ -11963,6 +11963,10 @@ The width and height of the image.
 
 @item N
 The number of input frame, starting from 0.
+
+@item WS
+@item HS
+The size of FFT array for horizontal and vertical processing.
 @end table
 
 @subsection Examples

@@ -71,8 +71,8 @@ typedef struct FFTFILTContext {
     int (*irdft_horizontal)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } FFTFILTContext;
 
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N", NULL        };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_VARS_NB };
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "WS",   "HS", NULL        };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_WS, VAR_HS, VAR_VARS_NB };
 
 enum { Y = 0, U, V };
 
@@ -268,6 +268,8 @@ static void do_eval(FFTFILTContext *s, AVFilterLink *inlink, int plane)
     values[VAR_N] = inlink->frame_count_out;
     values[VAR_W] = s->planewidth[plane];
     values[VAR_H] = s->planeheight[plane];
+    values[VAR_WS] = s->rdft_hlen[plane];
+    values[VAR_HS] = s->rdft_vlen[plane];
 
     for (i = 0; i < s->rdft_hlen[plane]; i++) {
         values[VAR_X] = i;
