@@ -43,9 +43,9 @@ static void ttafilter_process_dec_c(int32_t *qm, int32_t *dx, int32_t *dl,
     *error = *in;
     *in += (round >> shift);
 
-    dl[4] = -dl[5]; dl[5] = -dl[6];
-    dl[6] = *in - dl[7]; dl[7] = *in;
-    dl[5] += dl[6]; dl[4] += dl[5];
+    dl[4] = -(unsigned)dl[5]; dl[5] = -(unsigned)dl[6];
+    dl[6] = *in -(unsigned)dl[7]; dl[7] = *in;
+    dl[5] += (unsigned)dl[6]; dl[4] += (unsigned)dl[5];
 }
 
 av_cold void ff_ttadsp_init(TTADSPContext *c)
