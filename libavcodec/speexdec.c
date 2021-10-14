@@ -1423,7 +1423,9 @@ static int parse_speex_extradata(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     s->vbr = bytestream_get_le32(&buf);
     s->frames_per_packet = bytestream_get_le32(&buf);
-    if (s->frames_per_packet <= 0)
+    if (s->frames_per_packet <= 0 ||
+        s->frames_per_packet > 64 ||
+        s->frames_per_packet >= INT32_MAX / s->nb_channels / s->frame_size)
         return AVERROR_INVALIDDATA;
     s->extra_headers = bytestream_get_le32(&buf);
 
