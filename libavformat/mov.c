@@ -7074,7 +7074,7 @@ static int mov_read_dvcc_dvvc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return ret;
     }
 
-    av_log(c, AV_LOG_TRACE, "DOVI in dvcC/dvvC box, version: %d.%d, profile: %d, level: %d, "
+    av_log(c, AV_LOG_TRACE, "DOVI in dvcC/dvvC/dvwC box, version: %d.%d, profile: %d, level: %d, "
            "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
            dovi->dv_version_major, dovi->dv_version_minor,
            dovi->dv_profile, dovi->dv_level,
@@ -7273,6 +7273,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('c','l','l','i'), mov_read_clli },
 { MKTAG('d','v','c','C'), mov_read_dvcc_dvvc },
 { MKTAG('d','v','v','C'), mov_read_dvcc_dvvc },
+{ MKTAG('d','v','w','C'), mov_read_dvcc_dvvc },
 { MKTAG('k','i','n','d'), mov_read_kind },
 { 0, NULL }
 };
