@@ -574,15 +574,16 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
     const uint##depth##_t max = (1 << nbits) - 1;                                                          \
     int bytes = depth / 8;                                                                                 \
                                                                                                            \
-    imax = FFMIN(-y + dst_h, src_h);                                                                       \
-    slice_start = (imax * jobnr) / nb_jobs;                                                                \
-    slice_end = ((imax * (jobnr+1)) / nb_jobs);                                                            \
-                                                                                                           \
+    imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);                                             \
     i = FFMAX(-y, 0);                                                                                      \
-    sa = (uint##depth##_t *)(src->data[3] + (i + slice_start) * src->linesize[3]);                         \
-    da = (uint##depth##_t *)(dst->data[3] + (y + i + slice_start) * dst->linesize[3]);                     \
                                                                                                            \
-    for (i = i + slice_start; i < slice_end; i++) {                                                        \
+    slice_start = i + (imax * jobnr) / nb_jobs;                                                            \
+    slice_end = i + ((imax * (jobnr+1)) / nb_jobs);                                                        \
+                                                                                                           \
+    sa = (uint##depth##_t *)(src->data[3] + (slice_start) * src->linesize[3]);                             \
+    da = (uint##depth##_t *)(dst->data[3] + (y + slice_start) * dst->linesize[3]);                         \
+                                                                                                           \
+    for (i = slice_start; i < slice_end; i++) {                                                            \
         j = FFMAX(-x, 0);                                                                                  \
         s = sa + j;                                                                                        \
         d = da + x+j;                                                                                      \
