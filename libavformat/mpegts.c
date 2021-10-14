@@ -2179,6 +2179,8 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             AVDOVIDecoderConfigurationRecord *dovi;
             size_t dovi_size;
             int ret;
+            int dependency_pid;
+
             if (desc_end - *pp < 4) // (8 + 8 + 7 + 6 + 1 + 1 + 1) / 8
                 return AVERROR_INVALIDDATA;
 
@@ -2194,7 +2196,11 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             dovi->rpu_present_flag  = (buf >> 2) & 0x01;    // 1 bit
             dovi->el_present_flag   = (buf >> 1) & 0x01;    // 1 bit
             dovi->bl_present_flag   =  buf       & 0x01;    // 1 bit
-            if (desc_end - *pp >= 20) {  // 4 + 4 * 4
+            if (!dovi->bl_present_flag && desc_end - *pp >= 2) {
+                buf = get16(pp, desc_end);
+                dependency_pid = buf >> 3; // 13 bits
+            }
+            if (desc_end - *pp >= 1) {  // 8 bits
                 buf = get8(pp, desc_end);
                 dovi->dv_bl_signal_compatibility_id = (buf >> 4) & 0x0f; // 4 bits
             } else {
@@ -2211,12 +2217,13 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             }
 
             av_log(fc, AV_LOG_TRACE, "DOVI, version: %d.%d, profile: %d, level: %d, "
-                   "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
+                   "rpu flag: %d, el flag: %d, bl flag: %d, dependency_pid: %d, compatibility id: %d\n",
                    dovi->dv_version_major, dovi->dv_version_minor,
                    dovi->dv_profile, dovi->dv_level,
                    dovi->rpu_present_flag,
                    dovi->el_present_flag,
                    dovi->bl_present_flag,
+                   dependency_pid,
                    dovi->dv_bl_signal_compatibility_id);
         }
         break;
