@@ -191,7 +191,7 @@ static int irdft_horizontal8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
             uint8_t *dst = out->data[plane] + i * out->linesize[plane];
 
             for (int j = 0; j < w; j++)
-                dst[j] = av_clip(lrintf(src[j] * scale), 0, 255);
+                dst[j] = av_clip_uint8(lrintf(src[j] * scale));
         }
     }
 
