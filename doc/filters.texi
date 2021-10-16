@@ -21612,6 +21612,9 @@ Set if output video needs to be transposed. Boolean value, by default disabled.
 
 @item alpha_mask
 Build mask in alpha plane for all unmapped pixels by marking them fully transparent. Boolean value, by default disabled.
+
+@item reset_rot
+Reset rotation of output video. Boolean value, by default disabled.
 @end table
 
 @subsection Examples
