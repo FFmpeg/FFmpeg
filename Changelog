@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.16:
+ configure: update copyright year
  avformat/wavdec: Check smv_block_size
  avformat/rmdec: Check for multiple audio_stream_info
  avcodec/apedec: Use 64bit to avoid overflow
