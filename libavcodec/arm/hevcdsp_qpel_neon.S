@@ -237,7 +237,7 @@
         vld1.8    {d23}, [r2], r3
         bne 8b
         subs  r5, #8
-        ble       99f
+        beq       99f
         mov r4, r12
         add r6, #16
         mov r0, r6
@@ -280,7 +280,7 @@
         vld1.8    {d23}, [r2], r3
         bne 8b
         subs  r5, #8
-        ble       99f
+        beq       99f
         mov r4, r12
         add r6, #8
         mov r0, r6
@@ -310,7 +310,7 @@
         vld1.8    {d23}, [r2], r3
         bne 8b
         subs  r5, #8
-        ble       99f
+        beq       99f
         mov r4, r12
         add r6, #8
         mov r0, r6
@@ -377,7 +377,7 @@ endfunc
         vst1.16   {q7}, [r0], r1
         bne       8b
         subs      r5, #8
-        ble       99f
+        beq      99f
         mov       r4, r12
         add       r6, #16
         mov       r0, r6
@@ -417,7 +417,7 @@ endfunc
         vst1.8    d0, [r0], r1
         bne       8b
         subs      r5, #8
-        ble       99f
+        beq      99f
         mov       r4, r12
         add       r6, #8
         mov       r0, r6
@@ -446,7 +446,7 @@ endfunc
         vst1.8         d0, [r0], r1
         bne       8b
         subs      r5, #8
-        ble       99f
+        beq      99f
         mov       r4, r12
         add       r6, #8
         add       r10, #16
@@ -533,7 +533,7 @@ endfunc
         \filterh q7
         bne 8b
         subs  r5, #8
-        ble 99f
+        beq 99f
         mov r4, r12
         add r6, #16
         mov r0, r6
@@ -594,7 +594,7 @@ endfunc
         \filterh q7
         bne 8b
         subs  r5, #8
-        ble 99f
+        beq 99f
         mov r4, r12
         add r6, #8
         mov r0, r6
@@ -641,7 +641,7 @@ endfunc
         \filterh q7
         bne 8b
         subs  r5, #8
-        ble 99f
+        beq 99f
         mov r4, r12
         add r6, #8
         mov r0, r6
