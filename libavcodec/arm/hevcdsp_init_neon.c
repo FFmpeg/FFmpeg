@@ -270,7 +270,8 @@ av_cold void ff_hevc_dsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         put_hevc_qpel_uw_neon[3][1]      = ff_hevc_put_qpel_uw_h1v3_neon_8;
         put_hevc_qpel_uw_neon[3][2]      = ff_hevc_put_qpel_uw_h2v3_neon_8;
         put_hevc_qpel_uw_neon[3][3]      = ff_hevc_put_qpel_uw_h3v3_neon_8;
-        for (x = 0; x < 10; x++) {
+        for (x = 3; x < 10; x++) {
+            if (x == 4) continue;
             c->put_hevc_qpel[x][1][0]         = ff_hevc_put_qpel_neon_wrapper;
             c->put_hevc_qpel[x][0][1]         = ff_hevc_put_qpel_neon_wrapper;
             c->put_hevc_qpel[x][1][1]         = ff_hevc_put_qpel_neon_wrapper;
