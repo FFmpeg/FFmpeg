@@ -292,7 +292,9 @@ typedef struct AVIOContext {
 
 #if FF_API_AVIOCONTEXT_WRITTEN
     /**
-     * @deprecated field utilized privately by libavformat.
+     * @deprecated field utilized privately by libavformat. For a public
+     *             statistic of how many bytes were written out, see
+     *             AVIOContext::bytes_written.
      */
     attribute_deprecated
     int64_t written;
@@ -303,6 +305,16 @@ typedef struct AVIOContext {
      * used keeping track of already written data for a later flush.
      */
     unsigned char *buf_ptr_max;
+
+    /**
+     * Read-only statistic of bytes read for this AVIOContext.
+     */
+    int64_t bytes_read;
+
+    /**
+     * Read-only statistic of bytes written for this AVIOContext.
+     */
+    int64_t bytes_written;
 } AVIOContext;
 
 /**

@@ -169,6 +169,9 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
         if (ret < 0) {
             s->error = ret;
         } else {
+            ctx->bytes_written += len;
+            s->bytes_written = ctx->bytes_written;
+
             if (s->pos + len > ctx->written_output_size) {
                 ctx->written_output_size = s->pos + len;
 #if FF_API_AVIOCONTEXT_WRITTEN
@@ -584,6 +587,7 @@ static void fill_buffer(AVIOContext *s)
         s->buf_ptr = dst;
         s->buf_end = dst + len;
         ffiocontext(s)->bytes_read += len;
+        s->bytes_read = ffiocontext(s)->bytes_read;
     }
 }
 
@@ -657,6 +661,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                 } else {
                     s->pos += len;
                     ffiocontext(s)->bytes_read += len;
+                    s->bytes_read = ffiocontext(s)->bytes_read;
                     size -= len;
                     buf += len;
                     // reset the buffer
@@ -1236,8 +1241,9 @@ int avio_close(AVIOContext *s)
 
     av_freep(&s->buffer);
     if (s->write_flag)
-        av_log(s, AV_LOG_VERBOSE, "Statistics: %d seeks, %d writeouts\n",
-               ctx->seek_count, ctx->writeout_count);
+        av_log(s, AV_LOG_VERBOSE,
+               "Statistics: %"PRId64" bytes written, %d seeks, %d writeouts\n",
+               ctx->bytes_written, ctx->seek_count, ctx->writeout_count);
     else
         av_log(s, AV_LOG_VERBOSE, "Statistics: %"PRId64" bytes read, %d seeks\n",
                ctx->bytes_read, ctx->seek_count);

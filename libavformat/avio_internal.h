@@ -52,6 +52,11 @@ typedef struct FFIOContext {
     int64_t bytes_read;
 
     /**
+     * Bytes written statistic
+     */
+    int64_t bytes_written;
+
+    /**
      * seek statistic
      */
     int seek_count;
