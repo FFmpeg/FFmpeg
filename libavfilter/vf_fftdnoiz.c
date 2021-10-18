@@ -583,6 +583,9 @@ static int export_pass(AVFilterContext *ctx, void *arg,
     for (int plane = 0; plane < s->nb_planes; plane++) {
         PlaneContext *p = &s->planes[plane];
 
+        if (!((1 << plane) & s->planesf) || ctx->is_disabled)
+            continue;
+
         export_plane(s, out->data[plane], out->linesize[plane],
                      p->buffer[CURRENT], p->buffer_linesize, plane,
                      jobnr, nb_jobs);
