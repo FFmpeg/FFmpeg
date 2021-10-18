@@ -1856,7 +1856,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *last_filter = NULL;
     AVCodecParameters *codecpar = is->video_st->codecpar;
     AVRational fr = av_guess_frame_rate(is->ic, is->video_st, NULL);
-    AVDictionaryEntry *e = NULL;
+    const AVDictionaryEntry *e = NULL;
     int nb_pix_fmts = 0;
     int i, j;
 
@@ -1960,7 +1960,7 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     int channels[2] = { 0, -1 };
     AVFilterContext *filt_asrc = NULL, *filt_asink = NULL;
     char aresample_swr_opts[512] = "";
-    AVDictionaryEntry *e = NULL;
+    const AVDictionaryEntry *e = NULL;
     char asrc_args[256];
     int ret;
 
@@ -2575,7 +2575,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     const AVCodec *codec;
     const char *forced_codec_name = NULL;
     AVDictionary *opts = NULL;
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     int sample_rate, nb_channels;
     int64_t channel_layout;
     int ret = 0;
@@ -2760,7 +2760,7 @@ static int read_thread(void *arg)
     AVPacket *pkt = NULL;
     int64_t stream_start_time;
     int pkt_in_play_range = 0;
-    AVDictionaryEntry *t;
+    const AVDictionaryEntry *t;
     SDL_mutex *wait_mutex = SDL_CreateMutex();
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;

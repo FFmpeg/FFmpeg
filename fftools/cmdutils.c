@@ -2121,7 +2121,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
                                 AVFormatContext *s, AVStream *st, const AVCodec *codec)
 {
     AVDictionary    *ret = NULL;
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM
                                       : AV_OPT_FLAG_DECODING_PARAM;
     char          prefix = 0;

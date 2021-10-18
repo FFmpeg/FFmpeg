@@ -86,7 +86,7 @@ static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx
 static char *choose_pix_fmts(OutputFilter *ofilter)
 {
     OutputStream *ost = ofilter->ost;
-    AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
+    const AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
     if (strict_dict)
         // used by choose_pixel_fmt() and below
         av_opt_set(ost->enc_ctx, "strict", strict_dict->value, 0);
@@ -437,7 +437,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     if ((ofilter->width || ofilter->height) && ofilter->ost->autoscale) {
         char args[255];
         AVFilterContext *filter;
-        AVDictionaryEntry *e = NULL;
+        const AVDictionaryEntry *e = NULL;
 
         snprintf(args, sizeof(args), "%d:%d",
                  ofilter->width, ofilter->height);
@@ -994,7 +994,7 @@ int configure_filtergraph(FilterGraph *fg)
     if (simple) {
         OutputStream *ost = fg->outputs[0]->ost;
         char args[512];
-        AVDictionaryEntry *e = NULL;
+        const AVDictionaryEntry *e = NULL;
 
         if (filter_nbthreads) {
             ret = av_opt_set(fg->graph, "threads", filter_nbthreads, 0);

@@ -249,7 +249,7 @@ static int show_hwaccels(void *optctx, const char *opt, const char *arg)
 /* return a copy of the input with the stream specifiers removed from the keys */
 static AVDictionary *strip_specifiers(AVDictionary *dict)
 {
-    AVDictionaryEntry *e = NULL;
+    const AVDictionaryEntry *e = NULL;
     AVDictionary    *ret = NULL;
 
     while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))) {
@@ -1074,7 +1074,7 @@ static void dump_attachment(AVStream *st, const char *filename)
 {
     int ret;
     AVIOContext *out = NULL;
-    AVDictionaryEntry *e;
+    const AVDictionaryEntry *e;
 
     if (!st->codecpar->extradata_size) {
         av_log(NULL, AV_LOG_WARNING, "No extradata to dump in stream #%d:%d.\n",
@@ -1110,7 +1110,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     int err, i, ret;
     int64_t timestamp;
     AVDictionary *unused_opts = NULL;
-    AVDictionaryEntry *e = NULL;
+    const AVDictionaryEntry *e = NULL;
     char *   video_codec_name = NULL;
     char *   audio_codec_name = NULL;
     char *subtitle_codec_name = NULL;
@@ -2279,7 +2279,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     OutputStream *ost;
     InputStream  *ist;
     AVDictionary *unused_opts = NULL;
-    AVDictionaryEntry *e = NULL;
+    const AVDictionaryEntry *e = NULL;
 
     if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
         o->stop_time = INT64_MAX;

@@ -580,7 +580,7 @@ static int writer_open(WriterContext **wctx, const Writer *writer, const char *a
     /* convert options to dictionary */
     if (args) {
         AVDictionary *opts = NULL;
-        AVDictionaryEntry *opt = NULL;
+        const AVDictionaryEntry *opt = NULL;
 
         if ((ret = av_dict_parse_string(&opts, args, "=", ":", 0)) < 0) {
             av_log(*wctx, AV_LOG_ERROR, "Failed to parse option string '%s' provided to writer context\n", args);
@@ -1836,7 +1836,7 @@ static void writer_register_all(void)
 
 static inline int show_tags(WriterContext *w, AVDictionary *tags, int section_id)
 {
-    AVDictionaryEntry *tag = NULL;
+    const AVDictionaryEntry *tag = NULL;
     int ret = 0;
 
     if (!tags)
@@ -2364,7 +2364,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                 print_int("max_content", metadata->MaxCLL);
                 print_int("max_average", metadata->MaxFALL);
             } else if (sd->type == AV_FRAME_DATA_ICC_PROFILE) {
-                AVDictionaryEntry *tag = av_dict_get(sd->metadata, "name", NULL, AV_DICT_MATCH_CASE);
+                const AVDictionaryEntry *tag = av_dict_get(sd->metadata, "name", NULL, AV_DICT_MATCH_CASE);
                 if (tag)
                     print_str(tag->key, tag->value);
                 print_int("size", sd->size);
@@ -2957,7 +2957,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
 {
     int err, i;
     AVFormatContext *fmt_ctx = NULL;
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
     int scan_all_pmts_set = 0;
 
     fmt_ctx = avformat_alloc_context();

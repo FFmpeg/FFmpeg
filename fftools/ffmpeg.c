@@ -677,7 +677,7 @@ static void ffmpeg_cleanup(int ret)
 
 void remove_avoptions(AVDictionary **a, AVDictionary *b)
 {
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
 
     while ((t = av_dict_get(b, "", t, AV_DICT_IGNORE_SUFFIX))) {
         av_dict_set(a, t->key, NULL, AV_DICT_MATCH_CASE);
@@ -686,7 +686,7 @@ void remove_avoptions(AVDictionary **a, AVDictionary *b)
 
 void assert_avoptions(AVDictionary *m)
 {
-    AVDictionaryEntry *t;
+    const AVDictionaryEntry *t;
     if ((t = av_dict_get(m, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         av_log(NULL, AV_LOG_FATAL, "Option %s not found.\n", t->key);
         exit_program(1);
@@ -3228,7 +3228,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
 static void set_encoder_id(OutputFile *of, OutputStream *ost)
 {
-    AVDictionaryEntry *e;
+    const AVDictionaryEntry *e;
 
     uint8_t *encoder_string;
     int encoder_string_len;
