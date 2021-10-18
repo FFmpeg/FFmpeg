@@ -73,11 +73,12 @@ typedef struct FFTdnoizContext {
 
 #define OFFSET(x) offsetof(FFTdnoizContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption fftdnoiz_options[] = {
     { "sigma",   "set denoise strength",
-        OFFSET(sigma),      AV_OPT_TYPE_FLOAT, {.dbl=1},        0,  30, .flags = FLAGS },
+        OFFSET(sigma),      AV_OPT_TYPE_FLOAT, {.dbl=1},        0,  30, .flags = TFLAGS },
     { "amount",  "set amount of denoising",
-        OFFSET(amount),     AV_OPT_TYPE_FLOAT, {.dbl=1},     0.01,   1, .flags = FLAGS },
+        OFFSET(amount),     AV_OPT_TYPE_FLOAT, {.dbl=1},     0.01,   1, .flags = TFLAGS },
     { "block",   "set block log2(size)",
         OFFSET(block_bits), AV_OPT_TYPE_INT,   {.i64=4},        3,   6, .flags = FLAGS },
     { "overlap", "set block overlap",
@@ -87,7 +88,7 @@ static const AVOption fftdnoiz_options[] = {
     { "next",    "set number of next frames for temporal denoising",
         OFFSET(nb_next),    AV_OPT_TYPE_INT,   {.i64=0},        0,   1, .flags = FLAGS },
     { "planes",  "set planes to filter",
-        OFFSET(planesf),    AV_OPT_TYPE_INT,   {.i64=7},        0,  15, .flags = FLAGS },
+        OFFSET(planesf),    AV_OPT_TYPE_INT,   {.i64=7},        0,  15, .flags = TFLAGS },
     { NULL }
 };
 
@@ -758,4 +759,5 @@ const AVFilter ff_vf_fftdnoiz = {
     .priv_class    = &fftdnoiz_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
