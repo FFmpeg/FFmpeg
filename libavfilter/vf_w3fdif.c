@@ -526,6 +526,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             return AVERROR(ENOMEM);
     }
 
+    if (!s->prev)
+        return 0;
+
     if ((s->deint && !s->cur->interlaced_frame) || ctx->is_disabled) {
         AVFrame *out = av_frame_clone(s->cur);
         if (!out)
@@ -536,9 +539,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             out->pts *= 2;
         return ff_filter_frame(ctx->outputs[0], out);
     }
-
-    if (!s->prev)
-        return 0;
 
     ret = filter(ctx, 0);
     if (ret < 0 || s->mode == 0)
