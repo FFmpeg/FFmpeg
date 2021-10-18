@@ -1012,7 +1012,7 @@ typedef struct AVFilterInOut {
     /** index of the filt_ctx pad to use for linking */
     int pad_idx;
 
-    /** next input/input in the list, NULL if this is the last */
+    /** next input/output in the list, NULL if this is the last */
     struct AVFilterInOut *next;
 } AVFilterInOut;
 
