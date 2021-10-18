@@ -2146,7 +2146,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
                          int64_t target_ts, int flags)
 {
     const AVInputFormat *avif = s->iformat;
-    int64_t av_uninit(pos_min), av_uninit(pos_max), pos, pos_limit;
+    int64_t pos_min = 0, pos_max = 0, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
     int index;
     int64_t ret;
