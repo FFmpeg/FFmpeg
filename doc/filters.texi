@@ -26200,27 +26200,27 @@ The sequential number of the last selected frame. It's NAN if undefined.
 The timebase of the input timestamps.
 
 @item pts
-The PTS (Presentation TimeStamp) of the filtered video frame,
+The PTS (Presentation TimeStamp) of the filtered frame,
 expressed in @var{TB} units. It's NAN if undefined.
 
 @item t
-The PTS of the filtered video frame,
+The PTS of the filtered frame,
 expressed in seconds. It's NAN if undefined.
 
 @item prev_pts
-The PTS of the previously filtered video frame. It's NAN if undefined.
+The PTS of the previously filtered frame. It's NAN if undefined.
 
 @item prev_selected_pts
-The PTS of the last previously filtered video frame. It's NAN if undefined.
+The PTS of the last previously filtered frame. It's NAN if undefined.
 
 @item prev_selected_t
-The PTS of the last previously selected video frame, expressed in seconds. It's NAN if undefined.
+The PTS of the last previously selected frame, expressed in seconds. It's NAN if undefined.
 
 @item start_pts
-The PTS of the first video frame in the video. It's NAN if undefined.
+The first PTS in the stream which is not NAN. It remains NAN if not found.
 
 @item start_t
-The time of the first video frame in the video. It's NAN if undefined.
+The first PTS, in seconds, in the stream which is not NAN. It remains NAN if not found.
 
 @item pict_type @emph{(video only)}
 The type of the filtered frame. It can assume one of the following
