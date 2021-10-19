@@ -241,7 +241,7 @@ static av_cold int aom_free(AVCodecContext *avctx)
 
 static av_cold int av1_init(AVCodecContext *avctx)
 {
-    return aom_init(avctx, &aom_codec_av1_dx_algo);
+    return aom_init(avctx, aom_codec_av1_dx());
 }
 
 const AVCodec ff_libaom_av1_decoder = {
