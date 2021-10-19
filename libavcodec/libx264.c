@@ -115,9 +115,6 @@ typedef struct X264Context {
      * encounter a frame with ROI side data.
      */
     int roi_warned;
-
-    void *sei_data;
-    int sei_data_size;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -322,7 +319,6 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
     if (frame) {
         x264_sei_t *sei = &x4->pic.extra_sei;
-        sei->num_payloads = 0;
 
         for (i = 0; i < x4->pic.img.i_plane; i++) {
             x4->pic.img.plane[i]    = frame->data[i];
@@ -449,20 +445,24 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
         for (int j = 0; j < frame->nb_side_data; j++) {
             AVFrameSideData *side_data = frame->side_data[j];
+            unsigned int sei_data_size = 0;
             void *tmp;
             x264_sei_payload_t *sei_payload;
             if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
                 continue;
-            tmp = av_fast_realloc(x4->sei_data, &x4->sei_data_size, (sei->num_payloads + 1) * sizeof(*sei_payload));
+            tmp = av_fast_realloc(sei->payloads, &sei_data_size, (sei->num_payloads + 1) * sizeof(*sei_payload));
             if (!tmp) {
-                av_freep(&x4->pic.extra_sei.payloads);
                 av_freep(&x4->pic.prop.quant_offsets);
                 return AVERROR(ENOMEM);
             }
-            x4->sei_data = tmp;
-            sei->payloads = x4->sei_data;
+            sei->payloads = tmp;
+            sei->sei_free = av_free;
             sei_payload = &sei->payloads[sei->num_payloads];
-            sei_payload->payload = side_data->data;
+            sei_payload->payload = av_memdup(side_data->data, side_data->size);
+            if (!sei_payload->payload) {
+                av_freep(&x4->pic.prop.quant_offsets);
+                return AVERROR(ENOMEM);
+            }
             sei_payload->payload_size = side_data->size;
             sei_payload->payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
             sei->num_payloads++;
@@ -532,8 +532,6 @@ static av_cold int X264_close(AVCodecContext *avctx)
 #if X264_BUILD >= 161
     x264_param_cleanup(&x4->params);
 #endif
-
-    av_freep(&x4->sei_data);
 
     if (x4->enc) {
         x264_encoder_close(x4->enc);
