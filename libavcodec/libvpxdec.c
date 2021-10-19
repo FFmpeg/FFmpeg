@@ -242,11 +242,11 @@ static int vpx_decode(AVCodecContext *avctx,
                                &ctx->decoder_alpha,
 #if CONFIG_LIBVPX_VP8_DECODER && CONFIG_LIBVPX_VP9_DECODER
                                (avctx->codec_id == AV_CODEC_ID_VP8) ?
-                               &vpx_codec_vp8_dx_algo : &vpx_codec_vp9_dx_algo
+                               vpx_codec_vp8_dx() : vpx_codec_vp9_dx()
 #elif CONFIG_LIBVPX_VP8_DECODER
-                               &vpx_codec_vp8_dx_algo
+                               vpx_codec_vp8_dx()
 #else
-                               &vpx_codec_vp9_dx_algo
+                               vpx_codec_vp9_dx()
 #endif
                                );
                 if (ret)
@@ -350,7 +350,7 @@ static av_cold int vpx_free(AVCodecContext *avctx)
 static av_cold int vp8_init(AVCodecContext *avctx)
 {
     VPxContext *ctx = avctx->priv_data;
-    return vpx_init(avctx, &ctx->decoder, &vpx_codec_vp8_dx_algo);
+    return vpx_init(avctx, &ctx->decoder, vpx_codec_vp8_dx());
 }
 
 const AVCodec ff_libvpx_vp8_decoder = {
@@ -372,7 +372,7 @@ const AVCodec ff_libvpx_vp8_decoder = {
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
     VPxContext *ctx = avctx->priv_data;
-    return vpx_init(avctx, &ctx->decoder, &vpx_codec_vp9_dx_algo);
+    return vpx_init(avctx, &ctx->decoder, vpx_codec_vp9_dx());
 }
 
 AVCodec ff_libvpx_vp9_decoder = {
