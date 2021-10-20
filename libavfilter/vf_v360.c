@@ -164,7 +164,7 @@ static const AVOption v360_options[] = {
     {    "iv_fov", "input vertical field of view",  OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "iv_fov"},
     {    "id_fov", "input diagonal field of view",  OFFSET(id_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "id_fov"},
     {"alpha_mask", "build mask in alpha plane",      OFFSET(alpha), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "alpha"},
-    { "reset_rot", "reset rotation",             OFFSET(reset_rot), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1,TFLAGS, "reset_rot"},
+    { "reset_rot", "reset rotation",             OFFSET(reset_rot), AV_OPT_TYPE_BOOL,   {.i64=0},              -1,                   1,TFLAGS, "reset_rot"},
     { NULL }
 };
 
@@ -4962,7 +4962,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     int ret;
 
     s->yaw = s->pitch = s->roll = 0.f;
-    s->reset_rot = 0;
+    if (s->reset_rot < 0)
+        s->reset_rot = 0;
 
     ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
     if (ret < 0)
