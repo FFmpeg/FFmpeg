@@ -319,6 +319,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
     if (frame) {
         x264_sei_t *sei = &x4->pic.extra_sei;
+        unsigned int sei_data_size = 0;
 
         for (i = 0; i < x4->pic.img.i_plane; i++) {
             x4->pic.img.plane[i]    = frame->data[i];
@@ -445,7 +446,6 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
         for (int j = 0; j < frame->nb_side_data; j++) {
             AVFrameSideData *side_data = frame->side_data[j];
-            unsigned int sei_data_size = 0;
             void *tmp;
             x264_sei_payload_t *sei_payload;
             if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
