@@ -134,6 +134,7 @@ int64_t av_rescale(int64_t a, int64_t b, int64_t c) av_const;
  *
  * The operation is mathematically equivalent to `a * b / c`, but writing that
  * directly can overflow, and does not support different rounding methods.
+ * If the result is not representable then INT64_MIN is returned.
  *
  * @see av_rescale(), av_rescale_q(), av_rescale_q_rnd()
  */
