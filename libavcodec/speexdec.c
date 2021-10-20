@@ -1450,7 +1450,7 @@ static av_cold int speex_decode_init(AVCodecContext *avctx)
         if (s->rate <= 0)
             return AVERROR_INVALIDDATA;
 
-        s->nb_channels = avctx->channels;
+        s->nb_channels = avctx->ch_layout.nb_channels;
         if (s->nb_channels <= 0)
             return AVERROR_INVALIDDATA;
 
@@ -1492,7 +1492,9 @@ static av_cold int speex_decode_init(AVCodecContext *avctx)
 
     if (s->bitrate > 0)
         avctx->bit_rate = s->bitrate;
-    avctx->channels = s->nb_channels;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+    avctx->ch_layout.nb_channels = s->nb_channels;
     avctx->sample_rate = s->rate;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
@@ -1554,12 +1556,12 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
         ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
         if (ret < 0)
             return ret;
-        if (avctx->channels == 2)
+        if (avctx->ch_layout.nb_channels == 2)
             speex_decode_stereo(dst + i * s->frame_size, s->frame_size, &s->stereo);
     }
 
     dst = (float *)frame->extended_data[0];
-    s->fdsp->vector_fmul_scalar(dst, dst, scale, frame->nb_samples * frame->channels);
+    s->fdsp->vector_fmul_scalar(dst, dst, scale, frame->nb_samples * frame->ch_layout.nb_channels);
     frame->nb_samples = s->frame_size * s->frames_per_packet;
 
     *got_frame_ptr = 1;
