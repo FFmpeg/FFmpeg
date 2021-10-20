@@ -109,13 +109,14 @@ int ff_hls_senc_parse_audio_setup_info(AVStream *st, HLSAudioSetupInfo *info)
         }
 
         st->codecpar->sample_rate       = ac3hdr->sample_rate;
-        st->codecpar->channels          = ac3hdr->channels;
-        st->codecpar->channel_layout    = ac3hdr->channel_layout;
+        av_channel_layout_uninit(&st->codecpar->ch_layout);
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, ac3hdr->channel_layout);
         st->codecpar->bit_rate          = ac3hdr->bit_rate;
 
         av_free(ac3hdr);
     } else {  /*  Parse 'dec3' EC3SpecificBox */
         GetBitContext gb;
+        uint64_t mask;
         int data_rate, fscod, acmod, lfeon;
 
         ret = init_get_bits8(&gb, info->setup_data, info->setup_data_length);
@@ -131,11 +132,12 @@ int ff_hls_senc_parse_audio_setup_info(AVStream *st, HLSAudioSetupInfo *info)
 
         st->codecpar->sample_rate = eac3_sample_rate_tab[fscod];
 
-        st->codecpar->channel_layout = ff_ac3_channel_layout_tab[acmod];
+        mask = ff_ac3_channel_layout_tab[acmod];
         if (lfeon)
-            st->codecpar->channel_layout |= AV_CH_LOW_FREQUENCY;
+            mask |= AV_CH_LOW_FREQUENCY;
 
-        st->codecpar->channels = av_get_channel_layout_nb_channels(st->codecpar->channel_layout);
+        av_channel_layout_uninit(&st->codecpar->ch_layout);
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
 
         st->codecpar->bit_rate = data_rate*1000;
     }
