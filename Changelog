@@ -2,6 +2,15 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.3.3:
+ avformat/matroskadec: Reset state also on failure in matroska_reset_status()
+ avformat/wavdec: Check smv_block_size
+ avformat/rmdec: Check for multiple audio_stream_info
+ avcodec/apedec: Use 64bit to avoid overflow
+ avcodec/apedec: Fix undefined integer overflow in long_filter_ehigh_3830()
+ oavformat/avidec: Check offset in odml
+ avformat/mpegts: use actually read packet size in mpegts_resync special case
+ avfilter/scale_npp: fix non-aligned output frame dimensions
+ Update for 4.3.3
  swscale/alphablend: Fix slice handling
  avcodec/apedec: Fix integer overflow in filter_fast_3320()
  avcodec/mxpegdec: Check for AVDISCARD_ALL
