@@ -365,7 +365,7 @@ Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's UR
 Apple doesn't have an official spec for LHLS. Meanwhile hls.js player folks are
 trying to standardize a open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
 This option will also try to comply with the above open spec, till Apple's spec officially supports it.
-Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
+It enables @var{streaming} and @var{hls_playlist} options automatically.
 This is an experimental feature.
 
 @item ldash @var{ldash}
