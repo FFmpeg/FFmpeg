@@ -1179,7 +1179,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         out_pkt->pts          = sti->parser->pts;
         out_pkt->dts          = sti->parser->dts;
         out_pkt->pos          = sti->parser->pos;
-        out_pkt->flags       |= pkt->flags & AV_PKT_FLAG_DISCARD;
+        out_pkt->flags       |= pkt->flags & (AV_PKT_FLAG_DISCARD | AV_PKT_FLAG_CORRUPT);
 
         if (sti->need_parsing == AVSTREAM_PARSE_FULL_RAW)
             out_pkt->pos = sti->parser->frame_offset;
