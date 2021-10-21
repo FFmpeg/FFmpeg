@@ -1564,7 +1564,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             q = get_ts_payload_start(buf);
             ts_st->discontinuity = 0;
         }
-        if (key && is_start && pts != AV_NOPTS_VALUE) {
+        if (key && is_start && pts != AV_NOPTS_VALUE &&
+            !is_dvb_teletext /* adaptation+payload forbidden for teletext (ETSI EN 300 472 V1.3.1 4.1) */) {
             // set Random Access for key frames
             if (ts_st->pcr_period)
                 write_pcr = 1;
