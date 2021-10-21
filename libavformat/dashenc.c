@@ -1406,8 +1406,8 @@ static int dash_init(AVFormatContext *s)
     }
 
     if (c->ldash && !c->streaming) {
-        av_log(s, AV_LOG_WARNING, "LDash option will be ignored as streaming is not enabled\n");
-        c->ldash = 0;
+        av_log(s, AV_LOG_WARNING, "Enabling streaming as LDash is enabled\n");
+        c->streaming = 1;
     }
 
     if (c->target_latency && !c->streaming) {
