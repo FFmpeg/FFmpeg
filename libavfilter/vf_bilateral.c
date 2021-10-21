@@ -284,7 +284,7 @@ static void bilateral_##name(BilateralContext *s, const uint8_t *ssrc, uint8_t *
                                                                                           \
     for (int i = 0; i < height; i++)                                                      \
         for (int j = 0; j < width; j++)                                                   \
-            dst[j + i * dst_linesize] = img_out_f[i * width + j];                         \
+            dst[j + i * dst_linesize] = lrintf(img_out_f[i * width + j]);                 \
 }
 
 BILATERAL(uint8_t, byte)
