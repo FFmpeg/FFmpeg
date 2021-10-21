@@ -55,6 +55,7 @@
 
 /** largest possible size of flac header */
 #define MAX_FRAME_HEADER_SIZE 16
+#define MAX_FRAME_VERIFY_SIZE (MAX_FRAME_HEADER_SIZE + 1)
 
 typedef struct FLACHeaderMarker {
     int offset;       /**< byte offset from start of FLACParseContext->buffer */
@@ -99,7 +100,7 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
     uint8_t subframe_type;
 
     // header plus one byte from first subframe
-    init_get_bits(&gb, buf, MAX_FRAME_HEADER_SIZE * 8 + 8);
+    init_get_bits(&gb, buf, MAX_FRAME_VERIFY_SIZE * 8);
     if (ff_flac_decode_frame_header(avctx, &gb, fi, 127)) {
         return 0;
     }
@@ -196,7 +197,7 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
     uint8_t *header_buf;
     int size = 0;
     header_buf = flac_fifo_read_wrap(fpc, offset,
-                                     MAX_FRAME_HEADER_SIZE,
+                                     MAX_FRAME_VERIFY_SIZE + AV_INPUT_BUFFER_PADDING_SIZE,
                                      &fpc->wrap_buf,
                                      &fpc->wrap_buf_allocated_size);
     if (frame_header_is_valid(fpc->avctx, header_buf, &fi)) {
