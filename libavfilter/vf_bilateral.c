@@ -143,7 +143,6 @@ static int config_input(AVFilterLink *inlink)
 
 #define BILATERAL(type, name)                                                           \
 static void bilateral_##name(BilateralContext *s, const uint8_t *ssrc, uint8_t *ddst,   \
-                             float sigma_spatial, float sigma_range,                    \
                              int width, int height, int src_linesize, int dst_linesize) \
 {                                                                                       \
     type *dst = (type *)ddst;                                                           \
@@ -314,11 +313,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         if (s->depth <= 8)
-           bilateral_byte(s, in->data[plane], out->data[plane], s->sigmaS, s->sigmaR,
+           bilateral_byte(s, in->data[plane], out->data[plane],
                       s->planewidth[plane], s->planeheight[plane],
                       in->linesize[plane], out->linesize[plane]);
         else
-           bilateral_word(s, in->data[plane], out->data[plane], s->sigmaS, s->sigmaR,
+           bilateral_word(s, in->data[plane], out->data[plane],
                       s->planewidth[plane], s->planeheight[plane],
                       in->linesize[plane] / 2, out->linesize[plane] / 2);
     }
