@@ -362,11 +362,12 @@ Ignore IO errors during open and write. Useful for long-duration runs with netwo
 
 @item lhls @var{lhls}
 Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's URI.
-Apple doesn't have an official spec for LHLS. Meanwhile hls.js player folks are
-trying to standardize a open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
-This option will also try to comply with the above open spec, till Apple's spec officially supports it.
+hls.js player folks are trying to standardize an open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
+This option tries to comply with the above open spec.
 It enables @var{streaming} and @var{hls_playlist} options automatically.
 This is an experimental feature.
+
+Note: This is not Apple's version LHLS. See @url{https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis}
 
 @item ldash @var{ldash}
 Enable Low-latency Dash by constraining the presence and values of some elements.
