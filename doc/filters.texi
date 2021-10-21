@@ -21706,19 +21706,24 @@ Default is universal.
 
 @section varblur
 Apply variable blur filter by using 2nd video stream to set blur radius.
+The 2nd stream must have the same dimensions.
 
 This filter accepts the following options:
 
 @table @option
 @item min_r
-Set min allowed radius. By default is 0. Allowed range is from 0 to 254.
+Set min allowed radius. Allowed range is from 0 to 254. Default is 0.
 @item max_r
-Set max allowed radius. By default is 8. Allowed range is from 1 to 255.
+Set max allowed radius. Allowed range is from 1 to 255. Default is 8.
 @item planes
-Set which planes to process. By default all are used.
+Set which planes to process. By default, all are used.
 @end table
 
 The @code{varblur} filter also supports the @ref{framesync} options.
+
+@subsection Commands
+
+This filter supports all the above options as @ref{commands}.
 
 @section vectorscope
 
