@@ -874,15 +874,16 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     int need_reinit = 0;
 
     if (c->nb_slice_ctx) {
+        int parent_ret = 0;
         for (int i = 0; i < c->nb_slice_ctx; i++) {
             int ret = sws_setColorspaceDetails(c->slice_ctx[i], inv_table,
                                                srcRange, table, dstRange,
                                                brightness, contrast, saturation);
             if (ret < 0)
-                return ret;
+                parent_ret = ret;
         }
 
-        return 0;
+        return parent_ret;
     }
 
     handle_formats(c);
