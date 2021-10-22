@@ -995,7 +995,10 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                                      0, 1 << 16, 1 << 16);
             return 0;
         }
-        return -1;
+        //We do not support this combination currently, we need to cascade more contexts to compensate
+        if (c->cascaded_context[0] && memcmp(c->dstColorspaceTable, c->srcColorspaceTable, sizeof(int) * 4))
+            return -1; //AVERROR_PATCHWELCOME;
+        return 0;
     }
 
     if (!isYUV(c->dstFormat) && !isGray(c->dstFormat)) {
