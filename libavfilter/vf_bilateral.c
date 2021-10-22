@@ -297,18 +297,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(out, in);
     }
-    av_frame_copy_props(out, in);
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
         if (!(s->planes & (1 << plane))) {
-            av_image_copy_plane(out->data[plane], out->linesize[plane],
-                                in->data[plane], in->linesize[plane],
-                                s->planewidth[plane] * ((s->depth + 7) / 8), s->planeheight[plane]);
+            if (out != in)
+                av_image_copy_plane(out->data[plane], out->linesize[plane],
+                                    in->data[plane], in->linesize[plane],
+                                    s->planewidth[plane] * ((s->depth + 7) / 8), s->planeheight[plane]);
             continue;
         }
 
@@ -322,7 +327,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                       in->linesize[plane] / 2, out->linesize[plane] / 2);
     }
 
-    av_frame_free(&in);
+    if (out != in)
+        av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
