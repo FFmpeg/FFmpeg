@@ -223,7 +223,7 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
         int k;
         for (k = 0; k < FF_ARRAY_ELEMS(s->cmyk_adjust[0]); k++) {
             READ16(val);
-            s->cmyk_adjust[i][k] = val / 100.;
+            s->cmyk_adjust[i][k] = val / 100.f;
         }
         ret = register_range(s, i);
         if (ret < 0)
@@ -299,11 +299,11 @@ static const enum AVPixelFormat pix_fmts[] = {
 static inline int comp_adjust(int scale, float value, float adjust, float k, int correction_method)
 {
     const float min = -value;
-    const float max = 1. - value;
-    float res = (-1. - adjust) * k - adjust;
+    const float max = 1.f - value;
+    float res = (-1.f - adjust) * k - adjust;
     if (correction_method == CORRECTION_METHOD_RELATIVE)
         res *= max;
-    return lrint(av_clipf(res, min, max) * scale);
+    return lrintf(av_clipf(res, min, max) * scale);
 }
 
 #define DECLARE_SELECTIVE_COLOR_FUNC(nbits)                                                             \
