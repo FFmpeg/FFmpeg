@@ -241,7 +241,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (s->depth == 8) {
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
-                    dst[x] = lrintf(bptr[x]);
+                    dst[x] = av_clip_uint8(lrintf(bptr[x]));
                 }
                 bptr += width;
                 dst += out->linesize[plane];
@@ -249,7 +249,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         } else {
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
-                    dst16[x] = lrintf(bptr[x]);
+                    dst16[x] = av_clip_uintp2_c(lrintf(bptr[x]), s->depth);
                 }
                 bptr += width;
                 dst16 += out->linesize[plane] / 2;
