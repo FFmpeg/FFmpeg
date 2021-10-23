@@ -709,12 +709,14 @@ static int param_init(AVFilterContext *ctx)
     if (!strcmp(ctx->filter->name, "convolution")) {
         for (i = 0; i < 4; i++) {
             int *matrix = (int *)s->matrix[i];
-            char *p, *arg, *saveptr = NULL;
-            float sum = 0;
+            char *orig, *p, *arg, *saveptr = NULL;
+            float sum = 1.f;
 
-            p = s->matrix_str[i];
+            p = orig = av_strdup(s->matrix_str[i]);
             if (p) {
                 s->matrix_length[i] = 0;
+                s->rdiv[i] = 0.f;
+                sum = 0.f;
 
                 while (s->matrix_length[i] < 49) {
                     if (!(arg = av_strtok(p, " |", &saveptr)))
@@ -726,6 +728,7 @@ static int param_init(AVFilterContext *ctx)
                     s->matrix_length[i]++;
                 }
 
+                av_freep(&orig);
                 if (!(s->matrix_length[i] & 1)) {
                     av_log(ctx, AV_LOG_ERROR, "number of matrix elements must be odd\n");
                     return AVERROR(EINVAL);
