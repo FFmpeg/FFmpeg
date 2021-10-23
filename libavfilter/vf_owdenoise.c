@@ -19,6 +19,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+// The code written by Michael Niedermayer in 70024b6b47b9eacfe01e8f92349ca9bf1ccd7d5a:libavfilter/vf_owdenoise.c
+// can also be used under the LGPL due to:
+// <michaelni> durandal_1707, if you do all the "todo" points from vf_owdenoise.c that are in that file since 2013 then sure i would be more than happy to relicense my part of it to LGPL
+// <durandal_1707> michaelni: first relicense than work
+
 /**
  * @todo try to change to int
  * @todo try lifting based implementation
