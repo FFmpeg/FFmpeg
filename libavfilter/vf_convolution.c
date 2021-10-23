@@ -699,96 +699,12 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     return 0;
 }
 
-static int config_input(AVFilterLink *inlink)
+static int param_init(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = inlink->dst;
     ConvolutionContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int p;
-
-    s->depth = desc->comp[0].depth;
-    s->max = (1 << s->depth) - 1;
-
-    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-    s->planewidth[0] = s->planewidth[3] = inlink->w;
-    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    s->planeheight[0] = s->planeheight[3] = inlink->h;
-
-    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->nb_threads = ff_filter_get_nb_threads(ctx);
-    s->bpc = (s->depth + 7) / 8;
-
-    if (!strcmp(ctx->filter->name, "convolution")) {
-        if (s->depth > 8) {
-            for (p = 0; p < s->nb_planes; p++) {
-                if (s->mode[p] == MATRIX_ROW)
-                    s->filter[p] = filter16_row;
-                else if (s->mode[p] == MATRIX_COLUMN)
-                    s->filter[p] = filter16_column;
-                else if (s->size[p] == 3)
-                    s->filter[p] = filter16_3x3;
-                else if (s->size[p] == 5)
-                    s->filter[p] = filter16_5x5;
-                else if (s->size[p] == 7)
-                    s->filter[p] = filter16_7x7;
-            }
-        }
-#if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64
-        ff_convolution_init_x86(s);
-#endif
-    } else if (!strcmp(ctx->filter->name, "prewitt")) {
-        if (s->depth > 8)
-            for (p = 0; p < s->nb_planes; p++)
-                s->filter[p] = filter16_prewitt;
-    } else if (!strcmp(ctx->filter->name, "roberts")) {
-        if (s->depth > 8)
-            for (p = 0; p < s->nb_planes; p++)
-                s->filter[p] = filter16_roberts;
-    } else if (!strcmp(ctx->filter->name, "sobel")) {
-        if (s->depth > 8)
-            for (p = 0; p < s->nb_planes; p++)
-                s->filter[p] = filter16_sobel;
-    } else if (!strcmp(ctx->filter->name, "kirsch")) {
-        if (s->depth > 8)
-            for (p = 0; p < s->nb_planes; p++)
-                s->filter[p] = filter16_kirsch;
-    } else if (!strcmp(ctx->filter->name, "scharr")) {
-        if (s->depth > 8)
-            for (p = 0; p < s->nb_planes; p++)
-                s->filter[p] = filter16_scharr;
-    }
-
-    return 0;
-}
-
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
-{
-    AVFilterContext *ctx = inlink->dst;
-    ConvolutionContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out;
-    ThreadData td;
-
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(out, in);
-
-    td.in = in;
-    td.out = out;
-    ff_filter_execute(ctx, filter_slice, &td, NULL,
-                      FFMIN3(s->planeheight[1], s->planewidth[1], s->nb_threads));
-
-    av_frame_free(&in);
-    return ff_filter_frame(outlink, out);
-}
-
-static av_cold int init(AVFilterContext *ctx)
-{
-    ConvolutionContext *s = ctx->priv;
-    int i;
+    int p, i;
 
     if (!strcmp(ctx->filter->name, "convolution")) {
         for (i = 0; i < 4; i++) {
@@ -866,10 +782,8 @@ static av_cold int init(AVFilterContext *ctx)
         }
     } else if (!strcmp(ctx->filter->name, "prewitt")) {
         for (i = 0; i < 4; i++) {
-            if ((1 << i) & s->planes)
-                s->filter[i] = filter_prewitt;
-            else
-                s->copy[i] = 1;
+            s->filter[i] = filter_prewitt;
+            s->copy[i] = !((1 << i) & s->planes);
             s->size[i] = 3;
             s->setup[i] = setup_3x3;
             s->rdiv[i] = s->scale;
@@ -877,10 +791,8 @@ static av_cold int init(AVFilterContext *ctx)
         }
     } else if (!strcmp(ctx->filter->name, "roberts")) {
         for (i = 0; i < 4; i++) {
-            if ((1 << i) & s->planes)
-                s->filter[i] = filter_roberts;
-            else
-                s->copy[i] = 1;
+            s->filter[i] = filter_roberts;
+            s->copy[i] = !((1 << i) & s->planes);
             s->size[i] = 3;
             s->setup[i] = setup_3x3;
             s->rdiv[i] = s->scale;
@@ -888,10 +800,8 @@ static av_cold int init(AVFilterContext *ctx)
         }
     } else if (!strcmp(ctx->filter->name, "sobel")) {
         for (i = 0; i < 4; i++) {
-            if ((1 << i) & s->planes)
-                s->filter[i] = filter_sobel;
-            else
-                s->copy[i] = 1;
+            s->filter[i] = filter_sobel;
+            s->copy[i] = !((1 << i) & s->planes);
             s->size[i] = 3;
             s->setup[i] = setup_3x3;
             s->rdiv[i] = s->scale;
@@ -899,10 +809,8 @@ static av_cold int init(AVFilterContext *ctx)
         }
     } else if (!strcmp(ctx->filter->name, "kirsch")) {
         for (i = 0; i < 4; i++) {
-            if ((1 << i) & s->planes)
-                s->filter[i] = filter_kirsch;
-            else
-                s->copy[i] = 1;
+            s->filter[i] = filter_kirsch;
+            s->copy[i] = !((1 << i) & s->planes);
             s->size[i] = 3;
             s->setup[i] = setup_3x3;
             s->rdiv[i] = s->scale;
@@ -910,10 +818,8 @@ static av_cold int init(AVFilterContext *ctx)
         }
     } else if (!strcmp(ctx->filter->name, "scharr")) {
         for (i = 0; i < 4; i++) {
-            if ((1 << i) & s->planes)
-                s->filter[i] = filter_scharr;
-            else
-                s->copy[i] = 1;
+            s->filter[i] = filter_scharr;
+            s->copy[i] = !((1 << i) & s->planes);
             s->size[i] = 3;
             s->setup[i] = setup_3x3;
             s->rdiv[i] = s->scale;
@@ -921,7 +827,89 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
+    s->depth = desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
+
+    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0] = s->planewidth[3] = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
+    s->bpc = (s->depth + 7) / 8;
+
+    if (!strcmp(ctx->filter->name, "convolution")) {
+        if (s->depth > 8) {
+            for (p = 0; p < s->nb_planes; p++) {
+                if (s->mode[p] == MATRIX_ROW)
+                    s->filter[p] = filter16_row;
+                else if (s->mode[p] == MATRIX_COLUMN)
+                    s->filter[p] = filter16_column;
+                else if (s->size[p] == 3)
+                    s->filter[p] = filter16_3x3;
+                else if (s->size[p] == 5)
+                    s->filter[p] = filter16_5x5;
+                else if (s->size[p] == 7)
+                    s->filter[p] = filter16_7x7;
+            }
+        }
+#if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64
+        ff_convolution_init_x86(s);
+#endif
+    } else if (!strcmp(ctx->filter->name, "prewitt")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_prewitt;
+    } else if (!strcmp(ctx->filter->name, "roberts")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_roberts;
+    } else if (!strcmp(ctx->filter->name, "sobel")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_sobel;
+    } else if (!strcmp(ctx->filter->name, "kirsch")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_kirsch;
+    } else if (!strcmp(ctx->filter->name, "scharr")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_scharr;
+    }
+
     return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    return param_init(ctx);
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    ConvolutionContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out;
+    ThreadData td;
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+
+    td.in = in;
+    td.out = out;
+    ff_filter_execute(ctx, filter_slice, &td, NULL,
+                      FFMIN3(s->planeheight[1], s->planewidth[1], s->nb_threads));
+
+    av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
@@ -933,7 +921,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     if (ret < 0)
         return ret;
 
-    return init(ctx);
+    return param_init(ctx);
 }
 
 static const AVFilterPad convolution_inputs[] = {
@@ -959,7 +947,6 @@ const AVFilter ff_vf_convolution = {
     .description   = NULL_IF_CONFIG_SMALL("Apply convolution filter."),
     .priv_size     = sizeof(ConvolutionContext),
     .priv_class    = &convolution_class,
-    .init          = init,
     FILTER_INPUTS(convolution_inputs),
     FILTER_OUTPUTS(convolution_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
@@ -986,7 +973,6 @@ const AVFilter ff_vf_prewitt = {
     .description   = NULL_IF_CONFIG_SMALL("Apply prewitt operator."),
     .priv_size     = sizeof(ConvolutionContext),
     .priv_class    = &common_class,
-    .init          = init,
     FILTER_INPUTS(convolution_inputs),
     FILTER_OUTPUTS(convolution_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
@@ -1003,7 +989,6 @@ const AVFilter ff_vf_sobel = {
     .description   = NULL_IF_CONFIG_SMALL("Apply sobel operator."),
     .priv_size     = sizeof(ConvolutionContext),
     .priv_class    = &common_class,
-    .init          = init,
     FILTER_INPUTS(convolution_inputs),
     FILTER_OUTPUTS(convolution_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
@@ -1020,7 +1005,6 @@ const AVFilter ff_vf_roberts = {
     .description   = NULL_IF_CONFIG_SMALL("Apply roberts cross operator."),
     .priv_size     = sizeof(ConvolutionContext),
     .priv_class    = &common_class,
-    .init          = init,
     FILTER_INPUTS(convolution_inputs),
     FILTER_OUTPUTS(convolution_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
@@ -1037,7 +1021,6 @@ const AVFilter ff_vf_kirsch = {
     .description   = NULL_IF_CONFIG_SMALL("Apply kirsch operator."),
     .priv_size     = sizeof(ConvolutionContext),
     .priv_class    = &common_class,
-    .init          = init,
     FILTER_INPUTS(convolution_inputs),
     FILTER_OUTPUTS(convolution_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
@@ -1054,7 +1037,6 @@ const AVFilter ff_vf_scharr = {
     .description   = NULL_IF_CONFIG_SMALL("Apply scharr operator."),
     .priv_size     = sizeof(ConvolutionContext),
     .priv_class    = &common_class,
-    .init          = init,
     FILTER_INPUTS(convolution_inputs),
     FILTER_OUTPUTS(convolution_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
