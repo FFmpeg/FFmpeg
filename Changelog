@@ -2,6 +2,21 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.4.1:
+- avcodec/flac_parser: Consider AV_INPUT_BUFFER_PADDING_SIZE
+- avcodec/ttadsp: Fix integer overflows in tta_filter_process_c()
+- avutil/mathematics: Document av_rescale_rnd() behavior on non int64 results
+- avcodec/utils: Ensure 8x8 alignment for ARGO in avcodec_align_dimensions2()
+- avformat/matroskadec: Reset state also on failure in matroska_reset_status()
+- avformat/wavdec: Check smv_block_size
+- avformat/rmdec: Check for multiple audio_stream_info
+- avcodec/apedec: Use 64bit to avoid overflow
+- avcodec/apedec: Fix undefined integer overflow in long_filter_ehigh_3830()
+- oavformat/avidec: Check offset in odml
+- avformat/mpegts: use actually read packet size in mpegts_resync special case
+- fftools/ffmpeg: Fix crash when flushing non-fully setup output stream
+- avfilter/scale_npp: fix non-aligned output frame dimensions
+- Revert "avformat/hlsenc: compute video_keyframe_size after write keyframe"
+- Changelog: update
 - swscale/alphablend: Fix slice handling
 - avcodec/apedec: Fix integer overflow in filter_fast_3320()
 - avformat/mov: Fix last mfra check
