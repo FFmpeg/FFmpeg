@@ -38,11 +38,6 @@
 #include "vf_nlmeans.h"
 #include "video.h"
 
-struct weighted_avg {
-    float total_weight;
-    float sum;
-};
-
 typedef struct NLMeansContext {
     const AVClass *class;
     int nb_planes;
@@ -329,6 +324,58 @@ struct thread_data {
     int p;
 };
 
+static void compute_weights_line_c(const uint32_t *const iia,
+                                   const uint32_t *const iib,
+                                   const uint32_t *const iid,
+                                   const uint32_t *const iie,
+                                   const uint8_t *const src,
+                                   struct weighted_avg *wa,
+                                   const float *const weight_lut,
+                                   int max_meaningful_diff,
+                                   int startx, int endx)
+{
+    for (int x = startx; x < endx; x++) {
+        /*
+         * M is a discrete map where every entry contains the sum of all the entries
+         * in the rectangle from the top-left origin of M to its coordinate. In the
+         * following schema, "i" contains the sum of the whole map:
+         *
+         * M = +----------+-----------------+----+
+         *     |          |                 |    |
+         *     |          |                 |    |
+         *     |         a|                b|   c|
+         *     +----------+-----------------+----+
+         *     |          |                 |    |
+         *     |          |                 |    |
+         *     |          |        X        |    |
+         *     |          |                 |    |
+         *     |         d|                e|   f|
+         *     +----------+-----------------+----+
+         *     |          |                 |    |
+         *     |         g|                h|   i|
+         *     +----------+-----------------+----+
+         *
+         * The sum of the X box can be calculated with:
+         *    X = e-d-b+a
+         *
+         * See https://en.wikipedia.org/wiki/Summed_area_table
+         *
+         * The compute*_ssd functions compute the integral image M where every entry
+         * contains the sum of the squared difference of every corresponding pixels of
+         * two input planes of the same size as M.
+         */
+        const uint32_t a = iia[x];
+        const uint32_t b = iib[x];
+        const uint32_t d = iid[x];
+        const uint32_t e = iie[x];
+        const uint32_t patch_diff_sq = FFMIN(e - d - b + a, max_meaningful_diff);
+        const float weight = weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
+
+        wa[x].total_weight += weight;
+        wa[x].sum += weight * src[x];
+    }
+}
+
 static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     NLMeansContext *s = ctx->priv;
@@ -346,50 +393,19 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int dist_d = dist_b * s->ii_lz_32;
     const int dist_e = dist_d + dist_b;
     const float *const weight_lut = s->weight_lut;
+    NLMeansDSPContext *dsp = &s->dsp;
 
     for (int y = starty; y < endy; y++) {
-        const uint8_t *src = td->src + y*src_linesize;
+        const uint8_t *const src = td->src + y*src_linesize;
         struct weighted_avg *wa = s->wa + y*s->wa_linesize;
-        for (int x = td->startx; x < td->endx; x++) {
-            /*
-             * M is a discrete map where every entry contains the sum of all the entries
-             * in the rectangle from the top-left origin of M to its coordinate. In the
-             * following schema, "i" contains the sum of the whole map:
-             *
-             * M = +----------+-----------------+----+
-             *     |          |                 |    |
-             *     |          |                 |    |
-             *     |         a|                b|   c|
-             *     +----------+-----------------+----+
-             *     |          |                 |    |
-             *     |          |                 |    |
-             *     |          |        X        |    |
-             *     |          |                 |    |
-             *     |         d|                e|   f|
-             *     +----------+-----------------+----+
-             *     |          |                 |    |
-             *     |         g|                h|   i|
-             *     +----------+-----------------+----+
-             *
-             * The sum of the X box can be calculated with:
-             *    X = e-d-b+a
-             *
-             * See https://en.wikipedia.org/wiki/Summed_area_table
-             *
-             * The compute*_ssd functions compute the integral image M where every entry
-             * contains the sum of the squared difference of every corresponding pixels of
-             * two input planes of the same size as M.
-             */
-            const uint32_t a = ii[x];
-            const uint32_t b = ii[x + dist_b];
-            const uint32_t d = ii[x + dist_d];
-            const uint32_t e = ii[x + dist_e];
-            const uint32_t patch_diff_sq = FFMIN(e - d - b + a, max_meaningful_diff);
-            const float weight = weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
+        const uint32_t *const iia = ii;
+        const uint32_t *const iib = ii + dist_b;
+        const uint32_t *const iid = ii + dist_d;
+        const uint32_t *const iie = ii + dist_e;
 
-            wa[x].total_weight += weight;
-            wa[x].sum += weight * src[x];
-        }
+        dsp->compute_weights_line(iia, iib, iid, iie, src, wa,
+                                  weight_lut, max_meaningful_diff,
+                                  td->startx, td->endx);
         ii += s->ii_lz_32;
     }
     return 0;
@@ -493,6 +509,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 void ff_nlmeans_init(NLMeansDSPContext *dsp)
 {
     dsp->compute_safe_ssd_integral_image = compute_safe_ssd_integral_image_c;
+    dsp->compute_weights_line = compute_weights_line_c;
 
     if (ARCH_AARCH64)
         ff_nlmeans_init_aarch64(dsp);

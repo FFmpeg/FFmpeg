@@ -22,11 +22,25 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct weighted_avg {
+    float total_weight;
+    float sum;
+};
+
 typedef struct NLMeansDSPContext {
     void (*compute_safe_ssd_integral_image)(uint32_t *dst, ptrdiff_t dst_linesize_32,
                                             const uint8_t *s1, ptrdiff_t linesize1,
                                             const uint8_t *s2, ptrdiff_t linesize2,
                                             int w, int h);
+    void (*compute_weights_line)(const uint32_t *const iia,
+                                 const uint32_t *const iib,
+                                 const uint32_t *const iid,
+                                 const uint32_t *const iie,
+                                 const uint8_t *const src,
+                                 struct weighted_avg *wa,
+                                 const float *const weight_lut,
+                                 int max_meaningful_diff,
+                                 int startx, int endx);
 } NLMeansDSPContext;
 
 void ff_nlmeans_init(NLMeansDSPContext *dsp);
