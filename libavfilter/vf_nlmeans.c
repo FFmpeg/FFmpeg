@@ -526,7 +526,7 @@ static av_cold int init(AVFilterContext *ctx)
     s->patch_hsize       = s->patch_size       / 2;
     s->patch_hsize_uv    = s->patch_size_uv    / 2;
 
-    av_log(ctx, AV_LOG_INFO, "Research window: %dx%d / %dx%d, patch size: %dx%d / %dx%d\n",
+    av_log(ctx, AV_LOG_DEBUG, "Research window: %dx%d / %dx%d, patch size: %dx%d / %dx%d\n",
            s->research_size, s->research_size, s->research_size_uv, s->research_size_uv,
            s->patch_size,    s->patch_size,    s->patch_size_uv,    s->patch_size_uv);
 
