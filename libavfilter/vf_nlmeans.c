@@ -101,14 +101,13 @@ static void compute_safe_ssd_integral_image_c(uint32_t *dst, ptrdiff_t dst_lines
                                               const uint8_t *s2, ptrdiff_t linesize2,
                                               int w, int h)
 {
-    int x, y;
     const uint32_t *dst_top = dst - dst_linesize_32;
 
     /* SIMD-friendly assumptions allowed here */
     av_assert2(!(w & 0xf) && w >= 16 && h >= 1);
 
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x += 4) {
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x += 4) {
             const int d0 = s1[x    ] - s2[x    ];
             const int d1 = s1[x + 1] - s2[x + 1];
             const int d2 = s1[x + 2] - s2[x + 2];
@@ -161,14 +160,12 @@ static inline void compute_unsafe_ssd_integral_image(uint32_t *dst, ptrdiff_t ds
                                                      int offx, int offy, int r, int sw, int sh,
                                                      int w, int h)
 {
-    int x, y;
-
-    for (y = starty; y < starty + h; y++) {
+    for (int y = starty; y < starty + h; y++) {
         uint32_t acc = dst[y*dst_linesize_32 + startx - 1] - dst[(y-1)*dst_linesize_32 + startx - 1];
         const int s1y = av_clip(y -  r,         0, sh - 1);
         const int s2y = av_clip(y - (r + offy), 0, sh - 1);
 
-        for (x = startx; x < startx + w; x++) {
+        for (int x = startx; x < startx + w; x++) {
             const int s1x = av_clip(x -  r,         0, sw - 1);
             const int s2x = av_clip(x - (r + offx), 0, sw - 1);
             const uint8_t v1 = src[s1y*linesize + s1x];
@@ -334,7 +331,6 @@ struct thread_data {
 
 static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    int x, y;
     NLMeansContext *s = ctx->priv;
     const struct thread_data *td = arg;
     const ptrdiff_t src_linesize = td->src_linesize;
@@ -349,10 +345,10 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int dist_d = dist_b * s->ii_lz_32;
     const int dist_e = dist_d + dist_b;
 
-    for (y = starty; y < endy; y++) {
+    for (int y = starty; y < endy; y++) {
         const uint8_t *src = td->src + y*src_linesize;
         struct weighted_avg *wa = s->wa + y*s->wa_linesize;
-        for (x = td->startx; x < td->endx; x++) {
+        for (int x = td->startx; x < td->endx; x++) {
             /*
              * M is a discrete map where every entry contains the sum of all the entries
              * in the rectangle from the top-left origin of M to its coordinate. In the
@@ -404,10 +400,8 @@ static void weight_averages(uint8_t *dst, ptrdiff_t dst_linesize,
                             struct weighted_avg *wa, ptrdiff_t wa_linesize,
                             int w, int h)
 {
-    int x, y;
-
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
             // Also weight the centered pixel
             wa[x].total_weight += 1.f;
             wa[x].sum += 1.f * src[x];
@@ -423,7 +417,6 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
                          uint8_t *dst, ptrdiff_t dst_linesize,
                          const uint8_t *src, ptrdiff_t src_linesize)
 {
-    int offx, offy;
     NLMeansContext *s = ctx->priv;
     /* patches center points cover the whole research window so the patches
      * themselves overflow the research window */
@@ -433,8 +426,8 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
 
     memset(s->wa, 0, s->wa_linesize * h * sizeof(*s->wa));
 
-    for (offy = -r; offy <= r; offy++) {
-        for (offx = -r; offx <= r; offx++) {
+    for (int offy = -r; offy <= r; offy++) {
+        for (int offx = -r; offx <= r; offx++) {
             if (offx || offy) {
                 struct thread_data td = {
                     .src          = src + offy*src_linesize + offx,
@@ -464,7 +457,6 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    int i;
     AVFilterContext *ctx = inlink->dst;
     NLMeansContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -476,7 +468,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    for (i = 0; i < s->nb_planes; i++) {
+    for (int i = 0; i < s->nb_planes; i++) {
         const int w = i ? s->chroma_w          : inlink->w;
         const int h = i ? s->chroma_h          : inlink->h;
         const int p = i ? s->patch_hsize_uv    : s->patch_hsize;
@@ -508,7 +500,6 @@ void ff_nlmeans_init(NLMeansDSPContext *dsp)
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    int i;
     NLMeansContext *s = ctx->priv;
     const double h = s->sigma * 10.;
 
@@ -517,7 +508,7 @@ static av_cold int init(AVFilterContext *ctx)
     s->weight_lut = av_calloc(s->max_meaningful_diff, sizeof(*s->weight_lut));
     if (!s->weight_lut)
         return AVERROR(ENOMEM);
-    for (i = 0; i < s->max_meaningful_diff; i++)
+    for (int i = 0; i < s->max_meaningful_diff; i++)
         s->weight_lut[i] = exp(-i * s->pdiff_scale);
 
     CHECK_ODD_FIELD(research_size,   "Luma research window");
