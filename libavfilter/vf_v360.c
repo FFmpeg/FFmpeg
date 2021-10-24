@@ -4961,7 +4961,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     V360Context *s = ctx->priv;
     int ret;
 
-    s->yaw = s->pitch = s->roll = 0.f;
+    if (s->reset_rot <= 0)
+        s->yaw = s->pitch = s->roll = 0.f;
     if (s->reset_rot < 0)
         s->reset_rot = 0;
 
