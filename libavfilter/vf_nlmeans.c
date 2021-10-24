@@ -308,9 +308,9 @@ static int config_input(AVFilterLink *inlink)
     s->ii = s->ii_orig + s->ii_lz_32 + 1;
 
     // allocate weighted average for every pixel
-    s->linesize = inlink->w;
-    s->total_weight = av_malloc_array(inlink->w, inlink->h * sizeof(*s->total_weight));
-    s->sum = av_malloc_array(inlink->w, inlink->h * sizeof(*s->sum));
+    s->linesize = inlink->w + 100;
+    s->total_weight = av_malloc_array(s->linesize, inlink->h * sizeof(*s->total_weight));
+    s->sum = av_malloc_array(s->linesize, inlink->h * sizeof(*s->sum));
     if (!s->total_weight || !s->sum)
         return AVERROR(ENOMEM);
 
@@ -519,6 +519,9 @@ void ff_nlmeans_init(NLMeansDSPContext *dsp)
 
     if (ARCH_AARCH64)
         ff_nlmeans_init_aarch64(dsp);
+
+    if (ARCH_X86)
+        ff_nlmeans_init_x86(dsp);
 }
 
 static av_cold int init(AVFilterContext *ctx)

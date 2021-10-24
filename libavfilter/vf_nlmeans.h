@@ -41,5 +41,6 @@ typedef struct NLMeansDSPContext {
 
 void ff_nlmeans_init(NLMeansDSPContext *dsp);
 void ff_nlmeans_init_aarch64(NLMeansDSPContext *dsp);
+void ff_nlmeans_init_x86(NLMeansDSPContext *dsp);
 
 #endif /* AVFILTER_NLMEANS_H */
