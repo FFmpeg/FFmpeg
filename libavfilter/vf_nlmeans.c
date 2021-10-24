@@ -332,6 +332,7 @@ struct thread_data {
 static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     NLMeansContext *s = ctx->priv;
+    const uint32_t max_meaningful_diff = s->max_meaningful_diff;
     const struct thread_data *td = arg;
     const ptrdiff_t src_linesize = td->src_linesize;
     const int process_h = td->endy - td->starty;
@@ -383,13 +384,11 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             const uint32_t b = ii[x + dist_b];
             const uint32_t d = ii[x + dist_d];
             const uint32_t e = ii[x + dist_e];
-            const uint32_t patch_diff_sq = e - d - b + a;
+            const uint32_t patch_diff_sq = FFMIN(e - d - b + a, max_meaningful_diff);
+            const float weight = weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
 
-            if (patch_diff_sq < s->max_meaningful_diff) {
-                const float weight = weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
-                wa[x].total_weight += weight;
-                wa[x].sum += weight * src[x];
-            }
+            wa[x].total_weight += weight;
+            wa[x].sum += weight * src[x];
         }
         ii += s->ii_lz_32;
     }
@@ -506,7 +505,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->pdiff_scale = 1. / (h * h);
     s->max_meaningful_diff = log(255.) / s->pdiff_scale;
-    s->weight_lut = av_calloc(s->max_meaningful_diff, sizeof(*s->weight_lut));
+    s->weight_lut = av_calloc(s->max_meaningful_diff + 1, sizeof(*s->weight_lut));
     if (!s->weight_lut)
         return AVERROR(ENOMEM);
     for (int i = 0; i < s->max_meaningful_diff; i++)
