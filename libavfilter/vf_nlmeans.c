@@ -344,6 +344,7 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int dist_b = 2*p + 1;
     const int dist_d = dist_b * s->ii_lz_32;
     const int dist_e = dist_d + dist_b;
+    const float *const weight_lut = s->weight_lut;
 
     for (int y = starty; y < endy; y++) {
         const uint8_t *src = td->src + y*src_linesize;
@@ -385,7 +386,7 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             const uint32_t patch_diff_sq = e - d - b + a;
 
             if (patch_diff_sq < s->max_meaningful_diff) {
-                const float weight = s->weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
+                const float weight = weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
                 wa[x].total_weight += weight;
                 wa[x].sum += weight * src[x];
             }
