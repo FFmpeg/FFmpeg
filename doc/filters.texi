@@ -15551,6 +15551,19 @@ Negate (invert) the input video.
 It accepts the following option:
 
 @table @option
+@item components
+Set components to negate.
+
+Available values for components are:
+@table @samp
+@item y
+@item u
+@item v
+@item a
+@item r
+@item g
+@item b
+@end table
 
 @item negate_alpha
 With value 1, it negates the alpha component, if present. Default value is 0.

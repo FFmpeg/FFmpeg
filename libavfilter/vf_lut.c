@@ -69,7 +69,6 @@ typedef struct LutContext {
     int is_planar;
     int is_16bit;
     int step;
-    int negate_alpha; /* only used by negate */
 } LutContext;
 
 #define Y 0
@@ -641,31 +640,4 @@ static av_cold int lutrgb_init(AVFilterContext *ctx)
 
 DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input video.",
                   lut);
-#endif
-
-#if CONFIG_NEGATE_FILTER
-
-static const AVOption negate_options[] = {
-    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
-    { NULL }
-};
-
-AVFILTER_DEFINE_CLASS(negate);
-
-static av_cold int negate_init(AVFilterContext *ctx)
-{
-    LutContext *s = ctx->priv;
-
-    for (int i = 0; i < 4; i++) {
-        s->comp_expr_str[i] = av_strdup((i == 3 && !s->negate_alpha) ?
-                                          "val" : "negval");
-        if (!s->comp_expr_str[i])
-            return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
-DEFINE_LUT_FILTER(negate, "Negate input video.", negate);
-
 #endif
