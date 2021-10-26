@@ -126,6 +126,7 @@ typedef struct HTTPContext {
     int is_multi_client;
     HandshakeState handshake_step;
     int is_connected_server;
+    int short_seek_size;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -167,6 +168,7 @@ static const AVOption options[] = {
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, D | E },
     { "resource", "The resource requested by a client", OFFSET(resource), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reply_code", "The http status code to return to a client", OFFSET(reply_code), AV_OPT_TYPE_INT, { .i64 = 200}, INT_MIN, 599, E},
+    { "short_seek_size", "Threshold to favor readahead over seek.", OFFSET(short_seek_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
     { NULL }
 };
 
@@ -1842,6 +1844,8 @@ static int http_get_file_handle(URLContext *h)
 static int http_get_short_seek(URLContext *h)
 {
     HTTPContext *s = h->priv_data;
+    if (s->short_seek_size >= 1)
+        return s->short_seek_size;
     return ffurl_get_short_seek(s->hd);
 }
 
