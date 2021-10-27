@@ -554,6 +554,24 @@ fail:
     return ret;
 }
 
+static void update_output_color_information(ZScaleContext *s, AVFrame *frame)
+{
+    if (s->colorspace != -1)
+        frame->colorspace = (int)s->dst_format.matrix_coefficients;
+
+    if (s->primaries != -1)
+        frame->color_primaries = (int)s->dst_format.color_primaries;
+
+    if (s->range != -1)
+        frame->color_range = convert_range_from_zimg(s->dst_format.pixel_range);
+
+    if (s->trc != -1)
+        frame->color_trc = (int)s->dst_format.transfer_characteristics;
+
+    if (s->chromal != -1)
+        frame->chroma_location = (int)s->dst_format.chroma_location - 1;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     ZScaleContext *s = link->dst->priv;
@@ -621,20 +639,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         format_init(&s->dst_format, out, odesc, s->colorspace,
                     s->primaries, s->trc, s->range, s->chromal);
 
-        if (s->colorspace != -1)
-            out->colorspace = (int)s->dst_format.matrix_coefficients;
-
-        if (s->primaries != -1)
-            out->color_primaries = (int)s->dst_format.color_primaries;
-
-        if (s->range != -1)
-            out->color_range = convert_range_from_zimg(s->dst_format.pixel_range);
-
-        if (s->trc != -1)
-            out->color_trc = (int)s->dst_format.transfer_characteristics;
-
-        if (s->chromal != -1)
-            out->chroma_location = (int)s->dst_format.chroma_location - 1;
+        update_output_color_information(s, out);
 
         ret = graph_build(&s->graph, &s->params, &s->src_format, &s->dst_format,
                           &s->tmp, &s->tmp_size);
@@ -680,17 +685,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         }
     }
 
-    if (s->colorspace != -1)
-        out->colorspace = (int)s->dst_format.matrix_coefficients;
-
-    if (s->primaries != -1)
-        out->color_primaries = (int)s->dst_format.color_primaries;
-
-    if (s->range != -1)
-        out->color_range = convert_range_from_zimg(s->dst_format.pixel_range);
-
-    if (s->trc != -1)
-        out->color_trc = (int)s->dst_format.transfer_characteristics;
+    update_output_color_information(s, out);
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
               (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
