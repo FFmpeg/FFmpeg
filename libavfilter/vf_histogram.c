@@ -85,8 +85,8 @@ static const AVOption histogram_options[] = {
     { "f",         "set foreground opacity", OFFSET(fgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.7}, 0, 1, FLAGS},
     { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
     { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
-    { "colors_mode", "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 6, FLAGS, "colors_mode"},
-    { "l",           "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 6, FLAGS, "colors_mode"},
+    { "colors_mode", "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 9, FLAGS, "colors_mode"},
+    { "l",           "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 9, FLAGS, "colors_mode"},
         { "whiteonblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "colors_mode" },
         { "blackonwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "colors_mode" },
         { "whiteongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "colors_mode" },
@@ -94,6 +94,9 @@ static const AVOption histogram_options[] = {
         { "coloronblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "colors_mode" },
         { "coloronwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=5}, 0, 0, FLAGS, "colors_mode" },
         { "colorongray" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=6}, 0, 0, FLAGS, "colors_mode" },
+        { "blackoncolor", NULL, 0, AV_OPT_TYPE_CONST, {.i64=7}, 0, 0, FLAGS, "colors_mode" },
+        { "whiteoncolor", NULL, 0, AV_OPT_TYPE_CONST, {.i64=8}, 0, 0, FLAGS, "colors_mode" },
+        { "grayoncolor" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=9}, 0, 0, FLAGS, "colors_mode" },
     { NULL }
 };
 
@@ -312,6 +315,41 @@ static int config_input(AVFilterLink *inlink)
                 memcpy(s->fg_color[1], blue_yuva_color,  4);
                 memcpy(s->fg_color[2], red_yuva_color,   4);
             }
+        } else if (s->colors_mode == 7) {
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    FFSWAP(uint8_t, s->fg_color[i][j], s->bg_color[i][j]);
+            if (rgb) {
+                memcpy(s->bg_color[0], red_gbrp_color,   4);
+                memcpy(s->bg_color[1], green_gbrp_color, 4);
+                memcpy(s->bg_color[2], blue_gbrp_color,  4);
+            } else {
+                memcpy(s->bg_color[0], green_yuva_color, 4);
+                memcpy(s->bg_color[1], blue_yuva_color,  4);
+                memcpy(s->bg_color[2], red_yuva_color,   4);
+            }
+        } else if (s->colors_mode == 8) {
+            if (rgb) {
+                memcpy(s->bg_color[0], red_gbrp_color,   4);
+                memcpy(s->bg_color[1], green_gbrp_color, 4);
+                memcpy(s->bg_color[2], blue_gbrp_color,  4);
+            } else {
+                memcpy(s->bg_color[0], igreen_yuva_color,4);
+                memcpy(s->bg_color[1], blue_yuva_color,  4);
+                memcpy(s->bg_color[2], red_yuva_color,   4);
+            }
+        } else if (s->colors_mode == 9) {
+            for (int i = 0; i < 4; i++)
+                memcpy(s->fg_color[i], gray_color, 4);
+            if (rgb) {
+                memcpy(s->bg_color[0], red_gbrp_color,   4);
+                memcpy(s->bg_color[1], green_gbrp_color, 4);
+                memcpy(s->bg_color[2], blue_gbrp_color,  4);
+            } else {
+                memcpy(s->bg_color[0], igreen_yuva_color,4);
+                memcpy(s->bg_color[1], blue_yuva_color,  4);
+                memcpy(s->bg_color[2], red_yuva_color,   4);
+            }
         }
     }
 
@@ -517,6 +555,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                             out->data[p][(j + starty) * out->linesize[p] + startx + i] = 255;
                         }
                     }
+                    if (s->display_mode) {
+                        for (j = col_height - 1; j >= 0; j--) {
+                            for (l = 0; l < s->dncomp; l++)
+                                out->data[l][(j + starty) * out->linesize[l] + startx + i] = s->bg_color[p][l];
+                        }
+                    }
                     for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)
                         for (l = 0; l < s->dncomp; l++)
                             out->data[l][(j + starty) * out->linesize[l] + startx + i] = p == l ? i : mid;
@@ -529,6 +573,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, s->fg_color[p][l] * mult);
                         } else {
                             AV_WN16(out->data[p] + (j + starty) * out->linesize[p] + startx * 2 + i * 2, 255 * mult);
+                        }
+                    }
+                    if (s->display_mode) {
+                        for (j = col_height - 1; j >= 0; j--) {
+                            for (l = 0; l < s->dncomp; l++)
+                                AV_WN16(out->data[l] + (j + starty) * out->linesize[l] + startx * 2 + i * 2, s->bg_color[p][l] * mult);
                         }
                     }
                     for (j = s->level_height + s->scale_height - 1; j >= s->level_height; j--)

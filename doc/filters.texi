@@ -13515,6 +13515,9 @@ It accepts the following values:
 @item coloronblack
 @item coloronwhite
 @item colorongray
+@item blackoncolor
+@item whiteoncolor
+@item grayoncolor
 @end table
 Default is @code{whiteonblack}.
 @end table
