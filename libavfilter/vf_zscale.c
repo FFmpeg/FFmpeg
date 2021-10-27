@@ -569,7 +569,7 @@ static void update_output_color_information(ZScaleContext *s, AVFrame *frame)
         frame->color_trc = (int)s->dst_format.transfer_characteristics;
 
     if (s->chromal != -1)
-        frame->chroma_location = (int)s->dst_format.chroma_location - 1;
+        frame->chroma_location = (int)s->dst_format.chroma_location + 1;
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
