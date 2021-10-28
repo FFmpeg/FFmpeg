@@ -31,7 +31,7 @@
 
 /*
  * @file
- * Caculate the SSIM between two input videos.
+ * Calculate the SSIM between two input videos.
  */
 
 #include "libavutil/avstring.h"

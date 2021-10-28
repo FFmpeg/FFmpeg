@@ -22,7 +22,7 @@
 
 /**
  * @file
- * Caculate the PSNR between two input videos.
+ * Calculate the PSNR between two input videos.
  */
 
 #include "libavutil/avstring.h"
