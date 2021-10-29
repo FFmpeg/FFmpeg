@@ -22,11 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct weighted_avg {
-    float total_weight;
-    float sum;
-};
-
 typedef struct NLMeansDSPContext {
     void (*compute_safe_ssd_integral_image)(uint32_t *dst, ptrdiff_t dst_linesize_32,
                                             const uint8_t *s1, ptrdiff_t linesize1,
@@ -37,7 +32,8 @@ typedef struct NLMeansDSPContext {
                                  const uint32_t *const iid,
                                  const uint32_t *const iie,
                                  const uint8_t *const src,
-                                 struct weighted_avg *wa,
+                                 float *total_weight,
+                                 float *sum,
                                  const float *const weight_lut,
                                  int max_meaningful_diff,
                                  int startx, int endx);
