@@ -6821,7 +6821,8 @@ enabled alsa && { check_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimesta
 enabled libjack &&
     require_pkg_config libjack jack jack/jack.h jack_port_get_latency_range
 
-enabled sndio && check_lib sndio sndio.h sio_open -lsndio
+enabled sndio && { check_pkg_config sndio sndio "sndio.h" sio_open ||
+                   check_lib sndio sndio.h sio_open -lsndio; }
 
 if enabled libcdio; then
     check_pkg_config libcdio libcdio_paranoia "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open ||
