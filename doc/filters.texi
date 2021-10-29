@@ -13735,15 +13735,15 @@ The filter accepts the following options:
 
 @table @option
 @item hue
-Set the hue value which will be used if color difference calculation.
+Set the hue value which will be used in color difference calculation.
 Allowed range is from -360 to 360. Default value is 0.
 
 @item sat
-Set the saturation value which will be used if color difference calculation.
+Set the saturation value which will be used in color difference calculation.
 Allowed range is from -1 to 1. Default value is 0.
 
 @item val
-Set the value which will be used if color difference calculation.
+Set the value which will be used in color difference calculation.
 Allowed range is from -1 to 1. Default value is 0.
 
 @item similarity
@@ -13773,15 +13773,15 @@ The filter accepts the following options:
 
 @table @option
 @item hue
-Set the hue value which will be used if color difference calculation.
+Set the hue value which will be used in color difference calculation.
 Allowed range is from -360 to 360. Default value is 0.
 
 @item sat
-Set the saturation value which will be used if color difference calculation.
+Set the saturation value which will be used in color difference calculation.
 Allowed range is from -1 to 1. Default value is 0.
 
 @item val
-Set the value which will be used if color difference calculation.
+Set the value which will be used in color difference calculation.
 Allowed range is from -1 to 1. Default value is 0.
 
 @item similarity
