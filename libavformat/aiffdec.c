@@ -120,6 +120,9 @@ static int get_aiff_header(AVFormatContext *s, int size,
         sample_rate = val << exp;
     else
         sample_rate = (val + (1ULL<<(-exp-1))) >> -exp;
+    if (sample_rate <= 0)
+        return AVERROR_INVALIDDATA;
+
     par->sample_rate = sample_rate;
     if (size < 18)
         return AVERROR_INVALIDDATA;
