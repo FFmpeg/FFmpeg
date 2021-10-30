@@ -185,8 +185,10 @@ static int get_aiff_header(AVFormatContext *s, int size,
         par->block_align = (av_get_bits_per_sample(par->codec_id) * par->channels) >> 3;
 
     if (aiff->block_duration) {
-        par->bit_rate = (int64_t)par->sample_rate * (par->block_align << 3) /
-                        aiff->block_duration;
+        par->bit_rate = av_rescale(par->sample_rate, par->block_align * 8LL,
+                                   aiff->block_duration);
+        if (par->bit_rate < 0)
+            par->bit_rate = 0;
     }
 
     /* Chunk is over */
