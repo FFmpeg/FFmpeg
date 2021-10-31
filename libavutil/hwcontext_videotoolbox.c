@@ -375,10 +375,11 @@ static int vt_pixbuf_set_colorspace(AVHWFramesContext *hwfc,
     switch (src->colorspace) {
     case AVCOL_SPC_BT2020_CL:
     case AVCOL_SPC_BT2020_NCL:
-        if (__builtin_available(macOS 10.11, *))
-            colormatrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
-        else
-            colormatrix = CFSTR("ITU_R_2020");
+#if HAVE_KCVIMAGEBUFFERYCBCRMATRIX_ITU_R_2020
+        colormatrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
+#else
+        colormatrix = CFSTR("ITU_R_2020");
+#endif
         break;
     case AVCOL_SPC_BT470BG:
     case AVCOL_SPC_SMPTE170M:
@@ -398,10 +399,11 @@ static int vt_pixbuf_set_colorspace(AVHWFramesContext *hwfc,
 
     switch (src->color_primaries) {
     case AVCOL_PRI_BT2020:
-        if (__builtin_available(macOS 10.11, *))
-            colorpri = kCVImageBufferColorPrimaries_ITU_R_2020;
-        else
-            colorpri = CFSTR("ITU_R_2020");
+#if HAVE_KCVIMAGEBUFFERCOLORPRIMARIES_ITU_R_2020
+        colorpri = kCVImageBufferColorPrimaries_ITU_R_2020;
+#else
+        colorpri = CFSTR("ITU_R_2020");
+#endif
         break;
     case AVCOL_PRI_BT709:
         colorpri = kCVImageBufferColorPrimaries_ITU_R_709_2;
@@ -420,17 +422,19 @@ static int vt_pixbuf_set_colorspace(AVHWFramesContext *hwfc,
 
     switch (src->color_trc) {
     case AVCOL_TRC_SMPTE2084:
-        if (__builtin_available(macOS 10.13, *))
-            colortrc = kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
-        else
-            colortrc = CFSTR("SMPTE_ST_2084_PQ");
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_2084_PQ
+        colortrc = kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
+#else
+        colortrc = CFSTR("SMPTE_ST_2084_PQ");
+#endif
         break;
     case AVCOL_TRC_BT2020_10:
     case AVCOL_TRC_BT2020_12:
-        if (__builtin_available(macOS 10.11, *))
-            colortrc = kCVImageBufferTransferFunction_ITU_R_2020;
-        else
-            colortrc = CFSTR("ITU_R_2020");
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2020
+        colortrc = kCVImageBufferTransferFunction_ITU_R_2020;
+#else
+        colortrc = CFSTR("ITU_R_2020");
+#endif
         break;
     case AVCOL_TRC_BT709:
         colortrc = kCVImageBufferTransferFunction_ITU_R_709_2;
@@ -439,16 +443,18 @@ static int vt_pixbuf_set_colorspace(AVHWFramesContext *hwfc,
         colortrc = kCVImageBufferTransferFunction_SMPTE_240M_1995;
         break;
     case AVCOL_TRC_SMPTE428:
-        if (__builtin_available(macOS 10.12, *))
-            colortrc = kCVImageBufferTransferFunction_SMPTE_ST_428_1;
-        else
-            colortrc = CFSTR("SMPTE_ST_428_1");
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_428_1
+        colortrc = kCVImageBufferTransferFunction_SMPTE_ST_428_1;
+#else
+        colortrc = CFSTR("SMPTE_ST_428_1");
+#endif
         break;
     case AVCOL_TRC_ARIB_STD_B67:
-        if (__builtin_available(macOS 10.13, *))
-            colortrc = kCVImageBufferTransferFunction_ITU_R_2100_HLG;
-        else
-            colortrc = CFSTR("ITU_R_2100_HLG");
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+        colortrc = kCVImageBufferTransferFunction_ITU_R_2100_HLG;
+#else
+        colortrc = CFSTR("ITU_R_2100_HLG");
+#endif
         break;
     case AVCOL_TRC_GAMMA22:
         gamma = 2.2;

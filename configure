@@ -2329,6 +2329,10 @@ TYPES_LIST="
     kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ
     kCVImageBufferTransferFunction_ITU_R_2100_HLG
     kCVImageBufferTransferFunction_Linear
+    kCVImageBufferYCbCrMatrix_ITU_R_2020
+    kCVImageBufferColorPrimaries_ITU_R_2020
+    kCVImageBufferTransferFunction_ITU_R_2020
+    kCVImageBufferTransferFunction_SMPTE_ST_428_1
     socklen_t
     struct_addrinfo
     struct_group_source_req
@@ -6273,6 +6277,10 @@ enabled videotoolbox && {
     check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ "-framework CoreVideo"
     check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_ITU_R_2100_HLG "-framework CoreVideo"
     check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_Linear "-framework CoreVideo"
+    check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferYCbCrMatrix_ITU_R_2020 "-framework CoreVideo"
+    check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferColorPrimaries_ITU_R_2020 "-framework CoreVideo"
+    check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_ITU_R_2020 "-framework CoreVideo"
+    check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_SMPTE_ST_428_1 "-framework CoreVideo"
 }
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
