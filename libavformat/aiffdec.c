@@ -310,7 +310,7 @@ static int aiff_read_header(AVFormatContext *s)
             break;
         case MKTAG('w', 'a', 'v', 'e'):
             if ((uint64_t)size > (1<<30))
-                return -1;
+                return AVERROR_INVALIDDATA;
             if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0)
                 return ret;
             if (   (st->codecpar->codec_id == AV_CODEC_ID_QDMC || st->codecpar->codec_id == AV_CODEC_ID_QDM2)
@@ -372,7 +372,7 @@ got_sound:
         st->codecpar->block_align = 35;
     } else if (st->codecpar->block_align <= 0) {
         av_log(s, AV_LOG_ERROR, "could not find COMM tag or invalid block_align value\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* Now positioned, get the sound data start and end */
