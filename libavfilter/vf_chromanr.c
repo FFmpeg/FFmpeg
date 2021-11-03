@@ -72,7 +72,8 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-#define SQR(x) ((x)*(x))
+#define MANHATTAN_DISTANCE(x, y, z) ((x) + (y) + (z))
+#define EUCLIDEAN_DISTANCE(x, y, z) (sqrtf((x)*(x) + (y)*(y) + (z)*(z)))
 
 #define FILTER_FUNC(distance, name, ctype, type, fun)                                    \
 static int distance ## _slice##name(AVFilterContext *ctx, void *arg,                     \
@@ -136,19 +137,22 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
             int sv = cv;                                                                 \
             int cn = 1;                                                                  \
                                                                                          \
-            for (int yy = FFMAX(0, y - sizeh); yy < FFMIN(y + sizeh, h); yy += steph) {           \
+            for (int yy = FFMAX(0, y - sizeh); yy <= FFMIN(y + sizeh, h - 1); yy += steph) {      \
                 const type *in_yptr = (const type *)(in->data[0] + yy * chroma_h * in_ylinesize); \
                 const type *in_uptr = (const type *)(in->data[1] + yy * in_ulinesize);            \
                 const type *in_vptr = (const type *)(in->data[2] + yy * in_vlinesize);            \
                                                                                                   \
-                for (int xx = FFMAX(0, x - sizew); xx < FFMIN(x + sizew, w); xx += stepw) {       \
+                for (int xx = FFMAX(0, x - sizew); xx <= FFMIN(x + sizew, w - 1); xx += stepw) {  \
                     const ctype Y = in_yptr[xx * chroma_w];                            \
                     const ctype U = in_uptr[xx];                                       \
                     const ctype V = in_vptr[xx];                                       \
+                    const ctype cyY = FFABS(cy - Y);                                   \
+                    const ctype cuU = FFABS(cu - U);                                   \
+                    const ctype cvV = FFABS(cv - V);                                   \
                                                                                        \
-                    if (fun(cu - U) + fun(cv - V) + fun(cy - Y) < thres &&             \
-                        fun(cu - U) < thres_u && fun(cv - V) < thres_v &&              \
-                        fun(cy - Y) < thres_y &&                                       \
+                    if (fun(cyY, cuU, cvV) < thres &&                                  \
+                        cuU < thres_u && cvV < thres_v &&                              \
+                        cyY < thres_y &&                                               \
                         xx != x && yy != y) {                                          \
                         su += U;                                                       \
                         sv += V;                                                       \
@@ -168,11 +172,11 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
     return 0;                                                                          \
 }
 
-FILTER_FUNC(manhattan, 8,  int, uint8_t, FFABS)
-FILTER_FUNC(manhattan, 16, int, uint16_t, FFABS)
+FILTER_FUNC(manhattan, 8,  int, uint8_t, MANHATTAN_DISTANCE)
+FILTER_FUNC(manhattan, 16, int, uint16_t, MANHATTAN_DISTANCE)
 
-FILTER_FUNC(euclidean, 8,  int, uint8_t, SQR)
-FILTER_FUNC(euclidean, 16, int64_t, uint16_t, SQR)
+FILTER_FUNC(euclidean, 8,  int, uint8_t, EUCLIDEAN_DISTANCE)
+FILTER_FUNC(euclidean, 16, int64_t, uint16_t, EUCLIDEAN_DISTANCE)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -238,14 +242,14 @@ static int config_input(AVFilterLink *inlink)
 #define VF AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption chromanr_options[] = {
-    { "thres", "set y+u+v threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=30}, 1,  5000, VF },
+    { "thres", "set y+u+v threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=30}, 1,   200, VF },
     { "sizew", "set horizontal size", OFFSET(sizew),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
     { "sizeh", "set vertical size",   OFFSET(sizeh),     AV_OPT_TYPE_INT,   {.i64=5},  1,   100, VF },
     { "stepw", "set horizontal step", OFFSET(stepw),     AV_OPT_TYPE_INT,   {.i64=1},  1,    50, VF },
     { "steph", "set vertical step",   OFFSET(steph),     AV_OPT_TYPE_INT,   {.i64=1},  1,    50, VF },
-    { "threy", "set y threshold",   OFFSET(threshold_y), AV_OPT_TYPE_FLOAT, {.dbl=5000},1, 5000, VF },
-    { "threu", "set u threshold",   OFFSET(threshold_u), AV_OPT_TYPE_FLOAT, {.dbl=5000},1, 5000, VF },
-    { "threv", "set v threshold",   OFFSET(threshold_v), AV_OPT_TYPE_FLOAT, {.dbl=5000},1, 5000, VF },
+    { "threy", "set y threshold",   OFFSET(threshold_y), AV_OPT_TYPE_FLOAT, {.dbl=200},1,   200, VF },
+    { "threu", "set u threshold",   OFFSET(threshold_u), AV_OPT_TYPE_FLOAT, {.dbl=200},1,   200, VF },
+    { "threv", "set v threshold",   OFFSET(threshold_v), AV_OPT_TYPE_FLOAT, {.dbl=200},1,   200, VF },
     { "distance", "set distance type", OFFSET(distance), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, VF, "distance" },
     {   "manhattan", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, VF, "distance" },
     {   "euclidean", "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, VF, "distance" },
