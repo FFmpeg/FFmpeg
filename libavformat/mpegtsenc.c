@@ -1852,12 +1852,12 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     if (side_data)
         stream_id = side_data[0];
 
-    if (ts->copyts < 1) {
-        if (!ts->first_dts_checked && dts != AV_NOPTS_VALUE) {
-            ts->first_pcr += dts * 300;
-            ts->first_dts_checked = 1;
-        }
+    if (!ts->first_dts_checked && dts != AV_NOPTS_VALUE) {
+        ts->first_pcr += dts * 300;
+        ts->first_dts_checked = 1;
+    }
 
+    if (ts->copyts < 1) {
         if (pts != AV_NOPTS_VALUE)
             pts += delay;
         if (dts != AV_NOPTS_VALUE)
