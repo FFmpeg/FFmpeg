@@ -911,7 +911,7 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
 }
 
 #define rdpx(src) \
-    is_be ? AV_RB16(src) : AV_RL16(src)
+    (is_be ? AV_RB16(src) : AV_RL16(src))
 static av_always_inline void planar_rgb16_to_y(uint8_t *_dst, const uint8_t *_src[4],
                                                int width, int bpc, int is_be, int32_t *rgb2yuv)
 {
