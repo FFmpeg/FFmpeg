@@ -74,7 +74,7 @@ enum VulkanExtensions {
     /* Device */                                                                   \
     MACRO(1, 0, EXT_NO_FLAG,              GetDeviceProcAddr)                       \
     MACRO(1, 0, EXT_NO_FLAG,              CreateDevice)                            \
-    MACRO(1, 0, EXT_NO_FLAG,              GetPhysicalDeviceFeatures)               \
+    MACRO(1, 0, EXT_NO_FLAG,              GetPhysicalDeviceFeatures2)              \
     MACRO(1, 0, EXT_NO_FLAG,              DestroyDevice)                           \
                                                                                    \
     MACRO(1, 0, EXT_NO_FLAG,              EnumeratePhysicalDevices)                \
@@ -197,6 +197,10 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceProperties2 props;
     VkPhysicalDeviceMemoryProperties mprops;
     VkPhysicalDeviceExternalMemoryHostPropertiesEXT hprops;
+
+    /* Features */
+    VkPhysicalDeviceVulkan11Features device_features_1_1;
+    VkPhysicalDeviceVulkan12Features device_features_1_2;
 
     /* Queues */
     uint32_t qfs[3];
@@ -1176,7 +1180,7 @@ err:
 }
 
 static int submit_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
-                           VkSubmitInfo *s_info, int synchronous)
+                           VkSubmitInfo *s_info, AVVkFrame *f, int synchronous)
 {
     VkResult ret;
     VulkanQueueCtx *q = &cmd->queues[cmd->cur_queue_idx];
@@ -1199,6 +1203,10 @@ static int submit_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
         unref_exec_ctx_deps(hwfc, cmd);
         return AVERROR_EXTERNAL;
     }
+
+    if (f)
+        for (int i = 0; i < s_info->signalSemaphoreCount; i++)
+            f->sem_value[i]++;
 
     q->was_synchronous = synchronous;
 
@@ -1250,7 +1258,17 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFunctions *vk = &p->vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    VkPhysicalDeviceFeatures dev_features = { 0 };
+    VkPhysicalDeviceVulkan12Features dev_features_1_2 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+    };
+    VkPhysicalDeviceVulkan11Features dev_features_1_1 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+        .pNext = &dev_features_1_2,
+    };
+    VkPhysicalDeviceFeatures2 dev_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = &dev_features_1_1,
+    };
     VkDeviceQueueCreateInfo queue_create_info[3] = {
         { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
         { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
@@ -1265,6 +1283,10 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     };
 
     hwctx->device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    hwctx->device_features.pNext = &p->device_features_1_1;
+    p->device_features_1_1.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    p->device_features_1_1.pNext = &p->device_features_1_2;
+    p->device_features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
     ctx->free = vulkan_device_free;
 
     /* Create an instance if not given one */
@@ -1275,10 +1297,10 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     if ((err = find_device(ctx, dev_select)))
         goto end;
 
-    vk->GetPhysicalDeviceFeatures(hwctx->phys_dev, &dev_features);
+    vk->GetPhysicalDeviceFeatures2(hwctx->phys_dev, &dev_features);
 
     /* Try to keep in sync with libplacebo */
-#define COPY_FEATURE(DST, NAME) (DST).features.NAME = dev_features.NAME;
+#define COPY_FEATURE(DST, NAME) (DST).features.NAME = dev_features.features.NAME;
     COPY_FEATURE(hwctx->device_features, shaderImageGatherExtended)
     COPY_FEATURE(hwctx->device_features, shaderStorageImageReadWithoutFormat)
     COPY_FEATURE(hwctx->device_features, shaderStorageImageWriteWithoutFormat)
@@ -1286,6 +1308,13 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     COPY_FEATURE(hwctx->device_features, vertexPipelineStoresAndAtomics)
     COPY_FEATURE(hwctx->device_features, shaderInt64)
 #undef COPY_FEATURE
+
+    /* We require timeline semaphores */
+    if (!dev_features_1_2.timelineSemaphore) {
+        av_log(ctx, AV_LOG_ERROR, "Device does not support timeline semaphores!\n");
+        err = AVERROR(ENOSYS);
+    }
+    p->device_features_1_2.timelineSemaphore = 1;
 
     /* Search queue family */
     if ((err = search_queue_families(ctx, &dev_info)))
@@ -1732,18 +1761,28 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
     VulkanFunctions *vk = &p->vkfn;
+    uint64_t sem_sig_val[AV_NUM_DATA_POINTERS];
 
     VkImageMemoryBarrier img_bar[AV_NUM_DATA_POINTERS] = { 0 };
 
+    VkTimelineSemaphoreSubmitInfo s_timeline_sem_info = {
+        .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+        .pSignalSemaphoreValues = sem_sig_val,
+        .signalSemaphoreValueCount = planes,
+    };
+
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext                = &s_timeline_sem_info,
         .pSignalSemaphores    = frame->sem,
         .signalSemaphoreCount = planes,
     };
 
     VkPipelineStageFlagBits wait_st[AV_NUM_DATA_POINTERS];
-    for (int i = 0; i < planes; i++)
+    for (int i = 0; i < planes; i++) {
         wait_st[i] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        sem_sig_val[i] = frame->sem_value[i] + 1;
+    }
 
     switch (pmode) {
     case PREP_MODE_WRITE:
@@ -1760,6 +1799,8 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         new_layout = VK_IMAGE_LAYOUT_GENERAL;
         new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
         dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
+        s_timeline_sem_info.pWaitSemaphoreValues = frame->sem_value;
+        s_timeline_sem_info.waitSemaphoreValueCount = planes;
         s_info.pWaitSemaphores = frame->sem;
         s_info.pWaitDstStageMask = wait_st;
         s_info.waitSemaphoreCount = planes;
@@ -1794,7 +1835,7 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
                            VK_PIPELINE_STAGE_TRANSFER_BIT,
                            0, 0, NULL, 0, NULL, planes, img_bar);
 
-    return submit_exec_ctx(hwfc, ectx, &s_info, 0);
+    return submit_exec_ctx(hwfc, ectx, &s_info, frame, 0);
 }
 
 static inline void get_plane_wh(int *w, int *h, enum AVPixelFormat format,
@@ -1833,9 +1874,16 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
         .handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
     };
 
+    VkSemaphoreTypeCreateInfo sem_type_info = {
+        .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+        .pNext         = p->extensions & EXT_EXTERNAL_FD_SEM ? &ext_sem_info : NULL,
+        .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+        .initialValue  = 0,
+    };
+
     VkSemaphoreCreateInfo sem_spawn = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = p->extensions & EXT_EXTERNAL_FD_SEM ? &ext_sem_info : NULL,
+        .pNext = &sem_type_info,
     };
 
     AVVkFrame *f = av_vk_frame_alloc();
@@ -1888,6 +1936,7 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
 
         f->layout[i] = create_info.initialLayout;
         f->access[i] = 0x0;
+        f->sem_value[i] = 0;
     }
 
     f->flags     = 0x0;
@@ -2315,8 +2364,15 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .handleTypes = htype,
         };
 
+        VkSemaphoreTypeCreateInfo sem_type_info = {
+            .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+            .initialValue  = 1,
+        };
+
         VkSemaphoreCreateInfo sem_spawn = {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = &sem_type_info,
         };
 
         VkImageCreateInfo create_info = {
@@ -2374,6 +2430,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
 
         f->layout[i] = create_info.initialLayout;
         f->access[i] = 0x0;
+        f->sem_value[i] = 0;
     }
 
     for (int i = 0; i < desc->nb_objects; i++) {
@@ -3224,14 +3281,28 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
     VulkanExecCtx *ectx = to_buf ? &fp->download_ctx : &fp->upload_ctx;
     VkCommandBuffer cmd_buf = get_buf_exec_ctx(hwfc, ectx);
 
+    uint64_t sem_signal_values[AV_NUM_DATA_POINTERS];
+
+    VkTimelineSemaphoreSubmitInfo s_timeline_sem_info = {
+        .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+        .pWaitSemaphoreValues = frame->sem_value,
+        .pSignalSemaphoreValues = sem_signal_values,
+        .waitSemaphoreValueCount = planes,
+        .signalSemaphoreValueCount = planes,
+    };
+
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext                = &s_timeline_sem_info,
         .pSignalSemaphores    = frame->sem,
         .pWaitSemaphores      = frame->sem,
         .pWaitDstStageMask    = sem_wait_dst,
         .signalSemaphoreCount = planes,
         .waitSemaphoreCount   = planes,
     };
+
+    for (int i = 0; i < planes; i++)
+        sem_signal_values[i] = frame->sem_value[i] + 1;
 
     if ((err = wait_start_exec_ctx(hwfc, ectx)))
         return err;
@@ -3313,9 +3384,9 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, const AVFrame *f,
         }
         if (ref && (err = add_buf_dep_exec_ctx(hwfc, ectx, bufs, planes)))
             return err;
-        return submit_exec_ctx(hwfc, ectx, &s_info, !ref);
+        return submit_exec_ctx(hwfc, ectx, &s_info, frame, !ref);
     } else {
-        return submit_exec_ctx(hwfc, ectx, &s_info,    1);
+        return submit_exec_ctx(hwfc, ectx, &s_info, frame,    1);
     }
 }
 

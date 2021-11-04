@@ -195,12 +195,21 @@ typedef struct AVVkFrame {
     VkImageLayout layout[AV_NUM_DATA_POINTERS];
 
     /**
-     * Synchronization semaphores. Must not be freed manually. Must be waited on
-     * and signalled at every queue submission.
+     * Synchronization timeline semaphores. Must not be freed manually.
+     * Must be waited on at every submission using the value in sem_value,
+     * and must be signalled at every submission, using an incremented value.
+     *
      * Could be less than the amount of images: either one per VkDeviceMemory
      * or one for the entire frame. All others will be set to VK_NULL_HANDLE.
      */
     VkSemaphore sem[AV_NUM_DATA_POINTERS];
+
+    /**
+     * Up to date semaphore value at which each image becomes accessible.
+     * Clients must wait on this value when submitting a command queue,
+     * and increment it when signalling.
+     */
+    uint64_t sem_value[AV_NUM_DATA_POINTERS];
 
     /**
      * Internal data.
