@@ -148,12 +148,18 @@ typedef struct FFVkExecContext {
     int sem_wait_alloc; /* Allocated sem_wait */
     int sem_wait_cnt;
 
+    uint64_t *sem_wait_val;
+    int sem_wait_val_alloc;
+
     VkPipelineStageFlagBits *sem_wait_dst;
     int sem_wait_dst_alloc; /* Allocated sem_wait_dst */
 
     VkSemaphore *sem_sig;
     int sem_sig_alloc; /* Allocated sem_sig */
     int sem_sig_cnt;
+
+    uint64_t *sem_sig_val;
+    int sem_sig_val_alloc;
 } FFVkExecContext;
 
 typedef struct VulkanFilterContext {

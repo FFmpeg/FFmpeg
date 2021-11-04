@@ -486,6 +486,13 @@ int ff_vk_add_exec_dep(AVFilterContext *avctx, FFVkExecContext *e,
             return AVERROR(ENOMEM);
         }
 
+        e->sem_wait_val = av_fast_realloc(e->sem_wait_val, &e->sem_wait_val_alloc,
+                                          (e->sem_wait_cnt + 1)*sizeof(*e->sem_wait_val));
+        if (!e->sem_wait_val) {
+            ff_vk_discard_exec_deps(avctx, e);
+            return AVERROR(ENOMEM);
+        }
+
         e->sem_sig = av_fast_realloc(e->sem_sig, &e->sem_sig_alloc,
                                      (e->sem_sig_cnt + 1)*sizeof(*e->sem_sig));
         if (!e->sem_sig) {
@@ -493,11 +500,23 @@ int ff_vk_add_exec_dep(AVFilterContext *avctx, FFVkExecContext *e,
             return AVERROR(ENOMEM);
         }
 
+        e->sem_sig_val = av_fast_realloc(e->sem_sig_val, &e->sem_sig_val_alloc,
+                                         (e->sem_sig_cnt + 1)*sizeof(*e->sem_sig_val));
+        if (!e->sem_sig_val) {
+            ff_vk_discard_exec_deps(avctx, e);
+            return AVERROR(ENOMEM);
+        }
+
         e->sem_wait[e->sem_wait_cnt] = f->sem[i];
         e->sem_wait_dst[e->sem_wait_cnt] = in_wait_dst_flag;
+        e->sem_wait_val[e->sem_wait_cnt] = f->sem_value[i];
         e->sem_wait_cnt++;
 
+        /* TODO: fix this in case execution fails */
+        f->sem_value[i]++;
+
         e->sem_sig[e->sem_sig_cnt] = f->sem[i];
+        e->sem_sig_val[e->sem_sig_cnt] = f->sem_value[i];
         e->sem_sig_cnt++;
     }
 
@@ -525,8 +544,18 @@ int ff_vk_submit_exec_queue(AVFilterContext *avctx, FFVkExecContext *e)
     VulkanFilterContext *s = avctx->priv;
     FFVkQueueCtx *q = &e->queues[s->cur_queue_idx];
 
+    VkTimelineSemaphoreSubmitInfo s_timeline_sem_info = {
+        .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+        .pWaitSemaphoreValues = e->sem_wait_val,
+        .pSignalSemaphoreValues = e->sem_sig_val,
+        .waitSemaphoreValueCount = e->sem_wait_cnt,
+        .signalSemaphoreValueCount = e->sem_sig_cnt,
+    };
+
     VkSubmitInfo s_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext                = &s_timeline_sem_info,
+
         .commandBufferCount   = 1,
         .pCommandBuffers      = &e->bufs[s->cur_queue_idx],
 
@@ -1349,8 +1378,10 @@ static void free_exec_ctx(VulkanFilterContext *s, FFVkExecContext *e)
     av_freep(&e->bufs);
     av_freep(&e->queues);
     av_freep(&e->sem_sig);
+    av_freep(&e->sem_sig_val);
     av_freep(&e->sem_wait);
     av_freep(&e->sem_wait_dst);
+    av_freep(&e->sem_wait_val);
     av_free(e);
 }
 
