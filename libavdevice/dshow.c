@@ -569,7 +569,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
                                                 (ctx->requested_width && ctx->requested_height) ||
                                                  ctx->pixel_format != AV_PIX_FMT_NONE ||
                                                  ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
-                  || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
+                  || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate || ctx->sample_size));
     int format_set = 0;
     int should_show_properties = (devtype == VideoDevice) ? ctx->show_video_device_dialog : ctx->show_audio_device_dialog;
 
