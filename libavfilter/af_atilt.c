@@ -196,7 +196,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, s->filter_channels, &td, NULL, FFMIN(inlink->channels,
+    ff_filter_execute(ctx, s->filter_channels, &td, NULL, FFMIN(inlink->channels,
                                                                ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
