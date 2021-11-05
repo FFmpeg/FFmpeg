@@ -2011,7 +2011,7 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
         try_export_flags(hwfc, &eiinfo.handleTypes, &e,
                          VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
 
-    if (p->extensions & EXT_EXTERNAL_DMABUF_MEMORY)
+    if (p->extensions & (EXT_EXTERNAL_DMABUF_MEMORY | EXT_DRM_MODIFIER_FLAGS))
         try_export_flags(hwfc, &eiinfo.handleTypes, &e,
                          VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT);
 
@@ -2323,13 +2323,9 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFunctions *vk = &p->vkfn;
     VulkanFramesPriv *fp = hwfc->internal->priv;
-    AVVulkanFramesContext *frames_hwctx = hwfc->hwctx;
     const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
-    const int has_modifiers = !!(p->extensions & EXT_DRM_MODIFIER_FLAGS);
-    VkSubresourceLayout plane_data[AV_NUM_DATA_POINTERS] = { 0 };
-    VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { 0 };
-    VkBindImagePlaneMemoryInfo plane_info[AV_NUM_DATA_POINTERS] = { 0 };
-    VkExternalMemoryHandleTypeFlagBits htype = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+    VkBindImageMemoryInfo bind_info[AV_DRM_MAX_PLANES];
+    VkBindImagePlaneMemoryInfo plane_info[AV_DRM_MAX_PLANES];
 
     for (int i = 0; i < desc->nb_layers; i++) {
         if (drm_to_vulkan_fmt(desc->layers[i].format) == VK_FORMAT_UNDEFINED) {
@@ -2345,48 +2341,48 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         goto fail;
     }
 
-    f->tiling = has_modifiers ? VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT :
-                desc->objects[0].format_modifier == DRM_FORMAT_MOD_LINEAR ?
-                VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
+    f->tiling = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
 
     for (int i = 0; i < desc->nb_layers; i++) {
         const int planes = desc->layers[i].nb_planes;
-        VkImageDrmFormatModifierExplicitCreateInfoEXT drm_info = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT,
-            .drmFormatModifier = desc->objects[0].format_modifier,
-            .drmFormatModifierPlaneCount = planes,
-            .pPlaneLayouts = (const VkSubresourceLayout *)&plane_data,
-        };
 
-        VkExternalMemoryImageCreateInfo einfo = {
-            .sType       = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
-            .pNext       = has_modifiers ? &drm_info : NULL,
-            .handleTypes = htype,
-        };
-
+        /* Semaphore */
         VkSemaphoreTypeCreateInfo sem_type_info = {
             .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
             .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-            .initialValue  = 1,
+            .initialValue  = 0,
         };
-
         VkSemaphoreCreateInfo sem_spawn = {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = &sem_type_info,
         };
 
+        /* Image creation */
+        VkSubresourceLayout ext_img_layouts[AV_DRM_MAX_PLANES];
+        VkImageDrmFormatModifierExplicitCreateInfoEXT ext_img_mod_spec = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT,
+            .drmFormatModifier = desc->objects[0].format_modifier,
+            .drmFormatModifierPlaneCount = planes,
+            .pPlaneLayouts = (const VkSubresourceLayout *)&ext_img_layouts,
+        };
+        VkExternalMemoryImageCreateInfo ext_img_spec = {
+            .sType       = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
+            .pNext       = &ext_img_mod_spec,
+            .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
+        };
         VkImageCreateInfo create_info = {
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext                 = &einfo,
+            .pNext                 = &ext_img_spec,
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = drm_to_vulkan_fmt(desc->layers[i].format),
             .extent.depth          = 1,
             .mipLevels             = 1,
             .arrayLayers           = 1,
-            .flags                 = VK_IMAGE_CREATE_ALIAS_BIT,
+            .flags                 = 0x0, /* ALIAS flag is implicit for imported images */
             .tiling                = f->tiling,
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
-            .usage                 = frames_hwctx->usage,
+            .usage                 = VK_IMAGE_USAGE_SAMPLED_BIT |
+                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
             .pQueueFamilyIndices   = p->qfs,
             .queueFamilyIndexCount = p->num_qfs,
@@ -2394,15 +2390,53 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
                                                       VK_SHARING_MODE_EXCLUSIVE,
         };
 
+        /* Image format verification */
+        VkImageFormatProperties2 props_ret = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+        };
+        VkPhysicalDeviceImageDrmFormatModifierInfoEXT props_drm_mod = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_DRM_FORMAT_MODIFIER_INFO_EXT,
+            .drmFormatModifier = ext_img_mod_spec.drmFormatModifier,
+            .pQueueFamilyIndices = create_info.pQueueFamilyIndices,
+            .queueFamilyIndexCount = create_info.queueFamilyIndexCount,
+            .sharingMode = create_info.sharingMode,
+        };
+        VkPhysicalDeviceExternalImageFormatInfo props_ext = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+            .pNext = &props_drm_mod,
+            .handleType = ext_img_spec.handleTypes,
+        };
+        VkPhysicalDeviceImageFormatInfo2 fmt_props = {
+            .sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+            .pNext  = &props_ext,
+            .format = create_info.format,
+            .type   = create_info.imageType,
+            .tiling = create_info.tiling,
+            .usage  = create_info.usage,
+            .flags  = create_info.flags,
+        };
+
+        /* Check if importing is possible for this combination of parameters */
+        ret = vk->GetPhysicalDeviceImageFormatProperties2(hwctx->phys_dev,
+                                                          &fmt_props, &props_ret);
+        if (ret != VK_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "Cannot map DRM frame to Vulkan: %s\n",
+                   vk_ret2str(ret));
+            err = AVERROR_EXTERNAL;
+            goto fail;
+        }
+
+        /* Set the image width/height */
         get_plane_wh(&create_info.extent.width, &create_info.extent.height,
                      hwfc->sw_format, src->width, src->height, i);
 
+        /* Set the subresource layout based on the layer properties */
         for (int j = 0; j < planes; j++) {
-            plane_data[j].offset     = desc->layers[i].planes[j].offset;
-            plane_data[j].rowPitch   = desc->layers[i].planes[j].pitch;
-            plane_data[j].size       = 0; /* The specs say so for all 3 */
-            plane_data[j].arrayPitch = 0;
-            plane_data[j].depthPitch = 0;
+            ext_img_layouts[j].offset     = desc->layers[i].planes[j].offset;
+            ext_img_layouts[j].rowPitch   = desc->layers[i].planes[j].pitch;
+            ext_img_layouts[j].size       = 0; /* The specs say so for all 3 */
+            ext_img_layouts[j].arrayPitch = 0;
+            ext_img_layouts[j].depthPitch = 0;
         }
 
         /* Create image */
@@ -2434,24 +2468,37 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     }
 
     for (int i = 0; i < desc->nb_objects; i++) {
-        int use_ded_mem = 0;
+        /* Memory requirements */
+        VkImageMemoryRequirementsInfo2 req_desc = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+            .image = f->img[i],
+        };
+        VkMemoryDedicatedRequirements ded_req = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+        };
+        VkMemoryRequirements2 req2 = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+            .pNext = &ded_req,
+        };
+
+        /* Allocation/importing */
         VkMemoryFdPropertiesKHR fdmp = {
             .sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR,
         };
-        VkMemoryRequirements req = {
-            .size = desc->objects[i].size,
-        };
         VkImportMemoryFdInfoKHR idesc = {
             .sType      = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
-            .handleType = htype,
             .fd         = dup(desc->objects[i].fd),
+            .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
         };
         VkMemoryDedicatedAllocateInfo ded_alloc = {
             .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
             .pNext = &idesc,
+            .image = req_desc.image,
         };
 
-        ret = vk->GetMemoryFdPropertiesKHR(hwctx->act_dev, htype,
+        /* Get object properties */
+        ret = vk->GetMemoryFdPropertiesKHR(hwctx->act_dev,
+                                           VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
                                            idesc.fd, &fdmp);
         if (ret != VK_SUCCESS) {
             av_log(hwfc, AV_LOG_ERROR, "Failed to get FD properties: %s\n",
@@ -2461,59 +2508,44 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             goto fail;
         }
 
-        req.memoryTypeBits = fdmp.memoryTypeBits;
+        vk->GetImageMemoryRequirements2(hwctx->act_dev, &req_desc, &req2);
 
-        /* Dedicated allocation only makes sense if there's a one to one mapping
-         * between images and the memory backing them, so only check in this
-         * case. */
-        if (desc->nb_layers == desc->nb_objects) {
-            VkImageMemoryRequirementsInfo2 req_desc = {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-                .image = f->img[i],
-            };
-            VkMemoryDedicatedRequirements ded_req = {
-                .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-            };
-            VkMemoryRequirements2 req2 = {
-                .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-                .pNext = &ded_req,
-            };
+        /* Only a single bit must be set, not a range, and it must match */
+        req2.memoryRequirements.memoryTypeBits = fdmp.memoryTypeBits;
 
-            vk->GetImageMemoryRequirements2(hwctx->act_dev, &req_desc, &req2);
-
-            use_ded_mem = ded_req.prefersDedicatedAllocation |
-                          ded_req.requiresDedicatedAllocation;
-            if (use_ded_mem)
-                ded_alloc.image = f->img[i];
-        }
-
-        err = alloc_mem(ctx, &req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        use_ded_mem ? &ded_alloc : ded_alloc.pNext,
+        err = alloc_mem(ctx, &req2.memoryRequirements,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        (ded_req.prefersDedicatedAllocation ||
+                         ded_req.requiresDedicatedAllocation) ?
+                            &ded_alloc : ded_alloc.pNext,
                         &f->flags, &f->mem[i]);
         if (err) {
             close(idesc.fd);
             return err;
         }
 
-        f->size[i] = desc->objects[i].size;
+        f->size[i] = req2.memoryRequirements.size;
     }
 
     for (int i = 0; i < desc->nb_layers; i++) {
         const int planes = desc->layers[i].nb_planes;
-        const int signal_p = has_modifiers && (planes > 1);
         for (int j = 0; j < planes; j++) {
             VkImageAspectFlagBits aspect = j == 0 ? VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT :
                                            j == 1 ? VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT :
                                                     VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT;
 
             plane_info[bind_counts].sType = VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO;
+            plane_info[bind_counts].pNext = NULL;
             plane_info[bind_counts].planeAspect = aspect;
 
             bind_info[bind_counts].sType  = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
-            bind_info[bind_counts].pNext  = signal_p ? &plane_info[bind_counts] : NULL;
+            bind_info[bind_counts].pNext  = planes > 1 ? &plane_info[bind_counts] : NULL;
             bind_info[bind_counts].image  = f->img[i];
             bind_info[bind_counts].memory = f->mem[desc->layers[i].planes[j].object_index];
-            bind_info[bind_counts].memoryOffset = desc->layers[i].planes[j].offset;
+
+            /* Offset is already signalled via pPlaneLayouts above */
+            bind_info[bind_counts].memoryOffset = 0;
+
             bind_counts++;
         }
     }
@@ -2523,7 +2555,8 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to bind memory: %s\n",
                vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
+        err = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     /* NOTE: This is completely uneccesary and unneeded once we can import
@@ -2848,12 +2881,16 @@ static int vulkan_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
 #if CONFIG_LIBDRM
 #if CONFIG_VAAPI
     case AV_PIX_FMT_VAAPI:
-        if (p->extensions & EXT_EXTERNAL_DMABUF_MEMORY)
+        if (p->extensions & (EXT_EXTERNAL_DMABUF_MEMORY | EXT_DRM_MODIFIER_FLAGS))
             return vulkan_map_from_vaapi(hwfc, dst, src, flags);
+        else
+            return AVERROR(ENOSYS);
 #endif
     case AV_PIX_FMT_DRM_PRIME:
-        if (p->extensions & EXT_EXTERNAL_DMABUF_MEMORY)
+        if (p->extensions & (EXT_EXTERNAL_DMABUF_MEMORY | EXT_DRM_MODIFIER_FLAGS))
             return vulkan_map_from_drm(hwfc, dst, src, flags);
+        else
+            return AVERROR(ENOSYS);
 #endif
     default:
         return AVERROR(ENOSYS);
@@ -2911,14 +2948,12 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     if (err < 0)
         goto end;
 
-    if (p->extensions & EXT_DRM_MODIFIER_FLAGS) {
-        ret = vk->GetImageDrmFormatModifierPropertiesEXT(hwctx->act_dev, f->img[0],
-                                                         &drm_mod);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to retrieve DRM format modifier!\n");
-            err = AVERROR_EXTERNAL;
-            goto end;
-        }
+    ret = vk->GetImageDrmFormatModifierPropertiesEXT(hwctx->act_dev, f->img[0],
+                                                     &drm_mod);
+    if (ret != VK_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Failed to retrieve DRM format modifier!\n");
+        err = AVERROR_EXTERNAL;
+        goto end;
     }
 
     for (int i = 0; (i < planes) && (f->mem[i]); i++) {
@@ -2945,9 +2980,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     for (int i = 0; i < drm_desc->nb_layers; i++) {
         VkSubresourceLayout layout;
         VkImageSubresource sub = {
-            .aspectMask = p->extensions & EXT_DRM_MODIFIER_FLAGS ?
-                          VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT :
-                          VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT,
         };
         VkFormat plane_vkfmt = av_vkfmt_from_pixfmt(hwfc->sw_format)[i];
 
@@ -3019,12 +3052,16 @@ static int vulkan_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
     switch (dst->format) {
 #if CONFIG_LIBDRM
     case AV_PIX_FMT_DRM_PRIME:
-        if (p->extensions & EXT_EXTERNAL_DMABUF_MEMORY)
+        if (p->extensions & (EXT_EXTERNAL_DMABUF_MEMORY | EXT_DRM_MODIFIER_FLAGS))
             return vulkan_map_to_drm(hwfc, dst, src, flags);
+        else
+            return AVERROR(ENOSYS);
 #if CONFIG_VAAPI
     case AV_PIX_FMT_VAAPI:
-        if (p->extensions & EXT_EXTERNAL_DMABUF_MEMORY)
+        if (p->extensions & (EXT_EXTERNAL_DMABUF_MEMORY | EXT_DRM_MODIFIER_FLAGS))
             return vulkan_map_to_vaapi(hwfc, dst, src, flags);
+        else
+            return AVERROR(ENOSYS);
 #endif
 #endif
     default:
