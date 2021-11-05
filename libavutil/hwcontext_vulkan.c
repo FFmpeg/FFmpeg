@@ -18,6 +18,8 @@
 
 #define VK_NO_PROTOTYPES
 
+#include <unistd.h>
+
 #include "config.h"
 #include "pixdesc.h"
 #include "avstring.h"
@@ -33,7 +35,6 @@
 #endif
 
 #if CONFIG_LIBDRM
-#include <unistd.h>
 #include <xf86drm.h>
 #include <drm_fourcc.h>
 #include "hwcontext_drm.h"
@@ -237,6 +238,7 @@ typedef struct AVVkFrameInternal {
     CUmipmappedArray cu_mma[AV_NUM_DATA_POINTERS];
     CUarray cu_array[AV_NUM_DATA_POINTERS];
     CUexternalSemaphore cu_sem[AV_NUM_DATA_POINTERS];
+    int exp_sem[AV_NUM_DATA_POINTERS];
 #endif
 } AVVkFrameInternal;
 
@@ -1647,6 +1649,7 @@ static void vulkan_free_internal(AVVkFrameInternal *internal)
                 CHECK_CU(cu->cuMipmappedArrayDestroy(internal->cu_mma[i]));
             if (internal->ext_mem[i])
                 CHECK_CU(cu->cuDestroyExternalMemory(internal->ext_mem[i]));
+            close(internal->exp_sem[i]);
         }
 
         av_buffer_unref(&internal->cuda_fc_ref);
@@ -2724,7 +2727,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                 .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
             };
             CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC ext_sem_desc = {
-                .type = CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD,
+                .type = 9 /* TODO: CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TIMELINE_SEMAPHORE_FD */,
             };
 
             int p_w, p_h;
@@ -2763,7 +2766,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
             }
 
             ret = vk->GetSemaphoreFdKHR(hwctx->act_dev, &sem_export,
-                                        &ext_sem_desc.handle.fd);
+                                        &dst_int->exp_sem[i]);
             if (ret != VK_SUCCESS) {
                 av_log(ctx, AV_LOG_ERROR, "Failed to export semaphore: %s\n",
                        vk_ret2str(ret));
@@ -2771,9 +2774,12 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                 goto fail;
             }
 
+            ext_sem_desc.handle.fd = dup(dst_int->exp_sem[i]);
+
             ret = CHECK_CU(cu->cuImportExternalSemaphore(&dst_int->cu_sem[i],
                                                          &ext_sem_desc));
             if (ret < 0) {
+                close(ext_sem_desc.handle.fd);
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
@@ -2819,6 +2825,11 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
     dst_int = dst_f->internal;
 
+    for (int i = 0; i < planes; i++) {
+        s_w_par[i].params.fence.value = dst_f->sem_value[i] + 0;
+        s_s_par[i].params.fence.value = dst_f->sem_value[i] + 1;
+    }
+
     ret = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
                                                      planes, cuda_dev->stream));
     if (ret < 0) {
@@ -2856,6 +2867,9 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
         err = AVERROR_EXTERNAL;
         goto fail;
     }
+
+    for (int i = 0; i < planes; i++)
+        dst_f->sem_value[i]++;
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
@@ -3638,6 +3652,11 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
     dst_int = dst_f->internal;
 
+    for (int i = 0; i < planes; i++) {
+        s_w_par[i].params.fence.value = dst_f->sem_value[i] + 0;
+        s_s_par[i].params.fence.value = dst_f->sem_value[i] + 1;
+    }
+
     ret = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
                                                      planes, cuda_dev->stream));
     if (ret < 0) {
@@ -3675,6 +3694,9 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
         err = AVERROR_EXTERNAL;
         goto fail;
     }
+
+    for (int i = 0; i < planes; i++)
+        dst_f->sem_value[i]++;
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
