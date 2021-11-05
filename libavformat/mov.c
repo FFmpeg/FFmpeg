@@ -4828,20 +4828,34 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             dts = frag_stream_info->first_tfra_pts;
             av_log(c->fc, AV_LOG_DEBUG, "found mfra time %"PRId64
                     ", using it for dts\n", pts);
-        } else if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE && !c->use_tfdt) {
-            // FIXME: sidx earliest_presentation_time is *PTS*, s.b.
-            // pts = frag_stream_info->sidx_pts;
-            dts = frag_stream_info->sidx_pts - sc->time_offset;
-            av_log(c->fc, AV_LOG_DEBUG, "found sidx time %"PRId64
-                    ", using it for pts\n", pts);
-        } else if (frag_stream_info->tfdt_dts != AV_NOPTS_VALUE) {
-            dts = frag_stream_info->tfdt_dts - sc->time_offset;
-            av_log(c->fc, AV_LOG_DEBUG, "found tfdt time %"PRId64
-                    ", using it for dts\n", dts);
         } else {
-            dts = sc->track_end - sc->time_offset;
-            av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
-                    ", using it for dts\n", dts);
+            int has_tfdt = frag_stream_info->tfdt_dts != AV_NOPTS_VALUE;
+            int has_sidx = frag_stream_info->sidx_pts != AV_NOPTS_VALUE;
+            int fallback_tfdt = !c->use_tfdt && !has_sidx && has_tfdt;
+            int fallback_sidx =  c->use_tfdt && !has_tfdt && has_sidx;
+
+            if (fallback_sidx) {
+                av_log(c->fc, AV_LOG_DEBUG, "use_tfdt set but no tfdt found, using sidx instead\n");
+            }
+            if (fallback_tfdt) {
+                av_log(c->fc, AV_LOG_DEBUG, "use_tfdt not set but no sidx found, using tfdt instead\n");
+            }
+
+            if (has_tfdt && c->use_tfdt || fallback_tfdt) {
+                dts = frag_stream_info->tfdt_dts - sc->time_offset;
+                av_log(c->fc, AV_LOG_DEBUG, "found tfdt time %"PRId64
+                        ", using it for dts\n", dts);
+            } else if (has_sidx && !c->use_tfdt || fallback_sidx) {
+                // FIXME: sidx earliest_presentation_time is *PTS*, s.b.
+                // pts = frag_stream_info->sidx_pts;
+                dts = frag_stream_info->sidx_pts - sc->time_offset;
+                av_log(c->fc, AV_LOG_DEBUG, "found sidx time %"PRId64
+                        ", using it for pts\n", pts);
+            } else {
+                dts = sc->track_end - sc->time_offset;
+                av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
+                        ", using it for dts\n", dts);
+            }
         }
     } else {
         dts = sc->track_end - sc->time_offset;
@@ -8533,7 +8547,7 @@ static const AVOption mov_options[] = {
         FLAGS, "use_mfra_for" },
     {"pts", "pts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_PTS}, 0, 0,
         FLAGS, "use_mfra_for" },
-    {"use_tfdt", "use tfdt for fragment timestamps", OFFSET(use_tfdt), AV_OPT_TYPE_BOOL, {.i64 = 0},
+    {"use_tfdt", "use tfdt for fragment timestamps", OFFSET(use_tfdt), AV_OPT_TYPE_BOOL, {.i64 = 1},
         0, 1, FLAGS},
     { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
         AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, .flags = FLAGS },

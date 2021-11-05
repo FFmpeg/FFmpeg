@@ -691,7 +691,7 @@ Don't use mfra box to set timestamps
 
 @item use_tfdt
 For fragmented input, set fragment's starting timestamp to @code{baseMediaDecodeTime} from the @code{tfdt} box.
-Default is disabled, which will preferentially use the @code{earliest_presentation_time} from the @code{sidx} box.
+Default is enabled, which will prefer to use the @code{tfdt} box to set DTS. Disable to use the @code{earliest_presentation_time} from the @code{sidx} box.
 In either case, the timestamp from the @code{mfra} box will be used if it's available and @code{use_mfra_for} is
 set to pts or dts.
 
