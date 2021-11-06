@@ -67,6 +67,7 @@ typedef struct MovieContext {
     int loop_count;
     int64_t discontinuity_threshold;
     int64_t ts_offset;
+    int dec_threads;
 
     AVFormatContext *format_ctx;
 
@@ -90,6 +91,7 @@ static const AVOption movie_options[]= {
     { "s",            "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  0, 0, FLAGS },
     { "loop",         "set loop count",          OFFSET(loop_count),   AV_OPT_TYPE_INT,    {.i64 =  1},  0,        INT_MAX, FLAGS },
     { "discontinuity", "set discontinuity threshold", OFFSET(discontinuity_threshold), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX, FLAGS },
+    { "dec_threads",  "set the number of threads for decoding", OFFSET(dec_threads), AV_OPT_TYPE_INT, {.i64 =  0}, 0, INT_MAX, FLAGS },
     { NULL },
 };
 
@@ -150,7 +152,7 @@ static AVStream *find_stream(void *log, AVFormatContext *avf, const char *spec)
     return found;
 }
 
-static int open_stream(AVFilterContext *ctx, MovieStream *st)
+static int open_stream(AVFilterContext *ctx, MovieStream *st, int dec_threads)
 {
     const AVCodec *codec;
     int ret;
@@ -169,7 +171,9 @@ static int open_stream(AVFilterContext *ctx, MovieStream *st)
     if (ret < 0)
         return ret;
 
-    st->codec_ctx->thread_count = ff_filter_get_nb_threads(ctx);
+    if (!dec_threads)
+        dec_threads = ff_filter_get_nb_threads(ctx);
+    st->codec_ctx->thread_count = dec_threads;
 
     if ((ret = avcodec_open2(st->codec_ctx, codec, NULL)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to open codec\n");
@@ -314,7 +318,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
             if (ret < 0)
                 return ret;
         }
-        ret = open_stream(ctx, &movie->st[i]);
+        ret = open_stream(ctx, &movie->st[i], movie->dec_threads);
         if (ret < 0)
             return ret;
     }

@@ -28356,6 +28356,9 @@ changed, so it will generate non monotonically increasing timestamps.
 Specifies the time difference between frames above which the point is
 considered a timestamp discontinuity which is removed by adjusting the later
 timestamps.
+
+@item dec_threads
+Specifies the number of threads for decoding
 @end table
 
 It allows overlaying a second video on top of the main input of
