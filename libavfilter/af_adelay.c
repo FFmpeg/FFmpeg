@@ -189,14 +189,15 @@ static int config_input(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
     AudioDelayContext *s = ctx->priv;
     AVFrame *out_frame;
     int i;
 
     if (ctx->is_disabled || !s->delays)
-        return ff_filter_frame(ctx->outputs[0], frame);
+        return ff_filter_frame(outlink, frame);
 
-    out_frame = ff_get_audio_buffer(ctx->outputs[0], frame->nb_samples);
+    out_frame = ff_get_audio_buffer(outlink, frame->nb_samples);
     if (!out_frame) {
         av_frame_free(&frame);
         return AVERROR(ENOMEM);
@@ -215,9 +216,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     out_frame->pts = s->next_pts;
-    s->next_pts += av_rescale_q(frame->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
+    s->next_pts += av_rescale_q(frame->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
     av_frame_free(&frame);
-    return ff_filter_frame(ctx->outputs[0], out_frame);
+    return ff_filter_frame(outlink, out_frame);
 }
 
 static int activate(AVFilterContext *ctx)
