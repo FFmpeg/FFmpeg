@@ -91,9 +91,9 @@ static int apng_write_header(AVFormatContext *format_context)
         return AVERROR(EINVAL);
     }
 
-    if (apng->last_delay.num > USHRT_MAX || apng->last_delay.den > USHRT_MAX) {
+    if (apng->last_delay.num > UINT16_MAX || apng->last_delay.den > UINT16_MAX) {
         av_reduce(&apng->last_delay.num, &apng->last_delay.den,
-                  apng->last_delay.num, apng->last_delay.den, USHRT_MAX);
+                  apng->last_delay.num, apng->last_delay.den, UINT16_MAX);
         av_log(format_context, AV_LOG_WARNING,
                "Last frame delay is too precise. Reducing to %d/%d (%f).\n",
                apng->last_delay.num, apng->last_delay.den, (double)apng->last_delay.num / apng->last_delay.den);
@@ -191,7 +191,7 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
                 if (packet) {
                     int64_t delay_num_raw = (packet->dts - apng->prev_packet->dts) * codec_stream->time_base.num;
                     int64_t delay_den_raw = codec_stream->time_base.den;
-                    if (!av_reduce(&delay.num, &delay.den, delay_num_raw, delay_den_raw, USHRT_MAX) &&
+                    if (!av_reduce(&delay.num, &delay.den, delay_num_raw, delay_den_raw, UINT16_MAX) &&
                         !apng->framerate_warned) {
                         av_log(format_context, AV_LOG_WARNING,
                                "Frame rate is too high or specified too precisely. Unable to copy losslessly.\n");
@@ -281,9 +281,9 @@ static void apng_deinit(AVFormatContext *s)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "plays", "Number of times to play the output: 0 - infinite loop, 1 - no loop", OFFSET(plays),
-      AV_OPT_TYPE_INT, { .i64 = 1 }, 0, UINT_MAX, ENC },
+      AV_OPT_TYPE_INT, { .i64 = 1 }, 0, UINT16_MAX, ENC },
     { "final_delay", "Force delay after the last frame", OFFSET(last_delay),
-      AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, USHRT_MAX, ENC },
+      AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, UINT16_MAX, ENC },
     { NULL },
 };
 
