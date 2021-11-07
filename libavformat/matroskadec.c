@@ -2806,7 +2806,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                           &st->sample_aspect_ratio.den,
                           st->codecpar->height * track->video.display_width  * display_width_mul,
                           st->codecpar->width  * track->video.display_height * display_height_mul,
-                          255);
+                          INT_MAX);
             }
             if (st->codecpar->codec_id != AV_CODEC_ID_HEVC)
                 st->need_parsing = AVSTREAM_PARSE_HEADERS;
