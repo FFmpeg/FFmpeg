@@ -2524,6 +2524,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 av_log(c->fc, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
                 return AVERROR_INVALIDDATA;
             }
+            if (st->codecpar->channels < 0) {
+                av_log(c->fc, AV_LOG_ERROR, "Invalid channels %d\n", st->codecpar->channels);
+                return AVERROR_INVALIDDATA;
+            }
         } else if (st->codecpar->codec_type==AVMEDIA_TYPE_SUBTITLE){
             mov_parse_stsd_subtitle(c, pb, st, sc,
                                     size - (avio_tell(pb) - start_pos));
