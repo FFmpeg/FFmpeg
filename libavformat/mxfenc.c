@@ -2500,7 +2500,7 @@ static int mxf_init_timecode(AVFormatContext *s, AVStream *st, AVRational tbc)
         return av_timecode_init(&mxf->tc, av_inv_q(tbc), 0, 0, s);
 }
 
-static int mxf_write_header(AVFormatContext *s)
+static int mxf_init(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     int i, ret;
@@ -3245,7 +3245,7 @@ const AVOutputFormat ff_mxf_muxer = {
     .priv_data_size    = sizeof(MXFContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
-    .write_header      = mxf_write_header,
+    .init              = mxf_init,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
     .deinit            = mxf_deinit,
@@ -3261,7 +3261,7 @@ const AVOutputFormat ff_mxf_d10_muxer = {
     .priv_data_size    = sizeof(MXFContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
-    .write_header      = mxf_write_header,
+    .init              = mxf_init,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
     .deinit            = mxf_deinit,
@@ -3278,7 +3278,7 @@ const AVOutputFormat ff_mxf_opatom_muxer = {
     .priv_data_size    = sizeof(MXFContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_DNXHD,
-    .write_header      = mxf_write_header,
+    .init              = mxf_init,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
     .deinit            = mxf_deinit,
