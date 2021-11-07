@@ -58,8 +58,7 @@ enum VulkanExtensions {
     EXT_EXTERNAL_FD_MEMORY     = 1 <<  2, /* VK_KHR_external_memory_fd */
     EXT_EXTERNAL_FD_SEM        = 1 <<  3, /* VK_KHR_external_semaphore_fd */
     EXT_EXTERNAL_HOST_MEMORY   = 1 <<  4, /* VK_EXT_external_memory_host */
-    EXT_PUSH_DESCRIPTORS       = 1 <<  5, /* VK_KHR_push_descriptor */
-    EXT_DEBUG_UTILS            = 1 <<  6, /* VK_EXT_debug_utils */
+    EXT_DEBUG_UTILS            = 1 <<  5, /* VK_EXT_debug_utils */
 
     EXT_NO_FLAG                = 1 << 31,
 };
@@ -457,13 +456,26 @@ static const VulkanOptExtension optional_instance_exts[] = {
 };
 
 static const VulkanOptExtension optional_device_exts[] = {
+    /* Misc or required by other extensions */
+    { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,                  EXT_NO_FLAG,                },
+    { VK_EXT_HDR_METADATA_EXTENSION_NAME,                     EXT_NO_FLAG,                },
+    { VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,         EXT_NO_FLAG,                },
+    { VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,                EXT_NO_FLAG,                },
+
+    /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               EXT_EXTERNAL_FD_MEMORY,     },
     { VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,          EXT_EXTERNAL_DMABUF_MEMORY, },
     { VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,        EXT_DRM_MODIFIER_FLAGS,     },
     { VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,            EXT_EXTERNAL_FD_SEM,        },
     { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME,             EXT_EXTERNAL_HOST_MEMORY,   },
-    { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,                  EXT_PUSH_DESCRIPTORS,       },
-    { VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,                 EXT_NO_FLAG,                },
+
+    /* Video encoding/decoding */
+    { VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,                      EXT_NO_FLAG,                },
+    { VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,               EXT_NO_FLAG,                },
+    { VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME,               EXT_NO_FLAG,                },
+    { VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME,                EXT_NO_FLAG,                },
+    { VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME,                EXT_NO_FLAG,                },
+    { VK_EXT_VIDEO_DECODE_H265_EXTENSION_NAME,                EXT_NO_FLAG,                },
 };
 
 /* Converts return values to strings */
@@ -598,7 +610,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
         if (!found)
             continue;
 
-        av_log(ctx, AV_LOG_VERBOSE, "Using %s extension \"%s\"\n", mod, tstr);
+        av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
         p->extensions |= optional_exts[i].flag;
         ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
     }
@@ -613,7 +625,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             }
         }
         if (found) {
-            av_log(ctx, AV_LOG_VERBOSE, "Using %s extension \"%s\"\n", mod, tstr);
+            av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
             ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
             p->extensions |= EXT_DEBUG_UTILS;
         } else {
@@ -1419,8 +1431,6 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         for (int j = 0; j < FF_ARRAY_ELEMS(optional_device_exts); j++) {
             if (!strcmp(hwctx->enabled_dev_extensions[i],
                         optional_device_exts[j].name)) {
-                av_log(ctx, AV_LOG_VERBOSE, "Using device extension %s\n",
-                       hwctx->enabled_dev_extensions[i]);
                 p->extensions |= optional_device_exts[j].flag;
                 break;
             }
