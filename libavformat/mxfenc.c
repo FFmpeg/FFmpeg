@@ -420,6 +420,7 @@ typedef struct MXFContext {
     int track_instance_count; // used to generate MXFTrack uuids
     int cbr_index;           ///< use a constant bitrate index
     uint8_t unused_tags[MXF_NUM_TAGS];  ///< local tags that we know will not be used
+    MXFStreamContext timecode_track_priv;
 } MXFContext;
 
 static void mxf_write_uuid(AVIOContext *pb, enum MXFMetadataSetType type, int value)
@@ -2704,9 +2705,7 @@ static int mxf_init(AVFormatContext *s)
     mxf->timecode_track = av_mallocz(sizeof(*mxf->timecode_track));
     if (!mxf->timecode_track)
         return AVERROR(ENOMEM);
-    mxf->timecode_track->priv_data = av_mallocz(sizeof(MXFStreamContext));
-    if (!mxf->timecode_track->priv_data)
-        return AVERROR(ENOMEM);
+    mxf->timecode_track->priv_data = &mxf->timecode_track_priv;
     mxf->timecode_track->index = -1;
 
     return 0;
@@ -3079,10 +3078,7 @@ static void mxf_deinit(AVFormatContext *s)
 
     av_freep(&mxf->index_entries);
     av_freep(&mxf->body_partition_offset);
-    if (mxf->timecode_track) {
-        av_freep(&mxf->timecode_track->priv_data);
-        av_freep(&mxf->timecode_track);
-    }
+    av_freep(&mxf->timecode_track);
 }
 
 static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flush)
