@@ -885,8 +885,13 @@ static int find_device(AVHWDeviceContext *ctx, VulkanDeviceSelection *select)
     }
 
 end:
-    if (choice > -1)
+    if (choice > -1) {
+        av_log(ctx, AV_LOG_VERBOSE, "Device %d selected: %s (%s) (0x%x)\n",
+               choice, prop[choice].properties.deviceName,
+               vk_dev_type(prop[choice].properties.deviceType),
+               prop[choice].properties.deviceID);
         hwctx->phys_dev = devices[choice];
+    }
 
     av_free(devices);
     av_free(prop);
