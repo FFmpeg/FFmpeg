@@ -1221,7 +1221,7 @@ static int sb_decode(AVCodecContext *avctx, void *ptr_st,
     float low_pi_gain[NB_NB_SUBFRAMES];
     float low_exc_rms[NB_NB_SUBFRAMES];
     float interp_qlsp[NB_ORDER];
-    int ret, wideband, dtx = 0;
+    int ret, wideband;
     float *low_innov_alias;
     float qlsp[NB_ORDER];
     float ak[NB_ORDER];
@@ -1254,11 +1254,6 @@ static int sb_decode(AVCodecContext *avctx, void *ptr_st,
 
     /* If null mode (no transmission), just set a couple things to zero */
     if (st->submodes[st->submodeID] == NULL) {
-        if (dtx) {
-            //sb_decode_lost(st, out, 1);
-            return 0;
-        }
-
         for (int i = 0; i < st->frame_size; i++)
             out[st->frame_size + i] = 1e-15f;
 
