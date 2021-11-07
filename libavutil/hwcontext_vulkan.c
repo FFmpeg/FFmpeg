@@ -112,6 +112,7 @@ enum VulkanExtensions {
     /* Semaphores */                                                               \
     MACRO(1, 1, EXT_EXTERNAL_FD_SEM,      GetSemaphoreFdKHR)                       \
     MACRO(1, 1, EXT_NO_FLAG,              CreateSemaphore)                         \
+    MACRO(1, 1, EXT_NO_FLAG,              WaitSemaphores)                          \
     MACRO(1, 1, EXT_NO_FLAG,              DestroySemaphore)                        \
                                                                                    \
     /* Memory */                                                                   \
@@ -1736,6 +1737,16 @@ static void vulkan_frame_free(void *opaque, uint8_t *data)
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
     VulkanFunctions *vk = &p->vkfn;
     int planes = av_pix_fmt_count_planes(hwfc->sw_format);
+
+    VkSemaphoreWaitInfo wait_info = {
+        .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+        .flags          = 0x0,
+        .pSemaphores    = f->sem,
+        .pValues        = f->sem_value,
+        .semaphoreCount = planes,
+    };
+
+    vk->WaitSemaphores(hwctx->act_dev, &wait_info, UINT64_MAX);
 
     vulkan_free_internal(f->internal);
 
