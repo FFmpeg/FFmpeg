@@ -139,7 +139,6 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     X264Context *x4 = ctx->priv_data;
     uint8_t *p;
     uint64_t size = x4->sei_size;
-    int i;
     int ret;
 
     if (!nnal)
@@ -165,14 +164,14 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     if (x4->sei_size > 0) {
         memcpy(p, x4->sei, x4->sei_size);
         p += x4->sei_size;
+        size -= x4->sei_size;
         x4->sei_size = 0;
         av_freep(&x4->sei);
     }
 
-    for (i = 0; i < nnal; i++){
-        memcpy(p, nals[i].p_payload, nals[i].i_payload);
-        p += nals[i].i_payload;
-    }
+    /* x264 guarantees the payloads of the NALs
+     * to be sequential in memory. */
+    memcpy(p, nals[0].p_payload, size);
 
     return 1;
 }
