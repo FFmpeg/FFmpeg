@@ -268,7 +268,7 @@ static int get_next_adts_frame(CodecParserContext *ctx, AudioFrame *frame)
 
     /* Find next sync word 0xFFF */
     while (ctx->buf_ptr < ctx->buf_end - 1) {
-        if (*ctx->buf_ptr == 0xFF && *(ctx->buf_ptr + 1) & 0xF0 == 0xF0)
+        if (*ctx->buf_ptr == 0xFF && (*(ctx->buf_ptr + 1) & 0xF0) == 0xF0)
             break;
         ctx->buf_ptr++;
     }
