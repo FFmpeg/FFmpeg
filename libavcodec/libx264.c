@@ -162,11 +162,7 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     p = pkt->data;
 
     /* Write the SEI as part of the first frame. */
-    if (x4->sei_size > 0 && nnal > 0) {
-        if (x4->sei_size > size) {
-            av_log(ctx, AV_LOG_ERROR, "Error: nal buffer is too small\n");
-            return -1;
-        }
+    if (x4->sei_size > 0) {
         memcpy(p, x4->sei, x4->sei_size);
         p += x4->sei_size;
         x4->sei_size = 0;
