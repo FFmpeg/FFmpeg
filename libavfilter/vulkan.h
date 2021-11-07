@@ -19,11 +19,14 @@
 #ifndef AVFILTER_VULKAN_H
 #define AVFILTER_VULKAN_H
 
+#define VK_NO_PROTOTYPES
+
 #include "avfilter.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/bprint.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vulkan.h"
+#include "libavutil/vulkan_functions.h"
 
 /* GLSL management macros */
 #define INDENT(N) INDENT_##N
@@ -153,6 +156,8 @@ typedef struct FFVkExecContext {
 
 typedef struct VulkanFilterContext {
     const AVClass         *class;
+    FFVulkanFunctions     vkfn;
+    FFVulkanExtensions    extensions;
 
     AVBufferRef           *device_ref;
     AVBufferRef           *frames_ref; /* For in-place filtering */

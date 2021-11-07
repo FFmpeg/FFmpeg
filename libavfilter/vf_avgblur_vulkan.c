@@ -203,6 +203,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
     int err;
     VkCommandBuffer cmd_buf;
     AvgBlurVulkanContext *s = avctx->priv;
+    FFVulkanFunctions *vk = &s->vkctx.vkfn;
     AVVkFrame *in = (AVVkFrame *)in_f->data[0];
     AVVkFrame *tmp = (AVVkFrame *)tmp_f->data[0];
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
@@ -279,9 +280,9 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
             },
         };
 
-        vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
-                             0, NULL, 0, NULL, FF_ARRAY_ELEMS(bar), bar);
+        vk->CmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
+                               0, NULL, 0, NULL, FF_ARRAY_ELEMS(bar), bar);
 
         in->layout[i]  = bar[0].newLayout;
         in->access[i]  = bar[0].dstAccessMask;
@@ -295,13 +296,13 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
 
     ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl_hor);
 
-    vkCmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
+    vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
                   s->vkctx.output_height, 1);
 
     ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl_ver);
 
-    vkCmdDispatch(cmd_buf, s->vkctx.output_width,
-                  FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
+    vk->CmdDispatch(cmd_buf, s->vkctx.output_width,
+                    FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
 
     ff_vk_add_exec_dep(avctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
     ff_vk_add_exec_dep(avctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);

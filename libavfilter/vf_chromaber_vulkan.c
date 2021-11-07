@@ -173,6 +173,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     int err = 0;
     VkCommandBuffer cmd_buf;
     ChromaticAberrationVulkanContext *s = avctx->priv;
+    FFVulkanFunctions *vk = &s->vkctx.vkfn;
     AVVkFrame *in = (AVVkFrame *)in_f->data[0];
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
     int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
@@ -228,9 +229,9 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
             },
         };
 
-        vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
-                             0, NULL, 0, NULL, FF_ARRAY_ELEMS(bar), bar);
+        vk->CmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
+                               0, NULL, 0, NULL, FF_ARRAY_ELEMS(bar), bar);
 
         in->layout[i]  = bar[0].newLayout;
         in->access[i]  = bar[0].dstAccessMask;
@@ -244,9 +245,9 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     ff_vk_update_push_exec(avctx, s->exec, VK_SHADER_STAGE_COMPUTE_BIT,
                            0, sizeof(s->opts), &s->opts);
 
-    vkCmdDispatch(cmd_buf,
-                  FFALIGN(s->vkctx.output_width,  CGROUPS[0])/CGROUPS[0],
-                  FFALIGN(s->vkctx.output_height, CGROUPS[1])/CGROUPS[1], 1);
+    vk->CmdDispatch(cmd_buf,
+                    FFALIGN(s->vkctx.output_width,  CGROUPS[0])/CGROUPS[0],
+                    FFALIGN(s->vkctx.output_height, CGROUPS[1])/CGROUPS[1], 1);
 
     ff_vk_add_exec_dep(avctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
     ff_vk_add_exec_dep(avctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
