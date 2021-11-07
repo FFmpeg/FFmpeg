@@ -49,17 +49,6 @@
             goto fail;                                                         \
     } while (0)
 
-/* Gets the queues count for a single queue family */
-#define GET_QUEUE_COUNT(hwctx, graph, comp, tx) (                   \
-    graph ?  hwctx->nb_graphics_queues :                            \
-    comp  ? (hwctx->nb_comp_queues ?                                \
-             hwctx->nb_comp_queues : hwctx->nb_graphics_queues) :   \
-    tx    ? (hwctx->nb_tx_queues ? hwctx->nb_tx_queues :            \
-             (hwctx->nb_comp_queues ?                               \
-              hwctx->nb_comp_queues : hwctx->nb_graphics_queues)) : \
-    0                                                               \
-)
-
 /* Useful for attaching immutable samplers to arrays */
 #define DUP_SAMPLER_ARRAY4(x) (VkSampler []){ x, x, x, x, }
 

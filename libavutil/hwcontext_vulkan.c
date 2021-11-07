@@ -17,6 +17,7 @@
  */
 
 #define VK_NO_PROTOTYPES
+#define VK_ENABLE_BETA_EXTENSIONS
 
 #include <unistd.h>
 
@@ -25,6 +26,7 @@
 #include "avstring.h"
 #include "imgutils.h"
 #include "hwcontext.h"
+#include "avassert.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_vulkan.h"
 
@@ -204,7 +206,7 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceVulkan12Features device_features_1_2;
 
     /* Queues */
-    uint32_t qfs[3];
+    uint32_t qfs[5];
     int num_qfs;
 
     /* Debug callback */
@@ -241,16 +243,6 @@ typedef struct AVVkFrameInternal {
     int exp_sem[AV_NUM_DATA_POINTERS];
 #endif
 } AVVkFrameInternal;
-
-#define GET_QUEUE_COUNT(hwctx, graph, comp, tx) (                   \
-    graph ?  hwctx->nb_graphics_queues :                            \
-    comp  ? (hwctx->nb_comp_queues ?                                \
-             hwctx->nb_comp_queues : hwctx->nb_graphics_queues) :   \
-    tx    ? (hwctx->nb_tx_queues ? hwctx->nb_tx_queues :            \
-             (hwctx->nb_comp_queues ?                               \
-              hwctx->nb_comp_queues : hwctx->nb_graphics_queues)) : \
-    0                                                               \
-)
 
 #define DEFAULT_USAGE_FLAGS (VK_IMAGE_USAGE_SAMPLED_BIT      |                 \
                              VK_IMAGE_USAGE_STORAGE_BIT      |                 \
@@ -903,16 +895,39 @@ end:
     return err;
 }
 
-static int search_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
+/* Picks the least used qf with the fewest unneeded flags, or -1 if none found */
+static inline int pick_queue_family(VkQueueFamilyProperties *qf, uint32_t num_qf,
+                                    VkQueueFlagBits flags)
+{
+    int index = -1;
+    uint32_t min_score = UINT32_MAX;
+
+    for (int i = 0; i < num_qf; i++) {
+        const VkQueueFlagBits qflags = qf[i].queueFlags;
+        if (qflags & flags) {
+            uint32_t score = av_popcount(qflags) + qf[i].timestampValidBits;
+            if (score < min_score) {
+                index = i;
+                min_score = score;
+            }
+        }
+    }
+
+    if (index > -1)
+        qf[index].timestampValidBits++;
+
+    return index;
+}
+
+static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
 {
     uint32_t num;
     float *weights;
-    VkQueueFamilyProperties *qs = NULL;
+    VkQueueFamilyProperties *qf = NULL;
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFunctions *vk = &p->vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    int graph_index = -1, comp_index = -1, tx_index = -1;
-    VkDeviceQueueCreateInfo *pc = (VkDeviceQueueCreateInfo *)cd->pQueueCreateInfos;
+    int graph_index, comp_index, tx_index, enc_index, dec_index;
 
     /* First get the number of queue families */
     vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &num, NULL);
@@ -922,81 +937,113 @@ static int search_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     }
 
     /* Then allocate memory */
-    qs = av_malloc_array(num, sizeof(VkQueueFamilyProperties));
-    if (!qs)
+    qf = av_malloc_array(num, sizeof(VkQueueFamilyProperties));
+    if (!qf)
         return AVERROR(ENOMEM);
 
     /* Finally retrieve the queue families */
-    vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &num, qs);
+    vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &num, qf);
 
-#define SEARCH_FLAGS(expr, out)                                                \
-    for (int i = 0; i < num; i++) {                                            \
-        const VkQueueFlagBits flags = qs[i].queueFlags;                        \
-        if (expr) {                                                            \
-            out = i;                                                           \
-            break;                                                             \
+    av_log(ctx, AV_LOG_VERBOSE, "Queue families:\n");
+    for (int i = 0; i < num; i++) {
+        av_log(ctx, AV_LOG_VERBOSE, "    %i:%s%s%s%s%s%s%s (queues: %i)\n", i,
+               ((qf[i].queueFlags) & VK_QUEUE_GRAPHICS_BIT) ? " graphics" : "",
+               ((qf[i].queueFlags) & VK_QUEUE_COMPUTE_BIT) ? " compute" : "",
+               ((qf[i].queueFlags) & VK_QUEUE_TRANSFER_BIT) ? " transfer" : "",
+               ((qf[i].queueFlags) & VK_QUEUE_VIDEO_ENCODE_BIT_KHR) ? " encode" : "",
+               ((qf[i].queueFlags) & VK_QUEUE_VIDEO_DECODE_BIT_KHR) ? " decode" : "",
+               ((qf[i].queueFlags) & VK_QUEUE_SPARSE_BINDING_BIT) ? " sparse" : "",
+               ((qf[i].queueFlags) & VK_QUEUE_PROTECTED_BIT) ? " protected" : "",
+               qf[i].queueCount);
+
+        /* We use this field to keep a score of how many times we've used that
+         * queue family in order to make better choices. */
+        qf[i].timestampValidBits = 0;
+    }
+
+    /* Pick each queue family to use */
+    graph_index = pick_queue_family(qf, num, VK_QUEUE_GRAPHICS_BIT);
+    comp_index  = pick_queue_family(qf, num, VK_QUEUE_COMPUTE_BIT);
+    tx_index    = pick_queue_family(qf, num, VK_QUEUE_TRANSFER_BIT);
+    enc_index   = pick_queue_family(qf, num, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
+    dec_index   = pick_queue_family(qf, num, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
+
+    hwctx->queue_family_index        = -1;
+    hwctx->queue_family_comp_index   = -1;
+    hwctx->queue_family_tx_index     = -1;
+    hwctx->queue_family_encode_index = -1;
+    hwctx->queue_family_decode_index = -1;
+
+#define SETUP_QUEUE(qf_idx)                                                    \
+    if (qf_idx > -1) {                                                         \
+        int fidx = qf_idx;                                                     \
+        int qc = qf[fidx].queueCount;                                          \
+        VkDeviceQueueCreateInfo *pc;                                           \
+                                                                               \
+        if (fidx == graph_index) {                                             \
+            hwctx->queue_family_index = fidx;                                  \
+            hwctx->nb_graphics_queues = qc;                                    \
+            graph_index = -1;                                                  \
         }                                                                      \
+        if (fidx == comp_index) {                                              \
+            hwctx->queue_family_comp_index = fidx;                             \
+            hwctx->nb_comp_queues = qc;                                        \
+            comp_index = -1;                                                   \
+        }                                                                      \
+        if (fidx == tx_index) {                                                \
+            hwctx->queue_family_tx_index = fidx;                               \
+            hwctx->nb_tx_queues = qc;                                          \
+            tx_index = -1;                                                     \
+        }                                                                      \
+        if (fidx == enc_index) {                                               \
+            hwctx->queue_family_encode_index = fidx;                           \
+            hwctx->nb_encode_queues = qc;                                      \
+            enc_index = -1;                                                    \
+        }                                                                      \
+        if (fidx == dec_index) {                                               \
+            hwctx->queue_family_decode_index = fidx;                           \
+            hwctx->nb_decode_queues = qc;                                      \
+            dec_index = -1;                                                    \
+        }                                                                      \
+                                                                               \
+        pc = av_realloc((void *)cd->pQueueCreateInfos,                         \
+                        sizeof(*pc) * (cd->queueCreateInfoCount + 1));         \
+        if (!pc) {                                                             \
+            av_free(qf);                                                       \
+            return AVERROR(ENOMEM);                                            \
+        }                                                                      \
+        cd->pQueueCreateInfos = pc;                                            \
+        pc = &pc[cd->queueCreateInfoCount];                                    \
+                                                                               \
+        weights = av_malloc(qc * sizeof(float));                               \
+        if (!weights) {                                                        \
+            av_free(qf);                                                       \
+            return AVERROR(ENOMEM);                                            \
+        }                                                                      \
+                                                                               \
+        memset(pc, 0, sizeof(*pc));                                            \
+        pc->sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;     \
+        pc->queueFamilyIndex = fidx;                                           \
+        pc->queueCount       = qc;                                             \
+        pc->pQueuePriorities = weights;                                        \
+                                                                               \
+        for (int i = 0; i < qc; i++)                                           \
+            weights[i] = 1.0f / qc;                                            \
+                                                                               \
+        cd->queueCreateInfoCount++;                                            \
     }
 
-    SEARCH_FLAGS(flags & VK_QUEUE_GRAPHICS_BIT, graph_index)
-
-    SEARCH_FLAGS((flags &  VK_QUEUE_COMPUTE_BIT) && (i != graph_index),
-                 comp_index)
-
-    SEARCH_FLAGS((flags & VK_QUEUE_TRANSFER_BIT) && (i != graph_index) &&
-                 (i != comp_index), tx_index)
-
-#undef SEARCH_FLAGS
-#define ADD_QUEUE(fidx, graph, comp, tx)                                                 \
-    av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i (total queues: %i) for %s%s%s\n", \
-           fidx, qs[fidx].queueCount, graph ? "graphics " : "",                          \
-           comp ? "compute " : "", tx ? "transfers " : "");                              \
-    av_log(ctx, AV_LOG_VERBOSE, "    QF %i flags: %s%s%s%s\n", fidx,                     \
-           ((qs[fidx].queueFlags) & VK_QUEUE_GRAPHICS_BIT) ? "(graphics) " : "",         \
-           ((qs[fidx].queueFlags) & VK_QUEUE_COMPUTE_BIT) ? "(compute) " : "",           \
-           ((qs[fidx].queueFlags) & VK_QUEUE_TRANSFER_BIT) ? "(transfers) " : "",        \
-           ((qs[fidx].queueFlags) & VK_QUEUE_SPARSE_BINDING_BIT) ? "(sparse) " : "");    \
-    pc[cd->queueCreateInfoCount].queueFamilyIndex = fidx;                                \
-    pc[cd->queueCreateInfoCount].queueCount = qs[fidx].queueCount;                       \
-    weights = av_malloc(qs[fidx].queueCount * sizeof(float));                            \
-    pc[cd->queueCreateInfoCount].pQueuePriorities = weights;                             \
-    if (!weights)                                                                        \
-        goto fail;                                                                       \
-    for (int i = 0; i < qs[fidx].queueCount; i++)                                        \
-        weights[i] = 1.0f;                                                               \
-    cd->queueCreateInfoCount++;
-
-    ADD_QUEUE(graph_index, 1, comp_index < 0, tx_index < 0 && comp_index < 0)
-    hwctx->queue_family_index      = graph_index;
-    hwctx->queue_family_comp_index = graph_index;
-    hwctx->queue_family_tx_index   = graph_index;
-    hwctx->nb_graphics_queues      = qs[graph_index].queueCount;
-
-    if (comp_index != -1) {
-        ADD_QUEUE(comp_index, 0, 1, tx_index < 0)
-        hwctx->queue_family_tx_index   = comp_index;
-        hwctx->queue_family_comp_index = comp_index;
-        hwctx->nb_comp_queues          = qs[comp_index].queueCount;
-    }
-
-    if (tx_index != -1) {
-        ADD_QUEUE(tx_index, 0, 0, 1)
-        hwctx->queue_family_tx_index = tx_index;
-        hwctx->nb_tx_queues          = qs[tx_index].queueCount;
-    }
+    SETUP_QUEUE(graph_index)
+    SETUP_QUEUE(comp_index)
+    SETUP_QUEUE(tx_index)
+    SETUP_QUEUE(enc_index)
+    SETUP_QUEUE(dec_index)
 
 #undef ADD_QUEUE
-    av_free(qs);
+
+    av_free(qf);
 
     return 0;
-
-fail:
-    av_freep(&pc[0].pQueuePriorities);
-    av_freep(&pc[1].pQueuePriorities);
-    av_freep(&pc[2].pQueuePriorities);
-    av_free(qs);
-
-    return AVERROR(ENOMEM);
 }
 
 static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
@@ -1271,17 +1318,10 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
         .pNext = &dev_features_1_1,
     };
-    VkDeviceQueueCreateInfo queue_create_info[3] = {
-        { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
-        { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
-        { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, },
-    };
 
     VkDeviceCreateInfo dev_info = {
         .sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext                = &hwctx->device_features,
-        .pQueueCreateInfos    = queue_create_info,
-        .queueCreateInfoCount = 0,
     };
 
     hwctx->device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -1318,24 +1358,24 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     }
     p->device_features_1_2.timelineSemaphore = 1;
 
-    /* Search queue family */
-    if ((err = search_queue_families(ctx, &dev_info)))
+    /* Setup queue family */
+    if ((err = setup_queue_families(ctx, &dev_info)))
         goto end;
 
     if ((err = check_extensions(ctx, 1, opts, &dev_info.ppEnabledExtensionNames,
                                 &dev_info.enabledExtensionCount, 0))) {
-        av_free((void *)queue_create_info[0].pQueuePriorities);
-        av_free((void *)queue_create_info[1].pQueuePriorities);
-        av_free((void *)queue_create_info[2].pQueuePriorities);
+        for (int i = 0; i < dev_info.queueCreateInfoCount; i++)
+            av_free((void *)dev_info.pQueueCreateInfos[i].pQueuePriorities);
+        av_free((void *)dev_info.pQueueCreateInfos);
         goto end;
     }
 
     ret = vk->CreateDevice(hwctx->phys_dev, &dev_info, hwctx->alloc,
                            &hwctx->act_dev);
 
-    av_free((void *)queue_create_info[0].pQueuePriorities);
-    av_free((void *)queue_create_info[1].pQueuePriorities);
-    av_free((void *)queue_create_info[2].pQueuePriorities);
+    for (int i = 0; i < dev_info.queueCreateInfoCount; i++)
+        av_free((void *)dev_info.pQueueCreateInfos[i].pQueuePriorities);
+    av_free((void *)dev_info.pQueueCreateInfos);
 
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Device creation failure: %s\n",
@@ -1366,6 +1406,7 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
     VulkanDevicePriv *p = ctx->internal->priv;
     VulkanFunctions *vk = &p->vkfn;
+    int graph_index, comp_index, tx_index, enc_index, dec_index;
 
     /* Set device extension flags */
     for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++) {
@@ -1410,26 +1451,49 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         return AVERROR_EXTERNAL;
     }
 
-#define CHECK_QUEUE(type, n)                                                         \
-if (n >= queue_num) {                                                                \
-    av_log(ctx, AV_LOG_ERROR, "Invalid %s queue index %i (device has %i queues)!\n", \
-           type, n, queue_num);                                                      \
-    return AVERROR(EINVAL);                                                          \
-}
+    graph_index = hwctx->queue_family_index;
+    comp_index  = hwctx->queue_family_comp_index;
+    tx_index    = hwctx->queue_family_tx_index;
+    enc_index   = hwctx->queue_family_encode_index;
+    dec_index   = hwctx->queue_family_decode_index;
 
-    CHECK_QUEUE("graphics", hwctx->queue_family_index)
-    CHECK_QUEUE("upload",   hwctx->queue_family_tx_index)
-    CHECK_QUEUE("compute",  hwctx->queue_family_comp_index)
+#define CHECK_QUEUE(type, required, fidx, ctx_qf, qc)                                           \
+    do {                                                                                        \
+        if (ctx_qf < 0 && required) {                                                           \
+            av_log(ctx, AV_LOG_ERROR, "%s queue family is required, but marked as missing"      \
+                   " in the context!\n", type);                                                 \
+            return AVERROR(EINVAL);                                                             \
+        } else if (fidx < 0 || ctx_qf < 0) {                                                    \
+            break;                                                                              \
+        } else if (ctx_qf >= queue_num) {                                                       \
+            av_log(ctx, AV_LOG_ERROR, "Invalid %s family index %i (device has %i families)!\n", \
+                   type, ctx_qf, queue_num);                                                    \
+            return AVERROR(EINVAL);                                                             \
+        }                                                                                       \
+                                                                                                \
+        av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i (queues: %i)"                        \
+               " for%s%s%s%s%s\n",                                                              \
+               ctx_qf, qc,                                                                      \
+               ctx_qf == graph_index ? " graphics" : "",                                        \
+               ctx_qf == comp_index  ? " compute" : "",                                         \
+               ctx_qf == tx_index    ? " transfers" : "",                                       \
+               ctx_qf == enc_index   ? " encode" : "",                                          \
+               ctx_qf == dec_index   ? " decode" : "");                                         \
+        graph_index = (ctx_qf == graph_index) ? -1 : graph_index;                               \
+        comp_index  = (ctx_qf == comp_index)  ? -1 : comp_index;                                \
+        tx_index    = (ctx_qf == tx_index)    ? -1 : tx_index;                                  \
+        enc_index   = (ctx_qf == enc_index)   ? -1 : enc_index;                                 \
+        dec_index   = (ctx_qf == dec_index)   ? -1 : dec_index;                                 \
+        p->qfs[p->num_qfs++] = ctx_qf;                                                          \
+    } while (0)
+
+    CHECK_QUEUE("graphics", 0, graph_index, hwctx->queue_family_index,        hwctx->nb_graphics_queues);
+    CHECK_QUEUE("upload",   1, tx_index,    hwctx->queue_family_tx_index,     hwctx->nb_tx_queues);
+    CHECK_QUEUE("compute",  1, comp_index,  hwctx->queue_family_comp_index,   hwctx->nb_comp_queues);
+    CHECK_QUEUE("encode",   0, enc_index,   hwctx->queue_family_encode_index, hwctx->nb_encode_queues);
+    CHECK_QUEUE("decode",   0, dec_index,   hwctx->queue_family_decode_index, hwctx->nb_decode_queues);
 
 #undef CHECK_QUEUE
-
-    p->qfs[p->num_qfs++] = hwctx->queue_family_index;
-    if ((hwctx->queue_family_tx_index != hwctx->queue_family_index) &&
-        (hwctx->queue_family_tx_index != hwctx->queue_family_comp_index))
-        p->qfs[p->num_qfs++] = hwctx->queue_family_tx_index;
-    if ((hwctx->queue_family_comp_index != hwctx->queue_family_index) &&
-        (hwctx->queue_family_comp_index != hwctx->queue_family_tx_index))
-        p->qfs[p->num_qfs++] = hwctx->queue_family_comp_index;
 
     /* Get device capabilities */
     vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
@@ -2076,13 +2140,13 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     err = create_exec_ctx(hwfc, &fp->conv_ctx,
                           dev_hwctx->queue_family_comp_index,
-                          GET_QUEUE_COUNT(dev_hwctx, 0, 1, 0));
+                          dev_hwctx->nb_comp_queues);
     if (err)
         return err;
 
     err = create_exec_ctx(hwfc, &fp->upload_ctx,
                           dev_hwctx->queue_family_tx_index,
-                          GET_QUEUE_COUNT(dev_hwctx, 0, 0, 1));
+                          dev_hwctx->nb_tx_queues);
     if (err)
         return err;
 

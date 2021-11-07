@@ -99,8 +99,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         return AVERROR_EXTERNAL;
 
     s->vkctx.queue_family_idx = s->vkctx.hwctx->queue_family_comp_index;
-    s->vkctx.queue_count = GET_QUEUE_COUNT(s->vkctx.hwctx, 0, 1, 0);
-    s->vkctx.cur_queue_idx = av_get_random_seed() % s->vkctx.queue_count;
+    s->vkctx.queue_count = s->vkctx.hwctx->nb_comp_queues;
 
     { /* Create shader for the horizontal pass */
         desc_i[0].updater = s->input_images;
