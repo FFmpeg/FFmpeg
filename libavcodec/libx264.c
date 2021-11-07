@@ -138,13 +138,23 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
 {
     X264Context *x4 = ctx->priv_data;
     uint8_t *p;
-    int i, size = x4->sei_size, ret;
+    uint64_t size = x4->sei_size;
+    int i;
+    int ret;
 
     if (!nnal)
         return 0;
 
-    for (i = 0; i < nnal; i++)
+    for (int i = 0; i < nnal; i++) {
         size += nals[i].i_payload;
+        /* ff_get_encode_buffer() accepts an int64_t and
+         * so we need to make sure that no overflow happens before
+         * that. With 32bit ints this is automatically true. */
+#if INT_MAX > INT64_MAX / INT_MAX - 1
+        if ((int64_t)size < 0)
+            return AVERROR(ERANGE);
+#endif
+    }
 
     if ((ret = ff_get_encode_buffer(ctx, pkt, size, 0)) < 0)
         return ret;
