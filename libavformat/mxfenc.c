@@ -2507,9 +2507,6 @@ static int mxf_write_header(AVFormatContext *s)
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     int64_t timestamp = 0;
 
-    if (!s->nb_streams)
-        return -1;
-
     if (s->oformat == &ff_mxf_opatom_muxer && s->nb_streams !=1) {
         av_log(s, AV_LOG_ERROR, "there must be exactly one stream for mxf opatom\n");
         return -1;
