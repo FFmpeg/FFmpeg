@@ -303,7 +303,7 @@ void ff_flush_packet_queue(AVFormatContext *s)
     avpriv_packet_list_free(&si->packet_buffer,     &si->packet_buffer_end);
     avpriv_packet_list_free(&si->raw_packet_buffer, &si->raw_packet_buffer_end);
 
-    si->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
+    si->raw_packet_buffer_size = 0;
 }
 
 int av_find_default_stream_index(AVFormatContext *s)

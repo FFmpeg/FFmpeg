@@ -174,7 +174,6 @@ AVFormatContext *avformat_alloc_context(void)
     }
 
     si->offset = AV_NOPTS_VALUE;
-    si->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
     si->shortest_end = AV_NOPTS_VALUE;
 
     return s;

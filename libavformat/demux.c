@@ -328,7 +328,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     if (s->pb && !si->data_offset)
         si->data_offset = avio_tell(s->pb);
 
-    si->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
+    si->raw_packet_buffer_size = 0;
 
     update_stream_avctx(s);
 
@@ -432,7 +432,7 @@ no_packet:
             }
         }
 
-        end = si->raw_packet_buffer_remaining_size <= 0
+        end = si->raw_packet_buffer_size >= s->probesize
                 || sti->probe_packets <= 0;
 
         if (end || av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)) {
@@ -544,13 +544,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (pktl) {
             AVStream *const st = s->streams[pktl->pkt.stream_index];
-            if (si->raw_packet_buffer_remaining_size <= 0)
+            if (si->raw_packet_buffer_size >= s->probesize)
                 if ((err = probe_codec(s, st, NULL)) < 0)
                     return err;
             if (ffstream(st)->request_probe <= 0) {
                 avpriv_packet_list_get(&si->raw_packet_buffer,
                                        &si->raw_packet_buffer_end, pkt);
-                si->raw_packet_buffer_remaining_size += pkt->size;
+                si->raw_packet_buffer_size -= pkt->size;
                 return 0;
             }
         }
@@ -631,7 +631,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return err;
         }
         pkt1 = &si->raw_packet_buffer_end->pkt;
-        si->raw_packet_buffer_remaining_size -= pkt1->size;
+        si->raw_packet_buffer_size += pkt1->size;
 
         if ((err = probe_codec(s, st, pkt1)) < 0)
             return err;
