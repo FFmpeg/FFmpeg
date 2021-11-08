@@ -1800,13 +1800,7 @@ int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *a
     }
 
     if (args && bsfc->filter->priv_class) {
-        const AVOption *opt = av_opt_next(bsfc->priv_data, NULL);
-        const char * shorthand[2] = {NULL};
-
-        if (opt)
-            shorthand[0] = opt->name;
-
-        if ((ret = av_opt_set_from_string(bsfc->priv_data, args, shorthand, "=", ":")) < 0) {
+        if ((ret = av_set_options_string(bsfc->priv_data, args, "=", ":")) < 0) {
             av_bsf_free(&bsfc);
             return ret;
         }
