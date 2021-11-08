@@ -1611,6 +1611,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (!ost->muxing_queue)
         exit_program(1);
 
+    MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
+                         ost->copy_initial_nonkeyframes, oc, st);
+
     return ost;
 }
 
@@ -1917,8 +1920,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         ost->last_frame = av_frame_alloc();
         if (!ost->last_frame)
             exit_program(1);
-    } else {
-        MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i, ost->copy_initial_nonkeyframes, oc ,st);
     }
 
     if (ost->stream_copy)
@@ -2045,8 +2046,6 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc,
     subtitle_enc = ost->enc_ctx;
 
     subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
-
-    MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i, ost->copy_initial_nonkeyframes, oc, st);
 
     if (!ost->stream_copy) {
         char *frame_size = NULL;
