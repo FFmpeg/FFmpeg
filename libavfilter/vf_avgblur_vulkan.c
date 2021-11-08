@@ -70,7 +70,7 @@ static const char blur_kernel[] = {
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
-    SPIRVShader *shd;
+    FFSPIRVShader *shd;
     AvgBlurVulkanContext *s = ctx->priv;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
     VkSampler *sampler = ff_vk_init_sampler(ctx, 1, VK_FILTER_LINEAR);

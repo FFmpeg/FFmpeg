@@ -136,8 +136,8 @@ static av_cold int init_filter(AVFilterContext *ctx)
             .buf_content = "ivec2 o_offset[3], o_size[3];",
         };
 
-        SPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "overlay_compute",
-                                             VK_SHADER_STAGE_COMPUTE_BIT);
+        FFSPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "overlay_compute",
+                                               VK_SHADER_STAGE_COMPUTE_BIT);
         if (!shd)
             return AVERROR(ENOMEM);
 

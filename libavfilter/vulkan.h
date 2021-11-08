@@ -55,12 +55,12 @@
 /* Useful for attaching immutable samplers to arrays */
 #define DUP_SAMPLER_ARRAY4(x) (VkSampler []){ x, x, x, x, }
 
-typedef struct SPIRVShader {
+typedef struct FFSPIRVShader {
     const char *name;                       /* Name for id/debugging purposes */
     AVBPrint src;
     int local_size[3];                      /* Compute shader workgroup sizes */
     VkPipelineShaderStageCreateInfo shader;
-} SPIRVShader;
+} FFSPIRVShader;
 
 typedef struct VulkanDescriptorSetBinding {
     const char         *name;
@@ -89,7 +89,7 @@ typedef struct VulkanPipeline {
     VkPipeline       pipeline;
 
     /* Shaders */
-    SPIRVShader **shaders;
+    FFSPIRVShader **shaders;
     int shaders_num;
 
     /* Push consts */
@@ -249,27 +249,32 @@ VulkanPipeline *ff_vk_create_pipeline(AVFilterContext *avctx);
 /**
  * Inits a shader for a specific pipeline. Will be auto-freed on uninit.
  */
-SPIRVShader *ff_vk_init_shader(AVFilterContext *avctx, VulkanPipeline *pl,
-                               const char *name, VkShaderStageFlags stage);
+FFSPIRVShader *ff_vk_init_shader(AVFilterContext *avctx, VulkanPipeline *pl,
+                                 const char *name, VkShaderStageFlags stage);
 
 /**
  * Writes the workgroup size for a shader.
  */
-void ff_vk_set_compute_shader_sizes(AVFilterContext *avctx, SPIRVShader *shd,
+void ff_vk_set_compute_shader_sizes(AVFilterContext *avctx, FFSPIRVShader *shd,
                                     int local_size[3]);
 
 /**
  * Adds a descriptor set to the shader and registers them in the pipeline.
  */
 int ff_vk_add_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
-                             SPIRVShader *shd, VulkanDescriptorSetBinding *desc,
+                             FFSPIRVShader *shd, VulkanDescriptorSetBinding *desc,
                              int num, int only_print_to_shader);
 
 /**
  * Compiles the shader, entrypoint must be set to "main".
  */
-int ff_vk_compile_shader(AVFilterContext *avctx, SPIRVShader *shd,
+int ff_vk_compile_shader(AVFilterContext *avctx, FFSPIRVShader *shd,
                          const char *entrypoint);
+
+/**
+ * Pretty print shader, mainly used by shader compilers.
+ */
+void ff_vk_print_shader(AVFilterContext *avctx, FFSPIRVShader *shd, int prio);
 
 /**
  * Initializes the pipeline layout after all shaders and descriptor sets have

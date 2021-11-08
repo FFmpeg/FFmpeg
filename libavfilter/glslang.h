@@ -19,34 +19,23 @@
 #ifndef AVFILTER_GLSLANG_H
 #define AVFILTER_GLSLANG_H
 
-#include <stdlib.h>
+#include "vulkan.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/**
+ * Un/initialize glslang's global state. Thread-safe and reference counted.
+ */
+int ff_vk_glslang_init(void);
+void ff_vk_glslang_uninit(void);
 
-int glslang_init(void);
-void glslang_uninit(void);
+/**
+ * Compile GLSL into SPIR-V using glslang.
+ */
+int ff_vk_glslang_shader_compile(AVFilterContext *avctx, FFSPIRVShader *shd,
+                                 uint8_t **data, size_t *size, void **opaque);
 
-typedef struct GLSlangResult {
-    int rval;
-    char *error_msg;
-
-    void *data; /* Shader data or NULL */
-    size_t size;
-} GLSlangResult;
-
-enum GLSlangStage {
-    GLSLANG_VERTEX,
-    GLSLANG_FRAGMENT,
-    GLSLANG_COMPUTE,
-};
-
-/* Compile GLSL into a SPIRV stream, if possible */
-GLSlangResult *glslang_compile(const char *glsl, enum GLSlangStage stage);
-
-#ifdef __cplusplus
-}
-#endif
+/**
+ * Frees the shader-specific context.
+ */
+void ff_vk_glslang_shader_free(void *opaque);
 
 #endif /* AVFILTER_GLSLANG_H */

@@ -170,8 +170,8 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             .buf_content = "mat4 yuv_matrix;",
         };
 
-        SPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "scale_compute",
-                                             VK_SHADER_STAGE_COMPUTE_BIT);
+        FFSPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "scale_compute",
+                                               VK_SHADER_STAGE_COMPUTE_BIT);
         if (!shd)
             return AVERROR(ENOMEM);
 

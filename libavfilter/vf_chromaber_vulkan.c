@@ -109,8 +109,8 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             },
         };
 
-        SPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "chromaber_compute",
-                                             VK_SHADER_STAGE_COMPUTE_BIT);
+        FFSPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "chromaber_compute",
+                                               VK_SHADER_STAGE_COMPUTE_BIT);
         if (!shd)
             return AVERROR(ENOMEM);
 

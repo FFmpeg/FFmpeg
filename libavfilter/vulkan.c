@@ -794,7 +794,7 @@ int ff_vk_filter_init(AVFilterContext *avctx)
 
     s->output_format = AV_PIX_FMT_NONE;
 
-    if (glslang_init())
+    if (ff_vk_glslang_init())
         return AVERROR_EXTERNAL;
 
     return 0;
@@ -924,11 +924,11 @@ int ff_vk_create_imageview(AVFilterContext *avctx, FFVkExecContext *e,
     return 0;
 }
 
-FN_CREATING(VulkanPipeline, SPIRVShader, shader, shaders, shaders_num)
-SPIRVShader *ff_vk_init_shader(AVFilterContext *avctx, VulkanPipeline *pl,
-                               const char *name, VkShaderStageFlags stage)
+FN_CREATING(VulkanPipeline, FFSPIRVShader, shader, shaders, shaders_num)
+FFSPIRVShader *ff_vk_init_shader(AVFilterContext *avctx, VulkanPipeline *pl,
+                                 const char *name, VkShaderStageFlags stage)
 {
-    SPIRVShader *shd = create_shader(pl);
+    FFSPIRVShader *shd = create_shader(pl);
     if (!shd)
         return NULL;
 
@@ -946,7 +946,7 @@ SPIRVShader *ff_vk_init_shader(AVFilterContext *avctx, VulkanPipeline *pl,
     return shd;
 }
 
-void ff_vk_set_compute_shader_sizes(AVFilterContext *avctx, SPIRVShader *shd,
+void ff_vk_set_compute_shader_sizes(AVFilterContext *avctx, FFSPIRVShader *shd,
                                         int local_size[3])
 {
     shd->local_size[0] = local_size[0];
@@ -958,7 +958,7 @@ void ff_vk_set_compute_shader_sizes(AVFilterContext *avctx, SPIRVShader *shd,
                shd->local_size[0], shd->local_size[1], shd->local_size[2]);
 }
 
-static void print_shader(AVFilterContext *avctx, SPIRVShader *shd, int prio)
+void ff_vk_print_shader(AVFilterContext *avctx, FFSPIRVShader *shd, int prio)
 {
     int line = 0;
     const char *p = shd->src.str;
@@ -979,60 +979,45 @@ static void print_shader(AVFilterContext *avctx, SPIRVShader *shd, int prio)
     av_bprint_finalize(&buf, NULL);
 }
 
-int ff_vk_compile_shader(AVFilterContext *avctx, SPIRVShader *shd,
+int ff_vk_compile_shader(AVFilterContext *avctx, FFSPIRVShader *shd,
                          const char *entrypoint)
 {
+    int err;
     VkResult ret;
     VulkanFilterContext *s = avctx->priv;
     FFVulkanFunctions *vk = &s->vkfn;
     VkShaderModuleCreateInfo shader_create;
-    GLSlangResult *res;
-
-    static const enum GLSlangStage emap[] = {
-        [VK_SHADER_STAGE_VERTEX_BIT]   = GLSLANG_VERTEX,
-        [VK_SHADER_STAGE_FRAGMENT_BIT] = GLSLANG_FRAGMENT,
-        [VK_SHADER_STAGE_COMPUTE_BIT]  = GLSLANG_COMPUTE,
-    };
+    uint8_t *spirv;
+    size_t spirv_size;
+    void *priv;
 
     shd->shader.pName = entrypoint;
 
-    res = glslang_compile(shd->src.str, emap[shd->shader.stage]);
-    if (!res)
-        return AVERROR(ENOMEM);
+    err = ff_vk_glslang_shader_compile(avctx, shd, &spirv, &spirv_size, &priv);
+    if (err < 0)
+        return err;
 
-    if (res->rval) {
-        av_log(avctx, AV_LOG_ERROR, "Error compiling shader %s: %s!\n",
-               shd->name, av_err2str(res->rval));
-        print_shader(avctx, shd, AV_LOG_ERROR);
-        if (res->error_msg)
-            av_log(avctx, AV_LOG_ERROR, "%s", res->error_msg);
-        av_free(res->error_msg);
-        return res->rval;
-    }
+    ff_vk_print_shader(avctx, shd, AV_LOG_VERBOSE);
 
-    print_shader(avctx, shd, AV_LOG_VERBOSE);
+    av_log(avctx, AV_LOG_VERBOSE, "Shader %s compiled! Size: %zu bytes\n",
+           shd->name, spirv_size);
 
     shader_create.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shader_create.pNext    = NULL;
-    shader_create.codeSize = res->size;
+    shader_create.codeSize = spirv_size;
     shader_create.flags    = 0;
-    shader_create.pCode    = res->data;
+    shader_create.pCode    = (void *)spirv;
 
     ret = vk->CreateShaderModule(s->hwctx->act_dev, &shader_create, NULL,
                                  &shd->shader.module);
 
-    /* Free the GLSlangResult struct */
-    av_free(res->data);
-    av_free(res);
+    ff_vk_glslang_shader_free(priv);
 
     if (ret != VK_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Unable to create shader module: %s\n",
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
-
-    av_log(avctx, AV_LOG_VERBOSE, "Shader %s linked! Size: %zu bytes\n",
-           shd->name, shader_create.codeSize);
 
     return 0;
 }
@@ -1059,7 +1044,7 @@ static const struct descriptor_props {
 };
 
 int ff_vk_add_descriptor_set(AVFilterContext *avctx, VulkanPipeline *pl,
-                             SPIRVShader *shd, VulkanDescriptorSetBinding *desc,
+                             FFSPIRVShader *shd, VulkanDescriptorSetBinding *desc,
                              int num, int only_print_to_shader)
 {
     VkResult ret;
@@ -1423,7 +1408,7 @@ static void free_pipeline(VulkanFilterContext *s, VulkanPipeline *pl)
     FFVulkanFunctions *vk = &s->vkfn;
 
     for (int i = 0; i < pl->shaders_num; i++) {
-        SPIRVShader *shd = pl->shaders[i];
+        FFSPIRVShader *shd = pl->shaders[i];
         av_bprint_finalize(&shd->src, NULL);
         vk->DestroyShaderModule(s->hwctx->act_dev, shd->shader.module,
                                 s->hwctx->alloc);
@@ -1471,7 +1456,7 @@ void ff_vk_filter_uninit(AVFilterContext *avctx)
     VulkanFilterContext *s = avctx->priv;
     FFVulkanFunctions *vk = &s->vkfn;
 
-    glslang_uninit();
+    ff_vk_glslang_uninit();
 
     for (int i = 0; i < s->exec_ctx_num; i++)
         free_exec_ctx(s, s->exec_ctx[i]);
