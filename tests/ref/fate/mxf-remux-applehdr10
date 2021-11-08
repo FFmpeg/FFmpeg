@@ -1,0 +1,67 @@
+5e03bad42adeb396b6614890f30aefba *tests/data/fate/mxf-remux-applehdr10.mxf
+323641 tests/data/fate/mxf-remux-applehdr10.mxf
+#tb 0: 1001/60000
+#media_type 0: video
+#codec_id 0: prores
+#dimensions 0: 1280x720
+#sar 0: 1/1
+#tb 1: 1/48000
+#media_type 1: audio
+#codec_id 1: pcm_s24le
+#sample_rate 1: 48000
+#channel_layout_name 1: mono
+0,          0,          0,        1,    57008, 0x43416399, S=1,       88
+1,          0,          0,      801,     2403, 0x00000000
+0,          1,          1,        1,    57248, 0xa06cd7b5
+1,        801,        801,      801,     2403, 0x00000000
+0,          2,          2,        1,    57200, 0x5623da10
+1,       1602,       1602,      800,     2400, 0x00000000
+1,       2402,       2402,      801,     2403, 0x00000000
+0,          3,          3,        1,    57152, 0x52d89d3f
+1,       3203,       3203,      801,     2403, 0x00000000
+0,          4,          4,        1,    56960, 0x431d5189
+[STREAM]
+index=0
+codec_name=prores
+codec_tag=0x6f637061
+TAG:file_package_umid=0x060A2B340101010501010D001300000000000000000000000000000000000001
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=34000/50000
+red_y=16000/50000
+green_x=13250/50000
+green_y=34500/50000
+blue_x=7500/50000
+blue_y=3000/50000
+white_point_x=15635/50000
+white_point_y=16450/50000
+min_luminance=0/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+index=1
+codec_name=pcm_s24le
+codec_tag=0x0000
+TAG:file_package_umid=0x060A2B340101010501010D001300000000000000000000000000000000000001
+[/STREAM]
+[STREAM]
+index=2
+codec_name=pcm_s24le
+codec_tag=0x0000
+TAG:file_package_umid=0x060A2B340101010501010D001300000000000000000000000000000000000001
+[/STREAM]
+[FORMAT]
+TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010900
+TAG:uid=adab4424-2f25-4dc7-92ff-000c00000000
+TAG:generation_uid=adab4424-2f25-4dc7-92ff-000c00000001
+TAG:company_name=FFmpeg
+TAG:product_name=OP1a Muxer
+TAG:product_version_num=0.0.0.0.0
+TAG:product_version=0.0.0
+TAG:application_platform=Lavf
+TAG:product_uid=adab4424-2f25-4dc7-92ff-29bd000c0002
+TAG:toolkit_version_num=0.0.0.0.0
+TAG:material_package_umid=0x060A2B340101010501010D001300000000000000000000000000000000000000
+TAG:timecode=00:01:15;26
+[/FORMAT]

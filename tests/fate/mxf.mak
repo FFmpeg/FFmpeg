@@ -35,6 +35,10 @@ FATE_MXF_PROBE-$(call DEMDEC, MXF, PRORES PCM_S24LE) += fate-mxf-probe-applehdr1
 fate-mxf-probe-applehdr10: SRC = $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf
 fate-mxf-probe-applehdr10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)" | sed -e "s/yuv422p10../yuv422p10/"
 
+# Tests remuxing ProRes as well as writing mastering display metadata.
+FATE_MXF_FFMPEG_FFPROBE-$(call REMUX, MXF, PRORES_DECODER) += fate-mxf-remux-applehdr10
+fate-mxf-remux-applehdr10: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf mxf "-map 0 -c copy" "-c copy -t 0.3" "-show_entries format_tags:stream_side_data_list:stream=index,codec_name,codec_tag:stream_tags"
+
 FATE_MXF-$(call DEMMUX, MXF, MXF, MPEGVIDEO_PARSER MPEG2VIDEO_DECODER) += fate-mxf-reel_name fate-mxf-user-comments
 fate-mxf-reel_name: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf  -c copy -timecode 00:00:00:00 -metadata "reel_name=test_reel" -fflags +bitexact -f mxf
 fate-mxf-user-comments: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf -c copy -metadata "comment_test=value" -fflags +bitexact -f mxf
