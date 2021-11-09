@@ -2383,8 +2383,8 @@ static int64_t append_single_file(AVFormatContext *s, VariantStream *vs)
 
     do {
         read_byte = avio_read(vs->out, buf, BUFSIZE);
-        avio_write(vs->out_single_file, buf, read_byte);
         if (read_byte > 0) {
+            avio_write(vs->out_single_file, buf, read_byte);
             total_size += read_byte;
             ret = total_size;
         }
