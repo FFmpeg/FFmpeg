@@ -217,10 +217,9 @@ MID6(uint16_t, 16)
 #define DIFF(type, ss)                                         \
 static unsigned diff_##ss(const type *const prev,              \
                           const type *const next,              \
-                          int end, int x, int k, int j)        \
+                          int x, int y)                        \
 {                                                              \
-    return FFABS(prev[av_clip(x + k + j, 0, end)] -            \
-                 next[av_clip(x - k + j, 0, end)]);            \
+    return FFABS(prev[x] -  next[y]);                          \
 }
 
 DIFF(uint8_t, 8)
@@ -272,9 +271,11 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
         atype sum = 0;                                                         \
                                                                                \
         for (int j = -redge; j <= redge; j++) {                                \
-            sum += diff_##ss(prev_line,  next_line,  end, x, i, j);            \
-            sum += diff_##ss(prev2_line, prev_line,  end, x, i, j);            \
-            sum += diff_##ss(next_line,  next2_line, end, x, i, j);            \
+            const int xx = av_clip(x + i + j, 0, end);                         \
+            const int yy = av_clip(x - i + j, 0, end);                         \
+            sum += diff_##ss(prev_line,  next_line,  xx, yy);                  \
+            sum += diff_##ss(prev2_line, prev_line,  xx, yy);                  \
+            sum += diff_##ss(next_line,  next2_line, xx, yy);                  \
         }                                                                      \
                                                                                \
         sD[i + rslope]  =     sum;                                             \
@@ -288,9 +289,11 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
         atype sum = 0;                                                         \
                                                                                \
         for (int j = -redge; j <= redge; j++) {                                \
-            sum += diff_##ss(prev_line,  next_line,  end, x, k + i, j);        \
-            sum += diff_##ss(prev2_line, prev_line,  end, x, k + i, j);        \
-            sum += diff_##ss(next_line,  next2_line, end, x, k + i, j);        \
+            const int xx = av_clip(x + k + i + j, 0, end);                     \
+            const int yy = av_clip(x - k - i + j, 0, end);                     \
+            sum += diff_##ss(prev_line,  next_line,  xx, yy);                  \
+            sum += diff_##ss(prev2_line, prev_line,  xx, yy);                  \
+            sum += diff_##ss(next_line,  next2_line, xx, yy);                  \
         }                                                                      \
                                                                                \
         sd[i + rslope]  =     sum;                                             \
