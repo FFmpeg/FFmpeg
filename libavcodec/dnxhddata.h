@@ -88,7 +88,7 @@ static av_always_inline uint64_t ff_dnxhd_parse_header_prefix(const uint8_t *buf
     return ff_dnxhd_check_header_prefix(prefix);
 }
 
-int avpriv_dnxhd_get_frame_size(int cid);
-int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h);
+int ff_dnxhd_get_frame_size(int cid);
+int ff_dnxhd_get_hr_frame_size(int cid, int w, int h);
 
 #endif /* AVCODEC_DNXHDDATA_H */

@@ -1083,7 +1083,7 @@ const CIDEntry *ff_dnxhd_get_cid_table(int cid)
     return NULL;
 }
 
-int avpriv_dnxhd_get_frame_size(int cid)
+int ff_dnxhd_get_frame_size(int cid)
 {
     const CIDEntry *entry = ff_dnxhd_get_cid_table(cid);
     if (!entry)
@@ -1091,7 +1091,7 @@ int avpriv_dnxhd_get_frame_size(int cid)
     return entry->frame_size;
 }
 
-int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h)
+int ff_dnxhd_get_hr_frame_size(int cid, int w, int h)
 {
     const CIDEntry *entry = ff_dnxhd_get_cid_table(cid);
     int result;
