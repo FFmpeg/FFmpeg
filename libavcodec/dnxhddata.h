@@ -90,6 +90,5 @@ static av_always_inline uint64_t ff_dnxhd_parse_header_prefix(const uint8_t *buf
 
 int avpriv_dnxhd_get_frame_size(int cid);
 int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h);
-int avpriv_dnxhd_get_interlaced(int cid);
 
 #endif /* AVCODEC_DNXHDDATA_H */

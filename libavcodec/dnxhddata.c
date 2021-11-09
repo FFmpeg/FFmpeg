@@ -1105,14 +1105,6 @@ int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h)
     return FFMAX(result, 8192);
 }
 
-int avpriv_dnxhd_get_interlaced(int cid)
-{
-    const CIDEntry *entry = ff_dnxhd_get_cid_table(cid);
-    if (!entry)
-        return -1;
-    return entry->flags & DNXHD_INTERLACED ? 1 : 0;
-}
-
 static int dnxhd_find_hr_cid(AVCodecContext *avctx)
 {
     switch (avctx->profile) {
