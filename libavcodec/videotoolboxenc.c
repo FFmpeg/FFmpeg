@@ -2554,6 +2554,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
 
 
 pe_cleanup:
+    CVPixelBufferRelease(pix_buf);
     if(vtctx->session)
         CFRelease(vtctx->session);
 
