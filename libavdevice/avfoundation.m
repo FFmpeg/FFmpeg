@@ -87,6 +87,8 @@ typedef struct
     int             frames_captured;
     int             audio_frames_captured;
     pthread_mutex_t frame_lock;
+    pthread_cond_t  frame_condition;
+    int             is_done;
     id              avf_delegate;
     id              avf_audio_delegate;
 
@@ -111,16 +113,10 @@ typedef struct
 
     int             num_video_devices;
 
-    int             audio_channels;
-    int             audio_bits_per_sample;
-    int             audio_float;
-    int             audio_be;
-    int             audio_signed_integer;
-    int             audio_packed;
-    int             audio_non_interleaved;
-
-    int32_t         *audio_buffer;
-    int             audio_buffer_size;
+    UInt32            audio_buffers;
+    UInt32            audio_channels;
+    UInt32            bytes_per_sample;
+    AudioConverterRef audio_converter;
 
     enum AVPixelFormat pixel_format;
 
@@ -142,8 +138,14 @@ static void lock_frames(AVFContext* ctx)
     pthread_mutex_lock(&ctx->frame_lock);
 }
 
+static void wait_frames(AVFContext* ctx)
+{
+    pthread_cond_wait(&ctx->frame_condition, &ctx->frame_lock);
+}
+
 static void unlock_frames(AVFContext* ctx)
 {
+    pthread_cond_signal(&ctx->frame_condition);
     pthread_mutex_unlock(&ctx->frame_lock);
 }
 
@@ -226,8 +228,8 @@ static void unlock_frames(AVFContext* ctx)
 {
     lock_frames(_context);
 
-    if (_context->current_frame != nil) {
-        CFRelease(_context->current_frame);
+    while (!_context->is_done && _context->current_frame != nil) {
+        wait_frames(_context);
     }
 
     _context->current_frame = (CMSampleBufferRef)CFRetain(videoFrame);
@@ -270,8 +272,8 @@ static void unlock_frames(AVFContext* ctx)
 {
     lock_frames(_context);
 
-    if (_context->current_audio_frame != nil) {
-        CFRelease(_context->current_audio_frame);
+    while (!_context->is_done && _context->current_audio_frame != nil) {
+        wait_frames(_context);
     }
 
     _context->current_audio_frame = (CMSampleBufferRef)CFRetain(audioFrame);
@@ -299,9 +301,13 @@ static void destroy_context(AVFContext* ctx)
     ctx->avf_delegate    = NULL;
     ctx->avf_audio_delegate = NULL;
 
-    av_freep(&ctx->audio_buffer);
+    if (ctx->audio_converter) {
+      AudioConverterDispose(ctx->audio_converter);
+      ctx->audio_converter = NULL;
+    }
 
     pthread_mutex_destroy(&ctx->frame_lock);
+    pthread_cond_destroy(&ctx->frame_condition);
 
     if (ctx->current_frame) {
         CFRelease(ctx->current_frame);
@@ -639,6 +645,11 @@ static int get_video_config(AVFormatContext *s)
 
     lock_frames(ctx);
 
+    if (ctx->is_done) {
+        unlock_frames(ctx);
+        return 0;
+    }
+
     ctx->video_stream_index = stream->index;
 
     avpriv_set_pts_info(stream, 64, 1, avf_time_base);
@@ -673,6 +684,10 @@ static int get_audio_config(AVFormatContext *s)
     AVFContext *ctx = (AVFContext*)s->priv_data;
     CMFormatDescriptionRef format_desc;
     AVStream* stream = avformat_new_stream(s, NULL);
+    AudioStreamBasicDescription output_format = {0};
+    int audio_bits_per_sample, audio_float, audio_be;
+    int audio_signed_integer, audio_packed, audio_non_interleaved;
+    int must_convert = 0;
 
     if (!stream) {
         return 1;
@@ -685,72 +700,117 @@ static int get_audio_config(AVFormatContext *s)
 
     lock_frames(ctx);
 
+    if (ctx->is_done) {
+        unlock_frames(ctx);
+        return 0;
+    }
+
     ctx->audio_stream_index = stream->index;
 
     avpriv_set_pts_info(stream, 64, 1, avf_time_base);
 
     format_desc = CMSampleBufferGetFormatDescription(ctx->current_audio_frame);
-    const AudioStreamBasicDescription *basic_desc = CMAudioFormatDescriptionGetStreamBasicDescription(format_desc);
+    const AudioStreamBasicDescription *input_format = CMAudioFormatDescriptionGetStreamBasicDescription(format_desc);
 
-    if (!basic_desc) {
+    if (!input_format) {
+        CFRelease(ctx->current_audio_frame);
+        ctx->current_audio_frame = nil;
         unlock_frames(ctx);
         av_log(s, AV_LOG_ERROR, "audio format not available\n");
         return 1;
     }
 
-    stream->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
-    stream->codecpar->sample_rate    = basic_desc->mSampleRate;
-    stream->codecpar->channels       = basic_desc->mChannelsPerFrame;
-    stream->codecpar->channel_layout = av_get_default_channel_layout(stream->codecpar->channels);
-
-    ctx->audio_channels        = basic_desc->mChannelsPerFrame;
-    ctx->audio_bits_per_sample = basic_desc->mBitsPerChannel;
-    ctx->audio_float           = basic_desc->mFormatFlags & kAudioFormatFlagIsFloat;
-    ctx->audio_be              = basic_desc->mFormatFlags & kAudioFormatFlagIsBigEndian;
-    ctx->audio_signed_integer  = basic_desc->mFormatFlags & kAudioFormatFlagIsSignedInteger;
-    ctx->audio_packed          = basic_desc->mFormatFlags & kAudioFormatFlagIsPacked;
-    ctx->audio_non_interleaved = basic_desc->mFormatFlags & kAudioFormatFlagIsNonInterleaved;
-
-    if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
-        ctx->audio_float &&
-        ctx->audio_bits_per_sample == 32 &&
-        ctx->audio_packed) {
-        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_F32BE : AV_CODEC_ID_PCM_F32LE;
-    } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
-        ctx->audio_signed_integer &&
-        ctx->audio_bits_per_sample == 16 &&
-        ctx->audio_packed) {
-        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S16BE : AV_CODEC_ID_PCM_S16LE;
-    } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
-        ctx->audio_signed_integer &&
-        ctx->audio_bits_per_sample == 24 &&
-        ctx->audio_packed) {
-        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
-    } else if (basic_desc->mFormatID == kAudioFormatLinearPCM &&
-        ctx->audio_signed_integer &&
-        ctx->audio_bits_per_sample == 32 &&
-        ctx->audio_packed) {
-        stream->codecpar->codec_id = ctx->audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
-    } else {
+    if (input_format->mFormatID != kAudioFormatLinearPCM) {
+        CFRelease(ctx->current_audio_frame);
+        ctx->current_audio_frame = nil;
         unlock_frames(ctx);
-        av_log(s, AV_LOG_ERROR, "audio format is not supported\n");
+        av_log(s, AV_LOG_ERROR, "only PCM audio format are supported at the moment\n");
         return 1;
     }
 
-    if (ctx->audio_non_interleaved) {
-        CMBlockBufferRef block_buffer = CMSampleBufferGetDataBuffer(ctx->current_audio_frame);
-        ctx->audio_buffer_size        = CMBlockBufferGetDataLength(block_buffer);
-        ctx->audio_buffer             = av_malloc(ctx->audio_buffer_size);
-        if (!ctx->audio_buffer) {
+    stream->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    stream->codecpar->sample_rate    = input_format->mSampleRate;
+    stream->codecpar->channels       = input_format->mChannelsPerFrame;
+    stream->codecpar->channel_layout = av_get_default_channel_layout(stream->codecpar->channels);
+
+    audio_bits_per_sample = input_format->mBitsPerChannel;
+    audio_float           = input_format->mFormatFlags & kAudioFormatFlagIsFloat;
+    audio_be              = input_format->mFormatFlags & kAudioFormatFlagIsBigEndian;
+    audio_signed_integer  = input_format->mFormatFlags & kAudioFormatFlagIsSignedInteger;
+    audio_packed          = input_format->mFormatFlags & kAudioFormatFlagIsPacked;
+    audio_non_interleaved = input_format->mFormatFlags & kAudioFormatFlagIsNonInterleaved;
+
+    ctx->bytes_per_sample = input_format->mBitsPerChannel / 8;
+    ctx->audio_channels   = input_format->mChannelsPerFrame;
+
+    if (audio_non_interleaved) {
+        ctx->audio_buffers = input_format->mChannelsPerFrame;
+    } else {
+        ctx->audio_buffers = 1;
+    }
+
+    if (audio_non_interleaved || !audio_packed) {
+      must_convert = 1;
+    }
+
+    output_format.mBitsPerChannel   = input_format->mBitsPerChannel;
+    output_format.mChannelsPerFrame = ctx->audio_channels;
+    output_format.mFramesPerPacket  = 1;
+    output_format.mBytesPerFrame    = output_format.mChannelsPerFrame * ctx->bytes_per_sample;
+    output_format.mBytesPerPacket   = output_format.mFramesPerPacket * output_format.mBytesPerFrame;
+    output_format.mFormatFlags      = kAudioFormatFlagIsPacked | audio_be;
+    output_format.mFormatID         = kAudioFormatLinearPCM;
+    output_format.mReserved         = 0;
+    output_format.mSampleRate       = input_format->mSampleRate;
+  
+    if (audio_float &&
+        audio_bits_per_sample == 64) {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_F64BE : AV_CODEC_ID_PCM_F64LE;
+        output_format.mFormatFlags |= kAudioFormatFlagIsFloat;
+    } else if (audio_float &&
+        audio_bits_per_sample == 32) {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_F32BE : AV_CODEC_ID_PCM_F32LE;
+        output_format.mFormatFlags |= kAudioFormatFlagIsFloat;
+    } else if (audio_signed_integer &&
+        audio_bits_per_sample == 8) {
+        stream->codecpar->codec_id = AV_CODEC_ID_PCM_S8;
+        output_format.mFormatFlags |= kAudioFormatFlagIsSignedInteger;
+    } else if (audio_signed_integer &&
+        audio_bits_per_sample == 16) {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_S16BE : AV_CODEC_ID_PCM_S16LE;
+        output_format.mFormatFlags |= kAudioFormatFlagIsSignedInteger;
+    } else if (audio_signed_integer &&
+        audio_bits_per_sample == 24) {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
+        output_format.mFormatFlags |= kAudioFormatFlagIsSignedInteger;
+    } else if (audio_signed_integer &&
+        audio_bits_per_sample == 32) {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
+        output_format.mFormatFlags |= kAudioFormatFlagIsSignedInteger;
+    } else if (audio_signed_integer &&
+        audio_bits_per_sample == 64) {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_S64BE : AV_CODEC_ID_PCM_S64LE;
+        output_format.mFormatFlags |= kAudioFormatFlagIsSignedInteger;
+    } else {
+        stream->codecpar->codec_id = audio_be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
+        output_format.mBitsPerChannel = 32;
+        output_format.mFormatFlags |= kAudioFormatFlagIsSignedInteger;
+        must_convert = 1;
+    }
+
+    if (must_convert) {
+        OSStatus ret = AudioConverterNew(input_format, &output_format, &ctx->audio_converter);
+        if (ret != noErr) {
+            CFRelease(ctx->current_audio_frame);
+            ctx->current_audio_frame = nil;
             unlock_frames(ctx);
-            av_log(s, AV_LOG_ERROR, "error allocating audio buffer\n");
+            av_log(s, AV_LOG_ERROR, "Error while allocating audio converter\n");
             return 1;
         }
     }
 
     CFRelease(ctx->current_audio_frame);
     ctx->current_audio_frame = nil;
-
     unlock_frames(ctx);
 
     return 0;
@@ -770,6 +830,8 @@ static int avf_read_header(AVFormatContext *s)
     ctx->num_video_devices = [devices count] + [devices_muxed count];
 
     pthread_mutex_init(&ctx->frame_lock, NULL);
+    pthread_cond_init(&ctx->frame_condition, NULL);
+    ctx->is_done = false;
 
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     CGGetActiveDisplayList(0, NULL, &num_screens);
@@ -1055,6 +1117,11 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
         CMBlockBufferRef block_buffer;
         lock_frames(ctx);
 
+        if (ctx->is_done) {
+            unlock_frames(ctx);
+            return 0;
+        }
+
         if (ctx->current_frame != nil) {
             int status;
             int length = 0;
@@ -1067,11 +1134,15 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             } else if (block_buffer != nil) {
                 length = (int)CMBlockBufferGetDataLength(block_buffer);
             } else  {
+                CFRelease(ctx->current_frame);
+                ctx->current_frame = nil;
                 unlock_frames(ctx);
                 return AVERROR(EINVAL);
             }
 
             if (av_new_packet(pkt, length) < 0) {
+                CFRelease(ctx->current_frame);
+                ctx->current_frame = nil;
                 unlock_frames(ctx);
                 return AVERROR(EIO);
             }
@@ -1100,26 +1171,84 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ctx->current_frame = nil;
 
             if (status < 0) {
+                CFRelease(ctx->current_frame);
+                ctx->current_frame = nil;
                 unlock_frames(ctx);
                 return status;
             }
         } else if (ctx->current_audio_frame != nil) {
+            OSStatus ret;
             CMBlockBufferRef block_buffer = CMSampleBufferGetDataBuffer(ctx->current_audio_frame);
-            int block_buffer_size         = CMBlockBufferGetDataLength(block_buffer);
 
-            if (!block_buffer || !block_buffer_size) {
+            size_t input_size = CMBlockBufferGetDataLength(block_buffer);;
+            int buffer_size = input_size / ctx->audio_buffers;
+            int nb_samples = input_size / (ctx->audio_channels * ctx->bytes_per_sample);
+            int output_size = buffer_size;
+
+            UInt32 size = sizeof(output_size);
+            ret = AudioConverterGetProperty(ctx->audio_converter, kAudioConverterPropertyCalculateOutputBufferSize, &size, &output_size);
+            if (ret != noErr) {
+                CFRelease(ctx->current_audio_frame);
+                ctx->current_audio_frame = nil;
                 unlock_frames(ctx);
                 return AVERROR(EIO);
             }
 
-            if (ctx->audio_non_interleaved && block_buffer_size > ctx->audio_buffer_size) {
-                unlock_frames(ctx);
-                return AVERROR_BUFFER_TOO_SMALL;
-            }
-
-            if (av_new_packet(pkt, block_buffer_size) < 0) {
+            if (av_new_packet(pkt, output_size) < 0) {
+                CFRelease(ctx->current_audio_frame);
+                ctx->current_audio_frame = nil;
                 unlock_frames(ctx);
                 return AVERROR(EIO);
+            }
+
+            if (ctx->audio_converter) {
+                size_t input_buffer_size = offsetof(AudioBufferList, mBuffers[0]) + (sizeof(AudioBuffer) * ctx->audio_buffers);
+                AudioBufferList *input_buffer = av_malloc(input_buffer_size);
+
+                input_buffer->mNumberBuffers = ctx->audio_buffers;
+
+                for (int c = 0; c < ctx->audio_buffers; c++) {
+                    input_buffer->mBuffers[c].mNumberChannels = 1;
+
+                    ret = CMBlockBufferGetDataPointer(block_buffer, c * buffer_size, (size_t *)&input_buffer->mBuffers[c].mDataByteSize, NULL, (void *)&input_buffer->mBuffers[c].mData);
+
+                    if (ret != kCMBlockBufferNoErr) {
+                        av_free(input_buffer);
+                        CFRelease(ctx->current_audio_frame);
+                        ctx->current_audio_frame = nil;
+                        unlock_frames(ctx);
+                        return AVERROR(EIO);
+                    }
+                }
+
+                AudioBufferList output_buffer = {
+                   .mNumberBuffers = 1,
+                   .mBuffers[0]    = {
+                       .mNumberChannels = ctx->audio_channels,
+                       .mDataByteSize   = pkt->size,
+                       .mData           = pkt->data
+                   }
+                };
+
+                ret = AudioConverterConvertComplexBuffer(ctx->audio_converter, nb_samples, input_buffer, &output_buffer);
+                av_free(input_buffer);
+
+                if (ret != noErr) {
+                    CFRelease(ctx->current_audio_frame);
+                    ctx->current_audio_frame = nil;
+                    unlock_frames(ctx);
+                    return AVERROR(EIO);
+                }
+
+                pkt->size = output_buffer.mBuffers[0].mDataByteSize;
+            } else {
+                 ret = CMBlockBufferCopyDataBytes(block_buffer, 0, pkt->size, pkt->data);
+                 if (ret != kCMBlockBufferNoErr) {
+                     CFRelease(ctx->current_audio_frame);
+                     ctx->current_audio_frame = nil;
+                     unlock_frames(ctx);
+                     return AVERROR(EIO);
+                 }
             }
 
             CMItemCount count;
@@ -1133,54 +1262,9 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index  = ctx->audio_stream_index;
             pkt->flags        |= AV_PKT_FLAG_KEY;
 
-            if (ctx->audio_non_interleaved) {
-                int sample, c, shift, num_samples;
-
-                OSStatus ret = CMBlockBufferCopyDataBytes(block_buffer, 0, pkt->size, ctx->audio_buffer);
-                if (ret != kCMBlockBufferNoErr) {
-                    unlock_frames(ctx);
-                    return AVERROR(EIO);
-                }
-
-                num_samples = pkt->size / (ctx->audio_channels * (ctx->audio_bits_per_sample >> 3));
-
-                // transform decoded frame into output format
-                #define INTERLEAVE_OUTPUT(bps)                                         \
-                {                                                                      \
-                    int##bps##_t **src;                                                \
-                    int##bps##_t *dest;                                                \
-                    src = av_malloc(ctx->audio_channels * sizeof(int##bps##_t*));      \
-                    if (!src) {                                                        \
-                        unlock_frames(ctx);                                            \
-                        return AVERROR(EIO);                                           \
-                    }                                                                  \
-                                                                                       \
-                    for (c = 0; c < ctx->audio_channels; c++) {                        \
-                        src[c] = ((int##bps##_t*)ctx->audio_buffer) + c * num_samples; \
-                    }                                                                  \
-                    dest  = (int##bps##_t*)pkt->data;                                  \
-                    shift = bps - ctx->audio_bits_per_sample;                          \
-                    for (sample = 0; sample < num_samples; sample++)                   \
-                        for (c = 0; c < ctx->audio_channels; c++)                      \
-                            *dest++ = src[c][sample] << shift;                         \
-                    av_freep(&src);                                                    \
-                }
-
-                if (ctx->audio_bits_per_sample <= 16) {
-                    INTERLEAVE_OUTPUT(16)
-                } else {
-                    INTERLEAVE_OUTPUT(32)
-                }
-            } else {
-                OSStatus ret = CMBlockBufferCopyDataBytes(block_buffer, 0, pkt->size, pkt->data);
-                if (ret != kCMBlockBufferNoErr) {
-                    unlock_frames(ctx);
-                    return AVERROR(EIO);
-                }
-            }
-
             CFRelease(ctx->current_audio_frame);
             ctx->current_audio_frame = nil;
+            unlock_frames(ctx);
         } else {
             pkt->data = NULL;
             unlock_frames(ctx);
@@ -1190,8 +1274,6 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(EAGAIN);
             }
         }
-
-        unlock_frames(ctx);
     } while (!pkt->data);
 
     return 0;
@@ -1200,6 +1282,9 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int avf_close(AVFormatContext *s)
 {
     AVFContext* ctx = (AVFContext*)s->priv_data;
+    lock_frames(ctx);
+    ctx->is_done = true;
+    unlock_frames(ctx);
     destroy_context(ctx);
     return 0;
 }
