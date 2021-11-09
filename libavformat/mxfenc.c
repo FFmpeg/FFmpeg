@@ -2065,7 +2065,7 @@ static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    int i, cid, frame_size = 0;
+    int i, cid;
 
     if (mxf->header_written)
         return 1;
@@ -2091,12 +2091,6 @@ static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
     case 3: sc->component_depth = 12; break;
     }
     if (!sc->component_depth)
-        return 0;
-
-    if ((frame_size = avpriv_dnxhd_get_frame_size(cid)) == DNXHD_VARIABLE) {
-        frame_size = avpriv_dnxhd_get_hr_frame_size(cid, st->codecpar->width, st->codecpar->height);
-    }
-    if (frame_size < 0)
         return 0;
 
     if (cid >= 1270) { // RI raster
