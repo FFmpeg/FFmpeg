@@ -35,6 +35,8 @@ typedef struct ESTDIFContext {
     int deint;            ///< which frames to deinterlace
     int rslope;           ///< best edge slope search radius
     int redge;            ///< best edge match search radius
+    float ecost;          ///< edge cost for edge matching
+    float mcost;          ///< middle cost for edge matching
     float dcost;          ///< distance cost for edge matching
     int interp;           ///< type of interpolation
     int linesize[4];      ///< bytes of pixel data per line for each plane
@@ -93,6 +95,8 @@ static const AVOption estdif_options[] = {
     CONST("interlaced", "only deinterlace frames marked as interlaced", 1, "deint"),
     { "rslope", "specify the search radius for edge slope tracing", OFFSET(rslope), AV_OPT_TYPE_INT, {.i64=1}, 1, MAX_R, FLAGS, },
     { "redge",  "specify the search radius for best edge matching", OFFSET(redge),  AV_OPT_TYPE_INT, {.i64=2}, 0, MAX_R, FLAGS, },
+    { "ecost",  "specify the edge cost for edge matching",          OFFSET(ecost),  AV_OPT_TYPE_FLOAT,{.dbl=0.03125},0,1,FLAGS, },
+    { "mcost",  "specify the middle cost for edge matching",        OFFSET(mcost),  AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1,  FLAGS, },
     { "dcost",  "specify the distance cost for edge matching",      OFFSET(dcost),  AV_OPT_TYPE_FLOAT,{.dbl=0.5}, 0, 1,  FLAGS, },
     { "interp", "specify the type of interpolation",                OFFSET(interp), AV_OPT_TYPE_INT, {.i64=1}, 0, 2,     FLAGS, "interp" },
     CONST("2p", "two-point interpolation",  0, "interp"),
@@ -260,9 +264,10 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
     const type *const next2_line = (const type *const)nnext2_line;             \
     const type *const next3_line = (const type *const)nnext3_line;             \
     const int interp = s->interp;                                              \
+    const int ecost = s->ecost * 32.f;                                         \
     const int dcost = s->dcost * s->max;                                       \
     const int end = width - 1;                                                 \
-    const atype f = redge + 2;                                                 \
+    const atype mcost = s->mcost * s->redge * 4.f;                             \
     atype sd[S], sD[S], di = 0;                                                \
     atype dmin = amax;                                                         \
     int k = *K;                                                                \
@@ -278,8 +283,8 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
             sum += diff_##ss(next_line,  next2_line, xx, yy);                  \
         }                                                                      \
                                                                                \
-        sD[i + rslope]  =     sum;                                             \
-        sD[i + rslope] += f * cost_##ss(prev_line,  next_line,  end, x, i);    \
+        sD[i + rslope]  = ecost * sum;                                         \
+        sD[i + rslope] += mcost * cost_##ss(prev_line,  next_line,  end, x, i);\
         sD[i + rslope] += dcost * abs(i);                                      \
                                                                                \
         dmin = FFMIN(sD[i + rslope], dmin);                                    \
@@ -296,8 +301,8 @@ static void interpolate_##ss(ESTDIFContext *s, uint8_t *ddst,                  \
             sum += diff_##ss(next_line,  next2_line, xx, yy);                  \
         }                                                                      \
                                                                                \
-        sd[i + rslope]  =     sum;                                             \
-        sd[i + rslope] += f * cost_##ss(prev_line, next_line, end, x, k + i);  \
+        sd[i + rslope]  = ecost * sum;                                         \
+        sd[i + rslope] += mcost * cost_##ss(prev_line, next_line, end, x, k+i);\
         sd[i + rslope] += dcost * abs(k + i);                                  \
                                                                                \
         dmin = FFMIN(sd[i + rslope], dmin);                                    \
