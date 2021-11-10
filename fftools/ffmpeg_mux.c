@@ -290,3 +290,24 @@ int of_check_init(OutputFile *of)
 
     return 0;
 }
+
+int of_write_trailer(OutputFile *of)
+{
+    int ret;
+
+    if (!of->header_written) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Nothing was written into output file %d (%s), because "
+               "at least one of its streams received no packets.\n",
+               of->index, of->ctx->url);
+        return AVERROR(EINVAL);
+    }
+
+    ret = av_write_trailer(of->ctx);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", of->ctx->url, av_err2str(ret));
+        return ret;
+    }
+
+    return 0;
+}

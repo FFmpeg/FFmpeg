@@ -4450,19 +4450,9 @@ static int transcode(void)
 
     /* write the trailer if needed */
     for (i = 0; i < nb_output_files; i++) {
-        os = output_files[i]->ctx;
-        if (!output_files[i]->header_written) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Nothing was written into output file %d (%s), because "
-                   "at least one of its streams received no packets.\n",
-                   i, os->url);
-            continue;
-        }
-        if ((ret = av_write_trailer(os)) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", os->url, av_err2str(ret));
-            if (exit_on_error)
-                exit_program(1);
-        }
+        ret = of_write_trailer(output_files[i]);
+        if (ret < 0 && exit_on_error)
+            exit_program(1);
     }
 
     /* dump report by using the first video and audio streams */
