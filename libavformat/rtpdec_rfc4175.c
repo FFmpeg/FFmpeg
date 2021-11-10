@@ -55,9 +55,11 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
         if (data->depth == 8) {
             data->pgroup = 4;
             pixfmt = AV_PIX_FMT_UYVY422;
+            stream->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
         } else if (data->depth == 10) {
             data->pgroup = 5;
             pixfmt = AV_PIX_FMT_YUV422P10;
+            stream->codecpar->codec_id = AV_CODEC_ID_BITPACKED;
         } else {
             return AVERROR_INVALIDDATA;
         }
@@ -268,7 +270,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 const RTPDynamicProtocolHandler ff_rfc4175_rtp_handler = {
     .enc_name           = "raw",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
-    .codec_id           = AV_CODEC_ID_BITPACKED,
+    .codec_id           = AV_CODEC_ID_NONE,
     .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = rfc4175_parse_sdp_line,
     .parse_packet       = rfc4175_handle_packet,
