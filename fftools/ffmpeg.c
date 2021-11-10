@@ -565,19 +565,9 @@ static void ffmpeg_cleanup(int ret)
     av_freep(&subtitle_out);
 
     /* close files */
-    for (i = 0; i < nb_output_files; i++) {
-        OutputFile *of = output_files[i];
-        AVFormatContext *s;
-        if (!of)
-            continue;
-        s = of->ctx;
-        if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
-            avio_closep(&s->pb);
-        avformat_free_context(s);
-        av_dict_free(&of->opts);
+    for (i = 0; i < nb_output_files; i++)
+        of_close(&output_files[i]);
 
-        av_freep(&output_files[i]);
-    }
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 

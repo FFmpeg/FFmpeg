@@ -311,3 +311,20 @@ int of_write_trailer(OutputFile *of)
 
     return 0;
 }
+
+void of_close(OutputFile **pof)
+{
+    OutputFile *of = *pof;
+    AVFormatContext *s;
+
+    if (!of)
+        return;
+
+    s = of->ctx;
+    if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
+        avio_closep(&s->pb);
+    avformat_free_context(s);
+    av_dict_free(&of->opts);
+
+    av_freep(pof);
+}
