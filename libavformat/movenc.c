@@ -1018,17 +1018,9 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
                 avio_wb16(pb, 16);
             avio_wb16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
         } else { /* reserved for mp4/3gp */
-            if (track->par->codec_id == AV_CODEC_ID_FLAC ||
-                track->par->codec_id == AV_CODEC_ID_OPUS) {
-                avio_wb16(pb, track->par->channels);
-            } else {
-                avio_wb16(pb, 2);
-            }
-            if (track->par->codec_id == AV_CODEC_ID_FLAC) {
-                avio_wb16(pb, track->par->bits_per_raw_sample);
-            } else {
-                avio_wb16(pb, 16);
-            }
+            avio_wb16(pb, track->par->channels > 0 ? track->par->channels : 1);
+            track->par->bits_per_coded_sample = av_get_bits_per_sample(track->par->codec_id);
+            avio_wb16(pb, track->par->bits_per_coded_sample > 0 ? track->par->bits_per_coded_sample : 16);
             avio_wb16(pb, 0);
         }
 
@@ -1532,8 +1524,10 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         tag = track->par->codec_tag;
     else if (track->mode == MODE_F4V)
         tag = track->par->codec_tag;
-    else
+    
+    if (tag == 0) {
         tag = mov_get_codec_tag(s, track);
+    }
 
     return tag;
 }
