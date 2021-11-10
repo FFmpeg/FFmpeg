@@ -24,12 +24,13 @@
 #define CGS 32
 
 typedef struct AvgBlurVulkanContext {
-    VulkanFilterContext vkctx;
+    FFVulkanContext vkctx;
 
     int initialized;
+    FFVkQueueFamilyCtx qf;
     FFVkExecContext *exec;
-    VulkanPipeline *pl_hor;
-    VulkanPipeline *pl_ver;
+    FFVulkanPipeline *pl_hor;
+    FFVulkanPipeline *pl_ver;
 
     /* Shader updators, must be in the main filter struct */
     VkDescriptorImageInfo input_images[3];
@@ -73,16 +74,14 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     FFSPIRVShader *shd;
     AvgBlurVulkanContext *s = ctx->priv;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    VkSampler *sampler = ff_vk_init_sampler(ctx, 1, VK_FILTER_LINEAR);
 
-    VulkanDescriptorSetBinding desc_i[2] = {
+    FFVulkanDescriptorSetBinding desc_i[2] = {
         {
             .name       = "input_img",
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER_ARRAY4(*sampler),
         },
         {
             .name       = "output_img",
@@ -95,17 +94,17 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         },
     };
 
-    if (!sampler)
-        return AVERROR_EXTERNAL;
+    ff_vk_qf_init(ctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
 
-    s->vkctx.queue_family_idx = s->vkctx.hwctx->queue_family_comp_index;
-    s->vkctx.queue_count = s->vkctx.hwctx->nb_comp_queues;
+    desc_i[0].sampler = ff_vk_init_sampler(ctx, 1, VK_FILTER_LINEAR);
+    if (!desc_i[0].sampler)
+        return AVERROR_EXTERNAL;
 
     { /* Create shader for the horizontal pass */
         desc_i[0].updater = s->input_images;
         desc_i[1].updater = s->tmp_images;
 
-        s->pl_hor = ff_vk_create_pipeline(ctx);
+        s->pl_hor = ff_vk_create_pipeline(ctx, &s->qf);
         if (!s->pl_hor)
             return AVERROR(ENOMEM);
 
@@ -148,7 +147,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         desc_i[0].updater = s->tmp_images;
         desc_i[1].updater = s->output_images;
 
-        s->pl_ver = ff_vk_create_pipeline(ctx);
+        s->pl_ver = ff_vk_create_pipeline(ctx, &s->qf);
         if (!s->pl_ver)
             return AVERROR(ENOMEM);
 
@@ -188,7 +187,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     }
 
     /* Execution context */
-    RET(ff_vk_create_exec_ctx(ctx, &s->exec));
+    RET(ff_vk_create_exec_ctx(ctx, &s->exec, &s->qf));
 
     s->initialized = 1;
 
@@ -310,6 +309,8 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
     err = ff_vk_submit_exec_queue(avctx, s->exec);
     if (err)
         return err;
+
+    ff_vk_qf_rotate(&s->qf);
 
     return err;
 

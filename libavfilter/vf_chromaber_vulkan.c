@@ -24,11 +24,12 @@
 #define CGROUPS (int [3]){ 32, 32, 1 }
 
 typedef struct ChromaticAberrationVulkanContext {
-    VulkanFilterContext vkctx;
+    FFVulkanContext vkctx;
 
     int initialized;
+    FFVkQueueFamilyCtx qf;
     FFVkExecContext *exec;
-    VulkanPipeline *pl;
+    FFVulkanPipeline *pl;
 
     /* Shader updators, must be in the main filter struct */
     VkDescriptorImageInfo input_images[3];
@@ -67,17 +68,18 @@ static const char distort_chroma_kernel[] = {
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
+    FFVkSampler *sampler;
     ChromaticAberrationVulkanContext *s = ctx->priv;
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+
+    ff_vk_qf_init(ctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
 
     /* Create a sampler */
-    VkSampler *sampler = ff_vk_init_sampler(ctx, 0, VK_FILTER_LINEAR);
+    sampler = ff_vk_init_sampler(ctx, 0, VK_FILTER_LINEAR);
     if (!sampler)
         return AVERROR_EXTERNAL;
 
-    s->vkctx.queue_family_idx = s->vkctx.hwctx->queue_family_comp_index;
-    s->vkctx.queue_count = s->vkctx.hwctx->nb_comp_queues;
-
-    s->pl = ff_vk_create_pipeline(ctx);
+    s->pl = ff_vk_create_pipeline(ctx, &s->qf);
     if (!s->pl)
         return AVERROR(ENOMEM);
 
@@ -86,8 +88,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     s->opts.dist[1] = (s->opts.dist[1] / 100.0f) + 1.0f;
 
     { /* Create the shader */
-        const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-        VulkanDescriptorSetBinding desc_i[2] = {
+        FFVulkanDescriptorSetBinding desc_i[2] = {
             {
                 .name       = "input_img",
                 .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -95,7 +96,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
                 .elems      = planes,
                 .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
                 .updater    = s->input_images,
-                .samplers   = DUP_SAMPLER_ARRAY4(*sampler),
+                .sampler    = sampler,
             },
             {
                 .name       = "output_img",
@@ -158,7 +159,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     RET(ff_vk_init_compute_pipeline(ctx, s->pl));
 
     /* Execution context */
-    RET(ff_vk_create_exec_ctx(ctx, &s->exec));
+    RET(ff_vk_create_exec_ctx(ctx, &s->exec, &s->qf));
 
     s->initialized = 1;
 
@@ -255,6 +256,8 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     err = ff_vk_submit_exec_queue(avctx, s->exec);
     if (err)
         return err;
+
+    ff_vk_qf_rotate(&s->qf);
 
     return err;
 
