@@ -803,22 +803,56 @@ typedef struct AVIndexEntry {
     int min_distance;         /**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
 } AVIndexEntry;
 
-#define AV_DISPOSITION_DEFAULT   0x0001
-#define AV_DISPOSITION_DUB       0x0002
-#define AV_DISPOSITION_ORIGINAL  0x0004
-#define AV_DISPOSITION_COMMENT   0x0008
-#define AV_DISPOSITION_LYRICS    0x0010
-#define AV_DISPOSITION_KARAOKE   0x0020
+/**
+ * The stream should be chosen by default among other streams of the same type,
+ * unless the user has explicitly specified otherwise.
+ */
+#define AV_DISPOSITION_DEFAULT              (1 << 0)
+/**
+ * The stream is not in original language.
+ *
+ * @note AV_DISPOSITION_ORIGINAL is the inverse of this disposition. At most
+ *       one of them should be set in properly tagged streams.
+ * @note This disposition may apply to any stream type, not just audio.
+ */
+#define AV_DISPOSITION_DUB                  (1 << 1)
+/**
+ * The stream is in original language.
+ *
+ * @see the notes for AV_DISPOSITION_DUB
+ */
+#define AV_DISPOSITION_ORIGINAL             (1 << 2)
+/**
+ * The stream is a commentary track.
+ */
+#define AV_DISPOSITION_COMMENT              (1 << 3)
+/**
+ * The stream contains song lyrics.
+ */
+#define AV_DISPOSITION_LYRICS               (1 << 4)
+/**
+ * The stream contains karaoke audio.
+ */
+#define AV_DISPOSITION_KARAOKE              (1 << 5)
 
 /**
  * Track should be used during playback by default.
  * Useful for subtitle track that should be displayed
  * even when user did not explicitly ask for subtitles.
  */
-#define AV_DISPOSITION_FORCED    0x0040
-#define AV_DISPOSITION_HEARING_IMPAIRED  0x0080  /**< stream for hearing impaired audiences */
-#define AV_DISPOSITION_VISUAL_IMPAIRED   0x0100  /**< stream for visual impaired audiences */
-#define AV_DISPOSITION_CLEAN_EFFECTS     0x0200  /**< stream without voice */
+#define AV_DISPOSITION_FORCED               (1 << 6)
+/**
+ * The stream is intended for hearing impaired audiences.
+ */
+#define AV_DISPOSITION_HEARING_IMPAIRED     (1 << 7)
+/**
+ * The stream is intended for visually impaired audiences.
+ */
+#define AV_DISPOSITION_VISUAL_IMPAIRED      (1 << 8)
+/**
+ * The audio stream contains music and sound effects without voice.
+ */
+#define AV_DISPOSITION_CLEAN_EFFECTS        (1 << 9)
 /**
  * The stream is stored in the file as an attached picture/"cover art" (e.g.
  * APIC frame in ID3v2). The first (usually only) packet associated with it
@@ -826,21 +860,39 @@ typedef struct AVIndexEntry {
  * seeking takes place. It can also be accessed at any time in
  * AVStream.attached_pic.
  */
-#define AV_DISPOSITION_ATTACHED_PIC      0x0400
+#define AV_DISPOSITION_ATTACHED_PIC         (1 << 10)
 /**
  * The stream is sparse, and contains thumbnail images, often corresponding
  * to chapter markers. Only ever used with AV_DISPOSITION_ATTACHED_PIC.
  */
-#define AV_DISPOSITION_TIMED_THUMBNAILS  0x0800
+#define AV_DISPOSITION_TIMED_THUMBNAILS     (1 << 11)
 
 /**
- * To specify text track kind (different from subtitles default).
+ * The subtitle stream contains captions, providing a transcription and possibly
+ * a translation of audio. Typically intended for hearing-impaired audiences.
  */
-#define AV_DISPOSITION_CAPTIONS     0x10000
-#define AV_DISPOSITION_DESCRIPTIONS 0x20000
-#define AV_DISPOSITION_METADATA     0x40000
-#define AV_DISPOSITION_DEPENDENT    0x80000 ///< dependent audio stream (mix_type=0 in mpegts)
-#define AV_DISPOSITION_STILL_IMAGE 0x100000 ///< still images in video stream (still_picture_flag=1 in mpegts)
+#define AV_DISPOSITION_CAPTIONS             (1 << 16)
+/**
+ * The subtitle stream contains a textual description of the video content.
+ * Typically intended for visually-impaired audiences or for the cases where the
+ * video cannot be seen.
+ */
+#define AV_DISPOSITION_DESCRIPTIONS         (1 << 17)
+/**
+ * The subtitle stream contains time-aligned metadata that is not intended to be
+ * directly presented to the user.
+ */
+#define AV_DISPOSITION_METADATA             (1 << 18)
+/**
+ * The audio stream is intended to be mixed with another stream before
+ * presentation.
+ * Corresponds to mix_type=0 in mpegts.
+ */
+#define AV_DISPOSITION_DEPENDENT            (1 << 19)
+/**
+ * The video stream contains still images.
+ */
+#define AV_DISPOSITION_STILL_IMAGE          (1 << 20)
 
 /**
  * Options for behavior on timestamp wrap detection.
@@ -903,7 +955,13 @@ typedef struct AVStream {
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
-    int disposition; /**< AV_DISPOSITION_* bit field */
+    /**
+     * Stream disposition - a combination of AV_DISPOSITION_* flags.
+     * - demuxing: set by libavformat when creating the stream or in
+     *             avformat_find_stream_info().
+     * - muxing: may be set by the caller before avformat_write_header().
+     */
+    int disposition;
 
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
