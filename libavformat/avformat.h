@@ -895,6 +895,20 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_STILL_IMAGE          (1 << 20)
 
 /**
+ * @return The AV_DISPOSITION_* flag corresponding to disp or a negative error
+ *         code if disp does not correspond to a known stream disposition.
+ */
+int av_disposition_from_string(const char *disp);
+
+/**
+ * @param disposition a combination of AV_DISPOSITION_* values
+ * @return The string description corresponding to the lowest set bit in
+ *         disposition. NULL when the lowest set bit does not correspond
+ *         to a known disposition or when disposition is 0.
+ */
+const char *av_disposition_to_string(int disposition);
+
+/**
  * Options for behavior on timestamp wrap detection.
  */
 #define AV_PTS_WRAP_IGNORE      0   ///< ignore the wrap

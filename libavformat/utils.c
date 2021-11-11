@@ -28,6 +28,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/internal.h"
+#include "libavutil/intmath.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixfmt.h"
@@ -1964,4 +1965,50 @@ void ff_format_set_url(AVFormatContext *s, char *url)
     av_assert0(url);
     av_freep(&s->url);
     s->url = url;
+}
+
+static const struct {
+    const char *str;
+    int disposition;
+} dispositions[] = {
+    { "default",            AV_DISPOSITION_DEFAULT            },
+    { "dub",                AV_DISPOSITION_DUB                },
+    { "original",           AV_DISPOSITION_ORIGINAL           },
+    { "comment",            AV_DISPOSITION_COMMENT            },
+    { "lyrics",             AV_DISPOSITION_LYRICS             },
+    { "karaoke",            AV_DISPOSITION_KARAOKE            },
+    { "forced",             AV_DISPOSITION_FORCED             },
+    { "hearing_impaired",   AV_DISPOSITION_HEARING_IMPAIRED   },
+    { "visual_impaired",    AV_DISPOSITION_VISUAL_IMPAIRED    },
+    { "clean_effects",      AV_DISPOSITION_CLEAN_EFFECTS      },
+    { "attached_pic",       AV_DISPOSITION_ATTACHED_PIC       },
+    { "timed_thumbnails",   AV_DISPOSITION_TIMED_THUMBNAILS   },
+    { "captions",           AV_DISPOSITION_CAPTIONS           },
+    { "descriptions",       AV_DISPOSITION_DESCRIPTIONS       },
+    { "metadata",           AV_DISPOSITION_METADATA           },
+    { "dependent",          AV_DISPOSITION_DEPENDENT          },
+    { "still_image",        AV_DISPOSITION_STILL_IMAGE        },
+};
+
+int av_disposition_from_string(const char *disp)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(dispositions); i++)
+        if (!strcmp(disp, dispositions[i].str))
+            return dispositions[i].disposition;
+    return AVERROR(EINVAL);
+}
+
+const char *av_disposition_to_string(int disposition)
+{
+    int val;
+
+    if (disposition <= 0)
+        return NULL;
+
+    val = 1 << ff_ctz(disposition);
+    for (int i = 0; i < FF_ARRAY_ELEMS(dispositions); i++)
+        if (dispositions[i].disposition == val)
+            return dispositions[i].str;
+
+    return NULL;
 }
