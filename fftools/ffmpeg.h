@@ -579,6 +579,8 @@ typedef struct OutputStream {
 typedef struct OutputFile {
     int index;
 
+    const AVOutputFormat *format;
+
     AVFormatContext *ctx;
     AVDictionary *opts;
     int ost_index;       /* index of the first stream in output_streams */

@@ -2789,9 +2789,9 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
     if (!codec_tag) {
         unsigned int codec_tag_tmp;
-        if (!of->ctx->oformat->codec_tag ||
-            av_codec_get_id (of->ctx->oformat->codec_tag, par_src->codec_tag) == par_src->codec_id ||
-            !av_codec_get_tag2(of->ctx->oformat->codec_tag, par_src->codec_id, &codec_tag_tmp))
+        if (!of->format->codec_tag ||
+            av_codec_get_id (of->format->codec_tag, par_src->codec_tag) == par_src->codec_id ||
+            !av_codec_get_tag2(of->format->codec_tag, par_src->codec_id, &codec_tag_tmp))
             codec_tag = par_src->codec_tag;
     }
 
@@ -2809,7 +2809,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     else
         ost->st->avg_frame_rate = ist->st->avg_frame_rate;
 
-    ret = avformat_transfer_internal_stream_timing_info(of->ctx->oformat, ost->st, ist->st, copy_tb);
+    ret = avformat_transfer_internal_stream_timing_info(of->format, ost->st, ist->st, copy_tb);
     if (ret < 0)
         return ret;
 
@@ -3011,7 +3011,8 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     InputStream *ist = get_input_stream(ost);
     AVCodecContext *enc_ctx = ost->enc_ctx;
     AVCodecContext *dec_ctx = NULL;
-    AVFormatContext *oc = output_files[ost->file_index]->ctx;
+    OutputFile      *of = output_files[ost->file_index];
+    AVFormatContext *oc = of->ctx;
     int ret;
 
     set_encoder_id(output_files[ost->file_index], ost);
@@ -3072,7 +3073,8 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
             enc_ctx->time_base = av_buffersink_get_time_base(ost->filter->filter);
         if (   av_q2d(enc_ctx->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
-           && (video_sync_method == VSYNC_CFR || video_sync_method == VSYNC_VSCFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
+           && (video_sync_method == VSYNC_CFR || video_sync_method == VSYNC_VSCFR ||
+               (video_sync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
             av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
                                        "Please consider specifying a lower framerate, a different muxer or -vsync 2\n");
         }
@@ -3405,7 +3407,7 @@ static int transcode_init(void)
     /* write headers for files with no streams */
     for (i = 0; i < nb_output_files; i++) {
         oc = output_files[i]->ctx;
-        if (oc->oformat->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
+        if (output_files[i]->format->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
             ret = of_check_init(output_files[i]);
             if (ret < 0)
                 goto dump_format;
@@ -4615,7 +4617,7 @@ int main(int argc, char **argv)
     }
 
     for (i = 0; i < nb_output_files; i++) {
-        if (strcmp(output_files[i]->ctx->oformat->name, "rtp"))
+        if (strcmp(output_files[i]->format->name, "rtp"))
             want_sdp = 0;
     }
 

@@ -2332,6 +2332,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     }
 
     of->ctx = oc;
+    of->format = oc->oformat;
     if (o->recording_time != INT64_MAX)
         oc->duration = o->recording_time;
 
