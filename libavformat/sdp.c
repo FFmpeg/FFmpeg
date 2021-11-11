@@ -660,6 +660,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
                                     p->width, p->height, pix_fmt, config);
             break;
         }
+        case AV_CODEC_ID_BITPACKED:
         case AV_CODEC_ID_RAWVIDEO: {
             const char *pix_fmt;
             int bit_depth = 8;
@@ -667,6 +668,10 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
             switch (p->format) {
             case AV_PIX_FMT_UYVY422:
                 pix_fmt = "YCbCr-4:2:2";
+                break;
+            case AV_PIX_FMT_YUV422P10:
+                pix_fmt = "YCbCr-4:2:2";
+                bit_depth = 10;
                 break;
             case AV_PIX_FMT_YUV420P:
                 pix_fmt = "YCbCr-4:2:0";
