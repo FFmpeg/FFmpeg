@@ -805,23 +805,6 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
             return ret;
     }
 
-    if (do_deinterlace) {
-        AVFilterContext *yadif;
-
-        snprintf(name, sizeof(name), "deinterlace_in_%d_%d",
-                 ist->file_index, ist->st->index);
-        if ((ret = avfilter_graph_create_filter(&yadif,
-                                                avfilter_get_by_name("yadif"),
-                                                name, "", NULL,
-                                                fg->graph)) < 0)
-            return ret;
-
-        if ((ret = avfilter_link(last_filter, 0, yadif, 0)) < 0)
-            return ret;
-
-        last_filter = yadif;
-    }
-
     snprintf(name, sizeof(name), "trim_in_%d_%d",
              ist->file_index, ist->st->index);
     if (copy_ts) {
