@@ -1679,13 +1679,14 @@ enum PrepMode {
     PREP_MODE_WRITE,
     PREP_MODE_RO_SHADER,
     PREP_MODE_EXTERNAL_EXPORT,
+    PREP_MODE_EXTERNAL_IMPORT
 };
 
 static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
                          AVVkFrame *frame, enum PrepMode pmode)
 {
     int err;
-    uint32_t dst_qf;
+    uint32_t src_qf, dst_qf;
     VkImageLayout new_layout;
     VkAccessFlags new_access;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
@@ -1718,16 +1719,30 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     case PREP_MODE_WRITE:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        src_qf     = VK_QUEUE_FAMILY_IGNORED;
         dst_qf     = VK_QUEUE_FAMILY_IGNORED;
         break;
     case PREP_MODE_RO_SHADER:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_READ_BIT;
+        src_qf     = VK_QUEUE_FAMILY_IGNORED;
         dst_qf     = VK_QUEUE_FAMILY_IGNORED;
+        break;
+    case PREP_MODE_EXTERNAL_IMPORT:
+        new_layout = VK_IMAGE_LAYOUT_GENERAL;
+        new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        src_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
+        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
+        s_timeline_sem_info.pWaitSemaphoreValues = frame->sem_value;
+        s_timeline_sem_info.waitSemaphoreValueCount = planes;
+        s_info.pWaitSemaphores = frame->sem;
+        s_info.pWaitDstStageMask = wait_st;
+        s_info.waitSemaphoreCount = planes;
         break;
     case PREP_MODE_EXTERNAL_EXPORT:
         new_layout = VK_IMAGE_LAYOUT_GENERAL;
         new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        src_qf     = VK_QUEUE_FAMILY_IGNORED;
         dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
         s_timeline_sem_info.pWaitSemaphoreValues = frame->sem_value;
         s_timeline_sem_info.waitSemaphoreValueCount = planes;
@@ -1749,7 +1764,7 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
         img_bar[i].dstAccessMask = new_access;
         img_bar[i].oldLayout = frame->layout[i];
         img_bar[i].newLayout = new_layout;
-        img_bar[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        img_bar[i].srcQueueFamilyIndex = src_qf;
         img_bar[i].dstQueueFamilyIndex = dst_qf;
         img_bar[i].image = frame->img[i];
         img_bar[i].subresourceRange.levelCount = 1;
@@ -2723,10 +2738,10 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
                                           AVFrame *dst, const AVFrame *src)
 {
     int err;
-    VkResult ret;
     CUcontext dummy;
     AVVkFrame *dst_f;
     AVVkFrameInternal *dst_int;
+    VulkanFramesPriv *fp = hwfc->internal->priv;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
 
@@ -2738,16 +2753,20 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
     CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS s_w_par[AV_NUM_DATA_POINTERS] = { 0 };
     CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS s_s_par[AV_NUM_DATA_POINTERS] = { 0 };
 
-    ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
-    if (ret < 0)
-        return AVERROR_EXTERNAL;
-
     dst_f = (AVVkFrame *)dst->data[0];
 
-    ret = vulkan_export_to_cuda(hwfc, src->hw_frames_ctx, dst);
-    if (ret < 0) {
+    err = prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_EXPORT);
+    if (err < 0)
+        return err;
+
+    err = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
+    if (err < 0)
+        return err;
+
+    err = vulkan_export_to_cuda(hwfc, src->hw_frames_ctx, dst);
+    if (err < 0) {
         CHECK_CU(cu->cuCtxPopCurrent(&dummy));
-        return ret;
+        return err;
     }
 
     dst_int = dst_f->internal;
@@ -2757,12 +2776,10 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
         s_s_par[i].params.fence.value = dst_f->sem_value[i] + 1;
     }
 
-    ret = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
+    err = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
                                                      planes, cuda_dev->stream));
-    if (ret < 0) {
-        err = AVERROR_EXTERNAL;
+    if (err < 0)
         goto fail;
-    }
 
     for (int i = 0; i < planes; i++) {
         CUDA_MEMCPY2D cpy = {
@@ -2781,19 +2798,15 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
         cpy.WidthInBytes = p_w * desc->comp[i].step;
         cpy.Height = p_h;
 
-        ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, cuda_dev->stream));
-        if (ret < 0) {
-            err = AVERROR_EXTERNAL;
+        err = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, cuda_dev->stream));
+        if (err < 0)
             goto fail;
-        }
     }
 
-    ret = CHECK_CU(cu->cuSignalExternalSemaphoresAsync(dst_int->cu_sem, s_s_par,
+    err = CHECK_CU(cu->cuSignalExternalSemaphoresAsync(dst_int->cu_sem, s_s_par,
                                                        planes, cuda_dev->stream));
-    if (ret < 0) {
-        err = AVERROR_EXTERNAL;
+    if (err < 0)
         goto fail;
-    }
 
     for (int i = 0; i < planes; i++)
         dst_f->sem_value[i]++;
@@ -2802,7 +2815,7 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
     av_log(hwfc, AV_LOG_VERBOSE, "Transfered CUDA image to Vulkan!\n");
 
-    return 0;
+    return err = prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
@@ -3550,10 +3563,10 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
                                         const AVFrame *src)
 {
     int err;
-    VkResult ret;
     CUcontext dummy;
     AVVkFrame *dst_f;
     AVVkFrameInternal *dst_int;
+    VulkanFramesPriv *fp = hwfc->internal->priv;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
 
@@ -3565,11 +3578,15 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS s_w_par[AV_NUM_DATA_POINTERS] = { 0 };
     CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS s_s_par[AV_NUM_DATA_POINTERS] = { 0 };
 
-    ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
-    if (ret < 0)
-        return AVERROR_EXTERNAL;
-
     dst_f = (AVVkFrame *)src->data[0];
+
+    err = prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_EXPORT);
+    if (err < 0)
+        return err;
+
+    err = CHECK_CU(cu->cuCtxPushCurrent(cuda_dev->cuda_ctx));
+    if (err < 0)
+        return err;
 
     err = vulkan_export_to_cuda(hwfc, dst->hw_frames_ctx, src);
     if (err < 0) {
@@ -3584,12 +3601,10 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
         s_s_par[i].params.fence.value = dst_f->sem_value[i] + 1;
     }
 
-    ret = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
+    err = CHECK_CU(cu->cuWaitExternalSemaphoresAsync(dst_int->cu_sem, s_w_par,
                                                      planes, cuda_dev->stream));
-    if (ret < 0) {
-        err = AVERROR_EXTERNAL;
+    if (err < 0)
         goto fail;
-    }
 
     for (int i = 0; i < planes; i++) {
         CUDA_MEMCPY2D cpy = {
@@ -3608,19 +3623,15 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
         cpy.WidthInBytes = w * desc->comp[i].step;
         cpy.Height = h;
 
-        ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, cuda_dev->stream));
-        if (ret < 0) {
-            err = AVERROR_EXTERNAL;
+        err = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, cuda_dev->stream));
+        if (err < 0)
             goto fail;
-        }
     }
 
-    ret = CHECK_CU(cu->cuSignalExternalSemaphoresAsync(dst_int->cu_sem, s_s_par,
+    err = CHECK_CU(cu->cuSignalExternalSemaphoresAsync(dst_int->cu_sem, s_s_par,
                                                        planes, cuda_dev->stream));
-    if (ret < 0) {
-        err = AVERROR_EXTERNAL;
+    if (err < 0)
         goto fail;
-    }
 
     for (int i = 0; i < planes; i++)
         dst_f->sem_value[i]++;
@@ -3629,7 +3640,7 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
     av_log(hwfc, AV_LOG_VERBOSE, "Transfered Vulkan image to CUDA!\n");
 
-    return 0;
+    return prepare_frame(hwfc, &fp->upload_ctx, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
