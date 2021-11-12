@@ -123,7 +123,6 @@ typedef struct AVVkFrameInternal {
     CUmipmappedArray cu_mma[AV_NUM_DATA_POINTERS];
     CUarray cu_array[AV_NUM_DATA_POINTERS];
     CUexternalSemaphore cu_sem[AV_NUM_DATA_POINTERS];
-    int exp_sem[AV_NUM_DATA_POINTERS];
 #endif
 } AVVkFrameInternal;
 
@@ -1572,7 +1571,6 @@ static void vulkan_free_internal(AVVkFrameInternal *internal)
                 CHECK_CU(cu->cuMipmappedArrayDestroy(internal->cu_mma[i]));
             if (internal->ext_mem[i])
                 CHECK_CU(cu->cuDestroyExternalMemory(internal->ext_mem[i]));
-            close(internal->exp_sem[i]);
         }
 
         av_buffer_unref(&internal->cuda_fc_ref);
@@ -2698,15 +2696,13 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
             }
 
             ret = vk->GetSemaphoreFdKHR(hwctx->act_dev, &sem_export,
-                                        &dst_int->exp_sem[i]);
+                                        &ext_sem_desc.handle.fd);
             if (ret != VK_SUCCESS) {
                 av_log(ctx, AV_LOG_ERROR, "Failed to export semaphore: %s\n",
                        vk_ret2str(ret));
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
-
-            ext_sem_desc.handle.fd = dup(dst_int->exp_sem[i]);
 
             ret = CHECK_CU(cu->cuImportExternalSemaphore(&dst_int->cu_sem[i],
                                                          &ext_sem_desc));
