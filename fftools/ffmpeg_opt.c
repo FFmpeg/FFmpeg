@@ -176,7 +176,6 @@ int auto_conversion_filters = 1;
 int64_t stats_period = 500000;
 
 
-static int intra_only         = 0;
 static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
 static int do_psnr            = 0;
@@ -1822,8 +1821,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         }
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
-        if (intra_only)
-            video_enc->gop_size = 0;
         MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
         if (intra_matrix) {
             if (!(video_enc->intra_matrix = av_mallocz(sizeof(*video_enc->intra_matrix) * 64))) {
@@ -3772,8 +3769,6 @@ const OptionDef options[] = {
         "set pixel format", "format" },
     { "bits_per_raw_sample", OPT_VIDEO | OPT_INT | HAS_ARG,                      { &frame_bits_per_raw_sample },
         "set the number of bits per raw sample", "number" },
-    { "intra",        OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &intra_only },
-        "deprecated use -g 1" },
     { "vn",           OPT_VIDEO | OPT_BOOL  | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,{ .off = OFFSET(video_disable) },
         "disable video" },
     { "rc_override",  OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
