@@ -2676,6 +2676,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
 
             ret = CHECK_CU(cu->cuImportExternalMemory(&dst_int->ext_mem[i], &ext_desc));
             if (ret < 0) {
+                close(ext_desc.handle.fd);
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
