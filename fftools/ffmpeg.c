@@ -3168,9 +3168,6 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     if (ost->st->duration <= 0 && ist->st->duration > 0)
         ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
 
-    // copy disposition
-    ost->st->disposition = ist->st->disposition;
-
     if (ist->st->nb_side_data) {
         for (i = 0; i < ist->st->nb_side_data; i++) {
             const AVPacketSideData *sd_src = &ist->st->side_data[i];
@@ -3358,7 +3355,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     AVCodecContext *enc_ctx = ost->enc_ctx;
     AVCodecContext *dec_ctx = NULL;
     AVFormatContext *oc = output_files[ost->file_index]->ctx;
-    int j, ret;
+    int ret;
 
     set_encoder_id(output_files[ost->file_index], ost);
 
@@ -3368,21 +3365,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     av_dict_set(&ost->st->metadata, "rotate", NULL, 0);
 
     if (ist) {
-        ost->st->disposition          = ist->st->disposition;
-
         dec_ctx = ist->dec_ctx;
 
         enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
-    } else {
-        for (j = 0; j < oc->nb_streams; j++) {
-            AVStream *st = oc->streams[j];
-            if (st != ost->st && st->codecpar->codec_type == ost->st->codecpar->codec_type)
-                break;
-        }
-        if (j == oc->nb_streams)
-            if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ||
-                ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-                ost->st->disposition = AV_DISPOSITION_DEFAULT;
     }
 
     if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -3659,24 +3644,6 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
             ost->st->duration = av_rescale_q(ist->st->duration, ist->st->time_base, ost->st->time_base);
     } else if (ost->stream_copy) {
         ret = init_output_stream_streamcopy(ost);
-        if (ret < 0)
-            return ret;
-    }
-
-    // parse user provided disposition, and update stream values
-    if (ost->disposition) {
-#if LIBAVFORMAT_VERSION_MAJOR >= 60
-        ret = av_opt_set(ost->st, "disposition", ost->disposition, 0);
-#else
-        {
-            const AVClass *class = av_stream_get_class();
-            const AVOption    *o = av_opt_find(&class, "disposition", NULL, 0, AV_OPT_SEARCH_FAKE_OBJ);
-
-            av_assert0(o);
-            ret = av_opt_eval_flags(&class, o, ost->disposition, &ost->st->disposition);
-        }
-#endif
-
         if (ret < 0)
             return ret;
     }

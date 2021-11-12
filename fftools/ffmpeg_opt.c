@@ -2150,6 +2150,72 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
     return 0;
 }
 
+static int set_dispositions(OutputFile *of)
+{
+    int nb_streams[AVMEDIA_TYPE_NB]   = { 0 };
+    int have_default[AVMEDIA_TYPE_NB] = { 0 };
+    int have_manual = 0;
+
+    // first, copy the input dispositions
+    for (int i = 0; i< of->ctx->nb_streams; i++) {
+        OutputStream *ost = output_streams[of->ost_index + i];
+
+        nb_streams[ost->st->codecpar->codec_type]++;
+
+        have_manual |= !!ost->disposition;
+
+        if (ost->source_index >= 0) {
+            ost->st->disposition = input_streams[ost->source_index]->st->disposition;
+
+            if (ost->st->disposition & AV_DISPOSITION_DEFAULT)
+                have_default[ost->st->codecpar->codec_type] = 1;
+        }
+    }
+
+    if (have_manual) {
+        // process manually set dispositions - they override the above copy
+        for (int i = 0; i< of->ctx->nb_streams; i++) {
+            OutputStream *ost = output_streams[of->ost_index + i];
+            int ret;
+
+            if (!ost->disposition)
+                continue;
+
+#if LIBAVFORMAT_VERSION_MAJOR >= 60
+            ret = av_opt_set(ost->st, "disposition", ost->disposition, 0);
+#else
+            {
+                const AVClass *class = av_stream_get_class();
+                const AVOption    *o = av_opt_find(&class, "disposition", NULL, 0, AV_OPT_SEARCH_FAKE_OBJ);
+
+                av_assert0(o);
+                ret = av_opt_eval_flags(&class, o, ost->disposition, &ost->st->disposition);
+            }
+#endif
+
+            if (ret < 0)
+                return ret;
+        }
+    } else {
+        // For each media type with more than one stream, find a suitable stream to
+        // mark as default, unless one is already marked default.
+        // "Suitable" means the first of that type, skipping attached pictures.
+        for (int i = 0; i< of->ctx->nb_streams; i++) {
+            OutputStream *ost = output_streams[of->ost_index + i];
+            enum AVMediaType type = ost->st->codecpar->codec_type;
+
+            if (nb_streams[type] < 2 || have_default[type] ||
+                ost->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
+                continue;
+
+            ost->st->disposition |= AV_DISPOSITION_DEFAULT;
+            have_default[type] = 1;
+        }
+    }
+
+    return 0;
+}
+
 static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
                                AVFormatContext *oc)
 {
@@ -2855,6 +2921,12 @@ loop_end:
             }
             av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
         }
+    }
+
+    err = set_dispositions(of);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error setting output stream dispositions\n");
+        exit_program(1);
     }
 
     return 0;

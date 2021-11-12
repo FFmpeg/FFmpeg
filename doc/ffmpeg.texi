@@ -560,27 +560,22 @@ ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @item -disposition[:stream_specifier] @var{value} (@emph{output,per-stream})
 Sets the disposition for a stream.
 
-This option overrides the disposition copied from the input stream. It is also
-possible to delete the disposition by setting it to 0.
+By default, the disposition is copied from the input stream, unless the output
+stream this option applies to is fed by a complex filtergraph - in that case the
+disposition is unset by default.
 
-The following dispositions are recognized:
-@table @option
-@item default
-@item dub
-@item original
-@item comment
-@item lyrics
-@item karaoke
-@item forced
-@item hearing_impaired
-@item visual_impaired
-@item clean_effects
-@item attached_pic
-@item captions
-@item descriptions
-@item dependent
-@item metadata
-@end table
+@var{value} is a sequence of items separated by '+' or '-'. The first item may
+also be prefixed with '+' or '-', in which case this option modifies the default
+value. Otherwise (the first item is not prefixed) this options overrides the
+default value. A '+' prefix adds the given disposition, '-' removes it. It is
+also possible to clear the disposition by setting it to 0.
+
+If no @code{-disposition} options were specified for an output file, ffmpeg will
+automatically set the 'default' disposition on the first stream of each type,
+when there are multiple streams of this type in the output file and no stream of
+that type is already marked as default.
+
+The @code{-dispositions} option lists the known dispositions.
 
 For example, to make the second audio stream the default stream:
 @example
