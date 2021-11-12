@@ -1215,6 +1215,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     if (!dev_features_1_2.timelineSemaphore) {
         av_log(ctx, AV_LOG_ERROR, "Device does not support timeline semaphores!\n");
         err = AVERROR(ENOSYS);
+        goto end;
     }
     p->device_features_1_2.timelineSemaphore = 1;
 
