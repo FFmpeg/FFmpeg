@@ -1677,7 +1677,6 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
 
 enum PrepMode {
     PREP_MODE_WRITE,
-    PREP_MODE_RO_SHADER,
     PREP_MODE_EXTERNAL_EXPORT,
     PREP_MODE_EXTERNAL_IMPORT
 };
@@ -1719,12 +1718,6 @@ static int prepare_frame(AVHWFramesContext *hwfc, VulkanExecCtx *ectx,
     case PREP_MODE_WRITE:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
-        src_qf     = VK_QUEUE_FAMILY_IGNORED;
-        dst_qf     = VK_QUEUE_FAMILY_IGNORED;
-        break;
-    case PREP_MODE_RO_SHADER:
-        new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        new_access = VK_ACCESS_TRANSFER_READ_BIT;
         src_qf     = VK_QUEUE_FAMILY_IGNORED;
         dst_qf     = VK_QUEUE_FAMILY_IGNORED;
         break;
@@ -2504,10 +2497,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         goto fail;
     }
 
-    /* NOTE: This is completely uneccesary and unneeded once we can import
-     * semaphores from DRM. Otherwise we have to activate the semaphores.
-     * We're reusing the exec context that's also used for uploads/downloads. */
-    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_RO_SHADER);
+    err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_EXTERNAL_IMPORT);
     if (err)
         goto fail;
 
