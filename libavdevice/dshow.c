@@ -425,7 +425,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 av_log(
                     avctx,
                     AV_LOG_INFO,
-                    "  ch=%2lu, bits=%2lu, rate=%6lu\n",
+                    "  ch=%2u, bits=%2u, rate=%6lu\n",
                     fx->nChannels, fx->wBitsPerSample, fx->nSamplesPerSec
                 );
                 continue;
