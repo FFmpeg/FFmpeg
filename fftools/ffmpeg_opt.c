@@ -312,12 +312,6 @@ static int opt_sameq(void *optctx, const char *opt, const char *arg)
     return AVERROR(EINVAL);
 }
 
-static int opt_video_channel(void *optctx, const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -channel.\n");
-    return opt_default(optctx, "channel", arg);
-}
-
 static int opt_video_standard(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -standard.\n");
@@ -3893,8 +3887,6 @@ const OptionDef options[] = {
         "set canvas size (WxH or abbreviation)", "size" },
 
     /* grab options */
-    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_video_channel },
-        "deprecated, use -channel", "channel" },
     { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_video_standard },
         "deprecated, use -standard", "standard" },
     { "isync", OPT_BOOL | OPT_EXPERT, { &input_sync }, "this option is deprecated and does nothing", "" },
