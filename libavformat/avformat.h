@@ -909,6 +909,13 @@ typedef struct AVIndexEntry {
  * sizeof(AVStream) must not be used outside libav*.
  */
 typedef struct AVStream {
+#if FF_API_AVSTREAM_CLASS
+    /**
+     * A class for @ref avoptions. Set on stream creation.
+     */
+    const AVClass *av_class;
+#endif
+
     int index;    /**< stream index in AVFormatContext */
     /**
      * Format-specific stream ID.
@@ -1863,6 +1870,14 @@ void avformat_free_context(AVFormatContext *s);
  * @see av_opt_find().
  */
 const AVClass *avformat_get_class(void);
+
+/**
+ * Get the AVClass for AVStream. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *av_stream_get_class(void);
 
 /**
  * Add a new stream to a media file.

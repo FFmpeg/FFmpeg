@@ -32,7 +32,7 @@
 // Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
 // Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  59
-#define LIBAVFORMAT_VERSION_MINOR   8
+#define LIBAVFORMAT_VERSION_MINOR   9
 #define LIBAVFORMAT_VERSION_MICRO 100
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -58,6 +58,7 @@
 #define FF_API_LAVF_PRIV_OPT            (LIBAVFORMAT_VERSION_MAJOR < 60)
 #define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 60)
 #define FF_API_AVIOCONTEXT_WRITTEN      (LIBAVFORMAT_VERSION_MAJOR < 60)
+#define FF_API_AVSTREAM_CLASS           (LIBAVFORMAT_VERSION_MAJOR > 59)
 
 
 #define FF_API_R_FRAME_RATE            1

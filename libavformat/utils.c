@@ -721,6 +721,17 @@ void avformat_free_context(AVFormatContext *s)
     av_free(s);
 }
 
+static const AVClass stream_class = {
+    .class_name     = "AVStream",
+    .item_name      = av_default_item_name,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
+const AVClass *av_stream_get_class(void)
+{
+    return &stream_class;
+}
+
 AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 {
     FFFormatContext *const si = ffformatcontext(s);
@@ -744,6 +755,10 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     if (!sti)
         return NULL;
     st = &sti->pub;
+
+#if FF_API_AVSTREAM_CLASS
+    st->av_class = &stream_class;
+#endif
 
     st->codecpar = avcodec_parameters_alloc();
     if (!st->codecpar)
