@@ -19,6 +19,13 @@
 #define VK_NO_PROTOTYPES
 #define VK_ENABLE_BETA_EXTENSIONS
 
+#ifdef _WIN32
+#include <windows.h> /* Included to prevent conflicts with CreateSemaphore */
+#include "compat/w32dlfcn.h"
+#else
+#include <dlfcn.h>
+#endif
+
 #include <unistd.h>
 
 #include "config.h"
@@ -31,12 +38,6 @@
 #include "hwcontext_vulkan.h"
 
 #include "vulkan_loader.h"
-
-#ifdef _WIN32
-#include "compat/w32dlfcn.h"
-#else
-#include <dlfcn.h>
-#endif
 
 #if CONFIG_LIBDRM
 #include <xf86drm.h>
