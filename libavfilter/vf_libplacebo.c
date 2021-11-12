@@ -116,6 +116,18 @@ typedef struct LibplaceboContext {
     int num_hooks;
 } LibplaceboContext;
 
+static inline enum pl_log_level get_log_level(void)
+{
+    int av_lev = av_log_get_level();
+    return av_lev >= AV_LOG_TRACE   ? PL_LOG_TRACE :
+           av_lev >= AV_LOG_DEBUG   ? PL_LOG_DEBUG :
+           av_lev >= AV_LOG_VERBOSE ? PL_LOG_INFO :
+           av_lev >= AV_LOG_WARNING ? PL_LOG_WARN :
+           av_lev >= AV_LOG_ERROR   ? PL_LOG_ERR :
+           av_lev >= AV_LOG_FATAL   ? PL_LOG_FATAL :
+                                      PL_LOG_NONE;
+}
+
 static void pl_av_log(void *log_ctx, enum pl_log_level level, const char *msg)
 {
     int av_lev;
@@ -177,7 +189,7 @@ static int libplacebo_init(AVFilterContext *avctx)
 
     /* Create libplacebo log context */
     s->log = pl_log_create(PL_API_VER, pl_log_params(
-        .log_level = PL_LOG_DEBUG,
+        .log_level = get_log_level(),
         .log_cb = pl_av_log,
         .log_priv = s,
     ));
@@ -447,6 +459,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
+    pl_log_level_update(s->log, get_log_level());
     if (!s->initialized)
         RET(init_vulkan(ctx));
 
