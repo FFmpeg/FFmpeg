@@ -1820,6 +1820,16 @@ int show_sample_fmts(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+int show_dispositions(void *optctx, const char *opt, const char *arg)
+{
+    for (int i = 0; i < 32; i++) {
+        const char *str = av_disposition_to_string(1 << i);
+        if (str)
+            printf("%s\n", str);
+    }
+    return 0;
+}
+
 static void show_help_codec(const char *name, int encoder)
 {
     const AVCodecDescriptor *desc;

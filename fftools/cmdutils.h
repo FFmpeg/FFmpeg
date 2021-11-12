@@ -238,6 +238,7 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
     { "pix_fmts",    OPT_EXIT,             { .func_arg = show_pix_fmts },    "show available pixel formats" },          \
     { "layouts",     OPT_EXIT,             { .func_arg = show_layouts },     "show standard channel layouts" },         \
     { "sample_fmts", OPT_EXIT,             { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
+    { "dispositions", OPT_EXIT,            { .func_arg = show_dispositions}, "show available stream dispositions" },    \
     { "colors",      OPT_EXIT,             { .func_arg = show_colors },      "show available color names" },            \
     { "loglevel",    HAS_ARG,              { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
     { "v",           HAS_ARG,              { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
@@ -576,6 +577,11 @@ int show_layouts(void *optctx, const char *opt, const char *arg);
  * program.
  */
 int show_sample_fmts(void *optctx, const char *opt, const char *arg);
+
+/**
+ * Print a listing containing all supported stream dispositions.
+ */
+int show_dispositions(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the color names and values recognized

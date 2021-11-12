@@ -167,6 +167,9 @@ Show available sample formats.
 @item -layouts
 Show channel names and standard channel layouts.
 
+@item -dispositions
+Show stream dispositions.
+
 @item -colors
 Show recognized color names.
 
