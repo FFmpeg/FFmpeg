@@ -3332,8 +3332,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
 
     if (ist) {
         dec_ctx = ist->dec_ctx;
-
-        enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
     }
 
     if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
