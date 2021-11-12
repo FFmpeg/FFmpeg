@@ -303,15 +303,6 @@ static int opt_stats_period(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_sameq(void *optctx, const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_ERROR, "Option '%s' was removed. "
-           "If you are looking for an option to preserve the quality (which is not "
-           "what -%s was for), use -qscale 0 or an equivalent quality factor option.\n",
-           opt, opt);
-    return AVERROR(EINVAL);
-}
-
 static int opt_audio_codec(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -3764,10 +3755,6 @@ const OptionDef options[] = {
     { "vcodec",       OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_INPUT |
                       OPT_OUTPUT,                                                { .func_arg = opt_video_codec },
         "force video codec ('copy' to copy stream)", "codec" },
-    { "sameq",        OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_sameq },
-        "Removed" },
-    { "same_quant",   OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_sameq },
-        "Removed" },
     { "timecode",     OPT_VIDEO | HAS_ARG | OPT_PERFILE | OPT_OUTPUT,            { .func_arg = opt_timecode },
         "set initial TimeCode value.", "hh:mm:ss[:;.]ff" },
     { "pass",         OPT_VIDEO | HAS_ARG | OPT_SPEC | OPT_INT | OPT_OUTPUT,     { .off = OFFSET(pass) },
