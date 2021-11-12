@@ -55,18 +55,10 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  *
  */
-#ifndef FF_API_LAVF_PRIV_OPT
 #define FF_API_LAVF_PRIV_OPT            (LIBAVFORMAT_VERSION_MAJOR < 60)
-#endif
-#ifndef FF_API_COMPUTE_PKT_FIELDS2
 #define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 60)
-#endif
-#ifndef FF_API_AVIOCONTEXT_WRITTEN
 #define FF_API_AVIOCONTEXT_WRITTEN      (LIBAVFORMAT_VERSION_MAJOR < 60)
-#endif
 
 
-#ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
-#endif
 #endif /* AVFORMAT_VERSION_H */

@@ -50,14 +50,8 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_SWS_PARAM_OPTION
 #define FF_API_SWS_PARAM_OPTION             (LIBAVFILTER_VERSION_MAJOR < 9)
-#endif
-#ifndef FF_API_BUFFERSINK_ALLOC
 #define FF_API_BUFFERSINK_ALLOC             (LIBAVFILTER_VERSION_MAJOR < 9)
-#endif
-#ifndef FF_API_PAD_COUNT
 #define FF_API_PAD_COUNT                    (LIBAVFILTER_VERSION_MAJOR < 9)
-#endif
 
 #endif /* AVFILTER_VERSION_H */
