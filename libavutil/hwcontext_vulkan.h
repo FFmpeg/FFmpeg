@@ -19,6 +19,9 @@
 #ifndef AVUTIL_HWCONTEXT_VULKAN_H
 #define AVUTIL_HWCONTEXT_VULKAN_H
 
+#if defined(_WIN32) && !defined(VK_USE_PLATFORM_WIN32_KHR)
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
 #include <vulkan/vulkan.h>
 
 #include "pixfmt.h"
