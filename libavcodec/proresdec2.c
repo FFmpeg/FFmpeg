@@ -33,6 +33,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "hwconfig.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "profiles.h"
@@ -268,12 +269,15 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (pix_fmt != ctx->pix_fmt) {
-#define HWACCEL_MAX 0
+#define HWACCEL_MAX (CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL)
         enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
         int ret;
 
         ctx->pix_fmt = pix_fmt;
 
+#if CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VIDEOTOOLBOX;
+#endif
         *fmtp++ = ctx->pix_fmt;
         *fmtp = AV_PIX_FMT_NONE;
 
@@ -864,4 +868,10 @@ const AVCodec ff_prores_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+#if CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL
+        HWACCEL_VIDEOTOOLBOX(prores),
+#endif
+        NULL
+    },
 };

@@ -32,6 +32,7 @@
 #include "h264dec.h"
 #include "hevcdec.h"
 #include "mpegvideo.h"
+#include "proresdec.h"
 #include <Availability.h>
 #include <AvailabilityMacros.h>
 #include <TargetConditionals.h>
@@ -186,7 +187,6 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
     int pps_size = escape_ps(NULL, h->ps.pps->data, h->ps.pps->data_size);
     int vt_extradata_size;
     uint8_t *vt_extradata;
-    int i;
 
     vt_extradata_size = 6 + 2 + sps_size + 3 + pps_size;
     vt_extradata = av_malloc(vt_extradata_size);
@@ -873,12 +873,45 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case AV_CODEC_ID_MPEG4 :
         videotoolbox->cm_codec_type = kCMVideoCodecType_MPEG4Video;
         break;
+    case AV_CODEC_ID_PRORES :
+        switch (avctx->codec_tag) {
+        case MKTAG('a','p','c','o'):
+            videotoolbox->cm_codec_type = kCMVideoCodecType_AppleProRes422Proxy;
+            break;
+        case MKTAG('a','p','c','s'):
+            videotoolbox->cm_codec_type = kCMVideoCodecType_AppleProRes422LT;
+            break;
+        case MKTAG('a','p','c','n'):
+            videotoolbox->cm_codec_type = kCMVideoCodecType_AppleProRes422;
+            break;
+        case MKTAG('a','p','c','h'):
+            videotoolbox->cm_codec_type = kCMVideoCodecType_AppleProRes422HQ;
+            break;
+        case MKTAG('a','p','4','h'):
+            videotoolbox->cm_codec_type = kCMVideoCodecType_AppleProRes4444;
+            break;
+        case MKTAG('a','p','4','x'):
+            videotoolbox->cm_codec_type = kCMVideoCodecType_AppleProRes4444XQ;
+            break;
+        default:
+            videotoolbox->cm_codec_type = avctx->codec_tag;
+            av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
+        }
+        break;
     case AV_CODEC_ID_VP9 :
         videotoolbox->cm_codec_type = kCMVideoCodecType_VP9;
         break;
     default :
         break;
     }
+
+#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+    if (avctx->codec_id == AV_CODEC_ID_PRORES) {
+        if (__builtin_available(macOS 10.9, *)) {
+            VTRegisterProfessionalVideoWorkflowVideoDecoders();
+        }
+    }
+#endif
 
 #if defined(MAC_OS_VERSION_11_0) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0)
     if (__builtin_available(macOS 11.0, *)) {
@@ -1064,6 +1097,30 @@ static int videotoolbox_mpeg_end_frame(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     AVFrame *frame = s->current_picture_ptr->f;
+
+    return ff_videotoolbox_common_end_frame(avctx, frame);
+}
+
+static int videotoolbox_prores_start_frame(AVCodecContext *avctx,
+                                         const uint8_t *buffer,
+                                         uint32_t size)
+{
+    return 0;
+}
+
+static int videotoolbox_prores_decode_slice(AVCodecContext *avctx,
+                                          const uint8_t *buffer,
+                                          uint32_t size)
+{
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+
+    return ff_videotoolbox_buffer_copy(vtctx, buffer, size);
+}
+
+static int videotoolbox_prores_end_frame(AVCodecContext *avctx)
+{
+    ProresContext *ctx = avctx->priv_data;
+    AVFrame *frame = ctx->frame;
 
     return ff_videotoolbox_common_end_frame(avctx, frame);
 }
@@ -1285,6 +1342,21 @@ const AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
+    .priv_data_size = sizeof(VTContext),
+};
+
+const AVHWAccel ff_prores_videotoolbox_hwaccel = {
+    .name           = "prores_videotoolbox",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_PRORES,
+    .pix_fmt        = AV_PIX_FMT_VIDEOTOOLBOX,
+    .alloc_frame    = ff_videotoolbox_alloc_frame,
+    .start_frame    = videotoolbox_prores_start_frame,
+    .decode_slice   = videotoolbox_prores_decode_slice,
+    .end_frame      = videotoolbox_prores_end_frame,
     .frame_params   = ff_videotoolbox_frame_params,
     .init           = ff_videotoolbox_common_init,
     .uninit         = ff_videotoolbox_uninit,

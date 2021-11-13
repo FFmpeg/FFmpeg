@@ -34,6 +34,7 @@ version <next>:
 - RTP packetizer for uncompressed video (RFC 4175)
 - bitpacked encoder
 - VideoToolbox VP9 hwaccel
+- VideoToolbox ProRes hwaccel
 
 
 version 4.4:
