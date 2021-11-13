@@ -95,6 +95,7 @@ void ff_rtp_send_vc2hq(AVFormatContext *s1, const uint8_t *buf, int size, int in
 void ff_rtp_send_vp8(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_vp9(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buff, int size);
+void ff_rtp_send_raw_rfc4175(AVFormatContext *s1, const uint8_t *buf, int size);
 
 const uint8_t *ff_h263_find_resync_marker_reverse(const uint8_t *av_restrict start,
                                                   const uint8_t *av_restrict end);

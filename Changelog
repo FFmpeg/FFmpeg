@@ -31,6 +31,7 @@ version <next>:
 - varblur video filter
 - huesaturation video filter
 - colorspectrum source video filter
+- RTP packetizer for uncompressed video (RFC 4175)
 
 
 version 4.4:

@@ -660,6 +660,31 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
                                     p->width, p->height, pix_fmt, config);
             break;
         }
+        case AV_CODEC_ID_RAWVIDEO: {
+            const char *pix_fmt;
+            int bit_depth = 8;
+
+            switch (p->format) {
+            case AV_PIX_FMT_UYVY422:
+                pix_fmt = "YCbCr-4:2:2";
+                break;
+            case AV_PIX_FMT_YUV420P:
+                pix_fmt = "YCbCr-4:2:0";
+                break;
+            default:
+                av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
+                return NULL;
+            }
+
+            av_strlcatf(buff, size, "a=rtpmap:%d raw/90000\r\n"
+                                    "a=fmtp:%d sampling=%s; "
+                                    "width=%d; height=%d; "
+                                    "depth=%d\r\n",
+                                    payload_type, payload_type,
+                                    pix_fmt, p->width, p->height, bit_depth);
+            break;
+        }
+
         case AV_CODEC_ID_VP8:
             av_strlcatf(buff, size, "a=rtpmap:%d VP8/90000\r\n",
                                      payload_type);

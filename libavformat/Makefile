@@ -482,6 +482,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc_jpeg.o \
                                             rtpenc_mpv.o     \
                                             rtpenc.o      \
+                                            rtpenc_rfc4175.o    \
                                             rtpenc_vc2hq.o              \
                                             rtpenc_vp8.o  \
                                             rtpenc_vp9.o                \
