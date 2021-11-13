@@ -2210,9 +2210,9 @@ fail:
 }
 
 #if CONFIG_LIBDRM
-static void vulkan_unmap_from(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
+static void vulkan_unmap_from_drm(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
 {
-    VulkanMapping *map = hwmap->priv;
+    AVVkFrame *f = hwmap->priv;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
@@ -2221,21 +2221,22 @@ static void vulkan_unmap_from(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
     VkSemaphoreWaitInfo wait_info = {
         .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
         .flags          = 0x0,
-        .pSemaphores    = map->frame->sem,
-        .pValues        = map->frame->sem_value,
+        .pSemaphores    = f->sem,
+        .pValues        = f->sem_value,
         .semaphoreCount = planes,
     };
 
     vk->WaitSemaphores(hwctx->act_dev, &wait_info, UINT64_MAX);
 
+    vulkan_free_internal(f);
+
     for (int i = 0; i < planes; i++) {
-        vk->DestroyImage(hwctx->act_dev, map->frame->img[i], hwctx->alloc);
-        vk->FreeMemory(hwctx->act_dev, map->frame->mem[i], hwctx->alloc);
-        vk->DestroySemaphore(hwctx->act_dev, map->frame->sem[i], hwctx->alloc);
+        vk->DestroyImage(hwctx->act_dev, f->img[i], hwctx->alloc);
+        vk->FreeMemory(hwctx->act_dev, f->mem[i], hwctx->alloc);
+        vk->DestroySemaphore(hwctx->act_dev, f->sem[i], hwctx->alloc);
     }
 
-    av_freep(&map->frame);
-    av_free(map);
+    av_free(f);
 }
 
 static const struct {
@@ -2540,7 +2541,6 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
 {
     int err = 0;
     AVVkFrame *f;
-    VulkanMapping *map = NULL;
 
     if ((err = vulkan_map_from_drm_frame_desc(hwfc, &f, src)))
         return err;
@@ -2550,15 +2550,8 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     dst->width   = src->width;
     dst->height  = src->height;
 
-    map = av_mallocz(sizeof(VulkanMapping));
-    if (!map)
-        goto fail;
-
-    map->frame = f;
-    map->flags = flags;
-
     err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
-                                &vulkan_unmap_from, map);
+                                &vulkan_unmap_from_drm, f);
     if (err < 0)
         goto fail;
 
@@ -2568,7 +2561,6 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
 
 fail:
     vulkan_frame_free(hwfc->device_ctx->hwctx, (uint8_t *)f);
-    av_free(map);
     return err;
 }
 
