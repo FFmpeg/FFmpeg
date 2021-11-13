@@ -1075,6 +1075,9 @@ static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) 
 
     int depth = descriptor->comp[0].depth;
 
+    if (descriptor->flags & AV_PIX_FMT_FLAG_ALPHA)
+        return AV_PIX_FMT_AYUV64;
+
 #if HAVE_KCVPIXELFORMATTYPE_444YPCBCR16BIPLANARVIDEORANGE
     if (depth > 10)
         return descriptor->log2_chroma_w == 0 ? AV_PIX_FMT_P416 : AV_PIX_FMT_P216;
