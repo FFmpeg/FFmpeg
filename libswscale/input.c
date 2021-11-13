@@ -1238,15 +1238,23 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         c->chrToYV12 = read_ayuv64le_UV_c;
         break;
     case AV_PIX_FMT_P010LE:
+    case AV_PIX_FMT_P210LE:
+    case AV_PIX_FMT_P410LE:
         c->chrToYV12 = p010LEToUV_c;
         break;
     case AV_PIX_FMT_P010BE:
+    case AV_PIX_FMT_P210BE:
+    case AV_PIX_FMT_P410BE:
         c->chrToYV12 = p010BEToUV_c;
         break;
     case AV_PIX_FMT_P016LE:
+    case AV_PIX_FMT_P216LE:
+    case AV_PIX_FMT_P416LE:
         c->chrToYV12 = p016LEToUV_c;
         break;
     case AV_PIX_FMT_P016BE:
+    case AV_PIX_FMT_P216BE:
+    case AV_PIX_FMT_P416BE:
         c->chrToYV12 = p016BEToUV_c;
         break;
     case AV_PIX_FMT_Y210LE:
@@ -1519,6 +1527,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GRAY16LE:
 
     case AV_PIX_FMT_P016LE:
+    case AV_PIX_FMT_P216LE:
+    case AV_PIX_FMT_P416LE:
         c->lumToYV12 = bswap16Y_c;
         break;
     case AV_PIX_FMT_YUVA420P9LE:
@@ -1561,6 +1571,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GRAY16BE:
 
     case AV_PIX_FMT_P016BE:
+    case AV_PIX_FMT_P216BE:
+    case AV_PIX_FMT_P416BE:
         c->lumToYV12 = bswap16Y_c;
         break;
     case AV_PIX_FMT_YUVA420P9BE:
@@ -1687,9 +1699,13 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         c->lumToYV12 = bgr64LEToY_c;
         break;
     case AV_PIX_FMT_P010LE:
+    case AV_PIX_FMT_P210LE:
+    case AV_PIX_FMT_P410LE:
         c->lumToYV12 = p010LEToY_c;
         break;
     case AV_PIX_FMT_P010BE:
+    case AV_PIX_FMT_P210BE:
+    case AV_PIX_FMT_P410BE:
         c->lumToYV12 = p010BEToY_c;
         break;
     case AV_PIX_FMT_GRAYF32LE:
