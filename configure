@@ -2338,6 +2338,12 @@ TYPES_LIST="
     kCMVideoCodecType_HEVC
     kCMVideoCodecType_HEVCWithAlpha
     kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
+    kCVPixelFormatType_422YpCbCr8BiPlanarVideoRange
+    kCVPixelFormatType_422YpCbCr10BiPlanarVideoRange
+    kCVPixelFormatType_422YpCbCr16BiPlanarVideoRange
+    kCVPixelFormatType_444YpCbCr8BiPlanarVideoRange
+    kCVPixelFormatType_444YpCbCr10BiPlanarVideoRange
+    kCVPixelFormatType_444YpCbCr16BiPlanarVideoRange
     kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ
     kCVImageBufferTransferFunction_ITU_R_2100_HLG
     kCVImageBufferTransferFunction_Linear
@@ -6291,6 +6297,12 @@ enabled videotoolbox && {
     check_func_headers CoreMedia/CMFormatDescription.h kCMVideoCodecType_HEVC "-framework CoreMedia"
     check_func_headers CoreMedia/CMFormatDescription.h kCMVideoCodecType_HEVCWithAlpha "-framework CoreMedia"
     check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange "-framework CoreVideo"
+    check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_422YpCbCr8BiPlanarVideoRange "-framework CoreVideo"
+    check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_422YpCbCr10BiPlanarVideoRange "-framework CoreVideo"
+    check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_422YpCbCr16BiPlanarVideoRange "-framework CoreVideo"
+    check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_444YpCbCr8BiPlanarVideoRange "-framework CoreVideo"
+    check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_444YpCbCr10BiPlanarVideoRange "-framework CoreVideo"
+    check_func_headers CoreVideo/CVPixelBuffer.h kCVPixelFormatType_444YpCbCr16BiPlanarVideoRange "-framework CoreVideo"
     check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ "-framework CoreVideo"
     check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_ITU_R_2100_HLG "-framework CoreVideo"
     check_func_headers CoreVideo/CVImageBuffer.h kCVImageBufferTransferFunction_Linear "-framework CoreVideo"
