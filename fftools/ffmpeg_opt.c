@@ -134,12 +134,6 @@ static const char *const opt_name_enc_time_bases[]            = {"enc_time_base"
     }\
 }
 
-const HWAccel hwaccels[] = {
-#if CONFIG_VIDEOTOOLBOX
-    { "videotoolbox", videotoolbox_init, HWACCEL_VIDEOTOOLBOX, AV_PIX_FMT_VIDEOTOOLBOX },
-#endif
-    { 0 },
-};
 HWDevice *filter_hw_device;
 
 char *vstats_filename;
@@ -931,21 +925,10 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 else if (!strcmp(hwaccel, "auto"))
                     ist->hwaccel_id = HWACCEL_AUTO;
                 else {
-                    enum AVHWDeviceType type;
-                    int i;
-                    for (i = 0; hwaccels[i].name; i++) {
-                        if (!strcmp(hwaccels[i].name, hwaccel)) {
-                            ist->hwaccel_id = hwaccels[i].id;
-                            break;
-                        }
-                    }
-
-                    if (!ist->hwaccel_id) {
-                        type = av_hwdevice_find_type_by_name(hwaccel);
-                        if (type != AV_HWDEVICE_TYPE_NONE) {
-                            ist->hwaccel_id = HWACCEL_GENERIC;
-                            ist->hwaccel_device_type = type;
-                        }
+                    enum AVHWDeviceType type = av_hwdevice_find_type_by_name(hwaccel);
+                    if (type != AV_HWDEVICE_TYPE_NONE) {
+                        ist->hwaccel_id = HWACCEL_GENERIC;
+                        ist->hwaccel_device_type = type;
                     }
 
                     if (!ist->hwaccel_id) {
@@ -3811,9 +3794,6 @@ const OptionDef options[] = {
     { "hwaccel_output_format", OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |
                           OPT_SPEC | OPT_INPUT,                                  { .off = OFFSET(hwaccel_output_formats) },
         "select output format used with HW accelerated decoding", "format" },
-#if CONFIG_VIDEOTOOLBOX
-    { "videotoolbox_pixfmt", HAS_ARG | OPT_STRING | OPT_EXPERT, { &videotoolbox_pixfmt}, "" },
-#endif
     { "hwaccels",         OPT_EXIT,                                              { .func_arg = show_hwaccels },
         "show available HW acceleration methods" },
     { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
