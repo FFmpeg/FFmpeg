@@ -21,6 +21,7 @@
 
 #ifdef _WIN32
 #include <windows.h> /* Included to prevent conflicts with CreateSemaphore */
+#include <versionhelpers.h>
 #include "compat/w32dlfcn.h"
 #else
 #include <dlfcn.h>
@@ -123,6 +124,10 @@ typedef struct AVVkFrameInternal {
     CUmipmappedArray cu_mma[AV_NUM_DATA_POINTERS];
     CUarray cu_array[AV_NUM_DATA_POINTERS];
     CUexternalSemaphore cu_sem[AV_NUM_DATA_POINTERS];
+#ifdef _WIN32
+    HANDLE ext_mem_handle[AV_NUM_DATA_POINTERS];
+    HANDLE ext_sem_handle[AV_NUM_DATA_POINTERS];
+#endif
 #endif
 } AVVkFrameInternal;
 
@@ -309,6 +314,10 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,        FF_VK_EXT_DRM_MODIFIER_FLAGS     },
     { VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,            FF_VK_EXT_EXTERNAL_FD_SEM        },
     { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME,             FF_VK_EXT_EXTERNAL_HOST_MEMORY   },
+#ifdef _WIN32
+    { VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,            FF_VK_EXT_EXTERNAL_WIN32_MEMORY  },
+    { VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,         FF_VK_EXT_EXTERNAL_WIN32_SEM     },
+#endif
 
     /* Video encoding/decoding */
     { VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,                      FF_VK_EXT_NO_FLAG                },
@@ -1575,6 +1584,12 @@ static void vulkan_free_internal(AVVkFrame *f)
                 CHECK_CU(cu->cuMipmappedArrayDestroy(internal->cu_mma[i]));
             if (internal->ext_mem[i])
                 CHECK_CU(cu->cuDestroyExternalMemory(internal->ext_mem[i]));
+#ifdef _WIN32
+            if (internal->ext_sem_handle[i])
+                CloseHandle(internal->ext_sem_handle[i]);
+            if (internal->ext_mem_handle[i])
+                CloseHandle(internal->ext_mem_handle[i]);
+#endif
         }
 
         av_buffer_unref(&internal->cuda_fc_ref);
@@ -1811,12 +1826,22 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
 
     VkExportSemaphoreCreateInfo ext_sem_info = {
         .sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
+#ifdef _WIN32
+        .handleTypes = IsWindows8OrGreater()
+            ? VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+            : VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+#else
         .handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
+#endif
     };
 
     VkSemaphoreTypeCreateInfo sem_type_info = {
         .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+#ifdef _WIN32
+        .pNext         = p->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM ? &ext_sem_info : NULL,
+#else
         .pNext         = p->extensions & FF_VK_EXT_EXTERNAL_FD_SEM ? &ext_sem_info : NULL,
+#endif
         .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
         .initialValue  = 0,
     };
@@ -1947,6 +1972,12 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
         .pNext       = hwctx->create_pnext,
     };
 
+#ifdef _WIN32
+    if (p->extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY)
+        try_export_flags(hwfc, &eiinfo.handleTypes, &e, IsWindows8OrGreater()
+                             ? VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+                             : VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT);
+#else
     if (p->extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY)
         try_export_flags(hwfc, &eiinfo.handleTypes, &e,
                          VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
@@ -1954,6 +1985,7 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
     if (p->extensions & (FF_VK_EXT_EXTERNAL_DMABUF_MEMORY | FF_VK_EXT_DRM_MODIFIER_FLAGS))
         try_export_flags(hwfc, &eiinfo.handleTypes, &e,
                          VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT);
+#endif
 
     for (int i = 0; i < av_pix_fmt_count_planes(hwfc->sw_format); i++) {
         eminfo[i].sType       = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
@@ -2651,6 +2683,43 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                 },
                 .numLevels = 1,
             };
+            int p_w, p_h;
+
+#ifdef _WIN32
+            CUDA_EXTERNAL_MEMORY_HANDLE_DESC ext_desc = {
+                .type = IsWindows8OrGreater()
+                    ? CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32
+                    : CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT,
+                .size = dst_f->size[i],
+            };
+            VkMemoryGetWin32HandleInfoKHR export_info = {
+                .sType      = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
+                .memory     = dst_f->mem[i],
+                .handleType = IsWindows8OrGreater()
+                    ? VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+                    : VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+            };
+            VkSemaphoreGetWin32HandleInfoKHR sem_export = {
+                .sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR,
+                .semaphore = dst_f->sem[i],
+                .handleType = IsWindows8OrGreater()
+                    ? VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+                    : VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+            };
+            CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC ext_sem_desc = {
+                .type = 10 /* TODO: CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TIMELINE_SEMAPHORE_WIN32 */,
+            };
+
+            ret = vk->GetMemoryWin32HandleKHR(hwctx->act_dev, &export_info,
+                                              &ext_desc.handle.win32.handle);
+            if (ret != VK_SUCCESS) {
+                av_log(hwfc, AV_LOG_ERROR, "Unable to export the image as a Win32 Handle: %s!\n",
+                       vk_ret2str(ret));
+                err = AVERROR_EXTERNAL;
+                goto fail;
+            }
+            dst_int->ext_mem_handle[i] = ext_desc.handle.win32.handle;
+#else
             CUDA_EXTERNAL_MEMORY_HANDLE_DESC ext_desc = {
                 .type = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD,
                 .size = dst_f->size[i],
@@ -2669,12 +2738,6 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                 .type = 9 /* TODO: CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TIMELINE_SEMAPHORE_FD */,
             };
 
-            int p_w, p_h;
-            get_plane_wh(&p_w, &p_h, hwfc->sw_format, hwfc->width, hwfc->height, i);
-
-            tex_desc.arrayDesc.Width = p_w;
-            tex_desc.arrayDesc.Height = p_h;
-
             ret = vk->GetMemoryFdKHR(hwctx->act_dev, &export_info,
                                      &ext_desc.handle.fd);
             if (ret != VK_SUCCESS) {
@@ -2683,13 +2746,20 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
+#endif
 
             ret = CHECK_CU(cu->cuImportExternalMemory(&dst_int->ext_mem[i], &ext_desc));
             if (ret < 0) {
+#ifndef _WIN32
                 close(ext_desc.handle.fd);
+#endif
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
+
+            get_plane_wh(&p_w, &p_h, hwfc->sw_format, hwfc->width, hwfc->height, i);
+            tex_desc.arrayDesc.Width = p_w;
+            tex_desc.arrayDesc.Height = p_h;
 
             ret = CHECK_CU(cu->cuExternalMemoryGetMappedMipmappedArray(&dst_int->cu_mma[i],
                                                                        dst_int->ext_mem[i],
@@ -2706,19 +2776,29 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
                 goto fail;
             }
 
+#ifdef _WIN32
+            ret = vk->GetSemaphoreWin32HandleKHR(hwctx->act_dev, &sem_export,
+                                                 &ext_sem_desc.handle.win32.handle);
+#else
             ret = vk->GetSemaphoreFdKHR(hwctx->act_dev, &sem_export,
                                         &ext_sem_desc.handle.fd);
+#endif
             if (ret != VK_SUCCESS) {
                 av_log(ctx, AV_LOG_ERROR, "Failed to export semaphore: %s\n",
                        vk_ret2str(ret));
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
+#ifdef _WIN32
+            dst_int->ext_sem_handle[i] = ext_sem_desc.handle.win32.handle;
+#endif
 
             ret = CHECK_CU(cu->cuImportExternalSemaphore(&dst_int->cu_sem[i],
                                                          &ext_sem_desc));
             if (ret < 0) {
+#ifndef _WIN32
                 close(ext_sem_desc.handle.fd);
+#endif
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
@@ -3544,8 +3624,13 @@ static int vulkan_transfer_data_to(AVHWFramesContext *hwfc, AVFrame *dst,
     switch (src->format) {
 #if CONFIG_CUDA
     case AV_PIX_FMT_CUDA:
+#ifdef _WIN32
+        if ((p->extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY) &&
+            (p->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM))
+#else
         if ((p->extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY) &&
             (p->extensions & FF_VK_EXT_EXTERNAL_FD_SEM))
+#endif
             return vulkan_transfer_data_from_cuda(hwfc, dst, src);
 #endif
     default:
@@ -3657,8 +3742,13 @@ static int vulkan_transfer_data_from(AVHWFramesContext *hwfc, AVFrame *dst,
     switch (dst->format) {
 #if CONFIG_CUDA
     case AV_PIX_FMT_CUDA:
+#ifdef _WIN32
+        if ((p->extensions & FF_VK_EXT_EXTERNAL_WIN32_MEMORY) &&
+            (p->extensions & FF_VK_EXT_EXTERNAL_WIN32_SEM))
+#else
         if ((p->extensions & FF_VK_EXT_EXTERNAL_FD_MEMORY) &&
             (p->extensions & FF_VK_EXT_EXTERNAL_FD_SEM))
+#endif
             return vulkan_transfer_data_to_cuda(hwfc, dst, src);
 #endif
     default:
