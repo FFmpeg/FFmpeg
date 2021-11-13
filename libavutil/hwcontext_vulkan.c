@@ -1550,8 +1550,10 @@ static int alloc_mem(AVHWDeviceContext *ctx, VkMemoryRequirements *req,
     return 0;
 }
 
-static void vulkan_free_internal(AVVkFrameInternal *internal)
+static void vulkan_free_internal(AVVkFrame *f)
 {
+    AVVkFrameInternal *internal = f->internal;
+
     if (!internal)
         return;
 
@@ -1577,7 +1579,7 @@ static void vulkan_free_internal(AVVkFrameInternal *internal)
     }
 #endif
 
-    av_free(internal);
+    av_freep(&f->internal);
 }
 
 static void vulkan_frame_free(void *opaque, uint8_t *data)
@@ -1593,7 +1595,7 @@ static void vulkan_frame_free(void *opaque, uint8_t *data)
      * issues tracking command buffer execution state on uninit. */
     vk->DeviceWaitIdle(hwctx->act_dev);
 
-    vulkan_free_internal(f->internal);
+    vulkan_free_internal(f);
 
     for (int i = 0; i < planes; i++) {
         vk->DestroyImage(hwctx->act_dev, f->img[i], hwctx->alloc);
@@ -2620,15 +2622,13 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
         if (!dst_f->internal)
             dst_f->internal = dst_int = av_mallocz(sizeof(*dst_f->internal));
 
-        if (!dst_int) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!dst_int)
+            return AVERROR(ENOMEM);
 
         dst_int->cuda_fc_ref = av_buffer_ref(cuda_hwfc);
         if (!dst_int->cuda_fc_ref) {
-            err = AVERROR(ENOMEM);
-            goto fail;
+            av_freep(&dst_f->internal);
+            return AVERROR(ENOMEM);
         }
 
         for (int i = 0; i < planes; i++) {
@@ -2669,7 +2669,8 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
             ret = vk->GetMemoryFdKHR(hwctx->act_dev, &export_info,
                                      &ext_desc.handle.fd);
             if (ret != VK_SUCCESS) {
-                av_log(hwfc, AV_LOG_ERROR, "Unable to export the image as a FD!\n");
+                av_log(hwfc, AV_LOG_ERROR, "Unable to export the image as a FD: %s!\n",
+                       vk_ret2str(ret));
                 err = AVERROR_EXTERNAL;
                 goto fail;
             }
@@ -2718,6 +2719,7 @@ static int vulkan_export_to_cuda(AVHWFramesContext *hwfc,
     return 0;
 
 fail:
+    vulkan_free_internal(dst_f);
     return err;
 }
 
@@ -2806,7 +2808,7 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
-    vulkan_free_internal(dst_int);
+    vulkan_free_internal(dst_f);
     dst_f->internal = NULL;
     av_buffer_unref(&dst->buf[0]);
     return err;
@@ -3631,7 +3633,7 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
-    vulkan_free_internal(dst_int);
+    vulkan_free_internal(dst_f);
     dst_f->internal = NULL;
     av_buffer_unref(&dst->buf[0]);
     return err;
