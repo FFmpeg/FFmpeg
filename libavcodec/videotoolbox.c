@@ -1064,9 +1064,35 @@ static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) 
         return AV_PIX_FMT_NV12; // same as av_videotoolbox_alloc_context()
 
     int depth = descriptor->comp[0].depth;
+
+#if HAVE_KCVPIXELFORMATTYPE_444YPCBCR16BIPLANARVIDEORANGE
+    if (depth > 10)
+        return descriptor->log2_chroma_w == 0 ? AV_PIX_FMT_P416 : AV_PIX_FMT_P216;
+#endif
+
+#if HAVE_KCVPIXELFORMATTYPE_444YPCBCR10BIPLANARVIDEORANGE
+    if (descriptor->log2_chroma_w == 0) {
+#if HAVE_KCVPIXELFORMATTYPE_444YPCBCR8BIPLANARVIDEORANGE
+        if (depth <= 8)
+            return AV_PIX_FMT_NV24;
+#endif
+        return AV_PIX_FMT_P410;
+    }
+#endif
+#if HAVE_KCVPIXELFORMATTYPE_422YPCBCR10BIPLANARVIDEORANGE
+    if (descriptor->log2_chroma_h == 0) {
+#if HAVE_KCVPIXELFORMATTYPE_422YPCBCR8BIPLANARVIDEORANGE
+        if (depth <= 8)
+            return AV_PIX_FMT_NV16;
+#endif
+        return AV_PIX_FMT_P210;
+    }
+#endif
+#if HAVE_KCVPIXELFORMATTYPE_420YPCBCR10BIPLANARVIDEORANGE
     if (depth > 8) {
         return AV_PIX_FMT_P010;
     }
+#endif
 
     return AV_PIX_FMT_NV12;
 }
