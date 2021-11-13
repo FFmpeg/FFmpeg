@@ -1059,7 +1059,7 @@ static int videotoolbox_uninit(AVCodecContext *avctx)
 }
 
 static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) {
-    const AVPixFmtDescriptor *descriptor = av_pix_fmt_desc_get(avctx->pix_fmt);
+    const AVPixFmtDescriptor *descriptor = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
     if (!descriptor)
         return AV_PIX_FMT_NV12; // same as av_videotoolbox_alloc_context()
 
