@@ -140,14 +140,51 @@ int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 
 #define AV_W8(p, v) *(p) = (v)
 
+static int escape_ps(uint8_t* dst, const uint8_t* src, int src_size)
+{
+    int i;
+    int size = src_size;
+    uint8_t* p = dst;
+
+    for (i = 0; i < src_size; i++) {
+        if (i + 2 < src_size &&
+            src[i]     == 0x00 &&
+            src[i + 1] == 0x00 &&
+            src[i + 2] <= 0x03) {
+            if (dst) {
+                *p++ = src[i++];
+                *p++ = src[i++];
+                *p++ = 0x03;
+            } else {
+                i += 2;
+            }
+            size++;
+        }
+        if (dst)
+            *p++ = src[i];
+    }
+
+    if (dst)
+        av_assert0((p - dst) == size);
+
+    return size;
+}
+
 CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     H264Context *h = avctx->priv_data;
     CFDataRef data = NULL;
     uint8_t *p;
-    int vt_extradata_size = 6 + 2 + h->ps.sps->data_size + 3 + h->ps.pps->data_size;
-    uint8_t *vt_extradata = av_malloc(vt_extradata_size);
+    int sps_size = escape_ps(NULL, h->ps.sps->data, h->ps.sps->data_size);
+    int pps_size = escape_ps(NULL, h->ps.pps->data, h->ps.pps->data_size);
+    int vt_extradata_size;
+    uint8_t *vt_extradata;
+    int i;
+
+    vt_extradata_size = 6 + 2 + sps_size + 3 + pps_size;
+    vt_extradata = av_malloc(vt_extradata_size);
+
     if (!vt_extradata)
         return NULL;
 
@@ -159,14 +196,14 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
     AV_W8(p + 3, h->ps.sps->data[3]); /* level */
     AV_W8(p + 4, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 3 (11) */
     AV_W8(p + 5, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
-    AV_WB16(p + 6, h->ps.sps->data_size);
-    memcpy(p + 8, h->ps.sps->data, h->ps.sps->data_size);
-    p += 8 + h->ps.sps->data_size;
+    AV_WB16(p + 6, sps_size);
+    p += 8;
+    p += escape_ps(p, h->ps.sps->data, h->ps.sps->data_size);
     AV_W8(p + 0, 1); /* number of pps */
-    AV_WB16(p + 1, h->ps.pps->data_size);
-    memcpy(p + 3, h->ps.pps->data, h->ps.pps->data_size);
+    AV_WB16(p + 1, pps_size);
+    p += 3;
+    p += escape_ps(p, h->ps.pps->data, h->ps.pps->data_size);
 
-    p += 3 + h->ps.pps->data_size;
     av_assert0(p - vt_extradata == vt_extradata_size);
 
     // save sps header (profile/level) used to create decoder session,
