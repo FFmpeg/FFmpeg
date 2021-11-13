@@ -2218,6 +2218,16 @@ static void vulkan_unmap_from(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
     VulkanDevicePriv *p = hwfc->device_ctx->internal->priv;
     FFVulkanFunctions *vk = &p->vkfn;
 
+    VkSemaphoreWaitInfo wait_info = {
+        .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+        .flags          = 0x0,
+        .pSemaphores    = map->frame->sem,
+        .pValues        = map->frame->sem_value,
+        .semaphoreCount = planes,
+    };
+
+    vk->WaitSemaphores(hwctx->act_dev, &wait_info, UINT64_MAX);
+
     for (int i = 0; i < planes; i++) {
         vk->DestroyImage(hwctx->act_dev, map->frame->img[i], hwctx->alloc);
         vk->FreeMemory(hwctx->act_dev, map->frame->mem[i], hwctx->alloc);
