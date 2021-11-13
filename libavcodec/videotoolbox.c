@@ -33,6 +33,7 @@
 #include "hevcdec.h"
 #include "mpegvideo.h"
 #include <Availability.h>
+#include <AvailabilityMacros.h>
 #include <TargetConditionals.h>
 
 #ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
@@ -44,6 +45,10 @@
 
 #if !HAVE_KCMVIDEOCODECTYPE_HEVC
 enum { kCMVideoCodecType_HEVC = 'hvc1' };
+#endif
+
+#if !HAVE_KCMVIDEOCODECTYPE_VP9
+enum { kCMVideoCodecType_VP9 = 'vp09' };
 #endif
 
 #define VIDEOTOOLBOX_ESDS_EXTRADATA_PADDING  12
@@ -816,6 +821,11 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
         if (data)
             CFDictionarySetValue(avc_info, CFSTR("hvcC"), data);
         break;
+    case kCMVideoCodecType_VP9 :
+        data = ff_videotoolbox_vpcc_extradata_create(avctx);
+        if (data)
+            CFDictionarySetValue(avc_info, CFSTR("vpcC"), data);
+        break;
     default:
         break;
     }
@@ -863,12 +873,15 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case AV_CODEC_ID_MPEG4 :
         videotoolbox->cm_codec_type = kCMVideoCodecType_MPEG4Video;
         break;
+    case AV_CODEC_ID_VP9 :
+        videotoolbox->cm_codec_type = kCMVideoCodecType_VP9;
+        break;
     default :
         break;
     }
 
-#ifdef __MAC_10_11
-    if (__builtin_available(macOS 10.11, *)) {
+#if defined(MAC_OS_VERSION_11_0) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0)
+    if (__builtin_available(macOS 11.0, *)) {
         VTRegisterSupplementalVideoDecoderIfAvailable(videotoolbox->cm_codec_type);
     }
 #endif
