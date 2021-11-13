@@ -2235,6 +2235,7 @@ static void vulkan_unmap_from(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
     }
 
     av_freep(&map->frame);
+    av_free(map);
 }
 
 static const struct {
