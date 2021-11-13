@@ -1108,6 +1108,8 @@ static int submit_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
 
     ret = vk->QueueSubmit(q->queue, 1, s_info, q->fence);
     if (ret != VK_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Queue submission failure: %s\n",
+               vk_ret2str(ret));
         unref_exec_ctx_deps(hwfc, cmd);
         return AVERROR_EXTERNAL;
     }
