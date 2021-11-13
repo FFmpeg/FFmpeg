@@ -30,6 +30,7 @@ version <next>:
 - xcorrelate video filter
 - varblur video filter
 - huesaturation video filter
+- colorspectrum source video filter
 
 
 version 4.4:

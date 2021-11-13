@@ -522,6 +522,7 @@ OBJS-$(CONFIG_ALLRGB_FILTER)                 += vsrc_testsrc.o
 OBJS-$(CONFIG_ALLYUV_FILTER)                 += vsrc_testsrc.o
 OBJS-$(CONFIG_CELLAUTO_FILTER)               += vsrc_cellauto.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_testsrc.o
+OBJS-$(CONFIG_COLORSPECTRUM_FILTER)          += vsrc_testsrc.o
 OBJS-$(CONFIG_COREIMAGESRC_FILTER)           += vf_coreimage.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_GRADIENTS_FILTER)              += vsrc_gradients.o

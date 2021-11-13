@@ -25257,6 +25257,7 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{allrgb}
 @anchor{allyuv}
 @anchor{color}
+@anchor{colorspectrum}
 @anchor{haldclutsrc}
 @anchor{nullsrc}
 @anchor{pal75bars}
@@ -25267,13 +25268,15 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{testsrc}
 @anchor{testsrc2}
 @anchor{yuvtestsrc}
-@section allrgb, allyuv, color, haldclutsrc, nullsrc, pal75bars, pal100bars, rgbtestsrc, smptebars, smptehdbars, testsrc, testsrc2, yuvtestsrc
+@section allrgb, allyuv, color, colorspectrum, haldclutsrc, nullsrc, pal75bars, pal100bars, rgbtestsrc, smptebars, smptehdbars, testsrc, testsrc2, yuvtestsrc
 
 The @code{allrgb} source returns frames of size 4096x4096 of all rgb colors.
 
 The @code{allyuv} source returns frames of size 4096x4096 of all yuv colors.
 
 The @code{color} source provides an uniformly colored input.
+
+The @code{colorspectrum} source provides a color spectrum input.
 
 The @code{haldclutsrc} source provides an identity Hald CLUT. See also
 @ref{haldclut} filter.
@@ -25366,6 +25369,16 @@ Set the number of decimals to show in the timestamp, only available in the
 The displayed timestamp value will correspond to the original
 timestamp value multiplied by the power of 10 of the specified
 value. Default value is 0.
+
+@item type
+Set the type of the color spectrum, only available in the
+@code{colorspectrum} source. Can be one of the following:
+
+@table @samp
+@item black
+@item white
+@item all
+@end table
 @end table
 
 @subsection Examples
