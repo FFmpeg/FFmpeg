@@ -61,9 +61,9 @@ static void videotoolbox_buffer_release(void *opaque, uint8_t *data)
     av_free(data);
 }
 
-static int videotoolbox_buffer_copy(VTContext *vtctx,
-                                    const uint8_t *buffer,
-                                    uint32_t size)
+int ff_videotoolbox_buffer_copy(VTContext *vtctx,
+                                const uint8_t *buffer,
+                                uint32_t size)
 {
     void *tmp;
 
@@ -376,7 +376,7 @@ int ff_videotoolbox_h264_start_frame(AVCodecContext *avctx,
     H264Context *h = avctx->priv_data;
 
     if (h->is_avc == 1) {
-        return videotoolbox_buffer_copy(vtctx, buffer, size);
+        return ff_videotoolbox_buffer_copy(vtctx, buffer, size);
     }
 
     return 0;
@@ -440,18 +440,6 @@ int ff_videotoolbox_h264_decode_slice(AVCodecContext *avctx,
     return videotoolbox_common_decode_slice(avctx, buffer, size);
 }
 
-int ff_videotoolbox_uninit(AVCodecContext *avctx)
-{
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
-    if (vtctx) {
-        av_freep(&vtctx->bitstream);
-        if (vtctx->frame)
-            CVPixelBufferRelease(vtctx->frame);
-    }
-
-    return 0;
-}
-
 #if CONFIG_VIDEOTOOLBOX
 // Return the AVVideotoolboxContext that matters currently. Where it comes from
 // depends on the API used.
@@ -465,6 +453,43 @@ static AVVideotoolboxContext *videotoolbox_get_context(AVCodecContext *avctx)
             return vtctx->vt_ctx;
     }
     return avctx->hwaccel_context;
+}
+
+static void videotoolbox_stop(AVCodecContext *avctx)
+{
+    AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
+    if (!videotoolbox)
+        return;
+
+    if (videotoolbox->cm_fmt_desc) {
+        CFRelease(videotoolbox->cm_fmt_desc);
+        videotoolbox->cm_fmt_desc = NULL;
+    }
+
+    if (videotoolbox->session) {
+        VTDecompressionSessionInvalidate(videotoolbox->session);
+        CFRelease(videotoolbox->session);
+        videotoolbox->session = NULL;
+    }
+}
+
+int ff_videotoolbox_uninit(AVCodecContext *avctx)
+{
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    if (!vtctx)
+        return 0;
+
+    av_freep(&vtctx->bitstream);
+    if (vtctx->frame)
+        CVPixelBufferRelease(vtctx->frame);
+
+    if (vtctx->vt_ctx)
+        videotoolbox_stop(avctx);
+
+    av_buffer_unref(&vtctx->cached_hw_frames_ctx);
+    av_freep(&vtctx->vt_ctx);
+
+    return 0;
 }
 
 static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
@@ -903,24 +928,6 @@ static int videotoolbox_start(AVCodecContext *avctx)
     }
 }
 
-static void videotoolbox_stop(AVCodecContext *avctx)
-{
-    AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
-    if (!videotoolbox)
-        return;
-
-    if (videotoolbox->cm_fmt_desc) {
-        CFRelease(videotoolbox->cm_fmt_desc);
-        videotoolbox->cm_fmt_desc = NULL;
-    }
-
-    if (videotoolbox->session) {
-        VTDecompressionSessionInvalidate(videotoolbox->session);
-        CFRelease(videotoolbox->session);
-        videotoolbox->session = NULL;
-    }
-}
-
 static const char *videotoolbox_error_string(OSStatus status)
 {
     switch (status) {
@@ -934,7 +941,7 @@ static const char *videotoolbox_error_string(OSStatus status)
     return "unknown";
 }
 
-static int videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
+int ff_videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     OSStatus status;
     AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
@@ -973,7 +980,7 @@ static int videotoolbox_h264_end_frame(AVCodecContext *avctx)
     H264Context *h = avctx->priv_data;
     AVFrame *frame = h->cur_pic_ptr->f;
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
-    int ret = videotoolbox_common_end_frame(avctx, frame);
+    int ret = ff_videotoolbox_common_end_frame(avctx, frame);
     vtctx->bitstream_size = 0;
     return ret;
 }
@@ -1012,7 +1019,7 @@ static int videotoolbox_hevc_end_frame(AVCodecContext *avctx)
     h->output_frame->crop_top = 0;
     h->output_frame->crop_bottom = 0;
 
-    int ret = videotoolbox_common_end_frame(avctx, frame);
+    int ret = ff_videotoolbox_common_end_frame(avctx, frame);
     vtctx->bitstream_size = 0;
     return ret;
 }
@@ -1023,7 +1030,7 @@ static int videotoolbox_mpeg_start_frame(AVCodecContext *avctx,
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
 
-    return videotoolbox_buffer_copy(vtctx, buffer, size);
+    return ff_videotoolbox_buffer_copy(vtctx, buffer, size);
 }
 
 static int videotoolbox_mpeg_decode_slice(AVCodecContext *avctx,
@@ -1038,24 +1045,7 @@ static int videotoolbox_mpeg_end_frame(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     AVFrame *frame = s->current_picture_ptr->f;
 
-    return videotoolbox_common_end_frame(avctx, frame);
-}
-
-static int videotoolbox_uninit(AVCodecContext *avctx)
-{
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
-    if (!vtctx)
-        return 0;
-
-    ff_videotoolbox_uninit(avctx);
-
-    if (vtctx->vt_ctx)
-        videotoolbox_stop(avctx);
-
-    av_buffer_unref(&vtctx->cached_hw_frames_ctx);
-    av_freep(&vtctx->vt_ctx);
-
-    return 0;
+    return ff_videotoolbox_common_end_frame(avctx, frame);
 }
 
 static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) {
@@ -1097,7 +1087,7 @@ static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) 
     return AV_PIX_FMT_NV12;
 }
 
-static int videotoolbox_common_init(AVCodecContext *avctx)
+int ff_videotoolbox_common_init(AVCodecContext *avctx)
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     AVHWFramesContext *hw_frames;
@@ -1169,12 +1159,12 @@ static int videotoolbox_common_init(AVCodecContext *avctx)
     return 0;
 
 fail:
-    videotoolbox_uninit(avctx);
+    ff_videotoolbox_uninit(avctx);
     return err;
 }
 
-static int videotoolbox_frame_params(AVCodecContext *avctx,
-                                     AVBufferRef *hw_frames_ctx)
+int ff_videotoolbox_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx)
 {
     AVHWFramesContext *frames_ctx = (AVHWFramesContext*)hw_frames_ctx->data;
 
@@ -1195,9 +1185,9 @@ const AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
-    .frame_params   = videotoolbox_frame_params,
-    .init           = videotoolbox_common_init,
-    .uninit         = videotoolbox_uninit,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
@@ -1211,9 +1201,9 @@ const AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .decode_slice   = videotoolbox_hevc_decode_slice,
     .decode_params  = videotoolbox_hevc_decode_params,
     .end_frame      = videotoolbox_hevc_end_frame,
-    .frame_params   = videotoolbox_frame_params,
-    .init           = videotoolbox_common_init,
-    .uninit         = videotoolbox_uninit,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
@@ -1227,9 +1217,9 @@ const AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .decode_slice   = ff_videotoolbox_h264_decode_slice,
     .decode_params  = videotoolbox_h264_decode_params,
     .end_frame      = videotoolbox_h264_end_frame,
-    .frame_params   = videotoolbox_frame_params,
-    .init           = videotoolbox_common_init,
-    .uninit         = videotoolbox_uninit,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
@@ -1242,9 +1232,9 @@ const AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
-    .frame_params   = videotoolbox_frame_params,
-    .init           = videotoolbox_common_init,
-    .uninit         = videotoolbox_uninit,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
@@ -1257,9 +1247,9 @@ const AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
-    .frame_params   = videotoolbox_frame_params,
-    .init           = videotoolbox_common_init,
-    .uninit         = videotoolbox_uninit,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
@@ -1272,9 +1262,9 @@ const AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
-    .frame_params   = videotoolbox_frame_params,
-    .init           = videotoolbox_common_init,
-    .uninit         = videotoolbox_uninit,
+    .frame_params   = ff_videotoolbox_frame_params,
+    .init           = ff_videotoolbox_common_init,
+    .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
