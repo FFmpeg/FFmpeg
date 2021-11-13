@@ -52,6 +52,7 @@ typedef struct {
     int first_field;
     int alpha_info;
     void (*unpack_alpha)(GetBitContext *gb, uint16_t *dst, int num_coeffs, const int num_bits);
+    enum AVPixelFormat pix_fmt;
 } ProresContext;
 
 #endif /* AVCODEC_PRORESDEC_H */

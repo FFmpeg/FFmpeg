@@ -187,6 +187,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
     permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
+    ctx->pix_fmt = AV_PIX_FMT_NONE;
+
     if (avctx->bits_per_raw_sample == 10){
         ctx->unpack_alpha = unpack_alpha_10;
     } else if (avctx->bits_per_raw_sample == 12){
@@ -204,6 +206,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     int hdr_size, width, height, flags;
     int version;
     const uint8_t *ptr;
+    enum AVPixelFormat pix_fmt;
 
     hdr_size = AV_RB16(buf);
     ff_dlog(avctx, "header size %d\n", hdr_size);
@@ -252,16 +255,32 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
     if (ctx->alpha_info) {
         if (avctx->bits_per_raw_sample == 10) {
-            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P10 : AV_PIX_FMT_YUVA422P10;
+            pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P10 : AV_PIX_FMT_YUVA422P10;
         } else { /* 12b */
-            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P12 : AV_PIX_FMT_YUVA422P12;
+            pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P12 : AV_PIX_FMT_YUVA422P12;
         }
     } else {
         if (avctx->bits_per_raw_sample == 10) {
-            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
+            pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
         } else { /* 12b */
-            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P12 : AV_PIX_FMT_YUV422P12;
+            pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P12 : AV_PIX_FMT_YUV422P12;
         }
+    }
+
+    if (pix_fmt != ctx->pix_fmt) {
+#define HWACCEL_MAX 0
+        enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
+        int ret;
+
+        ctx->pix_fmt = pix_fmt;
+
+        *fmtp++ = ctx->pix_fmt;
+        *fmtp = AV_PIX_FMT_NONE;
+
+        if ((ret = ff_thread_get_format(avctx, pix_fmts)) < 0)
+            return ret;
+
+        avctx->pix_fmt = ret;
     }
 
     avctx->color_primaries = buf[14];
@@ -782,16 +801,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     buf += frame_hdr_size;
     buf_size -= frame_hdr_size;
 
+    if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
+        return ret;
+
+    if (avctx->hwaccel) {
+        ret = avctx->hwaccel->start_frame(avctx, NULL, 0);
+        if (ret < 0)
+            return ret;
+        ret = avctx->hwaccel->decode_slice(avctx, avpkt->data, avpkt->size);
+        if (ret < 0)
+            return ret;
+        ret = avctx->hwaccel->end_frame(avctx);
+        if (ret < 0)
+            return ret;
+        goto finish;
+    }
+
  decode_picture:
     pic_size = decode_picture_header(avctx, buf, buf_size);
     if (pic_size < 0) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture header\n");
         return pic_size;
     }
-
-    if (ctx->first_field)
-        if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
-            return ret;
 
     if ((ret = decode_picture(avctx)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture\n");
@@ -806,6 +837,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         goto decode_picture;
     }
 
+finish:
     *got_frame      = 1;
 
     return avpkt->size;
