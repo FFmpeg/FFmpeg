@@ -2393,6 +2393,102 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "vulkan",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_P210BE] = {
+        .name = "p210be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 6, 10 },        /* Y */
+            { 1, 4, 0, 6, 10 },        /* U */
+            { 1, 4, 2, 6, 10 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
+    [AV_PIX_FMT_P210LE] = {
+        .name = "p210le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 6, 10 },        /* Y */
+            { 1, 4, 0, 6, 10 },        /* U */
+            { 1, 4, 2, 6, 10 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_P410BE] = {
+        .name = "p410be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 6, 10 },        /* Y */
+            { 1, 4, 0, 6, 10 },        /* U */
+            { 1, 4, 2, 6, 10 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
+    [AV_PIX_FMT_P410LE] = {
+        .name = "p410le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 6, 10 },        /* Y */
+            { 1, 4, 0, 6, 10 },        /* U */
+            { 1, 4, 2, 6, 10 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_P216BE] = {
+        .name = "p216be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 16 },        /* Y */
+            { 1, 4, 0, 0, 16 },        /* U */
+            { 1, 4, 2, 0, 16 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
+    [AV_PIX_FMT_P216LE] = {
+        .name = "p216le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 16 },        /* Y */
+            { 1, 4, 0, 0, 16 },        /* U */
+            { 1, 4, 2, 0, 16 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_P416BE] = {
+        .name = "p416be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 16 },        /* Y */
+            { 1, 4, 0, 0, 16 },        /* U */
+            { 1, 4, 2, 0, 16 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
+    [AV_PIX_FMT_P416LE] = {
+        .name = "p416le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 16 },        /* Y */
+            { 1, 4, 0, 0, 16 },        /* U */
+            { 1, 4, 2, 0, 16 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
 };
 
 static const char * const color_range_names[] = {
