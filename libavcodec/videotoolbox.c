@@ -32,6 +32,7 @@
 #include "h264dec.h"
 #include "hevcdec.h"
 #include "mpegvideo.h"
+#include <Availability.h>
 #include <TargetConditionals.h>
 
 #ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
@@ -865,6 +866,12 @@ static int videotoolbox_start(AVCodecContext *avctx)
     default :
         break;
     }
+
+#ifdef __MAC_10_11
+    if (__builtin_available(macOS 10.11, *)) {
+        VTRegisterSupplementalVideoDecoderIfAvailable(videotoolbox->cm_codec_type);
+    }
+#endif
 
     decoder_spec = videotoolbox_decoder_config_create(videotoolbox->cm_codec_type, avctx);
 
