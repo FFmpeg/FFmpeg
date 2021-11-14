@@ -241,6 +241,8 @@ static int read_odml_index(AVFormatContext *s, int64_t frame_num)
         } else {
             int64_t offset, pos;
             int duration;
+            int ret;
+
             offset = avio_rl64(pb);
             avio_rl32(pb);       /* size */
             duration = avio_rl32(pb);
@@ -258,7 +260,7 @@ static int read_odml_index(AVFormatContext *s, int64_t frame_num)
             if (avio_seek(pb, offset + 8, SEEK_SET) < 0)
                 return -1;
             avi->odml_depth++;
-            read_odml_index(s, frame_num);
+            ret = read_odml_index(s, frame_num);
             avi->odml_depth--;
             frame_num += duration;
 
@@ -266,7 +268,8 @@ static int read_odml_index(AVFormatContext *s, int64_t frame_num)
                 av_log(s, AV_LOG_ERROR, "Failed to restore position after reading index\n");
                 return -1;
             }
-
+            if (ret < 0)
+                return ret;
         }
     }
     avi->index_loaded = 2;
