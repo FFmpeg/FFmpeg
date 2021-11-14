@@ -131,7 +131,11 @@ my $program_version_num = version->declare(get_conf('PACKAGE_VERSION'))->numify;
 my $program_version_6_8 = $program_version_num >= 6.008000;
 
 # print the TOC where @contents is used
-set_from_init_file('INLINE_CONTENTS', 1);
+if ($program_version_6_8) {
+    set_from_init_file('CONTENTS_OUTPUT_LOCATION', 'inline');
+} else {
+    set_from_init_file('INLINE_CONTENTS', 1);
+}
 
 # make chapters <h2>
 set_from_init_file('CHAPTER_HEADER_LEVEL', 2);
