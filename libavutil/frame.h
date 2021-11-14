@@ -311,7 +311,8 @@ typedef struct AVFrame {
 #define AV_NUM_DATA_POINTERS 8
     /**
      * pointer to the picture/channel planes.
-     * This might be different from the first allocated byte
+     * This might be different from the first allocated byte. For video,
+     * it could even point to the end of the image data.
      *
      * Some decoders access areas outside 0,0 - width,height, please
      * see avcodec_align_dimensions2(). Some filters and swscale can read
@@ -320,12 +321,20 @@ typedef struct AVFrame {
      *
      * NOTE: Except for hwaccel formats, pointers not needed by the format
      * MUST be set to NULL.
+     *
+     * @attention In case of video, the data[] pointers can point to the
+     * end of image data in order to reverse line order, when used in
+     * combination with negative values in the linesize[] array.
      */
     uint8_t *data[AV_NUM_DATA_POINTERS];
 
     /**
-     * For video, size in bytes of each picture line.
-     * For audio, size in bytes of each plane.
+     * For video, a positive or negative value, which is typically indicating
+     * the size in bytes of each picture line, but it can also be:
+     * - the negative byte size of lines for vertical flipping
+     *   (with data[n] pointing to the end of the data
+     * - a positive or negative multiple of the byte size as for accessing
+     *   even and odd fields of a frame (possibly flipped)
      *
      * For audio, only linesize[0] may be set. For planar audio, each channel
      * plane must be the same size.
@@ -337,6 +346,9 @@ typedef struct AVFrame {
      *
      * @note The linesize may be larger than the size of usable data -- there
      * may be extra padding present for performance reasons.
+     *
+     * @attention In case of video, line size values can be negative to achieve
+     * a vertically inverted iteration over image lines.
      */
     int linesize[AV_NUM_DATA_POINTERS];
 
