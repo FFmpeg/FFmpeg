@@ -2926,16 +2926,6 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
     return *p;
 }
 
-static int get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
-{
-    InputStream *ist = s->opaque;
-
-    if (ist->hwaccel_get_buffer && frame->format == ist->hwaccel_pix_fmt)
-        return ist->hwaccel_get_buffer(s, frame, flags);
-
-    return avcodec_default_get_buffer2(s, frame, flags);
-}
-
 static int init_input_stream(int ist_index, char *error, int error_len)
 {
     int ret;
@@ -2951,7 +2941,6 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         ist->dec_ctx->opaque                = ist;
         ist->dec_ctx->get_format            = get_format;
-        ist->dec_ctx->get_buffer2           = get_buffer;
 #if LIBAVCODEC_VERSION_MAJOR < 60
 FF_DISABLE_DEPRECATION_WARNINGS
         ist->dec_ctx->thread_safe_callbacks = 1;
