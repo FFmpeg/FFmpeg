@@ -381,7 +381,6 @@ typedef struct InputStream {
     int  (*hwaccel_retrieve_data)(AVCodecContext *s, AVFrame *frame);
     enum AVPixelFormat hwaccel_pix_fmt;
     enum AVPixelFormat hwaccel_retrieved_pix_fmt;
-    AVBufferRef *hw_frames_ctx;
 
     /* stats */
     // combined size of all the packets read

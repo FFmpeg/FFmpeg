@@ -2913,12 +2913,6 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
             }
         }
 
-        if (ist->hw_frames_ctx) {
-            s->hw_frames_ctx = av_buffer_ref(ist->hw_frames_ctx);
-            if (!s->hw_frames_ctx)
-                return AV_PIX_FMT_NONE;
-        }
-
         ist->hwaccel_pix_fmt = *p;
         break;
     }
