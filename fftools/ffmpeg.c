@@ -2332,14 +2332,10 @@ static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
 static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
                         int *decode_failed)
 {
-    AVFrame *decoded_frame;
+    AVFrame *decoded_frame = ist->decoded_frame;
     AVCodecContext *avctx = ist->dec_ctx;
     int ret, err = 0;
     AVRational decoded_frame_tb;
-
-    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
-        return AVERROR(ENOMEM);
-    decoded_frame = ist->decoded_frame;
 
     update_benchmark(NULL);
     ret = decode(avctx, decoded_frame, got_output, pkt);
@@ -2397,7 +2393,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
 static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *duration_pts, int eof,
                         int *decode_failed)
 {
-    AVFrame *decoded_frame;
+    AVFrame *decoded_frame = ist->decoded_frame;
     int i, ret = 0, err = 0;
     int64_t best_effort_timestamp;
     int64_t dts = AV_NOPTS_VALUE;
@@ -2408,9 +2404,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     if (!eof && pkt && pkt->size == 0)
         return 0;
 
-    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
-        return AVERROR(ENOMEM);
-    decoded_frame = ist->decoded_frame;
     if (ist->dts != AV_NOPTS_VALUE)
         dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
     if (pkt) {
