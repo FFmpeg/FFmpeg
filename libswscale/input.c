@@ -973,7 +973,7 @@ static av_always_inline void planar_rgbf32_to_a(uint8_t *_dst, const uint8_t *_s
     uint16_t *dst        = (uint16_t *)_dst;
 
     for (i = 0; i < width; i++) {
-        dst[i] = av_clip_uint16(lrintf(65535.0f * rdpx(src[3] + i)));
+        dst[i] = lrintf(av_clipf(65535.0f * rdpx(src[3] + i), 0.0f, 65535.0f));
     }
 }
 
@@ -987,9 +987,9 @@ static av_always_inline void planar_rgbf32_to_uv(uint8_t *_dstU, uint8_t *_dstV,
     int32_t rv = rgb2yuv[RV_IDX], gv = rgb2yuv[GV_IDX], bv = rgb2yuv[BV_IDX];
 
     for (i = 0; i < width; i++) {
-        int g = av_clip_uint16(lrintf(65535.0f * rdpx(src[0] + i)));
-        int b = av_clip_uint16(lrintf(65535.0f * rdpx(src[1] + i)));
-        int r = av_clip_uint16(lrintf(65535.0f * rdpx(src[2] + i)));
+        int g = lrintf(av_clipf(65535.0f * rdpx(src[0] + i), 0.0f, 65535.0f));
+        int b = lrintf(av_clipf(65535.0f * rdpx(src[1] + i), 0.0f, 65535.0f));
+        int r = lrintf(av_clipf(65535.0f * rdpx(src[2] + i), 0.0f, 65535.0f));
 
         dstU[i] = (ru*r + gu*g + bu*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
         dstV[i] = (rv*r + gv*g + bv*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
@@ -1005,9 +1005,9 @@ static av_always_inline void planar_rgbf32_to_y(uint8_t *_dst, const uint8_t *_s
     int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
 
     for (i = 0; i < width; i++) {
-        int g = av_clip_uint16(lrintf(65535.0f * rdpx(src[0] + i)));
-        int b = av_clip_uint16(lrintf(65535.0f * rdpx(src[1] + i)));
-        int r = av_clip_uint16(lrintf(65535.0f * rdpx(src[2] + i)));
+        int g = lrintf(av_clipf(65535.0f * rdpx(src[0] + i), 0.0f, 65535.0f));
+        int b = lrintf(av_clipf(65535.0f * rdpx(src[1] + i), 0.0f, 65535.0f));
+        int r = lrintf(av_clipf(65535.0f * rdpx(src[2] + i), 0.0f, 65535.0f));
 
         dst[i] = (ry*r + gy*g + by*b + (0x2001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
     }
@@ -1021,7 +1021,7 @@ static av_always_inline void grayf32ToY16_c(uint8_t *_dst, const uint8_t *_src, 
     uint16_t *dst    = (uint16_t *)_dst;
 
     for (i = 0; i < width; ++i){
-        dst[i] = av_clip_uint16(lrintf(65535.0f * rdpx(src + i)));
+        dst[i] = lrintf(av_clipf(65535.0f * rdpx(src + i), 0.0f,  65535.0f));
     }
 }
 
