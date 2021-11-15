@@ -8496,25 +8496,31 @@ This filter supports the all above options as @ref{commands}.
 
 @section colorkey
 RGB colorspace color keying.
+This filter operates on 8-bit RGB format frames by setting the alpha component of each pixel
+which falls within the similarity radius of the key color to 0. The alpha value for pixels outside
+the similarity radius depends on the value of the blend option.
 
 The filter accepts the following options:
 
 @table @option
 @item color
-The color which will be replaced with transparency.
+Set the color for which alpha will be set to 0 (full transparency).
+See @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default is @code{black}.
 
 @item similarity
-Similarity percentage with the key color.
-
-0.01 matches only the exact key color, while 1.0 matches everything.
+Set the radius from the key color within which other colors also have full transparency.
+The computed distance is related to the unit fractional distance in 3D space between the RGB values
+of the key color and the pixel's color. Range is 0.01 to 1.0. 0.01 matches within a very small radius
+around the exact key color, while 1.0 matches everything.
+Default is @code{0.01}.
 
 @item blend
-Blend percentage.
-
-0.0 makes pixels either fully transparent, or not transparent at all.
-
-Higher values result in semi-transparent pixels, with a higher transparency
-the more similar the pixels color is to the key color.
+Set how the alpha value for pixels that fall outside the similarity radius is computed.
+0.0 makes pixels either fully transparent or fully opaque.
+Higher values result in semi-transparent pixels, with greater transparency
+the more similar the pixel color is to the key color.
+Range is 0.0 to 1.0. Default is @code{0.0}.
 @end table
 
 @subsection Examples
