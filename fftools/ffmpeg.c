@@ -1533,9 +1533,6 @@ static int reap_filters(int flush)
         if (av_buffersink_get_type(filter) == AVMEDIA_TYPE_AUDIO)
             init_output_stream_wrapper(ost, NULL, 1);
 
-        if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
-            return AVERROR(ENOMEM);
-        }
         filtered_frame = ost->filtered_frame;
 
         while (1) {
@@ -2342,8 +2339,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
 
     if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
         return AVERROR(ENOMEM);
-    if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc()))
-        return AVERROR(ENOMEM);
     decoded_frame = ist->decoded_frame;
 
     update_benchmark(NULL);
@@ -2414,8 +2409,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
         return 0;
 
     if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
-        return AVERROR(ENOMEM);
-    if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc()))
         return AVERROR(ENOMEM);
     decoded_frame = ist->decoded_frame;
     if (ist->dts != AV_NOPTS_VALUE)
