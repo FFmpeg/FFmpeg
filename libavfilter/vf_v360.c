@@ -163,6 +163,8 @@ static const AVOption v360_options[] = {
     {    "ih_fov", "input horizontal field of view",OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "ih_fov"},
     {    "iv_fov", "input vertical field of view",  OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "iv_fov"},
     {    "id_fov", "input diagonal field of view",  OFFSET(id_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f,TFLAGS, "id_fov"},
+    {  "h_offset", "output horizontal off-axis offset",OFFSET(h_offset), AV_OPT_TYPE_FLOAT,{.dbl=0.f},       -1.f,                 1.f,TFLAGS, "h_offset"},
+    {  "v_offset", "output vertical off-axis offset",  OFFSET(v_offset), AV_OPT_TYPE_FLOAT,{.dbl=0.f},       -1.f,                 1.f,TFLAGS, "v_offset"},
     {"alpha_mask", "build mask in alpha plane",      OFFSET(alpha), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "alpha"},
     { "reset_rot", "reset rotation",             OFFSET(reset_rot), AV_OPT_TYPE_BOOL,   {.i64=0},              -1,                   1,TFLAGS, "reset_rot"},
     { NULL }
@@ -1028,6 +1030,17 @@ static inline void rotate_cube_face_inverse(float *uf, float *vf, int rotation)
 }
 
 /**
+ * Offset vector.
+ *
+ * @param vec vector
+ */
+static void offset_vector(float *vec, float h_offset, float v_offset)
+{
+    vec[0] += h_offset;
+    vec[1] += v_offset;
+}
+
+/**
  * Normalize vector.
  *
  * @param vec vector
@@ -1103,8 +1116,6 @@ static void cube_to_xyz(const V360Context *s,
     vec[0] = l_x;
     vec[1] = l_y;
     vec[2] = l_z;
-
-    normalize_vector(vec);
 }
 
 /**
@@ -1854,8 +1865,6 @@ static int stereographic_to_xyz(const V360Context *s,
     vec[1] = y / r * sin_theta;
     vec[2] = cosf(theta);
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -1959,8 +1968,6 @@ static int equisolid_to_xyz(const V360Context *s,
     vec[0] = x / r * sin_theta;
     vec[1] = y / r * sin_theta;
     vec[2] = cosf(theta);
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -2066,12 +2073,11 @@ static int orthographic_to_xyz(const V360Context *s,
         vec[0] = x;
         vec[1] = y;
 
-        normalize_vector(vec);
         return 1;
     } else {
-        vec[0] = 0;
-        vec[1] = 0;
-        vec[2] = 1;
+        vec[0] = 0.f;
+        vec[1] = 0.f;
+        vec[2] = 1.f;
 
         return 0;
     }
@@ -2474,8 +2480,6 @@ static int hammer_to_xyz(const V360Context *s,
     vec[1] = M_SQRT2 * y * z;
     vec[2] = w * (bb  - aa) / (aa + bb);
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -2545,8 +2549,6 @@ static int sinusoidal_to_xyz(const V360Context *s,
     vec[0] = cos_theta * sin_phi;
     vec[1] = sin_theta;
     vec[2] = cos_theta * cos_phi;
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -2743,8 +2745,6 @@ static int eac_to_xyz(const V360Context *s,
     vec[1] = l_y;
     vec[2] = l_z;
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -2846,8 +2846,6 @@ static int flat_to_xyz(const V360Context *s,
     vec[1] = l_y;
     vec[2] = 1.f;
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -2896,8 +2894,6 @@ static int fisheye_to_xyz(const V360Context *s,
     vec[0] = cos_theta * cos_phi;
     vec[1] = cos_theta * sin_phi;
     vec[2] = sin_theta;
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -2993,8 +2989,6 @@ static int pannini_to_xyz(const V360Context *s,
     vec[1] = sinf(lat);
     vec[2] = cosf(lon) * cosf(lat);
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -3089,8 +3083,6 @@ static int cylindrical_to_xyz(const V360Context *s,
     vec[0] = cos_theta * sin_phi;
     vec[1] = sin_theta;
     vec[2] = cos_theta * cos_phi;
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -3217,8 +3209,6 @@ static int cylindricalea_to_xyz(const V360Context *s,
     vec[1] = sin_theta;
     vec[2] = cos_theta * cos_phi;
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -3331,8 +3321,6 @@ static int tetrahedron_to_xyz(const V360Context *s,
     vec[1] = 1.f - vf * 2.f;
     vec[2] = 2.f * fabsf(1.f - fabsf(1.f - uf * 2.f + vf)) - 1.f;
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -3443,8 +3431,6 @@ static int dfisheye_to_xyz(const V360Context *s,
     vec[0] = cos_theta * m * uf / lh;
     vec[1] = cos_theta *     vf / lh;
     vec[2] = sin_theta;
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -3567,8 +3553,6 @@ static int barrel_to_xyz(const V360Context *s,
     vec[0] = l_x;
     vec[1] = l_y;
     vec[2] = l_z;
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -3826,8 +3810,6 @@ static int barrelsplit_to_xyz(const V360Context *s,
     vec[1] = l_y;
     vec[2] = l_z;
 
-    normalize_vector(vec);
-
     return 1;
 }
 
@@ -3883,8 +3865,6 @@ static int tspyramid_to_xyz(const V360Context *s,
         vec[1] =  1.f;
         vec[2] = -2.f * (1.f - y) / 0.375f + 1.f;
     }
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -3986,8 +3966,6 @@ static int octahedron_to_xyz(const V360Context *s,
         vec[0] = x;
         vec[1] = y;
     }
-
-    normalize_vector(vec);
 
     return 1;
 }
@@ -4293,6 +4271,8 @@ static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobn
                     out_mask = s->out_transform(s, j, i, height, width, vec);
                 else
                     out_mask = s->out_transform(s, i, j, width, height, vec);
+                offset_vector(vec, s->h_offset, s->v_offset);
+                normalize_vector(vec);
                 av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
                 rotate(s->rot_quaternion, vec);
                 av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));

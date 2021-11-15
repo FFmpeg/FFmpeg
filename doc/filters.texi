@@ -21814,6 +21814,11 @@ Set if input video is transposed. Boolean value, by default disabled.
 @item out_trans
 Set if output video needs to be transposed. Boolean value, by default disabled.
 
+@item h_offset
+@item v_offset
+Set output horizontal/vertical off-axis offset. Default is set to 0.
+Allowed range is from -1 to 1.
+
 @item alpha_mask
 Build mask in alpha plane for all unmapped pixels by marking them fully transparent. Boolean value, by default disabled.
 
