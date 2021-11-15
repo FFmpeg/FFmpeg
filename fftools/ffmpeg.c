@@ -3325,11 +3325,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
 
     set_encoder_id(output_files[ost->file_index], ost);
 
-    // Muxers use AV_PKT_DATA_DISPLAYMATRIX to signal rotation. On the other
-    // hand, the legacy API makes demuxers set "rotate" metadata entries,
-    // which have to be filtered out to prevent leaking them to output files.
-    av_dict_set(&ost->st->metadata, "rotate", NULL, 0);
-
     if (ist) {
         dec_ctx = ist->dec_ctx;
     }
