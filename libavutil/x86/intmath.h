@@ -110,8 +110,8 @@ static av_always_inline av_const double av_clipd_sse2(double a, double amin, dou
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
     if (amin > amax) abort();
 #endif
-    __asm__ ("minsd %2, %0 \n\t"
-             "maxsd %1, %0 \n\t"
+    __asm__ ("maxsd %1, %0 \n\t"
+             "minsd %2, %0 \n\t"
              : "+&x"(a) : "xm"(amin), "xm"(amax));
     return a;
 }
@@ -126,8 +126,8 @@ static av_always_inline av_const float av_clipf_sse(float a, float amin, float a
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
     if (amin > amax) abort();
 #endif
-    __asm__ ("minss %2, %0 \n\t"
-             "maxss %1, %0 \n\t"
+    __asm__ ("maxss %1, %0 \n\t"
+             "minss %2, %0 \n\t"
              : "+&x"(a) : "xm"(amin), "xm"(amax));
     return a;
 }

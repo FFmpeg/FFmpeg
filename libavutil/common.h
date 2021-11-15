@@ -379,6 +379,8 @@ static av_always_inline int64_t av_sat_sub64_c(int64_t a, int64_t b) {
 
 /**
  * Clip a float value into the amin-amax range.
+ * If a is nan or -inf amin will be returned.
+ * If a is +inf amax will be returned.
  * @param a value to clip
  * @param amin minimum value of the clip range
  * @param amax maximum value of the clip range
@@ -389,13 +391,13 @@ static av_always_inline av_const float av_clipf_c(float a, float amin, float ama
 #if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
     if (amin > amax) abort();
 #endif
-    if      (a < amin) return amin;
-    else if (a > amax) return amax;
-    else               return a;
+    return FFMIN(FFMAX(a, amin), amax);
 }
 
 /**
  * Clip a double value into the amin-amax range.
+ * If a is nan or -inf amin will be returned.
+ * If a is +inf amax will be returned.
  * @param a value to clip
  * @param amin minimum value of the clip range
  * @param amax maximum value of the clip range
@@ -406,9 +408,7 @@ static av_always_inline av_const double av_clipd_c(double a, double amin, double
 #if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
     if (amin > amax) abort();
 #endif
-    if      (a < amin) return amin;
-    else if (a > amax) return amax;
-    else               return a;
+    return FFMIN(FFMAX(a, amin), amax);
 }
 
 /** Compute ceil(log2(x)).
