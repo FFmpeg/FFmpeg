@@ -2434,7 +2434,7 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
 static int mov_write_ctts_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     MOVMuxContext *mov = s->priv_data;
-    MOVStts *ctts_entries;
+    MOVCtts *ctts_entries;
     uint32_t entries = 0;
     uint32_t atom_size;
     int i;

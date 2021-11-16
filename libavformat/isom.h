@@ -55,8 +55,13 @@ struct AVAESCTR;
 
 typedef struct MOVStts {
     unsigned int count;
-    int duration;
+    unsigned int duration;
 } MOVStts;
+
+typedef struct MOVCtts {
+    unsigned int count;
+    int duration;
+} MOVCtts;
 
 typedef struct MOVStsc {
     int first;
@@ -168,7 +173,7 @@ typedef struct MOVStreamContext {
     uint8_t *sdtp_data;
     unsigned int ctts_count;
     unsigned int ctts_allocated_size;
-    MOVStts *ctts_data;
+    MOVCtts *ctts_data;
     unsigned int stsc_count;
     MOVStsc *stsc_data;
     unsigned int stsc_index;
