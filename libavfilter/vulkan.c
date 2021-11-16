@@ -90,37 +90,39 @@ const char *ff_vk_ret2str(VkResult res)
 }
 
 void ff_vk_qf_init(AVFilterContext *avctx, FFVkQueueFamilyCtx *qf,
-                   VkQueueFlagBits dev_family, int queue_limit)
+                   VkQueueFlagBits dev_family, int nb_queues)
 {
     FFVulkanContext *s = avctx->priv;
-
-    if (!queue_limit)
-        queue_limit = INT32_MAX;
 
     switch (dev_family) {
     case VK_QUEUE_GRAPHICS_BIT:
         qf->queue_family = s->hwctx->queue_family_index;
-        qf->nb_queues = FFMIN(s->hwctx->nb_graphics_queues, queue_limit);
-        return;
+        qf->actual_queues = s->hwctx->nb_graphics_queues;
+        break;
     case VK_QUEUE_COMPUTE_BIT:
         qf->queue_family = s->hwctx->queue_family_comp_index;
-        qf->nb_queues = FFMIN(s->hwctx->nb_comp_queues, queue_limit);
-        return;
+        qf->actual_queues = s->hwctx->nb_comp_queues;
+        break;
     case VK_QUEUE_TRANSFER_BIT:
         qf->queue_family = s->hwctx->queue_family_tx_index;
-        qf->nb_queues = FFMIN(s->hwctx->nb_tx_queues, queue_limit);
-        return;
+        qf->actual_queues = s->hwctx->nb_tx_queues;
+        break;
     case VK_QUEUE_VIDEO_ENCODE_BIT_KHR:
         qf->queue_family = s->hwctx->queue_family_encode_index;
-        qf->nb_queues = FFMIN(s->hwctx->nb_encode_queues, queue_limit);
-        return;
+        qf->actual_queues = s->hwctx->nb_encode_queues;
+        break;
     case VK_QUEUE_VIDEO_DECODE_BIT_KHR:
         qf->queue_family = s->hwctx->queue_family_decode_index;
-        qf->nb_queues = FFMIN(s->hwctx->nb_decode_queues, queue_limit);
-        return;
+        qf->actual_queues = s->hwctx->nb_decode_queues;
+        break;
     default:
         av_assert0(0); /* Should never happen */
     }
+
+    if (qf->actual_queues)
+        qf->nb_queues = qf->actual_queues;
+    else
+        qf->nb_queues = nb_queues;
 
     return;
 }
@@ -435,7 +437,8 @@ int ff_vk_create_exec_ctx(AVFilterContext *avctx, FFVkExecContext **ctx,
 
     for (int i = 0; i < qf->nb_queues; i++) {
         FFVkQueueCtx *q = &e->queues[i];
-        vk->GetDeviceQueue(s->hwctx->act_dev, qf->queue_family, i, &q->queue);
+        vk->GetDeviceQueue(s->hwctx->act_dev, qf->queue_family,
+                           i % qf->actual_queues, &q->queue);
     }
 
     *ctx = e;

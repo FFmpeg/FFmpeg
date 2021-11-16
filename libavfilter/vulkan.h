@@ -87,6 +87,7 @@ typedef struct FFVkQueueFamilyCtx {
     int queue_family;
     int nb_queues;
     int cur_queue;
+    int actual_queues;
 } FFVkQueueFamilyCtx;
 
 typedef struct FFVulkanPipeline {
@@ -235,11 +236,11 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);
 const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt);
 
 /**
- * Initialize a queue family.
- * A queue limit of 0 means no limit.
+ * Initialize a queue family with a specific number of queues.
+ * If nb_queues == 0, use however many queues the queue family has.
  */
 void ff_vk_qf_init(AVFilterContext *avctx, FFVkQueueFamilyCtx *qf,
-                   VkQueueFlagBits dev_family, int queue_limit);
+                   VkQueueFlagBits dev_family, int nb_queues);
 
 /**
  * Rotate through the queues in a queue family.
