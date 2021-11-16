@@ -1105,6 +1105,13 @@ int ff_vk_add_descriptor_set(AVFilterContext *avctx, FFVulkanPipeline *pl,
     if (!pl->desc_layout)
         return AVERROR(ENOMEM);
 
+    pl->desc_set_initialized = av_realloc_array(pl->desc_set_initialized,
+                                                sizeof(*pl->desc_set_initialized),
+                                                pl->descriptor_sets_num + 1);
+    if (!pl->desc_set_initialized)
+        return AVERROR(ENOMEM);
+
+    pl->desc_set_initialized[pl->descriptor_sets_num] = 0;
     layout = &pl->desc_layout[pl->desc_layout_num];
 
     { /* Create descriptor set layout descriptions */
@@ -1244,6 +1251,19 @@ void ff_vk_update_descriptor_set(AVFilterContext *avctx, FFVulkanPipeline *pl,
 {
     FFVulkanContext *s = avctx->priv;
     FFVulkanFunctions *vk = &s->vkfn;
+
+    /* If a set has never been updated, update all queues' sets. */
+    if (!pl->desc_set_initialized[set_id]) {
+        for (int i = 0; i < pl->qf->nb_queues; i++) {
+            set_id = set_id*pl->qf->nb_queues + i;
+            vk->UpdateDescriptorSetWithTemplate(s->hwctx->act_dev,
+                                                pl->desc_set[set_id],
+                                                pl->desc_template[set_id],
+                                                s);
+        }
+        pl->desc_set_initialized[set_id] = 1;
+        return;
+    }
 
     set_id = set_id*pl->qf->nb_queues + pl->qf->cur_queue;
 
@@ -1514,6 +1534,7 @@ static void free_pipeline(FFVulkanContext *s, FFVulkanPipeline *pl)
     av_freep(&pl->shaders);
     av_freep(&pl->desc_layout);
     av_freep(&pl->desc_template);
+    av_freep(&pl->desc_set_initialized);
     av_freep(&pl->push_consts);
     pl->push_consts_num = 0;
 

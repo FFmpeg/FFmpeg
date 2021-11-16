@@ -113,6 +113,7 @@ typedef struct FFVulkanPipeline {
     void                         **desc_staging;
     VkDescriptorSetLayoutBinding **desc_binding;
     VkDescriptorUpdateTemplate    *desc_template;
+    int                           *desc_set_initialized;
     int                            desc_layout_num;
     int                            descriptor_sets_num;
     int                            total_descriptor_sets;
