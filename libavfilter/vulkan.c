@@ -119,7 +119,7 @@ void ff_vk_qf_init(AVFilterContext *avctx, FFVkQueueFamilyCtx *qf,
         av_assert0(0); /* Should never happen */
     }
 
-    if (qf->actual_queues)
+    if (!nb_queues)
         qf->nb_queues = qf->actual_queues;
     else
         qf->nb_queues = nb_queues;
@@ -1258,10 +1258,10 @@ void ff_vk_update_descriptor_set(AVFilterContext *avctx, FFVulkanPipeline *pl,
     /* If a set has never been updated, update all queues' sets. */
     if (!pl->desc_set_initialized[set_id]) {
         for (int i = 0; i < pl->qf->nb_queues; i++) {
-            set_id = set_id*pl->qf->nb_queues + i;
+            int idx = set_id*pl->qf->nb_queues + i;
             vk->UpdateDescriptorSetWithTemplate(s->hwctx->act_dev,
-                                                pl->desc_set[set_id],
-                                                pl->desc_template[set_id],
+                                                pl->desc_set[idx],
+                                                pl->desc_template[idx],
                                                 s);
         }
         pl->desc_set_initialized[set_id] = 1;
