@@ -948,7 +948,6 @@ static inline void cx_pktcpy(AOMContext *ctx,
     dst->sz       = src->data.frame.sz;
     dst->buf      = src->data.frame.buf;
 #ifdef AOM_FRAME_IS_INTRAONLY
-    dst->have_sse = 0;
     dst->frame_number = ++ctx->frame_number;
     dst->have_sse = ctx->have_sse;
     if (ctx->have_sse) {
