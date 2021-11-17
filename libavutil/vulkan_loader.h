@@ -121,7 +121,7 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
         }
 
         if (!fn && ((extensions_mask &~ FF_VK_EXT_NO_FLAG) & load->ext_flag)) {
-            av_log(ctx, AV_LOG_ERROR, "Loader error, function \"%s\" indicated"
+            av_log(ctx, AV_LOG_ERROR, "Loader error, function \"%s\" indicated "
                    "as supported, but got NULL function pointer!\n", load->names[0]);
             return AVERROR_EXTERNAL;
         }
