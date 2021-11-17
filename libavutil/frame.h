@@ -187,6 +187,13 @@ enum AVFrameSideDataType {
      * as described by AVDetectionBBoxHeader.
      */
     AV_FRAME_DATA_DETECTION_BBOXES,
+
+    /**
+     * Dolby Vision RPU data, suitable for passing to x265
+     * or other libraries. Array of uint8_t, with NAL emulation
+     * bytes intact.
+     */
+    AV_FRAME_DATA_DOVI_RPU_BUFFER,
 };
 
 enum AVActiveFormatDescription {
