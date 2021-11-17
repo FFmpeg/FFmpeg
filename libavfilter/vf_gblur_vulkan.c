@@ -296,8 +296,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     s->initialized = 1;
 
-    return 0;
-
 fail:
     av_free(kernel_def);
     return err;
