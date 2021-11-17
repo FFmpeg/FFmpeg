@@ -130,6 +130,7 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     if ((flags & AVIO_FLAG_READ_WRITE) == AVIO_FLAG_READ_WRITE)
         return AVERROR(EINVAL);
 
+    s->logging_settings = (struct rist_logging_settings)LOGGING_SETTINGS_INITIALIZER;
     ret = rist_logging_set(&logging_settings, s->log_level, log_cb, h, NULL, NULL);
     if (ret < 0)
         return risterr2ret(ret);
