@@ -2342,9 +2342,7 @@ static int dash_check_bitstream(AVFormatContext *s, AVStream *st,
     if (oc->oformat->check_bitstream) {
         AVStream *const ost = oc->streams[0];
         int ret;
-        AVPacket pkt = *avpkt;
-        pkt.stream_index = 0;
-        ret = oc->oformat->check_bitstream(oc, ost, &pkt);
+        ret = oc->oformat->check_bitstream(oc, ost, avpkt);
         if (ret == 1) {
             FFStream *const  sti = ffstream(st);
             FFStream *const osti = ffstream(ost);
