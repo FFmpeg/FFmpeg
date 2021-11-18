@@ -297,7 +297,6 @@ static void transform_point(float matrix[4][4],
                             float *tx, float *ty, float *tz)
 {
     x = y;
-    *tx = x;
     *tx = x * matrix[0][0] + y * matrix[1][0] + z * matrix[2][0] + matrix[3][0];
     *ty = x * matrix[0][1] + y * matrix[1][1] + z * matrix[2][1] + matrix[3][1];
     *tz = x * matrix[0][2] + y * matrix[1][2] + z * matrix[2][2] + matrix[3][2];
