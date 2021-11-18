@@ -799,6 +799,7 @@ were recently referenced in the playlist. Default value is 1, meaning segments o
 Set output format options using a :-separated list of key=value
 parameters. Values containing @code{:} special characters must be
 escaped.
+@code{hls_ts_options} is deprecated, use hls_segment_options instead of it..
 
 @item hls_start_number_source
 Start the playlist sequence number (@code{#EXT-X-MEDIA-SEQUENCE}) according to the specified source.
