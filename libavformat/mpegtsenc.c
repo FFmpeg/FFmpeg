@@ -1140,9 +1140,7 @@ static int mpegts_init(AVFormatContext *s)
     ts->nit.write_packet = section_write_packet;
     ts->nit.opaque       = s;
 
-    ts->pkt = av_packet_alloc();
-    if (!ts->pkt)
-        return AVERROR(ENOMEM);
+    ts->pkt = ffformatcontext(s)->pkt;
 
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
@@ -2185,8 +2183,6 @@ static void mpegts_deinit(AVFormatContext *s)
     MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
     int i;
-
-    av_packet_free(&ts->pkt);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
