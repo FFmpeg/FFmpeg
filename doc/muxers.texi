@@ -919,6 +919,10 @@ This example will create a directory hierarchy 2016/02/15 (if any of them do not
 produce the playlist, @file{out.m3u8}, and segment files:
 @file{2016/02/15/file-20160215-1455569023.ts}, @file{2016/02/15/file-20160215-1455569024.ts}, etc.
 
+@item hls_segment_options @var{options_list}
+Set output format options using a :-separated list of key=value
+parameters. Values containing @code{:} special characters must be
+escaped.
 
 @item hls_key_info_file @var{key_info_file}
 Use the information in @var{key_info_file} for segment encryption. The first
