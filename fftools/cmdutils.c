@@ -1823,7 +1823,7 @@ int show_sample_fmts(void *optctx, const char *opt, const char *arg)
 int show_dispositions(void *optctx, const char *opt, const char *arg)
 {
     for (int i = 0; i < 32; i++) {
-        const char *str = av_disposition_to_string(1 << i);
+        const char *str = av_disposition_to_string(1U << i);
         if (str)
             printf("%s\n", str);
     }
