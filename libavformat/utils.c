@@ -1985,34 +1985,17 @@ void ff_format_set_url(AVFormatContext *s, char *url)
     s->url = url;
 }
 
-static const struct {
-    const char *str;
-    int disposition;
-} dispositions[] = {
-    { "default",            AV_DISPOSITION_DEFAULT            },
-    { "dub",                AV_DISPOSITION_DUB                },
-    { "original",           AV_DISPOSITION_ORIGINAL           },
-    { "comment",            AV_DISPOSITION_COMMENT            },
-    { "lyrics",             AV_DISPOSITION_LYRICS             },
-    { "karaoke",            AV_DISPOSITION_KARAOKE            },
-    { "forced",             AV_DISPOSITION_FORCED             },
-    { "hearing_impaired",   AV_DISPOSITION_HEARING_IMPAIRED   },
-    { "visual_impaired",    AV_DISPOSITION_VISUAL_IMPAIRED    },
-    { "clean_effects",      AV_DISPOSITION_CLEAN_EFFECTS      },
-    { "attached_pic",       AV_DISPOSITION_ATTACHED_PIC       },
-    { "timed_thumbnails",   AV_DISPOSITION_TIMED_THUMBNAILS   },
-    { "captions",           AV_DISPOSITION_CAPTIONS           },
-    { "descriptions",       AV_DISPOSITION_DESCRIPTIONS       },
-    { "metadata",           AV_DISPOSITION_METADATA           },
-    { "dependent",          AV_DISPOSITION_DEPENDENT          },
-    { "still_image",        AV_DISPOSITION_STILL_IMAGE        },
-};
+static int option_is_disposition(const AVOption *opt)
+{
+    return opt->type == AV_OPT_TYPE_CONST &&
+           opt->unit && !strcmp(opt->unit, "disposition");
+}
 
 int av_disposition_from_string(const char *disp)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(dispositions); i++)
-        if (!strcmp(disp, dispositions[i].str))
-            return dispositions[i].disposition;
+    for (const AVOption *opt = stream_options; opt->name; opt++)
+        if (option_is_disposition(opt) && !strcmp(disp, opt->name))
+            return opt->default_val.i64;
     return AVERROR(EINVAL);
 }
 
@@ -2024,9 +2007,9 @@ const char *av_disposition_to_string(int disposition)
         return NULL;
 
     val = 1 << ff_ctz(disposition);
-    for (int i = 0; i < FF_ARRAY_ELEMS(dispositions); i++)
-        if (dispositions[i].disposition == val)
-            return dispositions[i].str;
+    for (const AVOption *opt = stream_options; opt->name; opt++)
+        if (option_is_disposition(opt) && opt->default_val.i64 == val)
+            return opt->name;
 
     return NULL;
 }
