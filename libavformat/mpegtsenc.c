@@ -2208,10 +2208,10 @@ static void mpegts_deinit(AVFormatContext *s)
     av_freep(&ts->services);
 }
 
-static int mpegts_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+static int mpegts_check_bitstream(AVFormatContext *s, AVStream *st,
+                                  const AVPacket *pkt)
 {
     int ret = 1;
-    AVStream *st = s->streams[pkt->stream_index];
 
     if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&

@@ -1074,7 +1074,7 @@ static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
 
     if (s->oformat->check_bitstream) {
         if (!sti->bitstream_checked) {
-            if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
+            if ((ret = s->oformat->check_bitstream(s, &sti->pub, pkt)) < 0)
                 return ret;
             else if (ret == 1)
                 sti->bitstream_checked = 1;

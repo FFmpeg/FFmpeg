@@ -984,15 +984,17 @@ static int seg_write_trailer(struct AVFormatContext *s)
     return ret;
 }
 
-static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+static int seg_check_bitstream(AVFormatContext *s, AVStream *st,
+                               const AVPacket *pkt)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     if (oc->oformat->check_bitstream) {
-        int ret = oc->oformat->check_bitstream(oc, pkt);
+        AVStream *const ost = oc->streams[st->index];
+        int ret = oc->oformat->check_bitstream(oc, ost, pkt);
         if (ret == 1) {
-            FFStream *const  sti = ffstream( s->streams[pkt->stream_index]);
-            FFStream *const osti = ffstream(oc->streams[pkt->stream_index]);
+            FFStream *const  sti = ffstream(st);
+            FFStream *const osti = ffstream(ost);
              sti->bsfc = osti->bsfc;
             osti->bsfc = NULL;
         }

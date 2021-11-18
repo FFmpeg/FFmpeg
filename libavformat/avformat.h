@@ -322,6 +322,7 @@
 #include "libavformat/version.h"
 
 struct AVFormatContext;
+struct AVStream;
 
 struct AVDeviceInfoList;
 struct AVDeviceCapabilitiesQuery;
@@ -623,9 +624,13 @@ typedef struct AVOutputFormat {
     /**
      * Set up any necessary bitstream filtering and extract any extra data needed
      * for the global header.
+     *
+     * @note pkt might have been directly forwarded by a meta-muxer; therefore
+     *       pkt->stream_index as well as the pkt's timebase might be invalid.
      * Return 0 if more packets from this stream must be checked; 1 if not.
      */
-    int (*check_bitstream)(struct AVFormatContext *, const AVPacket *pkt);
+    int (*check_bitstream)(struct AVFormatContext *s, struct AVStream *st,
+                           const AVPacket *pkt);
 } AVOutputFormat;
 /**
  * @}

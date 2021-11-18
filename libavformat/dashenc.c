@@ -2333,19 +2333,21 @@ static int dash_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static int dash_check_bitstream(struct AVFormatContext *s, const AVPacket *avpkt)
+static int dash_check_bitstream(AVFormatContext *s, AVStream *st,
+                                const AVPacket *avpkt)
 {
     DASHContext *c = s->priv_data;
-    OutputStream *os = &c->streams[avpkt->stream_index];
+    OutputStream *os = &c->streams[st->index];
     AVFormatContext *oc = os->ctx;
     if (oc->oformat->check_bitstream) {
+        AVStream *const ost = oc->streams[0];
         int ret;
         AVPacket pkt = *avpkt;
         pkt.stream_index = 0;
-        ret = oc->oformat->check_bitstream(oc, &pkt);
+        ret = oc->oformat->check_bitstream(oc, ost, &pkt);
         if (ret == 1) {
-            FFStream *const  sti = ffstream(s->streams[avpkt->stream_index]);
-            FFStream *const osti = ffstream(oc->streams[0]);
+            FFStream *const  sti = ffstream(st);
+            FFStream *const osti = ffstream(ost);
              sti->bsfc = osti->bsfc;
             osti->bsfc = NULL;
         }
