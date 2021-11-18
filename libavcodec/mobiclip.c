@@ -491,7 +491,7 @@ static int add_pframe_coefficients(AVCodecContext *avctx, AVFrame *frame,
     int ret, idx = get_ue_golomb_31(gb);
 
     if (idx == 0) {
-        ret = add_coefficients(avctx, frame, bx, by, size, plane);
+        return add_coefficients(avctx, frame, bx, by, size, plane);
     } else if ((unsigned)idx < FF_ARRAY_ELEMS(pframe_block4x4_coefficients_tab)) {
         int flags = pframe_block4x4_coefficients_tab[idx];
 
@@ -505,11 +505,10 @@ static int add_pframe_coefficients(AVCodecContext *avctx, AVFrame *frame,
                 flags >>= 1;
             }
         }
+        return 0;
     } else {
-        ret = AVERROR_INVALIDDATA;
+        return AVERROR_INVALIDDATA;
     }
-
-    return ret;
 }
 
 static int adjust(int x, int size)
