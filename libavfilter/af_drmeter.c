@@ -26,7 +26,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-#define BINS 10000
+#define BINS 32768
 
 typedef struct ChannelStats {
     uint64_t nb_samples;
@@ -75,8 +75,8 @@ static void finish_block(ChannelStats *p)
 
     rms = sqrt(2 * p->sum / p->nb_samples);
     peak = p->peak;
-    rms_bin = av_clip(rms * BINS, 0, BINS);
-    peak_bin = av_clip(peak * BINS, 0, BINS);
+    rms_bin = av_clip(lrintf(rms * BINS), 0, BINS);
+    peak_bin = av_clip(lrintf(peak * BINS), 0, BINS);
     p->rms[rms_bin]++;
     p->peaks[peak_bin]++;
 
@@ -158,7 +158,7 @@ static void print_stats(AVFilterContext *ctx)
 
         for (i = BINS, j = 0; i >= 0 && j < 0.2 * p->blknum; i--) {
             if (p->rms[i]) {
-                rmssum += SQR(i / (double)BINS) * p->rms[i];
+                rmssum += SQR(i / (double)BINS);
                 j += p->rms[i];
             }
         }
