@@ -26,13 +26,15 @@
 #include "avfilter.h"
 #include "internal.h"
 
+#define BINS 10000
+
 typedef struct ChannelStats {
     uint64_t nb_samples;
     uint64_t blknum;
     float peak;
     float sum;
-    uint32_t peaks[10001];
-    uint32_t rms[10001];
+    uint32_t peaks[BINS+1];
+    uint32_t rms[BINS+1];
 } ChannelStats;
 
 typedef struct DRMeterContext {
@@ -73,8 +75,8 @@ static void finish_block(ChannelStats *p)
 
     rms = sqrt(2 * p->sum / p->nb_samples);
     peak = p->peak;
-    rms_bin = av_clip(rms * 10000, 0, 10000);
-    peak_bin = av_clip(peak * 10000, 0, 10000);
+    rms_bin = av_clip(rms * BINS, 0, BINS);
+    peak_bin = av_clip(peak * BINS, 0, BINS);
     p->rms[rms_bin]++;
     p->peaks[peak_bin]++;
 
@@ -144,29 +146,29 @@ static void print_stats(AVFilterContext *ctx)
 
         finish_block(p);
 
-        for (i = 0; i <= 10000; i++) {
-            if (p->peaks[10000 - i]) {
+        for (i = 0; i <= BINS; i++) {
+            if (p->peaks[BINS - i]) {
                 if (first)
                     break;
                 first = 1;
             }
         }
 
-        secondpeak = (10000 - i) / 10000.;
+        secondpeak = (BINS - i) / (double)BINS;
 
-        for (i = 10000, j = 0; i >= 0 && j < 0.2 * p->blknum; i--) {
+        for (i = BINS, j = 0; i >= 0 && j < 0.2 * p->blknum; i--) {
             if (p->rms[i]) {
-                rmssum += SQR(i / 10000.) * p->rms[i];
+                rmssum += SQR(i / (double)BINS) * p->rms[i];
                 j += p->rms[i];
             }
         }
 
         chdr = 20 * log10(secondpeak / sqrt(rmssum / (0.2 * p->blknum)));
         dr += chdr;
-        av_log(ctx, AV_LOG_INFO, "Channel %d: DR: %.1f\n", ch + 1, chdr);
+        av_log(ctx, AV_LOG_INFO, "Channel %d: DR: %g\n", ch + 1, chdr);
     }
 
-    av_log(ctx, AV_LOG_INFO, "Overall DR: %.1f\n", dr / s->nb_channels);
+    av_log(ctx, AV_LOG_INFO, "Overall DR: %g\n", dr / s->nb_channels);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
