@@ -408,7 +408,9 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
                         mh.stream_type);
             return AVERROR_PATCHWELCOME;
         }
-        if (mh.channel_modifier_thd_stream0 == THD_CH_MODIFIER_STEREO)
+        if (mh.channels_thd_stream1 == 2 &&
+            mh.channels_thd_stream2 == 2 &&
+            m->avctx->channels == 2)
             m->substream[0].mask = AV_CH_LAYOUT_STEREO;
         if ((substr = (mh.num_substreams > 1)))
             m->substream[0].mask = AV_CH_LAYOUT_STEREO;

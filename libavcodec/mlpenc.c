@@ -626,7 +626,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             ctx->ch_modifier_thd0    = 0;
             ctx->ch_modifier_thd1    = 0;
             ctx->ch_modifier_thd2    = 0;
-            ctx->channel_arrangement = 0;
+            ctx->channel_arrangement = 1;
             break;
         case AV_CH_LAYOUT_5POINT0_BACK:
             ctx->ch_modifier_thd0    = 1;
