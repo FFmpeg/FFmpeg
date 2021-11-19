@@ -23,6 +23,8 @@
 
 #if CONFIG_LIBGLSLANG
 #include "vulkan_glslang.c"
+#elif CONFIG_LIBSHADERC
+#include "vulkan_shaderc.c"
 #endif
 
 /* Generic macro for creating contexts which need to keep their addresses
@@ -859,6 +861,8 @@ int ff_vk_compile_shader(FFVulkanContext *s, FFVkSPIRVShader *shd,
     if (!s->spirv_compiler) {
 #if CONFIG_LIBGLSLANG
         s->spirv_compiler = ff_vk_glslang_init();
+#elif CONFIG_LIBSHADERC
+        s->spirv_compiler = ff_vk_shaderc_init();
 #else
         return AVERROR(ENOSYS);
 #endif
