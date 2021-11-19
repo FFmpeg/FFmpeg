@@ -179,7 +179,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         ff_vk_set_compute_shader_sizes(shd, CGROUPS);
 
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd,  desc_i, 2, 0)); /* set 0 */
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd,  desc_i, FF_ARRAY_ELEMS(desc_i), 0)); /* set 0 */
         RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd, &desc_b, 1, 0)); /* set 1 */
 
         GLSLD(   scale_bilinear                                                  );
