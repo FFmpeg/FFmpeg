@@ -39,7 +39,6 @@
 
 typedef struct SMCContext {
     AVFrame *prev_frame;    // buffer for previous source frame
-    PutByteContext pb;
 
     uint8_t mono_value;
     int nb_distinct;
@@ -110,9 +109,9 @@ static int count_distinct_items(const uint8_t *block_values,
      s->color_octets[i][6] == distinct_values[x] || \
      s->color_octets[i][7] == distinct_values[x])
 
-static void smc_encode_stream(SMCContext *s, const AVFrame *frame)
+static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
+                              PutByteContext *pb)
 {
-    PutByteContext *pb = &s->pb;
     const uint8_t *src_pixels = (const uint8_t *)frame->data[0];
     const int stride = frame->linesize[0];
     const uint8_t *prev_pixels = (const uint8_t *)s->prev_frame->data[0];
@@ -492,6 +491,7 @@ static int smc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     SMCContext *s = avctx->priv_data;
     const AVFrame *pict = frame;
+    PutByteContext pb;
     uint8_t *pal;
     int ret;
 
@@ -506,18 +506,18 @@ static int smc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->key_frame = 0;
     }
 
-    bytestream2_init_writer(&s->pb, pkt->data, pkt->size);
+    bytestream2_init_writer(&pb, pkt->data, pkt->size);
 
-    bytestream2_put_be32(&s->pb, 0x00);
+    bytestream2_put_be32(&pb, 0x00);
 
     pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
     if (!pal)
         return AVERROR(ENOMEM);
     memcpy(pal, frame->data[1], AVPALETTE_SIZE);
 
-    smc_encode_stream(s, pict);
+    smc_encode_stream(s, pict, &pb);
 
-    av_shrink_packet(pkt, bytestream2_tell_p(&s->pb));
+    av_shrink_packet(pkt, bytestream2_tell_p(&pb));
 
     pkt->data[0] = 0x0;
 
