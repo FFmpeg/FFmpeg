@@ -633,7 +633,6 @@ static void ffmpeg_cleanup(int ret)
         InputStream *ist = input_streams[i];
 
         av_frame_free(&ist->decoded_frame);
-        av_frame_free(&ist->filter_frame);
         av_packet_free(&ist->pkt);
         av_dict_free(&ist->decoder_opts);
         avsubtitle_free(&ist->prev_sub.subtitle);
@@ -2171,11 +2170,15 @@ static int ifilter_has_all_input_formats(FilterGraph *fg)
     return 1;
 }
 
-static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
+static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
 {
     FilterGraph *fg = ifilter->graph;
     AVFrameSideData *sd;
     int need_reinit, ret;
+    int buffersrc_flags = AV_BUFFERSRC_FLAG_PUSH;
+
+    if (keep_reference)
+        buffersrc_flags |= AV_BUFFERSRC_FLAG_KEEP_REF;
 
     /* determine if the parameters for this input changed */
     need_reinit = ifilter->format != frame->format;
@@ -2217,7 +2220,6 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
             AVFrame *tmp = av_frame_clone(frame);
             if (!tmp)
                 return AVERROR(ENOMEM);
-            av_frame_unref(frame);
 
             if (!av_fifo_space(ifilter->frame_queue)) {
                 ret = av_fifo_realloc2(ifilter->frame_queue, 2 * av_fifo_size(ifilter->frame_queue));
@@ -2243,7 +2245,7 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
         }
     }
 
-    ret = av_buffersrc_add_frame_flags(ifilter->filter, frame, AV_BUFFERSRC_FLAG_PUSH);
+    ret = av_buffersrc_add_frame_flags(ifilter->filter, frame, buffersrc_flags);
     if (ret < 0) {
         if (ret != AVERROR_EOF)
             av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
@@ -2306,18 +2308,10 @@ static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacke
 static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
 {
     int i, ret;
-    AVFrame *f;
 
     av_assert1(ist->nb_filters > 0); /* ensure ret is initialized */
     for (i = 0; i < ist->nb_filters; i++) {
-        if (i < ist->nb_filters - 1) {
-            f = ist->filter_frame;
-            ret = av_frame_ref(f, decoded_frame);
-            if (ret < 0)
-                break;
-        } else
-            f = decoded_frame;
-        ret = ifilter_send_frame(ist->filters[i], f);
+        ret = ifilter_send_frame(ist->filters[i], decoded_frame, i < ist->nb_filters - 1);
         if (ret == AVERROR_EOF)
             ret = 0; /* ignore */
         if (ret < 0) {
@@ -2385,7 +2379,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     ist->nb_samples = decoded_frame->nb_samples;
     err = send_frame_to_filters(ist, decoded_frame);
 
-    av_frame_unref(ist->filter_frame);
     av_frame_unref(decoded_frame);
     return err < 0 ? err : ret;
 }
@@ -2511,7 +2504,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     err = send_frame_to_filters(ist, decoded_frame);
 
 fail:
-    av_frame_unref(ist->filter_frame);
     av_frame_unref(decoded_frame);
     return err < 0 ? err : ret;
 }

@@ -893,10 +893,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         if (!ist->decoded_frame)
             exit_program(1);
 
-        ist->filter_frame = av_frame_alloc();
-        if (!ist->filter_frame)
-            exit_program(1);
-
         ist->pkt = av_packet_alloc();
         if (!ist->pkt)
             exit_program(1);

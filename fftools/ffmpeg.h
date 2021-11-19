@@ -311,7 +311,6 @@ typedef struct InputStream {
     AVCodecContext *dec_ctx;
     const AVCodec *dec;
     AVFrame *decoded_frame;
-    AVFrame *filter_frame; /* a ref of decoded_frame, to be sent to filters */
     AVPacket *pkt;
 
     int64_t       prev_pkt_pts;
