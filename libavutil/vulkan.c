@@ -21,7 +21,7 @@
 #include "vulkan.h"
 #include "vulkan_loader.h"
 
-#if FF_VK_ENABLE_SHADER_COMPILATION && CONFIG_LIBGLSLANG
+#if CONFIG_LIBGLSLANG
 #include "vulkan_glslang.c"
 #endif
 
@@ -857,7 +857,7 @@ int ff_vk_compile_shader(FFVulkanContext *s, FFVkSPIRVShader *shd,
     shd->shader.pName = entrypoint;
 
     if (!s->spirv_compiler) {
-#if FF_VK_ENABLE_SHADER_COMPILATION && CONFIG_LIBGLSLANG
+#if CONFIG_LIBGLSLANG
         s->spirv_compiler = ff_vk_glslang_init();
 #else
         return AVERROR(ENOSYS);

@@ -16,9 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VULKAN_H
-#define AVFILTER_VULKAN_H
+#ifndef AVFILTER_VULKAN_FILTER_H
+#define AVFILTER_VULKAN_FILTER_H
 
-#include "libavutil/vulkan.h"
+#include "avfilter.h"
 
-#endif /* AVFILTER_VULKAN_H */
+#include "vulkan.h"
+
+/**
+ * General lavfi IO functions
+ */
+int  ff_vk_filter_init                 (AVFilterContext *avctx);
+int  ff_vk_filter_config_input         (AVFilterLink   *inlink);
+int  ff_vk_filter_config_output        (AVFilterLink  *outlink);
+int  ff_vk_filter_config_output_inplace(AVFilterLink  *outlink);
+
+#endif /* AVFILTER_VULKAN_FILTER_H */

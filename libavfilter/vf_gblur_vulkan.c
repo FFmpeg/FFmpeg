@@ -19,7 +19,7 @@
 
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
-#include "vulkan.h"
+#include "vulkan_filter.h"
 #include "internal.h"
 
 #define CGS 32

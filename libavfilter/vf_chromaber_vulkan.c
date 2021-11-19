@@ -18,7 +18,7 @@
 
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
-#include "vulkan.h"
+#include "vulkan_filter.h"
 #include "internal.h"
 
 #define CGROUPS (int [3]){ 32, 32, 1 }

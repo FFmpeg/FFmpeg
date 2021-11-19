@@ -22,15 +22,12 @@
 #define VK_NO_PROTOTYPES
 #define VK_ENABLE_BETA_EXTENSIONS
 
-#ifndef FF_VK_ENABLE_SHADER_COMPILATION
-#define FF_VK_ENABLE_SHADER_COMPILATION 1
-#endif
-
 #include "pixdesc.h"
 #include "bprint.h"
 #include "hwcontext.h"
 #include "hwcontext_vulkan.h"
 #include "vulkan_functions.h"
+#include "vulkan_loader.h"
 
 #define FF_VK_DEFAULT_USAGE_FLAGS (VK_IMAGE_USAGE_SAMPLED_BIT      |           \
                                    VK_IMAGE_USAGE_STORAGE_BIT      |           \

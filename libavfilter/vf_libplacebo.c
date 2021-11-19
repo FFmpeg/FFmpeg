@@ -19,7 +19,7 @@
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
 #include "internal.h"
-#include "vulkan.h"
+#include "vulkan_filter.h"
 #include "scale_eval.h"
 
 #include <libplacebo/renderer.h>
