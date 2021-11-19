@@ -219,10 +219,10 @@ static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     messages = glslang_program_SPIRV_get_messages(glslc_program);
     if (messages) {
-        ff_vk_print_shader(s, shd, AV_LOG_WARNING);
+        ff_vk_print_shader(avctx, shd, AV_LOG_WARNING);
         av_log(avctx, AV_LOG_WARNING, "%s\n", messages);
     } else {
-        ff_vk_print_shader(s, shd, AV_LOG_VERBOSE);
+        ff_vk_print_shader(avctx, shd, AV_LOG_VERBOSE);
     }
 
     glslang_shader_delete(glslc_shader);
