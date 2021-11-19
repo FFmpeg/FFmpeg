@@ -470,6 +470,7 @@ extern const AVFilter ff_vf_vaguedenoiser;
 extern const AVFilter ff_vf_varblur;
 extern const AVFilter ff_vf_vectorscope;
 extern const AVFilter ff_vf_vflip;
+extern const AVFilter ff_vf_vflip_vulkan;
 extern const AVFilter ff_vf_vfrdet;
 extern const AVFilter ff_vf_vibrance;
 extern const AVFilter ff_vf_vidstabdetect;
