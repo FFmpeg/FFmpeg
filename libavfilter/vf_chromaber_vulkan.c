@@ -126,7 +126,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         ff_vk_add_push_constant(s->pl, 0, sizeof(s->opts),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd, desc_i, 2, 0)); /* set 0 */
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd, desc_i, FF_ARRAY_ELEMS(desc_i), 0)); /* set 0 */
 
         GLSLD(   distort_chroma_kernel                                        );
         GLSLC(0, void main()                                                  );
