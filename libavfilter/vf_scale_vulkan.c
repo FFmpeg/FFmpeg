@@ -303,32 +303,30 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
     VkImageMemoryBarrier barriers[AV_NUM_DATA_POINTERS*2];
     int barrier_count = 0;
+    const int planes = av_pix_fmt_count_planes(s->vkctx.input_format);
 
     /* Update descriptors and init the exec context */
     ff_vk_start_exec_recording(vkctx, s->exec);
     cmd_buf = ff_vk_get_exec_buf(s->exec);
 
-    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.input_format); i++) {
+    for (int i = 0; i < planes; i++) {
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->input_images[i].imageView, in->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.input_format)[i],
                                    ff_comp_identity_map));
 
-        s->input_images[i].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
-
-    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.output_format); i++) {
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->output_images[i].imageView, out->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
                                    ff_comp_identity_map));
 
+        s->input_images[i].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     }
 
     ff_vk_update_descriptor_set(vkctx, s->pl, 0);
 
-    for (int i = 0; i < av_pix_fmt_count_planes(s->vkctx.input_format); i++) {
+    for (int i = 0; i < planes; i++) {
         VkImageMemoryBarrier bar = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .srcAccessMask = 0,
