@@ -116,7 +116,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, 1, 1 });
 
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl_hor, shd, desc_i, 2, 0));
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl_hor, shd, desc_i, FF_ARRAY_ELEMS(desc_i), 0));
 
         GLSLF(0, #define FILTER_RADIUS (%i)                     ,s->size_x - 1);
         GLSLC(0, #define INC(x) (ivec2(x, 0))                                 );
@@ -161,7 +161,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         ff_vk_set_compute_shader_sizes(shd, (int [3]){ 1, CGS, 1 });
 
-        RET(ff_vk_add_descriptor_set(vkctx, s->pl_ver, shd, desc_i, 2, 0));
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl_ver, shd, desc_i, FF_ARRAY_ELEMS(desc_i), 0));
 
         GLSLF(0, #define FILTER_RADIUS (%i)                     ,s->size_y - 1);
         GLSLC(0, #define INC(x) (ivec2(0, x))                                 );
