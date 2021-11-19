@@ -31,6 +31,7 @@
 #include "cbs.h"
 #include "cbs_h265.h"
 #include "codec_internal.h"
+#include "h2645data.h"
 #include "h265_profile_level.h"
 #include "hevc.h"
 #include "hevc_sei.h"
@@ -496,24 +497,17 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
     if (avctx->sample_aspect_ratio.num != 0 &&
         avctx->sample_aspect_ratio.den != 0) {
-        static const AVRational sar_idc[] = {
-            {   0,  0 },
-            {   1,  1 }, {  12, 11 }, {  10, 11 }, {  16, 11 },
-            {  40, 33 }, {  24, 11 }, {  20, 11 }, {  32, 11 },
-            {  80, 33 }, {  18, 11 }, {  15, 11 }, {  64, 33 },
-            { 160, 99 }, {   4,  3 }, {   3,  2 }, {   2,  1 },
-        };
         int num, den, i;
         av_reduce(&num, &den, avctx->sample_aspect_ratio.num,
                   avctx->sample_aspect_ratio.den, 65535);
-        for (i = 0; i < FF_ARRAY_ELEMS(sar_idc); i++) {
-            if (num == sar_idc[i].num &&
-                den == sar_idc[i].den) {
+        for (i = 0; i < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect); i++) {
+            if (num == ff_h2645_pixel_aspect[i].num &&
+                den == ff_h2645_pixel_aspect[i].den) {
                 vui->aspect_ratio_idc = i;
                 break;
             }
         }
-        if (i >= FF_ARRAY_ELEMS(sar_idc)) {
+        if (i >= FF_ARRAY_ELEMS(ff_h2645_pixel_aspect)) {
             vui->aspect_ratio_idc = 255;
             vui->sar_width  = num;
             vui->sar_height = den;

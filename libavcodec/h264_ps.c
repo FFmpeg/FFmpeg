@@ -31,6 +31,7 @@
 #include "mathops.h"
 #include "avcodec.h"
 #include "h264data.h"
+#include "h2645data.h"
 #include "h264_ps.h"
 #include "golomb.h"
 
@@ -142,8 +143,8 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
         if (aspect_ratio_idc == EXTENDED_SAR) {
             sps->sar.num = get_bits(gb, 16);
             sps->sar.den = get_bits(gb, 16);
-        } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h264_pixel_aspect)) {
-            sps->sar = ff_h264_pixel_aspect[aspect_ratio_idc];
+        } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect)) {
+            sps->sar = ff_h2645_pixel_aspect[aspect_ratio_idc];
         } else {
             av_log(logctx, AV_LOG_WARNING, "Unknown SAR index: %u.\n",
                    aspect_ratio_idc);

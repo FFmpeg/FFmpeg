@@ -29,6 +29,7 @@
 #include "h264.h"
 #include "h264_levels.h"
 #include "h264_sei.h"
+#include "h2645data.h"
 
 enum {
     FLIP_HORIZONTAL = 1,
@@ -144,25 +145,17 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
     int crop_unit_x, crop_unit_y;
 
     if (ctx->sample_aspect_ratio.num && ctx->sample_aspect_ratio.den) {
-        // Table E-1.
-        static const AVRational sar_idc[] = {
-            {   0,  0 }, // Unspecified (never written here).
-            {   1,  1 }, {  12, 11 }, {  10, 11 }, {  16, 11 },
-            {  40, 33 }, {  24, 11 }, {  20, 11 }, {  32, 11 },
-            {  80, 33 }, {  18, 11 }, {  15, 11 }, {  64, 33 },
-            { 160, 99 }, {   4,  3 }, {   3,  2 }, {   2,  1 },
-        };
         int num, den, i;
 
         av_reduce(&num, &den, ctx->sample_aspect_ratio.num,
                   ctx->sample_aspect_ratio.den, 65535);
 
-        for (i = 1; i < FF_ARRAY_ELEMS(sar_idc); i++) {
-            if (num == sar_idc[i].num &&
-                den == sar_idc[i].den)
+        for (i = 1; i < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect); i++) {
+            if (num == ff_h2645_pixel_aspect[i].num &&
+                den == ff_h2645_pixel_aspect[i].den)
                 break;
         }
-        if (i == FF_ARRAY_ELEMS(sar_idc)) {
+        if (i == FF_ARRAY_ELEMS(ff_h2645_pixel_aspect)) {
             sps->vui.aspect_ratio_idc = 255;
             sps->vui.sar_width  = num;
             sps->vui.sar_height = den;

@@ -25,6 +25,7 @@
 
 #include "libavutil/imgutils.h"
 #include "golomb.h"
+#include "h2645data.h"
 #include "hevc_data.h"
 #include "hevc_ps.h"
 
@@ -48,26 +49,6 @@ static const uint8_t default_scaling_list_inter[] = {
     18, 20, 24, 25, 28, 33, 41, 54,
     20, 24, 25, 28, 33, 41, 54, 71,
     24, 25, 28, 33, 41, 54, 71, 91
-};
-
-static const AVRational vui_sar[] = {
-    {  0,   1 },
-    {  1,   1 },
-    { 12,  11 },
-    { 10,  11 },
-    { 16,  11 },
-    { 40,  33 },
-    { 24,  11 },
-    { 20,  11 },
-    { 32,  11 },
-    { 80,  33 },
-    { 18,  11 },
-    { 15,  11 },
-    { 64,  33 },
-    { 160, 99 },
-    {  4,   3 },
-    {  3,   2 },
-    {  2,   1 },
 };
 
 static const uint8_t hevc_sub_width_c[] = {
@@ -594,8 +575,8 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
     sar_present = get_bits1(gb);
     if (sar_present) {
         uint8_t sar_idx = get_bits(gb, 8);
-        if (sar_idx < FF_ARRAY_ELEMS(vui_sar))
-            vui->sar = vui_sar[sar_idx];
+        if (sar_idx < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect))
+            vui->sar = ff_h2645_pixel_aspect[sar_idx];
         else if (sar_idx == 255) {
             vui->sar.num = get_bits(gb, 16);
             vui->sar.den = get_bits(gb, 16);

@@ -49,26 +49,6 @@ extern const PMbInfo ff_h264_p_sub_mb_type_info[4];
 extern const PMbInfo ff_h264_b_mb_type_info[23];
 extern const PMbInfo ff_h264_b_sub_mb_type_info[13];
 
-static const AVRational ff_h264_pixel_aspect[17] = {
-    {   0,  1 },
-    {   1,  1 },
-    {  12, 11 },
-    {  10, 11 },
-    {  16, 11 },
-    {  40, 33 },
-    {  24, 11 },
-    {  20, 11 },
-    {  32, 11 },
-    {  80, 33 },
-    {  18, 11 },
-    {  15, 11 },
-    {  64, 33 },
-    { 160, 99 },
-    {   4,  3 },
-    {   3,  2 },
-    {   2,  1 },
-};
-
 extern const uint8_t ff_h264_dequant4_coeff_init[6][3];
 extern const uint8_t ff_h264_dequant8_coeff_init_scan[16];
 extern const uint8_t ff_h264_dequant8_coeff_init[6][6];
