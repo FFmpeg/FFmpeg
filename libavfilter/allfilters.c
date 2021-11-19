@@ -283,6 +283,7 @@ extern const AVFilter ff_vf_greyedge;
 extern const AVFilter ff_vf_guided;
 extern const AVFilter ff_vf_haldclut;
 extern const AVFilter ff_vf_hflip;
+extern const AVFilter ff_vf_hflip_vulkan;
 extern const AVFilter ff_vf_histeq;
 extern const AVFilter ff_vf_histogram;
 extern const AVFilter ff_vf_hqdn3d;

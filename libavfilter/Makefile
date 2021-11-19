@@ -298,6 +298,7 @@ OBJS-$(CONFIG_GREYEDGE_FILTER)               += vf_colorconstancy.o
 OBJS-$(CONFIG_GUIDED_FILTER)                 += vf_guided.o
 OBJS-$(CONFIG_HALDCLUT_FILTER)               += vf_lut3d.o framesync.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
+OBJS-$(CONFIG_HFLIP_VULKAN_FILTER)           += vf_hflip_vulkan.o vulkan.o
 OBJS-$(CONFIG_HISTEQ_FILTER)                 += vf_histeq.o
 OBJS-$(CONFIG_HISTOGRAM_FILTER)              += vf_histogram.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o
