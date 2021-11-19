@@ -103,7 +103,7 @@ static inline int h263_get_motion_length(int val, int f_code){
     int l, bit_size, code;
 
     if (val == 0) {
-        return ff_mvtab[0][1];
+        return 1; /* ff_mvtab[0][1] */
     } else {
         bit_size = f_code - 1;
         /* modulo encoding */
