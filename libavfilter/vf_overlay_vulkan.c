@@ -242,8 +242,12 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f,
     AVVkFrame *main    = (AVVkFrame *)main_f->data[0];
     AVVkFrame *overlay = (AVVkFrame *)overlay_f->data[0];
 
-    AVHWFramesContext *main_fc = (AVHWFramesContext*)main_f->hw_frames_ctx->data;
+    AVHWFramesContext *main_fc    = (AVHWFramesContext*)main_f->hw_frames_ctx->data;
     AVHWFramesContext *overlay_fc = (AVHWFramesContext*)overlay_f->hw_frames_ctx->data;
+
+    const VkFormat *output_formats     = av_vkfmt_from_pixfmt(s->vkctx.output_format);
+    const VkFormat *main_sw_formats    = av_vkfmt_from_pixfmt(main_fc->sw_format);
+    const VkFormat *overlay_sw_formats = av_vkfmt_from_pixfmt(overlay_fc->sw_format);
 
     /* Update descriptors and init the exec context */
     ff_vk_start_exec_recording(vkctx, s->exec);
@@ -252,17 +256,17 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f,
     for (int i = 0; i < planes; i++) {
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->main_images[i].imageView, main->img[i],
-                                   av_vkfmt_from_pixfmt(main_fc->sw_format)[i],
+                                   main_sw_formats[i],
                                    ff_comp_identity_map));
 
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->overlay_images[i].imageView, overlay->img[i],
-                                   av_vkfmt_from_pixfmt(overlay_fc->sw_format)[i],
+                                   overlay_sw_formats[i],
                                    ff_comp_identity_map));
 
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->output_images[i].imageView, out->img[i],
-                                   av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
+                                   output_formats[i],
                                    ff_comp_identity_map));
 
         s->main_images[i].imageLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
