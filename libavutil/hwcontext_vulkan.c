@@ -38,6 +38,7 @@
 #include "hwcontext_internal.h"
 #include "hwcontext_vulkan.h"
 
+#include "vulkan.h"
 #include "vulkan_loader.h"
 
 #if CONFIG_LIBDRM
@@ -130,11 +131,6 @@ typedef struct AVVkFrameInternal {
 #endif
 #endif
 } AVVkFrameInternal;
-
-#define DEFAULT_USAGE_FLAGS (VK_IMAGE_USAGE_SAMPLED_BIT      |                 \
-                             VK_IMAGE_USAGE_STORAGE_BIT      |                 \
-                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |                 \
-                             VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 
 #define ADD_VAL_TO_LIST(list, count, val)                                      \
     do {                                                                       \
@@ -251,7 +247,7 @@ static int pixfmt_is_supported(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
         vk->GetPhysicalDeviceFormatProperties2(hwctx->phys_dev, fmt[i], &prop);
         flags = linear ? prop.formatProperties.linearTilingFeatures :
                          prop.formatProperties.optimalTilingFeatures;
-        if (!(flags & DEFAULT_USAGE_FLAGS))
+        if (!(flags & FF_VK_DEFAULT_USAGE_FLAGS))
             return 0;
     }
 
@@ -2041,7 +2037,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                     VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
 
     if (!hwctx->usage)
-        hwctx->usage = DEFAULT_USAGE_FLAGS;
+        hwctx->usage = FF_VK_DEFAULT_USAGE_FLAGS;
 
     err = create_exec_ctx(hwfc, &fp->conv_ctx,
                           dev_hwctx->queue_family_comp_index,

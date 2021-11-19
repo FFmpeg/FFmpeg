@@ -70,16 +70,17 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     int err;
     FFVkSampler *sampler;
     ChromaticAberrationVulkanContext *s = ctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    ff_vk_qf_init(ctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
+    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
 
     /* Create a sampler */
-    sampler = ff_vk_init_sampler(ctx, 0, VK_FILTER_LINEAR);
+    sampler = ff_vk_init_sampler(vkctx, 0, VK_FILTER_LINEAR);
     if (!sampler)
         return AVERROR_EXTERNAL;
 
-    s->pl = ff_vk_create_pipeline(ctx, &s->qf);
+    s->pl = ff_vk_create_pipeline(vkctx, &s->qf);
     if (!s->pl)
         return AVERROR(ENOMEM);
 
@@ -110,22 +111,22 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             },
         };
 
-        FFSPIRVShader *shd = ff_vk_init_shader(ctx, s->pl, "chromaber_compute",
-                                               VK_SHADER_STAGE_COMPUTE_BIT);
+        FFVkSPIRVShader *shd = ff_vk_init_shader(s->pl, "chromaber_compute",
+                                                 VK_SHADER_STAGE_COMPUTE_BIT);
         if (!shd)
             return AVERROR(ENOMEM);
 
-        ff_vk_set_compute_shader_sizes(ctx, shd, CGROUPS);
+        ff_vk_set_compute_shader_sizes(shd, CGROUPS);
 
         GLSLC(0, layout(push_constant, std430) uniform pushConstants {        );
         GLSLC(1,    vec2 dist;                                                );
         GLSLC(0, };                                                           );
         GLSLC(0,                                                              );
 
-        ff_vk_add_push_constant(ctx, s->pl, 0, sizeof(s->opts),
+        ff_vk_add_push_constant(s->pl, 0, sizeof(s->opts),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-        RET(ff_vk_add_descriptor_set(ctx, s->pl, shd, desc_i, 2, 0)); /* set 0 */
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl, shd, desc_i, 2, 0)); /* set 0 */
 
         GLSLD(   distort_chroma_kernel                                        );
         GLSLC(0, void main()                                                  );
@@ -152,14 +153,14 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         }
         GLSLC(0, }                                                            );
 
-        RET(ff_vk_compile_shader(ctx, shd, "main"));
+        RET(ff_vk_compile_shader(vkctx, shd, "main"));
     }
 
-    RET(ff_vk_init_pipeline_layout(ctx, s->pl));
-    RET(ff_vk_init_compute_pipeline(ctx, s->pl));
+    RET(ff_vk_init_pipeline_layout(vkctx, s->pl));
+    RET(ff_vk_init_compute_pipeline(vkctx, s->pl));
 
     /* Execution context */
-    RET(ff_vk_create_exec_ctx(ctx, &s->exec, &s->qf));
+    RET(ff_vk_create_exec_ctx(vkctx, &s->exec, &s->qf));
 
     s->initialized = 1;
 
@@ -174,23 +175,24 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     int err = 0;
     VkCommandBuffer cmd_buf;
     ChromaticAberrationVulkanContext *s = avctx->priv;
-    FFVulkanFunctions *vk = &s->vkctx.vkfn;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanFunctions *vk = &vkctx->vkfn;
     AVVkFrame *in = (AVVkFrame *)in_f->data[0];
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
     int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
     /* Update descriptors and init the exec context */
-    ff_vk_start_exec_recording(avctx, s->exec);
-    cmd_buf = ff_vk_get_exec_buf(avctx, s->exec);
+    ff_vk_start_exec_recording(vkctx, s->exec);
+    cmd_buf = ff_vk_get_exec_buf(s->exec);
 
     for (int i = 0; i < planes; i++) {
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->input_images[i].imageView,
-                                   in->img[i],
+        RET(ff_vk_create_imageview(vkctx, s->exec,
+                                   &s->input_images[i].imageView, in->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.input_format)[i],
                                    ff_comp_identity_map));
 
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->output_images[i].imageView,
-                                   out->img[i],
+        RET(ff_vk_create_imageview(vkctx, s->exec,
+                                   &s->output_images[i].imageView, out->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
                                    ff_comp_identity_map));
 
@@ -198,7 +200,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
         s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     }
 
-    ff_vk_update_descriptor_set(avctx, s->pl, 0);
+    ff_vk_update_descriptor_set(vkctx, s->pl, 0);
 
     for (int i = 0; i < planes; i++) {
         VkImageMemoryBarrier bar[2] = {
@@ -241,19 +243,19 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
         out->access[i] = bar[1].dstAccessMask;
     }
 
-    ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl);
+    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl);
 
-    ff_vk_update_push_exec(avctx, s->exec, VK_SHADER_STAGE_COMPUTE_BIT,
+    ff_vk_update_push_exec(vkctx, s->exec, VK_SHADER_STAGE_COMPUTE_BIT,
                            0, sizeof(s->opts), &s->opts);
 
     vk->CmdDispatch(cmd_buf,
                     FFALIGN(s->vkctx.output_width,  CGROUPS[0])/CGROUPS[0],
                     FFALIGN(s->vkctx.output_height, CGROUPS[1])/CGROUPS[1], 1);
 
-    ff_vk_add_exec_dep(avctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(avctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    ff_vk_add_exec_dep(vkctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    ff_vk_add_exec_dep(vkctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-    err = ff_vk_submit_exec_queue(avctx, s->exec);
+    err = ff_vk_submit_exec_queue(vkctx, s->exec);
     if (err)
         return err;
 
@@ -262,7 +264,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *in_f)
     return err;
 
 fail:
-    ff_vk_discard_exec_deps(avctx, s->exec);
+    ff_vk_discard_exec_deps(s->exec);
     return err;
 }
 
@@ -302,7 +304,7 @@ static void chromaber_vulkan_uninit(AVFilterContext *avctx)
 {
     ChromaticAberrationVulkanContext *s = avctx->priv;
 
-    ff_vk_filter_uninit(avctx);
+    ff_vk_uninit(&s->vkctx);
 
     s->initialized = 0;
 }

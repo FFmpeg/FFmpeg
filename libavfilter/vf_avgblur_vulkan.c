@@ -71,8 +71,9 @@ static const char blur_kernel[] = {
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
-    FFSPIRVShader *shd;
+    FFVkSPIRVShader *shd;
     AvgBlurVulkanContext *s = ctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
     FFVulkanDescriptorSetBinding desc_i[2] = {
@@ -94,9 +95,9 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         },
     };
 
-    ff_vk_qf_init(ctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
+    ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
 
-    desc_i[0].sampler = ff_vk_init_sampler(ctx, 1, VK_FILTER_LINEAR);
+    desc_i[0].sampler = ff_vk_init_sampler(vkctx, 1, VK_FILTER_LINEAR);
     if (!desc_i[0].sampler)
         return AVERROR_EXTERNAL;
 
@@ -104,16 +105,16 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         desc_i[0].updater = s->input_images;
         desc_i[1].updater = s->tmp_images;
 
-        s->pl_hor = ff_vk_create_pipeline(ctx, &s->qf);
+        s->pl_hor = ff_vk_create_pipeline(vkctx, &s->qf);
         if (!s->pl_hor)
             return AVERROR(ENOMEM);
 
-        shd = ff_vk_init_shader(ctx, s->pl_hor, "avgblur_compute_hor",
+        shd = ff_vk_init_shader(s->pl_hor, "avgblur_compute_hor",
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-        ff_vk_set_compute_shader_sizes(ctx, shd, (int [3]){ CGS, 1, 1 });
+        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, 1, 1 });
 
-        RET(ff_vk_add_descriptor_set(ctx, s->pl_hor, shd, desc_i, 2, 0));
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl_hor, shd, desc_i, 2, 0));
 
         GLSLF(0, #define FILTER_RADIUS (%i)                     ,s->size_x - 1);
         GLSLC(0, #define INC(x) (ivec2(x, 0))                                 );
@@ -137,26 +138,26 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         }
         GLSLC(0, }                                                            );
 
-        RET(ff_vk_compile_shader(ctx, shd, "main"));
+        RET(ff_vk_compile_shader(vkctx, shd, "main"));
 
-        RET(ff_vk_init_pipeline_layout(ctx, s->pl_hor));
-        RET(ff_vk_init_compute_pipeline(ctx, s->pl_hor));
+        RET(ff_vk_init_pipeline_layout(vkctx, s->pl_hor));
+        RET(ff_vk_init_compute_pipeline(vkctx, s->pl_hor));
     }
 
     { /* Create shader for the vertical pass */
         desc_i[0].updater = s->tmp_images;
         desc_i[1].updater = s->output_images;
 
-        s->pl_ver = ff_vk_create_pipeline(ctx, &s->qf);
+        s->pl_ver = ff_vk_create_pipeline(vkctx, &s->qf);
         if (!s->pl_ver)
             return AVERROR(ENOMEM);
 
-        shd = ff_vk_init_shader(ctx, s->pl_ver, "avgblur_compute_ver",
+        shd = ff_vk_init_shader(s->pl_ver, "avgblur_compute_ver",
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-        ff_vk_set_compute_shader_sizes(ctx, shd, (int [3]){ 1, CGS, 1 });
+        ff_vk_set_compute_shader_sizes(shd, (int [3]){ 1, CGS, 1 });
 
-        RET(ff_vk_add_descriptor_set(ctx, s->pl_ver, shd, desc_i, 2, 0));
+        RET(ff_vk_add_descriptor_set(vkctx, s->pl_ver, shd, desc_i, 2, 0));
 
         GLSLF(0, #define FILTER_RADIUS (%i)                     ,s->size_y - 1);
         GLSLC(0, #define INC(x) (ivec2(0, x))                                 );
@@ -180,14 +181,14 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         }
         GLSLC(0, }                                                            );
 
-        RET(ff_vk_compile_shader(ctx, shd, "main"));
+        RET(ff_vk_compile_shader(vkctx, shd, "main"));
 
-        RET(ff_vk_init_pipeline_layout(ctx, s->pl_ver));
-        RET(ff_vk_init_compute_pipeline(ctx, s->pl_ver));
+        RET(ff_vk_init_pipeline_layout(vkctx, s->pl_ver));
+        RET(ff_vk_init_compute_pipeline(vkctx, s->pl_ver));
     }
 
     /* Execution context */
-    RET(ff_vk_create_exec_ctx(ctx, &s->exec, &s->qf));
+    RET(ff_vk_create_exec_ctx(vkctx, &s->exec, &s->qf));
 
     s->initialized = 1;
 
@@ -202,29 +203,30 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
     int err;
     VkCommandBuffer cmd_buf;
     AvgBlurVulkanContext *s = avctx->priv;
-    FFVulkanFunctions *vk = &s->vkctx.vkfn;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanFunctions *vk = &vkctx->vkfn;
     AVVkFrame *in = (AVVkFrame *)in_f->data[0];
     AVVkFrame *tmp = (AVVkFrame *)tmp_f->data[0];
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
     int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
     /* Update descriptors and init the exec context */
-    ff_vk_start_exec_recording(avctx, s->exec);
-    cmd_buf = ff_vk_get_exec_buf(avctx, s->exec);
+    ff_vk_start_exec_recording(vkctx, s->exec);
+    cmd_buf = ff_vk_get_exec_buf(s->exec);
 
     for (int i = 0; i < planes; i++) {
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->input_images[i].imageView,
-                                   in->img[i],
+        RET(ff_vk_create_imageview(vkctx, s->exec,
+                                   &s->input_images[i].imageView, in->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.input_format)[i],
                                    ff_comp_identity_map));
 
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->tmp_images[i].imageView,
-                                   tmp->img[i],
+        RET(ff_vk_create_imageview(vkctx, s->exec,
+                                   &s->tmp_images[i].imageView, tmp->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
                                    ff_comp_identity_map));
 
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->output_images[i].imageView,
-                                   out->img[i],
+        RET(ff_vk_create_imageview(vkctx, s->exec,
+                                   &s->output_images[i].imageView, out->img[i],
                                    av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
                                    ff_comp_identity_map));
 
@@ -233,8 +235,8 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
         s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     }
 
-    ff_vk_update_descriptor_set(avctx, s->pl_hor, 0);
-    ff_vk_update_descriptor_set(avctx, s->pl_ver, 0);
+    ff_vk_update_descriptor_set(vkctx, s->pl_hor, 0);
+    ff_vk_update_descriptor_set(vkctx, s->pl_ver, 0);
 
     for (int i = 0; i < planes; i++) {
         VkImageMemoryBarrier bar[] = {
@@ -293,20 +295,20 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
         out->access[i] = bar[2].dstAccessMask;
     }
 
-    ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl_hor);
+    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl_hor);
 
     vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
                   s->vkctx.output_height, 1);
 
-    ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl_ver);
+    ff_vk_bind_pipeline_exec(vkctx, s->exec, s->pl_ver);
 
     vk->CmdDispatch(cmd_buf, s->vkctx.output_width,
                     FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
 
-    ff_vk_add_exec_dep(avctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(avctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    ff_vk_add_exec_dep(vkctx, s->exec, in_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    ff_vk_add_exec_dep(vkctx, s->exec, out_f, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-    err = ff_vk_submit_exec_queue(avctx, s->exec);
+    err = ff_vk_submit_exec_queue(vkctx,s->exec);
     if (err)
         return err;
 
@@ -315,7 +317,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
     return err;
 
 fail:
-    ff_vk_discard_exec_deps(avctx, s->exec);
+    ff_vk_discard_exec_deps(s->exec);
     return err;
 }
 
@@ -364,7 +366,7 @@ static void avgblur_vulkan_uninit(AVFilterContext *avctx)
 {
     AvgBlurVulkanContext *s = avctx->priv;
 
-    ff_vk_filter_uninit(avctx);
+    ff_vk_uninit(&s->vkctx);
 
     s->initialized = 0;
 }

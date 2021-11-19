@@ -127,7 +127,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     int err = 0;
     char *kernel_def;
     uint8_t *kernel_mapped;
-    FFSPIRVShader *shd;
+    FFVkSPIRVShader *shd;
     GBlurVulkanContext *s = ctx->priv;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
@@ -160,7 +160,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         .buf_content = NULL,
     };
 
-    image_descs[0].sampler = ff_vk_init_sampler(ctx, 1, VK_FILTER_LINEAR);
+    image_descs[0].sampler = ff_vk_init_sampler(&s->vkctx, 1, VK_FILTER_LINEAR);
     if (!image_descs[0].sampler)
             return AVERROR_EXTERNAL;
 
@@ -172,28 +172,28 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     buf_desc.buf_content = kernel_def;
 
-    ff_vk_qf_init(ctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
+    ff_vk_qf_init(&s->vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
 
     { /* Create shader for the horizontal pass */
         image_descs[0].updater = s->input_images;
         image_descs[1].updater = s->tmp_images;
         buf_desc.updater = &s->params_desc_hor;
 
-        s->pl_hor = ff_vk_create_pipeline(ctx, &s->qf);
+        s->pl_hor = ff_vk_create_pipeline(&s->vkctx, &s->qf);
         if (!s->pl_hor) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
 
-        shd = ff_vk_init_shader(ctx, s->pl_hor, "gblur_compute_hor", image_descs[0].stages);
+        shd = ff_vk_init_shader(s->pl_hor, "gblur_compute_hor", image_descs[0].stages);
         if (!shd) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
 
-        ff_vk_set_compute_shader_sizes(ctx, shd, (int [3]){ CGS, CGS, 1 });
-        RET(ff_vk_add_descriptor_set(ctx, s->pl_hor, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
-        RET(ff_vk_add_descriptor_set(ctx, s->pl_hor, shd, &buf_desc, 1, 0));
+        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, CGS, 1 });
+        RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_hor, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
+        RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_hor, shd, &buf_desc, 1, 0));
 
         GLSLD(   gblur_horizontal                                         );
         GLSLC(0, void main()                                              );
@@ -214,23 +214,23 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         }
         GLSLC(0, }                                                        );
 
-        RET(ff_vk_compile_shader(ctx, shd, "main"));
+        RET(ff_vk_compile_shader(&s->vkctx, shd, "main"));
 
-        RET(ff_vk_init_pipeline_layout(ctx, s->pl_hor));
-        RET(ff_vk_init_compute_pipeline(ctx, s->pl_hor));
+        RET(ff_vk_init_pipeline_layout(&s->vkctx, s->pl_hor));
+        RET(ff_vk_init_compute_pipeline(&s->vkctx, s->pl_hor));
 
-        RET(ff_vk_create_buf(ctx, &s->params_buf_hor, sizeof(float) * s->kernel_size,
+        RET(ff_vk_create_buf(&s->vkctx, &s->params_buf_hor, sizeof(float) * s->kernel_size,
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-        RET(ff_vk_map_buffers(ctx, &s->params_buf_hor, &kernel_mapped, 1, 0));
+        RET(ff_vk_map_buffers(&s->vkctx, &s->params_buf_hor, &kernel_mapped, 1, 0));
 
         init_gaussian_kernel((float *)kernel_mapped, s->sigma, s->kernel_size);
 
-        RET(ff_vk_unmap_buffers(ctx, &s->params_buf_hor, 1, 1));
+        RET(ff_vk_unmap_buffers(&s->vkctx, &s->params_buf_hor, 1, 1));
 
         s->params_desc_hor.buffer = s->params_buf_hor.buf;
         s->params_desc_hor.range  = VK_WHOLE_SIZE;
 
-        ff_vk_update_descriptor_set(ctx, s->pl_hor, 1);
+        ff_vk_update_descriptor_set(&s->vkctx, s->pl_hor, 1);
     }
 
     { /* Create shader for the vertical pass */
@@ -238,21 +238,21 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         image_descs[1].updater = s->output_images;
         buf_desc.updater = &s->params_desc_ver;
 
-        s->pl_ver = ff_vk_create_pipeline(ctx, &s->qf);
+        s->pl_ver = ff_vk_create_pipeline(&s->vkctx, &s->qf);
         if (!s->pl_ver) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
 
-        shd = ff_vk_init_shader(ctx, s->pl_ver, "gblur_compute_ver", image_descs[0].stages);
+        shd = ff_vk_init_shader(s->pl_ver, "gblur_compute_ver", image_descs[0].stages);
         if (!shd) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
 
-        ff_vk_set_compute_shader_sizes(ctx, shd, (int [3]){ CGS, CGS, 1 });
-        RET(ff_vk_add_descriptor_set(ctx, s->pl_ver, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
-        RET(ff_vk_add_descriptor_set(ctx, s->pl_ver, shd, &buf_desc, 1, 0));
+        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, CGS, 1 });
+        RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_ver, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
+        RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_ver, shd, &buf_desc, 1, 0));
 
         GLSLD(   gblur_vertical                                           );
         GLSLC(0, void main()                                              );
@@ -273,26 +273,26 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         }
         GLSLC(0, }                                                        );
 
-        RET(ff_vk_compile_shader(ctx, shd, "main"));
+        RET(ff_vk_compile_shader(&s->vkctx, shd, "main"));
 
-        RET(ff_vk_init_pipeline_layout(ctx, s->pl_ver));
-        RET(ff_vk_init_compute_pipeline(ctx, s->pl_ver));
+        RET(ff_vk_init_pipeline_layout(&s->vkctx, s->pl_ver));
+        RET(ff_vk_init_compute_pipeline(&s->vkctx, s->pl_ver));
 
-        RET(ff_vk_create_buf(ctx, &s->params_buf_ver, sizeof(float) * s->kernel_size,
+        RET(ff_vk_create_buf(&s->vkctx, &s->params_buf_ver, sizeof(float) * s->kernel_size,
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-        RET(ff_vk_map_buffers(ctx, &s->params_buf_ver, &kernel_mapped, 1, 0));
+        RET(ff_vk_map_buffers(&s->vkctx, &s->params_buf_ver, &kernel_mapped, 1, 0));
 
         init_gaussian_kernel((float *)kernel_mapped, s->sigmaV, s->kernel_size);
 
-        RET(ff_vk_unmap_buffers(ctx, &s->params_buf_ver, 1, 1));
+        RET(ff_vk_unmap_buffers(&s->vkctx, &s->params_buf_ver, 1, 1));
 
         s->params_desc_ver.buffer = s->params_buf_ver.buf;
         s->params_desc_ver.range  = VK_WHOLE_SIZE;
 
-        ff_vk_update_descriptor_set(ctx, s->pl_ver, 1);
+        ff_vk_update_descriptor_set(&s->vkctx, s->pl_ver, 1);
     }
 
-    RET(ff_vk_create_exec_ctx(ctx, &s->exec, &s->qf));
+    RET(ff_vk_create_exec_ctx(&s->vkctx, &s->exec, &s->qf));
 
     s->initialized = 1;
 
@@ -307,9 +307,9 @@ static av_cold void gblur_vulkan_uninit(AVFilterContext *avctx)
 
     av_frame_free(&s->tmpframe);
 
-    ff_vk_filter_uninit(avctx);
-    ff_vk_free_buf(avctx, &s->params_buf_hor);
-    ff_vk_free_buf(avctx, &s->params_buf_ver);
+    ff_vk_free_buf(&s->vkctx, &s->params_buf_hor);
+    ff_vk_free_buf(&s->vkctx, &s->params_buf_ver);
+    ff_vk_uninit(&s->vkctx);
 
     s->initialized = 0;
 }
@@ -329,23 +329,23 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
 
     int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    ff_vk_start_exec_recording(avctx, s->exec);
-    cmd_buf = ff_vk_get_exec_buf(avctx, s->exec);
+    ff_vk_start_exec_recording(&s->vkctx, s->exec);
+    cmd_buf = ff_vk_get_exec_buf(s->exec);
 
     input_formats = av_vkfmt_from_pixfmt(s->vkctx.input_format);
     output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
     for (int i = 0; i < planes; i++) {
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->input_images[i].imageView,
+        RET(ff_vk_create_imageview(&s->vkctx, s->exec, &s->input_images[i].imageView,
                                    in->img[i],
                                    input_formats[i],
                                    ff_comp_identity_map));
 
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->tmp_images[i].imageView,
+        RET(ff_vk_create_imageview(&s->vkctx, s->exec, &s->tmp_images[i].imageView,
                                    tmp->img[i],
                                    output_formats[i],
                                    ff_comp_identity_map));
 
-        RET(ff_vk_create_imageview(avctx, s->exec, &s->output_images[i].imageView,
+        RET(ff_vk_create_imageview(&s->vkctx, s->exec, &s->output_images[i].imageView,
                                    out->img[i],
                                    output_formats[i],
                                    ff_comp_identity_map));
@@ -355,8 +355,8 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
         s->output_images[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     }
 
-    ff_vk_update_descriptor_set(avctx, s->pl_hor, 0);
-    ff_vk_update_descriptor_set(avctx, s->pl_ver, 0);
+    ff_vk_update_descriptor_set(&s->vkctx, s->pl_hor, 0);
+    ff_vk_update_descriptor_set(&s->vkctx, s->pl_ver, 0);
 
     for (int i = 0; i < planes; i++) {
         VkImageMemoryBarrier barriers[] = {
@@ -415,20 +415,20 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
         out->access[i] = barriers[2].dstAccessMask;
     }
 
-    ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl_hor);
+    ff_vk_bind_pipeline_exec(&s->vkctx, s->exec, s->pl_hor);
 
     vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
                     FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
 
-    ff_vk_bind_pipeline_exec(avctx, s->exec, s->pl_ver);
+    ff_vk_bind_pipeline_exec(&s->vkctx, s->exec, s->pl_ver);
 
     vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
                     FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
 
-    ff_vk_add_exec_dep(avctx, s->exec, inframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    ff_vk_add_exec_dep(avctx, s->exec, outframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    ff_vk_add_exec_dep(&s->vkctx, s->exec, inframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    ff_vk_add_exec_dep(&s->vkctx, s->exec, outframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-    err = ff_vk_submit_exec_queue(avctx, s->exec);
+    err = ff_vk_submit_exec_queue(&s->vkctx, s->exec);
     if (err)
         return err;
 
@@ -436,7 +436,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
 
     return 0;
 fail:
-    ff_vk_discard_exec_deps(avctx, s->exec);
+    ff_vk_discard_exec_deps(s->exec);
     return err;
 }
 

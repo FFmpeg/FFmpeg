@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_GLSLANG_H
-#define AVFILTER_GLSLANG_H
+#ifndef AVUTIL_GLSLANG_H
+#define AVUTIL_GLSLANG_H
 
 #include "vulkan.h"
 
@@ -30,7 +30,7 @@ void ff_vk_glslang_uninit(void);
 /**
  * Compile GLSL into SPIR-V using glslang.
  */
-int ff_vk_glslang_shader_compile(AVFilterContext *avctx, FFSPIRVShader *shd,
+int ff_vk_glslang_shader_compile(void *avctx, FFVkSPIRVShader *shd,
                                  uint8_t **data, size_t *size, void **opaque);
 
 /**
@@ -38,4 +38,4 @@ int ff_vk_glslang_shader_compile(AVFilterContext *avctx, FFSPIRVShader *shd,
  */
 void ff_vk_glslang_shader_free(void *opaque);
 
-#endif /* AVFILTER_GLSLANG_H */
+#endif /* AVUTIL_GLSLANG_H */
