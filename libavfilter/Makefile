@@ -576,7 +576,7 @@ OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h
-SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h
+SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h vulkan_filter.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral

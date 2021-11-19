@@ -19,14 +19,11 @@
 #ifndef AVUTIL_VULKAN_H
 #define AVUTIL_VULKAN_H
 
-#define VK_NO_PROTOTYPES
-#define VK_ENABLE_BETA_EXTENSIONS
-
 #include "pixdesc.h"
 #include "bprint.h"
 #include "hwcontext.h"
-#include "hwcontext_vulkan.h"
 #include "vulkan_functions.h"
+#include "hwcontext_vulkan.h"
 #include "vulkan_loader.h"
 
 #define FF_VK_DEFAULT_USAGE_FLAGS (VK_IMAGE_USAGE_SAMPLED_BIT      |           \

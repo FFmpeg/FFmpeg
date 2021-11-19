@@ -19,6 +19,12 @@
 #ifndef AVUTIL_VULKAN_FUNCTIONS_H
 #define AVUTIL_VULKAN_FUNCTIONS_H
 
+#define VK_NO_PROTOTYPES
+#define VK_ENABLE_BETA_EXTENSIONS
+
+#include "hwcontext.h"
+#include "hwcontext_vulkan.h"
+
 /* An enum of bitflags for every optional extension we need */
 typedef enum FFVulkanExtensions {
     FF_VK_EXT_EXTERNAL_DMABUF_MEMORY = 1ULL <<  0, /* VK_EXT_external_memory_dma_buf */
