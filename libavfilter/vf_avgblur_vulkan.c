@@ -212,6 +212,10 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
     AVVkFrame *in = (AVVkFrame *)in_f->data[0];
     AVVkFrame *tmp = (AVVkFrame *)tmp_f->data[0];
     AVVkFrame *out = (AVVkFrame *)out_f->data[0];
+
+    const VkFormat *input_formats = av_vkfmt_from_pixfmt(s->vkctx.input_format);
+    const VkFormat *output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
+
     int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
     /* Update descriptors and init the exec context */
@@ -221,17 +225,17 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out_f, AVFrame *tmp_f
     for (int i = 0; i < planes; i++) {
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->input_images[i].imageView, in->img[i],
-                                   av_vkfmt_from_pixfmt(s->vkctx.input_format)[i],
+                                   input_formats[i],
                                    ff_comp_identity_map));
 
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->tmp_images[i].imageView, tmp->img[i],
-                                   av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
+                                   output_formats[i],
                                    ff_comp_identity_map));
 
         RET(ff_vk_create_imageview(vkctx, s->exec,
                                    &s->output_images[i].imageView, out->img[i],
-                                   av_vkfmt_from_pixfmt(s->vkctx.output_format)[i],
+                                   output_formats[i],
                                    ff_comp_identity_map));
 
         s->input_images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
