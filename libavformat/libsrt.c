@@ -320,7 +320,9 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
     int latency = s->latency / 1000;
     int rcvlatency = s->rcvlatency / 1000;
     int peerlatency = s->peerlatency / 1000;
+#if SRT_VERSION_VALUE >= 0x010302
     int snddropdelay = s->snddropdelay > 0 ? s->snddropdelay / 1000 : s->snddropdelay;
+#endif
     int connect_timeout = s->connect_timeout;
 
     if ((s->mode == SRT_MODE_RENDEZVOUS && libsrt_setsockopt(h, fd, SRTO_RENDEZVOUS, "SRTO_RENDEZVOUS", &yes, sizeof(yes)) < 0) ||
