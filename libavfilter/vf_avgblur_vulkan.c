@@ -111,6 +111,8 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         shd = ff_vk_init_shader(s->pl_hor, "avgblur_compute_hor",
                                 VK_SHADER_STAGE_COMPUTE_BIT);
+        if (!shd)
+            return AVERROR(ENOMEM);
 
         ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, 1, 1 });
 
@@ -154,6 +156,8 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         shd = ff_vk_init_shader(s->pl_ver, "avgblur_compute_ver",
                                 VK_SHADER_STAGE_COMPUTE_BIT);
+        if (!shd)
+            return AVERROR(ENOMEM);
 
         ff_vk_set_compute_shader_sizes(shd, (int [3]){ 1, CGS, 1 });
 
