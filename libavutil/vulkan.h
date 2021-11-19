@@ -22,6 +22,10 @@
 #define VK_NO_PROTOTYPES
 #define VK_ENABLE_BETA_EXTENSIONS
 
+#ifndef FF_VK_ENABLE_SHADER_COMPILATION
+#define FF_VK_ENABLE_SHADER_COMPILATION 1
+#endif
+
 #include "pixdesc.h"
 #include "bprint.h"
 #include "hwcontext.h"
@@ -63,6 +67,15 @@ typedef struct FFVkSPIRVShader {
     int local_size[3];                      /* Compute shader workgroup sizes */
     VkPipelineShaderStageCreateInfo shader;
 } FFVkSPIRVShader;
+
+typedef struct FFVkSPIRVCompiler {
+    void *priv;
+    int (*compile_shader)(struct FFVkSPIRVCompiler *ctx, void *avctx,
+                          struct FFVkSPIRVShader *shd, uint8_t **data,
+                          size_t *size, const char *entrypoint, void **opaque);
+    void (*free_shader)(struct FFVkSPIRVCompiler *ctx, void **opaque);
+    void (*uninit)(struct FFVkSPIRVCompiler **ctx);
+} FFVkSPIRVCompiler;
 
 typedef struct FFVkSampler {
     VkSampler sampler[4];
@@ -193,6 +206,8 @@ typedef struct FFVulkanContext {
     AVBufferRef           *frames_ref;
     AVHWFramesContext     *frames;
     AVVulkanFramesContext *hwfc;
+
+    FFVkSPIRVCompiler     *spirv_compiler;
 
     /* Properties */
     int                 output_width;

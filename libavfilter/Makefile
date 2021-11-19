@@ -578,8 +578,6 @@ SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h
 SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h
 
-OBJS-$(CONFIG_LIBGLSLANG)                    += glslang.o
-
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
 

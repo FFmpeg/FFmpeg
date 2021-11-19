@@ -24,10 +24,8 @@
 #include "mem.h"
 #include "avassert.h"
 
-#include "vulkan_glslang.h"
-
-static pthread_mutex_t glslang_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int glslang_refcount = 0;
+static pthread_mutex_t glslc_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int glslc_refcount = 0;
 
 static const glslang_resource_t glslc_resource_limits = {
     .max_lights = 32,
@@ -137,8 +135,10 @@ static const glslang_resource_t glslc_resource_limits = {
     }
 };
 
-int ff_vk_glslang_shader_compile(void *avctx, FFVkSPIRVShader *shd,
-                                 uint8_t **data, size_t *size, void **opaque)
+static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
+                                FFVkSPIRVShader *shd, uint8_t **data,
+                                size_t *size, const char *entrypoint,
+                                void **opaque)
 {
     const char *messages;
     glslang_shader_t *glslc_shader;
@@ -174,7 +174,7 @@ int ff_vk_glslang_shader_compile(void *avctx, FFVkSPIRVShader *shd,
         .resource                          = &glslc_resource_limits,
     };
 
-    av_assert0(glslang_refcount);
+    av_assert0(glslc_refcount);
 
     if (!(glslc_shader = glslang_shader_create(&glslc_input)))
         return AVERROR(ENOMEM);
@@ -218,8 +218,12 @@ int ff_vk_glslang_shader_compile(void *avctx, FFVkSPIRVShader *shd,
     glslang_program_SPIRV_generate(glslc_program, glslc_input.stage);
 
     messages = glslang_program_SPIRV_get_messages(glslc_program);
-    if (messages)
+    if (messages) {
+        ff_vk_print_shader(s, shd, AV_LOG_WARNING);
         av_log(avctx, AV_LOG_WARNING, "%s\n", messages);
+    } else {
+        ff_vk_print_shader(s, shd, AV_LOG_VERBOSE);
+    }
 
     glslang_shader_delete(glslc_shader);
 
@@ -230,27 +234,47 @@ int ff_vk_glslang_shader_compile(void *avctx, FFVkSPIRVShader *shd,
     return 0;
 }
 
-void ff_vk_glslang_shader_free(void *opaque)
+static void glslc_shader_free(FFVkSPIRVCompiler *ctx, void **opaque)
 {
-    glslang_program_delete(opaque);
+    if (!opaque || !*opaque)
+        return;
+
+    av_assert0(glslc_refcount);
+    glslang_program_delete(*opaque);
+    *opaque = NULL;
 }
 
-int ff_vk_glslang_init(void)
+static void glslc_uninit(FFVkSPIRVCompiler **ctx)
 {
-    int ret = 0;
+    if (!ctx || !*ctx)
+        return;
 
-    pthread_mutex_lock(&glslang_mutex);
-    if (glslang_refcount++ == 0)
-        ret = !glslang_initialize_process();
-    pthread_mutex_unlock(&glslang_mutex);
+    pthread_mutex_lock(&glslc_mutex);
+    if (glslc_refcount && (--glslc_refcount == 0))
+        glslang_finalize_process();
+    pthread_mutex_unlock(&glslc_mutex);
+
+    av_freep(ctx);
+}
+
+static FFVkSPIRVCompiler *ff_vk_glslang_init(void)
+{
+    FFVkSPIRVCompiler *ret = av_mallocz(sizeof(*ret));
+    if (!ret)
+        return NULL;
+
+    ret->compile_shader = glslc_shader_compile;
+    ret->free_shader    = glslc_shader_free;
+    ret->uninit         = glslc_uninit;
+
+    pthread_mutex_lock(&glslc_mutex);
+    if (!glslc_refcount++) {
+        if (!glslang_initialize_process()) {
+            av_freep(&ret);
+            glslc_refcount--;
+        }
+    }
+    pthread_mutex_unlock(&glslc_mutex);
 
     return ret;
-}
-
-void ff_vk_glslang_uninit(void)
-{
-    pthread_mutex_lock(&glslang_mutex);
-    if (glslang_refcount && (--glslang_refcount == 0))
-        glslang_finalize_process();
-    pthread_mutex_unlock(&glslang_mutex);
 }

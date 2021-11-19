@@ -188,8 +188,5 @@ int ff_vk_filter_init(AVFilterContext *avctx)
 
     s->output_format = AV_PIX_FMT_NONE;
 
-    if (ff_vk_glslang_init())
-        return AVERROR_EXTERNAL;
-
     return 0;
 }

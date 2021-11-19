@@ -16,11 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "vulkan.h"
-#include "vulkan_glslang.h"
-
 #include "avassert.h"
+
+#include "vulkan.h"
 #include "vulkan_loader.h"
+
+#if FF_VK_ENABLE_SHADER_COMPILATION && CONFIG_LIBGLSLANG
+#include "vulkan_glslang.c"
+#endif
 
 /* Generic macro for creating contexts which need to keep their addresses
  * if another context is created. */
@@ -843,7 +846,6 @@ void ff_vk_print_shader(void *ctx, FFVkSPIRVShader *shd, int prio)
 int ff_vk_compile_shader(FFVulkanContext *s, FFVkSPIRVShader *shd,
                          const char *entrypoint)
 {
-#if CONFIG_LIBGLSLANG
     int err;
     VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
@@ -854,11 +856,20 @@ int ff_vk_compile_shader(FFVulkanContext *s, FFVkSPIRVShader *shd,
 
     shd->shader.pName = entrypoint;
 
-    err = ff_vk_glslang_shader_compile(s, shd, &spirv, &spirv_size, &priv);
+    if (!s->spirv_compiler) {
+#if FF_VK_ENABLE_SHADER_COMPILATION && CONFIG_LIBGLSLANG
+        s->spirv_compiler = ff_vk_glslang_init();
+#else
+        return AVERROR(ENOSYS);
+#endif
+        if (!s->spirv_compiler)
+            return AVERROR(ENOMEM);
+    }
+
+    err = s->spirv_compiler->compile_shader(s->spirv_compiler, s, shd, &spirv,
+                                            &spirv_size, entrypoint, &priv);
     if (err < 0)
         return err;
-
-    ff_vk_print_shader(s, shd, AV_LOG_VERBOSE);
 
     av_log(s, AV_LOG_VERBOSE, "Shader %s compiled! Size: %zu bytes\n",
            shd->name, spirv_size);
@@ -872,7 +883,7 @@ int ff_vk_compile_shader(FFVulkanContext *s, FFVkSPIRVShader *shd,
     ret = vk->CreateShaderModule(s->hwctx->act_dev, &shader_create, NULL,
                                  &shd->shader.module);
 
-    ff_vk_glslang_shader_free(priv);
+    s->spirv_compiler->free_shader(s->spirv_compiler, &priv);
 
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Unable to create shader module: %s\n",
@@ -881,9 +892,6 @@ int ff_vk_compile_shader(FFVulkanContext *s, FFVkSPIRVShader *shd,
     }
 
     return 0;
-#else
-    return AVERROR(ENOSYS);
-#endif
 }
 
 static const struct descriptor_props {
@@ -1367,7 +1375,8 @@ void ff_vk_uninit(FFVulkanContext *s)
 {
     FFVulkanFunctions *vk = &s->vkfn;
 
-    ff_vk_glslang_uninit();
+    if (s->spirv_compiler)
+        s->spirv_compiler->uninit(&s->spirv_compiler);
 
     for (int i = 0; i < s->exec_ctx_num; i++)
         free_exec_ctx(s, s->exec_ctx[i]);
