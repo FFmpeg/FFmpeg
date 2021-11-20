@@ -832,6 +832,13 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     enc_index   = pick_queue_family(qf, num, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
     dec_index   = pick_queue_family(qf, num, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
 
+    /* Signalling the transfer capabilities on a queue family is optional */
+    if (tx_index < 0) {
+        tx_index = pick_queue_family(qf, num, VK_QUEUE_COMPUTE_BIT);
+        if (tx_index < 0)
+            tx_index = pick_queue_family(qf, num, VK_QUEUE_GRAPHICS_BIT);
+    }
+
     hwctx->queue_family_index        = -1;
     hwctx->queue_family_comp_index   = -1;
     hwctx->queue_family_tx_index     = -1;
