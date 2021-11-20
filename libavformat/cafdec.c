@@ -224,7 +224,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
         av_log(s, AV_LOG_ERROR, "error reading packet table\n");
         return AVERROR_INVALIDDATA;
     }
-    avio_skip(pb, ccount + size - avio_tell(pb));
+    avio_seek(pb, ccount + size, SEEK_SET);
 
     caf->num_bytes = pos;
     return 0;
@@ -331,7 +331,7 @@ static int read_header(AVFormatContext *s)
         if (size > 0 && (pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             if (pos > INT64_MAX - size)
                 return AVERROR_INVALIDDATA;
-            avio_skip(pb, FFMAX(0, pos + size - avio_tell(pb)));
+            avio_seek(pb, pos + size, SEEK_SET);
         }
     }
 
