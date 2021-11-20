@@ -350,7 +350,7 @@ void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf)
 {
     FFVulkanFunctions *vk = &s->vkfn;
 
-    if (!buf)
+    if (!buf || !s->hwctx)
         return;
 
     vk->DeviceWaitIdle(s->hwctx->act_dev);
