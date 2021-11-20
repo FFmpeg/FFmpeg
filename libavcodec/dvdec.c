@@ -399,8 +399,8 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     int retried = 0;
     int sta;
 
-    av_assert1((((int) mb_bit_buffer) & 7) == 0);
-    av_assert1((((int) vs_bit_buffer) & 7) == 0);
+    av_assert1((((uintptr_t) mb_bit_buffer) & 7) == 0);
+    av_assert1((((uintptr_t) vs_bit_buffer) & 7) == 0);
 
 retry:
 

@@ -131,7 +131,7 @@ static int vsad_intra16_mmx(MpegEncContext *v, uint8_t *pix, uint8_t *dummy,
 {
     int tmp;
 
-    av_assert2((((int) pix) & 7) == 0);
+    av_assert2(((uintptr_t) pix & 7) == 0);
     av_assert2((stride & 7) == 0);
 
 #define SUM(in0, in1, out0, out1)               \
@@ -195,8 +195,8 @@ static int vsad16_mmx(MpegEncContext *v, uint8_t *pix1, uint8_t *pix2,
 {
     int tmp;
 
-    av_assert2((((int) pix1) & 7) == 0);
-    av_assert2((((int) pix2) & 7) == 0);
+    av_assert2(((uintptr_t)pix1 & 7) == 0);
+    av_assert2(((uintptr_t)pix2 & 7) == 0);
     av_assert2((stride & 7) == 0);
 
 #define SUM(in0, in1, out0, out1)       \

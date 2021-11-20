@@ -277,7 +277,7 @@ static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "Could not get shared memory buffer.\n");
         return AVERROR(ENOMEM);
     }
-    segment = (xcb_shm_seg_t)av_buffer_pool_buffer_get_opaque(buf);
+    segment = (xcb_shm_seg_t)(uintptr_t)av_buffer_pool_buffer_get_opaque(buf);
 
     iq = xcb_shm_get_image(c->conn, drawable,
                            c->x, c->y, c->width, c->height, ~0,
