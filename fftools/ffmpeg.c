@@ -753,14 +753,13 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
         AVPacket *tmp_pkt;
         /* the muxer is not initialized yet, buffer the packet */
         if (!av_fifo_space(ost->muxing_queue)) {
+            size_t cur_size = av_fifo_size(ost->muxing_queue);
             unsigned int are_we_over_size =
                 (ost->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
-            int new_size = are_we_over_size ?
-                           FFMIN(2 * av_fifo_size(ost->muxing_queue),
-                                 ost->max_muxing_queue_size) :
-                           2 * av_fifo_size(ost->muxing_queue);
+            size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : INT_MAX;
+            size_t new_size = FFMIN(2 * cur_size, limit);
 
-            if (new_size <= av_fifo_size(ost->muxing_queue)) {
+            if (new_size <= cur_size) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Too many packets buffered for output stream %d:%d.\n",
                        ost->file_index, ost->st->index);
