@@ -6910,7 +6910,6 @@ check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
 check_cflags -Wundef
 check_cflags -Wmissing-prototypes
-check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 check_cflags -Wempty-body
 
