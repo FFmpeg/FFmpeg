@@ -183,6 +183,7 @@ static int fifo_thread_write_packet(FifoThreadContext *ctx, AVPacket *pkt)
     AVFormatContext *avf2 = fifo->avf;
     AVRational src_tb, dst_tb;
     int ret, s_idx;
+    int64_t orig_pts, orig_dts, orig_duration;
 
     if (fifo->timeshift && pkt->dts != AV_NOPTS_VALUE)
         atomic_fetch_sub_explicit(&fifo->queue_duration, next_duration(avf, pkt, &ctx->last_received_dts), memory_order_relaxed);
@@ -198,14 +199,23 @@ static int fifo_thread_write_packet(FifoThreadContext *ctx, AVPacket *pkt)
         }
     }
 
+    orig_pts = pkt->pts;
+    orig_dts = pkt->dts;
+    orig_duration = pkt->duration;
     s_idx = pkt->stream_index;
     src_tb = avf->streams[s_idx]->time_base;
     dst_tb = avf2->streams[s_idx]->time_base;
     av_packet_rescale_ts(pkt, src_tb, dst_tb);
 
     ret = av_write_frame(avf2, pkt);
-    if (ret >= 0)
+    if (ret >= 0) {
         av_packet_unref(pkt);
+    } else {
+        // avoid scaling twice
+        pkt->pts = orig_pts;
+        pkt->dts = orig_dts;
+        pkt->duration = orig_duration;
+    }
     return ret;
 }
 
