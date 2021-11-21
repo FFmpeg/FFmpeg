@@ -368,7 +368,7 @@ static int hds_write_header(AVFormatContext *s)
             ctx->flags = s->flags;
 
             ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf),
-                                         AVIO_FLAG_WRITE, os,
+                                         1, os,
                                          NULL, hds_write, NULL);
             if (!ctx->pb) {
                 return AVERROR(ENOMEM);

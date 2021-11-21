@@ -186,7 +186,7 @@ static void init_fps(int bf, int audio_preroll, int fps)
     ctx->oformat = av_guess_format(format, NULL, NULL);
     if (!ctx->oformat)
         exit(1);
-    ctx->pb = avio_alloc_context(iobuf, iobuf_size, AVIO_FLAG_WRITE, NULL, NULL, io_write, NULL);
+    ctx->pb = avio_alloc_context(iobuf, iobuf_size, 1, NULL, NULL, io_write, NULL);
     if (!ctx->pb)
         exit(1);
     ctx->pb->write_data_type = io_write_data_type;
