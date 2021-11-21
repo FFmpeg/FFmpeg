@@ -2238,11 +2238,10 @@ static AVStream *find_matching_stream(MpegTSContext *ts, int pid, unsigned int p
                                       int stream_identifier, int pmt_stream_idx, struct Program *p)
 {
     AVFormatContext *s = ts->stream;
-    int i;
     AVStream *found = NULL;
 
     if (stream_identifier) { /* match based on "stream identifier descriptor" if present */
-        for (i = 0; i < p->nb_streams; i++) {
+        for (int i = 0; i < p->nb_streams; i++) {
             if (p->streams[i].stream_identifier == stream_identifier)
                 if (!found || pmt_stream_idx == i) /* fallback to idx based guess if multiple streams have the same identifier */
                     found = s->streams[p->streams[i].idx];
@@ -2255,7 +2254,7 @@ static AVStream *find_matching_stream(MpegTSContext *ts, int pid, unsigned int p
         av_log(ts->stream, AV_LOG_VERBOSE,
                "re-using existing %s stream %d (pid=0x%x) for new pid=0x%x\n",
                av_get_media_type_string(found->codecpar->codec_type),
-               i, found->id, pid);
+               found->index, found->id, pid);
     }
 
     return found;
