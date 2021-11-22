@@ -8254,15 +8254,6 @@ static int mov_init(AVFormatContext *s)
                 track->squash_fragment_samples_to_one =
                     ff_is_ttml_stream_paragraph_based(track->par);
 
-                if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
-                    track->squash_fragment_samples_to_one) {
-                    av_log(s, AV_LOG_ERROR,
-                           "Fragmentation is not currently supported for "
-                           "TTML in MP4/ISMV (track synchronization between "
-                           "subtitles and other media is not yet implemented)!\n");
-                    return AVERROR_PATCHWELCOME;
-                }
-
                 if (track->mode != MODE_ISM &&
                     track->par->codec_tag == MOV_ISMV_TTML_TAG &&
                     s->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {

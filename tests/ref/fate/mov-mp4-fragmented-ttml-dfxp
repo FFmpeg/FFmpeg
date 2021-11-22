@@ -1,0 +1,430 @@
+09836de7062020ab760fc949875b7e2b *tests/data/fate/mov-mp4-fragmented-ttml-dfxp.ismv
+189404 tests/data/fate/mov-mp4-fragmented-ttml-dfxp.ismv
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.000"><span region="Default">Don't show this text it may be used to insert hidden data</span></p>
+      <p
+        begin="00:00:01.500"
+        end="00:00:02.002"><span region="Default">SubRip subtitles capability tester 1.3o by ale5000<br/>Use VLC 1.1 or higher as reference for most things and MPC Home Cinema for others<br/>This text should be blue<br/>This text should be red<br/>This text should be black<br/>If you see this with the normal font, the player don't (fully) support font face</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:02.002"><span region="Default">SubRip subtitles capability tester 1.3o by ale5000<br/>Use VLC 1.1 or higher as reference for most things and MPC Home Cinema for others<br/>This text should be blue<br/>This text should be red<br/>This text should be black<br/>If you see this with the normal font, the player don't (fully) support font face</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.496"><span region="Default">SubRip subtitles capability tester 1.3o by ale5000<br/>Use VLC 1.1 or higher as reference for most things and MPC Home Cinema for others<br/>This text should be blue<br/>This text should be red<br/>This text should be black<br/>If you see this with the normal font, the player don't (fully) support font face</span></p>
+      <p
+        begin="00:00:00.496"
+        end="00:00:00.496"><span region="Default">Hidden</span></p>
+      <p
+        begin="00:00:00.497"
+        end="00:00:02.002"><span region="Default">This text should be small<br/>This text should be normal<br/>This text should be big</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:01.494"><span region="Default">This text should be small<br/>This text should be normal<br/>This text should be big</span></p>
+      <p
+        begin="00:00:01.495"
+        end="00:00:02.002"><span region="Default">This should be an E with an accent: È<br/>日本語<br/>This text should be bold, italics and underline<br/>This text should be small and green<br/>This text should be small and red<br/>This text should be big and brown</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:02.002"><span region="Default">This should be an E with an accent: È<br/>日本語<br/>This text should be bold, italics and underline<br/>This text should be small and green<br/>This text should be small and red<br/>This text should be big and brown</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:01.490"><span region="Default">This should be an E with an accent: È<br/>日本語<br/>This text should be bold, italics and underline<br/>This text should be small and green<br/>This text should be small and red<br/>This text should be big and brown</span></p>
+      <p
+        begin="00:00:01.491"
+        end="00:00:02.002"><span region="Default">This line should be bold<br/>This line should be italics<br/>This line should be underline<br/>This line should be strikethrough<br/>Both lines<br/>should be underline</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:02.002"><span region="Default">This line should be bold<br/>This line should be italics<br/>This line should be underline<br/>This line should be strikethrough<br/>Both lines<br/>should be underline</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.486"><span region="Default">This line should be bold<br/>This line should be italics<br/>This line should be underline<br/>This line should be strikethrough<br/>Both lines<br/>should be underline</span></p>
+      <p
+        begin="00:00:00.487"
+        end="00:00:02.002"><span region="Default">&gt;<br/>It would be a good thing to<br/>hide invalid html tags that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>Show not opened tags<br/>&lt;</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:01.484"><span region="Default">&gt;<br/>It would be a good thing to<br/>hide invalid html tags that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>Show not opened tags<br/>&lt;</span></p>
+      <p
+        begin="00:00:01.485"
+        end="00:00:02.002"><span region="Default">and also<br/>hide invalid html tags with parameters that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>This text should be showed underlined without problems also: 2&lt;3,5&gt;1,4&lt;6<br/>This shouldn't be underlined</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:02.002"><span region="Default">and also<br/>hide invalid html tags with parameters that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>This text should be showed underlined without problems also: 2&lt;3,5&gt;1,4&lt;6<br/>This shouldn't be underlined</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.480"><span region="Default">and also<br/>hide invalid html tags with parameters that are closed and show the text in them<br/>but show un-closed invalid html tags<br/>This text should be showed underlined without problems also: 2&lt;3,5&gt;1,4&lt;6<br/>This shouldn't be underlined</span></p>
+      <p
+        begin="00:00:00.481"
+        end="00:00:01.480"><span region="Default">This text should be in the normal position...</span></p>
+      <p
+        begin="00:00:01.481"
+        end="00:00:02.002"><span region="Default">This text should NOT be in the normal position</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.478"><span region="Default">This text should NOT be in the normal position</span></p>
+      <p
+        begin="00:00:00.479"
+        end="00:00:02.002"><span region="Default">Implementation is the same of the ASS tag<br/>This text should be at the<br/>top and horizontally centered</span></p>
+      <p
+        begin="00:00:00.479"
+        end="00:00:02.002"><span region="Default">This text should be at the<br/>middle and horizontally centered</span></p>
+      <p
+        begin="00:00:00.479"
+        end="00:00:02.002"><span region="Default">This text should be at the<br/>bottom and horizontally centered</span></p>
+    </div>
+  </body>
+</tt>
+<?xml version="1.0" encoding="utf-8"?>
+<tt
+  xmlns="http://www.w3.org/ns/ttml"
+  xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+  xmlns:tts="http://www.w3.org/ns/ttml#styling"
+  xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+  ttp:cellResolution="384 288"
+  xml:lang="">
+  <head>
+    <layout>
+      <region xml:id="Default"
+        tts:origin="3% 0%"
+        tts:extent="97% 97%"
+        tts:displayAlign="after"
+        tts:textAlign="center"
+        tts:fontSize="16c"
+        tts:fontFamily="Arial"
+        tts:overflow="visible" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.476"><span region="Default">Implementation is the same of the ASS tag<br/>This text should be at the<br/>top and horizontally centered</span></p>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.476"><span region="Default">This text should be at the<br/>middle and horizontally centered</span></p>
+      <p
+        begin="00:00:00.000"
+        end="00:00:00.476"><span region="Default">This text should be at the<br/>bottom and horizontally centered</span></p>
+      <p
+        begin="00:00:00.477"
+        end="00:00:00.501"><span region="Default">This text should be at the<br/>top and horizontally at the left</span></p>
+      <p
+        begin="00:00:00.477"
+        end="00:00:00.500"><span region="Default">This text should be at the<br/>middle and horizontally at the left<br/>(The second position must be ignored)</span></p>
+      <p
+        begin="00:00:00.477"
+        end="00:00:00.500"><span region="Default">This text should be at the<br/>bottom and horizontally at the left</span></p>
+    </div>
+  </body>
+</tt>
+packet,subtitle,1,0,0.000000,0,0.000000,20020000,2.002000,1172,14746,K__,CRC32:bde7afa1
+packet,subtitle,1,20020000,2.002000,20020000,2.002000,20020000,2.002000,1015,29540,K__,CRC32:c1cb78f2
+packet,subtitle,1,40040000,4.004000,40040000,4.004000,20020000,2.002000,1305,44177,K__,CRC32:267b17fe
+packet,subtitle,1,60060000,6.006000,60060000,6.006000,20020000,2.002000,1111,59104,K__,CRC32:d6aaf284
+packet,subtitle,1,80080000,8.008000,80080000,8.008000,20020000,2.002000,927,73837,K__,CRC32:0ee24ad7
+packet,subtitle,1,100100000,10.010000,100100000,10.010000,20020000,2.002000,1194,88386,K__,CRC32:a9816515
+packet,subtitle,1,120120000,12.012000,120120000,12.012000,20020000,2.002000,874,103202,K__,CRC32:c47ebb4e
+packet,subtitle,1,140140000,14.014000,140140000,14.014000,20020000,2.002000,1154,117698,K__,CRC32:09b26179
+packet,subtitle,1,160160000,16.016000,160160000,16.016000,20020000,2.002000,1240,132474,K__,CRC32:d7e3067e
+packet,subtitle,1,180180000,18.018000,180180000,18.018000,20020000,2.002000,960,147336,K__,CRC32:d2d99797
+packet,subtitle,1,200200000,20.020000,200200000,20.020000,20020000,2.002000,1251,161918,K__,CRC32:1857892c
+packet,subtitle,1,220220000,22.022000,220220000,22.022000,20020000,2.002000,1285,176791,K__,CRC32:76bd9787
+packet,subtitle,1,240240000,24.024000,240240000,24.024000,5005000,0.500500,1676,187162,K__,CRC32:b519ec6f
