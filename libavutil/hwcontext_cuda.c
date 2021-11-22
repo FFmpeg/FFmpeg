@@ -402,12 +402,13 @@ static int cuda_device_create(AVHWDeviceContext *device_ctx,
 
     ret = cuda_flags_from_opts(device_ctx, opts, &flags);
     if (ret < 0)
-        return ret;
+        goto error;
 
     if (device)
         device_idx = strtol(device, NULL, 0);
 
-    if (cuda_device_init(device_ctx) < 0)
+    ret = cuda_device_init(device_ctx);
+    if (ret < 0)
         goto error;
 
     cu = hwctx->internal->cuda_dl;
@@ -428,7 +429,7 @@ static int cuda_device_create(AVHWDeviceContext *device_ctx,
 
 error:
     cuda_device_uninit(device_ctx);
-    return AVERROR_UNKNOWN;
+    return ret;
 }
 
 static int cuda_device_derive(AVHWDeviceContext *device_ctx,
@@ -441,7 +442,7 @@ static int cuda_device_derive(AVHWDeviceContext *device_ctx,
 
     ret = cuda_flags_from_opts(device_ctx, opts, &flags);
     if (ret < 0)
-        return ret;
+        goto error;
 
 #if CONFIG_VULKAN
     VkPhysicalDeviceIDProperties vk_idp = {
@@ -466,16 +467,19 @@ static int cuda_device_derive(AVHWDeviceContext *device_ctx,
 #undef TYPE
 #endif
     default:
-        return AVERROR(ENOSYS);
+        ret = AVERROR(ENOSYS);
+        goto error;
     }
 
     if (!src_uuid) {
         av_log(device_ctx, AV_LOG_ERROR,
                "Failed to get UUID of source device.\n");
+        ret = AVERROR(EINVAL);
         goto error;
     }
 
-    if (cuda_device_init(device_ctx) < 0)
+    ret = cuda_device_init(device_ctx);
+    if (ret < 0)
         goto error;
 
     cu = hwctx->internal->cuda_dl;
@@ -520,7 +524,7 @@ static int cuda_device_derive(AVHWDeviceContext *device_ctx,
 
 error:
     cuda_device_uninit(device_ctx);
-    return AVERROR_UNKNOWN;
+    return ret;
 }
 
 const HWContextType ff_hwcontext_type_cuda = {
