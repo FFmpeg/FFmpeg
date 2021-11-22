@@ -192,5 +192,5 @@ const AVFilter ff_vf_entropy = {
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pixfmts),
     .priv_class     = &entropy_class,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
 };

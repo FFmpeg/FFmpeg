@@ -202,6 +202,7 @@ const AVFilter ff_af_drmeter = {
     .priv_size     = sizeof(DRMeterContext),
     .priv_class    = &drmeter_class,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(drmeter_inputs),
     FILTER_OUTPUTS(drmeter_outputs),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT),

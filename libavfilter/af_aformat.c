@@ -162,6 +162,7 @@ const AVFilter ff_af_aformat = {
     .uninit        = uninit,
     .priv_size     = sizeof(AFormatContext),
     .priv_class    = &aformat_class,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_af_aformat_inputs),
     FILTER_OUTPUTS(avfilter_af_aformat_outputs),
     FILTER_QUERY_FUNC(query_formats),

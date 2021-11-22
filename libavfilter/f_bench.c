@@ -113,6 +113,7 @@ const AVFilter ff_vf_bench = {
     FILTER_INPUTS(bench_inputs),
     FILTER_OUTPUTS(bench_outputs),
     .priv_class    = &bench_class,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_BENCH_FILTER */
 
@@ -143,5 +144,6 @@ const AVFilter ff_af_abench = {
     FILTER_INPUTS(abench_inputs),
     FILTER_OUTPUTS(abench_outputs),
     .priv_class    = &abench_class,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_ABENCH_FILTER */

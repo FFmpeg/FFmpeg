@@ -363,6 +363,7 @@ const AVFilter ff_vf_mestimate = {
     .priv_size     = sizeof(MEContext),
     .priv_class    = &mestimate_class,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(mestimate_inputs),
     FILTER_OUTPUTS(mestimate_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

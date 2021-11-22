@@ -294,6 +294,7 @@ const AVFilter ff_vf_setpts = {
     .init      = init,
     .activate  = activate,
     .uninit    = uninit,
+    .flags     = AVFILTER_FLAG_METADATA_ONLY,
 
     .priv_size = sizeof(SetPTSContext),
     .priv_class = &setpts_class,
@@ -334,6 +335,7 @@ const AVFilter ff_af_asetpts = {
     .uninit      = uninit,
     .priv_size   = sizeof(SetPTSContext),
     .priv_class  = &asetpts_class,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asetpts_inputs),
     FILTER_OUTPUTS(asetpts_outputs),
 };

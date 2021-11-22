@@ -120,6 +120,22 @@ enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
  */
 #define AVFILTER_FLAG_SLICE_THREADS         (1 << 2)
 /**
+ * The filter is a "metadata" filter - it does not modify the frame data in any
+ * way. It may only affect the metadata (i.e. those fields copied by
+ * av_frame_copy_props()).
+ *
+ * More precisely, this means:
+ * - video: the data of any frame output by the filter must be exactly equal to
+ *   some frame that is received on one of its inputs. Furthermore, all frames
+ *   produced on a given output must correspond to frames received on the same
+ *   input and their order must be unchanged. Note that the filter may still
+ *   drop or duplicate the frames.
+ * - audio: the data produced by the filter on any of its outputs (viewed e.g.
+ *   as an array of interleaved samples) must be exactly equal to the data
+ *   received by the filter on one of its inputs.
+ */
+#define AVFILTER_FLAG_METADATA_ONLY         (1 << 3)
+/**
  * Some filters support a generic "enable" expression option that can be used
  * to enable or disable a filter in the timeline. Filters supporting this
  * option have this flag set. When the enable expression is false, the default

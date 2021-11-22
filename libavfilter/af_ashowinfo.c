@@ -257,6 +257,7 @@ const AVFilter ff_af_ashowinfo = {
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each audio frame."),
     .priv_size   = sizeof(AShowInfoContext),
     .uninit      = uninit,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
 };

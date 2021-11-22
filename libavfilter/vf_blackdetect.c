@@ -257,5 +257,5 @@ const AVFilter ff_vf_blackdetect = {
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .uninit        = uninit,
     .priv_class    = &blackdetect_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_METADATA_ONLY,
 };

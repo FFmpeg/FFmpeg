@@ -43,6 +43,7 @@ static const AVFilterPad avfilter_vf_null_outputs[] = {
 const AVFilter ff_vf_null = {
     .name        = "null",
     .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_null_inputs),
     FILTER_OUTPUTS(avfilter_vf_null_outputs),
 };

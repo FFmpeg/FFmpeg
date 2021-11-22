@@ -108,6 +108,7 @@ const AVFilter ff_vf_vfrdet = {
     .priv_size   = sizeof(VFRDETContext),
     .init        = init,
     .uninit      = uninit,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(vfrdet_inputs),
     FILTER_OUTPUTS(vfrdet_outputs),
 };

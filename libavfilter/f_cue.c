@@ -142,6 +142,7 @@ const AVFilter ff_af_acue = {
     .description = NULL_IF_CONFIG_SMALL("Delay filtering to match a cue."),
     .priv_class  = &cue_acue_class,
     .priv_size   = sizeof(CueContext),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(acue_inputs),
     FILTER_OUTPUTS(acue_outputs),
     .activate    = activate,

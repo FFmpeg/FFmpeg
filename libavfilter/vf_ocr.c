@@ -143,6 +143,7 @@ const AVFilter ff_vf_ocr = {
     .priv_class    = &ocr_class,
     .init          = init,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ocr_inputs),
     FILTER_OUTPUTS(ocr_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

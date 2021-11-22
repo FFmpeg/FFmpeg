@@ -294,6 +294,7 @@ const AVFilter ff_vf_find_rect = {
     .priv_size       = sizeof(FOCContext),
     .init            = init,
     .uninit          = uninit,
+    .flags           = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(foc_inputs),
     FILTER_OUTPUTS(foc_outputs),
     FILTER_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P),

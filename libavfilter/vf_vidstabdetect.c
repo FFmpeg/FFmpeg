@@ -196,6 +196,7 @@ const AVFilter ff_vf_vidstabdetect = {
     .priv_size     = sizeof(StabData),
     .init          = init,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_vidstabdetect_inputs),
     FILTER_OUTPUTS(avfilter_vf_vidstabdetect_outputs),
     FILTER_PIXFMTS_ARRAY(ff_vidstab_pix_fmts),

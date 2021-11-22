@@ -242,6 +242,7 @@ const AVFilter ff_vf_readvitc = {
     .description   = NULL_IF_CONFIG_SMALL("Read vertical interval timecode and write it to frame metadata."),
     .priv_size     = sizeof(ReadVitcContext),
     .priv_class    = &readvitc_class,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),

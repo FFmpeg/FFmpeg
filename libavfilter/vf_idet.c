@@ -436,6 +436,7 @@ const AVFilter ff_vf_idet = {
     .priv_size     = sizeof(IDETContext),
     .init          = init,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(idet_inputs),
     FILTER_OUTPUTS(idet_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

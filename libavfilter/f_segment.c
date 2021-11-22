@@ -286,7 +286,7 @@ const AVFilter ff_vf_segment = {
     .activate    = activate,
     FILTER_INPUTS(segment_inputs),
     .outputs     = NULL,
-    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif // CONFIG_SEGMENT_FILTER
 
@@ -325,6 +325,6 @@ const AVFilter ff_af_asegment = {
     .activate    = activate,
     FILTER_INPUTS(asegment_inputs),
     .outputs     = NULL,
-    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif // CONFIG_ASEGMENT_FILTER

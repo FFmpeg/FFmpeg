@@ -169,6 +169,8 @@ const AVFilter ff_vf_format = {
     .priv_size     = sizeof(FormatContext),
     .priv_class    = &format_class,
 
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
+
     FILTER_INPUTS(avfilter_vf_format_inputs),
     FILTER_OUTPUTS(avfilter_vf_format_outputs),
 
@@ -202,6 +204,8 @@ const AVFilter ff_vf_noformat = {
     .uninit        = uninit,
 
     .priv_size     = sizeof(FormatContext),
+
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 
     FILTER_INPUTS(avfilter_vf_noformat_inputs),
     FILTER_OUTPUTS(avfilter_vf_noformat_outputs),

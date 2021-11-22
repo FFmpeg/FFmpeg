@@ -188,6 +188,7 @@ const AVFilter ff_vf_setdar = {
     .description = NULL_IF_CONFIG_SMALL("Set the frame display aspect ratio."),
     .priv_size   = sizeof(AspectContext),
     .priv_class  = &setdar_class,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_setdar_inputs),
     FILTER_OUTPUTS(avfilter_vf_setdar_outputs),
 };
@@ -250,6 +251,7 @@ const AVFilter ff_vf_setsar = {
     .description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
     .priv_size   = sizeof(AspectContext),
     .priv_class  = &setsar_class,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_setsar_inputs),
     FILTER_OUTPUTS(avfilter_vf_setsar_outputs),
 };

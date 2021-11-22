@@ -94,5 +94,5 @@ const AVFilter ff_vf_framestep = {
     .priv_class  = &framestep_class,
     FILTER_INPUTS(framestep_inputs),
     FILTER_OUTPUTS(framestep_outputs),
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
 };

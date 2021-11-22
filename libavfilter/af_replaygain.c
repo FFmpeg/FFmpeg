@@ -606,6 +606,7 @@ const AVFilter ff_af_replaygain = {
     .description   = NULL_IF_CONFIG_SMALL("ReplayGain scanner."),
     .uninit        = uninit,
     .priv_size     = sizeof(ReplayGainContext),
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(replaygain_inputs),
     FILTER_OUTPUTS(replaygain_outputs),
     FILTER_QUERY_FUNC(query_formats),

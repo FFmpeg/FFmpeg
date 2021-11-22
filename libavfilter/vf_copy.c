@@ -75,6 +75,7 @@ static const AVFilterPad avfilter_vf_copy_outputs[] = {
 const AVFilter ff_vf_copy = {
     .name        = "copy",
     .description = NULL_IF_CONFIG_SMALL("Copy the input video unchanged to the output."),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_copy_inputs),
     FILTER_OUTPUTS(avfilter_vf_copy_outputs),
     FILTER_QUERY_FUNC(query_formats),

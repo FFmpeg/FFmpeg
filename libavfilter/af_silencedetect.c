@@ -272,4 +272,5 @@ const AVFilter ff_af_silencedetect = {
                       AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
                       AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P),
     .priv_class    = &silencedetect_class,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

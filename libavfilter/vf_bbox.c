@@ -151,6 +151,6 @@ const AVFilter ff_vf_bbox = {
     FILTER_INPUTS(bbox_inputs),
     FILTER_OUTPUTS(bbox_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
     .process_command = ff_filter_process_command,
 };

@@ -206,6 +206,7 @@ const AVFilter ff_vf_scdet = {
     .priv_size     = sizeof(SCDetContext),
     .priv_class    = &scdet_class,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(scdet_inputs),
     FILTER_OUTPUTS(scdet_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

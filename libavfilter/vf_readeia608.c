@@ -555,6 +555,8 @@ const AVFilter ff_vf_readeia608 = {
     FILTER_OUTPUTS(readeia608_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS            |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .process_command = process_command,
 };

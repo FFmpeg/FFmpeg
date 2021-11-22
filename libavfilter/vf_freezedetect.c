@@ -217,6 +217,7 @@ const AVFilter ff_vf_freezedetect = {
     .priv_size     = sizeof(FreezeDetectContext),
     .priv_class    = &freezedetect_class,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(freezedetect_inputs),
     FILTER_OUTPUTS(freezedetect_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

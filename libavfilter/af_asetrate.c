@@ -113,4 +113,5 @@ const AVFilter ff_af_asetrate = {
     FILTER_OUTPUTS(asetrate_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .priv_class    = &asetrate_class,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

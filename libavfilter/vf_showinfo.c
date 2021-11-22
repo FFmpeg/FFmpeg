@@ -678,4 +678,5 @@ const AVFilter ff_vf_showinfo = {
     FILTER_OUTPUTS(avfilter_vf_showinfo_outputs),
     .priv_size   = sizeof(ShowInfoContext),
     .priv_class  = &showinfo_class,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 };

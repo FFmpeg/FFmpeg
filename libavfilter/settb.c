@@ -185,6 +185,7 @@ const AVFilter ff_vf_settb = {
     FILTER_INPUTS(avfilter_vf_settb_inputs),
     FILTER_OUTPUTS(avfilter_vf_settb_outputs),
     .activate    = activate,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_SETTB_FILTER */
 
@@ -216,5 +217,6 @@ const AVFilter ff_af_asettb = {
     FILTER_OUTPUTS(avfilter_af_asettb_outputs),
     .priv_class  = &asettb_class,
     .activate    = activate,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_ASETTB_FILTER */

@@ -112,7 +112,7 @@ const AVFilter ff_vf_split = {
     .init        = split_init,
     FILTER_INPUTS(avfilter_vf_split_inputs),
     .outputs     = NULL,
-    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };
 
 static const AVFilterPad avfilter_af_asplit_inputs[] = {
@@ -131,5 +131,5 @@ const AVFilter ff_af_asplit = {
     .init        = split_init,
     FILTER_INPUTS(avfilter_af_asplit_inputs),
     .outputs     = NULL,
-    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };

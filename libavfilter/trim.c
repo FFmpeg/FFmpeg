@@ -363,6 +363,7 @@ const AVFilter ff_af_atrim = {
     .init        = init,
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &atrim_class,
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(atrim_inputs),
     FILTER_OUTPUTS(atrim_outputs),
 };

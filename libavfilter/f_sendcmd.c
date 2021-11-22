@@ -597,6 +597,7 @@ const AVFilter ff_vf_sendcmd = {
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(SendCmdContext),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(sendcmd_inputs),
     FILTER_OUTPUTS(sendcmd_outputs),
     .priv_class  = &sendcmd_class,
@@ -628,6 +629,7 @@ const AVFilter ff_af_asendcmd = {
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(SendCmdContext),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asendcmd_inputs),
     FILTER_OUTPUTS(asendcmd_outputs),
 };

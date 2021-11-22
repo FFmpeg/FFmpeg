@@ -198,5 +198,6 @@ const AVFilter ff_vf_qp = {
     FILTER_INPUTS(qp_inputs),
     FILTER_OUTPUTS(qp_outputs),
     .priv_class    = &qp_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_METADATA_ONLY,
 };

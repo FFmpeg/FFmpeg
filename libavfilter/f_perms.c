@@ -138,7 +138,8 @@ const AVFilter ff_af_aperms = {
     .priv_size   = sizeof(PermsContext),
     FILTER_INPUTS(aperms_inputs),
     FILTER_OUTPUTS(aperms_outputs),
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                   AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_APERMS_FILTER */
 
@@ -167,6 +168,7 @@ const AVFilter ff_vf_perms = {
     FILTER_INPUTS(perms_inputs),
     FILTER_OUTPUTS(perms_outputs),
     .priv_class  = &perms_class,
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                   AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_PERMS_FILTER */

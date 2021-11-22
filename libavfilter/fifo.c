@@ -132,6 +132,7 @@ const AVFilter ff_vf_fifo = {
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(FifoContext),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_fifo_inputs),
     FILTER_OUTPUTS(avfilter_vf_fifo_outputs),
 };
@@ -158,6 +159,7 @@ const AVFilter ff_af_afifo = {
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(FifoContext),
+    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_af_afifo_inputs),
     FILTER_OUTPUTS(avfilter_af_afifo_outputs),
 };

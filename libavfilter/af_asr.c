@@ -172,6 +172,7 @@ const AVFilter ff_af_asr = {
     .priv_class    = &asr_class,
     .init          = asr_init,
     .uninit        = asr_uninit,
+    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asr_inputs),
     FILTER_OUTPUTS(asr_outputs),
     FILTER_QUERY_FUNC(query_formats),
