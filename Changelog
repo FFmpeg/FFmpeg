@@ -36,6 +36,7 @@ version <next>:
 - VideoToolbox VP9 hwaccel
 - VideoToolbox ProRes hwaccel
 - support loongarch.
+- aspectralstats audio filter
 
 
 version 4.4:
