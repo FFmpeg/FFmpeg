@@ -24798,6 +24798,57 @@ To enable compilation of these filters you need to configure FFmpeg with
 
 To use vaapi filters, you need to setup the vaapi device correctly. For more information, please read @url{https://trac.ffmpeg.org/wiki/Hardware/VAAPI}
 
+@section overlay_vaapi
+
+Overlay one video on the top of another.
+
+It takes two inputs and has one output. The first input is the "main" video on which the second input is overlaid.
+This filter requires same memory layout for all the inputs. So, format conversion may be needed.
+
+The filter accepts the following options:
+
+@table @option
+
+@item x
+Set the x coordinate of the overlaid video on the main video.
+Default value is @code{0}.
+
+@item y
+Set the y coordinate of the overlaid video on the main video.
+Default value is @code{0}.
+
+@item w
+Set the width of the overlaid video on the main video.
+Default value is the width of input overlay video.
+
+@item h
+Set the height of the overlaid video on the main video.
+Default value is the height of input overlay video.
+
+@item alpha
+Set blocking detection thresholds. Allowed range is 0.0 to 1.0, it
+requires an input video with alpha channel.
+Default value is @code{0.0}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Overlay an image LOGO at the top-left corner of the INPUT video. Both inputs for this filter are yuv420p format.
+@example
+-i INPUT -i LOGO -filter_complex "[0:v]hwupload[a], [1:v]format=yuv420p, hwupload[b], [a][b]overlay_vaapi" OUTPUT
+@end example
+@item
+Overlay an image LOGO at the offset (200, 100) from the top-left corner of the INPUT video.
+The inputs have same memory layout for color channels, the overlay has additional alpha plane, like INPUT is yuv420p, and the LOGO is yuva420p.
+@example
+-i INPUT -i LOGO -filter_complex "[0:v]hwupload[a], [1:v]format=yuva420p, hwupload[b], [a][b]overlay_vaapi=x=200:y=100:w=400:h=300:alpha=1.0, hwdownload, format=nv12" OUTPUT
+@end example
+
+@end itemize
+
 @section tonemap_vaapi
 
 Perform HDR(High Dynamic Range) to SDR(Standard Dynamic Range) conversion with tone-mapping.
