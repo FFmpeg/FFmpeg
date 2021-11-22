@@ -376,6 +376,22 @@ static int cuda_context_init(AVHWDeviceContext *device_ctx, int flags) {
     return 0;
 }
 
+static int cuda_flags_from_opts(AVHWDeviceContext *device_ctx,
+                                AVDictionary *opts, int *flags)
+{
+    AVDictionaryEntry *primary_ctx_opt = av_dict_get(opts, "primary_ctx", NULL, 0);
+
+    if (primary_ctx_opt && strtol(primary_ctx_opt->value, NULL, 10)) {
+        av_log(device_ctx, AV_LOG_VERBOSE, "Using CUDA primary device context\n");
+        *flags |= AV_CUDA_USE_PRIMARY_CONTEXT;
+    } else if (primary_ctx_opt) {
+        av_log(device_ctx, AV_LOG_VERBOSE, "Disabling use of CUDA primary device context\n");
+        *flags &= ~AV_CUDA_USE_PRIMARY_CONTEXT;
+    }
+
+    return 0;
+}
+
 static int cuda_device_create(AVHWDeviceContext *device_ctx,
                               const char *device,
                               AVDictionary *opts, int flags)
@@ -383,6 +399,10 @@ static int cuda_device_create(AVHWDeviceContext *device_ctx,
     AVCUDADeviceContext *hwctx = device_ctx->hwctx;
     CudaFunctions *cu;
     int ret, device_idx = 0;
+
+    ret = cuda_flags_from_opts(device_ctx, opts, &flags);
+    if (ret < 0)
+        return ret;
 
     if (device)
         device_idx = strtol(device, NULL, 0);
@@ -418,6 +438,10 @@ static int cuda_device_derive(AVHWDeviceContext *device_ctx,
     CudaFunctions *cu;
     const char *src_uuid = NULL;
     int ret, i, device_count;
+
+    ret = cuda_flags_from_opts(device_ctx, opts, &flags);
+    if (ret < 0)
+        return ret;
 
 #if CONFIG_VULKAN
     VkPhysicalDeviceIDProperties vk_idp = {
