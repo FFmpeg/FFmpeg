@@ -1960,6 +1960,13 @@ filter (scale, aresample) in the graph.
 On by default, to explicitly disable it you need to specify
 @code{-noauto_conversion_filters}.
 
+@item -bits_per_raw_sample[:@var{stream_specifier}] @var{value} (@emph{output,per-stream})
+Declare the number of bits per raw sample in the given output stream to be
+@var{value}. Note that this option sets the information provided to the
+encoder/muxer, it does not change the stream to conform to this value. Setting
+values that do not match the stream properties may result in encoding failures
+or invalid output files.
+
 @end table
 
 @section Preset files

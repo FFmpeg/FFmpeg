@@ -96,6 +96,7 @@ static const char *const opt_name_discard[]                   = {"discard", NULL
 static const char *const opt_name_disposition[]               = {"disposition", NULL};
 static const char *const opt_name_time_bases[]                = {"time_base", NULL};
 static const char *const opt_name_enc_time_bases[]            = {"enc_time_base", NULL};
+static const char *const opt_name_bits_per_raw_sample[]       = {"bits_per_raw_sample", NULL};
 
 #define WARN_MULTIPLE_OPT_USAGE(name, type, so, st)\
 {\
@@ -160,7 +161,6 @@ int abort_on_flags    = 0;
 int print_stats       = -1;
 int qp_hist           = 0;
 int stdin_interaction = 1;
-int frame_bits_per_raw_sample = 0;
 float max_error_rate  = 2.0/3;
 char *filter_nbthreads;
 int filter_complex_nbthreads = 0;
@@ -1604,6 +1604,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->muxing_queue_data_threshold = 50*1024*1024;
     MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, ost->muxing_queue_data_threshold, oc, st);
 
+    MATCH_PER_STREAM_OPT(bits_per_raw_sample, i, ost->bits_per_raw_sample,
+                         oc, st);
+
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -1769,7 +1772,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             exit_program(1);
         }
 
-        video_enc->bits_per_raw_sample = frame_bits_per_raw_sample;
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
         if (frame_pix_fmt && *frame_pix_fmt == '+') {
             ost->keep_pix_fmt = 1;
@@ -3681,6 +3683,9 @@ const OptionDef options[] = {
         "set the maximum number of queued packets from the demuxer" },
     { "find_stream_info", OPT_BOOL | OPT_PERFILE | OPT_INPUT | OPT_EXPERT, { &find_stream_info },
         "read and decode the streams to fill missing information with heuristics" },
+    { "bits_per_raw_sample", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
+        { .off = OFFSET(bits_per_raw_sample) },
+        "set the number of bits per raw sample", "number" },
 
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },
@@ -3700,8 +3705,6 @@ const OptionDef options[] = {
     { "pix_fmt",      OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
                       OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(frame_pix_fmts) },
         "set pixel format", "format" },
-    { "bits_per_raw_sample", OPT_VIDEO | OPT_INT | HAS_ARG,                      { &frame_bits_per_raw_sample },
-        "set the number of bits per raw sample", "number" },
     { "vn",           OPT_VIDEO | OPT_BOOL  | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,{ .off = OFFSET(video_disable) },
         "disable video" },
     { "rc_override",  OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |

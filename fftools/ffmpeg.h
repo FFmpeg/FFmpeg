@@ -228,6 +228,8 @@ typedef struct OptionsContext {
     int        nb_enc_time_bases;
     SpecifierOpt *autoscale;
     int        nb_autoscale;
+    SpecifierOpt *bits_per_raw_sample;
+    int        nb_bits_per_raw_sample;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -483,6 +485,7 @@ typedef struct OutputStream {
     int top_field_first;
     int rotate_overridden;
     int autoscale;
+    int bits_per_raw_sample;
     double rotate_override_value;
 
     AVRational frame_aspect_ratio;
