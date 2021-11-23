@@ -960,6 +960,30 @@ static void cleanup_filtergraph(FilterGraph *fg)
     avfilter_graph_free(&fg->graph);
 }
 
+static int filter_is_buffersrc(const AVFilterContext *f)
+{
+    return f->nb_inputs == 0 &&
+           (!strcmp(f->filter->name, "buffersrc") ||
+            !strcmp(f->filter->name, "abuffersrc"));
+}
+
+static int graph_is_meta(AVFilterGraph *graph)
+{
+    for (unsigned i = 0; i < graph->nb_filters; i++) {
+        const AVFilterContext *f = graph->filters[i];
+
+        /* in addition to filters flagged as meta, also
+         * disregard sinks and buffersources (but not other sources,
+         * since they introduce data we are not aware of)
+         */
+        if (!((f->filter->flags & AVFILTER_FLAG_METADATA_ONLY) ||
+              f->nb_outputs == 0                               ||
+              filter_is_buffersrc(f)))
+            return 0;
+    }
+    return 1;
+}
+
 int configure_filtergraph(FilterGraph *fg)
 {
     AVFilterInOut *inputs, *outputs, *cur;
@@ -1059,6 +1083,8 @@ int configure_filtergraph(FilterGraph *fg)
         avfilter_graph_set_auto_convert(fg->graph, AVFILTER_AUTO_CONVERT_NONE);
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
         goto fail;
+
+    fg->is_meta = graph_is_meta(fg->graph);
 
     /* limit the lists of allowed formats to the ones selected, to
      * make sure they stay the same if the filtergraph is reconfigured later */

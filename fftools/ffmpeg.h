@@ -287,6 +287,9 @@ typedef struct FilterGraph {
 
     AVFilterGraph *graph;
     int reconfiguration;
+    // true when the filtergraph contains only meta filters
+    // that do not modify the frame data
+    int is_meta;
 
     InputFilter   **inputs;
     int          nb_inputs;
