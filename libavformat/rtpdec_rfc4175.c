@@ -63,6 +63,17 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
         } else {
             return AVERROR_INVALIDDATA;
         }
+    } else if (!strncmp(data->sampling, "YCbCr-4:2:0", 11)) {
+        tag = MKTAG('I', '4', '2', '0');
+        data->xinc = 4;
+
+        if (data->depth == 8) {
+            data->pgroup = 6;
+            pixfmt = AV_PIX_FMT_YUV420P;
+            stream->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
     } else {
         return AVERROR_INVALIDDATA;
     }
