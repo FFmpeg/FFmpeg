@@ -74,6 +74,26 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
         } else {
             return AVERROR_INVALIDDATA;
         }
+    } else if (!strncmp(data->sampling, "RGB", 3)) {
+        tag = MKTAG('R', 'G', 'B', 24);
+        if (data->depth == 8) {
+            data->xinc = 1;
+            data->pgroup = 3;
+            pixfmt = AV_PIX_FMT_RGB24;
+            stream->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+    } else if (!strncmp(data->sampling, "BGR", 3)) {
+        tag = MKTAG('B', 'G', 'R', 24);
+        if (data->depth == 8) {
+            data->xinc = 1;
+            data->pgroup = 3;
+            pixfmt = AV_PIX_FMT_BGR24;
+            stream->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
     } else {
         return AVERROR_INVALIDDATA;
     }
