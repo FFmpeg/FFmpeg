@@ -1157,7 +1157,8 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
         vk->DestroyDebugUtilsMessengerEXT(hwctx->inst, p->debug_ctx,
                                           hwctx->alloc);
 
-    vk->DestroyInstance(hwctx->inst, hwctx->alloc);
+    if (hwctx->inst)
+        vk->DestroyInstance(hwctx->inst, hwctx->alloc);
 
     if (p->libvulkan)
         dlclose(p->libvulkan);
