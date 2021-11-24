@@ -1464,13 +1464,13 @@ test_pkg_config_cpp(){
     cond="$4"
     shift 4
     disable $name
-    test_cmd $pkg_config --exists --print-errors $pkg_version || return
+    test_cmd $pkg_config --exists --print-errors $pkg_version || returnddd
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
-    pkg_incdir=$($pkg_config --variable=includedir $pkg_config_flags $pkg)
+    pkg_incflags=$($pkg_config --cflags-onyl-I $pkg_config_flags $pkg)
     test_cpp_condition "$pkg_incdir/$headers" "$cond" "$@" &&
         enable $name &&
         set_sanitized "${name}_cflags" $pkg_cflags &&
-        set_sanitized "${name}_incdir" $pkg_incdir
+        set_sanitized "${name}_incflags" $pkg_incflags
 }
 
 check_pkg_config(){
@@ -1485,6 +1485,13 @@ check_pkg_config_cpp(){
     name="$1"
     test_pkg_config_cpp "$@" &&
         eval add_cflags \$${name}_cflags
+}
+
+check_pkg_config_header_only(){
+    log check_pkg_config_cpp "$@"
+    name="$1"
+    test_pkg_config_cpp "$@" &&
+        eval add_cflags \$${name}_incflags
 }
 
 test_exec(){
@@ -6842,7 +6849,7 @@ enabled vdpau &&
 enabled crystalhd && check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
 
 if enabled vulkan; then
-    require_pkg_config_cpp vulkan "vulkan >= 1.2.189" "vulkan/vulkan.h" "defined VK_VERSION_1_2" ||
+    check_pkg_config_header_only vulkan "vulkan >= 1.2.189" "vulkan/vulkan.h" "defined VK_VERSION_1_2" ||
         require_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_2"
 fi
 
