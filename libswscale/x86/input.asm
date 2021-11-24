@@ -93,7 +93,31 @@ shuf_rgb_12x4:   db 0, 0x80, 1, 0x80,  2, 0x80,  3, 0x80, \
                     6, 0x80, 7, 0x80,  8, 0x80,  9, 0x80
 shuf_rgb_3x56:   db 2, 0x80, 3, 0x80,  4, 0x80,  5, 0x80, \
                     8, 0x80, 9, 0x80, 10, 0x80, 11, 0x80
-
+pd_65535f:     times 8 dd 65535.0
+pb_pack_shuffle16le:    db  0,  1,  4,  5, \
+                            8,  9, 12, 13, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                            0,  1,  4,  5, \
+                            8,  9, 12, 13
+pb_shuffle32be:         db  3,  2,  1,  0, \
+                            7,  6,  5,  4, \
+                           11, 10,  9,  8, \
+                           15, 14, 13, 12, \
+                            3,  2,  1,  0, \
+                            7,  6,  5,  4, \
+                           11, 10,  9,  8, \
+                           15, 14, 13, 12
+pb_shuffle16be:         db  1,  0,  3,  2, \
+                            5,  4,  7,  6, \
+                            9,  8, 11, 10, \
+                           13, 12, 15, 14, \
+                            1,  0,  3,  2, \
+                            5,  4,  7,  6, \
+                            9,  8, 11, 10, \
+                           13, 12, 15, 14
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -738,3 +762,461 @@ YUYV_TO_UV_FN 3, uyvy, 1
 NVXX_TO_UV_FN 5, nv12
 NVXX_TO_UV_FN 5, nv21
 %endif
+
+%if ARCH_X86_64
+%define RY_IDX 0
+%define GY_IDX 1
+%define BY_IDX 2
+%define RU_IDX 3
+%define GU_IDX 4
+%define BU_IDX 5
+%define RV_IDX 6
+%define GV_IDX 7
+%define BV_IDX 8
+%define RGB2YUV_SHIFT 15
+
+%define R m0
+%define G m1
+%define B m2
+
+%macro SWAP32 1
+%if mmsize > 16 || cpuflag(sse4)
+    pshufb   m%1, [pb_shuffle32be]
+%else
+    psrlw    xm7, xm%1, 8
+    psllw   xm%1, 8
+    por     xm%1, xm7
+    pshuflw xm%1, xm%1, (2 << 6 | 3 << 4 | 0 << 2 | 1 << 0)
+    pshufhw xm%1, xm%1, (2 << 6 | 3 << 4 | 0 << 2 | 1 << 0)
+%endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+; 3 - is big endian
+; 4 - load only 2 values on sse2
+%macro LOADF32 4
+    %if notcpuflag(sse4) && %4
+        %if %3  ; big endian
+            mov tmp1q, %2
+            bswap tmp1q
+            movq xm%1, tmp1q
+        %else
+            movq m%1, %2
+        %endif
+    %else
+        movu m%1, %2
+        %if %3
+            SWAP32 %1
+        %endif
+    %endif
+    maxps m%1, m9 ; 0.0 (nan, -inf) -> 0.0
+    mulps m%1, m8 ; [pd_65535f]
+    minps m%1, m8 ; +inf -> 65535
+    ; cvtps2dq rounds to nearest int
+    ; assuming mxcsr register is default rounding
+    ; 0.40 -> 0.0, 0.50 -> 0.0, 0.51 -> 1.0
+    cvtps2dq m%1, m%1
+
+    %if notcpuflag(sse4) && %4
+        ; line up the 2 values in lanes 0,2
+        %if %3 ; big endian
+            pshufd m%1, m%1, (3 << 6 | 0 << 4 | 2 << 2 | 1 << 0)
+        %else
+            pshufd m%1, m%1, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        %endif
+    %endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+; 3 - is big endian
+%macro LOAD16 3
+    %if cpuflag(sse4) || mmsize > 16
+        pmovzxwd  m%1, %2
+        %if %3 ; bigendian
+            pshufb m%1, m8 ; [pb_shuffle16be]
+        %endif
+    %else
+        %if %3 ; bigendian
+            mov     tmp1d, dword %2
+            bswap   tmp1d
+            movd     xm%1, tmp1d
+            pshuflw   m%1, m%1, (3 << 6 | 0 << 4 | 3 << 2 | 1 << 0)
+            pshufd    m%1, m%1, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        %else
+            movd     xm%1, %2
+            punpcklwd m%1, m9 ; interleave words with zero
+            pshufd    m%1, m%1, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        %endif
+    %endif
+%endmacro
+
+%macro LOAD8_RGB 0
+    %if cpuflag(sse4) || mmsize > 16
+        pmovzxbd  R, [srcRq + xq]
+        pmovzxbd  G, [srcGq + xq]
+        pmovzxbd  B, [srcBq + xq]
+    %else
+        ; thought this would be faster but from my measurments its not
+        ; movd m0, [srcRq + xq + 0]; overeads by 2 bytes
+        ; punpcklbw m0, m9 ; interleave bytes with zero
+        ; punpcklwd m0, m9 ; interleave words with zero
+        ; pshufd m0, m0, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+
+        movzx tmp2q, byte [srcRq + xq + 1]
+        movzx tmp1q, byte [srcRq + xq + 0]
+        shl   tmp2q, 32
+        or    tmp1q, tmp2q
+        movq    xm0, tmp1q
+
+        movzx tmp2q, byte [srcGq + xq + 1]
+        movzx tmp3q, byte [srcGq + xq + 0]
+        shl   tmp2q, 32
+        or    tmp3q, tmp2q
+        movq    xm1, tmp3q
+
+        movzx tmp2q, byte [srcBq + xq + 1]
+        movzx tmp1q, byte [srcBq + xq + 0]
+        shl   tmp2q, 32
+        or    tmp1q, tmp2q
+        movq    xm2, tmp1q
+
+        pshufd   m0, m0, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        pshufd   m1, m1, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        pshufd   m2, m2, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+    %endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+; 3 - store only 2 values on sse2
+%macro STORE16 3
+    %if %3 && notcpuflag(sse4)
+        pshufd        m%2,  m%2, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        pshuflw       m%2,  m%2, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+        movd           %1,  m%2
+    %elif mmsize > 16
+        pshufb        m%2,   m7   ; [pb_pack_shuffle16le]
+        vpermq        m%2,  m%2,  (3 << 6 | 0 << 4 | 3 << 2 | 0 << 0)
+        movu           %1, xm%2
+    %else
+        %if cpuflag(sse4)
+            pshufb  m%2,  m7 ; [pb_pack_shuffle16le]
+        %else
+            pshuflw m%2, m%2, (1 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+            pshufhw m%2, m%2, (1 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+            pshufd  m%2, m%2, (3 << 6 | 3 << 4 | 2 << 2 | 0 << 0)
+        %endif
+        movq %1, m%2
+    %endif
+%endmacro
+
+%macro PMUL 3
+%if cpuflag(sse4) || mmsize > 16
+    pmulld  %1, %2, %3
+%else
+    pmuludq %1, %2, %3
+%endif
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - is big endian
+; 4 - is float
+; in sse2 mode only 2 values are done per loop, due to lack of pmulld instruction
+%macro planar_rgb_to_y_fn 4
+%if %2 == 8
+    %define OFFSET (0x801<<(RGB2YUV_SHIFT-7))
+    %define RSHIFT (RGB2YUV_SHIFT-6)
+%else
+    %if %2 < 16
+        %define SHIFT %2
+        %define BPC %2
+    %else
+        %define SHIFT 14
+        %define BPC 16
+    %endif
+    %define OFFSET ((16 << (RGB2YUV_SHIFT + BPC - 8)) + (1 << (RGB2YUV_SHIFT + SHIFT - 15)))
+    %define RSHIFT (RGB2YUV_SHIFT + SHIFT - 14)
+%endif
+cglobal planar_%1_to_y, 4, 12, 13, dst, src, w, rgb2yuv, srcR, srcG, srcB, x, tmp1, tmp2, tmp3, tmp4
+    VBROADCASTSS m10, dword [rgb2yuvq + RY_IDX*4] ; ry
+    VBROADCASTSS m11, dword [rgb2yuvq + GY_IDX*4] ; gy
+    VBROADCASTSS m12, dword [rgb2yuvq + BY_IDX*4] ; by
+    pxor m9, m9
+
+    %if %4
+        movu m8, [pd_65535f]
+    %endif
+
+    %if cpuflag(sse4) || mmsize > 16
+        movu m7, [pb_pack_shuffle16le]
+        %if %3 && %2 > 8 && %2 <= 16
+            movu m8,  [pb_shuffle16be]
+        %endif
+    %endif
+
+    mov           xq, OFFSET
+    movq         xm6, xq
+    VBROADCASTSS  m6, xm6
+
+    mov srcGq, [srcq +  0]
+    mov srcBq, [srcq +  8]
+    mov srcRq, [srcq + 16]
+
+    xor xq, xq
+    %%loop_x:
+        %if %4
+            LOADF32 0, [srcRq + xq*4], %3, 1
+            LOADF32 1, [srcGq + xq*4], %3, 1
+            LOADF32 2, [srcBq + xq*4], %3, 1
+        %elif %2 == 8
+            LOAD8_RGB
+        %else
+            LOAD16 0, [srcRq + xq*2], %3
+            LOAD16 1, [srcGq + xq*2], %3
+            LOAD16 2, [srcBq + xq*2], %3
+        %endif
+
+        PMUL      R, R, m10 ; r*ry
+        PMUL      G, G, m11 ; g*gy
+        PMUL      B, B, m12 ; b*by
+        paddd    m0, m6       ; + OFFSET
+        paddd     B, G
+        paddd    m0, B
+        psrad    m0, RSHIFT
+        STORE16 [dstq + 2*xq], 0, 1
+
+        %if cpuflag(avx2) || cpuflag(sse4)
+            add xq, mmsize/4
+        %else
+            add xd, 2
+        %endif
+        cmp xd, wd
+        jl %%loop_x
+RET
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - is big endian
+; 4 - is float
+; in sse2 mode only 2 values are done per loop, due to lack of pmulld instruction
+%macro planar_rgb_to_uv_fn 4
+%if %2 == 8
+    %define OFFSET (0x4001<<(RGB2YUV_SHIFT-7))
+    %define RSHIFT (RGB2YUV_SHIFT-6)
+%else
+    %if %2 < 16
+        %define SHIFT %2
+        %define BPC %2
+    %else
+        %define SHIFT 14
+        %define BPC 16
+    %endif
+    %define OFFSET ((128 << (RGB2YUV_SHIFT + BPC - 8)) + (1 << (RGB2YUV_SHIFT + SHIFT - 15)))
+    %define RSHIFT (RGB2YUV_SHIFT + SHIFT - 14)
+%endif
+cglobal planar_%1_to_uv, 5, 12, 16, dstU, dstV, src, w, rgb2yuv, srcR, srcG, srcB, x, tmp1, tmp2, tmp3
+    VBROADCASTSS m10, dword [rgb2yuvq + RU_IDX*4] ; ru
+    VBROADCASTSS m11, dword [rgb2yuvq + GU_IDX*4] ; gu
+    VBROADCASTSS m12, dword [rgb2yuvq + BU_IDX*4] ; bu
+    VBROADCASTSS m13, dword [rgb2yuvq + RV_IDX*4] ; rv
+    VBROADCASTSS m14, dword [rgb2yuvq + GV_IDX*4] ; gv
+    VBROADCASTSS m15, dword [rgb2yuvq + BV_IDX*4] ; bv
+    pxor m9, m9
+
+    %if %4
+        movu m8, [pd_65535f]
+    %endif
+
+    %if cpuflag(sse4) || mmsize > 16
+        movu m7, [pb_pack_shuffle16le]
+        %if %3 && %2 > 8 && %2 <= 16
+            movu m8,  [pb_shuffle16be]
+        %endif
+    %endif
+
+    mov          xq, OFFSET
+    movq        xm6, xq
+    VBROADCASTSS m6, xm6
+
+    mov srcGq, [srcq +  0]
+    mov srcBq, [srcq +  8]
+    mov srcRq, [srcq + 16]
+
+    xor xq, xq
+    %%loop_x:
+        %if %4
+            LOADF32 0, [srcRq + xq*4], %3, 1
+            LOADF32 1, [srcGq + xq*4], %3, 1
+            LOADF32 2, [srcBq + xq*4], %3, 1
+        %elif %2 == 8
+            LOAD8_RGB
+        %else
+            LOAD16 0, [srcRq + xq*2], %3
+            LOAD16 1, [srcGq + xq*2], %3
+            LOAD16 2, [srcBq + xq*2], %3
+        %endif
+
+        PMUL      m5, R, m10 ; r*ru
+        PMUL      m4, G, m11 ; b*gu
+        paddd     m4, m5
+        PMUL      m5, B, m12 ; b*bu
+        paddd     m4, m6     ; + OFFSET
+        paddd     m4, m5
+        psrad     m4, RSHIFT
+        STORE16 [dstUq + 2*xq], 4, 1
+
+        PMUL      R, R, m13 ; r*rv
+        PMUL      G, G, m14 ; g*gv*g
+        PMUL      B, B, m15 ; b*bv
+        paddd    m0, m6     ; + OFFSET
+        paddd     B, G
+        paddd    m0, B
+        psrad    m0, RSHIFT
+        STORE16 [dstVq + 2*xq], 0, 1
+
+        %if cpuflag(avx2) || cpuflag(sse4)
+            add xd, mmsize/4
+        %else
+            add xd, 2
+        %endif
+        cmp xd, wd
+        jl %%loop_x
+RET
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - is big endian
+; 4 - is float
+%macro planar_rgb_to_a_fn 4
+cglobal planar_%1_to_a, 4, 6, 10, dst, src, w, rgb2yuv, srcA, x
+    %if %4 && (cpuflag(sse4) || mmsize > 16)
+        movu m7, [pb_pack_shuffle16le]
+    %elif %3 && (cpuflag(sse4) || mmsize > 16)
+        movu m7, [pb_shuffle16be]
+    %endif
+
+    %if %4
+        movu m8, [pd_65535f]
+    %endif
+
+    pxor   m9, m9
+    mov srcAq, [srcq +  24]
+    xor    xq, xq
+    %%loop_x:
+        %if %4 ; float
+            LOADF32 0, [srcAq + xq*4], %3, 0
+            STORE16 [dstq + xq*2], 0, 0
+            add xq, mmsize/4
+        %elif %2 == 8
+            ; only need to convert 8bit value to 16bit
+            %if cpuflag(sse4) || mmsize > 16
+                pmovzxbw  m0, [srcAq + xq]
+            %else
+                movsd     m0, [srcAq + xq]
+                punpcklbw m0, m9 ; interleave bytes with zero
+            %endif
+            psllw m0, 6
+            movu [dstq + xq*2], m0
+            add xq, mmsize/2
+        %else
+            ; only need to convert 16bit format to 16le
+            movu m0, [srcAq + xq*2]
+            %if %3 ; bigendian
+                %if cpuflag(sse4) || mmsize > 16
+                    pshufb m0, m7 ; [pb_shuffle16be]
+                %else
+                    psrlw  m7, m0, 8
+                    psllw  m0, 8
+                    por    m0, m7
+                %endif
+            %endif
+            %if %2 < 16
+                psllw m0, (14 - %2)
+            %endif
+            movu [dstq + xq*2], m0
+            add xq, mmsize/2
+        %endif
+        cmp xd, wd
+        jl %%loop_x
+RET
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - is float
+%macro planer_rgbxx_y_fn_decl 3
+planar_rgb_to_y_fn  %1le,  %2, 0, %3
+planar_rgb_to_y_fn  %1be,  %2, 1, %3
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - is float
+%macro planer_rgbxx_uv_fn_decl 3
+planar_rgb_to_uv_fn  %1le,  %2, 0, %3
+planar_rgb_to_uv_fn  %1be,  %2, 1, %3
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - is float
+%macro planer_rgbxx_a_fn_decl 3
+planar_rgb_to_a_fn  %1le,  %2, 0, %3
+planar_rgb_to_a_fn  %1be,  %2, 1, %3
+%endmacro
+
+%macro planar_rgb_y_all_fn_decl 0
+planar_rgb_to_y_fn        rgb,  8, 0, 0
+planer_rgbxx_y_fn_decl   rgb9,  9, 0
+planer_rgbxx_y_fn_decl  rgb10, 10, 0
+planer_rgbxx_y_fn_decl  rgb12, 12, 0
+planer_rgbxx_y_fn_decl  rgb14, 14, 0
+planer_rgbxx_y_fn_decl  rgb16, 16, 0
+planer_rgbxx_y_fn_decl rgbf32, 32, 1
+%endmacro
+
+%macro planar_rgb_uv_all_fn_decl 0
+planar_rgb_to_uv_fn        rgb,  8, 0, 0
+planer_rgbxx_uv_fn_decl   rgb9,  9, 0
+planer_rgbxx_uv_fn_decl  rgb10, 10, 0
+planer_rgbxx_uv_fn_decl  rgb12, 12, 0
+planer_rgbxx_uv_fn_decl  rgb14, 14, 0
+planer_rgbxx_uv_fn_decl  rgb16, 16, 0
+planer_rgbxx_uv_fn_decl rgbf32, 32, 1
+%endmacro
+
+%macro planar_rgb_a_all_fn_decl 0
+planar_rgb_to_a_fn        rgb,  8, 0, 0
+planer_rgbxx_a_fn_decl  rgb10, 10, 0
+planer_rgbxx_a_fn_decl  rgb12, 12, 0
+planer_rgbxx_a_fn_decl  rgb16, 16, 0
+planer_rgbxx_a_fn_decl rgbf32, 32, 1
+%endmacro
+
+; sse2 to_y only matches c speed with current implementation
+; except on floating point formats
+INIT_XMM sse2
+planer_rgbxx_y_fn_decl rgbf32, 32, 1
+planar_rgb_uv_all_fn_decl
+planar_rgb_a_all_fn_decl
+
+; sse4 to_a conversions are just the sse2 ones
+; except on floating point formats
+INIT_XMM sse4
+planar_rgb_y_all_fn_decl
+planar_rgb_uv_all_fn_decl
+planer_rgbxx_a_fn_decl rgbf32, 32, 1
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+planar_rgb_y_all_fn_decl
+planar_rgb_uv_all_fn_decl
+planar_rgb_a_all_fn_decl
+%endif
+
+%endif ; ARCH_X86_64

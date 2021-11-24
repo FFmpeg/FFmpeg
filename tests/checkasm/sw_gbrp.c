@@ -190,9 +190,225 @@ static void check_output_yuv2gbrp(void)
     sws_freeContext(ctx);
 }
 
+#undef LARGEST_INPUT_SIZE
+#undef INPUT_SIZES
+
+static void check_input_planar_rgb_to_y(void)
+{
+    struct SwsContext *ctx;
+    const AVPixFmtDescriptor *desc;
+    int fmi, isi;
+    int dstW, byte_size;
+#define LARGEST_INPUT_SIZE 512
+#define INPUT_SIZES 6
+    static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
+    uint8_t *src[4];
+    int32_t rgb2yuv[9] = {0};
+
+    declare_func(void, uint8_t *dst, uint8_t *src[4], int w, int32_t *rgb2yuv);
+
+    LOCAL_ALIGNED_8(int32_t, src_r, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_g, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_b, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_a, [LARGEST_INPUT_SIZE]);
+
+    LOCAL_ALIGNED_8(uint8_t, dst0_y, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+    LOCAL_ALIGNED_8(uint8_t, dst1_y, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+
+    randomize_buffers((uint8_t*)src_r, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_g, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_b, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_a, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)rgb2yuv, 9 * sizeof(int32_t));
+
+    src[0] = (uint8_t*)src_g;
+    src[1] = (uint8_t*)src_b;
+    src[2] = (uint8_t*)src_r;
+    src[3] = (uint8_t*)src_a;
+
+    ctx = sws_alloc_context();
+    if (sws_init_context(ctx, NULL, NULL) < 0)
+        fail();
+
+    for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
+        for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+            desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
+            ctx->srcFormat = planar_fmts[fmi];
+            ctx->dstFormat = AV_PIX_FMT_YUVA444P16;
+            byte_size = 2;
+            dstW = input_sizes[isi];
+
+            ff_sws_init_scale(ctx);
+            if(check_func(ctx->readLumPlanar, "planar_%s_to_y_%d",  desc->name, dstW)) {
+                memset(dst0_y, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
+                memset(dst1_y, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
+
+                call_ref(dst0_y, src, dstW, rgb2yuv);
+                call_new(dst1_y, src, dstW, rgb2yuv);
+
+                if (memcmp(dst0_y, dst1_y, dstW * byte_size))
+                    fail();
+
+                bench_new(dst1_y, src, dstW, rgb2yuv);
+
+            }
+        }
+    }
+    sws_freeContext(ctx);
+}
+
+#undef LARGEST_INPUT_SIZE
+#undef INPUT_SIZES
+
+static void check_input_planar_rgb_to_uv(void)
+{
+    struct SwsContext *ctx;
+    const AVPixFmtDescriptor *desc;
+    int fmi, isi;
+    int dstW, byte_size;
+#define LARGEST_INPUT_SIZE 512
+#define INPUT_SIZES 6
+    static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
+    uint8_t *src[4];
+    int32_t rgb2yuv[9] = {0};
+
+    declare_func(void, uint8_t *dstU, uint8_t *dstV,
+                       uint8_t *src[4], int w, int32_t *rgb2yuv);
+
+    LOCAL_ALIGNED_8(int32_t, src_r, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_g, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_b, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_a, [LARGEST_INPUT_SIZE]);
+
+    LOCAL_ALIGNED_8(uint8_t, dst0_u, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+    LOCAL_ALIGNED_8(uint8_t, dst0_v, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+
+    LOCAL_ALIGNED_8(uint8_t, dst1_u, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+    LOCAL_ALIGNED_8(uint8_t, dst1_v, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+
+    randomize_buffers((uint8_t*)src_r, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_g, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_b, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_a, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)rgb2yuv, 9 * sizeof(int32_t));
+
+    src[0] = (uint8_t*)src_g;
+    src[1] = (uint8_t*)src_b;
+    src[2] = (uint8_t*)src_r;
+    src[3] = (uint8_t*)src_a;
+
+    ctx = sws_alloc_context();
+    if (sws_init_context(ctx, NULL, NULL) < 0)
+        fail();
+
+    for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
+        for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+            desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
+            ctx->srcFormat = planar_fmts[fmi];
+            ctx->dstFormat = AV_PIX_FMT_YUVA444P16;
+            byte_size = 2;
+            dstW = input_sizes[isi];
+
+            ff_sws_init_scale(ctx);
+            if(check_func(ctx->readChrPlanar, "planar_%s_to_uv_%d",  desc->name, dstW)) {
+                memset(dst0_u, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
+                memset(dst0_v, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
+                memset(dst1_u, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
+                memset(dst1_v, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
+
+                call_ref(dst0_u, dst0_v, src, dstW, rgb2yuv);
+                call_new(dst1_u, dst1_v, src, dstW, rgb2yuv);
+
+                if (memcmp(dst0_u, dst1_u, dstW * byte_size) ||
+                    memcmp(dst0_v, dst1_v, dstW * byte_size))
+                    fail();
+
+                bench_new(dst1_u, dst1_v, src, dstW, rgb2yuv);
+            }
+        }
+    }
+    sws_freeContext(ctx);
+}
+
+#undef LARGEST_INPUT_SIZE
+#undef INPUT_SIZES
+
+static void check_input_planar_rgb_to_a(void)
+{
+    struct SwsContext *ctx;
+    const AVPixFmtDescriptor *desc;
+    int fmi, isi;
+    int dstW, byte_size;
+#define LARGEST_INPUT_SIZE 512
+#define INPUT_SIZES 6
+    static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
+    uint8_t *src[4];
+    int32_t rgb2yuv[9] = {0};
+
+    declare_func(void, uint8_t *dst, uint8_t *src[4], int w, int32_t *rgb2yuv);
+
+    LOCAL_ALIGNED_8(int32_t, src_r, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_g, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_b, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_a, [LARGEST_INPUT_SIZE]);
+
+    LOCAL_ALIGNED_8(uint8_t, dst0_a, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+    LOCAL_ALIGNED_8(uint8_t, dst1_a, [LARGEST_INPUT_SIZE * sizeof(int32_t)]);
+
+    randomize_buffers((uint8_t*)src_r, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_g, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_b, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_a, LARGEST_INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)rgb2yuv, 9 * sizeof(int32_t));
+
+    src[0] = (uint8_t*)src_g;
+    src[1] = (uint8_t*)src_b;
+    src[2] = (uint8_t*)src_r;
+    src[3] = (uint8_t*)src_a;
+
+    ctx = sws_alloc_context();
+    if (sws_init_context(ctx, NULL, NULL) < 0)
+        fail();
+
+    for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
+        for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+            desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
+            if (!(desc->flags & AV_PIX_FMT_FLAG_ALPHA))
+                continue;
+
+            ctx->srcFormat = planar_fmts[fmi];
+            ctx->dstFormat = AV_PIX_FMT_YUVA444P16;
+            byte_size = 2;
+            dstW = input_sizes[isi];
+
+            ff_sws_init_scale(ctx);
+            if(check_func(ctx->readAlpPlanar, "planar_%s_to_a_%d",  desc->name, dstW)) {
+                memset(dst0_a, 0x00, LARGEST_INPUT_SIZE * sizeof(int32_t));
+                memset(dst1_a, 0x00, LARGEST_INPUT_SIZE * sizeof(int32_t));
+
+                call_ref(dst0_a, src, dstW, rgb2yuv);
+                call_new(dst1_a, src, dstW, rgb2yuv);
+
+                if (memcmp(dst0_a, dst1_a, dstW * byte_size))
+                    fail();
+                bench_new(dst1_a, src, dstW, rgb2yuv);
+            }
+        }
+    }
+    sws_freeContext(ctx);
+}
 
 void checkasm_check_sw_gbrp(void)
 {
     check_output_yuv2gbrp();
     report("output_yuv2gbrp");
+
+    check_input_planar_rgb_to_y();
+    report("input_planar_rgb_y");
+
+    check_input_planar_rgb_to_uv();
+    report("input_planar_rgb_uv");
+
+    check_input_planar_rgb_to_a();
+    report("input_planar_rgb_a");
 }
