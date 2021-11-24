@@ -45,7 +45,7 @@ AVFILTEROBJS-$(CONFIG_NLMEANS_FILTER)    += vf_nlmeans.o
 CHECKASMOBJS-$(CONFIG_AVFILTER) += $(AVFILTEROBJS-yes)
 
 # swscale tests
-SWSCALEOBJS                             += sw_rgb.o sw_scale.o
+SWSCALEOBJS                             += sw_gbrp.o sw_rgb.o sw_scale.o
 
 CHECKASMOBJS-$(CONFIG_SWSCALE)  += $(SWSCALEOBJS)
 

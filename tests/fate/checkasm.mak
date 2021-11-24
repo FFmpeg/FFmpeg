@@ -26,6 +26,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-pixblockdsp                               \
                 fate-checkasm-sbrdsp                                    \
                 fate-checkasm-synth_filter                              \
+                fate-checkasm-sw_gbrp                                   \
                 fate-checkasm-sw_rgb                                    \
                 fate-checkasm-sw_scale                                  \
                 fate-checkasm-utvideodsp                                \

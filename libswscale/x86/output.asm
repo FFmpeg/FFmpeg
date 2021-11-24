@@ -38,7 +38,49 @@ pw_32:         times 8 dw 32
 pd_255:        times 8 dd 255
 pw_512:        times 8 dw 512
 pw_1024:       times 8 dw 1024
-
+pd_65535_invf:             times 8 dd 0x37800080 ;1.0/65535.0
+pd_yuv2gbrp16_start:       times 8 dd -0x40000000
+pd_yuv2gbrp_y_start:       times 8 dd  (1 << 9)
+pd_yuv2gbrp_uv_start:      times 8 dd  ((1 << 9) - (128 << 19))
+pd_yuv2gbrp_a_start:       times 8 dd  (1 << 18)
+pd_yuv2gbrp16_offset:      times 8 dd  0x10000  ;(1 << 16)
+pd_yuv2gbrp16_round13:     times 8 dd  0x02000  ;(1 << 13)
+pd_yuv2gbrp16_a_offset:    times 8 dd  0x20002000
+pd_yuv2gbrp16_upper30:     times 8 dd  0x3FFFFFFF ;(1<<30) - 1
+pd_yuv2gbrp16_upper27:     times 8 dd  0x07FFFFFF ;(1<<27) - 1
+pd_yuv2gbrp16_upperC:      times 8 dd  0xC0000000
+pb_pack_shuffle8:       db  0,  4,  8, 12, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                            0,  4,  8, 12, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1
+pb_pack_shuffle16le:    db  0,  1,  4,  5, \
+                            8,  9, 12, 13, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                            0,  1,  4,  5, \
+                            8,  9, 12, 13
+pb_pack_shuffle16be:    db  1,  0,  5,  4, \
+                            9,  8, 13, 12, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                           -1, -1, -1, -1, \
+                            1,  0,  5,  4, \
+                            9,  8, 13, 12
+pb_shuffle32be:         db  3,  2,  1,  0, \
+                            7,  6,  5,  4, \
+                           11, 10,  9,  8, \
+                           15, 14, 13, 12, \
+                            3,  2,  1,  0, \
+                            7,  6,  5,  4, \
+                           11, 10,  9,  8, \
+                           15, 14, 13, 12
 yuv2nv12_shuffle_mask: times 2 db 0,  4,  8, 12, \
                                  -1, -1, -1, -1, \
                                  -1, -1, -1, -1, \
@@ -548,4 +590,394 @@ INIT_YMM avx2
 yuv2nv12cX_fn yuv2nv12
 yuv2nv12cX_fn yuv2nv21
 %endif
+%endif ; ARCH_X86_64
+
+;-----------------------------------------------------------------------------
+; planar grb yuv2anyX functions
+; void ff_yuv2<gbr_format>_full_X_<opt>(SwsContext *c, const int16_t *lumFilter,
+;                                       const int16_t **lumSrcx, int lumFilterSize,
+;                                       const int16_t *chrFilter, const int16_t **chrUSrcx,
+;                                       const int16_t **chrVSrcx, int chrFilterSize,
+;                                       const int16_t **alpSrcx, uint8_t **dest,
+;                                       int dstW, int y)
+;-----------------------------------------------------------------------------
+
+%if ARCH_X86_64
+struc SwsContext
+    .padding:           resb 40292 ; offsetof(SwsContext, yuv2rgb_y_offset)
+    .yuv2rgb_y_offset:  resd 1
+    .yuv2rgb_y_coeff:   resd 1
+    .yuv2rgb_v2r_coeff: resd 1
+    .yuv2rgb_v2g_coeff: resd 1
+    .yuv2rgb_u2g_coeff: resd 1
+    .yuv2rgb_u2b_coeff: resd 1
+endstruc
+
+%define R m0
+%define G m1
+%define B m2
+%define A m3
+
+%define Y m4
+%define U m5
+%define V m6
+
+; Clip a signed integer to an unsigned power of two range.
+; av_clip_uintp2
+; 1 - dest
+; 2 - bit position to clip at
+%macro CLIPP2 2
+    ; (~a) >> 31 & ((1<<p) - 1);
+    pcmpeqb m4, m4
+    pxor m4, %1
+    psrad m4, 31
+    movu m5, [pd_yuv2gbrp16_upper%2]
+    pand m4, m5
+
+    ; (a & ~((1<<p) - 1)) == 0
+    pandn m5, %1
+    pxor m6, m6
+    pcmpeqd m5, m6
+%if cpuflag(avx2)
+    vpblendvb %1, m4, %1, m5
+%else
+    pxor %1, m4
+    pand %1, m5
+    pxor %1, m4
+%endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+%macro LOAD16 2
+    %if cpuflag(avx2)
+        movu xm%1, %2
+        vpmovsxwd m%1, xm%1
+    %elif cpuflag(sse4)
+        movsd m%1, %2
+        pmovsxwd m%1, m%1
+    %else
+        movsd m%1, %2
+        punpcklwd m%1, m%1
+        psrad m%1, 16 ; sign extend
+    %endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+; 3 - depth
+%macro LOAD_PIXELS 3
+    mov ptrq, [%2 + jq*8]
+%if %3 >= 16
+    movu m%1, [ptrq + xq*4]
+%else
+    LOAD16 %1, [ptrq + xq*2]
+%endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+%macro STORE8 2
+    mov ptrq, %1
+    %if mmsize > 16
+        pshufb m%2, [pb_pack_shuffle8]
+        vextractf128 xm4, m%2, 1
+        por xm%2, xm4
+        movq [ptrq + xq], xm%2
+    %else
+        %if cpuflag(sse4)
+            pshufb m%2, [pb_pack_shuffle8]
+        %else
+            psrldq m4, m%2, 3
+            por m%2, m4
+            psrldq m4, m%2, 6
+            por m%2, m4
+        %endif
+        movd [ptrq + xq], m%2
+    %endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+; 3 - is big endian
+%macro STORE16 3
+    mov ptrq, %1
+    %if mmsize > 16
+        %if %3 ; bigendian
+            pshufb m%2, [pb_pack_shuffle16be]
+        %else
+            pshufb m%2, [pb_pack_shuffle16le]
+        %endif
+        vpermq m%2, m%2, (3 << 6 | 0 << 4 | 3 << 2 | 0 << 0)
+        movu [ptrq + xq*2], xm%2
+    %else
+        %if cpuflag(sse4) && %3 ; bigendian
+            pshufb m%2, [pb_pack_shuffle16be]
+        %elif cpuflag(sse4)
+            pshufb m%2, [pb_pack_shuffle16le]
+        %else
+            pshuflw m%2, m%2, (1 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+            pshufhw m%2, m%2, (1 << 6 | 1 << 4 | 2 << 2 | 0 << 0)
+            pshufd  m%2, m%2, (3 << 6 | 3 << 4 | 2 << 2 | 0 << 0)
+            %if %3 ; bigendian
+                psrlw  m4, m%2, 8
+                psllw  m%2, 8
+                por m%2, m4
+            %endif
+        %endif
+        movq [ptrq + xq*2], m%2
+    %endif
+%endmacro
+
+%macro SWAP32 1
+%if mmsize > 16 || cpuflag(sse4)
+    pshufb m%1, [pb_shuffle32be]
+%else
+    psrlw  m4, m%1, 8
+    psllw  m%1, 8
+    por m%1, m4
+    pshuflw m%1, m%1, (2 << 6 | 3 << 4 | 0 << 2 | 1 << 0)
+    pshufhw m%1, m%1, (2 << 6 | 3 << 4 | 0 << 2 | 1 << 0)
+%endif
+%endmacro
+
+; 1 - dest
+; 2 - source
+; 3 - depth
+; 4 - is big endian
+%macro STORE_PIXELS 4
+%if %3 > 16
+    %if %4
+        SWAP32 %2
+    %endif
+    mov ptrq, %1
+    movu [ptrq + xq*4], m%2
+%elif %3 > 8
+    STORE16 %1, %2, %4
+%else
+    STORE8 %1, %2
+%endif
+%endmacro
+
+%macro PMULLO 3
+%if cpuflag(sse4) || mmsize > 16
+    pmulld %1, %2, %3
+%else
+    %ifidni %1, %2
+    %else
+        mova %1, %2
+    %endif
+    pshufd m7, %1, (2 << 6 | 3 << 4 | 0 << 2 | 1 << 0) ; 0xb1
+    pshufd m8, %3, (2 << 6 | 3 << 4 | 0 << 2 | 1 << 0) ; 0xb1
+    pmuludq m7, m8
+    pshufd  m7, m7, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0) ; 0xd8
+    pmuludq %1, %3
+    pshufd  %1, %1, (3 << 6 | 1 << 4 | 2 << 2 | 0 << 0) ; 0xd8
+    punpckldq %1, m7
+%endif
+%endmacro
+
+; 1 - name
+; 2 - depth
+; 3 - has alpha
+; 3 - is big endian
+; 5 - is float
+%macro yuv2gbrp_fn 5
+%define DEPTH %2
+%define HAS_ALPHA %3
+%define IS_BE %4
+%define FLOAT %5
+%define SH (22 + 8 - DEPTH)
+
+%if DEPTH >= 16
+    %define RGB_SHIFT 14
+    %define A_SHIFT 14
+%elif 22 != SH
+    %define RGB_SHIFT SH
+    %define A_SHIFT (SH-3)
+%else
+    %define RGB_SHIFT 22
+    %define A_SHIFT 19
+%endif
+
+%if DEPTH >= 16
+    %define YUV_SHIFT 14
+    %define Y_START  m9
+    %define Y_ROUND [pd_yuv2gbrp16_round13]
+    %define UV_START m9
+    %define A_START  m9
+    %define A_CLIP2P 30
+%else
+    %define YUV_SHIFT 10
+    %define Y_START  [pd_yuv2gbrp_y_start]
+    %define Y_ROUND  m9
+    %define UV_START [pd_yuv2gbrp_uv_start]
+    %define A_START  [pd_yuv2gbrp_a_start]
+    %define A_CLIP2P 27
+%endif
+
+cglobal yuv2%1_full_X, 12, 14, 16, ptr, lumFilter, lumSrcx, lumFilterSize, chrFilter, chrUSrcx, chrVSrcx, chrFilterSize, alpSrcx, dest, dstW, y, x, j
+    VBROADCASTSS m10, dword [ptrq + SwsContext.yuv2rgb_y_offset]
+    VBROADCASTSS m11, dword [ptrq + SwsContext.yuv2rgb_y_coeff]
+    VBROADCASTSS m12, dword [ptrq + SwsContext.yuv2rgb_v2r_coeff]
+    VBROADCASTSS m13, dword [ptrq + SwsContext.yuv2rgb_v2g_coeff]
+    VBROADCASTSS m14, dword [ptrq + SwsContext.yuv2rgb_u2g_coeff]
+    VBROADCASTSS m15, dword [ptrq + SwsContext.yuv2rgb_u2b_coeff]
+
+%if DEPTH >= 16
+    movu m9, [pd_yuv2gbrp16_start]
+%else
+    mov xq, (1 << (SH-1))
+    movq xm9, xq
+    VBROADCASTSS m9, xm9
+%endif
+    xor xq, xq
+
+    %%loop_x:
+        movu Y, Y_START
+        movu U, UV_START
+        movu V, UV_START
+
+        xor jq, jq
+        %%loop_luma:
+            movsx ptrd, word [lumFilterq + jq*2]
+            movd xm0, ptrd
+            VBROADCASTSS m0, xm0
+            LOAD_PIXELS 1, lumSrcxq, DEPTH
+            PMULLO m1, m1, m0
+            paddd Y, m1
+            inc jd
+            cmp jd, lumFilterSized
+            jl %%loop_luma
+
+%if HAS_ALPHA
+        cmp alpSrcxq, 0
+        je %%skip_alpha_load
+            xor jq, jq
+            movu A, A_START
+            %%loop_alpha:
+                movsx ptrd, word [lumFilterq + jq*2]
+                movd xm0, ptrd
+                VBROADCASTSS m0, xm0
+                LOAD_PIXELS 1, alpSrcxq, DEPTH
+                PMULLO m1, m1, m0
+                paddd A, m1
+                inc jd
+                cmp jd, lumFilterSized
+                jl %%loop_alpha
+%if DEPTH >= 16
+            psrad A, 1
+            paddd A, [pd_yuv2gbrp16_a_offset]
+%endif
+        %%skip_alpha_load:
+%endif
+        xor jq, jq
+        %%loop_chr:
+            movsx ptrd, word [chrFilterq + jq*2]
+            movd xm0, ptrd
+            VBROADCASTSS m0, xm0
+            LOAD_PIXELS 1, chrUSrcxq, DEPTH
+            LOAD_PIXELS 2, chrVSrcxq, DEPTH
+            PMULLO m1, m1, m0
+            PMULLO m2, m2, m0
+            paddd U, m1
+            paddd V, m2
+            inc jd
+            cmp jd, chrFilterSized
+            jl %%loop_chr
+
+        psrad Y, YUV_SHIFT
+%if  DEPTH >= 16
+        paddd Y, [pd_yuv2gbrp16_offset]
+%endif
+        psrad U, YUV_SHIFT
+        psrad V, YUV_SHIFT
+
+        psubd  Y, m10    ; yuv2rgb_y_offset
+        PMULLO Y, Y, m11 ; yuv2rgb_y_coeff
+        paddd  Y, Y_ROUND
+
+        PMULLO R, V, m12 ; yuv2rgb_v2r_coeff
+        PMULLO B, U, m15 ; yuv2rgb_u2b_coeff
+
+        PMULLO U, U, m14 ; yuv2rgb_u2g_coeff
+        PMULLO V, V, m13 ; yuv2rgb_v2g_coeff
+        paddd G, U, V
+        paddd R, Y
+        paddd G, Y
+        paddd B, Y
+
+        CLIPP2 R, 30
+        CLIPP2 G, 30
+        CLIPP2 B, 30
+
+        psrad R, RGB_SHIFT
+        psrad G, RGB_SHIFT
+        psrad B, RGB_SHIFT
+
+%if FLOAT
+        cvtdq2ps R, R
+        cvtdq2ps G, G
+        cvtdq2ps B, B
+        mulps R, [pd_65535_invf]
+        mulps G, [pd_65535_invf]
+        mulps B, [pd_65535_invf]
+%endif
+        STORE_PIXELS [destq +  0], 1, DEPTH, IS_BE ; G
+        STORE_PIXELS [destq +  8], 2, DEPTH, IS_BE ; B
+        STORE_PIXELS [destq + 16], 0, DEPTH, IS_BE ; R
+
+%if HAS_ALPHA
+        cmp alpSrcxq, 0
+        je %%skip_alpha_store
+            CLIPP2 A, A_CLIP2P
+            psrad A, A_SHIFT
+%if FLOAT
+            cvtdq2ps A, A
+            mulps A, [pd_65535_invf]
+%endif
+            STORE_PIXELS [destq + 24], 3, DEPTH, IS_BE
+        %%skip_alpha_store:
+%endif
+        add xq, mmsize/4
+        cmp xd, dstWd
+        jl %%loop_x
+
+    RET
+%endmacro
+
+%macro yuv2gbrp_fn_decl 2
+INIT_%1 %2
+yuv2gbrp_fn gbrp,        8, 0, 0, 0
+yuv2gbrp_fn gbrap,       8, 1, 0, 0
+yuv2gbrp_fn gbrp9le,     9, 0, 0, 0
+yuv2gbrp_fn gbrp10le,   10, 0, 0, 0
+yuv2gbrp_fn gbrap10le,  10, 1, 0, 0
+yuv2gbrp_fn gbrp12le,   12, 0, 0, 0
+yuv2gbrp_fn gbrap12le,  12, 1, 0, 0
+yuv2gbrp_fn gbrp14le,   14, 0, 0, 0
+yuv2gbrp_fn gbrp16le,   16, 0, 0, 0
+yuv2gbrp_fn gbrap16le,  16, 1, 0, 0
+yuv2gbrp_fn gbrpf32le,  32, 0, 0, 1
+yuv2gbrp_fn gbrapf32le, 32, 1, 0, 1
+
+yuv2gbrp_fn gbrp9be,     9, 0, 1, 0
+yuv2gbrp_fn gbrp10be,   10, 0, 1, 0
+yuv2gbrp_fn gbrap10be,  10, 1, 1, 0
+yuv2gbrp_fn gbrp12be,   12, 0, 1, 0
+yuv2gbrp_fn gbrap12be,  12, 1, 1, 0
+yuv2gbrp_fn gbrp14be,   14, 0, 1, 0
+yuv2gbrp_fn gbrp16be,   16, 0, 1, 0
+yuv2gbrp_fn gbrap16be,  16, 1, 1, 0
+yuv2gbrp_fn gbrpf32be,  32, 0, 1, 1
+yuv2gbrp_fn gbrapf32be, 32, 1, 1, 1
+%endmacro
+
+yuv2gbrp_fn_decl XMM, sse2
+yuv2gbrp_fn_decl XMM, sse4
+
+%if HAVE_AVX2_EXTERNAL
+yuv2gbrp_fn_decl YMM, avx2
+%endif
+
 %endif ; ARCH_X86_64

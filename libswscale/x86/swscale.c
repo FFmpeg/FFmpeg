@@ -353,6 +353,43 @@ void ff_yuv2 ## fmt ## cX_ ## opt(enum AVPixelFormat format, const uint8_t *dith
 
 YUV2NV_DECL(nv12, avx2);
 YUV2NV_DECL(nv21, avx2);
+
+#define YUV2GBRP_FN_DECL(fmt, opt)                                                      \
+void ff_yuv2##fmt##_full_X_ ##opt(SwsContext *c, const int16_t *lumFilter,           \
+                                 const int16_t **lumSrcx, int lumFilterSize,         \
+                                 const int16_t *chrFilter, const int16_t **chrUSrcx, \
+                                 const int16_t **chrVSrcx, int chrFilterSize,        \
+                                 const int16_t **alpSrcx, uint8_t **dest,            \
+                                 int dstW, int y)
+
+#define YUV2GBRP_DECL(opt)     \
+YUV2GBRP_FN_DECL(gbrp,       opt); \
+YUV2GBRP_FN_DECL(gbrap,      opt); \
+YUV2GBRP_FN_DECL(gbrp9le,    opt); \
+YUV2GBRP_FN_DECL(gbrp10le,   opt); \
+YUV2GBRP_FN_DECL(gbrap10le,  opt); \
+YUV2GBRP_FN_DECL(gbrp12le,   opt); \
+YUV2GBRP_FN_DECL(gbrap12le,  opt); \
+YUV2GBRP_FN_DECL(gbrp14le,   opt); \
+YUV2GBRP_FN_DECL(gbrp16le,   opt); \
+YUV2GBRP_FN_DECL(gbrap16le,  opt); \
+YUV2GBRP_FN_DECL(gbrpf32le,  opt); \
+YUV2GBRP_FN_DECL(gbrapf32le, opt); \
+YUV2GBRP_FN_DECL(gbrp9be,    opt); \
+YUV2GBRP_FN_DECL(gbrp10be,   opt); \
+YUV2GBRP_FN_DECL(gbrap10be,  opt); \
+YUV2GBRP_FN_DECL(gbrp12be,   opt); \
+YUV2GBRP_FN_DECL(gbrap12be,  opt); \
+YUV2GBRP_FN_DECL(gbrp14be,   opt); \
+YUV2GBRP_FN_DECL(gbrp16be,   opt); \
+YUV2GBRP_FN_DECL(gbrap16be,  opt); \
+YUV2GBRP_FN_DECL(gbrpf32be,  opt); \
+YUV2GBRP_FN_DECL(gbrapf32be, opt);
+
+YUV2GBRP_DECL(sse2);
+YUV2GBRP_DECL(sse4);
+YUV2GBRP_DECL(avx2);
+
 #endif
 
 av_cold void ff_sws_init_swscale_x86(SwsContext *c)
@@ -601,5 +638,66 @@ switch(c->dstBpc){ \
             break;
         }
     }
+
+    if(c->flags & SWS_FULL_CHR_H_INT) {
+
+        /* yuv2gbrp uses the SwsContext for yuv coefficients
+           if struct offsets change the asm needs to be updated too */
+        av_assert0(offsetof(SwsContext, yuv2rgb_y_offset) == 40292);
+
+#define YUV2ANYX_FUNC_CASE(fmt, name, opt)              \
+        case fmt:                                       \
+            c->yuv2anyX = ff_yuv2##name##_full_X_##opt; \
+            break;
+
+#define YUV2ANYX_GBRAP_CASES(opt)                                  \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP,       gbrp,       opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP,      gbrap,      opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP9LE,    gbrp9le,    opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP10LE,   gbrp10le,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP10LE,  gbrap10le,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP12LE,   gbrp12le,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP12LE,  gbrap12le,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP14LE,   gbrp14le,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP16LE,   gbrp16le,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP16LE,  gbrap16le,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRPF32LE,  gbrpf32le,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAPF32LE, gbrapf32le, opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP9BE,    gbrp9be,    opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP10BE,   gbrp10be,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP10BE,  gbrap10be,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP12BE,   gbrp12be,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP12BE,  gbrap12be,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP14BE,   gbrp14be,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRP16BE,   gbrp16be,   opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAP16BE,  gbrap16be,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRPF32BE,  gbrpf32be,  opt) \
+        YUV2ANYX_FUNC_CASE(AV_PIX_FMT_GBRAPF32BE, gbrapf32be, opt)
+
+        if (EXTERNAL_SSE2(cpu_flags)) {
+            switch (c->dstFormat) {
+            YUV2ANYX_GBRAP_CASES(sse2)
+            default:
+                break;
+            }
+        }
+
+        if (EXTERNAL_SSE4(cpu_flags)) {
+            switch (c->dstFormat) {
+            YUV2ANYX_GBRAP_CASES(sse4)
+            default:
+                break;
+            }
+        }
+
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            switch (c->dstFormat) {
+            YUV2ANYX_GBRAP_CASES(avx2)
+            default:
+                break;
+            }
+        }
+    }
+
 #endif
 }
