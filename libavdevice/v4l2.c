@@ -1019,8 +1019,6 @@ static int v4l2_get_device_list(AVFormatContext *ctx, AVDeviceInfoList *device_l
     struct video_data *s = ctx->priv_data;
     DIR *dir;
     struct dirent *entry;
-    AVDeviceInfo *device = NULL;
-    struct v4l2_capability cap;
     int ret = 0;
 
     if (!device_list)
@@ -1033,6 +1031,8 @@ static int v4l2_get_device_list(AVFormatContext *ctx, AVDeviceInfoList *device_l
         return ret;
     }
     while ((entry = readdir(dir))) {
+        AVDeviceInfo *device = NULL;
+        struct v4l2_capability cap;
         int fd = -1;
         char device_name[256];
 
