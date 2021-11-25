@@ -314,6 +314,9 @@ typedef struct AVFrame {
      * This might be different from the first allocated byte. For video,
      * it could even point to the end of the image data.
      *
+     * All pointers in data and extended_data must point into one of the
+     * AVBufferRef in buf or extended_buf.
+     *
      * Some decoders access areas outside 0,0 - width,height, please
      * see avcodec_align_dimensions2(). Some filters and swscale can read
      * up to 16 bytes beyond the planes, if these filters are to be used,
@@ -490,10 +493,10 @@ typedef struct AVFrame {
     uint64_t channel_layout;
 
     /**
-     * AVBuffer references backing the data for this frame. If all elements of
-     * this array are NULL, then this frame is not reference counted. This array
-     * must be filled contiguously -- if buf[i] is non-NULL then buf[j] must
-     * also be non-NULL for all j < i.
+     * AVBuffer references backing the data for this frame. All the pointers in
+     * data and extended_data must point inside one of the buffers in buf or
+     * extended_buf. This array must be filled contiguously -- if buf[i] is
+     * non-NULL then buf[j] must also be non-NULL for all j < i.
      *
      * There may be at most one AVBuffer per data plane, so for video this array
      * always contains all the references. For planar audio with more than
