@@ -1885,6 +1885,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -3249,6 +3250,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -3336,6 +3338,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -3433,6 +3436,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -3515,6 +3519,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -4265,6 +4270,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -4766,6 +4772,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -5116,6 +5123,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r
@@ -6340,6 +6348,7 @@ Set transform type of IIR filter.
 @item dii
 @item tdii
 @item latt
+@item svf
 @end table
 
 @item precision, r

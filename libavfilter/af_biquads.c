@@ -99,6 +99,7 @@ enum TransformType {
     DII,
     TDII,
     LATT,
+    SVF,
     NB_TTYPE,
 };
 
@@ -419,6 +420,54 @@ BIQUAD_LATT_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
 BIQUAD_LATT_FILTER(flt, float,   -1., 1., 0)
 BIQUAD_LATT_FILTER(dbl, double,  -1., 1., 0)
 
+#define BIQUAD_SVF_FILTER(name, type, min, max, need_clipping)                \
+static void biquad_svf_## name (BiquadsContext *s,                            \
+                           const void *input, void *output, int len,          \
+                           double *y0, double *y1,                            \
+                           double *unused1, double *unused2,                  \
+                           double b0, double b1, double b2,                   \
+                           double a1, double a2, int *clippings,              \
+                           int disabled)                                      \
+{                                                                             \
+    const type *ibuf = input;                                                 \
+    type *obuf = output;                                                      \
+    double s0 = *y0;                                                          \
+    double s1 = *y1;                                                          \
+    double wet = s->mix;                                                      \
+    double dry = 1. - wet;                                                    \
+    double in, out;                                                           \
+    double t0, t1;                                                            \
+                                                                              \
+    for (int i = 0; i < len; i++) {                                           \
+        in   = ibuf[i];                                                       \
+        out  = b2 * in + s0;                                                  \
+        t0   = b0 * in + a1 * s0 + s1;                                        \
+        t1   = b1 * in + a2 * s0;                                             \
+        s0   = t0;                                                            \
+        s1   = t1;                                                            \
+                                                                              \
+        out = out * wet + in * dry;                                           \
+        if (disabled) {                                                       \
+            obuf[i] = in;                                                     \
+        } else if (need_clipping && out < min) {                              \
+            (*clippings)++;                                                   \
+            obuf[i] = min;                                                    \
+        } else if (need_clipping && out > max) {                              \
+            (*clippings)++;                                                   \
+            obuf[i] = max;                                                    \
+        } else {                                                              \
+            obuf[i] = out;                                                    \
+        }                                                                     \
+    }                                                                         \
+    *y0 = s0;                                                                 \
+    *y1 = s1;                                                                 \
+}
+
+BIQUAD_SVF_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
+BIQUAD_SVF_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
+BIQUAD_SVF_FILTER(flt, float,   -1., 1., 0)
+BIQUAD_SVF_FILTER(dbl, double,  -1., 1., 0)
+
 static void convert_dir2latt(BiquadsContext *s)
 {
     double k0, k1, v0, v1, v2;
@@ -434,6 +483,24 @@ static void convert_dir2latt(BiquadsContext *s)
     s->b0 = v0;
     s->b1 = v1;
     s->b2 = v2;
+}
+
+static void convert_dir2svf(BiquadsContext *s)
+{
+    double a[2];
+    double b[3];
+
+    a[0] = -s->a1;
+    a[1] = -s->a2;
+    b[0] = s->b1 - s->a1 * s->b0;
+    b[1] = s->b2 - s->a2 * s->b0;
+    b[2] = s->b0;
+
+    s->a1 = a[0];
+    s->a2 = a[1];
+    s->b0 = b[0];
+    s->b1 = b[1];
+    s->b2 = b[2];
 }
 
 static int config_filter(AVFilterLink *outlink, int reset)
@@ -724,6 +791,23 @@ static int config_filter(AVFilterLink *outlink, int reset)
         default: av_assert0(0);
         }
         break;
+    case SVF:
+        switch (inlink->format) {
+        case AV_SAMPLE_FMT_S16P:
+            s->filter = biquad_svf_s16;
+            break;
+        case AV_SAMPLE_FMT_S32P:
+            s->filter = biquad_svf_s32;
+            break;
+        case AV_SAMPLE_FMT_FLTP:
+            s->filter = biquad_svf_flt;
+            break;
+        case AV_SAMPLE_FMT_DBLP:
+            s->filter = biquad_svf_dbl;
+            break;
+        default: av_assert0(0);
+        }
+        break;
     default:
         av_assert0(0);
      }
@@ -732,6 +816,8 @@ static int config_filter(AVFilterLink *outlink, int reset)
 
      if (s->transform_type == LATT)
          convert_dir2latt(s);
+     else if (s->transform_type == SVF)
+         convert_dir2svf(s);
 
     return 0;
 }
@@ -906,6 +992,7 @@ static const AVOption equalizer_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -947,6 +1034,7 @@ static const AVOption bass_lowshelf_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -995,6 +1083,7 @@ static const AVOption treble_highshelf_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1042,6 +1131,7 @@ static const AVOption bandpass_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1079,6 +1169,7 @@ static const AVOption bandreject_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1118,6 +1209,7 @@ static const AVOption lowpass_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1157,6 +1249,7 @@ static const AVOption highpass_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1196,6 +1289,7 @@ static const AVOption allpass_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1228,6 +1322,7 @@ static const AVOption biquad_options[] = {
     {"dii",  "direct form II", 0, AV_OPT_TYPE_CONST, {.i64=DII}, 0, 0, AF, "transform_type"},
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
+    {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
