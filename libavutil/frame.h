@@ -322,8 +322,7 @@ typedef struct AVFrame {
      * up to 16 bytes beyond the planes, if these filters are to be used,
      * then 16 extra bytes must be allocated.
      *
-     * NOTE: Except for hwaccel formats, pointers not needed by the format
-     * MUST be set to NULL.
+     * NOTE: Pointers not needed by the format MUST be set to NULL.
      *
      * @attention In case of video, the data[] pointers can point to the
      * end of image data in order to reverse line order, when used in
