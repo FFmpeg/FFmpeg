@@ -65,6 +65,7 @@ extern const AVCodec ff_bethsoftvid_decoder;
 extern const AVCodec ff_bfi_decoder;
 extern const AVCodec ff_bink_decoder;
 extern const AVCodec ff_bitpacked_decoder;
+extern const AVCodec ff_bitpacked_encoder;
 extern const AVCodec ff_bmp_encoder;
 extern const AVCodec ff_bmp_decoder;
 extern const AVCodec ff_bmv_video_decoder;

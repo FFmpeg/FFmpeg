@@ -32,6 +32,7 @@ version <next>:
 - huesaturation video filter
 - colorspectrum source video filter
 - RTP packetizer for uncompressed video (RFC 4175)
+- bitpacked encoder
 
 
 version 4.4:
