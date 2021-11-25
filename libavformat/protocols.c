@@ -93,17 +93,17 @@ const AVClass *ff_urlcontext_child_class_iterate(void **iter)
 
 const char *avio_enum_protocols(void **opaque, int output)
 {
-    const URLProtocol **p = *opaque;
+    uintptr_t i;
 
-    p = p ? p + 1 : url_protocols;
-    *opaque = p;
-    if (!*p) {
-        *opaque = NULL;
-        return NULL;
+    for (i = (uintptr_t)*opaque; url_protocols[i]; i++) {
+        const URLProtocol *p = url_protocols[i];
+        if ((output && p->url_write) || (!output && p->url_read)) {
+            *opaque = (void*)(uintptr_t)(i + 1);
+            return p->name;
+        }
     }
-    if ((output && (*p)->url_write) || (!output && (*p)->url_read))
-        return (*p)->name;
-    return avio_enum_protocols(opaque, output);
+    *opaque = NULL;
+    return NULL;
 }
 
 const AVClass *avio_protocol_get_class(const char *name)
