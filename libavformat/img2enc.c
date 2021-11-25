@@ -36,7 +36,6 @@ typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
     int img_number;
     int split_planes;       /**< use independent file for each Y, U, V plane */
-    char path[1024];
     char tmp[4][1024];
     char target[4][1024];
     int update;
@@ -53,14 +52,12 @@ static int write_header(AVFormatContext *s)
     AVStream *st = s->streams[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
 
-    av_strlcpy(img->path, s->url, sizeof(img->path));
-
     if (st->codecpar->codec_id == AV_CODEC_ID_GIF) {
         img->muxer = "gif";
     } else if (st->codecpar->codec_id == AV_CODEC_ID_FITS) {
         img->muxer = "fits";
     } else if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
-        const char *str = strrchr(img->path, '.');
+        const char *str = strrchr(s->url, '.');
         img->split_planes =     str
                              && !av_strcasecmp(str + 1, "y")
                              && s->nb_streams == 1
@@ -136,29 +133,29 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     AVDictionary *options = NULL;
 
     if (img->update) {
-        av_strlcpy(filename, img->path, sizeof(filename));
+        av_strlcpy(filename, s->url, sizeof(filename));
     } else if (img->use_strftime) {
         time_t now0;
         struct tm *tm, tmpbuf;
         time(&now0);
         tm = localtime_r(&now0, &tmpbuf);
-        if (!strftime(filename, sizeof(filename), img->path, tm)) {
+        if (!strftime(filename, sizeof(filename), s->url, tm)) {
             av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
             return AVERROR(EINVAL);
         }
     } else if (img->frame_pts) {
-        if (av_get_frame_filename2(filename, sizeof(filename), img->path, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+        if (av_get_frame_filename2(filename, sizeof(filename), s->url, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
             av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
             return AVERROR(EINVAL);
         }
-    } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
+    } else if (av_get_frame_filename2(filename, sizeof(filename), s->url,
                                       img->img_number,
                                       AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
                img->img_number > 1) {
         av_log(s, AV_LOG_ERROR,
                "Could not get frame filename number %d from pattern '%s'. "
                "Use '-frames:v 1' for a single image, or '-update' option, or use a pattern such as %%03d within the filename.\n",
-               img->img_number, img->path);
+               img->img_number, s->url);
         return AVERROR(EINVAL);
     }
     for (i = 0; i < 4; i++) {
