@@ -33,7 +33,7 @@ API changes, most recent first:
   Add "disposition" AVOption to AVStream's class.
 
 2021-11-12 - xxxxxxxxxx - lavu 57.8.100 - hwcontext_vulkan.h
-  Added AVFrame.sem_value, AVVulkanDeviceContext.queue_family_encode_index,
+  Added AVVkFrame.sem_value, AVVulkanDeviceContext.queue_family_encode_index,
   nb_encode_queues, queue_family_decode_index, and nb_decode_queues.
 
 2021-10-18 - xxxxxxxxxx - lavf 59.8.100 - avio.h
