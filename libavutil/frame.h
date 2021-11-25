@@ -422,6 +422,14 @@ typedef struct AVFrame {
     int64_t pkt_dts;
 
     /**
+     * Time base for the timestamps in this frame.
+     * In the future, this field may be set on frames output by decoders or
+     * filters, but its value will be by default ignored on input to encoders
+     * or filters.
+     */
+    AVRational time_base;
+
+    /**
      * picture number in bitstream order
      */
     int coded_picture_number;

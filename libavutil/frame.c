@@ -63,6 +63,7 @@ static void get_frame_defaults(AVFrame *frame)
     frame->pkt_duration        = 0;
     frame->pkt_pos             = -1;
     frame->pkt_size            = -1;
+    frame->time_base           = (AVRational){ 0, 1 };
     frame->key_frame           = 1;
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
@@ -278,6 +279,7 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->pkt_pos                = src->pkt_pos;
     dst->pkt_size               = src->pkt_size;
     dst->pkt_duration           = src->pkt_duration;
+    dst->time_base              = src->time_base;
     dst->reordered_opaque       = src->reordered_opaque;
     dst->quality                = src->quality;
     dst->best_effort_timestamp  = src->best_effort_timestamp;
