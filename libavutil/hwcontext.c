@@ -122,6 +122,7 @@ static const AVClass hwdevice_ctx_class = {
 static void hwdevice_ctx_free(void *opaque, uint8_t *data)
 {
     AVHWDeviceContext *ctx = (AVHWDeviceContext*)data;
+    int i;
 
     /* uninit might still want access the hw context and the user
      * free() callback might destroy it, so uninit has to be called first */
@@ -132,6 +133,8 @@ static void hwdevice_ctx_free(void *opaque, uint8_t *data)
         ctx->free(ctx);
 
     av_buffer_unref(&ctx->internal->source_device);
+    for (i = 0; i < AV_HWDEVICE_TYPE_NB; i++)
+        av_buffer_unref(&ctx->internal->derived_devices[i]);
 
     av_freep(&ctx->hwctx);
     av_freep(&ctx->internal->priv);
@@ -643,6 +646,26 @@ fail:
     return ret;
 }
 
+static AVBufferRef* find_derived_hwdevice_ctx(AVBufferRef *src_ref, enum AVHWDeviceType type)
+{
+    AVBufferRef *tmp_ref;
+    AVHWDeviceContext *src_ctx;
+    int i;
+
+    src_ctx = (AVHWDeviceContext*)src_ref->data;
+    if (src_ctx->type == type)
+        return src_ref;
+
+    for (i = 0; i < AV_HWDEVICE_TYPE_NB; i++)
+        if (src_ctx->internal->derived_devices[i]) {
+            tmp_ref = find_derived_hwdevice_ctx(src_ctx->internal->derived_devices[i], type);
+            if (tmp_ref)
+                return tmp_ref;
+        }
+
+    return NULL;
+}
+
 int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
                                         enum AVHWDeviceType type,
                                         AVBufferRef *src_ref,
@@ -666,6 +689,16 @@ int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
         tmp_ref = tmp_ctx->internal->source_device;
     }
 
+    tmp_ref = find_derived_hwdevice_ctx(src_ref, type);
+    if (tmp_ref) {
+        dst_ref = av_buffer_ref(tmp_ref);
+        if (!dst_ref) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        goto done;
+    }
+
     dst_ref = av_hwdevice_ctx_alloc(type);
     if (!dst_ref) {
         ret = AVERROR(ENOMEM);
@@ -684,6 +717,11 @@ int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
             if (ret == 0) {
                 dst_ctx->internal->source_device = av_buffer_ref(src_ref);
                 if (!dst_ctx->internal->source_device) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+                tmp_ctx->internal->derived_devices[type] = av_buffer_ref(dst_ref);
+                if (!tmp_ctx->internal->derived_devices[type]) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
