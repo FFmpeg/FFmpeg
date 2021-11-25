@@ -749,7 +749,7 @@ static int j2k_probe(const AVProbeData *p)
 static int jpeg_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
-    int i, state = SOI;
+    int i, state = SOI, got_header = 0;
 
     if (AV_RB16(b) != 0xFFD8 ||
         AV_RB32(b) == 0xFFD8FFF7)
@@ -789,7 +789,11 @@ static int jpeg_probe(const AVProbeData *p)
             break;
         case DQT:
         case APP0:
+            if (AV_RL32(&b[i + 4]) == MKTAG('J','F','I','F'))
+                got_header = 1;
         case APP1:
+            if (AV_RL32(&b[i + 4]) == MKTAG('E','x','i','f'))
+                got_header = 1;
         case APP2:
         case APP3:
         case APP4:
@@ -817,7 +821,7 @@ static int jpeg_probe(const AVProbeData *p)
     if (state == EOI)
         return AVPROBE_SCORE_EXTENSION + 1;
     if (state == SOS)
-        return AVPROBE_SCORE_EXTENSION / 2;
+        return AVPROBE_SCORE_EXTENSION / 2 + got_header;
     return AVPROBE_SCORE_EXTENSION / 8 + 1;
 }
 
