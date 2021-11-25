@@ -50,6 +50,9 @@ enum MXFMetadataSetType {
     TaggedValue,
     TapeDescriptor,
     AVCSubDescriptor,
+    AudioChannelLabelSubDescriptor,
+    SoundfieldGroupLabelSubDescriptor,
+    GroupOfSoundfieldGroupsLabelSubDescriptor,
 };
 
 enum MXFFrameLayout {
