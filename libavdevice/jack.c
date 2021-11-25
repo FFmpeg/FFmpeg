@@ -167,7 +167,7 @@ static int start_jack(AVFormatContext *context)
 
     /* Register JACK ports */
     for (i = 0; i < self->nports; i++) {
-        char str[16];
+        char str[32];
         snprintf(str, sizeof(str), "input_%d", i + 1);
         self->ports[i] = jack_port_register(self->client, str,
                                             JACK_DEFAULT_AUDIO_TYPE,
