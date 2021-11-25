@@ -1033,13 +1033,19 @@ static int v4l2_get_device_list(AVFormatContext *ctx, AVDeviceInfoList *device_l
     while ((entry = readdir(dir))) {
         AVDeviceInfo *device = NULL;
         struct v4l2_capability cap;
-        int fd = -1;
+        int fd = -1, size;
         char device_name[256];
 
         if (!v4l2_is_v4l_dev(entry->d_name))
             continue;
 
-        snprintf(device_name, sizeof(device_name), "/dev/%s", entry->d_name);
+        size = snprintf(device_name, sizeof(device_name), "/dev/%s", entry->d_name);
+        if (size >= sizeof(device_name)) {
+            av_log(ctx, AV_LOG_ERROR, "Device name too long.\n");
+            ret = AVERROR(ENOSYS);
+            break;
+        }
+
         if ((fd = device_open(ctx, device_name)) < 0)
             continue;
 
