@@ -37,6 +37,7 @@ bits_per_raw_sample=N/A
 nb_frames=N/A
 nb_read_frames=N/A
 nb_read_packets=N/A
+extradata_size=22
 DISPOSITION:default=0
 DISPOSITION:dub=0
 DISPOSITION:original=0

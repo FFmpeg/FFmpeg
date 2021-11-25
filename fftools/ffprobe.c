@@ -2769,6 +2769,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
                                           par->extradata_size);
 
     if (par->extradata_size > 0) {
+        print_int("extradata_size", par->extradata_size);
         writer_print_data_hash(w, "extradata_hash", par->extradata,
                                                     par->extradata_size);
     }

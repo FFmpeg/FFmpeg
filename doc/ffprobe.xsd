@@ -215,6 +215,7 @@
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
       <xsd:attribute name="extradata"        type="xsd:string" />
+      <xsd:attribute name="extradata_size"   type="xsd:int"    />
       <xsd:attribute name="extradata_hash"   type="xsd:string" />
 
       <!-- video attributes -->
