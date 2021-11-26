@@ -555,9 +555,6 @@ static void ffmpeg_cleanup(int ret)
 
             avfilter_inout_free(&ofilter->out_tmp);
             av_freep(&ofilter->name);
-            av_freep(&ofilter->formats);
-            av_freep(&ofilter->channel_layouts);
-            av_freep(&ofilter->sample_rates);
             av_freep(&fg->outputs[j]);
         }
         av_freep(&fg->outputs);

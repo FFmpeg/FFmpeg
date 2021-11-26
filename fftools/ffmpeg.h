@@ -273,9 +273,10 @@ typedef struct OutputFilter {
     uint64_t channel_layout;
 
     // those are only set if no format is specified and the encoder gives us multiple options
-    int *formats;
-    uint64_t *channel_layouts;
-    int *sample_rates;
+    // They point directly to the relevant lists of the encoder.
+    const int *formats;
+    const uint64_t *channel_layouts;
+    const int *sample_rates;
 } OutputFilter;
 
 typedef struct FilterGraph {
