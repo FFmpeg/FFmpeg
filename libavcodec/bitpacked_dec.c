@@ -149,7 +149,6 @@ const AVCodec ff_bitpacked_decoder = {
     .priv_data_size        = sizeof(struct BitpackedContext),
     .init = bitpacked_init_decoder,
     .decode = bitpacked_decode,
-    .capabilities = AV_CODEC_CAP_EXPERIMENTAL,
     .codec_tags     = (const uint32_t []){
         MKTAG('U', 'Y', 'V', 'Y'),
         FF_CODEC_TAGS_END,
