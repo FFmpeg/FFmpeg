@@ -284,8 +284,8 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     avio_w8(pb, FLV_TAG_TYPE_META);            // tag type META
     flv->metadata_size_pos = avio_tell(pb);
     avio_wb24(pb, 0);           // size of data part (sum of all parts below)
-    avio_wb24(pb, ts);          // timestamp
-    avio_wb32(pb, 0);           // reserved
+    put_timestamp(pb, ts);      // timestamp
+    avio_wb24(pb, 0);           // reserved
 
     /* now data of data_size size */
 
