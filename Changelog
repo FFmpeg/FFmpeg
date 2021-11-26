@@ -40,6 +40,7 @@ version <next>:
 - adynamicsmooth audio filter
 - libplacebo filter
 - vflip_vulkan, hflip_vulkan and flip_vulkan filters
+- adynamicequalizer audio filter
 
 
 version 4.4:

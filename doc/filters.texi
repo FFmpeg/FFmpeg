@@ -843,6 +843,82 @@ Compute derivative/integral of audio stream.
 
 Applying both filters one after another produces original audio.
 
+@section adynamicequalizer
+
+Apply dynamic equalization to input audio stream.
+
+A description of the accepted options follows.
+
+@table @option
+@item threshold
+Set the detection threshold used to trigger equalization.
+Threshold detection is using bandpass filter.
+Default value is 0. Allowed range is from 0 to 100.
+
+@item dfrequency
+Set the detection frequency in Hz used for bandpass filter used to trigger equalization.
+Default value is 1000 Hz. Allowed range is between 2 and 1000000 Hz.
+
+@item dqfactor
+Set the detection resonance factor for bandpass filter used to trigger equalization.
+Default value is 1. Allowed range is from 0.001 to 1000.
+
+@item tfrequency
+Set the target frequency of equalization filter.
+Default value is 1000 Hz. Allowed range is between 2 and 1000000 Hz.
+
+@item tqfactor
+Set the target resonance factor for target equalization filter.
+Default value is 1. Allowed range is from 0.001 to 1000.
+
+@item attack
+Set the amount of milliseconds the signal from detection has to rise above
+the detection threshold before equalization starts.
+Default is 20. Allowed range is between 1 and 2000.
+
+@item release
+Set the amount of milliseconds the signal from detection has to fall below the
+detection threshold before equalization ends.
+Default is 200. Allowed range is between 1 and 2000.
+
+@item knee
+Curve the sharp knee around the detection threshold to calculate
+equalization gain more softly.
+Default is 1. Allowed range is between 0 and 8.
+
+@item ratio
+Set the ratio by which the equalization gain is raised.
+Default is 1. Allowed range is between 1 and 20.
+
+@item makeup
+Set the makeup offset in dB by which the equalization gain is raised.
+Default is 0. Allowed range is between 0 and 30.
+
+@item range
+Set the max allowed cut/boost amount in dB. Default is 0.
+Allowed range is from 0 to 200.
+
+@item slew
+Set the slew factor. Default is 1. Allowed range is from 1 to 200.
+
+@item mode
+Set the mode of filter operation, can be one of the following:
+
+@table @samp
+@item listen
+Output only isolated bandpass signal.
+@item cut
+Cut frequencies above detection threshold.
+@item boost
+Boost frequencies bellow detection threshold.
+@end table
+Default mode is @samp{cut}.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section adynamicsmooth
 
 Apply dynamic smoothing to input audio stream.
