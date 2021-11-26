@@ -146,6 +146,13 @@ typedef struct AVVkFrameInternal {
         }                                                                      \
     } while(0)
 
+#define RELEASE_PROPS(props, count)                                            \
+    if (props) {                                                               \
+        for (int i = 0; i < count; i++)                                        \
+            av_free((void *)((props)[i]));                                     \
+        av_free((void *)props);                                                \
+    }
+
 static const struct {
     enum AVPixelFormat pixfmt;
     const VkFormat vkfmts[4];
@@ -511,25 +518,129 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     return 0;
 
 fail:
-    if (extension_names)
-        for (int i = 0; i < extensions_found; i++)
-            av_free((void *)extension_names[i]);
-    av_free(extension_names);
+    RELEASE_PROPS(extension_names, extensions_found);
     av_free(user_exts_str);
     av_free(sup_ext);
+    return err;
+}
+
+static int check_validation_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
+                                   const char * const **dst, uint32_t *num,
+                                   int *debug_mode)
+{
+    static const char default_layer[] = { "VK_LAYER_KHRONOS_validation" };
+
+    int found = 0, err = 0;
+    VulkanDevicePriv *priv = ctx->internal->priv;
+    FFVulkanFunctions *vk = &priv->vkfn;
+
+    uint32_t sup_layer_count;
+    VkLayerProperties *sup_layers;
+
+    AVDictionaryEntry *user_layers;
+    char *user_layers_str = NULL;
+    char *save, *token;
+
+    const char **enabled_layers = NULL;
+    uint32_t enabled_layers_count = 0;
+
+    AVDictionaryEntry *debug_opt = av_dict_get(opts, "debug", NULL, 0);
+    int debug = debug_opt && strtol(debug_opt->value, NULL, 10);
+
+    /* If `debug=0`, enable no layers at all. */
+    if (debug_opt && !debug)
+        return 0;
+
+    vk->EnumerateInstanceLayerProperties(&sup_layer_count, NULL);
+    sup_layers = av_malloc_array(sup_layer_count, sizeof(VkLayerProperties));
+    if (!sup_layers)
+        return AVERROR(ENOMEM);
+    vk->EnumerateInstanceLayerProperties(&sup_layer_count, sup_layers);
+
+    av_log(ctx, AV_LOG_VERBOSE, "Supported validation layers:\n");
+    for (int i = 0; i < sup_layer_count; i++)
+        av_log(ctx, AV_LOG_VERBOSE, "\t%s\n", sup_layers[i].layerName);
+
+    /* If `debug=1` is specified, enable the standard validation layer extension */
+    if (debug) {
+        *debug_mode = debug;
+        for (int i = 0; i < sup_layer_count; i++) {
+            if (!strcmp(default_layer, sup_layers[i].layerName)) {
+                found = 1;
+                av_log(ctx, AV_LOG_VERBOSE, "Default validation layer %s is enabled\n",
+                       default_layer);
+                ADD_VAL_TO_LIST(enabled_layers, enabled_layers_count, default_layer);
+                break;
+            }
+        }
+    }
+
+    user_layers = av_dict_get(opts, "validation_layers", NULL, 0);
+    if (!user_layers)
+        goto end;
+
+    user_layers_str = av_strdup(user_layers->value);
+    if (!user_layers_str) {
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    token = av_strtok(user_layers_str, "+", &save);
+    while (token) {
+        found = 0;
+        if (!strcmp(default_layer, token)) {
+            if (debug) {
+                /* if the `debug=1`, default_layer is enabled, skip here */
+                token = av_strtok(NULL, "+", &save);
+                continue;
+            } else {
+                /* if the `debug=0`, enable debug mode to load its callback properly */
+                *debug_mode = debug;
+            }
+        }
+        for (int j = 0; j < sup_layer_count; j++) {
+            if (!strcmp(token, sup_layers[j].layerName)) {
+                found = 1;
+                break;
+            }
+        }
+        if (found) {
+            av_log(ctx, AV_LOG_VERBOSE, "Requested Validation Layer: %s\n", token);
+            ADD_VAL_TO_LIST(enabled_layers, enabled_layers_count, token);
+        } else {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Validation Layer \"%s\" not support.\n", token);
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+        token = av_strtok(NULL, "+", &save);
+    }
+
+    av_free(user_layers_str);
+
+end:
+    av_free(sup_layers);
+
+    *dst = enabled_layers;
+    *num = enabled_layers_count;
+
+    return 0;
+
+fail:
+    RELEASE_PROPS(enabled_layers, enabled_layers_count);
+    av_free(sup_layers);
+    av_free(user_layers_str);
     return err;
 }
 
 /* Creates a VkInstance */
 static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
 {
-    int err = 0;
+    int err = 0, debug_mode = 0;
     VkResult ret;
     VulkanDevicePriv *p = ctx->internal->priv;
     FFVulkanFunctions *vk = &p->vkfn;
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
-    AVDictionaryEntry *debug_opt = av_dict_get(opts, "debug", NULL, 0);
-    const int debug_mode = debug_opt && strtol(debug_opt->value, NULL, 10);
     VkApplicationInfo application_info = {
         .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pEngineName        = "libavutil",
@@ -555,17 +666,18 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         return err;
     }
 
+    err = check_validation_layers(ctx, opts, &inst_props.ppEnabledLayerNames,
+                                    &inst_props.enabledLayerCount, &debug_mode);
+    if (err)
+        goto fail;
+
     /* Check for present/missing extensions */
     err = check_extensions(ctx, 0, opts, &inst_props.ppEnabledExtensionNames,
                            &inst_props.enabledExtensionCount, debug_mode);
+    hwctx->enabled_inst_extensions = inst_props.ppEnabledExtensionNames;
+    hwctx->nb_enabled_inst_extensions = inst_props.enabledExtensionCount;
     if (err < 0)
-        return err;
-
-    if (debug_mode) {
-        static const char *layers[] = { "VK_LAYER_KHRONOS_validation" };
-        inst_props.ppEnabledLayerNames = layers;
-        inst_props.enabledLayerCount = FF_ARRAY_ELEMS(layers);
-    }
+        goto fail;
 
     /* Try to create the instance */
     ret = vk->CreateInstance(&inst_props, hwctx->alloc, &hwctx->inst);
@@ -574,16 +686,14 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     if (ret != VK_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Instance creation failure: %s\n",
                vk_ret2str(ret));
-        for (int i = 0; i < inst_props.enabledExtensionCount; i++)
-            av_free((void *)inst_props.ppEnabledExtensionNames[i]);
-        av_free((void *)inst_props.ppEnabledExtensionNames);
-        return AVERROR_EXTERNAL;
+        err = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     err = ff_vk_load_functions(ctx, vk, p->extensions, 1, 0);
     if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Unable to load instance functions!\n");
-        return err;
+        goto fail;
     }
 
     if (debug_mode) {
@@ -604,10 +714,11 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
                                          hwctx->alloc, &p->debug_ctx);
     }
 
-    hwctx->enabled_inst_extensions = inst_props.ppEnabledExtensionNames;
-    hwctx->nb_enabled_inst_extensions = inst_props.enabledExtensionCount;
+    err = 0;
 
-    return 0;
+fail:
+    RELEASE_PROPS(inst_props.ppEnabledLayerNames, inst_props.enabledLayerCount);
+    return err;
 }
 
 typedef struct VulkanDeviceSelection {
@@ -1163,13 +1274,8 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
     if (p->libvulkan)
         dlclose(p->libvulkan);
 
-    for (int i = 0; i < hwctx->nb_enabled_inst_extensions; i++)
-        av_free((void *)hwctx->enabled_inst_extensions[i]);
-    av_free((void *)hwctx->enabled_inst_extensions);
-
-    for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++)
-        av_free((void *)hwctx->enabled_dev_extensions[i]);
-    av_free((void *)hwctx->enabled_dev_extensions);
+    RELEASE_PROPS(hwctx->enabled_inst_extensions, hwctx->nb_enabled_inst_extensions);
+    RELEASE_PROPS(hwctx->enabled_dev_extensions, hwctx->nb_enabled_dev_extensions);
 }
 
 static int vulkan_device_create_internal(AVHWDeviceContext *ctx,

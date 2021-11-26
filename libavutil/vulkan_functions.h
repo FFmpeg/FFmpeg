@@ -45,6 +45,7 @@ typedef enum FFVulkanExtensions {
 #define FN_LIST(MACRO)                                                                   \
     /* Instance */                                                                       \
     MACRO(0, 0, FF_VK_EXT_NO_FLAG,              EnumerateInstanceExtensionProperties)    \
+    MACRO(0, 0, FF_VK_EXT_NO_FLAG,              EnumerateInstanceLayerProperties)        \
     MACRO(0, 0, FF_VK_EXT_NO_FLAG,              CreateInstance)                          \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              DestroyInstance)                         \
                                                                                          \
