@@ -26,7 +26,8 @@
 
 enum FlipType {
     FLIP_VERTICAL,
-    FLIP_HORIZONTAL
+    FLIP_HORIZONTAL,
+    FLIP_BOTH
 };
 
 typedef struct FlipVulkanContext {
@@ -103,6 +104,9 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType 
                 break;
             case FLIP_VERTICAL:
                 GLSLF(2, vec4 res = texture(input_image[%i], ivec2(pos.x, size.y - pos.y));   ,i);
+                break;
+            case FLIP_BOTH:
+                GLSLF(2, vec4 res = texture(input_image[%i], ivec2(size.xy - pos.xy));,         i);
                 break;
             default:
                 GLSLF(2, vec4 res = texture(input_image[%i], pos);                            ,i);
@@ -226,7 +230,7 @@ fail:
     return err;
 }
 
-static int flip_vulkan_filter_frame(AVFilterLink *link, AVFrame *in, enum FlipType type)
+static int filter_frame(AVFilterLink *link, AVFrame *in, enum FlipType type)
 {
     int err;
     AVFrame *out = NULL;
@@ -259,13 +263,26 @@ fail:
 
 static int hflip_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    return flip_vulkan_filter_frame(link, in, FLIP_HORIZONTAL);
+    return filter_frame(link, in, FLIP_HORIZONTAL);
 }
 
 static int vflip_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    return flip_vulkan_filter_frame(link, in, FLIP_VERTICAL);
+    return filter_frame(link, in, FLIP_VERTICAL);
 }
+
+static int flip_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
+{
+    return filter_frame(link, in, FLIP_BOTH);
+}
+
+static const AVFilterPad flip_vulkan_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = &ff_vk_filter_config_output,
+    }
+};
 
 static const AVOption hflip_vulkan_options[] = {
     { NULL },
@@ -279,14 +296,6 @@ static const AVFilterPad hflip_vulkan_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = &hflip_vulkan_filter_frame,
         .config_props = &ff_vk_filter_config_input,
-    }
-};
-
-static const AVFilterPad flip_vulkan_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = &ff_vk_filter_config_output,
     }
 };
 
@@ -328,5 +337,33 @@ const AVFilter ff_vf_vflip_vulkan = {
     FILTER_OUTPUTS(flip_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .priv_class     = &vflip_vulkan_class,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+};
+
+static const AVOption flip_vulkan_options[] = {
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(flip_vulkan);
+
+static const AVFilterPad flip_vulkan_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = &flip_vulkan_filter_frame,
+        .config_props = &ff_vk_filter_config_input,
+    }
+};
+
+const AVFilter ff_vf_flip_vulkan = {
+    .name           = "flip_vulkan",
+    .description    = NULL_IF_CONFIG_SMALL("Flip both horizontally and vertically"),
+    .priv_size      = sizeof(FlipVulkanContext),
+    .init           = &ff_vk_filter_init,
+    .uninit         = &flip_vulkan_uninit,
+    FILTER_INPUTS(flip_vulkan_inputs),
+    FILTER_OUTPUTS(flip_vulkan_outputs),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
+    .priv_class     = &flip_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -265,6 +265,7 @@ extern const AVFilter ff_vf_fieldmatch;
 extern const AVFilter ff_vf_fieldorder;
 extern const AVFilter ff_vf_fillborders;
 extern const AVFilter ff_vf_find_rect;
+extern const AVFilter ff_vf_flip_vulkan;
 extern const AVFilter ff_vf_floodfill;
 extern const AVFilter ff_vf_format;
 extern const AVFilter ff_vf_fps;
