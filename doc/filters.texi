@@ -28395,6 +28395,15 @@ timestamps.
 
 @item dec_threads
 Specifies the number of threads for decoding
+
+@item format_opts
+Specify format options for the opened file. Format options can be specified
+as a list of @var{key}=@var{value} pairs separated by ':'. The following example
+shows how to add protocol_whitelist and protocol_blacklist options:
+@example
+ffplay -f lavfi
+"movie=filename='1.sdp':format_opts='protocol_whitelist=file,rtp,udp\:protocol_blacklist=http'"
+@end example
 @end table
 
 It allows overlaying a second video on top of the main input of

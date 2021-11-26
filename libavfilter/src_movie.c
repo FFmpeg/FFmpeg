@@ -74,6 +74,7 @@ typedef struct MovieContext {
     int max_stream_index; /**< max stream # actually used for output */
     MovieStream *st; /**< array of all streams, one per output */
     int *out_index; /**< stream number -> output number map, or -1 */
+    AVDictionary *format_opts;
 } MovieContext;
 
 #define OFFSET(x) offsetof(MovieContext, x)
@@ -92,6 +93,7 @@ static const AVOption movie_options[]= {
     { "loop",         "set loop count",          OFFSET(loop_count),   AV_OPT_TYPE_INT,    {.i64 =  1},  0,        INT_MAX, FLAGS },
     { "discontinuity", "set discontinuity threshold", OFFSET(discontinuity_threshold), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX, FLAGS },
     { "dec_threads",  "set the number of threads for decoding", OFFSET(dec_threads), AV_OPT_TYPE_INT, {.i64 =  0}, 0, INT_MAX, FLAGS },
+    { "format_opts",  "set format options for the opened file", OFFSET(format_opts), AV_OPT_TYPE_DICT, {.str = NULL}, 0, 0, FLAGS},
     { NULL },
 };
 
@@ -243,7 +245,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
     iformat = movie->format_name ? av_find_input_format(movie->format_name) : NULL;
 
     movie->format_ctx = NULL;
-    if ((ret = avformat_open_input(&movie->format_ctx, movie->file_name, iformat, NULL)) < 0) {
+    if ((ret = avformat_open_input(&movie->format_ctx, movie->file_name, iformat, &movie->format_opts)) < 0) {
         av_log(ctx, AV_LOG_ERROR,
                "Failed to avformat_open_input '%s'\n", movie->file_name);
         return ret;
