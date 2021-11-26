@@ -692,11 +692,6 @@ static int vqa_decode_frame_hicolor(VqaContext *s, AVFrame *frame)
         bytestream2_get_buffer(&s->gb, s->codebook, chunk_size);
     }
 
-    if (vprz_chunk == -1 && vptr_chunk == -1) {
-        av_log(s->avctx, AV_LOG_ERROR, "frame has no block data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     /* decode the frame */
 
     if (vptr_chunk != -1) {
@@ -716,7 +711,7 @@ static int vqa_decode_frame_hicolor(VqaContext *s, AVFrame *frame)
         if ((res = decode_format80(s, chunk_size, s->decode_buffer, s->decode_buffer_size, 0)) < 0)
             return res;
     } else {
-        av_log(s->avctx, AV_LOG_ERROR, "expected either VPTR or VPRZ chunk\n");
+        av_log(s->avctx, AV_LOG_ERROR, "frame has no block data\n");
         return AVERROR_INVALIDDATA;
     }
 
