@@ -105,6 +105,7 @@ static const AVOption sdp_options[] = {
     { "custom_io", "use custom I/O", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_CUSTOM_IO}, 0, 0, DEC, "rtsp_flags" },
     { "rtcp_to_source", "send RTCP packets to the source address of received packets", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_RTCP_TO_SOURCE}, 0, 0, DEC, "rtsp_flags" },
     { "listen_timeout", "set maximum timeout (in seconds) to wait for incoming connections", OFFSET(stimeout), AV_OPT_TYPE_DURATION, {.i64 = READ_PACKET_TIMEOUT_S*1000000}, INT_MIN, INT64_MAX, DEC },
+    { "localaddr",          "local address",                                                 OFFSET(localaddr),AV_OPT_TYPE_STRING,   {.str = NULL}, 0, 0, DEC }, \
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "set media types to accept from the server"),
     COMMON_OPTS(),
     { NULL },
@@ -113,6 +114,7 @@ static const AVOption sdp_options[] = {
 static const AVOption rtp_options[] = {
     RTSP_FLAG_OPTS("rtp_flags", "set RTP flags"),
     { "listen_timeout", "set maximum timeout (in seconds) to wait for incoming connections", OFFSET(stimeout), AV_OPT_TYPE_DURATION, {.i64 = READ_PACKET_TIMEOUT_S*1000000}, INT_MIN, INT64_MAX, DEC },
+    { "localaddr",          "local address",                                                 OFFSET(localaddr),AV_OPT_TYPE_STRING,   {.str = NULL}, 0, 0, DEC }, \
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "set media types to accept from the server"),
     COMMON_OPTS(),
     { NULL },
@@ -125,6 +127,8 @@ static AVDictionary *map_to_opts(RTSPState *rt)
 
     av_dict_set_int(&opts, "buffer_size", rt->buffer_size, 0);
     av_dict_set_int(&opts, "pkt_size",    rt->pkt_size,    0);
+    if (rt->localaddr && rt->localaddr[0])
+        av_dict_set(&opts, "localaddr", rt->localaddr, 0);
 
     return opts;
 }
@@ -2407,6 +2411,8 @@ static int sdp_read_header(AVFormatContext *s)
 
         if (!(rt->rtsp_flags & RTSP_FLAG_CUSTOM_IO)) {
             AVDictionary *opts = map_to_opts(rt);
+            char buf[MAX_URL_SIZE];
+            const char *p;
 
             err = getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip,
                               sizeof(rtsp_st->sdp_ip),
@@ -2424,6 +2430,11 @@ static int sdp_read_header(AVFormatContext *s)
                         rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0,
                         rt->rtsp_flags & RTSP_FLAG_RTCP_TO_SOURCE ? 1 : 0);
 
+            p = strchr(s->url, '?');
+            if (p && av_find_info_tag(buf, sizeof(buf), "localaddr", p))
+                av_strlcatf(url, sizeof(url), "&localaddr=%s", buf);
+            else if (rt->localaddr && rt->localaddr[0])
+                av_strlcatf(url, sizeof(url), "&localaddr=%s", rt->localaddr);
             append_source_addrs(url, sizeof(url), "sources",
                                 rtsp_st->nb_include_source_addrs,
                                 rtsp_st->include_source_addrs);
