@@ -2197,7 +2197,6 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
         exit_program(1);
     }
 
-    ost->source_index = -1;
     ost->filter       = ofilter;
 
     ofilter->ost      = ost;
