@@ -581,7 +581,7 @@ static int check_validation_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
 
     user_layers_str = av_strdup(user_layers->value);
     if (!user_layers_str) {
-        err = AVERROR(EINVAL);
+        err = AVERROR(ENOMEM);
         goto fail;
     }
 
