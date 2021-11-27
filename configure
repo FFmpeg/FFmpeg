@@ -1464,12 +1464,14 @@ test_pkg_config_cpp(){
     cond="$4"
     shift 4
     disable $name
-    test_cmd $pkg_config --exists --print-errors $pkg_version || returnddd
+    test_cmd $pkg_config --exists --print-errors $pkg_version || return
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
-    pkg_incflags=$($pkg_config --cflags-onyl-I $pkg_config_flags $pkg)
+    pkg_incdir=$($pkg_config --variable=includedir $pkg_config_flags $pkg)
+    pkg_incflags=$($pkg_config --cflags-only-I $pkg_config_flags $pkg)
     test_cpp_condition "$pkg_incdir/$headers" "$cond" "$@" &&
         enable $name &&
         set_sanitized "${name}_cflags" $pkg_cflags &&
+        set_sanitized "${name}_incdir" $pkg_incdir &&
         set_sanitized "${name}_incflags" $pkg_incflags
 }
 
