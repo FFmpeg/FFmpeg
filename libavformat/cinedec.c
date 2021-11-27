@@ -33,6 +33,7 @@
 
 typedef struct {
     uint64_t pts;
+    uint64_t maxsize;
 } CineDemuxContext;
 
 /** Compression */
@@ -288,20 +289,31 @@ static int cine_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     FFStream *const sti = ffstream(st);
     AVIOContext *pb = avctx->pb;
     int n, size, ret;
+    int64_t ret64;
 
     if (cine->pts >= sti->nb_index_entries)
         return AVERROR_EOF;
 
-    avio_seek(pb, sti->index_entries[cine->pts].pos, SEEK_SET);
+    ret64 = avio_seek(pb, sti->index_entries[cine->pts].pos, SEEK_SET);
+    if (ret64 < 0)
+        return ret64;
     n = avio_rl32(pb);
     if (n < 8)
         return AVERROR_INVALIDDATA;
     avio_skip(pb, n - 8);
     size = avio_rl32(pb);
+    if (avio_feof(pb))
+        return AVERROR_INVALIDDATA;
+
+    if (cine->maxsize && sti->index_entries[cine->pts].pos + size + n > cine->maxsize)
+        size = cine->maxsize - sti->index_entries[cine->pts].pos - n;
 
     ret = av_get_packet(pb, pkt, size);
     if (ret < 0)
         return ret;
+
+    if (ret != size)
+        cine->maxsize = sti->index_entries[cine->pts].pos + n + ret;
 
     pkt->pts = cine->pts++;
     pkt->stream_index = 0;
