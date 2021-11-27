@@ -340,8 +340,8 @@ static int mv_read_header(AVFormatContext *avctx)
             return AVERROR_INVALIDDATA;
         }
         avpriv_set_pts_info(ast, 33, 1, ast->codecpar->sample_rate);
-        if (set_channels(avctx, ast, avio_rb32(pb)) < 0)
-            return AVERROR_INVALIDDATA;
+
+        avio_skip(pb, 4);
 
         v = avio_rb32(pb);
         if (v == AUDIO_FORMAT_SIGNED) {
@@ -350,7 +350,11 @@ static int mv_read_header(AVFormatContext *avctx)
             avpriv_request_sample(avctx, "Audio compression (format %i)", v);
         }
 
-        avio_skip(pb, 12);
+        if (set_channels(avctx, ast, avio_rb32(pb)) < 0)
+            return AVERROR_INVALIDDATA;
+
+        avio_skip(pb, 8);
+
         var_read_metadata(avctx, "title", 0x80);
         var_read_metadata(avctx, "comment", 0x100);
         avio_skip(pb, 0x80);
