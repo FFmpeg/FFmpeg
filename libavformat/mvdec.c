@@ -299,6 +299,8 @@ static int mv_read_header(AVFormatContext *avctx)
     if (version == 2) {
         uint64_t timestamp;
         int v;
+        uint32_t bytes_per_sample;
+
         avio_skip(pb, 22);
 
         /* allocate audio track first to prevent unnecessary seeking
@@ -341,11 +343,21 @@ static int mv_read_header(AVFormatContext *avctx)
         }
         avpriv_set_pts_info(ast, 33, 1, ast->codecpar->sample_rate);
 
-        avio_skip(pb, 4);
+        bytes_per_sample = avio_rb32(pb);
 
         v = avio_rb32(pb);
         if (v == AUDIO_FORMAT_SIGNED) {
-            ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
+            switch (bytes_per_sample) {
+            case 1:
+                ast->codecpar->codec_id = AV_CODEC_ID_PCM_S8;
+                break;
+            case 2:
+                ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
+                break;
+            default:
+                avpriv_request_sample(avctx, "Audio sample size %i bytes", bytes_per_sample);
+                break;
+            }
         } else {
             avpriv_request_sample(avctx, "Audio compression (format %i)", v);
         }
@@ -369,7 +381,7 @@ static int mv_read_header(AVFormatContext *avctx)
             avio_skip(pb, 8);
             av_add_index_entry(ast, pos, timestamp, asize, 0, AVINDEX_KEYFRAME);
             av_add_index_entry(vst, pos + asize, i, vsize, 0, AVINDEX_KEYFRAME);
-            timestamp += asize / (ast->codecpar->channels * 2LL);
+            timestamp += asize / (ast->codecpar->channels * bytes_per_sample);
         }
     } else if (!version && avio_rb16(pb) == 3) {
         avio_skip(pb, 4);
