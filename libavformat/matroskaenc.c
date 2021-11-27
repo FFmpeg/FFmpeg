@@ -533,6 +533,7 @@ static int mkv_add_cuepoint(MatroskaMuxContext *mkv, int stream, int64_t ts,
 {
     mkv_cues *cues = &mkv->cues;
     mkv_cuepoint *entries = cues->entries;
+    unsigned idx = cues->num_entries;
 
     if (ts < 0)
         return 0;
@@ -542,11 +543,19 @@ static int mkv_add_cuepoint(MatroskaMuxContext *mkv, int stream, int64_t ts,
         return AVERROR(ENOMEM);
     cues->entries = entries;
 
-    cues->entries[cues->num_entries].pts           = ts;
-    cues->entries[cues->num_entries].stream_idx    = stream;
-    cues->entries[cues->num_entries].cluster_pos   = cluster_pos - mkv->segment_offset;
-    cues->entries[cues->num_entries].relative_pos  = relative_pos;
-    cues->entries[cues->num_entries++].duration    = duration;
+    /* Make sure the cues entries are sorted by pts. */
+    while (idx > 0 && entries[idx - 1].pts > ts)
+        idx--;
+    memmove(&entries[idx + 1], &entries[idx],
+            (cues->num_entries - idx) * sizeof(entries[0]));
+
+    entries[idx].pts           = ts;
+    entries[idx].stream_idx    = stream;
+    entries[idx].cluster_pos   = cluster_pos - mkv->segment_offset;
+    entries[idx].relative_pos  = relative_pos;
+    entries[idx].duration      = duration;
+
+    cues->num_entries++;
 
     return 0;
 }
