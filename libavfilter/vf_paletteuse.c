@@ -811,7 +811,7 @@ static void debug_mean_error(PaletteUseContext *s, const AVFrame *in1,
     uint8_t  *src2 =             in2->data[0];
     const int src1_linesize = in1->linesize[0] >> 2;
     const int src2_linesize = in2->linesize[0];
-    const float div = in1->width * in1->height * s->use_alpha ? 4 : 3;
+    const float div = in1->width * in1->height * (s->use_alpha ? 4 : 3);
     unsigned mean_err = 0;
 
     for (y = 0; y < in1->height; y++) {
