@@ -823,13 +823,11 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
             }
             memcpy(rect->data[1], clut_table, (1 << region->depth) * sizeof(*clut_table));
 
-            rect->data[0] = av_malloc(region->buf_size);
+            rect->data[0] = av_memdup(region->pbuf, region->buf_size);
             if (!rect->data[0]) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-
-            memcpy(rect->data[0], region->pbuf, region->buf_size);
 
             if ((clut == &default_clut && ctx->compute_clut < 0) || ctx->compute_clut == 1) {
                 if (!region->has_computed_clut) {
@@ -1074,11 +1072,9 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
     clut = get_clut(ctx, clut_id);
 
     if (!clut) {
-        clut = av_malloc(sizeof(*clut));
+        clut = av_memdup(&default_clut, sizeof(*clut));
         if (!clut)
             return AVERROR(ENOMEM);
-
-        memcpy(clut, &default_clut, sizeof(*clut));
 
         clut->id = clut_id;
         clut->version = -1;

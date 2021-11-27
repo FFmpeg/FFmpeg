@@ -93,19 +93,17 @@ static int parse_header(OutputStream *os, const uint8_t *buf, int buf_size)
             if (os->nb_extra_packets >= FF_ARRAY_ELEMS(os->extra_packets))
                 return AVERROR_INVALIDDATA;
             os->extra_packet_sizes[os->nb_extra_packets] = size;
-            os->extra_packets[os->nb_extra_packets] = av_malloc(size);
+            os->extra_packets[os->nb_extra_packets] = av_memdup(buf, size);
             if (!os->extra_packets[os->nb_extra_packets])
                 return AVERROR(ENOMEM);
-            memcpy(os->extra_packets[os->nb_extra_packets], buf, size);
             os->nb_extra_packets++;
         } else if (type == 0x12) {
             if (os->metadata)
                 return AVERROR_INVALIDDATA;
             os->metadata_size = size - 11 - 4;
-            os->metadata      = av_malloc(os->metadata_size);
+            os->metadata      = av_memdup(buf + 11, os->metadata_size);
             if (!os->metadata)
                 return AVERROR(ENOMEM);
-            memcpy(os->metadata, buf + 11, os->metadata_size);
         }
         buf      += size;
         buf_size -= size;

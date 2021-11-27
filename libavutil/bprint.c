@@ -244,10 +244,8 @@ int av_bprint_finalize(AVBPrint *buf, char **ret_str)
                 str = buf->str;
             buf->str = NULL;
         } else {
-            str = av_malloc(real_size);
-            if (str)
-                memcpy(str, buf->str, real_size);
-            else
+            str = av_memdup(buf->str, real_size);
+            if (!str)
                 ret = AVERROR(ENOMEM);
         }
         *ret_str = str;

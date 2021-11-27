@@ -1104,11 +1104,9 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
         avctx->sw_pix_fmt = fmt[n - 1];
     }
 
-    choices = av_malloc_array(n + 1, sizeof(*choices));
+    choices = av_memdup(fmt, (n + 1) * sizeof(*choices));
     if (!choices)
         return AV_PIX_FMT_NONE;
-
-    memcpy(choices, fmt, (n + 1) * sizeof(*choices));
 
     for (;;) {
         // Remove the previous hwaccel, if there was one.

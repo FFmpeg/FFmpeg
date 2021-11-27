@@ -938,10 +938,9 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
             // audio track - add a second stream for this
             AVStream *sub_st;
             // priv_data cannot be shared between streams
-            PESContext *sub_pes = av_malloc(sizeof(*sub_pes));
+            PESContext *sub_pes = av_memdup(pes, sizeof(*sub_pes));
             if (!sub_pes)
                 return AVERROR(ENOMEM);
-            memcpy(sub_pes, pes, sizeof(*sub_pes));
 
             sub_st = avformat_new_stream(pes->stream, NULL);
             if (!sub_st) {

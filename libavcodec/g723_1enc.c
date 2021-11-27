@@ -1116,10 +1116,9 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     HFParam hf[4];
 
     /* duplicate input */
-    start = in = av_malloc(frame->nb_samples * sizeof(int16_t));
+    start = in = av_memdup(frame->data[0], frame->nb_samples * sizeof(int16_t));
     if (!in)
         return AVERROR(ENOMEM);
-    memcpy(in, frame->data[0], frame->nb_samples * sizeof(int16_t));
 
     highpass_filter(in, &p->hpf_fir_mem, &p->hpf_iir_mem);
 

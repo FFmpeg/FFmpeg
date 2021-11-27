@@ -387,10 +387,9 @@ static void copy_default_source_addrs(struct RTSPSource **addrs, int count,
     int i;
     for (i = 0; i < count; i++) {
         rtsp_src = addrs[i];
-        rtsp_src2 = av_malloc(sizeof(*rtsp_src2));
+        rtsp_src2 = av_memdup(rtsp_src, sizeof(*rtsp_src));
         if (!rtsp_src2)
             continue;
-        memcpy(rtsp_src2, rtsp_src, sizeof(*rtsp_src));
         dynarray_add(dest, dest_count, rtsp_src2);
     }
 }
