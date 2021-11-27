@@ -2925,6 +2925,8 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     unsigned int i, entries, alloc_size = 0;
     int64_t duration = 0;
     int64_t total_sample_count = 0;
+    int64_t current_dts = 0;
+    int64_t corrected_dts = 0;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2965,11 +2967,34 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->stts_data[i].count= sample_count;
         sc->stts_data[i].duration= sample_duration;
 
-        av_log(c->fc, AV_LOG_TRACE, "sample_count=%d, sample_duration=%d\n",
+        av_log(c->fc, AV_LOG_TRACE, "sample_count=%u, sample_duration=%u\n",
                 sample_count, sample_duration);
 
-        duration+=(int64_t)sample_duration*(uint64_t)sample_count;
-        total_sample_count+=sample_count;
+        /* STTS sample offsets are uint32 but some files store it as int32
+         * with negative values used to correct DTS delays.
+           There may be abnormally large values as well. */
+        if (sample_duration > c->max_stts_delta) {
+            // assume high delta is a correction if negative when cast as int32
+            int32_t delta_magnitude = (int32_t)sample_duration;
+            av_log(c->fc, AV_LOG_WARNING, "Too large sample offset %u in stts entry %u with count %u in st:%d. Clipping to 1.\n",
+                   sample_duration, i, sample_count, st->index);
+            sc->stts_data[i].duration = 1;
+            corrected_dts += (delta_magnitude < 0 ? (int64_t)delta_magnitude : 1) * sample_count;
+        } else {
+            corrected_dts += sample_duration * sample_count;
+        }
+
+        current_dts += sc->stts_data[i].duration * sample_count;
+
+        if (current_dts > corrected_dts) {
+            int64_t drift = (current_dts - corrected_dts)/FFMAX(sample_count, 1);
+            uint32_t correction = (sc->stts_data[i].duration > drift) ? drift : sc->stts_data[i].duration - 1;
+            current_dts -= correction * sample_count;
+            sc->stts_data[i].duration -= correction;
+        }
+
+        duration+=(int64_t)sc->stts_data[i].duration*(uint64_t)sc->stts_data[i].count;
+        total_sample_count+=sc->stts_data[i].count;
     }
 
     sc->stts_count = i;
@@ -3856,13 +3881,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int distance = 0;
         unsigned int rap_group_index = 0;
         unsigned int rap_group_sample = 0;
-        int64_t last_dts = 0;
-        int64_t dts_correction = 0;
         int rap_group_present = sc->rap_group_count && sc->rap_group;
         int key_off = (sc->keyframe_count && sc->keyframes[0] > 0) || (sc->stps_count && sc->stps_data[0] > 0);
 
         current_dts -= sc->dts_shift;
-        last_dts     = current_dts;
 
         if (!sc->sample_count || sti->nb_index_entries)
             return;
@@ -3973,26 +3995,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 current_offset += sample_size;
                 stream_size += sample_size;
 
-                /* A negative sample duration is invalid based on the spec,
-                 * but some samples need it to correct the DTS. */
-                if (sc->stts_data[stts_index].duration < 0) {
-                    av_log(mov->fc, AV_LOG_WARNING,
-                           "Invalid SampleDelta %d in STTS, at %d st:%d\n",
-                           sc->stts_data[stts_index].duration, stts_index,
-                           st->index);
-                    dts_correction += sc->stts_data[stts_index].duration - 1;
-                    sc->stts_data[stts_index].duration = 1;
-                }
                 current_dts += sc->stts_data[stts_index].duration;
-                if (!dts_correction || current_dts + dts_correction > last_dts) {
-                    current_dts += dts_correction;
-                    dts_correction = 0;
-                } else {
-                    /* Avoid creating non-monotonous DTS */
-                    dts_correction += current_dts - last_dts - 1;
-                    current_dts = last_dts + 1;
-                }
-                last_dts = current_dts;
+
                 distance++;
                 stts_sample++;
                 current_sample++;
@@ -8577,6 +8581,7 @@ static const AVOption mov_options[] = {
     { "decryption_key", "The media decryption key (hex)", OFFSET(decryption_key), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_DECODING_PARAM },
     { "enable_drefs", "Enable external track support.", OFFSET(enable_drefs), AV_OPT_TYPE_BOOL,
         {.i64 = 0}, 0, 1, FLAGS },
+    { "max_stts_delta", "treat offsets above this value as invalid", OFFSET(max_stts_delta), AV_OPT_TYPE_INT, {.i64 = UINT_MAX-48000*10 }, 0, UINT_MAX, .flags = AV_OPT_FLAG_DECODING_PARAM },
 
     { NULL },
 };
