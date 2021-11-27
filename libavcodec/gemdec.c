@@ -157,6 +157,14 @@ static int gem_decode_frame(AVCodecContext *avctx,
     if (header_size >= 11)
         tag = bytestream2_peek_be32(&gb);
 
+    if (tag == AV_RB32("STTT") || tag == AV_RB32("TIMG") || tag == AV_RB32("XIMG") ||
+        planes == 1 || planes == 2 || planes == 3 || planes == 4 ||
+        planes == 8 || planes == 16 || planes == 24) {
+    } else {
+        avpriv_request_sample(avctx, "planes=%d", planes);
+        return AVERROR_PATCHWELCOME;
+    }
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
@@ -236,9 +244,6 @@ static int gem_decode_frame(AVCodecContext *avctx,
         planes = 1;
         row_width = avctx->width * pixel_size;
         put_lines = put_lines_bytes;
-    } else {
-        avpriv_request_sample(avctx, "planes=%d", planes);
-        return AVERROR_PATCHWELCOME;
     }
 
     ret = av_reallocp_array(&avctx->priv_data, planes, row_width);
