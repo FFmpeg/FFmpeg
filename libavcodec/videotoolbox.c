@@ -877,6 +877,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
         switch (avctx->codec_tag) {
         default:
             av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
+        // fall-through
         case MKTAG('a','p','c','o'): // kCMVideoCodecType_AppleProRes422Proxy
         case MKTAG('a','p','c','s'): // kCMVideoCodecType_AppleProRes422LT
         case MKTAG('a','p','c','n'): // kCMVideoCodecType_AppleProRes422
@@ -884,6 +885,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
         case MKTAG('a','p','4','h'): // kCMVideoCodecType_AppleProRes4444
         case MKTAG('a','p','4','x'): // kCMVideoCodecType_AppleProRes4444XQ
             videotoolbox->cm_codec_type = av_bswap32(avctx->codec_tag);
+            break;
         }
         break;
     case AV_CODEC_ID_VP9 :
