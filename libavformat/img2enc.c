@@ -121,6 +121,13 @@ static int write_packet_pipe(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int write_and_close(AVFormatContext *s, AVIOContext **pb, const unsigned char *buf, int size)
+{
+    avio_write(*pb, buf, size);
+    avio_flush(*pb);
+    return ff_format_io_close(s, pb);
+}
+
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
@@ -187,24 +194,22 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             ysize *= 2;
             usize *= 2;
         }
-        avio_write(pb[0], pkt->data                , ysize);
-        avio_write(pb[1], pkt->data + ysize        , usize);
-        avio_write(pb[2], pkt->data + ysize + usize, usize);
-        ff_format_io_close(s, &pb[1]);
-        ff_format_io_close(s, &pb[2]);
-        if (desc->nb_components > 3) {
-            avio_write(pb[3], pkt->data + ysize + 2*usize, ysize);
-            ff_format_io_close(s, &pb[3]);
-        }
-    } else if (img->muxer) {
-        ret = write_muxed_file(s, pb[0], pkt);
-        if (ret < 0)
+        if ((ret = write_and_close(s, &pb[0], pkt->data                , ysize)) < 0 ||
+            (ret = write_and_close(s, &pb[1], pkt->data + ysize        , usize)) < 0 ||
+            (ret = write_and_close(s, &pb[2], pkt->data + ysize + usize, usize)) < 0)
             goto fail;
+        if (desc->nb_components > 3)
+            ret = write_and_close(s, &pb[3], pkt->data + ysize + 2*usize, ysize);
+    } else if (img->muxer) {
+        if ((ret = write_muxed_file(s, pb[0], pkt)) < 0)
+            goto fail;
+        ret = ff_format_io_close(s, &pb[0]);
     } else {
-        avio_write(pb[0], pkt->data, pkt->size);
+        ret = write_and_close(s, &pb[0], pkt->data, pkt->size);
     }
-    avio_flush(pb[0]);
-    ff_format_io_close(s, &pb[0]);
+    if (ret < 0)
+        goto fail;
+
     for (i = 0; i < nb_renames; i++) {
         int ret = ff_rename(img->tmp[i], img->target[i], s);
         if (ret < 0)
