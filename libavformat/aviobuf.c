@@ -1231,6 +1231,7 @@ int avio_close(AVIOContext *s)
 {
     FFIOContext *const ctx = ffiocontext(s);
     URLContext *h;
+    int ret, error;
 
     if (!s)
         return 0;
@@ -1249,9 +1250,14 @@ int avio_close(AVIOContext *s)
                ctx->bytes_read, ctx->seek_count);
     av_opt_free(s);
 
+    error = s->error;
     avio_context_free(&s);
 
-    return ffurl_close(h);
+    ret = ffurl_close(h);
+    if (ret < 0)
+        return ret;
+
+    return error;
 }
 
 int avio_closep(AVIOContext **s)
