@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-12-xx - xxxxxxxxxx - lavf 59.10.100 - avformat.h
+  Add AVFormatContext io_close2 which returns an int
+
 2021-11-10 - xxxxxxxxxx - lavu 57.11.100 - hwcontext_vulkan.h
   Add AVVkFrame.offset and AVVulkanFramesContext.flags.
 

@@ -866,6 +866,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
     oc->opaque                   = s->opaque;
     oc->io_open                  = s->io_open;
     oc->io_close                 = s->io_close;
+    oc->io_close2                = s->io_close2;
     oc->strict_std_compliance    = s->strict_std_compliance;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 

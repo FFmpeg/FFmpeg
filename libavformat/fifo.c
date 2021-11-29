@@ -499,6 +499,7 @@ static int fifo_mux_init(AVFormatContext *avf, const AVOutputFormat *oformat,
         return ret;
     avf2->opaque = avf->opaque;
     avf2->io_close = avf->io_close;
+    avf2->io_close2 = avf->io_close2;
     avf2->io_open = avf->io_open;
     avf2->flags = avf->flags;
 

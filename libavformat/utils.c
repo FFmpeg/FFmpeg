@@ -1831,11 +1831,22 @@ int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **op
     return 0;
 }
 
-void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
+void ff_format_io_close_default(AVFormatContext *s, AVIOContext *pb)
 {
-    if (*pb)
-        s->io_close(s, *pb);
+    avio_close(pb);
+}
+
+int ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
+{
+    int ret = 0;
+    if (*pb) {
+        if (s->io_close == ff_format_io_close_default || s->io_close == NULL)
+            ret = s->io_close2(s, *pb);
+        else
+            s->io_close(s, *pb);
+    }
     *pb = NULL;
+    return ret;
 }
 
 int ff_is_http_proto(const char *filename) {
