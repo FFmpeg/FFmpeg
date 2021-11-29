@@ -2366,6 +2366,11 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     VAStatus vas;
     int err;
 
+    ctx->va_config  = VA_INVALID_ID;
+    ctx->va_context = VA_INVALID_ID;
+
+    /* If you add something that can fail above this av_frame_alloc(),
+     * modify ff_vaapi_encode_close() accordingly. */
     ctx->frame = av_frame_alloc();
     if (!ctx->frame) {
         return AVERROR(ENOMEM);
@@ -2376,9 +2381,6 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
                "required to associate the encoding device.\n");
         return AVERROR(EINVAL);
     }
-
-    ctx->va_config  = VA_INVALID_ID;
-    ctx->va_context = VA_INVALID_ID;
 
     ctx->input_frames_ref = av_buffer_ref(avctx->hw_frames_ctx);
     if (!ctx->input_frames_ref) {
@@ -2530,6 +2532,11 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic, *next;
+
+    /* We check ctx->frame to know whether ff_vaapi_encode_init()
+     * has been called and va_config/va_context initialized. */
+    if (!ctx->frame)
+        return 0;
 
     for (pic = ctx->pic_start; pic; pic = next) {
         next = pic->next;
