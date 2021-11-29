@@ -85,7 +85,7 @@ typedef struct {
     uint8_t box_flags;
     StyleBox d;
     uint16_t text_pos;
-    uint16_t byte_count;
+    unsigned byte_count;
     char **fonts;
     int font_count;
     double font_scale_factor;
@@ -585,9 +585,9 @@ static void mov_text_cancel_overrides_cb(void *priv, const char *style_name)
     mov_text_ass_style_set(s, style);
 }
 
-static uint16_t utf8_strlen(const char *text, int len)
+static unsigned utf8_strlen(const char *text, int len)
 {
-    uint16_t i = 0, ret = 0;
+    unsigned i = 0, ret = 0;
     while (i < len) {
         char c = text[i];
         if ((c & 0x80) == 0)
@@ -607,7 +607,7 @@ static uint16_t utf8_strlen(const char *text, int len)
 
 static void mov_text_text_cb(void *priv, const char *text, int len)
 {
-    uint16_t utf8_len = utf8_strlen(text, len);
+    unsigned utf8_len = utf8_strlen(text, len);
     MovTextContext *s = priv;
     av_bprint_append_data(&s->buffer, text, len);
     // If it's not utf-8, just use the byte length
