@@ -32,6 +32,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "edge_common.h"
 
 #define PLANE_R 0x4
 #define PLANE_G 0x1
@@ -139,176 +140,6 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static void gaussian_blur(AVFilterContext *ctx, int w, int h,
-                                uint8_t *dst, int dst_linesize,
-                          const uint8_t *src, int src_linesize)
-{
-    int i, j;
-
-    memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
-    if (h > 1) {
-        memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
-    }
-    for (j = 2; j < h - 2; j++) {
-        dst[0] = src[0];
-        if (w > 1)
-            dst[1] = src[1];
-        for (i = 2; i < w - 2; i++) {
-            /* Gaussian mask of size 5x5 with sigma = 1.4 */
-            dst[i] = ((src[-2*src_linesize + i-2] + src[2*src_linesize + i-2]) * 2
-                    + (src[-2*src_linesize + i-1] + src[2*src_linesize + i-1]) * 4
-                    + (src[-2*src_linesize + i  ] + src[2*src_linesize + i  ]) * 5
-                    + (src[-2*src_linesize + i+1] + src[2*src_linesize + i+1]) * 4
-                    + (src[-2*src_linesize + i+2] + src[2*src_linesize + i+2]) * 2
-
-                    + (src[  -src_linesize + i-2] + src[  src_linesize + i-2]) *  4
-                    + (src[  -src_linesize + i-1] + src[  src_linesize + i-1]) *  9
-                    + (src[  -src_linesize + i  ] + src[  src_linesize + i  ]) * 12
-                    + (src[  -src_linesize + i+1] + src[  src_linesize + i+1]) *  9
-                    + (src[  -src_linesize + i+2] + src[  src_linesize + i+2]) *  4
-
-                    + src[i-2] *  5
-                    + src[i-1] * 12
-                    + src[i  ] * 15
-                    + src[i+1] * 12
-                    + src[i+2] *  5) / 159;
-        }
-        if (w > 2)
-            dst[i    ] = src[i    ];
-        if (w > 3)
-            dst[i + 1] = src[i + 1];
-
-        dst += dst_linesize;
-        src += src_linesize;
-    }
-    if (h > 2) {
-        memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
-    }
-    if (h > 3)
-        memcpy(dst, src, w);
-}
-
-enum {
-    DIRECTION_45UP,
-    DIRECTION_45DOWN,
-    DIRECTION_HORIZONTAL,
-    DIRECTION_VERTICAL,
-};
-
-static int get_rounded_direction(int gx, int gy)
-{
-    /* reference angles:
-     *   tan( pi/8) = sqrt(2)-1
-     *   tan(3pi/8) = sqrt(2)+1
-     * Gy/Gx is the tangent of the angle (theta), so Gy/Gx is compared against
-     * <ref-angle>, or more simply Gy against <ref-angle>*Gx
-     *
-     * Gx and Gy bounds = [-1020;1020], using 16-bit arithmetic:
-     *   round((sqrt(2)-1) * (1<<16)) =  27146
-     *   round((sqrt(2)+1) * (1<<16)) = 158218
-     */
-    if (gx) {
-        int tanpi8gx, tan3pi8gx;
-
-        if (gx < 0)
-            gx = -gx, gy = -gy;
-        gy *= (1 << 16);
-        tanpi8gx  =  27146 * gx;
-        tan3pi8gx = 158218 * gx;
-        if (gy > -tan3pi8gx && gy < -tanpi8gx)  return DIRECTION_45UP;
-        if (gy > -tanpi8gx  && gy <  tanpi8gx)  return DIRECTION_HORIZONTAL;
-        if (gy >  tanpi8gx  && gy <  tan3pi8gx) return DIRECTION_45DOWN;
-    }
-    return DIRECTION_VERTICAL;
-}
-
-static void sobel(int w, int h,
-                       uint16_t *dst, int dst_linesize,
-                         int8_t *dir, int dir_linesize,
-                  const uint8_t *src, int src_linesize)
-{
-    int i, j;
-
-    for (j = 1; j < h - 1; j++) {
-        dst += dst_linesize;
-        dir += dir_linesize;
-        src += src_linesize;
-        for (i = 1; i < w - 1; i++) {
-            const int gx =
-                -1*src[-src_linesize + i-1] + 1*src[-src_linesize + i+1]
-                -2*src[                i-1] + 2*src[                i+1]
-                -1*src[ src_linesize + i-1] + 1*src[ src_linesize + i+1];
-            const int gy =
-                -1*src[-src_linesize + i-1] + 1*src[ src_linesize + i-1]
-                -2*src[-src_linesize + i  ] + 2*src[ src_linesize + i  ]
-                -1*src[-src_linesize + i+1] + 1*src[ src_linesize + i+1];
-
-            dst[i] = FFABS(gx) + FFABS(gy);
-            dir[i] = get_rounded_direction(gx, gy);
-        }
-    }
-}
-
-static void non_maximum_suppression(int w, int h,
-                                          uint8_t  *dst, int dst_linesize,
-                                    const  int8_t  *dir, int dir_linesize,
-                                    const uint16_t *src, int src_linesize)
-{
-    int i, j;
-
-#define COPY_MAXIMA(ay, ax, by, bx) do {                \
-    if (src[i] > src[(ay)*src_linesize + i+(ax)] &&     \
-        src[i] > src[(by)*src_linesize + i+(bx)])       \
-        dst[i] = av_clip_uint8(src[i]);                 \
-} while (0)
-
-    for (j = 1; j < h - 1; j++) {
-        dst += dst_linesize;
-        dir += dir_linesize;
-        src += src_linesize;
-        for (i = 1; i < w - 1; i++) {
-            switch (dir[i]) {
-            case DIRECTION_45UP:        COPY_MAXIMA( 1, -1, -1,  1); break;
-            case DIRECTION_45DOWN:      COPY_MAXIMA(-1, -1,  1,  1); break;
-            case DIRECTION_HORIZONTAL:  COPY_MAXIMA( 0, -1,  0,  1); break;
-            case DIRECTION_VERTICAL:    COPY_MAXIMA(-1,  0,  1,  0); break;
-            }
-        }
-    }
-}
-
-static void double_threshold(int low, int high, int w, int h,
-                                   uint8_t *dst, int dst_linesize,
-                             const uint8_t *src, int src_linesize)
-{
-    int i, j;
-
-    for (j = 0; j < h; j++) {
-        for (i = 0; i < w; i++) {
-            if (src[i] > high) {
-                dst[i] = src[i];
-                continue;
-            }
-
-            if (!(!i || i == w - 1 || !j || j == h - 1) &&
-                src[i] > low &&
-                (src[-src_linesize + i-1] > high ||
-                 src[-src_linesize + i  ] > high ||
-                 src[-src_linesize + i+1] > high ||
-                 src[                i-1] > high ||
-                 src[                i+1] > high ||
-                 src[ src_linesize + i-1] > high ||
-                 src[ src_linesize + i  ] > high ||
-                 src[ src_linesize + i+1] > high))
-                dst[i] = src[i];
-            else
-                dst[i] = 0;
-        }
-        dst += dst_linesize;
-        src += src_linesize;
-    }
-}
-
 static void color_mix(int w, int h,
                             uint8_t *dst, int dst_linesize,
                       const uint8_t *src, int src_linesize)
@@ -360,12 +191,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         /* gaussian filter to reduce noise  */
-        gaussian_blur(ctx, width, height,
-                      tmpbuf,      width,
-                      in->data[p], in->linesize[p]);
+        ff_gaussian_blur(width, height,
+                         tmpbuf,      width,
+                         in->data[p], in->linesize[p]);
 
         /* compute the 16-bits gradients and directions for the next step */
-        sobel(width, height,
+        ff_sobel(width, height,
               gradients, width,
               directions,width,
               tmpbuf,    width);
@@ -373,13 +204,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         /* non_maximum_suppression() will actually keep & clip what's necessary and
          * ignore the rest, so we need a clean output buffer */
         memset(tmpbuf, 0, width * height);
-        non_maximum_suppression(width, height,
+        ff_non_maximum_suppression(width, height,
                                 tmpbuf,    width,
                                 directions,width,
                                 gradients, width);
 
         /* keep high values, or low values surrounded by high values */
-        double_threshold(edgedetect->low_u8, edgedetect->high_u8,
+        ff_double_threshold(edgedetect->low_u8, edgedetect->high_u8,
                          width, height,
                          out->data[p], out->linesize[p],
                          tmpbuf,       width);
