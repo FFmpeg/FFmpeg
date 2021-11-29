@@ -266,7 +266,8 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
 static int file_close(URLContext *h)
 {
     FileContext *c = h->priv_data;
-    return close(c->fd);
+    int ret = close(c->fd);
+    return (ret == -1) ? AVERROR(errno) : 0;
 }
 
 static int file_open_dir(URLContext *h)
