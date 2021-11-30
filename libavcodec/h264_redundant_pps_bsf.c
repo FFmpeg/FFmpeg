@@ -27,11 +27,10 @@
 #include "cbs_h264.h"
 #include "h264.h"
 
+#define NEW_GLOBAL_PIC_INIT_QP 26
 
 typedef struct H264RedundantPPSContext {
     CBSBSFContext common;
-
-    int global_pic_init_qp;
 } H264RedundantPPSContext;
 
 
@@ -50,7 +49,7 @@ static int h264_redundant_pps_fixup_pps(H264RedundantPPSContext *ctx,
     pps = unit->content;
 
     // Overwrite pic_init_qp with the global value.
-    pps->pic_init_qp_minus26 = ctx->global_pic_init_qp - 26;
+    pps->pic_init_qp_minus26 = NEW_GLOBAL_PIC_INIT_QP - 26;
 
     // Some PPSs have this set, so it must be set in all of them.
     // (Slices which do not use such a PPS on input will still have
@@ -69,7 +68,7 @@ static int h264_redundant_pps_fixup_slice(H264RedundantPPSContext *ctx,
     // We modified the PPS's qp value, now offset this by applying
     // the negative offset to the slices.
     slice->slice_qp_delta += pps->pic_init_qp_minus26
-                             - (ctx->global_pic_init_qp - 26);
+                             - (NEW_GLOBAL_PIC_INIT_QP - 26);
 
     return 0;
 }
@@ -119,10 +118,6 @@ static const CBSBSFType h264_redundant_pps_type = {
 
 static int h264_redundant_pps_init(AVBSFContext *bsf)
 {
-    H264RedundantPPSContext *ctx = bsf->priv_data;
-
-    ctx->global_pic_init_qp = 26;
-
     return ff_cbs_bsf_generic_init(bsf, &h264_redundant_pps_type);
 }
 
