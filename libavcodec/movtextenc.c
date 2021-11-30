@@ -615,8 +615,8 @@ static void mov_text_text_cb(void *priv, const char *text, int len)
 static void mov_text_new_line_cb(void *priv, int forced)
 {
     MovTextContext *s = priv;
-    av_bprint_append_data(&s->buffer, "\n", 1);
     s->text_pos += 1;
+    av_bprint_chars(&s->buffer, '\n', 1);
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {
