@@ -667,6 +667,8 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         }
     }
 
+    if (s->byte_count > UINT16_MAX)
+        return AVERROR(ERANGE);
     AV_WB16(buf, s->byte_count);
     buf += 2;
 
