@@ -33,7 +33,6 @@ typedef struct H264RedundantPPSContext {
 
     int global_pic_init_qp;
     int current_pic_init_qp;
-    int extradata_pic_init_qp;
 } H264RedundantPPSContext;
 
 
@@ -111,12 +110,6 @@ static int h264_redundant_pps_update_fragment(AVBSFContext *bsf,
     return 0;
 }
 
-static void h264_redundant_pps_flush(AVBSFContext *bsf)
-{
-    H264RedundantPPSContext *ctx = bsf->priv_data;
-    ctx->current_pic_init_qp = ctx->extradata_pic_init_qp;
-}
-
 static const CBSBSFType h264_redundant_pps_type = {
     .codec_id        = AV_CODEC_ID_H264,
     .fragment_name   = "access unit",
@@ -141,7 +134,6 @@ const AVBitStreamFilter ff_h264_redundant_pps_bsf = {
     .name           = "h264_redundant_pps",
     .priv_data_size = sizeof(H264RedundantPPSContext),
     .init           = &h264_redundant_pps_init,
-    .flush          = &h264_redundant_pps_flush,
     .close          = &ff_cbs_bsf_generic_close,
     .filter         = &ff_cbs_bsf_generic_filter,
     .codec_ids      = h264_redundant_pps_codec_ids,
