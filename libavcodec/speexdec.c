@@ -1545,7 +1545,7 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = init_get_bits8(&s->gb, avpkt->data, buf_size)) < 0)
         return ret;
 
-    frame->nb_samples = s->frame_size * s->frames_per_packet;
+    frame->nb_samples = FFALIGN(s->frame_size * s->frames_per_packet, 4);
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
@@ -1560,6 +1560,7 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
 
     dst = (float *)frame->extended_data[0];
     s->fdsp->vector_fmul_scalar(dst, dst, scale, frame->nb_samples * frame->channels);
+    frame->nb_samples = s->frame_size * s->frames_per_packet;
 
     *got_frame_ptr = 1;
 
