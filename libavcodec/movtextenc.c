@@ -640,7 +640,6 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     MovTextContext *s = avctx->priv_data;
     ASSDialog *dialog;
     int i, length;
-    size_t j;
 
     s->byte_count = 0;
     s->text_pos = 0;
@@ -661,16 +660,15 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         mov_text_dialog(s, dialog);
         ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
         ff_ass_free_dialog(&dialog);
-
-        for (j = 0; j < box_count; j++) {
-            box_types[j].encode(s);
-        }
     }
 
     if (s->byte_count > UINT16_MAX)
         return AVERROR(ERANGE);
     AV_WB16(buf, s->byte_count);
     buf += 2;
+
+    for (size_t j = 0; j < box_count; j++)
+        box_types[j].encode(s);
 
     if (!av_bprint_is_complete(&s->buffer))
         return AVERROR(ENOMEM);
