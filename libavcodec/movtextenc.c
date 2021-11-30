@@ -646,6 +646,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     s->text_pos = 0;
     s->count = 0;
     s->box_flags = 0;
+    av_bprint_clear(&s->buffer);
     for (i = 0; i < sub->num_rects; i++) {
         const char *ass = sub->rects[i]->ass;
 
@@ -669,27 +670,20 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     AV_WB16(buf, s->byte_count);
     buf += 2;
 
-    if (!av_bprint_is_complete(&s->buffer)) {
-        length = AVERROR(ENOMEM);
-        goto exit;
-    }
+    if (!av_bprint_is_complete(&s->buffer))
+        return AVERROR(ENOMEM);
 
-    if (!s->buffer.len) {
-        length = 0;
-        goto exit;
-    }
+    if (!s->buffer.len)
+        return 0;
 
     if (s->buffer.len > bufsize - 3) {
         av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
-        length = AVERROR_BUFFER_TOO_SMALL;
-        goto exit;
+        return AVERROR_BUFFER_TOO_SMALL;
     }
 
     memcpy(buf, s->buffer.str, s->buffer.len);
     length = s->buffer.len + 2;
 
-exit:
-    av_bprint_clear(&s->buffer);
     return length;
 }
 
