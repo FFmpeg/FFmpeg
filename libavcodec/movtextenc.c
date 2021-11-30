@@ -84,7 +84,6 @@ typedef struct {
     uint8_t box_flags;
     StyleBox d;
     uint16_t text_pos;
-    unsigned byte_count;
     char **fonts;
     int font_count;
     double font_scale_factor;
@@ -611,7 +610,6 @@ static void mov_text_text_cb(void *priv, const char *text, int len)
     av_bprint_append_data(&s->buffer, text, len);
     // If it's not utf-8, just use the byte length
     s->text_pos += utf8_len ? utf8_len : len;
-    s->byte_count += len;
 }
 
 static void mov_text_new_line_cb(void *priv, int forced)
@@ -619,7 +617,6 @@ static void mov_text_new_line_cb(void *priv, int forced)
     MovTextContext *s = priv;
     av_bprint_append_data(&s->buffer, "\n", 1);
     s->text_pos += 1;
-    s->byte_count += 1;
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {
@@ -641,7 +638,6 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     ASSDialog *dialog;
     int i, length;
 
-    s->byte_count = 0;
     s->text_pos = 0;
     s->count = 0;
     s->box_flags = 0;
@@ -662,9 +658,9 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         ff_ass_free_dialog(&dialog);
     }
 
-    if (s->byte_count > UINT16_MAX)
+    if (s->buffer.len > UINT16_MAX)
         return AVERROR(ERANGE);
-    AV_WB16(buf, s->byte_count);
+    AV_WB16(buf, s->buffer.len);
     buf += 2;
 
     for (size_t j = 0; j < box_count; j++)
