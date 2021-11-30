@@ -32,7 +32,6 @@ typedef struct H264RedundantPPSContext {
     CBSBSFContext common;
 
     int global_pic_init_qp;
-    int current_pic_init_qp;
 } H264RedundantPPSContext;
 
 
@@ -50,9 +49,7 @@ static int h264_redundant_pps_fixup_pps(H264RedundantPPSContext *ctx,
         return err;
     pps = unit->content;
 
-    // Record the current value of pic_init_qp in order to fix up
-    // following slices, then overwrite with the global value.
-    ctx->current_pic_init_qp = pps->pic_init_qp_minus26 + 26;
+    // Overwrite pic_init_qp with the global value.
     pps->pic_init_qp_minus26 = ctx->global_pic_init_qp - 26;
 
     // Some PPSs have this set, so it must be set in all of them.
@@ -66,10 +63,13 @@ static int h264_redundant_pps_fixup_pps(H264RedundantPPSContext *ctx,
 static int h264_redundant_pps_fixup_slice(H264RedundantPPSContext *ctx,
                                           H264RawSliceHeader *slice)
 {
-    int qp;
+    const CodedBitstreamH264Context *const in = ctx->common.input->priv_data;
+    const H264RawPPS *const pps = in->pps[slice->pic_parameter_set_id];
 
-    qp = ctx->current_pic_init_qp + slice->slice_qp_delta;
-    slice->slice_qp_delta = qp - ctx->global_pic_init_qp;
+    // We modified the PPS's qp value, now offset this by applying
+    // the negative offset to the slices.
+    slice->slice_qp_delta += pps->pic_init_qp_minus26
+                             - (ctx->global_pic_init_qp - 26);
 
     return 0;
 }
