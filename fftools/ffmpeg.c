@@ -4699,7 +4699,7 @@ static int transcode(void)
 
     term_exit();
 
-    /* write the trailer if needed and close file */
+    /* write the trailer if needed */
     for (i = 0; i < nb_output_files; i++) {
         os = output_files[i]->ctx;
         if (!output_files[i]->header_written) {
@@ -4718,6 +4718,18 @@ static int transcode(void)
 
     /* dump report by using the first video and audio streams */
     print_report(1, timer_start, av_gettime_relative());
+
+    /* close the output files */
+    for (i = 0; i < nb_output_files; i++) {
+        os = output_files[i]->ctx;
+        if (os && os->oformat && !(os->oformat->flags & AVFMT_NOFILE)) {
+            if ((ret = avio_closep(&os->pb)) < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Error closing file %s: %s\n", os->url, av_err2str(ret));
+                if (exit_on_error)
+                    exit_program(1);
+            }
+        }
+    }
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
