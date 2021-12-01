@@ -2032,6 +2032,9 @@ ARCH_LIST="
     avr32_uc
     bfin
     ia64
+    loongarch
+    loongarch32
+    loongarch64
     m68k
     mips
     mips64
@@ -4959,6 +4962,9 @@ case "$arch" in
     arm*|iPad*|iPhone*)
         arch="arm"
     ;;
+    loongarch*)
+        arch="loongarch"
+    ;;
     mips*|IP*)
         case "$arch" in
         *el)
@@ -5106,6 +5112,18 @@ elif enabled bfin; then
 
     cpuflags="-mcpu=$cpu"
 
+elif enabled loongarch; then
+
+    enable local_aligned
+    enable simd_align_32
+    enable fast_64bit
+    enable fast_clz
+    enable fast_unaligned
+    case $cpu in
+        la464)
+            cpuflags="-march=$cpu"
+        ;;
+    esac
 elif enabled mips; then
 
     if [ "$cpu" != "generic" ]; then
@@ -5360,6 +5378,11 @@ check_64bit(){
 
 case "$arch" in
     aarch64|alpha|ia64)
+        enabled shared && enable_weak pic
+    ;;
+    loongarch)
+        check_64bit loongarch32 loongarch64
+        enabled loongarch64 && disable loongarch32
         enabled shared && enable_weak pic
     ;;
     mips)

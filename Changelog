@@ -35,6 +35,7 @@ version <next>:
 - bitpacked encoder
 - VideoToolbox VP9 hwaccel
 - VideoToolbox ProRes hwaccel
+- support loongarch.
 
 
 version 4.4:
