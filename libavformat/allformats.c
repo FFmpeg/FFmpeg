@@ -392,6 +392,7 @@ extern const AVOutputFormat ff_sbc_muxer;
 extern const AVInputFormat  ff_sbg_demuxer;
 extern const AVInputFormat  ff_scc_demuxer;
 extern const AVOutputFormat ff_scc_muxer;
+extern const AVInputFormat  ff_scd_demuxer;
 extern const AVInputFormat  ff_sdp_demuxer;
 extern const AVInputFormat  ff_sdr2_demuxer;
 extern const AVInputFormat  ff_sds_demuxer;
