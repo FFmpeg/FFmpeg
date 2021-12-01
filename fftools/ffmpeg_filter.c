@@ -83,7 +83,10 @@ static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx
     return target;
 }
 
-static char *choose_pix_fmts(OutputFilter *ofilter)
+/* May return NULL (no pixel format found), a static string or a string
+ * backed by the bprint. Nothing has been written to the AVBPrint in case
+ * NULL is returned. The AVBPrint provided should be clean. */
+static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
 {
     OutputStream *ost = ofilter->ost;
     const AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
@@ -96,18 +99,12 @@ static char *choose_pix_fmts(OutputFilter *ofilter)
                                             AVFILTER_AUTO_CONVERT_NONE);
         if (ost->enc_ctx->pix_fmt == AV_PIX_FMT_NONE)
             return NULL;
-        return av_strdup(av_get_pix_fmt_name(ost->enc_ctx->pix_fmt));
+        return av_get_pix_fmt_name(ost->enc_ctx->pix_fmt);
     }
     if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-        return av_strdup(av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc_ctx, ost->enc, ost->enc_ctx->pix_fmt)));
+        return av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc_ctx, ost->enc, ost->enc_ctx->pix_fmt));
     } else if (ost->enc && ost->enc->pix_fmts) {
         const enum AVPixelFormat *p;
-        AVIOContext *s = NULL;
-        uint8_t *ret;
-        int len;
-
-        if (avio_open_dyn_buf(&s) < 0)
-            exit_program(1);
 
         p = ost->enc->pix_fmts;
         if (ost->enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
@@ -116,11 +113,11 @@ static char *choose_pix_fmts(OutputFilter *ofilter)
 
         for (; *p != AV_PIX_FMT_NONE; p++) {
             const char *name = av_get_pix_fmt_name(*p);
-            avio_printf(s, "%s|", name);
+            av_bprintf(bprint, "%s%c", name, p[1] == AV_PIX_FMT_NONE ? '\0' : '|');
         }
-        len = avio_close_dyn_buf(s, &ret);
-        ret[len - 1] = 0;
-        return ret;
+        if (!av_bprint_is_complete(bprint))
+            exit_program(1);
+        return bprint->str;
     } else
         return NULL;
 }
@@ -416,12 +413,13 @@ static int insert_filter(AVFilterContext **last_filter, int *pad_idx,
 
 static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
-    char *pix_fmts;
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
     AVFilterContext *last_filter = out->filter_ctx;
+    AVBPrint bprint;
     int pad_idx = out->pad_idx;
     int ret;
+    const char *pix_fmts;
     char name[255];
 
     snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
@@ -457,13 +455,14 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         pad_idx = 0;
     }
 
-    if ((pix_fmts = choose_pix_fmts(ofilter))) {
+    av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
+    if ((pix_fmts = choose_pix_fmts(ofilter, &bprint))) {
         AVFilterContext *filter;
 
         ret = avfilter_graph_create_filter(&filter,
                                            avfilter_get_by_name("format"),
                                            "format", pix_fmts, NULL, fg->graph);
-        av_freep(&pix_fmts);
+        av_bprint_finalize(&bprint, NULL);
         if (ret < 0)
             return ret;
         if ((ret = avfilter_link(last_filter, pad_idx, filter, 0)) < 0)
