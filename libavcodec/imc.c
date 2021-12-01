@@ -829,7 +829,7 @@ static void imc_get_coeffs(AVCodecContext *avctx,
 static void imc_refine_bit_allocation(IMCContext *q, IMCChannel *chctx)
 {
     int i, j;
-    int bits, summer;
+    int summer;
 
     for (i = 0; i < BANDS; i++) {
         chctx->sumLenArr[i]   = 0;
@@ -853,7 +853,7 @@ static void imc_refine_bit_allocation(IMCContext *q, IMCChannel *chctx)
     }
 
     /* calculate bits left, bits needed and adjust bit allocation */
-    bits = summer = 0;
+    summer = 0;
 
     for (i = 0; i < BANDS; i++) {
         if (chctx->bandFlagsBuf[i]) {
@@ -863,7 +863,6 @@ static void imc_refine_bit_allocation(IMCContext *q, IMCChannel *chctx)
                     chctx->CWlengthT[j] = 0;
                 }
             }
-            bits   += chctx->skipFlagBits[i];
             summer -= chctx->skipFlagBits[i];
         }
     }

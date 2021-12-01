@@ -1272,7 +1272,6 @@ static void makelayers(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
     double min = DBL_MAX;
     double max = 0;
     double thresh;
-    int tile_disto = 0;
 
     Jpeg2000CodingStyle *codsty = &s->codsty;
 
@@ -1294,7 +1293,6 @@ static void makelayers(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
                             int dr;
                             double dd, drslope;
 
-                            tile_disto += pass->disto;
                             if (passno == 0) {
                                 dr = (int32_t)pass->rate;
                                 dd = pass->disto;

@@ -414,11 +414,10 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
         start = 0;
         for (g = 0; g < sce->ics.num_swb; g++) {
             int nz = 0;
-            float uplim = 0.0f, energy = 0.0f;
+            float uplim = 0.0f;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 uplim += band->threshold;
-                energy += band->energy;
                 if (band->energy <= band->threshold || band->threshold == 0.0f) {
                     sce->zeroes[(w+w2)*16+g] = 1;
                     continue;

@@ -476,8 +476,6 @@ static void guess_mv(ERContext *s)
         none_left = 1;
         changed   = 1;
         for (pass = 0; (changed || pass < 2) && pass < 10; pass++) {
-            int score_sum = 0;
-
             changed = 0;
             for (blocklist_index = 0; blocklist_index < blocklist_length; blocklist_index++) {
                 const int mb_x = blocklist[blocklist_index][0];
@@ -668,7 +666,6 @@ skip_mean_and_median:
                         best_pred  = j;
                     }
                 }
-                score_sum += best_score;
                 s->mv[0][0][0] = mv_predictor[best_pred][0];
                 s->mv[0][0][1] = mv_predictor[best_pred][1];
 

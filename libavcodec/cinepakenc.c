@@ -705,7 +705,6 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
     int entry_size      = s->pix_fmt == AV_PIX_FMT_RGB24 ? 6 : 4;
     int *codebook       = v1mode ? info->v1_codebook : info->v4_codebook;
     int size            = v1mode ? info->v1_size : info->v4_size;
-    int64_t total_error = 0;
     uint8_t vq_pict_buf[(MB_AREA * 3) / 2];
     uint8_t     *sub_data[4],     *vq_data[4];
     int      sub_linesize[4],  vq_linesize[4];
@@ -795,7 +794,6 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
 
                 mb->v1_error = compute_mb_distortion(s, sub_data, sub_linesize,
                                                      vq_data, vq_linesize);
-                total_error += mb->v1_error;
             } else {
                 for (k = 0; k < 4; k++)
                     mb->v4_vector[k] = s->codebook_closest[i + k];
@@ -805,7 +803,6 @@ static int quantize(CinepakEncContext *s, int h, uint8_t *data[4],
 
                 mb->v4_error = compute_mb_distortion(s, sub_data, sub_linesize,
                                                      vq_data, vq_linesize);
-                total_error += mb->v4_error;
             }
             i += v1mode ? 1 : 4;
         }

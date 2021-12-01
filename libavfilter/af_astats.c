@@ -403,7 +403,6 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
            max_sigma_x = 0,
            diff1_sum = 0,
            diff1_sum_x2 = 0,
-           sigma_x = 0,
            sigma_x2 = 0,
            noise_floor = 0,
            entropy = 0,
@@ -428,7 +427,6 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         diff1_sum_x2 += p->diff1_sum_x2;
         min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
-        sigma_x += p->sigma_x;
         sigma_x2 += p->sigma_x2;
         noise_floor = FFMAX(noise_floor, p->noise_floor);
         noise_floor_count += p->noise_floor_count;
@@ -659,7 +657,6 @@ static void print_stats(AVFilterContext *ctx)
            max_sigma_x = 0,
            diff1_sum_x2 = 0,
            diff1_sum = 0,
-           sigma_x = 0,
            sigma_x2 = 0,
            noise_floor = 0,
            entropy = 0,
@@ -684,7 +681,6 @@ static void print_stats(AVFilterContext *ctx)
         diff1_sum += p->diff1_sum;
         min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
-        sigma_x += p->sigma_x;
         sigma_x2 += p->sigma_x2;
         noise_floor = FFMAX(noise_floor, p->noise_floor);
         p->entropy = calc_entropy(s, p);

@@ -362,16 +362,12 @@ int main(int argc, char **argv){
 
         for(ch=0; ch<in_ch_count; ch++){
             double sse, maxdiff=0;
-            double sum_a= 0;
-            double sum_b= 0;
             double sum_aa= 0;
             double sum_bb= 0;
             double sum_ab= 0;
             for(i=0; i<out_count; i++){
                 double a= get(ain , ch, i, in_ch_count, in_sample_fmt);
                 double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
-                sum_a += a;
-                sum_b += b;
                 sum_aa+= a*a;
                 sum_bb+= b*b;
                 sum_ab+= a*b;
@@ -392,16 +388,12 @@ int main(int argc, char **argv){
         if(flush_count){
             for(ch=0; ch<in_ch_count; ch++){
                 double sse, maxdiff=0;
-                double sum_a= 0;
-                double sum_b= 0;
                 double sum_aa= 0;
                 double sum_bb= 0;
                 double sum_ab= 0;
                 for(i=0; i<flush_count; i++){
                     double a= get(ain , ch, i+out_count, in_ch_count, in_sample_fmt);
                     double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
-                    sum_a += a;
-                    sum_b += b;
                     sum_aa+= a*a;
                     sum_bb+= b*b;
                     sum_ab+= a*b;

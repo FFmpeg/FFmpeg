@@ -666,7 +666,6 @@ static void reconstruct_and_encode_image(RoqEncContext *enc,
     int i, j, k;
     int x, y;
     int subX, subY;
-    int dist=0;
 
     roq_qcell *qcell;
     CelEvaluation *eval;
@@ -692,7 +691,6 @@ static void reconstruct_and_encode_image(RoqEncContext *enc,
 
         x = eval->sourceX;
         y = eval->sourceY;
-        dist += eval->eval_dist[eval->best_coding];
 
         switch (eval->best_coding) {
         case RoQ_ID_MOT:
