@@ -42,6 +42,8 @@
 
 #if ARCH_X86
 #include "x86/h264_cabac.c"
+#elif ARCH_LOONGARCH64
+#include "loongarch/h264_cabac.c"
 #endif
 
 /* Cabac pre state table */
