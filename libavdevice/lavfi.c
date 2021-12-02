@@ -356,8 +356,6 @@ end:
     av_free(pix_fmts);
     avfilter_inout_free(&input_links);
     avfilter_inout_free(&output_links);
-    if (ret < 0)
-        lavfi_read_close(avctx);
     return ret;
 }
 
@@ -507,4 +505,5 @@ const AVInputFormat ff_lavfi_demuxer = {
     .read_close     = lavfi_read_close,
     .flags          = AVFMT_NOFILE,
     .priv_class     = &lavfi_class,
+    .flags_internal = FF_FMT_INIT_CLEANUP,
 };
