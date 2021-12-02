@@ -156,9 +156,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         av_bprint_init(&graph_file_pb, 0, AV_BPRINT_SIZE_UNLIMITED);
         ret = avio_read_to_bprint(avio, &graph_file_pb, INT_MAX);
         avio_closep(&avio);
-        av_bprint_chars(&graph_file_pb, '\0', 1);
-        if (!ret && !av_bprint_is_complete(&graph_file_pb))
-            ret = AVERROR(ENOMEM);
         if (ret) {
             av_bprint_finalize(&graph_file_pb, NULL);
             goto end;
