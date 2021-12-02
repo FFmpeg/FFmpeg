@@ -271,14 +271,15 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         } else if (type == AVMEDIA_TYPE_AUDIO) {
             static const enum AVSampleFormat sample_fmts[] = {
                 AV_SAMPLE_FMT_U8,  AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32,
-                AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_DBL, -1
+                AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_DBL,
             };
 
             ret = avfilter_graph_create_filter(&sink, abuffersink,
                                                inout->name, NULL,
                                                NULL, lavfi->graph);
             if (ret >= 0)
-                ret = av_opt_set_int_list(sink, "sample_fmts", sample_fmts,  AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+                ret = av_opt_set_bin(sink, "sample_fmts", (const uint8_t*)sample_fmts,
+                                     sizeof(sample_fmts), AV_OPT_SEARCH_CHILDREN);
             if (ret < 0)
                 goto end;
             ret = av_opt_set_int(sink, "all_channel_counts", 1,
