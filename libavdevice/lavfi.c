@@ -317,26 +317,27 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         AVFilterContext *sink = lavfi->sinks[lavfi->stream_sink_map[i]];
         AVRational time_base = av_buffersink_get_time_base(sink);
         AVStream *st = avctx->streams[i];
-        st->codecpar->codec_type = av_buffersink_get_type(sink);
+        AVCodecParameters *const par = st->codecpar;
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
+        par->codec_type = av_buffersink_get_type(sink);
         if (av_buffersink_get_type(sink) == AVMEDIA_TYPE_VIDEO) {
-            st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
-            st->codecpar->format     = av_buffersink_get_format(sink);
-            st->codecpar->width      = av_buffersink_get_w(sink);
-            st->codecpar->height     = av_buffersink_get_h(sink);
+            par->codec_id   = AV_CODEC_ID_RAWVIDEO;
+            par->format     = av_buffersink_get_format(sink);
+            par->width      = av_buffersink_get_w(sink);
+            par->height     = av_buffersink_get_h(sink);
             st       ->sample_aspect_ratio =
-            st->codecpar->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink);
+            par->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink);
             avctx->probesize = FFMAX(avctx->probesize,
                                      av_buffersink_get_w(sink) * av_buffersink_get_h(sink) *
                                      av_get_padded_bits_per_pixel(av_pix_fmt_desc_get(av_buffersink_get_format(sink))) *
                                      30);
         } else if (av_buffersink_get_type(sink) == AVMEDIA_TYPE_AUDIO) {
-            st->codecpar->codec_id    = av_get_pcm_codec(av_buffersink_get_format(sink), -1);
-            st->codecpar->channels    = av_buffersink_get_channels(sink);
-            st->codecpar->format      = av_buffersink_get_format(sink);
-            st->codecpar->sample_rate = av_buffersink_get_sample_rate(sink);
-            st->codecpar->channel_layout = av_buffersink_get_channel_layout(sink);
-            if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
+            par->channels    = av_buffersink_get_channels(sink);
+            par->sample_rate = av_buffersink_get_sample_rate(sink);
+            par->channel_layout = av_buffersink_get_channel_layout(sink);
+            par->format      = av_buffersink_get_format(sink);
+            par->codec_id    = av_get_pcm_codec(av_buffersink_get_format(sink), -1);
+            if (par->codec_id == AV_CODEC_ID_NONE)
                 av_log(avctx, AV_LOG_ERROR,
                        "Could not find PCM codec for sample format %s.\n",
                        av_get_sample_fmt_name(av_buffersink_get_format(sink)));
