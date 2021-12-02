@@ -320,27 +320,27 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         AVCodecParameters *const par = st->codecpar;
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
         par->codec_type = av_buffersink_get_type(sink);
-        if (av_buffersink_get_type(sink) == AVMEDIA_TYPE_VIDEO) {
+        if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
+            int64_t probesize;
             par->codec_id   = AV_CODEC_ID_RAWVIDEO;
             par->format     = av_buffersink_get_format(sink);
             par->width      = av_buffersink_get_w(sink);
             par->height     = av_buffersink_get_h(sink);
+            probesize       = par->width * par->height * 30 *
+                              av_get_padded_bits_per_pixel(av_pix_fmt_desc_get(par->format));
+            avctx->probesize = FFMAX(avctx->probesize, probesize);
             st       ->sample_aspect_ratio =
             par->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink);
-            avctx->probesize = FFMAX(avctx->probesize,
-                                     av_buffersink_get_w(sink) * av_buffersink_get_h(sink) *
-                                     av_get_padded_bits_per_pixel(av_pix_fmt_desc_get(av_buffersink_get_format(sink))) *
-                                     30);
-        } else if (av_buffersink_get_type(sink) == AVMEDIA_TYPE_AUDIO) {
+        } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             par->channels    = av_buffersink_get_channels(sink);
             par->sample_rate = av_buffersink_get_sample_rate(sink);
             par->channel_layout = av_buffersink_get_channel_layout(sink);
             par->format      = av_buffersink_get_format(sink);
-            par->codec_id    = av_get_pcm_codec(av_buffersink_get_format(sink), -1);
+            par->codec_id    = av_get_pcm_codec(par->format, -1);
             if (par->codec_id == AV_CODEC_ID_NONE)
                 av_log(avctx, AV_LOG_ERROR,
                        "Could not find PCM codec for sample format %s.\n",
-                       av_get_sample_fmt_name(av_buffersink_get_format(sink)));
+                       av_get_sample_fmt_name(par->format));
         }
     }
 
