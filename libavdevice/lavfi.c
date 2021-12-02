@@ -76,7 +76,7 @@ static int *create_all_formats(int n)
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             fmts[j++] = i;
     }
-    fmts[j] = -1;
+    fmts[j] = AV_PIX_FMT_NONE;
     return fmts;
 }
 
