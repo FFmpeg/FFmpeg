@@ -88,7 +88,7 @@ fate-unknown_layout-ac3: CMD = md5 -auto_conversion_filters \
 
 FATE_FFMPEG-$(call ALLYES, SINE_FILTER AMIX_FILTER MPEG4_ENCODER AC3_FIXED_ENCODER) += fate-shortest
 fate-shortest: tests/data/vsynth_lena.yuv
-fate-shortest: CMD = framemd5 -auto_conversion_filters -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -c:v mpeg4 -c:a ac3_fixed -shortest
+fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -threads 1 -c:v mpeg4 -c:a ac3_fixed -shortest
 
 FATE_STREAMCOPY-$(call ALLYES, EAC3_DEMUXER MOV_MUXER) += fate-copy-trac3074
 fate-copy-trac3074: $(SAMPLES)/eac3/csi_miami_stereo_128_spx.eac3
@@ -140,7 +140,7 @@ tests/data/audio_shorter_than_video.nut: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
         -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv \
         -f lavfi -i "sine=1000:d=1" \
-        -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -c:v mpeg4 -c:a pcm_s16le -bitexact \
+        -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -c:v mpeg4 -threads 1 -c:a pcm_s16le -bitexact \
         -y $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut 2>/dev/null
 
 FATE_STREAMCOPY-$(call ALLYES, SINE_FILTER AMIX_FILTER NUT_MUXER PCM_S16LE_ENCODER MPEG4_ENCODER AC3_FIXED_ENCODER) += fate-copy-shortest1
