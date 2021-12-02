@@ -269,11 +269,10 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             if (ret < 0)
                 goto end;
         } else if (type == AVMEDIA_TYPE_AUDIO) {
-            enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_U8,
-                                                  AV_SAMPLE_FMT_S16,
-                                                  AV_SAMPLE_FMT_S32,
-                                                  AV_SAMPLE_FMT_FLT,
-                                                  AV_SAMPLE_FMT_DBL, -1 };
+            static const enum AVSampleFormat sample_fmts[] = {
+                AV_SAMPLE_FMT_U8,  AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32,
+                AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_DBL, -1
+            };
 
             ret = avfilter_graph_create_filter(&sink, abuffersink,
                                                inout->name, NULL,
