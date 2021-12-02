@@ -2372,9 +2372,9 @@ static int sdp_read_header(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
-    int size, i, err;
-    char *content;
+    int i, err;
     char url[MAX_URL_SIZE];
+    AVBPrint bp;
 
     if (!ff_network_init())
         return AVERROR(EIO);
@@ -2385,22 +2385,15 @@ static int sdp_read_header(AVFormatContext *s)
         rt->lower_transport = RTSP_LOWER_TRANSPORT_CUSTOM;
 
     /* read the whole sdp file */
-    /* XXX: better loading */
-    content = av_malloc(SDP_MAX_SIZE);
-    if (!content) {
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+    err = avio_read_to_bprint(s->pb, &bp, INT_MAX);
+    if (err < 0 ) {
         ff_network_close();
-        return AVERROR(ENOMEM);
+        av_bprint_finalize(&bp, NULL);
+        return err;
     }
-    size = avio_read(s->pb, content, SDP_MAX_SIZE - 1);
-    if (size <= 0) {
-        av_free(content);
-        ff_network_close();
-        return AVERROR_INVALIDDATA;
-    }
-    content[size] ='\0';
-
-    err = ff_sdp_parse(s, content);
-    av_freep(&content);
+    err = ff_sdp_parse(s, bp.str);
+    av_bprint_finalize(&bp, NULL);
     if (err) goto fail;
 
     /* open each RTP stream */
