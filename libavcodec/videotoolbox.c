@@ -895,7 +895,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
         break;
     }
 
-#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9) && AV_HAS_BUILTIN(__builtin_available)
     if (avctx->codec_id == AV_CODEC_ID_PRORES) {
         if (__builtin_available(macOS 10.9, *)) {
             VTRegisterProfessionalVideoWorkflowVideoDecoders();
@@ -903,7 +903,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
     }
 #endif
 
-#if defined(MAC_OS_VERSION_11_0) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0)
+#if defined(MAC_OS_VERSION_11_0) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0) && AV_HAS_BUILTIN(__builtin_available)
     if (__builtin_available(macOS 11.0, *)) {
         VTRegisterSupplementalVideoDecoderIfAvailable(videotoolbox->cm_codec_type);
     }
