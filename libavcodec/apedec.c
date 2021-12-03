@@ -101,7 +101,7 @@ typedef struct APEFilter {
     int16_t *historybuffer; ///< filter memory
     int16_t *delay;         ///< filtered values
 
-    int avg;
+    uint32_t avg;
 } APEFilter;
 
 typedef struct APERice {
