@@ -1138,6 +1138,7 @@ static void do_subtitle_out(OutputFile *of,
     }
 }
 
+/* May modify/reset next_picture */
 static void do_video_out(OutputFile *of,
                          OutputStream *ost,
                          AVFrame *next_picture)
@@ -1421,8 +1422,7 @@ static void do_video_out(OutputFile *of,
 
     av_frame_unref(ost->last_frame);
     if (next_picture)
-        if (av_frame_ref(ost->last_frame, next_picture) < 0)
-            goto error;
+        av_frame_move_ref(ost->last_frame, next_picture);
 
     return;
 error:
