@@ -3258,10 +3258,12 @@ static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
 
 static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 {
+    FilterGraph *fg;
     ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
-    filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
-    filtergraphs[nb_filtergraphs - 1]->graph_desc = av_strdup(arg);
-    if (!filtergraphs[nb_filtergraphs - 1]->graph_desc)
+    fg = filtergraphs[nb_filtergraphs - 1];
+    fg->index      = nb_filtergraphs - 1;
+    fg->graph_desc = av_strdup(arg);
+    if (!fg->graph_desc)
         return AVERROR(ENOMEM);
 
     input_stream_potentially_available = 1;
@@ -3271,13 +3273,15 @@ static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 
 static int opt_filter_complex_script(void *optctx, const char *opt, const char *arg)
 {
+    FilterGraph *fg;
     uint8_t *graph_desc = read_file(arg);
     if (!graph_desc)
         return AVERROR(EINVAL);
 
     ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
-    filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
-    filtergraphs[nb_filtergraphs - 1]->graph_desc = graph_desc;
+    fg = filtergraphs[nb_filtergraphs - 1];
+    fg->index      = nb_filtergraphs - 1;
+    fg->graph_desc = graph_desc;
 
     input_stream_potentially_available = 1;
 
