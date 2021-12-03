@@ -5407,6 +5407,9 @@ static int mov_read_smdm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_WARNING, "Unsupported Mastering Display Metadata box version %d\n", version);
         return 0;
     }
+    if (sc->mastering)
+        return AVERROR_INVALIDDATA;
+
     avio_skip(pb, 3); /* flags */
 
     sc->mastering = av_mastering_display_metadata_alloc();
