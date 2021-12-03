@@ -410,6 +410,9 @@ typedef struct AVPacket {
 
     /**
      * Time base of the packet's timestamps.
+     * In the future, this field may be set on packets output by encoders or
+     * demuxers, but its value will be by default ignored on input to decoders
+     * or muxers.
      */
     AVRational time_base;
 } AVPacket;
