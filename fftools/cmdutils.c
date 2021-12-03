@@ -2216,19 +2216,13 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
 
 void *allocate_array_elem(void *ptr, size_t elem_size, int *nb_elems)
 {
-    void *new_elem, **array;
+    void *new_elem;
 
-    memcpy(&array, ptr, sizeof(array));
-    if (*nb_elems == INT_MAX) {
-        av_log(NULL, AV_LOG_ERROR, "Array too big.\n");
+    if (!(new_elem = av_mallocz(elem_size)) ||
+        av_dynarray_add_nofree(ptr, nb_elems, new_elem) < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
         exit_program(1);
     }
-    new_elem = av_mallocz(elem_size);
-    if (!new_elem)
-        exit_program(1);
-    GROW_ARRAY(array, *nb_elems);
-    memcpy(ptr, &array, sizeof(array));
-    array[*nb_elems - 1] = new_elem;
     return new_elem;
 }
 
