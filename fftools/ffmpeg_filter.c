@@ -166,16 +166,14 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
         exit_program(1);
     fg->index = nb_filtergraphs;
 
-    ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
-    ofilter = fg->outputs[0];
+    ofilter = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
     ofilter->ost    = ost;
     ofilter->graph  = fg;
     ofilter->format = -1;
 
     ost->filter = ofilter;
 
-    ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
-    ifilter = fg->inputs[0];
+    ifilter = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
     ifilter->ist    = ist;
     ifilter->graph  = fg;
     ifilter->format = -1;
@@ -281,8 +279,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ist->decoding_needed |= DECODING_FOR_FILTER;
     ist->st->discard = AVDISCARD_NONE;
 
-    ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
-    ifilter = fg->inputs[fg->nb_inputs - 1];
+    ifilter = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
     ifilter->ist    = ist;
     ifilter->graph  = fg;
     ifilter->format = -1;
@@ -318,9 +315,7 @@ int init_complex_filtergraph(FilterGraph *fg)
         init_input_filter(fg, cur);
 
     for (cur = outputs; cur;) {
-        OutputFilter *ofilter;
-        ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
-        ofilter = fg->outputs[fg->nb_outputs - 1];
+        OutputFilter *const ofilter = ALLOC_ARRAY_ELEM(fg->outputs, fg->nb_outputs);
 
         ofilter->graph   = fg;
         ofilter->out_tmp = cur;
