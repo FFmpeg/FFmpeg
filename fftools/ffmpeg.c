@@ -1291,7 +1291,7 @@ static void do_video_out(OutputFile *of,
         int forced_keyframe = 0;
         double pts_time;
 
-        if (i < nb0_frames && ost->last_frame) {
+        if (i < nb0_frames && ost->last_frame->buf[0]) {
             in_picture = ost->last_frame;
         } else
             in_picture = next_picture;
@@ -1419,13 +1419,10 @@ static void do_video_out(OutputFile *of,
             do_video_stats(ost, frame_size);
     }
 
-    if (!ost->last_frame)
-        ost->last_frame = av_frame_alloc();
     av_frame_unref(ost->last_frame);
-    if (next_picture && ost->last_frame)
-        av_frame_ref(ost->last_frame, next_picture);
-    else
-        av_frame_free(&ost->last_frame);
+    if (next_picture)
+        if (av_frame_ref(ost->last_frame, next_picture) < 0)
+            goto error;
 
     return;
 error:

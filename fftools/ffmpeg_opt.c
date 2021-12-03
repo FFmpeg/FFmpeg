@@ -1905,6 +1905,10 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         ost->avfilter = get_ost_filters(o, oc, ost);
         if (!ost->avfilter)
             exit_program(1);
+
+        ost->last_frame = av_frame_alloc();
+        if (!ost->last_frame)
+            exit_program(1);
     } else {
         MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i, ost->copy_initial_nonkeyframes, oc ,st);
     }
