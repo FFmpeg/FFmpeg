@@ -40,17 +40,15 @@
 #include "libavutil/intreadwrite.h"
 
 typedef struct Fragment {
-    char file[1024];
-    char infofile[1024];
     int64_t start_time, duration;
     int n;
     int64_t start_pos, size;
+    char file[1024];
+    char infofile[1024];
 } Fragment;
 
 typedef struct OutputStream {
     AVFormatContext *ctx;
-    char dirname[1024];
-    uint8_t iobuf[32768];
     URLContext *out;  // Current output stream where all output is written
     URLContext *out2; // Auxiliary output stream where all output is also written
     URLContext *tail_out; // The actual main output stream, if we're currently seeked back to write elsewhere
@@ -64,6 +62,8 @@ typedef struct OutputStream {
     char *private_str;
     int packet_size;
     int audio_tag;
+    char dirname[1024];
+    uint8_t iobuf[32768];
 } OutputStream;
 
 typedef struct SmoothStreamingContext {
