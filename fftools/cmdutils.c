@@ -2214,6 +2214,22 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
     return array;
 }
 
+void *allocate_array_elem(void *ptr, size_t elem_size, int *nb_elems)
+{
+    void *new_elem, **array = (void**)ptr;
+
+    if (*nb_elems == INT_MAX) {
+        av_log(NULL, AV_LOG_ERROR, "Array too big.\n");
+        exit_program(1);
+    }
+    new_elem = av_mallocz(elem_size);
+    if (!new_elem)
+        exit_program(1);
+    GROW_ARRAY(array, *nb_elems);
+    array[*nb_elems - 1] = new_elem;
+    return array;
+}
+
 double get_rotation(int32_t *displaymatrix)
 {
     double theta = 0;

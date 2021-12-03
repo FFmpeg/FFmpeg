@@ -1265,11 +1265,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     /* dump the file content */
     av_dump_format(ic, nb_input_files, filename, 0);
 
-    GROW_ARRAY(input_files, nb_input_files);
-    f = av_mallocz(sizeof(*f));
-    if (!f)
-        exit_program(1);
-    input_files[nb_input_files - 1] = f;
+    ALLOC_ARRAY_ELEM(input_files, nb_input_files);
+    f = input_files[nb_input_files - 1];
 
     f->ctx        = ic;
     f->ist_index  = nb_input_streams - ic->nb_streams;
@@ -2263,11 +2260,8 @@ static int open_output_file(OptionsContext *o, const char *filename)
         }
     }
 
-    GROW_ARRAY(output_files, nb_output_files);
-    of = av_mallocz(sizeof(*of));
-    if (!of)
-        exit_program(1);
-    output_files[nb_output_files - 1] = of;
+    ALLOC_ARRAY_ELEM(output_files, nb_output_files);
+    of = output_files[nb_output_files - 1];
 
     of->ost_index      = nb_output_streams;
     of->recording_time = o->recording_time;
@@ -3264,9 +3258,7 @@ static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
 
 static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 {
-    GROW_ARRAY(filtergraphs, nb_filtergraphs);
-    if (!(filtergraphs[nb_filtergraphs - 1] = av_mallocz(sizeof(*filtergraphs[0]))))
-        return AVERROR(ENOMEM);
+    ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
     filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
     filtergraphs[nb_filtergraphs - 1]->graph_desc = av_strdup(arg);
     if (!filtergraphs[nb_filtergraphs - 1]->graph_desc)
@@ -3283,9 +3275,7 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
     if (!graph_desc)
         return AVERROR(EINVAL);
 
-    GROW_ARRAY(filtergraphs, nb_filtergraphs);
-    if (!(filtergraphs[nb_filtergraphs - 1] = av_mallocz(sizeof(*filtergraphs[0]))))
-        return AVERROR(ENOMEM);
+    ALLOC_ARRAY_ELEM(filtergraphs, nb_filtergraphs);
     filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
     filtergraphs[nb_filtergraphs - 1]->graph_desc = graph_desc;
 

@@ -628,10 +628,27 @@ FILE *get_preset_file(char *filename, size_t filename_size,
  */
 void *grow_array(void *array, int elem_size, int *size, int new_size);
 
+/**
+ * Atomically add a new element to an array of pointers, i.e. allocate
+ * a new entry, reallocate the array of pointers and make the new last
+ * member of this array point to the newly allocated buffer.
+ * Calls exit() on failure.
+ *
+ * @param array     array of pointers to reallocate
+ * @param elem_size size of the new element to allocate
+ * @param nb_elems  pointer to the number of elements of the array array;
+ *                  *nb_elems will be incremented by one by this function.
+ * @return reallocated array
+ */
+void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
+
 #define media_type_string av_get_media_type_string
 
 #define GROW_ARRAY(array, nb_elems)\
     array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
+
+#define ALLOC_ARRAY_ELEM(array, nb_elems)\
+    array = allocate_array_elem(array, sizeof(*array[0]), &nb_elems)
 
 #define GET_PIX_FMT_NAME(pix_fmt)\
     const char *name = av_get_pix_fmt_name(pix_fmt);
