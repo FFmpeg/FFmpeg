@@ -646,7 +646,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     while (size > 0) {
         len = FFMIN(s->buf_end - s->buf_ptr, size);
         if (len == 0 || s->write_flag) {
-            if((s->direct || size > s->buffer_size) && !s->update_checksum) {
+            if((s->direct || size > s->buffer_size) && !s->update_checksum && s->read_packet) {
                 // bypass the buffer and read data directly into buf
                 len = read_packet_wrapper(s, buf, size);
                 if (len == AVERROR_EOF) {
