@@ -147,7 +147,7 @@ float dts_error_threshold   = 3600*30;
 
 int audio_volume      = 256;
 int audio_sync_method = 0;
-int video_sync_method = VSYNC_AUTO;
+enum VideoSyncMethod video_sync_method = VSYNC_AUTO;
 float frame_drop_threshold = 0;
 int do_benchmark      = 0;
 int do_benchmark_all  = 0;

@@ -47,12 +47,14 @@
 
 #include "libswresample/swresample.h"
 
-#define VSYNC_AUTO       -1
-#define VSYNC_PASSTHROUGH 0
-#define VSYNC_CFR         1
-#define VSYNC_VFR         2
-#define VSYNC_VSCFR       0xfe
-#define VSYNC_DROP        0xff
+enum VideoSyncMethod {
+    VSYNC_AUTO = -1,
+    VSYNC_PASSTHROUGH,
+    VSYNC_CFR,
+    VSYNC_VFR,
+    VSYNC_VSCFR,
+    VSYNC_DROP,
+};
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 
@@ -605,7 +607,7 @@ extern float dts_error_threshold;
 
 extern int audio_volume;
 extern int audio_sync_method;
-extern int video_sync_method;
+extern enum VideoSyncMethod video_sync_method;
 extern float frame_drop_threshold;
 extern int do_benchmark;
 extern int do_benchmark_all;

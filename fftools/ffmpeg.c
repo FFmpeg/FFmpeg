@@ -1143,7 +1143,8 @@ static void do_video_out(OutputFile *of,
                          OutputStream *ost,
                          AVFrame *next_picture)
 {
-    int ret, format_video_sync;
+    int ret;
+    enum VideoSyncMethod format_video_sync;
     AVPacket *pkt = ost->pkt;
     AVCodecContext *enc = ost->enc_ctx;
     AVRational frame_rate;
