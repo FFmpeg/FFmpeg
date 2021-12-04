@@ -2125,10 +2125,10 @@ static int opt_streamid(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
+static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *os,
+                         int copy_metadata)
 {
     AVFormatContext *is = ifile->ctx;
-    AVFormatContext *os = ofile->ctx;
     AVChapter **tmp;
     int i;
 
@@ -2168,14 +2168,14 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
     return 0;
 }
 
-static int set_dispositions(OutputFile *of)
+static int set_dispositions(OutputFile *of, AVFormatContext *ctx)
 {
     int nb_streams[AVMEDIA_TYPE_NB]   = { 0 };
     int have_default[AVMEDIA_TYPE_NB] = { 0 };
     int have_manual = 0;
 
     // first, copy the input dispositions
-    for (int i = 0; i< of->ctx->nb_streams; i++) {
+    for (int i = 0; i < ctx->nb_streams; i++) {
         OutputStream *ost = output_streams[of->ost_index + i];
 
         nb_streams[ost->st->codecpar->codec_type]++;
@@ -2192,7 +2192,7 @@ static int set_dispositions(OutputFile *of)
 
     if (have_manual) {
         // process manually set dispositions - they override the above copy
-        for (int i = 0; i< of->ctx->nb_streams; i++) {
+        for (int i = 0; i < ctx->nb_streams; i++) {
             OutputStream *ost = output_streams[of->ost_index + i];
             int ret;
 
@@ -2218,7 +2218,7 @@ static int set_dispositions(OutputFile *of)
         // For each media type with more than one stream, find a suitable stream to
         // mark as default, unless one is already marked default.
         // "Suitable" means the first of that type, skipping attached pictures.
-        for (int i = 0; i< of->ctx->nb_streams; i++) {
+        for (int i = 0; i < ctx->nb_streams; i++) {
             OutputStream *ost = output_streams[of->ost_index + i];
             enum AVMediaType type = ost->st->codecpar->codec_type;
 
@@ -2760,7 +2760,7 @@ loop_end:
         }
     }
     if (o->chapters_input_file >= 0)
-        copy_chapters(input_files[o->chapters_input_file], of,
+        copy_chapters(input_files[o->chapters_input_file], of, oc,
                       !o->metadata_chapters_manual);
 
     /* copy global metadata by default */
@@ -2913,7 +2913,7 @@ loop_end:
         }
     }
 
-    err = set_dispositions(of);
+    err = set_dispositions(of, oc);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error setting output stream dispositions\n");
         exit_program(1);
