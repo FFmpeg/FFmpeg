@@ -484,278 +484,278 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
     const AVCodecParameters *p = st->codecpar;
 
     switch (p->codec_id) {
-        case AV_CODEC_ID_DIRAC:
-            av_strlcatf(buff, size, "a=rtpmap:%d VC2/90000\r\n", payload_type);
-            break;
-        case AV_CODEC_ID_H264: {
-            int mode = 1;
-            if (fmt && fmt->oformat && fmt->oformat->priv_class &&
-                av_opt_flag_is_set(fmt->priv_data, "rtpflags", "h264_mode0"))
-                mode = 0;
-            if (p->extradata_size) {
-                config = extradata2psets(fmt, p);
-            }
-            av_strlcatf(buff, size, "a=rtpmap:%d H264/90000\r\n"
-                                    "a=fmtp:%d packetization-mode=%d%s\r\n",
-                                     payload_type,
-                                     payload_type, mode, config ? config : "");
-            break;
+    case AV_CODEC_ID_DIRAC:
+        av_strlcatf(buff, size, "a=rtpmap:%d VC2/90000\r\n", payload_type);
+        break;
+    case AV_CODEC_ID_H264: {
+        int mode = 1;
+        if (fmt && fmt->oformat && fmt->oformat->priv_class &&
+            av_opt_flag_is_set(fmt->priv_data, "rtpflags", "h264_mode0"))
+            mode = 0;
+        if (p->extradata_size) {
+            config = extradata2psets(fmt, p);
         }
-        case AV_CODEC_ID_H261:
-        {
-            const char *pic_fmt = NULL;
-            /* only QCIF and CIF are specified as supported in RFC 4587 */
-            if (p->width == 176 && p->height == 144)
-                pic_fmt = "QCIF=1";
-            else if (p->width == 352 && p->height == 288)
-                pic_fmt = "CIF=1";
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d H261/90000\r\n", payload_type);
-            if (pic_fmt)
-                av_strlcatf(buff, size, "a=fmtp:%d %s\r\n", payload_type, pic_fmt);
-            break;
+        av_strlcatf(buff, size, "a=rtpmap:%d H264/90000\r\n"
+                                "a=fmtp:%d packetization-mode=%d%s\r\n",
+                                 payload_type,
+                                 payload_type, mode, config ? config : "");
+        break;
+    }
+    case AV_CODEC_ID_H261:
+    {
+        const char *pic_fmt = NULL;
+        /* only QCIF and CIF are specified as supported in RFC 4587 */
+        if (p->width == 176 && p->height == 144)
+            pic_fmt = "QCIF=1";
+        else if (p->width == 352 && p->height == 288)
+            pic_fmt = "CIF=1";
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d H261/90000\r\n", payload_type);
+        if (pic_fmt)
+            av_strlcatf(buff, size, "a=fmtp:%d %s\r\n", payload_type, pic_fmt);
+        break;
+    }
+    case AV_CODEC_ID_H263:
+    case AV_CODEC_ID_H263P:
+        /* a=framesize is required by 3GPP TS 26.234 (PSS). It
+         * actually specifies the maximum video size, but we only know
+         * the current size. This is required for playback on Android
+         * stagefright and on Samsung bada. */
+        if (!fmt || !fmt->oformat->priv_class ||
+            !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190") ||
+            p->codec_id == AV_CODEC_ID_H263P)
+        av_strlcatf(buff, size, "a=rtpmap:%d H263-2000/90000\r\n"
+                                "a=framesize:%d %d-%d\r\n",
+                                payload_type,
+                                payload_type, p->width, p->height);
+        break;
+    case AV_CODEC_ID_HEVC:
+        if (p->extradata_size)
+            config = extradata2psets_hevc(p);
+        av_strlcatf(buff, size, "a=rtpmap:%d H265/90000\r\n", payload_type);
+        if (config)
+            av_strlcatf(buff, size, "a=fmtp:%d %s\r\n",
+                                     payload_type, config);
+        break;
+    case AV_CODEC_ID_MPEG4:
+        if (p->extradata_size) {
+            config = extradata2config(fmt, p);
         }
-        case AV_CODEC_ID_H263:
-        case AV_CODEC_ID_H263P:
-            /* a=framesize is required by 3GPP TS 26.234 (PSS). It
-             * actually specifies the maximum video size, but we only know
-             * the current size. This is required for playback on Android
-             * stagefright and on Samsung bada. */
-            if (!fmt || !fmt->oformat->priv_class ||
-                !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190") ||
-                p->codec_id == AV_CODEC_ID_H263P)
-            av_strlcatf(buff, size, "a=rtpmap:%d H263-2000/90000\r\n"
-                                    "a=framesize:%d %d-%d\r\n",
-                                    payload_type,
-                                    payload_type, p->width, p->height);
-            break;
-        case AV_CODEC_ID_HEVC:
-            if (p->extradata_size)
-                config = extradata2psets_hevc(p);
-            av_strlcatf(buff, size, "a=rtpmap:%d H265/90000\r\n", payload_type);
-            if (config)
-                av_strlcatf(buff, size, "a=fmtp:%d %s\r\n",
-                                         payload_type, config);
-            break;
-        case AV_CODEC_ID_MPEG4:
+        av_strlcatf(buff, size, "a=rtpmap:%d MP4V-ES/90000\r\n"
+                                "a=fmtp:%d profile-level-id=1%s\r\n",
+                                 payload_type,
+                                 payload_type, config ? config : "");
+        break;
+    case AV_CODEC_ID_AAC:
+        if (fmt && fmt->oformat && fmt->oformat->priv_class &&
+            av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
+            config = latm_context2config(fmt, p);
+            if (!config)
+                return NULL;
+            av_strlcatf(buff, size, "a=rtpmap:%d MP4A-LATM/%d/%d\r\n"
+                                    "a=fmtp:%d profile-level-id=%d;cpresent=0;config=%s\r\n",
+                                     payload_type, p->sample_rate, p->channels,
+                                     payload_type, latm_context2profilelevel(p), config);
+        } else {
             if (p->extradata_size) {
                 config = extradata2config(fmt, p);
-            }
-            av_strlcatf(buff, size, "a=rtpmap:%d MP4V-ES/90000\r\n"
-                                    "a=fmtp:%d profile-level-id=1%s\r\n",
-                                     payload_type,
-                                     payload_type, config ? config : "");
-            break;
-        case AV_CODEC_ID_AAC:
-            if (fmt && fmt->oformat && fmt->oformat->priv_class &&
-                av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
-                config = latm_context2config(fmt, p);
-                if (!config)
-                    return NULL;
-                av_strlcatf(buff, size, "a=rtpmap:%d MP4A-LATM/%d/%d\r\n"
-                                        "a=fmtp:%d profile-level-id=%d;cpresent=0;config=%s\r\n",
-                                         payload_type, p->sample_rate, p->channels,
-                                         payload_type, latm_context2profilelevel(p), config);
             } else {
-                if (p->extradata_size) {
-                    config = extradata2config(fmt, p);
-                } else {
-                    /* FIXME: maybe we can forge config information based on the
-                     *        codec parameters...
-                     */
-                    av_log(fmt, AV_LOG_ERROR, "AAC with no global headers is currently not supported.\n");
-                    return NULL;
-                }
-                if (!config) {
-                    return NULL;
-                }
-                av_strlcatf(buff, size, "a=rtpmap:%d MPEG4-GENERIC/%d/%d\r\n"
-                                        "a=fmtp:%d profile-level-id=1;"
-                                        "mode=AAC-hbr;sizelength=13;indexlength=3;"
-                                        "indexdeltalength=3%s\r\n",
-                                         payload_type, p->sample_rate, p->channels,
-                                         payload_type, config);
+                /* FIXME: maybe we can forge config information based on the
+                 *        codec parameters...
+                 */
+                av_log(fmt, AV_LOG_ERROR, "AAC with no global headers is currently not supported.\n");
+                return NULL;
             }
-            break;
-        case AV_CODEC_ID_PCM_S16BE:
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d L16/%d/%d\r\n",
-                                         payload_type,
-                                         p->sample_rate, p->channels);
-            break;
-        case AV_CODEC_ID_PCM_S24BE:
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d L24/%d/%d\r\n",
-                                         payload_type,
-                                         p->sample_rate, p->channels);
-            break;
-        case AV_CODEC_ID_PCM_MULAW:
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d PCMU/%d/%d\r\n",
-                                         payload_type,
-                                         p->sample_rate, p->channels);
-            break;
-        case AV_CODEC_ID_PCM_ALAW:
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d PCMA/%d/%d\r\n",
-                                         payload_type,
-                                         p->sample_rate, p->channels);
-            break;
-        case AV_CODEC_ID_AMR_NB:
-            av_strlcatf(buff, size, "a=rtpmap:%d AMR/%d/%d\r\n"
-                                    "a=fmtp:%d octet-align=1\r\n",
+            if (!config) {
+                return NULL;
+            }
+            av_strlcatf(buff, size, "a=rtpmap:%d MPEG4-GENERIC/%d/%d\r\n"
+                                    "a=fmtp:%d profile-level-id=1;"
+                                    "mode=AAC-hbr;sizelength=13;indexlength=3;"
+                                    "indexdeltalength=3%s\r\n",
                                      payload_type, p->sample_rate, p->channels,
-                                     payload_type);
-            break;
-        case AV_CODEC_ID_AMR_WB:
-            av_strlcatf(buff, size, "a=rtpmap:%d AMR-WB/%d/%d\r\n"
-                                    "a=fmtp:%d octet-align=1\r\n",
-                                     payload_type, p->sample_rate, p->channels,
-                                     payload_type);
-            break;
-        case AV_CODEC_ID_VORBIS:
-            if (p->extradata_size)
-                config = xiph_extradata2config(fmt, p);
-            else
-                av_log(fmt, AV_LOG_ERROR, "Vorbis configuration info missing\n");
-            if (!config)
-                return NULL;
-
-            av_strlcatf(buff, size, "a=rtpmap:%d vorbis/%d/%d\r\n"
-                                    "a=fmtp:%d configuration=%s\r\n",
-                                    payload_type, p->sample_rate, p->channels,
-                                    payload_type, config);
-            break;
-        case AV_CODEC_ID_THEORA: {
-            const char *pix_fmt;
-            switch (p->format) {
-            case AV_PIX_FMT_YUV420P:
-                pix_fmt = "YCbCr-4:2:0";
-                break;
-            case AV_PIX_FMT_YUV422P:
-                pix_fmt = "YCbCr-4:2:2";
-                break;
-            case AV_PIX_FMT_YUV444P:
-                pix_fmt = "YCbCr-4:4:4";
-                break;
-            default:
-                av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
-                return NULL;
-            }
-
-            if (p->extradata_size)
-                config = xiph_extradata2config(fmt, p);
-            else
-                av_log(fmt, AV_LOG_ERROR, "Theora configuration info missing\n");
-            if (!config)
-                return NULL;
-
-            av_strlcatf(buff, size, "a=rtpmap:%d theora/90000\r\n"
-                                    "a=fmtp:%d delivery-method=inline; "
-                                    "width=%d; height=%d; sampling=%s; "
-                                    "configuration=%s\r\n",
-                                    payload_type, payload_type,
-                                    p->width, p->height, pix_fmt, config);
-            break;
+                                     payload_type, config);
         }
-        case AV_CODEC_ID_BITPACKED:
-        case AV_CODEC_ID_RAWVIDEO: {
-            const char *pix_fmt;
-            int bit_depth = 8;
+        break;
+    case AV_CODEC_ID_PCM_S16BE:
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d L16/%d/%d\r\n",
+                                     payload_type,
+                                     p->sample_rate, p->channels);
+        break;
+    case AV_CODEC_ID_PCM_S24BE:
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d L24/%d/%d\r\n",
+                                     payload_type,
+                                     p->sample_rate, p->channels);
+        break;
+    case AV_CODEC_ID_PCM_MULAW:
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d PCMU/%d/%d\r\n",
+                                     payload_type,
+                                     p->sample_rate, p->channels);
+        break;
+    case AV_CODEC_ID_PCM_ALAW:
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d PCMA/%d/%d\r\n",
+                                     payload_type,
+                                     p->sample_rate, p->channels);
+        break;
+    case AV_CODEC_ID_AMR_NB:
+        av_strlcatf(buff, size, "a=rtpmap:%d AMR/%d/%d\r\n"
+                                "a=fmtp:%d octet-align=1\r\n",
+                                 payload_type, p->sample_rate, p->channels,
+                                 payload_type);
+        break;
+    case AV_CODEC_ID_AMR_WB:
+        av_strlcatf(buff, size, "a=rtpmap:%d AMR-WB/%d/%d\r\n"
+                                "a=fmtp:%d octet-align=1\r\n",
+                                 payload_type, p->sample_rate, p->channels,
+                                 payload_type);
+        break;
+    case AV_CODEC_ID_VORBIS:
+        if (p->extradata_size)
+            config = xiph_extradata2config(fmt, p);
+        else
+            av_log(fmt, AV_LOG_ERROR, "Vorbis configuration info missing\n");
+        if (!config)
+            return NULL;
 
-            switch (p->format) {
-            case AV_PIX_FMT_UYVY422:
-                pix_fmt = "YCbCr-4:2:2";
-                break;
-            case AV_PIX_FMT_YUV422P10:
-                pix_fmt = "YCbCr-4:2:2";
-                bit_depth = 10;
-                break;
-            case AV_PIX_FMT_YUV420P:
-                pix_fmt = "YCbCr-4:2:0";
-                break;
-            case AV_PIX_FMT_RGB24:
-                pix_fmt = "RGB";
-                break;
-            case AV_PIX_FMT_BGR24:
-                pix_fmt = "BGR";
-                break;
-            default:
-                av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
-                return NULL;
-            }
-
-            av_strlcatf(buff, size, "a=rtpmap:%d raw/90000\r\n"
-                                    "a=fmtp:%d sampling=%s; "
-                                    "width=%d; height=%d; "
-                                    "depth=%d\r\n",
-                                    payload_type, payload_type,
-                                    pix_fmt, p->width, p->height, bit_depth);
+        av_strlcatf(buff, size, "a=rtpmap:%d vorbis/%d/%d\r\n"
+                                "a=fmtp:%d configuration=%s\r\n",
+                                payload_type, p->sample_rate, p->channels,
+                                payload_type, config);
+        break;
+    case AV_CODEC_ID_THEORA: {
+        const char *pix_fmt;
+        switch (p->format) {
+        case AV_PIX_FMT_YUV420P:
+            pix_fmt = "YCbCr-4:2:0";
             break;
-        }
-
-        case AV_CODEC_ID_VP8:
-            av_strlcatf(buff, size, "a=rtpmap:%d VP8/90000\r\n",
-                                     payload_type);
+        case AV_PIX_FMT_YUV422P:
+            pix_fmt = "YCbCr-4:2:2";
             break;
-        case AV_CODEC_ID_VP9:
-            av_strlcatf(buff, size, "a=rtpmap:%d VP9/90000\r\n",
-                                     payload_type);
-            break;
-        case AV_CODEC_ID_MJPEG:
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d JPEG/90000\r\n",
-                                         payload_type);
-            break;
-        case AV_CODEC_ID_ADPCM_G722:
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d G722/%d/%d\r\n",
-                                         payload_type,
-                                         8000, p->channels);
-            break;
-        case AV_CODEC_ID_ADPCM_G726: {
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d AAL2-G726-%d/%d\r\n",
-                                         payload_type,
-                                         p->bits_per_coded_sample*8,
-                                         p->sample_rate);
-            break;
-        }
-        case AV_CODEC_ID_ADPCM_G726LE: {
-            if (payload_type >= RTP_PT_PRIVATE)
-                av_strlcatf(buff, size, "a=rtpmap:%d G726-%d/%d\r\n",
-                                         payload_type,
-                                         p->bits_per_coded_sample*8,
-                                         p->sample_rate);
-            break;
-        }
-        case AV_CODEC_ID_ILBC:
-            av_strlcatf(buff, size, "a=rtpmap:%d iLBC/%d\r\n"
-                                    "a=fmtp:%d mode=%d\r\n",
-                                     payload_type, p->sample_rate,
-                                     payload_type, p->block_align == 38 ? 20 : 30);
-            break;
-        case AV_CODEC_ID_SPEEX:
-            av_strlcatf(buff, size, "a=rtpmap:%d speex/%d\r\n",
-                                     payload_type, p->sample_rate);
-            break;
-        case AV_CODEC_ID_OPUS:
-            /* The opus RTP draft says that all opus streams MUST be declared
-               as stereo, to avoid negotiation failures. The actual number of
-               channels can change on a packet-by-packet basis. The number of
-               channels a receiver prefers to receive or a sender plans to send
-               can be declared via fmtp parameters (both default to mono), but
-               receivers MUST be able to receive and process stereo packets. */
-            av_strlcatf(buff, size, "a=rtpmap:%d opus/48000/2\r\n",
-                                     payload_type);
-            if (p->channels == 2) {
-                av_strlcatf(buff, size, "a=fmtp:%d sprop-stereo=1\r\n",
-                                         payload_type);
-            }
+        case AV_PIX_FMT_YUV444P:
+            pix_fmt = "YCbCr-4:4:4";
             break;
         default:
-            /* Nothing special to do here... */
+            av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
+            return NULL;
+        }
+
+        if (p->extradata_size)
+            config = xiph_extradata2config(fmt, p);
+        else
+            av_log(fmt, AV_LOG_ERROR, "Theora configuration info missing\n");
+        if (!config)
+            return NULL;
+
+        av_strlcatf(buff, size, "a=rtpmap:%d theora/90000\r\n"
+                                "a=fmtp:%d delivery-method=inline; "
+                                "width=%d; height=%d; sampling=%s; "
+                                "configuration=%s\r\n",
+                                payload_type, payload_type,
+                                p->width, p->height, pix_fmt, config);
+        break;
+    }
+    case AV_CODEC_ID_BITPACKED:
+    case AV_CODEC_ID_RAWVIDEO: {
+        const char *pix_fmt;
+        int bit_depth = 8;
+
+        switch (p->format) {
+        case AV_PIX_FMT_UYVY422:
+            pix_fmt = "YCbCr-4:2:2";
             break;
+        case AV_PIX_FMT_YUV422P10:
+            pix_fmt = "YCbCr-4:2:2";
+            bit_depth = 10;
+            break;
+        case AV_PIX_FMT_YUV420P:
+            pix_fmt = "YCbCr-4:2:0";
+            break;
+        case AV_PIX_FMT_RGB24:
+            pix_fmt = "RGB";
+            break;
+        case AV_PIX_FMT_BGR24:
+            pix_fmt = "BGR";
+            break;
+        default:
+            av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
+            return NULL;
+        }
+
+        av_strlcatf(buff, size, "a=rtpmap:%d raw/90000\r\n"
+                                "a=fmtp:%d sampling=%s; "
+                                "width=%d; height=%d; "
+                                "depth=%d\r\n",
+                                payload_type, payload_type,
+                                pix_fmt, p->width, p->height, bit_depth);
+        break;
+    }
+
+    case AV_CODEC_ID_VP8:
+        av_strlcatf(buff, size, "a=rtpmap:%d VP8/90000\r\n",
+                                 payload_type);
+        break;
+    case AV_CODEC_ID_VP9:
+        av_strlcatf(buff, size, "a=rtpmap:%d VP9/90000\r\n",
+                                 payload_type);
+        break;
+    case AV_CODEC_ID_MJPEG:
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d JPEG/90000\r\n",
+                                     payload_type);
+        break;
+    case AV_CODEC_ID_ADPCM_G722:
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d G722/%d/%d\r\n",
+                                     payload_type,
+                                     8000, p->channels);
+        break;
+    case AV_CODEC_ID_ADPCM_G726: {
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d AAL2-G726-%d/%d\r\n",
+                                     payload_type,
+                                     p->bits_per_coded_sample*8,
+                                     p->sample_rate);
+        break;
+    }
+    case AV_CODEC_ID_ADPCM_G726LE: {
+        if (payload_type >= RTP_PT_PRIVATE)
+            av_strlcatf(buff, size, "a=rtpmap:%d G726-%d/%d\r\n",
+                                     payload_type,
+                                     p->bits_per_coded_sample*8,
+                                     p->sample_rate);
+        break;
+    }
+    case AV_CODEC_ID_ILBC:
+        av_strlcatf(buff, size, "a=rtpmap:%d iLBC/%d\r\n"
+                                "a=fmtp:%d mode=%d\r\n",
+                                 payload_type, p->sample_rate,
+                                 payload_type, p->block_align == 38 ? 20 : 30);
+        break;
+    case AV_CODEC_ID_SPEEX:
+        av_strlcatf(buff, size, "a=rtpmap:%d speex/%d\r\n",
+                                 payload_type, p->sample_rate);
+        break;
+    case AV_CODEC_ID_OPUS:
+        /* The opus RTP draft says that all opus streams MUST be declared
+           as stereo, to avoid negotiation failures. The actual number of
+           channels can change on a packet-by-packet basis. The number of
+           channels a receiver prefers to receive or a sender plans to send
+           can be declared via fmtp parameters (both default to mono), but
+           receivers MUST be able to receive and process stereo packets. */
+        av_strlcatf(buff, size, "a=rtpmap:%d opus/48000/2\r\n",
+                                 payload_type);
+        if (p->channels == 2) {
+            av_strlcatf(buff, size, "a=fmtp:%d sprop-stereo=1\r\n",
+                                     payload_type);
+        }
+        break;
+    default:
+        /* Nothing special to do here... */
+        break;
     }
 
     av_free(config);
