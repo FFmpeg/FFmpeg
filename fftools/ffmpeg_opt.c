@@ -1895,6 +1895,30 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         ost->top_field_first = -1;
         MATCH_PER_STREAM_OPT(top_field_first, i, ost->top_field_first, oc, st);
 
+        ost->vsync_method = video_sync_method;
+        if (ost->vsync_method == VSYNC_AUTO) {
+            if (!strcmp(oc->oformat->name, "avi")) {
+                ost->vsync_method = VSYNC_VFR;
+            } else {
+                ost->vsync_method = (oc->oformat->flags & AVFMT_VARIABLE_FPS)       ?
+                                     ((oc->oformat->flags & AVFMT_NOTIMESTAMPS) ?
+                                      VSYNC_PASSTHROUGH : VSYNC_VFR)                :
+                                     VSYNC_CFR;
+            }
+
+            if (ost->source_index >= 0 && ost->vsync_method == VSYNC_CFR) {
+                const InputStream *ist = input_streams[ost->source_index];
+                const InputFile *ifile = input_files[ist->file_index];
+
+                if (ifile->nb_streams == 1 && ifile->input_ts_offset == 0)
+                    ost->vsync_method = VSYNC_VSCFR;
+            }
+
+            if (ost->vsync_method == VSYNC_CFR && copy_ts) {
+                ost->vsync_method = VSYNC_VSCFR;
+            }
+        }
+        ost->is_cfr = (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR);
 
         ost->avfilter = get_ost_filters(o, oc, ost);
         if (!ost->avfilter)
