@@ -38,8 +38,8 @@
  * @param idx   The stream index
  * @return The payload type (the 'PT' field in the RTP header).
  */
-int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecParameters *par,
-                            int idx);
+int ff_rtp_get_payload_type(const AVFormatContext *fmt,
+                            const AVCodecParameters *par, int idx);
 
 /**
  * Initialize a codec context based on the payload type.

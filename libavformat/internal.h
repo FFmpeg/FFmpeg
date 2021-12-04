@@ -557,7 +557,7 @@ uint64_t ff_parse_ntp_time(uint64_t ntp_ts);
  * @param fmt the AVFormatContext, which might contain options modifying
  *            the generated SDP
  */
-void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
+void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
                         const char *dest_addr, const char *dest_type,
                         int port, int ttl, AVFormatContext *fmt);
 

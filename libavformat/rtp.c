@@ -87,8 +87,8 @@ int ff_rtp_get_codec_info(AVCodecParameters *par, int payload_type)
     return -1;
 }
 
-int ff_rtp_get_payload_type(AVFormatContext *fmt,
-                            AVCodecParameters *par, int idx)
+int ff_rtp_get_payload_type(const AVFormatContext *fmt,
+                            const AVCodecParameters *par, int idx)
 {
     int i;
     const AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;

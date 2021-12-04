@@ -151,7 +151,7 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
 }
 
 #define MAX_PSET_SIZE 1024
-static char *extradata2psets(AVFormatContext *s, AVCodecParameters *par)
+static char *extradata2psets(AVFormatContext *s, const AVCodecParameters *par)
 {
     char *psets, *p;
     const uint8_t *r;
@@ -222,7 +222,7 @@ static char *extradata2psets(AVFormatContext *s, AVCodecParameters *par)
     return psets;
 }
 
-static char *extradata2psets_hevc(AVCodecParameters *par)
+static char *extradata2psets_hevc(const AVCodecParameters *par)
 {
     char *psets;
     uint8_t *extradata = par->extradata;
@@ -323,7 +323,7 @@ err:
     return NULL;
 }
 
-static char *extradata2config(AVFormatContext *s, AVCodecParameters *par)
+static char *extradata2config(AVFormatContext *s, const AVCodecParameters *par)
 {
     char *config;
 
@@ -343,7 +343,7 @@ static char *extradata2config(AVFormatContext *s, AVCodecParameters *par)
     return config;
 }
 
-static char *xiph_extradata2config(AVFormatContext *s, AVCodecParameters *par)
+static char *xiph_extradata2config(AVFormatContext *s, const AVCodecParameters *par)
 {
     uint8_t *config;
     char *encoded_config;
@@ -413,7 +413,7 @@ xiph_fail:
     return NULL;
 }
 
-static int latm_context2profilelevel(AVCodecParameters *par)
+static int latm_context2profilelevel(const AVCodecParameters *par)
 {
     /* MP4A-LATM
      * The RTP payload format specification is described in RFC 3016
@@ -442,7 +442,7 @@ static int latm_context2profilelevel(AVCodecParameters *par)
     return profile_level;
 }
 
-static char *latm_context2config(AVFormatContext *s, AVCodecParameters *par)
+static char *latm_context2config(AVFormatContext *s, const AVCodecParameters *par)
 {
     /* MP4A-LATM
      * The RTP payload format specification is described in RFC 3016
@@ -477,10 +477,11 @@ static char *latm_context2config(AVFormatContext *s, AVCodecParameters *par)
     return config;
 }
 
-static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int payload_type, AVFormatContext *fmt)
+static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st,
+                                        int payload_type, AVFormatContext *fmt)
 {
     char *config = NULL;
-    AVCodecParameters *p = st->codecpar;
+    const AVCodecParameters *p = st->codecpar;
 
     switch (p->codec_id) {
         case AV_CODEC_ID_DIRAC:
@@ -762,11 +763,11 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
     return buff;
 }
 
-void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
+void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
                         const char *dest_addr, const char *dest_type,
                         int port, int ttl, AVFormatContext *fmt)
 {
-    AVCodecParameters *p = st->codecpar;
+    const AVCodecParameters *p = st->codecpar;
     const char *type;
     int payload_type;
 
@@ -863,7 +864,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
     return AVERROR(ENOSYS);
 }
 
-void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
+void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
                         const char *dest_addr, const char *dest_type,
                         int port, int ttl, AVFormatContext *fmt)
 {
