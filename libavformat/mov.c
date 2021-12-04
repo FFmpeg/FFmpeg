@@ -590,10 +590,12 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < entries; i++) {
         MOVDref *dref = &sc->drefs[i];
         uint32_t size = avio_rb32(pb);
-        int64_t next = avio_tell(pb) + size - 4;
+        int64_t next = avio_tell(pb);
 
-        if (size < 12)
+        if (size < 12 || next < 0 || next > INT64_MAX - size)
             return AVERROR_INVALIDDATA;
+
+        next += size - 4;
 
         dref->type = avio_rl32(pb);
         avio_rb32(pb); // version + flags
