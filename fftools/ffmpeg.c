@@ -2761,17 +2761,17 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     return !eof_reached;
 }
 
-static void print_sdp(void)
+static int print_sdp(void)
 {
     char sdp[16384];
     int i;
-    int j;
+    int j, ret;
     AVIOContext *sdp_pb;
     AVFormatContext **avc;
 
     for (i = 0; i < nb_output_files; i++) {
         if (!output_files[i]->header_written)
-            return;
+            return 0;
     }
 
     avc = av_malloc_array(nb_output_files, sizeof(*avc));
@@ -2784,26 +2784,34 @@ static void print_sdp(void)
         }
     }
 
-    if (!j)
+    if (!j) {
+        av_log(NULL, AV_LOG_ERROR, "No output streams in the SDP.\n");
+        ret = AVERROR(EINVAL);
         goto fail;
+    }
 
-    av_sdp_create(avc, j, sdp, sizeof(sdp));
+    ret = av_sdp_create(avc, j, sdp, sizeof(sdp));
+    if (ret < 0)
+        goto fail;
 
     if (!sdp_filename) {
         printf("SDP:\n%s\n", sdp);
         fflush(stdout);
     } else {
-        if (avio_open2(&sdp_pb, sdp_filename, AVIO_FLAG_WRITE, &int_cb, NULL) < 0) {
+        ret = avio_open2(&sdp_pb, sdp_filename, AVIO_FLAG_WRITE, &int_cb, NULL);
+        if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", sdp_filename);
-        } else {
-            avio_print(sdp_pb, sdp);
-            avio_closep(&sdp_pb);
-            av_freep(&sdp_filename);
+            goto fail;
         }
+
+        avio_print(sdp_pb, sdp);
+        avio_closep(&sdp_pb);
+        av_freep(&sdp_filename);
     }
 
 fail:
     av_freep(&avc);
+    return ret;
 }
 
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
@@ -2959,8 +2967,13 @@ static int check_init_output_file(OutputFile *of, int file_index)
     av_dump_format(of->ctx, file_index, of->ctx->url, 1);
     nb_output_dumped++;
 
-    if (sdp_filename || want_sdp)
-        print_sdp();
+    if (sdp_filename || want_sdp) {
+        ret = print_sdp();
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error writing the SDP.\n");
+            return ret;
+        }
+    }
 
     /* flush the muxing queues */
     for (i = 0; i < of->ctx->nb_streams; i++) {
