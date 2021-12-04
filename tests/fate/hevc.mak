@@ -239,7 +239,7 @@ $(foreach N,$(HEVC_SAMPLES_444_8BIT),$(eval $(call FATE_HEVC_TEST_444_8BIT,$(N))
 $(foreach N,$(HEVC_SAMPLES_444_12BIT),$(eval $(call FATE_HEVC_TEST_444_12BIT,$(N))))
 $(foreach N,$(HEVC_SAMPLES_444_12BIT_LARGE),$(eval $(call FATE_HEVC_TEST_444_12BIT_LARGE,$(N))))
 
-fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync 0 -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
+fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync passthrough -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
 FATE_HEVC_LARGE += fate-hevc-paramchange-yuv420p-yuv420p10
 
 tests/data/hevc-mp4.mov: TAG = GEN
