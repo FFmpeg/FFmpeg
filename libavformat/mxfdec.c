@@ -2274,12 +2274,12 @@ static enum AVColorRange mxf_get_color_range(MXFContext *mxf, MXFDescriptor *des
         /* CDCI range metadata */
         if (!descriptor->component_depth)
             return AVCOL_RANGE_UNSPECIFIED;
-        if (descriptor->black_ref_level == 0 &&
+        if (descriptor->black_ref_level == 0 && descriptor->component_depth < 31 &&
             descriptor->white_ref_level == ((1<<descriptor->component_depth) - 1) &&
             (descriptor->color_range    == (1<<descriptor->component_depth) ||
              descriptor->color_range    == ((1<<descriptor->component_depth) - 1)))
             return AVCOL_RANGE_JPEG;
-        if (descriptor->component_depth >= 8 &&
+        if (descriptor->component_depth >= 8 && descriptor->component_depth < 31 &&
             descriptor->black_ref_level == (1  <<(descriptor->component_depth - 4)) &&
             descriptor->white_ref_level == (235<<(descriptor->component_depth - 8)) &&
             descriptor->color_range     == ((14<<(descriptor->component_depth - 4)) + 1))
