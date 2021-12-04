@@ -1620,23 +1620,25 @@ It is useful for when flow speed of output packets is important, such as live st
 Read input at native frame rate. This is equivalent to setting @code{-readrate 1}.
 @item -vsync @var{parameter}
 Video sync method.
-For compatibility reasons old values can be specified as numbers.
-Newly added values will have to be specified as strings always.
+
+For compatibility reasons some of the values can be specified as numbers (shown
+in parentheses in the following table). This is deprecated and will stop working
+in the future.
 
 @table @option
-@item 0, passthrough
+@item passthrough (0)
 Each frame is passed with its timestamp from the demuxer to the muxer.
-@item 1, cfr
+@item cfr (1)
 Frames will be duplicated and dropped to achieve exactly the requested
 constant frame rate.
-@item 2, vfr
+@item vfr (2)
 Frames are passed through with their timestamp or dropped so as to
 prevent 2 frames from having the same timestamp.
 @item drop
 As passthrough but destroys all timestamps, making the muxer generate
 fresh timestamps based on frame-rate.
-@item -1, auto
-Chooses between 1 and 2 depending on muxer capabilities. This is the
+@item auto (-1)
+Chooses between cfr and vfr depending on muxer capabilities. This is the
 default method.
 @end table
 
