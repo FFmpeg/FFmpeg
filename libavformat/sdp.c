@@ -151,7 +151,8 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
 }
 
 #define MAX_PSET_SIZE 1024
-static char *extradata2psets(AVFormatContext *s, const AVCodecParameters *par)
+static int extradata2psets(AVFormatContext *s, const AVCodecParameters *par,
+                           char **out)
 {
     char *psets, *p;
     const uint8_t *r;
@@ -162,15 +163,18 @@ static char *extradata2psets(AVFormatContext *s, const AVCodecParameters *par)
     uint8_t *tmpbuf = NULL;
     const uint8_t *sps = NULL, *sps_end;
 
+    *out = NULL;
+
     if (par->extradata_size > MAX_EXTRADATA_SIZE) {
         av_log(s, AV_LOG_ERROR, "Too much extradata!\n");
-
-        return NULL;
+        return AVERROR_INVALIDDATA;
     }
     if (par->extradata[0] == 1) {
-        if (ff_avc_write_annexb_extradata(par->extradata, &extradata,
-                                          &extradata_size))
-            return NULL;
+        int ret = ff_avc_write_annexb_extradata(par->extradata, &extradata,
+                                                &extradata_size);
+        if (ret < 0)
+            return ret;
+
         tmpbuf = extradata;
     }
 
@@ -178,7 +182,7 @@ static char *extradata2psets(AVFormatContext *s, const AVCodecParameters *par)
     if (!psets) {
         av_log(s, AV_LOG_ERROR, "Cannot allocate memory for the parameter sets.\n");
         av_free(tmpbuf);
-        return NULL;
+        return AVERROR(ENOMEM);
     }
     memcpy(psets, pset_string, strlen(pset_string));
     p = psets + strlen(pset_string);
@@ -203,11 +207,12 @@ static char *extradata2psets(AVFormatContext *s, const AVCodecParameters *par)
             sps_end = r1;
         }
         if (!av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r)) {
-            av_log(s, AV_LOG_ERROR, "Cannot Base64-encode %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
+            av_log(s, AV_LOG_ERROR, "Cannot Base64-encode %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"!\n",
+                   MAX_PSET_SIZE - (p - psets), r1 - r);
             av_free(psets);
             av_free(tmpbuf);
 
-            return NULL;
+            return AVERROR_INVALIDDATA;
         }
         p += strlen(p);
         r = r1;
@@ -219,10 +224,11 @@ static char *extradata2psets(AVFormatContext *s, const AVCodecParameters *par)
     }
     av_free(tmpbuf);
 
-    return psets;
+    *out = psets;
+    return 0;
 }
 
-static char *extradata2psets_hevc(const AVCodecParameters *par)
+static int extradata2psets_hevc(const AVCodecParameters *par, char **out)
 {
     char *psets;
     uint8_t *extradata = par->extradata;
@@ -231,7 +237,9 @@ static char *extradata2psets_hevc(const AVCodecParameters *par)
     int ps_pos[3] = { 0 };
     static const char * const ps_names[3] = { "vps", "sps", "pps" };
     int num_arrays, num_nalus;
-    int pos, i, j;
+    int pos, i, j, ret;
+
+    *out = NULL;
 
     // Convert to hvcc format. Since we need to group multiple NALUs of
     // the same type, and we might need to convert from one format to the
@@ -239,9 +247,13 @@ static char *extradata2psets_hevc(const AVCodecParameters *par)
     // format.
     if (par->extradata[0] != 1) {
         AVIOContext *pb;
-        if (avio_open_dyn_buf(&pb) < 0)
-            return NULL;
-        if (ff_isom_write_hvcc(pb, par->extradata, par->extradata_size, 0) < 0) {
+
+        ret = avio_open_dyn_buf(&pb);
+        if (ret < 0)
+            return ret;
+
+        ret = ff_isom_write_hvcc(pb, par->extradata, par->extradata_size, 0);
+        if (ret < 0) {
             avio_close_dyn_buf(pb, &tmpbuf);
             goto err;
         }
@@ -284,8 +296,11 @@ static char *extradata2psets_hevc(const AVCodecParameters *par)
         goto err;
 
     psets = av_mallocz(MAX_PSET_SIZE);
-    if (!psets)
+    if (!psets) {
+        ret = AVERROR(ENOMEM);
         goto err;
+    }
+
     psets[0] = '\0';
 
     for (i = 0; i < 3; i++) {
@@ -316,40 +331,48 @@ static char *extradata2psets_hevc(const AVCodecParameters *par)
     }
     av_free(tmpbuf);
 
-    return psets;
-
+    *out = psets;
+    return 0;
 err:
+    if (ret >= 0)
+        ret = AVERROR_INVALIDDATA;
     av_free(tmpbuf);
-    return NULL;
+    return ret;
 }
 
-static char *extradata2config(AVFormatContext *s, const AVCodecParameters *par)
+static int extradata2config(AVFormatContext *s, const AVCodecParameters *par,
+                            char **out)
 {
     char *config;
 
+    *out = NULL;
+
     if (par->extradata_size > MAX_EXTRADATA_SIZE) {
         av_log(s, AV_LOG_ERROR, "Too much extradata!\n");
-
-        return NULL;
+        return AVERROR_INVALIDDATA;
     }
     config = av_malloc(10 + par->extradata_size * 2);
     if (!config) {
         av_log(s, AV_LOG_ERROR, "Cannot allocate memory for the config info.\n");
-        return NULL;
+        return AVERROR(ENOMEM);
     }
     memcpy(config, "; config=", 9);
     ff_data_to_hex(config + 9, par->extradata, par->extradata_size, 0);
 
-    return config;
+    *out = config;
+    return 0;
 }
 
-static char *xiph_extradata2config(AVFormatContext *s, const AVCodecParameters *par)
+static int xiph_extradata2config(AVFormatContext *s, const AVCodecParameters *par,
+                                 char **out)
 {
     uint8_t *config;
     char *encoded_config;
     const uint8_t *header_start[3];
     int headers_len, header_len[3], config_len;
-    int first_header_size;
+    int first_header_size, ret;
+
+    *out = NULL;
 
     switch (par->codec_id) {
     case AV_CODEC_ID_THEORA:
@@ -360,14 +383,15 @@ static char *xiph_extradata2config(AVFormatContext *s, const AVCodecParameters *
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unsupported Xiph codec ID\n");
-        return NULL;
+        return AVERROR(ENOSYS);
     }
 
-    if (avpriv_split_xiph_headers(par->extradata, par->extradata_size,
-                              first_header_size, header_start,
-                              header_len) < 0) {
+    ret = avpriv_split_xiph_headers(par->extradata, par->extradata_size,
+                                    first_header_size, header_start,
+                                    header_len);
+    if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Extradata corrupt.\n");
-        return NULL;
+        return ret;
     }
 
     headers_len = header_len[0] + header_len[2];
@@ -405,12 +429,13 @@ static char *xiph_extradata2config(AVFormatContext *s, const AVCodecParameters *
                      config, config_len);
     av_free(config);
 
-    return encoded_config;
+    *out = encoded_config;
+    return 0;
 
 xiph_fail:
     av_log(s, AV_LOG_ERROR,
            "Not enough memory for configuration string\n");
-    return NULL;
+    return AVERROR(ENOMEM);
 }
 
 static int latm_context2profilelevel(const AVCodecParameters *par)
@@ -442,7 +467,8 @@ static int latm_context2profilelevel(const AVCodecParameters *par)
     return profile_level;
 }
 
-static char *latm_context2config(AVFormatContext *s, const AVCodecParameters *par)
+static int latm_context2config(AVFormatContext *s, const AVCodecParameters *par,
+                               char **out)
 {
     /* MP4A-LATM
      * The RTP payload format specification is described in RFC 3016
@@ -452,12 +478,14 @@ static char *latm_context2config(AVFormatContext *s, const AVCodecParameters *pa
     int rate_index;
     char *config;
 
+    *out = NULL;
+
     for (rate_index = 0; rate_index < 16; rate_index++)
         if (avpriv_mpeg4audio_sample_rates[rate_index] == par->sample_rate)
             break;
     if (rate_index == 16) {
         av_log(s, AV_LOG_ERROR, "Unsupported sample rate\n");
-        return NULL;
+        return AVERROR(ENOSYS);
     }
 
     config_byte[0] = 0x40;
@@ -470,18 +498,20 @@ static char *latm_context2config(AVFormatContext *s, const AVCodecParameters *pa
     config = av_malloc(6*2+1);
     if (!config) {
         av_log(s, AV_LOG_ERROR, "Cannot allocate memory for the config info.\n");
-        return NULL;
+        return AVERROR(ENOMEM);
     }
     ff_data_to_hex(config, config_byte, 6, 1);
 
-    return config;
+    *out = config;
+    return 0;
 }
 
-static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st,
-                                        int payload_type, AVFormatContext *fmt)
+static int sdp_write_media_attributes(char *buff, int size, const AVStream *st,
+                                      int payload_type, AVFormatContext *fmt)
 {
     char *config = NULL;
     const AVCodecParameters *p = st->codecpar;
+    int ret = 0;
 
     switch (p->codec_id) {
     case AV_CODEC_ID_DIRAC:
@@ -493,7 +523,9 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
             av_opt_flag_is_set(fmt->priv_data, "rtpflags", "h264_mode0"))
             mode = 0;
         if (p->extradata_size) {
-            config = extradata2psets(fmt, p);
+            ret = extradata2psets(fmt, p, &config);
+            if (ret < 0)
+                return ret;
         }
         av_strlcatf(buff, size, "a=rtpmap:%d H264/90000\r\n"
                                 "a=fmtp:%d packetization-mode=%d%s\r\n",
@@ -530,8 +562,11 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
                                 payload_type, p->width, p->height);
         break;
     case AV_CODEC_ID_HEVC:
-        if (p->extradata_size)
-            config = extradata2psets_hevc(p);
+        if (p->extradata_size) {
+            ret = extradata2psets_hevc(p, &config);
+            if (ret < 0)
+                return ret;
+        }
         av_strlcatf(buff, size, "a=rtpmap:%d H265/90000\r\n", payload_type);
         if (config)
             av_strlcatf(buff, size, "a=fmtp:%d %s\r\n",
@@ -539,7 +574,9 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
         break;
     case AV_CODEC_ID_MPEG4:
         if (p->extradata_size) {
-            config = extradata2config(fmt, p);
+            ret = extradata2config(fmt, p, &config);
+            if (ret < 0)
+                return ret;
         }
         av_strlcatf(buff, size, "a=rtpmap:%d MP4V-ES/90000\r\n"
                                 "a=fmtp:%d profile-level-id=1%s\r\n",
@@ -549,25 +586,24 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
     case AV_CODEC_ID_AAC:
         if (fmt && fmt->oformat && fmt->oformat->priv_class &&
             av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
-            config = latm_context2config(fmt, p);
-            if (!config)
-                return NULL;
+            ret = latm_context2config(fmt, p, &config);
+            if (ret < 0)
+                return ret;
             av_strlcatf(buff, size, "a=rtpmap:%d MP4A-LATM/%d/%d\r\n"
                                     "a=fmtp:%d profile-level-id=%d;cpresent=0;config=%s\r\n",
                                      payload_type, p->sample_rate, p->channels,
                                      payload_type, latm_context2profilelevel(p), config);
         } else {
             if (p->extradata_size) {
-                config = extradata2config(fmt, p);
+                ret = extradata2config(fmt, p, &config);
+                if (ret < 0)
+                    return ret;
             } else {
                 /* FIXME: maybe we can forge config information based on the
                  *        codec parameters...
                  */
                 av_log(fmt, AV_LOG_ERROR, "AAC with no global headers is currently not supported.\n");
-                return NULL;
-            }
-            if (!config) {
-                return NULL;
+                return AVERROR(ENOSYS);
             }
             av_strlcatf(buff, size, "a=rtpmap:%d MPEG4-GENERIC/%d/%d\r\n"
                                     "a=fmtp:%d profile-level-id=1;"
@@ -615,11 +651,13 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
         break;
     case AV_CODEC_ID_VORBIS:
         if (p->extradata_size)
-            config = xiph_extradata2config(fmt, p);
-        else
+            ret = xiph_extradata2config(fmt, p, &config);
+        else {
             av_log(fmt, AV_LOG_ERROR, "Vorbis configuration info missing\n");
-        if (!config)
-            return NULL;
+            ret = AVERROR_INVALIDDATA;
+        }
+        if (ret < 0)
+            return ret;
 
         av_strlcatf(buff, size, "a=rtpmap:%d vorbis/%d/%d\r\n"
                                 "a=fmtp:%d configuration=%s\r\n",
@@ -640,15 +678,17 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
             break;
         default:
             av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
-            return NULL;
+            return AVERROR(ENOSYS);
         }
 
         if (p->extradata_size)
-            config = xiph_extradata2config(fmt, p);
-        else
+            ret = xiph_extradata2config(fmt, p, &config);
+        else {
             av_log(fmt, AV_LOG_ERROR, "Theora configuration info missing\n");
-        if (!config)
-            return NULL;
+            ret = AVERROR_INVALIDDATA;
+        }
+        if (ret < 0)
+            return ret;
 
         av_strlcatf(buff, size, "a=rtpmap:%d theora/90000\r\n"
                                 "a=fmtp:%d delivery-method=inline; "
@@ -682,7 +722,7 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
             break;
         default:
             av_log(fmt, AV_LOG_ERROR, "Unsupported pixel format.\n");
-            return NULL;
+            return AVERROR(ENOSYS);
         }
 
         av_strlcatf(buff, size, "a=rtpmap:%d raw/90000\r\n"
@@ -760,12 +800,12 @@ static char *sdp_write_media_attributes(char *buff, int size, const AVStream *st
 
     av_free(config);
 
-    return buff;
+    return 0;
 }
 
-void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
-                        const char *dest_addr, const char *dest_type,
-                        int port, int ttl, AVFormatContext *fmt)
+int ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
+                       const char *dest_addr, const char *dest_type,
+                       int port, int ttl, AVFormatContext *fmt)
 {
     const AVCodecParameters *p = st->codecpar;
     const char *type;
@@ -786,7 +826,7 @@ void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
         av_strlcatf(buff, size, "b=AS:%"PRId64"\r\n", p->bit_rate / 1000);
     }
 
-    sdp_write_media_attributes(buff, size, st, payload_type, fmt);
+    return sdp_write_media_attributes(buff, size, st, payload_type, fmt);
 }
 
 int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
@@ -832,10 +872,13 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
                 ttl = 0;
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
-            ff_sdp_write_media(buf, size, ac[i]->streams[j], index++,
-                               dst[0] ? dst : NULL, dst_type,
-                               (port > 0) ? port + j * 2 : 0,
-                               ttl, ac[i]);
+            int ret = ff_sdp_write_media(buf, size, ac[i]->streams[j], index++,
+                                         dst[0] ? dst : NULL, dst_type,
+                                         (port > 0) ? port + j * 2 : 0,
+                                         ttl, ac[i]);
+            if (ret < 0)
+                return ret;
+
             if (port <= 0) {
                 av_strlcatf(buf, size,
                                    "a=control:streamid=%d\r\n", i + j);
@@ -864,9 +907,10 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
     return AVERROR(ENOSYS);
 }
 
-void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
-                        const char *dest_addr, const char *dest_type,
-                        int port, int ttl, AVFormatContext *fmt)
+int ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
+                       const char *dest_addr, const char *dest_type,
+                       int port, int ttl, AVFormatContext *fmt)
 {
+    return AVERROR(ENOSYS);
 }
 #endif

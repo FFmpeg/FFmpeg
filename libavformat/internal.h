@@ -556,10 +556,11 @@ uint64_t ff_parse_ntp_time(uint64_t ntp_ts);
  * @param ttl the time to live of the stream, 0 if not multicast
  * @param fmt the AVFormatContext, which might contain options modifying
  *            the generated SDP
+ * @return 0 on success, a negative error code on failure
  */
-void ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
-                        const char *dest_addr, const char *dest_type,
-                        int port, int ttl, AVFormatContext *fmt);
+int ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
+                       const char *dest_addr, const char *dest_type,
+                       int port, int ttl, AVFormatContext *fmt);
 
 /**
  * Write a packet to another muxer than the one the user originally
