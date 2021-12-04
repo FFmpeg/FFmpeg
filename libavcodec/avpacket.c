@@ -142,7 +142,14 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
 
         if (new_size + data_offset > pkt->buf->size ||
             !av_buffer_is_writable(pkt->buf)) {
-            int ret = av_buffer_realloc(&pkt->buf, new_size + data_offset);
+            int ret;
+
+            // allocate slightly more than requested to avoid excessive
+            // reallocations
+            if (new_size + data_offset < INT_MAX - new_size/16)
+                new_size += new_size/16;
+
+            ret = av_buffer_realloc(&pkt->buf, new_size + data_offset);
             if (ret < 0) {
                 pkt->data = old_data;
                 return ret;
