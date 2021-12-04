@@ -195,17 +195,17 @@ static int rfc4175_parse_sdp_line(AVFormatContext *s, int st_index,
 static int rfc4175_finalize_packet(PayloadContext *data, AVPacket *pkt,
                                    int stream_index)
 {
-   int ret;
+    int ret;
 
-   pkt->stream_index = stream_index;
-   ret = av_packet_from_data(pkt, data->frame, data->frame_size);
-   if (ret < 0) {
-       av_freep(&data->frame);
-   }
+    pkt->stream_index = stream_index;
+    ret = av_packet_from_data(pkt, data->frame, data->frame_size);
+    if (ret < 0) {
+        av_freep(&data->frame);
+    }
 
-   data->frame = NULL;
+    data->frame = NULL;
 
-   return ret;
+    return ret;
 }
 
 static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
