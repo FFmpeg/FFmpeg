@@ -71,10 +71,10 @@ static int get_second_size(char *codec_name)
 
 static int aa_read_header(AVFormatContext *s)
 {
-    int i, j, idx, largest_idx = -1;
+    int i, idx, largest_idx = -1;
     uint32_t toc_size, npairs, header_seed = 0, start;
     char codec_name[64] = {0};
-    uint8_t output[24], dst[8], src[8];
+    uint8_t buf[24];
     int64_t largest_size = -1, current_size = -1, chapter_pos;
     struct toc_entry {
         uint32_t offset;
@@ -156,19 +156,11 @@ static int aa_read_header(AVFormatContext *s)
     if (!c->tea_ctx)
         return AVERROR(ENOMEM);
     av_tea_init(c->tea_ctx, c->aa_fixed_key, 16);
-    output[0] = output[1] = 0; // purely for padding purposes
-    memcpy(output + 2, header_key, 16);
-    idx = 0;
-    for (i = 0; i < 3; i++) { // TEA CBC with weird mixed endianness
-        AV_WB32(src, header_seed);
-        AV_WB32(src + 4, header_seed + 1);
-        header_seed += 2;
-        av_tea_crypt(c->tea_ctx, dst, src, 1, NULL, 0); // TEA ECB encrypt
-        for (j = 0; j < TEA_BLOCK_SIZE && idx < 18; j+=1, idx+=1) {
-            output[idx] = output[idx] ^ dst[j];
-        }
-    }
-    memcpy(c->file_key, output + 2, 16); // skip first 2 bytes of output
+    for (int i = 0; i < 6; i++)
+        AV_WB32(buf + 4 * i, header_seed + i);
+    av_tea_crypt(c->tea_ctx, buf, buf, 3, NULL, 0);
+    AV_WN64(c->file_key,     AV_RN64(buf + 2)  ^ AV_RN64(header_key));
+    AV_WN64(c->file_key + 8, AV_RN64(buf + 10) ^ AV_RN64(header_key + 8));
     av_log(s, AV_LOG_DEBUG, "File key is ");
     for (i = 0; i < 16; i++)
         av_log(s, AV_LOG_DEBUG, "%02x", c->file_key[i]);
