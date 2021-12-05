@@ -34,6 +34,13 @@ typedef struct IOContext {
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
+int64_t interrupt_counter;
+static int interrupt_cb(void *ctx)
+{
+    interrupt_counter --;
+    return interrupt_counter < 0;
+}
+
 static void error(const char *err)
 {
     fprintf(stderr, "%s", err);
@@ -160,6 +167,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                 *strchr(extension, ',') = 0;
             av_strlcatf(filename, sizeof(filename), ".%s", extension);
         }
+
+        interrupt_counter = bytestream2_get_le32(&gbc);
+        avfmt->interrupt_callback.callback = interrupt_cb;
     }
 
     if (!io_buffer_size || size / io_buffer_size > maxblocks)
