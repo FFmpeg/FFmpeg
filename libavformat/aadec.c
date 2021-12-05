@@ -130,8 +130,8 @@ static int aa_read_header(AVFormatContext *s)
                 AV_WB32(&header_key[idx * 4], header_key_part[idx]); // convert each part to BE!
             }
             av_log(s, AV_LOG_DEBUG, "Processed HeaderKey is ");
-            for (i = 0; i < 16; i++)
-                av_log(s, AV_LOG_DEBUG, "%02x", header_key[i]);
+            for (int j = 0; j < 16; j++)
+                av_log(s, AV_LOG_DEBUG, "%02x", header_key[j]);
             av_log(s, AV_LOG_DEBUG, "\n");
         } else {
             av_dict_set(&s->metadata, key, val, 0);
