@@ -157,10 +157,22 @@ static int gem_decode_frame(AVCodecContext *avctx,
     if (header_size >= 11)
         tag = bytestream2_peek_be32(&gb);
 
-    if (tag == AV_RB32("STTT") || tag == AV_RB32("TIMG") || tag == AV_RB32("XIMG") ||
-        planes == 1 || planes == 2 || planes == 3 || planes == 4 ||
-        planes == 8 || planes == 16 || planes == 24) {
-    } else {
+    if (tag == AV_RB32("STTT")) {
+        if (planes != 4) {
+            avpriv_request_sample(avctx, "STTT planes=%d", planes);
+            return AVERROR_PATCHWELCOME;
+        }
+    } else if (tag == AV_RB32("TIMG")) {
+        if (planes != 15) {
+            avpriv_request_sample(avctx, "TIMG planes=%d", planes);
+            return AVERROR_PATCHWELCOME;
+        }
+    } else if (tag == AV_RB32("XIMG")) {
+        if (planes != 1 && planes != 2 && planes != 4 && planes != 8 && planes != 16 && planes != 24 && planes != 32) {
+            avpriv_request_sample(avctx, "XIMG planes=%d", planes);
+            return AVERROR_PATCHWELCOME;
+        }
+    } else if (planes != 1 && planes != 2 && planes != 3 && planes != 4 && planes != 8 && planes != 16 && planes != 24) {
         avpriv_request_sample(avctx, "planes=%d", planes);
         return AVERROR_PATCHWELCOME;
     }
@@ -184,14 +196,12 @@ static int gem_decode_frame(AVCodecContext *avctx,
                 palette[i] = 0xFF000000 | r << 16 | g << 8 | b;
             }
         } else {
-            avpriv_request_sample(avctx, "STTT planes=%d", planes);
-            return AVERROR_PATCHWELCOME;
+            av_assert0(0);
         }
     } else if (tag == AV_RB32("TIMG")) {
         bytestream2_skip(&gb, 4);
         if (planes != 15) {
-            avpriv_request_sample(avctx, "TIMG planes=%d", planes);
-            return AVERROR_PATCHWELCOME;
+            av_assert0(0);
         }
     } else if (tag == AV_RB32("XIMG")) {
         bytestream2_skip(&gb, 6);
@@ -215,8 +225,7 @@ static int gem_decode_frame(AVCodecContext *avctx,
             row_width = avctx->width * pixel_size;
             put_lines = put_lines_bytes;
         } else {
-            avpriv_request_sample(avctx, "XIMG planes=%d", planes);
-            return AVERROR_PATCHWELCOME;
+            av_assert0(0);
         }
     } else if (planes == 1) {
         palette[0] = 0xFFFFFFFF;
@@ -244,7 +253,8 @@ static int gem_decode_frame(AVCodecContext *avctx,
         planes = 1;
         row_width = avctx->width * pixel_size;
         put_lines = put_lines_bytes;
-    }
+    } else
+        av_assert0(0);
 
     ret = av_reallocp_array(&avctx->priv_data, planes, row_width);
     if (ret < 0)
