@@ -216,7 +216,6 @@ static char *extradata2psets(AVFormatContext *s, AVCodecParameters *par)
         memcpy(p, profile_string, strlen(profile_string));
         p += strlen(p);
         ff_data_to_hex(p, sps + 1, 3, 0);
-        p[6] = '\0';
     }
     av_free(tmpbuf);
 
@@ -340,7 +339,6 @@ static char *extradata2config(AVFormatContext *s, AVCodecParameters *par)
     }
     memcpy(config, "; config=", 9);
     ff_data_to_hex(config + 9, par->extradata, par->extradata_size, 0);
-    config[9 + par->extradata_size * 2] = 0;
 
     return config;
 }
@@ -475,7 +473,6 @@ static char *latm_context2config(AVFormatContext *s, AVCodecParameters *par)
         return NULL;
     }
     ff_data_to_hex(config, config_byte, 6, 1);
-    config[12] = 0;
 
     return config;
 }

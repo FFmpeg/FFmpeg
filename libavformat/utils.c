@@ -1151,6 +1151,7 @@ char *ff_data_to_hex(char *buff, const uint8_t *src, int s, int lowercase)
         buff[i * 2]     = hex_table[src[i] >> 4];
         buff[i * 2 + 1] = hex_table[src[i] & 0xF];
     }
+    buff[2 * s] = '\0';
 
     return buff;
 }

@@ -122,7 +122,6 @@ static int tak_read_header(AVFormatContext *s)
             }
 
             ff_data_to_hex(md5_hex, md5, sizeof(md5), 1);
-            md5_hex[2 * sizeof(md5)] = '\0';
             av_log(s, AV_LOG_VERBOSE, "MD5=%s\n", md5_hex);
             break;
         }

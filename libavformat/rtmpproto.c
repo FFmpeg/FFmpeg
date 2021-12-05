@@ -1663,7 +1663,6 @@ static int do_llnw_auth(RTMPContext *rt, const char *user, const char *nonce)
     av_md5_update(md5, rt->password, strlen(rt->password));
     av_md5_final(md5, hash);
     ff_data_to_hex(hashstr1, hash, 16, 1);
-    hashstr1[32] = '\0';
 
     av_md5_init(md5);
     av_md5_update(md5, method, strlen(method));
@@ -1673,7 +1672,6 @@ static int do_llnw_auth(RTMPContext *rt, const char *user, const char *nonce)
         av_md5_update(md5, "/_definst_", strlen("/_definst_"));
     av_md5_final(md5, hash);
     ff_data_to_hex(hashstr2, hash, 16, 1);
-    hashstr2[32] = '\0';
 
     av_md5_init(md5);
     av_md5_update(md5, hashstr1, strlen(hashstr1));

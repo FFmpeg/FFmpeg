@@ -745,7 +745,6 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
             memcpy(iv, hls->iv, sizeof(iv));
         }
         ff_data_to_hex(buf, iv, sizeof(iv), 0);
-        buf[32] = '\0';
         memcpy(hls->iv_string, buf, sizeof(hls->iv_string));
     }
 

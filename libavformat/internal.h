@@ -484,6 +484,17 @@ void ff_flush_packet_queue(AVFormatContext *s);
  */
 int ff_mkdir_p(const char *path);
 
+/**
+ * Write hexadecimal string corresponding to given binary data. The string
+ * is zero-terminated.
+ *
+ * @param buf       the output string is written here;
+ *                  needs to be at least 2 * size + 1 bytes long.
+ * @param src       the input data to be transformed.
+ * @param size      the size (in byte) of src.
+ * @param lowercase determines whether to use the range [0-9a-f] or [0-9A-F].
+ * @return buf.
+ */
 char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
 
 /**
