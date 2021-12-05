@@ -26,6 +26,7 @@
  * @sa http://wiki.multimedia.cx/index.php?title=Vivo
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
@@ -206,11 +207,12 @@ static int vivo_read_header(AVFormatContext *s)
                     return AVERROR_INVALIDDATA;
                 value_used = 1;
             } else if (!strcmp(key, "FPS")) {
-                AVRational tmp;
+                double d;
+                if (av_sscanf(value, "%f", &d) != 1)
+                    return AVERROR_INVALIDDATA;
 
                 value_used = 1;
-                if (!av_parse_ratio(&tmp, value, 10000, AV_LOG_WARNING, s))
-                    fps = av_inv_q(tmp);
+                fps = av_inv_q(av_d2q(d, 10000));
             }
 
             if (!value_used)
