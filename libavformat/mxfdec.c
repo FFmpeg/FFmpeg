@@ -887,6 +887,9 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
 {
     int i, length;
 
+    if (segment->temporal_offset_entries)
+        return AVERROR_INVALIDDATA;
+
     segment->nb_index_entries = avio_rb32(pb);
 
     length = avio_rb32(pb);
