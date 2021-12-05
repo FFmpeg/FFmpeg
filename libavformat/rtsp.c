@@ -1178,8 +1178,8 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     char buf[MAX_URL_SIZE], buf1[MAX_URL_SIZE], *q;
     unsigned char ch;
     const char *p;
-    int ret, content_length, line_count = 0, request = 0;
-    unsigned char *content = NULL;
+    int ret, content_length, line_count, request;
+    unsigned char *content;
 
 start:
     line_count = 0;
