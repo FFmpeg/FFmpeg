@@ -1352,23 +1352,18 @@ static int open_input_file(OptionsContext *o, const char *filename)
     return 0;
 }
 
-static uint8_t *get_line(AVIOContext *s)
+static char *get_line(AVIOContext *s, AVBPrint *bprint)
 {
-    AVIOContext *line;
-    uint8_t *buf;
     char c;
 
-    if (avio_open_dyn_buf(&line) < 0) {
+    while ((c = avio_r8(s)) && c != '\n')
+        av_bprint_chars(bprint, c, 1);
+
+    if (!av_bprint_is_complete(bprint)) {
         av_log(NULL, AV_LOG_FATAL, "Could not alloc buffer for reading preset.\n");
         exit_program(1);
     }
-
-    while ((c = avio_r8(s)) && c != '\n')
-        avio_w8(line, c);
-    avio_w8(line, 0);
-    avio_close_dyn_buf(line, &buf);
-
-    return buf;
+    return bprint->str;
 }
 
 static int get_preset_file_2(const char *preset_name, const char *codec_name, AVIOContext **s)
@@ -1499,20 +1494,21 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         ost->autoscale = 1;
         MATCH_PER_STREAM_OPT(autoscale, i, ost->autoscale, oc, st);
         if (preset && (!(ret = get_preset_file_2(preset, ost->enc->name, &s)))) {
+            AVBPrint bprint;
+            av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
             do  {
-                buf = get_line(s);
-                if (!buf[0] || buf[0] == '#') {
-                    av_free(buf);
+                av_bprint_clear(&bprint);
+                buf = get_line(s, &bprint);
+                if (!buf[0] || buf[0] == '#')
                     continue;
-                }
                 if (!(arg = strchr(buf, '='))) {
                     av_log(NULL, AV_LOG_FATAL, "Invalid line found in the preset file.\n");
                     exit_program(1);
                 }
                 *arg++ = 0;
                 av_dict_set(&ost->encoder_opts, buf, arg, AV_DICT_DONT_OVERWRITE);
-                av_free(buf);
             } while (!s->eof_reached);
+            av_bprint_finalize(&bprint, NULL);
             avio_closep(&s);
         }
         if (ret) {
