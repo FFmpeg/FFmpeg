@@ -83,6 +83,7 @@ static int aa_read_header(AVFormatContext *s)
     uint32_t header_key_part[4];
     uint8_t header_key[16] = {0};
     AADemuxContext *c = s->priv_data;
+    char file_key[2 * sizeof(c->file_key) + 1];
     AVIOContext *pb = s->pb;
     AVStream *st;
     FFStream *sti;
@@ -130,10 +131,8 @@ static int aa_read_header(AVFormatContext *s)
             for (idx = 0; idx < 4; idx++) {
                 AV_WB32(&header_key[idx * 4], header_key_part[idx]); // convert each part to BE!
             }
-            av_log(s, AV_LOG_DEBUG, "Processed HeaderKey is ");
-            for (int j = 0; j < 16; j++)
-                av_log(s, AV_LOG_DEBUG, "%02x", header_key[j]);
-            av_log(s, AV_LOG_DEBUG, "\n");
+            ff_data_to_hex(key, header_key, sizeof(header_key), 1);
+            av_log(s, AV_LOG_DEBUG, "Processed HeaderKey is %s\n", key);
         } else {
             av_dict_set(&s->metadata, key, val, 0);
         }
@@ -161,10 +160,8 @@ static int aa_read_header(AVFormatContext *s)
     av_tea_crypt(c->tea_ctx, buf, buf, 3, NULL, 0);
     AV_WN64(c->file_key,     AV_RN64(buf + 2)  ^ AV_RN64(header_key));
     AV_WN64(c->file_key + 8, AV_RN64(buf + 10) ^ AV_RN64(header_key + 8));
-    av_log(s, AV_LOG_DEBUG, "File key is ");
-    for (i = 0; i < 16; i++)
-        av_log(s, AV_LOG_DEBUG, "%02x", c->file_key[i]);
-    av_log(s, AV_LOG_DEBUG, "\n");
+    ff_data_to_hex(file_key, c->file_key, sizeof(c->file_key), 1);
+    av_log(s, AV_LOG_DEBUG, "File key is %s\n", file_key);
     av_tea_init(c->tea_ctx, c->file_key, 16);
 
     /* decoder setup */
