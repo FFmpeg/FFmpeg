@@ -173,6 +173,7 @@ static int aa_read_header(AVFormatContext *s)
     for (i = 0; i < 16; i++)
         av_log(s, AV_LOG_DEBUG, "%02x", c->file_key[i]);
     av_log(s, AV_LOG_DEBUG, "\n");
+    av_tea_init(c->tea_ctx, c->file_key, 16);
 
     /* decoder setup */
     st = avformat_new_stream(s, NULL);
@@ -246,9 +247,6 @@ static int aa_read_header(AVFormatContext *s)
 
 static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int i;
-    int blocks;
-    uint8_t *buf;
     int ret;
     AADemuxContext *c = s->priv_data;
     uint64_t pos = avio_tell(s->pb);
@@ -279,15 +277,10 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret != c->current_codec_second_size)
         return AVERROR_EOF;
 
-    buf = pkt->data;
-    // decrypt c->current_codec_second_size bytes
+    // decrypt c->current_codec_second_size bytes in blocks of TEA_BLOCK_SIZE
     // trailing bytes are left unencrypted!
-    blocks = c->current_codec_second_size / TEA_BLOCK_SIZE;
-    for (i = 0; i < blocks; i++) {
-        av_tea_init(c->tea_ctx, c->file_key, 16);
-        av_tea_crypt(c->tea_ctx, buf, buf, 1, NULL, 1);
-        buf += TEA_BLOCK_SIZE;
-    }
+    av_tea_crypt(c->tea_ctx, pkt->data, pkt->data,
+                 c->current_codec_second_size / TEA_BLOCK_SIZE, NULL, 1);
 
     // update state
     c->current_chapter_size = c->current_chapter_size - c->current_codec_second_size;
