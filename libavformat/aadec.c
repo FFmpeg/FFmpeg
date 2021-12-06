@@ -71,7 +71,7 @@ static int get_second_size(char *codec_name)
 
 static int aa_read_header(AVFormatContext *s)
 {
-    int i, idx, largest_idx = -1;
+    int largest_idx = -1;
     uint32_t toc_size, npairs, header_seed = 0, start;
     char codec_name[64] = {0};
     uint8_t buf[24];
@@ -80,7 +80,6 @@ static int aa_read_header(AVFormatContext *s)
         uint32_t offset;
         uint32_t size;
     } TOC[MAX_TOC_ENTRIES];
-    uint32_t header_key_part[4];
     uint8_t header_key[16] = {0};
     AADemuxContext *c = s->priv_data;
     char file_key[2 * sizeof(c->file_key) + 1];
@@ -96,7 +95,7 @@ static int aa_read_header(AVFormatContext *s)
     avio_skip(pb, 4); // unidentified integer
     if (toc_size > MAX_TOC_ENTRIES || toc_size < 2)
         return AVERROR_INVALIDDATA;
-    for (i = 0; i < toc_size; i++) { // read TOC
+    for (uint32_t i = 0; i < toc_size; i++) { // read TOC
         avio_skip(pb, 4); // TOC entry index
         TOC[i].offset = avio_rb32(pb); // block offset
         TOC[i].size = avio_rb32(pb); // block size
@@ -105,7 +104,7 @@ static int aa_read_header(AVFormatContext *s)
     npairs = avio_rb32(pb); // read dictionary entries
     if (npairs > MAX_DICTIONARY_ENTRIES)
         return AVERROR_INVALIDDATA;
-    for (i = 0; i < npairs; i++) {
+    for (uint32_t i = 0; i < npairs; i++) {
         char key[128], val[128];
         uint32_t nkey, nval;
 
@@ -121,6 +120,7 @@ static int aa_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_DEBUG, "HeaderSeed is <%s>\n", val);
             header_seed = atoi(val);
         } else if (!strcmp(key, "HeaderKey")) { // this looks like "1234567890 1234567890 1234567890 1234567890"
+            uint32_t header_key_part[4];
             av_log(s, AV_LOG_DEBUG, "HeaderKey is <%s>\n", val);
 
             ret = sscanf(val, "%"SCNu32"%"SCNu32"%"SCNu32"%"SCNu32,
@@ -128,9 +128,8 @@ static int aa_read_header(AVFormatContext *s)
             if (ret != 4)
                 return AVERROR_INVALIDDATA;
 
-            for (idx = 0; idx < 4; idx++) {
+            for (int idx = 0; idx < 4; idx++)
                 AV_WB32(&header_key[idx * 4], header_key_part[idx]); // convert each part to BE!
-            }
             ff_data_to_hex(key, header_key, sizeof(header_key), 1);
             av_log(s, AV_LOG_DEBUG, "Processed HeaderKey is %s\n", key);
         } else {
@@ -195,7 +194,7 @@ static int aa_read_header(AVFormatContext *s)
     }
 
     /* determine, and jump to audio start offset */
-    for (i = 1; i < toc_size; i++) { // skip the first entry!
+    for (uint32_t i = 1; i < toc_size; i++) { // skip the first entry!
         current_size = TOC[i].size;
         if (current_size > largest_size) {
             largest_idx = i;
