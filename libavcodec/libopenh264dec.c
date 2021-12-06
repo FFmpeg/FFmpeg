@@ -91,8 +91,8 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
 {
     SVCContext *s = avctx->priv_data;
     SBufferInfo info = { 0 };
-    uint8_t* ptrs[3];
-    int ret, linesize[3];
+    uint8_t *ptrs[4] = { NULL };
+    int ret, linesize[4];
     AVFrame *avframe = data;
     DECODING_STATE state;
 #if OPENH264_VER_AT_LEAST(1, 7)
@@ -140,6 +140,7 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
 
     linesize[0] = info.UsrData.sSystemBuffer.iStride[0];
     linesize[1] = linesize[2] = info.UsrData.sSystemBuffer.iStride[1];
+    linesize[3] = 0;
     av_image_copy(avframe->data, avframe->linesize, (const uint8_t **) ptrs, linesize, avctx->pix_fmt, avctx->width, avctx->height);
 
     avframe->pts     = info.uiOutYuvTimeStamp;
