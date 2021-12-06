@@ -560,8 +560,10 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
 
 /**
  * Skip a RTP/TCP interleaved packet.
+ *
+ * @return 0 on success, < 0 on failure.
  */
-void ff_rtsp_skip_packet(AVFormatContext *s);
+int ff_rtsp_skip_packet(AVFormatContext *s);
 
 /**
  * Connect to the RTSP server and set up the individual media streams.
