@@ -979,6 +979,7 @@ static int mov_read_adrm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint8_t output[64];
     uint8_t file_checksum[20];
     uint8_t calculated_checksum[20];
+    char checksum_string[2 * sizeof(file_checksum) + 1];
     struct AVSHA *sha;
     int i;
     int ret = 0;
@@ -1003,10 +1004,9 @@ static int mov_read_adrm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_read(pb, output, 4); // go to offset 4, absolute position 0x28d
     avio_read(pb, file_checksum, 20);
 
-    av_log(c->fc, AV_LOG_INFO, "[aax] file checksum == "); // required by external tools
-    for (i = 0; i < 20; i++)
-        av_log(c->fc, AV_LOG_INFO, "%02x", file_checksum[i]);
-    av_log(c->fc, AV_LOG_INFO, "\n");
+    // required by external tools
+    ff_data_to_hex(checksum_string, file_checksum, sizeof(file_checksum), 1);
+    av_log(c->fc, AV_LOG_INFO, "[aax] file checksum == %s\n", checksum_string);
 
     /* verify activation data */
     if (!activation_bytes) {
