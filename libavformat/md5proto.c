@@ -25,6 +25,7 @@
 #include "libavutil/error.h"
 #include "avformat.h"
 #include "avio.h"
+#include "internal.h"
 #include "url.h"
 
 struct MD5Context {
@@ -57,14 +58,13 @@ static int md5_close(URLContext *h)
 {
     struct MD5Context *c = h->priv_data;
     const char *filename = h->filename;
-    uint8_t md5[16], buf[64];
+    uint8_t md5[16], buf[2 * sizeof(md5) + 1];
     URLContext *out;
-    int i, err = 0;
+    int err = 0;
 
     av_md5_final(c->md5, md5);
-    for (i = 0; i < sizeof(md5); i++)
-        snprintf(buf + i*2, 3, "%02x", md5[i]);
-    buf[i*2] = '\n';
+    ff_data_to_hex(buf, md5, sizeof(md5), 1);
+    buf[2 * sizeof(md5)] = '\n';
 
     av_strstart(filename, "md5:", &filename);
 
@@ -74,10 +74,10 @@ static int md5_close(URLContext *h)
                                    h->protocol_whitelist, h->protocol_blacklist, h);
         if (err)
             return err;
-        err = ffurl_write(out, buf, i*2+1);
+        err = ffurl_write(out, buf, sizeof(buf));
         ffurl_close(out);
     } else {
-        if (fwrite(buf, 1, i*2+1, stdout) < i*2+1)
+        if (fwrite(buf, 1, sizeof(buf), stdout) < sizeof(buf))
             err = AVERROR(errno);
     }
 
