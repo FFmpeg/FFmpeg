@@ -992,6 +992,7 @@ static const struct {
 } vaapi_drm_format_map[] = {
 #ifdef DRM_FORMAT_R8
     DRM_MAP(NV12, 2, DRM_FORMAT_R8,  DRM_FORMAT_RG88),
+    DRM_MAP(NV12, 2, DRM_FORMAT_R8,  DRM_FORMAT_GR88),
 #endif
     DRM_MAP(NV12, 1, DRM_FORMAT_NV12),
 #if defined(VA_FOURCC_P010) && defined(DRM_FORMAT_R16)
