@@ -630,7 +630,7 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
  * Find stream index based on format-specific stream ID
  * @return stream index, or < 0 on error
  */
-int ff_find_stream_index(AVFormatContext *s, int id);
+int ff_find_stream_index(const AVFormatContext *s, int id);
 
 /**
  * Internal version of av_index_search_timestamp
