@@ -245,6 +245,10 @@ static av_cold int concatf_open(URLContext *h, const char *uri, int flags)
         char *node_uri;
         int64_t size;
         size_t len = i;
+        int leading_spaces = strspn(cursor, " \n\t\r");
+
+        if (!cursor[leading_spaces])
+            break;
 
         node_uri = av_get_token(&cursor, "\r\n");
         if (!node_uri) {
