@@ -156,7 +156,10 @@ typedef enum AVVkFrameFlags {
  */
 typedef struct AVVulkanFramesContext {
     /**
-     * Controls the tiling of allocated frames.
+     * Controls the tiling of allocated frames. If left as optimal tiling,
+     * then during av_hwframe_ctx_init() will decide based on whether the device
+     * supports DRM modifiers, or if the linear_images flag is set, otherwise
+     * will allocate optimally-tiled images.
      */
     VkImageTiling tiling;
 
@@ -168,6 +171,12 @@ typedef struct AVVulkanFramesContext {
 
     /**
      * Extension data for image creation.
+     * If VkImageDrmFormatModifierListCreateInfoEXT is present in the chain,
+     * and the device supports DRM modifiers, then images will be allocated
+     * with the specific requested DRM modifiers.
+     * Additional structures may be added at av_hwframe_ctx_init() time,
+     * which will be freed automatically on uninit(), so users need only free
+     * any structures they've allocated themselves.
      */
     void *create_pnext;
 
