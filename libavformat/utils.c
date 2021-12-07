@@ -1480,23 +1480,23 @@ static int match_stream_specifier(AVFormatContext *s, AVStream *st,
             int ret;
 
             if (match) {
-               spec += 2;
-               val = strchr(spec, ':');
+                spec += 2;
+                val = strchr(spec, ':');
 
-               key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
-               if (!key)
-                   return AVERROR(ENOMEM);
+                key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
+                if (!key)
+                    return AVERROR(ENOMEM);
 
-               tag = av_dict_get(st->metadata, key, NULL, 0);
-               if (tag) {
-                   if (!val || !strcmp(tag->value, val + 1))
-                       ret = 1;
-                   else
-                       ret = 0;
-               } else
-                   ret = 0;
+                tag = av_dict_get(st->metadata, key, NULL, 0);
+                if (tag) {
+                    if (!val || !strcmp(tag->value, val + 1))
+                        ret = 1;
+                    else
+                        ret = 0;
+                } else
+                    ret = 0;
 
-               av_freep(&key);
+                av_freep(&key);
             }
             return match && ret;
         } else if (*spec == 'u' && *(spec + 1) == '\0') {
