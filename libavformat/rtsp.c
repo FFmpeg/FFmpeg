@@ -1197,7 +1197,7 @@ start:
             ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
             av_log(s, AV_LOG_TRACE, "ret=%d c=%02x [%c]\n", ret, ch, ch);
             if (ret != 1)
-                return AVERROR_EOF;
+                return ret < 0 ? ret : AVERROR(EIO);
             if (ch == '\n')
                 break;
             if (ch == '$' && q == buf) {
@@ -1250,9 +1250,9 @@ start:
         content = av_malloc(content_length + 1);
         if (!content)
             return AVERROR(ENOMEM);
-        if (ffurl_read_complete(rt->rtsp_hd, content, content_length) != content_length) {
+        if ((ret = ffurl_read_complete(rt->rtsp_hd, content, content_length)) != content_length) {
             av_freep(&content);
-            return AVERROR(EIO);
+            return ret < 0 ? ret : AVERROR(EIO);
         }
         content[content_length] = '\0';
     }
