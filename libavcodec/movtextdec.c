@@ -263,6 +263,14 @@ static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, const AVPacket *a
     return 0;
 }
 
+static int styles_equivalent(const StyleBox *a, const StyleBox *b)
+{
+#define CMP(field) a->field == b->field
+    return CMP(bold)  && CMP(italic)   && CMP(underline) && CMP(color) &&
+           CMP(alpha) && CMP(fontsize) && CMP(font_id);
+#undef CMP
+}
+
 static int decode_styl(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
 {
     int i;
@@ -299,6 +307,19 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, const AVPacket *a
         }
 
         mov_text_parse_style_record(style, &tsmb);
+        if (styles_equivalent(style, &m->d.style)) {
+            /* Skip this style as it is equivalent to the default style */
+            m->style_entries--;
+            i--;
+            continue;
+        } else if (i && style->start == style[-1].end &&
+                   styles_equivalent(style, &style[-1])) {
+            /* Merge the two adjacent styles */
+            style[-1].end = style->end;
+            m->style_entries--;
+            i--;
+            continue;
+        }
     }
     return 0;
 }
