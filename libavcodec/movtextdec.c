@@ -144,6 +144,7 @@ static void mov_text_parse_style_record(StyleBox *style, const uint8_t **ptr)
     style->fontsize  = bytestream_get_byte(ptr);
     // Primary color
     style->color     = bytestream_get_be24(ptr);
+    style->color     = RGB_TO_BGR(style->color);
     style->alpha     = bytestream_get_byte(ptr);
 }
 
@@ -189,6 +190,7 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     }
     // Background Color
     m->d.back_color = bytestream_get_be24(&tx3g_ptr);
+    m->d.back_color = RGB_TO_BGR(m->d.back_color);
     m->d.back_alpha = bytestream_get_byte(&tx3g_ptr);
     // BoxRecord
     tx3g_ptr += 8;
@@ -369,7 +371,7 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
                     }
                 if (default_style->color != style->color) {
                     color = style->color;
-                    av_bprintf(buf, "{\\1c&H%X&}", RGB_TO_BGR(color));
+                    av_bprintf(buf, "{\\1c&H%X&}", color);
                 }
                 if (default_style->alpha != style->alpha)
                     av_bprintf(buf, "{\\1a&H%02X&}", 255 - style->alpha);
@@ -392,10 +394,10 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
             }
             if (text_pos == m->h.hlit_end) {
                 if (m->box_flags & HCLR_BOX) {
-                    av_bprintf(buf, "{\\2c&H%X&}", RGB_TO_BGR(default_style->color));
+                    av_bprintf(buf, "{\\2c&H%X&}", default_style->color);
                 } else {
                     av_bprintf(buf, "{\\1c&H%X&}{\\2c&H%X&}",
-                               RGB_TO_BGR(color), RGB_TO_BGR(default_style->color));
+                               color, default_style->color);
                 }
             }
         }
@@ -441,10 +443,10 @@ static int mov_text_init(AVCodecContext *avctx) {
         return ff_ass_subtitle_header_full(avctx,
                     m->frame_width, m->frame_height,
                     m->d.font, default_style->fontsize,
-                    (255U - default_style->alpha) << 24 | RGB_TO_BGR(default_style->color),
-                    (255U - default_style->alpha) << 24 | RGB_TO_BGR(default_style->color),
-                    (255U - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
-                    (255U - m->d.back_alpha) << 24 | RGB_TO_BGR(m->d.back_color),
+                    (255U - default_style->alpha) << 24 | default_style->color,
+                    (255U - default_style->alpha) << 24 | default_style->color,
+                    (255U - m->d.back_alpha) << 24 | m->d.back_color,
+                    (255U - m->d.back_alpha) << 24 | m->d.back_color,
                     default_style->bold, default_style->italic, default_style->underline,
                     ASS_DEFAULT_BORDERSTYLE, m->d.alignment);
     } else
