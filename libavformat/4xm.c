@@ -136,7 +136,8 @@ static int parse_strk(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
 
     track = AV_RL32(buf + 8);
-    if ((unsigned)track >= UINT_MAX / sizeof(AudioTrack) - 1) {
+    if ((unsigned)track >= UINT_MAX / sizeof(AudioTrack) - 1 ||
+        track >= s->max_streams) {
         av_log(s, AV_LOG_ERROR, "current_track too large\n");
         return AVERROR_INVALIDDATA;
     }
