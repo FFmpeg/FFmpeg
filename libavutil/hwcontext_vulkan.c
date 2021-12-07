@@ -103,8 +103,14 @@ typedef struct VulkanDevicePriv {
     /* Settings */
     int use_linear_images;
 
+    /* Option to allocate all image planes in a single allocation */
+    int contiguous_planes;
+
     /* Nvidia */
     int dev_is_nvidia;
+
+    /* Intel */
+    int dev_is_intel;
 } VulkanDevicePriv;
 
 typedef struct VulkanFramesPriv {
@@ -1374,6 +1380,12 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     if (opt_d)
         p->use_linear_images = strtol(opt_d->value, NULL, 10);
 
+    opt_d = av_dict_get(opts, "contiguous_planes", NULL, 0);
+    if (opt_d)
+        p->contiguous_planes = strtol(opt_d->value, NULL, 10);
+    else
+        p->contiguous_planes = -1;
+
     hwctx->enabled_dev_extensions = dev_info.ppEnabledExtensionNames;
     hwctx->nb_enabled_dev_extensions = dev_info.enabledExtensionCount;
 
@@ -1424,6 +1436,7 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
                p->hprops.minImportedHostPointerAlignment);
 
     p->dev_is_nvidia = (p->props.properties.vendorID == 0x10de);
+    p->dev_is_intel  = (p->props.properties.vendorID == 0x8086);
 
     vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &queue_num, NULL);
     if (!queue_num) {
@@ -1742,8 +1755,13 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
     AVHWDeviceContext *ctx = hwfc->device_ctx;
     VulkanDevicePriv *p = ctx->internal->priv;
     FFVulkanFunctions *vk = &p->vkfn;
+    AVVulkanFramesContext *hwfctx = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VkBindImageMemoryInfo bind_info[AV_NUM_DATA_POINTERS] = { { 0 } };
+
+    VkMemoryRequirements cont_memory_requirements = { 0 };
+    int cont_mem_size_list[AV_NUM_DATA_POINTERS] = { 0 };
+    int cont_mem_size = 0;
 
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
 
@@ -1771,6 +1789,27 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
             req.memoryRequirements.size = FFALIGN(req.memoryRequirements.size,
                                                   p->props.properties.limits.minMemoryMapAlignment);
 
+        if (hwfctx->flags & AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY) {
+            if (ded_req.requiresDedicatedAllocation) {
+                av_log(hwfc, AV_LOG_ERROR, "Cannot allocate all planes in a single allocation, "
+                                           "device requires dedicated image allocation!\n");
+                return AVERROR(EINVAL);
+            } else if (!i) {
+                cont_memory_requirements = req.memoryRequirements;
+            } else if (cont_memory_requirements.memoryTypeBits !=
+                       req.memoryRequirements.memoryTypeBits) {
+                av_log(hwfc, AV_LOG_ERROR, "The memory requirements differ between plane 0 "
+                                           "and %i, cannot allocate in a single region!\n",
+                                           i);
+                return AVERROR(EINVAL);
+            }
+
+            cont_mem_size_list[i] = FFALIGN(req.memoryRequirements.size,
+                                            req.memoryRequirements.alignment);
+            cont_mem_size += cont_mem_size_list[i];
+            continue;
+        }
+
         /* In case the implementation prefers/requires dedicated allocation */
         use_ded_mem = ded_req.prefersDedicatedAllocation |
                       ded_req.requiresDedicatedAllocation;
@@ -1790,6 +1829,29 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
         bind_info[i].sType  = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
         bind_info[i].image  = f->img[i];
         bind_info[i].memory = f->mem[i];
+    }
+
+    if (hwfctx->flags & AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY) {
+        cont_memory_requirements.size = cont_mem_size;
+
+        /* Allocate memory */
+        if ((err = alloc_mem(ctx, &cont_memory_requirements,
+                                f->tiling == VK_IMAGE_TILING_LINEAR ?
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT :
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                (void *)(((uint8_t *)alloc_pnext)),
+                                &f->flags, &f->mem[0])))
+            return err;
+
+        f->size[0] = cont_memory_requirements.size;
+
+        for (int i = 0; i < planes; i++) {
+            bind_info[i].sType  = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+            bind_info[i].image  = f->img[i];
+            bind_info[i].memory = f->mem[0];
+            bind_info[i].memoryOffset = !i ? 0 : cont_mem_size_list[i - 1];
+            f->offset[i] = bind_info[i].memoryOffset;
+        }
     }
 
     /* Bind the allocated memory to the images */
@@ -2153,6 +2215,12 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     if (!hwctx->usage)
         hwctx->usage = FF_VK_DEFAULT_USAGE_FLAGS;
+
+    if (!(hwctx->flags & AV_VK_FRAME_FLAG_NONE)) {
+        if (p->contiguous_planes == 1 ||
+           ((p->contiguous_planes == -1) && p->dev_is_intel))
+           hwctx->flags |= AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY;
+    }
 
     err = create_exec_ctx(hwfc, &fp->conv_ctx,
                           dev_hwctx->queue_family_comp_index,
@@ -3074,6 +3142,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     FFVulkanFunctions *vk = &p->vkfn;
     VulkanFramesPriv *fp = hwfc->internal->priv;
     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
+    AVVulkanFramesContext *hwfctx = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VkImageDrmFormatModifierPropertiesEXT drm_mod = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT,
@@ -3142,8 +3211,11 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
             continue;
 
         vk->GetImageSubresourceLayout(hwctx->act_dev, f->img[i], &sub, &layout);
-        drm_desc->layers[i].planes[0].offset       = layout.offset;
-        drm_desc->layers[i].planes[0].pitch        = layout.rowPitch;
+        drm_desc->layers[i].planes[0].offset = layout.offset;
+        drm_desc->layers[i].planes[0].pitch  = layout.rowPitch;
+
+        if (hwfctx->flags & AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY)
+            drm_desc->layers[i].planes[0].offset += f->offset[i];
     }
 
     dst->width   = src->width;

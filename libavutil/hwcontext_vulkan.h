@@ -138,6 +138,20 @@ typedef struct AVVulkanDeviceContext {
 } AVVulkanDeviceContext;
 
 /**
+ * Defines the behaviour of frame allocation.
+ */
+typedef enum AVVkFrameFlags {
+    /* Unless this flag is set, autodetected flags will be OR'd based on the
+     * device and tiling during av_hwframe_ctx_init(). */
+    AV_VK_FRAME_FLAG_NONE              = (1ULL << 0),
+
+    /* Image planes will be allocated in a single VkDeviceMemory, rather
+     * than as per-plane VkDeviceMemory allocations. Required for exporting
+     * to VAAPI on Intel devices. */
+    AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY = (1ULL << 1),
+} AVVkFrameFlags;
+
+/**
  * Allocated as AVHWFramesContext.hwctx, used to set pool-specific options
  */
 typedef struct AVVulkanFramesContext {
@@ -165,6 +179,13 @@ typedef struct AVVulkanFramesContext {
      * extensions are present in enabled_dev_extensions.
      */
     void *alloc_pnext[AV_NUM_DATA_POINTERS];
+
+    /**
+     * A combination of AVVkFrameFlags. Unless AV_VK_FRAME_FLAG_NONE is set,
+     * autodetected flags will be OR'd based on the device and tiling during
+     * av_hwframe_ctx_init().
+     */
+    AVVkFrameFlags flags;
 } AVVulkanFramesContext;
 
 /*
@@ -192,8 +213,9 @@ typedef struct AVVkFrame {
     VkImageTiling tiling;
 
     /**
-     * Memory backing the images. Could be less than the amount of images
-     * if importing from a DRM or VAAPI frame.
+     * Memory backing the images. Could be less than the amount of planes,
+     * in which case the offset value will indicate the binding offset of
+     * each plane in the memory.
      */
     VkDeviceMemory mem[AV_NUM_DATA_POINTERS];
     size_t size[AV_NUM_DATA_POINTERS];
@@ -230,6 +252,11 @@ typedef struct AVVkFrame {
      * Internal data.
      */
     struct AVVkFrameInternal *internal;
+
+    /**
+     * Describes the binding offset of each plane to the VkDeviceMemory.
+     */
+    ptrdiff_t offset[AV_NUM_DATA_POINTERS];
 } AVVkFrame;
 
 /**
