@@ -481,8 +481,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     MovTextContext *m = avctx->priv_data;
     int ret;
     AVBPrint buf;
-    char *ptr = avpkt->data;
-    char *end;
+    const char *ptr = avpkt->data, *end;
     int text_length, tsmb_type, ret_tsmb;
     uint64_t tsmb_size;
     const uint8_t *tsmb;
