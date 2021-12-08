@@ -111,7 +111,7 @@ typedef struct {
 
 typedef struct {
     uint32_t type;
-    size_t base_size;
+    unsigned base_size;
     int (*decode)(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt);
 } Box;
 
