@@ -294,7 +294,7 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, uint64_t size)
         if (style->end < style->start ||
             (i && style->start < m->s[i - 1].end)) {
             mov_text_cleanup(m);
-            return AVERROR(ENOMEM);
+            return AVERROR_INVALIDDATA;
         }
         if (style->start == style->end) {
             /* Skip this style as it applies to no character */
