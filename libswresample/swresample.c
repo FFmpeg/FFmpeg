@@ -643,14 +643,16 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
     if(s->resample_first){
         if(postin != midbuf)
-            out_count= resample(s, midbuf, out_count, postin, in_count);
+            if ((out_count = resample(s, midbuf, out_count, postin, in_count)) < 0)
+                return out_count;
         if(midbuf != preout)
             swri_rematrix(s, preout, midbuf, out_count, preout==out);
     }else{
         if(postin != midbuf)
             swri_rematrix(s, midbuf, postin, in_count, midbuf==out);
         if(midbuf != preout)
-            out_count= resample(s, preout, out_count, midbuf, in_count);
+            if ((out_count = resample(s, preout, out_count, midbuf, in_count)) < 0)
+                return out_count;
     }
 
     if(preout != out && out_count){
@@ -769,7 +771,7 @@ int attribute_align_arg swr_convert(struct SwrContext *s,
         if(ret>0 && !s->drop_output)
             s->outpts += ret * (int64_t)s->in_sample_rate;
 
-        av_assert2(max_output < 0 || ret < 0 || ret <= max_output);
+        av_assert2(max_output < 0 || ret <= max_output);
 
         return ret;
     }else{
