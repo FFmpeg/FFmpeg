@@ -102,7 +102,6 @@ typedef struct {
     MovTextDefault d;
     uint8_t box_flags;
     uint16_t style_entries, ftab_entries;
-    uint64_t tracksize;
     int readorder;
     int frame_width;
     int frame_height;
@@ -481,9 +480,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     int ret;
     AVBPrint buf;
     const char *ptr = avpkt->data, *end;
-    int text_length, tsmb_type, ret_tsmb;
-    uint64_t tsmb_size;
-    const uint8_t *tsmb;
+    int text_length;
     size_t i;
 
     if (!ptr || avpkt->size < 2)
@@ -510,27 +507,23 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
 
     mov_text_cleanup(m);
 
-    tsmb_size = 0;
-    m->tracksize = 2 + text_length;
     m->style_entries = 0;
     m->box_flags = 0;
     // Note that the spec recommends lines be no longer than 2048 characters.
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if (text_length + 2 != avpkt->size) {
-        while (m->tracksize + 8 <= avpkt->size) {
-            int size_var;
-            // A box is a minimum of 8 bytes.
-            tsmb = ptr + m->tracksize - 2;
-            tsmb_size = AV_RB32(tsmb);
-            tsmb += 4;
-            tsmb_type = AV_RB32(tsmb);
-            tsmb += 4;
+    if (text_length + 2 < avpkt->size) {
+        const uint8_t *tsmb = end;
+        const uint8_t *const tsmb_end = avpkt->data + avpkt->size;
+        // A box is a minimum of 8 bytes.
+        while (tsmb_end - tsmb >= 8) {
+            uint64_t tsmb_size = bytestream_get_be32(&tsmb);
+            uint32_t tsmb_type = bytestream_get_be32(&tsmb);
+            int size_var, ret_tsmb;
 
             if (tsmb_size == 1) {
-                if (m->tracksize + 16 > avpkt->size)
+                if (tsmb_end - tsmb < 8)
                     break;
-                tsmb_size = AV_RB64(tsmb);
-                tsmb += 8;
+                tsmb_size = bytestream_get_be64(&tsmb);
                 size_var = 16;
             } else
                 size_var = 8;
@@ -540,12 +533,10 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                 av_log(avctx, AV_LOG_ERROR, "tsmb_size invalid\n");
                 return AVERROR_INVALIDDATA;
             }
-
-            if (tsmb_size > avpkt->size - m->tracksize)
-                break;
-
-            m->tracksize += tsmb_size;
             tsmb_size -= size_var;
+
+            if (tsmb_end - tsmb < tsmb_size)
+                break;
 
             for (i = 0; i < box_count; i++) {
                 if (tsmb_type == box_types[i].type) {
@@ -556,6 +547,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                         break;
                 }
             }
+            tsmb += tsmb_size;
         }
         text_to_ass(&buf, ptr, end, avctx);
         mov_text_cleanup(m);
