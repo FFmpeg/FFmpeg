@@ -103,7 +103,6 @@ typedef struct {
     uint8_t box_flags;
     uint16_t style_entries, ftab_entries;
     uint64_t tracksize;
-    int size_var;
     int readorder;
     int frame_width;
     int frame_height;
@@ -112,7 +111,7 @@ typedef struct {
 typedef struct {
     uint32_t type;
     unsigned base_size;
-    int (*decode)(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt);
+    int (*decode)(const uint8_t *tsmb, MovTextContext *m, uint64_t size);
 } Box;
 
 static void mov_text_cleanup(MovTextContext *m)
@@ -241,14 +240,14 @@ static int mov_text_tx3g(AVCodecContext *avctx, MovTextContext *m)
     return 0;
 }
 
-static int decode_twrp(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
+static int decode_twrp(const uint8_t *tsmb, MovTextContext *m, uint64_t size)
 {
     m->box_flags |= TWRP_BOX;
     m->w.wrap_flag = bytestream_get_byte(&tsmb);
     return 0;
 }
 
-static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
+static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, uint64_t size)
 {
     m->box_flags |= HLIT_BOX;
     m->h.hlit_start = bytestream_get_be16(&tsmb);
@@ -256,7 +255,7 @@ static int decode_hlit(const uint8_t *tsmb, MovTextContext *m, const AVPacket *a
     return 0;
 }
 
-static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
+static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, uint64_t size)
 {
     m->box_flags |= HCLR_BOX;
     bytestream_get_buffer(&tsmb, m->c.hlit_color, 4);
@@ -271,14 +270,14 @@ static int styles_equivalent(const StyleBox *a, const StyleBox *b)
 #undef CMP
 }
 
-static int decode_styl(const uint8_t *tsmb, MovTextContext *m, const AVPacket *avpkt)
+static int decode_styl(const uint8_t *tsmb, MovTextContext *m, uint64_t size)
 {
     int i;
     int style_entries = bytestream_get_be16(&tsmb);
     StyleBox *tmp;
 
     // A single style record is of length 12 bytes.
-    if (m->tracksize + m->size_var + 2 + style_entries * 12 > avpkt->size)
+    if (2 + style_entries * 12 > size)
         return -1;
 
     tmp = av_realloc_array(m->s, style_entries, sizeof(*m->s));
@@ -519,6 +518,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (text_length + 2 != avpkt->size) {
         while (m->tracksize + 8 <= avpkt->size) {
+            int size_var;
             // A box is a minimum of 8 bytes.
             tsmb = ptr + m->tracksize - 2;
             tsmb_size = AV_RB32(tsmb);
@@ -531,12 +531,12 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                     break;
                 tsmb_size = AV_RB64(tsmb);
                 tsmb += 8;
-                m->size_var = 16;
+                size_var = 16;
             } else
-                m->size_var = 8;
+                size_var = 8;
             //size_var is equal to 8 or 16 depending on the size of box
 
-            if (tsmb_size < m->size_var) {
+            if (tsmb_size < size_var) {
                 av_log(avctx, AV_LOG_ERROR, "tsmb_size invalid\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -544,16 +544,18 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             if (tsmb_size > avpkt->size - m->tracksize)
                 break;
 
+            m->tracksize += tsmb_size;
+            tsmb_size -= size_var;
+
             for (i = 0; i < box_count; i++) {
                 if (tsmb_type == box_types[i].type) {
-                    if (m->tracksize + m->size_var + box_types[i].base_size > avpkt->size)
+                    if (tsmb_size < box_types[i].base_size)
                         break;
-                    ret_tsmb = box_types[i].decode(tsmb, m, avpkt);
+                    ret_tsmb = box_types[i].decode(tsmb, m, tsmb_size);
                     if (ret_tsmb == -1)
                         break;
                 }
             }
-            m->tracksize = m->tracksize + tsmb_size;
         }
         text_to_ass(&buf, ptr, end, avctx);
         mov_text_cleanup(m);
