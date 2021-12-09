@@ -485,29 +485,19 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
                              int is_extradata)
 {
     MMALDecodeContext *ctx = avctx->priv_data;
-    AVBufferRef *buf = NULL;
+    const AVBufferRef *buf = NULL;
     int size = 0;
     uint8_t *data = (uint8_t *)"";
     uint8_t *start;
     int ret = 0;
 
     if (avpkt->size) {
-        if (avpkt->buf) {
-            buf = av_buffer_ref(avpkt->buf);
-            size = avpkt->size;
-            data = avpkt->data;
-        } else {
-            buf = av_buffer_alloc(avpkt->size);
-            if (buf) {
-                memcpy(buf->data, avpkt->data, avpkt->size);
-                size = buf->size;
-                data = buf->data;
-            }
-        }
-        if (!buf) {
-            ret = AVERROR(ENOMEM);
+        ret = av_packet_make_refcounted(avpkt);
+        if (ret < 0)
             goto done;
-        }
+        buf  = avpkt->buf;
+        data = avpkt->data;
+        size = avpkt->size;
         if (!is_extradata)
             ctx->packets_sent++;
     } else {
@@ -573,7 +563,6 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
     } while (size);
 
 done:
-    av_buffer_unref(&buf);
     av_packet_unref(avpkt);
     return ret;
 }
