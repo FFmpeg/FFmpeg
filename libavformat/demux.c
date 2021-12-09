@@ -2054,9 +2054,6 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st,
         }
     }
 
-    if (!pkt.data && !got_picture)
-        ret = -1;
-
 fail:
     if (do_skip_frame) {
         avctx->skip_frame = skip_frame;
