@@ -462,6 +462,7 @@ extern const AVFilter ff_vf_transpose;
 extern const AVFilter ff_vf_transpose_npp;
 extern const AVFilter ff_vf_transpose_opencl;
 extern const AVFilter ff_vf_transpose_vaapi;
+extern const AVFilter ff_vf_transpose_vulkan;
 extern const AVFilter ff_vf_trim;
 extern const AVFilter ff_vf_unpremultiply;
 extern const AVFilter ff_vf_unsharp;
