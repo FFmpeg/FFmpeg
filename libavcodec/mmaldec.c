@@ -820,16 +820,14 @@ static const AVOption options[]={
     {NULL}
 };
 
-#define FFMMAL_DEC_CLASS(NAME) \
-    static const AVClass ffmmal_##NAME##_dec_class = { \
-        .class_name = "mmal_" #NAME "_dec", \
-        .item_name  = av_default_item_name, \
-        .option     = options, \
-        .version    = LIBAVUTIL_VERSION_INT, \
-    };
+static const AVClass ffmmal_dec_class = {
+    .class_name = "mmal_dec",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 #define FFMMAL_DEC(NAME, ID) \
-    FFMMAL_DEC_CLASS(NAME) \
     const AVCodec ff_##NAME##_mmal_decoder = { \
         .name           = #NAME "_mmal", \
         .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (mmal)"), \
@@ -840,7 +838,7 @@ static const AVOption options[]={
         .close          = ffmmal_close_decoder, \
         .receive_frame  = ffmmal_receive_frame, \
         .flush          = ffmmal_flush, \
-        .priv_class     = &ffmmal_##NAME##_dec_class, \
+        .priv_class     = &ffmmal_dec_class, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
         .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS, \
         .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL, \
