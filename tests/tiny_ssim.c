@@ -80,11 +80,11 @@ static float ssim_end1( int s1, int s2, int ss, int s12 )
  * Maximum value for 9-bit is: ss*64 = (2^9-1)^2*16*4*64 = 1069551616, which will not overflow. */
 #if BIT_DEPTH > 9
     typedef float type;
-    static const float ssim_c1 = .01*.01*PIXEL_MAX*PIXEL_MAX*64;
+    static const float ssim_c1 = .01*.01*PIXEL_MAX*PIXEL_MAX*64*64;
     static const float ssim_c2 = .03*.03*PIXEL_MAX*PIXEL_MAX*64*63;
 #else
     typedef int type;
-    static const int ssim_c1 = (int)(.01*.01*PIXEL_MAX*PIXEL_MAX*64 + .5);
+    static const int ssim_c1 = (int)(.01*.01*PIXEL_MAX*PIXEL_MAX*64*64 + .5);
     static const int ssim_c2 = (int)(.03*.03*PIXEL_MAX*PIXEL_MAX*64*63 + .5);
 #endif
     type fs1 = s1;
