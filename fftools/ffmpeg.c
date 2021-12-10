@@ -2951,8 +2951,6 @@ static int check_init_output_file(OutputFile *of, int file_index)
             return 0;
     }
 
-    of->ctx->interrupt_callback = int_cb;
-
     ret = avformat_write_header(of->ctx, &of->opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
