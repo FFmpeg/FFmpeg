@@ -2962,16 +2962,17 @@ this @code{lavfi.astats.Overall.Peak_count}.
 For description what each key means read below.
 
 @item reset
-Set number of frame after which stats are going to be recalculated.
+Set the number of frames over which cumulative stats are calculated before
+being reset
 Default is disabled.
 
 @item measure_perchannel
-Select the entries which need to be measured per channel. The metadata keys can
+Select the parameters which are measured per channel. The metadata keys can
 be used as flags, default is @option{all} which measures everything.
 @option{none} disables all per channel measurement.
 
 @item measure_overall
-Select the entries which need to be measured overall. The metadata keys can
+Select the parameters which are measured overall. The metadata keys can
 be used as flags, default is @option{all} which measures everything.
 @option{none} disables all overall measurement.
 
