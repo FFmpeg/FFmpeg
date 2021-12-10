@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
 #include "internal.h"
+#include "transpose.h"
 
 #define CGS 32
 
@@ -33,6 +34,7 @@ typedef struct TransposeVulkanContext {
     VkDescriptorImageInfo input_images[3];
     VkDescriptorImageInfo output_images[3];
 
+    int dir;
     int initialized;
 } TransposeVulkanContext;
 
@@ -86,13 +88,20 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         GLSLC(0, void main()                                               );
         GLSLC(0, {                                                         );
         GLSLC(1,     ivec2 size;                                           );
-        GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);    );
+        GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);          );
         for (int i = 0; i < planes; i++) {
             GLSLC(0,                                                       );
-            GLSLF(1, size = imageSize(output_images[%i]);                 ,i);
+            GLSLF(1, size = imageSize(output_images[%i]);                ,i);
             GLSLC(1, if (IS_WITHIN(pos, size)) {                           );
-            GLSLF(2,     vec4 res = texture(input_images[%i], pos.yx);    ,i);
-            GLSLF(2,     imageStore(output_images[%i], pos, res);         ,i);
+            if (s->dir == TRANSPOSE_CCLOCK)
+                GLSLF(2, vec4 res = texture(input_images[%i], ivec2(size.y - pos.y, pos.x)); ,i);
+            else if (s->dir == TRANSPOSE_CLOCK_FLIP || s->dir == TRANSPOSE_CLOCK) {
+                GLSLF(2, vec4 res = texture(input_images[%i], ivec2(size.yx - pos.yx));      ,i);
+                if (s->dir == TRANSPOSE_CLOCK)
+                    GLSLC(2, pos = ivec2(pos.x, size.y - pos.y);           );
+            } else
+                GLSLF(2, vec4 res = texture(input_images[%i], pos.yx);   ,i);
+            GLSLF(2,     imageStore(output_images[%i], pos, res);        ,i);
             GLSLC(1, }                                                     );
         }
         GLSLC(0, }                                                         );
@@ -279,7 +288,15 @@ fail:
     return err;
 }
 
+#define OFFSET(x) offsetof(TransposeVulkanContext, x)
+#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
+
 static const AVOption transpose_vulkan_options[] = {
+    { "dir", "set transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, { .i64 = TRANSPOSE_CCLOCK_FLIP }, 0, 7, FLAGS, "dir" },
+        { "cclock_flip", "rotate counter-clockwise with vertical flip", 0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK_FLIP }, .flags=FLAGS, .unit = "dir" },
+        { "clock",       "rotate clockwise",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .flags=FLAGS, .unit = "dir" },
+        { "cclock",      "rotate counter-clockwise",                    0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .flags=FLAGS, .unit = "dir" },
+        { "clock_flip",  "rotate clockwise with vertical flip",         0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .flags=FLAGS, .unit = "dir" },
     { NULL }
 };
 
