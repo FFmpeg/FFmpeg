@@ -262,7 +262,6 @@ static av_cold void transpose_vulkan_uninit(AVFilterContext *avctx)
 
 static int config_props_output(AVFilterLink *outlink)
 {
-    int err = 0;
     AVFilterContext *avctx = outlink->src;
     TransposeVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
@@ -271,21 +270,13 @@ static int config_props_output(AVFilterLink *outlink)
     vkctx->output_width  = inlink->h;
     vkctx->output_height = inlink->w;
 
-    RET(ff_vk_filter_config_output(outlink));
-
-    outlink->w = inlink->h;
-    outlink->h = inlink->w;
-
     if (inlink->sample_aspect_ratio.num)
         outlink->sample_aspect_ratio = av_div_q((AVRational) { 1, 1 },
                                                 inlink->sample_aspect_ratio);
     else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
-    err = 0;
-
-fail:
-    return err;
+    return ff_vk_filter_config_output(outlink);
 }
 
 #define OFFSET(x) offsetof(TransposeVulkanContext, x)
