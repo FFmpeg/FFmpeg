@@ -534,10 +534,8 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
         PGSSubObject *object;
 
         sub->rects[i]  = av_mallocz(sizeof(*sub->rects[0]));
-        if (!sub->rects[i]) {
-            avsubtitle_free(sub);
+        if (!sub->rects[i])
             return AVERROR(ENOMEM);
-        }
         sub->num_rects++;
         sub->rects[i]->type = SUBTITLE_BITMAP;
 
@@ -547,10 +545,8 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
             // Missing object.  Should only happen with damaged streams.
             av_log(avctx, AV_LOG_ERROR, "Invalid object id %d\n",
                    ctx->presentation.objects[i].id);
-            if (avctx->err_recognition & AV_EF_EXPLODE) {
-                avsubtitle_free(sub);
+            if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
-            }
             // Leaves rect empty with 0 width and height.
             continue;
         }
@@ -569,16 +565,13 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
             if (object->rle_remaining_len) {
                 av_log(avctx, AV_LOG_ERROR, "RLE data length %u is %u bytes shorter than expected\n",
                        object->rle_data_len, object->rle_remaining_len);
-                if (avctx->err_recognition & AV_EF_EXPLODE) {
-                    avsubtitle_free(sub);
+                if (avctx->err_recognition & AV_EF_EXPLODE)
                     return AVERROR_INVALIDDATA;
-                }
             }
             ret = decode_rle(avctx, sub->rects[i], object->rle, object->rle_data_len);
             if (ret < 0) {
                 if ((avctx->err_recognition & AV_EF_EXPLODE) ||
                     ret == AVERROR(ENOMEM)) {
-                    avsubtitle_free(sub);
                     return ret;
                 }
                 sub->rects[i]->w = 0;
@@ -589,10 +582,8 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
         /* Allocate memory for colors */
         sub->rects[i]->nb_colors    = 256;
         sub->rects[i]->data[1] = av_mallocz(AVPALETTE_SIZE);
-        if (!sub->rects[i]->data[1]) {
-            avsubtitle_free(sub);
+        if (!sub->rects[i]->data[1])
             return AVERROR(ENOMEM);
-        }
 
         if (!ctx->forced_subs_only || ctx->presentation.objects[i].composition_flag & 0x40)
         memcpy(sub->rects[i]->data[1], palette->clut, sub->rects[i]->nb_colors * sizeof(uint32_t));
