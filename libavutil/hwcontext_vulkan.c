@@ -3301,6 +3301,11 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     VkImageDrmFormatModifierPropertiesEXT drm_mod = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT,
     };
+    VkSemaphoreWaitInfo wait_info = {
+        .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+        .flags          = 0x0,
+        .semaphoreCount = planes,
+    };
 
     AVDRMFrameDescriptor *drm_desc = av_mallocz(sizeof(*drm_desc));
     if (!drm_desc)
@@ -3309,6 +3314,12 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     err = prepare_frame(hwfc, &fp->conv_ctx, f, PREP_MODE_EXTERNAL_EXPORT);
     if (err < 0)
         goto end;
+
+    /* Wait for the operation to finish so we can cleanly export it. */
+    wait_info.pSemaphores = f->sem;
+    wait_info.pValues     = f->sem_value;
+
+    vk->WaitSemaphores(hwctx->act_dev, &wait_info, UINT64_MAX);
 
     err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src, &vulkan_unmap_to_drm, drm_desc);
     if (err < 0)
