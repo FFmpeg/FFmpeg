@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-11-10 - xxxxxxxxxx - lavu 57.11.100 - hwcontext_vulkan.h
+  Add AVVkFrame.offset and AVVulkanFramesContext.flags.
+
 2021-11-xx - xxxxxxxxxx - lavfi 8.19.100 - avfilter.h
   Add AVFILTER_FLAG_METADATA_ONLY.
 
