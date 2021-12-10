@@ -494,8 +494,10 @@ static void mov_text_alpha_cb(void *priv, int alpha, int alpha_id)
 
 static uint16_t find_font_id(MovTextContext *s, const char *name)
 {
-    int i;
-    for (i = 0; i < s->font_count; i++) {
+    if (!name)
+        return 1;
+
+    for (int i = 0; i < s->font_count; i++) {
         if (!strcmp(name, s->fonts[i]))
             return i + 1;
     }
