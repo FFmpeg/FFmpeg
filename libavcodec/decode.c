@@ -862,8 +862,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                        "Invalid UTF-8 in decoded subtitles text; "
                        "maybe missing -sub_charenc option\n");
                 avsubtitle_free(sub);
-                ret = AVERROR_INVALIDDATA;
-                break;
+                *got_sub_ptr = 0;
+                return AVERROR_INVALIDDATA;
             }
         }
 
