@@ -667,11 +667,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub_ptr,
             break;
         }
         if (ret < 0 && (ret == AVERROR(ENOMEM) ||
-                        avctx->err_recognition & AV_EF_EXPLODE)) {
-            avsubtitle_free(data);
-            *got_sub_ptr = 0;
+                        avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
-        }
 
         buf += segment_length;
     }

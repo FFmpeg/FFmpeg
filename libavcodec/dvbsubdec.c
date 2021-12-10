@@ -1715,8 +1715,6 @@ static int dvbsub_decode(AVCodecContext *avctx,
 
 end:
     if (ret < 0) {
-        *got_sub_ptr = 0;
-        avsubtitle_free(sub);
         return ret;
     } else {
         if (ctx->compute_edt == 1)
