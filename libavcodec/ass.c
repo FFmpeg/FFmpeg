@@ -118,22 +118,22 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                     int readorder, int layer, const char *style,
                     const char *speaker)
 {
+    AVSubtitleRect **rects, *rect;
     char *ass_str;
-    AVSubtitleRect **rects;
 
     rects = av_realloc_array(sub->rects, sub->num_rects+1, sizeof(*sub->rects));
     if (!rects)
         return AVERROR(ENOMEM);
     sub->rects = rects;
-    rects[sub->num_rects]       = av_mallocz(sizeof(*rects[0]));
-    if (!rects[sub->num_rects])
+    rect       = av_mallocz(sizeof(*rect));
+    if (!rect)
         return AVERROR(ENOMEM);
-    rects[sub->num_rects]->type = SUBTITLE_ASS;
+    rects[sub->num_rects++] = rect;
+    rect->type = SUBTITLE_ASS;
     ass_str = ff_ass_get_dialog(readorder, layer, style, speaker, dialog);
     if (!ass_str)
         return AVERROR(ENOMEM);
-    rects[sub->num_rects]->ass = ass_str;
-    sub->num_rects++;
+    rect->ass = ass_str;
     return 0;
 }
 
