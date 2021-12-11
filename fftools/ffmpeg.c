@@ -3274,7 +3274,6 @@ static void report_new_stream(int input_index, AVPacket *pkt)
 static int transcode_init(void)
 {
     int ret = 0, i, j, k;
-    AVFormatContext *oc;
     OutputStream *ost;
     InputStream *ist;
     char error[1024] = {0};
@@ -3345,16 +3344,6 @@ static int transcode_init(void)
                     break;
                 }
             p->discard = discard;
-        }
-    }
-
-    /* write headers for files with no streams */
-    for (i = 0; i < nb_output_files; i++) {
-        oc = output_files[i]->ctx;
-        if (output_files[i]->format->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
-            ret = of_check_init(output_files[i]);
-            if (ret < 0)
-                goto dump_format;
         }
     }
 

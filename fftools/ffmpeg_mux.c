@@ -340,6 +340,13 @@ int of_muxer_init(OutputFile *of, int64_t limit_filesize)
     if (strcmp(of->format->name, "rtp"))
         want_sdp = 0;
 
+    /* write the header for files with no streams */
+    if (of->format->flags & AVFMT_NOSTREAMS && of->ctx->nb_streams == 0) {
+        int ret = of_check_init(of);
+        if (ret < 0)
+            return ret;
+    }
+
     return 0;
 }
 
