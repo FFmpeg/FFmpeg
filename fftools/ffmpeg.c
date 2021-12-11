@@ -2913,7 +2913,6 @@ static void init_encoder_time_base(OutputStream *ost, AVRational default_time_ba
 {
     InputStream *ist = get_input_stream(ost);
     AVCodecContext *enc_ctx = ost->enc_ctx;
-    AVFormatContext *oc;
 
     if (ost->enc_timebase.num > 0) {
         enc_ctx->time_base = ost->enc_timebase;
@@ -2926,8 +2925,9 @@ static void init_encoder_time_base(OutputStream *ost, AVRational default_time_ba
             return;
         }
 
-        oc = output_files[ost->file_index]->ctx;
-        av_log(oc, AV_LOG_WARNING, "Input stream data not available, using default time base\n");
+        av_log(NULL, AV_LOG_WARNING,
+               "Input stream data for output stream #%d:%d not available, "
+               "using default time base\n", ost->file_index, ost->index);
     }
 
     enc_ctx->time_base = default_time_base;
@@ -2939,7 +2939,6 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
     AVCodecContext *enc_ctx = ost->enc_ctx;
     AVCodecContext *dec_ctx = NULL;
     OutputFile      *of = output_files[ost->file_index];
-    AVFormatContext *oc = of->ctx;
     int ret;
 
     set_encoder_id(output_files[ost->file_index], ost);
@@ -3002,7 +3001,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         if (   av_q2d(enc_ctx->time_base) < 0.001 && ost->vsync_method != VSYNC_PASSTHROUGH
            && (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR ||
                (ost->vsync_method == VSYNC_AUTO && !(of->format->flags & AVFMT_VARIABLE_FPS)))){
-            av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
+            av_log(NULL, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
                                        "Please consider specifying a lower framerate, a different muxer or "
                                        "setting vsync/fps_mode to vfr\n");
         }
