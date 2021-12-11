@@ -32,10 +32,8 @@
 #define MAX_MBPAIR_SIZE (256*1024) // a tighter bound could be calculated if someone cares about a few bytes
 
 typedef struct H2645NAL {
-    uint8_t *rbsp_buffer;
-
-    int size;
     const uint8_t *data;
+    int size;
 
     /**
      * Size, in bits, of just the data, excluding the stop bit and any trailing
