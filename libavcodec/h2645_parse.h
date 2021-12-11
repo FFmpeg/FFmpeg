@@ -52,6 +52,11 @@ typedef struct H2645NAL {
     int type;
 
     /**
+     * H.264 only, nal_ref_idc
+     */
+    int ref_idc;
+
+    /**
      * HEVC only, nuh_temporal_id_plus_1 - 1
      */
     int temporal_id;
@@ -64,10 +69,6 @@ typedef struct H2645NAL {
     int skipped_bytes;
     int skipped_bytes_pos_size;
     int *skipped_bytes_pos;
-    /**
-     * H.264 only, nal_ref_idc
-     */
-    int ref_idc;
 } H2645NAL;
 
 typedef struct H2645RBSP {
