@@ -3462,10 +3462,8 @@ static int need_output(void)
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost    = output_streams[i];
         OutputFile *of       = output_files[ost->file_index];
-        AVFormatContext *os  = output_files[ost->file_index]->ctx;
 
-        if (ost->finished ||
-            (os->pb && avio_tell(os->pb) >= of->limit_filesize))
+        if (ost->finished || of_finished(of))
             continue;
         if (ost->frame_number >= ost->max_frames) {
             int j;

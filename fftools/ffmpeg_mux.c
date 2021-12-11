@@ -33,6 +33,8 @@
 #include "libavformat/avio.h"
 
 struct Muxer {
+    /* filesize limit expressed in bytes */
+    int64_t limit_filesize;
     int header_written;
 };
 
@@ -322,7 +324,7 @@ void of_close(OutputFile **pof)
     av_freep(pof);
 }
 
-int of_muxer_init(OutputFile *of)
+int of_muxer_init(OutputFile *of, int64_t limit_filesize)
 {
     Muxer *mux = av_mallocz(sizeof(*mux));
 
@@ -331,7 +333,14 @@ int of_muxer_init(OutputFile *of)
 
     of->mux  = mux;
 
+    mux->limit_filesize = limit_filesize;
+
     return 0;
+}
+
+int of_finished(OutputFile *of)
+{
+    return of_filesize(of) >= of->mux->limit_filesize;
 }
 
 int64_t of_filesize(OutputFile *of)

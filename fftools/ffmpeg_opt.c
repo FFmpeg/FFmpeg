@@ -2403,7 +2403,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
     of->ost_index      = nb_output_streams;
     of->recording_time = o->recording_time;
     of->start_time     = o->start_time;
-    of->limit_filesize = o->limit_filesize;
     of->shortest       = o->shortest;
     av_dict_copy(&of->opts, o->g->format_opts, 0);
 
@@ -3006,7 +3005,7 @@ loop_end:
         exit_program(1);
     }
 
-    err = of_muxer_init(of);
+    err = of_muxer_init(of, o->limit_filesize);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error initializing internal muxing state\n");
         exit_program(1);
