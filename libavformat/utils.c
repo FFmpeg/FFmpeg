@@ -2085,7 +2085,7 @@ int ff_format_shift_data(AVFormatContext *s, int64_t read_start, int shift_size)
         avio_write(s->pb, read_buf[read_buf_id], n);
         pos += n;
     } while (pos < pos_end);
-    ff_format_io_close(s, &read_pb);
+    ret = ff_format_io_close(s, &read_pb);
 
 end:
     av_free(buf);
