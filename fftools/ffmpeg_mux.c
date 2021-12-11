@@ -382,3 +382,10 @@ int64_t of_filesize(OutputFile *of)
 
     return ret;
 }
+
+AVChapter * const *
+of_get_chapters(OutputFile *of, unsigned int *nb_chapters)
+{
+    *nb_chapters = of->ctx->nb_chapters;
+    return of->ctx->chapters;
+}

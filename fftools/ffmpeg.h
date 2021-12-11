@@ -707,5 +707,7 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
                      int unqueue);
 int of_finished(OutputFile *of);
 int64_t of_filesize(OutputFile *of);
+AVChapter * const *
+of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
 #endif /* FFTOOLS_FFMPEG_H */

@@ -2868,12 +2868,15 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
             *next++ = 0;
 
         if (!memcmp(p, "chapters", 8)) {
-
-            AVFormatContext *avf = output_files[ost->file_index]->ctx;
+            OutputFile *of = output_files[ost->file_index];
+            AVChapter * const *ch;
+            unsigned int    nb_ch;
             int j;
 
-            if (avf->nb_chapters > INT_MAX - size ||
-                !(pts = av_realloc_f(pts, size += avf->nb_chapters - 1,
+            ch = of_get_chapters(of, &nb_ch);
+
+            if (nb_ch > INT_MAX - size ||
+                !(pts = av_realloc_f(pts, size += nb_ch - 1,
                                      sizeof(*pts)))) {
                 av_log(NULL, AV_LOG_FATAL,
                        "Could not allocate forced key frames array.\n");
@@ -2882,8 +2885,8 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
             t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
             t = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
 
-            for (j = 0; j < avf->nb_chapters; j++) {
-                AVChapter *c = avf->chapters[j];
+            for (j = 0; j < nb_ch; j++) {
+                const AVChapter *c = ch[j];
                 av_assert1(index < size);
                 pts[index++] = av_rescale_q(c->start, c->time_base,
                                             avctx->time_base) + t;
