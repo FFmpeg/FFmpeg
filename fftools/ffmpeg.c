@@ -2947,7 +2947,7 @@ static int compare_int64(const void *a, const void *b)
 }
 
 /* open the muxer when all the streams are initialized */
-static int check_init_output_file(OutputFile *of, int file_index)
+static int check_init_output_file(OutputFile *of)
 {
     int ret, i;
 
@@ -2962,13 +2962,13 @@ static int check_init_output_file(OutputFile *of, int file_index)
         av_log(NULL, AV_LOG_ERROR,
                "Could not write header for output file #%d "
                "(incorrect codec parameters ?): %s\n",
-               file_index, av_err2str(ret));
+               of->index, av_err2str(ret));
         return ret;
     }
     //assert_avoptions(of->opts);
     of->header_written = 1;
 
-    av_dump_format(of->ctx, file_index, of->ctx->url, 1);
+    av_dump_format(of->ctx, of->index, of->ctx->url, 1);
     nb_output_dumped++;
 
     if (sdp_filename || want_sdp) {
@@ -3571,7 +3571,7 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
 
     ost->initialized = 1;
 
-    ret = check_init_output_file(output_files[ost->file_index], ost->file_index);
+    ret = check_init_output_file(output_files[ost->file_index]);
     if (ret < 0)
         return ret;
 
@@ -3674,7 +3674,7 @@ static int transcode_init(void)
     for (i = 0; i < nb_output_files; i++) {
         oc = output_files[i]->ctx;
         if (oc->oformat->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
-            ret = check_init_output_file(output_files[i], i);
+            ret = check_init_output_file(output_files[i]);
             if (ret < 0)
                 goto dump_format;
         }

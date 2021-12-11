@@ -2314,6 +2314,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
 
     of = ALLOC_ARRAY_ELEM(output_files, nb_output_files);
 
+    of->index          = nb_output_files - 1;
     of->ost_index      = nb_output_streams;
     of->recording_time = o->recording_time;
     of->start_time     = o->start_time;
