@@ -1518,6 +1518,22 @@ static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *o
     return 0;
 }
 
+static int check_opt_bitexact(void *ctx, const AVDictionary *opts,
+                              const char *opt_name, int flag)
+{
+    const AVDictionaryEntry *e = av_dict_get(opts, opt_name, NULL, 0);
+
+    if (e) {
+        const AVOption *o = av_opt_find(ctx, opt_name, NULL, 0, 0);
+        int val = 0;
+        if (!o)
+            return 0;
+        av_opt_eval_flags(ctx, o, e->value, &val);
+        return !!(val & flag);
+    }
+    return 0;
+}
+
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type, int source_index)
 {
     OutputStream *ost;
@@ -1610,8 +1626,13 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     }
 
 
-    if (o->bitexact)
+    if (o->bitexact) {
         ost->enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+        ost->bitexact        = 1;
+    } else {
+        ost->bitexact        = check_opt_bitexact(ost->enc_ctx, ost->encoder_opts, "flags",
+                                                  AV_CODEC_FLAG_BITEXACT);
+    }
 
     MATCH_PER_STREAM_OPT(time_bases, str, time_base, oc, st);
     if (time_base) {
@@ -2424,6 +2445,10 @@ static int open_output_file(OptionsContext *o, const char *filename)
 
     if (o->bitexact) {
         oc->flags    |= AVFMT_FLAG_BITEXACT;
+        of->bitexact  = 1;
+    } else {
+        of->bitexact  = check_opt_bitexact(oc, of->opts, "fflags",
+                                           AVFMT_FLAG_BITEXACT);
     }
 
     /* create streams for all unlabeled output pads */

@@ -498,6 +498,7 @@ typedef struct OutputStream {
     int top_field_first;
     int rotate_overridden;
     int autoscale;
+    int bitexact;
     int bits_per_raw_sample;
     double rotate_override_value;
 
@@ -598,6 +599,7 @@ typedef struct OutputFile {
     int64_t start_time;      ///< start time in microseconds == AV_TIME_BASE units
 
     int shortest;
+    int bitexact;
 } OutputFile;
 
 extern InputStream **input_streams;
