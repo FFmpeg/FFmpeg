@@ -38,6 +38,8 @@ struct Muxer {
     int header_written;
 };
 
+static int want_sdp = 1;
+
 static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream, OSTFinished others)
 {
     int i;
@@ -334,6 +336,9 @@ int of_muxer_init(OutputFile *of, int64_t limit_filesize)
     of->mux  = mux;
 
     mux->limit_filesize = limit_filesize;
+
+    if (strcmp(of->format->name, "rtp"))
+        want_sdp = 0;
 
     return 0;
 }

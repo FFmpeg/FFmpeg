@@ -656,7 +656,6 @@ extern char *qsv_device;
 #endif
 extern HWDevice *filter_hw_device;
 
-extern int want_sdp;
 extern unsigned nb_output_dumped;
 extern int main_return_code;
 

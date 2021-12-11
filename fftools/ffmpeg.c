@@ -137,8 +137,6 @@ static int64_t nb_frames_drop = 0;
 static int64_t decode_error_stat[2];
 unsigned nb_output_dumped = 0;
 
-int want_sdp = 1;
-
 static BenchmarkTimeStamps current_time;
 AVIOContext *progress_avio = NULL;
 
@@ -4513,7 +4511,7 @@ static int64_t getmaxrss(void)
 
 int main(int argc, char **argv)
 {
-    int i, ret;
+    int ret;
     BenchmarkTimeStamps ti;
 
     init_dynload();
@@ -4547,11 +4545,6 @@ int main(int argc, char **argv)
     if (nb_output_files <= 0) {
         av_log(NULL, AV_LOG_FATAL, "At least one output file must be specified\n");
         exit_program(1);
-    }
-
-    for (i = 0; i < nb_output_files; i++) {
-        if (strcmp(output_files[i]->format->name, "rtp"))
-            want_sdp = 0;
     }
 
     current_time = ti = get_benchmark_time_stamps();
