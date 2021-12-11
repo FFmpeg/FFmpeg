@@ -333,3 +333,17 @@ int of_muxer_init(OutputFile *of)
 
     return 0;
 }
+
+int64_t of_filesize(OutputFile *of)
+{
+    AVIOContext *pb = of->ctx->pb;
+    int64_t ret = -1;
+
+    if (pb) {
+        ret = avio_size(pb);
+        if (ret <= 0) // FIXME improve avio_size() so it works with non seekable output too
+            ret = avio_tell(pb);
+    }
+
+    return ret;
+}

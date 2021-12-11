@@ -705,5 +705,6 @@ void of_close(OutputFile **pof);
 
 void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
                      int unqueue);
+int64_t of_filesize(OutputFile *of);
 
 #endif /* FFTOOLS_FFMPEG_H */
