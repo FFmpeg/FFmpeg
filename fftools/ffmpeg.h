@@ -583,9 +583,12 @@ typedef struct OutputStream {
     int64_t error[4];
 } OutputStream;
 
+typedef struct Muxer Muxer;
+
 typedef struct OutputFile {
     int index;
 
+    Muxer                *mux;
     const AVOutputFormat *format;
 
     AVFormatContext *ctx;
@@ -596,8 +599,6 @@ typedef struct OutputFile {
     uint64_t limit_filesize; /* filesize limit expressed in bytes */
 
     int shortest;
-
-    int header_written;
 } OutputFile;
 
 extern InputStream **input_streams;
@@ -696,6 +697,7 @@ int hw_device_setup_for_filter(FilterGraph *fg);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
+int of_muxer_init(OutputFile *of);
 /* open the muxer when all the streams are initialized */
 int of_check_init(OutputFile *of);
 int of_write_trailer(OutputFile *of);

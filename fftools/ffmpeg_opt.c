@@ -3006,6 +3006,12 @@ loop_end:
         exit_program(1);
     }
 
+    err = of_muxer_init(of);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error initializing internal muxing state\n");
+        exit_program(1);
+    }
+
     return 0;
 }
 

@@ -32,6 +32,10 @@
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 
+struct Muxer {
+    int header_written;
+};
+
 static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream, OSTFinished others)
 {
     int i;
@@ -64,7 +68,7 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
         ost->frame_number++;
     }
 
-    if (!of->header_written) {
+    if (!of->mux->header_written) {
         AVPacket *tmp_pkt;
         /* the muxer is not initialized yet, buffer the packet */
         if (!av_fifo_can_write(ost->muxing_queue)) {
@@ -182,7 +186,7 @@ static int print_sdp(void)
     AVFormatContext **avc;
 
     for (i = 0; i < nb_output_files; i++) {
-        if (!output_files[i]->header_written)
+        if (!output_files[i]->mux->header_written)
             return 0;
     }
 
@@ -246,7 +250,7 @@ int of_check_init(OutputFile *of)
         return ret;
     }
     //assert_avoptions(of->opts);
-    of->header_written = 1;
+    of->mux->header_written = 1;
 
     av_dump_format(of->ctx, of->index, of->ctx->url, 1);
     nb_output_dumped++;
@@ -282,7 +286,7 @@ int of_write_trailer(OutputFile *of)
 {
     int ret;
 
-    if (!of->header_written) {
+    if (!of->mux->header_written) {
         av_log(NULL, AV_LOG_ERROR,
                "Nothing was written into output file %d (%s), because "
                "at least one of its streams received no packets.\n",
@@ -313,5 +317,19 @@ void of_close(OutputFile **pof)
     avformat_free_context(s);
     av_dict_free(&of->opts);
 
+    av_freep(&of->mux);
+
     av_freep(pof);
+}
+
+int of_muxer_init(OutputFile *of)
+{
+    Muxer *mux = av_mallocz(sizeof(*mux));
+
+    if (!mux)
+        return AVERROR(ENOMEM);
+
+    of->mux  = mux;
+
+    return 0;
 }
