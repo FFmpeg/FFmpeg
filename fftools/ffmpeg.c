@@ -724,11 +724,11 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
         if (ret < 0)
             goto finish;
         while ((ret = av_bsf_receive_packet(ost->bsf_ctx, pkt)) >= 0)
-            of_write_packet(of, pkt, ost, 0);
+            of_submit_packet(of, pkt, ost);
         if (ret == AVERROR(EAGAIN))
             ret = 0;
     } else if (!eof)
-        of_write_packet(of, pkt, ost, 0);
+        of_submit_packet(of, pkt, ost);
 
 finish:
     if (ret < 0 && ret != AVERROR_EOF) {

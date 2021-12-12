@@ -102,38 +102,11 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
-void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
-                     int unqueue)
+static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
     int ret;
-
-    /*
-     * Audio encoders may split the packets --  #frames in != #packets out.
-     * But there is no reordering, so we can limit the number of output packets
-     * by simply dropping them here.
-     * Counting encoded video frames needs to be done separately because of
-     * reordering, see do_video_out().
-     * Do not count the packet when unqueued because it has been counted when queued.
-     */
-    if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed) && !unqueue) {
-        if (ost->frame_number >= ost->max_frames) {
-            av_packet_unref(pkt);
-            return;
-        }
-        ost->frame_number++;
-    }
-
-    /* the muxer is not initialized yet, buffer the packet */
-    if (!of->mux->header_written) {
-        ret = queue_packet(of, ost, pkt);
-        if (ret < 0) {
-            av_packet_unref(pkt);
-            exit_program(1);
-        }
-        return;
-    }
 
     if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP) ||
         (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
@@ -209,6 +182,38 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
         print_error("av_interleaved_write_frame()", ret);
         main_return_code = 1;
         close_all_output_streams(ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
+    }
+}
+
+void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+{
+    AVStream *st = ost->st;
+    int ret;
+
+    /*
+     * Audio encoders may split the packets --  #frames in != #packets out.
+     * But there is no reordering, so we can limit the number of output packets
+     * by simply dropping them here.
+     * Counting encoded video frames needs to be done separately because of
+     * reordering, see do_video_out().
+     */
+    if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed)) {
+        if (ost->frame_number >= ost->max_frames) {
+            av_packet_unref(pkt);
+            return;
+        }
+        ost->frame_number++;
+    }
+
+    if (of->mux->header_written) {
+        write_packet(of, ost, pkt);
+    } else {
+        /* the muxer is not initialized yet, buffer the packet */
+        ret = queue_packet(of, ost, pkt);
+        if (ret < 0) {
+            av_packet_unref(pkt);
+            exit_program(1);
+        }
     }
 }
 
@@ -310,7 +315,7 @@ int of_check_init(OutputFile *of)
 
         while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
             ms->muxing_queue_data_size -= pkt->size;
-            of_write_packet(of, pkt, ost, 1);
+            write_packet(of, ost, pkt);
             av_packet_free(&pkt);
         }
     }
