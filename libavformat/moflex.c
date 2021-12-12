@@ -383,4 +383,5 @@ const AVInputFormat ff_moflex_demuxer = {
     .read_close     = moflex_read_close,
     .extensions     = "moflex",
     .flags          = AVFMT_GENERIC_INDEX,
+    .flags_internal = FF_FMT_INIT_CLEANUP,
 };
