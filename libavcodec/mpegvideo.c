@@ -768,11 +768,9 @@ static int init_context_frame(MpegEncContext *s)
             !FF_ALLOC_TYPED_ARRAY (s->cplx_tab,     mb_array_size) ||
             !FF_ALLOC_TYPED_ARRAY (s->bits_tab,     mb_array_size))
             return AVERROR(ENOMEM);
-    }
 
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
-        /* interlaced direct mode decoding tables */
         for (i = 0; i < 2; i++) {
             int j, k;
             for (j = 0; j < 2; j++) {
@@ -782,15 +780,27 @@ static int init_context_frame(MpegEncContext *s)
                     s->b_field_mv_table[i][j][k] = s->b_field_mv_table_base[i][j][k] +
                                                    s->mb_stride + 1;
                 }
-                if (!FF_ALLOCZ_TYPED_ARRAY(s->b_field_select_table [i][j], mv_table_size * 2) ||
-                    !FF_ALLOCZ_TYPED_ARRAY(s->p_field_mv_table_base[i][j], mv_table_size))
+                if (!FF_ALLOCZ_TYPED_ARRAY(s->b_field_select_table [i][j], mv_table_size * 2))
                     return AVERROR(ENOMEM);
-                s->p_field_mv_table[i][j] = s->p_field_mv_table_base[i][j] + s->mb_stride + 1;
             }
             if (!FF_ALLOCZ_TYPED_ARRAY(s->p_field_select_table[i], mv_table_size * 2))
                 return AVERROR(ENOMEM);
         }
     }
+    }
+
+    if (s->codec_id == AV_CODEC_ID_MPEG4 ||
+        (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
+        /* interlaced direct mode decoding tables */
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                if (!FF_ALLOCZ_TYPED_ARRAY(s->p_field_mv_table_base[i][j], mv_table_size))
+                    return AVERROR(ENOMEM);
+                s->p_field_mv_table[i][j] = s->p_field_mv_table_base[i][j] + s->mb_stride + 1;
+            }
+        }
+    }
+
     if (s->out_format == FMT_H263) {
         /* cbp values, cbp, ac_pred, pred_dir */
         if (!FF_ALLOCZ_TYPED_ARRAY(s->coded_block_base, y_size + (s->mb_height&1)*2*s->b8_stride) ||
