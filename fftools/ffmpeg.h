@@ -565,15 +565,6 @@ typedef struct OutputStream {
 
     int max_muxing_queue_size;
 
-    /* the packets are buffered here until the muxer is ready to be initialized */
-    AVFifo *muxing_queue;
-
-    /*
-     * The size of the AVPackets' buffers in queue.
-     * Updated when a packet is either pushed or pulled from the queue.
-     */
-    size_t muxing_queue_data_size;
-
     /* Threshold after which max_muxing_queue_size will be in effect */
     size_t muxing_queue_data_threshold;
 

@@ -1699,8 +1699,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->max_muxing_queue_size = 128;
     MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, ost->max_muxing_queue_size, oc, st);
 
-    ost->muxing_queue_data_size = 0;
-
     ost->muxing_queue_data_threshold = 50*1024*1024;
     MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, ost->muxing_queue_data_threshold, oc, st);
 
@@ -1723,13 +1721,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         input_streams[source_index]->st->discard = input_streams[source_index]->user_set_discard;
     }
     ost->last_mux_dts = AV_NOPTS_VALUE;
-
-    ost->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
-    if (!ost->muxing_queue)
-        exit_program(1);
-
-    MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
-                         ost->copy_initial_nonkeyframes, oc, st);
 
     return ost;
 }

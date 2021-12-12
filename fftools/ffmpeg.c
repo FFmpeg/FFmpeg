@@ -591,13 +591,6 @@ static void ffmpeg_cleanup(int ret)
         avcodec_free_context(&ost->enc_ctx);
         avcodec_parameters_free(&ost->ref_par);
 
-        if (ost->muxing_queue) {
-            AVPacket *pkt;
-            while (av_fifo_read(ost->muxing_queue, &pkt, 1) >= 0)
-                av_packet_free(&pkt);
-            av_fifo_freep2(&ost->muxing_queue);
-        }
-
         av_freep(&output_streams[i]);
     }
 #if HAVE_THREADS

@@ -32,7 +32,20 @@
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 
+typedef struct MuxStream {
+    /* the packets are buffered here until the muxer is ready to be initialized */
+    AVFifo *muxing_queue;
+
+    /*
+     * The size of the AVPackets' buffers in queue.
+     * Updated when a packet is either pushed or pulled from the queue.
+     */
+    size_t muxing_queue_data_size;
+} MuxStream;
+
 struct Muxer {
+    MuxStream *streams;
+
     /* filesize limit expressed in bytes */
     int64_t limit_filesize;
     int64_t final_filesize;
@@ -55,6 +68,7 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
 {
     AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
+    MuxStream *ms = &of->mux->streams[st->index];
     int ret;
 
     /*
@@ -76,10 +90,10 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
     if (!of->mux->header_written) {
         AVPacket *tmp_pkt;
         /* the muxer is not initialized yet, buffer the packet */
-        if (!av_fifo_can_write(ost->muxing_queue)) {
-            size_t cur_size = av_fifo_can_read(ost->muxing_queue);
+        if (!av_fifo_can_write(ms->muxing_queue)) {
+            size_t cur_size = av_fifo_can_read(ms->muxing_queue);
             unsigned int are_we_over_size =
-                (ost->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
+                (ms->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
             size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
             size_t new_size = FFMIN(2 * cur_size, limit);
 
@@ -89,7 +103,7 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
                        ost->file_index, ost->st->index);
                 exit_program(1);
             }
-            ret = av_fifo_grow2(ost->muxing_queue, new_size - cur_size);
+            ret = av_fifo_grow2(ms->muxing_queue, new_size - cur_size);
             if (ret < 0)
                 exit_program(1);
         }
@@ -100,8 +114,8 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
         if (!tmp_pkt)
             exit_program(1);
         av_packet_move_ref(tmp_pkt, pkt);
-        ost->muxing_queue_data_size += tmp_pkt->size;
-        av_fifo_write(ost->muxing_queue, &tmp_pkt, 1);
+        ms->muxing_queue_data_size += tmp_pkt->size;
+        av_fifo_write(ms->muxing_queue, &tmp_pkt, 1);
         return;
     }
 
@@ -270,15 +284,16 @@ int of_check_init(OutputFile *of)
 
     /* flush the muxing queues */
     for (i = 0; i < of->ctx->nb_streams; i++) {
+        MuxStream     *ms = &of->mux->streams[i];
         OutputStream *ost = output_streams[of->ost_index + i];
         AVPacket *pkt;
 
         /* try to improve muxing time_base (only possible if nothing has been written yet) */
-        if (!av_fifo_can_read(ost->muxing_queue))
+        if (!av_fifo_can_read(ms->muxing_queue))
             ost->mux_timebase = ost->st->time_base;
 
-        while (av_fifo_read(ost->muxing_queue, &pkt, 1) >= 0) {
-            ost->muxing_queue_data_size -= pkt->size;
+        while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
+            ms->muxing_queue_data_size -= pkt->size;
             of_write_packet(of, pkt, ost, 1);
             av_packet_free(&pkt);
         }
@@ -319,6 +334,29 @@ int of_write_trailer(OutputFile *of)
     return 0;
 }
 
+static void mux_free(Muxer **pmux, int nb_streams)
+{
+    Muxer *mux = *pmux;
+
+    if (!mux)
+        return;
+
+    for (int i = 0; i < nb_streams; i++) {
+        MuxStream *ms = &mux->streams[i];
+        AVPacket *pkt;
+
+        if (!ms->muxing_queue)
+            continue;
+
+        while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0)
+            av_packet_free(&pkt);
+        av_fifo_freep2(&ms->muxing_queue);
+    }
+    av_freep(&mux->streams);
+
+    av_freep(pmux);
+}
+
 void of_close(OutputFile **pof)
 {
     OutputFile *of = *pof;
@@ -328,12 +366,13 @@ void of_close(OutputFile **pof)
         return;
 
     s = of->ctx;
+
+    mux_free(&of->mux, s ? s->nb_streams : 0);
+
     if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
         avio_closep(&s->pb);
     avformat_free_context(s);
     av_dict_free(&of->opts);
-
-    av_freep(&of->mux);
 
     av_freep(pof);
 }
@@ -341,11 +380,27 @@ void of_close(OutputFile **pof)
 int of_muxer_init(OutputFile *of, int64_t limit_filesize)
 {
     Muxer *mux = av_mallocz(sizeof(*mux));
+    int ret = 0;
 
     if (!mux)
         return AVERROR(ENOMEM);
 
+    mux->streams = av_calloc(of->ctx->nb_streams, sizeof(*mux->streams));
+    if (!mux->streams) {
+        av_freep(&mux);
+        return AVERROR(ENOMEM);
+    }
+
     of->mux  = mux;
+
+    for (int i = 0; i < of->ctx->nb_streams; i++) {
+        MuxStream *ms = &mux->streams[i];
+        ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
+        if (!ms->muxing_queue) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
 
     mux->limit_filesize = limit_filesize;
 
@@ -354,12 +409,16 @@ int of_muxer_init(OutputFile *of, int64_t limit_filesize)
 
     /* write the header for files with no streams */
     if (of->format->flags & AVFMT_NOSTREAMS && of->ctx->nb_streams == 0) {
-        int ret = of_check_init(of);
+        ret = of_check_init(of);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
-    return 0;
+fail:
+    if (ret < 0)
+        mux_free(&of->mux, of->ctx->nb_streams);
+
+    return ret;
 }
 
 int of_finished(OutputFile *of)
