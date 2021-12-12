@@ -295,7 +295,8 @@ static int decode_speedhq_border(const SHQContext *s, GetBitContext *gb, AVFrame
         if (s->subsampling == SHQ_SUBSAMPLING_420) {
             dest_cb = frame->data[1] + frame->linesize[1] * (y/2 + field_number) + x / 2;
             dest_cr = frame->data[2] + frame->linesize[2] * (y/2 + field_number) + x / 2;
-        } else if (s->subsampling == SHQ_SUBSAMPLING_422) {
+        } else {
+            av_assert2(s->subsampling == SHQ_SUBSAMPLING_422);
             dest_cb = frame->data[1] + frame->linesize[1] * (y + field_number) + x / 2;
             dest_cr = frame->data[2] + frame->linesize[2] * (y + field_number) + x / 2;
         }
