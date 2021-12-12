@@ -658,12 +658,6 @@ do {\
     memcpy(&s->progressive_sequence, &s1->progressive_sequence,
            (char *) &s1->rtp_mode - (char *) &s1->progressive_sequence);
 
-    if (!s1->first_field) {
-        s->last_pict_type = s1->pict_type;
-        if (s1->current_picture_ptr)
-            s->last_lambda_for[s1->pict_type] = s1->current_picture_ptr->f->quality;
-    }
-
     return 0;
 }
 
