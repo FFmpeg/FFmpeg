@@ -172,7 +172,7 @@ static int moflex_read_sync(AVFormatContext *s)
         unsigned type, ssize, codec_id = 0;
         unsigned codec_type, width = 0, height = 0, sample_rate = 0, channels = 0;
         int stream_index = -1;
-        AVRational fps;
+        AVRational tb = av_make_q(0, 1);
 
         read_var_byte(s, &type);
         read_var_byte(s, &ssize);
@@ -195,6 +195,7 @@ static int moflex_read_sync(AVFormatContext *s)
                 return AVERROR_PATCHWELCOME;
             }
             sample_rate = avio_rb24(pb) + 1;
+            tb = av_make_q(1, sample_rate);
             channels = avio_r8(pb) + 1;
             break;
         case 1:
@@ -208,8 +209,8 @@ static int moflex_read_sync(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Unsupported video codec: %d\n", codec_id);
                 return AVERROR_PATCHWELCOME;
             }
-            fps.num = avio_rb16(pb);
-            fps.den = avio_rb16(pb);
+            tb.den = avio_rb16(pb);
+            tb.num = avio_rb16(pb);
             width = avio_rb16(pb);
             height = avio_rb16(pb);
             avio_skip(pb, type == 3 ? 3 : 2);
@@ -237,10 +238,8 @@ static int moflex_read_sync(AVFormatContext *s)
             if (!st->priv_data)
                 return AVERROR(ENOMEM);
 
-            if (sample_rate)
-                avpriv_set_pts_info(st, 63, 1, sample_rate);
-            else
-                avpriv_set_pts_info(st, 63, fps.den, fps.num);
+            if (tb.num)
+                avpriv_set_pts_info(st, 63, tb.num, tb.den);
         }
     }
 
