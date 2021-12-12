@@ -63,12 +63,50 @@ static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream,
     }
 }
 
+static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+{
+    MuxStream *ms = &of->mux->streams[ost->index];
+    AVPacket *tmp_pkt;
+    int ret;
+
+    if (!av_fifo_can_write(ms->muxing_queue)) {
+        size_t cur_size = av_fifo_can_read(ms->muxing_queue);
+        unsigned int are_we_over_size =
+            (ms->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
+        size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
+        size_t new_size = FFMIN(2 * cur_size, limit);
+
+        if (new_size <= cur_size) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Too many packets buffered for output stream %d:%d.\n",
+                   ost->file_index, ost->st->index);
+            return AVERROR(ENOSPC);
+        }
+        ret = av_fifo_grow2(ms->muxing_queue, new_size - cur_size);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = av_packet_make_refcounted(pkt);
+    if (ret < 0)
+        return ret;
+
+    tmp_pkt = av_packet_alloc();
+    if (!tmp_pkt)
+        return AVERROR(ENOMEM);
+
+    av_packet_move_ref(tmp_pkt, pkt);
+    ms->muxing_queue_data_size += tmp_pkt->size;
+    av_fifo_write(ms->muxing_queue, &tmp_pkt, 1);
+
+    return 0;
+}
+
 void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
                      int unqueue)
 {
     AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
-    MuxStream *ms = &of->mux->streams[st->index];
     int ret;
 
     /*
@@ -87,35 +125,13 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
         ost->frame_number++;
     }
 
+    /* the muxer is not initialized yet, buffer the packet */
     if (!of->mux->header_written) {
-        AVPacket *tmp_pkt;
-        /* the muxer is not initialized yet, buffer the packet */
-        if (!av_fifo_can_write(ms->muxing_queue)) {
-            size_t cur_size = av_fifo_can_read(ms->muxing_queue);
-            unsigned int are_we_over_size =
-                (ms->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
-            size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
-            size_t new_size = FFMIN(2 * cur_size, limit);
-
-            if (new_size <= cur_size) {
-                av_log(NULL, AV_LOG_ERROR,
-                       "Too many packets buffered for output stream %d:%d.\n",
-                       ost->file_index, ost->st->index);
-                exit_program(1);
-            }
-            ret = av_fifo_grow2(ms->muxing_queue, new_size - cur_size);
-            if (ret < 0)
-                exit_program(1);
+        ret = queue_packet(of, ost, pkt);
+        if (ret < 0) {
+            av_packet_unref(pkt);
+            exit_program(1);
         }
-        ret = av_packet_make_refcounted(pkt);
-        if (ret < 0)
-            exit_program(1);
-        tmp_pkt = av_packet_alloc();
-        if (!tmp_pkt)
-            exit_program(1);
-        av_packet_move_ref(tmp_pkt, pkt);
-        ms->muxing_queue_data_size += tmp_pkt->size;
-        av_fifo_write(ms->muxing_queue, &tmp_pkt, 1);
         return;
     }
 
