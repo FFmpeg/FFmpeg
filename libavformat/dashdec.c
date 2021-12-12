@@ -403,6 +403,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     DASHContext *c = s->priv_data;
     AVDictionary *tmp = NULL;
     const char *proto_name = NULL;
+    int proto_name_len;
     int ret;
 
     if (av_strstart(url, "crypto", NULL)) {
@@ -416,6 +417,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     if (!proto_name)
         return AVERROR_INVALIDDATA;
 
+    proto_name_len = strlen(proto_name);
     // only http(s) & file are allowed
     if (av_strstart(proto_name, "file", NULL)) {
         if (strcmp(c->allowed_extensions, "ALL") && !av_match_ext(url, c->allowed_extensions)) {
@@ -430,9 +432,9 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     } else
         return AVERROR_INVALIDDATA;
 
-    if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
+    if (!strncmp(proto_name, url, proto_name_len) && url[proto_name_len] == ':')
         ;
-    else if (av_strstart(url, "crypto", NULL) && !strncmp(proto_name, url + 7, strlen(proto_name)) && url[7 + strlen(proto_name)] == ':')
+    else if (av_strstart(url, "crypto", NULL) && !strncmp(proto_name, url + 7, proto_name_len) && url[7 + proto_name_len] == ':')
         ;
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
