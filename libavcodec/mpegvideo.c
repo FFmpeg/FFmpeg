@@ -2317,7 +2317,6 @@ void ff_mpeg_flush(AVCodecContext *avctx){
     ff_mpeg_unref_picture(s->avctx, &s->next_picture);
 
     s->mb_x= s->mb_y= 0;
-    s->closed_gop= 0;
 
 #if FF_API_FLAG_TRUNCATED
     s->parse_context.state= -1;
