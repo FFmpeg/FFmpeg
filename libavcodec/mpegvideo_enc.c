@@ -1658,8 +1658,7 @@ static int frame_start(MpegEncContext *s)
 
     if (s->pict_type != AV_PICTURE_TYPE_B) {
         s->last_picture_ptr = s->next_picture_ptr;
-        if (!s->droppable)
-            s->next_picture_ptr = s->current_picture_ptr;
+        s->next_picture_ptr = s->current_picture_ptr;
     }
 
     if (s->last_picture_ptr) {
