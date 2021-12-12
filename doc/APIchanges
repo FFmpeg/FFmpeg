@@ -14,6 +14,11 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-12-20 - xxxxxxxxxx - lavu 57.11.101 - display.h
+  Modified the documentation of av_display_rotation_set()
+  to match its longstanding actual behaviour of treating
+  the angle as directed clockwise.
+
 2021-12-xx - xxxxxxxxxx - lavf 59.10.100 - avformat.h
   Add AVFormatContext io_close2 which returns an int
 

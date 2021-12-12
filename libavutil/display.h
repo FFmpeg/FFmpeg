@@ -88,7 +88,7 @@
 double av_display_rotation_get(const int32_t matrix[9]);
 
 /**
- * Initialize a transformation matrix describing a pure counterclockwise
+ * Initialize a transformation matrix describing a pure clockwise
  * rotation by the specified angle (in degrees).
  *
  * @param matrix an allocated transformation matrix (will be fully overwritten
