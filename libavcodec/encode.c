@@ -366,7 +366,7 @@ int attribute_align_arg avcodec_send_frame(AVCodecContext *avctx, const AVFrame 
     if (avci->draining)
         return AVERROR_EOF;
 
-    if (avci->buffer_frame->data[0])
+    if (avci->buffer_frame->buf[0])
         return AVERROR(EAGAIN);
 
     if (!frame) {
