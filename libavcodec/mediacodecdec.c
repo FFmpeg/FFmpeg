@@ -155,6 +155,9 @@ static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
         uint8_t *data = NULL;
         int data_size = 0;
 
+        avctx->profile = ff_h264_get_profile(sps);
+        avctx->level = sps->level_idc;
+
         if ((ret = h2645_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
             goto done;
         }
@@ -235,6 +238,9 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     if (vps && pps && sps) {
         uint8_t *data;
         int data_size;
+
+        avctx->profile = sps->ptl.general_ptl.profile_idc;
+        avctx->level   = sps->ptl.general_ptl.level_idc;
 
         if ((ret = h2645_ps_to_nalu(vps->data, vps->data_size, &vps_data, &vps_data_size)) < 0 ||
             (ret = h2645_ps_to_nalu(sps->data, sps->data_size, &sps_data, &sps_data_size)) < 0 ||
