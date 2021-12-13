@@ -1238,6 +1238,11 @@ static void do_video_out(OutputFile *of,
         }
     }
 
+    /*
+     * For video, number of frames in == number of packets out.
+     * But there may be reordering, so we can't throw away frames on encoder
+     * flush, we need to limit them here, before they go into encoder.
+     */
     nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
     nb0_frames = FFMIN(nb0_frames, nb_frames);
 
@@ -1392,11 +1397,6 @@ static void do_video_out(OutputFile *of,
             }
         }
         ost->sync_opts++;
-        /*
-         * For video, number of frames in == number of packets out.
-         * But there may be reordering, so we can't throw away frames on encoder
-         * flush, we need to limit them here, before they go into encoder.
-         */
         ost->frame_number++;
 
         if (vstats_filename && frame_size)
