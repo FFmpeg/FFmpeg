@@ -885,15 +885,16 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
     ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
 
-    if (CONFIG_H261_ENCODER && s->out_format == FMT_H261)
+    if (CONFIG_H261_ENCODER && s->out_format == FMT_H261) {
         ff_h261_encode_init(s);
-    if (CONFIG_H263_ENCODER && s->out_format == FMT_H263)
-        ff_h263_encode_init(s);
-    if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
-        ff_msmpeg4_encode_init(s);
-    if ((CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-        && s->out_format == FMT_MPEG1)
+    } else if ((CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
+               && s->out_format == FMT_MPEG1) {
         ff_mpeg1_encode_init(s);
+    } else if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
+        ff_h263_encode_init(s);
+        if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
+            ff_msmpeg4_encode_init(s);
+    }
 
     /* init q matrix */
     for (i = 0; i < 64; i++) {
@@ -3695,7 +3696,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
                        s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
-    }
+
     if(s->codec_id == AV_CODEC_ID_AMV){
         static const uint8_t y[32]={13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
         static const uint8_t c[32]={14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
@@ -3715,8 +3716,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
                        s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
-
-    if (s->out_format == FMT_SPEEDHQ) {
+    } else if (s->out_format == FMT_SPEEDHQ) {
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg2_dc_scale_table[3];
     }
