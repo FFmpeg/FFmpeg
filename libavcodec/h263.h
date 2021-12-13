@@ -87,13 +87,6 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
                       int16_t block[6][64]);
 
-/**
- * Return the value of the 3-bit "source format" syntax element.
- * This represents some standard picture dimensions or indicates that
- * width&height are explicitly stored later.
- */
-int av_const h263_get_picture_format(int width, int height);
-
 void ff_clean_h263_qscales(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
