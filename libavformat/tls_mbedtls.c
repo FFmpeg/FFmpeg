@@ -223,7 +223,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     }
 
     mbedtls_ssl_conf_authmode(&tls_ctx->ssl_config,
-                              shr->ca_file ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_NONE);
+                              shr->verify ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_NONE);
     mbedtls_ssl_conf_rng(&tls_ctx->ssl_config, mbedtls_ctr_drbg_random, &tls_ctx->ctr_drbg_context);
     mbedtls_ssl_conf_ca_chain(&tls_ctx->ssl_config, &tls_ctx->ca_cert, NULL);
 
