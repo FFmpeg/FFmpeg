@@ -983,14 +983,12 @@ OBJS-$(CONFIG_VP8_QSV_HWACCEL)            += qsvdec.o
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o
 
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
-OBJS-$(CONFIG_DNXHD_DEMUXER)           += dnxhddata.o
 OBJS-$(CONFIG_FITS_DEMUXER)            += fits.o
 OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
-OBJS-$(CONFIG_MXF_MUXER)               += dnxhddata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o

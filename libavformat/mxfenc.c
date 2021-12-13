@@ -48,7 +48,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
-#include "libavcodec/dnxhddata.h"
 #include "libavcodec/dv_profile.h"
 #include "libavcodec/h264_ps.h"
 #include "libavcodec/golomb.h"
