@@ -863,14 +863,6 @@ const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index)
     return &codec->hw_configs[index]->public;
 }
 
-unsigned int avpriv_toupper4(unsigned int x)
-{
-    return av_toupper(x & 0xFF) +
-          (av_toupper((x >>  8) & 0xFF) << 8)  +
-          (av_toupper((x >> 16) & 0xFF) << 16) +
-((unsigned)av_toupper((x >> 24) & 0xFF) << 24);
-}
-
 int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
 {
     int ret;

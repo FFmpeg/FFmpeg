@@ -361,7 +361,7 @@ enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
         if (tag == tags[i].tag)
             return tags[i].id;
     for (int i = 0; tags[i].id != AV_CODEC_ID_NONE; i++)
-        if (avpriv_toupper4(tag) == avpriv_toupper4(tags[i].tag))
+        if (ff_toupper4(tag) == ff_toupper4(tags[i].tag))
             return tags[i].id;
     return AV_CODEC_ID_NONE;
 }

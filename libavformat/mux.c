@@ -204,7 +204,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     for (int n = 0; s->oformat->codec_tag[n]; n++) {
         avctag = s->oformat->codec_tag[n];
         while (avctag->id != AV_CODEC_ID_NONE) {
-            if (avpriv_toupper4(avctag->tag) == avpriv_toupper4(st->codecpar->codec_tag)) {
+            if (ff_toupper4(avctag->tag) == ff_toupper4(st->codecpar->codec_tag)) {
                 id = avctag->id;
                 if (id == st->codecpar->codec_id)
                     return 1;

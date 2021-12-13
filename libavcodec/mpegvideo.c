@@ -701,7 +701,7 @@ void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
     s->workaround_bugs = avctx->workaround_bugs;
 
     /* convert fourcc to upper case */
-    s->codec_tag          = avpriv_toupper4(avctx->codec_tag);
+    s->codec_tag       = ff_toupper4(avctx->codec_tag);
 }
 
 /**

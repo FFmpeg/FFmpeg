@@ -1717,7 +1717,7 @@ static unsigned int validate_codec_tag(const AVCodecTag *const *tags,
     for (i = 0; tags && tags[i]; i++) {
         const AVCodecTag *codec_tags = tags[i];
         while (codec_tags->id != AV_CODEC_ID_NONE) {
-            if (avpriv_toupper4(codec_tags->tag) == avpriv_toupper4(tag) &&
+            if (ff_toupper4(codec_tags->tag) == ff_toupper4(tag) &&
                 codec_tags->id == codec_id)
                 return codec_tags->tag;
             codec_tags++;
