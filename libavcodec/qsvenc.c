@@ -76,6 +76,15 @@ static const struct profile_names hevc_profiles[] = {
 #endif
 };
 
+static const struct profile_names vp9_profiles[] = {
+#if QSV_VERSION_ATLEAST(1, 19)
+    { MFX_PROFILE_VP9_0,                        "0"                     },
+    { MFX_PROFILE_VP9_1,                        "1"                     },
+    { MFX_PROFILE_VP9_2,                        "2"                     },
+    { MFX_PROFILE_VP9_3,                        "3"                     },
+#endif
+};
+
 static const char *print_profile(enum AVCodecID codec_id, mfxU16 profile)
 {
     const struct profile_names *profiles;
@@ -95,6 +104,11 @@ static const char *print_profile(enum AVCodecID codec_id, mfxU16 profile)
     case AV_CODEC_ID_HEVC:
         profiles = hevc_profiles;
         num_profiles = FF_ARRAY_ELEMS(hevc_profiles);
+        break;
+
+    case AV_CODEC_ID_VP9:
+        profiles = vp9_profiles;
+        num_profiles = FF_ARRAY_ELEMS(vp9_profiles);
         break;
 
     default:
