@@ -421,6 +421,18 @@ static void dump_video_vp9_param(AVCodecContext *avctx, QSVEncContext *q,
 #endif
 }
 
+static void dump_video_mjpeg_param(AVCodecContext *avctx, QSVEncContext *q)
+{
+    mfxInfoMFX *info = &q->param.mfx;
+
+    av_log(avctx, AV_LOG_VERBOSE, "Interleaved: %"PRIu16" \n", info->Interleaved);
+    av_log(avctx, AV_LOG_VERBOSE, "Quality: %"PRIu16" \n", info->Quality);
+    av_log(avctx, AV_LOG_VERBOSE, "RestartInterval: %"PRIu16" \n", info->RestartInterval);
+
+    av_log(avctx, AV_LOG_VERBOSE, "FrameRateExtD: %"PRIu32"; FrameRateExtN: %"PRIu32" \n",
+           info->FrameInfo.FrameRateExtD, info->FrameInfo.FrameRateExtN);
+}
+
 static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
 {
     const char *rc_desc;
@@ -969,6 +981,8 @@ static int qsv_retrieve_enc_jpeg_params(AVCodecContext *avctx, QSVEncContext *q)
     // for qsv mjpeg the return value maybe 0 so alloc the buffer
     if (q->packet_size == 0)
         q->packet_size = q->param.mfx.FrameInfo.Height * q->param.mfx.FrameInfo.Width * 4;
+
+    dump_video_mjpeg_param(avctx, q);
 
     return 0;
 }
