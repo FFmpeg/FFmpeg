@@ -770,8 +770,8 @@ static int init_context_frame(MpegEncContext *s)
             return AVERROR(ENOMEM);
 
 #define ALLOCZ_ARRAYS(p, mult, numb) ((p) = av_calloc(numb, mult * sizeof(*(p))))
-    if (s->codec_id == AV_CODEC_ID_MPEG4 ||
-        (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
+        if (s->codec_id == AV_CODEC_ID_MPEG4 ||
+            (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
             int16_t (*tmp1)[2];
             uint8_t *tmp2;
             if (!(tmp1 = ALLOCZ_ARRAYS(s->b_field_mv_table_base, 8, mv_table_size)) ||
@@ -782,18 +782,17 @@ static int init_context_frame(MpegEncContext *s)
             s->p_field_select_table[1] = s->p_field_select_table[0] + 2 * mv_table_size;
             tmp1 += s->mb_stride + 1;
 
-        for (i = 0; i < 2; i++) {
-            int j, k;
-            for (j = 0; j < 2; j++) {
-                for (k = 0; k < 2; k++) {
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    for (int k = 0; k < 2; k++) {
                         s->b_field_mv_table[i][j][k] = tmp1;
                         tmp1 += mv_table_size;
-                }
+                    }
                     s->b_field_select_table[i][j] = tmp2;
                     tmp2 += 2 * mv_table_size;
+                }
             }
         }
-    }
     }
 
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
