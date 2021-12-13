@@ -2391,7 +2391,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     OutputFile *of;
     OutputStream *ost;
     InputStream  *ist;
-    AVDictionary *unused_opts = NULL;
+    AVDictionary *unused_opts = NULL, *format_opts = NULL;
     const AVDictionaryEntry *e = NULL;
 
     if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
@@ -2416,7 +2416,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     of->recording_time = o->recording_time;
     of->start_time     = o->start_time;
     of->shortest       = o->shortest;
-    av_dict_copy(&of->opts, o->g->format_opts, 0);
+    av_dict_copy(&format_opts, o->g->format_opts, 0);
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -2438,7 +2438,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
         oc->flags    |= AVFMT_FLAG_BITEXACT;
         of->bitexact  = 1;
     } else {
-        of->bitexact  = check_opt_bitexact(oc, of->opts, "fflags",
+        of->bitexact  = check_opt_bitexact(oc, format_opts, "fflags",
                                            AVFMT_FLAG_BITEXACT);
     }
 
@@ -2819,7 +2819,7 @@ loop_end:
         /* open the file */
         if ((err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
                               &oc->interrupt_callback,
-                              &of->opts)) < 0) {
+                              &format_opts)) < 0) {
             print_error(filename, err);
             exit_program(1);
         }
@@ -2827,7 +2827,7 @@ loop_end:
         assert_file_overwrite(filename);
 
     if (o->mux_preload) {
-        av_dict_set_int(&of->opts, "preload", o->mux_preload*AV_TIME_BASE, 0);
+        av_dict_set_int(&format_opts, "preload", o->mux_preload*AV_TIME_BASE, 0);
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
@@ -3021,7 +3021,7 @@ loop_end:
         exit_program(1);
     }
 
-    err = of_muxer_init(of, o->limit_filesize);
+    err = of_muxer_init(of, format_opts, o->limit_filesize);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error initializing internal muxing state\n");
         exit_program(1);

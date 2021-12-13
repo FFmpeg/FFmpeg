@@ -46,6 +46,8 @@ typedef struct MuxStream {
 struct Muxer {
     MuxStream *streams;
 
+    AVDictionary *opts;
+
     /* filesize limit expressed in bytes */
     int64_t limit_filesize;
     int64_t final_filesize;
@@ -281,7 +283,7 @@ int of_check_init(OutputFile *of)
             return 0;
     }
 
-    ret = avformat_write_header(of->ctx, &of->opts);
+    ret = avformat_write_header(of->ctx, &of->mux->opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not write header for output file #%d "
@@ -374,6 +376,7 @@ static void mux_free(Muxer **pmux, int nb_streams)
         av_fifo_freep2(&ms->muxing_queue);
     }
     av_freep(&mux->streams);
+    av_dict_free(&mux->opts);
 
     av_freep(pmux);
 }
@@ -393,12 +396,11 @@ void of_close(OutputFile **pof)
     if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
         avio_closep(&s->pb);
     avformat_free_context(s);
-    av_dict_free(&of->opts);
 
     av_freep(pof);
 }
 
-int of_muxer_init(OutputFile *of, int64_t limit_filesize)
+int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize)
 {
     Muxer *mux = av_mallocz(sizeof(*mux));
     int ret = 0;
@@ -424,6 +426,7 @@ int of_muxer_init(OutputFile *of, int64_t limit_filesize)
     }
 
     mux->limit_filesize = limit_filesize;
+    mux->opts           = opts;
 
     if (strcmp(of->format->name, "rtp"))
         want_sdp = 0;

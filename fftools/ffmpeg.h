@@ -584,7 +584,6 @@ typedef struct OutputFile {
     const AVOutputFormat *format;
 
     AVFormatContext *ctx;
-    AVDictionary *opts;
     int ost_index;       /* index of the first stream in output_streams */
     int64_t recording_time;  ///< desired length of the resulting file in microseconds == AV_TIME_BASE units
     int64_t start_time;      ///< start time in microseconds == AV_TIME_BASE units
@@ -688,7 +687,7 @@ int hw_device_setup_for_filter(FilterGraph *fg);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
-int of_muxer_init(OutputFile *of, int64_t limit_filesize);
+int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize);
 /* open the muxer when all the streams are initialized */
 int of_check_init(OutputFile *of);
 int of_write_trailer(OutputFile *of);
