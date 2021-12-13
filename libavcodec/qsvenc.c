@@ -41,10 +41,12 @@
 #include "qsv_internal.h"
 #include "qsvenc.h"
 
-static const struct {
+struct profile_names {
     mfxU16 profile;
     const char *name;
-} profile_names[] = {
+};
+
+static const struct profile_names avc_profiles[] = {
     { MFX_PROFILE_AVC_BASELINE,                 "baseline"              },
     { MFX_PROFILE_AVC_MAIN,                     "main"                  },
     { MFX_PROFILE_AVC_EXTENDED,                 "extended"              },
@@ -57,9 +59,15 @@ static const struct {
     { MFX_PROFILE_AVC_CONSTRAINED_HIGH,         "constrained high"      },
     { MFX_PROFILE_AVC_PROGRESSIVE_HIGH,         "progressive high"      },
 #endif
+};
+
+static const struct profile_names mpeg2_profiles[] = {
     { MFX_PROFILE_MPEG2_SIMPLE,                 "simple"                },
     { MFX_PROFILE_MPEG2_MAIN,                   "main"                  },
     { MFX_PROFILE_MPEG2_HIGH,                   "high"                  },
+};
+
+static const struct profile_names hevc_profiles[] = {
 #if QSV_VERSION_ATLEAST(1, 8)
     { MFX_PROFILE_HEVC_MAIN,                    "main"                  },
     { MFX_PROFILE_HEVC_MAIN10,                  "main10"                },
@@ -68,12 +76,35 @@ static const struct {
 #endif
 };
 
-static const char *print_profile(mfxU16 profile)
+static const char *print_profile(enum AVCodecID codec_id, mfxU16 profile)
 {
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(profile_names); i++)
-        if (profile == profile_names[i].profile)
-            return profile_names[i].name;
+    const struct profile_names *profiles;
+    int i, num_profiles;
+
+    switch (codec_id) {
+    case AV_CODEC_ID_H264:
+        profiles = avc_profiles;
+        num_profiles = FF_ARRAY_ELEMS(avc_profiles);
+        break;
+
+    case AV_CODEC_ID_MPEG2VIDEO:
+        profiles = mpeg2_profiles;
+        num_profiles = FF_ARRAY_ELEMS(mpeg2_profiles);
+        break;
+
+    case AV_CODEC_ID_HEVC:
+        profiles = hevc_profiles;
+        num_profiles = FF_ARRAY_ELEMS(hevc_profiles);
+        break;
+
+    default:
+        return "unknown";
+    }
+
+    for (i = 0; i < num_profiles; i++)
+        if (profile == profiles[i].profile)
+            return profiles[i].name;
+
     return "unknown";
 }
 
@@ -143,7 +174,7 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #endif
 
     av_log(avctx, AV_LOG_VERBOSE, "profile: %s; level: %"PRIu16"\n",
-           print_profile(info->CodecProfile), info->CodecLevel);
+           print_profile(avctx->codec_id, info->CodecProfile), info->CodecLevel);
 
     av_log(avctx, AV_LOG_VERBOSE, "GopPicSize: %"PRIu16"; GopRefDist: %"PRIu16"; GopOptFlag: ",
            info->GopPicSize, info->GopRefDist);
