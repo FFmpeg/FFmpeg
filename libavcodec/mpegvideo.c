@@ -769,34 +769,44 @@ static int init_context_frame(MpegEncContext *s)
             !FF_ALLOC_TYPED_ARRAY (s->bits_tab,     mb_array_size))
             return AVERROR(ENOMEM);
 
+#define ALLOCZ_ARRAYS(p, mult, numb) ((p) = av_calloc(numb, mult * sizeof(*(p))))
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
+            int16_t (*tmp1)[2];
+            uint8_t *tmp2;
+            if (!(tmp1 = ALLOCZ_ARRAYS(s->b_field_mv_table_base, 8, mv_table_size)) ||
+                !(tmp2 = ALLOCZ_ARRAYS(s->b_field_select_table[0][0], 2 * 4, mv_table_size)) ||
+                !ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * 2, mv_table_size))
+                return AVERROR(ENOMEM);
+
+            s->p_field_select_table[1] = s->p_field_select_table[0] + 2 * mv_table_size;
+            tmp1 += s->mb_stride + 1;
+
         for (i = 0; i < 2; i++) {
             int j, k;
             for (j = 0; j < 2; j++) {
                 for (k = 0; k < 2; k++) {
-                    if (!FF_ALLOCZ_TYPED_ARRAY(s->b_field_mv_table_base[i][j][k], mv_table_size))
-                        return AVERROR(ENOMEM);
-                    s->b_field_mv_table[i][j][k] = s->b_field_mv_table_base[i][j][k] +
-                                                   s->mb_stride + 1;
+                        s->b_field_mv_table[i][j][k] = tmp1;
+                        tmp1 += mv_table_size;
                 }
-                if (!FF_ALLOCZ_TYPED_ARRAY(s->b_field_select_table [i][j], mv_table_size * 2))
-                    return AVERROR(ENOMEM);
+                    s->b_field_select_table[i][j] = tmp2;
+                    tmp2 += 2 * mv_table_size;
             }
-            if (!FF_ALLOCZ_TYPED_ARRAY(s->p_field_select_table[i], mv_table_size * 2))
-                return AVERROR(ENOMEM);
         }
     }
     }
 
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
+        int16_t (*tmp)[2];
         /* interlaced direct mode decoding tables */
+        if (!(tmp = ALLOCZ_ARRAYS(s->p_field_mv_table_base, 4, mv_table_size)))
+            return AVERROR(ENOMEM);
+        tmp += s->mb_stride + 1;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-                if (!FF_ALLOCZ_TYPED_ARRAY(s->p_field_mv_table_base[i][j], mv_table_size))
-                    return AVERROR(ENOMEM);
-                s->p_field_mv_table[i][j] = s->p_field_mv_table_base[i][j] + s->mb_stride + 1;
+                s->p_field_mv_table[i][j] = tmp;
+                tmp += mv_table_size;
             }
         }
     }
@@ -880,14 +890,14 @@ static void clear_context(MpegEncContext *s)
     s->b_bidir_forw_mv_table = NULL;
     s->b_bidir_back_mv_table = NULL;
     s->b_direct_mv_table     = NULL;
+    s->b_field_mv_table_base = NULL;
+    s->p_field_mv_table_base = NULL;
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 2; j++) {
             for (k = 0; k < 2; k++) {
-                s->b_field_mv_table_base[i][j][k] = NULL;
                 s->b_field_mv_table[i][j][k] = NULL;
             }
             s->b_field_select_table[i][j] = NULL;
-            s->p_field_mv_table_base[i][j] = NULL;
             s->p_field_mv_table[i][j] = NULL;
         }
         s->p_field_select_table[i] = NULL;
@@ -1026,17 +1036,19 @@ static void free_context_frame(MpegEncContext *s)
     s->b_bidir_forw_mv_table = NULL;
     s->b_bidir_back_mv_table = NULL;
     s->b_direct_mv_table     = NULL;
+    av_freep(&s->b_field_mv_table_base);
+    av_freep(&s->b_field_select_table[0][0]);
+    av_freep(&s->p_field_mv_table_base);
+    av_freep(&s->p_field_select_table[0]);
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 2; j++) {
             for (k = 0; k < 2; k++) {
-                av_freep(&s->b_field_mv_table_base[i][j][k]);
                 s->b_field_mv_table[i][j][k] = NULL;
             }
-            av_freep(&s->b_field_select_table[i][j]);
-            av_freep(&s->p_field_mv_table_base[i][j]);
+            s->b_field_select_table[i][j] = NULL;
             s->p_field_mv_table[i][j] = NULL;
         }
-        av_freep(&s->p_field_select_table[i]);
+        s->p_field_select_table[i] = NULL;
     }
 
     av_freep(&s->dc_val_base);
