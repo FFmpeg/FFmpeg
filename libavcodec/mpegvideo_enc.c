@@ -3697,25 +3697,25 @@ static int encode_picture(MpegEncContext *s, int picture_number)
                        s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
 
-    if(s->codec_id == AV_CODEC_ID_AMV){
-        static const uint8_t y[32]={13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
-        static const uint8_t c[32]={14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
-        for(i=1;i<64;i++){
-            int j= s->idsp.idct_permutation[ff_zigzag_direct[i]];
+        if (s->codec_id == AV_CODEC_ID_AMV) {
+            static const uint8_t y[32] = {13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
+            static const uint8_t c[32] = {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
+            for (int i = 1; i < 64; i++) {
+                int j = s->idsp.idct_permutation[ff_zigzag_direct[i]];
 
-            s->intra_matrix[j]        = sp5x_qscale_five_quant_table[0][i];
-            s->chroma_intra_matrix[j] = sp5x_qscale_five_quant_table[1][i];
+                s->intra_matrix[j]        = sp5x_qscale_five_quant_table[0][i];
+                s->chroma_intra_matrix[j] = sp5x_qscale_five_quant_table[1][i];
+            }
+            s->y_dc_scale_table = y;
+            s->c_dc_scale_table = c;
+            s->intra_matrix[0] = 13;
+            s->chroma_intra_matrix[0] = 14;
+            ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
+                              s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
+            ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
+                              s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
+            s->qscale = 8;
         }
-        s->y_dc_scale_table= y;
-        s->c_dc_scale_table= c;
-        s->intra_matrix[0] = 13;
-        s->chroma_intra_matrix[0] = 14;
-        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
-                       s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
-        ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
-                       s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
-        s->qscale= 8;
-    }
     } else if (s->out_format == FMT_SPEEDHQ) {
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg2_dc_scale_table[3];
