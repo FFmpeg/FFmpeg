@@ -60,9 +60,6 @@ static const struct {
     { MFX_PROFILE_MPEG2_SIMPLE,                 "simple"                },
     { MFX_PROFILE_MPEG2_MAIN,                   "main"                  },
     { MFX_PROFILE_MPEG2_HIGH,                   "high"                  },
-    { MFX_PROFILE_VC1_SIMPLE,                   "simple"                },
-    { MFX_PROFILE_VC1_MAIN,                     "main"                  },
-    { MFX_PROFILE_VC1_ADVANCED,                 "advanced"              },
 #if QSV_VERSION_ATLEAST(1, 8)
     { MFX_PROFILE_HEVC_MAIN,                    "main"                  },
     { MFX_PROFILE_HEVC_MAIN10,                  "main10"                },
