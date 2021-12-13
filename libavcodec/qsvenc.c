@@ -343,6 +343,84 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 
 }
 
+static void dump_video_vp9_param(AVCodecContext *avctx, QSVEncContext *q,
+                                 mfxExtBuffer **coding_opts)
+{
+    mfxInfoMFX *info = &q->param.mfx;
+#if QSV_HAVE_EXT_VP9_PARAM
+    mfxExtVP9Param *vp9_param = (mfxExtVP9Param *)coding_opts[0];
+#endif
+#if QSV_HAVE_CO2
+    mfxExtCodingOption2 *co2 = (mfxExtCodingOption2*)coding_opts[1];
+#endif
+
+    av_log(avctx, AV_LOG_VERBOSE, "profile: %s \n",
+           print_profile(avctx->codec_id, info->CodecProfile));
+
+    av_log(avctx, AV_LOG_VERBOSE, "GopPicSize: %"PRIu16"; GopRefDist: %"PRIu16"; GopOptFlag: ",
+           info->GopPicSize, info->GopRefDist);
+    if (info->GopOptFlag & MFX_GOP_CLOSED)
+        av_log(avctx, AV_LOG_VERBOSE, "closed ");
+    if (info->GopOptFlag & MFX_GOP_STRICT)
+        av_log(avctx, AV_LOG_VERBOSE, "strict ");
+    av_log(avctx, AV_LOG_VERBOSE, "; IdrInterval: %"PRIu16"\n", info->IdrInterval);
+
+    av_log(avctx, AV_LOG_VERBOSE, "TargetUsage: %"PRIu16"; RateControlMethod: %s\n",
+           info->TargetUsage, print_ratecontrol(info->RateControlMethod));
+
+    if (info->RateControlMethod == MFX_RATECONTROL_CBR ||
+        info->RateControlMethod == MFX_RATECONTROL_VBR) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "BufferSizeInKB: %"PRIu16"; InitialDelayInKB: %"PRIu16"; TargetKbps: %"PRIu16"; MaxKbps: %"PRIu16"; BRCParamMultiplier: %"PRIu16"\n",
+               info->BufferSizeInKB, info->InitialDelayInKB, info->TargetKbps, info->MaxKbps, info->BRCParamMultiplier);
+    } else if (info->RateControlMethod == MFX_RATECONTROL_CQP) {
+        av_log(avctx, AV_LOG_VERBOSE, "QPI: %"PRIu16"; QPP: %"PRIu16"; QPB: %"PRIu16"\n",
+               info->QPI, info->QPP, info->QPB);
+    }
+#if QSV_HAVE_ICQ
+    else if (info->RateControlMethod == MFX_RATECONTROL_ICQ) {
+        av_log(avctx, AV_LOG_VERBOSE, "ICQQuality: %"PRIu16"\n", info->ICQQuality);
+    }
+#endif
+    else {
+        av_log(avctx, AV_LOG_VERBOSE, "Unsupported ratecontrol method: %d \n", info->RateControlMethod);
+    }
+
+    av_log(avctx, AV_LOG_VERBOSE, "NumRefFrame: %"PRIu16"\n", info->NumRefFrame);
+
+#if QSV_HAVE_CO2
+    av_log(avctx, AV_LOG_VERBOSE,
+           "IntRefType: %"PRIu16"; IntRefCycleSize: %"PRIu16"; IntRefQPDelta: %"PRId16"\n",
+           co2->IntRefType, co2->IntRefCycleSize, co2->IntRefQPDelta);
+
+    av_log(avctx, AV_LOG_VERBOSE, "MaxFrameSize: %d; ", co2->MaxFrameSize);
+    av_log(avctx, AV_LOG_VERBOSE, "\n");
+
+    av_log(avctx, AV_LOG_VERBOSE,
+           "BitrateLimit: %s; MBBRC: %s; ExtBRC: %s\n",
+           print_threestate(co2->BitrateLimit), print_threestate(co2->MBBRC),
+           print_threestate(co2->ExtBRC));
+
+#if QSV_HAVE_VDENC
+    av_log(avctx, AV_LOG_VERBOSE, "VDENC: %s\n", print_threestate(info->LowPower));
+#endif
+
+#if QSV_VERSION_ATLEAST(1, 9)
+    av_log(avctx, AV_LOG_VERBOSE,
+           "MinQPI: %"PRIu8"; MaxQPI: %"PRIu8"; MinQPP: %"PRIu8"; MaxQPP: %"PRIu8"; MinQPB: %"PRIu8"; MaxQPB: %"PRIu8"\n",
+           co2->MinQPI, co2->MaxQPI, co2->MinQPP, co2->MaxQPP, co2->MinQPB, co2->MaxQPB);
+#endif
+#endif
+
+    av_log(avctx, AV_LOG_VERBOSE, "FrameRateExtD: %"PRIu32"; FrameRateExtN: %"PRIu32" \n",
+           info->FrameInfo.FrameRateExtD, info->FrameInfo.FrameRateExtN);
+
+#if QSV_HAVE_EXT_VP9_PARAM
+    av_log(avctx, AV_LOG_VERBOSE, "WriteIVFHeaders: %s \n",
+           print_threestate(vp9_param->WriteIVFHeaders));
+#endif
+}
+
 static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
 {
     const char *rc_desc;
@@ -940,6 +1018,8 @@ static int qsv_retrieve_enc_vp9_params(AVCodecContext *avctx, QSVEncContext *q)
                                   "Error calling GetVideoParam");
 
     q->packet_size = q->param.mfx.BufferSizeInKB * q->param.mfx.BRCParamMultiplier * 1000;
+
+    dump_video_vp9_param(avctx, q, ext_buffers);
 
     return 0;
 }
