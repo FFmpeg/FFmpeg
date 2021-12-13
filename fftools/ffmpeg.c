@@ -2296,11 +2296,71 @@ fail:
     return err < 0 ? err : ret;
 }
 
+static int process_subtitle(InputStream *ist, AVSubtitle *subtitle, int *got_output)
+{
+    int ret = 0;
+    int free_sub = 1;
+
+    if (ist->fix_sub_duration) {
+        int end = 1;
+        if (ist->prev_sub.got_output) {
+            end = av_rescale(subtitle->pts - ist->prev_sub.subtitle.pts,
+                             1000, AV_TIME_BASE);
+            if (end < ist->prev_sub.subtitle.end_display_time) {
+                av_log(NULL, AV_LOG_DEBUG,
+                       "Subtitle duration reduced from %"PRId32" to %d%s\n",
+                       ist->prev_sub.subtitle.end_display_time, end,
+                       end <= 0 ? ", dropping it" : "");
+                ist->prev_sub.subtitle.end_display_time = end;
+            }
+        }
+        FFSWAP(int,        *got_output, ist->prev_sub.got_output);
+        FFSWAP(int,        ret,         ist->prev_sub.ret);
+        FFSWAP(AVSubtitle, *subtitle,   ist->prev_sub.subtitle);
+        if (end <= 0)
+            goto out;
+    }
+
+    if (!*got_output)
+        return ret;
+
+    if (ist->sub2video.frame) {
+        sub2video_update(ist, INT64_MIN, subtitle);
+    } else if (ist->nb_filters) {
+        if (!ist->sub2video.sub_queue)
+            ist->sub2video.sub_queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
+        if (!ist->sub2video.sub_queue)
+            report_and_exit(AVERROR(ENOMEM));
+
+        ret = av_fifo_write(ist->sub2video.sub_queue, subtitle, 1);
+        if (ret < 0)
+            exit_program(1);
+        free_sub = 0;
+    }
+
+    if (!subtitle->num_rects)
+        goto out;
+
+    ist->frames_decoded++;
+
+    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+        if (!check_output_constraints(ist, ost) || !ost->enc_ctx
+            || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
+            continue;
+
+        do_subtitle_out(output_files[ost->file_index], ost, subtitle);
+    }
+
+out:
+    if (free_sub)
+        avsubtitle_free(subtitle);
+    return ret;
+}
+
 static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
                                int *decode_failed)
 {
     AVSubtitle subtitle;
-    int free_sub = 1;
     int ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                        &subtitle, got_output, pkt);
 
@@ -2313,60 +2373,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
         return ret;
     }
 
-    if (ist->fix_sub_duration) {
-        int end = 1;
-        if (ist->prev_sub.got_output) {
-            end = av_rescale(subtitle.pts - ist->prev_sub.subtitle.pts,
-                             1000, AV_TIME_BASE);
-            if (end < ist->prev_sub.subtitle.end_display_time) {
-                av_log(NULL, AV_LOG_DEBUG,
-                       "Subtitle duration reduced from %"PRId32" to %d%s\n",
-                       ist->prev_sub.subtitle.end_display_time, end,
-                       end <= 0 ? ", dropping it" : "");
-                ist->prev_sub.subtitle.end_display_time = end;
-            }
-        }
-        FFSWAP(int,        *got_output, ist->prev_sub.got_output);
-        FFSWAP(int,        ret,         ist->prev_sub.ret);
-        FFSWAP(AVSubtitle, subtitle,    ist->prev_sub.subtitle);
-        if (end <= 0)
-            goto out;
-    }
-
-    if (!*got_output)
-        return ret;
-
-    if (ist->sub2video.frame) {
-        sub2video_update(ist, INT64_MIN, &subtitle);
-    } else if (ist->nb_filters) {
-        if (!ist->sub2video.sub_queue)
-            ist->sub2video.sub_queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
-        if (!ist->sub2video.sub_queue)
-            report_and_exit(AVERROR(ENOMEM));
-
-        ret = av_fifo_write(ist->sub2video.sub_queue, &subtitle, 1);
-        if (ret < 0)
-            exit_program(1);
-        free_sub = 0;
-    }
-
-    if (!subtitle.num_rects)
-        goto out;
-
-    ist->frames_decoded++;
-
-    for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
-        if (!check_output_constraints(ist, ost) || !ost->enc_ctx
-            || ost->enc_ctx->codec_type != AVMEDIA_TYPE_SUBTITLE)
-            continue;
-
-        do_subtitle_out(output_files[ost->file_index], ost, &subtitle);
-    }
-
-out:
-    if (free_sub)
-        avsubtitle_free(&subtitle);
-    return ret;
+    return process_subtitle(ist, &subtitle, got_output);
 }
 
 static int send_filter_eof(InputStream *ist)
