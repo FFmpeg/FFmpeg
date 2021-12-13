@@ -363,10 +363,4 @@ int ff_int_from_list_or_default(void *ctx, const char * val_name, int val,
 
 void ff_dvdsub_parse_palette(uint32_t *palette, const char *p);
 
-#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
-#    define av_export_avcodec __declspec(dllimport)
-#else
-#    define av_export_avcodec
-#endif
-
 #endif /* AVCODEC_INTERNAL_H */
