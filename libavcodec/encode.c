@@ -247,11 +247,8 @@ end:
     if (ret < 0 || !got_packet)
         av_packet_unref(avpkt);
 
-    if (frame) {
-        if (!ret)
-            avctx->frame_number++;
+    if (frame)
         av_frame_unref(frame);
-    }
 
     if (got_packet)
         // Encoders must always return ref-counted buffers.
@@ -382,6 +379,8 @@ int attribute_align_arg avcodec_send_frame(AVCodecContext *avctx, const AVFrame 
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
             return ret;
     }
+
+    avctx->frame_number++;
 
     return 0;
 }
