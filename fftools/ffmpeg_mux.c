@@ -35,6 +35,7 @@
 struct Muxer {
     /* filesize limit expressed in bytes */
     int64_t limit_filesize;
+    int64_t final_filesize;
     int header_written;
 };
 
@@ -304,6 +305,17 @@ int of_write_trailer(OutputFile *of)
         return ret;
     }
 
+    of->mux->final_filesize = of_filesize(of);
+
+    if (!(of->format->flags & AVFMT_NOFILE)) {
+        ret = avio_closep(&of->ctx->pb);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error closing file %s: %s\n",
+                   of->ctx->url, av_err2str(ret));
+            return ret;
+        }
+    }
+
     return 0;
 }
 
@@ -360,7 +372,9 @@ int64_t of_filesize(OutputFile *of)
     AVIOContext *pb = of->ctx->pb;
     int64_t ret = -1;
 
-    if (pb) {
+    if (of->mux->final_filesize)
+        ret = of->mux->final_filesize;
+    else if (pb) {
         ret = avio_size(pb);
         if (ret <= 0) // FIXME improve avio_size() so it works with non seekable output too
             ret = avio_tell(pb);

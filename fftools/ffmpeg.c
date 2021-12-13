@@ -4312,7 +4312,6 @@ static int transcode_step(void)
 static int transcode(void)
 {
     int ret, i;
-    AVFormatContext *os;
     OutputStream *ost;
     InputStream *ist;
     int64_t timer_start;
@@ -4380,18 +4379,6 @@ static int transcode(void)
 
     /* dump report by using the first video and audio streams */
     print_report(1, timer_start, av_gettime_relative());
-
-    /* close the output files */
-    for (i = 0; i < nb_output_files; i++) {
-        os = output_files[i]->ctx;
-        if (os && os->oformat && !(os->oformat->flags & AVFMT_NOFILE)) {
-            if ((ret = avio_closep(&os->pb)) < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Error closing file %s: %s\n", os->url, av_err2str(ret));
-                if (exit_on_error)
-                    exit_program(1);
-            }
-        }
-    }
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
