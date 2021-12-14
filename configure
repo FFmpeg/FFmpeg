@@ -6566,7 +6566,7 @@ enabled libopus           && {
         require_pkg_config libopus opus opus_multistream.h opus_multistream_surround_encoder_create
     }
 }
-enabled libplacebo        && require_pkg_config libplacebo "libplacebo >= 4.173.0" libplacebo/vulkan.h pl_vulkan_create
+enabled libplacebo        && require_pkg_config libplacebo "libplacebo >= 4.184.0" libplacebo/vulkan.h pl_vulkan_create
 enabled libpulse          && require_pkg_config libpulse libpulse pulse/pulseaudio.h pa_context_new
 enabled librabbitmq       && require_pkg_config librabbitmq "librabbitmq >= 0.7.1" amqp.h amqp_new_connection
 enabled librav1e          && require_pkg_config librav1e "rav1e >= 0.4.0" rav1e.h rav1e_context_new
