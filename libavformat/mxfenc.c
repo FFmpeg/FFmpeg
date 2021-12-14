@@ -32,6 +32,7 @@
  * SMPTE 379M MXF Generic Container
  * SMPTE 381M Mapping MPEG Streams into the MXF Generic Container
  * SMPTE 422M Mapping JPEG 2000 Codestreams into the MXF Generic Container
+ * SMPTE ST2019-4 (2009 or later) Mapping VC-3 Coding Units into the MXF Generic Container
  * SMPTE RP210: SMPTE Metadata Dictionary
  * SMPTE RP224: Registry of SMPTE Universal Labels
  */
@@ -181,7 +182,7 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
       mxf_write_cdci_desc },
     // DNxHD
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x0C,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x01,0x00,0x00 },
       mxf_write_cdci_desc },
     // JPEG2000
@@ -2674,6 +2675,12 @@ static int mxf_init(AVFormatContext *s)
 
         memcpy(sc->track_essence_element_key, mxf_essence_container_uls[sc->index].element_ul, 15);
         sc->track_essence_element_key[15] = present[sc->index];
+        if (s->oformat == &ff_mxf_opatom_muxer && st->codecpar->codec_id == AV_CODEC_ID_DNXHD) {
+            // clip-wrapping requires 0x0D per ST2019-4:2009 or 0x06 per previous version ST2019-4:2008
+            // we choose to use 0x06 instead 0x0D to be compatible with AVID systems
+            // and produce mxf files with the most relevant flavour for opatom
+            sc->track_essence_element_key[14] = 0x06;
+        }
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
 
         if (!present[sc->index])
