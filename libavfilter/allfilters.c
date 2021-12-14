@@ -496,6 +496,7 @@ extern const AVFilter ff_vf_xmedian;
 extern const AVFilter ff_vf_xstack;
 extern const AVFilter ff_vf_yadif;
 extern const AVFilter ff_vf_yadif_cuda;
+extern const AVFilter ff_vf_yadif_videotoolbox;
 extern const AVFilter ff_vf_yaepblur;
 extern const AVFilter ff_vf_zmq;
 extern const AVFilter ff_vf_zoompan;
