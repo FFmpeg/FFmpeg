@@ -278,6 +278,41 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_P416LE]      = { 1, 0 },
 };
 
+void ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSize, int16_t *filter, int dstW){
+#if ARCH_X86_64
+    int i, j, k, l;
+    int cpu_flags = av_get_cpu_flags();
+    if (EXTERNAL_AVX2_FAST(cpu_flags)){
+        if ((c->srcBpc == 8) && (c->dstBpc <= 14)){
+            if (dstW % 16 == 0){
+                if (filter != NULL){
+                    for (i = 0; i < dstW; i += 8){
+                        FFSWAP(int, filterPos[i + 2], filterPos[i+4]);
+                        FFSWAP(int, filterPos[i + 3], filterPos[i+5]);
+                    }
+                    if (filterSize > 4){
+                        int16_t *tmp2 = av_malloc(dstW * filterSize * 2);
+                        memcpy(tmp2, filter, dstW * filterSize * 2);
+                        for (i = 0; i < dstW; i += 16){//pixel
+                            for (k = 0; k < filterSize / 4; ++k){//fcoeff
+                                for (j = 0; j < 16; ++j){//inner pixel
+                                    for (l = 0; l < 4; ++l){//coeff
+                                        int from = i * filterSize + j * filterSize + k * 4 + l;
+                                        int to = (i) * filterSize + j * 4 + l + k * 64;
+                                        filter[to] = tmp2[from];
+                                    }
+                                }
+                            }
+                        }
+                        av_free(tmp2);
+                    }
+                }
+            }
+        }
+    }
+#endif
+}
+
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)
 {
     return (unsigned)pix_fmt < FF_ARRAY_ELEMS(format_entries) ?
@@ -1801,6 +1836,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                            get_local_pos(c, 0, 0, 0),
                            get_local_pos(c, 0, 0, 0))) < 0)
                 goto fail;
+            ff_shuffle_filter_coefficients(c, c->hLumFilterPos, c->hLumFilterSize, c->hLumFilter, dstW);
             if ((ret = initFilter(&c->hChrFilter, &c->hChrFilterPos,
                            &c->hChrFilterSize, c->chrXInc,
                            c->chrSrcW, c->chrDstW, filterAlign, 1 << 14,
@@ -1810,6 +1846,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                            get_local_pos(c, c->chrSrcHSubSample, c->src_h_chr_pos, 0),
                            get_local_pos(c, c->chrDstHSubSample, c->dst_h_chr_pos, 0))) < 0)
                 goto fail;
+            ff_shuffle_filter_coefficients(c, c->hChrFilterPos, c->hChrFilterSize, c->hChrFilter, c->chrDstW);
         }
     } // initialize horizontal stuff
 

@@ -134,13 +134,13 @@ static void check_yuv2yuvX(void)
 }
 
 #undef SRC_PIXELS
-#define SRC_PIXELS 128
+#define SRC_PIXELS 512
 
 static void check_hscale(void)
 {
 #define MAX_FILTER_WIDTH 40
-#define FILTER_SIZES 5
-    static const int filter_sizes[FILTER_SIZES] = { 4, 8, 16, 32, 40 };
+#define FILTER_SIZES 6
+    static const int filter_sizes[FILTER_SIZES] = { 4, 8, 12, 16, 32, 40 };
 
 #define HSCALE_PAIRS 2
     static const int hscale_pairs[HSCALE_PAIRS][2] = {
@@ -159,12 +159,16 @@ static void check_hscale(void)
     // padded
     LOCAL_ALIGNED_32(int16_t, filter, [SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH]);
     LOCAL_ALIGNED_32(int32_t, filterPos, [SRC_PIXELS]);
+    LOCAL_ALIGNED_32(int16_t, filterAvx2, [SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH]);
+    LOCAL_ALIGNED_32(int32_t, filterPosAvx, [SRC_PIXELS]);
 
     // The dst parameter here is either int16_t or int32_t but we use void* to
     // just cover both cases.
     declare_func_emms(AV_CPU_FLAG_MMX, void, void *c, void *dst, int dstW,
                       const uint8_t *src, const int16_t *filter,
                       const int32_t *filterPos, int filterSize);
+
+    int cpu_flags = av_get_cpu_flags();
 
     ctx = sws_alloc_context();
     if (sws_init_context(ctx, NULL, NULL) < 0)
@@ -179,9 +183,11 @@ static void check_hscale(void)
             ctx->srcBpc = hscale_pairs[hpi][0];
             ctx->dstBpc = hscale_pairs[hpi][1];
             ctx->hLumFilterSize = ctx->hChrFilterSize = width;
+            ctx->dstW = ctx->chrDstW = SRC_PIXELS;
 
             for (i = 0; i < SRC_PIXELS; i++) {
                 filterPos[i] = i;
+                filterPosAvx[i] = i;
 
                 // These filter cofficients are chosen to try break two corner
                 // cases, namely:
@@ -210,16 +216,20 @@ static void check_hscale(void)
                 filter[SRC_PIXELS * width + i] = rnd();
             }
             ff_sws_init_scale(ctx);
+            memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
+            if (cpu_flags & AV_CPU_FLAG_AVX2){
+                ff_shuffle_filter_coefficients(ctx, filterPosAvx, width, filterAvx2, SRC_PIXELS);
+            }
 
             if (check_func(ctx->hcScale, "hscale_%d_to_%d_width%d", ctx->srcBpc, ctx->dstBpc + 1, width)) {
                 memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
                 memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
 
                 call_ref(NULL, dst0, SRC_PIXELS, src, filter, filterPos, width);
-                call_new(NULL, dst1, SRC_PIXELS, src, filter, filterPos, width);
+                call_new(NULL, dst1, SRC_PIXELS, src, filterAvx2, filterPosAvx, width);
                 if (memcmp(dst0, dst1, SRC_PIXELS * sizeof(dst0[0])))
                     fail();
-                bench_new(NULL, dst0, SRC_PIXELS, src, filter, filterPos, width);
+                bench_new(NULL, dst0, SRC_PIXELS, src, filter, filterPosAvx, width);
             }
         }
     }
