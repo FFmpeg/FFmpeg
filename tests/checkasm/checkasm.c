@@ -236,6 +236,9 @@ static const struct {
     { "FMA4",     "fma4",     AV_CPU_FLAG_FMA4 },
     { "AVX2",     "avx2",     AV_CPU_FLAG_AVX2 },
     { "AVX-512",  "avx512",   AV_CPU_FLAG_AVX512 },
+#elif ARCH_LOONGARCH
+    { "LSX",      "lsx",      AV_CPU_FLAG_LSX },
+    { "LASX",     "lasx",     AV_CPU_FLAG_LASX },
 #endif
     { NULL }
 };

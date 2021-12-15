@@ -72,6 +72,10 @@
 #define AV_CPU_FLAG_MMI          (1 << 0)
 #define AV_CPU_FLAG_MSA          (1 << 1)
 
+//Loongarch SIMD extension.
+#define AV_CPU_FLAG_LSX          (1 << 0)
+#define AV_CPU_FLAG_LASX         (1 << 1)
+
 /**
  * Return the flags which specify extensions supported by the CPU.
  * The returned value is affected by av_force_cpu_flags() if that was used

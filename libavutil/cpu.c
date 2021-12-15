@@ -62,6 +62,8 @@ static int get_cpu_flags(void)
         return ff_get_cpu_flags_ppc();
     if (ARCH_X86)
         return ff_get_cpu_flags_x86();
+    if (ARCH_LOONGARCH)
+        return ff_get_cpu_flags_loongarch();
     return 0;
 }
 
@@ -168,6 +170,9 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
 #elif ARCH_MIPS
         { "mmi",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_MMI      },    .unit = "flags" },
         { "msa",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_MSA      },    .unit = "flags" },
+#elif ARCH_LOONGARCH
+        { "lsx",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_LSX      },    .unit = "flags" },
+        { "lasx",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_LASX     },    .unit = "flags" },
 #endif
         { NULL },
     };
@@ -253,6 +258,8 @@ size_t av_cpu_max_align(void)
         return ff_get_cpu_max_align_ppc();
     if (ARCH_X86)
         return ff_get_cpu_max_align_x86();
+    if (ARCH_LOONGARCH)
+        return ff_get_cpu_max_align_loongarch();
 
     return 8;
 }

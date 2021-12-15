@@ -59,12 +59,20 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 COMPILE_NVCC = $(call COMPILE,NVCC)
 COMPILE_MMI = $(call COMPILE,CC,MMIFLAGS)
 COMPILE_MSA = $(call COMPILE,CC,MSAFLAGS)
+COMPILE_LSX = $(call COMPILE,CC,LSXFLAGS)
+COMPILE_LASX = $(call COMPILE,CC,LASXFLAGS)
 
 %_mmi.o: %_mmi.c
 	$(COMPILE_MMI)
 
 %_msa.o: %_msa.c
 	$(COMPILE_MSA)
+
+%_lsx.o: %_lsx.c
+	$(COMPILE_LSX)
+
+%_lasx.o: %_lasx.c
+	$(COMPILE_LASX)
 
 %.o: %.c
 	$(COMPILE_C)
