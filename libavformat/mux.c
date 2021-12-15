@@ -1014,15 +1014,9 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
         AVStream *const st = s->streams[pktl->pkt.stream_index];
         FFStream *const sti = ffstream(st);
 
-        *pkt = pktl->pkt;
-
-        si->packet_buffer = pktl->next;
-        if (!si->packet_buffer)
-            si->packet_buffer_end = NULL;
-
         if (sti->last_in_packet_buffer == pktl)
             sti->last_in_packet_buffer = NULL;
-        av_freep(&pktl);
+        avpriv_packet_list_get(&si->packet_buffer, &si->packet_buffer_end, pkt);
 
         return 1;
     } else {

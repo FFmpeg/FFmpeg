@@ -3128,14 +3128,10 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flus
             pktl = si->packet_buffer;
         }
 
-        *out = pktl->pkt;
-        av_log(s, AV_LOG_TRACE, "out st:%d dts:%"PRId64"\n", (*out).stream_index, (*out).dts);
-        si->packet_buffer = pktl->next;
         if (ffstream(s->streams[pktl->pkt.stream_index])->last_in_packet_buffer == pktl)
             ffstream(s->streams[pktl->pkt.stream_index])->last_in_packet_buffer = NULL;
-        if (!si->packet_buffer)
-            si->packet_buffer_end = NULL;
-        av_freep(&pktl);
+        avpriv_packet_list_get(&si->packet_buffer, &si->packet_buffer_end, out);
+        av_log(s, AV_LOG_TRACE, "out st:%d dts:%"PRId64"\n", out->stream_index, out->dts);
         return 1;
     } else {
     out:
