@@ -1717,28 +1717,6 @@ static int64_t select_cur_seq_no(HLSContext *c, struct playlist *pls)
     return pls->start_seq_no;
 }
 
-static int save_avio_options(AVFormatContext *s)
-{
-    HLSContext *c = s->priv_data;
-    static const char * const opts[] = {
-        "headers", "http_proxy", "user_agent", "cookies", "referer", "rw_timeout", "icy", NULL };
-    const char * const * opt = opts;
-    uint8_t *buf;
-    int ret = 0;
-
-    while (*opt) {
-        if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN | AV_OPT_ALLOW_NULL, &buf) >= 0) {
-            ret = av_dict_set(&c->avio_opts, *opt, buf,
-                              AV_DICT_DONT_STRDUP_VAL);
-            if (ret < 0)
-                return ret;
-        }
-        opt++;
-    }
-
-    return ret;
-}
-
 static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
                           int flags, AVDictionary **opts)
 {
@@ -1884,7 +1862,7 @@ static int hls_read_header(AVFormatContext *s)
     c->first_timestamp = AV_NOPTS_VALUE;
     c->cur_timestamp = AV_NOPTS_VALUE;
 
-    if ((ret = save_avio_options(s)) < 0)
+    if ((ret = ffio_copy_url_options(s->pb, &c->avio_opts)) < 0)
         return ret;
 
     /* XXX: Some HLS servers don't like being sent the range header,

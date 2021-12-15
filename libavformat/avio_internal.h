@@ -206,6 +206,12 @@ int ffio_fdopen(AVIOContext **s, URLContext *h);
  */
 URLContext *ffio_geturlcontext(AVIOContext *s);
 
+
+/**
+ * Read url related dictionary options from the AVIOContext and write to the given dictionary
+ */
+int ffio_copy_url_options(AVIOContext* pb, AVDictionary** avio_opts);
+
 /**
  * Open a write-only fake memory stream. The written data is not stored
  * anywhere - this is only used for measuring the amount of data

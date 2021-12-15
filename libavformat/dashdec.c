@@ -1833,31 +1833,6 @@ end:
     return ret;
 }
 
-static int save_avio_options(AVFormatContext *s)
-{
-    DASHContext *c = s->priv_data;
-    const char *opts[] = {
-        "headers", "user_agent", "cookies", "http_proxy", "referer", "rw_timeout", "icy", NULL };
-    const char **opt = opts;
-    uint8_t *buf = NULL;
-    int ret = 0;
-
-    while (*opt) {
-        if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
-            if (buf[0] != '\0') {
-                ret = av_dict_set(&c->avio_opts, *opt, buf, AV_DICT_DONT_STRDUP_VAL);
-                if (ret < 0)
-                    return ret;
-            } else {
-                av_freep(&buf);
-            }
-        }
-        opt++;
-    }
-
-    return ret;
-}
-
 static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
                           int flags, AVDictionary **opts)
 {
@@ -2057,7 +2032,7 @@ static int dash_read_header(AVFormatContext *s)
 
     c->interrupt_callback = &s->interrupt_callback;
 
-    if ((ret = save_avio_options(s)) < 0)
+    if ((ret = ffio_copy_url_options(s->pb, &c->avio_opts)) < 0)
         return ret;
 
     if ((ret = parse_manifest(s, s->url, s->pb)) < 0)
