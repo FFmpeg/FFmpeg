@@ -430,8 +430,8 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
  * Each dictionary will contain the options from codec_opts which can
  * be applied to the corresponding stream codec context.
  *
- * @return pointer to the created array of dictionaries, NULL if it
- * cannot be created
+ * @return pointer to the created array of dictionaries.
+ * Calls exit() on failure.
  */
 AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
                                            AVDictionary *codec_opts);
