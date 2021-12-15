@@ -765,14 +765,14 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
 
 static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
                                FrameThreadContext *fctx, AVCodecContext *avctx,
-                               AVCodecContext *src, const AVCodec *codec, int first)
+                               const AVCodec *codec, int first)
 {
     AVCodecContext *copy;
     int err;
 
     atomic_init(&p->state, STATE_INPUT_READY);
 
-    copy = av_memdup(src, sizeof(*src));
+    copy = av_memdup(avctx, sizeof(*avctx));
     if (!copy)
         return AVERROR(ENOMEM);
     copy->priv_data = NULL;
@@ -784,7 +784,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     p->parent = fctx;
     p->avctx  = copy;
 
-    copy->internal = av_memdup(src->internal, sizeof(*src->internal));
+    copy->internal = av_memdup(avctx->internal, sizeof(*avctx->internal));
     if (!copy->internal)
         return AVERROR(ENOMEM);
     copy->internal->thread_ctx = p;
@@ -798,7 +798,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
 
         if (codec->priv_class) {
             *(const AVClass **)copy->priv_data = codec->priv_class;
-            err = av_opt_copy(copy->priv_data, src->priv_data);
+            err = av_opt_copy(copy->priv_data, avctx->priv_data);
             if (err < 0)
                 return err;
         }
@@ -843,7 +843,6 @@ int ff_frame_thread_init(AVCodecContext *avctx)
 {
     int thread_count = avctx->thread_count;
     const AVCodec *codec = avctx->codec;
-    AVCodecContext *src = avctx;
     FrameThreadContext *fctx;
     int err, i = 0;
 
@@ -876,7 +875,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
     fctx->delaying = 1;
 
     if (codec->type == AVMEDIA_TYPE_VIDEO)
-        avctx->delay = src->thread_count - 1;
+        avctx->delay = avctx->thread_count - 1;
 
     fctx->threads = av_calloc(thread_count, sizeof(*fctx->threads));
     if (!fctx->threads) {
@@ -888,7 +887,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         PerThreadContext *p  = &fctx->threads[i];
         int first = !i;
 
-        err = init_thread(p, &i, fctx, avctx, src, codec, first);
+        err = init_thread(p, &i, fctx, avctx, codec, first);
         if (err < 0)
             goto error;
     }
