@@ -219,7 +219,7 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
 
         return avpriv_packet_list_put(&aiff->pict_list, &aiff->pict_list_end,
-                                  pkt, av_packet_ref, 0);
+                                      pkt, NULL, 0);
     }
 
     return 0;

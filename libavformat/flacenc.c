@@ -360,7 +360,7 @@ static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == c->audio_stream_idx) {
         if (c->waiting_pics) {
             /* buffer audio packets until we get all the pictures */
-            ret = avpriv_packet_list_put(&c->queue, &c->queue_end, pkt, av_packet_ref, 0);
+            ret = avpriv_packet_list_put(&c->queue, &c->queue_end, pkt, NULL, 0);
             if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "Out of memory in packet queue; skipping attached pictures\n");
                 c->waiting_pics = 0;

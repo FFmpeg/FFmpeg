@@ -524,7 +524,8 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == mp3->audio_stream_idx) {
         if (mp3->pics_to_write) {
             /* buffer audio packets until we get all the pictures */
-            int ret = avpriv_packet_list_put(&mp3->queue, &mp3->queue_end, pkt, av_packet_ref, 0);
+            int ret = avpriv_packet_list_put(&mp3->queue, &mp3->queue_end,
+                                             pkt, NULL, 0);
 
             if (ret < 0) {
                 av_log(s, AV_LOG_WARNING, "Not enough memory to buffer audio. Skipping picture streams\n");

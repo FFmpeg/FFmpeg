@@ -95,10 +95,11 @@ static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     ret = avpriv_packet_list_put(&tta->queue, &tta->queue_end, pkt,
-                                 av_packet_ref, 0);
+                                 NULL, 0);
     if (ret < 0) {
         return ret;
     }
+    pkt = &tta->queue_end->pkt;
 
     avio_wl32(tta->seek_table, pkt->size);
     tta->nb_samples += pkt->duration;

@@ -6187,9 +6187,11 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(EINVAL);
             }
 
+            /* The following will reset pkt and is only allowed to be used
+             * because we return immediately. afterwards. */
             if ((ret = avpriv_packet_list_put(&trk->squashed_packet_queue,
                                               &trk->squashed_packet_queue_end,
-                                              pkt, av_packet_ref, 0)) < 0) {
+                                              pkt, NULL, 0)) < 0) {
                 return ret;
             }
 
