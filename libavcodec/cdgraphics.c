@@ -218,7 +218,7 @@ static void cdg_scroll(CDGraphicsContext *cc, uint8_t *data,
 
     /// find the difference and save the offset for cdg_tile_block usage
     hinc = h_off - cc->hscroll;
-    vinc = v_off - cc->vscroll;
+    vinc = cc->vscroll - v_off;
     cc->hscroll = h_off;
     cc->vscroll = v_off;
 
