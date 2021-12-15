@@ -88,4 +88,10 @@ void ff_h264_idct_add16_intra_lasx(uint8_t *dst, const int32_t *blk_offset,
                                    const uint8_t nzc[15 * 8]);
 void ff_h264_deq_idct_luma_dc_lasx(int16_t *dst, int16_t *src,
                                    int32_t de_qval);
+
+void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
+                                       int8_t ref[2][40], int16_t mv[2][40][2],
+                                       int bidir, int edges, int step,
+                                       int mask_mv0, int mask_mv1, int field);
+
 #endif  // #ifndef AVCODEC_LOONGARCH_H264DSP_LASX_H

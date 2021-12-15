@@ -29,6 +29,8 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
     int cpu_flags = av_get_cpu_flags();
 
     if (have_lasx(cpu_flags)) {
+        if (chroma_format_idc <= 1)
+            c->h264_loop_filter_strength = ff_h264_loop_filter_strength_lasx;
         if (bit_depth == 8) {
             c->h264_add_pixels4_clear = ff_h264_add_pixels4_8_lasx;
             c->h264_add_pixels8_clear = ff_h264_add_pixels8_8_lasx;
