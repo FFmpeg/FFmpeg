@@ -122,5 +122,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
                            const int bit_depth, const int chroma_format_idc);
 void ff_h264_pred_init_mips(H264PredContext *h, int codec_id,
                             const int bit_depth, const int chroma_format_idc);
+void ff_h264_pred_init_loongarch(H264PredContext *h, int codec_id,
+                                 const int bit_depth, const int chroma_format_idc);
 
 #endif /* AVCODEC_H264PRED_H */
