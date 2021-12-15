@@ -605,6 +605,15 @@ int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src)
     if (ret < 0)
         return ret;
 
+    ret = ff_stream_side_data_copy(dst, src);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
+int ff_stream_side_data_copy(AVStream *dst, const AVStream *src)
+{
     /* Free existing side data*/
     for (int i = 0; i < dst->nb_side_data; i++)
         av_free(dst->side_data[i].data);

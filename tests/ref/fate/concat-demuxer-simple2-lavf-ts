@@ -213,3 +213,4 @@ video|1|175582|1.950911|171982|1.910911|3600|0.040000|15019|224848|__MPEGTS Stre
 
 0|mp2|unknown|audio|[3][0][0][0]|0x0003|s16p|44100|1|mono|0|N/A|0/0|0/0|1/90000|0|0.000000|N/A|N/A|64000|N/A|N/A|N/A|N/A|89|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|this is stream 0
 1|mpeg2video|4|video|[2][0][0][0]|0x0002|352|288|0|0|0|0|1|1:1|11:9|yuv420p|8|tv|unknown|unknown|unknown|left|progressive|1|N/A|25/1|25/1|1/90000|N/A|N/A|N/A|N/A|N/A|N/A|N/A|N/A|N/A|60|22|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|this is stream 1
+CPB properties|0|0|0|49152|-1
