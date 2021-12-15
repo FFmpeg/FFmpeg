@@ -590,6 +590,9 @@ SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h vulkan_filter.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
+TESTPROGS-$(CONFIG_DNN) += dnn-layer-avgpool dnn-layer-conv2d dnn-layer-dense  \
+                           dnn-layer-depth2space dnn-layer-mathbinary          \
+                           dnn-layer-mathunary dnn-layer-maximum dnn-layer-pad \
 
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 

@@ -1,3 +1,11 @@
+/dnn-layer-conv2d
+/dnn-layer-depth2space
+/dnn-layer-maximum
+/dnn-layer-pad
+/dnn-layer-mathbinary
+/dnn-layer-mathunary
+/dnn-layer-avgpool
+/dnn-layer-dense
 /drawutils
 /filtfmts
 /formats

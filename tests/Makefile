@@ -1,3 +1,4 @@
+
 THREADS = 1
 VREF = tests/vsynth1/00.pgm
 AREF = tests/data/asynth1.sw
@@ -10,8 +11,7 @@ FFMPEG=ffmpeg$(PROGSSUF)$(EXESUF)
 $(AREF): CMP=
 
 APITESTSDIR := tests/api
-DNNTESTSDIR := tests/dnn
-FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/lavf tests/data/lavf-fate tests/data/pixfmt tests/vsynth1 $(APITESTSDIR) $(DNNTESTSDIR)
+FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/lavf tests/data/lavf-fate tests/data/pixfmt tests/vsynth1 $(APITESTSDIR)
 OUTDIRS += $(FATE_OUTDIRS)
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
@@ -96,7 +96,6 @@ CONFIG_LARGE_TESTS:=
 endif
 
 include $(SRC_PATH)/$(APITESTSDIR)/Makefile
-include $(SRC_PATH)/$(DNNTESTSDIR)/Makefile
 
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
