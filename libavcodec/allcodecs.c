@@ -837,6 +837,7 @@ extern const AVCodec ff_mpeg4_cuvid_decoder;
 extern const AVCodec ff_mpeg4_mediacodec_decoder;
 extern const AVCodec ff_mpeg4_omx_encoder;
 extern const AVCodec ff_mpeg4_v4l2m2m_encoder;
+extern const AVCodec ff_prores_videotoolbox_encoder;
 extern const AVCodec ff_vc1_cuvid_decoder;
 extern const AVCodec ff_vp8_cuvid_decoder;
 extern const AVCodec ff_vp8_mediacodec_decoder;

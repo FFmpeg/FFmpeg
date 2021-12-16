@@ -42,6 +42,7 @@ version <next>:
 - vflip_vulkan, hflip_vulkan and flip_vulkan filters
 - adynamicequalizer audio filter
 - yadif_videotoolbox filter
+- VideoToolbox ProRes encoder
 
 
 version 4.4:
