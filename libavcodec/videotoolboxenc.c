@@ -2618,7 +2618,7 @@ static const enum AVPixelFormat hevc_pix_fmts[] = {
 
 #define OFFSET(x) offsetof(VTEncContext, x)
 static const AVOption h264_options[] = {
-    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = H264_PROF_AUTO }, H264_PROF_AUTO, H264_PROF_COUNT, VE, "profile" },
+    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT64, { .i64 = H264_PROF_AUTO }, H264_PROF_AUTO, H264_PROF_COUNT, VE, "profile" },
     { "baseline", "Baseline Profile", 0, AV_OPT_TYPE_CONST, { .i64 = H264_PROF_BASELINE }, INT_MIN, INT_MAX, VE, "profile" },
     { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = H264_PROF_MAIN     }, INT_MIN, INT_MAX, VE, "profile" },
     { "high",     "High Profile",     0, AV_OPT_TYPE_CONST, { .i64 = H264_PROF_HIGH     }, INT_MIN, INT_MAX, VE, "profile" },
@@ -2672,7 +2672,7 @@ const AVCodec ff_h264_videotoolbox_encoder = {
 };
 
 static const AVOption hevc_options[] = {
-    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = HEVC_PROF_AUTO }, HEVC_PROF_AUTO, HEVC_PROF_COUNT, VE, "profile" },
+    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT64, { .i64 = HEVC_PROF_AUTO }, HEVC_PROF_AUTO, HEVC_PROF_COUNT, VE, "profile" },
     { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = HEVC_PROF_MAIN   }, INT_MIN, INT_MAX, VE, "profile" },
     { "main10",   "Main10 Profile",   0, AV_OPT_TYPE_CONST, { .i64 = HEVC_PROF_MAIN10 }, INT_MIN, INT_MAX, VE, "profile" },
 
