@@ -2361,6 +2361,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         return status;
     }
 
+#if CONFIG_ATSC_A53
     side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
     if (vtctx->a53_cc && side_data && side_data->size) {
         sei = av_mallocz(sizeof(*sei));
@@ -2375,6 +2376,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
             }
         }
     }
+#endif
 
     time = CMTimeMake(frame->pts * avctx->time_base.num, avctx->time_base.den);
     status = VTCompressionSessionEncodeFrame(
