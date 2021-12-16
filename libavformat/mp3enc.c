@@ -132,7 +132,7 @@ typedef struct MP3Context {
     int pics_to_write;
 
     /* audio packets are queued here until we get all the attached pictures */
-    PacketList *queue, *queue_end;
+    PacketList queue;
 } MP3Context;
 
 static const uint8_t xing_offtbl[2][2] = {{32, 17}, {17, 9}};
@@ -387,8 +387,8 @@ static int mp3_queue_flush(AVFormatContext *s)
     ff_id3v2_finish(&mp3->id3, s->pb, s->metadata_header_padding);
     mp3_write_xing(s);
 
-    while (mp3->queue) {
-        avpriv_packet_list_get(&mp3->queue, &mp3->queue_end, pkt);
+    while (mp3->queue.head) {
+        avpriv_packet_list_get(&mp3->queue, pkt);
         if (write && (ret = mp3_write_audio_packet(s, pkt)) < 0)
             write = 0;
         av_packet_unref(pkt);
@@ -524,8 +524,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == mp3->audio_stream_idx) {
         if (mp3->pics_to_write) {
             /* buffer audio packets until we get all the pictures */
-            int ret = avpriv_packet_list_put(&mp3->queue, &mp3->queue_end,
-                                             pkt, NULL, 0);
+            int ret = avpriv_packet_list_put(&mp3->queue, pkt, NULL, 0);
 
             if (ret < 0) {
                 av_log(s, AV_LOG_WARNING, "Not enough memory to buffer audio. Skipping picture streams\n");
@@ -633,7 +632,7 @@ static void mp3_deinit(struct AVFormatContext *s)
 {
     MP3Context *mp3 = s->priv_data;
 
-    avpriv_packet_list_free(&mp3->queue, &mp3->queue_end);
+    avpriv_packet_list_free(&mp3->queue);
     av_freep(&mp3->xing_frame);
 }
 

@@ -23,16 +23,19 @@
 
 #include "packet.h"
 
-typedef struct PacketList {
-    struct PacketList *next;
+typedef struct PacketListEntry {
+    struct PacketListEntry *next;
     AVPacket pkt;
+} PacketListEntry;
+
+typedef struct PacketList {
+    PacketListEntry *head, *tail;
 } PacketList;
 
 /**
  * Append an AVPacket to the list.
  *
- * @param head  List head element
- * @param tail  List tail element
+ * @param list  A PacketList
  * @param pkt   The packet being appended. The data described in it will
  *              be made reference counted if it isn't already.
  * @param copy  A callback to copy the contents of the packet to the list.
@@ -41,8 +44,7 @@ typedef struct PacketList {
  * @return 0 on success, negative AVERROR value on failure. On failure,
            the packet and the list are unchanged.
  */
-int avpriv_packet_list_put(PacketList **head, PacketList **tail,
-                           AVPacket *pkt,
+int avpriv_packet_list_put(PacketList *list, AVPacket *pkt,
                            int (*copy)(AVPacket *dst, const AVPacket *src),
                            int flags);
 
@@ -52,22 +54,17 @@ int avpriv_packet_list_put(PacketList **head, PacketList **tail,
  * @note The pkt will be overwritten completely on success. The caller
  *       owns the packet and must unref it by itself.
  *
- * @param head List head element
- * @param tail List tail element
+ * @param head A pointer to a PacketList struct
  * @param pkt  Pointer to an AVPacket struct
  * @return 0 on success, and a packet is returned. AVERROR(EAGAIN) if
  *         the list was empty.
  */
-int avpriv_packet_list_get(PacketList **head, PacketList **tail,
-                           AVPacket *pkt);
+int avpriv_packet_list_get(PacketList *list, AVPacket *pkt);
 
 /**
  * Wipe the list and unref all the packets in it.
- *
- * @param head List head element
- * @param tail List tail element
  */
-void avpriv_packet_list_free(PacketList **head, PacketList **tail);
+void avpriv_packet_list_free(PacketList *list);
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
 

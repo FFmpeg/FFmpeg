@@ -483,16 +483,16 @@ static void avpacket_queue_init(AVFormatContext *avctx, AVPacketQueue *q)
 
 static void avpacket_queue_flush(AVPacketQueue *q)
 {
-    PacketList *pkt, *pkt1;
+    PacketListEntry *pkt, *pkt1;
 
     pthread_mutex_lock(&q->mutex);
-    for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
+    for (pkt = q->pkt_list.head; pkt != NULL; pkt = pkt1) {
         pkt1 = pkt->next;
         av_packet_unref(&pkt->pkt);
         av_freep(&pkt);
     }
-    q->last_pkt   = NULL;
-    q->first_pkt  = NULL;
+    q->pkt_list.head = NULL;
+    q->pkt_list.tail = NULL;
     q->nb_packets = 0;
     q->size       = 0;
     pthread_mutex_unlock(&q->mutex);
@@ -516,7 +516,7 @@ static unsigned long long avpacket_queue_size(AVPacketQueue *q)
 
 static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 {
-    PacketList *pkt1;
+    PacketListEntry *pkt1;
 
     // Drop Packet if queue size is > maximum queue size
     if (avpacket_queue_size(q) > (uint64_t)q->max_q_size) {
@@ -530,7 +530,7 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
         return -1;
     }
 
-    pkt1 = (PacketList *)av_malloc(sizeof(PacketList));
+    pkt1 = (PacketListEntry *)av_malloc(sizeof(*pkt1));
     if (!pkt1) {
         av_packet_unref(pkt);
         return -1;
@@ -540,13 +540,13 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 
     pthread_mutex_lock(&q->mutex);
 
-    if (!q->last_pkt) {
-        q->first_pkt = pkt1;
+    if (!q->pkt_list.tail) {
+        q->pkt_list.head = pkt1;
     } else {
-        q->last_pkt->next = pkt1;
+        q->pkt_list.tail->next = pkt1;
     }
 
-    q->last_pkt = pkt1;
+    q->pkt_list.tail = pkt1;
     q->nb_packets++;
     q->size += pkt1->pkt.size + sizeof(*pkt1);
 
@@ -558,17 +558,16 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 
 static int avpacket_queue_get(AVPacketQueue *q, AVPacket *pkt, int block)
 {
-    PacketList *pkt1;
     int ret;
 
     pthread_mutex_lock(&q->mutex);
 
     for (;; ) {
-        pkt1 = q->first_pkt;
+        PacketListEntry *pkt1 = q->pkt_list.head;
         if (pkt1) {
-            q->first_pkt = pkt1->next;
-            if (!q->first_pkt) {
-                q->last_pkt = NULL;
+            q->pkt_list.head = pkt1->next;
+            if (!q->pkt_list.head) {
+                q->pkt_list.tail = NULL;
             }
             q->nb_packets--;
             q->size -= pkt1->pkt.size + sizeof(*pkt1);

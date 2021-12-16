@@ -167,7 +167,7 @@ typedef struct MOVTrack {
 
     unsigned int squash_fragment_samples_to_one; //< flag to note formats where all samples for a fragment are to be squashed
 
-    PacketList *squashed_packet_queue, *squashed_packet_queue_end;
+    PacketList squashed_packet_queue;
 } MOVTrack;
 
 typedef enum {

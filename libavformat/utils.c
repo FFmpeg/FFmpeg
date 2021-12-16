@@ -239,7 +239,6 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
             }
 
             ret = avpriv_packet_list_put(&si->raw_packet_buffer,
-                                         &si->raw_packet_buffer_end,
                                      &s->streams[i]->attached_pic,
                                      av_packet_ref, 0);
             if (ret < 0)
@@ -300,9 +299,9 @@ int ff_is_intra_only(enum AVCodecID id)
 void ff_flush_packet_queue(AVFormatContext *s)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    avpriv_packet_list_free(&si->parse_queue,       &si->parse_queue_end);
-    avpriv_packet_list_free(&si->packet_buffer,     &si->packet_buffer_end);
-    avpriv_packet_list_free(&si->raw_packet_buffer, &si->raw_packet_buffer_end);
+    avpriv_packet_list_free(&si->parse_queue);
+    avpriv_packet_list_free(&si->packet_buffer);
+    avpriv_packet_list_free(&si->raw_packet_buffer);
 
     si->raw_packet_buffer_size = 0;
 }
