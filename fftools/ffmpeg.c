@@ -835,13 +835,28 @@ static double psnr(double d)
     return -10.0 * log10(d);
 }
 
-static void do_video_stats(OutputStream *ost, const AVPacket *pkt)
+static void update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_vstats)
 {
+    const uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
+                                                NULL);
     AVCodecContext *enc = ost->enc_ctx;
     int frame_number;
     double ti1, bitrate, avg_bitrate;
 
-    /* this is executed just the first time do_video_stats is called */
+    ost->quality   = sd ? AV_RL32(sd) : -1;
+    ost->pict_type = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
+
+    for (int i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
+        if (sd && i < sd[5])
+            ost->error[i] = AV_RL64(sd + 8 + 8*i);
+        else
+            ost->error[i] = -1;
+    }
+
+    if (!write_vstats)
+        return;
+
+    /* this is executed just the first time update_video_stats is called */
     if (!vstats_file) {
         vstats_file = fopen(vstats_filename, "w");
         if (!vstats_file) {
@@ -946,8 +961,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
                    av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &enc->time_base));
         }
 
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename)
-            do_video_stats(ost, pkt);
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
+            update_video_stats(ost, pkt, !!vstats_filename);
 
         ost->packets_encoded++;
 

@@ -101,19 +101,6 @@ void of_write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost,
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        int i;
-        uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
-                                              NULL);
-        ost->quality = sd ? AV_RL32(sd) : -1;
-        ost->pict_type = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
-
-        for (i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
-            if (sd && i < sd[5])
-                ost->error[i] = AV_RL64(sd + 8 + 8*i);
-            else
-                ost->error[i] = -1;
-        }
-
         if (ost->frame_rate.num && ost->is_cfr) {
             if (pkt->duration > 0)
                 av_log(NULL, AV_LOG_WARNING, "Overriding packet duration by frame rate, this should not happen\n");
