@@ -578,13 +578,13 @@ switch(c->dstBpc){ \
              break; \
     }
 
-    if (EXTERNAL_AVX2_FAST(cpu_flags)){
-      if ((c->srcBpc == 8) && (c->dstBpc <= 14)){
-        if(c->chrDstW % 16 == 0)
-          ASSIGN_AVX2_SCALE_FUNC(c->hcScale, c->hChrFilterSize);
-        if(c->dstW % 16 == 0)
-          ASSIGN_AVX2_SCALE_FUNC(c->hyScale, c->hLumFilterSize);
-      }
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        if ((c->srcBpc == 8) && (c->dstBpc <= 14)) {
+            if (c->chrDstW % 16 == 0)
+                ASSIGN_AVX2_SCALE_FUNC(c->hcScale, c->hChrFilterSize);
+            if (c->dstW % 16 == 0)
+                ASSIGN_AVX2_SCALE_FUNC(c->hyScale, c->hLumFilterSize);
+        }
     }
 
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
