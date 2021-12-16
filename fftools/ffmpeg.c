@@ -837,7 +837,7 @@ static double psnr(double d)
 
 static void do_video_stats(OutputStream *ost, const AVPacket *pkt)
 {
-    AVCodecContext *enc;
+    AVCodecContext *enc = ost->enc_ctx;
     int frame_number;
     double ti1, bitrate, avg_bitrate;
 
@@ -850,7 +850,6 @@ static void do_video_stats(OutputStream *ost, const AVPacket *pkt)
         }
     }
 
-    enc = ost->enc_ctx;
     frame_number = ost->packets_encoded;
     if (vstats_version <= 1) {
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
