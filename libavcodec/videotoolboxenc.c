@@ -996,6 +996,7 @@ static int get_cv_ycbcr_matrix(AVCodecContext *avctx, CFStringRef *matrix) {
             break;
 
         case AVCOL_SPC_UNSPECIFIED:
+        case AVCOL_SPC_RGB:
             *matrix = NULL;
             break;
 
