@@ -309,6 +309,7 @@ External library support:
                            if openssl, gnutls or libtls is not used [no]
   --enable-mediacodec      enable Android MediaCodec support [no]
   --enable-mediafoundation enable encoding via MediaFoundation [auto]
+  --disable-metal          disable Apple Metal framework [autodetect]
   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL processing [no]
@@ -382,6 +383,8 @@ Toolchain options:
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --nvcc=NVCC              use Nvidia CUDA compiler NVCC or clang [$nvcc_default]
   --ld=LD                  use linker LD [$ld_default]
+  --metalcc=METALCC        use metal compiler METALCC [$metalcc_default]
+  --metallib=METALLIB      use metal linker METALLIB [$metallib_default]
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --ranlib=RANLIB          use ranlib RANLIB [$ranlib_default]
@@ -2564,6 +2567,8 @@ CMDLINE_SET="
     ln_s
     logfile
     malloc_prefix
+    metalcc
+    metallib
     nm
     optflags
     nvcc
@@ -3835,6 +3840,8 @@ host_cc_default="gcc"
 doxygen_default="doxygen"
 install="install"
 ln_s_default="ln -s -f"
+metalcc_default="xcrun metal"
+metallib_default="xcrun metallib"
 nm_default="nm -g"
 pkg_config_default=pkg-config
 ranlib_default="ranlib"
@@ -4435,7 +4442,7 @@ if enabled cuda_nvcc; then
 fi
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec x86asmexe
+    target_exec x86asmexe metalcc metallib
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -6326,6 +6333,7 @@ check_apple_framework CoreFoundation
 check_apple_framework CoreMedia
 check_apple_framework CoreVideo
 check_apple_framework CoreAudio
+check_apple_framework Metal
 
 enabled avfoundation && {
     disable coregraphics applicationservices
@@ -7620,6 +7628,8 @@ ARFLAGS=$arflags
 AR_O=$ar_o
 AR_CMD=$ar
 NM_CMD=$nm
+METALCC=$metalcc
+METALLIB=$metallib
 RANLIB=$ranlib
 STRIP=$strip
 STRIPTYPE=$striptype
