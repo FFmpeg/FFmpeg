@@ -835,7 +835,7 @@ static double psnr(double d)
     return -10.0 * log10(d);
 }
 
-static void do_video_stats(OutputStream *ost, int frame_size)
+static void do_video_stats(OutputStream *ost, const AVPacket *pkt)
 {
     AVCodecContext *enc;
     int frame_number;
@@ -863,13 +863,13 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     if (ost->error[0]>=0 && (enc->flags & AV_CODEC_FLAG_PSNR))
         fprintf(vstats_file, "PSNR= %6.2f ", psnr(ost->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
 
-    fprintf(vstats_file,"f_size= %6d ", frame_size);
+    fprintf(vstats_file,"f_size= %6d ", pkt->size);
     /* compute pts value */
-    ti1 = av_stream_get_end_pts(ost->st) * av_q2d(ost->st->time_base);
+    ti1 = pkt->dts * av_q2d(ost->mux_timebase);
     if (ti1 < 0.01)
         ti1 = 0.01;
 
-    bitrate     = (frame_size * 8) / av_q2d(enc->time_base) / 1000.0;
+    bitrate     = (pkt->size * 8) / av_q2d(enc->time_base) / 1000.0;
     avg_bitrate = (double)(ost->data_size * 8) / ti1 / 1000.0;
     fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
            (double)ost->data_size / 1024, ti1, bitrate, avg_bitrate);
@@ -948,7 +948,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
         }
 
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename)
-            do_video_stats(ost, pkt->size);
+            do_video_stats(ost, pkt);
 
         ost->packets_encoded++;
 
