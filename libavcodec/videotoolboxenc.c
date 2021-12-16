@@ -406,14 +406,14 @@ static int count_nalus(size_t length_code_size,
     return 0;
 }
 
-static CMVideoCodecType get_cm_codec_type(enum AVCodecID id,
-                                          enum AVPixelFormat fmt,
+static CMVideoCodecType get_cm_codec_type(AVCodecContext *avctx,
                                           double alpha_quality)
 {
-    switch (id) {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt == AV_PIX_FMT_VIDEOTOOLBOX ? avctx->sw_pix_fmt : avctx->pix_fmt);
+    switch (avctx->codec_id) {
     case AV_CODEC_ID_H264: return kCMVideoCodecType_H264;
     case AV_CODEC_ID_HEVC:
-        if (fmt == AV_PIX_FMT_BGRA && alpha_quality > 0.0) {
+        if (desc && (desc->flags & AV_PIX_FMT_FLAG_ALPHA) && alpha_quality > 0.0) {
             return kCMVideoCodecType_HEVCWithAlpha;
         }
         return kCMVideoCodecType_HEVC;
@@ -1376,7 +1376,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
     CFNumberRef            gamma_level = NULL;
     int                    status;
 
-    codec_type = get_cm_codec_type(avctx->codec_id, avctx->pix_fmt, vtctx->alpha_quality);
+    codec_type = get_cm_codec_type(avctx, vtctx->alpha_quality);
     if (!codec_type) {
         av_log(avctx, AV_LOG_ERROR, "Error: no mapping for AVCodecID %d\n", avctx->codec_id);
         return AVERROR(EINVAL);
