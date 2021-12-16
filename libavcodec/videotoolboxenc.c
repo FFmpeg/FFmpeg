@@ -549,6 +549,7 @@ static int copy_param_sets(
 
 static int set_extradata(AVCodecContext *avctx, CMSampleBufferRef sample_buffer)
 {
+    VTEncContext *vtctx = avctx->priv_data;
     CMVideoFormatDescriptionRef vid_fmt;
     size_t total_size;
     int status;
@@ -559,23 +560,37 @@ static int set_extradata(AVCodecContext *avctx, CMSampleBufferRef sample_buffer)
         return AVERROR_EXTERNAL;
     }
 
-    status = get_params_size(avctx, vid_fmt, &total_size);
-    if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get parameter sets.\n");
-        return status;
-    }
+    if (vtctx->get_param_set_func) {
+        status = get_params_size(avctx, vid_fmt, &total_size);
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Could not get parameter sets.\n");
+            return status;
+        }
 
-    avctx->extradata = av_mallocz(total_size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!avctx->extradata) {
-        return AVERROR(ENOMEM);
-    }
-    avctx->extradata_size = total_size;
+        avctx->extradata = av_mallocz(total_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!avctx->extradata) {
+            return AVERROR(ENOMEM);
+        }
+        avctx->extradata_size = total_size;
 
-    status = copy_param_sets(avctx, vid_fmt, avctx->extradata, total_size);
+        status = copy_param_sets(avctx, vid_fmt, avctx->extradata, total_size);
 
-    if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Could not copy param sets.\n");
-        return status;
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Could not copy param sets.\n");
+            return status;
+        }
+    } else {
+        CFDataRef data = CMFormatDescriptionGetExtension(vid_fmt, kCMFormatDescriptionExtension_VerbatimSampleDescription);
+        if (data && CFGetTypeID(data) == CFDataGetTypeID()) {
+            CFIndex size = CFDataGetLength(data);
+
+            avctx->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!avctx->extradata)
+                return AVERROR(ENOMEM);
+            avctx->extradata_size = size;
+
+            CFDataGetBytes(data, CFRangeMake(0, size), avctx->extradata);
+        }
     }
 
     return 0;
@@ -1936,62 +1951,83 @@ static int vtenc_cm_to_avpacket(
     CMTime  dts;
     CMVideoFormatDescriptionRef vid_fmt;
 
-
     vtenc_get_frame_info(sample_buffer, &is_key_frame);
-    status = get_length_code_size(avctx, sample_buffer, &length_code_size);
-    if (status) return status;
 
-    add_header = is_key_frame && !(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER);
+    if (vtctx->get_param_set_func) {
+        status = get_length_code_size(avctx, sample_buffer, &length_code_size);
+        if (status) return status;
 
-    if (add_header) {
-        vid_fmt = CMSampleBufferGetFormatDescription(sample_buffer);
-        if (!vid_fmt) {
-            av_log(avctx, AV_LOG_ERROR, "Cannot get format description.\n");
+        add_header = is_key_frame && !(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER);
+
+        if (add_header) {
+            vid_fmt = CMSampleBufferGetFormatDescription(sample_buffer);
+            if (!vid_fmt) {
+                av_log(avctx, AV_LOG_ERROR, "Cannot get format description.\n");
+                return AVERROR_EXTERNAL;
+            }
+
+            int status = get_params_size(avctx, vid_fmt, &header_size);
+            if (status) return status;
+        }
+
+        status = count_nalus(length_code_size, sample_buffer, &nalu_count);
+        if(status)
+            return status;
+
+        if (sei) {
+            size_t msg_size = get_sei_msg_bytes(sei,
+                                                SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35);
+
+            sei_nalu_size = sizeof(start_code) + 1 + msg_size + 1;
+        }
+
+        in_buf_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
+        out_buf_size = header_size +
+                       in_buf_size +
+                       sei_nalu_size +
+                       nalu_count * ((int)sizeof(start_code) - (int)length_code_size);
+
+        status = ff_get_encode_buffer(avctx, pkt, out_buf_size, 0);
+        if (status < 0)
+            return status;
+
+        if (add_header) {
+            status = copy_param_sets(avctx, vid_fmt, pkt->data, out_buf_size);
+            if(status) return status;
+        }
+
+        status = copy_replace_length_codes(
+            avctx,
+            length_code_size,
+            sample_buffer,
+            sei,
+            pkt->data + header_size,
+            pkt->size - header_size
+        );
+
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d\n", status);
+            return status;
+        }
+    } else {
+        size_t len;
+        CMBlockBufferRef buf = CMSampleBufferGetDataBuffer(sample_buffer);
+        if (!buf) {
+            av_log(avctx, AV_LOG_ERROR, "Error getting block buffer\n");
             return AVERROR_EXTERNAL;
         }
 
-        int status = get_params_size(avctx, vid_fmt, &header_size);
-        if (status) return status;
-    }
+        len = CMBlockBufferGetDataLength(buf);
 
-    status = count_nalus(length_code_size, sample_buffer, &nalu_count);
-    if(status)
-        return status;
+        status = ff_get_encode_buffer(avctx, pkt, len, 0);
+        if (status < 0)
+            return status;
 
-    if (sei) {
-        size_t msg_size = get_sei_msg_bytes(sei,
-                                            SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35);
-
-        sei_nalu_size = sizeof(start_code) + 1 + msg_size + 1;
-    }
-
-    in_buf_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
-    out_buf_size = header_size +
-                   in_buf_size +
-                   sei_nalu_size +
-                   nalu_count * ((int)sizeof(start_code) - (int)length_code_size);
-
-    status = ff_get_encode_buffer(avctx, pkt, out_buf_size, 0);
-    if (status < 0)
-        return status;
-
-    if (add_header) {
-        status = copy_param_sets(avctx, vid_fmt, pkt->data, out_buf_size);
-        if(status) return status;
-    }
-
-    status = copy_replace_length_codes(
-        avctx,
-        length_code_size,
-        sample_buffer,
-        sei,
-        pkt->data + header_size,
-        pkt->size - header_size
-    );
-
-    if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d\n", status);
-        return status;
+        status = CMBlockBufferCopyDataBytes(buf, 0, len, pkt->data);
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
     }
 
     if (is_key_frame) {
