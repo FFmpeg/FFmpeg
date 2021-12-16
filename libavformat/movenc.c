@@ -6457,29 +6457,29 @@ static void mov_free(AVFormatContext *s)
     }
 
     for (i = 0; i < mov->nb_streams; i++) {
-        if (mov->tracks[i].tag == MKTAG('r','t','p',' '))
-            ff_mov_close_hinting(&mov->tracks[i]);
-        else if (mov->tracks[i].tag == MKTAG('t','m','c','d') && mov->nb_meta_tmcd)
-            av_freep(&mov->tracks[i].par);
-        av_freep(&mov->tracks[i].cluster);
-        av_freep(&mov->tracks[i].frag_info);
-        av_packet_free(&mov->tracks[i].cover_image);
+        MOVTrack *const track = &mov->tracks[i];
 
-        if (mov->tracks[i].eac3_priv) {
-            struct eac3_info *info = mov->tracks[i].eac3_priv;
+        if (track->tag == MKTAG('r','t','p',' '))
+            ff_mov_close_hinting(track);
+        else if (track->tag == MKTAG('t','m','c','d') && mov->nb_meta_tmcd)
+            av_freep(&track->par);
+        av_freep(&track->cluster);
+        av_freep(&track->frag_info);
+        av_packet_free(&track->cover_image);
+
+        if (track->eac3_priv) {
+            struct eac3_info *info = track->eac3_priv;
             av_packet_free(&info->pkt);
-            av_freep(&mov->tracks[i].eac3_priv);
+            av_freep(&track->eac3_priv);
         }
-        if (mov->tracks[i].vos_len)
-            av_freep(&mov->tracks[i].vos_data);
+        if (track->vos_len)
+            av_freep(&track->vos_data);
 
-        ff_mov_cenc_free(&mov->tracks[i].cenc);
-        ffio_free_dyn_buf(&mov->tracks[i].mdat_buf);
+        ff_mov_cenc_free(&track->cenc);
+        ffio_free_dyn_buf(&track->mdat_buf);
 
-        if (mov->tracks[i].squashed_packet_queue) {
-            avpriv_packet_list_free(&(mov->tracks[i].squashed_packet_queue),
-                                    &(mov->tracks[i].squashed_packet_queue_end));
-        }
+        avpriv_packet_list_free(&track->squashed_packet_queue,
+                                &track->squashed_packet_queue_end);
     }
 
     av_freep(&mov->tracks);
