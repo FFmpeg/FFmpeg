@@ -47,7 +47,7 @@ SECTION .text
 cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize, count, inner
     pxor m0, m0
     mova m15, [swizzle]
-    mov countq, $0
+    xor countq, countq
     movsxd wq, wd
 %ifidn %1, X4
     mova m14, [four]
@@ -61,7 +61,7 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     pxor m10, m10
     pxor m11, m11
     pxor m12, m12
-    mov innerq, $0
+    xor innerq, innerq
 .innerloop:
 %endif
     vpcmpeqd  m13, m13
@@ -76,7 +76,7 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     vpmaddwd m6, m6, [filterq + 32]
     vpmaddwd m7, m7, [filterq + 64]
     vpmaddwd m8, m8, [filterq + 96]
-    add filterq, $80
+    add filterq, 0x80
 %ifidn %1, X4
     paddd m9, m5
     paddd m10, m6
@@ -84,7 +84,7 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     paddd m12, m8
     paddd m1, m14
     paddd m2, m14
-    add innerq, $1
+    add innerq, 1
     cmp innerq, fltsizeq
     jl .innerloop
     vphaddd m5, m9, m10
@@ -98,8 +98,8 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     vpackssdw m5, m5, m6
     vpermd m5, m15, m5
     vmovdqu [dstq + countq * 2], m5
-    add fltposq, $40
-    add countq, $10
+    add fltposq, 0x40
+    add countq, 0x10
     cmp countq, wq
     jl .loop
 REP_RET
