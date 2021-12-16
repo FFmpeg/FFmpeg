@@ -45,63 +45,63 @@ SECTION .text
 
 %macro SCALE_FUNC 1
 cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize, count, inner
-  pxor m0, m0
-  mova m15, [swizzle]
-  mov countq, $0
-  movsxd wq, wd
+    pxor m0, m0
+    mova m15, [swizzle]
+    mov countq, $0
+    movsxd wq, wd
 %ifidn %1, X4
-  mova m14, [four]
-  shr fltsized, 2
+    mova m14, [four]
+    shr fltsized, 2
 %endif
 .loop:
-  movu m1, [fltposq]
-  movu m2, [fltposq+32]
+    movu m1, [fltposq]
+    movu m2, [fltposq+32]
 %ifidn %1, X4
-  pxor m9, m9
-  pxor m10, m10
-  pxor m11, m11
-  pxor m12, m12
-  mov innerq, $0
+    pxor m9, m9
+    pxor m10, m10
+    pxor m11, m11
+    pxor m12, m12
+    mov innerq, $0
 .innerloop:
 %endif
-  vpcmpeqd  m13, m13
-  vpgatherdd m3,[srcmemq + m1], m13
-  vpcmpeqd  m13, m13
-  vpgatherdd m4,[srcmemq + m2], m13
-  vpunpcklbw m5, m3, m0
-  vpunpckhbw m6, m3, m0
-  vpunpcklbw m7, m4, m0
-  vpunpckhbw m8, m4, m0
-  vpmaddwd m5, m5, [filterq]
-  vpmaddwd m6, m6, [filterq + 32]
-  vpmaddwd m7, m7, [filterq + 64]
-  vpmaddwd m8, m8, [filterq + 96]
-  add filterq, $80
+    vpcmpeqd  m13, m13
+    vpgatherdd m3,[srcmemq + m1], m13
+    vpcmpeqd  m13, m13
+    vpgatherdd m4,[srcmemq + m2], m13
+    vpunpcklbw m5, m3, m0
+    vpunpckhbw m6, m3, m0
+    vpunpcklbw m7, m4, m0
+    vpunpckhbw m8, m4, m0
+    vpmaddwd m5, m5, [filterq]
+    vpmaddwd m6, m6, [filterq + 32]
+    vpmaddwd m7, m7, [filterq + 64]
+    vpmaddwd m8, m8, [filterq + 96]
+    add filterq, $80
 %ifidn %1, X4
-  paddd m9, m5
-  paddd m10, m6
-  paddd m11, m7
-  paddd m12, m8
-  paddd m1, m14
-  paddd m2, m14
-  add innerq, $1
-  cmp innerq, fltsizeq
-  jl .innerloop
-  vphaddd m5, m9, m10
-  vphaddd m6, m11, m12
+    paddd m9, m5
+    paddd m10, m6
+    paddd m11, m7
+    paddd m12, m8
+    paddd m1, m14
+    paddd m2, m14
+    add innerq, $1
+    cmp innerq, fltsizeq
+    jl .innerloop
+    vphaddd m5, m9, m10
+    vphaddd m6, m11, m12
 %else
-  vphaddd m5, m5, m6
-  vphaddd m6, m7, m8
+    vphaddd m5, m5, m6
+    vphaddd m6, m7, m8
 %endif
-  vpsrad  m5, 7
-  vpsrad  m6, 7
-  vpackssdw m5, m5, m6
-  vpermd m5, m15, m5
-  vmovdqu [dstq + countq * 2], m5
-  add fltposq, $40
-  add countq, $10
-  cmp countq, wq
-  jl .loop
+    vpsrad  m5, 7
+    vpsrad  m6, 7
+    vpackssdw m5, m5, m6
+    vpermd m5, m15, m5
+    vmovdqu [dstq + countq * 2], m5
+    add fltposq, $40
+    add countq, $10
+    cmp countq, wq
+    jl .loop
 REP_RET
 %endmacro
 
