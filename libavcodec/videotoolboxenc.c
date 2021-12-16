@@ -2032,12 +2032,16 @@ static int get_cv_pixel_info(
     size_t         *strides,
     size_t         *contiguous_buf_size)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     VTEncContext *vtctx = avctx->priv_data;
     int av_format       = frame->format;
     int av_color_range  = frame->color_range;
     int i;
     int range_guessed;
     int status;
+
+    if (!desc)
+        return AVERROR(EINVAL);
 
     status = get_cv_pixel_format(avctx, av_format, av_color_range, color, &range_guessed);
     if (status) {
@@ -2063,63 +2067,18 @@ static int get_cv_pixel_info(
         }
     }
 
-    switch (av_format) {
-    case AV_PIX_FMT_NV12:
-        *plane_count = 2;
+    *plane_count = av_pix_fmt_count_planes(avctx->pix_fmt);
 
-        widths [0] = avctx->width;
-        heights[0] = avctx->height;
-        strides[0] = frame ? frame->linesize[0] : avctx->width;
-
-        widths [1] = (avctx->width  + 1) / 2;
-        heights[1] = (avctx->height + 1) / 2;
-        strides[1] = frame ? frame->linesize[1] : (avctx->width + 1) & -2;
-        break;
-
-    case AV_PIX_FMT_YUV420P:
-        *plane_count = 3;
-
-        widths [0] = avctx->width;
-        heights[0] = avctx->height;
-        strides[0] = frame ? frame->linesize[0] : avctx->width;
-
-        widths [1] = (avctx->width  + 1) / 2;
-        heights[1] = (avctx->height + 1) / 2;
-        strides[1] = frame ? frame->linesize[1] : (avctx->width + 1) / 2;
-
-        widths [2] = (avctx->width  + 1) / 2;
-        heights[2] = (avctx->height + 1) / 2;
-        strides[2] = frame ? frame->linesize[2] : (avctx->width + 1) / 2;
-        break;
-
-    case AV_PIX_FMT_BGRA:
-        *plane_count = 1;
-
-        widths [0] = avctx->width;
-        heights[0] = avctx->height;
-        strides[0] = frame ? frame->linesize[0] : avctx->width * 4;
-        break;
-
-    case AV_PIX_FMT_P010LE:
-        *plane_count = 2;
-        widths[0] = avctx->width;
-        heights[0] = avctx->height;
-        strides[0] = frame ? frame->linesize[0] : (avctx->width * 2 + 63) & -64;
-
-        widths[1] = (avctx->width + 1) / 2;
-        heights[1] = (avctx->height + 1) / 2;
-        strides[1] = frame ? frame->linesize[1] : ((avctx->width + 1) / 2 + 63) & -64;
-        break;
-
-    default:
-        av_log(
-               avctx,
-               AV_LOG_ERROR,
-               "Could not get frame format info for color %d range %d.\n",
-               av_format,
-               av_color_range);
-
-        return AVERROR(EINVAL);
+    for (i = 0; i < desc->nb_components; i++) {
+        int p = desc->comp[i].plane;
+        bool hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+        bool isAlpha = hasAlpha && (p + 1 == *plane_count);
+        bool isChroma = (p != 0) && !isAlpha;
+        int shiftw = isChroma ? desc->log2_chroma_w : 0;
+        int shifth = isChroma ? desc->log2_chroma_h : 0;
+        widths[p]  = (avctx->width  + ((1 << shiftw) >> 1)) >> shiftw;
+        heights[p] = (avctx->height + ((1 << shifth) >> 1)) >> shifth;
+        strides[p] = frame->linesize[p];
     }
 
     *contiguous_buf_size = 0;
