@@ -106,7 +106,9 @@ REP_RET
 %endmacro
 
 %if ARCH_X86_64
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 SCALE_FUNC 4
 SCALE_FUNC X4
+%endif
 %endif
