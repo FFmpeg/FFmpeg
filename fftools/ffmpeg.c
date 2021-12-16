@@ -851,7 +851,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     }
 
     enc = ost->enc_ctx;
-    frame_number = ost->st->nb_frames;
+    frame_number = ost->packets_encoded;
     if (vstats_version <= 1) {
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
@@ -949,6 +949,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename)
             do_video_stats(ost, pkt->size);
+
+        ost->packets_encoded++;
 
         output_packet(of, pkt, ost, 0);
     }
