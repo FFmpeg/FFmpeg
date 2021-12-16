@@ -29,6 +29,7 @@
 #include "libavutil/avstring.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/hwcontext_videotoolbox.h"
 #include "internal.h"
 #include <pthread.h>
 #include "atsc_a53.h"
@@ -797,25 +798,9 @@ static int get_cv_pixel_format(AVCodecContext* avctx,
                                         range != AVCOL_RANGE_JPEG;
 
     //MPEG range is used when no range is set
-    if (fmt == AV_PIX_FMT_NV12) {
-        *av_pixel_format = range == AVCOL_RANGE_JPEG ?
-                                        kCVPixelFormatType_420YpCbCr8BiPlanarFullRange :
-                                        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
-    } else if (fmt == AV_PIX_FMT_YUV420P) {
-        *av_pixel_format = range == AVCOL_RANGE_JPEG ?
-                                        kCVPixelFormatType_420YpCbCr8PlanarFullRange :
-                                        kCVPixelFormatType_420YpCbCr8Planar;
-    } else if (fmt == AV_PIX_FMT_BGRA) {
-        *av_pixel_format = kCVPixelFormatType_32BGRA;
-    } else if (fmt == AV_PIX_FMT_P010LE) {
-        *av_pixel_format = range == AVCOL_RANGE_JPEG ?
-                                        kCVPixelFormatType_420YpCbCr10BiPlanarFullRange :
-                                        kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
-    } else {
-        return AVERROR(EINVAL);
-    }
+    *av_pixel_format = av_map_videotoolbox_format_from_pixfmt2(fmt, range == AVCOL_RANGE_JPEG);
 
-    return 0;
+    return *av_pixel_format ? 0 : AVERROR(EINVAL);
 }
 
 static void add_color_attr(AVCodecContext *avctx, CFMutableDictionaryRef dict) {
