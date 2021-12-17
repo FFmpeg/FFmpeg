@@ -738,12 +738,13 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
 static int dng_decode_strip(AVCodecContext *avctx, AVFrame *frame)
 {
     TiffContext *s = avctx->priv_data;
+    int ret = ff_set_dimensions(s->avctx_mjpeg, s->width, s->height);
+
+    if (ret < 0)
+        return ret;
 
     s->jpgframe->width  = s->width;
     s->jpgframe->height = s->height;
-
-    s->avctx_mjpeg->width = s->width;
-    s->avctx_mjpeg->height = s->height;
 
     return dng_decode_jpeg(avctx, frame, s->stripsize, 0, 0, s->width, s->height);
 }
@@ -985,13 +986,13 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
     int has_width_leftover, has_height_leftover;
     int tile_x = 0, tile_y = 0;
     int pos_x = 0, pos_y = 0;
-    int ret;
+    int ret = ff_set_dimensions(s->avctx_mjpeg, s->tile_width, s->tile_length);
+
+    if (ret < 0)
+        return ret;
 
     s->jpgframe->width  = s->tile_width;
     s->jpgframe->height = s->tile_length;
-
-    s->avctx_mjpeg->width = s->tile_width;
-    s->avctx_mjpeg->height = s->tile_length;
 
     has_width_leftover = (s->width % s->tile_width != 0);
     has_height_leftover = (s->height % s->tile_length != 0);
