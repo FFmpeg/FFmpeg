@@ -63,6 +63,14 @@ p010be              3df51286ef66b53e3e283dbbab582263
 p010le              eadcd8241e97e35b2b47d5eb2eaea6cd
 p016be              3df51286ef66b53e3e283dbbab582263
 p016le              eadcd8241e97e35b2b47d5eb2eaea6cd
+p210be              4992fe87c600dfb177b1e2e6aa0f922c
+p210le              c695064fb9f2cc4e35957d4d649cc281
+p216be              98b73479f0ea9843768c162c449c3ac5
+p216le              77757390da383a90981e461d128d8789
+p410be              a7183a01888b47a4d9f3672073c7ea7d
+p410le              6cf3a3e199b327f4f013e0346410d7a8
+p416be              4dc4aebf18e09e8f8b49db90ae5ec127
+p416le              4990b51ff889d9ee23e68997f81c09f1
 rgb0                cfaf68671e43248267d8cd50cae8c13f
 rgb24               88894f608cf33ba310f21996748d77a7
 rgb444be            99d36d814988fb388aacdef575dacfcf

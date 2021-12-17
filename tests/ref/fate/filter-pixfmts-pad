@@ -25,6 +25,10 @@ nv12                381574979cb04be10c9168540310afad
 nv21                0fdeb2cdd56cf5a7147dc273456fa217
 nv24                193b9eadcc06ad5081609f76249b3e47
 nv42                1738ad3c31c6c16e17679f5b09ce4677
+p210le              10b53de63b086de93c076d1d40f9da42
+p216le              0bbf778e1b6101a3f650ce0454a357f2
+p410le              fcab6381bde9cd84b813925ff29be4d2
+p416le              6db094f8d7d27d7299bf9496ad66e2e0
 rgb0                78d500c8361ab6423a4826a00268c908
 rgb24               17f9e2e0c609009acaf2175c42d4a2a5
 rgba                b157c90191463d34fb3ce77b36c96386

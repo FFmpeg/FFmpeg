@@ -2563,14 +2563,18 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
     enum AVPixelFormat dstFormat = c->dstFormat;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
 
-    if (dstFormat == AV_PIX_FMT_P010LE || dstFormat == AV_PIX_FMT_P010BE) {
+    if (dstFormat == AV_PIX_FMT_P010LE || dstFormat == AV_PIX_FMT_P010BE ||
+        dstFormat == AV_PIX_FMT_P210LE || dstFormat == AV_PIX_FMT_P210BE ||
+        dstFormat == AV_PIX_FMT_P410LE || dstFormat == AV_PIX_FMT_P410BE) {
         *yuv2plane1 = isBE(dstFormat) ? yuv2p010l1_BE_c : yuv2p010l1_LE_c;
         *yuv2planeX = isBE(dstFormat) ? yuv2p010lX_BE_c : yuv2p010lX_LE_c;
         *yuv2nv12cX = yuv2p010cX_c;
     } else if (is16BPS(dstFormat)) {
         *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
         *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
-        if (dstFormat == AV_PIX_FMT_P016LE || dstFormat == AV_PIX_FMT_P016BE) {
+        if (dstFormat == AV_PIX_FMT_P016LE || dstFormat == AV_PIX_FMT_P016BE ||
+            dstFormat == AV_PIX_FMT_P216LE || dstFormat == AV_PIX_FMT_P216BE ||
+            dstFormat == AV_PIX_FMT_P416LE || dstFormat == AV_PIX_FMT_P416BE) {
           *yuv2nv12cX = yuv2p016cX_c;
         }
     } else if (isNBPS(dstFormat)) {
