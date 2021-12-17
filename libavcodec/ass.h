@@ -119,6 +119,13 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                     const char *speaker);
 
 /**
+ * Add an ASS dialog to a subtitle.
+ */
+int ff_ass_add_rect2(AVSubtitle *sub, const char *dialog,
+                     int readorder, int layer, const char *style,
+                     const char *speaker, unsigned *nb_rect_allocated);
+
+/**
  * Helper to flush a text subtitles decoder making use of the
  * FFASSDecoderContext.
  */
