@@ -244,7 +244,7 @@ FATE_HEVC_LARGE += fate-hevc-paramchange-yuv420p-yuv420p10
 
 tests/data/hevc-mp4.mov: TAG = GEN
 tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-i $(TARGET_SAMPLES)/hevc-conformance/WPP_A_ericsson_MAIN10_2.bit -c copy -flags +bitexact $(TARGET_PATH)/$@ -y 2>/dev/null
 
 FATE_HEVC-$(call ALLYES, HEVC_DEMUXER MOV_DEMUXER HEVC_MP4TOANNEXB_BSF MOV_MUXER HEVC_MUXER) += fate-hevc-bsf-mp4toannexb

@@ -1,6 +1,6 @@
 tests/data/fits-multi.fits: TAG = GEN
 tests/data/fits-multi.fits: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -i $(TARGET_SAMPLES)/gif/m4nb.gif \
         -y $(TARGET_PATH)/$(@) 2>/dev/null
 
@@ -14,7 +14,7 @@ map.tests/data/lena-gbrap16le.fits := rgba64
 tests/data/lena%.fits: TAG = GEN
 tests/data/lena%.fits: NAME = $(map.$(@))
 tests/data/lena%.fits: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -i $(TARGET_SAMPLES)/png1/lena-$(map.$(@)).png \
         -y $(TARGET_PATH)/$(@) 2>/dev/null
 
