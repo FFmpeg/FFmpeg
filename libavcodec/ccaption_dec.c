@@ -850,6 +850,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     int len = avpkt->size;
     int ret = 0;
     int i;
+    unsigned nb_rect_allocated = 0;
 
     for (i = 0; i < len; i += 3) {
         uint8_t hi, cc_type = bptr[i] & 1;
@@ -886,7 +887,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
                                                      AV_TIME_BASE_Q, ms_tb);
             else
                 sub->end_display_time = -1;
-            ret = ff_ass_add_rect(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL);
+            ret = ff_ass_add_rect2(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL, &nb_rect_allocated);
             if (ret < 0)
                 return ret;
             ctx->last_real_time = sub->pts;
@@ -896,7 +897,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
 
     if (!bptr && !ctx->real_time && ctx->buffer[!ctx->buffer_index].str[0]) {
         bidx = !ctx->buffer_index;
-        ret = ff_ass_add_rect(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL);
+        ret = ff_ass_add_rect2(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL, &nb_rect_allocated);
         if (ret < 0)
             return ret;
         sub->pts = ctx->buffer_time[1];
@@ -914,7 +915,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
         capture_screen(ctx);
         ctx->buffer_changed = 0;
 
-        ret = ff_ass_add_rect(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL);
+        ret = ff_ass_add_rect2(sub, ctx->buffer[bidx].str, ctx->readorder++, 0, NULL, NULL, &nb_rect_allocated);
         if (ret < 0)
             return ret;
         sub->end_display_time = -1;
