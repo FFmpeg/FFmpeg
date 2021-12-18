@@ -761,12 +761,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
         theta = get_rotation(displaymatrix);
 
         if (fabs(theta - 90) < 1.0) {
-            ret = insert_filter(&last_filter, &pad_idx, "transpose", "clock");
-            if (displaymatrix[3] > 0) {
-                ret = insert_filter(&last_filter, &pad_idx, "hflip", NULL);
-                if (ret < 0)
-                    return ret;
-            }
+            ret = insert_filter(&last_filter, &pad_idx, "transpose",
+                                displaymatrix[3] > 0 ? "cclock_flip" : "clock");
         } else if (fabs(theta - 180) < 1.0) {
             if (displaymatrix[0] < 0) {
                 ret = insert_filter(&last_filter, &pad_idx, "hflip", NULL);
@@ -777,12 +773,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                 ret = insert_filter(&last_filter, &pad_idx, "vflip", NULL);
             }
         } else if (fabs(theta - 270) < 1.0) {
-            ret = insert_filter(&last_filter, &pad_idx, "transpose", "cclock");
-            if (displaymatrix[3] < 0) {
-                ret = insert_filter(&last_filter, &pad_idx, "hflip", NULL);
-                if (ret < 0)
-                    return ret;
-            }
+            ret = insert_filter(&last_filter, &pad_idx, "transpose",
+                                displaymatrix[3] < 0 ? "clock_flip" : "cclock");
         } else if (fabs(theta) > 1.0) {
             char rotate_buf[64];
             snprintf(rotate_buf, sizeof(rotate_buf), "%f*PI/180", theta);
