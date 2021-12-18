@@ -1389,10 +1389,10 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         }
     }
 
-    if (vtctx->realtime) {
+    if (vtctx->realtime >= 0) {
         status = VTSessionSetProperty(vtctx->session,
                                       compat_keys.kVTCompressionPropertyKey_RealTime,
-                                      kCFBooleanTrue);
+                                      vtctx->realtime ? kCFBooleanTrue : kCFBooleanFalse);
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting realtime property: %d\n", status);
@@ -2677,7 +2677,7 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
     { "require_sw", "Require software encoding", OFFSET(require_sw), AV_OPT_TYPE_BOOL, \
         { .i64 = 0 }, 0, 1, VE }, \
     { "realtime", "Hint that encoding should happen in real-time if not faster (e.g. capturing from camera).", \
-        OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
+        OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, -1, 1, VE }, \
     { "frames_before", "Other frames will come before the frames in this session. This helps smooth concatenation issues.", \
         OFFSET(frames_before), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "frames_after", "Other frames will come after the frames in this session. This helps smooth concatenation issues.", \
