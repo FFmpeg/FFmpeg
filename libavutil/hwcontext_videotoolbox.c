@@ -318,7 +318,7 @@ static void vt_unmap(AVHWFramesContext *ctx, HWMapDescriptor *hwmap)
     CVPixelBufferUnlockBaseAddress(pixbuf, (uintptr_t)hwmap->priv);
 }
 
-static int vt_pixbuf_set_par(AVHWFramesContext *hwfc,
+static int vt_pixbuf_set_par(void *log_ctx,
                              CVPixelBufferRef pixbuf, const AVFrame *src)
 {
     CFMutableDictionaryRef par = NULL;
@@ -375,31 +375,30 @@ static int vt_pixbuf_set_par(AVHWFramesContext *hwfc,
     return 0;
 }
 
-static int vt_pixbuf_set_chromaloc(AVHWFramesContext *hwfc,
+CFStringRef av_map_videotoolbox_chroma_loc_from_av(enum AVChromaLocation loc)
+{
+    switch (loc) {
+    case AVCHROMA_LOC_LEFT:
+        return kCVImageBufferChromaLocation_Left;
+    case AVCHROMA_LOC_CENTER:
+        return kCVImageBufferChromaLocation_Center;
+    case AVCHROMA_LOC_TOP:
+        return kCVImageBufferChromaLocation_Top;
+    case AVCHROMA_LOC_BOTTOM:
+        return kCVImageBufferChromaLocation_Bottom;
+    case AVCHROMA_LOC_TOPLEFT:
+        return kCVImageBufferChromaLocation_TopLeft;
+    case AVCHROMA_LOC_BOTTOMLEFT:
+        return kCVImageBufferChromaLocation_BottomLeft;
+    default:
+        return NULL;
+    }
+}
+
+static int vt_pixbuf_set_chromaloc(void *log_ctx,
                                    CVPixelBufferRef pixbuf, const AVFrame *src)
 {
-    CFStringRef loc = NULL;
-
-    switch (src->chroma_location) {
-    case AVCHROMA_LOC_LEFT:
-        loc = kCVImageBufferChromaLocation_Left;
-        break;
-    case AVCHROMA_LOC_CENTER:
-        loc = kCVImageBufferChromaLocation_Center;
-        break;
-    case AVCHROMA_LOC_TOP:
-        loc = kCVImageBufferChromaLocation_Top;
-        break;
-    case AVCHROMA_LOC_BOTTOM:
-        loc = kCVImageBufferChromaLocation_Bottom;
-        break;
-    case AVCHROMA_LOC_TOPLEFT:
-        loc = kCVImageBufferChromaLocation_TopLeft;
-        break;
-    case AVCHROMA_LOC_BOTTOMLEFT:
-        loc = kCVImageBufferChromaLocation_BottomLeft;
-        break;
-    }
+    CFStringRef loc = av_map_videotoolbox_chroma_loc_from_av(src->chroma_location);
 
     if (loc) {
         CVBufferSetAttachment(
@@ -412,109 +411,115 @@ static int vt_pixbuf_set_chromaloc(AVHWFramesContext *hwfc,
     return 0;
 }
 
-static int vt_pixbuf_set_colorspace(AVHWFramesContext *hwfc,
+CFStringRef av_map_videotoolbox_color_matrix_from_av(enum AVColorSpace space)
+{
+    switch (space) {
+    case AVCOL_SPC_BT2020_CL:
+    case AVCOL_SPC_BT2020_NCL:
+#if HAVE_KCVIMAGEBUFFERYCBCRMATRIX_ITU_R_2020
+        if (__builtin_available(macOS 10.11, iOS 9, *))
+            return kCVImageBufferYCbCrMatrix_ITU_R_2020;
+#endif
+        return CFSTR("ITU_R_2020");
+    case AVCOL_SPC_BT470BG:
+    case AVCOL_SPC_SMPTE170M:
+        return kCVImageBufferYCbCrMatrix_ITU_R_601_4;
+    case AVCOL_SPC_BT709:
+        return kCVImageBufferYCbCrMatrix_ITU_R_709_2;
+    case AVCOL_SPC_SMPTE240M:
+        return kCVImageBufferYCbCrMatrix_SMPTE_240M_1995;
+    case AVCOL_SPC_UNSPECIFIED:
+    default:
+        return NULL;
+    }
+}
+
+CFStringRef av_map_videotoolbox_color_primaries_from_av(enum AVColorPrimaries pri)
+{
+    switch (pri) {
+    case AVCOL_PRI_BT2020:
+#if HAVE_KCVIMAGEBUFFERCOLORPRIMARIES_ITU_R_2020
+        if (__builtin_available(macOS 10.11, iOS 9, *))
+            return kCVImageBufferColorPrimaries_ITU_R_2020;
+#endif
+        return CFSTR("ITU_R_2020");
+    case AVCOL_PRI_BT709:
+        return kCVImageBufferColorPrimaries_ITU_R_709_2;
+    case AVCOL_PRI_SMPTE170M:
+        return kCVImageBufferColorPrimaries_SMPTE_C;
+    case AVCOL_PRI_BT470BG:
+        return kCVImageBufferColorPrimaries_EBU_3213;
+    case AVCOL_PRI_UNSPECIFIED:
+    default:
+        return NULL;
+    }
+}
+
+CFStringRef av_map_videotoolbox_color_trc_from_av(enum AVColorTransferCharacteristic trc)
+{
+
+    switch (trc) {
+    case AVCOL_TRC_SMPTE2084:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_2084_PQ
+        if (__builtin_available(macOS 10.13, iOS 11, *))
+            return kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
+#endif
+        return CFSTR("SMPTE_ST_2084_PQ");
+    case AVCOL_TRC_BT2020_10:
+    case AVCOL_TRC_BT2020_12:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2020
+        if (__builtin_available(macOS 10.11, iOS 9, *))
+            return kCVImageBufferTransferFunction_ITU_R_2020;
+#endif
+        return CFSTR("ITU_R_2020");
+    case AVCOL_TRC_BT709:
+        return kCVImageBufferTransferFunction_ITU_R_709_2;
+    case AVCOL_TRC_SMPTE240M:
+        return kCVImageBufferTransferFunction_SMPTE_240M_1995;
+    case AVCOL_TRC_SMPTE428:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_428_1
+        if (__builtin_available(macOS 10.12, iOS 10, *))
+            return kCVImageBufferTransferFunction_SMPTE_ST_428_1;
+#endif
+        return CFSTR("SMPTE_ST_428_1");
+    case AVCOL_TRC_ARIB_STD_B67:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+        if (__builtin_available(macOS 10.13, iOS 11, *))
+            return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
+#endif
+        return CFSTR("ITU_R_2100_HLG");
+    case AVCOL_TRC_GAMMA22:
+        return kCVImageBufferTransferFunction_UseGamma;
+    case AVCOL_TRC_GAMMA28:
+        return kCVImageBufferTransferFunction_UseGamma;
+    default:
+    case AVCOL_TRC_UNSPECIFIED:
+        return NULL;
+    }
+}
+
+static int vt_pixbuf_set_colorspace(void *log_ctx,
                                     CVPixelBufferRef pixbuf, const AVFrame *src)
 {
     CFStringRef colormatrix = NULL, colorpri = NULL, colortrc = NULL;
     Float32 gamma = 0;
 
-    switch (src->colorspace) {
-    case AVCOL_SPC_BT2020_CL:
-    case AVCOL_SPC_BT2020_NCL:
-#if HAVE_KCVIMAGEBUFFERYCBCRMATRIX_ITU_R_2020
-        colormatrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
-#else
-        colormatrix = CFSTR("ITU_R_2020");
-#endif
-        break;
-    case AVCOL_SPC_BT470BG:
-    case AVCOL_SPC_SMPTE170M:
-        colormatrix = kCVImageBufferYCbCrMatrix_ITU_R_601_4;
-        break;
-    case AVCOL_SPC_BT709:
-        colormatrix = kCVImageBufferYCbCrMatrix_ITU_R_709_2;
-        break;
-    case AVCOL_SPC_SMPTE240M:
-        colormatrix = kCVImageBufferYCbCrMatrix_SMPTE_240M_1995;
-        break;
-    case AVCOL_SPC_UNSPECIFIED:
-        break;
-    default:
-        av_log(hwfc, AV_LOG_WARNING, "Color space %s is not supported.\n", av_color_space_name(src->colorspace));
-    }
+    colormatrix = av_map_videotoolbox_color_matrix_from_av(src->colorspace);
+    if (!colormatrix && src->colorspace != AVCOL_SPC_UNSPECIFIED)
+        av_log(log_ctx, AV_LOG_WARNING, "Color space %s is not supported.\n", av_color_space_name(src->colorspace));
 
-    switch (src->color_primaries) {
-    case AVCOL_PRI_BT2020:
-#if HAVE_KCVIMAGEBUFFERCOLORPRIMARIES_ITU_R_2020
-        colorpri = kCVImageBufferColorPrimaries_ITU_R_2020;
-#else
-        colorpri = CFSTR("ITU_R_2020");
-#endif
-        break;
-    case AVCOL_PRI_BT709:
-        colorpri = kCVImageBufferColorPrimaries_ITU_R_709_2;
-        break;
-    case AVCOL_PRI_SMPTE170M:
-        colorpri = kCVImageBufferColorPrimaries_SMPTE_C;
-        break;
-    case AVCOL_PRI_BT470BG:
-        colorpri = kCVImageBufferColorPrimaries_EBU_3213;
-        break;
-    case AVCOL_PRI_UNSPECIFIED:
-        break;
-    default:
-        av_log(hwfc, AV_LOG_WARNING, "Color primaries %s is not supported.\n", av_color_primaries_name(src->color_primaries));
-    }
+    colorpri = av_map_videotoolbox_color_primaries_from_av(src->color_primaries);
+    if (!colorpri && src->color_primaries != AVCOL_PRI_UNSPECIFIED)
+        av_log(log_ctx, AV_LOG_WARNING, "Color primaries %s is not supported.\n", av_color_primaries_name(src->color_primaries));
 
-    switch (src->color_trc) {
-    case AVCOL_TRC_SMPTE2084:
-#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_2084_PQ
-        colortrc = kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
-#else
-        colortrc = CFSTR("SMPTE_ST_2084_PQ");
-#endif
-        break;
-    case AVCOL_TRC_BT2020_10:
-    case AVCOL_TRC_BT2020_12:
-#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2020
-        colortrc = kCVImageBufferTransferFunction_ITU_R_2020;
-#else
-        colortrc = CFSTR("ITU_R_2020");
-#endif
-        break;
-    case AVCOL_TRC_BT709:
-        colortrc = kCVImageBufferTransferFunction_ITU_R_709_2;
-        break;
-    case AVCOL_TRC_SMPTE240M:
-        colortrc = kCVImageBufferTransferFunction_SMPTE_240M_1995;
-        break;
-    case AVCOL_TRC_SMPTE428:
-#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_428_1
-        colortrc = kCVImageBufferTransferFunction_SMPTE_ST_428_1;
-#else
-        colortrc = CFSTR("SMPTE_ST_428_1");
-#endif
-        break;
-    case AVCOL_TRC_ARIB_STD_B67:
-#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
-        colortrc = kCVImageBufferTransferFunction_ITU_R_2100_HLG;
-#else
-        colortrc = CFSTR("ITU_R_2100_HLG");
-#endif
-        break;
-    case AVCOL_TRC_GAMMA22:
+    colortrc = av_map_videotoolbox_color_trc_from_av(src->color_trc);
+    if (!colortrc && src->color_trc != AVCOL_TRC_UNSPECIFIED)
+        av_log(log_ctx, AV_LOG_WARNING, "Color transfer function %s is not supported.\n", av_color_transfer_name(src->color_trc));
+
+    if (src->color_trc == AVCOL_TRC_GAMMA22)
         gamma = 2.2;
-        colortrc = kCVImageBufferTransferFunction_UseGamma;
-        break;
-    case AVCOL_TRC_GAMMA28:
+    else if (src->color_trc == AVCOL_TRC_GAMMA28)
         gamma = 2.8;
-        colortrc = kCVImageBufferTransferFunction_UseGamma;
-        break;
-    case AVCOL_TRC_UNSPECIFIED:
-        break;
-    default:
-        av_log(hwfc, AV_LOG_WARNING, "Color transfer function %s is not supported.\n", av_color_transfer_name(src->color_trc));
-    }
 
     if (colormatrix) {
         CVBufferSetAttachment(
@@ -550,17 +555,17 @@ static int vt_pixbuf_set_colorspace(AVHWFramesContext *hwfc,
     return 0;
 }
 
-static int vt_pixbuf_set_attachments(AVHWFramesContext *hwfc,
+static int vt_pixbuf_set_attachments(void *log_ctx,
                                      CVPixelBufferRef pixbuf, const AVFrame *src)
 {
     int ret;
-    ret = vt_pixbuf_set_par(hwfc, pixbuf, src);
+    ret = vt_pixbuf_set_par(log_ctx, pixbuf, src);
     if (ret < 0)
         return ret;
-    ret = vt_pixbuf_set_colorspace(hwfc, pixbuf, src);
+    ret = vt_pixbuf_set_colorspace(log_ctx, pixbuf, src);
     if (ret < 0)
         return ret;
-    ret = vt_pixbuf_set_chromaloc(hwfc, pixbuf, src);
+    ret = vt_pixbuf_set_chromaloc(log_ctx, pixbuf, src);
     if (ret < 0)
         return ret;
     return 0;
