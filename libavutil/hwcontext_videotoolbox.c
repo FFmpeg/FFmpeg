@@ -428,8 +428,12 @@ CFStringRef av_map_videotoolbox_color_matrix_from_av(enum AVColorSpace space)
         return kCVImageBufferYCbCrMatrix_ITU_R_709_2;
     case AVCOL_SPC_SMPTE240M:
         return kCVImageBufferYCbCrMatrix_SMPTE_240M_1995;
-    case AVCOL_SPC_UNSPECIFIED:
     default:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+        if (__builtin_available(macOS 10.13, iOS 11, tvOS 11, watchOS 4, *))
+            return CVYCbCrMatrixGetStringForIntegerCodePoint(space);
+#endif
+    case AVCOL_SPC_UNSPECIFIED:
         return NULL;
     }
 }
@@ -449,8 +453,12 @@ CFStringRef av_map_videotoolbox_color_primaries_from_av(enum AVColorPrimaries pr
         return kCVImageBufferColorPrimaries_SMPTE_C;
     case AVCOL_PRI_BT470BG:
         return kCVImageBufferColorPrimaries_EBU_3213;
-    case AVCOL_PRI_UNSPECIFIED:
     default:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+        if (__builtin_available(macOS 10.13, iOS 11, tvOS 11, watchOS 4, *))
+            return CVColorPrimariesGetStringForIntegerCodePoint(pri);
+#endif
+    case AVCOL_PRI_UNSPECIFIED:
         return NULL;
     }
 }
@@ -493,6 +501,10 @@ CFStringRef av_map_videotoolbox_color_trc_from_av(enum AVColorTransferCharacteri
     case AVCOL_TRC_GAMMA28:
         return kCVImageBufferTransferFunction_UseGamma;
     default:
+#if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+        if (__builtin_available(macOS 10.13, iOS 11, tvOS 11, watchOS 4, *))
+            return CVTransferFunctionGetStringForIntegerCodePoint(trc);
+#endif
     case AVCOL_TRC_UNSPECIFIED:
         return NULL;
     }
