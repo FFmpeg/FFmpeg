@@ -319,7 +319,7 @@ static int mv_read_header(AVFormatContext *avctx)
         avio_skip(pb, 4);
         vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         vst->avg_frame_rate = fps;
-        vst->nb_frames         = avio_rb32(pb);
+        vst->duration = vst->nb_frames = avio_rb32(pb);
         v = avio_rb32(pb);
         switch (v) {
         case 1:
