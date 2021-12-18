@@ -237,7 +237,7 @@ static int extradata2psets_hevc(const AVCodecParameters *par, char **out)
     int ps_pos[3] = { 0 };
     static const char * const ps_names[3] = { "vps", "sps", "pps" };
     int num_arrays, num_nalus;
-    int pos, i, j, ret;
+    int pos, i, j, ret = 0;
 
     *out = NULL;
 
