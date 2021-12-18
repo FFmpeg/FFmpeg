@@ -26,6 +26,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/rational.h"
 
@@ -300,8 +301,9 @@ static int mv_read_header(AVFormatContext *avctx)
         uint64_t timestamp;
         int v;
         uint32_t bytes_per_sample;
+        AVRational fps;
 
-        avio_skip(pb, 22);
+        avio_skip(pb, 10);
 
         /* allocate audio track first to prevent unnecessary seeking
          * (audio packet always precede video packet for a given frame) */
@@ -312,9 +314,11 @@ static int mv_read_header(AVFormatContext *avctx)
         vst = avformat_new_stream(avctx, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
-        avpriv_set_pts_info(vst, 64, 1, 15);
+        fps = av_d2q(av_int2double(avio_rb64(pb)), INT_MAX);
+        avpriv_set_pts_info(vst, 64, fps.den, fps.num);
+        avio_skip(pb, 4);
         vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-        vst->avg_frame_rate    = av_inv_q(vst->time_base);
+        vst->avg_frame_rate = fps;
         vst->nb_frames         = avio_rb32(pb);
         v = avio_rb32(pb);
         switch (v) {
