@@ -43,6 +43,7 @@ version <next>:
 - adynamicequalizer audio filter
 - yadif_videotoolbox filter
 - VideoToolbox ProRes encoder
+- anlmf audio filter
 
 
 version 4.4:

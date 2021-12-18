@@ -2301,8 +2301,8 @@ Set smooth factor. Default value is @var{11}. Allowed range is from @var{1} to @
 
 This filter supports the all above options as @ref{commands}.
 
-@section anlms
-Apply Normalized Least-Mean-Squares algorithm to the first audio stream using the second audio stream.
+@section anlmf, anlms
+Apply Normalized Least-Mean-(Squares|Fourth) algorithm to the first audio stream using the second audio stream.
 
 This adaptive filter is used to mimic a desired filter by finding the filter coefficients that
 relate to producing the least mean square of the error signal (difference between the desired,
