@@ -28,7 +28,7 @@ typedef struct CRCState {
     uint32_t crcval;
 } CRCState;
 
-static int crc_write_header(struct AVFormatContext *s)
+static int crc_init(struct AVFormatContext *s)
 {
     CRCState *crc = s->priv_data;
 
@@ -60,7 +60,7 @@ const AVOutputFormat ff_crc_muxer = {
     .priv_data_size    = sizeof(CRCState),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
-    .write_header      = crc_write_header,
+    .init              = crc_init,
     .write_packet      = crc_write_packet,
     .write_trailer     = crc_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
