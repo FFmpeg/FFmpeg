@@ -30,7 +30,7 @@ typedef struct WvMuxContext {
     int64_t samples;
 } WvMuxContext;
 
-static av_cold int wv_write_header(AVFormatContext *ctx)
+static av_cold int wv_init(AVFormatContext *ctx)
 {
     if (ctx->nb_streams > 1 ||
         ctx->streams[0]->codecpar->codec_id != AV_CODEC_ID_WAVPACK) {
@@ -84,7 +84,7 @@ const AVOutputFormat ff_wv_muxer = {
     .priv_data_size    = sizeof(WvMuxContext),
     .audio_codec       = AV_CODEC_ID_WAVPACK,
     .video_codec       = AV_CODEC_ID_NONE,
-    .write_header      = wv_write_header,
+    .init              = wv_init,
     .write_packet      = wv_write_packet,
     .write_trailer     = wv_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
