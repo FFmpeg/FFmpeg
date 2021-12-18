@@ -85,4 +85,11 @@ CFStringRef av_map_videotoolbox_color_primaries_from_av(enum AVColorPrimaries pr
  */
 CFStringRef av_map_videotoolbox_color_trc_from_av(enum AVColorTransferCharacteristic trc);
 
+/**
+ * Update a CVPixelBufferRef's metadata to based on an AVFrame.
+ * Returns 0 if no known equivalent was found.
+ */
+int av_vt_pixbuf_set_attachments(void *log_ctx,
+                                 CVPixelBufferRef pixbuf, const struct AVFrame *src);
+
 #endif /* AVUTIL_HWCONTEXT_VIDEOTOOLBOX_H */

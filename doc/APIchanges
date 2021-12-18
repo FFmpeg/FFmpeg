@@ -15,6 +15,9 @@ libavutil:     2021-04-27
 API changes, most recent first:
 
 2021-12-xx - xxxxxxxxxx - lavu 57.13.100 - hwcontext_videotoolbox.h
+  Add av_vt_pixbuf_set_attachments
+
+2021-12-xx - xxxxxxxxxx - lavu 57.13.100 - hwcontext_videotoolbox.h
   Add av_map_videotoolbox_chroma_loc_from_av
   Add av_map_videotoolbox_color_matrix_from_av
   Add av_map_videotoolbox_color_primaries_from_av

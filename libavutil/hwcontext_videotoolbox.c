@@ -571,6 +571,12 @@ static int vt_pixbuf_set_attachments(void *log_ctx,
     return 0;
 }
 
+int av_vt_pixbuf_set_attachments(void *log_ctx,
+                                 CVPixelBufferRef pixbuf, const AVFrame *src)
+{
+    return vt_pixbuf_set_attachments(log_ctx, pixbuf, src);
+}
+
 static int vt_map_frame(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *src,
                         int flags)
 {
