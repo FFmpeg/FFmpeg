@@ -2896,14 +2896,14 @@ the_end:
                     break;
                 case 5:
                     av_display_rotation_set(matrix, 90.0);
-                    av_display_matrix_flip(matrix, 0, 1);
+                    av_display_matrix_flip(matrix, 1, 0);
                     break;
                 case 6:
                     av_display_rotation_set(matrix, 90.0);
                     break;
                 case 7:
                     av_display_rotation_set(matrix, -90.0);
-                    av_display_matrix_flip(matrix, 0, 1);
+                    av_display_matrix_flip(matrix, 1, 0);
                     break;
                 case 8:
                     av_display_rotation_set(matrix, -90.0);
