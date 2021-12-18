@@ -807,6 +807,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
         return ret;
+    ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
         ret = avctx->hwaccel->start_frame(avctx, NULL, 0);
@@ -856,6 +857,18 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
+static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    ProresContext *csrc = src->priv_data;
+    ProresContext *cdst = dst->priv_data;
+
+    cdst->pix_fmt = csrc->pix_fmt;
+
+    return 0;
+}
+#endif
+
 const AVCodec ff_prores_decoder = {
     .name           = "prores",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
@@ -865,6 +878,7 @@ const AVCodec ff_prores_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
