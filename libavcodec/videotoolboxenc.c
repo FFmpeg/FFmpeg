@@ -227,14 +227,14 @@ typedef struct VTEncContext {
     int64_t dts_delta;
 
     int64_t profile;
-    int64_t level;
-    int64_t entropy;
-    int64_t realtime;
-    int64_t frames_before;
-    int64_t frames_after;
+    int level;
+    int entropy;
+    int realtime;
+    int frames_before;
+    int frames_after;
 
-    int64_t allow_sw;
-    int64_t require_sw;
+    int allow_sw;
+    int require_sw;
     double alpha_quality;
 
     bool flushing;
