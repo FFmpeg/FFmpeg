@@ -140,5 +140,43 @@ void ff_tm_16x16_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
                      const uint8_t *top);
 void ff_tm_32x32_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
                      const uint8_t *top);
+void ff_loop_filter_h_16_8_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                               int32_t i, int32_t h);
+void ff_loop_filter_v_16_8_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                               int32_t i, int32_t h);
+void ff_loop_filter_h_4_8_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_v_4_8_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_h_44_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_44_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_8_8_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_v_8_8_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                              int32_t i, int32_t h);
+void ff_loop_filter_h_88_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_88_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_84_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_84_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_48_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_48_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_h_16_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_loop_filter_v_16_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
+                                int32_t i, int32_t h);
+void ff_idct_idct_8x8_add_lsx(uint8_t *dst, ptrdiff_t stride,
+                              int16_t *block, int eob);
+void ff_idct_idct_16x16_add_lsx(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
+void ff_idct_idct_32x32_add_lsx(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
 
 #endif /* AVCODEC_LOONGARCH_VP9DSP_LOONGARCH_H */

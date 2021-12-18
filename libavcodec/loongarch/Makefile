@@ -13,4 +13,6 @@ LASX-OBJS-$(CONFIG_H264PRED)          += loongarch/h264_intrapred_lasx.o
 LSX-OBJS-$(CONFIG_VP8_DECODER)        += loongarch/vp8_mc_lsx.o \
                                          loongarch/vp8_lpf_lsx.o
 LSX-OBJS-$(CONFIG_VP9_DECODER)        += loongarch/vp9_mc_lsx.o \
-                                         loongarch/vp9_intra_lsx.o
+                                         loongarch/vp9_intra_lsx.o \
+                                         loongarch/vp9_lpf_lsx.o \
+                                         loongarch/vp9_idct_lsx.o
