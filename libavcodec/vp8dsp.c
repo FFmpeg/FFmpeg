@@ -743,5 +743,7 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
         ff_vp8dsp_init_x86(dsp);
     if (ARCH_MIPS)
         ff_vp8dsp_init_mips(dsp);
+    if (ARCH_LOONGARCH)
+        ff_vp8dsp_init_loongarch(dsp);
 }
 #endif /* CONFIG_VP8_DECODER */

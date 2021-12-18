@@ -101,6 +101,7 @@ void ff_vp8dsp_init_aarch64(VP8DSPContext *c);
 void ff_vp8dsp_init_arm(VP8DSPContext *c);
 void ff_vp8dsp_init_x86(VP8DSPContext *c);
 void ff_vp8dsp_init_mips(VP8DSPContext *c);
+void ff_vp8dsp_init_loongarch(VP8DSPContext *c);
 
 #define IS_VP7 1
 #define IS_VP8 0
