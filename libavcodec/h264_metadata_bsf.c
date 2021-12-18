@@ -341,15 +341,24 @@ static int h264_metadata_handle_display_orientation(AVBSFContext *bsf,
                                    SEI_TYPE_DISPLAY_ORIENTATION,
                                    &message) == 0) {
         H264RawSEIDisplayOrientation *disp = message->payload;
+        double angle = disp->anticlockwise_rotation * 180.0 / 65536.0;
         int32_t *matrix;
 
         matrix = av_malloc(9 * sizeof(int32_t));
         if (!matrix)
             return AVERROR(ENOMEM);
 
-        av_display_rotation_set(matrix,
-                                disp->anticlockwise_rotation *
-                                180.0 / 65536.0);
+        /* av_display_rotation_set() expects the angle in the clockwise
+         * direction, hence the first minus.
+         * The below code applies the flips after the rotation, yet
+         * the H.2645 specs require flipping to be applied first.
+         * Because of R O(phi) = O(-phi) R (where R is flipping around
+         * an arbitatry axis and O(phi) is the proper rotation by phi)
+         * we can create display matrices as desired by negating
+         * the degree once for every flip applied. */
+        angle = -angle * (1 - 2 * !!disp->hor_flip) * (1 - 2 * !!disp->ver_flip);
+
+        av_display_rotation_set(matrix, angle);
         av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
 
         // If there are multiple display orientation messages in an

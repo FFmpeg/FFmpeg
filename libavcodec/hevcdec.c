@@ -2769,6 +2769,16 @@ static int set_side_data(HEVCContext *s)
         if (!rotation)
             return AVERROR(ENOMEM);
 
+        /* av_display_rotation_set() expects the angle in the clockwise
+         * direction, hence the first minus.
+         * The below code applies the flips after the rotation, yet
+         * the H.2645 specs require flipping to be applied first.
+         * Because of R O(phi) = O(-phi) R (where R is flipping around
+         * an arbitatry axis and O(phi) is the proper rotation by phi)
+         * we can create display matrices as desired by negating
+         * the degree once for every flip applied. */
+        angle = -angle * (1 - 2 * !!s->sei.display_orientation.hflip)
+                       * (1 - 2 * !!s->sei.display_orientation.vflip);
         av_display_rotation_set((int32_t *)rotation->data, angle);
         av_display_matrix_flip((int32_t *)rotation->data,
                                s->sei.display_orientation.hflip,
