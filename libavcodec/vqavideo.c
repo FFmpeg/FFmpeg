@@ -588,13 +588,14 @@ static int vqa_decode_chunk(VqaContext *s, AVFrame *frame)
         if (s->partial_countdown <= 0) {
             bytestream2_init(&s->gb, s->next_codebook_buffer, s->next_codebook_buffer_index);
             /* decompress codebook */
-            if ((res = decode_format80(s, s->next_codebook_buffer_index,
-                                       s->codebook, s->codebook_size, 0)) < 0)
-                return res;
+            res = decode_format80(s, s->next_codebook_buffer_index,
+                                  s->codebook, s->codebook_size, 0);
 
             /* reset accounting */
             s->next_codebook_buffer_index = 0;
             s->partial_countdown = s->partial_count;
+            if (res < 0)
+                return res;
         }
     }
 
