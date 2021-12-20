@@ -113,13 +113,13 @@ $(BIN2CEXE): ffbuild/bin2c_host.o
 	$(HOSTLD) $(HOSTLDFLAGS) $(HOSTLD_O) $^ $(HOSTEXTRALIBS)
 
 %.metal.air: %.metal
-	$(METALCC) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) -o $@
+	$(METALCC) $< -o $@
 
 %.metallib: %.metal.air
-	$(METALLIB) --split-module-without-linking $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) -o $@
+	$(METALLIB) --split-module-without-linking $< -o $@
 
 %.metallib.c: %.metallib $(BIN2CEXE)
-	$(BIN2C) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) $@ $(subst .,_,$(basename $(notdir $@)))
+	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
 
 %.ptx: %.cu $(SRC_PATH)/compat/cuda/cuda_runtime.h
 	$(COMPILE_NVCC)
