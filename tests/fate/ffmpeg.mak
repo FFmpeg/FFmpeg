@@ -100,6 +100,17 @@ FATE_SAMPLES_FFMPEG-$(call ALLYES, FILE_PROTOCOL LAVFI_INDEV RAWVIDEO_DEMUXER \
 fate-shortest: tests/data/vsynth_lena.yuv
 fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -threads 1 -c:v mpeg4 -c:a ac3_fixed -shortest
 
+# Basic test for fix_sub_duration, which calculates duration based on the
+# following subtitle's pts.
+FATE_SAMPLES_FFMPEG-$(call ALLYES, LAVFI_INDEV MOVIE_FILTER FILE_PROTOCOL \
+                                   PIPE_PROTOCOL MPEGVIDEO_DEMUXER \
+                                   MPEG2VIDEO_DECODER CCAPTION_DECODER \
+                                   SUBRIP_ENCODER SRT_MUXER) \
+                           += fate-ffmpeg-fix_sub_duration
+fate-ffmpeg-fix_sub_duration: CMD = fmtstdout srt -fix_sub_duration \
+  -real_time 1 -f lavfi \
+  -i "movie=$(TARGET_SAMPLES)/sub/Closedcaption_rollup.m2v[out0+subcc]"
+
 FATE_STREAMCOPY-$(call ALLYES, EAC3_DEMUXER MOV_MUXER) += fate-copy-trac3074
 fate-copy-trac3074: $(SAMPLES)/eac3/csi_miami_stereo_128_spx.eac3
 fate-copy-trac3074: CMD = transcode eac3 $(TARGET_SAMPLES)/eac3/csi_miami_stereo_128_spx.eac3\
