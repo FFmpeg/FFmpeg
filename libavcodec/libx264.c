@@ -944,7 +944,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
 #if X264_BUILD >= 142
     /* Separate headers not supported in AVC-Intra mode */
-    if (x4->params.i_avcintra_class >= 0)
+    if (x4->avcintra_class >= 0)
         x4->params.b_repeat_headers = 1;
 #endif
 
