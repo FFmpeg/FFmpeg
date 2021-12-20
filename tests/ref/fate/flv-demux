@@ -1,6 +1,6 @@
-packet|codec_type=audio|stream_index=1|pts=0|pts_time=0.000000|dts=0|dts_time=0.000000|duration=46|duration_time=0.046000|size=9|pos=3241|flags=K_side_data|side_data_type=New Extradata
+packet|codec_type=audio|stream_index=1|pts=0|pts_time=0.000000|dts=0|dts_time=0.000000|duration=46|duration_time=0.046000|size=9|pos=3241|flags=K_|side_data|side_data_type=New Extradata
 |data_hash=CRC32:bbb61b93
-packet|codec_type=video|stream_index=0|pts=0|pts_time=0.000000|dts=0|dts_time=0.000000|duration=33|duration_time=0.033000|size=135|pos=3267|flags=K_side_data|side_data_type=New Extradata
+packet|codec_type=video|stream_index=0|pts=0|pts_time=0.000000|dts=0|dts_time=0.000000|duration=33|duration_time=0.033000|size=135|pos=3267|flags=K_|side_data|side_data_type=New Extradata
 |data_hash=CRC32:3f2ccc9e
 packet|codec_type=video|stream_index=0|pts=33|pts_time=0.033000|dts=33|dts_time=0.033000|duration=33|duration_time=0.033000|size=92|pos=3422|flags=__|data_hash=CRC32:c14e72b2
 packet|codec_type=audio|stream_index=1|pts=46|pts_time=0.046000|dts=46|dts_time=0.046000|duration=46|duration_time=0.046000|size=9|pos=3534|flags=K_|data_hash=CRC32:bbb61b93

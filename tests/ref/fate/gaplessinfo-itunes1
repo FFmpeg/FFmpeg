@@ -7,7 +7,7 @@ duration_ts=1294336
 start_time=0.047889
 duration=29.350023
 [/FORMAT]
-packet|pts=0|dts=0|duration=1024|flags=K_side_data|
+packet|pts=0|dts=0|duration=1024|flags=K_|side_data|
 
 packet|pts=1024|dts=1024|duration=1024|flags=K_
 packet|pts=2048|dts=2048|duration=1024|flags=K_
