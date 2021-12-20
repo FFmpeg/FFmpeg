@@ -22,6 +22,8 @@
 
 #include "checkasm.h"
 
+#include <stdlib.h>
+
 #define EPS 0.00005
 
 #define SCALE_NOOP(x) (x)
@@ -41,6 +43,16 @@ static const int check_lens[] = {
     2, 4, 8, 16, 32, 64, 1024, 16384,
 };
 
+static AVTXContext *tx_refs[6 /*AVTXType*/][FF_ARRAY_ELEMS(check_lens)];
+static int init = 0;
+
+static void free_tx_refs(void)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(tx_refs); i++)
+        for (int j = 0; j < FF_ARRAY_ELEMS(*tx_refs); j++)
+            av_tx_uninit(&tx_refs[i][j]);
+}
+
 #define CHECK_TEMPLATE(PREFIX, TYPE, DATA_TYPE, SCALE, LENGTHS, CHECK_EXPRESSION) \
     do {                                                                          \
         int err;                                                                  \
@@ -59,23 +71,25 @@ static const int check_lens[] = {
             }                                                                     \
                                                                                   \
             if (check_func(fn, PREFIX "_%i", len)) {                              \
+                AVTXContext *tx_ref = tx_refs[TYPE][i];                           \
+                if (!tx_ref)                                                      \
+                    tx_ref = tx;                                                  \
                 num_checks++;                                                     \
                 last_check = len;                                                 \
-                call_ref(tx, out_ref, in, sizeof(DATA_TYPE));                     \
-                call_new(tx, out_new, in, sizeof(DATA_TYPE));                     \
+                call_ref(tx_ref, out_ref, in, sizeof(DATA_TYPE));                 \
+                call_new(tx,     out_new, in, sizeof(DATA_TYPE));                 \
                 if (CHECK_EXPRESSION) {                                           \
                     fail();                                                       \
+                    av_tx_uninit(&tx);                                            \
                     break;                                                        \
                 }                                                                 \
                 bench_new(tx, out_new, in, sizeof(DATA_TYPE));                    \
+                av_tx_uninit(&tx_refs[TYPE][i]);                                  \
+                tx_refs[TYPE][i] = tx;                                            \
+            } else {                                                              \
+                av_tx_uninit(&tx);                                                \
             }                                                                     \
-                                                                                  \
-            av_tx_uninit(&tx);                                                    \
-            fn = NULL;                                                            \
         }                                                                         \
-                                                                                  \
-        av_tx_uninit(&tx);                                                        \
-        fn = NULL;                                                                \
                                                                                   \
         if (num_checks == 1)                                                      \
             report(PREFIX "_%i", last_check);                                     \
@@ -105,4 +119,9 @@ void checkasm_check_av_tx(void)
     av_free(in);
     av_free(out_ref);
     av_free(out_new);
+
+    if (!init) {
+        init = 1;
+        atexit(free_tx_refs);
+    }
 }
