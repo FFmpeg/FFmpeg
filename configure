@@ -324,7 +324,7 @@ External library support:
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
   --enable-vapoursynth     enable VapourSynth demuxer [no]
-  --enable-vulkan          enable Vulkan code [no]
+  --disable-vulkan         disable Vulkan code [autodetect]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
@@ -1897,6 +1897,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     vaapi
     vdpau
     videotoolbox
+    vulkan
     v4l2_m2m
     xvmc
 "
@@ -1919,7 +1920,6 @@ HWACCEL_LIBRARY_LIST="
     mmal
     omx
     opencl
-    vulkan
 "
 
 DOCUMENT_LIST="
@@ -6915,7 +6915,7 @@ enabled crystalhd && check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.
 
 if enabled vulkan; then
     check_pkg_config_header_only vulkan "vulkan >= 1.2.189" "vulkan/vulkan.h" "defined VK_VERSION_1_2" ||
-        require_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_2"
+        check_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_2"
 fi
 
 if enabled x86; then
