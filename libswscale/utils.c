@@ -282,7 +282,7 @@ void ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSiz
 #if ARCH_X86_64
     int i, j, k, l;
     int cpu_flags = av_get_cpu_flags();
-    if (EXTERNAL_AVX2_FAST(cpu_flags)){
+    if (EXTERNAL_AVX2_FAST(cpu_flags) && !(cpu_flags & AV_CPU_FLAG_SLOW_GATHER)) {
         if ((c->srcBpc == 8) && (c->dstBpc <= 14)){
             if (dstW % 16 == 0){
                 if (filter != NULL){
