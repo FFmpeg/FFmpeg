@@ -370,9 +370,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->codec_id == AV_CODEC_ID_AMV || (avctx->active_thread_type & FF_THREAD_SLICE))
-        s->huffman = 0;
-
     if (s->intra_dc_precision > (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 3 : 0)) {
         av_log(avctx, AV_LOG_ERROR, "intra dc precision too large\n");
         return AVERROR(EINVAL);
@@ -570,15 +567,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
         avctx->mb_decision != FF_MB_DECISION_RD) {
         av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
-        return AVERROR(EINVAL);
-    }
-
-    if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
-            (s->codec_id == AV_CODEC_ID_AMV ||
-             s->codec_id == AV_CODEC_ID_MJPEG)) {
-        // Used to produce garbage with MJPEG.
-        av_log(avctx, AV_LOG_ERROR,
-               "QP RD is no longer compatible with MJPEG or AMV\n");
         return AVERROR(EINVAL);
     }
 

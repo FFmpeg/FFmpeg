@@ -276,6 +276,16 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
     av_assert0(s->slice_context_count == 1);
 
+    if (s->codec_id == AV_CODEC_ID_AMV || (s->avctx->active_thread_type & FF_THREAD_SLICE))
+        s->huffman = 0;
+
+    if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
+        // Used to produce garbage with MJPEG.
+        av_log(s->avctx, AV_LOG_ERROR,
+               "QP RD is no longer compatible with MJPEG or AMV\n");
+        return AVERROR(EINVAL);
+    }
+
     /* The following check is automatically true for AMV,
      * but it doesn't hurt either. */
     ret = ff_mjpeg_encode_check_pix_fmt(s->avctx);
