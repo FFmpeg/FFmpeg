@@ -625,6 +625,12 @@ Save the currently used video capture filter device and its
 parameters (if the filter supports it) to a file.
 If a file with the same name exists it will be overwritten.
 
+@item use_video_device_timestamps
+If set to @option{false}, the timestamp for video frames will be
+derived from the wallclock instead of the timestamp provided by
+the capture device. This allows working around devices that
+provide unreliable timestamps.
+
 @end table
 
 @subsection Examples

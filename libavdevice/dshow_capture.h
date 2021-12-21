@@ -312,6 +312,7 @@ struct dshow_ctx {
     char *audio_filter_save_file;
     char *video_filter_load_file;
     char *video_filter_save_file;
+    int   use_video_device_timestamps;
 
     IBaseFilter *device_filter[2];
     IPin        *device_pin[2];

@@ -309,10 +309,14 @@ long ff_dshow_meminputpin_Receive(DShowMemInputPin *this, IMediaSample *sample)
     if (!sample)
         return E_POINTER;
 
+    priv_data = pin->filter->priv_data;
+    s = priv_data;
+    ctx = s->priv_data;
+
     IMediaSample_GetTime(sample, &orig_curtime, &dummy);
     orig_curtime += pin->filter->start_time;
     IReferenceClock_GetTime(clock, &graphtime);
-    if (devtype == VideoDevice) {
+    if (devtype == VideoDevice && !ctx->use_video_device_timestamps) {
         /* PTS from video devices is unreliable. */
         IReferenceClock_GetTime(clock, &curtime);
     } else {
@@ -322,7 +326,7 @@ long ff_dshow_meminputpin_Receive(DShowMemInputPin *this, IMediaSample *sample)
                like 437650244077016960 which FFmpeg doesn't like.
                TODO figure out math. For now just drop them. */
             av_log(NULL, AV_LOG_DEBUG,
-                "dshow dropping initial (or ending) audio frame with odd PTS too high %"PRId64"\n", curtime);
+                "dshow dropping initial (or ending) frame with odd PTS too high %"PRId64"\n", curtime);
             return S_OK;
         }
         curtime += pin->filter->start_time;
@@ -330,9 +334,6 @@ long ff_dshow_meminputpin_Receive(DShowMemInputPin *this, IMediaSample *sample)
 
     buf_size = IMediaSample_GetActualDataLength(sample);
     IMediaSample_GetPointer(sample, &buf);
-    priv_data = pin->filter->priv_data;
-    s = priv_data;
-    ctx = s->priv_data;
     index = pin->filter->stream_index;
 
     av_log(NULL, AV_LOG_VERBOSE, "dshow passing through packet of type %s size %8d "

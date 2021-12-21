@@ -1310,6 +1310,7 @@ static const AVOption options[] = {
     { "audio_device_save", "save audio capture filter device (and properties) to file", OFFSET(audio_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "video_device_load", "load video capture filter device (and properties) from file", OFFSET(video_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "video_device_save", "save video capture filter device (and properties) to file", OFFSET(video_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "use_video_device_timestamps", "use device instead of wallclock timestamps for video frames", OFFSET(use_video_device_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DEC },
     { NULL },
 };
 
