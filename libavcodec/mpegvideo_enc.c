@@ -607,24 +607,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->thread_count > 1         &&
-        s->codec_id != AV_CODEC_ID_MPEG4      &&
-        s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
-        s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
-        s->codec_id != AV_CODEC_ID_MJPEG      &&
-        (s->codec_id != AV_CODEC_ID_H263P)) {
-        av_log(avctx, AV_LOG_ERROR,
-               "multi threaded encoding not supported by codec\n");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    if (avctx->thread_count < 1) {
-        av_log(avctx, AV_LOG_ERROR,
-               "automatic thread number detection not supported by codec, "
-               "patch welcome\n");
-        return AVERROR_PATCHWELCOME;
-    }
-
     if (s->b_frame_strategy && (avctx->flags & AV_CODEC_FLAG_PASS2)) {
         av_log(avctx, AV_LOG_INFO,
                "notice: b_frame_strategy only affects the first pass\n");
