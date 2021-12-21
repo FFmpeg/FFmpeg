@@ -210,6 +210,11 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
         av_log(avctx, AV_LOG_VERBOSE,
                "BufferSizeInKB: %"PRIu16"; InitialDelayInKB: %"PRIu16"; TargetKbps: %"PRIu16"; MaxKbps: %"PRIu16"; BRCParamMultiplier: %"PRIu16"\n",
                info->BufferSizeInKB, info->InitialDelayInKB, info->TargetKbps, info->MaxKbps, info->BRCParamMultiplier);
+#if QSV_HAVE_LA
+        if (info->RateControlMethod == MFX_RATECONTROL_VBR && q->extbrc && q->look_ahead_depth > 0 ) {
+            av_log(avctx, AV_LOG_VERBOSE, "LookAheadDepth: %"PRIu16"\n",co2->LookAheadDepth);
+        }
+#endif
     } else if (info->RateControlMethod == MFX_RATECONTROL_CQP) {
         av_log(avctx, AV_LOG_VERBOSE, "QPI: %"PRIu16"; QPP: %"PRIu16"; QPB: %"PRIu16"\n",
                info->QPI, info->QPP, info->QPB);
@@ -742,6 +747,11 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     switch (q->param.mfx.RateControlMethod) {
     case MFX_RATECONTROL_CBR:
     case MFX_RATECONTROL_VBR:
+#if QSV_HAVE_LA
+        if (q->extbrc) {
+            q->extco2.LookAheadDepth = q->look_ahead_depth;
+        }
+#endif
 #if QSV_HAVE_VCM
     case MFX_RATECONTROL_VCM:
 #endif
