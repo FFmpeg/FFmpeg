@@ -26,10 +26,12 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/objc.h"
 
+#include <assert.h>
+
 extern char ff_vf_yadif_videotoolbox_metallib_data[];
 extern unsigned int ff_vf_yadif_videotoolbox_metallib_len;
 
-typedef struct YADIFVTContext {
+typedef struct API_AVAILABLE(macos(10.11), ios(8.0)) YADIFVTContext {
     YADIFContext yadif;
 
     AVBufferRef       *device_ref;
@@ -44,7 +46,12 @@ typedef struct YADIFVTContext {
     id<MTLBuffer> mtlParamsBuffer;
 
     CVMetalTextureCacheRef textureCache;
-} YADIFVTContext;
+} YADIFVTContext API_AVAILABLE(macos(10.11), ios(8.0));
+
+// Using sizeof(YADIFVTContext) outside of an availability check will error
+// if we're targeting an older OS version, so we need to calculate the size ourselves
+// (we'll statically verify it's correct in yadif_videotoolbox_init behind a check)
+#define YADIF_VT_CTX_SIZE (sizeof(YADIFContext) + sizeof(void*) * 10)
 
 struct mtlYadifParams {
     uint channels;
@@ -62,7 +69,7 @@ static void call_kernel(AVFilterContext *ctx,
                         id<MTLTexture> next,
                         int channels,
                         int parity,
-                        int tff)
+                        int tff) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
     id<MTLCommandBuffer> buffer = s->mtlQueue.commandBuffer;
@@ -93,7 +100,7 @@ static void call_kernel(AVFilterContext *ctx,
 }
 
 static void filter(AVFilterContext *ctx, AVFrame *dst,
-                   int parity, int tff)
+                   int parity, int tff) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
@@ -162,7 +169,7 @@ exit:
     return;
 }
 
-static av_cold void yadif_videotoolbox_uninit(AVFilterContext *ctx)
+static av_cold void do_uninit(AVFilterContext *ctx) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
@@ -188,7 +195,15 @@ static av_cold void yadif_videotoolbox_uninit(AVFilterContext *ctx)
     }
 }
 
-static av_cold int yadif_videotoolbox_init(AVFilterContext *ctx)
+
+static av_cold void yadif_videotoolbox_uninit(AVFilterContext *ctx)
+{
+    if (@available(macOS 10.11, iOS 8.0, *)) {
+        do_uninit(ctx);
+    }
+}
+
+static av_cold int do_init(AVFilterContext *ctx) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
     NSError *err = nil;
@@ -261,7 +276,19 @@ fail:
     return AVERROR_EXTERNAL;
 }
 
-static int config_input(AVFilterLink *inlink)
+static av_cold int yadif_videotoolbox_init(AVFilterContext *ctx)
+{
+    if (@available(macOS 10.11, iOS 8.0, *)) {
+        // Ensure we calculated YADIF_VT_CTX_SIZE correctly
+        static_assert(YADIF_VT_CTX_SIZE == sizeof(YADIFVTContext), "Incorrect YADIF_VT_CTX_SIZE value!");
+        return do_init(ctx);
+    } else {
+        av_log(ctx, AV_LOG_ERROR, "Metal is not available on this OS version\n");
+        return AVERROR(ENOSYS);
+    }
+}
+
+static int do_config_input(AVFilterLink *inlink) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     AVFilterContext *ctx = inlink->dst;
     YADIFVTContext *s = ctx->priv;
@@ -283,7 +310,18 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int config_output(AVFilterLink *link)
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    if (@available(macOS 10.11, iOS 8.0, *)) {
+        return do_config_input(inlink);
+    } else {
+        av_log(ctx, AV_LOG_ERROR, "Metal is not available on this OS version\n");
+        return AVERROR(ENOSYS);
+    }
+}
+
+static int do_config_output(AVFilterLink *link) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     AVHWFramesContext *output_frames;
     AVFilterContext *ctx = link->src;
@@ -347,6 +385,17 @@ exit:
     return ret;
 }
 
+static int config_output(AVFilterLink *link)
+{
+    AVFilterContext *ctx = link->src;
+    if (@available(macOS 10.11, iOS 8.0, *)) {
+        return do_config_output(link);
+    } else {
+        av_log(ctx, AV_LOG_ERROR, "Metal is not available on this OS version\n");
+        return AVERROR(ENOSYS);
+    }
+}
+
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 #define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, unit }
 
@@ -394,7 +443,7 @@ static const AVFilterPad yadif_videotoolbox_outputs[] = {
 AVFilter ff_vf_yadif_videotoolbox = {
     .name           = "yadif_videotoolbox",
     .description    = NULL_IF_CONFIG_SMALL("YADIF for VideoToolbox frames using Metal compute"),
-    .priv_size      = sizeof(YADIFVTContext),
+    .priv_size      = YADIF_VT_CTX_SIZE,
     .priv_class     = &yadif_videotoolbox_class,
     .init           = yadif_videotoolbox_init,
     .uninit         = yadif_videotoolbox_uninit,

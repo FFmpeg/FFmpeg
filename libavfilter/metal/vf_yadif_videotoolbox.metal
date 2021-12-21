@@ -27,6 +27,15 @@
 using namespace metal;
 
 /*
+ * Version compat shims
+ */
+
+#if __METAL_VERSION__ < 210
+#define max3(x, y, z) max(x, max(y, z))
+#define min3(x, y, z) min(x, min(y, z))
+#endif
+
+/*
  * Parameters
  */
 
@@ -44,7 +53,7 @@ struct deintParams {
  */
 
 #define accesstype access::sample
-const sampler s(coord::pixel);
+constexpr sampler s(coord::pixel);
 
 template <typename T>
 T tex2D(texture2d<float, access::sample> tex, uint x, uint y)
