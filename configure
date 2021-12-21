@@ -6915,7 +6915,7 @@ enabled crystalhd && check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.
 
 if enabled vulkan; then
     check_pkg_config_header_only vulkan "vulkan >= 1.2.189" "vulkan/vulkan.h" "defined VK_VERSION_1_2" ||
-        check_cpp_condition vulkan "vulkan/vulkan.h" "defined VK_VERSION_1_2"
+        check_cpp_condition vulkan "vulkan/vulkan.h" "defined(VK_VERSION_1_3) || (defined(VK_VERSION_1_2) && VK_HEADER_VERSION >= 189)"
 fi
 
 if enabled x86; then
