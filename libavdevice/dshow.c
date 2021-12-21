@@ -197,6 +197,80 @@ fail:
     return;
 }
 
+static void
+dshow_get_device_media_types(AVFormatContext *avctx, enum dshowDeviceType devtype,
+                                         enum dshowSourceFilterType sourcetype, IBaseFilter *device_filter,
+                                         enum AVMediaType **media_types, int *nb_media_types)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IEnumPins *pins = 0;
+    IPin *pin;
+    int has_audio = 0, has_video = 0;
+
+    if (IBaseFilter_EnumPins(device_filter, &pins) != S_OK)
+        return;
+
+    while (IEnumPins_Next(pins, 1, &pin, NULL) == S_OK) {
+        IKsPropertySet *p = NULL;
+        PIN_INFO info = { 0 };
+        GUID category;
+        DWORD r2;
+        IEnumMediaTypes *types = NULL;
+        AM_MEDIA_TYPE *type;
+
+        if (IPin_QueryPinInfo(pin, &info) != S_OK)
+            goto next;
+        IBaseFilter_Release(info.pFilter);
+
+        if (info.dir != PINDIR_OUTPUT)
+            goto next;
+        if (IPin_QueryInterface(pin, &IID_IKsPropertySet, (void **) &p) != S_OK)
+            goto next;
+        if (IKsPropertySet_Get(p, &AMPROPSETID_Pin, AMPROPERTY_PIN_CATEGORY,
+                               NULL, 0, &category, sizeof(GUID), &r2) != S_OK)
+            goto next;
+        if (!IsEqualGUID(&category, &PIN_CATEGORY_CAPTURE))
+            goto next;
+
+        if (IPin_EnumMediaTypes(pin, &types) != S_OK)
+            goto next;
+
+        // enumerate media types exposed by pin
+        // NB: don't know if a pin can expose both audio and video, check 'm all to be safe
+        IEnumMediaTypes_Reset(types);
+        while (IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
+            if (IsEqualGUID(&type->majortype, &MEDIATYPE_Video)) {
+                has_video = 1;
+            } else if (IsEqualGUID(&type->majortype, &MEDIATYPE_Audio)) {
+                has_audio = 1;
+            }
+            CoTaskMemFree(type);
+        }
+
+    next:
+        if (types)
+            IEnumMediaTypes_Release(types);
+        if (p)
+            IKsPropertySet_Release(p);
+        if (pin)
+            IPin_Release(pin);
+    }
+
+    IEnumPins_Release(pins);
+
+    if (has_audio || has_video) {
+        int nb_types = has_audio + has_video;
+        *media_types = av_malloc_array(nb_types, sizeof(enum AVMediaType));
+        if (*media_types) {
+            if (has_audio)
+                (*media_types)[0] = AVMEDIA_TYPE_AUDIO;
+            if (has_video)
+                (*media_types)[0 + has_audio] = AVMEDIA_TYPE_VIDEO;
+            *nb_media_types = nb_types;
+        }
+    }
+}
+
 /**
  * Cycle through available devices using the device enumerator devenum,
  * retrieve the device with type specified by devtype and return the
@@ -242,6 +316,8 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         LPOLESTR olestr = NULL;
         LPMALLOC co_malloc = NULL;
         AVDeviceInfo *device = NULL;
+        enum AVMediaType *media_types = NULL;
+        int nb_media_types = 0;
         int i;
 
         r = CoGetMalloc(1, &co_malloc);
@@ -286,6 +362,12 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                 // success, loop will end now
             }
         } else {
+            // get media types exposed by pins of device
+            if (IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void* ) &device_filter) == S_OK) {
+                dshow_get_device_media_types(avctx, devtype, sourcetype, device_filter, &media_types, &nb_media_types);
+                IBaseFilter_Release(device_filter);
+                device_filter = NULL;
+            }
             if (device_list) {
                 device = av_mallocz(sizeof(AVDeviceInfo));
                 if (!device)
@@ -308,12 +390,25 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                 device = NULL;  // copied into array, make sure not freed below
             }
             else {
-                av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
-                av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
+                av_log(avctx, AV_LOG_INFO, "\"%s\"", friendly_name);
+                if (nb_media_types > 0) {
+                    const char* media_type = av_get_media_type_string(media_types[0]);
+                    av_log(avctx, AV_LOG_INFO, " (%s", media_type ? media_type : "unknown");
+                    for (int i = 1; i < nb_media_types; ++i) {
+                        media_type = av_get_media_type_string(media_types[i]);
+                        av_log(avctx, AV_LOG_INFO, ", %s", media_type ? media_type : "unknown");
+                    }
+                    av_log(avctx, AV_LOG_INFO, ")");
+                } else {
+                    av_log(avctx, AV_LOG_INFO, " (none)");
+                }
+                av_log(avctx, AV_LOG_INFO, "\n");
+                av_log(avctx, AV_LOG_INFO, "  Alternative name \"%s\"\n", unique_name);
             }
         }
 
-fail:
+    fail:
+        av_freep(&media_types);
         if (device) {
             av_freep(&device->device_name);
             av_freep(&device->device_description);
@@ -1186,9 +1281,7 @@ static int dshow_read_header(AVFormatContext *avctx)
     }
 
     if (ctx->list_devices) {
-        av_log(avctx, AV_LOG_INFO, "DirectShow video devices (some may be both video and audio devices)\n");
         dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL, NULL, NULL);
-        av_log(avctx, AV_LOG_INFO, "DirectShow audio devices\n");
         dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL, NULL, NULL);
         ret = AVERROR_EXIT;
         goto error;
