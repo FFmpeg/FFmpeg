@@ -708,9 +708,9 @@ dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
     if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_unique_name)) < 0)
         return r;
     ctx->device_filter[devtype] = device_filter;
+    ctx->device_unique_name[devtype] = device_unique_name;
     if ((r = dshow_cycle_pins(avctx, devtype, sourcetype, device_filter, NULL)) < 0)
         return r;
-    av_freep(&device_unique_name);
     return 0;
 }
 
@@ -1143,6 +1143,7 @@ static int dshow_read_header(AVFormatContext *avctx)
                 }
             }
         }
+        // don't exit yet, allow it to list crossbar options in dshow_open_device
     }
     if (ctx->device_name[VideoDevice]) {
         if ((r = dshow_open_device(avctx, devenum, VideoDevice, VideoSourceDevice)) < 0 ||
