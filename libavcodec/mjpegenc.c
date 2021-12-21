@@ -320,12 +320,15 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     return 0;
 }
 
-av_cold void ff_mjpeg_encode_close(MpegEncContext *s)
+static av_cold int mjpeg_encode_close(AVCodecContext *avctx)
 {
+    MpegEncContext *const s = avctx->priv_data;
     if (s->mjpeg_ctx) {
         av_freep(&s->mjpeg_ctx->huff_buffer);
         av_freep(&s->mjpeg_ctx);
     }
+    ff_mpv_encode_end(avctx);
+    return 0;
 }
 
 /**
@@ -618,7 +621,7 @@ const AVCodec ff_mjpeg_encoder = {
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
-    .close          = ff_mpv_encode_end,
+    .close          = mjpeg_encode_close,
     .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) {
@@ -647,7 +650,7 @@ const AVCodec ff_amv_encoder = {
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = amv_encode_picture,
-    .close          = ff_mpv_encode_end,
+    .close          = mjpeg_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE

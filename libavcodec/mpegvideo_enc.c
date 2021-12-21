@@ -970,9 +970,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     ff_rate_control_uninit(s);
 
     ff_mpv_common_end(s);
-    if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) &&
-        s->out_format == FMT_MJPEG)
-        ff_mjpeg_encode_close(s);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->tmp_frames); i++)
         av_frame_free(&s->tmp_frames[i]);
