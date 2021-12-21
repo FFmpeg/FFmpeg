@@ -146,8 +146,21 @@ int ff_get_cpu_flags_x86(void)
     if (max_std_level >= 7) {
         cpuid(7, eax, ebx, ecx, edx);
 #if HAVE_AVX2
-        if ((rval & AV_CPU_FLAG_AVX) && (ebx & 0x00000020))
+        if ((rval & AV_CPU_FLAG_AVX) && (ebx & 0x00000020)) {
             rval |= AV_CPU_FLAG_AVX2;
+            cpuid(1, eax, ebx, ecx, std_caps);
+            family = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
+            model  = ((eax >> 4) & 0xf) + ((eax >> 12) & 0xf0);
+            /* Haswell has slow gather */
+            if (!strncmp(vendor.c, "GenuineIntel", 12))
+                if (family == 6 && model < 70)
+                    rval |= AV_CPU_FLAG_SLOW_GATHER;
+            /* Zen 3 and earlier have slow gather */
+            if (!strncmp(vendor.c, "AuthenticAMD", 12))
+                if (family <= 0x19)
+                    rval |= AV_CPU_FLAG_SLOW_GATHER;
+        }
+
 #if HAVE_AVX512 /* F, CD, BW, DQ, VL */
         if ((xcr0_lo & 0xe0) == 0xe0) { /* OPMASK/ZMM state */
             if ((rval & AV_CPU_FLAG_AVX2) && (ebx & 0xd0030000) == 0xd0030000)

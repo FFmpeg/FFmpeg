@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2021-12-21 - xxxxxxxxxx - lavu 57.12.100 - cpu.h
+  Add AV_CPU_FLAG_SLOW_GATHER.
+
 2021-12-20 - xxxxxxxxxx - lavu 57.11.101 - display.h
   Modified the documentation of av_display_rotation_set()
   to match its longstanding actual behaviour of treating
