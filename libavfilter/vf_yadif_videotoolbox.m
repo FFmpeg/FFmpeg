@@ -20,11 +20,11 @@
  */
 
 #include "internal.h"
+#include "metal/utils.h"
 #include "yadif.h"
-#include <libavutil/avassert.h>
-#include <libavutil/hwcontext.h>
-#include <libavutil/objc.h>
-#include <libavfilter/metal/utils.h>
+#include "libavutil/avassert.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/objc.h"
 
 extern char ff_vf_yadif_videotoolbox_metallib_data[];
 extern unsigned int ff_vf_yadif_videotoolbox_metallib_len;

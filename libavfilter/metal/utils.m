@@ -17,7 +17,7 @@
  */
 
 #include "libavutil/log.h"
-#include <libavfilter/metal/utils.h>
+#include "utils.h"
 
 void ff_metal_compute_encoder_dispatch(id<MTLDevice> device,
                                        id<MTLComputePipelineState> pipeline,
