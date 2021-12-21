@@ -457,6 +457,8 @@ void avdevice_capabilities_free(AVDeviceCapabilitiesQuery **caps, AVFormatContex
 typedef struct AVDeviceInfo {
     char *device_name;                   /**< device name, format depends on device */
     char *device_description;            /**< human friendly name */
+    enum AVMediaType *media_types;       /**< array indicating what media types(s), if any, a device can provide. If null, cannot provide any */
+    int nb_media_types;                  /**< length of media_types array, 0 if device cannot provide any media types */
 } AVDeviceInfo;
 
 /**

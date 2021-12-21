@@ -157,6 +157,7 @@ void avdevice_free_list_devices(AVDeviceInfoList **device_list)
         if (dev) {
             av_freep(&dev->device_name);
             av_freep(&dev->device_description);
+            av_freep(&dev->media_types);
             av_free(dev);
         }
     }
