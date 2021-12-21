@@ -384,6 +384,12 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                                      sizeof(*(*device_list)->devices)) < 0)
                     goto fail;
 
+                // attach media_types to device
+                device->nb_media_types = nb_media_types;
+                device->media_types = media_types;
+                nb_media_types = 0;
+                media_types = NULL;
+
                 // store device in list
                 (*device_list)->devices[(*device_list)->nb_devices] = device;
                 (*device_list)->nb_devices++;
@@ -412,6 +418,7 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         if (device) {
             av_freep(&device->device_name);
             av_freep(&device->device_description);
+            // NB: no need to av_freep(&device->media_types), its only moved to device once nothing can fail anymore
             av_free(device);
         }
         if (olestr && co_malloc)
