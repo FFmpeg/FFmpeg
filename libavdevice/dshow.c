@@ -202,11 +202,14 @@ fail:
  * retrieve the device with type specified by devtype and return the
  * pointer to the object found in *pfilter.
  * If pfilter is NULL, list all device names.
+ * If device_list is not NULL, populate it with found devices instead of
+ * outputting device names to log
  */
 static int
 dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                     enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype,
-                    IBaseFilter **pfilter, char **device_unique_name)
+                    IBaseFilter **pfilter, char **device_unique_name,
+                    AVDeviceInfoList **device_list)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IBaseFilter *device_filter = NULL;
@@ -238,18 +241,19 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         IBindCtx *bind_ctx = NULL;
         LPOLESTR olestr = NULL;
         LPMALLOC co_malloc = NULL;
+        AVDeviceInfo *device = NULL;
         int i;
 
         r = CoGetMalloc(1, &co_malloc);
         if (r != S_OK)
-            goto fail1;
+            goto fail;
         r = CreateBindCtx(0, &bind_ctx);
         if (r != S_OK)
-            goto fail1;
+            goto fail;
         /* GetDisplayname works for both video and audio, DevicePath doesn't */
         r = IMoniker_GetDisplayName(m, bind_ctx, NULL, &olestr);
         if (r != S_OK)
-            goto fail1;
+            goto fail;
         unique_name = dup_wchar_to_utf8(olestr);
         /* replace ':' with '_' since we use : to delineate between sources */
         for (i = 0; i < strlen(unique_name); i++) {
@@ -259,34 +263,62 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
 
         r = IMoniker_BindToStorage(m, 0, 0, &IID_IPropertyBag, (void *) &bag);
         if (r != S_OK)
-            goto fail1;
+            goto fail;
 
         var.vt = VT_BSTR;
         r = IPropertyBag_Read(bag, L"FriendlyName", &var, NULL);
         if (r != S_OK)
-            goto fail1;
+            goto fail;
         friendly_name = dup_wchar_to_utf8(var.bstrVal);
 
         if (pfilter) {
             if (strcmp(device_name, friendly_name) && strcmp(device_name, unique_name))
-                goto fail1;
+                goto fail;
 
             if (!skip--) {
                 r = IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
                 if (r != S_OK) {
                     av_log(avctx, AV_LOG_ERROR, "Unable to BindToObject for %s\n", device_name);
-                    goto fail1;
+                    goto fail;
                 }
                 *device_unique_name = unique_name;
                 unique_name = NULL;
                 // success, loop will end now
             }
         } else {
-            av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
-            av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
+            if (device_list) {
+                device = av_mallocz(sizeof(AVDeviceInfo));
+                if (!device)
+                    goto fail;
+
+                device->device_name = av_strdup(friendly_name);
+                device->device_description = av_strdup(unique_name);
+                if (!device->device_name || !device->device_description)
+                    goto fail;
+
+                // make space in device_list for this new device
+                if (av_reallocp_array(&(*device_list)->devices,
+                                     (*device_list)->nb_devices + 1,
+                                     sizeof(*(*device_list)->devices)) < 0)
+                    goto fail;
+
+                // store device in list
+                (*device_list)->devices[(*device_list)->nb_devices] = device;
+                (*device_list)->nb_devices++;
+                device = NULL;  // copied into array, make sure not freed below
+            }
+            else {
+                av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
+                av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
+            }
         }
 
-fail1:
+fail:
+        if (device) {
+            av_freep(&device->device_name);
+            av_freep(&device->device_description);
+            av_free(device);
+        }
         if (olestr && co_malloc)
             IMalloc_Free(co_malloc, olestr);
         if (bind_ctx)
@@ -310,6 +342,39 @@ fail1:
     }
 
     return 0;
+}
+
+static int dshow_get_device_list(AVFormatContext *avctx, AVDeviceInfoList *device_list)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    ICreateDevEnum *devenum = NULL;
+    int r;
+    int ret = AVERROR(EIO);
+
+    if (!device_list)
+        return AVERROR(EINVAL);
+
+    CoInitialize(0);
+
+    r = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER,
+        &IID_ICreateDevEnum, (void**)&devenum);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not enumerate system devices.\n");
+        goto error;
+    }
+
+    ret = dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL, NULL, &device_list);
+    if (ret < S_OK)
+        goto error;
+    ret = dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL, NULL, &device_list);
+
+error:
+    if (devenum)
+        ICreateDevEnum_Release(devenum);
+
+    CoUninitialize();
+
+    return ret;
 }
 
 /**
@@ -705,7 +770,7 @@ dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
     char *device_unique_name = NULL;
     int r;
 
-    if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_unique_name)) < 0)
+    if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_unique_name, NULL)) < 0)
         return r;
     ctx->device_filter[devtype] = device_filter;
     ctx->device_unique_name[devtype] = device_unique_name;
@@ -765,7 +830,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         av_log(avctx, AV_LOG_INFO, "Capture filter loaded successfully from file \"%s\".\n", filename);
     } else {
 
-        if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_filter_unique_name)) < 0) {
+        if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_filter_unique_name, NULL)) < 0) {
             ret = r;
             goto error;
         }
@@ -1122,9 +1187,9 @@ static int dshow_read_header(AVFormatContext *avctx)
 
     if (ctx->list_devices) {
         av_log(avctx, AV_LOG_INFO, "DirectShow video devices (some may be both video and audio devices)\n");
-        dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL, NULL);
+        dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL, NULL, NULL);
         av_log(avctx, AV_LOG_INFO, "DirectShow audio devices\n");
-        dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL, NULL);
+        dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL, NULL, NULL);
         ret = AVERROR_EXIT;
         goto error;
     }
@@ -1329,6 +1394,7 @@ const AVInputFormat ff_dshow_demuxer = {
     .read_header    = dshow_read_header,
     .read_packet    = dshow_read_packet,
     .read_close     = dshow_read_close,
+    .get_device_list= dshow_get_device_list,
     .flags          = AVFMT_NOFILE | AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
     .priv_class     = &dshow_class,
 };
