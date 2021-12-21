@@ -2244,9 +2244,29 @@ double get_rotation(int32_t *displaymatrix)
 }
 
 #if CONFIG_AVDEVICE
+static void print_device_list(const AVDeviceInfoList *device_list)
+{
+    // print devices
+    for (int i = 0; i < device_list->nb_devices; i++) {
+        const AVDeviceInfo *device = device_list->devices[i];
+        printf("%c %s [%s] (", device_list->default_device == i ? '*' : ' ',
+            device->device_name, device->device_description);
+        if (device->nb_media_types > 0) {
+            for (int j = 0; j < device->nb_media_types; ++j) {
+                const char* media_type = av_get_media_type_string(device->media_types[j]);
+                if (j > 0)
+                    printf(", ");
+                printf("%s", media_type ? media_type : "unknown");
+            }
+        } else {
+            printf("none");
+        }
+        printf(")\n");
+    }
+}
 static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
 {
-    int ret, i;
+    int ret;
     AVDeviceInfoList *device_list = NULL;
 
     if (!fmt || !fmt->priv_class  || !AV_IS_INPUT_DEVICE(fmt->priv_class->category))
@@ -2258,10 +2278,7 @@ static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
         goto fail;
     }
 
-    for (i = 0; i < device_list->nb_devices; i++) {
-        printf("%c %s [%s]\n", device_list->default_device == i ? '*' : ' ',
-               device_list->devices[i]->device_name, device_list->devices[i]->device_description);
-    }
+    print_device_list(device_list);
 
   fail:
     avdevice_free_list_devices(&device_list);
@@ -2270,7 +2287,7 @@ static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
 
 static int print_device_sinks(const AVOutputFormat *fmt, AVDictionary *opts)
 {
-    int ret, i;
+    int ret;
     AVDeviceInfoList *device_list = NULL;
 
     if (!fmt || !fmt->priv_class  || !AV_IS_OUTPUT_DEVICE(fmt->priv_class->category))
@@ -2282,10 +2299,7 @@ static int print_device_sinks(const AVOutputFormat *fmt, AVDictionary *opts)
         goto fail;
     }
 
-    for (i = 0; i < device_list->nb_devices; i++) {
-        printf("%c %s [%s]\n", device_list->default_device == i ? '*' : ' ',
-               device_list->devices[i]->device_name, device_list->devices[i]->device_description);
-    }
+    print_device_list(device_list);
 
   fail:
     avdevice_free_list_devices(&device_list);
