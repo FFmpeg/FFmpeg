@@ -412,7 +412,6 @@ typedef struct MpegEncContext {
     /* MJPEG specific */
     struct MJpegContext *mjpeg_ctx;
     int esc_pos;
-    int pred;
 
     /* MSMPEG4 specific */
     int mv_table_index;
@@ -574,7 +573,7 @@ typedef struct MpegEncContext {
 
     int intra_penalty;
 
-#if FF_API_MPEGVIDEO_OPTS
+#if FF_API_MPEGVIDEO_OPTS || FF_API_MJPEG_PRED
     int dummy;               ///< used as target for deprecated options
 #endif
 } MpegEncContext;

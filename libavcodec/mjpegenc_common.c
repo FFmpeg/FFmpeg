@@ -310,7 +310,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
         put_bits(pb, 4, 0); /* AC huffman table index */
     }
 
-    put_bits(pb, 8, lossless ? pred : 0); /* Ss (not used) */
+    put_bits(pb, 8, pred); /* Ss (not used); pred only nonzero for LJPEG */
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_bits(pb, 8, 63); break; /* Se (not used) */
