@@ -41,6 +41,15 @@
 #include "mjpegenc.h"
 #include "profiles.h"
 
+/* The following is the private context of MJPEG/AMV decoder.
+ * Note that when using slice threading only the main thread's
+ * MpegEncContext is followed by a MjpegContext; the other threads
+ * can access this shared context via MpegEncContext.mjpeg. */
+typedef struct MJPEGEncContext {
+    MpegEncContext mpeg;
+    MJpegContext   mjpeg;
+} MJPEGEncContext;
+
 static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256],
                                     uint8_t *uni_ac_vlc_len)
 {
@@ -260,8 +269,10 @@ static int alloc_huffman(MpegEncContext *s)
 
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
-    MJpegContext *m;
+    MJpegContext *const m = &((MJPEGEncContext*)s)->mjpeg;
     int ret;
+
+    s->mjpeg_ctx = m;
 
     av_assert0(s->slice_context_count == 1);
 
@@ -275,10 +286,6 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
         av_log(s, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
         return AVERROR(EINVAL);
     }
-
-    m = av_mallocz(sizeof(MJpegContext));
-    if (!m)
-        return AVERROR(ENOMEM);
 
     s->min_qcoeff=-1023;
     s->max_qcoeff= 1023;
@@ -312,7 +319,6 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
     // Buffers start out empty.
     m->huff_ncode = 0;
-    s->mjpeg_ctx = m;
 
     if(s->huffman == HUFFMAN_TABLE_OPTIMAL)
         return alloc_huffman(s);
@@ -322,11 +328,8 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
 static av_cold int mjpeg_encode_close(AVCodecContext *avctx)
 {
-    MpegEncContext *const s = avctx->priv_data;
-    if (s->mjpeg_ctx) {
-        av_freep(&s->mjpeg_ctx->huff_buffer);
-        av_freep(&s->mjpeg_ctx);
-    }
+    MJPEGEncContext *const mjpeg = avctx->priv_data;
+    av_freep(&mjpeg->mjpeg.huff_buffer);
     ff_mpv_encode_end(avctx);
     return 0;
 }
@@ -377,7 +380,7 @@ static void ff_mjpeg_encode_coef(MJpegContext *s, uint8_t table_id, int val, int
 /**
  * Add the block's data into the JPEG buffer.
  *
- * @param s The MJpegEncContext that contains the JPEG buffer.
+ * @param s The MpegEncContext that contains the JPEG buffer.
  * @param block The block.
  * @param n The block's index or number.
  */
@@ -618,7 +621,7 @@ const AVCodec ff_mjpeg_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(MJPEGEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = mjpeg_encode_close,
@@ -647,7 +650,7 @@ const AVCodec ff_amv_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AMV,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(MJPEGEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = amv_encode_picture,
     .close          = mjpeg_encode_close,

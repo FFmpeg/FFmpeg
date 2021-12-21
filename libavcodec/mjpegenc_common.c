@@ -323,7 +323,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
 end:
     if (!lossless) {
         MpegEncContext *s = avctx->priv_data;
-        av_assert0(avctx->codec->priv_data_size == sizeof(MpegEncContext));
+        av_assert0(avctx->codec->priv_data_size > sizeof(MpegEncContext));
 
         s->esc_pos = put_bytes_count(pb, 0);
         for(i=1; i<s->slice_context_count; i++)
