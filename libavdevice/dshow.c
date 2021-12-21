@@ -23,6 +23,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/mem.h"
 #include "libavformat/internal.h"
 #include "libavformat/riff.h"
 #include "avdevice.h"
@@ -658,9 +659,111 @@ error:
     return ret;
 }
 
+static int dshow_should_set_format(AVFormatContext *avctx, enum dshowDeviceType devtype)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+
+    return (devtype == VideoDevice && (ctx->framerate ||
+                                      (ctx->requested_width && ctx->requested_height) ||
+                                       ctx->pixel_format != AV_PIX_FMT_NONE ||
+                                       ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
+        || (devtype == AudioDevice && (ctx->channels || ctx->sample_size || ctx->sample_rate));
+}
+
+
+struct dshow_format_info {
+    enum dshowDeviceType devtype;
+    // video
+    int64_t framerate;
+    enum AVPixelFormat pix_fmt;
+    enum AVCodecID codec_id;
+    enum AVColorRange col_range;
+    enum AVColorSpace col_space;
+    enum AVColorPrimaries col_prim;
+    enum AVColorTransferCharacteristic col_trc;
+    enum AVChromaLocation chroma_loc;
+    int width;
+    int height;
+    // audio
+    int sample_rate;
+    int sample_size;
+    int channels;
+};
+
+// user must av_free the returned pointer
+static struct dshow_format_info *dshow_get_format_info(AM_MEDIA_TYPE *type)
+{
+    struct dshow_format_info *fmt_info = NULL;
+    BITMAPINFOHEADER *bih;
+    DXVA2_ExtendedFormat *extended_format_info = NULL;
+    WAVEFORMATEX *fx;
+    enum dshowDeviceType devtype;
+    int64_t framerate;
+
+    if (!type)
+        return NULL;
+
+    if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo)) {
+        VIDEOINFOHEADER *v = (void *) type->pbFormat;
+        framerate = v->AvgTimePerFrame;
+        bih       = &v->bmiHeader;
+        devtype   = VideoDevice;
+    } else if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo2)) {
+        VIDEOINFOHEADER2 *v = (void *) type->pbFormat;
+        devtype   = VideoDevice;
+        framerate = v->AvgTimePerFrame;
+        bih       = &v->bmiHeader;
+        if (v->dwControlFlags & AMCONTROL_COLORINFO_PRESENT)
+            extended_format_info = (DXVA2_ExtendedFormat *) &v->dwControlFlags;
+    } else if (IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx)) {
+        fx = (void *) type->pbFormat;
+        devtype = AudioDevice;
+    } else {
+        return NULL;
+    }
+
+    fmt_info = av_mallocz(sizeof(struct dshow_format_info));
+    if (!fmt_info)
+        return NULL;
+    // initialize fields where unset is not zero
+    fmt_info->pix_fmt = AV_PIX_FMT_NONE;
+    fmt_info->col_space = AVCOL_SPC_UNSPECIFIED;
+    fmt_info->col_prim = AVCOL_PRI_UNSPECIFIED;
+    fmt_info->col_trc = AVCOL_TRC_UNSPECIFIED;
+    // now get info about format
+    fmt_info->devtype = devtype;
+    if (devtype == VideoDevice) {
+        fmt_info->width = bih->biWidth;
+        fmt_info->height = bih->biHeight;
+        fmt_info->framerate = framerate;
+        fmt_info->pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+        if (fmt_info->pix_fmt == AV_PIX_FMT_NONE) {
+            const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
+            fmt_info->codec_id = av_codec_get_id(tags, bih->biCompression);
+        }
+        else
+            fmt_info->codec_id = AV_CODEC_ID_RAWVIDEO;
+
+        if (extended_format_info) {
+            fmt_info->col_range = dshow_color_range(extended_format_info);
+            fmt_info->col_space = dshow_color_space(extended_format_info);
+            fmt_info->col_prim = dshow_color_primaries(extended_format_info);
+            fmt_info->col_trc = dshow_color_trc(extended_format_info);
+            fmt_info->chroma_loc = dshow_chroma_loc(extended_format_info);
+        }
+    } else {
+        fmt_info->sample_rate = fx->nSamplesPerSec;
+        fmt_info->sample_size = fx->wBitsPerSample;
+        fmt_info->channels = fx->nChannels;
+    }
+
+    return fmt_info;
+}
+
 /**
- * Cycle through available formats using the specified pin,
- * try to set parameters specified through AVOptions and if successful
+ * Cycle through available formats available from the specified pin,
+ * try to set parameters specified through AVOptions, or the pin's
+ * default format if no such parameters were set. If successful,
  * return 1 in *pformat_set.
  * If pformat_set is NULL, list all pin capabilities.
  */
@@ -671,9 +774,27 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
     struct dshow_ctx *ctx = avctx->priv_data;
     IAMStreamConfig *config = NULL;
     AM_MEDIA_TYPE *type = NULL;
+    AM_MEDIA_TYPE *previous_match_type = NULL;
     int format_set = 0;
     void *caps = NULL;
     int i, n, size, r;
+    int wait_for_better = 0;
+    int use_default;
+
+    // format parameters requested by user
+    // if none are requested by user, the values will below be set to
+    // those of the default format
+    // video
+    enum AVCodecID requested_video_codec_id   = ctx->video_codec_id;
+    enum AVPixelFormat requested_pixel_format = ctx->pixel_format;
+    int64_t requested_framerate               = ctx->framerate ? ((int64_t)ctx->requested_framerate.den * 10000000)
+                                                                    / ctx->requested_framerate.num : 0;
+    int requested_width                       = ctx->requested_width;
+    int requested_height                      = ctx->requested_height;
+    // audio
+    int requested_sample_rate                 = ctx->sample_rate;
+    int requested_sample_size                 = ctx->sample_size;
+    int requested_channels                    = ctx->channels;
 
     if (IPin_QueryInterface(pin, &IID_IAMStreamConfig, (void **) &config) != S_OK)
         return;
@@ -684,7 +805,83 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
     if (!caps)
         goto end;
 
+    /**
+     * If we should open the device with the default format,
+     * then:
+     * 1. check what the format of the default device is, and
+     * 2. below we iterate all formats till we find a matching
+     *    one, with most info exposed (see comment below).
+     */
+    use_default = !dshow_should_set_format(avctx, devtype);
+    if (use_default && pformat_set)
+    {
+        HRESULT hr;
+
+        // get default
+        if ((hr = IAMStreamConfig_GetFormat(config, &type)) != S_OK) {
+            if (hr == E_NOTIMPL || !IsEqualGUID(&type->majortype, devtype==VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
+                // default not available or of wrong type,
+                // fall back to iterating exposed formats
+                // until one of the right type is found
+                IEnumMediaTypes *types = NULL;
+                if (IPin_EnumMediaTypes(pin, &types) != S_OK)
+                    goto end;
+                IEnumMediaTypes_Reset(types);
+                while (IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
+                    if (IsEqualGUID(&type->majortype, devtype==VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
+                        break;
+                    }
+                    CoTaskMemFree(type);
+                    type = NULL;
+                }
+                IEnumMediaTypes_Release(types);
+            }
+
+            if (!type)
+                // this pin does not expose any formats of the expected type
+                goto end;
+        }
+
+        if (type) {
+            // interrogate default format, so we know what to search for below
+            struct dshow_format_info *fmt_info = dshow_get_format_info(type);
+            if (fmt_info) {
+                if (fmt_info->devtype == VideoDevice) {
+                    requested_video_codec_id = fmt_info->codec_id;
+                    requested_pixel_format   = fmt_info->pix_fmt;
+                    requested_framerate      = fmt_info->framerate;
+                    requested_width          = fmt_info->width;
+                    requested_height         = fmt_info->height;
+                } else {
+                    requested_sample_rate = fmt_info->sample_rate;
+                    requested_sample_size = fmt_info->sample_size;
+                    requested_channels    = fmt_info->channels;
+                }
+                av_free(fmt_info);  // free but don't set to NULL to enable below check
+            }
+
+            if (type && type->pbFormat)
+                CoTaskMemFree(type->pbFormat);
+            CoTaskMemFree(type);
+            type = NULL;
+            if (!fmt_info)
+                // default format somehow invalid, can't continue with this pin
+                goto end;
+            fmt_info = NULL;
+        }
+    }
+
+    // NB: some devices (e.g. Logitech C920) expose each video format twice:
+    // both a format containing a VIDEOINFOHEADER and a format containing
+    // a VIDEOINFOHEADER2. We want, if possible, to select a format with a
+    // VIDEOINFOHEADER2, as this potentially provides more info about the
+    // format. So, if in the iteration below we have found a matching format,
+    // but it is a VIDEOINFOHEADER, keep looking for a matching format that
+    // exposes contains a VIDEOINFOHEADER2. Fall back to the VIDEOINFOHEADER
+    // format if no corresponding VIDEOINFOHEADER2 is found when we finish
+    // iterating.
     for (i = 0; i < n && !format_set; i++) {
+        struct dshow_format_info *fmt_info = NULL;
         r = IAMStreamConfig_GetStreamCaps(config, i, &type, (void *) caps);
         if (r != S_OK)
             goto next;
@@ -692,106 +889,101 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
         ff_print_AM_MEDIA_TYPE(type);
 #endif
 
+        fmt_info = dshow_get_format_info(type);
+        if (!fmt_info)
+            goto next;
+
         if (devtype == VideoDevice) {
             VIDEO_STREAM_CONFIG_CAPS *vcaps = caps;
             BITMAPINFOHEADER *bih;
             int64_t *fr;
-            DXVA2_ExtendedFormat *extended_format_info = NULL;
-            const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
 #if DSHOWDEBUG
             ff_print_VIDEO_STREAM_CONFIG_CAPS(vcaps);
 #endif
+
+            if (fmt_info->devtype != VideoDevice)
+                goto next;
+
             if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo)) {
                 VIDEOINFOHEADER *v = (void *) type->pbFormat;
-                fr = &v->AvgTimePerFrame;
+                fr  = &v->AvgTimePerFrame;
                 bih = &v->bmiHeader;
+                wait_for_better = 1;
             } else if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo2)) {
                 VIDEOINFOHEADER2 *v = (void *) type->pbFormat;
-                fr = &v->AvgTimePerFrame;
+                fr  = &v->AvgTimePerFrame;
                 bih = &v->bmiHeader;
-                if (v->dwControlFlags & AMCONTROL_COLORINFO_PRESENT)
-                    extended_format_info = (DXVA2_ExtendedFormat *) &v->dwControlFlags;
-            } else {
-                goto next;
+                wait_for_better = 0;
             }
+
             if (!pformat_set) {
-                enum AVPixelFormat pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
-                if (pix_fmt == AV_PIX_FMT_NONE) {
-                    enum AVCodecID codec_id = av_codec_get_id(tags, bih->biCompression);
-                    const AVCodec *codec = avcodec_find_decoder(codec_id);
-                    if (codec_id == AV_CODEC_ID_NONE || !codec) {
+                if (fmt_info->pix_fmt == AV_PIX_FMT_NONE) {
+                    const AVCodec *codec = avcodec_find_decoder(fmt_info->codec_id);
+                    if (fmt_info->codec_id == AV_CODEC_ID_NONE || !codec) {
                         av_log(avctx, AV_LOG_INFO, "  unknown compression type 0x%X", (int) bih->biCompression);
                     } else {
                         av_log(avctx, AV_LOG_INFO, "  vcodec=%s", codec->name);
                     }
                 } else {
-                    av_log(avctx, AV_LOG_INFO, "  pixel_format=%s", av_get_pix_fmt_name(pix_fmt));
+                    av_log(avctx, AV_LOG_INFO, "  pixel_format=%s", av_get_pix_fmt_name(fmt_info->pix_fmt));
                 }
                 av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g",
                        vcaps->MinOutputSize.cx, vcaps->MinOutputSize.cy,
                        1e7 / vcaps->MaxFrameInterval,
                        vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
                        1e7 / vcaps->MinFrameInterval);
-                if (extended_format_info) {
-                    enum AVColorRange col_range = dshow_color_range(extended_format_info);
-                    enum AVColorSpace col_space = dshow_color_space(extended_format_info);
-                    enum AVColorPrimaries col_prim = dshow_color_primaries(extended_format_info);
-                    enum AVColorTransferCharacteristic col_trc = dshow_color_trc(extended_format_info);
-                    enum AVChromaLocation chroma_loc = dshow_chroma_loc(extended_format_info);
-                    if (col_range != AVCOL_RANGE_UNSPECIFIED || col_space != AVCOL_SPC_UNSPECIFIED || col_prim != AVCOL_PRI_UNSPECIFIED || col_trc != AVCOL_TRC_UNSPECIFIED) {
-                        const char *range = av_color_range_name(col_range);
-                        const char *space = av_color_space_name(col_space);
-                        const char *prim = av_color_primaries_name(col_prim);
-                        const char *trc = av_color_transfer_name(col_trc);
-                        av_log(avctx, AV_LOG_INFO, " (%s, %s/%s/%s",
-                            range ? range : "unknown",
-                            space ? space : "unknown",
-                            prim ? prim : "unknown",
-                            trc ? trc : "unknown");
-                        if (chroma_loc != AVCHROMA_LOC_UNSPECIFIED) {
-                            const char *chroma = av_chroma_location_name(chroma_loc);
-                            av_log(avctx, AV_LOG_INFO, ", %s", chroma ? chroma : "unknown");
-                        }
-                        av_log(avctx, AV_LOG_INFO, ")");
-                    }
-                    else if (chroma_loc != AVCHROMA_LOC_UNSPECIFIED) {
-                        const char *chroma = av_chroma_location_name(chroma_loc);
-                        av_log(avctx, AV_LOG_INFO, "(%s)", chroma ? chroma : "unknown");
-                    }
+
+                const char *chroma = av_chroma_location_name(fmt_info->chroma_loc);
+                if (fmt_info->col_range != AVCOL_RANGE_UNSPECIFIED ||
+                    fmt_info->col_space != AVCOL_SPC_UNSPECIFIED ||
+                    fmt_info->col_prim != AVCOL_PRI_UNSPECIFIED ||
+                    fmt_info->col_trc != AVCOL_TRC_UNSPECIFIED) {
+                    const char *range = av_color_range_name(fmt_info->col_range);
+                    const char *space = av_color_space_name(fmt_info->col_space);
+                    const char *prim = av_color_primaries_name(fmt_info->col_prim);
+                    const char *trc = av_color_transfer_name(fmt_info->col_trc);
+                    av_log(avctx, AV_LOG_INFO, " (%s, %s/%s/%s",
+                        range ? range : "unknown",
+                        space ? space : "unknown",
+                        prim  ? prim  : "unknown",
+                        trc   ? trc   : "unknown");
+                    if (fmt_info->chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
+                        av_log(avctx, AV_LOG_INFO, ", %s", chroma ? chroma : "unknown");
+                    av_log(avctx, AV_LOG_INFO, ")");
                 }
+                else if (fmt_info->chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
+                    av_log(avctx, AV_LOG_INFO, "(%s)", chroma ? chroma : "unknown");
 
                 av_log(avctx, AV_LOG_INFO, "\n");
                 continue;
             }
-            if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
-                if (ctx->video_codec_id != av_codec_get_id(tags, bih->biCompression))
+            if (requested_video_codec_id != AV_CODEC_ID_RAWVIDEO) {
+                if (requested_video_codec_id != fmt_info->codec_id)
                     goto next;
             }
-            if (ctx->pixel_format != AV_PIX_FMT_NONE &&
-                ctx->pixel_format != dshow_pixfmt(bih->biCompression, bih->biBitCount)) {
+            if (requested_pixel_format != AV_PIX_FMT_NONE &&
+                requested_pixel_format != fmt_info->pix_fmt) {
                 goto next;
             }
-            if (ctx->framerate) {
-                int64_t framerate = ((int64_t) ctx->requested_framerate.den*10000000)
-                                            /  ctx->requested_framerate.num;
-                if (framerate > vcaps->MaxFrameInterval ||
-                    framerate < vcaps->MinFrameInterval)
+            if (requested_framerate) {
+                if (requested_framerate > vcaps->MaxFrameInterval ||
+                    requested_framerate < vcaps->MinFrameInterval)
                     goto next;
-                *fr = framerate;
+                *fr = requested_framerate;
             }
-            if (ctx->requested_width && ctx->requested_height) {
-                if (ctx->requested_width  > vcaps->MaxOutputSize.cx ||
-                    ctx->requested_width  < vcaps->MinOutputSize.cx ||
-                    ctx->requested_height > vcaps->MaxOutputSize.cy ||
-                    ctx->requested_height < vcaps->MinOutputSize.cy)
+            if (requested_width && requested_height) {
+                if (requested_width  > vcaps->MaxOutputSize.cx ||
+                    requested_width  < vcaps->MinOutputSize.cx ||
+                    requested_height > vcaps->MaxOutputSize.cy ||
+                    requested_height < vcaps->MinOutputSize.cy)
                     goto next;
-                bih->biWidth  = ctx->requested_width;
-                bih->biHeight = ctx->requested_height;
+                bih->biWidth  = requested_width;
+                bih->biHeight = requested_height;
             }
         } else {
             WAVEFORMATEX *fx;
-#if DSHOWDEBUG
             AUDIO_STREAM_CONFIG_CAPS *acaps = caps;
+#if DSHOWDEBUG
             ff_print_AUDIO_STREAM_CONFIG_CAPS(acaps);
 #endif
             if (IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx)) {
@@ -808,23 +1000,62 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 );
                 continue;
             }
-            if (
-                (ctx->sample_rate && ctx->sample_rate != fx->nSamplesPerSec) ||
-                (ctx->sample_size && ctx->sample_size != fx->wBitsPerSample) ||
-                (ctx->channels    && ctx->channels    != fx->nChannels     )
-            ) {
-                goto next;
+            if (requested_sample_rate) {
+                if (requested_sample_rate > acaps->MaximumSampleFrequency ||
+                    requested_sample_rate < acaps->MinimumSampleFrequency)
+                    goto next;
+                fx->nSamplesPerSec = requested_sample_rate;
+            }
+            if (requested_sample_size) {
+                if (requested_sample_size > acaps->MaximumBitsPerSample ||
+                    requested_sample_size < acaps->MinimumBitsPerSample)
+                    goto next;
+                fx->wBitsPerSample = requested_sample_size;
+            }
+            if (requested_channels) {
+                if (requested_channels > acaps->MaximumChannels ||
+                    requested_channels < acaps->MinimumChannels)
+                    goto next;
+                fx->nChannels = requested_channels;
             }
         }
-        if (IAMStreamConfig_SetFormat(config, type) != S_OK)
-            goto next;
-        format_set = 1;
+
+        // found a matching format. Either apply or store
+        // for safekeeping if we might maybe find a better
+        // format with more info attached to it (see comment
+        // above loop)
+        if (!wait_for_better) {
+            if (IAMStreamConfig_SetFormat(config, type) != S_OK)
+                goto next;
+            format_set = 1;
+        }
+        else if (!previous_match_type) {
+            // store this matching format for possible later use.
+            // If we have already found a matching format, ignore it
+            previous_match_type = type;
+            type = NULL;
+        }
 next:
-        if (type->pbFormat)
+        av_freep(&fmt_info);
+        if (type && type->pbFormat)
             CoTaskMemFree(type->pbFormat);
         CoTaskMemFree(type);
     }
+    // previously found a matching VIDEOINFOHEADER format and stored
+    // it for safe keeping. Searching further for a matching
+    // VIDEOINFOHEADER2 format yielded nothing. So set the pin's
+    // format based on the VIDEOINFOHEADER format.
+    // NB: this never applies to an audio format because
+    // previous_match_type always NULL in that case
+    if (!format_set && previous_match_type) {
+        if (IAMStreamConfig_SetFormat(config, previous_match_type) == S_OK)
+            format_set = 1;
+    }
+
 end:
+    if (previous_match_type && previous_match_type->pbFormat)
+        CoTaskMemFree(previous_match_type->pbFormat);
+    CoTaskMemFree(previous_match_type);
     IAMStreamConfig_Release(config);
     av_free(caps);
     if (pformat_set)
@@ -943,11 +1174,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio only";
     const char *sourcetypename = (sourcetype == VideoSourceDevice) ? "video" : "audio";
 
-    int set_format = (devtype == VideoDevice && (ctx->framerate ||
-                                                (ctx->requested_width && ctx->requested_height) ||
-                                                 ctx->pixel_format != AV_PIX_FMT_NONE ||
-                                                 ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
-                  || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate || ctx->sample_size));
+    int set_format = dshow_should_set_format(avctx, devtype);
     int format_set = 0;
     int should_show_properties = (devtype == VideoDevice) ? ctx->show_video_device_dialog : ctx->show_audio_device_dialog;
 
@@ -967,9 +1194,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
 
     while (!device_pin && IEnumPins_Next(pins, 1, &pin, NULL) == S_OK) {
         IKsPropertySet *p = NULL;
-        IEnumMediaTypes *types = NULL;
         PIN_INFO info = {0};
-        AM_MEDIA_TYPE *type;
         GUID category;
         DWORD r2;
         char *name_buf = NULL;
@@ -1012,35 +1237,24 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             }
         }
 
-        if (set_format) {
-            dshow_cycle_formats(avctx, devtype, pin, &format_set);
-            if (!format_set) {
-                goto next;
-            }
+        // will either try to find format matching options supplied by user
+        // or try to open default format. Successful if returns with format_set==1
+        dshow_cycle_formats(avctx, devtype, pin, &format_set);
+        if (!format_set) {
+            goto next;
         }
+
         if (devtype == AudioDevice && ctx->audio_buffer_size) {
             if (dshow_set_audio_buffer_size(avctx, pin) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "unable to set audio buffer size %d to pin, using pin anyway...", ctx->audio_buffer_size);
             }
         }
 
-        if (IPin_EnumMediaTypes(pin, &types) != S_OK)
-            goto next;
-
-        IEnumMediaTypes_Reset(types);
-        /* in case format_set was not called, just verify the majortype */
-        while (!device_pin && IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
-            if (IsEqualGUID(&type->majortype, mediatype[devtype])) {
-                device_pin = pin;
-                av_log(avctx, AV_LOG_DEBUG, "Selecting pin %s on %s\n", name_buf, devtypename);
-                goto next;
-            }
-            CoTaskMemFree(type);
+        if (format_set) {
+            device_pin = pin;
+            av_log(avctx, AV_LOG_DEBUG, "Selecting pin %s on %s\n", name_buf, devtypename);
         }
-
 next:
-        if (types)
-            IEnumMediaTypes_Release(types);
         if (p)
             IKsPropertySet_Release(p);
         if (device_pin != pin)
@@ -1310,6 +1524,7 @@ dshow_add_device(AVFormatContext *avctx,
     AM_MEDIA_TYPE type;
     AVCodecParameters *par;
     AVStream *st;
+    struct dshow_format_info *fmt_info = NULL;
     int ret = AVERROR(EIO);
 
     type.pbFormat = NULL;
@@ -1324,12 +1539,16 @@ dshow_add_device(AVFormatContext *avctx,
     ctx->capture_filter[devtype]->stream_index = st->index;
 
     ff_dshow_pin_ConnectionMediaType(ctx->capture_pin[devtype], &type);
+    fmt_info = dshow_get_format_info(&type);
+    if (!fmt_info) {
+        ret = AVERROR(EIO);
+        goto error;
+    }
 
     par = st->codecpar;
     if (devtype == VideoDevice) {
         BITMAPINFOHEADER *bih = NULL;
         AVRational time_base;
-        DXVA2_ExtendedFormat *extended_format_info = NULL;
 
         if (IsEqualGUID(&type.formattype, &FORMAT_VideoInfo)) {
             VIDEOINFOHEADER *v = (void *) type.pbFormat;
@@ -1339,8 +1558,6 @@ dshow_add_device(AVFormatContext *avctx,
             VIDEOINFOHEADER2 *v = (void *) type.pbFormat;
             time_base = (AVRational) { v->AvgTimePerFrame, 10000000 };
             bih = &v->bmiHeader;
-            if (v->dwControlFlags & AMCONTROL_COLORINFO_PRESENT)
-                extended_format_info = (DXVA2_ExtendedFormat *) &v->dwControlFlags;
         }
         if (!bih) {
             av_log(avctx, AV_LOG_ERROR, "Could not get media type.\n");
@@ -1351,33 +1568,21 @@ dshow_add_device(AVFormatContext *avctx,
         st->r_frame_rate = av_inv_q(time_base);
 
         par->codec_type = AVMEDIA_TYPE_VIDEO;
-        par->width      = bih->biWidth;
-        par->height     = bih->biHeight;
+        par->width      = fmt_info->width;
+        par->height     = fmt_info->height;
         par->codec_tag  = bih->biCompression;
-        par->format     = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+        par->format     = fmt_info->pix_fmt;
         if (bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
             av_log(avctx, AV_LOG_DEBUG, "attempt to use full range for HDYC...\n");
             par->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
         }
-        if (extended_format_info) {
-            par->color_range = dshow_color_range(extended_format_info);
-            par->color_space = dshow_color_space(extended_format_info);
-            par->color_primaries = dshow_color_primaries(extended_format_info);
-            par->color_trc = dshow_color_trc(extended_format_info);
-            par->chroma_location = dshow_chroma_loc(extended_format_info);
-        }
-        if (par->format == AV_PIX_FMT_NONE) {
-            const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
-            par->codec_id = av_codec_get_id(tags, bih->biCompression);
-            if (par->codec_id == AV_CODEC_ID_NONE) {
-                av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
-                                 "Please report type 0x%X.\n", (int) bih->biCompression);
-                ret = AVERROR_PATCHWELCOME;
-                goto error;
-            }
-            par->bits_per_coded_sample = bih->biBitCount;
-        } else {
-            par->codec_id = AV_CODEC_ID_RAWVIDEO;
+        par->color_range = fmt_info->col_range;
+        par->color_space = fmt_info->col_space;
+        par->color_primaries = fmt_info->col_prim;
+        par->color_trc = fmt_info->col_trc;
+        par->chroma_location = fmt_info->chroma_loc;
+        par->codec_id = fmt_info->codec_id;
+        if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
             if (bih->biCompression == BI_RGB || bih->biCompression == BI_BITFIELDS) {
                 par->bits_per_coded_sample = bih->biBitCount;
                 if (par->height < 0) {
@@ -1390,23 +1595,26 @@ dshow_add_device(AVFormatContext *avctx,
                     }
                 }
             }
+        } else {
+            if (par->codec_id == AV_CODEC_ID_NONE) {
+                av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
+                                 "Please report type 0x%X.\n", (int) bih->biCompression);
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
+            }
+            par->bits_per_coded_sample = bih->biBitCount;
         }
     } else {
-        WAVEFORMATEX *fx = NULL;
-
-        if (IsEqualGUID(&type.formattype, &FORMAT_WaveFormatEx)) {
-            fx = (void *) type.pbFormat;
-        }
-        if (!fx) {
+        if (!IsEqualGUID(&type.formattype, &FORMAT_WaveFormatEx)) {
             av_log(avctx, AV_LOG_ERROR, "Could not get media type.\n");
             goto error;
         }
 
         par->codec_type  = AVMEDIA_TYPE_AUDIO;
-        par->format      = sample_fmt_bits_per_sample(fx->wBitsPerSample);
+        par->format      = sample_fmt_bits_per_sample(fmt_info->sample_size);
         par->codec_id    = waveform_codec_id(par->format);
-        par->sample_rate = fx->nSamplesPerSec;
-        par->channels    = fx->nChannels;
+        par->sample_rate = fmt_info->sample_rate;
+        par->channels    = fmt_info->channels;
     }
 
     avpriv_set_pts_info(st, 64, 1, 10000000);
@@ -1414,6 +1622,7 @@ dshow_add_device(AVFormatContext *avctx,
     ret = 0;
 
 error:
+    av_freep(&fmt_info);
     if (type.pbFormat)
         CoTaskMemFree(type.pbFormat);
     return ret;
