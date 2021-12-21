@@ -47,41 +47,41 @@ struct profile_names {
 };
 
 static const struct profile_names avc_profiles[] = {
-    { MFX_PROFILE_AVC_BASELINE,                 "baseline"              },
-    { MFX_PROFILE_AVC_MAIN,                     "main"                  },
-    { MFX_PROFILE_AVC_EXTENDED,                 "extended"              },
-    { MFX_PROFILE_AVC_HIGH,                     "high"                  },
+    { MFX_PROFILE_AVC_BASELINE,                 "avc baseline"              },
+    { MFX_PROFILE_AVC_MAIN,                     "avc main"                  },
+    { MFX_PROFILE_AVC_EXTENDED,                 "avc extended"              },
+    { MFX_PROFILE_AVC_HIGH,                     "avc high"                  },
 #if QSV_VERSION_ATLEAST(1, 15)
-    { MFX_PROFILE_AVC_HIGH_422,                 "high 422"              },
+    { MFX_PROFILE_AVC_HIGH_422,                 "avc high 422"              },
 #endif
 #if QSV_VERSION_ATLEAST(1, 4)
-    { MFX_PROFILE_AVC_CONSTRAINED_BASELINE,     "constrained baseline"  },
-    { MFX_PROFILE_AVC_CONSTRAINED_HIGH,         "constrained high"      },
-    { MFX_PROFILE_AVC_PROGRESSIVE_HIGH,         "progressive high"      },
+    { MFX_PROFILE_AVC_CONSTRAINED_BASELINE,     "avc constrained baseline"  },
+    { MFX_PROFILE_AVC_CONSTRAINED_HIGH,         "avc constrained high"      },
+    { MFX_PROFILE_AVC_PROGRESSIVE_HIGH,         "avc progressive high"      },
 #endif
 };
 
 static const struct profile_names mpeg2_profiles[] = {
-    { MFX_PROFILE_MPEG2_SIMPLE,                 "simple"                },
-    { MFX_PROFILE_MPEG2_MAIN,                   "main"                  },
-    { MFX_PROFILE_MPEG2_HIGH,                   "high"                  },
+    { MFX_PROFILE_MPEG2_SIMPLE,                 "mpeg2 simple"                },
+    { MFX_PROFILE_MPEG2_MAIN,                   "mpeg2 main"                  },
+    { MFX_PROFILE_MPEG2_HIGH,                   "mpeg2 high"                  },
 };
 
 static const struct profile_names hevc_profiles[] = {
 #if QSV_VERSION_ATLEAST(1, 8)
-    { MFX_PROFILE_HEVC_MAIN,                    "main"                  },
-    { MFX_PROFILE_HEVC_MAIN10,                  "main10"                },
-    { MFX_PROFILE_HEVC_MAINSP,                  "mainsp"                },
-    { MFX_PROFILE_HEVC_REXT,                    "rext"                  },
+    { MFX_PROFILE_HEVC_MAIN,                    "hevc main"                  },
+    { MFX_PROFILE_HEVC_MAIN10,                  "hevc main10"                },
+    { MFX_PROFILE_HEVC_MAINSP,                  "hevc mainsp"                },
+    { MFX_PROFILE_HEVC_REXT,                    "hevc rext"                  },
 #endif
 };
 
 static const struct profile_names vp9_profiles[] = {
 #if QSV_VERSION_ATLEAST(1, 19)
-    { MFX_PROFILE_VP9_0,                        "0"                     },
-    { MFX_PROFILE_VP9_1,                        "1"                     },
-    { MFX_PROFILE_VP9_2,                        "2"                     },
-    { MFX_PROFILE_VP9_3,                        "3"                     },
+    { MFX_PROFILE_VP9_0,                        "vp9 0"                     },
+    { MFX_PROFILE_VP9_1,                        "vp9 1"                     },
+    { MFX_PROFILE_VP9_2,                        "vp9 2"                     },
+    { MFX_PROFILE_VP9_3,                        "vp9 3"                     },
 #endif
 };
 
