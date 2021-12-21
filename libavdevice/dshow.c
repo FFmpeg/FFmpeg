@@ -29,6 +29,30 @@
 #include "libavcodec/raw.h"
 #include "objidl.h"
 #include "shlwapi.h"
+// NB: technically, we should include dxva.h and use
+// DXVA_ExtendedFormat, but that type is not defined in
+// the MinGW headers. The DXVA2_ExtendedFormat and the
+// contents of its fields is identical to
+// DXVA_ExtendedFormat (see https://docs.microsoft.com/en-us/windows/win32/medfound/extended-color-information#color-space-in-media-types)
+// and is provided by MinGW as well, so we use that
+// instead. NB also that per the Microsoft docs, the
+// lowest 8 bits of the structure, i.e. the SampleFormat
+// field, contain AMCONTROL_xxx flags instead of sample
+// format information, and should thus not be used.
+// NB further that various values in the structure's
+// fields (e.g. BT.2020 color space) are not provided
+// for either of the DXVA structs, but are provided in
+// the flags of the corresponding fields of Media Foundation.
+// These may be provided by DirectShow devices (e.g. LAVFilters
+// does so). So we use those values here too (the equivalence is
+// indicated by Microsoft example code: https://docs.microsoft.com/en-us/windows/win32/api/dxva2api/ns-dxva2api-dxva2_videodesc)
+#include "d3d9types.h"
+#include "dxva2api.h"
+
+#ifndef AMCONTROL_COLORINFO_PRESENT
+// not defined in some versions of MinGW's dvdmedia.h
+#   define AMCONTROL_COLORINFO_PRESENT 0x00000080 // if set, indicates DXVA color info is present in the upper (24) bits of the dwControlFlags
+#endif
 
 
 static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
@@ -52,6 +76,161 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
         }
     }
     return avpriv_find_pix_fmt(avpriv_get_raw_pix_fmt_tags(), biCompression); // all others
+}
+
+static enum AVColorRange dshow_color_range(DXVA2_ExtendedFormat *fmt_info)
+{
+    switch (fmt_info->NominalRange)
+    {
+    case DXVA2_NominalRange_Unknown:
+        return AVCOL_RANGE_UNSPECIFIED;
+    case DXVA2_NominalRange_Normal: // equal to DXVA2_NominalRange_0_255
+        return AVCOL_RANGE_JPEG;
+    case DXVA2_NominalRange_Wide:   // equal to DXVA2_NominalRange_16_235
+        return AVCOL_RANGE_MPEG;
+    case DXVA2_NominalRange_48_208:
+        // not an ffmpeg color range
+        return AVCOL_RANGE_UNSPECIFIED;
+
+    // values from MediaFoundation SDK (mfobjects.h)
+    case 4:     // MFNominalRange_64_127
+        // not an ffmpeg color range
+        return AVCOL_RANGE_UNSPECIFIED;
+
+    default:
+        return AVCOL_RANGE_UNSPECIFIED;
+    }
+}
+
+static enum AVColorSpace dshow_color_space(DXVA2_ExtendedFormat *fmt_info)
+{
+    switch (fmt_info->VideoTransferMatrix)
+    {
+    case DXVA2_VideoTransferMatrix_BT709:
+        return AVCOL_SPC_BT709;
+    case DXVA2_VideoTransferMatrix_BT601:
+        return AVCOL_SPC_BT470BG;
+    case DXVA2_VideoTransferMatrix_SMPTE240M:
+        return AVCOL_SPC_SMPTE240M;
+
+    // values from MediaFoundation SDK (mfobjects.h)
+    case 4:     // MFVideoTransferMatrix_BT2020_10
+    case 5:     // MFVideoTransferMatrix_BT2020_12
+        if (fmt_info->VideoTransferFunction == 12)  // MFVideoTransFunc_2020_const
+            return AVCOL_SPC_BT2020_CL;
+        else
+            return AVCOL_SPC_BT2020_NCL;
+
+    default:
+        return AVCOL_SPC_UNSPECIFIED;
+    }
+}
+
+static enum AVColorPrimaries dshow_color_primaries(DXVA2_ExtendedFormat *fmt_info)
+{
+    switch (fmt_info->VideoPrimaries)
+    {
+    case DXVA2_VideoPrimaries_Unknown:
+        return AVCOL_PRI_UNSPECIFIED;
+    case DXVA2_VideoPrimaries_reserved:
+        return AVCOL_PRI_RESERVED;
+    case DXVA2_VideoPrimaries_BT709:
+        return AVCOL_PRI_BT709;
+    case DXVA2_VideoPrimaries_BT470_2_SysM:
+        return AVCOL_PRI_BT470M;
+    case DXVA2_VideoPrimaries_BT470_2_SysBG:
+    case DXVA2_VideoPrimaries_EBU3213:   // this is PAL
+        return AVCOL_PRI_BT470BG;
+    case DXVA2_VideoPrimaries_SMPTE170M:
+    case DXVA2_VideoPrimaries_SMPTE_C:
+        return AVCOL_PRI_SMPTE170M;
+    case DXVA2_VideoPrimaries_SMPTE240M:
+        return AVCOL_PRI_SMPTE240M;
+
+    // values from MediaFoundation SDK (mfobjects.h)
+    case 9:     // MFVideoPrimaries_BT2020
+        return AVCOL_PRI_BT2020;
+    case 10:    // MFVideoPrimaries_XYZ
+        return AVCOL_PRI_SMPTE428;
+    case 11:    // MFVideoPrimaries_DCI_P3
+        return AVCOL_PRI_SMPTE431;
+    case 12:    // MFVideoPrimaries_ACES (Academy Color Encoding System)
+        // not an FFmpeg color primary
+        return AVCOL_PRI_UNSPECIFIED;
+
+    default:
+        return AVCOL_PRI_UNSPECIFIED;
+    }
+}
+
+static enum AVColorTransferCharacteristic dshow_color_trc(DXVA2_ExtendedFormat *fmt_info)
+{
+    switch (fmt_info->VideoTransferFunction)
+    {
+    case DXVA2_VideoTransFunc_Unknown:
+        return AVCOL_TRC_UNSPECIFIED;
+    case DXVA2_VideoTransFunc_10:
+        return AVCOL_TRC_LINEAR;
+    case DXVA2_VideoTransFunc_18:
+        // not an FFmpeg transfer characteristic
+        return AVCOL_TRC_UNSPECIFIED;
+    case DXVA2_VideoTransFunc_20:
+        // not an FFmpeg transfer characteristic
+        return AVCOL_TRC_UNSPECIFIED;
+    case DXVA2_VideoTransFunc_22:
+        return AVCOL_TRC_GAMMA22;
+    case DXVA2_VideoTransFunc_709:
+        return AVCOL_TRC_BT709;
+    case DXVA2_VideoTransFunc_240M:
+        return AVCOL_TRC_SMPTE240M;
+    case DXVA2_VideoTransFunc_sRGB:
+        return AVCOL_TRC_IEC61966_2_1;
+    case DXVA2_VideoTransFunc_28:
+        return AVCOL_TRC_GAMMA28;
+
+    // values from MediaFoundation SDK (mfobjects.h)
+    case 9:     // MFVideoTransFunc_Log_100
+        return AVCOL_TRC_LOG;
+    case 10:    // MFVideoTransFunc_Log_316
+        return AVCOL_TRC_LOG_SQRT;
+    case 11:    // MFVideoTransFunc_709_sym
+        // not an FFmpeg transfer characteristic
+        return AVCOL_TRC_UNSPECIFIED;
+    case 12:    // MFVideoTransFunc_2020_const
+    case 13:    // MFVideoTransFunc_2020
+        if (fmt_info->VideoTransferMatrix == 5) // MFVideoTransferMatrix_BT2020_12
+            return AVCOL_TRC_BT2020_12;
+        else
+            return AVCOL_TRC_BT2020_10;
+    case 14:    // MFVideoTransFunc_26
+        // not an FFmpeg transfer characteristic
+        return AVCOL_TRC_UNSPECIFIED;
+    case 15:    // MFVideoTransFunc_2084
+        return AVCOL_TRC_SMPTEST2084;
+    case 16:    // MFVideoTransFunc_HLG
+        return AVCOL_TRC_ARIB_STD_B67;
+    case 17:    // MFVideoTransFunc_10_rel
+        // not an FFmpeg transfer characteristic? Undocumented also by MS
+        return AVCOL_TRC_UNSPECIFIED;
+
+    default:
+        return AVCOL_TRC_UNSPECIFIED;
+    }
+}
+
+static enum AVChromaLocation dshow_chroma_loc(DXVA2_ExtendedFormat *fmt_info)
+{
+    if (fmt_info->VideoChromaSubsampling == DXVA2_VideoChromaSubsampling_Cosited)       // that is: (DXVA2_VideoChromaSubsampling_Horizontally_Cosited | DXVA2_VideoChromaSubsampling_Vertically_Cosited | DXVA2_VideoChromaSubsampling_Vertically_AlignedChromaPlanes)
+        return AVCHROMA_LOC_TOPLEFT;
+    else if (fmt_info->VideoChromaSubsampling == DXVA2_VideoChromaSubsampling_MPEG1)    // that is: DXVA2_VideoChromaSubsampling_Vertically_AlignedChromaPlanes
+        return AVCHROMA_LOC_CENTER;
+    else if (fmt_info->VideoChromaSubsampling == DXVA2_VideoChromaSubsampling_MPEG2)    // that is: (DXVA2_VideoChromaSubsampling_Horizontally_Cosited | DXVA2_VideoChromaSubsampling_Vertically_AlignedChromaPlanes)
+        return AVCHROMA_LOC_LEFT;
+    else if (fmt_info->VideoChromaSubsampling == DXVA2_VideoChromaSubsampling_DV_PAL)   // that is: (DXVA2_VideoChromaSubsampling_Horizontally_Cosited | DXVA2_VideoChromaSubsampling_Vertically_Cosited)
+        return AVCHROMA_LOC_TOPLEFT;
+    else
+        // unknown
+        return AVCHROMA_LOC_UNSPECIFIED;
 }
 
 static int
@@ -517,6 +696,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
             VIDEO_STREAM_CONFIG_CAPS *vcaps = caps;
             BITMAPINFOHEADER *bih;
             int64_t *fr;
+            DXVA2_ExtendedFormat *extended_format_info = NULL;
             const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
 #if DSHOWDEBUG
             ff_print_VIDEO_STREAM_CONFIG_CAPS(vcaps);
@@ -529,6 +709,8 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 VIDEOINFOHEADER2 *v = (void *) type->pbFormat;
                 fr = &v->AvgTimePerFrame;
                 bih = &v->bmiHeader;
+                if (v->dwControlFlags & AMCONTROL_COLORINFO_PRESENT)
+                    extended_format_info = (DXVA2_ExtendedFormat *) &v->dwControlFlags;
             } else {
                 goto next;
             }
@@ -545,11 +727,40 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 } else {
                     av_log(avctx, AV_LOG_INFO, "  pixel_format=%s", av_get_pix_fmt_name(pix_fmt));
                 }
-                av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g\n",
+                av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g",
                        vcaps->MinOutputSize.cx, vcaps->MinOutputSize.cy,
                        1e7 / vcaps->MaxFrameInterval,
                        vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
                        1e7 / vcaps->MinFrameInterval);
+                if (extended_format_info) {
+                    enum AVColorRange col_range = dshow_color_range(extended_format_info);
+                    enum AVColorSpace col_space = dshow_color_space(extended_format_info);
+                    enum AVColorPrimaries col_prim = dshow_color_primaries(extended_format_info);
+                    enum AVColorTransferCharacteristic col_trc = dshow_color_trc(extended_format_info);
+                    enum AVChromaLocation chroma_loc = dshow_chroma_loc(extended_format_info);
+                    if (col_range != AVCOL_RANGE_UNSPECIFIED || col_space != AVCOL_SPC_UNSPECIFIED || col_prim != AVCOL_PRI_UNSPECIFIED || col_trc != AVCOL_TRC_UNSPECIFIED) {
+                        const char *range = av_color_range_name(col_range);
+                        const char *space = av_color_space_name(col_space);
+                        const char *prim = av_color_primaries_name(col_prim);
+                        const char *trc = av_color_transfer_name(col_trc);
+                        av_log(avctx, AV_LOG_INFO, " (%s, %s/%s/%s",
+                            range ? range : "unknown",
+                            space ? space : "unknown",
+                            prim ? prim : "unknown",
+                            trc ? trc : "unknown");
+                        if (chroma_loc != AVCHROMA_LOC_UNSPECIFIED) {
+                            const char *chroma = av_chroma_location_name(chroma_loc);
+                            av_log(avctx, AV_LOG_INFO, ", %s", chroma ? chroma : "unknown");
+                        }
+                        av_log(avctx, AV_LOG_INFO, ")");
+                    }
+                    else if (chroma_loc != AVCHROMA_LOC_UNSPECIFIED) {
+                        const char *chroma = av_chroma_location_name(chroma_loc);
+                        av_log(avctx, AV_LOG_INFO, "(%s)", chroma ? chroma : "unknown");
+                    }
+                }
+
+                av_log(avctx, AV_LOG_INFO, "\n");
                 continue;
             }
             if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
@@ -1118,6 +1329,7 @@ dshow_add_device(AVFormatContext *avctx,
     if (devtype == VideoDevice) {
         BITMAPINFOHEADER *bih = NULL;
         AVRational time_base;
+        DXVA2_ExtendedFormat *extended_format_info = NULL;
 
         if (IsEqualGUID(&type.formattype, &FORMAT_VideoInfo)) {
             VIDEOINFOHEADER *v = (void *) type.pbFormat;
@@ -1127,6 +1339,8 @@ dshow_add_device(AVFormatContext *avctx,
             VIDEOINFOHEADER2 *v = (void *) type.pbFormat;
             time_base = (AVRational) { v->AvgTimePerFrame, 10000000 };
             bih = &v->bmiHeader;
+            if (v->dwControlFlags & AMCONTROL_COLORINFO_PRESENT)
+                extended_format_info = (DXVA2_ExtendedFormat *) &v->dwControlFlags;
         }
         if (!bih) {
             av_log(avctx, AV_LOG_ERROR, "Could not get media type.\n");
@@ -1144,6 +1358,13 @@ dshow_add_device(AVFormatContext *avctx,
         if (bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
             av_log(avctx, AV_LOG_DEBUG, "attempt to use full range for HDYC...\n");
             par->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
+        }
+        if (extended_format_info) {
+            par->color_range = dshow_color_range(extended_format_info);
+            par->color_space = dshow_color_space(extended_format_info);
+            par->color_primaries = dshow_color_primaries(extended_format_info);
+            par->color_trc = dshow_color_trc(extended_format_info);
+            par->chroma_location = dshow_chroma_loc(extended_format_info);
         }
         if (par->format == AV_PIX_FMT_NONE) {
             const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
