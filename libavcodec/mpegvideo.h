@@ -662,7 +662,7 @@ FF_MPV_OPT_CMP_FUNC, \
 #define FF_MPV_DEPRECATED_MPEG_QUANT_OPT \
     { "mpeg_quant", "Deprecated, does nothing", FF_MPV_OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
 #define FF_MPV_DEPRECATED_A53_CC_OPT \
-    { "a53cc",      "Deprecated, does nothing", FF_MPV_OFFSET(a53_cc),     AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
+    { "a53cc",      "Deprecated, does nothing", FF_MPV_OFFSET(dummy),      AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
 #define FF_MPV_DEPRECATED_MATRIX_OPT \
    { "force_duplicated_matrix", "Deprecated, does nothing", FF_MPV_OFFSET(dummy), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
 #define FF_MPV_DEPRECATED_BFRAME_OPTS \

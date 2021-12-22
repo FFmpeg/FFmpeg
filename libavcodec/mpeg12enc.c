@@ -551,7 +551,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         }
     }
 
-    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->a53_cc) {
+    if (CONFIG_MPEG2VIDEO_ENCODER && s->a53_cc) {
         side_data = av_frame_get_side_data(s->current_picture_ptr->f,
             AV_FRAME_DATA_A53_CC);
         if (side_data) {
