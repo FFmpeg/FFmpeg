@@ -2906,8 +2906,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         }
                     }
 
-                    update_mb_info(s, 1);
-
                     switch(s->codec_id){
                     case AV_CODEC_ID_MPEG4:
                         if (CONFIG_MPEG4_ENCODER) {
@@ -2924,8 +2922,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     break;
                     case AV_CODEC_ID_H263:
                     case AV_CODEC_ID_H263P:
-                        if (CONFIG_H263_ENCODER)
+                        if (CONFIG_H263_ENCODER) {
+                            update_mb_info(s, 1);
                             ff_h263_encode_gob_header(s, mb_y);
+                        }
                     break;
                     }
 
