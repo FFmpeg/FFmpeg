@@ -56,6 +56,7 @@ static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
 }
 
 static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
+                              MJpegContext *m,
                               ScanTable *intra_scantable,
                               uint16_t luma_intra_matrix[64],
                               uint16_t chroma_intra_matrix[64],
@@ -63,17 +64,12 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
 {
     int i, j, size;
     uint8_t *ptr;
-    MpegEncContext *s = NULL;
 
-    /* Since avctx->priv_data will point to LJpegEncContext in this case */
-    if (avctx->codec_id != AV_CODEC_ID_LJPEG)
-        s = avctx->priv_data;
-
-    if (avctx->codec_id != AV_CODEC_ID_LJPEG) {
+    if (m) {
         int matrix_count = 1 + !!memcmp(luma_intra_matrix,
                                         chroma_intra_matrix,
                                         sizeof(luma_intra_matrix[0]) * 64);
-        if (s && s->mjpeg_ctx->force_duplicated_matrix)
+        if (m->force_duplicated_matrix)
             matrix_count = 2;
         /* quant matrixes */
         put_marker(p, DQT);
@@ -110,16 +106,16 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
 
     // Only MJPEG can have a variable Huffman variable. All other
     // formats use the default Huffman table.
-    if (s && s->mjpeg_ctx->huffman == HUFFMAN_TABLE_OPTIMAL) {
-        size += put_huffman_table(p, 0, 0, s->mjpeg_ctx->bits_dc_luminance,
-                                  s->mjpeg_ctx->val_dc_luminance);
-        size += put_huffman_table(p, 0, 1, s->mjpeg_ctx->bits_dc_chrominance,
-                                  s->mjpeg_ctx->val_dc_chrominance);
+    if (m && m->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        size += put_huffman_table(p, 0, 0, m->bits_dc_luminance,
+                                  m->val_dc_luminance);
+        size += put_huffman_table(p, 0, 1, m->bits_dc_chrominance,
+                                  m->val_dc_chrominance);
 
-        size += put_huffman_table(p, 1, 0, s->mjpeg_ctx->bits_ac_luminance,
-                                  s->mjpeg_ctx->val_ac_luminance);
-        size += put_huffman_table(p, 1, 1, s->mjpeg_ctx->bits_ac_chrominance,
-                                  s->mjpeg_ctx->val_ac_chrominance);
+        size += put_huffman_table(p, 1, 0, m->bits_ac_luminance,
+                                  m->val_ac_luminance);
+        size += put_huffman_table(p, 1, 1, m->bits_ac_chrominance,
+                                  m->val_ac_chrominance);
     } else {
         size += put_huffman_table(p, 0, 0, ff_mjpeg_bits_dc_luminance,
                                   ff_mjpeg_val_dc);
@@ -218,11 +214,12 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4
 }
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
+                                    MJpegContext *m,
                                     ScanTable *intra_scantable, int pred,
                                     uint16_t luma_intra_matrix[64],
                                     uint16_t chroma_intra_matrix[64])
 {
-    const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
+    const int lossless = !m;
     int hsample[4], vsample[4];
     int components = 3 + (avctx->pix_fmt == AV_PIX_FMT_BGRA);
     int chroma_matrix = !!memcmp(luma_intra_matrix,
@@ -239,7 +236,8 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
 
     jpeg_put_comments(avctx, pb);
 
-    jpeg_table_header(avctx, pb, intra_scantable, luma_intra_matrix, chroma_intra_matrix, hsample);
+    jpeg_table_header(avctx, pb, m, intra_scantable,
+                      luma_intra_matrix, chroma_intra_matrix, hsample);
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_marker(pb, SOF0 ); break;
