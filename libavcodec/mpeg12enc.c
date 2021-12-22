@@ -62,6 +62,11 @@ static uint8_t uni_mpeg2_ac_vlc_len[64 * 64 * 2];
 static uint32_t mpeg1_lum_dc_uni[512];
 static uint32_t mpeg1_chr_dc_uni[512];
 
+typedef struct MPEG12EncContext {
+    MpegEncContext mpeg;
+    AVRational frame_rate_ext;
+} MPEG12EncContext;
+
 #define A53_MAX_CC_COUNT 0x1f
 #endif /* CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER */
 
@@ -101,8 +106,9 @@ av_cold void ff_mpeg1_init_uni_ac_vlc(const RLTable *rl, uint8_t *uni_ac_vlc_len
 }
 
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
-static int find_frame_rate_index(MpegEncContext *s)
+static int find_frame_rate_index(MPEG12EncContext *mpeg12)
 {
+    MpegEncContext *const s = &mpeg12->mpeg;
     int i;
     AVRational bestq = (AVRational) {0, 0};
     AVRational ext;
@@ -127,8 +133,8 @@ static int find_frame_rate_index(MpegEncContext *s)
                     || ext.num==1 && ext.den==1 && av_nearer_q(target, bestq, q) == 0) {
                     bestq               = q;
                     s->frame_rate_index = i;
-                    s->mpeg2_frame_rate_ext.num = ext.num;
-                    s->mpeg2_frame_rate_ext.den = ext.den;
+                    mpeg12->frame_rate_ext.num = ext.num;
+                    mpeg12->frame_rate_ext.den = ext.den;
                 }
             }
         }
@@ -142,8 +148,9 @@ static int find_frame_rate_index(MpegEncContext *s)
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
+    MPEG12EncContext *const mpeg12 = avctx->priv_data;
+    MpegEncContext *const s = &mpeg12->mpeg;
     int ret;
-    MpegEncContext *s = avctx->priv_data;
     int max_size = avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 16383 : 4095;
 
     if (avctx->width > max_size || avctx->height > max_size) {
@@ -199,7 +206,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_mpv_encode_init(avctx)) < 0)
         return ret;
 
-    if (find_frame_rate_index(s) < 0) {
+    if (find_frame_rate_index(mpeg12) < 0) {
         if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
                    avctx->time_base.den, avctx->time_base.num);
@@ -244,6 +251,7 @@ static void put_header(MpegEncContext *s, int header)
 /* put sequence header if needed */
 static void mpeg1_encode_sequence_header(MpegEncContext *s)
 {
+    MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
     unsigned int vbv_buffer_size, fps, v;
     int i, constraint_parameter_flag;
     uint64_t time_code;
@@ -339,8 +347,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, 1);                 // marker
             put_bits(&s->pb, 8, vbv_buffer_size >> 10); // vbv buffer ext
             put_bits(&s->pb, 1, s->low_delay);
-            put_bits(&s->pb, 2, s->mpeg2_frame_rate_ext.num-1); // frame_rate_ext_n
-            put_bits(&s->pb, 5, s->mpeg2_frame_rate_ext.den-1); // frame_rate_ext_d
+            put_bits(&s->pb, 2, mpeg12->frame_rate_ext.num-1); // frame_rate_ext_n
+            put_bits(&s->pb, 5, mpeg12->frame_rate_ext.den-1); // frame_rate_ext_d
 
             side_data = av_frame_get_side_data(s->current_picture_ptr->f, AV_FRAME_DATA_PANSCAN);
             if (side_data) {
@@ -1204,7 +1212,7 @@ const AVCodec ff_mpeg1video_encoder = {
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG1VIDEO,
-    .priv_data_size       = sizeof(MpegEncContext),
+    .priv_data_size       = sizeof(MPEG12EncContext),
     .init                 = encode_init,
     .encode2              = ff_mpv_encode_picture,
     .close                = ff_mpv_encode_end,
@@ -1221,7 +1229,7 @@ const AVCodec ff_mpeg2video_encoder = {
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
-    .priv_data_size       = sizeof(MpegEncContext),
+    .priv_data_size       = sizeof(MPEG12EncContext),
     .init                 = encode_init,
     .encode2              = ff_mpv_encode_picture,
     .close                = ff_mpv_encode_end,

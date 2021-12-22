@@ -203,7 +203,6 @@ typedef struct MpegEncContext {
     int last_non_b_pict_type;   ///< used for MPEG-4 gmc B-frames & ratecontrol
     int droppable;
     int frame_rate_index;
-    AVRational mpeg2_frame_rate_ext;
     int last_lambda_for[5];     ///< last lambda for a specific pict type
     int skipdct;                ///< skip dct and code zero residual
 
