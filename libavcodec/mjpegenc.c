@@ -86,8 +86,10 @@ static void mjpeg_encode_picture_header(MpegEncContext *s)
 
 void ff_mjpeg_amv_encode_picture_header(MpegEncContext *s)
 {
+    MJPEGEncContext *const m = (MJPEGEncContext*)s;
+    av_assert2(s->mjpeg_ctx == &m->mjpeg);
     /* s->huffman == HUFFMAN_TABLE_OPTIMAL can only be true for MJPEG. */
-    if (!CONFIG_MJPEG_ENCODER || s->huffman != HUFFMAN_TABLE_OPTIMAL)
+    if (!CONFIG_MJPEG_ENCODER || m->mjpeg.huffman != HUFFMAN_TABLE_OPTIMAL)
         mjpeg_encode_picture_header(s);
 }
 
@@ -211,13 +213,13 @@ static void mjpeg_build_optimal_huffman(MJpegContext *m)
  */
 int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 {
+    MJpegContext *const m = s->mjpeg_ctx;
     PutBitContext *pbc = &s->pb;
     int mb_y = s->mb_y - !s->mb_x;
     int ret;
 
 #if CONFIG_MJPEG_ENCODER
-    if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
-        MJpegContext *m = s->mjpeg_ctx;
+    if (m->huffman == HUFFMAN_TABLE_OPTIMAL) {
 
         mjpeg_build_optimal_huffman(m);
 
@@ -293,7 +295,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     av_assert0(s->slice_context_count == 1);
 
     if (s->codec_id == AV_CODEC_ID_AMV || (s->avctx->active_thread_type & FF_THREAD_SLICE))
-        s->huffman = 0;
+        m->huffman = HUFFMAN_TABLE_DEFAULT;
 
     if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
         // Used to produce garbage with MJPEG.
@@ -346,7 +348,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     // Buffers start out empty.
     m->huff_ncode = 0;
 
-    if(s->huffman == HUFFMAN_TABLE_OPTIMAL)
+    if (m->huffman == HUFFMAN_TABLE_OPTIMAL)
         return alloc_huffman(s);
 
     return 0;
@@ -514,7 +516,7 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
 void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i;
-    if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
+    if (s->mjpeg_ctx->huffman == HUFFMAN_TABLE_OPTIMAL) {
         if (s->chroma_format == CHROMA_444) {
             record_block(s, block[0], 0);
             record_block(s, block[2], 2);
@@ -614,11 +616,11 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 }
 #endif
 
-#define OFFSET(x) offsetof(MpegEncContext, x)
+#define OFFSET(x) offsetof(MJPEGEncContext, mjpeg.x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
 FF_MPV_COMMON_OPTS
-{ "pred", "Prediction method", OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 3, VE, "pred" },
+{ "pred", "Prediction method", FF_MPV_OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 3, VE, "pred" },
     { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
     { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "pred" },
     { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 3 }, INT_MIN, INT_MAX, VE, "pred" },

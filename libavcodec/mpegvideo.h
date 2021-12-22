@@ -290,7 +290,6 @@ typedef struct MpegEncContext {
     uint16_t chroma_intra_matrix[64];
     uint16_t inter_matrix[64];
     uint16_t chroma_inter_matrix[64];
-    int force_duplicated_matrix; ///< Force duplication of mjpeg matrices, useful for rtp streaming
 
     int intra_quant_bias;    ///< bias for the quantizer
     int inter_quant_bias;    ///< bias for the quantizer
@@ -414,7 +413,6 @@ typedef struct MpegEncContext {
     struct MJpegContext *mjpeg_ctx;
     int esc_pos;
     int pred;
-    int huffman;
 
     /* MSMPEG4 specific */
     int mv_table_index;
@@ -575,6 +573,10 @@ typedef struct MpegEncContext {
     int noise_reduction;
 
     int intra_penalty;
+
+#if FF_API_MPEGVIDEO_OPTS
+    int dummy;               ///< used as target for deprecated options
+#endif
 } MpegEncContext;
 
 /* mpegvideo_enc common options */
@@ -664,7 +666,7 @@ FF_MPV_OPT_CMP_FUNC, \
 #define FF_MPV_DEPRECATED_A53_CC_OPT \
     { "a53cc",      "Deprecated, does nothing", FF_MPV_OFFSET(a53_cc),     AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
 #define FF_MPV_DEPRECATED_MATRIX_OPT \
-   { "force_duplicated_matrix", "Deprecated, does nothing", FF_MPV_OFFSET(force_duplicated_matrix), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
+   { "force_duplicated_matrix", "Deprecated, does nothing", FF_MPV_OFFSET(dummy), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
 #define FF_MPV_DEPRECATED_BFRAME_OPTS \
    { "b_strategy",    "Deprecated, does nothing", FF_MPV_OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 2, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED }, \
    { "b_sensitivity", "Deprecated, does nothing", FF_MPV_OFFSET(b_sensitivity),    AV_OPT_TYPE_INT, { .i64 = 40 }, 1, INT_MAX, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED }, \

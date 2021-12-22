@@ -73,7 +73,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         int matrix_count = 1 + !!memcmp(luma_intra_matrix,
                                         chroma_intra_matrix,
                                         sizeof(luma_intra_matrix[0]) * 64);
-        if (s && s->force_duplicated_matrix)
+        if (s && s->mjpeg_ctx->force_duplicated_matrix)
             matrix_count = 2;
         /* quant matrixes */
         put_marker(p, DQT);
@@ -110,7 +110,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
 
     // Only MJPEG can have a variable Huffman variable. All other
     // formats use the default Huffman table.
-    if (s && s->huffman == HUFFMAN_TABLE_OPTIMAL) {
+    if (s && s->mjpeg_ctx->huffman == HUFFMAN_TABLE_OPTIMAL) {
         size += put_huffman_table(p, 0, 0, s->mjpeg_ctx->bits_dc_luminance,
                                   s->mjpeg_ctx->val_dc_luminance);
         size += put_huffman_table(p, 0, 1, s->mjpeg_ctx->bits_dc_chrominance,
