@@ -59,10 +59,38 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 
     st->codecpar->width  = s->width;
     st->codecpar->height = s->height;
+
+    if (ctx->iformat->raw_codec_id == AV_CODEC_ID_BITPACKED) {
+        unsigned int pgroup; /* size of the pixel group in bytes */
+        unsigned int xinc;
+        const AVPixFmtDescriptor *desc;
+        int tag;
+
+        desc = av_pix_fmt_desc_get(pix_fmt);
+        st->codecpar->bits_per_coded_sample = av_get_bits_per_pixel(desc);
+        if (pix_fmt == AV_PIX_FMT_YUV422P10) {
+            tag = MKTAG('U', 'Y', 'V', 'Y');
+            pgroup = 5;
+            xinc   = 2;
+        } else if (pix_fmt == AV_PIX_FMT_UYVY422) {
+            tag = MKTAG('U', 'Y', 'V', 'Y');
+            pgroup = 4;
+            xinc   = 2;
+            st->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+        } else {
+            av_log(ctx, AV_LOG_ERROR, "unsupported format: %s for bitpacked.\n",
+                    s->pixel_format);
+            return AVERROR(EINVAL);
+        }
+        st->codecpar->codec_tag = tag;
+        packet_size  = s->width * s->height * pgroup / xinc;
+    } else {
+        packet_size = av_image_get_buffer_size(pix_fmt, s->width, s->height, 1);
+        if (packet_size < 0)
+            return packet_size;
+    }
+
     st->codecpar->format = pix_fmt;
-    packet_size = av_image_get_buffer_size(st->codecpar->format, s->width, s->height, 1);
-    if (packet_size < 0)
-        return packet_size;
     ctx->packet_size = packet_size;
     st->codecpar->bit_rate = av_rescale_q(ctx->packet_size,
                                        (AVRational){8,1}, st->time_base);
@@ -111,3 +139,24 @@ const AVInputFormat ff_rawvideo_demuxer = {
     .raw_codec_id   = AV_CODEC_ID_RAWVIDEO,
     .priv_class     = &rawvideo_demuxer_class,
 };
+
+static const AVClass bitpacked_demuxer_class = {
+    .class_name = "bitpacked demuxer",
+    .item_name  = av_default_item_name,
+    .option     = rawvideo_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+#if CONFIG_BITPACKED_DEMUXER
+const AVInputFormat ff_bitpacked_demuxer = {
+    .name           = "bitpacked",
+    .long_name      = NULL_IF_CONFIG_SMALL("Bitpacked"),
+    .priv_data_size = sizeof(RawVideoDemuxerContext),
+    .read_header    = rawvideo_read_header,
+    .read_packet    = rawvideo_read_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "bitpacked",
+    .raw_codec_id   = AV_CODEC_ID_BITPACKED,
+    .priv_class     = &bitpacked_demuxer_class,
+};
+#endif // CONFIG_BITPACKED_DEMUXER
