@@ -73,17 +73,17 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         int matrix_count = 1 + !!memcmp(luma_intra_matrix,
                                         chroma_intra_matrix,
                                         sizeof(luma_intra_matrix[0]) * 64);
-    if (s && s->force_duplicated_matrix)
-        matrix_count = 2;
-    /* quant matrixes */
-    put_marker(p, DQT);
-    put_bits(p, 16, 2 + matrix_count * (1 + 64));
-    put_bits(p, 4, 0); /* 8 bit precision */
-    put_bits(p, 4, 0); /* table 0 */
-    for(i=0;i<64;i++) {
-        j = intra_scantable->permutated[i];
-        put_bits(p, 8, luma_intra_matrix[j]);
-    }
+        if (s && s->force_duplicated_matrix)
+            matrix_count = 2;
+        /* quant matrixes */
+        put_marker(p, DQT);
+        put_bits(p, 16, 2 + matrix_count * (1 + 64));
+        put_bits(p, 4, 0); /* 8 bit precision */
+        put_bits(p, 4, 0); /* table 0 */
+        for (int i = 0; i < 64; i++) {
+            uint8_t j = intra_scantable->permutated[i];
+            put_bits(p, 8, luma_intra_matrix[j]);
+        }
 
         if (matrix_count > 1) {
             put_bits(p, 4, 0); /* 8 bit precision */
