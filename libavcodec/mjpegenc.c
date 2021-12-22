@@ -78,6 +78,10 @@ static void mjpeg_encode_picture_header(MpegEncContext *s)
 {
     ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
                                    s->pred, s->intra_matrix, s->chroma_intra_matrix);
+
+    s->esc_pos = put_bytes_count(&s->pb, 0);
+    for (int i = 1; i < s->slice_context_count; i++)
+        s->thread_context[i]->esc_pos = 0;
 }
 
 void ff_mjpeg_amv_encode_picture_header(MpegEncContext *s)

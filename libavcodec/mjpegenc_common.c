@@ -224,7 +224,6 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
 {
     const int lossless = avctx->codec_id != AV_CODEC_ID_MJPEG && avctx->codec_id != AV_CODEC_ID_AMV;
     int hsample[4], vsample[4];
-    int i;
     int components = 3 + (avctx->pix_fmt == AV_PIX_FMT_BGRA);
     int chroma_matrix = !!memcmp(luma_intra_matrix,
                                  chroma_intra_matrix,
@@ -235,7 +234,8 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     put_marker(pb, SOI);
 
     // hack for AMV mjpeg format
-    if(avctx->codec_id == AV_CODEC_ID_AMV) goto end;
+    if (avctx->codec_id == AV_CODEC_ID_AMV)
+        return;
 
     jpeg_put_comments(avctx, pb);
 
@@ -319,16 +319,6 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     }
 
     put_bits(pb, 8, 0); /* Ah/Al (not used) */
-
-end:
-    if (!lossless) {
-        MpegEncContext *s = avctx->priv_data;
-        av_assert0(avctx->codec->priv_data_size > sizeof(MpegEncContext));
-
-        s->esc_pos = put_bytes_count(pb, 0);
-        for(i=1; i<s->slice_context_count; i++)
-            s->thread_context[i]->esc_pos = 0;
-    }
 }
 
 void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
