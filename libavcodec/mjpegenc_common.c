@@ -188,10 +188,6 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
 
 void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4])
 {
-    int chroma_h_shift, chroma_v_shift;
-
-    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
-                                     &chroma_v_shift);
     if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
         (   avctx->pix_fmt == AV_PIX_FMT_BGR0
          || avctx->pix_fmt == AV_PIX_FMT_BGRA
@@ -204,6 +200,9 @@ void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4
         vsample[0] = vsample[1] = vsample[2] = 2;
         hsample[0] = hsample[1] = hsample[2] = 1;
     } else {
+        int chroma_h_shift, chroma_v_shift;
+        av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
+                                         &chroma_v_shift);
         vsample[0] = 2;
         vsample[1] = 2 >> chroma_v_shift;
         vsample[2] = 2 >> chroma_v_shift;
