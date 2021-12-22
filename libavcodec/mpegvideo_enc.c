@@ -3404,8 +3404,6 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(b_count);
     MERGE(skip_count);
     MERGE(misc_bits);
-    MERGE(er.error_count);
-    MERGE(padding_bug_score);
     MERGE(current_picture.encoding_error[0]);
     MERGE(current_picture.encoding_error[1]);
     MERGE(current_picture.encoding_error[2]);
