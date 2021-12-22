@@ -188,7 +188,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p)
 
 void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4])
 {
-    if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
+    if (avctx->codec_id == AV_CODEC_ID_LJPEG &&
         (   avctx->pix_fmt == AV_PIX_FMT_BGR0
          || avctx->pix_fmt == AV_PIX_FMT_BGRA
          || avctx->pix_fmt == AV_PIX_FMT_BGR24)) {
