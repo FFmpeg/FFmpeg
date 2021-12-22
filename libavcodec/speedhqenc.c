@@ -213,8 +213,9 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
                 put_bits_le(&s->pb, ff_rl_speedhq.table_vlc[code][1] + 1,
                             ff_rl_speedhq.table_vlc[code][0] + (sign << ff_rl_speedhq.table_vlc[code][1]));
             } else {
-                /* escape seems to be pretty rare <5% so I do not optimize it */
-                put_bits_le(&s->pb, ff_rl_speedhq.table_vlc[121][1], ff_rl_speedhq.table_vlc[121][0]);
+                /* escape seems to be pretty rare <5% so I do not optimize it;
+                 * the values correspond to ff_rl_speedhq.table_vlc[121] */
+                put_bits_le(&s->pb, 6, 32);
                 /* escape: only clip in this case */
                 put_bits_le(&s->pb, 6, run);
                 put_bits_le(&s->pb, 12, level + 2048);
@@ -222,8 +223,8 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
             last_non_zero = i;
         }
     }
-    /* end of block */
-    put_bits_le(&s->pb, ff_rl_speedhq.table_vlc[122][1], ff_rl_speedhq.table_vlc[122][0]);
+    /* end of block; the values correspond to ff_rl_speedhq.table_vlc[122] */
+    put_bits_le(&s->pb, 4, 6);
 }
 
 void ff_speedhq_encode_mb(MpegEncContext *s, int16_t block[12][64])
