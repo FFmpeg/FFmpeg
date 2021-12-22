@@ -33,6 +33,8 @@ typedef struct RawVideoDemuxerContext {
     AVRational framerate;     /**< AVRational describing framerate, set by a private option. */
 } RawVideoDemuxerContext;
 
+// v210 frame width is padded to multiples of 48
+#define GET_PACKET_SIZE(w, h) (((w + 47) / 48) * 48 * h * 8 / 3)
 
 static int rawvideo_read_header(AVFormatContext *ctx)
 {
@@ -49,10 +51,13 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 
     st->codecpar->codec_id = ctx->iformat->raw_codec_id;
 
-    if ((pix_fmt = av_get_pix_fmt(s->pixel_format)) == AV_PIX_FMT_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "No such pixel format: %s.\n",
-               s->pixel_format);
-        return AVERROR(EINVAL);
+    if ((ctx->iformat->raw_codec_id != AV_CODEC_ID_V210) &&
+        (ctx->iformat->raw_codec_id != AV_CODEC_ID_V210X)) {
+        if ((pix_fmt = av_get_pix_fmt(s->pixel_format)) == AV_PIX_FMT_NONE) {
+            av_log(ctx, AV_LOG_ERROR, "No such pixel format: %s.\n",
+                    s->pixel_format);
+            return AVERROR(EINVAL);
+        }
     }
 
     avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
@@ -84,6 +89,12 @@ static int rawvideo_read_header(AVFormatContext *ctx)
         }
         st->codecpar->codec_tag = tag;
         packet_size  = s->width * s->height * pgroup / xinc;
+    } else if ((ctx->iformat->raw_codec_id == AV_CODEC_ID_V210) ||
+               (ctx->iformat->raw_codec_id == AV_CODEC_ID_V210X)) {
+        pix_fmt = ctx->iformat->raw_codec_id == AV_CODEC_ID_V210 ?
+                  AV_PIX_FMT_YUV422P10 : AV_PIX_FMT_YUV422P16;
+
+        packet_size = GET_PACKET_SIZE(s->width, s->height);
     } else {
         packet_size = av_image_get_buffer_size(pix_fmt, s->width, s->height, 1);
         if (packet_size < 0)
@@ -160,3 +171,38 @@ const AVInputFormat ff_bitpacked_demuxer = {
     .priv_class     = &bitpacked_demuxer_class,
 };
 #endif // CONFIG_BITPACKED_DEMUXER
+
+static const AVClass v210_demuxer_class = {
+    .class_name = "v210(x) demuxer",
+    .item_name  = av_default_item_name,
+    .option     = rawvideo_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+#if CONFIG_V210_DEMUXER
+const AVInputFormat ff_v210_demuxer = {
+    .name           = "v210",
+    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
+    .priv_data_size = sizeof(RawVideoDemuxerContext),
+    .read_header    = rawvideo_read_header,
+    .read_packet    = rawvideo_read_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "v210",
+    .raw_codec_id   = AV_CODEC_ID_V210,
+    .priv_class     = &v210_demuxer_class,
+};
+#endif // CONFIG_V210_DEMUXER
+
+#if CONFIG_V210X_DEMUXER
+const AVInputFormat ff_v210x_demuxer = {
+    .name           = "v210x",
+    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
+    .priv_data_size = sizeof(RawVideoDemuxerContext),
+    .read_header    = rawvideo_read_header,
+    .read_packet    = rawvideo_read_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "yuv10",
+    .raw_codec_id   = AV_CODEC_ID_V210X,
+    .priv_class     = &v210_demuxer_class,
+};
+#endif // CONFIG_V210X_DEMUXER
