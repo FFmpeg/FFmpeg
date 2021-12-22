@@ -65,6 +65,16 @@ static uint32_t mpeg1_chr_dc_uni[512];
 typedef struct MPEG12EncContext {
     MpegEncContext mpeg;
     AVRational frame_rate_ext;
+
+    int64_t timecode_frame_start; ///< GOP timecode frame start number, in non drop frame format
+    AVTimecode tc;           ///< timecode context
+    char *tc_opt_str;        ///< timecode option string
+    int drop_frame_timecode; ///< timecode is in drop frame format.
+    int scan_offset;         ///< reserve space for SVCD scan offset user data.
+
+    int a53_cc;
+    int seq_disp_ext;
+    int video_format;
 } MPEG12EncContext;
 
 #define A53_MAX_CC_COUNT 0x1f
@@ -218,24 +228,24 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    s->drop_frame_timecode = s->drop_frame_timecode || !!(avctx->flags2 & AV_CODEC_FLAG2_DROP_FRAME_TIMECODE);
-    if (s->drop_frame_timecode)
-        s->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
-    if (s->drop_frame_timecode && s->frame_rate_index != 4) {
+    mpeg12->drop_frame_timecode = mpeg12->drop_frame_timecode || !!(avctx->flags2 & AV_CODEC_FLAG2_DROP_FRAME_TIMECODE);
+    if (mpeg12->drop_frame_timecode)
+        mpeg12->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
+    if (mpeg12->drop_frame_timecode && s->frame_rate_index != 4) {
         av_log(avctx, AV_LOG_ERROR,
                "Drop frame time code only allowed with 1001/30000 fps\n");
         return AVERROR(EINVAL);
     }
 
-    if (s->tc_opt_str) {
+    if (mpeg12->tc_opt_str) {
         AVRational rate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
-        int ret = av_timecode_init_from_string(&s->tc, rate, s->tc_opt_str, s);
+        int ret = av_timecode_init_from_string(&mpeg12->tc, rate, mpeg12->tc_opt_str, s);
         if (ret < 0)
             return ret;
-        s->drop_frame_timecode = !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
-        s->timecode_frame_start = s->tc.start;
+        mpeg12->drop_frame_timecode  = !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
+        mpeg12->timecode_frame_start = mpeg12->tc.start;
     } else {
-        s->timecode_frame_start = 0; // default is -1
+        mpeg12->timecode_frame_start = 0; // default is -1
     }
 
     return 0;
@@ -364,12 +374,13 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                                 s->avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
                                 s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
                                 s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED ||
-                                s->video_format != VIDEO_FORMAT_UNSPECIFIED);
+                                mpeg12->video_format != VIDEO_FORMAT_UNSPECIFIED);
 
-            if (s->seq_disp_ext == 1 || (s->seq_disp_ext == -1 && use_seq_disp_ext)) {
+            if (mpeg12->seq_disp_ext == 1 ||
+                (mpeg12->seq_disp_ext == -1 && use_seq_disp_ext)) {
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 2);                         // sequence display extension
-                put_bits(&s->pb, 3, s->video_format);           // video_format
+                put_bits(&s->pb, 3, mpeg12->video_format);      // video_format
                 put_bits(&s->pb, 1, 1);                         // colour_description
                 put_bits(&s->pb, 8, s->avctx->color_primaries); // colour_primaries
                 put_bits(&s->pb, 8, s->avctx->color_trc);       // transfer_characteristics
@@ -382,17 +393,17 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         }
 
         put_header(s, GOP_START_CODE);
-        put_bits(&s->pb, 1, s->drop_frame_timecode);    // drop frame flag
+        put_bits(&s->pb, 1, mpeg12->drop_frame_timecode);    // drop frame flag
         /* time code: we must convert from the real frame rate to a
          * fake MPEG frame rate in case of low frame rate */
         fps       = (framerate.num + framerate.den / 2) / framerate.den;
         time_code = s->current_picture_ptr->f->coded_picture_number +
-                    s->timecode_frame_start;
+                    mpeg12->timecode_frame_start;
 
         s->gop_picture_number = s->current_picture_ptr->f->coded_picture_number;
 
-        av_assert0(s->drop_frame_timecode == !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
-        if (s->drop_frame_timecode)
+        av_assert0(mpeg12->drop_frame_timecode == !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
+        if (mpeg12->drop_frame_timecode)
             time_code = av_timecode_adjust_ntsc_framenum2(time_code, fps);
 
         put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
@@ -436,6 +447,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s)
 
 void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
+    MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
     AVFrameSideData *side_data;
     mpeg1_encode_sequence_header(s);
 
@@ -513,7 +525,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         put_bits(&s->pb, 1, s->progressive_frame);
         put_bits(&s->pb, 1, 0);                 /* composite_display_flag */
     }
-    if (s->scan_offset) {
+    if (mpeg12->scan_offset) {
         int i;
 
         put_header(s, USER_START_CODE);
@@ -559,7 +571,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         }
     }
 
-    if (CONFIG_MPEG2VIDEO_ENCODER && s->a53_cc) {
+    if (CONFIG_MPEG2VIDEO_ENCODER && mpeg12->a53_cc) {
         side_data = av_frame_get_side_data(s->current_picture_ptr->f,
             AV_FRAME_DATA_A53_CC);
         if (side_data) {
@@ -1138,7 +1150,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     ff_thread_once(&init_static_once, mpeg12_encode_init_static);
 }
 
-#define OFFSET(x) offsetof(MpegEncContext, x)
+#define OFFSET(x) offsetof(MPEG12EncContext, x)
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 #define COMMON_OPTS                                                           \
     { "gop_timecode",        "MPEG GOP Timecode in hh:mm:ss[:;.]ff format. Overrides timecode_frame_start.",   \
@@ -1165,9 +1177,9 @@ static const AVOption mpeg1_options[] = {
 static const AVOption mpeg2_options[] = {
     COMMON_OPTS
     { "intra_vlc",        "Use MPEG-2 intra VLC table.",
-      OFFSET(intra_vlc_format),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "non_linear_quant", "Use nonlinear quantizer.",    OFFSET(q_scale_type),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "alternate_scan",   "Enable alternate scantable.", OFFSET(alternate_scan), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+      FF_MPV_OFFSET(intra_vlc_format),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "non_linear_quant", "Use nonlinear quantizer.",    FF_MPV_OFFSET(q_scale_type),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "alternate_scan",   "Enable alternate scantable.", FF_MPV_OFFSET(alternate_scan), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "a53cc", "Use A53 Closed Captions (if available)", OFFSET(a53_cc),         AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, VE },
     { "seq_disp_ext",     "Write sequence_display_extension blocks.", OFFSET(seq_disp_ext), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, "seq_disp_ext" },
     {     "auto",   NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = -1},  0, 0, VE, "seq_disp_ext" },
@@ -1188,7 +1200,7 @@ static const AVOption mpeg2_options[] = {
 #undef LEVEL
     FF_MPV_COMMON_OPTS
 #if FF_API_MPEGVIDEO_OPTS
-    { "mpeg_quant",       "Deprecated, does nothing", OFFSET(mpeg_quant),
+    { "mpeg_quant",       "Deprecated, does nothing", FF_MPV_OFFSET(mpeg_quant),
       AV_OPT_TYPE_INT, {.i64 = 1 }, 0, 1, VE | AV_OPT_FLAG_DEPRECATED },
     FF_MPV_DEPRECATED_MATRIX_OPT
 #endif

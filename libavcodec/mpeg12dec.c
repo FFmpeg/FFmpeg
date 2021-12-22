@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/timecode.h"
 #include "libavutil/video_enc_params.h"
 
 #include "avcodec.h"

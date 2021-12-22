@@ -58,7 +58,6 @@
 #include "videodsp.h"
 
 #include "libavutil/opt.h"
-#include "libavutil/timecode.h"
 
 #define MAX_THREADS 32
 
@@ -443,7 +442,6 @@ typedef struct MpegEncContext {
     /* MPEG-2-specific - I wished not to have to support this mess. */
     int progressive_sequence;
     int mpeg_f_code[2][2];
-    int a53_cc;
 
     // picture structure defines are loaded from mpegutils.h
     int picture_structure;
@@ -457,8 +455,6 @@ typedef struct MpegEncContext {
     int brd_scale;
     int intra_vlc_format;
     int alternate_scan;
-    int seq_disp_ext;
-    int video_format;
 #define VIDEO_FORMAT_COMPONENT   0
 #define VIDEO_FORMAT_PAL         1
 #define VIDEO_FORMAT_NTSC        2
@@ -478,15 +474,10 @@ typedef struct MpegEncContext {
     int full_pel[2];
     int interlaced_dct;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
-    int drop_frame_timecode; ///< timecode is in drop frame format.
-    int scan_offset;         ///< reserve space for SVCD scan offset user data.
 
     /* RTP specific */
     int rtp_mode;
     int rtp_payload_size;
-
-    char *tc_opt_str;        ///< timecode option string
-    AVTimecode tc;           ///< timecode context
 
     uint8_t *ptr_lastgob;
     int swap_uv;             //vcr2 codec is an MPEG-2 variant with U and V swapped
