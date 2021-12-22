@@ -3596,9 +3596,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
                                         s->p_field_mv_table[i][j], s->f_code, CANDIDATE_MB_TYPE_INTER_I, !!s->intra_penalty);
                 }
             }
-        }
-
-        if(s->pict_type==AV_PICTURE_TYPE_B){
+        } else if (s->pict_type == AV_PICTURE_TYPE_B) {
             int a, b;
 
             a = ff_get_best_fcode(s, s->b_forw_mv_table, CANDIDATE_MB_TYPE_FORWARD);
