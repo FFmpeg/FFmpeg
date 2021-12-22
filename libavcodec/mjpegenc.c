@@ -74,6 +74,19 @@ static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256],
     }
 }
 
+static void mjpeg_encode_picture_header(MpegEncContext *s)
+{
+    ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
+                                   s->pred, s->intra_matrix, s->chroma_intra_matrix);
+}
+
+void ff_mjpeg_amv_encode_picture_header(MpegEncContext *s)
+{
+    /* s->huffman == HUFFMAN_TABLE_OPTIMAL can only be true for MJPEG. */
+    if (!CONFIG_MJPEG_ENCODER || s->huffman != HUFFMAN_TABLE_OPTIMAL)
+        mjpeg_encode_picture_header(s);
+}
+
 #if CONFIG_MJPEG_ENCODER
 /**
  * Encodes and outputs the entire frame in the JPEG format.
@@ -213,8 +226,7 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
         s->intra_chroma_ac_vlc_length      =
         s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
 
-        ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
-                                       s->pred, s->intra_matrix, s->chroma_intra_matrix);
+        mjpeg_encode_picture_header(s);
         mjpeg_encode_picture_frame(s);
     }
 #endif

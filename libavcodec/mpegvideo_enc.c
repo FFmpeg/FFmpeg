@@ -3702,10 +3702,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     switch(s->out_format) {
 #if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
     case FMT_MJPEG:
-        /* s->huffman == HUFFMAN_TABLE_OPTIMAL can only be true for MJPEG. */
-        if (!CONFIG_MJPEG_ENCODER || s->huffman != HUFFMAN_TABLE_OPTIMAL)
-            ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
-                                           s->pred, s->intra_matrix, s->chroma_intra_matrix);
+        ff_mjpeg_amv_encode_picture_header(s);
         break;
 #endif
     case FMT_SPEEDHQ:
