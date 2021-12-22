@@ -53,9 +53,8 @@
 #include "parser.h"
 #endif
 #include "mpegutils.h"
-#include "mpeg12data.h"
 #include "qpeldsp.h"
-#include "thread.h"
+#include "rl.h"
 #include "videodsp.h"
 
 #include "libavutil/opt.h"

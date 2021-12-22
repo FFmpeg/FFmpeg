@@ -31,7 +31,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
-#include "libavutil/motion_vector.h"
 #include "libavutil/video_enc_params.h"
 
 #include "avcodec.h"
@@ -44,8 +43,6 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
-#include "mjpegenc.h"
-#include "msmpeg4.h"
 #include "qpeldsp.h"
 #include "thread.h"
 #include "wmv2.h"

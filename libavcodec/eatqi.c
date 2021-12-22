@@ -37,6 +37,7 @@
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpeg12.h"
+#include "mpeg12data.h"
 
 typedef struct TqiContext {
     AVCodecContext *avctx;

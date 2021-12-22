@@ -45,6 +45,7 @@
 #include "encode.h"
 #include "idctdsp.h"
 #include "mpeg12.h"
+#include "mpeg12data.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "h261.h"

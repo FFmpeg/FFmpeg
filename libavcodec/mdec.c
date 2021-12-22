@@ -34,6 +34,7 @@
 #include "bswapdsp.h"
 #include "idctdsp.h"
 #include "mpeg12.h"
+#include "mpeg12data.h"
 #include "thread.h"
 
 typedef struct MDECContext {

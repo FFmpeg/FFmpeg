@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "mpeg12.h"
+#include "mpeg12data.h"
 #include "mpegvideo.h"
 #include "speedhqenc.h"
 
