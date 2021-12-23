@@ -105,6 +105,9 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
             return AVERROR(ENOSYS);
         if (c->plane >= MAX_PLANES)
             return AVERROR(ENOSYS);
+        /* data must either be in the high or low bits, never middle */
+        if (c->shift && ((c->shift + c->depth) & 0x7))
+            return AVERROR(ENOSYS);
         /* strange interleaving */
         if (pixelstep[c->plane] != 0 &&
             pixelstep[c->plane] != c->step)
