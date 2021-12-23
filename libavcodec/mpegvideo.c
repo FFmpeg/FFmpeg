@@ -1962,6 +1962,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                             int lowres_flag, int is_mpeg12)
 {
 #define IS_ENCODER(s) (CONFIG_MPEGVIDEOENC && !lowres_flag && (s)->encoding)
+#define IS_MPEG12(s) (CONFIG_SMALL ? ((s)->out_format == FMT_MPEG1) : is_mpeg12)
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     s->current_picture.qscale_table[mb_xy] = s->qscale;
@@ -2076,7 +2077,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
             }
 
             /* add dct residue */
-            if (IS_ENCODER(s) || !(s->msmpeg4_version || s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO
+            if (IS_ENCODER(s) || !(IS_MPEG12(s) || s->msmpeg4_version
                                 || (s->codec_id==AV_CODEC_ID_MPEG4 && !s->mpeg_quant))){
                 add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
@@ -2183,7 +2184,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 }
             }
             /* dct only in intra block */
-            else if (IS_ENCODER(s) || !(s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO)) {
+            else if (IS_ENCODER(s) || !IS_MPEG12(s)) {
                 put_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 put_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
                 put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
