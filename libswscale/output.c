@@ -2632,8 +2632,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
     } else {
         *yuv2plane1 = yuv2plane1_8_c;
         *yuv2planeX = yuv2planeX_8_c;
-        if (dstFormat == AV_PIX_FMT_NV12 || dstFormat == AV_PIX_FMT_NV21 ||
-            dstFormat == AV_PIX_FMT_NV24 || dstFormat == AV_PIX_FMT_NV42)
+        if (isSemiPlanarYUV(dstFormat))
             *yuv2nv12cX = yuv2nv12cX_c;
     }
 
