@@ -2166,10 +2166,11 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                             dest_pcm[i] += linesize[i] / 2;
                         }
                     }
-                } else if(s->dpcm_direction == -1) {
+                } else {
                     int i, w, h;
                     uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
                     int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
+                    av_assert2(s->dpcm_direction == -1);
                     for(i = 0; i < 3; i++) {
                         int idx = 0;
                         int vsub = i ? s->chroma_y_shift : 0;
