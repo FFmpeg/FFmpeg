@@ -2052,7 +2052,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                     }
                 }else{
                     op_qpix = s->me.qpel_put;
-                    if ((!s->no_rounding) || s->pict_type==AV_PICTURE_TYPE_B){
+                    if ((is_mpeg12 || !s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
                         op_pix = s->hdsp.put_pixels_tab;
                     }else{
                         op_pix = s->hdsp.put_no_rnd_pixels_tab;
