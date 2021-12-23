@@ -2318,7 +2318,7 @@ void ff_mpeg_flush(AVCodecContext *avctx){
     int i;
     MpegEncContext *s = avctx->priv_data;
 
-    if (!s || !s->picture)
+    if (!s->picture)
         return;
 
     for (i = 0; i < MAX_PICTURE_COUNT; i++)
