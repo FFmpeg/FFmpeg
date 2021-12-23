@@ -429,8 +429,7 @@ static void yuv2nv12cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
 {
     int i;
 
-    if (dstFormat == AV_PIX_FMT_NV12 ||
-        dstFormat == AV_PIX_FMT_NV24)
+    if (!isSwappedChroma(dstFormat))
         for (i=0; i<chrDstW; i++) {
             int u = chrDither[i & 7] << 12;
             int v = chrDither[(i + 3) & 7] << 12;
