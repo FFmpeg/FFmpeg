@@ -2597,9 +2597,8 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
     enum AVPixelFormat dstFormat = c->dstFormat;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
 
-    if (dstFormat == AV_PIX_FMT_P010LE || dstFormat == AV_PIX_FMT_P010BE ||
-        dstFormat == AV_PIX_FMT_P210LE || dstFormat == AV_PIX_FMT_P210BE ||
-        dstFormat == AV_PIX_FMT_P410LE || dstFormat == AV_PIX_FMT_P410BE) {
+    if (isSemiPlanarYUV(dstFormat) && isDataInHighBits(dstFormat)) {
+        av_assert0(desc->comp[0].depth == 10);
         *yuv2plane1 = isBE(dstFormat) ? yuv2p010l1_BE_c : yuv2p010l1_LE_c;
         *yuv2planeX = isBE(dstFormat) ? yuv2p010lX_BE_c : yuv2p010lX_LE_c;
         *yuv2nv12cX = isBE(dstFormat) ? yuv2p010cX_BE_c : yuv2p010cX_LE_c;
