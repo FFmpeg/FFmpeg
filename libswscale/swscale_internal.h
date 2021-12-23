@@ -911,6 +911,25 @@ static av_always_inline int isDataInHighBits(enum AVPixelFormat pix_fmt)
     return 1;
 }
 
+/*
+ * Identity formats where the chroma planes are swapped (CrCb order).
+ */
+static av_always_inline int isSwappedChroma(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    if (!isYUV(pix_fmt))
+        return 0;
+    if ((desc->flags & AV_PIX_FMT_FLAG_ALPHA) && desc->nb_components < 4)
+        return 0;
+    if (desc->nb_components < 3)
+        return 0;
+    if (!isPlanarYUV(pix_fmt) || isSemiPlanarYUV(pix_fmt))
+        return desc->comp[1].offset > desc->comp[2].offset;
+    else
+        return desc->comp[1].plane > desc->comp[2].plane;
+}
+
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
 

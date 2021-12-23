@@ -964,3 +964,8 @@ DataInHighBits:
   y210be
   y210le
 
+SwappedChroma:
+  nv21
+  nv42
+  yvyu422
+
