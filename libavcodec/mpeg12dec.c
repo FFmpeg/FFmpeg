@@ -1790,13 +1790,13 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     if (s->mb_y == 0 && s->mb_x == 0 && (s->first_field || s->picture_structure == PICT_FRAME)) {
         if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
             av_log(s->avctx, AV_LOG_DEBUG,
-                   "qp:%d fc:%2d%2d%2d%2d %s %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n",
+                   "qp:%d fc:%2d%2d%2d%2d %c %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n",
                    s->qscale,
                    s->mpeg_f_code[0][0], s->mpeg_f_code[0][1],
                    s->mpeg_f_code[1][0], s->mpeg_f_code[1][1],
-                   s->pict_type  == AV_PICTURE_TYPE_I ? "I" :
-                   (s->pict_type == AV_PICTURE_TYPE_P ? "P" :
-                   (s->pict_type == AV_PICTURE_TYPE_B ? "B" : "S")),
+                   s->pict_type  == AV_PICTURE_TYPE_I ? 'I' :
+                   (s->pict_type == AV_PICTURE_TYPE_P ? 'P' :
+                   (s->pict_type == AV_PICTURE_TYPE_B ? 'B' : 'S')),
                    s->progressive_sequence ? "ps"  : "",
                    s->progressive_frame    ? "pf"  : "",
                    s->alternate_scan       ? "alt" : "",
