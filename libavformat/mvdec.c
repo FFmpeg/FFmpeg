@@ -366,6 +366,9 @@ static int mv_read_header(AVFormatContext *avctx)
             avpriv_request_sample(avctx, "Audio compression (format %i)", v);
         }
 
+        if (bytes_per_sample == 0)
+            return AVERROR_INVALIDDATA;
+
         if (set_channels(avctx, ast, avio_rb32(pb)) < 0)
             return AVERROR_INVALIDDATA;
 
