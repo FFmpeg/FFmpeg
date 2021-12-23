@@ -679,10 +679,32 @@ void ff_mpv_common_init_neon(MpegEncContext *s);
 void ff_mpv_common_init_ppc(MpegEncContext *s);
 void ff_mpv_common_init_x86(MpegEncContext *s);
 void ff_mpv_common_init_mips(MpegEncContext *s);
+/**
+ * Initialize an MpegEncContext's thread contexts. Presumes that
+ * slice_context_count is already set and that all the fields
+ * that are freed/reset in free_duplicate_context() are NULL.
+ */
+int ff_mpv_init_duplicate_contexts(MpegEncContext *s);
+/**
+ * Initialize and allocates MpegEncContext fields dependent on the resolution.
+ */
+int ff_mpv_init_context_frame(MpegEncContext *s);
+/**
+ * Frees and resets MpegEncContext fields depending on the resolution
+ * as well as the slice thread contexts.
+ * Is used during resolution changes to avoid a full reinitialization of the
+ * codec.
+ */
+void ff_mpv_free_context_frame(MpegEncContext *s);
 
 int ff_mpv_common_frame_size_change(MpegEncContext *s);
 void ff_mpv_common_end(MpegEncContext *s);
 
+/**
+ * Initialize the given MpegEncContext for decoding.
+ * the changed fields will not depend upon
+ * the prior state of the MpegEncContext.
+ */
 void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx);
 void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64]);
 void ff_mpv_report_decode_progress(MpegEncContext *s);
