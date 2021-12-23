@@ -117,6 +117,7 @@ static int decode_frame(AVCodecContext *avctx,
     int idlen, pal, compr, y, w, h, bpp, flags, ret;
     int first_clr, colors, csize;
     int interleave;
+    size_t img_size;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -178,6 +179,15 @@ static int decode_frame(AVCodecContext *avctx,
 
     if ((compr & (~TGA_RLE)) == TGA_NODATA) {
         return avpkt->size;
+    }
+
+    if (!(compr & TGA_RLE)) {
+        img_size = w * ((bpp + 1) >> 3);
+        if (bytestream2_get_bytes_left(&s->gb) < img_size * h) {
+            av_log(avctx, AV_LOG_ERROR,
+                    "Not enough data available for image\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
@@ -251,7 +261,6 @@ static int decode_frame(AVCodecContext *avctx,
             if (res < 0)
                 return res;
         } else {
-            size_t img_size = w * ((bpp + 1) >> 3);
             uint8_t *line;
             if (bytestream2_get_bytes_left(&s->gb) < img_size * h) {
                 av_log(avctx, AV_LOG_ERROR,
