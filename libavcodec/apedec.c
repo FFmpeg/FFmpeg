@@ -1559,7 +1559,7 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         for (ch = 0; ch < s->channels; ch++) {
             sample8 = (uint8_t *)frame->data[ch];
             for (i = 0; i < blockstodecode; i++)
-                *sample8++ = (s->decoded[ch][i] + 0x80) & 0xff;
+                *sample8++ = (s->decoded[ch][i] + 0x80U) & 0xff;
         }
         break;
     case 16:
