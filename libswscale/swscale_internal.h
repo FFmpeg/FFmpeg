@@ -892,6 +892,25 @@ static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
     }
 }
 
+/*
+ * Identity formats where the data is in the high bits, and the low bits are shifted away.
+ */
+static av_always_inline int isDataInHighBits(enum AVPixelFormat pix_fmt)
+{
+    int i;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    if (desc->flags & (AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_HWACCEL))
+        return 0;
+    for (i = 0; i < desc->nb_components; i++) {
+        if (!desc->comp[i].shift)
+            return 0;
+        if ((desc->comp[i].shift + desc->comp[i].depth) & 0x7)
+            return 0;
+    }
+    return 1;
+}
+
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
 

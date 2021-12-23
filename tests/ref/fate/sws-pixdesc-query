@@ -952,3 +952,15 @@ usePal:
   rgb4_byte
   rgb8
 
+DataInHighBits:
+  p010be
+  p010le
+  p210be
+  p210le
+  p410be
+  p410le
+  xyz12be
+  xyz12le
+  y210be
+  y210le
+
