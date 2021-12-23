@@ -23,7 +23,6 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
-#include "simple_idct.h"
 #include "wmv2.h"
 #include "wmv2data.h"
 
@@ -52,49 +51,6 @@ av_cold void ff_wmv2_common_init(Wmv2Context *w)
     s->idsp.idct_put = w->wdsp.idct_put;
     s->idsp.idct_add = w->wdsp.idct_add;
     s->idsp.idct     = NULL;
-}
-
-static void wmv2_add_block(Wmv2Context *w, int16_t *block1,
-                           uint8_t *dst, int stride, int n)
-{
-    MpegEncContext *const s = &w->s;
-
-    if (s->block_last_index[n] >= 0) {
-        switch (w->abt_type_table[n]) {
-        case 0:
-            w->wdsp.idct_add(dst, stride, block1);
-            break;
-        case 1:
-            ff_simple_idct84_add(dst, stride, block1);
-            ff_simple_idct84_add(dst + 4 * stride, stride, w->abt_block2[n]);
-            s->bdsp.clear_block(w->abt_block2[n]);
-            break;
-        case 2:
-            ff_simple_idct48_add(dst, stride, block1);
-            ff_simple_idct48_add(dst + 4, stride, w->abt_block2[n]);
-            s->bdsp.clear_block(w->abt_block2[n]);
-            break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "internal error in WMV2 abt\n");
-        }
-    }
-}
-
-void ff_wmv2_add_mb(MpegEncContext *s, int16_t block1[6][64],
-                    uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr)
-{
-    Wmv2Context *const w = (Wmv2Context *) s;
-
-    wmv2_add_block(w, block1[0], dest_y,                       s->linesize, 0);
-    wmv2_add_block(w, block1[1], dest_y + 8,                   s->linesize, 1);
-    wmv2_add_block(w, block1[2], dest_y + 8 * s->linesize,     s->linesize, 2);
-    wmv2_add_block(w, block1[3], dest_y + 8 + 8 * s->linesize, s->linesize, 3);
-
-    if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
-        return;
-
-    wmv2_add_block(w, block1[4], dest_cb, s->uvlinesize, 4);
-    wmv2_add_block(w, block1[5], dest_cr, s->uvlinesize, 5);
 }
 
 void ff_mspel_motion(MpegEncContext *s, uint8_t *dest_y,
