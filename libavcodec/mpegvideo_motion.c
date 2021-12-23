@@ -839,8 +839,6 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
     int i;
     int mb_y = s->mb_y;
 
-    prefetch_motion(s, ref_picture, dir);
-
     if (!is_mpeg12 && s->obmc && s->pict_type != AV_PICTURE_TYPE_B) {
         apply_obmc(s, dest_y, dest_cb, dest_cr, ref_picture, pix_op);
         return;
@@ -978,6 +976,8 @@ void ff_mpv_motion(MpegEncContext *s,
                    op_pixels_func (*pix_op)[4],
                    qpel_mc_func (*qpix_op)[16])
 {
+    prefetch_motion(s, ref_picture, dir);
+
 #if !CONFIG_SMALL
     if (s->out_format == FMT_MPEG1)
         mpv_motion_internal(s, dest_y, dest_cb, dest_cr, dir,
