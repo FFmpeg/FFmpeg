@@ -2035,6 +2035,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                                                 int chroma_y_shift,
                                                 int chroma_format)
 {
+/* Interlaced DCT is only possible with MPEG-2 and MPEG-4
+ * and neither of these encoders currently supports 444. */
+#define INTERLACED_DCT(s) ((chroma_format == CHROMA_420 || chroma_format == CHROMA_422) && \
+                           (s)->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT)
     int16_t weight[12][64];
     int16_t orig[12][64];
     const int mb_x = s->mb_x;
@@ -2112,7 +2116,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     }
 
     if (s->mb_intra) {
-        if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        if (INTERLACED_DCT(s)) {
             int progressive_score, interlaced_score;
 
             s->interlaced_dct = 0;
@@ -2191,7 +2195,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                           op_pix, op_qpix);
         }
 
-        if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        if (INTERLACED_DCT(s)) {
             int progressive_score, interlaced_score;
 
             s->interlaced_dct = 0;
