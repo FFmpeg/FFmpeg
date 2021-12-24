@@ -14666,68 +14666,60 @@ ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Ca
 
 @section libvmaf
 
-Obtain the VMAF (Video Multi-Method Assessment Fusion)
-score between two input videos.
+Calulate the VMAF (Video Multi-Method Assessment Fusion) score for a
+reference/distorted pair of input videos.
 
-The first input is the encoded video, and the second input is the reference video.
+The first input is the distorted video, and the second input is the reference video.
 
 The obtained VMAF score is printed through the logging system.
 
 It requires Netflix's vmaf library (libvmaf) as a pre-requisite.
 After installing the library it can be enabled using:
 @code{./configure --enable-libvmaf}.
-If no model path is specified it uses the default model: @code{vmaf_v0.6.1.pkl}.
 
 The filter has following options:
 
 @table @option
+@item model
+A `|` delimited list of vmaf models. Each model can be configured with a number of parameters.
+Default value: @code{"version=vmaf_v0.6.1"}
+
 @item model_path
-Set the model path which is to be used for SVM.
-Default value: @code{"/usr/local/share/model/vmaf_v0.6.1.pkl"}
-
-@item log_path
-Set the file path to be used to store logs.
-
-@item log_fmt
-Set the format of the log file (csv, json or xml).
+Deprecated, use model='path=...'.
 
 @item enable_transform
-This option can enable/disable the @code{score_transform} applied to the final predicted VMAF score,
-if you have specified score_transform option in the input parameter file passed to @code{run_vmaf_training.py}
-Default value: @code{false}
+Deprecated, use model='enable_transform=true'.
 
 @item phone_model
-Invokes the phone model which will generate VMAF scores higher than in the
-regular model, which is more suitable for laptop, TV, etc. viewing conditions.
-Default value: @code{false}
-
-@item psnr
-Enables computing psnr along with vmaf.
-Default value: @code{false}
-
-@item ssim
-Enables computing ssim along with vmaf.
-Default value: @code{false}
-
-@item ms_ssim
-Enables computing ms_ssim along with vmaf.
-Default value: @code{false}
-
-@item pool
-Set the pool method to be used for computing vmaf.
-Options are @code{min}, @code{harmonic_mean} or @code{mean} (default).
-
-@item n_threads
-Set number of threads to be used when computing vmaf.
-Default value: @code{0}, which makes use of all available logical processors.
-
-@item n_subsample
-Set interval for frame subsampling used when computing vmaf.
-Default value: @code{1}
+Deprecated, use model='enable_transform=true'.
 
 @item enable_conf_interval
-Enables confidence interval.
-Default value: @code{false}
+Deprecated, use model='enable_conf_interval=true'.
+
+@item feature
+A `|` delimited list of features. Each feature can be configured with a number of parameters.
+
+@item psnr
+Deprecated, use feature='name=psnr'.
+
+@item ssim
+Deprecated, use feature='name=ssim'.
+
+@item ms_ssim
+Deprecated, use feature='name=ms_ssim'.
+
+@item log_path
+Set the file path to be used to store log files.
+
+@item log_fmt
+Set the format of the log file (xml, json, csv, or sub).
+
+@item n_threads
+Set number of threads to be used when initializing libvmaf.
+Default value: @code{0}, no threads.
+
+@item n_subsample
+Set frame subsampling interval to be used.
 @end table
 
 This filter also supports the @ref{framesync} options.
@@ -14735,23 +14727,31 @@ This filter also supports the @ref{framesync} options.
 @subsection Examples
 @itemize
 @item
-On the below examples the input file @file{main.mpg} being processed is
-compared with the reference file @file{ref.mpg}.
+In the examples below, a distorted video @file{distorted.mpg} is
+compared with a reference file @file{reference.mpg}.
 
+@item
+Basic usage:
 @example
-ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf -f null -
+ffmpeg -i distorted.mpg -i reference.mpg -lavfi libvmaf=log_path=output.xml -f null -
 @end example
 
 @item
-Example with options:
+Example with multiple models:
 @example
-ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf="psnr=1:log_fmt=json" -f null -
+ffmpeg -i distorted.mpg -i reference.mpg -lavfi libvmaf='model=version=vmaf_v0.6.1\\:name=vmaf|version=vmaf_v0.6.1neg\\:name=vmaf_neg' -f null -
+@end example
+
+@item
+Example with multiple addtional features:
+@example
+ffmpeg -i distorted.mpg -i reference.mpg -lavfi libvmaf='feature=name=psnr|name=ciede' -f null -
 @end example
 
 @item
 Example with options and different containers:
 @example
-ffmpeg -i main.mpg -i ref.mkv -lavfi "[0:v]settb=AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=AVTB,setpts=PTS-STARTPTS[ref];[main][ref]libvmaf=psnr=1:log_fmt=json" -f null -
+ffmpeg -i distorted.mpg -i reference.mkv -lavfi "[0:v]settb=AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=AVTB,setpts=PTS-STARTPTS[ref];[main][ref]libvmaf=log_fmt=json:log_path=output.json" -f null -
 @end example
 @end itemize
 
