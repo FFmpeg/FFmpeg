@@ -235,6 +235,7 @@ typedef struct NvencContext
     int intra_refresh;
     int single_slice_intra_refresh;
     int constrained_encoding;
+    int udu_sei;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

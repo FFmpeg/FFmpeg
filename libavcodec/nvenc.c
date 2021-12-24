@@ -2217,6 +2217,9 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
         }
     }
 
+    if (!ctx->udu_sei)
+        return sei_count;
+
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *side_data = frame->side_data[i];
         void *tmp;

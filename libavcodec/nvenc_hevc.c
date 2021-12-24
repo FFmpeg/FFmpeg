@@ -169,6 +169,8 @@ static const AVOption options[] = {
 #endif
     { "extra_sei",    "Pass on extra SEI data (e.g. a53 cc) to be included in the bitstream",
                                                             OFFSET(extra_sei),    AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
+    { "udu_sei",      "Pass on user data unregistered SEI if available",
+                                                            OFFSET(udu_sei),      AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "intra-refresh","Use Periodic Intra Refresh instead of IDR frames",
                                                             OFFSET(intra_refresh),AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "single-slice-intra-refresh", "Use single slice intra refresh",
