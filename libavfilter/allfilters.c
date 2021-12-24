@@ -19,9 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/thread.h"
 #include "avfilter.h"
-#include "config.h"
 
 extern const AVFilter ff_af_abench;
 extern const AVFilter ff_af_acompressor;

@@ -658,7 +658,7 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
         return AVERROR(ENOMEM);
     memset(s->mbintra_table, 1, mb_array_size);
 
-    return s->encoding ? 0 : ff_mpeg_er_init(s);
+    return !CONFIG_MPEGVIDEODEC || s->encoding ? 0 : ff_mpeg_er_init(s);
 }
 
 static void clear_context(MpegEncContext *s)
