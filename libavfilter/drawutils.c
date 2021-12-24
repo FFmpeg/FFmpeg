@@ -114,6 +114,8 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
         depthb = db;
         if (db * (c->offset + 1) > 16)
             return AVERROR(ENOSYS);
+        if (c->offset % db)
+            return AVERROR(ENOSYS);
         /* strange interleaving */
         if (pixelstep[c->plane] != 0 &&
             pixelstep[c->plane] != c->step)
