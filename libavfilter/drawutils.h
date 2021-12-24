@@ -37,7 +37,6 @@ typedef struct FFDrawContext {
     enum AVPixelFormat format;
     unsigned nb_planes;
     int pixelstep[MAX_PLANES]; /*< offset between pixels */
-    uint8_t comp_mask[MAX_PLANES]; /*< bitmask of used non-alpha components */
     uint8_t hsub[MAX_PLANES];  /*< horizontal subsampling */
     uint8_t vsub[MAX_PLANES];  /*< vertical subsampling */
     uint8_t hsub_max;
