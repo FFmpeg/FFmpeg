@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/intreadwrite.h"
@@ -32,50 +33,46 @@ enum { RED = 0, GREEN, BLUE, ALPHA };
 
 int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
 {
-    switch (pix_fmt) {
-    case AV_PIX_FMT_0RGB:
-    case AV_PIX_FMT_ARGB:  rgba_map[ALPHA] = 0; rgba_map[RED  ] = 1; rgba_map[GREEN] = 2; rgba_map[BLUE ] = 3; break;
-    case AV_PIX_FMT_0BGR:
-    case AV_PIX_FMT_ABGR:  rgba_map[ALPHA] = 0; rgba_map[BLUE ] = 1; rgba_map[GREEN] = 2; rgba_map[RED  ] = 3; break;
-    case AV_PIX_FMT_RGB48LE:
-    case AV_PIX_FMT_RGB48BE:
-    case AV_PIX_FMT_RGBA64BE:
-    case AV_PIX_FMT_RGBA64LE:
-    case AV_PIX_FMT_RGB0:
-    case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_RGB24: rgba_map[RED  ] = 0; rgba_map[GREEN] = 1; rgba_map[BLUE ] = 2; rgba_map[ALPHA] = 3; break;
-    case AV_PIX_FMT_BGR48LE:
-    case AV_PIX_FMT_BGR48BE:
-    case AV_PIX_FMT_BGRA64BE:
-    case AV_PIX_FMT_BGRA64LE:
-    case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_BGR0:
-    case AV_PIX_FMT_BGR24: rgba_map[BLUE ] = 0; rgba_map[GREEN] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
-    case AV_PIX_FMT_GBRP9LE:
-    case AV_PIX_FMT_GBRP9BE:
-    case AV_PIX_FMT_GBRP10LE:
-    case AV_PIX_FMT_GBRP10BE:
-    case AV_PIX_FMT_GBRP12LE:
-    case AV_PIX_FMT_GBRP12BE:
-    case AV_PIX_FMT_GBRP14LE:
-    case AV_PIX_FMT_GBRP14BE:
-    case AV_PIX_FMT_GBRP16LE:
-    case AV_PIX_FMT_GBRP16BE:
-    case AV_PIX_FMT_GBRAP:
-    case AV_PIX_FMT_GBRAP10LE:
-    case AV_PIX_FMT_GBRAP10BE:
-    case AV_PIX_FMT_GBRAP12LE:
-    case AV_PIX_FMT_GBRAP12BE:
-    case AV_PIX_FMT_GBRAP16LE:
-    case AV_PIX_FMT_GBRAP16BE:
-    case AV_PIX_FMT_GBRPF32LE:
-    case AV_PIX_FMT_GBRPF32BE:
-    case AV_PIX_FMT_GBRAPF32LE:
-    case AV_PIX_FMT_GBRAPF32BE:
-    case AV_PIX_FMT_GBRP:  rgba_map[GREEN] = 0; rgba_map[BLUE ] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
-    default:                    /* unsupported */
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    if (!(desc->flags & AV_PIX_FMT_FLAG_RGB))
         return AVERROR(EINVAL);
+    if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM)
+        return AVERROR(EINVAL);
+    av_assert0(desc->nb_components == 3 + !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA));
+    if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
+        rgba_map[RED]   = desc->comp[0].plane;
+        rgba_map[GREEN] = desc->comp[1].plane;
+        rgba_map[BLUE]  = desc->comp[2].plane;
+        rgba_map[ALPHA] = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? desc->comp[3].plane : 3;
+    } else {
+        int had0 = 0;
+        unsigned depthb = 0;
+        unsigned i;
+        for (i = 0; i < desc->nb_components; i++) {
+            /* all components must have same depth in bytes */
+            unsigned db = (desc->comp[i].depth + 7) / 8;
+            unsigned pos = desc->comp[i].offset / db;
+            if (depthb && (depthb != db))
+                return AVERROR(ENOSYS);
+
+            if (desc->comp[i].offset % db)
+                return AVERROR(ENOSYS);
+
+            had0 |= pos == 0;
+            rgba_map[i] = pos;
+        }
+
+        if (desc->nb_components == 3)
+            rgba_map[ALPHA] = had0 ? 3 : 0;
     }
+
+    av_assert0(rgba_map[RED]   != rgba_map[GREEN]);
+    av_assert0(rgba_map[GREEN] != rgba_map[BLUE]);
+    av_assert0(rgba_map[BLUE]  != rgba_map[RED]);
+    av_assert0(rgba_map[RED]   != rgba_map[ALPHA]);
+    av_assert0(rgba_map[GREEN] != rgba_map[ALPHA]);
+    av_assert0(rgba_map[BLUE]  != rgba_map[ALPHA]);
+
     return 0;
 }
 
