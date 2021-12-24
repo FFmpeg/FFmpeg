@@ -83,6 +83,7 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
     unsigned i, nb_planes = 0;
     int pixelstep[MAX_PLANES] = { 0 };
     int full_range = 0;
+    int depthb = 0;
 
     if (!desc || !desc->name)
         return AVERROR(EINVAL);
@@ -96,6 +97,7 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
         format == AV_PIX_FMT_YUVJ411P || format == AV_PIX_FMT_YUVJ440P)
         full_range = 1;
     for (i = 0; i < desc->nb_components; i++) {
+        int db;
         c = &desc->comp[i];
         /* for now, only 8-16 bits formats */
         if (c->depth < 8 || c->depth > 16)
@@ -105,6 +107,11 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
         /* data must either be in the high or low bits, never middle */
         if (c->shift && ((c->shift + c->depth) & 0x7))
             return AVERROR(ENOSYS);
+        /* mixed >8 and <=8 depth */
+        db = (c->depth + 7) / 8;
+        if (depthb && (depthb != db))
+            return AVERROR(ENOSYS);
+        depthb = db;
         /* strange interleaving */
         if (pixelstep[c->plane] != 0 &&
             pixelstep[c->plane] != c->step)
