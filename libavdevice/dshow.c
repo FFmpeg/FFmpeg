@@ -915,6 +915,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
             }
 
             if (!pformat_set) {
+                const char *chroma = av_chroma_location_name(fmt_info->chroma_loc);
                 if (fmt_info->pix_fmt == AV_PIX_FMT_NONE) {
                     const AVCodec *codec = avcodec_find_decoder(fmt_info->codec_id);
                     if (fmt_info->codec_id == AV_CODEC_ID_NONE || !codec) {
@@ -931,7 +932,6 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                        vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
                        1e7 / vcaps->MinFrameInterval);
 
-                const char *chroma = av_chroma_location_name(fmt_info->chroma_loc);
                 if (fmt_info->col_range != AVCOL_RANGE_UNSPECIFIED ||
                     fmt_info->col_space != AVCOL_SPC_UNSPECIFIED ||
                     fmt_info->col_prim != AVCOL_PRI_UNSPECIFIED ||
