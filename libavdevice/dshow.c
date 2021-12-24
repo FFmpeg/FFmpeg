@@ -382,7 +382,6 @@ dshow_get_device_media_types(AVFormatContext *avctx, enum dshowDeviceType devtyp
                                          enum dshowSourceFilterType sourcetype, IBaseFilter *device_filter,
                                          enum AVMediaType **media_types, int *nb_media_types)
 {
-    struct dshow_ctx *ctx = avctx->priv_data;
     IEnumPins *pins = 0;
     IPin *pin;
     int has_audio = 0, has_video = 0;
@@ -628,7 +627,6 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
 
 static int dshow_get_device_list(AVFormatContext *avctx, AVDeviceInfoList *device_list)
 {
-    struct dshow_ctx *ctx = avctx->priv_data;
     ICreateDevEnum *devenum = NULL;
     int r;
     int ret = AVERROR(EIO);
@@ -1170,7 +1168,6 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     IPin *pin;
     int r;
 
-    const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio only";
     const char *sourcetypename = (sourcetype == VideoSourceDevice) ? "video" : "audio";
 
