@@ -103,17 +103,17 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
 static const AVOption options[] = {
     QSV_COMMON_OPTS
 
-    { "cavlc",          "Enable CAVLC",                           OFFSET(qsv.cavlc),          AV_OPT_TYPE_INT, { .i64 = 0 },   0,          1, VE },
+    { "cavlc",          "Enable CAVLC",                           OFFSET(qsv.cavlc),          AV_OPT_TYPE_BOOL, { .i64 = 0 },   0,          1, VE },
 #if QSV_HAVE_VCM
-    { "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1,         VE },
+    { "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_BOOL, { .i64 = 0  },  0, 1,         VE },
 #endif
     { "idr_interval", "Distance (in I-frames) between IDR frames", OFFSET(qsv.idr_interval), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
-    { "pic_timing_sei",    "Insert picture timing SEI with pic_struct_syntax element", OFFSET(qsv.pic_timing_sei), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+    { "pic_timing_sei",    "Insert picture timing SEI with pic_struct_syntax element", OFFSET(qsv.pic_timing_sei), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, VE },
     { "single_sei_nal_unit",    "Put all the SEI messages into one NALU",        OFFSET(qsv.single_sei_nal_unit),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },
     { "max_dec_frame_buffering", "Maximum number of frames buffered in the DPB", OFFSET(qsv.max_dec_frame_buffering), AV_OPT_TYPE_INT, { .i64 = 0 },   0, UINT16_MAX, VE },
 
 #if QSV_HAVE_LA
-    { "look_ahead",       "Use VBR algorithm with look ahead",    OFFSET(qsv.look_ahead),       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "look_ahead",       "Use VBR algorithm with look ahead",    OFFSET(qsv.look_ahead),       AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "look_ahead_depth", "Depth of look ahead in number frames", OFFSET(qsv.look_ahead_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 100, VE },
 #endif
 #if QSV_HAVE_LA_DS
@@ -139,9 +139,9 @@ static const AVOption options[] = {
     { "main"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_AVC_MAIN     }, INT_MIN, INT_MAX,     VE, "profile" },
     { "high"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_AVC_HIGH     }, INT_MIN, INT_MAX,     VE, "profile" },
 
-    { "a53cc" , "Use A53 Closed Captions (if available)", OFFSET(qsv.a53_cc), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, VE},
+    { "a53cc" , "Use A53 Closed Captions (if available)", OFFSET(qsv.a53_cc), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, VE},
 
-    { "aud", "Insert the Access Unit Delimiter NAL", OFFSET(qsv.aud), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE},
+    { "aud", "Insert the Access Unit Delimiter NAL", OFFSET(qsv.aud), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE},
 
 #if QSV_HAVE_MF
     { "mfmode", "Multi-Frame Mode", OFFSET(qsv.mfmode), AV_OPT_TYPE_INT, { .i64 = MFX_MF_AUTO }, MFX_MF_DEFAULT, MFX_MF_AUTO, VE, "mfmode"},
