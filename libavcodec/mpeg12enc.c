@@ -776,6 +776,8 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                                                       int mb_block_count,
                                                       int chroma_y_shift)
 {
+/* MPEG-1 is always 420. */
+#define IS_MPEG1(s) (chroma_y_shift == 1 && (s)->codec_id == AV_CODEC_ID_MPEG1VIDEO)
     int i, cbp;
     const int mb_x     = s->mb_x;
     const int mb_y     = s->mb_y;
@@ -789,7 +791,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
 
     if (cbp == 0 && !first_mb && s->mv_type == MV_TYPE_16X16 &&
         (mb_x != s->mb_width - 1 ||
-         (mb_y != s->end_mb_y - 1 && s->codec_id == AV_CODEC_ID_MPEG1VIDEO)) &&
+         (mb_y != s->end_mb_y - 1 && IS_MPEG1(s))) &&
         ((s->pict_type == AV_PICTURE_TYPE_P && (motion_x | motion_y) == 0) ||
          (s->pict_type == AV_PICTURE_TYPE_B && s->mv_dir == s->last_mv_dir &&
           (((s->mv_dir & MV_DIR_FORWARD)
