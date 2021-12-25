@@ -545,31 +545,31 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
 
         if (ctx->udu_sei) {
-        for (i = 0; i < pic->nb_side_data; i++) {
-            AVFrameSideData *side_data = pic->side_data[i];
-            void *tmp;
-            x265_sei_payload *sei_payload;
+            for (i = 0; i < pic->nb_side_data; i++) {
+                AVFrameSideData *side_data = pic->side_data[i];
+                void *tmp;
+                x265_sei_payload *sei_payload;
 
-            if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
-                continue;
+                if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
+                    continue;
 
-            tmp = av_fast_realloc(ctx->sei_data,
-                                  &ctx->sei_data_size,
-                                  (sei->numPayloads + 1) * sizeof(*sei_payload));
-            if (!tmp) {
-                av_freep(&x265pic.userData);
-                av_freep(&x265pic.quantOffsets);
-                return AVERROR(ENOMEM);
+                tmp = av_fast_realloc(ctx->sei_data,
+                        &ctx->sei_data_size,
+                        (sei->numPayloads + 1) * sizeof(*sei_payload));
+                if (!tmp) {
+                    av_freep(&x265pic.userData);
+                    av_freep(&x265pic.quantOffsets);
+                    return AVERROR(ENOMEM);
+                }
+                ctx->sei_data = tmp;
+                sei->payloads = ctx->sei_data;
+                sei_payload = &sei->payloads[sei->numPayloads];
+                sei_payload->payload = side_data->data;
+                sei_payload->payloadSize = side_data->size;
+                /* Equal to libx265 USER_DATA_UNREGISTERED */
+                sei_payload->payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
+                sei->numPayloads++;
             }
-            ctx->sei_data = tmp;
-            sei->payloads = ctx->sei_data;
-            sei_payload = &sei->payloads[sei->numPayloads];
-            sei_payload->payload = side_data->data;
-            sei_payload->payloadSize = side_data->size;
-            /* Equal to libx265 USER_DATA_UNREGISTERED */
-            sei_payload->payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
-            sei->numPayloads++;
-        }
         }
     }
 

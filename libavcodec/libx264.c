@@ -466,29 +466,29 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         }
 
         if (x4->udu_sei) {
-        for (int j = 0; j < frame->nb_side_data; j++) {
-            AVFrameSideData *side_data = frame->side_data[j];
-            void *tmp;
-            x264_sei_payload_t *sei_payload;
-            if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
-                continue;
-            tmp = av_fast_realloc(sei->payloads, &sei_data_size, (sei->num_payloads + 1) * sizeof(*sei_payload));
-            if (!tmp) {
-                free_picture(ctx);
-                return AVERROR(ENOMEM);
+            for (int j = 0; j < frame->nb_side_data; j++) {
+                AVFrameSideData *side_data = frame->side_data[j];
+                void *tmp;
+                x264_sei_payload_t *sei_payload;
+                if (side_data->type != AV_FRAME_DATA_SEI_UNREGISTERED)
+                    continue;
+                tmp = av_fast_realloc(sei->payloads, &sei_data_size, (sei->num_payloads + 1) * sizeof(*sei_payload));
+                if (!tmp) {
+                    free_picture(ctx);
+                    return AVERROR(ENOMEM);
+                }
+                sei->payloads = tmp;
+                sei->sei_free = av_free;
+                sei_payload = &sei->payloads[sei->num_payloads];
+                sei_payload->payload = av_memdup(side_data->data, side_data->size);
+                if (!sei_payload->payload) {
+                    free_picture(ctx);
+                    return AVERROR(ENOMEM);
+                }
+                sei_payload->payload_size = side_data->size;
+                sei_payload->payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
+                sei->num_payloads++;
             }
-            sei->payloads = tmp;
-            sei->sei_free = av_free;
-            sei_payload = &sei->payloads[sei->num_payloads];
-            sei_payload->payload = av_memdup(side_data->data, side_data->size);
-            if (!sei_payload->payload) {
-                free_picture(ctx);
-                return AVERROR(ENOMEM);
-            }
-            sei_payload->payload_size = side_data->size;
-            sei_payload->payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
-            sei->num_payloads++;
-        }
         }
     }
 
