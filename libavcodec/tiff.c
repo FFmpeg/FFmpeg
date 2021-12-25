@@ -735,20 +735,6 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
     return 0;
 }
 
-static int dng_decode_strip(AVCodecContext *avctx, AVFrame *frame)
-{
-    TiffContext *s = avctx->priv_data;
-    int ret = ff_set_dimensions(s->avctx_mjpeg, s->width, s->height);
-
-    if (ret < 0)
-        return ret;
-
-    s->jpgframe->width  = s->width;
-    s->jpgframe->height = s->height;
-
-    return dng_decode_jpeg(avctx, frame, s->stripsize, 0, 0, s->width, s->height);
-}
-
 static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int stride,
                              const uint8_t *src, int size, int strip_start, int lines)
 {
@@ -870,7 +856,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
             av_log(s->avctx, AV_LOG_ERROR, "More than one DNG JPEG strips unsupported\n");
             return AVERROR_PATCHWELCOME;
         }
-        if ((ret = dng_decode_strip(s->avctx, p)) < 0)
+        if ((ret = dng_decode_jpeg(s->avctx, p, s->stripsize, 0, 0, s->width, s->height)) < 0)
             return ret;
         return 0;
     }
@@ -986,13 +972,7 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
     int has_width_leftover, has_height_leftover;
     int tile_x = 0, tile_y = 0;
     int pos_x = 0, pos_y = 0;
-    int ret = ff_set_dimensions(s->avctx_mjpeg, s->tile_width, s->tile_length);
-
-    if (ret < 0)
-        return ret;
-
-    s->jpgframe->width  = s->tile_width;
-    s->jpgframe->height = s->tile_length;
+    int ret;
 
     has_width_leftover = (s->width % s->tile_width != 0);
     has_height_leftover = (s->height % s->tile_length != 0);
