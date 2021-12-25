@@ -773,7 +773,8 @@ next_coef:
 static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                                                       int16_t block[8][64],
                                                       int motion_x, int motion_y,
-                                                      int mb_block_count)
+                                                      int mb_block_count,
+                                                      int chroma_y_shift)
 {
     int i, cbp;
     const int mb_x     = s->mb_x;
@@ -918,7 +919,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                 s->mv_bits += get_bits_diff(s);
             }
             if (cbp) {
-                if (s->chroma_y_shift) {
+                if (chroma_y_shift) {
                     put_bits(&s->pb,
                              ff_mpeg12_mbPatTable[cbp][1],
                              ff_mpeg12_mbPatTable[cbp][0]);
@@ -1025,7 +1026,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
             }
             s->mv_bits += get_bits_diff(s);
             if (cbp) {
-                if (s->chroma_y_shift) {
+                if (chroma_y_shift) {
                     put_bits(&s->pb,
                              ff_mpeg12_mbPatTable[cbp][1],
                              ff_mpeg12_mbPatTable[cbp][0]);
@@ -1052,9 +1053,9 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
                         int motion_x, int motion_y)
 {
     if (s->chroma_format == CHROMA_420)
-        mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 6);
+        mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 6, 1);
     else
-        mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 8);
+        mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 8, 0);
 }
 
 static av_cold void mpeg12_encode_init_static(void)
