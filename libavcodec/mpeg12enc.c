@@ -621,10 +621,8 @@ static inline void put_mb_modes(MpegEncContext *s, int n, int bits,
 static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 {
     if (val == 0) {
-        /* zero vector */
-        put_bits(&s->pb,
-                 ff_mpeg12_mbMotionVectorTable[0][1],
-                 ff_mpeg12_mbMotionVectorTable[0][0]);
+        /* zero vector, corresponds to ff_mpeg12_mbMotionVectorTable[0] */
+        put_bits(&s->pb, 1, 0x01);
     } else {
         int code, sign, bits;
         int bit_size = f_or_b_code - 1;
@@ -746,8 +744,10 @@ next_coef:
                 put_bits(&s->pb, table_vlc[code][1] + 1,
                          (table_vlc[code][0] << 1) + sign);
             } else {
-                /* escape seems to be pretty rare <5% so I do not optimize it */
-                put_bits(&s->pb, table_vlc[111][1], table_vlc[111][0]);
+                /* Escape seems to be pretty rare <5% so I do not optimize it;
+                 * the following value is the common escape value for both
+                 * possible tables (i.e. table_vlc[111]). */
+                put_bits(&s->pb, 6, 0x01);
                 /* escape: only clip in this case */
                 put_bits(&s->pb, 6, run);
                 if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
@@ -1097,7 +1097,7 @@ static av_cold void mpeg12_encode_init_static(void)
             int len;
 
             if (mv == 0) {
-                len = ff_mpeg12_mbMotionVectorTable[0][1];
+                len = 1; /* ff_mpeg12_mbMotionVectorTable[0][1] */
             } else {
                 int val, bit_size, code;
 
@@ -1112,7 +1112,7 @@ static av_cold void mpeg12_encode_init_static(void)
                     len = ff_mpeg12_mbMotionVectorTable[code][1] +
                           1 + bit_size;
                 else
-                    len = ff_mpeg12_mbMotionVectorTable[16][1] +
+                    len = 10 /* ff_mpeg12_mbMotionVectorTable[16][1] */ +
                           2 + bit_size;
             }
 
