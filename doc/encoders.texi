@@ -2660,6 +2660,9 @@ ffmpeg -i foo.mpg -c:v libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 Import closed captions (which must be ATSC compatible format) into output.
 Only the mpeg2 and h264 decoders provide these. Default is 1 (on).
 
+@item udu_sei @var{boolean}
+Import user data unregistered SEI if available into output. Default is 0 (off).
+
 @item x264-params (N.A.)
 Override the x264 configuration using a :-separated list of key=value
 parameters.
@@ -2740,6 +2743,9 @@ Quantizer curve compression factor
 @item forced-idr
 Normally, when forcing a I-frame type, the encoder can select any type
 of I-frame. This option forces it to choose an IDR-frame.
+
+@item udu_sei @var{boolean}
+Import user data unregistered SEI if available into output. Default is 0 (off).
 
 @item x265-params
 Set x265 options using a list of @var{key}=@var{value} couples separated
