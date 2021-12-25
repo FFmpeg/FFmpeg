@@ -124,6 +124,7 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
 {
     int au_headers_length, au_header_size, i;
     GetBitContext getbitcontext;
+    int ret;
 
     if (len < 2)
         return AVERROR_INVALIDDATA;
@@ -144,7 +145,9 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
     if (len < data->au_headers_length_bytes)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(&getbitcontext, buf, data->au_headers_length_bytes * 8);
+    ret = init_get_bits(&getbitcontext, buf, data->au_headers_length_bytes * 8);
+    if (ret < 0)
+        return ret;
 
     /* XXX: Wrong if optional additional sections are present (cts, dts etc...) */
     au_header_size = data->sizelength + data->indexlength;

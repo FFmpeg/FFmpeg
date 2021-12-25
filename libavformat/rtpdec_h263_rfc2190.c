@@ -142,7 +142,9 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         } else {
             /* Start/end skip bits not matching - missed packets? */
             GetBitContext gb;
-            init_get_bits(&gb, buf, len*8 - ebit);
+            ret = init_get_bits(&gb, buf, len*8 - ebit);
+            if (ret < 0)
+                return ret;
             skip_bits(&gb, sbit);
             if (data->endbyte_bits) {
                 data->endbyte |= get_bits(&gb, 8 - data->endbyte_bits);
