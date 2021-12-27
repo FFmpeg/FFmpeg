@@ -333,11 +333,9 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             par->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink);
         } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             par->sample_rate = av_buffersink_get_sample_rate(sink);
-            ret = av_channel_layout_from_mask(&par->ch_layout, av_buffersink_get_channel_layout(sink));
-            if (ret < 0) {
-                par->ch_layout.nb_channels = av_buffersink_get_channels(sink);
-                par->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-            }
+            ret = av_buffersink_get_ch_layout(sink, &par->ch_layout);
+            if (ret < 0)
+                goto end;
             par->format      = av_buffersink_get_format(sink);
             par->codec_id    = av_get_pcm_codec(par->format, -1);
             if (par->codec_id == AV_CODEC_ID_NONE)
@@ -441,7 +439,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
                                 frame->format, frame->width, frame->height, 1);
     } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         size = frame->nb_samples * av_get_bytes_per_sample(frame->format) *
-                                   frame->channels;
+                                   frame->ch_layout.nb_channels;
         if ((ret = av_new_packet(pkt, size)) < 0)
             goto fail;
         memcpy(pkt->data, frame->data[0], size);
