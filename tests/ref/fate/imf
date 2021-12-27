@@ -1,0 +1,54 @@
+FFMPEG sample content
+urn:uuid:8713c020-2489-45f5-a9f7-87be539e20b5
+24000 1001
+Marker resource count: 2
+Marker resource 0
+  Marker 0
+    Label LFOA
+    Offset 5
+Marker resource 1
+  Marker 0
+    Label FFOA
+    Offset 20
+  Marker 1
+    Label LFOC
+    Offset 24
+Main image resource count: 2
+Track file resource 0
+  urn:uuid:6f768ca4-c89e-4dac-9056-a29425d40ba1
+Track file resource 1
+  urn:uuid:f3b263b3-096b-4360-a952-b1a9623cd0ca
+Main audio track count: 2
+  Main audio virtual track 0
+  Main audio resource count: 2
+  Track file resource 0
+    urn:uuid:381dadd2-061e-46cc-a63a-e3d58ce7f488
+  Track file resource 1
+    urn:uuid:2484d613-bb7d-4bcc-8b0f-2e65938f0535
+  Main audio virtual track 1
+  Main audio resource count: 2
+  Track file resource 0
+    urn:uuid:381dadd2-061e-46cc-a63a-e3d58ce7f488
+  Track file resource 1
+    urn:uuid:2484d613-bb7d-4bcc-8b0f-2e65938f0535
+Allocate asset map
+Parse asset map XML document
+Compare assets count: 5 to 5
+For asset: 0:
+	Compare urn:uuid:b5d674b8-c6ce-4bce-3bdf-be045dfdb2d0 to urn:uuid:b5d674b8-c6ce-4bce-3bdf-be045dfdb2d0.
+	Compare IMF_TEST_ASSET_MAP_video.mxf to IMF_TEST_ASSET_MAP_video.mxf.
+For asset: 1:
+	Compare urn:uuid:ec3467ec-ab2a-4f49-c8cb-89caa3761f4a to urn:uuid:ec3467ec-ab2a-4f49-c8cb-89caa3761f4a.
+	Compare IMF_TEST_ASSET_MAP_video_1.mxf to IMF_TEST_ASSET_MAP_video_1.mxf.
+For asset: 2:
+	Compare urn:uuid:5cf5b5a7-8bb3-4f08-eaa6-3533d4b77fa6 to urn:uuid:5cf5b5a7-8bb3-4f08-eaa6-3533d4b77fa6.
+	Compare IMF_TEST_ASSET_MAP_audio.mxf to IMF_TEST_ASSET_MAP_audio.mxf.
+For asset: 3:
+	Compare urn:uuid:559777d6-ec29-4375-f90d-300b0bf73686 to urn:uuid:559777d6-ec29-4375-f90d-300b0bf73686.
+	Compare CPL_IMF_TEST_ASSET_MAP.xml to CPL_IMF_TEST_ASSET_MAP.xml.
+For asset: 4:
+	Compare urn:uuid:dd04528d-9b80-452a-7a13-805b08278b3d to urn:uuid:dd04528d-9b80-452a-7a13-805b08278b3d.
+	Compare PKL_IMF_TEST_ASSET_MAP.xml to PKL_IMF_TEST_ASSET_MAP.xml.
+#### The following should fail ####
+CPL parsing failed.
+#### End failing test ####

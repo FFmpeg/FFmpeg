@@ -698,6 +698,7 @@ TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 TESTPROGS-$(CONFIG_MOV_MUXER)            += movenc
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
 TESTPROGS-$(CONFIG_SRTP)                 += srtp
+TESTPROGS-$(CONFIG_IMF_DEMUXER)          += imf
 
 TOOLS     = aviocat                                                     \
             ismindex                                                    \
