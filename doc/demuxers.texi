@@ -274,6 +274,12 @@ which streams to actually receive.
 Each stream mirrors the @code{id} and @code{bandwidth} properties from the
 @code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
 
+@section imf
+
+Interoperable Master Format demuxer.
+
+This demuxer presents audio and video streams found in an IMF Composition.
+
 @section flv, live_flv, kux
 
 Adobe Flash Video Format demuxer.
