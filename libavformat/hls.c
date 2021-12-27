@@ -1284,6 +1284,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         char iv[33], key[33], url[MAX_URL_SIZE];
         ff_data_to_hex(iv, seg->iv, sizeof(seg->iv), 0);
         ff_data_to_hex(key, pls->key, sizeof(pls->key), 0);
+        iv[32] = key[32] = '\0';
         if (strstr(seg->url, "://"))
             snprintf(url, sizeof(url), "crypto+%s", seg->url);
         else
@@ -2051,6 +2052,7 @@ static int hls_read_header(AVFormatContext *s)
             if (strstr(in_fmt->name, "mov")) {
                 char key[33];
                 ff_data_to_hex(key, pls->key, sizeof(pls->key), 0);
+                key[32] = '\0';
                 av_dict_set(&options, "decryption_key", key, AV_OPT_FLAG_DECODING_PARAM);
             } else if (!c->crypto_ctx.aes_ctx) {
                 c->crypto_ctx.aes_ctx = av_aes_alloc();
