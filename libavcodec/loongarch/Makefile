@@ -7,6 +7,7 @@ OBJS-$(CONFIG_VP9_DECODER)            += loongarch/vp9dsp_init_loongarch.o
 OBJS-$(CONFIG_VC1DSP)                 += loongarch/vc1dsp_init_loongarch.o
 OBJS-$(CONFIG_HPELDSP)                += loongarch/hpeldsp_init_loongarch.o
 OBJS-$(CONFIG_IDCTDSP)                += loongarch/idctdsp_init_loongarch.o
+OBJS-$(CONFIG_VIDEODSP)               += loongarch/videodsp_init.o
 LASX-OBJS-$(CONFIG_H264CHROMA)        += loongarch/h264chroma_lasx.o
 LASX-OBJS-$(CONFIG_H264QPEL)          += loongarch/h264qpel_lasx.o
 LASX-OBJS-$(CONFIG_H264DSP)           += loongarch/h264dsp_lasx.o \
