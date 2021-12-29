@@ -367,4 +367,6 @@ av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
         ff_hpeldsp_init_x86(c, flags);
     if (ARCH_MIPS)
         ff_hpeldsp_init_mips(c, flags);
+    if (ARCH_LOONGARCH64)
+        ff_hpeldsp_init_loongarch(c, flags);
 }
