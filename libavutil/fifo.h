@@ -156,6 +156,7 @@ int av_fifo_grow(AVFifoBuffer *f, unsigned int additional_space);
  */
 void av_fifo_drain(AVFifoBuffer *f, int size);
 
+#if FF_API_FIFO_PEEK2
 /**
  * Return a pointer to the data stored in a FIFO buffer at a certain offset.
  * The FIFO buffer is not modified.
@@ -165,7 +166,9 @@ void av_fifo_drain(AVFifoBuffer *f, int size);
  *             than the used buffer size or the returned pointer will
  *             point outside to the buffer data.
  *             The used buffer size can be checked with av_fifo_size().
+ * @deprecated use av_fifo_generic_peek_at()
  */
+attribute_deprecated
 static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
 {
     uint8_t *ptr = f->rptr + offs;
@@ -175,5 +178,6 @@ static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
         ptr = f->end - (f->buffer - ptr);
     return ptr;
 }
+#endif
 
 #endif /* AVUTIL_FIFO_H */
