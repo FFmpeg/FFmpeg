@@ -24,9 +24,10 @@
 #include "common.h"
 #include "fifo.h"
 
-static AVFifoBuffer *fifo_alloc_common(void *buffer, size_t size)
+AVFifoBuffer *av_fifo_alloc_array(size_t nmemb, size_t size)
 {
     AVFifoBuffer *f;
+    void *buffer = av_malloc_array(nmemb, size);
     if (!buffer)
         return NULL;
     f = av_mallocz(sizeof(AVFifoBuffer));
@@ -35,21 +36,14 @@ static AVFifoBuffer *fifo_alloc_common(void *buffer, size_t size)
         return NULL;
     }
     f->buffer = buffer;
-    f->end    = f->buffer + size;
+    f->end    = f->buffer + nmemb * size;
     av_fifo_reset(f);
     return f;
 }
 
 AVFifoBuffer *av_fifo_alloc(unsigned int size)
 {
-    void *buffer = av_malloc(size);
-    return fifo_alloc_common(buffer, size);
-}
-
-AVFifoBuffer *av_fifo_alloc_array(size_t nmemb, size_t size)
-{
-    void *buffer = av_malloc_array(nmemb, size);
-    return fifo_alloc_common(buffer, nmemb * size);
+    return av_fifo_alloc_array(size, 1);
 }
 
 void av_fifo_free(AVFifoBuffer *f)
