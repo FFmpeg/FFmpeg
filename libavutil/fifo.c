@@ -27,7 +27,7 @@
 AVFifoBuffer *av_fifo_alloc_array(size_t nmemb, size_t size)
 {
     AVFifoBuffer *f;
-    void *buffer = av_malloc_array(nmemb, size);
+    void *buffer = av_realloc_array(NULL, nmemb, size);
     if (!buffer)
         return NULL;
     f = av_mallocz(sizeof(AVFifoBuffer));
@@ -83,17 +83,31 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size)
     unsigned int old_size = f->end - f->buffer;
 
     if (old_size < new_size) {
-        int len          = av_fifo_size(f);
-        AVFifoBuffer *f2 = av_fifo_alloc(new_size);
+        size_t offset_r = f->rptr - f->buffer;
+        size_t offset_w = f->wptr - f->buffer;
+        uint8_t *tmp;
 
-        if (!f2)
+        tmp = av_realloc(f->buffer, new_size);
+        if (!tmp)
             return AVERROR(ENOMEM);
-        av_fifo_generic_read(f, f2->buffer, len, NULL);
-        f2->wptr += len;
-        f2->wndx += len;
-        av_free(f->buffer);
-        *f = *f2;
-        av_free(f2);
+
+        // move the data from the beginning of the ring buffer
+        // to the newly allocated space
+        // the second condition distinguishes full vs empty fifo
+        if (offset_w <= offset_r && av_fifo_size(f)) {
+            const size_t copy = FFMIN(new_size - old_size, offset_w);
+            memcpy(tmp + old_size, tmp, copy);
+            if (copy < offset_w) {
+                memmove(tmp, tmp + copy , offset_w - copy);
+                offset_w -= copy;
+            } else
+                offset_w = old_size + copy;
+        }
+
+        f->buffer = tmp;
+        f->end    = f->buffer + new_size;
+        f->rptr   = f->buffer + offset_r;
+        f->wptr   = f->buffer + offset_w;
     }
     return 0;
 }
