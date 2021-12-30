@@ -14,6 +14,15 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-02-07 - xxxxxxxxxx - lavu 57.20.100 - fifo.h
+  Add a new FIFO API, which allows setting a FIFO element size.
+  This API operates on these elements rather than on bytes.
+  Add av_fifo_alloc2(), av_fifo_elem_size(), av_fifo_can_read(),
+  av_fifo_can_write(), av_fifo_grow2(), av_fifo_drain2(), av_fifo_write(),
+  av_fifo_write_from_cb(), av_fifo_read(), av_fifo_read_to_cb(),
+  av_fifo_peek(), av_fifo_peek_to_cb(), av_fifo_drain2(), av_fifo_reset2(),
+  av_fifo_freep2().
+
 2022-01-26 - af94ab7c7c0 - lavu 57.19.100 - tx.h
   Add AV_TX_FLOAT_RDFT, AV_TX_DOUBLE_RDFT and AV_TX_INT32_RDFT.
 
