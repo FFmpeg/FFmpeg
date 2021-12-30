@@ -25,6 +25,13 @@ Audible Format 2, 3, and 4 demuxer.
 
 This demuxer is used to demux Audible Format 2, 3, and 4 (.aa) files.
 
+@section aac
+
+Raw Audio Data Transport Stream AAC demuxer.
+
+This demuxer is used to demux an ADTS input containing a single AAC stream
+alongwith any ID3v1/2 or APE tags in it.
+
 @section apng
 
 Animated Portable Network Graphics demuxer.
