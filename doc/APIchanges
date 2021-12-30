@@ -14,6 +14,14 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-02-07 - xxxxxxxxxx - lavu 57.21.100 - fifo.h
+  Deprecate AVFifoBuffer and the API around it, namely av_fifo_alloc(),
+  av_fifo_alloc_array(), av_fifo_free(), av_fifo_freep(), av_fifo_reset(),
+  av_fifo_size(), av_fifo_space(), av_fifo_generic_peek_at(),
+  av_fifo_generic_peek(), av_fifo_generic_read(), av_fifo_generic_write(),
+  av_fifo_realloc2(), av_fifo_grow(), av_fifo_drain() and av_fifo_peek2().
+  Users should switch to the AVFifo-API.
+
 2022-02-07 - xxxxxxxxxx - lavu 57.20.100 - fifo.h
   Add a new FIFO API, which allows setting a FIFO element size.
   This API operates on these elements rather than on bytes.

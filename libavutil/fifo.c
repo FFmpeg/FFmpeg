@@ -287,6 +287,8 @@ void av_fifo_freep2(AVFifo **f)
 }
 
 
+#if FF_API_FIFO_OLD_API
+FF_DISABLE_DEPRECATION_WARNINGS
 #define OLD_FIFO_SIZE_MAX (size_t)FFMIN3(INT_MAX, UINT32_MAX, SIZE_MAX)
 
 AVFifoBuffer *av_fifo_alloc_array(size_t nmemb, size_t size)
@@ -499,3 +501,5 @@ void av_fifo_drain(AVFifoBuffer *f, int size)
         f->rptr -= f->end - f->buffer;
     f->rndx += size;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif

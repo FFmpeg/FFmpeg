@@ -220,6 +220,7 @@ void av_fifo_reset2(AVFifo *f);
 void av_fifo_freep2(AVFifo **f);
 
 
+#if FF_API_FIFO_OLD_API
 typedef struct AVFifoBuffer {
     uint8_t *buffer;
     uint8_t *rptr, *wptr, *end;
@@ -230,7 +231,9 @@ typedef struct AVFifoBuffer {
  * Initialize an AVFifoBuffer.
  * @param size of FIFO
  * @return AVFifoBuffer or NULL in case of memory allocation failure
+ * @deprecated use av_fifo_alloc2()
  */
+attribute_deprecated
 AVFifoBuffer *av_fifo_alloc(unsigned int size);
 
 /**
@@ -238,25 +241,33 @@ AVFifoBuffer *av_fifo_alloc(unsigned int size);
  * @param nmemb number of elements
  * @param size  size of the single element
  * @return AVFifoBuffer or NULL in case of memory allocation failure
+ * @deprecated use av_fifo_alloc2()
  */
+attribute_deprecated
 AVFifoBuffer *av_fifo_alloc_array(size_t nmemb, size_t size);
 
 /**
  * Free an AVFifoBuffer.
  * @param f AVFifoBuffer to free
+ * @deprecated use the AVFifo API with av_fifo_freep2()
  */
+attribute_deprecated
 void av_fifo_free(AVFifoBuffer *f);
 
 /**
  * Free an AVFifoBuffer and reset pointer to NULL.
  * @param f AVFifoBuffer to free
+ * @deprecated use the AVFifo API with av_fifo_freep2()
  */
+attribute_deprecated
 void av_fifo_freep(AVFifoBuffer **f);
 
 /**
  * Reset the AVFifoBuffer to the state right after av_fifo_alloc, in particular it is emptied.
  * @param f AVFifoBuffer to reset
+ * @deprecated use av_fifo_reset2() with the new AVFifo-API
  */
+attribute_deprecated
 void av_fifo_reset(AVFifoBuffer *f);
 
 /**
@@ -264,7 +275,9 @@ void av_fifo_reset(AVFifoBuffer *f);
  * amount of data you can read from it.
  * @param f AVFifoBuffer to read from
  * @return size
+ * @deprecated use av_fifo_can_read() with the new AVFifo-API
  */
+attribute_deprecated
 int av_fifo_size(const AVFifoBuffer *f);
 
 /**
@@ -272,7 +285,9 @@ int av_fifo_size(const AVFifoBuffer *f);
  * amount of data you can write into it.
  * @param f AVFifoBuffer to write into
  * @return size
+ * @deprecated use av_fifo_can_write() with the new AVFifo-API
  */
+attribute_deprecated
 int av_fifo_space(const AVFifoBuffer *f);
 
 /**
@@ -285,7 +300,11 @@ int av_fifo_space(const AVFifoBuffer *f);
  * @param dest data destination
  *
  * @return a non-negative number on success, a negative error code on failure
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_peek() when func == NULL,
+ *             av_fifo_peek_to_cb() otherwise
  */
+attribute_deprecated
 int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_size, void (*func)(void*, void*, int));
 
 /**
@@ -297,7 +316,11 @@ int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_siz
  * @param dest data destination
  *
  * @return a non-negative number on success, a negative error code on failure
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_peek() when func == NULL,
+ *             av_fifo_peek_to_cb() otherwise
  */
+attribute_deprecated
 int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int));
 
 /**
@@ -308,7 +331,11 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size, void (*func)
  * @param dest data destination
  *
  * @return a non-negative number on success, a negative error code on failure
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_read() when func == NULL,
+ *             av_fifo_read_to_cb() otherwise
  */
+attribute_deprecated
 int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int));
 
 /**
@@ -323,7 +350,11 @@ int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)
  * indicate no more data available to write.
  * If func is NULL, src is interpreted as a simple byte array for source data.
  * @return the number of bytes written to the FIFO or a negative error code on failure
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_write() when func == NULL,
+ *             av_fifo_write_from_cb() otherwise
  */
+attribute_deprecated
 int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void*, void*, int));
 
 /**
@@ -333,7 +364,11 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void
  * @param f AVFifoBuffer to resize
  * @param size new AVFifoBuffer size in bytes
  * @return <0 for failure, >=0 otherwise
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_grow2() to increase FIFO size,
+ *             decreasing FIFO size is not supported
  */
+attribute_deprecated
 int av_fifo_realloc2(AVFifoBuffer *f, unsigned int size);
 
 /**
@@ -344,14 +379,21 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int size);
  * @param f AVFifoBuffer to resize
  * @param additional_space the amount of space in bytes to allocate in addition to av_fifo_size()
  * @return <0 for failure, >=0 otherwise
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_grow2(); note that unlike
+ * this function it adds to the allocated size, rather than to the used size
  */
+attribute_deprecated
 int av_fifo_grow(AVFifoBuffer *f, unsigned int additional_space);
 
 /**
  * Read and discard the specified amount of data from an AVFifoBuffer.
  * @param f AVFifoBuffer to read from
  * @param size amount of data to read in bytes
+ *
+ * @deprecated use the new AVFifo-API with av_fifo_drain2()
  */
+attribute_deprecated
 void av_fifo_drain(AVFifoBuffer *f, int size);
 
 #if FF_API_FIFO_PEEK2
@@ -364,7 +406,7 @@ void av_fifo_drain(AVFifoBuffer *f, int size);
  *             than the used buffer size or the returned pointer will
  *             point outside to the buffer data.
  *             The used buffer size can be checked with av_fifo_size().
- * @deprecated use av_fifo_generic_peek_at()
+ * @deprecated use the new AVFifo-API with av_fifo_peek() or av_fifo_peek_to_cb()
  */
 attribute_deprecated
 static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
@@ -376,6 +418,7 @@ static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
         ptr = f->end - (f->buffer - ptr);
     return ptr;
 }
+#endif
 #endif
 
 #endif /* AVUTIL_FIFO_H */
