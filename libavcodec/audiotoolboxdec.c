@@ -375,6 +375,11 @@ static av_cold int ffat_create_decoder(AVCodecContext *avctx,
     avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
     avctx->ch_layout.nb_channels = out_format.mChannelsPerFrame = in_format.mChannelsPerFrame;
 
+    out_format.mBytesPerFrame =
+        out_format.mChannelsPerFrame * (out_format.mBitsPerChannel / 8);
+    out_format.mBytesPerPacket =
+        out_format.mBytesPerFrame * out_format.mFramesPerPacket;
+
     if (avctx->codec_id == AV_CODEC_ID_ADPCM_IMA_QT)
         in_format.mFramesPerPacket = 64;
 
