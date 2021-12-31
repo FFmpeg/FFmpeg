@@ -144,7 +144,6 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size,
             memcpy(wptr, src, len);
             src = (uint8_t *)src + len;
         }
-// Write memory barrier needed for SMP here in theory
         wptr += len;
         if (wptr >= f->end)
             wptr = f->buffer;
@@ -197,7 +196,6 @@ int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_siz
 int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
                          void (*func)(void *, void *, int))
 {
-// Read memory barrier needed for SMP here in theory
     uint8_t *rptr = f->rptr;
 
     do {
@@ -208,7 +206,6 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
             memcpy(dest, rptr, len);
             dest = (uint8_t *)dest + len;
         }
-// memory barrier needed for SMP here in theory
         rptr += len;
         if (rptr >= f->end)
             rptr -= f->end - f->buffer;
@@ -221,7 +218,6 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
 int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size,
                          void (*func)(void *, void *, int))
 {
-// Read memory barrier needed for SMP here in theory
     do {
         int len = FFMIN(f->end - f->rptr, buf_size);
         if (func)
@@ -230,7 +226,6 @@ int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size,
             memcpy(dest, f->rptr, len);
             dest = (uint8_t *)dest + len;
         }
-// memory barrier needed for SMP here in theory
         av_fifo_drain(f, len);
         buf_size -= len;
     } while (buf_size > 0);
