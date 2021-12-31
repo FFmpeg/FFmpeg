@@ -91,6 +91,8 @@ int av_fifo_space(const AVFifoBuffer *f);
  * @param buf_size number of bytes to read
  * @param func generic read function
  * @param dest data destination
+ *
+ * @return a non-negative number on success, a negative error code on failure
  */
 int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_size, void (*func)(void*, void*, int));
 
@@ -101,6 +103,8 @@ int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_siz
  * @param buf_size number of bytes to read
  * @param func generic read function
  * @param dest data destination
+ *
+ * @return a non-negative number on success, a negative error code on failure
  */
 int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int));
 
@@ -110,6 +114,8 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size, void (*func)
  * @param buf_size number of bytes to read
  * @param func generic read function
  * @param dest data destination
+ *
+ * @return a non-negative number on success, a negative error code on failure
  */
 int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int));
 
@@ -124,7 +130,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)
  * func must return the number of bytes written to dest_buf, or <= 0 to
  * indicate no more data available to write.
  * If func is NULL, src is interpreted as a simple byte array for source data.
- * @return the number of bytes written to the FIFO
+ * @return the number of bytes written to the FIFO or a negative error code on failure
  */
 int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void*, void*, int));
 

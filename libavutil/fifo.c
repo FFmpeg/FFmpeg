@@ -134,6 +134,9 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size,
     uint32_t wndx= f->wndx;
     uint8_t *wptr= f->wptr;
 
+    if (size > av_fifo_space(f))
+        return AVERROR(ENOSPC);
+
     do {
         int len = FFMIN(f->end - wptr, size);
         if (func) {
@@ -159,13 +162,8 @@ int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_siz
 {
     uint8_t *rptr = f->rptr;
 
-    av_assert2(offset >= 0);
-
-    /*
-     * *ndx are indexes modulo 2^32, they are intended to overflow,
-     * to handle *ndx greater than 4gb.
-     */
-    av_assert2(buf_size + (unsigned)offset <= f->wndx - f->rndx);
+    if (offset < 0 || buf_size > av_fifo_size(f) - offset)
+        return AVERROR(EINVAL);
 
     if (offset >= f->end - rptr)
         rptr += offset - (f->end - f->buffer);
@@ -198,6 +196,9 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
 {
     uint8_t *rptr = f->rptr;
 
+    if (buf_size > av_fifo_size(f))
+        return AVERROR(EINVAL);
+
     do {
         int len = FFMIN(f->end - rptr, buf_size);
         if (func)
@@ -218,6 +219,9 @@ int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
 int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size,
                          void (*func)(void *, void *, int))
 {
+    if (buf_size > av_fifo_size(f))
+        return AVERROR(EINVAL);
+
     do {
         int len = FFMIN(f->end - f->rptr, buf_size);
         if (func)
