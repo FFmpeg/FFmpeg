@@ -279,7 +279,11 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
     dst_buf = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!dst_buf)
         return top_buf;
-    av_frame_copy_props(dst_buf, top_buf);
+
+    if (av_frame_copy_props(dst_buf, top_buf) < 0) {
+        av_frame_free(&dst_buf);
+        return top_buf;
+    }
 
     for (plane = 0; plane < s->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
