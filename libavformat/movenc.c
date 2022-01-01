@@ -27,6 +27,7 @@
 #include "movenc.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "dovi_isom.h"
 #include "riff.h"
 #include "avio.h"
 #include "isom.h"
@@ -1911,6 +1912,8 @@ static int mov_write_sv3d_tag(AVFormatContext *s, AVIOContext *pb, AVSphericalMa
 
 static int mov_write_dvcc_dvvc_tag(AVFormatContext *s, AVIOContext *pb, AVDOVIDecoderConfigurationRecord *dovi)
 {
+    uint8_t buf[ISOM_DVCC_DVVC_SIZE];
+
     avio_wb32(pb, 32); /* size = 8 + 24 */
     if (dovi->dv_profile > 10)
         ffio_wfourcc(pb, "dvwC");
@@ -1918,23 +1921,10 @@ static int mov_write_dvcc_dvvc_tag(AVFormatContext *s, AVIOContext *pb, AVDOVIDe
         ffio_wfourcc(pb, "dvvC");
     else
         ffio_wfourcc(pb, "dvcC");
-    avio_w8(pb, dovi->dv_version_major);
-    avio_w8(pb, dovi->dv_version_minor);
-    avio_wb16(pb, (dovi->dv_profile << 9) | (dovi->dv_level << 3) |
-              (dovi->rpu_present_flag << 2) | (dovi->el_present_flag << 1) |
-              dovi->bl_present_flag);
-    avio_wb32(pb, (dovi->dv_bl_signal_compatibility_id << 28) | 0);
 
-    ffio_fill(pb, 0, 4 * 4); /* reserved */
-    av_log(s, AV_LOG_DEBUG, "DOVI in %s box, version: %d.%d, profile: %d, level: %d, "
-           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
-           dovi->dv_profile > 10 ? "dvwC" : (dovi->dv_profile > 7 ? "dvvC" : "dvcC"),
-           dovi->dv_version_major, dovi->dv_version_minor,
-           dovi->dv_profile, dovi->dv_level,
-           dovi->rpu_present_flag,
-           dovi->el_present_flag,
-           dovi->bl_present_flag,
-           dovi->dv_bl_signal_compatibility_id);
+    ff_isom_put_dvcc_dvvc(s, buf, dovi);
+    avio_write(pb, buf, sizeof(buf));
+
     return 32; /* 8 + 24 */
 }
 
