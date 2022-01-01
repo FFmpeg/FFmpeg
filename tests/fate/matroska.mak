@@ -90,6 +90,13 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER       \
                                += fate-matroska-dovi-write-config7
 fate-matroska-dovi-write-config7: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7.mp4 matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 40  -metadata_header_padding 64339" "-map 0 -c copy" "" "-show_entries stream_side_data_list"
 
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL \
+                                            MOV_DEMUXER MATROSKA_DEMUXER \
+                                            HEVC_DECODER AAC_DECODER      \
+                                            MATROSKA_MUXER FRAMECRC_MUXER) \
+                               += fate-matroska-dovi-write-config8
+fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov matroska "-c copy" "-map 0 -c copy -t 0.4" "" "-show_entries stream_side_data_list -select_streams v"
+
 # This tests writing the MS-compatibility modes V_MS/VFW/FOURCC and A_MS/ACM.
 # It furthermore tests writing the Cues at the front if the cues_to_front
 # option is set and more than enough space has been reserved in advance.

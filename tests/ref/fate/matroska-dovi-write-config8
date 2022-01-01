@@ -1,0 +1,60 @@
+a5f259b0d7590e1ef77e09c3a75d0801 *tests/data/fate/matroska-dovi-write-config8.matroska
+3600595 tests/data/fate/matroska-dovi-write-config8.matroska
+#extradata 0:      551, 0xa18acf66
+#extradata 1:        2, 0x00340022
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 1920x1080
+#sar 0: 0/1
+#tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: aac
+#sample_rate 1: 44100
+#channel_layout 1: 3
+#channel_layout_name 1: stereo
+0,        -67,          0,       33,    63375, 0xc76606ab, S=1,        8
+0,        -34,        133,       33,    46706, 0x0e08a7e5, F=0x0
+0,          0,         67,       33,    29766, 0x753c031a, F=0x0
+1,          0,          0,       23,        6, 0x031e0108
+1,         23,         23,       23,      251, 0x6b4a7cbd
+0,         33,         33,       33,    19409, 0x4b948b6c, F=0x0
+1,         46,         46,       23,      389, 0x6673c205
+0,         67,        100,       33,    21086, 0x1b9412ce, F=0x0
+1,         70,         70,       23,      356, 0x8c71a316
+1,         93,         93,       23,      339, 0x3018a45a
+0,        100,        267,       33,    62043, 0xc2356b56, F=0x0
+1,        116,        116,       23,      405, 0xc89ebe05
+0,        133,        200,       33,    36175, 0x0a7df38c, F=0x0
+1,        139,        139,       23,      449, 0x42eadf96
+1,        163,        163,       23,      416, 0x28a7c9b9
+0,        167,        167,       33,    16028, 0xa57fcbe9, F=0x0
+1,        186,        186,       23,      426, 0x9a74d4ec
+0,        200,        233,       33,    15428, 0x9a91f357, F=0x0
+1,        209,        209,       23,      419, 0xbe3dc54b
+1,        232,        232,       23,      424, 0x5102d50e
+0,        233,        400,       33,    66072, 0xa542b6d7, F=0x0
+1,        255,        255,       23,      402, 0xb11cc14c
+0,        267,        333,       33,    34985, 0xbfd8ff45, F=0x0
+1,        279,        279,       23,      401, 0x3820b8f9
+0,        300,        300,       33,    16036, 0xfc39c6ea, F=0x0
+1,        302,        302,       23,      400, 0xe5c4c168
+1,        325,        325,       23,      435, 0x6dbecc33
+0,        333,        367,       33,    19893, 0x7e746f4e, F=0x0
+1,        348,        348,       23,      441, 0x0ad3d199
+0,        367,        533,       33,    77576, 0xeba2e5c8, F=0x0
+1,        372,        372,       23,      479, 0x44dce967
+1,        395,        395,       23,      439, 0x7d85e4c9
+[STREAM]
+[SIDE_DATA]
+side_data_type=DOVI configuration record
+dv_version_major=1
+dv_version_minor=0
+dv_profile=8
+dv_level=4
+rpu_present_flag=1
+el_present_flag=0
+bl_present_flag=1
+dv_bl_signal_compatibility_id=4
+[/SIDE_DATA]
+[/STREAM]
