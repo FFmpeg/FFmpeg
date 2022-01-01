@@ -1066,7 +1066,6 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 
     s2->chroma_format              = 1;
     s->mpeg_enc_ctx_allocated      = 0;
-    s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field                = 0;
     avctx->color_range             = AVCOL_RANGE_MPEG;
     return 0;
@@ -1091,9 +1090,6 @@ static int mpeg_decode_update_thread_context(AVCodecContext *avctx,
 
     if (!ctx->mpeg_enc_ctx_allocated)
         memcpy(s + 1, s1 + 1, sizeof(Mpeg1Context) - sizeof(MpegEncContext));
-
-    if (!(s->pict_type == AV_PICTURE_TYPE_B || s->low_delay))
-        s->picture_number++;
 
     return 0;
 }
@@ -2072,10 +2068,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
             ff_print_debug_info(s, s->current_picture_ptr, pict);
             ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_QSCALE_TYPE_MPEG2);
         } else {
-            if (avctx->active_thread_type & FF_THREAD_FRAME)
-                s->picture_number++;
             /* latency of 1 frame for I- and P-frames */
-            /* XXX: use another variable than picture_number */
             if (s->last_picture_ptr) {
                 int ret = av_frame_ref(pict, s->last_picture_ptr->f);
                 if (ret < 0)
