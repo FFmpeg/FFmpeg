@@ -33,6 +33,8 @@ struct PayloadContext {
     int depth;
     int width;
     int height;
+    int interlaced;
+    int field;
 
     uint8_t *frame;
     unsigned int frame_size;
@@ -104,6 +106,11 @@ static int rfc4175_parse_format(AVStream *stream, PayloadContext *data)
     stream->codecpar->bits_per_coded_sample = av_get_bits_per_pixel(desc);
     data->frame_size = data->width * data->height * data->pgroup / data->xinc;
 
+    if (data->interlaced)
+        stream->codecpar->field_order = AV_FIELD_TT;
+    else
+        stream->codecpar->field_order = AV_FIELD_PROGRESSIVE;
+
     if (data->framerate.den > 0) {
         stream->avg_frame_rate = data->framerate;
         stream->codecpar->bit_rate = data->frame_size * av_q2d(data->framerate) * 8;
@@ -124,6 +131,8 @@ static int rfc4175_parse_fmtp(AVFormatContext *s, AVStream *stream,
         data->sampling = av_strdup(value);
     else if (!strncmp(attr, "depth", 5))
         data->depth = atoi(value);
+    else if (!strncmp(attr, "interlace", 9))
+        data->interlaced = 1;
     else if (!strncmp(attr, "exactframerate", 14)) {
         if (av_parse_video_rate(&data->framerate, value) < 0)
             return AVERROR(EINVAL);
@@ -195,15 +204,18 @@ static int rfc4175_parse_sdp_line(AVFormatContext *s, int st_index,
 static int rfc4175_finalize_packet(PayloadContext *data, AVPacket *pkt,
                                    int stream_index)
 {
-    int ret;
+    int ret = 0;
 
     pkt->stream_index = stream_index;
+    if (!data->interlaced || data->field) {
     ret = av_packet_from_data(pkt, data->frame, data->frame_size);
     if (ret < 0) {
         av_freep(&data->frame);
     }
-
     data->frame = NULL;
+    }
+
+    data->field = 0;
 
     return ret;
 }
@@ -213,7 +225,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                                  const uint8_t * buf, int len,
                                  uint16_t seq, int flags)
 {
-    int length, line, offset, cont;
+    int length, line, offset, cont, field;
     const uint8_t *headers = buf + 2; /* skip extended seqnum */
     const uint8_t *payload = buf + 2;
     int payload_len = len - 2;
@@ -266,10 +278,12 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             return AVERROR_INVALIDDATA;
 
         length = (headers[0] << 8) | headers[1];
+        field = (headers[2] & 0x80) >> 7;
         line = ((headers[2] & 0x7f) << 8) | headers[3];
         offset = ((headers[4] & 0x7f) << 8) | headers[5];
         cont = headers[4] & 0x80;
         headers += 6;
+        data->field = field;
 
         if (!data->pgroup || length % data->pgroup)
             return AVERROR_INVALIDDATA;
@@ -277,9 +291,12 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         if (length > payload_len)
             length = payload_len;
 
+        if (data->interlaced)
+            line = 2 * line + field;
+
         /* prevent ill-formed packets to write after buffer's end */
         copy_offset = (line * data->width + offset) * data->pgroup / data->xinc;
-        if (copy_offset + length > data->frame_size)
+        if (copy_offset + length > data->frame_size || !data->frame)
             return AVERROR_INVALIDDATA;
 
         dest = data->frame + copy_offset;
