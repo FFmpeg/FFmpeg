@@ -73,8 +73,6 @@
 #include <inttypes.h>
 #include <libxml/parser.h>
 
-#define MAX_BPRINT_READ_SIZE (UINT_MAX - 1)
-#define DEFAULT_ASSETMAP_SIZE 8 * 1024
 #define AVRATIONAL_FORMAT "%d/%d"
 #define AVRATIONAL_ARG(rational) rational.num, rational.den
 
@@ -279,7 +277,6 @@ static int parse_assetmap(AVFormatContext *s, const char *url)
     const char *base_url;
     char *tmp_str = NULL;
     int ret;
-    int64_t filesize;
 
     av_log(s, AV_LOG_DEBUG, "Asset Map URL: %s\n", url);
 
@@ -289,13 +286,10 @@ static int parse_assetmap(AVFormatContext *s, const char *url)
     if (ret < 0)
         return ret;
 
-    filesize = avio_size(in);
-    filesize = filesize > 0 ? filesize : DEFAULT_ASSETMAP_SIZE;
+    av_bprint_init(&buf, 0, INT_MAX); // xmlReadMemory uses integer length
 
-    av_bprint_init(&buf, filesize + 1, AV_BPRINT_SIZE_UNLIMITED);
-
-    ret = avio_read_to_bprint(in, &buf, MAX_BPRINT_READ_SIZE);
-    if (ret < 0 || !avio_feof(in) || buf.len == 0) {
+    ret = avio_read_to_bprint(in, &buf, SIZE_MAX);
+    if (ret < 0 || !avio_feof(in)) {
         av_log(s, AV_LOG_ERROR, "Unable to read to asset map '%s'\n", url);
         if (ret == 0)
             ret = AVERROR_INVALIDDATA;
@@ -311,8 +305,7 @@ static int parse_assetmap(AVFormatContext *s, const char *url)
     }
     base_url = av_dirname(tmp_str);
 
-    filesize = buf.len;
-    doc = xmlReadMemory(buf.str, filesize, url, NULL, 0);
+    doc = xmlReadMemory(buf.str, buf.len, url, NULL, 0);
 
     ret = parse_imf_asset_map_from_xml_dom(s, doc, &c->asset_locator_map, base_url);
     if (!ret)
