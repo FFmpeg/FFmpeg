@@ -30,8 +30,6 @@
 #include "dash.h"
 
 #define INITIAL_BUFFER_SIZE 32768
-#define MAX_BPRINT_READ_SIZE (UINT_MAX - 1)
-#define DEFAULT_MANIFEST_SIZE 8 * 1024
 
 struct fragment {
     int64_t url_offset;
@@ -1195,7 +1193,6 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     DASHContext *c = s->priv_data;
     int ret = 0;
     int close_in = 0;
-    int64_t filesize = 0;
     AVBPrint buf;
     AVDictionary *opts = NULL;
     xmlDoc *doc = NULL;
@@ -1226,26 +1223,17 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, (uint8_t**)&c->base_url) < 0)
         c->base_url = av_strdup(url);
 
-    filesize = avio_size(in);
-    filesize = filesize > 0 ? filesize : DEFAULT_MANIFEST_SIZE;
+    av_bprint_init(&buf, 0, INT_MAX); // xmlReadMemory uses integer bufsize
 
-    if (filesize > MAX_BPRINT_READ_SIZE) {
-        av_log(s, AV_LOG_ERROR, "Manifest too large: %"PRId64"\n", filesize);
-        return AVERROR_INVALIDDATA;
-    }
-
-    av_bprint_init(&buf, filesize + 1, AV_BPRINT_SIZE_UNLIMITED);
-
-    if ((ret = avio_read_to_bprint(in, &buf, MAX_BPRINT_READ_SIZE)) < 0 ||
-        !avio_feof(in) ||
-        (filesize = buf.len) == 0) {
+    if ((ret = avio_read_to_bprint(in, &buf, SIZE_MAX)) < 0 ||
+        !avio_feof(in)) {
         av_log(s, AV_LOG_ERROR, "Unable to read to manifest '%s'\n", url);
         if (ret == 0)
             ret = AVERROR_INVALIDDATA;
     } else {
         LIBXML_TEST_VERSION
 
-        doc = xmlReadMemory(buf.str, filesize, c->base_url, NULL, 0);
+        doc = xmlReadMemory(buf.str, buf.len, c->base_url, NULL, 0);
         root_element = xmlDocGetRootElement(doc);
         node = root_element;
 
