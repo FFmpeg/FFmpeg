@@ -728,9 +728,12 @@ static int sdp_write_media_attributes(char *buff, int size, const AVStream *st,
         av_strlcatf(buff, size, "a=rtpmap:%d raw/90000\r\n"
                                 "a=fmtp:%d sampling=%s; "
                                 "width=%d; height=%d; "
-                                "depth=%d\r\n",
+                                "depth=%d",
                                 payload_type, payload_type,
                                 pix_fmt, p->width, p->height, bit_depth);
+        if (p->field_order != AV_FIELD_PROGRESSIVE)
+            av_strlcatf(buff, size, "; interlace");
+        av_strlcatf(buff, size, "\r\n");
         break;
     }
 
