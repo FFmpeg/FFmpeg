@@ -371,17 +371,17 @@ static int init_duplicate_context(MpegEncContext *s)
         s->pblocks[i] = &s->block[i];
     }
 
-    if (!(s->block32         = av_mallocz(sizeof(*s->block32))) ||
-        !(s->dpcm_macroblock = av_mallocz(sizeof(*s->dpcm_macroblock))))
-        return AVERROR(ENOMEM);
-    s->dpcm_direction = 0;
-
     if (s->avctx->codec_tag == AV_RL32("VCR2")) {
         // exchange uv
         FFSWAP(void *, s->pblocks[4], s->pblocks[5]);
     }
 
     if (s->out_format == FMT_H263) {
+        if (!(s->block32         = av_mallocz(sizeof(*s->block32))) ||
+            !(s->dpcm_macroblock = av_mallocz(sizeof(*s->dpcm_macroblock))))
+            return AVERROR(ENOMEM);
+        s->dpcm_direction = 0;
+
         /* ac values */
         if (!FF_ALLOCZ_TYPED_ARRAY(s->ac_val_base,  yc_size))
             return AVERROR(ENOMEM);
