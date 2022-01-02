@@ -758,6 +758,31 @@ static struct dshow_format_info *dshow_get_format_info(AM_MEDIA_TYPE *type)
     return fmt_info;
 }
 
+static void dshow_get_default_format(IPin *pin, IAMStreamConfig *config, enum dshowDeviceType devtype, AM_MEDIA_TYPE **type)
+{
+    HRESULT hr;
+
+    if ((hr = IAMStreamConfig_GetFormat(config, type)) != S_OK) {
+        if (hr == E_NOTIMPL || !IsEqualGUID(&(*type)->majortype, devtype == VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
+            // default not available or of wrong type,
+            // fall back to iterating exposed formats
+            // until one of the right type is found
+            IEnumMediaTypes* types = NULL;
+            if (IPin_EnumMediaTypes(pin, &types) != S_OK)
+                return;
+            IEnumMediaTypes_Reset(types);
+            while (IEnumMediaTypes_Next(types, 1, type, NULL) == S_OK) {
+                if (IsEqualGUID(&(*type)->majortype, devtype == VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
+                    break;
+                }
+                CoTaskMemFree(*type);
+                *type = NULL;
+            }
+            IEnumMediaTypes_Release(types);
+        }
+    }
+}
+
 /**
  * Cycle through available formats available from the specified pin,
  * try to set parameters specified through AVOptions, or the pin's
@@ -813,32 +838,11 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
     use_default = !dshow_should_set_format(avctx, devtype);
     if (use_default && pformat_set)
     {
-        HRESULT hr;
-
         // get default
-        if ((hr = IAMStreamConfig_GetFormat(config, &type)) != S_OK) {
-            if (hr == E_NOTIMPL || !IsEqualGUID(&type->majortype, devtype==VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
-                // default not available or of wrong type,
-                // fall back to iterating exposed formats
-                // until one of the right type is found
-                IEnumMediaTypes *types = NULL;
-                if (IPin_EnumMediaTypes(pin, &types) != S_OK)
-                    goto end;
-                IEnumMediaTypes_Reset(types);
-                while (IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
-                    if (IsEqualGUID(&type->majortype, devtype==VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
-                        break;
-                    }
-                    CoTaskMemFree(type);
-                    type = NULL;
-                }
-                IEnumMediaTypes_Release(types);
-            }
-
-            if (!type)
-                // this pin does not expose any formats of the expected type
-                goto end;
-        }
+        dshow_get_default_format(pin, config, devtype, &type);
+        if (!type)
+            // this pin does not expose any formats of the expected type
+            goto end;
 
         if (type) {
             // interrogate default format, so we know what to search for below
@@ -1040,15 +1044,31 @@ next:
         CoTaskMemFree(type);
         type = NULL;
     }
-    // previously found a matching VIDEOINFOHEADER format and stored
-    // it for safe keeping. Searching further for a matching
-    // VIDEOINFOHEADER2 format yielded nothing. So set the pin's
-    // format based on the VIDEOINFOHEADER format.
-    // NB: this never applies to an audio format because
-    // previous_match_type always NULL in that case
-    if (pformat_set && !format_set && previous_match_type) {
-        if (IAMStreamConfig_SetFormat(config, previous_match_type) == S_OK)
-            format_set = 1;
+
+    // set the pin's format, if wanted
+    if (pformat_set && !format_set) {
+        if (previous_match_type) {
+            // previously found a matching VIDEOINFOHEADER format and stored
+            // it for safe keeping. Searching further for a matching
+            // VIDEOINFOHEADER2 format yielded nothing. So set the pin's
+            // format based on the VIDEOINFOHEADER format.
+            // NB: this never applies to an audio format because
+            // previous_match_type always NULL in that case
+            if (IAMStreamConfig_SetFormat(config, previous_match_type) == S_OK)
+                format_set = 1;
+        }
+        else if (use_default) {
+            // default format returned by device apparently was not contained
+            // in the capabilities of any of the formats returned by the device
+            // (sic?). Fall back to directly setting the default format
+            dshow_get_default_format(pin, config, devtype, &type);
+            if (IAMStreamConfig_SetFormat(config, type) == S_OK)
+                format_set = 1;
+            if (type && type->pbFormat)
+                CoTaskMemFree(type->pbFormat);
+            CoTaskMemFree(type);
+            type = NULL;
+        }
     }
 
 end:
