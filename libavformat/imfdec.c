@@ -889,6 +889,7 @@ static const AVClass imf_class = {
 const AVInputFormat ff_imf_demuxer = {
     .name           = "imf",
     .long_name      = NULL_IF_CONFIG_SMALL("IMF (Interoperable Master Format)"),
+    .flags          = AVFMT_EXPERIMENTAL,
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .priv_class     = &imf_class,
     .priv_data_size = sizeof(IMFContext),
