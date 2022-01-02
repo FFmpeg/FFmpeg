@@ -953,7 +953,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                     av_log(avctx, AV_LOG_INFO, "(%s)", chroma ? chroma : "unknown");
 
                 av_log(avctx, AV_LOG_INFO, "\n");
-                continue;
+                goto next;
             }
             if (requested_video_codec_id != AV_CODEC_ID_RAWVIDEO) {
                 if (requested_video_codec_id != fmt_info->codec_id)
@@ -1038,6 +1038,7 @@ next:
         if (type && type->pbFormat)
             CoTaskMemFree(type->pbFormat);
         CoTaskMemFree(type);
+        type = NULL;
     }
     // previously found a matching VIDEOINFOHEADER format and stored
     // it for safe keeping. Searching further for a matching
