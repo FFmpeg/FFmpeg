@@ -1046,7 +1046,7 @@ next:
     // format based on the VIDEOINFOHEADER format.
     // NB: this never applies to an audio format because
     // previous_match_type always NULL in that case
-    if (!format_set && previous_match_type) {
+    if (pformat_set && !format_set && previous_match_type) {
         if (IAMStreamConfig_SetFormat(config, previous_match_type) == S_OK)
             format_set = 1;
     }
