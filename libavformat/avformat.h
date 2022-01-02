@@ -463,6 +463,13 @@ typedef struct AVProbeData {
 /// Demuxer will use avio_open, no opened file should be provided by the caller.
 #define AVFMT_NOFILE        0x0001
 #define AVFMT_NEEDNUMBER    0x0002 /**< Needs '%d' in filename. */
+/**
+ * The muxer/demuxer is experimental and should be used with caution.
+ *
+ * - demuxers: will not be selected automatically by probing, must be specified
+ *             explicitly.
+ */
+#define AVFMT_EXPERIMENTAL  0x0004
 #define AVFMT_SHOW_IDS      0x0008 /**< Show format stream IDs numbers. */
 #define AVFMT_GLOBALHEADER  0x0040 /**< Format wants global header. */
 #define AVFMT_NOTIMESTAMPS  0x0080 /**< Format does not need / have any timestamps. */

@@ -158,6 +158,8 @@ const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
     }
 
     while ((fmt1 = av_demuxer_iterate(&i))) {
+        if (fmt1->flags & AVFMT_EXPERIMENTAL)
+            continue;
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
         score = 0;

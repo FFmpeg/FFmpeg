@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-01-xx - xxxxxxxxxx - lavf 59.13.100 - avformat.h
+  Add AVFMT_EXPERIMENTAL flag.
+
 2021-12-xx - xxxxxxxxxx - lavu 57.13.100 - hwcontext_videotoolbox.h
   Add av_vt_pixbuf_set_attachments
 
