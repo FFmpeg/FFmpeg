@@ -35,6 +35,7 @@ typedef struct TransposeVulkanContext {
     VkDescriptorImageInfo output_images[3];
 
     int dir;
+    int passthrough;
     int initialized;
 } TransposeVulkanContext;
 
@@ -222,6 +223,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     TransposeVulkanContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
+    if (s->passthrough)
+        return ff_filter_frame(outlink, in);
+
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         err = AVERROR(ENOMEM);
@@ -267,6 +271,17 @@ static int config_props_output(AVFilterLink *outlink)
     FFVulkanContext *vkctx = &s->vkctx;
     AVFilterLink *inlink = avctx->inputs[0];
 
+    if ((inlink->w >= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_LANDSCAPE) ||
+        (inlink->w <= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_PORTRAIT)) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "w:%d h:%d -> w:%d h:%d (passthrough mode)\n",
+               inlink->w, inlink->h, inlink->w, inlink->h);
+        outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
+        return outlink->hw_frames_ctx ? 0 : AVERROR(ENOMEM);
+    } else {
+        s->passthrough = TRANSPOSE_PT_TYPE_NONE;
+    }
+
     vkctx->output_width  = inlink->h;
     vkctx->output_height = inlink->w;
 
@@ -288,6 +303,13 @@ static const AVOption transpose_vulkan_options[] = {
         { "clock",       "rotate clockwise",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .flags=FLAGS, .unit = "dir" },
         { "cclock",      "rotate counter-clockwise",                    0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .flags=FLAGS, .unit = "dir" },
         { "clock_flip",  "rotate clockwise with vertical flip",         0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .flags=FLAGS, .unit = "dir" },
+
+    { "passthrough", "do not apply transposition if the input matches the specified geometry",
+      OFFSET(passthrough), AV_OPT_TYPE_INT, {.i64=TRANSPOSE_PT_TYPE_NONE},  0, INT_MAX, FLAGS, "passthrough" },
+        { "none",      "always apply transposition",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_NONE},      INT_MIN, INT_MAX, FLAGS, "passthrough" },
+        { "portrait",  "preserve portrait geometry",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_PORTRAIT},  INT_MIN, INT_MAX, FLAGS, "passthrough" },
+        { "landscape", "preserve landscape geometry",  0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_LANDSCAPE}, INT_MIN, INT_MAX, FLAGS, "passthrough" },
+
     { NULL }
 };
 
