@@ -35,7 +35,6 @@ enum ScalerFunc {
 typedef struct ScaleVulkanContext {
     FFVulkanContext vkctx;
 
-    int initialized;
     FFVkQueueFamilyCtx qf;
     FFVkExecContext *exec;
     FFVulkanPipeline *pl;
@@ -46,11 +45,14 @@ typedef struct ScaleVulkanContext {
     VkDescriptorImageInfo output_images[3];
     VkDescriptorBufferInfo params_desc;
 
-    enum ScalerFunc scaler;
     char *out_format_string;
-    enum AVColorRange out_range;
     char *w_expr;
     char *h_expr;
+
+    enum ScalerFunc scaler;
+    enum AVColorRange out_range;
+
+    int initialized;
 } ScaleVulkanContext;
 
 static const char scale_bilinear[] = {
