@@ -26,7 +26,7 @@ DECLARE_QUERYINTERFACE(enumpins, DShowEnumPins,
 DECLARE_ADDREF(enumpins, DShowEnumPins)
 DECLARE_RELEASE(enumpins, DShowEnumPins)
 
-long ff_dshow_enumpins_Next(DShowEnumPins *this, unsigned long n, IPin **pins,
+long WINAPI ff_dshow_enumpins_Next(DShowEnumPins *this, unsigned long n, IPin **pins,
                    unsigned long *fetched)
 {
     int count = 0;
@@ -45,20 +45,20 @@ long ff_dshow_enumpins_Next(DShowEnumPins *this, unsigned long n, IPin **pins,
         return S_FALSE;
     return S_OK;
 }
-long ff_dshow_enumpins_Skip(DShowEnumPins *this, unsigned long n)
+long WINAPI ff_dshow_enumpins_Skip(DShowEnumPins *this, unsigned long n)
 {
     dshowdebug("ff_dshow_enumpins_Skip(%p)\n", this);
     if (n) /* Any skip will always fall outside of the only valid pin. */
         return S_FALSE;
     return S_OK;
 }
-long ff_dshow_enumpins_Reset(DShowEnumPins *this)
+long WINAPI ff_dshow_enumpins_Reset(DShowEnumPins *this)
 {
     dshowdebug("ff_dshow_enumpins_Reset(%p)\n", this);
     this->pos = 0;
     return S_OK;
 }
-long ff_dshow_enumpins_Clone(DShowEnumPins *this, DShowEnumPins **pins)
+long WINAPI ff_dshow_enumpins_Clone(DShowEnumPins *this, DShowEnumPins **pins)
 {
     DShowEnumPins *new;
     dshowdebug("ff_dshow_enumpins_Clone(%p)\n", this);
