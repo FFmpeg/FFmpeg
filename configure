@@ -2434,6 +2434,7 @@ CONFIG_EXTRA="
     cbs_vp9
     dirac_parse
     dnn
+    dovi_rpu
     dvprofile
     exif
     faandct
@@ -2706,6 +2707,7 @@ cbs_mpeg2_select="cbs"
 cbs_vp9_select="cbs"
 dct_select="rdft"
 dirac_parse_select="golomb"
+dovi_rpu_select="golomb"
 dnn_suggest="libtensorflow libopenvino"
 dnn_deps="avformat swscale"
 error_resilience_select="me_cmp"
