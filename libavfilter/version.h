@@ -30,7 +30,7 @@
 #include "libavutil/version.h"
 
 #define LIBAVFILTER_VERSION_MAJOR   8
-#define LIBAVFILTER_VERSION_MINOR  21
+#define LIBAVFILTER_VERSION_MINOR  22
 #define LIBAVFILTER_VERSION_MICRO 100
 
 
