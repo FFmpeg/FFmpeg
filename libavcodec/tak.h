@@ -44,7 +44,6 @@
 #define TAK_LAST_FRAME_SIZE_BITS               24
 #define TAK_ENCODER_CODEC_BITS                  6
 #define TAK_ENCODER_PROFILE_BITS                4
-#define TAK_ENCODER_VERSION_BITS               24
 #define TAK_SAMPLE_RATE_MIN                  6000
 #define TAK_CHANNELS_MIN                        1
 #define TAK_BPS_MIN                             8

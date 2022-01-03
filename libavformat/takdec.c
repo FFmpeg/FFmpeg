@@ -171,9 +171,8 @@ static int tak_read_header(AVFormatContext *s)
                               get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
             av_freep(&buffer);
         } else if (type == TAK_METADATA_ENCODER) {
-            init_get_bits8(&gb, buffer, size - 3);
             av_log(s, AV_LOG_VERBOSE, "encoder version: %0X\n",
-                   get_bits_long(&gb, TAK_ENCODER_VERSION_BITS));
+                   AV_RL24(buffer));
             av_freep(&buffer);
         }
     }
