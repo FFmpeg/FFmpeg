@@ -277,7 +277,7 @@ static inline int ls_decode_line(JLSState *state, MJpegDecodeContext *s,
             /* decode aborted run */
             r = ff_log2_run[state->run_index[comp]];
             if (r)
-                r = get_bits_long(&s->gb, r);
+                r = get_bits(&s->gb, r);
             if (x + r * stride > w) {
                 r = (w - x) / stride;
             }
