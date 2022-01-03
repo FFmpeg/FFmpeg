@@ -14,85 +14,85 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
-2022-01-xx - xxxxxxxxxx - lavf 59.13.100 - avformat.h
+2022-01-03 - 70f318e6b6c - lavf 59.13.100 - avformat.h
   Add AVFMT_EXPERIMENTAL flag.
 
-2021-12-xx - xxxxxxxxxx - lavu 57.13.100 - hwcontext_videotoolbox.h
+2021-12-22 - b7e1ec7bda9 - lavu 57.13.100 - hwcontext_videotoolbox.h
   Add av_vt_pixbuf_set_attachments
 
-2021-12-xx - xxxxxxxxxx - lavu 57.13.100 - hwcontext_videotoolbox.h
+2021-12-22 - 69bd95dcd8d - lavu 57.13.100 - hwcontext_videotoolbox.h
   Add av_map_videotoolbox_chroma_loc_from_av
   Add av_map_videotoolbox_color_matrix_from_av
   Add av_map_videotoolbox_color_primaries_from_av
   Add av_map_videotoolbox_color_trc_from_av
 
-2021-12-21 - xxxxxxxxxx - lavu 57.12.100 - cpu.h
+2021-12-21 - ffbab99f2c2 - lavu 57.12.100 - cpu.h
   Add AV_CPU_FLAG_SLOW_GATHER.
 
-2021-12-20 - xxxxxxxxxx - lavu 57.11.101 - display.h
+2021-12-20 - 278068dc60d - lavu 57.11.101 - display.h
   Modified the documentation of av_display_rotation_set()
   to match its longstanding actual behaviour of treating
   the angle as directed clockwise.
 
-2021-12-xx - xxxxxxxxxx - lavf 59.10.100 - avformat.h
+2021-12-12 - 64834bb86a1 - lavf 59.10.100 - avformat.h
   Add AVFormatContext io_close2 which returns an int
 
-2021-11-10 - xxxxxxxxxx - lavu 57.11.100 - hwcontext_vulkan.h
+2021-12-10 - f45cbb775e4 - lavu 57.11.100 - hwcontext_vulkan.h
   Add AVVkFrame.offset and AVVulkanFramesContext.flags.
 
-2021-11-xx - xxxxxxxxxx - lavfi 8.19.100 - avfilter.h
+2021-12-04 - b9c928a486f - lavfi 8.19.100 - avfilter.h
   Add AVFILTER_FLAG_METADATA_ONLY.
 
-2021-12-03 - xxxxxxxxxx - lavu 57.10.100 - frame.h
+2021-12-03 - b236ef0a594 - lavu 57.10.100 - frame.h
   Add AVFrame.time_base
 
-2021-11-22 - xxxxxxxxxx - lavu 57.9.100 - pixfmt.h
+2021-11-22 - b2cd1fb2ec6 - lavu 57.9.100 - pixfmt.h
   Add AV_PIX_FMT_P210, AV_PIX_FMT_P410, AV_PIX_FMT_P216, and AV_PIX_FMT_P416.
 
-2021-11-17 - xxxxxxxxxx - lavf 57.9.100 - frame.h
+2021-11-17 - 54e65aa38ab - lavf 57.9.100 - frame.h
   Add AV_FRAME_DATA_DOVI_RPU_BUFFER.
 
-2021-11-xx - xxxxxxxxxx - lavf 59.9.100 - avformat.h
+2021-11-16 - ed75a08d36c - lavf 59.9.100 - avformat.h
   Add av_stream_get_class(). Schedule adding AVStream.av_class at libavformat
   major version 60.
   Add av_disposition_to_string() and av_disposition_from_string().
   Add "disposition" AVOption to AVStream's class.
 
-2021-11-12 - xxxxxxxxxx - lavu 57.8.100 - hwcontext_vulkan.h
+2021-11-12 - 8478d60d5b5 - lavu 57.8.100 - hwcontext_vulkan.h
   Added AVVkFrame.sem_value, AVVulkanDeviceContext.queue_family_encode_index,
   nb_encode_queues, queue_family_decode_index, and nb_decode_queues.
 
-2021-10-18 - xxxxxxxxxx - lavf 59.8.100 - avio.h
+2021-10-18 - 682bafdb125 - lavf 59.8.100 - avio.h
   Introduce public bytes_{read,written} statistic fields to AVIOContext.
 
-2021-10-13 - xxxxxxxxxx - lavf 59.7.100 - avio.h
+2021-10-13 - a5622ed16f8 - lavf 59.7.100 - avio.h
   Deprecate AVIOContext.written. Originally added as a private entry in
   commit 3f75e5116b900f1428aa13041fc7d6301bf1988a, its grouping with
   the comment noting its private state was missed during merging of the field
   from Libav (most likely due to an already existing field in between).
 
-2021-09-21 - xxxxxxxxxx - lavu 57.7.100 - pixfmt.h
+2021-09-21 - 0760d9153c3 - lavu 57.7.100 - pixfmt.h
   Add AV_PIX_FMT_X2BGR10.
 
-2021-09-20 - xxxxxxxxxx - lavu 57.6.100 - mem.h
+2021-09-20 - 8d5de914d31 - lavu 57.6.100 - mem.h
   Deprecate av_mallocz_array() as it is identical to av_calloc().
 
-2021-09-20 - xxxxxxxxxx - lavc 59.9.100 - avcodec.h
+2021-09-20 - 176b8d785bf - lavc 59.9.100 - avcodec.h
   Deprecate AVCodecContext.sub_text_format and the corresponding
   AVOptions. It is unused since the last major bump.
 
-2021-09-20 - xxxxxxxxxx - lavc 59.8.100 - avcodec.h codec.h
+2021-09-20 - dd846bc4a91 - lavc 59.8.100 - avcodec.h codec.h
   Deprecate AV_CODEC_FLAG_TRUNCATED and AV_CODEC_CAP_TRUNCATED,
   as they are redundant with parsers.
 
-2021-09-17 - xxxxxxxxxx - lavu 57.5.101 - buffer.h
+2021-09-17 - ccfdef79b13 - lavu 57.5.101 - buffer.h
   Constified the input parameters in av_buffer_replace(), av_buffer_ref(),
   and av_buffer_pool_buffer_get_opaque().
 
-2021-09-08 - xxxxxxxxxx - lavu 57.5.100 - hwcontext_d3d11va.h
+2021-09-08 - 4f78711f9c2 - lavu 57.5.100 - hwcontext_d3d11va.h
   Add AVD3D11VAFramesContext.texture_infos
 
-2021-09-06 - xxxxxxxxxx - lsws 6.1.100 - swscale.h
+2021-09-06 - 42cd64c1826 - lsws 6.1.100 - swscale.h
   Add AVFrame-based scaling API:
     - sws_scale_frame()
     - sws_frame_start()
@@ -101,54 +101,54 @@ API changes, most recent first:
     - sws_receive_slice()
     - sws_receive_slice_alignment()
 
-2021-09-02 - xxxxxxxxxx - lavc 59.7.100 - avcodec.h
+2021-09-02 - cbf111059d2 - lavc 59.7.100 - avcodec.h
   Incremented the number of elements of AVCodecParser.codec_ids to seven.
 
-2021-08-24 - xxxxxxxxxx - lavc 59.6.100 - avcodec.h
+2021-08-24 - 590a7e02f04 - lavc 59.6.100 - avcodec.h
   Add FF_CODEC_PROPERTY_FILM_GRAIN
 
-2021-08-20 - xxxxxxxxxx - lavfi 8.3.100 - avfilter.H
+2021-08-20 - 7c5f998196d - lavfi 8.3.100 - avfilter.H
   Add avfilter_filter_pad_count() as a replacement for avfilter_pad_count().
   Deprecate avfilter_pad_count().
 
-2021-08-17 - xxxxxxxxxx - lavu 57.4.101 - opt.h
+2021-08-17 - 8c53b145993 - lavu 57.4.101 - opt.h
   av_opt_copy() now guarantees that allocated src and dst options
   don't alias each other even on error.
 
-2021-08-14 - xxxxxxxxxx - lavu 57.4.100 - imgutils.h
+2021-08-14 - d5de9965ef6 - lavu 57.4.100 - imgutils.h
   Add av_image_copy_plane_uc_from()
 
-2021-08-02 - xxxxxxxxxx - lavc 59.4.100 - packet.h
+2021-08-02 - a1a0fddfd05 - lavc 59.4.100 - packet.h
   Add AVPacket.opaque, AVPacket.opaque_ref, AVPacket.time_base.
 
-2021-07-23 - xxxxxxxxxx - lavu 57.3.100 - common.h macros.h
+2021-07-23 - 2dd8acbe800 - lavu 57.3.100 - common.h macros.h
   Move several macros (AV_NE, FFDIFFSIGN, FFMAX, FFMAX3, FFMIN, FFMIN3,
   FFSWAP, FF_ARRAY_ELEMS, MKTAG, MKBETAG) from common.h to macros.h.
 
-2021-07-22 - xxxxxxxxxx - lavu 57.2.100 - film_grain_params.h
+2021-07-22 - e3b5ff17c2e - lavu 57.2.100 - film_grain_params.h
   Add AV_FILM_GRAIN_PARAMS_H274, AVFilmGrainH274Params
 
-2021-07-19 - xxxxxxxxxx - lavu 57.1.100 - cpu.h
+2021-07-19 - c1bf56a526f - lavu 57.1.100 - cpu.h
   Add av_cpu_force_count()
 
-2021-06-17 - xxxxxxxxxx - lavc 59.2.100 - packet.h
+2021-06-17 - aca923b3653 - lavc 59.2.100 - packet.h
   Add AV_PKT_DATA_DYNAMIC_HDR10_PLUS
 
-2021-06-09 - xxxxxxxxxx - lavf 59.3.100 - avformat.h
+2021-06-09 - 2cccab96f6f - lavf 59.3.100 - avformat.h
   Add pts_wrap_bits to AVStream
 
-2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec.h
+2021-06-10 - 7c9763070d9 - lavc 59.1.100 - avcodec.h codec.h
   Move av_get_profile_name() from avcodec.h to codec.h.
 
-2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec_par.h
+2021-06-10 - bb3648e6766 - lavc 59.1.100 - avcodec.h codec_par.h
   Move av_get_audio_frame_duration2() from avcodec.h to codec_par.h.
 
-2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h codec_id.h
+2021-06-10 - 881db34f6a0 - lavc 59.1.100 - avcodec.h codec_id.h
   Move av_get_bits_per_sample(), av_get_exact_bits_per_sample(),
   avcodec_profile_name(), and av_get_pcm_codec() from avcodec.h
   to codec_id.h.
 
-2021-xx-xx - xxxxxxxxxx - lavc 59.1.100 - avcodec.h defs.h
+2021-06-10 - ff0a96046d8 - lavc 59.1.100 - avcodec.h defs.h
   Add new installed header defs.h. The following definitions are moved
   into it from avcodec.h:
     - AVDiscard
