@@ -20,14 +20,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
 #include "avassert.h"
 #include "common.h"
 #include "fifo.h"
 
+#define OLD_FIFO_SIZE_MAX (size_t)FFMIN3(INT_MAX, UINT32_MAX, SIZE_MAX)
+
 AVFifoBuffer *av_fifo_alloc_array(size_t nmemb, size_t size)
 {
     AVFifoBuffer *f;
-    void *buffer = av_realloc_array(NULL, nmemb, size);
+    void *buffer;
+
+    if (nmemb > OLD_FIFO_SIZE_MAX / size)
+        return NULL;
+
+    buffer = av_realloc_array(NULL, nmemb, size);
     if (!buffer)
         return NULL;
     f = av_mallocz(sizeof(AVFifoBuffer));
@@ -81,6 +90,9 @@ int av_fifo_space(const AVFifoBuffer *f)
 int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size)
 {
     unsigned int old_size = f->end - f->buffer;
+
+    if (new_size > OLD_FIFO_SIZE_MAX)
+        return AVERROR(EINVAL);
 
     if (old_size < new_size) {
         size_t offset_r = f->rptr - f->buffer;
