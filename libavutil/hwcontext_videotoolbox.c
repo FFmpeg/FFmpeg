@@ -711,6 +711,30 @@ fail:
     return err;
 }
 
+static int vt_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
+                       const AVFrame *src, int flags)
+{
+    int err;
+
+    if (dst->format == AV_PIX_FMT_NONE)
+        dst->format = hwfc->sw_format;
+    else if (dst->format != hwfc->sw_format)
+        return AVERROR(ENOSYS);
+
+    err = vt_map_frame(hwfc, dst, src, flags);
+    if (err)
+        return err;
+
+    dst->width  = src->width;
+    dst->height = src->height;
+
+    err = av_frame_copy_props(dst, src);
+    if (err)
+        return err;
+
+    return 0;
+}
+
 static int vt_device_create(AVHWDeviceContext *ctx, const char *device,
                             AVDictionary *opts, int flags)
 {
@@ -736,6 +760,7 @@ const HWContextType ff_hwcontext_type_videotoolbox = {
     .transfer_get_formats = vt_transfer_get_formats,
     .transfer_data_to     = vt_transfer_data_to,
     .transfer_data_from   = vt_transfer_data_from,
+    .map_from             = vt_map_from,
 
     .pix_fmts = (const enum AVPixelFormat[]){ AV_PIX_FMT_VIDEOTOOLBOX, AV_PIX_FMT_NONE },
 };
