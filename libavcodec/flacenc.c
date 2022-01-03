@@ -30,7 +30,7 @@
 #include "bswapdsp.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "golomb.h"
+#include "put_golomb.h"
 #include "internal.h"
 #include "lpc.h"
 #include "flac.h"

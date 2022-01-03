@@ -23,6 +23,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "internal.h"
+#include "put_golomb.h"
 #include "rangecoder.h"
 
 

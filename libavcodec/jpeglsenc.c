@@ -32,7 +32,7 @@
 #include "encode.h"
 #include "get_bits.h"
 #include "put_bits.h"
-#include "golomb.h"
+#include "put_golomb.h"
 #include "internal.h"
 #include "mathops.h"
 #include "mjpeg.h"

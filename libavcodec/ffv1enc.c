@@ -36,8 +36,8 @@
 #include "encode.h"
 #include "internal.h"
 #include "put_bits.h"
+#include "put_golomb.h"
 #include "rangecoder.h"
-#include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
 

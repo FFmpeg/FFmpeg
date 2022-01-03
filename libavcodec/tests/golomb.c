@@ -27,6 +27,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/put_bits.h"
+#include "libavcodec/put_golomb.h"
 
 #define COUNT 8191
 #define SIZE (COUNT * 4)

@@ -33,14 +33,12 @@
 #include <stdint.h>
 
 #include "get_bits.h"
-#include "put_bits.h"
 
 #define INVALID_VLC           0x80000000
 
 extern const uint8_t ff_golomb_vlc_len[512];
 extern const uint8_t ff_ue_golomb_vlc_code[512];
 extern const  int8_t ff_se_golomb_vlc_code[512];
-extern const uint8_t ff_ue_golomb_len[256];
 
 extern const uint8_t ff_interleaved_golomb_vlc_len[256];
 extern const uint8_t ff_interleaved_ue_golomb_vlc_code[256];
@@ -615,135 +613,4 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
 #define get_te0_golomb(a, r) get_te(a, r, __FILE__, __func__, __LINE__)
 
 #endif /* TRACE */
-
-/**
- * write unsigned exp golomb code. 2^16 - 2 at most
- */
-static inline void set_ue_golomb(PutBitContext *pb, int i)
-{
-    av_assert2(i >= 0);
-    av_assert2(i <= 0xFFFE);
-
-    if (i < 256)
-        put_bits(pb, ff_ue_golomb_len[i], i + 1);
-    else {
-        int e = av_log2(i + 1);
-        put_bits(pb, 2 * e + 1, i + 1);
-    }
-}
-
-/**
- * write unsigned exp golomb code. 2^32-2 at most.
- */
-static inline void set_ue_golomb_long(PutBitContext *pb, uint32_t i)
-{
-    av_assert2(i <= (UINT32_MAX - 1));
-
-    if (i < 256)
-        put_bits(pb, ff_ue_golomb_len[i], i + 1);
-    else {
-        int e = av_log2(i + 1);
-        put_bits64(pb, 2 * e + 1, i + 1);
-    }
-}
-
-/**
- * write truncated unsigned exp golomb code.
- */
-static inline void set_te_golomb(PutBitContext *pb, int i, int range)
-{
-    av_assert2(range >= 1);
-    av_assert2(i <= range);
-
-    if (range == 2)
-        put_bits(pb, 1, i ^ 1);
-    else
-        set_ue_golomb(pb, i);
-}
-
-/**
- * write signed exp golomb code. 16 bits at most.
- */
-static inline void set_se_golomb(PutBitContext *pb, int i)
-{
-    i = 2 * i - 1;
-    if (i < 0)
-        i ^= -1;    //FIXME check if gcc does the right thing
-    set_ue_golomb(pb, i);
-}
-
-/**
- * write unsigned golomb rice code (ffv1).
- */
-static inline void set_ur_golomb(PutBitContext *pb, int i, int k, int limit,
-                                 int esc_len)
-{
-    int e;
-
-    av_assert2(i >= 0);
-
-    e = i >> k;
-    if (e < limit)
-        put_bits(pb, e + k + 1, (1 << k) + av_mod_uintp2(i, k));
-    else
-        put_bits(pb, limit + esc_len, i - limit + 1);
-}
-
-/**
- * write unsigned golomb rice code (jpegls).
- */
-static inline void set_ur_golomb_jpegls(PutBitContext *pb, int i, int k,
-                                        int limit, int esc_len)
-{
-    int e;
-
-    av_assert2(i >= 0);
-
-    e = (i >> k) + 1;
-    if (e < limit) {
-        while (e > 31) {
-            put_bits(pb, 31, 0);
-            e -= 31;
-        }
-        put_bits(pb, e, 1);
-        if (k)
-            put_sbits(pb, k, i);
-    } else {
-        while (limit > 31) {
-            put_bits(pb, 31, 0);
-            limit -= 31;
-        }
-        put_bits(pb, limit, 1);
-        put_bits(pb, esc_len, i - 1);
-    }
-}
-
-/**
- * write signed golomb rice code (ffv1).
- */
-static inline void set_sr_golomb(PutBitContext *pb, int i, int k, int limit,
-                                 int esc_len)
-{
-    int v;
-
-    v  = -2 * i - 1;
-    v ^= (v >> 31);
-
-    set_ur_golomb(pb, v, k, limit, esc_len);
-}
-
-/**
- * write signed golomb rice code (flac).
- */
-static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k,
-                                      int limit, int esc_len)
-{
-    int v;
-
-    v  = -2 * i - 1;
-    v ^= (v >> 31);
-
-    set_ur_golomb_jpegls(pb, v, k, limit, esc_len);
-}
-
 #endif /* AVCODEC_GOLOMB_H */
