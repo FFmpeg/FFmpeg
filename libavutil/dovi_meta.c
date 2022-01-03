@@ -33,3 +33,28 @@ AVDOVIDecoderConfigurationRecord *av_dovi_alloc(size_t *size)
 
     return dovi;
 }
+
+typedef struct AVDOVIMetadataInternal {
+    AVDOVIMetadata metadata;
+    AVDOVIRpuDataHeader header;
+    AVDOVIDataMapping mapping;
+    AVDOVIColorMetadata color;
+} AVDOVIMetadataInternal;
+
+AVDOVIMetadata *av_dovi_metadata_alloc(size_t *size)
+{
+    AVDOVIMetadataInternal *dovi = av_mallocz(sizeof(AVDOVIMetadataInternal));
+    if (!dovi)
+        return NULL;
+
+    if (size)
+        *size = sizeof(*dovi);
+
+    dovi->metadata = (struct AVDOVIMetadata) {
+        .header_offset  = offsetof(AVDOVIMetadataInternal, header),
+        .mapping_offset = offsetof(AVDOVIMetadataInternal, mapping),
+        .color_offset   = offsetof(AVDOVIMetadataInternal, color),
+    };
+
+    return &dovi->metadata;
+}
