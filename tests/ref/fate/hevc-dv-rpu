@@ -5,9 +5,233 @@ side_data_type=H.26[45] User Data Unregistered SEI message
 [SIDE_DATA]
 side_data_type=Dolby Vision RPU Data
 [/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Dolby Vision Metadata
+rpu_type=2
+rpu_format=18
+vdr_rpu_profile=1
+vdr_rpu_level=0
+chroma_resampling_explicit_filter_flag=0
+coef_data_type=0
+coef_log2_denom=23
+vdr_rpu_normalized_idc=1
+bl_video_full_range_flag=0
+bl_bit_depth=10
+el_bit_depth=10
+vdr_bit_depth=12
+spatial_resampling_filter_flag=0
+el_spatial_resampling_filter_flag=0
+disable_residual_flag=1
+vdr_rpu_id=0
+mapping_color_space=0
+mapping_chroma_format_idc=0
+nlq_method_idc=-1
+nlq_method_idc_name=none
+num_x_partitions=1
+num_y_partitions=1
+[COMPONENT]
+pivots=63 132 362 618 874 911 927 935 942
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=-409680 16721463 -20276640
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=-119056 13575212 -12867889
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=1317527 5338528 -948122
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=2119979 2065496 2288524
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=7982780 -11367226 9973944
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=53792084 -114243184 67724328
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=112973872 -244837568 139764480
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=236828416 -518849056 291306944
+[/SECTION]
+[/COMPONENT]
+[COMPONENT]
+pivots=0 1023
+[SECTION]
+mapping_idc=1
+mapping_idc_name=mmr
+mmr_order=3
+mmr_constant=-4200453
+mmr_coef=9094176 31944476 739652 -27103344 -3431599 -11015088 22758042 -2028643 -30021218 -906885 26272992 7291404 16488745 -78087176 -1487777 12496543 762460 -4281948 -5768035 -7843163 103636960
+[/SECTION]
+[/COMPONENT]
+[COMPONENT]
+pivots=0 1023
+[SECTION]
+mapping_idc=1
+mapping_idc_name=mmr
+mmr_order=3
+mmr_constant=-10387889
+mmr_coef=29604202 3214133 46206184 -8564340 -53383996 1628407 5426045 -21634202 -5251953 -50812292 19221972 76726656 -425892 -35041240 5917361 2863974 25030554 -14404292 -41230120 1229046 53575140
+[/SECTION]
+[/COMPONENT]
+dm_metadata_id=0
+scene_refresh_flag=1
+ycc_to_rgb_matrix=9574/8192 0/8192 13802/8192 9574/8192 -1540/8192 -5348/8192 9574/8192 17610/8192 0/8192
+ycc_to_rgb_offset=16777216/268435456 134217728/268435456 134217728/268435456
+rgb_to_lms_matrix=7222/16384 8771/16384 390/16384 2654/16384 12430/16384 1300/16384 0/16384 422/16384 15962/16384
+signal_eotf=65535
+signal_eotf_param0=0
+signal_eotf_param1=0
+signal_eotf_param2=0
+signal_bit_depth=12
+signal_color_space=0
+signal_chroma_format=0
+signal_full_range_flag=1
+source_min_pq=0
+source_max_pq=3079
+source_diagonal=42
+[/SIDE_DATA]
 [/FRAME]
 [FRAME]
 [SIDE_DATA]
 side_data_type=Dolby Vision RPU Data
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Dolby Vision Metadata
+rpu_type=2
+rpu_format=18
+vdr_rpu_profile=1
+vdr_rpu_level=0
+chroma_resampling_explicit_filter_flag=0
+coef_data_type=0
+coef_log2_denom=23
+vdr_rpu_normalized_idc=1
+bl_video_full_range_flag=0
+bl_bit_depth=10
+el_bit_depth=10
+vdr_bit_depth=12
+spatial_resampling_filter_flag=0
+el_spatial_resampling_filter_flag=0
+disable_residual_flag=1
+vdr_rpu_id=0
+mapping_color_space=0
+mapping_chroma_format_idc=0
+nlq_method_idc=-1
+nlq_method_idc_name=none
+num_x_partitions=1
+num_y_partitions=1
+[COMPONENT]
+pivots=63 132 362 618 874 911 927 935 942
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=-409680 16721463 -20276640
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=-119056 13575212 -12867889
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=1317527 5338528 -948122
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=2119979 2065496 2288524
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=7982780 -11367226 9973944
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=53792084 -114243184 67724328
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=112973872 -244837568 139764480
+[/SECTION]
+[SECTION]
+mapping_idc=0
+mapping_idc_name=polynomial
+poly_order=2
+poly_coef=236828416 -518849056 291306944
+[/SECTION]
+[/COMPONENT]
+[COMPONENT]
+pivots=0 1023
+[SECTION]
+mapping_idc=1
+mapping_idc_name=mmr
+mmr_order=3
+mmr_constant=-4200453
+mmr_coef=9094176 31944476 739652 -27103344 -3431599 -11015088 22758042 -2028643 -30021218 -906885 26272992 7291404 16488745 -78087176 -1487777 12496543 762460 -4281948 -5768035 -7843163 103636960
+[/SECTION]
+[/COMPONENT]
+[COMPONENT]
+pivots=0 1023
+[SECTION]
+mapping_idc=1
+mapping_idc_name=mmr
+mmr_order=3
+mmr_constant=-10387889
+mmr_coef=29604202 3214133 46206184 -8564340 -53383996 1628407 5426045 -21634202 -5251953 -50812292 19221972 76726656 -425892 -35041240 5917361 2863974 25030554 -14404292 -41230120 1229046 53575140
+[/SECTION]
+[/COMPONENT]
+dm_metadata_id=0
+scene_refresh_flag=1
+ycc_to_rgb_matrix=9574/8192 0/8192 13802/8192 9574/8192 -1540/8192 -5348/8192 9574/8192 17610/8192 0/8192
+ycc_to_rgb_offset=16777216/268435456 134217728/268435456 134217728/268435456
+rgb_to_lms_matrix=7222/16384 8771/16384 390/16384 2654/16384 12430/16384 1300/16384 0/16384 422/16384 15962/16384
+signal_eotf=65535
+signal_eotf_param0=0
+signal_eotf_param1=0
+signal_eotf_param2=0
+signal_bit_depth=12
+signal_color_space=0
+signal_chroma_format=0
+signal_full_range_flag=1
+source_min_pq=0
+source_max_pq=3079
+source_diagonal=42
 [/SIDE_DATA]
 [/FRAME]

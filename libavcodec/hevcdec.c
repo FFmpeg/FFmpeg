@@ -2723,6 +2723,7 @@ error:
 static int set_side_data(HEVCContext *s)
 {
     AVFrame *out = s->ref->frame;
+    int ret;
 
     if (s->sei.frame_packing.present &&
         s->sei.frame_packing.arrangement_type >= 3 &&
@@ -2976,6 +2977,9 @@ static int set_side_data(HEVCContext *s)
 
         s->rpu_buf = NULL;
     }
+
+    if ((ret = ff_dovi_attach_side_data(&s->dovi_ctx, out)) < 0)
+        return ret;
 
     return 0;
 }
@@ -3308,16 +3312,23 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     if (s->pkt.nb_nals > 1 && s->pkt.nals[s->pkt.nb_nals - 1].type == HEVC_NAL_UNSPEC62 &&
         s->pkt.nals[s->pkt.nb_nals - 1].size > 2 && !s->pkt.nals[s->pkt.nb_nals - 1].nuh_layer_id
         && !s->pkt.nals[s->pkt.nb_nals - 1].temporal_id) {
+        H2645NAL *nal = &s->pkt.nals[s->pkt.nb_nals - 1];
         if (s->rpu_buf) {
             av_buffer_unref(&s->rpu_buf);
             av_log(s->avctx, AV_LOG_WARNING, "Multiple Dolby Vision RPUs found in one AU. Skipping previous.\n");
         }
 
-        s->rpu_buf = av_buffer_alloc(s->pkt.nals[s->pkt.nb_nals - 1].raw_size - 2);
+        s->rpu_buf = av_buffer_alloc(nal->raw_size - 2);
         if (!s->rpu_buf)
             return AVERROR(ENOMEM);
+        memcpy(s->rpu_buf->data, nal->raw_data + 2, nal->raw_size - 2);
 
-        memcpy(s->rpu_buf->data, s->pkt.nals[s->pkt.nb_nals - 1].raw_data + 2, s->pkt.nals[s->pkt.nb_nals - 1].raw_size - 2);
+        ret = ff_dovi_rpu_parse(&s->dovi_ctx, nal->data + 2, nal->size - 2);
+        if (ret < 0) {
+            av_buffer_unref(&s->rpu_buf);
+            av_log(s->avctx, AV_LOG_WARNING, "Error parsing DOVI NAL unit.\n");
+            /* ignore */
+        }
     }
 
     /* decode the NAL units */
@@ -3450,8 +3461,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
 {
     int ret;
-    size_t new_extradata_size;
-    uint8_t *new_extradata;
+    uint8_t *sd;
+    size_t sd_size;
     HEVCContext *s = avctx->priv_data;
 
     if (!avpkt->size) {
@@ -3463,13 +3474,16 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
         return 0;
     }
 
-    new_extradata = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
-                                            &new_extradata_size);
-    if (new_extradata && new_extradata_size > 0) {
-        ret = hevc_decode_extradata(s, new_extradata, new_extradata_size, 0);
+    sd = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &sd_size);
+    if (sd && sd_size > 0) {
+        ret = hevc_decode_extradata(s, sd, sd_size, 0);
         if (ret < 0)
             return ret;
     }
+
+    sd = av_packet_get_side_data(avpkt, AV_PKT_DATA_DOVI_CONF, &sd_size);
+    if (sd && sd_size > 0)
+        ff_dovi_update_cfg(&s->dovi_ctx, (AVDOVIDecoderConfigurationRecord *) sd);
 
     s->ref = NULL;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
@@ -3563,6 +3577,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
+    ff_dovi_ctx_unref(&s->dovi_ctx);
     av_buffer_unref(&s->rpu_buf);
 
     av_freep(&s->md5_ctx);
@@ -3647,6 +3662,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     ff_bswapdsp_init(&s->bdsp);
 
+    s->dovi_ctx.logctx = avctx;
     s->context_initialized = 1;
     s->eos = 0;
 
@@ -3755,6 +3771,10 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
+    ret = ff_dovi_ctx_replace(&s->dovi_ctx, &s0->dovi_ctx);
+    if (ret < 0)
+        return ret;
+
     s->sei.frame_packing        = s0->sei.frame_packing;
     s->sei.display_orientation  = s0->sei.display_orientation;
     s->sei.mastering_display    = s0->sei.mastering_display;
@@ -3811,6 +3831,7 @@ static void hevc_decode_flush(AVCodecContext *avctx)
     HEVCContext *s = avctx->priv_data;
     ff_hevc_flush_dpb(s);
     ff_hevc_reset_sei(&s->sei);
+    ff_dovi_ctx_flush(&s->dovi_ctx);
     av_buffer_unref(&s->rpu_buf);
     s->max_ra = INT_MAX;
     s->eos = 1;
