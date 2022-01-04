@@ -401,7 +401,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 } else {
                     sub_header->rects[0]->nb_colors = 4;
                     guess_palette(ctx, (uint32_t*)sub_header->rects[0]->data[1],
-                                  0xffff00);
+                                  0xffffff);
                 }
                 sub_header->rects[0]->x = x1;
                 sub_header->rects[0]->y = y1;
