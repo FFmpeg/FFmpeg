@@ -178,7 +178,7 @@ static int v4l2_handle_event(V4L2Context *ctx)
     V4L2m2mContext *s = ctx_to_m2mctx(ctx);
     struct v4l2_format cap_fmt = s->capture.format;
     struct v4l2_event evt = { 0 };
-    int reinit, ret;
+    int ret;
 
     ret = ioctl(s->fd, VIDIOC_DQEVENT, &evt);
     if (ret < 0) {
@@ -200,8 +200,7 @@ static int v4l2_handle_event(V4L2Context *ctx)
         return 0;
     }
 
-    reinit = v4l2_resolution_changed(&s->capture, &cap_fmt);
-    if (reinit) {
+    if (v4l2_resolution_changed(&s->capture, &cap_fmt)) {
         s->capture.height = v4l2_get_height(&cap_fmt);
         s->capture.width = v4l2_get_width(&cap_fmt);
         s->capture.sample_aspect_ratio = v4l2_get_sar(&s->capture);
@@ -210,28 +209,20 @@ static int v4l2_handle_event(V4L2Context *ctx)
         return 0;
     }
 
-    if (reinit)
-        s->reinit = 1;
+    s->reinit = 1;
 
-    if (reinit) {
-        if (s->avctx)
-            ret = ff_set_dimensions(s->avctx, s->capture.width, s->capture.height);
-        if (ret < 0)
-            av_log(logger(ctx), AV_LOG_WARNING, "update avcodec height and width\n");
+    if (s->avctx)
+        ret = ff_set_dimensions(s->avctx, s->capture.width, s->capture.height);
+    if (ret < 0)
+        av_log(logger(ctx), AV_LOG_WARNING, "update avcodec height and width\n");
 
-        ret = ff_v4l2_m2m_codec_reinit(s);
-        if (ret) {
-            av_log(logger(ctx), AV_LOG_ERROR, "v4l2_m2m_codec_reinit\n");
-            return AVERROR(EINVAL);
-        }
-        goto reinit_run;
+    ret = ff_v4l2_m2m_codec_reinit(s);
+    if (ret) {
+        av_log(logger(ctx), AV_LOG_ERROR, "v4l2_m2m_codec_reinit\n");
+        return AVERROR(EINVAL);
     }
 
-    /* dummy event received */
-    return 0;
-
     /* reinit executed */
-reinit_run:
     return 1;
 }
 
