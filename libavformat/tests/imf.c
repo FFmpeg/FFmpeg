@@ -347,7 +347,7 @@ static int test_bad_cpl_parsing(void)
     doc = xmlReadMemory(cpl_bad_doc, strlen(cpl_bad_doc), NULL, NULL, 0);
     if (doc == NULL) {
         printf("XML parsing failed.\n");
-        return ret;
+        return 1;
     }
 
     ret = ff_imf_parse_cpl_from_xml_dom(doc, &cpl);
