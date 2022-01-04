@@ -2844,7 +2844,8 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
+static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
+                             int parse_only)
 {
     MpegEncContext *s = &ctx->m;
     int time_incr, time_increment;
@@ -3018,6 +3019,12 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
     }
 
+    /* Skip at this point when only parsing since the remaining
+     * data is not useful for a parser and requires the
+     * sprite_trajectory VLC to be initialized. */
+    if (parse_only)
+        goto end;
+
     if (s->pict_type == AV_PICTURE_TYPE_S) {
         if((ctx->vol_sprite_usage == STATIC_SPRITE ||
             ctx->vol_sprite_usage == GMC_SPRITE)) {
@@ -3095,6 +3102,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             skip_bits(gb, 2);  // ref_select_code
         }
     }
+
+end:
     /* detect buggy encoders which don't set the low_delay flag
      * (divx4/xvid/opendivx). Note we cannot detect divx5 without B-frames
      * easily (although it's buggy too) */
@@ -3214,11 +3223,14 @@ static int decode_studiovisualobject(Mpeg4DecContext *ctx, GetBitContext *gb)
  * Decode MPEG-4 headers.
  *
  * @param  header If set the absence of a VOP is not treated as error; otherwise, it is treated as such.
+ * @param  parse_only If set, things only relevant to a decoder may be skipped;
+ *                    furthermore, the VLC tables may be uninitialized.
  * @return <0 if an error occurred
  *         FRAME_SKIPPED if a not coded VOP is found
  *         0 else
  */
-int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb, int header)
+int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
+                                   int header, int parse_only)
 {
     MpegEncContext *s = &ctx->m;
     unsigned startcode, v;
@@ -3371,7 +3383,7 @@ end:
         }
         return decode_studio_vop_header(ctx, gb);
     } else
-        return decode_vop_header(ctx, gb);
+        return decode_vop_header(ctx, gb, parse_only);
 }
 
 av_cold void ff_mpeg4videodec_static_init(void) {
