@@ -153,6 +153,21 @@ static inline void v4l2_save_to_context(V4L2Context* ctx, struct v4l2_format_upd
     }
 }
 
+static int v4l2_start_decode(V4L2Context *ctx)
+{
+    struct v4l2_decoder_cmd cmd = {
+        .cmd = V4L2_DEC_CMD_START,
+        .flags = 0,
+    };
+    int ret;
+
+    ret = ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_DECODER_CMD, &cmd);
+    if (ret)
+        return AVERROR(errno);
+
+    return 0;
+}
+
 /**
  * handle resolution change event and end of stream event
  * returns 1 if reinit was successful, negative if it failed
@@ -190,6 +205,9 @@ static int v4l2_handle_event(V4L2Context *ctx)
         s->capture.height = v4l2_get_height(&cap_fmt);
         s->capture.width = v4l2_get_width(&cap_fmt);
         s->capture.sample_aspect_ratio = v4l2_get_sar(&s->capture);
+    } else {
+        v4l2_start_decode(ctx);
+        return 0;
     }
 
     if (reinit)
