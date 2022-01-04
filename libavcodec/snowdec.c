@@ -29,8 +29,6 @@
 #include "rangecoder.h"
 #include "mathops.h"
 
-#include "h263.h"
-
 static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer * sb, IDWTELEM * old_buffer, int plane_index, int add, int mb_y){
     Plane *p= &s->plane[plane_index];
     const int mb_w= s->b_width  << s->block_max_depth;

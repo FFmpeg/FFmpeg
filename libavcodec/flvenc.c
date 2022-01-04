@@ -19,7 +19,6 @@
  */
 
 #include "flv.h"
-#include "h263.h"
 #include "h263data.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"

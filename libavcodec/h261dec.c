@@ -31,7 +31,6 @@
 #include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
-#include "h263.h"
 #include "h261.h"
 #include "internal.h"
 

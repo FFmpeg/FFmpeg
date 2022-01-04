@@ -31,7 +31,6 @@
 
 #include "rangecoder.h"
 #include "mathops.h"
-#include "h263.h"
 
 
 void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,

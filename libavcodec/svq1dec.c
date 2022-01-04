@@ -37,7 +37,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "h263.h"
+#include "h263data.h"
 #include "hpeldsp.h"
 #include "internal.h"
 #include "mathops.h"
