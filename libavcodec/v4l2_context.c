@@ -162,9 +162,8 @@ static int v4l2_handle_event(V4L2Context *ctx)
 {
     V4L2m2mContext *s = ctx_to_m2mctx(ctx);
     struct v4l2_format cap_fmt = s->capture.format;
-    struct v4l2_format out_fmt = s->output.format;
     struct v4l2_event evt = { 0 };
-    int full_reinit, reinit, ret;
+    int reinit, ret;
 
     ret = ioctl(s->fd, VIDIOC_DQEVENT, &evt);
     if (ret < 0) {
@@ -180,23 +179,10 @@ static int v4l2_handle_event(V4L2Context *ctx)
     if (evt.type != V4L2_EVENT_SOURCE_CHANGE)
         return 0;
 
-    ret = ioctl(s->fd, VIDIOC_G_FMT, &out_fmt);
-    if (ret) {
-        av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_G_FMT\n", s->output.name);
-        return 0;
-    }
-
     ret = ioctl(s->fd, VIDIOC_G_FMT, &cap_fmt);
     if (ret) {
         av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_G_FMT\n", s->capture.name);
         return 0;
-    }
-
-    full_reinit = v4l2_resolution_changed(&s->output, &out_fmt);
-    if (full_reinit) {
-        s->output.height = v4l2_get_height(&out_fmt);
-        s->output.width = v4l2_get_width(&out_fmt);
-        s->output.sample_aspect_ratio = v4l2_get_sar(&s->output);
     }
 
     reinit = v4l2_resolution_changed(&s->capture, &cap_fmt);
@@ -206,17 +192,8 @@ static int v4l2_handle_event(V4L2Context *ctx)
         s->capture.sample_aspect_ratio = v4l2_get_sar(&s->capture);
     }
 
-    if (full_reinit || reinit)
+    if (reinit)
         s->reinit = 1;
-
-    if (full_reinit) {
-        ret = ff_v4l2_m2m_codec_full_reinit(s);
-        if (ret) {
-            av_log(logger(ctx), AV_LOG_ERROR, "v4l2_m2m_codec_full_reinit\n");
-            return AVERROR(EINVAL);
-        }
-        goto reinit_run;
-    }
 
     if (reinit) {
         if (s->avctx)
