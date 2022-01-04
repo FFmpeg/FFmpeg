@@ -499,7 +499,7 @@ static void dump_dovi_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
             av_log(ctx, AV_LOG_INFO, "} ");
         }
 
-        av_log(ctx, AV_LOG_INFO, "}; nlq_offset=%"PRIu64"; ", nlq->nlq_offset);
+        av_log(ctx, AV_LOG_INFO, "}; nlq_offset=%"PRIu16"; ", nlq->nlq_offset);
         av_log(ctx, AV_LOG_INFO, "vdr_in_max=%"PRIu64"; ", nlq->vdr_in_max);
         switch (mapping->nlq_method_idc) {
         case AV_DOVI_NLQ_LINEAR_DZ:
