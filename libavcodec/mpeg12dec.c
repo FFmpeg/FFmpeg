@@ -2832,7 +2832,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
     }
 #endif
 
-    s2->codec_tag = avpriv_toupper4(avctx->codec_tag);
+    s2->codec_tag = ff_toupper4(avctx->codec_tag);
     if (s->mpeg_enc_ctx_allocated == 0 && (   s2->codec_tag == AV_RL32("VCR2")
                                            || s2->codec_tag == AV_RL32("BW10")
                                           ))

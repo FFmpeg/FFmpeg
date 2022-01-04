@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "avlanguage.h"
+#include "dovi_isom.h"
 #include "flacenc.h"
 #include "internal.h"
 #include "isom.h"
@@ -1120,6 +1121,37 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
     return 0;
 }
 
+static void mkv_write_dovi(AVFormatContext *s, AVIOContext *pb, AVStream *st)
+{
+    AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)
+                                             av_stream_get_side_data(st, AV_PKT_DATA_DOVI_CONF, NULL);
+
+    if (dovi && dovi->dv_profile <= 10) {
+        ebml_master mapping;
+        uint8_t buf[ISOM_DVCC_DVVC_SIZE];
+        uint32_t type;
+
+        uint64_t expected_size = (2 + 1 + (sizeof(DVCC_DVVC_BLOCK_TYPE_NAME) - 1))
+                                + (2 + 1 + 4) + (2 + 1 + ISOM_DVCC_DVVC_SIZE);
+
+        if (dovi->dv_profile > 7) {
+            type = MKBETAG('d', 'v', 'v', 'C');
+        } else {
+            type = MKBETAG('d', 'v', 'c', 'C');
+        }
+
+        ff_isom_put_dvcc_dvvc(s, buf, dovi);
+
+        mapping = start_ebml_master(pb, MATROSKA_ID_TRACKBLKADDMAPPING, expected_size);
+
+        put_ebml_string(pb, MATROSKA_ID_BLKADDIDNAME, DVCC_DVVC_BLOCK_TYPE_NAME);
+        put_ebml_uint(pb, MATROSKA_ID_BLKADDIDTYPE, type);
+        put_ebml_binary(pb, MATROSKA_ID_BLKADDIDEXTRADATA, buf, sizeof(buf));
+
+        end_ebml_master(pb, mapping);
+    }
+}
+
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                            AVStream *st, mkv_track *track, AVIOContext *pb,
                            int is_default)
@@ -1319,6 +1351,11 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         mkv_write_video_projection(s, pb, st);
 
         end_ebml_master(pb, subinfo);
+
+        if (mkv->mode != MODE_WEBM) {
+            mkv_write_dovi(s, pb, st);
+        }
+
         break;
 
     case AVMEDIA_TYPE_AUDIO:

@@ -24,6 +24,8 @@
  * Tables taken directly from the E-AC-3 spec.
  */
 
+#include <stddef.h>
+
 #include "eac3_data.h"
 #include "ac3.h"
 

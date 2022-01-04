@@ -29,6 +29,9 @@
 #define IDeckLinkProfileAttributes IDeckLinkAttributes
 #endif
 
+extern "C" {
+#include "libavcodec/packet_internal.h"
+}
 #include "libavutil/thread.h"
 #include "decklink_common_c.h"
 #if CONFIG_LIBKLVANC
@@ -75,7 +78,7 @@ class decklink_output_callback;
 class decklink_input_callback;
 
 typedef struct AVPacketQueue {
-    PacketList *first_pkt, *last_pkt;
+    PacketList pkt_list;
     int nb_packets;
     unsigned long long size;
     int abort_request;

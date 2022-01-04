@@ -288,20 +288,20 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     // they are needed at least right now for some processes like trellis.
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
                                  m->huff_code_dc_luminance,
-                                 avpriv_mjpeg_bits_dc_luminance,
-                                 avpriv_mjpeg_val_dc);
+                                 ff_mjpeg_bits_dc_luminance,
+                                 ff_mjpeg_val_dc);
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_chrominance,
                                  m->huff_code_dc_chrominance,
-                                 avpriv_mjpeg_bits_dc_chrominance,
-                                 avpriv_mjpeg_val_dc);
+                                 ff_mjpeg_bits_dc_chrominance,
+                                 ff_mjpeg_val_dc);
     ff_mjpeg_build_huffman_codes(m->huff_size_ac_luminance,
                                  m->huff_code_ac_luminance,
-                                 avpriv_mjpeg_bits_ac_luminance,
-                                 avpriv_mjpeg_val_ac_luminance);
+                                 ff_mjpeg_bits_ac_luminance,
+                                 ff_mjpeg_val_ac_luminance);
     ff_mjpeg_build_huffman_codes(m->huff_size_ac_chrominance,
                                  m->huff_code_ac_chrominance,
-                                 avpriv_mjpeg_bits_ac_chrominance,
-                                 avpriv_mjpeg_val_ac_chrominance);
+                                 ff_mjpeg_bits_ac_chrominance,
+                                 ff_mjpeg_val_ac_chrominance);
 
     init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
     init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);

@@ -40,7 +40,7 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     crc_abs = get_bits1(gbc);    /* protection_absent */
     aot     = get_bits(gbc, 2);  /* profile_objecttype */
     sr      = get_bits(gbc, 4);  /* sample_frequency_index */
-    if (!avpriv_mpeg4audio_sample_rates[sr])
+    if (!ff_mpeg4audio_sample_rates[sr])
         return AAC_AC3_PARSE_ERROR_SAMPLE_RATE;
     skip_bits1(gbc);             /* private_bit */
     ch = get_bits(gbc, 3);       /* channel_configuration */
@@ -63,7 +63,7 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     hdr->crc_absent     = crc_abs;
     hdr->num_aac_frames = rdb + 1;
     hdr->sampling_index = sr;
-    hdr->sample_rate    = avpriv_mpeg4audio_sample_rates[sr];
+    hdr->sample_rate    = ff_mpeg4audio_sample_rates[sr];
     hdr->samples        = (rdb + 1) * 1024;
     hdr->bit_rate       = size * 8 * hdr->sample_rate / hdr->samples;
     hdr->frame_length   = size;

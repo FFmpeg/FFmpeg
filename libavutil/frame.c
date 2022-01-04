@@ -729,6 +729,7 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_FILM_GRAIN_PARAMS:           return "Film grain parameters";
     case AV_FRAME_DATA_DETECTION_BBOXES:            return "Bounding boxes for object detection and classification";
     case AV_FRAME_DATA_DOVI_RPU_BUFFER:             return "Dolby Vision RPU Data";
+    case AV_FRAME_DATA_DOVI_METADATA:               return "Dolby Vision Metadata";
     }
     return NULL;
 }

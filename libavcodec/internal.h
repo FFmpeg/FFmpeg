@@ -225,7 +225,7 @@ extern const uint8_t ff_log2_run[41];
  */
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
-unsigned int avpriv_toupper4(unsigned int x);
+unsigned int ff_toupper4(unsigned int x);
 
 void ff_color_frame(AVFrame *frame, const int color[4]);
 
@@ -362,11 +362,5 @@ int ff_int_from_list_or_default(void *ctx, const char * val_name, int val,
                                 const int * array_valid_values, int default_value);
 
 void ff_dvdsub_parse_palette(uint32_t *palette, const char *p);
-
-#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
-#    define av_export_avcodec __declspec(dllimport)
-#else
-#    define av_export_avcodec
-#endif
 
 #endif /* AVCODEC_INTERNAL_H */

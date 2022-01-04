@@ -170,54 +170,13 @@ static int film_init(AVFormatContext *format_context)
 static int write_header(AVFormatContext *format_context, uint8_t *header,
                         unsigned header_size)
 {
-    int ret = 0;
-    int64_t pos, pos_end;
-    uint8_t *buf, *read_buf[2];
-    int read_buf_id = 0;
-    int read_size[2];
-    AVIOContext *read_pb;
-
-    buf = av_malloc(header_size);
-    if (!buf)
-        return AVERROR(ENOMEM);
-    read_buf[0] = buf;
-    read_buf[1]  = header;
-    read_size[1] = header_size;
-
-    /* Write the header at the beginning of the file, shifting all content as necessary;
-     * based on the approach used by MOV faststart. */
-    avio_flush(format_context->pb);
-    ret = format_context->io_open(format_context, &read_pb, format_context->url, AVIO_FLAG_READ, NULL);
-    if (ret < 0) {
-        av_log(format_context, AV_LOG_ERROR, "Unable to re-open %s output file to "
-               "write the header\n", format_context->url);
-        av_free(buf);
+    int ret = ff_format_shift_data(format_context, 0, header_size);
+    if (ret < 0)
         return ret;
-    }
 
-    /* Mark the end of the shift to up to the last data we are going to write,
-     * and get ready for writing */
-    pos_end = avio_tell(format_context->pb) + header_size;
-    pos = avio_seek(format_context->pb, 0, SEEK_SET);
+    avio_seek(format_context->pb, 0, SEEK_SET);
+    avio_write(format_context->pb, header, header_size);
 
-    /* start reading at where the new header will be placed */
-    avio_seek(read_pb, 0, SEEK_SET);
-
-    /* shift data by chunk of at most header_size */
-    do {
-        int n;
-        read_size[read_buf_id] = avio_read(read_pb, read_buf[read_buf_id],
-                                           header_size);
-        read_buf_id ^= 1;
-        n = read_size[read_buf_id];
-        if (n <= 0)
-            break;
-        avio_write(format_context->pb, read_buf[read_buf_id], n);
-        pos += n;
-    } while (pos < pos_end);
-    ff_format_io_close(format_context, &read_pb);
-
-    av_free(buf);
     return 0;
 }
 

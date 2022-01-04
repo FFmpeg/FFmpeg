@@ -124,10 +124,10 @@ static av_cold void mss4_init_vlcs(void)
     for (unsigned i = 0, offset = 0; i < 2; i++) {
         mss4_init_vlc(&dc_vlc[i], &offset, mss4_dc_vlc_lens[i], NULL);
         mss4_init_vlc(&ac_vlc[i], &offset,
-                      i ? avpriv_mjpeg_bits_ac_chrominance + 1
-                        : avpriv_mjpeg_bits_ac_luminance   + 1,
-                      i ? avpriv_mjpeg_val_ac_chrominance
-                        : avpriv_mjpeg_val_ac_luminance);
+                      i ? ff_mjpeg_bits_ac_chrominance + 1
+                        : ff_mjpeg_bits_ac_luminance   + 1,
+                      i ? ff_mjpeg_val_ac_chrominance
+                        : ff_mjpeg_val_ac_luminance);
         mss4_init_vlc(&vec_entry_vlc[i], &offset, mss4_vec_entry_vlc_lens[i],
                       mss4_vec_entry_vlc_syms[i]);
     }

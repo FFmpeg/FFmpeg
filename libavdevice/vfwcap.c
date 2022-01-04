@@ -45,7 +45,7 @@ struct vfw_ctx {
     HWND hwnd;
     HANDLE mutex;
     HANDLE event;
-    PacketList *pktl;
+    PacketListEntry *pktl;
     unsigned int curbufsize;
     unsigned int frame_num;
     char *video_size;       /**< A string describing video size, set by a private option. */
@@ -179,7 +179,7 @@ static LRESULT CALLBACK videostream_cb(HWND hwnd, LPVIDEOHDR vdhdr)
 {
     AVFormatContext *s;
     struct vfw_ctx *ctx;
-    PacketList **ppktl, *pktl_next;
+    PacketListEntry **ppktl, *pktl_next;
 
     s = (AVFormatContext *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
     ctx = s->priv_data;
@@ -191,7 +191,7 @@ static LRESULT CALLBACK videostream_cb(HWND hwnd, LPVIDEOHDR vdhdr)
 
     WaitForSingleObject(ctx->mutex, INFINITE);
 
-    pktl_next = av_mallocz(sizeof(PacketList));
+    pktl_next = av_mallocz(sizeof(*pktl_next));
     if(!pktl_next)
         goto fail;
 
@@ -220,7 +220,7 @@ fail:
 static int vfw_read_close(AVFormatContext *s)
 {
     struct vfw_ctx *ctx = s->priv_data;
-    PacketList *pktl;
+    PacketListEntry *pktl;
 
     if(ctx->hwnd) {
         SendMessage(ctx->hwnd, WM_CAP_SET_CALLBACK_VIDEOSTREAM, 0, 0);
@@ -234,7 +234,7 @@ static int vfw_read_close(AVFormatContext *s)
 
     pktl = ctx->pktl;
     while (pktl) {
-        PacketList *next = pktl->next;
+        PacketListEntry *next = pktl->next;
         av_packet_unref(&pktl->pkt);
         av_free(pktl);
         pktl = next;
@@ -440,7 +440,7 @@ fail:
 static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct vfw_ctx *ctx = s->priv_data;
-    PacketList *pktl = NULL;
+    PacketListEntry *pktl = NULL;
 
     while(!pktl) {
         WaitForSingleObject(ctx->mutex, INFINITE);

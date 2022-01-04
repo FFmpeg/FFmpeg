@@ -40,7 +40,7 @@ typedef struct FlacMuxerContext {
     int audio_stream_idx;
     int waiting_pics;
     /* audio packets are queued here until we get all the attached pictures */
-    PacketList *queue, *queue_end;
+    PacketList queue;
 
     /* updated streaminfo sent by the encoder at the end */
     uint8_t streaminfo[FLAC_STREAMINFO_SIZE];
@@ -306,8 +306,8 @@ static int flac_queue_flush(AVFormatContext *s)
     if (ret < 0)
         write = 0;
 
-    while (c->queue) {
-        avpriv_packet_list_get(&c->queue, &c->queue_end, pkt);
+    while (c->queue.head) {
+        avpriv_packet_list_get(&c->queue, pkt);
         if (write && (ret = flac_write_audio_packet(s, pkt)) < 0)
             write = 0;
         av_packet_unref(pkt);
@@ -347,7 +347,7 @@ static void flac_deinit(struct AVFormatContext *s)
 {
     FlacMuxerContext *c = s->priv_data;
 
-    avpriv_packet_list_free(&c->queue, &c->queue_end);
+    avpriv_packet_list_free(&c->queue);
     for (unsigned i = 0; i < s->nb_streams; i++)
         av_packet_free((AVPacket **)&s->streams[i]->priv_data);
 }
@@ -360,7 +360,7 @@ static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == c->audio_stream_idx) {
         if (c->waiting_pics) {
             /* buffer audio packets until we get all the pictures */
-            ret = avpriv_packet_list_put(&c->queue, &c->queue_end, pkt, av_packet_ref, 0);
+            ret = avpriv_packet_list_put(&c->queue, pkt, NULL, 0);
             if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "Out of memory in packet queue; skipping attached pictures\n");
                 c->waiting_pics = 0;

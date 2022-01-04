@@ -70,7 +70,7 @@ enum dshowSourceFilterType {
 };
 
 #define DECLARE_QUERYINTERFACE(prefix, class, ...)                           \
-long                                                                         \
+long WINAPI                                                                  \
 ff_dshow_##prefix##_QueryInterface(class *this, const GUID *riid, void **ppvObject) \
 {                                                                            \
     struct GUIDoffset ifaces[] = __VA_ARGS__;                                \
@@ -93,14 +93,14 @@ ff_dshow_##prefix##_QueryInterface(class *this, const GUID *riid, void **ppvObje
     return E_NOINTERFACE;                                                    \
 }
 #define DECLARE_ADDREF(prefix, class)                                        \
-unsigned long                                                                \
+unsigned long WINAPI                                                         \
 ff_dshow_##prefix##_AddRef(class *this)                                      \
 {                                                                            \
     dshowdebug("ff_dshow_"AV_STRINGIFY(prefix)"_AddRef(%p)\t%ld\n", this, this->ref+1); \
     return InterlockedIncrement(&this->ref);                                 \
 }
 #define DECLARE_RELEASE(prefix, class)                                       \
-unsigned long                                                                \
+unsigned long WINAPI                                                         \
 ff_dshow_##prefix##_Release(class *this)                                     \
 {                                                                            \
     long ref = InterlockedDecrement(&this->ref);                             \
@@ -167,34 +167,34 @@ struct DShowPin {
     IMemInputPinVtbl *imemvtbl;
 };
 
-long          ff_dshow_pin_QueryInterface          (DShowPin *, const GUID *, void **);
-unsigned long ff_dshow_pin_AddRef                  (DShowPin *);
-unsigned long ff_dshow_pin_Release                 (DShowPin *);
-long          ff_dshow_pin_Connect                 (DShowPin *, IPin *, const AM_MEDIA_TYPE *);
-long          ff_dshow_pin_ReceiveConnection       (DShowPin *, IPin *, const AM_MEDIA_TYPE *);
-long          ff_dshow_pin_Disconnect              (DShowPin *);
-long          ff_dshow_pin_ConnectedTo             (DShowPin *, IPin **);
-long          ff_dshow_pin_ConnectionMediaType     (DShowPin *, AM_MEDIA_TYPE *);
-long          ff_dshow_pin_QueryPinInfo            (DShowPin *, PIN_INFO *);
-long          ff_dshow_pin_QueryDirection          (DShowPin *, PIN_DIRECTION *);
-long          ff_dshow_pin_QueryId                 (DShowPin *, wchar_t **);
-long          ff_dshow_pin_QueryAccept             (DShowPin *, const AM_MEDIA_TYPE *);
-long          ff_dshow_pin_EnumMediaTypes          (DShowPin *, IEnumMediaTypes **);
-long          ff_dshow_pin_QueryInternalConnections(DShowPin *, IPin **, unsigned long *);
-long          ff_dshow_pin_EndOfStream             (DShowPin *);
-long          ff_dshow_pin_BeginFlush              (DShowPin *);
-long          ff_dshow_pin_EndFlush                (DShowPin *);
-long          ff_dshow_pin_NewSegment              (DShowPin *, REFERENCE_TIME, REFERENCE_TIME, double);
+long          WINAPI ff_dshow_pin_QueryInterface          (DShowPin *, const GUID *, void **);
+unsigned long WINAPI ff_dshow_pin_AddRef                  (DShowPin *);
+unsigned long WINAPI ff_dshow_pin_Release                 (DShowPin *);
+long          WINAPI ff_dshow_pin_Connect                 (DShowPin *, IPin *, const AM_MEDIA_TYPE *);
+long          WINAPI ff_dshow_pin_ReceiveConnection       (DShowPin *, IPin *, const AM_MEDIA_TYPE *);
+long          WINAPI ff_dshow_pin_Disconnect              (DShowPin *);
+long          WINAPI ff_dshow_pin_ConnectedTo             (DShowPin *, IPin **);
+long          WINAPI ff_dshow_pin_ConnectionMediaType     (DShowPin *, AM_MEDIA_TYPE *);
+long          WINAPI ff_dshow_pin_QueryPinInfo            (DShowPin *, PIN_INFO *);
+long          WINAPI ff_dshow_pin_QueryDirection          (DShowPin *, PIN_DIRECTION *);
+long          WINAPI ff_dshow_pin_QueryId                 (DShowPin *, wchar_t **);
+long          WINAPI ff_dshow_pin_QueryAccept             (DShowPin *, const AM_MEDIA_TYPE *);
+long          WINAPI ff_dshow_pin_EnumMediaTypes          (DShowPin *, IEnumMediaTypes **);
+long          WINAPI ff_dshow_pin_QueryInternalConnections(DShowPin *, IPin **, unsigned long *);
+long          WINAPI ff_dshow_pin_EndOfStream             (DShowPin *);
+long          WINAPI ff_dshow_pin_BeginFlush              (DShowPin *);
+long          WINAPI ff_dshow_pin_EndFlush                (DShowPin *);
+long          WINAPI ff_dshow_pin_NewSegment              (DShowPin *, REFERENCE_TIME, REFERENCE_TIME, double);
 
-long          ff_dshow_meminputpin_QueryInterface          (DShowMemInputPin *, const GUID *, void **);
-unsigned long ff_dshow_meminputpin_AddRef                  (DShowMemInputPin *);
-unsigned long ff_dshow_meminputpin_Release                 (DShowMemInputPin *);
-long          ff_dshow_meminputpin_GetAllocator            (DShowMemInputPin *, IMemAllocator **);
-long          ff_dshow_meminputpin_NotifyAllocator         (DShowMemInputPin *, IMemAllocator *, BOOL);
-long          ff_dshow_meminputpin_GetAllocatorRequirements(DShowMemInputPin *, ALLOCATOR_PROPERTIES *);
-long          ff_dshow_meminputpin_Receive                 (DShowMemInputPin *, IMediaSample *);
-long          ff_dshow_meminputpin_ReceiveMultiple         (DShowMemInputPin *, IMediaSample **, long, long *);
-long          ff_dshow_meminputpin_ReceiveCanBlock         (DShowMemInputPin *);
+long          WINAPI ff_dshow_meminputpin_QueryInterface          (DShowMemInputPin *, const GUID *, void **);
+unsigned long WINAPI ff_dshow_meminputpin_AddRef                  (DShowMemInputPin *);
+unsigned long WINAPI ff_dshow_meminputpin_Release                 (DShowMemInputPin *);
+long          WINAPI ff_dshow_meminputpin_GetAllocator            (DShowMemInputPin *, IMemAllocator **);
+long          WINAPI ff_dshow_meminputpin_NotifyAllocator         (DShowMemInputPin *, IMemAllocator *, BOOL);
+long          WINAPI ff_dshow_meminputpin_GetAllocatorRequirements(DShowMemInputPin *, ALLOCATOR_PROPERTIES *);
+long          WINAPI ff_dshow_meminputpin_Receive                 (DShowMemInputPin *, IMediaSample *);
+long          WINAPI ff_dshow_meminputpin_ReceiveMultiple         (DShowMemInputPin *, IMediaSample **, long, long *);
+long          WINAPI ff_dshow_meminputpin_ReceiveCanBlock         (DShowMemInputPin *);
 
 void                 ff_dshow_pin_Destroy(DShowPin *);
 DShowPin            *ff_dshow_pin_Create (DShowFilter *filter);
@@ -212,13 +212,13 @@ struct DShowEnumPins {
     DShowFilter *filter;
 };
 
-long          ff_dshow_enumpins_QueryInterface(DShowEnumPins *, const GUID *, void **);
-unsigned long ff_dshow_enumpins_AddRef        (DShowEnumPins *);
-unsigned long ff_dshow_enumpins_Release       (DShowEnumPins *);
-long          ff_dshow_enumpins_Next          (DShowEnumPins *, unsigned long, IPin **, unsigned long *);
-long          ff_dshow_enumpins_Skip          (DShowEnumPins *, unsigned long);
-long          ff_dshow_enumpins_Reset         (DShowEnumPins *);
-long          ff_dshow_enumpins_Clone         (DShowEnumPins *, DShowEnumPins **);
+long          WINAPI ff_dshow_enumpins_QueryInterface(DShowEnumPins *, const GUID *, void **);
+unsigned long WINAPI ff_dshow_enumpins_AddRef        (DShowEnumPins *);
+unsigned long WINAPI ff_dshow_enumpins_Release       (DShowEnumPins *);
+long          WINAPI ff_dshow_enumpins_Next          (DShowEnumPins *, unsigned long, IPin **, unsigned long *);
+long          WINAPI ff_dshow_enumpins_Skip          (DShowEnumPins *, unsigned long);
+long          WINAPI ff_dshow_enumpins_Reset         (DShowEnumPins *);
+long          WINAPI ff_dshow_enumpins_Clone         (DShowEnumPins *, DShowEnumPins **);
 
 void                 ff_dshow_enumpins_Destroy(DShowEnumPins *);
 DShowEnumPins       *ff_dshow_enumpins_Create (DShowPin *pin, DShowFilter *filter);
@@ -233,13 +233,13 @@ struct DShowEnumMediaTypes {
     AM_MEDIA_TYPE type;
 };
 
-long          ff_dshow_enummediatypes_QueryInterface(DShowEnumMediaTypes *, const GUID *, void **);
-unsigned long ff_dshow_enummediatypes_AddRef        (DShowEnumMediaTypes *);
-unsigned long ff_dshow_enummediatypes_Release       (DShowEnumMediaTypes *);
-long          ff_dshow_enummediatypes_Next          (DShowEnumMediaTypes *, unsigned long, AM_MEDIA_TYPE **, unsigned long *);
-long          ff_dshow_enummediatypes_Skip          (DShowEnumMediaTypes *, unsigned long);
-long          ff_dshow_enummediatypes_Reset         (DShowEnumMediaTypes *);
-long          ff_dshow_enummediatypes_Clone         (DShowEnumMediaTypes *, DShowEnumMediaTypes **);
+long          WINAPI ff_dshow_enummediatypes_QueryInterface(DShowEnumMediaTypes *, const GUID *, void **);
+unsigned long WINAPI ff_dshow_enummediatypes_AddRef        (DShowEnumMediaTypes *);
+unsigned long WINAPI ff_dshow_enummediatypes_Release       (DShowEnumMediaTypes *);
+long          WINAPI ff_dshow_enummediatypes_Next          (DShowEnumMediaTypes *, unsigned long, AM_MEDIA_TYPE **, unsigned long *);
+long          WINAPI ff_dshow_enummediatypes_Skip          (DShowEnumMediaTypes *, unsigned long);
+long          WINAPI ff_dshow_enummediatypes_Reset         (DShowEnumMediaTypes *);
+long          WINAPI ff_dshow_enummediatypes_Clone         (DShowEnumMediaTypes *, DShowEnumMediaTypes **);
 
 void                 ff_dshow_enummediatypes_Destroy(DShowEnumMediaTypes *);
 DShowEnumMediaTypes *ff_dshow_enummediatypes_Create(const AM_MEDIA_TYPE *type);
@@ -262,21 +262,21 @@ struct DShowFilter {
     void (*callback)(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType type);
 };
 
-long          ff_dshow_filter_QueryInterface (DShowFilter *, const GUID *, void **);
-unsigned long ff_dshow_filter_AddRef         (DShowFilter *);
-unsigned long ff_dshow_filter_Release        (DShowFilter *);
-long          ff_dshow_filter_GetClassID     (DShowFilter *, CLSID *);
-long          ff_dshow_filter_Stop           (DShowFilter *);
-long          ff_dshow_filter_Pause          (DShowFilter *);
-long          ff_dshow_filter_Run            (DShowFilter *, REFERENCE_TIME);
-long          ff_dshow_filter_GetState       (DShowFilter *, DWORD, FILTER_STATE *);
-long          ff_dshow_filter_SetSyncSource  (DShowFilter *, IReferenceClock *);
-long          ff_dshow_filter_GetSyncSource  (DShowFilter *, IReferenceClock **);
-long          ff_dshow_filter_EnumPins       (DShowFilter *, IEnumPins **);
-long          ff_dshow_filter_FindPin        (DShowFilter *, const wchar_t *, IPin **);
-long          ff_dshow_filter_QueryFilterInfo(DShowFilter *, FILTER_INFO *);
-long          ff_dshow_filter_JoinFilterGraph(DShowFilter *, IFilterGraph *, const wchar_t *);
-long          ff_dshow_filter_QueryVendorInfo(DShowFilter *, wchar_t **);
+long          WINAPI ff_dshow_filter_QueryInterface (DShowFilter *, const GUID *, void **);
+unsigned long WINAPI ff_dshow_filter_AddRef         (DShowFilter *);
+unsigned long WINAPI ff_dshow_filter_Release        (DShowFilter *);
+long          WINAPI ff_dshow_filter_GetClassID     (DShowFilter *, CLSID *);
+long          WINAPI ff_dshow_filter_Stop           (DShowFilter *);
+long          WINAPI ff_dshow_filter_Pause          (DShowFilter *);
+long          WINAPI ff_dshow_filter_Run            (DShowFilter *, REFERENCE_TIME);
+long          WINAPI ff_dshow_filter_GetState       (DShowFilter *, DWORD, FILTER_STATE *);
+long          WINAPI ff_dshow_filter_SetSyncSource  (DShowFilter *, IReferenceClock *);
+long          WINAPI ff_dshow_filter_GetSyncSource  (DShowFilter *, IReferenceClock **);
+long          WINAPI ff_dshow_filter_EnumPins       (DShowFilter *, IEnumPins **);
+long          WINAPI ff_dshow_filter_FindPin        (DShowFilter *, const wchar_t *, IPin **);
+long          WINAPI ff_dshow_filter_QueryFilterInfo(DShowFilter *, FILTER_INFO *);
+long          WINAPI ff_dshow_filter_JoinFilterGraph(DShowFilter *, IFilterGraph *, const wchar_t *);
+long          WINAPI ff_dshow_filter_QueryVendorInfo(DShowFilter *, wchar_t **);
 
 void                 ff_dshow_filter_Destroy(DShowFilter *);
 DShowFilter         *ff_dshow_filter_Create (void *, void *, enum dshowDeviceType);
@@ -322,7 +322,7 @@ struct dshow_ctx {
     HANDLE mutex;
     HANDLE event[2]; /* event[0] is set by DirectShow
                       * event[1] is set by callback() */
-    PacketList *pktl;
+    PacketListEntry *pktl;
 
     int eof;
 

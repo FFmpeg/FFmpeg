@@ -164,20 +164,20 @@ static av_cold int jpg_init(AVCodecContext *avctx, JPGContext *c)
 {
     int ret;
 
-    ret = ff_mjpeg_build_vlc(&c->dc_vlc[0], avpriv_mjpeg_bits_dc_luminance,
-                             avpriv_mjpeg_val_dc, 0, avctx);
+    ret = ff_mjpeg_build_vlc(&c->dc_vlc[0], ff_mjpeg_bits_dc_luminance,
+                             ff_mjpeg_val_dc, 0, avctx);
     if (ret)
         return ret;
-    ret = ff_mjpeg_build_vlc(&c->dc_vlc[1], avpriv_mjpeg_bits_dc_chrominance,
-                             avpriv_mjpeg_val_dc, 0, avctx);
+    ret = ff_mjpeg_build_vlc(&c->dc_vlc[1], ff_mjpeg_bits_dc_chrominance,
+                             ff_mjpeg_val_dc, 0, avctx);
     if (ret)
         return ret;
-    ret = ff_mjpeg_build_vlc(&c->ac_vlc[0], avpriv_mjpeg_bits_ac_luminance,
-                             avpriv_mjpeg_val_ac_luminance, 1, avctx);
+    ret = ff_mjpeg_build_vlc(&c->ac_vlc[0], ff_mjpeg_bits_ac_luminance,
+                             ff_mjpeg_val_ac_luminance, 1, avctx);
     if (ret)
         return ret;
-    ret = ff_mjpeg_build_vlc(&c->ac_vlc[1], avpriv_mjpeg_bits_ac_chrominance,
-                             avpriv_mjpeg_val_ac_chrominance, 1, avctx);
+    ret = ff_mjpeg_build_vlc(&c->ac_vlc[1], ff_mjpeg_bits_ac_chrominance,
+                             ff_mjpeg_val_ac_chrominance, 1, avctx);
     if (ret)
         return ret;
 

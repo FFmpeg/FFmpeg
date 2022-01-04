@@ -24,13 +24,11 @@
 
 #include <stdint.h>
 
-#include "libavutil/internal.h"
 #include "ac3.h"
-#include "internal.h"
 
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];
-extern av_export_avcodec const uint16_t avpriv_ac3_channel_layout_tab[8];
+extern const uint16_t ff_ac3_channel_layout_tab[8];
 extern const uint8_t  ff_ac3_dec_channel_map[8][2][6];
 extern const int      ff_ac3_sample_rate_tab[];
 extern const uint16_t ff_ac3_bitrate_tab[19];

@@ -55,6 +55,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "dovi_isom.h"
 #include "riff.h"
 #include "isom.h"
 #include "libavcodec/get_bits.h"
@@ -812,7 +813,7 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     acmod = (ac3info >> 11) & 0x7;
     lfeon = (ac3info >> 10) & 0x1;
     st->codecpar->channels = ((int[]){2,1,2,3,3,4,4,5})[acmod] + lfeon;
-    st->codecpar->channel_layout = avpriv_ac3_channel_layout_tab[acmod];
+    st->codecpar->channel_layout = ff_ac3_channel_layout_tab[acmod];
     if (lfeon)
         st->codecpar->channel_layout |= AV_CH_LOW_FREQUENCY;
     *ast = bsmod;
@@ -845,7 +846,7 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     bsmod = (eac3info >> 12) & 0x1f;
     acmod = (eac3info >>  9) & 0x7;
     lfeon = (eac3info >>  8) & 0x1;
-    st->codecpar->channel_layout = avpriv_ac3_channel_layout_tab[acmod];
+    st->codecpar->channel_layout = ff_ac3_channel_layout_tab[acmod];
     if (lfeon)
         st->codecpar->channel_layout |= AV_CH_LOW_FREQUENCY;
     st->codecpar->channels = av_get_channel_layout_nb_channels(st->codecpar->channel_layout);
@@ -7062,58 +7063,21 @@ static int mov_read_dmlp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_dvcc_dvvc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
-    uint32_t buf;
-    AVDOVIDecoderConfigurationRecord *dovi;
-    size_t dovi_size;
+    uint8_t buf[ISOM_DVCC_DVVC_SIZE];
     int ret;
+    int64_t read_size = atom.size;
 
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    if ((uint64_t)atom.size > (1<<30) || atom.size < 4)
-        return AVERROR_INVALIDDATA;
+    // At most 24 bytes
+    read_size = FFMIN(read_size, ISOM_DVCC_DVVC_SIZE);
 
-    dovi = av_dovi_alloc(&dovi_size);
-    if (!dovi)
-        return AVERROR(ENOMEM);
-
-    dovi->dv_version_major = avio_r8(pb);
-    dovi->dv_version_minor = avio_r8(pb);
-
-    buf = avio_rb16(pb);
-    dovi->dv_profile        = (buf >> 9) & 0x7f;    // 7 bits
-    dovi->dv_level          = (buf >> 3) & 0x3f;    // 6 bits
-    dovi->rpu_present_flag  = (buf >> 2) & 0x01;    // 1 bit
-    dovi->el_present_flag   = (buf >> 1) & 0x01;    // 1 bit
-    dovi->bl_present_flag   =  buf       & 0x01;    // 1 bit
-    if (atom.size >= 24) {  // 4 + 4 + 4 * 4
-        buf = avio_r8(pb);
-        dovi->dv_bl_signal_compatibility_id = (buf >> 4) & 0x0f; // 4 bits
-    } else {
-        // 0 stands for None
-        // Dolby Vision V1.2.93 profiles and levels
-        dovi->dv_bl_signal_compatibility_id = 0;
-    }
-
-    ret = av_stream_add_side_data(st, AV_PKT_DATA_DOVI_CONF,
-                                  (uint8_t *)dovi, dovi_size);
-    if (ret < 0) {
-        av_free(dovi);
+    if ((ret = ffio_read_size(pb, buf, read_size)) < 0)
         return ret;
-    }
 
-    av_log(c, AV_LOG_TRACE, "DOVI in dvcC/dvvC/dvwC box, version: %d.%d, profile: %d, level: %d, "
-           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
-           dovi->dv_version_major, dovi->dv_version_minor,
-           dovi->dv_profile, dovi->dv_level,
-           dovi->rpu_present_flag,
-           dovi->el_present_flag,
-           dovi->bl_present_flag,
-           dovi->dv_bl_signal_compatibility_id
-        );
-
-    return 0;
+    return ff_isom_parse_dvcc_dvvc(c->fc, st, buf, read_size);
 }
 
 static int mov_read_kind(MOVContext *c, AVIOContext *pb, MOVAtom atom)

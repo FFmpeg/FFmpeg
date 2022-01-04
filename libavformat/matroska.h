@@ -111,6 +111,7 @@
 #define MATROSKA_ID_TRACKCONTENTENCODING 0x6240
 #define MATROSKA_ID_TRACKTIMECODESCALE 0x23314F
 #define MATROSKA_ID_TRACKMAXBLKADDID 0x55EE
+#define MATROSKA_ID_TRACKBLKADDMAPPING 0x41E4
 
 /* IDs in the trackvideo master */
 #define MATROSKA_ID_VIDEOFRAMERATE 0x2383E3
@@ -188,6 +189,12 @@
 #define MATROSKA_ID_ENCODINGSIGHASHALGO 0x47E6
 #define MATROSKA_ID_ENCODINGSIGKEYID 0x47E4
 #define MATROSKA_ID_ENCODINGSIGNATURE 0x47E3
+
+/* IDs in the block addition mapping master */
+#define MATROSKA_ID_BLKADDIDVALUE 0x41F0
+#define MATROSKA_ID_BLKADDIDNAME 0x41A4
+#define MATROSKA_ID_BLKADDIDTYPE 0x41E7
+#define MATROSKA_ID_BLKADDIDEXTRADATA 0x41ED
 
 /* ID in the cues master */
 #define MATROSKA_ID_POINTENTRY 0xBB
@@ -384,5 +391,7 @@ extern const char * const ff_matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_P
 #define CODEC_PRIVATE_SIZE "webm_dash_manifest_codec_priv_size"
 
 int ff_mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mode);
+
+#define DVCC_DVVC_BLOCK_TYPE_NAME "Dolby Vision configuration"
 
 #endif /* AVFORMAT_MATROSKA_H */

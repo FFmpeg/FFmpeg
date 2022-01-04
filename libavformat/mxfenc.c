@@ -3097,9 +3097,9 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flus
         stream_count += !!ffstream(s->streams[i])->last_in_packet_buffer;
 
     if (stream_count && (s->nb_streams == stream_count || flush)) {
-        PacketList *pktl = si->packet_buffer;
+        PacketListEntry *pktl = si->packet_buffer.head;
         if (s->nb_streams != stream_count) {
-            PacketList *last = NULL;
+            PacketListEntry *last = NULL;
             // find last packet in edit unit
             while (pktl) {
                 if (!stream_count || pktl->pkt.stream_index == 0)
@@ -3113,7 +3113,7 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flus
             }
             // purge packet queue
             while (pktl) {
-                PacketList *next = pktl->next;
+                PacketListEntry *next = pktl->next;
                 av_packet_unref(&pktl->pkt);
                 av_freep(&pktl);
                 pktl = next;
@@ -3121,21 +3121,17 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flus
             if (last)
                 last->next = NULL;
             else {
-                si->packet_buffer     = NULL;
-                si->packet_buffer_end = NULL;
+                si->packet_buffer.head = NULL;
+                si->packet_buffer.tail = NULL;
                 goto out;
             }
-            pktl = si->packet_buffer;
+            pktl = si->packet_buffer.head;
         }
 
-        *out = pktl->pkt;
-        av_log(s, AV_LOG_TRACE, "out st:%d dts:%"PRId64"\n", (*out).stream_index, (*out).dts);
-        si->packet_buffer = pktl->next;
         if (ffstream(s->streams[pktl->pkt.stream_index])->last_in_packet_buffer == pktl)
             ffstream(s->streams[pktl->pkt.stream_index])->last_in_packet_buffer = NULL;
-        if (!si->packet_buffer)
-            si->packet_buffer_end = NULL;
-        av_freep(&pktl);
+        avpriv_packet_list_get(&si->packet_buffer, out);
+        av_log(s, AV_LOG_TRACE, "out st:%d dts:%"PRId64"\n", out->stream_index, out->dts);
         return 1;
     } else {
     out:

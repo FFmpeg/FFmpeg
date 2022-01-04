@@ -204,5 +204,9 @@ end:
         IAMTVTuner_Release(tv_tuner_filter);
     if (tv_tuner_base_filter)
         IBaseFilter_Release(tv_tuner_base_filter);
+    if (tv_audio_filter)
+        IAMAudioInputMixer_Release(tv_audio_filter);
+    if (tv_audio_base_filter)
+        IBaseFilter_Release(tv_audio_base_filter);
     return hr;
 }

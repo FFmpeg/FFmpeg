@@ -448,7 +448,7 @@ static int avi_write_header(AVFormatContext *s)
                     par->bits_per_coded_sample = 16;
                 avist->pal_offset = avio_tell(pb) + 40;
                 ff_put_bmp_header(pb, par, 0, 0, avi->flipped_raw_rgb);
-                pix_fmt = avpriv_find_pix_fmt(avpriv_pix_fmt_bps_avi,
+                pix_fmt = avpriv_pix_fmt_find(PIX_FMT_LIST_AVI,
                                               par->bits_per_coded_sample);
                 if (   !par->codec_tag
                     && par->codec_id == AV_CODEC_ID_RAWVIDEO

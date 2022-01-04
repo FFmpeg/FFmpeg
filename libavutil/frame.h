@@ -189,11 +189,18 @@ enum AVFrameSideDataType {
     AV_FRAME_DATA_DETECTION_BBOXES,
 
     /**
-     * Dolby Vision RPU data, suitable for passing to x265
+     * Dolby Vision RPU raw data, suitable for passing to x265
      * or other libraries. Array of uint8_t, with NAL emulation
      * bytes intact.
      */
     AV_FRAME_DATA_DOVI_RPU_BUFFER,
+
+    /**
+     * Parsed Dolby Vision metadata, suitable for passing to a software
+     * implementation. The payload is the AVDOVIMetadata struct defined in
+     * libavutil/dovi_meta.h.
+     */
+    AV_FRAME_DATA_DOVI_METADATA,
 };
 
 enum AVActiveFormatDescription {

@@ -52,9 +52,9 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     s->layer = 4 - ((header >> 17) & 3);
     /* extract frequency */
     sample_rate_index = (header >> 10) & 3;
-    if (sample_rate_index >= FF_ARRAY_ELEMS(avpriv_mpa_freq_tab))
+    if (sample_rate_index >= FF_ARRAY_ELEMS(ff_mpa_freq_tab))
         sample_rate_index = 0;
-    sample_rate = avpriv_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
+    sample_rate = ff_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
     sample_rate_index += 3 * (s->lsf + mpeg25);
     s->sample_rate_index = sample_rate_index;
     s->error_protection = ((header >> 16) & 1) ^ 1;
@@ -75,7 +75,7 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
         s->nb_channels = 2;
 
     if (bitrate_index != 0) {
-        frame_size = avpriv_mpa_bitrate_tab[s->lsf][s->layer - 1][bitrate_index];
+        frame_size = ff_mpa_bitrate_tab[s->lsf][s->layer - 1][bitrate_index];
         s->bit_rate = frame_size * 1000;
         switch(s->layer) {
         case 1:

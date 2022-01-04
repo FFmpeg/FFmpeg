@@ -26,32 +26,32 @@ DECLARE_QUERYINTERFACE(filter, DShowFilter,
 DECLARE_ADDREF(filter, DShowFilter)
 DECLARE_RELEASE(filter, DShowFilter)
 
-long ff_dshow_filter_GetClassID(DShowFilter *this, CLSID *id)
+long WINAPI ff_dshow_filter_GetClassID(DShowFilter *this, CLSID *id)
 {
     dshowdebug("ff_dshow_filter_GetClassID(%p)\n", this);
     /* I'm not creating a ClassID just for this. */
     return E_FAIL;
 }
-long ff_dshow_filter_Stop(DShowFilter *this)
+long WINAPI ff_dshow_filter_Stop(DShowFilter *this)
 {
     dshowdebug("ff_dshow_filter_Stop(%p)\n", this);
     this->state = State_Stopped;
     return S_OK;
 }
-long ff_dshow_filter_Pause(DShowFilter *this)
+long WINAPI ff_dshow_filter_Pause(DShowFilter *this)
 {
     dshowdebug("ff_dshow_filter_Pause(%p)\n", this);
     this->state = State_Paused;
     return S_OK;
 }
-long ff_dshow_filter_Run(DShowFilter *this, REFERENCE_TIME start)
+long WINAPI ff_dshow_filter_Run(DShowFilter *this, REFERENCE_TIME start)
 {
     dshowdebug("ff_dshow_filter_Run(%p) %"PRId64"\n", this, start);
     this->state = State_Running;
     this->start_time = start;
     return S_OK;
 }
-long ff_dshow_filter_GetState(DShowFilter *this, DWORD ms, FILTER_STATE *state)
+long WINAPI ff_dshow_filter_GetState(DShowFilter *this, DWORD ms, FILTER_STATE *state)
 {
     dshowdebug("ff_dshow_filter_GetState(%p)\n", this);
     if (!state)
@@ -59,7 +59,7 @@ long ff_dshow_filter_GetState(DShowFilter *this, DWORD ms, FILTER_STATE *state)
     *state = this->state;
     return S_OK;
 }
-long ff_dshow_filter_SetSyncSource(DShowFilter *this, IReferenceClock *clock)
+long WINAPI ff_dshow_filter_SetSyncSource(DShowFilter *this, IReferenceClock *clock)
 {
     dshowdebug("ff_dshow_filter_SetSyncSource(%p)\n", this);
 
@@ -73,7 +73,7 @@ long ff_dshow_filter_SetSyncSource(DShowFilter *this, IReferenceClock *clock)
 
     return S_OK;
 }
-long ff_dshow_filter_GetSyncSource(DShowFilter *this, IReferenceClock **clock)
+long WINAPI ff_dshow_filter_GetSyncSource(DShowFilter *this, IReferenceClock **clock)
 {
     dshowdebug("ff_dshow_filter_GetSyncSource(%p)\n", this);
 
@@ -85,7 +85,7 @@ long ff_dshow_filter_GetSyncSource(DShowFilter *this, IReferenceClock **clock)
 
     return S_OK;
 }
-long ff_dshow_filter_EnumPins(DShowFilter *this, IEnumPins **enumpin)
+long WINAPI ff_dshow_filter_EnumPins(DShowFilter *this, IEnumPins **enumpin)
 {
     DShowEnumPins *new;
     dshowdebug("ff_dshow_filter_EnumPins(%p)\n", this);
@@ -99,7 +99,7 @@ long ff_dshow_filter_EnumPins(DShowFilter *this, IEnumPins **enumpin)
     *enumpin = (IEnumPins *) new;
     return S_OK;
 }
-long ff_dshow_filter_FindPin(DShowFilter *this, const wchar_t *id, IPin **pin)
+long WINAPI ff_dshow_filter_FindPin(DShowFilter *this, const wchar_t *id, IPin **pin)
 {
     DShowPin *found = NULL;
     dshowdebug("ff_dshow_filter_FindPin(%p)\n", this);
@@ -116,7 +116,7 @@ long ff_dshow_filter_FindPin(DShowFilter *this, const wchar_t *id, IPin **pin)
 
     return S_OK;
 }
-long ff_dshow_filter_QueryFilterInfo(DShowFilter *this, FILTER_INFO *info)
+long WINAPI ff_dshow_filter_QueryFilterInfo(DShowFilter *this, FILTER_INFO *info)
 {
     dshowdebug("ff_dshow_filter_QueryFilterInfo(%p)\n", this);
 
@@ -128,7 +128,7 @@ long ff_dshow_filter_QueryFilterInfo(DShowFilter *this, FILTER_INFO *info)
 
     return S_OK;
 }
-long ff_dshow_filter_JoinFilterGraph(DShowFilter *this, IFilterGraph *graph,
+long WINAPI ff_dshow_filter_JoinFilterGraph(DShowFilter *this, IFilterGraph *graph,
                             const wchar_t *name)
 {
     dshowdebug("ff_dshow_filter_JoinFilterGraph(%p)\n", this);
@@ -139,7 +139,7 @@ long ff_dshow_filter_JoinFilterGraph(DShowFilter *this, IFilterGraph *graph,
 
     return S_OK;
 }
-long ff_dshow_filter_QueryVendorInfo(DShowFilter *this, wchar_t **info)
+long WINAPI ff_dshow_filter_QueryVendorInfo(DShowFilter *this, wchar_t **info)
 {
     dshowdebug("ff_dshow_filter_QueryVendorInfo(%p)\n", this);
 

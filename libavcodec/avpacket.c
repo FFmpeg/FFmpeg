@@ -535,13 +535,12 @@ void av_packet_rescale_ts(AVPacket *pkt, AVRational src_tb, AVRational dst_tb)
         pkt->duration = av_rescale_q(pkt->duration, src_tb, dst_tb);
 }
 
-int avpriv_packet_list_put(PacketList **packet_buffer,
-                           PacketList **plast_pktl,
+int avpriv_packet_list_put(PacketList *packet_buffer,
                            AVPacket      *pkt,
                            int (*copy)(AVPacket *dst, const AVPacket *src),
                            int flags)
 {
-    PacketList *pktl = av_malloc(sizeof(PacketList));
+    PacketListEntry *pktl = av_malloc(sizeof(*pktl));
     int ret;
 
     if (!pktl)
@@ -565,44 +564,41 @@ int avpriv_packet_list_put(PacketList **packet_buffer,
 
     pktl->next = NULL;
 
-    if (*packet_buffer)
-        (*plast_pktl)->next = pktl;
+    if (packet_buffer->head)
+        packet_buffer->tail->next = pktl;
     else
-        *packet_buffer = pktl;
+        packet_buffer->head = pktl;
 
     /* Add the packet in the buffered packet list. */
-    *plast_pktl = pktl;
+    packet_buffer->tail = pktl;
     return 0;
 }
 
-int avpriv_packet_list_get(PacketList **pkt_buffer,
-                           PacketList **pkt_buffer_end,
+int avpriv_packet_list_get(PacketList *pkt_buffer,
                            AVPacket      *pkt)
 {
-    PacketList *pktl;
-    if (!*pkt_buffer)
+    PacketListEntry *pktl = pkt_buffer->head;
+    if (!pktl)
         return AVERROR(EAGAIN);
-    pktl        = *pkt_buffer;
     *pkt        = pktl->pkt;
-    *pkt_buffer = pktl->next;
-    if (!pktl->next)
-        *pkt_buffer_end = NULL;
+    pkt_buffer->head = pktl->next;
+    if (!pkt_buffer->head)
+        pkt_buffer->tail = NULL;
     av_freep(&pktl);
     return 0;
 }
 
-void avpriv_packet_list_free(PacketList **pkt_buf, PacketList **pkt_buf_end)
+void avpriv_packet_list_free(PacketList *pkt_buf)
 {
-    PacketList *tmp = *pkt_buf;
+    PacketListEntry *tmp = pkt_buf->head;
 
     while (tmp) {
-        PacketList *pktl = tmp;
+        PacketListEntry *pktl = tmp;
         tmp = pktl->next;
         av_packet_unref(&pktl->pkt);
         av_freep(&pktl);
     }
-    *pkt_buf     = NULL;
-    *pkt_buf_end = NULL;
+    pkt_buf->head = pkt_buf->tail = NULL;
 }
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type)

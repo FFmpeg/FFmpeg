@@ -1616,7 +1616,7 @@ dependent_frame:
         return AVERROR_INVALIDDATA;
     }
     avctx->channels = s->out_channels;
-    avctx->channel_layout = avpriv_ac3_channel_layout_tab[s->output_mode & ~AC3_OUTPUT_LFEON];
+    avctx->channel_layout = ff_ac3_channel_layout_tab[s->output_mode & ~AC3_OUTPUT_LFEON];
     if (s->output_mode & AC3_OUTPUT_LFEON)
         avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
 
@@ -1700,7 +1700,7 @@ skip:
         extended_channel_map[ch] = ch;
 
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        uint64_t ich_layout = avpriv_ac3_channel_layout_tab[s->prev_output_mode & ~AC3_OUTPUT_LFEON];
+        uint64_t ich_layout = ff_ac3_channel_layout_tab[s->prev_output_mode & ~AC3_OUTPUT_LFEON];
         int channel_map_size = ff_ac3_channels_tab[s->output_mode & ~AC3_OUTPUT_LFEON] + s->lfe_on;
         uint64_t channel_layout;
         int extend = 0;

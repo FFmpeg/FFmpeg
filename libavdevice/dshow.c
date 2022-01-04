@@ -76,7 +76,7 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
                 return AV_PIX_FMT_0RGB32;
         }
     }
-    return avpriv_find_pix_fmt(avpriv_get_raw_pix_fmt_tags(), biCompression); // all others
+    return avpriv_pix_fmt_find(PIX_FMT_LIST_RAW, biCompression); // all others
 }
 
 static enum AVColorRange dshow_color_range(DXVA2_ExtendedFormat *fmt_info)
@@ -238,7 +238,7 @@ static int
 dshow_read_close(AVFormatContext *s)
 {
     struct dshow_ctx *ctx = s->priv_data;
-    PacketList *pktl;
+    PacketListEntry *pktl;
 
     if (ctx->control) {
         IMediaControl_Stop(ctx->control);
@@ -298,7 +298,7 @@ dshow_read_close(AVFormatContext *s)
 
     pktl = ctx->pktl;
     while (pktl) {
-        PacketList *next = pktl->next;
+        PacketListEntry *next = pktl->next;
         av_packet_unref(&pktl->pkt);
         av_free(pktl);
         pktl = next;
@@ -342,7 +342,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, e
 {
     AVFormatContext *s = priv_data;
     struct dshow_ctx *ctx = s->priv_data;
-    PacketList **ppktl, *pktl_next;
+    PacketListEntry **ppktl, *pktl_next;
 
 //    dump_videohdr(s, vdhdr);
 
@@ -351,7 +351,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, e
     if(shall_we_drop(s, index, devtype))
         goto fail;
 
-    pktl_next = av_mallocz(sizeof(PacketList));
+    pktl_next = av_mallocz(sizeof(*pktl_next));
     if(!pktl_next)
         goto fail;
 
@@ -758,6 +758,31 @@ static struct dshow_format_info *dshow_get_format_info(AM_MEDIA_TYPE *type)
     return fmt_info;
 }
 
+static void dshow_get_default_format(IPin *pin, IAMStreamConfig *config, enum dshowDeviceType devtype, AM_MEDIA_TYPE **type)
+{
+    HRESULT hr;
+
+    if ((hr = IAMStreamConfig_GetFormat(config, type)) != S_OK) {
+        if (hr == E_NOTIMPL || !IsEqualGUID(&(*type)->majortype, devtype == VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
+            // default not available or of wrong type,
+            // fall back to iterating exposed formats
+            // until one of the right type is found
+            IEnumMediaTypes* types = NULL;
+            if (IPin_EnumMediaTypes(pin, &types) != S_OK)
+                return;
+            IEnumMediaTypes_Reset(types);
+            while (IEnumMediaTypes_Next(types, 1, type, NULL) == S_OK) {
+                if (IsEqualGUID(&(*type)->majortype, devtype == VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
+                    break;
+                }
+                CoTaskMemFree(*type);
+                *type = NULL;
+            }
+            IEnumMediaTypes_Release(types);
+        }
+    }
+}
+
 /**
  * Cycle through available formats available from the specified pin,
  * try to set parameters specified through AVOptions, or the pin's
@@ -813,32 +838,11 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
     use_default = !dshow_should_set_format(avctx, devtype);
     if (use_default && pformat_set)
     {
-        HRESULT hr;
-
         // get default
-        if ((hr = IAMStreamConfig_GetFormat(config, &type)) != S_OK) {
-            if (hr == E_NOTIMPL || !IsEqualGUID(&type->majortype, devtype==VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
-                // default not available or of wrong type,
-                // fall back to iterating exposed formats
-                // until one of the right type is found
-                IEnumMediaTypes *types = NULL;
-                if (IPin_EnumMediaTypes(pin, &types) != S_OK)
-                    goto end;
-                IEnumMediaTypes_Reset(types);
-                while (IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
-                    if (IsEqualGUID(&type->majortype, devtype==VideoDevice ? &MEDIATYPE_Video : &MEDIATYPE_Audio)) {
-                        break;
-                    }
-                    CoTaskMemFree(type);
-                    type = NULL;
-                }
-                IEnumMediaTypes_Release(types);
-            }
-
-            if (!type)
-                // this pin does not expose any formats of the expected type
-                goto end;
-        }
+        dshow_get_default_format(pin, config, devtype, &type);
+        if (!type)
+            // this pin does not expose any formats of the expected type
+            goto end;
 
         if (type) {
             // interrogate default format, so we know what to search for below
@@ -953,7 +957,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                     av_log(avctx, AV_LOG_INFO, "(%s)", chroma ? chroma : "unknown");
 
                 av_log(avctx, AV_LOG_INFO, "\n");
-                continue;
+                goto next;
             }
             if (requested_video_codec_id != AV_CODEC_ID_RAWVIDEO) {
                 if (requested_video_codec_id != fmt_info->codec_id)
@@ -1038,16 +1042,33 @@ next:
         if (type && type->pbFormat)
             CoTaskMemFree(type->pbFormat);
         CoTaskMemFree(type);
+        type = NULL;
     }
-    // previously found a matching VIDEOINFOHEADER format and stored
-    // it for safe keeping. Searching further for a matching
-    // VIDEOINFOHEADER2 format yielded nothing. So set the pin's
-    // format based on the VIDEOINFOHEADER format.
-    // NB: this never applies to an audio format because
-    // previous_match_type always NULL in that case
-    if (!format_set && previous_match_type) {
-        if (IAMStreamConfig_SetFormat(config, previous_match_type) == S_OK)
-            format_set = 1;
+
+    // set the pin's format, if wanted
+    if (pformat_set && !format_set) {
+        if (previous_match_type) {
+            // previously found a matching VIDEOINFOHEADER format and stored
+            // it for safe keeping. Searching further for a matching
+            // VIDEOINFOHEADER2 format yielded nothing. So set the pin's
+            // format based on the VIDEOINFOHEADER format.
+            // NB: this never applies to an audio format because
+            // previous_match_type always NULL in that case
+            if (IAMStreamConfig_SetFormat(config, previous_match_type) == S_OK)
+                format_set = 1;
+        }
+        else if (use_default) {
+            // default format returned by device apparently was not contained
+            // in the capabilities of any of the formats returned by the device
+            // (sic?). Fall back to directly setting the default format
+            dshow_get_default_format(pin, config, devtype, &type);
+            if (IAMStreamConfig_SetFormat(config, type) == S_OK)
+                format_set = 1;
+            if (type && type->pbFormat)
+                CoTaskMemFree(type->pbFormat);
+            CoTaskMemFree(type);
+            type = NULL;
+        }
     }
 
 end:
@@ -1847,7 +1868,7 @@ static int dshow_check_event_queue(IMediaEvent *media_event)
 static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct dshow_ctx *ctx = s->priv_data;
-    PacketList *pktl = NULL;
+    PacketListEntry *pktl = NULL;
 
     while (!ctx->eof && !pktl) {
         WaitForSingleObject(ctx->mutex, INFINITE);

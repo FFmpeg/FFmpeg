@@ -35,6 +35,7 @@
 #include "ac3dsp.h"
 #include "avcodec.h"
 #include "fft.h"
+#include "internal.h"
 #include "mathops.h"
 #include "me_cmp.h"
 #include "put_bits.h"

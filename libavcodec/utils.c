@@ -436,17 +436,6 @@ void ff_color_frame(AVFrame *frame, const int c[4])
     }
 }
 
-enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags,
-                                       unsigned int fourcc)
-{
-    while (tags->pix_fmt >= 0) {
-        if (tags->fourcc == fourcc)
-            return tags->pix_fmt;
-        tags++;
-    }
-    return AV_PIX_FMT_NONE;
-}
-
 int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec){
     return !!(codec->caps_internal & FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM);
 }
@@ -872,14 +861,6 @@ const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index)
         if (!codec->hw_configs[i])
             return NULL;
     return &codec->hw_configs[index]->public;
-}
-
-unsigned int avpriv_toupper4(unsigned int x)
-{
-    return av_toupper(x & 0xFF) +
-          (av_toupper((x >>  8) & 0xFF) << 8)  +
-          (av_toupper((x >> 16) & 0xFF) << 16) +
-((unsigned)av_toupper((x >> 24) & 0xFF) << 24);
 }
 
 int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
