@@ -807,7 +807,9 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
         av_log(NULL, AV_LOG_ERROR, "Cannot read IMF CPL\n");
         if (ret == 0)
             ret = AVERROR_INVALIDDATA;
-    } else {
+        goto clean_up;
+    }
+
         LIBXML_TEST_VERSION
 
         filesize = buf.len;
@@ -817,6 +819,7 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
                    AV_LOG_ERROR,
                    "XML parsing failed when reading the IMF CPL\n");
             ret = AVERROR_INVALIDDATA;
+            goto clean_up;
         }
 
         if ((ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl))) {
@@ -833,8 +836,8 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
         }
 
         xmlFreeDoc(doc);
-    }
 
+clean_up:
     av_bprint_finalize(&buf, NULL);
 
     return ret;
