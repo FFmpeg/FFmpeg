@@ -888,6 +888,7 @@ OBJS-$(CONFIG_ADPCM_G726LE_DECODER)       += g726.o
 OBJS-$(CONFIG_ADPCM_G726LE_ENCODER)       += g726.o
 OBJS-$(CONFIG_ADPCM_IMA_ACORN_DECODER)    += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_AMV_DECODER)      += adpcm.o adpcm_data.o
+OBJS-$(CONFIG_ADPCM_IMA_AMV_ENCODER)      += adpcmenc.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_ALP_DECODER)      += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_ALP_ENCODER)      += adpcmenc.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_IMA_APC_DECODER)      += adpcm.o adpcm_data.o
