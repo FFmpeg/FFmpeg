@@ -1,6 +1,9 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+
+
 version 5.0:
 - ADPCM IMA Westwood encoder
 - Westwood AUD muxer
