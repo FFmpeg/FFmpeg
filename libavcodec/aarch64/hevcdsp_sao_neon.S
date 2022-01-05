@@ -3,7 +3,7 @@
  *
  * AArch64 NEON optimised SAO functions for HEVC decoding
  *
- * Copyright (c) 2020-2021  J. Dekker <jdek@itanimul.li>
+ * Copyright (c) 2020 Josh Dekker <josh@itanimul.li>
  *
  * This file is part of FFmpeg.
  *
@@ -35,7 +35,6 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         stp             xzr, xzr, [sp, #32]
         stp             xzr, xzr, [sp, #48]
         mov             w8,  #4
-        sxtw            x6,  w6
 0:      ldrsh           x9, [x4,  x8, lsl #1]      // sao_offset_val[k+1]
         subs            w8,  w8,  #1
         add             w10, w8,  w5               // k + sao_left_class
@@ -44,9 +43,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         bne             0b
         ld1             {v16.16b-v19.16b}, [sp], #64
         movi            v20.8h,   #1
-        sub             x2,  x2, x6                // stride_dst - width
-        sub             x3,  x3, x6                // stride_src - width
-1:      mov             x8,  x6                    // beginning of line
+1:      mov             w8,  w6                    // beginning of line
 2:      // Simple layout for accessing 16bit values
         // with 8bit LUT.
         //
@@ -55,7 +52,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         // |xDE#xAD|xCA#xFE|xBE#xEF|xFE#xED|....
         // +----------------------------------->
         //    i-0     i-1     i-2     i-3
-        ld1             {v2.8b}, [x1], #8          // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
+        ld1             {v2.8b}, [x1]              // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
         uxtl            v0.8h,  v2.8b              // load src[x]
         ushr            v2.8h,  v0.8h, #3          // >> BIT_DEPTH - 3
         shl             v1.8h,  v2.8h, #1          // low (x2, accessing short)
@@ -64,7 +61,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         tbx             v2.16b, {v16.16b-v19.16b}, v1.16b // table
         add             v1.8h,  v0.8h, v2.8h       // src[x] + table
         sqxtun          v4.8b,  v1.8h              // clip + narrow
-        st1             {v4.8b}, [x0], #8          // store
+        st1             {v4.8b}, [x0]              // store
         subs            w8, w8,  #8                // done 8 pixels
         bne             2b
         subs            w7, w7,  #1                // finished line, prep. new
