@@ -44,6 +44,7 @@ version <next>:
 - yadif_videotoolbox filter
 - VideoToolbox ProRes encoder
 - anlmf audio filter
+- IMF demuxer (experimental)
 
 
 version 4.4:
