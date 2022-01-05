@@ -119,18 +119,19 @@ static float mobius(float in, float j, double peak)
 static void tonemap(TonemapContext *s, AVFrame *out, const AVFrame *in,
                     const AVPixFmtDescriptor *desc, int x, int y, double peak)
 {
-    const float *r_in = (const float *)(in->data[0] + x * desc->comp[0].step + y * in->linesize[0]);
-    const float *b_in = (const float *)(in->data[1] + x * desc->comp[1].step + y * in->linesize[1]);
-    const float *g_in = (const float *)(in->data[2] + x * desc->comp[2].step + y * in->linesize[2]);
-    float *r_out = (float *)(out->data[0] + x * desc->comp[0].step + y * out->linesize[0]);
-    float *b_out = (float *)(out->data[1] + x * desc->comp[1].step + y * out->linesize[1]);
-    float *g_out = (float *)(out->data[2] + x * desc->comp[2].step + y * out->linesize[2]);
+    int map[3] = { desc->comp[0].plane, desc->comp[1].plane, desc->comp[2].plane };
+    const float *r_in = (const float *)(in->data[map[0]] + x * desc->comp[map[0]].step + y * in->linesize[map[0]]);
+    const float *g_in = (const float *)(in->data[map[1]] + x * desc->comp[map[1]].step + y * in->linesize[map[1]]);
+    const float *b_in = (const float *)(in->data[map[2]] + x * desc->comp[map[2]].step + y * in->linesize[map[2]]);
+    float *r_out = (float *)(out->data[map[0]] + x * desc->comp[map[0]].step + y * out->linesize[map[0]]);
+    float *g_out = (float *)(out->data[map[1]] + x * desc->comp[map[1]].step + y * out->linesize[map[1]]);
+    float *b_out = (float *)(out->data[map[2]] + x * desc->comp[map[2]].step + y * out->linesize[map[2]]);
     float sig, sig_orig;
 
     /* load values */
     *r_out = *r_in;
-    *b_out = *b_in;
     *g_out = *g_in;
+    *b_out = *b_in;
 
     /* desaturate to prevent unnatural colors */
     if (s->desat > 0) {
