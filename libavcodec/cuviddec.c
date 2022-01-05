@@ -1030,13 +1030,7 @@ static void cuvid_flush(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    av_fifo_freep(&ctx->frame_queue);
-
-    ctx->frame_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(CuvidParsedFrame));
-    if (!ctx->frame_queue) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to recreate frame queue on flush\n");
-        return;
-    }
+    av_fifo_reset(ctx->frame_queue);
 
     if (ctx->cudecoder) {
         ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
