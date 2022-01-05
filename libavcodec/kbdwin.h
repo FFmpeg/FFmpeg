@@ -24,7 +24,7 @@
 /**
  * Maximum window size for ff_kbd_window_init.
  */
-#define FF_KBD_WINDOW_MAX 1024
+#define FF_KBD_WINDOW_MAX 2048
 
 /**
  * Generate a Kaiser-Bessel Derived Window.

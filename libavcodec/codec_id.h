@@ -515,6 +515,7 @@ enum AVCodecID {
     AV_CODEC_ID_SIREN,
     AV_CODEC_ID_HCA,
     AV_CODEC_ID_FASTAUDIO,
+    AV_CODEC_ID_AC4,
     AV_CODEC_ID_MSNSIREN,
 
     /* subtitle codecs */
