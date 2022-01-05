@@ -2384,8 +2384,6 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
  * avcodec_find_decoder() and avcodec_find_encoder() provide an easy way for
  * retrieving a codec.
  *
- * @warning This function is not thread safe!
- *
  * @note Always call this function before using decoding routines (such as
  * @ref avcodec_receive_frame()).
  *
