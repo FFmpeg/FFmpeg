@@ -810,32 +810,32 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
         goto clean_up;
     }
 
-        LIBXML_TEST_VERSION
+    LIBXML_TEST_VERSION
 
-        filesize = buf.len;
-        doc = xmlReadMemory(buf.str, filesize, NULL, NULL, 0);
-        if (!doc) {
-            av_log(NULL,
-                   AV_LOG_ERROR,
-                   "XML parsing failed when reading the IMF CPL\n");
-            ret = AVERROR_INVALIDDATA;
-            goto clean_up;
-        }
+    filesize = buf.len;
+    doc = xmlReadMemory(buf.str, filesize, NULL, NULL, 0);
+    if (!doc) {
+        av_log(NULL,
+                AV_LOG_ERROR,
+                "XML parsing failed when reading the IMF CPL\n");
+        ret = AVERROR_INVALIDDATA;
+        goto clean_up;
+    }
 
-        if ((ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl))) {
-            av_log(NULL, AV_LOG_ERROR, "Cannot parse IMF CPL\n");
-        } else {
-            av_log(NULL,
-                   AV_LOG_INFO,
-                   "IMF CPL ContentTitle: %s\n",
-                   (*cpl)->content_title_utf8);
-            av_log(NULL,
-                   AV_LOG_INFO,
-                   "IMF CPL Id: " FF_IMF_UUID_FORMAT "\n",
-                   UID_ARG((*cpl)->id_uuid));
-        }
+    if ((ret = ff_imf_parse_cpl_from_xml_dom(doc, cpl))) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot parse IMF CPL\n");
+    } else {
+        av_log(NULL,
+                AV_LOG_INFO,
+                "IMF CPL ContentTitle: %s\n",
+                (*cpl)->content_title_utf8);
+        av_log(NULL,
+                AV_LOG_INFO,
+                "IMF CPL Id: " FF_IMF_UUID_FORMAT "\n",
+                UID_ARG((*cpl)->id_uuid));
+    }
 
-        xmlFreeDoc(doc);
+    xmlFreeDoc(doc);
 
 clean_up:
     av_bprint_finalize(&buf, NULL);
