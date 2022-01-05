@@ -109,12 +109,6 @@ struct AVHWDeviceInternal {
      * context it was derived from.
      */
     AVBufferRef *source_device;
-
-    /**
-     * An array of reference to device contexts which
-     * were derived from this device.
-     */
-    AVBufferRef *derived_devices[AV_HWDEVICE_TYPE_NB];
 };
 
 struct AVHWFramesInternal {
