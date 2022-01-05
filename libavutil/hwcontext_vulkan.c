@@ -1872,12 +1872,14 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
 
         f->size[0] = cont_memory_requirements.size;
 
-        for (int i = 0; i < planes; i++) {
-            bind_info[i].sType  = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
-            bind_info[i].image  = f->img[i];
-            bind_info[i].memory = f->mem[0];
-            bind_info[i].memoryOffset = !i ? 0 : cont_mem_size_list[i - 1];
+        for (int i = 0, offset = 0; i < planes; i++) {
+            bind_info[i].sType        = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+            bind_info[i].image        = f->img[i];
+            bind_info[i].memory       = f->mem[0];
+            bind_info[i].memoryOffset = offset;
+
             f->offset[i] = bind_info[i].memoryOffset;
+            offset += cont_mem_size_list[i];
         }
     }
 
