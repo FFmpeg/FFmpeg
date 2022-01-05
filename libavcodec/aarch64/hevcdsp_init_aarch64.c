@@ -75,7 +75,11 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_8_neon;
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_8_neon;
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_8_neon;
-        c->sao_band_filter[0]          = ff_hevc_sao_band_filter_8x8_8_neon;
+        // This function is disabled, as it doesn't handle widths that aren't
+        // an even multiple of 8 correctly. fate-hevc doesn't exercise that
+        // for the current size, but if enabled for bigger sizes, the cases
+        // of non-multiple of 8 seem to arise.
+//        c->sao_band_filter[0]          = ff_hevc_sao_band_filter_8x8_8_neon;
     }
     if (bit_depth == 10) {
         c->add_residual[0]             = ff_hevc_add_residual_4x4_10_neon;
