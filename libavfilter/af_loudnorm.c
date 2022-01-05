@@ -206,10 +206,11 @@ static void detect_peak(LoudNormContext *s, int offset, int nb_samples, int chan
                     continue;
 
                 for (c = 0; c < channels; c++) {
-                    if (c == 0 || fabs(buf[index + c]) > max_peak)
-                        max_peak = fabs(buf[index + c]);
+		    int idx((index + c) < s->limiter_buf_size ? (index + c) : (index + c - s->limiter_buf_size));
+                    if (c == 0 || fabs(buf[idx]) > max_peak)
+                        max_peak = fabs(buf[idx]);
 
-                    s->prev_smp[c] = fabs(buf[(index + c) < s->limiter_buf_size ? (index + c) : (index + c - s->limiter_buf_size)]);
+                    s->prev_smp[c] = fabs(buf[idx]);
                 }
 
                 *peak_delta = n;
