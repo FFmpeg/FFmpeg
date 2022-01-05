@@ -78,7 +78,7 @@ typedef struct CuvidContext
     AVBufferRef *hwdevice;
     AVBufferRef *hwframe;
 
-    AVFifoBuffer *frame_queue;
+    AVFifo      *frame_queue;
 
     int deint_mode;
     int deint_mode_current;
@@ -363,13 +363,13 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     parsed_frame.dispinfo.progressive_frame = ctx->progressive_sequence;
 
     if (ctx->deint_mode_current == cudaVideoDeinterlaceMode_Weave) {
-        av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
+        av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
     } else {
         parsed_frame.is_deinterlacing = 1;
-        av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
+        av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
         if (!ctx->drop_second_field) {
             parsed_frame.second_field = 1;
-            av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
+            av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
         }
     }
 
@@ -384,7 +384,7 @@ static int cuvid_is_buffer_full(AVCodecContext *avctx)
     if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field)
         delay *= 2;
 
-    return (av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + delay >= ctx->nb_surfaces;
+    return av_fifo_can_read(ctx->frame_queue) + delay >= ctx->nb_surfaces;
 }
 
 static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
@@ -458,6 +458,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
     AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
     AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
+    CuvidParsedFrame parsed_frame;
     CUdeviceptr mapped_frame = 0;
     int ret = 0, eret = 0;
 
@@ -487,15 +488,12 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
     if (ret < 0)
         return ret;
 
-    if (av_fifo_size(ctx->frame_queue)) {
+    if (av_fifo_read(ctx->frame_queue, &parsed_frame, 1) >= 0) {
         const AVPixFmtDescriptor *pixdesc;
-        CuvidParsedFrame parsed_frame;
         CUVIDPROCPARAMS params;
         unsigned int pitch = 0;
         int offset = 0;
         int i;
-
-        av_fifo_generic_read(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
 
         memset(&params, 0, sizeof(params));
         params.progressive_frame = parsed_frame.dispinfo.progressive_frame;
@@ -657,7 +655,7 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
     AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
 
-    av_fifo_freep(&ctx->frame_queue);
+    av_fifo_freep2(&ctx->frame_queue);
 
     ctx->cudl->cuCtxPushCurrent(cuda_ctx);
 
@@ -834,7 +832,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ctx->frame_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(CuvidParsedFrame));
+    ctx->frame_queue = av_fifo_alloc2(ctx->nb_surfaces, sizeof(CuvidParsedFrame), 0);
     if (!ctx->frame_queue) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -1030,7 +1028,7 @@ static void cuvid_flush(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    av_fifo_reset(ctx->frame_queue);
+    av_fifo_reset2(ctx->frame_queue);
 
     if (ctx->cudecoder) {
         ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
