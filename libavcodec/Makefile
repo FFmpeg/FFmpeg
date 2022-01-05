@@ -118,7 +118,8 @@ OBJS-$(CONFIG_MDCT)                    += mdct_float.o mdct_fixed_32.o
 OBJS-$(CONFIG_ME_CMP)                  += me_cmp.o
 OBJS-$(CONFIG_MEDIACODEC)              += mediacodecdec_common.o mediacodec_surface.o mediacodec_wrapper.o mediacodec_sw_buffer.o
 OBJS-$(CONFIG_MPEG_ER)                 += mpeg_er.o
-OBJS-$(CONFIG_MPEGAUDIO)               += mpegaudio.o mpegaudiodec_common.o
+OBJS-$(CONFIG_MPEGAUDIO)               += mpegaudio.o mpegaudiodec_common.o \
+                                          mpegaudiodata.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += mpegaudiodsp.o                \
                                           mpegaudiodsp_data.o           \
                                           mpegaudiodsp_fixed.o          \
