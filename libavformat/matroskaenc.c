@@ -1123,6 +1123,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
 
 static void mkv_write_dovi(AVFormatContext *s, AVIOContext *pb, AVStream *st)
 {
+#if CONFIG_MATROSKA_MUXER
     AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)
                                              av_stream_get_side_data(st, AV_PKT_DATA_DOVI_CONF, NULL);
 
@@ -1150,6 +1151,7 @@ static void mkv_write_dovi(AVFormatContext *s, AVIOContext *pb, AVStream *st)
 
         end_ebml_master(pb, mapping);
     }
+#endif
 }
 
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
