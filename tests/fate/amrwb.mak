@@ -41,7 +41,13 @@ FATE_AMRWB += fate-amrwb-23k85-2
 fate-amrwb-23k85-2: CMD = pcm -i $(TARGET_SAMPLES)/amrwb/deus-23k85.awb
 fate-amrwb-23k85-2: REF = $(SAMPLES)/amrwb/deus-23k85.pcm
 
+FATE_AMRWB_REMUX-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER AMR_PARSER AMR_MUXER \
+                                AMR_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL)      \
+                                += fate-amrwb-remux
+fate-amrwb-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb amr "-c copy" "-c copy -t 1"
+
 $(FATE_AMRWB): CMP = stddev
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AMR, AMRWB) += $(FATE_AMRWB)
-fate-amrwb: $(FATE_AMRWB)
+FATE_SAMPLES_FFMPEG += $(FATE_AMRWB_REMUX-yes)
+fate-amrwb: $(FATE_AMRWB) $(FATE_AMRWB_REMUX-yes)
