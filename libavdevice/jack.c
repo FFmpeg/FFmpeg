@@ -50,8 +50,8 @@ typedef struct JackData {
     jack_port_t **  ports;
     int             nports;
     TimeFilter *    timefilter;
-    AVFifoBuffer *  new_pkts;
-    AVFifoBuffer *  filled_pkts;
+    AVFifo *        new_pkts;
+    AVFifo *        filled_pkts;
     int             pkt_xrun;
     int             jack_xrun;
 } JackData;
@@ -81,13 +81,14 @@ static int process_callback(jack_nframes_t nframes, void *arg)
                                       self->buffer_size);
 
     /* Check if an empty packet is available, and if there's enough space to send it back once filled */
-    if ((av_fifo_size(self->new_pkts) < sizeof(pkt)) || (av_fifo_space(self->filled_pkts) < sizeof(pkt))) {
+    if (!av_fifo_can_read(self->new_pkts) ||
+        !av_fifo_can_write(self->filled_pkts)) {
         self->pkt_xrun = 1;
         return 0;
     }
 
     /* Retrieve empty (but allocated) packet */
-    av_fifo_generic_read(self->new_pkts, &pkt, sizeof(pkt), NULL);
+    av_fifo_read(self->new_pkts, &pkt, 1);
 
     pkt_data  = (float *) pkt.data;
     latency   = 0;
@@ -106,7 +107,7 @@ static int process_callback(jack_nframes_t nframes, void *arg)
     pkt.pts = (cycle_time - (double) latency / (self->nports * self->sample_rate)) * 1000000.0;
 
     /* Send the now filled packet back, and increase packet counter */
-    av_fifo_generic_write(self->filled_pkts, &pkt, sizeof(pkt), NULL);
+    av_fifo_write(self->filled_pkts, &pkt, 1);
     sem_post(&self->packet_count);
 
     return 0;
@@ -134,12 +135,12 @@ static int supply_new_packets(JackData *self, AVFormatContext *context)
     /* Supply the process callback with new empty packets, by filling the new
      * packets FIFO buffer with as many packets as possible. process_callback()
      * can't do this by itself, because it can't allocate memory in realtime. */
-    while (av_fifo_space(self->new_pkts) >= sizeof(pkt)) {
+    while (av_fifo_can_write(self->new_pkts)) {
         if ((test = av_new_packet(&pkt, pkt_size)) < 0) {
             av_log(context, AV_LOG_ERROR, "Could not create packet of size %d\n", pkt_size);
             return test;
         }
-        av_fifo_generic_write(self->new_pkts, &pkt, sizeof(pkt), NULL);
+        av_fifo_write(self->new_pkts, &pkt, 1);
     }
     return 0;
 }
@@ -193,9 +194,9 @@ static int start_jack(AVFormatContext *context)
     }
 
     /* Create FIFO buffers */
-    self->filled_pkts = av_fifo_alloc_array(FIFO_PACKETS_NUM, sizeof(AVPacket));
+    self->filled_pkts = av_fifo_alloc2(FIFO_PACKETS_NUM, sizeof(AVPacket), 0);
     /* New packets FIFO with one extra packet for safety against underruns */
-    self->new_pkts    = av_fifo_alloc_array((FIFO_PACKETS_NUM + 1), sizeof(AVPacket));
+    self->new_pkts    = av_fifo_alloc2((FIFO_PACKETS_NUM + 1), sizeof(AVPacket), 0);
     if (!self->new_pkts) {
         jack_client_close(self->client);
         return AVERROR(ENOMEM);
@@ -209,14 +210,13 @@ static int start_jack(AVFormatContext *context)
 
 }
 
-static void free_pkt_fifo(AVFifoBuffer **fifo)
+static void free_pkt_fifo(AVFifo **fifop)
 {
+    AVFifo *fifo = *fifop;
     AVPacket pkt;
-    while (av_fifo_size(*fifo)) {
-        av_fifo_generic_read(*fifo, &pkt, sizeof(pkt), NULL);
+    while (av_fifo_read(fifo, &pkt, 1) >= 0)
         av_packet_unref(&pkt);
-    }
-    av_fifo_freep(fifo);
+    av_fifo_freep2(fifop);
 }
 
 static void stop_jack(JackData *self)
@@ -313,7 +313,7 @@ static int audio_read_packet(AVFormatContext *context, AVPacket *pkt)
     }
 
     /* Retrieve the packet filled with audio data by process_callback() */
-    av_fifo_generic_read(self->filled_pkts, pkt, sizeof(*pkt), NULL);
+    av_fifo_read(self->filled_pkts, pkt, 1);
 
     if ((test = supply_new_packets(self, context)))
         return test;
