@@ -236,6 +236,9 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.all_layers = dav1d->all_layers;
     if (dav1d->operating_point >= 0)
         s.operating_point = dav1d->operating_point;
+#if FF_DAV1D_VERSION_AT_LEAST(6,2)
+    s.strict_std_compliance = c->strict_std_compliance > 0;
+#endif
 
 #if FF_DAV1D_VERSION_AT_LEAST(6,0)
     if (dav1d->frame_threads || dav1d->tile_threads)
