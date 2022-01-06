@@ -21,7 +21,7 @@ API changes, most recent first:
   av_fifo_can_write(), av_fifo_grow2(), av_fifo_drain2(), av_fifo_write(),
   av_fifo_write_from_cb(), av_fifo_read(), av_fifo_read_to_cb(),
   av_fifo_peek(), av_fifo_peek_to_cb(), av_fifo_drain2(), av_fifo_reset2(),
-  av_fifo_freep2().
+  av_fifo_freep2(), av_fifo_auto_grow_limit().
 
 2022-01-26 - af94ab7c7c0 - lavu 57.19.100 - tx.h
   Add AV_TX_FLOAT_RDFT, AV_TX_DOUBLE_RDFT and AV_TX_INT32_RDFT.

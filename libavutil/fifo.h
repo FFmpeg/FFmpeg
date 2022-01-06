@@ -49,12 +49,19 @@ typedef struct AVFifo AVFifo;
 typedef int AVFifoCB(void *opaque, void *buf, size_t *nb_elems);
 
 /**
+ * Automatically resize the FIFO on writes, so that the data fits. This
+ * automatic resizing happens up to a limit that can be modified with
+ * av_fifo_auto_grow_limit().
+ */
+#define AV_FIFO_FLAG_AUTO_GROW      (1 << 0)
+
+/**
  * Allocate and initialize an AVFifo with a given element size.
  *
  * @param elems     initial number of elements that can be stored in the FIFO
  * @param elem_size Size in bytes of a single element. Further operations on
  *                  the returned FIFO will implicitly use this element size.
- * @param flags currently unused, must be 0
+ * @param flags a combination of AV_FIFO_FLAG_*
  *
  * @return newly-allocated AVFifo on success, a negative error code on failure
  */
@@ -66,6 +73,12 @@ AVFifo *av_fifo_alloc2(size_t elems, size_t elem_size,
  *         FIFO allocation and remains constant during its lifetime
  */
 size_t av_fifo_elem_size(const AVFifo *f);
+
+/**
+ * Set the maximum size (in elements) to which the FIFO can be resized
+ * automatically. Has no effect unless AV_FIFO_FLAG_AUTO_GROW is used.
+ */
+void av_fifo_auto_grow_limit(AVFifo *f, size_t max_elems);
 
 /**
  * @return number of elements available for reading from the given FIFO.

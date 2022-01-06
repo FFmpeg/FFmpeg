@@ -26,6 +26,9 @@
 #include "common.h"
 #include "fifo.h"
 
+// by default the FIFO can be auto-grown to 1MB
+#define AUTO_GROW_DEFAULT_BYTES (1024 * 1024)
+
 struct AVFifo {
     uint8_t *buffer;
 
@@ -33,6 +36,9 @@ struct AVFifo {
     size_t offset_r, offset_w;
     // distinguishes the ambiguous situation offset_r == offset_w
     int    is_empty;
+
+    unsigned int flags;
+    size_t       auto_grow_limit;
 };
 
 AVFifo *av_fifo_alloc2(size_t nb_elems, size_t elem_size,
@@ -59,7 +65,15 @@ AVFifo *av_fifo_alloc2(size_t nb_elems, size_t elem_size,
     f->elem_size = elem_size;
     f->is_empty  = 1;
 
+    f->flags           = flags;
+    f->auto_grow_limit = FFMAX(AUTO_GROW_DEFAULT_BYTES / elem_size, 1);
+
     return f;
+}
+
+void av_fifo_auto_grow_limit(AVFifo *f, size_t max_elems)
+{
+    f->auto_grow_limit = max_elems;
 }
 
 size_t av_fifo_elem_size(const AVFifo *f)
@@ -109,6 +123,26 @@ int av_fifo_grow2(AVFifo *f, size_t inc)
     return 0;
 }
 
+static int fifo_check_space(AVFifo *f, size_t to_write)
+{
+    const size_t can_write = av_fifo_can_write(f);
+    const size_t need_grow = to_write > can_write ? to_write - can_write : 0;
+    size_t can_grow;
+
+    if (!need_grow)
+        return 0;
+
+    can_grow = f->auto_grow_limit > f->nb_elems ?
+               f->auto_grow_limit - f->nb_elems : 0;
+    if ((f->flags & AV_FIFO_FLAG_AUTO_GROW) && need_grow <= can_grow) {
+        // allocate a bit more than necessary, if we can
+        const size_t inc = (need_grow < can_grow / 2 ) ? need_grow * 2 : can_grow;
+        return av_fifo_grow2(f, inc);
+    }
+
+    return AVERROR(ENOSPC);
+}
+
 static int fifo_write_common(AVFifo *f, const uint8_t *buf, size_t *nb_elems,
                              AVFifoCB read_cb, void *opaque)
 {
@@ -116,8 +150,9 @@ static int fifo_write_common(AVFifo *f, const uint8_t *buf, size_t *nb_elems,
     size_t offset_w = f->offset_w;
     int         ret = 0;
 
-    if (to_write > av_fifo_can_write(f))
-        return AVERROR(ENOSPC);
+    ret = fifo_check_space(f, to_write);
+    if (ret < 0)
+        return ret;
 
     while (to_write > 0) {
         size_t    len = FFMIN(f->nb_elems - offset_w, to_write);
