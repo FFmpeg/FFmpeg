@@ -1130,7 +1130,8 @@ static int gem_probe(const AVProbeData *p)
     return ret;
 }
 
-#define IMAGEAUTO_DEMUXER(imgname, codecid)\
+#define IMAGEAUTO_DEMUXER_0(imgname, codecid)
+#define IMAGEAUTO_DEMUXER_1(imgname, codecid)\
 const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .name           = AV_STRINGIFY(imgname) "_pipe",\
     .long_name      = NULL_IF_CONFIG_SMALL("piped " AV_STRINGIFY(imgname) " sequence"),\
@@ -1143,33 +1144,43 @@ const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .raw_codec_id   = codecid,\
 };
 
-IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
-IMAGEAUTO_DEMUXER(cri,     AV_CODEC_ID_CRI)
-IMAGEAUTO_DEMUXER(dds,     AV_CODEC_ID_DDS)
-IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
-IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
-IMAGEAUTO_DEMUXER(gem,     AV_CODEC_ID_GEM)
-IMAGEAUTO_DEMUXER(gif,     AV_CODEC_ID_GIF)
-IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
-IMAGEAUTO_DEMUXER(jpeg,    AV_CODEC_ID_MJPEG)
-IMAGEAUTO_DEMUXER(jpegls,  AV_CODEC_ID_JPEGLS)
-IMAGEAUTO_DEMUXER(pam,     AV_CODEC_ID_PAM)
-IMAGEAUTO_DEMUXER(pbm,     AV_CODEC_ID_PBM)
-IMAGEAUTO_DEMUXER(pcx,     AV_CODEC_ID_PCX)
-IMAGEAUTO_DEMUXER(pgm,     AV_CODEC_ID_PGM)
-IMAGEAUTO_DEMUXER(pgmyuv,  AV_CODEC_ID_PGMYUV)
-IMAGEAUTO_DEMUXER(pgx,     AV_CODEC_ID_PGX)
-IMAGEAUTO_DEMUXER(photocd, AV_CODEC_ID_PHOTOCD)
-IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
-IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
-IMAGEAUTO_DEMUXER(ppm,     AV_CODEC_ID_PPM)
-IMAGEAUTO_DEMUXER(psd,     AV_CODEC_ID_PSD)
-IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
-IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
-IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)
-IMAGEAUTO_DEMUXER(svg,     AV_CODEC_ID_SVG)
-IMAGEAUTO_DEMUXER(tiff,    AV_CODEC_ID_TIFF)
-IMAGEAUTO_DEMUXER(webp,    AV_CODEC_ID_WEBP)
-IMAGEAUTO_DEMUXER(xbm,     AV_CODEC_ID_XBM)
-IMAGEAUTO_DEMUXER(xpm,     AV_CODEC_ID_XPM)
-IMAGEAUTO_DEMUXER(xwd,     AV_CODEC_ID_XWD)
+#define IMAGEAUTO_DEMUXER_2(imgname, codecid, enabled) \
+        IMAGEAUTO_DEMUXER_ ## enabled(imgname, codecid)
+#define IMAGEAUTO_DEMUXER_3(imgname, codecid, config) \
+        IMAGEAUTO_DEMUXER_2(imgname, codecid, config)
+#define IMAGEAUTO_DEMUXER_EXT(imgname, codecid, uppercase_name) \
+        IMAGEAUTO_DEMUXER_3(imgname, AV_CODEC_ID_ ## codecid,   \
+                            CONFIG_IMAGE_ ## uppercase_name ## _PIPE_DEMUXER)
+#define IMAGEAUTO_DEMUXER(imgname, codecid)                     \
+        IMAGEAUTO_DEMUXER_EXT(imgname, codecid, codecid)
+
+IMAGEAUTO_DEMUXER(bmp,       BMP)
+IMAGEAUTO_DEMUXER(cri,       CRI)
+IMAGEAUTO_DEMUXER(dds,       DDS)
+IMAGEAUTO_DEMUXER(dpx,       DPX)
+IMAGEAUTO_DEMUXER(exr,       EXR)
+IMAGEAUTO_DEMUXER(gem,       GEM)
+IMAGEAUTO_DEMUXER(gif,       GIF)
+IMAGEAUTO_DEMUXER_EXT(j2k,   JPEG2000, J2K)
+IMAGEAUTO_DEMUXER_EXT(jpeg,  MJPEG, JPEG)
+IMAGEAUTO_DEMUXER(jpegls,    JPEGLS)
+IMAGEAUTO_DEMUXER(pam,       PAM)
+IMAGEAUTO_DEMUXER(pbm,       PBM)
+IMAGEAUTO_DEMUXER(pcx,       PCX)
+IMAGEAUTO_DEMUXER(pgm,       PGM)
+IMAGEAUTO_DEMUXER(pgmyuv,    PGMYUV)
+IMAGEAUTO_DEMUXER(pgx,       PGX)
+IMAGEAUTO_DEMUXER(photocd,   PHOTOCD)
+IMAGEAUTO_DEMUXER(pictor,    PICTOR)
+IMAGEAUTO_DEMUXER(png,       PNG)
+IMAGEAUTO_DEMUXER(ppm,       PPM)
+IMAGEAUTO_DEMUXER(psd,       PSD)
+IMAGEAUTO_DEMUXER(qdraw,     QDRAW)
+IMAGEAUTO_DEMUXER(sgi,       SGI)
+IMAGEAUTO_DEMUXER(sunrast,   SUNRAST)
+IMAGEAUTO_DEMUXER(svg,       SVG)
+IMAGEAUTO_DEMUXER(tiff,      TIFF)
+IMAGEAUTO_DEMUXER(webp,      WEBP)
+IMAGEAUTO_DEMUXER(xbm,       XBM)
+IMAGEAUTO_DEMUXER(xpm,       XPM)
+IMAGEAUTO_DEMUXER(xwd,       XWD)
