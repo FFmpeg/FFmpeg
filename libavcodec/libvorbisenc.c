@@ -46,7 +46,7 @@ typedef struct LibvorbisEncContext {
     vorbis_info vi;                     /**< vorbis_info used during init   */
     vorbis_dsp_state vd;                /**< DSP state used for analysis    */
     vorbis_block vb;                    /**< vorbis_block used for analysis */
-    AVFifoBuffer *pkt_fifo;             /**< output packet buffer           */
+    AVFifo *pkt_fifo;                   /**< output packet buffer           */
     int eof;                            /**< end-of-file flag               */
     int dsp_initialized;                /**< vd has been initialized        */
     vorbis_comment vc;                  /**< VorbisComment info             */
@@ -196,7 +196,7 @@ static av_cold int libvorbis_encode_close(AVCodecContext *avctx)
     vorbis_dsp_clear(&s->vd);
     vorbis_info_clear(&s->vi);
 
-    av_fifo_freep(&s->pkt_fifo);
+    av_fifo_freep2(&s->pkt_fifo);
     ff_af_queue_close(&s->afq);
 
     av_vorbis_parse_free(&s->vp);
@@ -271,7 +271,7 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
     avctx->frame_size = LIBVORBIS_FRAME_SIZE;
     ff_af_queue_init(avctx, &s->afq);
 
-    s->pkt_fifo = av_fifo_alloc(BUFFER_SIZE);
+    s->pkt_fifo = av_fifo_alloc2(BUFFER_SIZE, 1, 0);
     if (!s->pkt_fifo) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -327,12 +327,12 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         /* add any available packets to the output packet buffer */
         while ((ret = vorbis_bitrate_flushpacket(&s->vd, &op)) == 1) {
-            if (av_fifo_space(s->pkt_fifo) < sizeof(ogg_packet) + op.bytes) {
+            if (av_fifo_can_write(s->pkt_fifo) < sizeof(ogg_packet) + op.bytes) {
                 av_log(avctx, AV_LOG_ERROR, "packet buffer is too small\n");
                 return AVERROR_BUG;
             }
-            av_fifo_generic_write(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
-            av_fifo_generic_write(s->pkt_fifo, op.packet, op.bytes, NULL);
+            av_fifo_write(s->pkt_fifo, &op, sizeof(ogg_packet));
+            av_fifo_write(s->pkt_fifo, op.packet, op.bytes);
         }
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "error getting available packets\n");
@@ -344,15 +344,13 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return vorbis_error_to_averror(ret);
     }
 
-    /* check for available packets */
-    if (av_fifo_size(s->pkt_fifo) < sizeof(ogg_packet))
+    /* Read an available packet if possible */
+    if (av_fifo_read(s->pkt_fifo, &op, sizeof(ogg_packet)) < 0)
         return 0;
-
-    av_fifo_generic_read(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
 
     if ((ret = ff_get_encode_buffer(avctx, avpkt, op.bytes, 0)) < 0)
         return ret;
-    av_fifo_generic_read(s->pkt_fifo, avpkt->data, op.bytes, NULL);
+    av_fifo_read(s->pkt_fifo, avpkt->data, op.bytes);
 
     avpkt->pts = ff_samples_to_time_base(avctx, op.granulepos);
 
