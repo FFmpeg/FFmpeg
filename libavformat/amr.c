@@ -53,8 +53,6 @@ static int amr_write_header(AVFormatContext *s)
     AVIOContext    *pb  = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    s->priv_data = NULL;
-
     if (par->codec_id == AV_CODEC_ID_AMR_NB) {
         avio_write(pb, AMR_header,   sizeof(AMR_header)   - 1); /* magic number */
     } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
