@@ -246,6 +246,7 @@ static void finalize_rtp_handler_init(AVFormatContext *s, RTSPStream *rtsp_st,
     }
 }
 
+#if CONFIG_RTSP_DEMUXER
 static int init_satip_stream(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
@@ -274,6 +275,7 @@ static int init_satip_stream(AVFormatContext *s)
     }
     return 0;
 }
+#endif
 
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
 static int sdp_parse_rtpmap(AVFormatContext *s,
@@ -2006,6 +2008,7 @@ redirect:
 #endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
 
 #if CONFIG_RTPDEC
+#if CONFIG_RTSP_DEMUXER
 static int parse_rtsp_message(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
@@ -2028,6 +2031,7 @@ static int parse_rtsp_message(AVFormatContext *s)
 
     return 0;
 }
+#endif
 
 static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                            uint8_t *buf, int buf_size, int64_t wait_end)
