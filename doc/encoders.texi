@@ -3123,12 +3123,13 @@ Setting a higher @option{bits_per_mb} limit will improve the speed.
 For the fastest encoding speed set the @option{qscale} parameter (4 is the
 recommended value) and do not set a size constraint.
 
-@section QSV encoders
+@section QSV Encoders
 
-The family of Intel QuickSync Video encoders (MPEG-2, H.264, HEVC, JPEG/MJPEG and VP9)
+The family of Intel QuickSync Video encoders (MPEG-2, H.264, HEVC, JPEG/MJPEG
+and VP9)
 
+@subsection Ratecontrol Method
 The ratecontrol method is selected as follows:
-
 @itemize @bullet
 @item
 When @option{global_quality} is specified, a quality-based mode is used.
@@ -3176,6 +3177,7 @@ Note that depending on your system, a different mode than the one you specified
 may be selected by the encoder. Set the verbosity level to @var{verbose} or
 higher to see the actual settings used by the QSV runtime.
 
+@subsection Global Options -> MSDK Options
 Additional libavcodec global options are mapped to MSDK options as follows:
 
 @itemize
@@ -3211,6 +3213,251 @@ Setting the @option{coder} option to the value @var{vlc} will make the H.264
 encoder use CAVLC instead of CABAC.
 
 @end itemize
+
+@subsection Common Options
+Following options are used by all qsv encoders.
+
+@table @option
+@item @var{async_depth}
+Specifies how many asynchronous operations an application performs
+before the application explicitly synchronizes the result. If zero,
+the value is not specified.
+
+@item @var{avbr_accuracy}
+Accuracy of the AVBR ratecontrol (unit of tenth of percent).
+
+@item @var{avbr_convergence}
+Convergence of the AVBR ratecontrol (unit of 100 frames)
+
+The parameters @var{avbr_accuracy} and @var{avbr_convergence} are for the
+average variable bitrate control (AVBR) algorithm.
+The algorithm focuses on overall encoding quality while meeting the specified
+bitrate, @var{target_bitrate}, within the accuracy range @var{avbr_accuracy},
+after a @var{avbr_Convergence} period. This method does not follow HRD and the
+instant bitrate is not capped or padded.
+
+@item @var{preset}
+This option itemizes a range of choices from veryfast (best speed) to veryslow
+(best quality).
+@table @samp
+@item veryfast
+@item faster
+@item fast
+@item medium
+@item slow
+@item slower
+@item veryslow
+@end table
+
+@item @var{forced_idr}
+Forcing I frames as IDR frames.
+
+@item @var{low_power}
+For encoders set this flag to ON to reduce power consumption and GPU usage.
+@end table
+
+@subsection H264 options
+These options are used by h264_qsv
+
+@table @option
+@item @var{extbrc}
+Extended bitrate control.
+
+@item @var{recovery_point_sei}
+Set this flag to insert the recovery point SEI message at the beginning of every
+intra refresh cycle.
+
+@item @var{rdo}
+Enable rate distortion optimization.
+
+@item @var{max_frame_size}
+Maximum encoded frame size in bytes.
+
+@item @var{max_slice_size}
+Maximum encoded slice size in bytes.
+
+@item @var{bitrate_limit}
+Toggle bitrate limitations.
+Modifies bitrate to be in the range imposed by the QSV encoder. Setting this
+flag off may lead to violation of HRD conformance. Mind that specifying bitrate
+below the QSV encoder range might significantly affect quality. If on this
+option takes effect in non CQP modes: if bitrate is not in the range imposed
+by the QSV encoder, it will be changed to be in the range.
+
+@item @var{mbbrc}
+Setting this flag enables macroblock level bitrate control that generally
+improves subjective visual quality. Enabling this flag may have negative impact
+on performance and objective visual quality metric.
+
+@item @var{adaptive_i}
+This flag controls insertion of I frames by the QSV encoder. Turn ON this flag
+to allow changing of frame type from P and B to I.
+
+@item @var{adaptive_b}
+This flag controls changing of frame type from B to P.
+
+@item @var{b_strategy}
+This option controls usage of B frames as reference.
+
+@item @var{cavlc}
+If set, CAVLC is used; if unset, CABAC is used for encoding.
+
+@item @var{vcm}
+Video conferencing mode, please see ratecontrol method.
+
+@item @var{idr_interval}
+Distance (in I-frames) between IDR frames.
+
+@item @var{pic_timing_sei}
+Insert picture timing SEI with pic_struct_syntax element.
+
+@item @var{single_sei_nal_unit}
+Put all the SEI messages into one NALU.
+
+@item @var{max_dec_frame_buffering}
+Maximum number of frames buffered in the DPB.
+
+@item @var{look_ahead}
+Use VBR algorithm with look ahead.
+
+@item @var{look_ahead_depth}
+Depth of look ahead in number frames.
+
+@item @var{look_ahead_downsampling}
+Downscaling factor for the frames saved for the lookahead analysis.
+@table @samp
+@item unknown
+@item auto
+@item off
+@item 2x
+@item 4x
+@end table
+
+@item @var{int_ref_type}
+Specifies intra refresh type. The major goal of intra refresh is improvement of
+error resilience without significant impact on encoded bitstream size caused by
+I frames. The SDK encoder achieves this by encoding part of each frame in
+refresh cycle using intra MBs. @var{none} means no refresh. @var{vertical} means
+vertical refresh, by column of MBs.
+
+@item @var{int_ref_cycle_size}
+Specifies number of pictures within refresh cycle starting from 2. 0 and 1 are
+invalid values.
+
+@item @var{int_ref_qp_delta}
+Specifies QP difference for inserted intra MBs. This is signed value in
+[-51, 51] range if target encoding bit-depth for luma samples is 8 and this
+range is [-63, 63] for 10 bit-depth or [-75, 75] for 12 bit-depth respectively.
+
+@item @var{profile}
+@table @samp
+@item unknown
+@item baseline
+@item main
+@item high
+@end table
+
+@item @var{a53cc}
+Use A53 Closed Captions (if available).
+
+@item @var{aud}
+Insert the Access Unit Delimiter NAL.
+
+@item @var{mfmode}
+Multi-Frame Mode.
+@table @samp
+@item off
+@item auto
+@end table
+
+@item @var{repeat_pps}
+Repeat pps for every frame.
+@end table
+
+@subsection HEVC Options
+These options are used by hevc_qsv
+
+@table @option
+@item @var{extbrc}
+Extended bitrate control.
+
+@item @var{recovery_point_sei}
+Set this flag to insert the recovery point SEI message at the beginning of every
+intra refresh cycle.
+
+@item @var{rdo}
+Enable rate distortion optimization.
+
+@item @var{idr_interval}
+Distance (in I-frames) between IDR frames.
+@table @samp
+@item begin_only
+Output an IDR-frame only at the beginning of the stream.
+@end table
+
+@item @var{load_plugin}
+A user plugin to load in an internal session.
+@table @samp
+@item none
+@item hevc_sw
+@item hevc_hw
+@end table
+
+@item @var{load_plugins}
+A :-separate list of hexadecimal plugin UIDs to load in
+an internal session.
+
+@item @var{look_ahead_depth}
+Depth of look ahead in number frames, available when extbrc option is enabled.
+
+@item @var{profile}
+@table @samp
+@item unknown
+@item main
+@item main10
+@item mainsp
+@item rext
+@end table
+
+@item @var{gpb}
+1: GPB (generalized P/B frame)
+
+0: regular P frame.
+
+@item @var{tile_cols}
+Number of columns for tiled encoding.
+
+@item @var{tile_rows}
+Number of rows for tiled encoding.
+
+@item @var{aud}
+Insert the Access Unit Delimiter NAL.
+@end table
+
+@subsection MPEG2 Options
+These options are used by mpeg2_qsv
+@table @option
+@item @var{profile}
+@table @samp
+@item unknown
+@item simple
+@item main
+@item high
+@end table
+@end table
+
+@subsection VP9 Options
+These options are used by vp9_qsv
+@table @option
+@item @var{profile}
+@table @samp
+@item unknown
+@item profile0
+@item profile1
+@item profile2
+@item profile3
+@end table
+@end table
 
 @section snow
 

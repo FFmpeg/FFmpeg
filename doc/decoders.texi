@@ -126,6 +126,48 @@ Set amount of frame threads to use during decoding. The default value is 0 (auto
 
 @end table
 
+@section QSV Decoders
+
+The family of Intel QuickSync Video decoders (VC1, MPEG-2, H.264, HEVC,
+JPEG/MJPEG, VP8, VP9, AV1).
+
+@subsection Common Options
+
+The following options are supported by all qsv decoders.
+
+@table @option
+
+@item @var{async_depth}
+Internal parallelization depth, the higher the value the higher the latency.
+
+@item @var{gpu_copy}
+A GPU-accelerated copy between video and system memory
+@table @samp
+@item default
+@item on
+@item off
+@end table
+
+@end table
+
+@subsection HEVC Options
+Extra options for hevc_qsv.
+
+@table @option
+
+@item @var{load_plugin}
+A user plugin to load in an internal session
+@table @samp
+@item none
+@item hevc_sw
+@item hevc_hw
+@end table
+
+@item @var{load_plugins}
+A :-separate list of hexadecimal plugin UIDs to load in an internal session
+
+@end table
+
 @c man end VIDEO DECODERS
 
 @chapter Audio Decoders
