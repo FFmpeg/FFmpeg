@@ -66,6 +66,7 @@ static int amr_write_header(AVFormatContext *s)
 }
 #endif /* CONFIG_AMR_MUXER */
 
+#if CONFIG_AMR_DEMUXER
 static int amr_probe(const AVProbeData *p)
 {
     // Only check for "#!AMR" which could be amr-wb, amr-nb.
@@ -140,7 +141,6 @@ static int amr_read_header(AVFormatContext *s)
     return 0;
 }
 
-#if CONFIG_AMR_DEMUXER
 const AVInputFormat ff_amr_demuxer = {
     .name           = "amr",
     .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR"),
