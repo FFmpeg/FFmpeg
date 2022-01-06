@@ -54,9 +54,9 @@ static int amr_write_header(AVFormatContext *s)
     AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (par->codec_id == AV_CODEC_ID_AMR_NB) {
-        avio_write(pb, AMR_header,   sizeof(AMR_header)   - 1); /* magic number */
+        avio_write(pb, AMR_header,   sizeof(AMR_header));   /* magic number */
     } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
-        avio_write(pb, AMRWB_header, sizeof(AMRWB_header) - 1); /* magic number */
+        avio_write(pb, AMRWB_header, sizeof(AMRWB_header)); /* magic number */
     } else {
         return -1;
     }
