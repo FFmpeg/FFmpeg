@@ -255,8 +255,10 @@ static int dv_assemble_frame(AVFormatContext *s,
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         /* FIXME: we have to have more sensible approach than this one */
-        if (c->has_video)
+        if (c->has_video) {
             av_log(s, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
+            return AVERROR(EINVAL);
+        }
         if (data_size != c->sys->frame_size) {
             av_log(s, AV_LOG_ERROR, "Unexpected frame size, %d != %d\n",
                    data_size, c->sys->frame_size);
@@ -270,8 +272,10 @@ static int dv_assemble_frame(AVFormatContext *s,
         for (i = 0; i < c->n_ast && st != c->ast[i]; i++);
 
           /* FIXME: we have to have more sensible approach than this one */
-        if (av_fifo_size(c->audio_data[i]) + data_size >= 100*MAX_AUDIO_FRAME_SIZE)
+        if (av_fifo_size(c->audio_data[i]) + data_size >= 100*MAX_AUDIO_FRAME_SIZE) {
             av_log(s, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
+            return AVERROR(EINVAL);
+        }
         av_fifo_generic_write(c->audio_data[i], data, data_size, NULL);
 
         reqasize = 4 * dv_audio_frame_size(c->sys, c->frames, st->codecpar->sample_rate);
