@@ -168,10 +168,10 @@ typedef struct NvencContext
     int nb_surfaces;
     NvencSurface *surfaces;
 
-    AVFifoBuffer *unused_surface_queue;
-    AVFifoBuffer *output_surface_queue;
-    AVFifoBuffer *output_surface_ready_queue;
-    AVFifoBuffer *timestamp_list;
+    AVFifo *unused_surface_queue;
+    AVFifo *output_surface_queue;
+    AVFifo *output_surface_ready_queue;
+    AVFifo *timestamp_list;
 
     NV_ENC_SEI_PAYLOAD *sei_data;
     int sei_data_size;

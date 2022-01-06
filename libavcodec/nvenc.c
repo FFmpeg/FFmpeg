@@ -1568,7 +1568,7 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 
     ctx->surfaces[idx].output_surface = allocOut.bitstreamBuffer;
 
-    av_fifo_generic_write(ctx->unused_surface_queue, &tmp_surface, sizeof(tmp_surface), NULL);
+    av_fifo_write(ctx->unused_surface_queue, &tmp_surface, 1);
 
     return 0;
 }
@@ -1582,18 +1582,18 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx)
     if (!ctx->surfaces)
         return AVERROR(ENOMEM);
 
-    ctx->timestamp_list = av_fifo_alloc(ctx->nb_surfaces * sizeof(int64_t));
+    ctx->timestamp_list = av_fifo_alloc2(ctx->nb_surfaces, sizeof(int64_t), 0);
     if (!ctx->timestamp_list)
         return AVERROR(ENOMEM);
 
-    ctx->unused_surface_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(NvencSurface*));
+    ctx->unused_surface_queue = av_fifo_alloc2(ctx->nb_surfaces, sizeof(NvencSurface*), 0);
     if (!ctx->unused_surface_queue)
         return AVERROR(ENOMEM);
 
-    ctx->output_surface_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(NvencSurface*));
+    ctx->output_surface_queue = av_fifo_alloc2(ctx->nb_surfaces, sizeof(NvencSurface*), 0);
     if (!ctx->output_surface_queue)
         return AVERROR(ENOMEM);
-    ctx->output_surface_ready_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(NvencSurface*));
+    ctx->output_surface_ready_queue = av_fifo_alloc2(ctx->nb_surfaces, sizeof(NvencSurface*), 0);
     if (!ctx->output_surface_ready_queue)
         return AVERROR(ENOMEM);
 
@@ -1666,10 +1666,10 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
         p_nvenc->nvEncEncodePicture(ctx->nvencoder, &params);
     }
 
-    av_fifo_freep(&ctx->timestamp_list);
-    av_fifo_freep(&ctx->output_surface_ready_queue);
-    av_fifo_freep(&ctx->output_surface_queue);
-    av_fifo_freep(&ctx->unused_surface_queue);
+    av_fifo_freep2(&ctx->timestamp_list);
+    av_fifo_freep2(&ctx->output_surface_ready_queue);
+    av_fifo_freep2(&ctx->output_surface_queue);
+    av_fifo_freep2(&ctx->unused_surface_queue);
 
     if (ctx->surfaces && (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11)) {
         for (i = 0; i < ctx->nb_registered_frames; i++) {
@@ -1777,11 +1777,10 @@ static NvencSurface *get_free_frame(NvencContext *ctx)
 {
     NvencSurface *tmp_surf;
 
-    if (!(av_fifo_size(ctx->unused_surface_queue) > 0))
+    if (av_fifo_read(ctx->unused_surface_queue, &tmp_surf, 1) < 0)
         // queue empty
         return NULL;
 
-    av_fifo_generic_read(ctx->unused_surface_queue, &tmp_surf, sizeof(tmp_surf), NULL);
     return tmp_surf;
 }
 
@@ -1998,16 +1997,16 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
     }
 }
 
-static inline void timestamp_queue_enqueue(AVFifoBuffer* queue, int64_t timestamp)
+static inline void timestamp_queue_enqueue(AVFifo *queue, int64_t timestamp)
 {
-    av_fifo_generic_write(queue, &timestamp, sizeof(timestamp), NULL);
+    av_fifo_write(queue, &timestamp, 1);
 }
 
-static inline int64_t timestamp_queue_dequeue(AVFifoBuffer* queue)
+static inline int64_t timestamp_queue_dequeue(AVFifo *queue)
 {
     int64_t timestamp = AV_NOPTS_VALUE;
-    if (av_fifo_size(queue) > 0)
-        av_fifo_generic_read(queue, &timestamp, sizeof(timestamp), NULL);
+    // The following call might fail if the queue is empty.
+    av_fifo_read(queue, &timestamp, 1);
 
     return timestamp;
 }
@@ -2152,8 +2151,8 @@ static int output_ready(AVCodecContext *avctx, int flush)
     NvencContext *ctx = avctx->priv_data;
     int nb_ready, nb_pending;
 
-    nb_ready   = av_fifo_size(ctx->output_surface_ready_queue)   / sizeof(NvencSurface*);
-    nb_pending = av_fifo_size(ctx->output_surface_queue)         / sizeof(NvencSurface*);
+    nb_ready   = av_fifo_can_read(ctx->output_surface_ready_queue);
+    nb_pending = av_fifo_can_read(ctx->output_surface_queue);
     if (flush)
         return nb_ready > 0;
     return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
@@ -2442,16 +2441,14 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
 
     if (frame && frame->buf[0]) {
-        av_fifo_generic_write(ctx->output_surface_queue, &in_surf, sizeof(in_surf), NULL);
+        av_fifo_write(ctx->output_surface_queue, &in_surf, 1);
         timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
     }
 
     /* all the pending buffers are now ready for output */
     if (nv_status == NV_ENC_SUCCESS) {
-        while (av_fifo_size(ctx->output_surface_queue) > 0) {
-            av_fifo_generic_read(ctx->output_surface_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
-            av_fifo_generic_write(ctx->output_surface_ready_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
-        }
+        while (av_fifo_read(ctx->output_surface_queue, &tmp_out_surf, 1) >= 0)
+            av_fifo_write(ctx->output_surface_ready_queue, &tmp_out_surf, 1);
     }
 
     return 0;
@@ -2483,7 +2480,7 @@ int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         av_frame_unref(frame);
 
     if (output_ready(avctx, avctx->internal->draining)) {
-        av_fifo_generic_read(ctx->output_surface_ready_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
+        av_fifo_read(ctx->output_surface_ready_queue, &tmp_out_surf, 1);
 
         res = nvenc_push_context(avctx);
         if (res < 0)
@@ -2498,7 +2495,7 @@ int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         if (res)
             return res;
 
-        av_fifo_generic_write(ctx->unused_surface_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
+        av_fifo_write(ctx->unused_surface_queue, &tmp_out_surf, 1);
     } else if (avctx->internal->draining) {
         return AVERROR_EOF;
     } else {
@@ -2513,5 +2510,5 @@ av_cold void ff_nvenc_encode_flush(AVCodecContext *avctx)
     NvencContext *ctx = avctx->priv_data;
 
     nvenc_send_frame(avctx, NULL);
-    av_fifo_reset(ctx->timestamp_list);
+    av_fifo_reset2(ctx->timestamp_list);
 }
