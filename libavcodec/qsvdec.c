@@ -57,6 +57,11 @@ static const AVRational mfx_tb = { 1, 90000 };
     AV_NOPTS_VALUE : pts_tb.num ? \
     av_rescale_q(mfx_pts, mfx_tb, pts_tb) : mfx_pts)
 
+typedef struct QSVAsyncFrame {
+    mfxSyncPoint *sync;
+    QSVFrame     *frame;
+} QSVAsyncFrame;
+
 typedef struct QSVContext {
     // the session used for decoding
     mfxSession session;
@@ -73,7 +78,7 @@ typedef struct QSVContext {
      */
     QSVFrame *work_frames;
 
-    AVFifoBuffer *async_fifo;
+    AVFifo *async_fifo;
     int zero_consume_run;
     int buffered_count;
     int reinit_flag;
@@ -222,16 +227,6 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     return 0;
 }
 
-static inline unsigned int qsv_fifo_item_size(void)
-{
-    return sizeof(mfxSyncPoint*) + sizeof(QSVFrame*);
-}
-
-static inline unsigned int qsv_fifo_size(const AVFifoBuffer* fifo)
-{
-    return av_fifo_size(fifo) / qsv_fifo_item_size();
-}
-
 static int qsv_decode_preinit(AVCodecContext *avctx, QSVContext *q, enum AVPixelFormat pix_fmt, mfxVideoParam *param)
 {
     mfxSession session = NULL;
@@ -249,7 +244,7 @@ static int qsv_decode_preinit(AVCodecContext *avctx, QSVContext *q, enum AVPixel
     }
 
     if (!q->async_fifo) {
-        q->async_fifo = av_fifo_alloc(q->async_depth * qsv_fifo_item_size());
+        q->async_fifo = av_fifo_alloc2(q->async_depth, sizeof(QSVAsyncFrame), 0);
         if (!q->async_fifo)
             return AVERROR(ENOMEM);
     }
@@ -598,7 +593,6 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
                       AVFrame *frame, int *got_frame,
                       const AVPacket *avpkt)
 {
-    QSVFrame *out_frame;
     mfxFrameSurface1 *insurf;
     mfxFrameSurface1 *outsurf;
     mfxSyncPoint *sync;
@@ -657,6 +651,7 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
     }
 
     if (*sync) {
+        QSVAsyncFrame aframe;
         QSVFrame *out_frame = find_frame(q, outsurf);
 
         if (!out_frame) {
@@ -667,42 +662,43 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         }
 
         out_frame->queued += 1;
-        av_fifo_generic_write(q->async_fifo, &out_frame, sizeof(out_frame), NULL);
-        av_fifo_generic_write(q->async_fifo, &sync,      sizeof(sync),      NULL);
+
+        aframe = (QSVAsyncFrame){ sync, out_frame };
+        av_fifo_write(q->async_fifo, &aframe, 1);
     } else {
         av_freep(&sync);
     }
 
-    if ((qsv_fifo_size(q->async_fifo) >= q->async_depth) ||
-        (!avpkt->size && av_fifo_size(q->async_fifo))) {
+    if ((av_fifo_can_read(q->async_fifo) >= q->async_depth) ||
+        (!avpkt->size && av_fifo_can_read(q->async_fifo))) {
+        QSVAsyncFrame aframe;
         AVFrame *src_frame;
 
-        av_fifo_generic_read(q->async_fifo, &out_frame, sizeof(out_frame), NULL);
-        av_fifo_generic_read(q->async_fifo, &sync,      sizeof(sync),      NULL);
-        out_frame->queued -= 1;
+        av_fifo_read(q->async_fifo, &aframe, 1);
+        aframe.frame->queued -= 1;
 
         if (avctx->pix_fmt != AV_PIX_FMT_QSV) {
             do {
-                ret = MFXVideoCORE_SyncOperation(q->session, *sync, 1000);
+                ret = MFXVideoCORE_SyncOperation(q->session, *aframe.sync, 1000);
             } while (ret == MFX_WRN_IN_EXECUTION);
         }
 
-        av_freep(&sync);
+        av_freep(&aframe.sync);
 
-        src_frame = out_frame->frame;
+        src_frame = aframe.frame->frame;
 
         ret = av_frame_ref(frame, src_frame);
         if (ret < 0)
             return ret;
 
-        outsurf = &out_frame->surface;
+        outsurf = &aframe.frame->surface;
 
         frame->pts = MFX_PTS_TO_PTS(outsurf->Data.TimeStamp, avctx->pkt_timebase);
 #if QSV_VERSION_ATLEAST(1, 34)
         if ((avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
             QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 34) &&
             avctx->codec_id == AV_CODEC_ID_AV1) {
-            ret = qsv_export_film_grain(avctx, &out_frame->av1_film_grain_param, frame);
+            ret = qsv_export_film_grain(avctx, &aframe.frame->av1_film_grain_param, frame);
 
             if (ret < 0)
                 return ret;
@@ -717,10 +713,10 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
             outsurf->Info.PicStruct & MFX_PICSTRUCT_FIELD_TFF;
         frame->interlaced_frame =
             !(outsurf->Info.PicStruct & MFX_PICSTRUCT_PROGRESSIVE);
-        frame->pict_type = ff_qsv_map_pictype(out_frame->dec_info.FrameType);
+        frame->pict_type = ff_qsv_map_pictype(aframe.frame->dec_info.FrameType);
         //Key frame is IDR frame is only suitable for H264. For HEVC, IRAPs are key frames.
         if (avctx->codec_id == AV_CODEC_ID_H264)
-            frame->key_frame = !!(out_frame->dec_info.FrameType & MFX_FRAMETYPE_IDR);
+            frame->key_frame = !!(aframe.frame->dec_info.FrameType & MFX_FRAMETYPE_IDR);
 
         /* update the surface properties */
         if (avctx->pix_fmt == AV_PIX_FMT_QSV)
@@ -739,14 +735,11 @@ static void qsv_decode_close_qsvcontext(QSVContext *q)
     if (q->session)
         MFXVideoDECODE_Close(q->session);
 
-    while (q->async_fifo && av_fifo_size(q->async_fifo)) {
-        QSVFrame *out_frame;
-        mfxSyncPoint *sync;
-
-        av_fifo_generic_read(q->async_fifo, &out_frame, sizeof(out_frame), NULL);
-        av_fifo_generic_read(q->async_fifo, &sync,      sizeof(sync),      NULL);
-
-        av_freep(&sync);
+    if (q->async_fifo) {
+        QSVAsyncFrame aframe;
+        while (av_fifo_read(q->async_fifo, &aframe, 1) >= 0)
+            av_freep(&aframe.sync);
+        av_fifo_freep2(&q->async_fifo);
     }
 
     while (cur) {
@@ -755,9 +748,6 @@ static void qsv_decode_close_qsvcontext(QSVContext *q)
         av_freep(&cur);
         cur = q->work_frames;
     }
-
-    av_fifo_free(q->async_fifo);
-    q->async_fifo = NULL;
 
     ff_qsv_close_internal_session(&q->internal_qs);
 
@@ -840,7 +830,7 @@ typedef struct QSVDecContext {
 
     int load_plugin;
 
-    AVFifoBuffer *packet_fifo;
+    AVFifo *packet_fifo;
 
     AVPacket buffer_pkt;
 } QSVDecContext;
@@ -848,10 +838,8 @@ typedef struct QSVDecContext {
 static void qsv_clear_buffers(QSVDecContext *s)
 {
     AVPacket pkt;
-    while (av_fifo_size(s->packet_fifo) >= sizeof(pkt)) {
-        av_fifo_generic_read(s->packet_fifo, &pkt, sizeof(pkt), NULL);
+    while (av_fifo_read(s->packet_fifo, &pkt, 1) >= 0)
         av_packet_unref(&pkt);
-    }
 
     av_packet_unref(&s->buffer_pkt);
 }
@@ -864,7 +852,7 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 
     qsv_clear_buffers(s);
 
-    av_fifo_free(s->packet_fifo);
+    av_fifo_freep2(&s->packet_fifo);
 
     return 0;
 }
@@ -903,7 +891,8 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
     }
 
     s->qsv.orig_pix_fmt = AV_PIX_FMT_NV12;
-    s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
+    s->packet_fifo = av_fifo_alloc2(1, sizeof(AVPacket),
+                                    AV_FIFO_FLAG_AUTO_GROW);
     if (!s->packet_fifo) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -929,17 +918,10 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
     if (avpkt->size) {
         AVPacket input_ref;
 
-        if (av_fifo_space(s->packet_fifo) < sizeof(input_ref)) {
-            ret = av_fifo_realloc2(s->packet_fifo,
-                                   av_fifo_size(s->packet_fifo) + sizeof(input_ref));
-            if (ret < 0)
-                return ret;
-        }
-
         ret = av_packet_ref(&input_ref, avpkt);
         if (ret < 0)
             return ret;
-        av_fifo_generic_write(s->packet_fifo, &input_ref, sizeof(input_ref), NULL);
+        av_fifo_write(s->packet_fifo, &input_ref, 1);
     }
 
     /* process buffered data */
@@ -947,12 +929,12 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
         /* prepare the input data */
         if (s->buffer_pkt.size <= 0) {
             /* no more data */
-            if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
+            if (!av_fifo_can_read(s->packet_fifo))
                 return avpkt->size ? avpkt->size : qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
             /* in progress of reinit, no read from fifo and keep the buffer_pkt */
             if (!s->qsv.reinit_flag) {
                 av_packet_unref(&s->buffer_pkt);
-                av_fifo_generic_read(s->packet_fifo, &s->buffer_pkt, sizeof(s->buffer_pkt), NULL);
+                av_fifo_read(s->packet_fifo, &s->buffer_pkt, 1);
             }
         }
 
