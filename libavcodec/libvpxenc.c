@@ -127,7 +127,6 @@ typedef struct VPxEncoderContext {
     int tune_content;
     int corpus_complexity;
     int tpl_model;
-    int discard_hdr10_plus;
     AVFifo *hdr10_plus_fifo;
     /**
      * If the driver does not support ROI then warn the first time we
@@ -896,7 +895,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 #endif
     AVDictionaryEntry* en = NULL;
 
-    ctx->discard_hdr10_plus = 1;
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
 
@@ -916,7 +914,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         // Keep HDR10+ if it has bit depth higher than 8 and
         // it has PQ trc (SMPTE2084).
         if (enccfg.g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
-            ctx->discard_hdr10_plus = 0;
             ctx->hdr10_plus_fifo = av_fifo_alloc2(1, sizeof(FrameHDR10Plus),
                                                   AV_FIFO_FLAG_AUTO_GROW);
             if (!ctx->hdr10_plus_fifo)
@@ -1286,7 +1283,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
     }
     if (cx_frame->frame_number != -1) {
         VPxContext *ctx = avctx->priv_data;
-        if (!ctx->discard_hdr10_plus) {
+        if (ctx->hdr10_plus_fifo) {
             int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
             if (err < 0)
                 return err;
@@ -1701,7 +1698,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
 
-        if (!ctx->discard_hdr10_plus) {
+        if (ctx->hdr10_plus_fifo) {
             AVFrameSideData *hdr10_plus_metadata;
             // Add HDR10+ metadata to queue.
             hdr10_plus_metadata = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
