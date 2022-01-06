@@ -128,7 +128,7 @@ typedef struct VPxEncoderContext {
     int corpus_complexity;
     int tpl_model;
     int discard_hdr10_plus;
-    AVFifoBuffer *hdr10_plus_fifo;
+    AVFifo *hdr10_plus_fifo;
     /**
      * If the driver does not support ROI then warn the first time we
      * encounter a frame with ROI side data.
@@ -324,39 +324,23 @@ static av_cold void free_frame_list(struct FrameListData *list)
     }
 }
 
-static av_cold int add_hdr10_plus(AVFifoBuffer *fifo, struct FrameHDR10Plus *data)
-{
-    int err = av_fifo_grow(fifo, sizeof(*data));
-    if (err < 0)
-        return err;
-    av_fifo_generic_write(fifo, data, sizeof(*data), NULL);
-    return 0;
-}
-
-static av_cold void free_hdr10_plus_fifo(AVFifoBuffer **fifo)
+static av_cold void free_hdr10_plus_fifo(AVFifo **fifo)
 {
     FrameHDR10Plus frame_hdr10_plus;
-    while (av_fifo_size(*fifo) >= sizeof(frame_hdr10_plus)) {
-        av_fifo_generic_read(*fifo, &frame_hdr10_plus, sizeof(frame_hdr10_plus), NULL);
+    while (av_fifo_read(*fifo, &frame_hdr10_plus, 1) >= 0)
         av_buffer_unref(&frame_hdr10_plus.hdr10_plus);
-    }
-    av_fifo_freep(fifo);
+    av_fifo_freep2(fifo);
 }
 
-static int copy_hdr10_plus_to_pkt(AVFifoBuffer *fifo, AVPacket *pkt)
+static int copy_hdr10_plus_to_pkt(AVFifo *fifo, AVPacket *pkt)
 {
     FrameHDR10Plus frame_hdr10_plus;
     uint8_t *data;
-    if (!pkt)
+    if (!pkt || av_fifo_peek(fifo, &frame_hdr10_plus, 1, 0) < 0)
         return 0;
-    if (av_fifo_size(fifo) < sizeof(frame_hdr10_plus))
-        return 0;
-    av_fifo_generic_peek(fifo, &frame_hdr10_plus, sizeof(frame_hdr10_plus), NULL);
     if (!frame_hdr10_plus.hdr10_plus || frame_hdr10_plus.pts != pkt->pts)
         return 0;
-    av_fifo_generic_read(fifo, &frame_hdr10_plus, sizeof(frame_hdr10_plus), NULL);
-    if (!frame_hdr10_plus.hdr10_plus)
-        return 0;
+    av_fifo_drain2(fifo, 1);
 
     data = av_packet_new_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS, frame_hdr10_plus.hdr10_plus->size);
     if (!data) {
@@ -933,7 +917,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         // it has PQ trc (SMPTE2084).
         if (enccfg.g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
             ctx->discard_hdr10_plus = 0;
-            ctx->hdr10_plus_fifo = av_fifo_alloc(sizeof(FrameHDR10Plus));
+            ctx->hdr10_plus_fifo = av_fifo_alloc2(1, sizeof(FrameHDR10Plus),
+                                                  AV_FIFO_FLAG_AUTO_GROW);
             if (!ctx->hdr10_plus_fifo)
                 return AVERROR(ENOMEM);
         }
@@ -1727,7 +1712,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
                 data.hdr10_plus = av_buffer_ref(hdr10_plus_metadata->buf);
                 if (!data.hdr10_plus)
                     return AVERROR(ENOMEM);
-                err = add_hdr10_plus(ctx->hdr10_plus_fifo, &data);
+                err = av_fifo_write(ctx->hdr10_plus_fifo, &data, 1);
                 if (err < 0) {
                     av_buffer_unref(&data.hdr10_plus);
                     return err;
