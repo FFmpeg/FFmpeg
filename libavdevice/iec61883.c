@@ -220,6 +220,7 @@ static int iec61883_parse_queue_dv(struct iec61883_data *dv, AVPacket *pkt)
 
 static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
 {
+#if CONFIG_MPEGTS_DEMUXER
     DVPacket *packet;
     int size;
 
@@ -235,7 +236,7 @@ static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
         if (size > 0)
             return size;
     }
-
+#endif
     return -1;
 }
 
