@@ -151,7 +151,7 @@ typedef struct QSVEncContext {
 
     mfxExtBuffer **extparam;
 
-    AVFifoBuffer *async_fifo;
+    AVFifo *async_fifo;
 
     QSVFramesContext frames_ctx;
 

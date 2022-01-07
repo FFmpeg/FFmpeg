@@ -88,6 +88,12 @@ static const struct profile_names vp9_profiles[] = {
 #endif
 };
 
+typedef struct QSVPacket {
+    AVPacket        pkt;
+    mfxSyncPoint   *sync;
+    mfxBitstream   *bs;
+} QSVPacket;
+
 static const char *print_profile(enum AVCodecID codec_id, mfxU16 profile)
 {
     const struct profile_names *profiles;
@@ -1327,16 +1333,6 @@ static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
     return 0;
 }
 
-static inline unsigned int qsv_fifo_item_size(void)
-{
-    return sizeof(AVPacket) + sizeof(mfxSyncPoint*) + sizeof(mfxBitstream*);
-}
-
-static inline unsigned int qsv_fifo_size(const AVFifoBuffer* fifo)
-{
-    return av_fifo_size(fifo)/qsv_fifo_item_size();
-}
-
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 {
     int iopattern = 0;
@@ -1345,7 +1341,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 
     q->param.AsyncDepth = q->async_depth;
 
-    q->async_fifo = av_fifo_alloc(q->async_depth * qsv_fifo_item_size());
+    q->async_fifo = av_fifo_alloc2(q->async_depth, sizeof(QSVPacket), 0);
     if (!q->async_fifo)
         return AVERROR(ENOMEM);
 
@@ -1648,15 +1644,13 @@ static void print_interlace_msg(AVCodecContext *avctx, QSVEncContext *q)
 static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
                         const AVFrame *frame)
 {
-    AVPacket new_pkt = { 0 };
-    mfxBitstream *bs = NULL;
+    QSVPacket pkt = { { 0 } };
 #if QSV_VERSION_ATLEAST(1, 26)
     mfxExtAVCEncodedFrameInfo *enc_info = NULL;
     mfxExtBuffer **enc_buf = NULL;
 #endif
 
     mfxFrameSurface1 *surf = NULL;
-    mfxSyncPoint *sync     = NULL;
     QSVFrame *qsv_frame = NULL;
     mfxEncodeCtrl* enc_ctrl = NULL;
     int ret;
@@ -1679,17 +1673,17 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         }
     }
 
-    ret = av_new_packet(&new_pkt, q->packet_size);
+    ret = av_new_packet(&pkt.pkt, q->packet_size);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating the output packet\n");
         return ret;
     }
 
-    bs = av_mallocz(sizeof(*bs));
-    if (!bs)
+    pkt.bs = av_mallocz(sizeof(*pkt.bs));
+    if (!pkt.bs)
         goto nomem;
-    bs->Data      = new_pkt.data;
-    bs->MaxLength = new_pkt.size;
+    pkt.bs->Data      = pkt.pkt.data;
+    pkt.bs->MaxLength = pkt.pkt.size;
 
 #if QSV_VERSION_ATLEAST(1, 26)
     if (avctx->codec_id == AV_CODEC_ID_H264) {
@@ -1699,13 +1693,13 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 
         enc_info->Header.BufferId = MFX_EXTBUFF_ENCODED_FRAME_INFO;
         enc_info->Header.BufferSz = sizeof (*enc_info);
-        bs->NumExtParam = 1;
+        pkt.bs->NumExtParam = 1;
         enc_buf = av_mallocz(sizeof(mfxExtBuffer *));
         if (!enc_buf)
             goto nomem;
         enc_buf[0] = (mfxExtBuffer *)enc_info;
 
-        bs->ExtParam = enc_buf;
+        pkt.bs->ExtParam = enc_buf;
     }
 #endif
 
@@ -1713,12 +1707,12 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         q->set_encode_ctrl_cb(avctx, frame, &qsv_frame->enc_ctrl);
     }
 
-    sync = av_mallocz(sizeof(*sync));
-    if (!sync)
+    pkt.sync = av_mallocz(sizeof(*pkt.sync));
+    if (!pkt.sync)
         goto nomem;
 
     do {
-        ret = MFXVideoENCODE_EncodeFrameAsync(q->session, enc_ctrl, surf, bs, sync);
+        ret = MFXVideoENCODE_EncodeFrameAsync(q->session, enc_ctrl, surf, pkt.bs, pkt.sync);
         if (ret == MFX_WRN_DEVICE_BUSY)
             av_usleep(500);
     } while (ret == MFX_WRN_DEVICE_BUSY || ret == MFX_WRN_IN_EXECUTION);
@@ -1737,15 +1731,13 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 
     ret = 0;
 
-    if (*sync) {
-        av_fifo_generic_write(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
-        av_fifo_generic_write(q->async_fifo, &sync,    sizeof(sync),    NULL);
-        av_fifo_generic_write(q->async_fifo, &bs,      sizeof(bs),    NULL);
+    if (*pkt.sync) {
+        av_fifo_write(q->async_fifo, &pkt, 1);
     } else {
 free:
-        av_freep(&sync);
-        av_packet_unref(&new_pkt);
-        av_freep(&bs);
+        av_freep(&pkt.sync);
+        av_packet_unref(&pkt.pkt);
+        av_freep(&pkt.bs);
 #if QSV_VERSION_ATLEAST(1, 26)
         if (avctx->codec_id == AV_CODEC_ID_H264) {
             av_freep(&enc_info);
@@ -1769,60 +1761,56 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
     if (ret < 0)
         return ret;
 
-    if ((qsv_fifo_size(q->async_fifo) >= q->async_depth) ||
-        (!frame && av_fifo_size(q->async_fifo))) {
-        AVPacket new_pkt;
-        mfxBitstream *bs;
-        mfxSyncPoint *sync;
+    if ((av_fifo_can_read(q->async_fifo) >= q->async_depth) ||
+        (!frame && av_fifo_can_read(q->async_fifo))) {
+        QSVPacket qpkt;
 #if QSV_VERSION_ATLEAST(1, 26)
         mfxExtAVCEncodedFrameInfo *enc_info;
         mfxExtBuffer **enc_buf;
 #endif
         enum AVPictureType pict_type;
 
-        av_fifo_generic_read(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
-        av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
-        av_fifo_generic_read(q->async_fifo, &bs,      sizeof(bs),      NULL);
+        av_fifo_read(q->async_fifo, &qpkt, 1);
 
         do {
-            ret = MFXVideoCORE_SyncOperation(q->session, *sync, 1000);
+            ret = MFXVideoCORE_SyncOperation(q->session, *qpkt.sync, 1000);
         } while (ret == MFX_WRN_IN_EXECUTION);
 
-        new_pkt.dts  = av_rescale_q(bs->DecodeTimeStamp, (AVRational){1, 90000}, avctx->time_base);
-        new_pkt.pts  = av_rescale_q(bs->TimeStamp,       (AVRational){1, 90000}, avctx->time_base);
-        new_pkt.size = bs->DataLength;
+        qpkt.pkt.dts  = av_rescale_q(qpkt.bs->DecodeTimeStamp, (AVRational){1, 90000}, avctx->time_base);
+        qpkt.pkt.pts  = av_rescale_q(qpkt.bs->TimeStamp,       (AVRational){1, 90000}, avctx->time_base);
+        qpkt.pkt.size = qpkt.bs->DataLength;
 
-        if (bs->FrameType & MFX_FRAMETYPE_IDR || bs->FrameType & MFX_FRAMETYPE_xIDR) {
-            new_pkt.flags |= AV_PKT_FLAG_KEY;
+        if (qpkt.bs->FrameType & MFX_FRAMETYPE_IDR || qpkt.bs->FrameType & MFX_FRAMETYPE_xIDR) {
+            qpkt.pkt.flags |= AV_PKT_FLAG_KEY;
             pict_type = AV_PICTURE_TYPE_I;
-        } else if (bs->FrameType & MFX_FRAMETYPE_I || bs->FrameType & MFX_FRAMETYPE_xI)
+        } else if (qpkt.bs->FrameType & MFX_FRAMETYPE_I || qpkt.bs->FrameType & MFX_FRAMETYPE_xI)
             pict_type = AV_PICTURE_TYPE_I;
-        else if (bs->FrameType & MFX_FRAMETYPE_P || bs->FrameType & MFX_FRAMETYPE_xP)
+        else if (qpkt.bs->FrameType & MFX_FRAMETYPE_P || qpkt.bs->FrameType & MFX_FRAMETYPE_xP)
             pict_type = AV_PICTURE_TYPE_P;
-        else if (bs->FrameType & MFX_FRAMETYPE_B || bs->FrameType & MFX_FRAMETYPE_xB)
+        else if (qpkt.bs->FrameType & MFX_FRAMETYPE_B || qpkt.bs->FrameType & MFX_FRAMETYPE_xB)
             pict_type = AV_PICTURE_TYPE_B;
-        else if (bs->FrameType == MFX_FRAMETYPE_UNKNOWN) {
+        else if (qpkt.bs->FrameType == MFX_FRAMETYPE_UNKNOWN) {
             pict_type = AV_PICTURE_TYPE_NONE;
             av_log(avctx, AV_LOG_WARNING, "Unknown FrameType, set pict_type to AV_PICTURE_TYPE_NONE.\n");
         } else {
-            av_log(avctx, AV_LOG_ERROR, "Invalid FrameType:%d.\n", bs->FrameType);
+            av_log(avctx, AV_LOG_ERROR, "Invalid FrameType:%d.\n", qpkt.bs->FrameType);
             return AVERROR_INVALIDDATA;
         }
 
 #if QSV_VERSION_ATLEAST(1, 26)
         if (avctx->codec_id == AV_CODEC_ID_H264) {
-            enc_buf = bs->ExtParam;
-            enc_info = (mfxExtAVCEncodedFrameInfo *)(*bs->ExtParam);
-            ff_side_data_set_encoder_stats(&new_pkt,
+            enc_buf = qpkt.bs->ExtParam;
+            enc_info = (mfxExtAVCEncodedFrameInfo *)(*enc_buf);
+            ff_side_data_set_encoder_stats(&qpkt.pkt,
                 enc_info->QP * FF_QP2LAMBDA, NULL, 0, pict_type);
             av_freep(&enc_info);
             av_freep(&enc_buf);
         }
 #endif
-        av_freep(&bs);
-        av_freep(&sync);
+        av_freep(&qpkt.bs);
+        av_freep(&qpkt.sync);
 
-        av_packet_move_ref(pkt, &new_pkt);
+        av_packet_move_ref(pkt, &qpkt.pkt);
 
         *got_packet = 1;
     }
@@ -1852,29 +1840,23 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
         cur = q->work_frames;
     }
 
-    while (q->async_fifo && av_fifo_size(q->async_fifo)) {
-        AVPacket pkt;
-        mfxSyncPoint *sync;
-        mfxBitstream *bs;
-
-        av_fifo_generic_read(q->async_fifo, &pkt,  sizeof(pkt),  NULL);
-        av_fifo_generic_read(q->async_fifo, &sync, sizeof(sync), NULL);
-        av_fifo_generic_read(q->async_fifo, &bs,   sizeof(bs),   NULL);
-
+    if (q->async_fifo) {
+        QSVPacket pkt;
+        while (av_fifo_read(q->async_fifo, &pkt, 1) >= 0) {
 #if QSV_VERSION_ATLEAST(1, 26)
         if (avctx->codec_id == AV_CODEC_ID_H264) {
-            mfxExtBuffer **enc_buf = bs->ExtParam;
-            mfxExtAVCEncodedFrameInfo *enc_info = (mfxExtAVCEncodedFrameInfo *)(*bs->ExtParam);
+            mfxExtBuffer **enc_buf = pkt.bs->ExtParam;
+            mfxExtAVCEncodedFrameInfo *enc_info = (mfxExtAVCEncodedFrameInfo *)(*enc_buf);
             av_freep(&enc_info);
             av_freep(&enc_buf);
         }
 #endif
-        av_freep(&sync);
-        av_freep(&bs);
-        av_packet_unref(&pkt);
+        av_freep(&pkt.sync);
+        av_freep(&pkt.bs);
+        av_packet_unref(&pkt.pkt);
     }
-    av_fifo_free(q->async_fifo);
-    q->async_fifo = NULL;
+        av_fifo_freep2(&q->async_fifo);
+    }
 
     av_freep(&q->opaque_surfaces);
     av_buffer_unref(&q->opaque_alloc_buf);
