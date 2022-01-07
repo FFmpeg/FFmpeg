@@ -1173,13 +1173,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (par->codec_type == AVMEDIA_TYPE_ATTACHMENT)
         return 0;
 
-    if (par->codec_id == AV_CODEC_ID_AAC) {
-        ret = get_aac_sample_rates(s, mkv, par->extradata, par->extradata_size,
-                                   &sample_rate, &output_sample_rate);
-        if (ret < 0)
-            return ret;
-    }
-
     track_master = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
     put_ebml_uint(pb, MATROSKA_ID_TRACKNUMBER, track->track_num);
     put_ebml_uid (pb, MATROSKA_ID_TRACKUID,    track->uid);
@@ -1377,6 +1370,12 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         }
         if (par->codec_id == AV_CODEC_ID_OPUS)
             put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
+        else if (par->codec_id == AV_CODEC_ID_AAC) {
+            ret = get_aac_sample_rates(s, mkv, par->extradata, par->extradata_size,
+                                       &sample_rate, &output_sample_rate);
+            if (ret < 0)
+                return ret;
+        }
 
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
