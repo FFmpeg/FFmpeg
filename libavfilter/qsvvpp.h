@@ -73,7 +73,7 @@ typedef struct QSVVPPContext {
     int async_depth;
     int eof;
     /** order with frame_out, sync */
-    AVFifoBuffer *async_fifo;
+    AVFifo *async_fifo;
 } QSVVPPContext;
 
 typedef struct QSVVPPCrop {
