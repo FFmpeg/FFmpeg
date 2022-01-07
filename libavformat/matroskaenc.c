@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "av1.h"
 #include "avc.h"
 #include "hevc.h"
@@ -59,6 +61,11 @@
  * Info, Tracks, Chapters, Attachments, Tags (potentially twice) and Cues */
 #define MAX_SEEKHEAD_ENTRIES 7
 
+#define MODE_MATROSKAv2 0x01
+#define MODE_WEBM       0x02
+
+#define IS_WEBM(mkv) (CONFIG_WEBM_MUXER && CONFIG_MATROSKA_MUXER ? \
+                      ((mkv)->mode == MODE_WEBM) : CONFIG_WEBM_MUXER)
 #define IS_SEEKABLE(pb, mkv) (((pb)->seekable & AVIO_SEEKABLE_NORMAL) && \
                               !(mkv)->is_live)
 
@@ -117,9 +124,6 @@ typedef struct mkv_track {
     int64_t         codecpriv_offset;
     int64_t         ts_offset;
 } mkv_track;
-
-#define MODE_MATROSKAv2 0x01
-#define MODE_WEBM       0x02
 
 typedef struct MatroskaMuxContext {
     const AVClass      *class;
@@ -640,6 +644,7 @@ static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb,
     return 0;
 }
 
+#if CONFIG_MATROSKA_MUXER
 static int put_wv_codecpriv(AVIOContext *pb, const AVCodecParameters *par)
 {
     if (par->extradata && par->extradata_size == 2)
@@ -717,6 +722,7 @@ static int get_aac_sample_rates(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
     return 0;
 }
+#endif
 
 static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
                                          const AVCodecParameters *par,
@@ -726,6 +732,14 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:
         return put_xiph_codecpriv(s, dyn_cp, par);
+    case AV_CODEC_ID_AV1:
+        if (par->extradata_size)
+            return ff_isom_write_av1c(dyn_cp, par->extradata,
+                                      par->extradata_size);
+        else
+            put_ebml_void(pb, 4 + 3);
+        break;
+#if CONFIG_MATROSKA_MUXER
     case AV_CODEC_ID_FLAC:
         return put_flac_codecpriv(s, dyn_cp, par);
     case AV_CODEC_ID_WAVPACK:
@@ -736,13 +750,6 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
     case AV_CODEC_ID_HEVC:
         return ff_isom_write_hvcc(dyn_cp, par->extradata,
                                   par->extradata_size, 0);
-    case AV_CODEC_ID_AV1:
-        if (par->extradata_size)
-            return ff_isom_write_av1c(dyn_cp, par->extradata,
-                                      par->extradata_size);
-        else
-            put_ebml_void(pb, 4 + 3);
-        break;
     case AV_CODEC_ID_ALAC:
         if (par->extradata_size < 36) {
             av_log(s, AV_LOG_ERROR,
@@ -759,8 +766,9 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
         else
             put_ebml_void(pb, MAX_PCE_SIZE + 2 + 4);
         break;
+#endif
     default:
-        if (par->codec_id == AV_CODEC_ID_PRORES &&
+        if (CONFIG_MATROSKA_MUXER && par->codec_id == AV_CODEC_ID_PRORES &&
             ff_codec_get_id(ff_codec_movvideo_tags, par->codec_tag) == AV_CODEC_ID_PRORES) {
             avio_wl32(dyn_cp, par->codec_tag);
         } else if (par->extradata_size && par->codec_id != AV_CODEC_ID_TTA)
@@ -774,8 +782,8 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
                                   AVCodecParameters *par,
                                   int native_id, int qt_id)
 {
+    MatroskaMuxContext av_unused *const mkv = s->priv_data;
     AVIOContext *dyn_cp;
-    MatroskaMuxContext *mkv = s->priv_data;
     uint8_t *codecpriv;
     int ret, codecpriv_size;
 
@@ -785,6 +793,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
 
     if (native_id) {
         ret = mkv_write_native_codecprivate(s, pb, par, dyn_cp);
+#if CONFIG_MATROSKA_MUXER
     } else if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (qt_id) {
             if (!par->codec_tag)
@@ -826,6 +835,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
             par->codec_tag = tag;
 
         ff_put_wav_header(s, dyn_cp, par, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
+#endif
     }
 
     if (ret >= 0) {
@@ -991,7 +1001,7 @@ static void mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
     end_ebml_master(pb, projection);
 }
 
-static void mkv_write_field_order(AVIOContext *pb, int mode,
+static void mkv_write_field_order(AVIOContext *pb, int is_webm,
                                   enum AVFieldOrder field_order)
 {
     switch (field_order) {
@@ -1007,7 +1017,7 @@ static void mkv_write_field_order(AVIOContext *pb, int mode,
     case AV_FIELD_BT:
         put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
                       MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED);
-        if (mode != MODE_WEBM) {
+        if (!is_webm) {
             switch (field_order) {
             case AV_FIELD_TT:
                 put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
@@ -1031,7 +1041,8 @@ static void mkv_write_field_order(AVIOContext *pb, int mode,
 }
 
 static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
-                                 AVStream *st, int mode, int *h_width, int *h_height)
+                                 AVStream *st, int is_webm,
+                                 int *h_width, int *h_height)
 {
     const AVDictionaryEntry *tag;
     MatroskaVideoStereoModeType format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
@@ -1106,7 +1117,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
         return 0;
 
     // if webm, do not write unsupported modes
-    if ((mode == MODE_WEBM &&
+    if ((is_webm &&
         format > MATROSKA_VIDEO_STEREOMODE_TYPE_TOP_BOTTOM &&
         format != MATROSKA_VIDEO_STEREOMODE_TYPE_RIGHT_LEFT)
         || format >= MATROSKA_VIDEO_STEREOMODE_TYPE_NB) {
@@ -1192,7 +1203,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (st->disposition & AV_DISPOSITION_FORCED)
         put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGFORCED, 1);
 
-    if (mkv->mode == MODE_WEBM) {
+    if (IS_WEBM(mkv)) {
         const char *codec_id;
         if (par->codec_type != AVMEDIA_TYPE_SUBTITLE) {
             for (j = 0; ff_webm_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
@@ -1271,7 +1282,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 && av_cmp_q(av_inv_q(st->r_frame_rate), st->time_base) > 0)
             put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->r_frame_rate.den / st->r_frame_rate.num);
 
-        if (!native_id &&
+        if (CONFIG_MATROSKA_MUXER && !native_id &&
             ff_codec_get_tag(ff_codec_movvideo_tags, par->codec_id) &&
             ((!ff_codec_get_tag(ff_codec_bmp_tags,   par->codec_id) && par->codec_id != AV_CODEC_ID_RAWVIDEO) ||
              par->codec_id == AV_CODEC_ID_SVQ1 ||
@@ -1293,11 +1304,11 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
 
-        mkv_write_field_order(pb, mkv->mode, par->field_order);
+        mkv_write_field_order(pb, IS_WEBM(mkv), par->field_order);
 
         // check both side data and metadata for stereo information,
         // write the result to the bitstream if any is found
-        ret = mkv_write_stereo_mode(s, pb, st, mkv->mode,
+        ret = mkv_write_stereo_mode(s, pb, st, IS_WEBM(mkv),
                                     &display_width_div,
                                     &display_height_div);
         if (ret < 0)
@@ -1318,7 +1329,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 return AVERROR(EINVAL);
             }
             if (d_width != par->width || display_width_div != 1 || display_height_div != 1) {
-                if (mkv->mode == MODE_WEBM || display_width_div != 1 || display_height_div != 1) {
+                if (IS_WEBM(mkv) || display_width_div != 1 || display_height_div != 1) {
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
                 } else {
@@ -1335,7 +1346,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         } else if (display_width_div != 1 || display_height_div != 1) {
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , par->width / display_width_div);
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
-        } else if (mkv->mode != MODE_WEBM)
+        } else if (!IS_WEBM(mkv))
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
 
         if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
@@ -1347,9 +1358,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         end_ebml_master(pb, subinfo);
 
-        if (mkv->mode != MODE_WEBM) {
+        if (!IS_WEBM(mkv))
             mkv_write_dovi(s, pb, st);
-        }
 
         break;
 
@@ -1370,12 +1380,14 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         }
         if (par->codec_id == AV_CODEC_ID_OPUS)
             put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
+#if CONFIG_MATROSKA_MUXER
         else if (par->codec_id == AV_CODEC_ID_AAC) {
             ret = get_aac_sample_rates(s, mkv, par->extradata, par->extradata_size,
                                        &sample_rate, &output_sample_rate);
             if (ret < 0)
                 return ret;
         }
+#endif
 
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
@@ -1410,10 +1422,10 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             av_log(s, AV_LOG_ERROR, "Subtitle codec %d is not supported.\n", par->codec_id);
             return AVERROR(ENOSYS);
         }
-        if (mkv->mode != MODE_WEBM && st->disposition & AV_DISPOSITION_DESCRIPTIONS)
+        if (!IS_WEBM(mkv) && st->disposition & AV_DISPOSITION_DESCRIPTIONS)
             put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGTEXTDESCRIPTIONS, 1);
 
-        if (mkv->mode != MODE_WEBM || par->codec_id != AV_CODEC_ID_WEBVTT)
+        if (!IS_WEBM(mkv) || par->codec_id != AV_CODEC_ID_WEBVTT)
             native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
 
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, native_id);
@@ -1423,7 +1435,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         return AVERROR(EINVAL);
     }
 
-    if (mkv->mode != MODE_WEBM || par->codec_id != AV_CODEC_ID_WEBVTT) {
+    if (!IS_WEBM(mkv) || par->codec_id != AV_CODEC_ID_WEBVTT) {
         track->codecpriv_offset = avio_tell(pb);
         ret = mkv_write_codecprivate(s, pb, par, native_id, qt_id);
         if (ret < 0)
@@ -1642,7 +1654,7 @@ static int mkv_write_tags(AVFormatContext *s)
         }
     }
 
-    if (mkv->nb_attachments && mkv->mode != MODE_WEBM) {
+    if (mkv->nb_attachments && !IS_WEBM(mkv)) {
         for (i = 0; i < s->nb_streams; i++) {
             const mkv_track *track = &mkv->tracks[i];
             const AVStream     *st = s->streams[i];
@@ -1695,7 +1707,7 @@ static int mkv_write_chapters(AVFormatContext *s)
         return ret;
 
     editionentry = start_ebml_master(dyn_cp, MATROSKA_ID_EDITIONENTRY, 0);
-    if (mkv->mode != MODE_WEBM) {
+    if (!IS_WEBM(mkv)) {
         put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGDEFAULT, 1);
         /* If mkv_write_tags() has already been called, then any tags
          * corresponding to chapters will be put into a new Tags element. */
@@ -1855,7 +1867,7 @@ static int mkv_write_header(AVFormatContext *s)
     int ret, i, version = 2;
     int64_t creation_time;
 
-    if (mkv->mode != MODE_WEBM ||
+    if (!IS_WEBM(mkv) ||
         av_dict_get(s->metadata, "stereo_mode", NULL, 0) ||
         av_dict_get(s->metadata, "alpha_mode", NULL, 0))
         version = 4;
@@ -1900,7 +1912,7 @@ static int mkv_write_header(AVFormatContext *s)
         else
             put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
 
-        if (mkv->mode != MODE_WEBM)
+        if (!IS_WEBM(mkv))
             put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, mkv->segment_uid, 16);
     } else {
         const char *ident = "Lavf";
@@ -1948,7 +1960,7 @@ static int mkv_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (mkv->mode != MODE_WEBM) {
+    if (!IS_WEBM(mkv)) {
         ret = mkv_write_attachments(s);
         if (ret < 0)
             return ret;
@@ -2010,6 +2022,7 @@ static int mkv_blockgroup_size(int pkt_size, int track_num_size)
     return size;
 }
 
+#if CONFIG_MATROSKA_MUXER
 static int mkv_strip_wavpack(const uint8_t *src, uint8_t **pdst, int *size)
 {
     uint8_t *dst;
@@ -2062,6 +2075,7 @@ fail:
     av_freep(&dst);
     return ret;
 }
+#endif
 
 static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                            uint32_t blockid, const AVPacket *pkt, int keyframe)
@@ -2089,6 +2103,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
            pkt->size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
            mkv->cluster_pos, track_number, keyframe != 0);
 
+#if CONFIG_MATROSKA_MUXER
     if (par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 &&
         (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
         err = ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
@@ -2096,10 +2111,12 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
         /* extradata is Annex B, assume the bitstream is too and convert it */
         err = ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
-    } else if (par->codec_id == AV_CODEC_ID_AV1) {
-        err = ff_av1_filter_obus_buf(pkt->data, &data, &size, &offset);
     } else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
         err = mkv_strip_wavpack(pkt->data, &data, &size);
+    } else
+#endif
+           if (par->codec_id == AV_CODEC_ID_AV1) {
+        err = ff_av1_filter_obus_buf(pkt->data, &data, &size, &offset);
     } else
         data = pkt->data;
 
@@ -2109,7 +2126,8 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         return err;
     }
 
-    if (par->codec_id == AV_CODEC_ID_PRORES && size >= 8) {
+    if (CONFIG_MATROSKA_MUXER &&
+        par->codec_id == AV_CODEC_ID_PRORES && size >= 8) {
         /* Matroska specification requires to remove the first QuickTime atom
          */
         size  -= 8;
@@ -2261,6 +2279,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
                                         &side_data_size);
 
     switch (par->codec_id) {
+#if CONFIG_MATROSKA_MUXER
     case AV_CODEC_ID_AAC:
         if (side_data_size && mkv->track.bc) {
             int filler, output_sample_rate = 0;
@@ -2302,6 +2321,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
             par->extradata = old_extradata;
         }
         break;
+#endif
     // FIXME: Remove the following once libaom starts propagating extradata during init()
     //        See https://bugs.chromium.org/p/aomedia/issues/detail?id=2012
     case AV_CODEC_ID_AV1:
@@ -2721,7 +2741,8 @@ static int mkv_init(struct AVFormatContext *s)
         si->avoid_negative_ts_use_pts = 1;
     }
 
-    if (!strcmp(s->oformat->name, "webm")) {
+    if (!CONFIG_MATROSKA_MUXER ||
+        (CONFIG_WEBM_MUXER && !strcmp(s->oformat->name, "webm"))) {
         mkv->mode      = MODE_WEBM;
         mkv->write_crc = 0;
     } else
@@ -2755,7 +2776,7 @@ static int mkv_init(struct AVFormatContext *s)
         avpriv_set_pts_info(st, 64, 1, 1000);
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
-            if (mkv->mode == MODE_WEBM) {
+            if (IS_WEBM(mkv)) {
                 av_log(s, AV_LOG_WARNING, "Stream %d will be ignored "
                        "as WebM doesn't support attachments.\n", i);
             } else if (!get_mimetype(st)) {
@@ -2783,7 +2804,7 @@ static int mkv_check_bitstream(AVFormatContext *s, AVStream *st,
 {
     int ret = 1;
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
+    if (CONFIG_MATROSKA_MUXER && st->codecpar->codec_id == AV_CODEC_ID_AAC) {
         if (pkt->size > 2 && (AV_RB16(pkt->data) & 0xfff0) == 0xfff0)
             ret = ff_stream_add_bitstream_filter(st, "aac_adtstoasc", NULL);
     } else if (st->codecpar->codec_id == AV_CODEC_ID_VP9) {
