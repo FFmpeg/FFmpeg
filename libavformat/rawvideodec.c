@@ -42,6 +42,7 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     enum AVPixelFormat pix_fmt;
     AVStream *st;
     int packet_size;
+    int ret;
 
     st = avformat_new_stream(ctx, NULL);
     if (!st)
@@ -61,6 +62,10 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     }
 
     avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
+
+    ret = av_image_check_size(s->width, s->height, 0, ctx);
+    if (ret < 0)
+        return ret;
 
     st->codecpar->width  = s->width;
     st->codecpar->height = s->height;
@@ -100,6 +105,8 @@ static int rawvideo_read_header(AVFormatContext *ctx)
         if (packet_size < 0)
             return packet_size;
     }
+    if (packet_size == 0)
+        return AVERROR(EINVAL);
 
     st->codecpar->format = pix_fmt;
     ctx->packet_size = packet_size;
