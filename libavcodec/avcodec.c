@@ -183,7 +183,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     avci->es.in_frame = av_frame_alloc();
     avci->in_pkt = av_packet_alloc();
     avci->last_pkt_props = av_packet_alloc();
-    avci->pkt_props = av_fifo_alloc(sizeof(*avci->last_pkt_props));
+    avci->pkt_props = av_fifo_alloc2(1, sizeof(*avci->last_pkt_props),
+                                     AV_FIFO_FLAG_AUTO_GROW);
     if (!avci->buffer_frame || !avci->buffer_pkt          ||
         !avci->es.in_frame  || !avci->in_pkt     ||
         !avci->last_pkt_props || !avci->pkt_props) {
@@ -399,13 +400,8 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     av_packet_unref(avci->buffer_pkt);
 
     av_packet_unref(avci->last_pkt_props);
-    while (av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props)) {
-        av_fifo_generic_read(avci->pkt_props,
-                             avci->last_pkt_props, sizeof(*avci->last_pkt_props),
-                             NULL);
+    while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
         av_packet_unref(avci->last_pkt_props);
-    }
-    av_fifo_reset(avci->pkt_props);
 
     av_frame_unref(avci->es.in_frame);
     av_packet_unref(avci->in_pkt);
@@ -464,12 +460,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_frame_free(&avci->buffer_frame);
         av_packet_free(&avci->buffer_pkt);
         if (avci->pkt_props) {
-            while (av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props)) {
+            while (av_fifo_can_read(avci->pkt_props)) {
                 av_packet_unref(avci->last_pkt_props);
-                av_fifo_generic_read(avci->pkt_props, avci->last_pkt_props,
-                                     sizeof(*avci->last_pkt_props), NULL);
+                av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1);
             }
-            av_fifo_freep(&avci->pkt_props);
+            av_fifo_freep2(&avci->pkt_props);
         }
         av_packet_free(&avci->last_pkt_props);
 

@@ -165,26 +165,19 @@ static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
     int ret = 0;
 
     if (IS_EMPTY(avci->last_pkt_props)) {
-        if (av_fifo_size(avci->pkt_props) >= sizeof(*pkt)) {
-            av_fifo_generic_read(avci->pkt_props, avci->last_pkt_props,
-                                 sizeof(*avci->last_pkt_props), NULL);
-        } else
+        if (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) < 0)
             return copy_packet_props(avci->last_pkt_props, pkt);
-    }
-
-    if (av_fifo_space(avci->pkt_props) < sizeof(*pkt)) {
-        ret = av_fifo_grow(avci->pkt_props, sizeof(*pkt));
-        if (ret < 0)
-            return ret;
     }
 
     ret = copy_packet_props(&tmp, pkt);
     if (ret < 0)
         return ret;
 
-    av_fifo_generic_write(avci->pkt_props, &tmp, sizeof(tmp), NULL);
+    ret = av_fifo_write(avci->pkt_props, &tmp, 1);
+    if (ret < 0)
+        av_packet_unref(&tmp);
 
-    return 0;
+    return ret;
 }
 
 static int decode_bsfs_init(AVCodecContext *avctx)
@@ -544,9 +537,10 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
         avci->draining_done = 1;
 
     if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS) &&
-        IS_EMPTY(avci->last_pkt_props) && av_fifo_size(avci->pkt_props) >= sizeof(*avci->last_pkt_props))
-        av_fifo_generic_read(avci->pkt_props,
-                             avci->last_pkt_props, sizeof(*avci->last_pkt_props), NULL);
+        IS_EMPTY(avci->last_pkt_props)) {
+        // May fail if the FIFO is empty.
+        av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1);
+    }
 
     if (!ret) {
         frame->best_effort_timestamp = guess_correct_pts(avctx,
