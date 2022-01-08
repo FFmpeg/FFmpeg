@@ -126,8 +126,9 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(RawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption rawvideo_options[] = {
-    { "video_size", "set frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
+    /* pixel_format is not used by the v210 demuxers. */
     { "pixel_format", "set pixel format", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
+    { "video_size", "set frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
 };
@@ -175,7 +176,7 @@ const AVInputFormat ff_bitpacked_demuxer = {
 static const AVClass v210_demuxer_class = {
     .class_name = "v210(x) demuxer",
     .item_name  = av_default_item_name,
-    .option     = rawvideo_options,
+    .option     = rawvideo_options + 1,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
