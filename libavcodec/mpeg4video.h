@@ -27,7 +27,6 @@
 
 #include "get_bits.h"
 #include "mpegvideo.h"
-#include "rl.h"
 
 // shapes
 #define RECT_SHAPE       0
@@ -117,40 +116,6 @@ typedef struct Mpeg4DecContext {
 
     int rgb;
 } Mpeg4DecContext;
-
-static const uint8_t mpeg4_block_count[4] = {0, 6, 8, 12};
-
-/* dc encoding for MPEG-4 */
-extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
-extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
-
-extern const uint16_t ff_mpeg4_intra_vlc[103][2];
-extern const int8_t ff_mpeg4_intra_level[102];
-extern const int8_t ff_mpeg4_intra_run[102];
-
-extern RLTable ff_mpeg4_rl_intra;
-void ff_mpeg4_init_rl_intra(void);
-
-/* Note this is identical to the intra rvlc except that it is reordered. */
-extern RLTable ff_rvlc_rl_inter;
-extern RLTable ff_rvlc_rl_intra;
-
-extern const uint8_t ff_sprite_trajectory_lens[15];
-extern const uint8_t ff_mb_type_b_tab[4][2];
-
-/* these matrixes will be permuted for the idct */
-extern const int16_t ff_mpeg4_default_intra_matrix[64];
-extern const int16_t ff_mpeg4_default_non_intra_matrix[64];
-
-extern const uint8_t ff_mpeg4_y_dc_scale_table[32];
-extern const uint8_t ff_mpeg4_c_dc_scale_table[32];
-extern const uint16_t ff_mpeg4_resync_prefix[8];
-
-extern const uint8_t ff_mpeg4_dc_threshold[8];
-
-extern const uint8_t ff_mpeg4_studio_dc_luma[19][2];
-extern const uint8_t ff_mpeg4_studio_dc_chroma[19][2];
-extern const uint8_t ff_mpeg4_studio_intra[12][24][2];
 
 void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],

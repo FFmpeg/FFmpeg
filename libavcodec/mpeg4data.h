@@ -28,8 +28,7 @@
 #ifndef AVCODEC_MPEG4DATA_H
 #define AVCODEC_MPEG4DATA_H
 
-#include <stdint.h>
-#include "mpegvideo.h"
+#include "mpeg4videodata.h"
 
 /* dc encoding for MPEG-4 */
 const uint8_t ff_mpeg4_DCtab_lum[13][2] =

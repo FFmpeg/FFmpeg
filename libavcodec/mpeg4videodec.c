@@ -34,6 +34,7 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "mpeg4video.h"
+#include "mpeg4videodata.h"
 #include "h263.h"
 #include "profiles.h"
 #include "thread.h"
@@ -55,6 +56,8 @@ static VLC mb_type_b_vlc;
 static VLC studio_intra_tab[12];
 static VLC studio_luma_dc;
 static VLC studio_chroma_dc;
+
+static const uint8_t mpeg4_block_count[4] = { 0, 6, 8, 12 };
 
 static const int mb_type_b_map[4] = {
     MB_TYPE_DIRECT2 | MB_TYPE_L0L1,

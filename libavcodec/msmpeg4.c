@@ -34,7 +34,7 @@
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "libavutil/x86/asm.h"
-#include "mpeg4video.h"
+#include "mpeg4videodata.h"
 #include "msmpeg4data.h"
 #include "mpegvideodata.h"
 #include "vc1data.h"

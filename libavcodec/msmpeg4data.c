@@ -28,7 +28,7 @@
  */
 
 #include "h263data.h"
-#include "mpeg4video.h"
+#include "mpeg4videodata.h"
 #include "msmpeg4data.h"
 
 uint32_t ff_v2_dc_lum_table[512][2];
