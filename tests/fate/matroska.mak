@@ -99,6 +99,12 @@ FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL AVI_DEMUXER MATROSKA_MUXER \
                              PIPE_PROTOCOL) += fate-matroska-ms-mode
 fate-matroska-ms-mode: CMD = transcode avi $(TARGET_SAMPLES)/vp5/potter512-400-partial.avi matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 5000" "-map 0 -c copy -t 1"
 
+# This tests Matroska's QT-compatibility mode.
+FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER MATROSKA_MUXER       \
+                             MATROSKA_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
+                += fate-matroska-qt-mode
+fate-matroska-qt-mode: CMD = transcode mov $(TARGET_SAMPLES)/svq1/marymary-shackles.mov matroska "-c copy" "-c copy -t 3"
+
 # This test the following features of the Matroska muxer: Writing projection
 # stream side-data; not setting any track to default if the user requested it;
 # and modifying and writing colorspace properties.
