@@ -1567,6 +1567,15 @@ A safe size for most use cases should be about 50kB per hour of video.
 
 Note that cues are only written if the output is seekable and this option will
 have no effect if it is not.
+
+@item cues_to_front
+If set, the muxer will write the index at the beginning of the file
+by shifting the main data if necessary. This can be combined with
+reserve_index_space in which case the data is only shifted if
+the initially reserved space turns out to be insufficient.
+
+This option is ignored if the output is unseekable.
+
 @item default_mode
 This option controls how the FlagDefault of the output tracks will be set.
 It influences which tracks players should play by default. The default mode

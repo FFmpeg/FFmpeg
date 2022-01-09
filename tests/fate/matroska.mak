@@ -67,6 +67,38 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call DEMMUX, MATROSKA, MATROSKA) \
                                += fate-matroska-zero-length-block
 fate-matroska-zero-length-block: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/zero_length_block.mks matroska "-c:s copy -dash 1 -dash_track_number 2000000000 -reserve_index_space 62 -metadata_header_padding 1 -default_mode infer_no_subs" "-c:s copy" "" "-show_entries stream_tags=description"
 
+# This mainly tests the Matroska muxer's ability to shift the data
+# to create enough free space to write the Cues at the front.
+# The metadata_header_padding has been chosen so that three attempts
+# to write the Cues are necessary.
+# It also tests writing PCM audio in both endiannesses and putting
+# Cues with the same timestamp in the same CuePoint as well as
+# omitting CRC-32 elements when writing Matroska.
+FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL WAV_DEMUXER PCM_S24LE_DECODER    \
+                             PCM_S24BE_ENCODER MATROSKA_MUXER               \
+                             MATROSKA_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
+                += fate-matroska-move-cues-to-front
+fate-matroska-move-cues-to-front: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav matroska "-map 0 -map 0 -c:a:0 pcm_s24be -c:a:1 copy -cluster_time_limit 5 -cues_to_front yes -metadata_header_padding 7840 -write_crc32 0" "-map 0 -c copy -t 0.1"
+
+# This tests DOVI (reading from MP4 and Matroska and writing to Matroska)
+# as well as writing the Cues at the front (by shifting data) if
+# the initially reserved amount of space turns out to be insufficient.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER       \
+                                            HEVC_DECODER MATROSKA_MUXER     \
+                                            MATROSKA_DEMUXER FRAMECRC_MUXER \
+                                            PIPE_PROTOCOL)                  \
+                               += fate-matroska-dovi-write-config7
+fate-matroska-dovi-write-config7: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7.mp4 matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 40  -metadata_header_padding 64339" "-map 0 -c copy" "" "-show_entries stream_side_data_list"
+
+# This tests writing the MS-compatibility modes V_MS/VFW/FOURCC and A_MS/ACM.
+# It furthermore tests writing the Cues at the front if the cues_to_front
+# option is set and more than enough space has been reserved in advance.
+# (Btw: The keyframe flags of the input video stream seem wrong.)
+FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL AVI_DEMUXER MATROSKA_MUXER \
+                             MATROSKA_DEMUXER FRAMECRC_MUXER          \
+                             PIPE_PROTOCOL) += fate-matroska-ms-mode
+fate-matroska-ms-mode: CMD = transcode avi $(TARGET_SAMPLES)/vp5/potter512-400-partial.avi matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 5000" "-map 0 -c copy -t 1"
+
 # This test the following features of the Matroska muxer: Writing projection
 # stream side-data; not setting any track to default if the user requested it;
 # and modifying and writing colorspace properties.

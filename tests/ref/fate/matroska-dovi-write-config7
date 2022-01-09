@@ -1,0 +1,49 @@
+3fa1f47c5c3d22b5c33156ff14928d6c *tests/data/fate/matroska-dovi-write-config7.matroska
+72758 tests/data/fate/matroska-dovi-write-config7.matroska
+#extradata 0:      116, 0x2b8d1669
+#extradata 1:      116, 0x2b8d1669
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 1920x1080
+#sar 0: 0/1
+#tb 1: 1/1000
+#media_type 1: video
+#codec_id 1: hevc
+#dimensions 1: 1920x1080
+#sar 1: 0/1
+0,        -83,          0,       41,      699, 0x728548f1
+1,        -83,          0,       41,     1085, 0xfb2dba82, S=1,        8
+0,        -42,        167,       41,       95, 0xc0312044, F=0x0
+1,        -42,        167,       41,      481, 0xf23f91d5, F=0x0
+0,          0,         83,       41,       99, 0x5e0a2221, F=0x0
+1,          0,         83,       41,      485, 0x5f7b93b2, F=0x0
+0,         42,         42,       41,       99, 0xe60e208b, F=0x0
+1,         42,         42,       41,      485, 0x8335921c, F=0x0
+0,         83,        125,       41,       99, 0xa1e422e1, F=0x0
+1,         83,        125,       41,      485, 0xc4e49472, F=0x0
+0,        125,        333,       41,       96, 0xdc762089, F=0x0
+1,        125,        333,       41,      482, 0x769c921a, F=0x0
+0,        167,        250,       41,      100, 0x89cd22a0, F=0x0
+1,        167,        250,       41,      486, 0x4aca9431, F=0x0
+0,        208,        208,       41,      100, 0x6d4521ff, F=0x0
+1,        208,        208,       41,      486, 0x3b719390, F=0x0
+0,        250,        292,       41,       99, 0x92ab22c0, F=0x0
+1,        250,        292,       41,      485, 0x83e99451, F=0x0
+0,        292,        292,       41,       95, 0xcd9020bd, F=0x0
+1,        292,        292,       41,      481, 0x44ec924e, F=0x0
+[STREAM]
+[/STREAM]
+[STREAM]
+[SIDE_DATA]
+side_data_type=DOVI configuration record
+dv_version_major=1
+dv_version_minor=0
+dv_profile=7
+dv_level=4
+rpu_present_flag=1
+el_present_flag=1
+bl_present_flag=0
+dv_bl_signal_compatibility_id=6
+[/SIDE_DATA]
+[/STREAM]

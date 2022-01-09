@@ -161,6 +161,7 @@ typedef struct MatroskaMuxContext {
     int                 allow_raw_vfw;
     int                 flipped_raw_rgb;
     int                 default_mode;
+    int                 move_cues_to_front;
 
     uint32_t            segment_uid[4];
 } MatroskaMuxContext;
@@ -566,7 +567,8 @@ static int mkv_add_cuepoint(MatroskaMuxContext *mkv, int stream, int64_t ts,
 }
 
 static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp,
-                             mkv_cues *cues, mkv_track *tracks, int num_tracks)
+                             const mkv_cues *cues, mkv_track *tracks, int num_tracks,
+                             uint64_t offset)
 {
     AVIOContext *cuepoint;
     int ret;
@@ -597,7 +599,7 @@ static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp,
             tracks[idx].has_cue = 1;
             track_positions = start_ebml_master(cuepoint, MATROSKA_ID_CUETRACKPOSITION, MAX_CUETRACKPOS_SIZE);
             put_ebml_uint(cuepoint, MATROSKA_ID_CUETRACK           , tracks[idx].track_num);
-            put_ebml_uint(cuepoint, MATROSKA_ID_CUECLUSTERPOSITION , entry->cluster_pos);
+            put_ebml_uint(cuepoint, MATROSKA_ID_CUECLUSTERPOSITION , entry->cluster_pos + offset);
             put_ebml_uint(cuepoint, MATROSKA_ID_CUERELATIVEPOSITION, entry->relative_pos);
             if (entry->duration > 0)
                 put_ebml_uint(cuepoint, MATROSKA_ID_CUEDURATION    , entry->duration);
@@ -1984,12 +1986,14 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_void(pb, s->metadata_header_padding);
     }
 
-    if (mkv->reserve_cues_space) {
+    if (mkv->reserve_cues_space || mkv->move_cues_to_front) {
         if (IS_SEEKABLE(pb, mkv)) {
             mkv->cues_pos = avio_tell(pb);
-            if (mkv->reserve_cues_space == 1)
-                mkv->reserve_cues_space++;
-            put_ebml_void(pb, mkv->reserve_cues_space);
+            if (mkv->reserve_cues_space >= 1) {
+                if (mkv->reserve_cues_space == 1)
+                    mkv->reserve_cues_space++;
+                put_ebml_void(pb, mkv->reserve_cues_space);
+            }
         } else
             mkv->reserve_cues_space = -1;
     }
@@ -2575,25 +2579,31 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     if (mkv->cues.num_entries && mkv->reserve_cues_space >= 0) {
         AVIOContext *cues = NULL;
-        uint64_t size;
+        uint64_t size, offset = 0;
         int length_size = 0;
 
+redo_cues:
         ret = start_ebml_master_crc32(&cues, mkv);
         if (ret < 0)
             return ret;
 
         ret = mkv_assemble_cues(s->streams, cues, &mkv->cues,
-                                mkv->tracks, s->nb_streams);
+                                mkv->tracks, s->nb_streams, offset);
         if (ret < 0) {
             ffio_free_dyn_buf(&cues);
             return ret;
         }
 
-        if (mkv->reserve_cues_space) {
+        if (mkv->reserve_cues_space || mkv->move_cues_to_front) {
             size  = avio_tell(cues);
             length_size = ebml_length_size(size);
             size += 4 + length_size;
-            if (mkv->reserve_cues_space < size) {
+            if (offset + mkv->reserve_cues_space < size) {
+                if (mkv->move_cues_to_front) {
+                    offset = size - mkv->reserve_cues_space;
+                    ffio_reset_dyn_buf(cues);
+                    goto redo_cues;
+                }
                 av_log(s, AV_LOG_WARNING,
                        "Insufficient space reserved for Cues: "
                        "%d < %"PRIu64". No Cues will be output.\n",
@@ -2601,6 +2611,15 @@ static int mkv_write_trailer(AVFormatContext *s)
                 ret2 = AVERROR(EINVAL);
                 goto after_cues;
             } else {
+                if (offset) {
+                    ret = ff_format_shift_data(s, mkv->cues_pos + mkv->reserve_cues_space,
+                                               offset);
+                    if (ret < 0) {
+                        ffio_free_dyn_buf(&cues);
+                        return ret;
+                    }
+                    endpos += offset;
+                }
                 if ((ret64 = avio_seek(pb, mkv->cues_pos, SEEK_SET)) < 0) {
                     ffio_free_dyn_buf(&cues);
                     return ret64;
@@ -2623,7 +2642,7 @@ static int mkv_write_trailer(AVFormatContext *s)
         if (mkv->reserve_cues_space) {
             if (size < mkv->reserve_cues_space)
                 put_ebml_void(pb, mkv->reserve_cues_space - size);
-        } else
+        } else if (!mkv->move_cues_to_front)
             endpos = avio_tell(pb);
     }
 
@@ -2848,6 +2867,7 @@ static const AVCodecTag additional_subtitle_tags[] = {
 #define FLAGS AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "reserve_index_space", "Reserve a given amount of space (in bytes) at the beginning of the file for the index (cues).", OFFSET(reserve_cues_space), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX,   FLAGS },
+    { "cues_to_front", "Move Cues (the index) to the front by shifting data if necessary", OFFSET(move_cues_to_front), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, FLAGS },
     { "cluster_size_limit",  "Store at most the provided amount of bytes in a cluster. ",                                     OFFSET(cluster_size_limit), AV_OPT_TYPE_INT  , { .i64 = -1 }, -1, INT_MAX,   FLAGS },
     { "cluster_time_limit",  "Store at most the provided number of milliseconds in a cluster.",                               OFFSET(cluster_time_limit), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, FLAGS },
     { "dash", "Create a WebM file conforming to WebM DASH specification", OFFSET(is_dash), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
