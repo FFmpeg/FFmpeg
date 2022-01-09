@@ -91,7 +91,7 @@ static int amr_read_header(AVFormatContext *s)
 
     read = avio_read(pb, header, sizeof(header));
     if (read < 0)
-        return ret;
+        return read;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
