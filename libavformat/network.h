@@ -271,7 +271,8 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
  * @param addrlen Third argument of bind().
  * @return        0 on success or an AVERROR on failure.
  */
-int ff_listen(int fd, const struct sockaddr *addr, socklen_t addrlen);
+int ff_listen(int fd, const struct sockaddr *addr, socklen_t addrlen,
+              void *logctx);
 
 /**
  * Poll for a single connection on the passed file descriptor.

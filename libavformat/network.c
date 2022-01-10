@@ -208,12 +208,12 @@ int ff_socket(int af, int type, int proto, void *logctx)
 }
 
 int ff_listen(int fd, const struct sockaddr *addr,
-              socklen_t addrlen)
+              socklen_t addrlen, void *logctx)
 {
     int ret;
     int reuse = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse))) {
-        av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_REUSEADDR) failed\n");
+        av_log(logctx, AV_LOG_WARNING, "setsockopt(SO_REUSEADDR) failed\n");
     }
     ret = bind(fd, addr, addrlen);
     if (ret)
@@ -247,7 +247,7 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
                    socklen_t addrlen, int timeout, URLContext *h)
 {
     int ret;
-    if ((ret = ff_listen(fd, addr, addrlen)) < 0)
+    if ((ret = ff_listen(fd, addr, addrlen, h)) < 0)
         return ret;
     if ((ret = ff_accept(fd, timeout, h)) < 0)
         return ret;
