@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2021 Wu Jianhua <jianhua.wu@intel.com>
+ * copyright (c) 2021-2022 Wu Jianhua <jianhua.wu@intel.com>
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -42,39 +42,25 @@ typedef struct GBlurVulkanContext {
 
     int initialized;
     int size;
+    int sizeV;
     int planes;
-    int kernel_size;
     float sigma;
     float sigmaV;
     AVFrame *tmpframe;
 } GBlurVulkanContext;
 
-static const char gblur_horizontal[] = {
-    C(0, void gblur(const ivec2 pos, const int index)                                  )
-    C(0, {                                                                             )
-    C(1,     vec4 sum = texture(input_image[index], pos) * kernel[0];                  )
-    C(0,                                                                               )
-    C(1,     for(int i = 1; i < kernel.length(); i++) {                                )
-    C(2,         sum += texture(input_image[index], pos + vec2(i, 0.0)) * kernel[i];   )
-    C(2,         sum += texture(input_image[index], pos - vec2(i, 0.0)) * kernel[i];   )
-    C(1,     }                                                                         )
-    C(0,                                                                               )
-    C(1,     imageStore(output_image[index], pos, sum);                                )
-    C(0, }                                                                             )
-};
-
-static const char gblur_vertical[] = {
-    C(0, void gblur(const ivec2 pos, const int index)                                  )
-    C(0, {                                                                             )
-    C(1,     vec4 sum = texture(input_image[index], pos) * kernel[0];                  )
-    C(0,                                                                               )
-    C(1,     for(int i = 1; i < kernel.length(); i++) {                                )
-    C(2,         sum += texture(input_image[index], pos + vec2(0.0, i)) * kernel[i];   )
-    C(2,         sum += texture(input_image[index], pos - vec2(0.0, i)) * kernel[i];   )
-    C(1,     }                                                                         )
-    C(0,                                                                               )
-    C(1,     imageStore(output_image[index], pos, sum);                                )
-    C(0, }                                                                             )
+static const char gblur_func[] = {
+    C(0, void gblur(const ivec2 pos, const int index)                           )
+    C(0, {                                                                      )
+    C(1,     vec4 sum = texture(input_images[index], pos) * kernel[0];          )
+    C(0,                                                                        )
+    C(1,     for(int i = 1; i < kernel.length(); i++) {                         )
+    C(2,         sum += texture(input_images[index], pos + OFFSET) * kernel[i]; )
+    C(2,         sum += texture(input_images[index], pos - OFFSET) * kernel[i]; )
+    C(1,     }                                                                  )
+    C(0,                                                                        )
+    C(1,     imageStore(output_images[index], pos, sum);                        )
+    C(0, }                                                                      )
 };
 
 static inline float gaussian(float sigma, float x)
@@ -109,46 +95,41 @@ static void init_gaussian_kernel(float *kernel, float sigma, float kernel_size)
     }
 }
 
+static inline void init_kernel_size(GBlurVulkanContext *s, int *out_size)
+{
+    int size = *out_size;
+
+    if (!(size & 1)) {
+        av_log(s, AV_LOG_WARNING, "The kernel size should be odd\n");
+        size++;
+    }
+
+    *out_size = (size >> 1) + 1;
+}
+
 static av_cold void init_gaussian_params(GBlurVulkanContext *s)
 {
-    if (!(s->size & 1)) {
-        av_log(s, AV_LOG_WARNING, "kernel size should be odd\n");
-        s->size++;
-    }
     if (s->sigmaV <= 0)
         s->sigmaV = s->sigma;
 
-    s->kernel_size = (s->size >> 1) + 1;
+    init_kernel_size(s, &s->size);
+
+    if (s->sizeV <= 0)
+        s->sizeV = s->size;
+    else
+        init_kernel_size(s, &s->sizeV);
+
     s->tmpframe = NULL;
 }
 
-static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
+static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl, FFVkSPIRVShader *shd,
+                               FFVkBuffer *params_buf, VkDescriptorBufferInfo *params_desc,
+                               int ksize, float sigma)
 {
     int err = 0;
-    char *kernel_def;
     uint8_t *kernel_mapped;
-    FFVkSPIRVShader *shd;
-    GBlurVulkanContext *s = ctx->priv;
-    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    FFVulkanDescriptorSetBinding image_descs[] = {
-        {
-            .name       = "input_image",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-        {
-            .name       = "output_image",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-    };
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
     FFVulkanDescriptorSetBinding buf_desc = {
         .name        = "data",
@@ -160,24 +141,95 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         .buf_content = NULL,
     };
 
-    image_descs[0].sampler = ff_vk_init_sampler(&s->vkctx, 1, VK_FILTER_LINEAR);
-    if (!image_descs[0].sampler)
-            return AVERROR_EXTERNAL;
-
-    init_gaussian_params(s);
-
-    kernel_def = av_asprintf("float kernel[%i];", s->kernel_size);
+    char *kernel_def = av_asprintf("float kernel[%i];", ksize);
     if (!kernel_def)
         return AVERROR(ENOMEM);
 
+    buf_desc.updater = params_desc;
     buf_desc.buf_content = kernel_def;
+
+    RET(ff_vk_add_descriptor_set(&s->vkctx, pl, shd, &buf_desc, 1, 0));
+
+    GLSLD(   gblur_func                                               );
+    GLSLC(0, void main()                                              );
+    GLSLC(0, {                                                        );
+    GLSLC(1,     ivec2 size;                                          );
+    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);   );
+    for (int i = 0; i < planes; i++) {
+        GLSLC(0,                                                      );
+        GLSLF(1,  size = imageSize(output_images[%i]);               ,i);
+        GLSLC(1,  if (IS_WITHIN(pos, size)) {                         );
+        if (s->planes & (1 << i)) {
+            GLSLF(2,      gblur(pos, %i);                           ,i);
+        } else {
+            GLSLF(2, vec4 res = texture(input_images[%i], pos);      ,i);
+            GLSLF(2, imageStore(output_images[%i], pos, res);        ,i);
+        }
+        GLSLC(1, }                                                    );
+    }
+    GLSLC(0, }                                                        );
+
+    RET(ff_vk_compile_shader(&s->vkctx, shd, "main"));
+
+    RET(ff_vk_init_pipeline_layout(&s->vkctx, pl));
+    RET(ff_vk_init_compute_pipeline(&s->vkctx, pl));
+
+    RET(ff_vk_create_buf(&s->vkctx, params_buf, sizeof(float) * ksize,
+                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+    RET(ff_vk_map_buffers(&s->vkctx, params_buf, &kernel_mapped, 1, 0));
+
+    init_gaussian_kernel((float *)kernel_mapped, sigma, ksize);
+
+    RET(ff_vk_unmap_buffers(&s->vkctx, params_buf, 1, 1));
+
+    params_desc->buffer = params_buf->buf;
+    params_desc->range  = VK_WHOLE_SIZE;
+
+    ff_vk_update_descriptor_set(&s->vkctx, pl, 1);
+
+fail:
+    av_free(kernel_def);
+    return err;
+}
+
+static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
+{
+    int err = 0;
+    GBlurVulkanContext *s = ctx->priv;
+    FFVkSPIRVShader *shd;
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+
+    FFVulkanDescriptorSetBinding image_descs[] = {
+        {
+            .name       = "input_images",
+            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .dimensions = 2,
+            .elems      = planes,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+        {
+            .name       = "output_images",
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format),
+            .mem_quali  = "writeonly",
+            .dimensions = 2,
+            .elems      = planes,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+
+    image_descs[0].sampler = ff_vk_init_sampler(&s->vkctx, 1, VK_FILTER_LINEAR);
+    if (!image_descs[0].sampler)
+        return AVERROR_EXTERNAL;
+
+    init_gaussian_params(s);
 
     ff_vk_qf_init(&s->vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT, 0);
 
-    { /* Create shader for the horizontal pass */
+    {
+        /* Create shader for the horizontal pass */
         image_descs[0].updater = s->input_images;
         image_descs[1].updater = s->tmp_images;
-        buf_desc.updater = &s->params_desc_hor;
 
         s->pl_hor = ff_vk_create_pipeline(&s->vkctx, &s->qf);
         if (!s->pl_hor) {
@@ -191,52 +243,18 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             goto fail;
         }
 
-        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, CGS, 1 });
+        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, 1, 1 });
         RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_hor, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
-        RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_hor, shd, &buf_desc, 1, 0));
 
-        GLSLD(   gblur_horizontal                                         );
-        GLSLC(0, void main()                                              );
-        GLSLC(0, {                                                        );
-        GLSLC(1,     ivec2 size;                                          );
-        GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);   );
-        for (int i = 0; i < planes; i++) {
-            GLSLC(0,                                                      );
-            GLSLF(1,  size = imageSize(output_image[%i]);               ,i);
-            GLSLC(1,  if (IS_WITHIN(pos, size)) {                         );
-            if (s->planes & (1 << i)) {
-                GLSLF(2,      gblur(pos, %i);                           ,i);
-            } else {
-                GLSLF(2, vec4 res = texture(input_image[%i], pos);      ,i);
-                GLSLF(2, imageStore(output_image[%i], pos, res);        ,i);
-            }
-            GLSLC(1, }                                                    );
-        }
-        GLSLC(0, }                                                        );
-
-        RET(ff_vk_compile_shader(&s->vkctx, shd, "main"));
-
-        RET(ff_vk_init_pipeline_layout(&s->vkctx, s->pl_hor));
-        RET(ff_vk_init_compute_pipeline(&s->vkctx, s->pl_hor));
-
-        RET(ff_vk_create_buf(&s->vkctx, &s->params_buf_hor, sizeof(float) * s->kernel_size,
-                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-        RET(ff_vk_map_buffers(&s->vkctx, &s->params_buf_hor, &kernel_mapped, 1, 0));
-
-        init_gaussian_kernel((float *)kernel_mapped, s->sigma, s->kernel_size);
-
-        RET(ff_vk_unmap_buffers(&s->vkctx, &s->params_buf_hor, 1, 1));
-
-        s->params_desc_hor.buffer = s->params_buf_hor.buf;
-        s->params_desc_hor.range  = VK_WHOLE_SIZE;
-
-        ff_vk_update_descriptor_set(&s->vkctx, s->pl_hor, 1);
+        GLSLC(0, #define OFFSET (vec2(i, 0.0)));
+        RET(init_gblur_pipeline(s, s->pl_hor, shd, &s->params_buf_hor, &s->params_desc_hor,
+                                s->size, s->sigma));
     }
 
-    { /* Create shader for the vertical pass */
+    {
+        /* Create shader for the vertical pass */
         image_descs[0].updater = s->tmp_images;
         image_descs[1].updater = s->output_images;
-        buf_desc.updater = &s->params_desc_ver;
 
         s->pl_ver = ff_vk_create_pipeline(&s->vkctx, &s->qf);
         if (!s->pl_ver) {
@@ -250,46 +268,12 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             goto fail;
         }
 
-        ff_vk_set_compute_shader_sizes(shd, (int [3]){ CGS, CGS, 1 });
+        ff_vk_set_compute_shader_sizes(shd, (int [3]){ 1, CGS, 1 });
         RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_ver, shd, image_descs, FF_ARRAY_ELEMS(image_descs), 0));
-        RET(ff_vk_add_descriptor_set(&s->vkctx, s->pl_ver, shd, &buf_desc, 1, 0));
 
-        GLSLD(   gblur_vertical                                           );
-        GLSLC(0, void main()                                              );
-        GLSLC(0, {                                                        );
-        GLSLC(1,     ivec2 size;                                          );
-        GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);   );
-        for (int i = 0; i < planes; i++) {
-            GLSLC(0,                                                      );
-            GLSLF(1,  size = imageSize(output_image[%i]);               ,i);
-            GLSLC(1,  if (IS_WITHIN(pos, size)) {                         );
-            if (s->planes & (1 << i)) {
-                GLSLF(2,      gblur(pos, %i);                           ,i);
-            } else {
-                GLSLF(2, vec4 res = texture(input_image[%i], pos);      ,i);
-                GLSLF(2, imageStore(output_image[%i], pos, res);        ,i);
-            }
-            GLSLC(1, }                                                    );
-        }
-        GLSLC(0, }                                                        );
-
-        RET(ff_vk_compile_shader(&s->vkctx, shd, "main"));
-
-        RET(ff_vk_init_pipeline_layout(&s->vkctx, s->pl_ver));
-        RET(ff_vk_init_compute_pipeline(&s->vkctx, s->pl_ver));
-
-        RET(ff_vk_create_buf(&s->vkctx, &s->params_buf_ver, sizeof(float) * s->kernel_size,
-                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-        RET(ff_vk_map_buffers(&s->vkctx, &s->params_buf_ver, &kernel_mapped, 1, 0));
-
-        init_gaussian_kernel((float *)kernel_mapped, s->sigmaV, s->kernel_size);
-
-        RET(ff_vk_unmap_buffers(&s->vkctx, &s->params_buf_ver, 1, 1));
-
-        s->params_desc_ver.buffer = s->params_buf_ver.buf;
-        s->params_desc_ver.range  = VK_WHOLE_SIZE;
-
-        ff_vk_update_descriptor_set(&s->vkctx, s->pl_ver, 1);
+        GLSLC(0, #define OFFSET (vec2(0.0, i)));
+        RET(init_gblur_pipeline(s, s->pl_ver, shd, &s->params_buf_ver, &s->params_desc_ver,
+                                s->sizeV, s->sigmaV));
     }
 
     RET(ff_vk_create_exec_ctx(&s->vkctx, &s->exec, &s->qf));
@@ -297,7 +281,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     s->initialized = 1;
 
 fail:
-    av_free(kernel_def);
     return err;
 }
 
@@ -318,22 +301,21 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
 {
     int err;
     VkCommandBuffer cmd_buf;
-
-    const VkFormat *input_formats = NULL;
-    const VkFormat *output_formats = NULL;
     GBlurVulkanContext *s = avctx->priv;
     FFVulkanFunctions *vk = &s->vkctx.vkfn;
-    AVVkFrame *in = (AVVkFrame *)inframe->data[0];
-    AVVkFrame *tmp = (AVVkFrame *)s->tmpframe->data[0];
-    AVVkFrame *out = (AVVkFrame *)outframe->data[0];
 
-    int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+
+    AVVkFrame *in  = (AVVkFrame *)inframe->data[0];
+    AVVkFrame *out = (AVVkFrame *)outframe->data[0];
+    AVVkFrame *tmp = (AVVkFrame *)s->tmpframe->data[0];
+
+    const VkFormat *input_formats  = av_vkfmt_from_pixfmt(s->vkctx.input_format);
+    const VkFormat *output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
 
     ff_vk_start_exec_recording(&s->vkctx, s->exec);
     cmd_buf = ff_vk_get_exec_buf(s->exec);
 
-    input_formats = av_vkfmt_from_pixfmt(s->vkctx.input_format);
-    output_formats = av_vkfmt_from_pixfmt(s->vkctx.output_format);
     for (int i = 0; i < planes; i++) {
         RET(ff_vk_create_imageview(&s->vkctx, s->exec, &s->input_images[i].imageView,
                                    in->img[i],
@@ -418,11 +400,11 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
     ff_vk_bind_pipeline_exec(&s->vkctx, s->exec, s->pl_hor);
 
     vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
-                    FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
+                    s->vkctx.output_height, 1);
 
     ff_vk_bind_pipeline_exec(&s->vkctx, s->exec, s->pl_ver);
 
-    vk->CmdDispatch(cmd_buf, FFALIGN(s->vkctx.output_width, CGS)/CGS,
+    vk->CmdDispatch(cmd_buf,s->vkctx.output_width,
                     FFALIGN(s->vkctx.output_height, CGS)/CGS, 1);
 
     ff_vk_add_exec_dep(&s->vkctx, s->exec, inframe, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
@@ -435,6 +417,7 @@ static int process_frames(AVFilterContext *avctx, AVFrame *outframe, AVFrame *in
     ff_vk_qf_rotate(&s->qf);
 
     return 0;
+
 fail:
     ff_vk_discard_exec_deps(s->exec);
     return err;
@@ -482,10 +465,11 @@ fail:
 #define OFFSET(x) offsetof(GBlurVulkanContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption gblur_vulkan_options[] = {
-    { "sigma",  "Set sigma",            OFFSET(sigma),  AV_OPT_TYPE_FLOAT, {.dbl = 0.5}, 0.01, 1024.0,                FLAGS },
-    { "sigmaV", "Set vertical sigma",   OFFSET(sigmaV), AV_OPT_TYPE_FLOAT, {.dbl = 0},   0.0,  1024.0,                FLAGS },
-    { "planes", "Set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64 = 0xF}, 0,    0xF,                   FLAGS },
-    { "size",   "Set kernel size",      OFFSET(size),   AV_OPT_TYPE_INT,   {.i64 = 19},  1,    GBLUR_MAX_KERNEL_SIZE, FLAGS },
+    { "sigma",  "Set sigma",                OFFSET(sigma),  AV_OPT_TYPE_FLOAT, { .dbl = 0.5 }, 0.01, 1024.0,                FLAGS },
+    { "sigmaV", "Set vertical sigma",       OFFSET(sigmaV), AV_OPT_TYPE_FLOAT, { .dbl = 0   }, 0.0,  1024.0,                FLAGS },
+    { "planes", "Set planes to filter",     OFFSET(planes), AV_OPT_TYPE_INT,   { .i64 = 0xF }, 0,    0xF,                   FLAGS },
+    { "size",   "Set kernel size",          OFFSET(size),   AV_OPT_TYPE_INT,   { .i64 = 19  }, 1,    GBLUR_MAX_KERNEL_SIZE, FLAGS },
+    { "sizeV",  "Set vertical kernel size", OFFSET(sizeV),  AV_OPT_TYPE_INT,   { .i64 = 0   }, 0,    GBLUR_MAX_KERNEL_SIZE, FLAGS },
     { NULL },
 };
 
