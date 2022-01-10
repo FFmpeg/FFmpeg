@@ -59,6 +59,9 @@ fate-filter-paletteuse-nodither: CMD = framecrc -auto_conversion_filters -i $(TA
 FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-bayer
 fate-filter-paletteuse-bayer: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=bayer -pix_fmt bgra
 
+FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-bayer0
+fate-filter-paletteuse-bayer0: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=bayer:bayer_scale=0 -pix_fmt bgra
+
 FATE_FILTER_PALETTEUSE += fate-filter-paletteuse-sierra2_4a
 fate-filter-paletteuse-sierra2_4a: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/filter/anim.mkv -i $(TARGET_SAMPLES)/filter/anim-palette.png -lavfi paletteuse=sierra2_4a:diff_mode=rectangle -pix_fmt bgra
 

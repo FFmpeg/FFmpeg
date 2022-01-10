@@ -423,7 +423,8 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 const uint8_t r = av_clip_uint8(r8 + d);
                 const uint8_t g = av_clip_uint8(g8 + d);
                 const uint8_t b = av_clip_uint8(b8 + d);
-                const int color = color_get(s, src[x], a8, r, g, b, search_method);
+                const uint32_t color_new = (unsigned)(a8) << 24 | r << 16 | g << 8 | b;
+                const int color = color_get(s, color_new, a8, r, g, b, search_method);
 
                 if (color < 0)
                     return color;
