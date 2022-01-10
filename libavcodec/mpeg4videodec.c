@@ -3276,62 +3276,63 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
             continue;  // no startcode
 
         if (s->avctx->debug & FF_DEBUG_STARTCODE) {
-            av_log(s->avctx, AV_LOG_DEBUG, "startcode: %3X ", startcode);
+            const char *name;
             if (startcode <= 0x11F)
-                av_log(s->avctx, AV_LOG_DEBUG, "Video Object Start");
+                name = "Video Object Start";
             else if (startcode <= 0x12F)
-                av_log(s->avctx, AV_LOG_DEBUG, "Video Object Layer Start");
+                name = "Video Object Layer Start";
             else if (startcode <= 0x13F)
-                av_log(s->avctx, AV_LOG_DEBUG, "Reserved");
+                name = "Reserved";
             else if (startcode <= 0x15F)
-                av_log(s->avctx, AV_LOG_DEBUG, "FGS bp start");
+                name = "FGS bp start";
             else if (startcode <= 0x1AF)
-                av_log(s->avctx, AV_LOG_DEBUG, "Reserved");
+                name = "Reserved";
             else if (startcode == 0x1B0)
-                av_log(s->avctx, AV_LOG_DEBUG, "Visual Object Seq Start");
+                name = "Visual Object Seq Start";
             else if (startcode == 0x1B1)
-                av_log(s->avctx, AV_LOG_DEBUG, "Visual Object Seq End");
+                name = "Visual Object Seq End";
             else if (startcode == 0x1B2)
-                av_log(s->avctx, AV_LOG_DEBUG, "User Data");
+                name = "User Data";
             else if (startcode == 0x1B3)
-                av_log(s->avctx, AV_LOG_DEBUG, "Group of VOP start");
+                name = "Group of VOP start";
             else if (startcode == 0x1B4)
-                av_log(s->avctx, AV_LOG_DEBUG, "Video Session Error");
+                name = "Video Session Error";
             else if (startcode == 0x1B5)
-                av_log(s->avctx, AV_LOG_DEBUG, "Visual Object Start");
+                name = "Visual Object Start";
             else if (startcode == 0x1B6)
-                av_log(s->avctx, AV_LOG_DEBUG, "Video Object Plane start");
+                name = "Video Object Plane start";
             else if (startcode == 0x1B7)
-                av_log(s->avctx, AV_LOG_DEBUG, "slice start");
+                name = "slice start";
             else if (startcode == 0x1B8)
-                av_log(s->avctx, AV_LOG_DEBUG, "extension start");
+                name = "extension start";
             else if (startcode == 0x1B9)
-                av_log(s->avctx, AV_LOG_DEBUG, "fgs start");
+                name = "fgs start";
             else if (startcode == 0x1BA)
-                av_log(s->avctx, AV_LOG_DEBUG, "FBA Object start");
+                name = "FBA Object start";
             else if (startcode == 0x1BB)
-                av_log(s->avctx, AV_LOG_DEBUG, "FBA Object Plane start");
+                name = "FBA Object Plane start";
             else if (startcode == 0x1BC)
-                av_log(s->avctx, AV_LOG_DEBUG, "Mesh Object start");
+                name = "Mesh Object start";
             else if (startcode == 0x1BD)
-                av_log(s->avctx, AV_LOG_DEBUG, "Mesh Object Plane start");
+                name = "Mesh Object Plane start";
             else if (startcode == 0x1BE)
-                av_log(s->avctx, AV_LOG_DEBUG, "Still Texture Object start");
+                name = "Still Texture Object start";
             else if (startcode == 0x1BF)
-                av_log(s->avctx, AV_LOG_DEBUG, "Texture Spatial Layer start");
+                name = "Texture Spatial Layer start";
             else if (startcode == 0x1C0)
-                av_log(s->avctx, AV_LOG_DEBUG, "Texture SNR Layer start");
+                name = "Texture SNR Layer start";
             else if (startcode == 0x1C1)
-                av_log(s->avctx, AV_LOG_DEBUG, "Texture Tile start");
+                name = "Texture Tile start";
             else if (startcode == 0x1C2)
-                av_log(s->avctx, AV_LOG_DEBUG, "Texture Shape Layer start");
+                name = "Texture Shape Layer start";
             else if (startcode == 0x1C3)
-                av_log(s->avctx, AV_LOG_DEBUG, "stuffing start");
+                name = "stuffing start";
             else if (startcode <= 0x1C5)
-                av_log(s->avctx, AV_LOG_DEBUG, "reserved");
+                name = "Reserved";
             else if (startcode <= 0x1FF)
-                av_log(s->avctx, AV_LOG_DEBUG, "System start");
-            av_log(s->avctx, AV_LOG_DEBUG, " at %d\n", get_bits_count(gb));
+                name = "System start";
+            av_log(s->avctx, AV_LOG_DEBUG, "startcode: %3X %s at %d\n",
+                   startcode, name, get_bits_count(gb));
         }
 
         if (startcode >= 0x120 && startcode <= 0x12F) {
