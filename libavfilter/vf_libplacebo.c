@@ -390,7 +390,7 @@ fail:
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    int err, changed;
+    int err, changed_csp;
     AVFilterContext *ctx = link->dst;
     LibplaceboContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -426,21 +426,24 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
 
-    RET(process_frames(ctx, out, in));
+    changed_csp = in->colorspace      != out->colorspace     ||
+                  in->color_range     != out->color_range    ||
+                  in->color_trc       != out->color_trc      ||
+                  in->color_primaries != out->color_primaries;
 
-    int changed_csp = s->colorspace      != out->colorspace     ||
-                      s->color_range     != out->color_range    ||
-                      s->color_trc       != out->color_trc      ||
-                      s->color_primaries != out->color_primaries;
-
+    /* Strip side data if no longer relevant */
+    if (changed_csp) {
+        av_frame_remove_side_data(out, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+        av_frame_remove_side_data(out, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    }
     if (s->apply_dovi || changed_csp) {
-        /* Strip side data if no longer relevant */
         av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_RPU_BUFFER);
         av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_METADATA);
     }
-
     if (s->apply_filmgrain)
         av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+
+    RET(process_frames(ctx, out, in));
 
     av_frame_free(&in);
 
