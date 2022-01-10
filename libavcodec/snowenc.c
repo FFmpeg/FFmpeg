@@ -1858,7 +1858,7 @@ redo_frame:
 
     ff_side_data_set_encoder_stats(pkt, s->current_picture->quality,
                                    s->encoding_error,
-                                   (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? 4 : 0,
+                                   (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? SNOW_MAX_PLANES : 0,
                                    s->current_picture->pict_type);
 
     pkt->size = ff_rac_terminate(c, 0);
