@@ -98,7 +98,6 @@ typedef struct SVQ3Context {
     int has_watermark;
     uint32_t watermark_key;
     int adaptive_quant;
-    int next_p_frame_damaged;
     int h_edge_pos;
     int v_edge_pos;
     int last_frame_output;
@@ -1469,13 +1468,6 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I ||
         avctx->skip_frame >= AVDISCARD_ALL)
         return 0;
-
-    if (s->next_p_frame_damaged) {
-        if (s->pict_type == AV_PICTURE_TYPE_B)
-            return 0;
-        else
-            s->next_p_frame_damaged = 0;
-    }
 
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         s->frame_num_offset = s->slice_num - s->prev_frame_num;

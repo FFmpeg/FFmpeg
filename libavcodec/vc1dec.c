@@ -872,13 +872,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
     }
 
-    if (s->next_p_frame_damaged) {
-        if (s->pict_type == AV_PICTURE_TYPE_B)
-            goto end;
-        else
-            s->next_p_frame_damaged = 0;
-    }
-
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0) {
         goto err;
     }

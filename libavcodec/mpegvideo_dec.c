@@ -132,7 +132,6 @@ do {\
     s->next_picture_ptr    = REBASE_PICTURE(s1->next_picture_ptr,    s, s1);
 
     // Error/bug resilience
-    s->next_p_frame_damaged = s1->next_p_frame_damaged;
     s->workaround_bugs      = s1->workaround_bugs;
     s->padding_bug_score    = s1->padding_bug_score;
 
