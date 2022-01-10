@@ -178,7 +178,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     ifilter->graph  = fg;
     ifilter->format = -1;
 
-    ifilter->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
+    ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifilter->frame_queue)
         exit_program(1);
 
@@ -286,7 +286,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ifilter->type   = ist->st->codecpar->codec_type;
     ifilter->name   = describe_filter_link(fg, in, 1);
 
-    ifilter->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
+    ifilter->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifilter->frame_queue)
         exit_program(1);
 
@@ -1106,9 +1106,8 @@ int configure_filtergraph(FilterGraph *fg)
     }
 
     for (i = 0; i < fg->nb_inputs; i++) {
-        while (av_fifo_size(fg->inputs[i]->frame_queue)) {
-            AVFrame *tmp;
-            av_fifo_generic_read(fg->inputs[i]->frame_queue, &tmp, sizeof(tmp), NULL);
+        AVFrame *tmp;
+        while (av_fifo_read(fg->inputs[i]->frame_queue, &tmp, 1) >= 0) {
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
             av_frame_free(&tmp);
             if (ret < 0)
@@ -1129,9 +1128,8 @@ int configure_filtergraph(FilterGraph *fg)
     for (i = 0; i < fg->nb_inputs; i++) {
         InputStream *ist = fg->inputs[i]->ist;
         if (ist->sub2video.sub_queue && ist->sub2video.frame) {
-            while (av_fifo_size(ist->sub2video.sub_queue)) {
-                AVSubtitle tmp;
-                av_fifo_generic_read(ist->sub2video.sub_queue, &tmp, sizeof(tmp), NULL);
+            AVSubtitle tmp;
+            while (av_fifo_read(ist->sub2video.sub_queue, &tmp, 1) >= 0) {
                 sub2video_update(ist, INT64_MIN, &tmp);
                 avsubtitle_free(&tmp);
             }

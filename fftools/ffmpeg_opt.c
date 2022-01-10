@@ -1589,8 +1589,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     ost->max_muxing_queue_size = 128;
     MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, ost->max_muxing_queue_size, oc, st);
-    ost->max_muxing_queue_size = FFMIN(ost->max_muxing_queue_size, INT_MAX / sizeof(ost->pkt));
-    ost->max_muxing_queue_size *= sizeof(ost->pkt);
 
     ost->muxing_queue_data_size = 0;
 
@@ -1617,7 +1615,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     }
     ost->last_mux_dts = AV_NOPTS_VALUE;
 
-    ost->muxing_queue = av_fifo_alloc(8 * sizeof(AVPacket));
+    ost->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
     if (!ost->muxing_queue)
         exit_program(1);
 

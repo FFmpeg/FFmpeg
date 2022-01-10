@@ -241,7 +241,7 @@ typedef struct InputFilter {
     uint8_t            *name;
     enum AVMediaType    type;   // AVMEDIA_TYPE_SUBTITLE for sub2video
 
-    AVFifoBuffer *frame_queue;
+    AVFifo *frame_queue;
 
     // parameters configured for this input
     int format;
@@ -355,7 +355,7 @@ typedef struct InputStream {
     struct sub2video {
         int64_t last_pts;
         int64_t end_pts;
-        AVFifoBuffer *sub_queue;    ///< queue of AVSubtitle* before filter init
+        AVFifo *sub_queue;    ///< queue of AVSubtitle* before filter init
         AVFrame *frame;
         int w, h;
         unsigned int initialize; ///< marks if sub2video_update should force an initialization
@@ -555,7 +555,7 @@ typedef struct OutputStream {
     int max_muxing_queue_size;
 
     /* the packets are buffered here until the muxer is ready to be initialized */
-    AVFifoBuffer *muxing_queue;
+    AVFifo *muxing_queue;
 
     /*
      * The size of the AVPackets' buffers in queue.

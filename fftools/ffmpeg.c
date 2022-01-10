@@ -527,23 +527,17 @@ static void ffmpeg_cleanup(int ret)
         for (j = 0; j < fg->nb_inputs; j++) {
             InputFilter *ifilter = fg->inputs[j];
             struct InputStream *ist = ifilter->ist;
+            AVFrame *frame;
 
-            while (av_fifo_size(ifilter->frame_queue)) {
-                AVFrame *frame;
-                av_fifo_generic_read(ifilter->frame_queue, &frame,
-                                     sizeof(frame), NULL);
+            while (av_fifo_read(ifilter->frame_queue, &frame, 1) >= 0)
                 av_frame_free(&frame);
-            }
-            av_fifo_freep(&ifilter->frame_queue);
+            av_fifo_freep2(&ifilter->frame_queue);
             av_freep(&ifilter->displaymatrix);
             if (ist->sub2video.sub_queue) {
-                while (av_fifo_size(ist->sub2video.sub_queue)) {
-                    AVSubtitle sub;
-                    av_fifo_generic_read(ist->sub2video.sub_queue,
-                                         &sub, sizeof(sub), NULL);
+                AVSubtitle sub;
+                while (av_fifo_read(ist->sub2video.sub_queue, &sub, 1) >= 0)
                     avsubtitle_free(&sub);
-                }
-                av_fifo_freep(&ist->sub2video.sub_queue);
+                av_fifo_freep2(&ist->sub2video.sub_queue);
             }
             av_buffer_unref(&ifilter->hw_frames_ctx);
             av_freep(&ifilter->name);
@@ -608,12 +602,10 @@ static void ffmpeg_cleanup(int ret)
         avcodec_parameters_free(&ost->ref_par);
 
         if (ost->muxing_queue) {
-            while (av_fifo_size(ost->muxing_queue)) {
-                AVPacket *pkt;
-                av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
+            AVPacket *pkt;
+            while (av_fifo_read(ost->muxing_queue, &pkt, 1) >= 0)
                 av_packet_free(&pkt);
-            }
-            av_fifo_freep(&ost->muxing_queue);
+            av_fifo_freep2(&ost->muxing_queue);
         }
 
         av_freep(&output_streams[i]);
@@ -749,11 +741,11 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
     if (!of->header_written) {
         AVPacket *tmp_pkt;
         /* the muxer is not initialized yet, buffer the packet */
-        if (!av_fifo_space(ost->muxing_queue)) {
-            size_t cur_size = av_fifo_size(ost->muxing_queue);
+        if (!av_fifo_can_write(ost->muxing_queue)) {
+            size_t cur_size = av_fifo_can_read(ost->muxing_queue);
             unsigned int are_we_over_size =
                 (ost->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
-            size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : INT_MAX;
+            size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
             size_t new_size = FFMIN(2 * cur_size, limit);
 
             if (new_size <= cur_size) {
@@ -762,7 +754,7 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
                        ost->file_index, ost->st->index);
                 exit_program(1);
             }
-            ret = av_fifo_realloc2(ost->muxing_queue, new_size);
+            ret = av_fifo_grow2(ost->muxing_queue, new_size - cur_size);
             if (ret < 0)
                 exit_program(1);
         }
@@ -774,7 +766,7 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
             exit_program(1);
         av_packet_move_ref(tmp_pkt, pkt);
         ost->muxing_queue_data_size += tmp_pkt->size;
-        av_fifo_generic_write(ost->muxing_queue, &tmp_pkt, sizeof(tmp_pkt), NULL);
+        av_fifo_write(ost->muxing_queue, &tmp_pkt, 1);
         return;
     }
 
@@ -2195,15 +2187,11 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_ref
             if (!tmp)
                 return AVERROR(ENOMEM);
 
-            if (!av_fifo_space(ifilter->frame_queue)) {
-                ret = av_fifo_realloc2(ifilter->frame_queue, 2 * av_fifo_size(ifilter->frame_queue));
-                if (ret < 0) {
-                    av_frame_free(&tmp);
-                    return ret;
-                }
-            }
-            av_fifo_generic_write(ifilter->frame_queue, &tmp, sizeof(tmp), NULL);
-            return 0;
+            ret = av_fifo_write(ifilter->frame_queue, &tmp, 1);
+            if (ret < 0)
+                av_frame_free(&tmp);
+
+            return ret;
         }
 
         ret = reap_filters(1);
@@ -2526,15 +2514,13 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
         sub2video_update(ist, INT64_MIN, &subtitle);
     } else if (ist->nb_filters) {
         if (!ist->sub2video.sub_queue)
-            ist->sub2video.sub_queue = av_fifo_alloc(8 * sizeof(AVSubtitle));
+            ist->sub2video.sub_queue = av_fifo_alloc2(8, sizeof(AVSubtitle), AV_FIFO_FLAG_AUTO_GROW);
         if (!ist->sub2video.sub_queue)
             exit_program(1);
-        if (!av_fifo_space(ist->sub2video.sub_queue)) {
-            ret = av_fifo_realloc2(ist->sub2video.sub_queue, 2 * av_fifo_size(ist->sub2video.sub_queue));
-            if (ret < 0)
-                exit_program(1);
-        }
-        av_fifo_generic_write(ist->sub2video.sub_queue, &subtitle, sizeof(subtitle), NULL);
+
+        ret = av_fifo_write(ist->sub2video.sub_queue, &subtitle, 1);
+        if (ret < 0)
+            exit_program(1);
         free_sub = 0;
     }
 
@@ -2976,14 +2962,13 @@ static int check_init_output_file(OutputFile *of, int file_index)
     /* flush the muxing queues */
     for (i = 0; i < of->ctx->nb_streams; i++) {
         OutputStream *ost = output_streams[of->ost_index + i];
+        AVPacket *pkt;
 
         /* try to improve muxing time_base (only possible if nothing has been written yet) */
-        if (!av_fifo_size(ost->muxing_queue))
+        if (!av_fifo_can_read(ost->muxing_queue))
             ost->mux_timebase = ost->st->time_base;
 
-        while (av_fifo_size(ost->muxing_queue)) {
-            AVPacket *pkt;
-            av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
+        while (av_fifo_read(ost->muxing_queue, &pkt, 1) >= 0) {
             ost->muxing_queue_data_size -= pkt->size;
             write_packet(of, pkt, ost, 1);
             av_packet_free(&pkt);
