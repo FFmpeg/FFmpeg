@@ -175,7 +175,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         while (cur_ai && fd < 0) {
             fd = ff_socket(cur_ai->ai_family,
                            cur_ai->ai_socktype,
-                           cur_ai->ai_protocol);
+                           cur_ai->ai_protocol, h);
             if (fd < 0) {
                 ret = ff_neterrno();
                 cur_ai = cur_ai->ai_next;

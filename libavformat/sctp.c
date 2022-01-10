@@ -220,7 +220,7 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
     cur_ai = ai;
 
 restart:
-    fd = ff_socket(cur_ai->ai_family, SOCK_STREAM, IPPROTO_SCTP);
+    fd = ff_socket(cur_ai->ai_family, SOCK_STREAM, IPPROTO_SCTP, h);
     if (fd < 0) {
         ret = ff_neterrno();
         goto fail;

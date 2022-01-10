@@ -351,9 +351,9 @@ static int udp_socket_create(URLContext *h, struct sockaddr_storage *addr,
         goto fail;
     for (res = res0; res; res=res->ai_next) {
         if (s->udplite_coverage)
-            udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, IPPROTO_UDPLITE);
+            udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, IPPROTO_UDPLITE, h);
         else
-            udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0);
+            udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0, h);
         if (udp_fd != -1) break;
         ff_log_net_error(h, AV_LOG_ERROR, "socket");
     }
