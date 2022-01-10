@@ -1760,7 +1760,7 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
 
     AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frame->hw_frames_ctx->data;
-    NV_ENC_REGISTER_RESOURCE reg;
+    NV_ENC_REGISTER_RESOURCE reg = { 0 };
     int i, idx, ret;
 
     for (i = 0; i < ctx->nb_registered_frames; i++) {
