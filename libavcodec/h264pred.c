@@ -445,19 +445,19 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
 #define FUNCD(a) a ## _c
 
 #define H264_PRED(depth) \
-            h->pred4x4[VERT_PRED       ]= FUNCC(pred4x4_vertical          , depth);\
-            h->pred4x4[HOR_PRED        ]= FUNCC(pred4x4_horizontal        , depth);\
-        h->pred4x4[DC_PRED             ]= FUNCC(pred4x4_dc                , depth);\
-            h->pred4x4[DIAG_DOWN_LEFT_PRED ]= FUNCC(pred4x4_down_left     , depth);\
-        h->pred4x4[DIAG_DOWN_RIGHT_PRED]= FUNCC(pred4x4_down_right        , depth);\
-        h->pred4x4[VERT_RIGHT_PRED     ]= FUNCC(pred4x4_vertical_right    , depth);\
-        h->pred4x4[HOR_DOWN_PRED       ]= FUNCC(pred4x4_horizontal_down   , depth);\
-            h->pred4x4[VERT_LEFT_PRED  ]= FUNCC(pred4x4_vertical_left     , depth);\
-        h->pred4x4[HOR_UP_PRED         ]= FUNCC(pred4x4_horizontal_up     , depth);\
-            h->pred4x4[LEFT_DC_PRED    ]= FUNCC(pred4x4_left_dc           , depth);\
-            h->pred4x4[TOP_DC_PRED     ]= FUNCC(pred4x4_top_dc            , depth);\
+    h->pred4x4[VERT_PRED           ] = FUNCC(pred4x4_vertical,        depth);\
+    h->pred4x4[HOR_PRED            ] = FUNCC(pred4x4_horizontal,      depth);\
+    h->pred4x4[DC_PRED             ] = FUNCC(pred4x4_dc,              depth);\
+    h->pred4x4[DIAG_DOWN_LEFT_PRED ] = FUNCC(pred4x4_down_left,       depth);\
+    h->pred4x4[DIAG_DOWN_RIGHT_PRED] = FUNCC(pred4x4_down_right,      depth);\
+    h->pred4x4[VERT_RIGHT_PRED     ] = FUNCC(pred4x4_vertical_right,  depth);\
+    h->pred4x4[HOR_DOWN_PRED       ] = FUNCC(pred4x4_horizontal_down, depth);\
+    h->pred4x4[VERT_LEFT_PRED      ] = FUNCC(pred4x4_vertical_left,   depth);\
+    h->pred4x4[HOR_UP_PRED         ] = FUNCC(pred4x4_horizontal_up,   depth);\
+    h->pred4x4[LEFT_DC_PRED        ] = FUNCC(pred4x4_left_dc,         depth);\
+    h->pred4x4[TOP_DC_PRED         ] = FUNCC(pred4x4_top_dc,          depth);\
     if (depth > 8 || codec_id != AV_CODEC_ID_VP8)\
-            h->pred4x4[DC_128_PRED     ]= FUNCC(pred4x4_128_dc            , depth);\
+        h->pred4x4[DC_128_PRED     ] = FUNCC(pred4x4_128_dc,          depth);\
 \
     h->pred8x8l[VERT_PRED           ]= FUNCC(pred8x8l_vertical            , depth);\
     h->pred8x8l[HOR_PRED            ]= FUNCC(pred8x8l_horizontal          , depth);\
@@ -475,15 +475,12 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     if (chroma_format_idc <= 1) {\
         h->pred8x8[VERT_PRED8x8   ]= FUNCC(pred8x8_vertical               , depth);\
         h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x8_horizontal             , depth);\
+        h->pred8x8[PLANE_PRED8x8] = FUNCC(pred8x8_plane,       depth);\
     } else {\
         h->pred8x8[VERT_PRED8x8   ]= FUNCC(pred8x16_vertical              , depth);\
         h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x16_horizontal            , depth);\
+        h->pred8x8[PLANE_PRED8x8] = FUNCC(pred8x16_plane,      depth);\
     }\
-        if (chroma_format_idc <= 1) {\
-            h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x8_plane                , depth);\
-        } else {\
-            h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x16_plane               , depth);\
-        }\
     if (depth > 8 || (codec_id != AV_CODEC_ID_RV40 && \
                       codec_id != AV_CODEC_ID_VP7  && \
                       codec_id != AV_CODEC_ID_VP8)) { \
@@ -531,8 +528,8 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     h->pred8x8l_filter_add [VERT_PRED   ]= FUNCC(pred8x8l_vertical_filter_add           , depth);\
     h->pred8x8l_filter_add [ HOR_PRED   ]= FUNCC(pred8x8l_horizontal_filter_add         , depth);\
     if (chroma_format_idc <= 1) {\
-    h->pred8x8_add  [VERT_PRED8x8]= FUNCC(pred8x8_vertical_add            , depth);\
-    h->pred8x8_add  [ HOR_PRED8x8]= FUNCC(pred8x8_horizontal_add          , depth);\
+        h->pred8x8_add[VERT_PRED8x8] = FUNCC(pred8x8_vertical_add,    depth);\
+        h->pred8x8_add[ HOR_PRED8x8] = FUNCC(pred8x8_horizontal_add,  depth);\
     } else {\
         h->pred8x8_add  [VERT_PRED8x8]= FUNCC(pred8x16_vertical_add            , depth);\
         h->pred8x8_add  [ HOR_PRED8x8]= FUNCC(pred8x16_horizontal_add          , depth);\
