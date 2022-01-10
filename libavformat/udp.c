@@ -740,8 +740,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     /* XXX: fix av_url_split */
     if (hostname[0] == '\0' || hostname[0] == '?') {
         /* only accepts null hostname if input */
-        if (!(flags & AVIO_FLAG_READ))
+        if (!(flags & AVIO_FLAG_READ)) {
+            ret = AVERROR(EINVAL);
             goto fail;
+        }
     } else {
         if ((ret = ff_udp_set_remote_url(h, uri)) < 0)
             goto fail;
@@ -754,8 +756,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         udp_fd = udp_socket_create(h, &my_addr, &len, localaddr);
     else
         udp_fd = udp_socket_create(h, &my_addr, &len, s->localaddr);
-    if (udp_fd < 0)
+    if (udp_fd < 0) {
+        ret = AVERROR(EIO);
         goto fail;
+    }
 
     s->local_addr_storage=my_addr; //store for future multicast join
 
