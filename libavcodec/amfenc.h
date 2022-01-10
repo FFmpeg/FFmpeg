@@ -72,7 +72,7 @@ typedef struct AmfContext {
     AVFrame            *delayed_frame;
 
     // shift dts back by max_b_frames in timing
-    AVFifoBuffer       *timestamp_list;
+    AVFifo             *timestamp_list;
     int64_t             dts_delay;
 
     // common encoder option options

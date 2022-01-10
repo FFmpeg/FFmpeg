@@ -117,8 +117,9 @@ static int amf_load_library(AVCodecContext *avctx)
     if (!ctx->delayed_frame) {
         return AVERROR(ENOMEM);
     }
-    // hardcoded to current HW queue size - will realloc in timestamp_queue_enqueue() if too small
-    ctx->timestamp_list = av_fifo_alloc((avctx->max_b_frames + 16) * sizeof(int64_t));
+    // hardcoded to current HW queue size - will auto-realloc if too small
+    ctx->timestamp_list = av_fifo_alloc2(avctx->max_b_frames + 16, sizeof(int64_t),
+                                         AV_FIFO_FLAG_AUTO_GROW);
     if (!ctx->timestamp_list) {
         return AVERROR(ENOMEM);
     }
@@ -403,7 +404,7 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
     ctx->version = 0;
     ctx->delayed_drain = 0;
     av_frame_free(&ctx->delayed_frame);
-    av_fifo_freep(&ctx->timestamp_list);
+    av_fifo_freep2(&ctx->timestamp_list);
 
     return 0;
 }
@@ -429,18 +430,6 @@ static int amf_copy_surface(AVCodecContext *avctx, const AVFrame *frame,
         (const uint8_t**)frame->data, frame->linesize, frame->format,
         avctx->width, avctx->height);
 
-    return 0;
-}
-
-static inline int timestamp_queue_enqueue(AVCodecContext *avctx, int64_t timestamp)
-{
-    AmfContext         *ctx = avctx->priv_data;
-    if (av_fifo_space(ctx->timestamp_list) < sizeof(timestamp)) {
-        if (av_fifo_grow(ctx->timestamp_list, sizeof(timestamp)) < 0) {
-            return AVERROR(ENOMEM);
-        }
-    }
-    av_fifo_generic_write(ctx->timestamp_list, &timestamp, sizeof(timestamp), NULL);
     return 0;
 }
 
@@ -479,21 +468,17 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
     pkt->pts = var.int64Value; // original pts
 
 
-    AMF_RETURN_IF_FALSE(ctx, av_fifo_size(ctx->timestamp_list) > 0, AVERROR_UNKNOWN, "timestamp_list is empty\n");
-
-    av_fifo_generic_read(ctx->timestamp_list, &timestamp, sizeof(timestamp), NULL);
+    AMF_RETURN_IF_FALSE(ctx, av_fifo_read(ctx->timestamp_list, &timestamp, 1) >= 0,
+                        AVERROR_UNKNOWN, "timestamp_list is empty\n");
 
     // calc dts shift if max_b_frames > 0
     if (avctx->max_b_frames > 0 && ctx->dts_delay == 0) {
         int64_t timestamp_last = AV_NOPTS_VALUE;
-        AMF_RETURN_IF_FALSE(ctx, av_fifo_size(ctx->timestamp_list) > 0, AVERROR_UNKNOWN,
+        size_t can_read = av_fifo_can_read(ctx->timestamp_list);
+
+        AMF_RETURN_IF_FALSE(ctx, can_read > 0, AVERROR_UNKNOWN,
             "timestamp_list is empty while max_b_frames = %d\n", avctx->max_b_frames);
-        av_fifo_generic_peek_at(
-            ctx->timestamp_list,
-            &timestamp_last,
-            (av_fifo_size(ctx->timestamp_list) / sizeof(timestamp) - 1) * sizeof(timestamp_last),
-            sizeof(timestamp_last),
-            NULL);
+        av_fifo_peek(ctx->timestamp_list, &timestamp_last, 1, can_read - 1);
         if (timestamp < 0 || timestamp_last < AV_NOPTS_VALUE) {
             return AVERROR(ERANGE);
         }
@@ -710,9 +695,9 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
             AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
 
             av_frame_unref(frame);
-            if ((ret = timestamp_queue_enqueue(avctx, pts)) < 0) {
+            ret = av_fifo_write(ctx->timestamp_list, &pts, 1);
+            if (ret < 0)
                 return ret;
-            }
         }
     }
 
@@ -751,9 +736,9 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                     av_frame_unref(ctx->delayed_frame);
                     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "Repeated SubmitInput() failed with error %d\n", res);
 
-                    if ((ret = timestamp_queue_enqueue(avctx, pts)) < 0) {
+                    ret = av_fifo_write(ctx->timestamp_list, &pts, 1);
+                    if (ret < 0)
                         return ret;
-                    }
                 } else {
                     av_log(avctx, AV_LOG_WARNING, "Data acquired but delayed frame submission got AMF_INPUT_FULL- should not happen\n");
                 }
