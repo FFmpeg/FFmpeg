@@ -998,7 +998,7 @@ static int h264_slice_header_init(H264Context *h)
                     sps->chroma_format_idc);
     ff_h264chroma_init(&h->h264chroma, sps->bit_depth_chroma);
     ff_h264qpel_init(&h->h264qpel, sps->bit_depth_luma);
-    ff_h264_pred_init(&h->hpc, h->avctx->codec_id, sps->bit_depth_luma,
+    ff_h264_pred_init(&h->hpc, AV_CODEC_ID_H264, sps->bit_depth_luma,
                       sps->chroma_format_idc);
     ff_videodsp_init(&h->vdsp, sps->bit_depth_luma);
 
