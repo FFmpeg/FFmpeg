@@ -83,13 +83,11 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
-    s->unrestricted_mv = 1;
 
     /* select sub codec */
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H263:
     case AV_CODEC_ID_H263P:
-        s->unrestricted_mv = 0;
         avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
         break;
     case AV_CODEC_ID_MPEG4:

@@ -66,7 +66,6 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
         return -1;      /* SAC: off */
     }
     s->obmc= get_bits1(&s->gb);
-    s->unrestricted_mv = s->obmc || s->h263_long_vectors;
     s->pb_frame = get_bits1(&s->gb);
 
     if (format < 6) {

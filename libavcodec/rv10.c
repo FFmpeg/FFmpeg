@@ -149,7 +149,6 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     }
     skip_bits(&s->gb, 3);   /* ignored */
     s->f_code          = 1;
-    s->unrestricted_mv = 1;
 
     return mb_count;
 }
@@ -298,7 +297,6 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         skip_bits(&s->gb, 5);
 
     s->f_code          = 1;
-    s->unrestricted_mv = 1;
     s->h263_aic        = s->pict_type == AV_PICTURE_TYPE_I;
     s->modified_quant  = 1;
     if (!s->avctx->lowres)

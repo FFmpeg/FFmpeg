@@ -90,7 +90,6 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
 
     s->h263_plus = 0;
 
-    s->unrestricted_mv   = 1;
     s->h263_long_vectors = 0;
 
     /* PEI */

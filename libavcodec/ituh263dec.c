@@ -1150,7 +1150,6 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
             return -1; /* SAC: off */
         }
         s->obmc= get_bits1(&s->gb); /* Advanced prediction mode */
-        s->unrestricted_mv = s->h263_long_vectors || s->obmc;
 
         s->pb_frame = get_bits1(&s->gb);
         s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
@@ -1180,7 +1179,6 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
             s->obmc= get_bits1(&s->gb); /* Advanced prediction mode */
             s->h263_aic = get_bits1(&s->gb); /* Advanced Intra Coding (AIC) */
             s->loop_filter= get_bits1(&s->gb);
-            s->unrestricted_mv = s->umvplus || s->obmc || s->loop_filter;
             if(s->avctx->lowres)
                 s->loop_filter = 0;
 
