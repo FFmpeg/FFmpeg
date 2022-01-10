@@ -2960,7 +2960,7 @@ static int64_t calc_pts_duration(MOVMuxContext *mov, MOVTrack *track)
 static int mov_write_mdhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
-    int64_t duration = calc_pts_duration(mov, track);
+    int64_t duration = calc_samples_pts_duration(mov, track);
     int version = duration < INT32_MAX ? 0 : 1;
 
     if (track->mode == MODE_ISM)

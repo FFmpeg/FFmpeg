@@ -1,4 +1,4 @@
-3c4432fe59ffd9f2ed6ba4b122cea935 *tests/data/fate/mov-mp4-disposition-mpegts-remux.mp4
+adb3b95c07a5f3e0c86641dd62f01dae *tests/data/fate/mov-mp4-disposition-mpegts-remux.mp4
 5709 tests/data/fate/mov-mp4-disposition-mpegts-remux.mp4
 #tb 0: 1/48000
 #media_type 0: audio
