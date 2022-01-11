@@ -208,11 +208,11 @@ static int rfc4175_finalize_packet(PayloadContext *data, AVPacket *pkt,
 
     pkt->stream_index = stream_index;
     if (!data->interlaced || data->field) {
-    ret = av_packet_from_data(pkt, data->frame, data->frame_size);
-    if (ret < 0) {
-        av_freep(&data->frame);
-    }
-    data->frame = NULL;
+        ret = av_packet_from_data(pkt, data->frame, data->frame_size);
+        if (ret < 0) {
+            av_freep(&data->frame);
+        }
+        data->frame = NULL;
     }
 
     data->field = 0;
