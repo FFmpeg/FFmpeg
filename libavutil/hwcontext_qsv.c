@@ -112,6 +112,40 @@ static const struct {
 #endif
 };
 
+extern int ff_qsv_get_surface_base_handle(mfxFrameSurface1 *surf,
+                                          enum AVHWDeviceType base_dev_type,
+                                          void **base_handle);
+
+/**
+ * Caller needs to allocate enough space for base_handle pointer.
+ **/
+int ff_qsv_get_surface_base_handle(mfxFrameSurface1 *surf,
+                                   enum AVHWDeviceType base_dev_type,
+                                   void **base_handle)
+{
+    mfxHDLPair *handle_pair;
+    handle_pair = surf->Data.MemId;
+    switch (base_dev_type) {
+#if CONFIG_VAAPI
+    case AV_HWDEVICE_TYPE_VAAPI:
+        base_handle[0] = handle_pair->first;
+        return 0;
+#endif
+#if CONFIG_D3D11VA
+    case AV_HWDEVICE_TYPE_D3D11VA:
+        base_handle[0] = handle_pair->first;
+        base_handle[1] = handle_pair->secode;
+        return 0;
+#endif
+#if CONFIG_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        base_handle[0] = handle_pair->first;
+        return 0;
+#endif
+    }
+    return AVERROR(EINVAL);
+}
+
 static uint32_t qsv_fourcc_from_pix_fmt(enum AVPixelFormat pix_fmt)
 {
     int i;
