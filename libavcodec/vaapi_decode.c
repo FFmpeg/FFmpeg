@@ -650,7 +650,7 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
     ctx->hwctx  = ctx->device->hwctx;
 
     err = vaapi_decode_make_config(avctx, ctx->frames->device_ref,
-                                   &ctx->va_config, avctx->hw_frames_ctx);
+                                   &ctx->va_config, NULL);
     if (err)
         goto fail;
 
