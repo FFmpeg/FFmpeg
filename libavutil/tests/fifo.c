@@ -23,78 +23,73 @@
 int main(void)
 {
     /* create a FIFO buffer */
-    AVFifoBuffer *fifo = av_fifo_alloc(13 * sizeof(int));
+    AVFifo *fifo = av_fifo_alloc2(13, sizeof(int), 0);
     int i, j, n, *p;
 
     /* fill data */
-    for (i = 0; av_fifo_space(fifo) >= sizeof(int); i++)
-        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
+    for (i = 0; av_fifo_can_write(fifo); i++)
+        av_fifo_write(fifo, &i, 1);
 
     /* peek_at at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
+    n = av_fifo_can_read(fifo);
     for (i = 0; i < n; i++) {
-        av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
+        av_fifo_peek(fifo, &j, 1, i);
         printf("%d: %d\n", i, j);
     }
     printf("\n");
 
     /* generic peek at FIFO */
 
-    n = av_fifo_size(fifo);
-    p = malloc(n);
+    n = av_fifo_can_read(fifo);
+    p = malloc(n * av_fifo_elem_size(fifo));
     if (p == NULL) {
         fprintf(stderr, "failed to allocate memory.\n");
         exit(1);
     }
 
-    (void) av_fifo_generic_peek(fifo, p, n, NULL);
+    (void) av_fifo_peek(fifo, p, n, 0);
 
     /* read data at p */
-    n /= sizeof(int);
     for(i = 0; i < n; ++i)
         printf("%d: %d\n", i, p[i]);
 
     putchar('\n');
 
     /* read data */
-    for (i = 0; av_fifo_size(fifo) >= sizeof(int); i++) {
-        av_fifo_generic_read(fifo, &j, sizeof(int), NULL);
+    for (i = 0; av_fifo_can_read(fifo); i++) {
+        av_fifo_read(fifo, &j, 1);
         printf("%d ", j);
     }
     printf("\n");
 
-    /* test *ndx overflow */
-    av_fifo_reset(fifo);
-    fifo->rndx = fifo->wndx = ~(uint32_t)0 - 5;
-
     /* fill data */
-    for (i = 0; av_fifo_space(fifo) >= sizeof(int); i++)
-        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
+    for (i = 0; av_fifo_can_write(fifo); i++)
+        av_fifo_write(fifo, &i, 1);
 
     /* peek_at at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
+    n = av_fifo_can_read(fifo);
     for (i = 0; i < n; i++) {
-        av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
+        av_fifo_peek(fifo, &j, 1, i);
         printf("%d: %d\n", i, j);
     }
     putchar('\n');
 
     /* test fifo_grow */
-    (void) av_fifo_grow(fifo, 15 * sizeof(int));
+    (void) av_fifo_grow2(fifo, 15);
 
     /* fill data */
-    n = av_fifo_size(fifo) / sizeof(int);
-    for (i = n; av_fifo_space(fifo) >= sizeof(int); ++i)
-        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
+    n = av_fifo_can_read(fifo);
+    for (i = n; av_fifo_can_write(fifo); ++i)
+        av_fifo_write(fifo, &i, 1);
 
     /* peek_at at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
+    n = av_fifo_can_read(fifo);
     for (i = 0; i < n; i++) {
-        av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
+        av_fifo_peek(fifo, &j, 1, i);
         printf("%d: %d\n", i, j);
     }
 
-    av_fifo_free(fifo);
+    av_fifo_freep2(&fifo);
     free(p);
 
     return 0;
