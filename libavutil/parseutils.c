@@ -112,7 +112,7 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "hd480",     852, 480 },
     { "hd720",    1280, 720 },
     { "hd1080",   1920,1080 },
-    { "qhd",      2560,1440 },
+    { "quadhd",   2560,1440 },
     { "2k",       2048,1080 }, /* Digital Cinema System Specification */
     { "2kdci",    2048,1080 },
     { "2kflat",   1998,1080 },
