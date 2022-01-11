@@ -148,7 +148,7 @@ typedef struct OptionsContext {
 
     int64_t recording_time;
     int64_t stop_time;
-    uint64_t limit_filesize;
+    int64_t limit_filesize;
     float mux_preload;
     float mux_max_delay;
     int shortest;
@@ -596,7 +596,7 @@ typedef struct OutputFile {
     int ost_index;       /* index of the first stream in output_streams */
     int64_t recording_time;  ///< desired length of the resulting file in microseconds == AV_TIME_BASE units
     int64_t start_time;      ///< start time in microseconds == AV_TIME_BASE units
-    uint64_t limit_filesize; /* filesize limit expressed in bytes */
+    int64_t limit_filesize; /* filesize limit expressed in bytes */
 
     int shortest;
 } OutputFile;

@@ -231,7 +231,7 @@ static void init_options(OptionsContext *o)
     o->start_time     = AV_NOPTS_VALUE;
     o->start_time_eof = AV_NOPTS_VALUE;
     o->recording_time = INT64_MAX;
-    o->limit_filesize = UINT64_MAX;
+    o->limit_filesize = INT64_MAX;
     o->chapters_input_file = INT_MAX;
     o->accurate_seek  = 1;
     o->thread_queue_size = -1;
