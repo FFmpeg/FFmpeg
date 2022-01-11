@@ -43,6 +43,9 @@
     ((patch) + ((minor)* 0x100) + ((major) *0x10000))
 #define FF_LIBRIST_VERSION FF_LIBRIST_MAKE_VERSION(LIBRIST_API_VERSION_MAJOR, LIBRIST_API_VERSION_MINOR, LIBRIST_API_VERSION_PATCH)
 #define FF_LIBRIST_VERSION_41 FF_LIBRIST_MAKE_VERSION(4, 1, 0)
+#define FF_LIBRIST_VERSION_42 FF_LIBRIST_MAKE_VERSION(4, 2, 0)
+
+#define FIFO_SIZE_DEFAULT 8192
 
 typedef struct RISTContext {
     const AVClass *class;
@@ -52,6 +55,8 @@ typedef struct RISTContext {
     int packet_size;
     int log_level;
     int encryption;
+    int fifo_size;
+    int overrun_nonfatal;
     char *secret;
 
     struct rist_logging_settings logging_settings;
@@ -70,6 +75,8 @@ static const AVOption librist_options[] = {
     { "main",        NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_MAIN},     0, 0, .flags = D|E, "profile" },
     { "advanced",    NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_ADVANCED}, 0, 0, .flags = D|E, "profile" },
     { "buffer_size", "set buffer_size in ms", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64=0},                 0, 30000, .flags = D|E },
+    { "fifo_size",   "set fifo buffer size, must be a power of 2", OFFSET(fifo_size), AV_OPT_TYPE_INT, {.i64=FIFO_SIZE_DEFAULT}, 32, 262144, .flags = D|E },
+    { "overrun_nonfatal", "survive in case of receiving fifo buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,    D },
     { "pkt_size",    "set packet size", OFFSET(packet_size), AV_OPT_TYPE_INT,   {.i64=1316},                  1, MAX_PAYLOAD_SIZE,    .flags = D|E },
     { "log_level",   "set loglevel",    OFFSET(log_level),   AV_OPT_TYPE_INT,   {.i64=RIST_LOG_INFO},        -1, INT_MAX, .flags = D|E },
     { "secret", "set encryption secret",OFFSET(secret),      AV_OPT_TYPE_STRING,{.str=NULL},                  0, 0,       .flags = D|E },
@@ -161,6 +168,18 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     if (ret < 0)
         goto err;
 
+    if (flags & AVIO_FLAG_READ) {
+//Prior to 4.2.0 there was a bug in librist which made this call always fail.
+#if FF_LIBRIST_VERSION >= FF_LIBRIST_VERSION_42
+        ret = rist_receiver_set_output_fifo_size(s->ctx, s->fifo_size);
+        if (ret != 0)
+            goto err;
+#else
+        if (s->fifo_size != FIFO_SIZE_DEFAULT)
+            av_log(h, AV_LOG_ERROR, "librist prior to 0.2.7 has a bug which fails setting the fifo buffer size\n");
+#endif
+    }
+
     if (((s->encryption == 128 || s->encryption == 256) && !s->secret) ||
         ((peer_config->key_size == 128 || peer_config->key_size == 256) && !peer_config->secret[0])) {
         av_log(h, AV_LOG_ERROR, "secret is mandatory if encryption is enabled\n");
@@ -223,8 +242,21 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
         return AVERROR_EXTERNAL;
     }
 
+#if FF_LIBRIST_VERSION >= FF_LIBRIST_VERSION_42
+    if (data_block->flags & RIST_DATA_FLAGS_OVERFLOW) {
+        if (!s->overrun_nonfatal) {
+            av_log(h, AV_LOG_ERROR, "Fifo buffer overrun. "
+                    "To avoid, increase fifo_size option. "
+                    "To survive in such case, use overrun_nonfatal option\n");
+            size = AVERROR(EIO);
+            goto out_free;
+        }
+    }
+#endif
+
     size = data_block->payload_len;
     memcpy(buf, data_block->payload, size);
+out_free:
 #if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
     rist_receiver_data_block_free((struct rist_data_block**)&data_block);
 #else

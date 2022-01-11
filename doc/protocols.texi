@@ -777,6 +777,14 @@ Set internal RIST buffer size in milliseconds for retransmission of data.
 Default value is 0 which means the librist default (1 sec). Maximum value is 30
 seconds.
 
+@item fifo_size
+Size of the librist receiver output fifo in number of packets. This must be a
+power of 2.
+Defaults to 8192 (vs the librist default of 1024).
+
+@item overrun_nonfatal=@var{1|0}
+Survive in case of librist fifo buffer overrun. Default value is 0.
+
 @item pkt_size
 Set maximum packet size for sending data. 1316 by default.
 
