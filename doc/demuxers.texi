@@ -775,6 +775,10 @@ disabled). Default value is -1.
 @item merge_pmt_versions
 Re-use existing streams when a PMT's version is updated and elementary
 streams move to different PIDs. Default value is 0.
+
+@item max_packet_size
+Set maximum size, in bytes, of packet emitted by the demuxer. Payloads above this size
+are split across multiple packets. Range is 1 to INT_MAX/2. Default is 204800 bytes.
 @end table
 
 @section mpjpeg

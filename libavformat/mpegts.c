@@ -47,8 +47,6 @@
  * synchronization is lost */
 #define MAX_RESYNC_SIZE 65536
 
-#define MAX_PES_PAYLOAD 200 * 1024
-
 #define MAX_MP4_DESCR_COUNT 16
 
 #define MOD_UNLIKELY(modulus, dividend, divisor, prev_dividend)                \
@@ -162,6 +160,7 @@ struct MpegTSContext {
 
     int resync_size;
     int merge_pmt_versions;
+    int max_packet_size;
 
     /******************************************/
     /* private mpegts data */
@@ -198,6 +197,8 @@ static const AVOption options[] = {
      {.i64 = 0}, 0, 1, 0 },
     {"skip_clear", "skip clearing programs", offsetof(MpegTSContext, skip_clear), AV_OPT_TYPE_BOOL,
      {.i64 = 0}, 0, 1, 0 },
+    {"max_packet_size", "maximum size of emitted packet", offsetof(MpegTSContext, max_packet_size), AV_OPT_TYPE_INT,
+     {.i64 = 204800}, 1, INT_MAX/2, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
@@ -1121,7 +1122,7 @@ static AVBufferRef *buffer_pool_get(MpegTSContext *ts, int size)
 {
     int index = av_log2(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!ts->pools[index]) {
-        int pool_size = FFMIN(MAX_PES_PAYLOAD + AV_INPUT_BUFFER_PADDING_SIZE, 2 << index);
+        int pool_size = FFMIN(ts->max_packet_size + AV_INPUT_BUFFER_PADDING_SIZE, 2 << index);
         ts->pools[index] = av_buffer_pool_init(pool_size, NULL);
         if (!ts->pools[index])
             return NULL;
@@ -1368,7 +1369,7 @@ skip:
             break;
         case MPEGTS_PAYLOAD:
             do {
-                int max_packet_size = MAX_PES_PAYLOAD;
+                int max_packet_size = ts->max_packet_size;
                 if (pes->PES_packet_length && pes->PES_packet_length + PES_START_SIZE > pes->pes_header_size)
                     max_packet_size = pes->PES_packet_length + PES_START_SIZE - pes->pes_header_size;
 
@@ -1378,7 +1379,7 @@ skip:
                     if (ret < 0)
                         return ret;
                     pes->PES_packet_length = 0;
-                    max_packet_size = MAX_PES_PAYLOAD;
+                    max_packet_size = ts->max_packet_size;
                     ts->stop_parse = 1;
                 } else if (pes->data_index == 0 &&
                            buf_size > max_packet_size) {
