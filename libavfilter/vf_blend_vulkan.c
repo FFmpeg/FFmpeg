@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2021 Wu Jianhua <jianhua.wu@intel.com>
+ * copyright (c) 2021-2022 Wu Jianhua <jianhua.wu@intel.com>
  * The blend modes are based on the blend.c.
  *
  * This file is part of FFmpeg.
@@ -68,7 +68,10 @@ static const char blend_##MODE##_func[] = { \
 #define A top
 #define B bottom
 
+#define FN(EXPR) A + ((EXPR) - A) * opacity
+
 DEFINE_BLEND_MODE(NORMAL, A * opacity + B * (1.0f - opacity))
+DEFINE_BLEND_MODE(MULTIPLY, FN(1.0f * A * B / 1.0f))
 
 static inline void init_blend_func(FilterParamsVulkan *param)
 {
@@ -79,6 +82,7 @@ static inline void init_blend_func(FilterParamsVulkan *param)
 
     switch (param->mode) {
     CASE(NORMAL)
+    CASE(MULTIPLY)
     default: param->blend = NULL; break;
     }
 
@@ -448,7 +452,8 @@ static const AVOption blend_vulkan_options[] = {
     { "c2_mode", "set component #2 blend mode", OFFSET(params[2].mode), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, "mode" },
     { "c3_mode", "set component #3 blend mode", OFFSET(params[3].mode), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, "mode" },
     { "all_mode", "set blend mode for all components", OFFSET(all_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, BLEND_NB - 1, FLAGS, "mode" },
-        { "normal", "", 0, AV_OPT_TYPE_CONST, { .i64 = BLEND_NORMAL }, 0, 0, FLAGS, "mode" },
+        { "normal",   "", 0, AV_OPT_TYPE_CONST, { .i64 = BLEND_NORMAL   }, 0, 0, FLAGS, "mode" },
+        { "multiply", "", 0, AV_OPT_TYPE_CONST, { .i64 = BLEND_MULTIPLY }, 0, 0, FLAGS, "mode" },
 
     { "c0_opacity",  "set color component #0 opacity", OFFSET(params[0].opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
     { "c1_opacity",  "set color component #1 opacity", OFFSET(params[1].opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
