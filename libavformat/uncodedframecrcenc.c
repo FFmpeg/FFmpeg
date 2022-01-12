@@ -79,7 +79,7 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
     int nb_planes, nb_samples, p;
     const char *name;
 
-    nb_planes  = frame->channels;
+    nb_planes  = frame->ch_layout.nb_channels;
     nb_samples = frame->nb_samples;
     if (!av_sample_fmt_is_planar(frame->format)) {
         nb_samples *= nb_planes;
