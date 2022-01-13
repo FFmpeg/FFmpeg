@@ -61,6 +61,12 @@
  * Info, Tracks, Chapters, Attachments, Tags (potentially twice) and Cues */
 #define MAX_SEEKHEAD_ENTRIES 7
 
+/* Largest known-length EBML length */
+#define MAX_EBML_LENGTH ((1ULL << 56) - 2)
+/* The dynamic buffer API we rely upon has a limit of INT_MAX;
+ * and so has avio_write(). */
+#define MAX_SUPPORTED_EBML_LENGTH FFMIN(MAX_EBML_LENGTH, INT_MAX)
+
 #define MODE_MATROSKAv2 0x01
 #define MODE_WEBM       0x02
 
@@ -84,6 +90,48 @@ typedef struct ebml_stored_master {
     AVIOContext    *bc;
     int64_t         pos;
 } ebml_stored_master;
+
+typedef enum EbmlType {
+    EBML_UINT,
+    EBML_SINT,
+    EBML_FLOAT,
+    EBML_UID,
+    EBML_STR,
+    EBML_UTF8 = EBML_STR,
+    EBML_BIN,
+    EBML_MASTER,
+} EbmlType;
+
+typedef struct EbmlMaster {
+    int nb_elements;               ///< -1 if not finished
+    int containing_master;         ///< -1 if no parent exists
+} EbmlMaster;
+
+typedef struct EbmlElement {
+    uint32_t id;
+    EbmlType type;
+    unsigned length_size;
+    uint64_t size;                 ///< excluding id and length field
+    union {
+        uint64_t uint;
+        int64_t  sint;
+        double   f;
+        const char    *str;
+        const uint8_t *bin;
+        EbmlMaster master;
+    } priv;
+} EbmlElement;
+
+typedef struct EbmlWriter {
+    unsigned nb_elements;
+    int      current_master_element;
+    EbmlElement *elements;
+} EbmlWriter;
+
+#define EBML_WRITER(max_nb_elems) \
+     EbmlElement elements[max_nb_elems]; \
+     EbmlWriter writer = (EbmlWriter){ .elements = elements, \
+                                       .current_master_element = -1 }
 
 typedef struct mkv_seekhead_entry {
     uint32_t        elementid;
@@ -360,6 +408,207 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
         return;
     put_ebml_length(pb, pos - master.pos, master.sizebytes);
     avio_seek(pb, pos, SEEK_SET);
+}
+
+static EbmlElement *ebml_writer_add(EbmlWriter *writer,
+                                    uint32_t id, EbmlType type)
+{
+    writer->elements[writer->nb_elements].id   = id;
+    writer->elements[writer->nb_elements].type = type;
+    return &writer->elements[writer->nb_elements++];
+}
+
+static void ebml_writer_open_master(EbmlWriter *writer, uint32_t id)
+{
+    EbmlElement *const elem = ebml_writer_add(writer, id, EBML_MASTER);
+    EbmlMaster *const master = &elem->priv.master;
+
+    master->containing_master = writer->current_master_element;
+    master->nb_elements = -1;
+
+    writer->current_master_element = writer->nb_elements - 1;
+}
+
+static void ebml_writer_add_string(EbmlWriter *writer, uint32_t id,
+                                   const char *str)
+{
+    EbmlElement *const elem = ebml_writer_add(writer, id, EBML_STR);
+
+    elem->priv.str = str;
+}
+
+static void ebml_writer_add_bin(EbmlWriter *writer, uint32_t id,
+                                const uint8_t *data, size_t size)
+{
+    EbmlElement *const elem = ebml_writer_add(writer, id, EBML_BIN);
+
+#if SIZE_MAX > UINT64_MAX
+    size = FFMIN(size, UINT64_MAX);
+#endif
+    elem->size = size;
+    elem->priv.bin = data;
+}
+
+static void ebml_writer_add_float(EbmlWriter *writer, uint32_t id,
+                                  double val)
+{
+    EbmlElement *const elem = ebml_writer_add(writer, id, EBML_FLOAT);
+
+    elem->priv.f = val;
+}
+
+static void ebml_writer_add_uid(EbmlWriter *writer, uint32_t id,
+                                uint64_t val)
+{
+    EbmlElement *const elem = ebml_writer_add(writer, id, EBML_UID);
+    elem->priv.uint = val;
+}
+
+static int ebml_writer_str_len(EbmlElement *elem)
+{
+    size_t len = strlen(elem->priv.str);
+#if SIZE_MAX > UINT64_MAX
+    len = FF_MIN(len, UINT64_MAX);
+#endif
+    elem->size = len;
+    return 0;
+}
+
+static av_const int uint_size(uint64_t val)
+{
+    int bytes = 0;
+    do {
+        bytes++;
+    } while (val >>= 8);
+    return bytes;
+}
+
+static int ebml_writer_uint_len(EbmlElement *elem)
+{
+    elem->size = uint_size(elem->priv.uint);
+    return 0;
+}
+
+static av_const int sint_size(int64_t val)
+{
+    uint64_t tmp = 2 * (uint64_t)(val < 0 ? val^-1 : val);
+    return uint_size(tmp);
+}
+
+static int ebml_writer_sint_len(EbmlElement *elem)
+{
+    elem->size = sint_size(elem->priv.sint);
+    return 0;
+}
+
+static int ebml_writer_elem_len(EbmlWriter *writer, EbmlElement *elem,
+                                int remaining_elems);
+
+static int ebml_writer_master_len(EbmlWriter *writer, EbmlElement *elem,
+                                  int remaining_elems)
+{
+    int nb_elems = elem->priv.master.nb_elements >= 0 ? elem->priv.master.nb_elements : remaining_elems - 1;
+    EbmlElement *const master = elem;
+    uint64_t total_size = 0;
+
+    master->priv.master.nb_elements = nb_elems;
+    for (; elem++, nb_elems > 0;) {
+        int ret = ebml_writer_elem_len(writer, elem, nb_elems);
+        if (ret < 0)
+            return ret;
+        av_assert2(ret < nb_elems);
+        /* No overflow is possible here, as both total_size and elem->size
+         * are bounded by MAX_SUPPORTED_EBML_LENGTH. */
+        total_size += ebml_id_size(elem->id) + elem->length_size + elem->size;
+        if (total_size > MAX_SUPPORTED_EBML_LENGTH)
+            return AVERROR(ERANGE);
+        nb_elems--;      /* consume elem */
+        elem += ret, nb_elems -= ret; /* and elem's children */
+    }
+    master->size = total_size;
+
+    return master->priv.master.nb_elements;
+}
+
+static int ebml_writer_elem_len(EbmlWriter *writer, EbmlElement *elem,
+                                int remaining_elems)
+{
+    int ret = 0;
+
+    switch (elem->type) {
+        case EBML_FLOAT:
+        case EBML_UID:
+            elem->size = 8;
+            break;
+        case EBML_STR:
+            ret = ebml_writer_str_len(elem);
+            break;
+        case EBML_UINT:
+            ret = ebml_writer_uint_len(elem);
+            break;
+        case EBML_SINT:
+            ret = ebml_writer_sint_len(elem);
+            break;
+        case EBML_MASTER:
+            ret = ebml_writer_master_len(writer, elem, remaining_elems);
+            break;
+    }
+    if (ret < 0)
+        return ret;
+    if (elem->size > MAX_SUPPORTED_EBML_LENGTH)
+        return AVERROR(ERANGE);
+    elem->length_size = ebml_length_size(elem->size);
+    return ret; /* number of elements consumed excluding elem itself */
+}
+
+static int ebml_writer_elem_write(const EbmlElement *elem, AVIOContext *pb)
+{
+    put_ebml_id(pb, elem->id);
+    put_ebml_num(pb, elem->size, elem->length_size);
+    switch (elem->type) {
+        case EBML_UID:
+        case EBML_FLOAT: {
+            uint64_t val = elem->type == EBML_UID ? elem->priv.uint
+                                                  : av_double2int(elem->priv.f);
+            avio_wb64(pb, val);
+            break;
+        }
+        case EBML_UINT:
+        case EBML_SINT: {
+            uint64_t val = elem->type == EBML_UINT ? elem->priv.uint
+                                                   : elem->priv.sint;
+            for (int i = elem->size; --i >= 0; )
+                avio_w8(pb, (uint8_t)(val >> i * 8));
+            break;
+        }
+        case EBML_STR:
+        case EBML_BIN: {
+            const uint8_t *data = elem->type == EBML_BIN ? elem->priv.bin
+                                         : (const uint8_t*)elem->priv.str;
+            avio_write(pb, data, elem->size);
+            break;
+        }
+        case EBML_MASTER: {
+            int nb_elems = elem->priv.master.nb_elements;
+
+            elem++;
+            for (int i = 0; i < nb_elems; i++)
+                i += ebml_writer_elem_write(elem + i, pb);
+
+            return nb_elems;
+        }
+    }
+    return 0;
+}
+
+static int ebml_writer_write(EbmlWriter *writer, AVIOContext *pb)
+{
+    int ret = ebml_writer_elem_len(writer, writer->elements,
+                                   writer->nb_elements);
+    if (ret < 0)
+        return ret;
+    ebml_writer_elem_write(writer->elements, pb);
+    return 0;
 }
 
 static void mkv_add_seekhead_entry(MatroskaMuxContext *mkv, uint32_t elementid,
