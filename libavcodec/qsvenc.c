@@ -1004,6 +1004,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->extvp9param.Header.BufferId = MFX_EXTBUFF_VP9_PARAM;
         q->extvp9param.Header.BufferSz = sizeof(q->extvp9param);
         q->extvp9param.WriteIVFHeaders = MFX_CODINGOPTION_OFF;
+#if QSV_HAVE_EXT_VP9_TILES
+        q->extvp9param.NumTileColumns  = q->tile_cols;
+        q->extvp9param.NumTileRows     = q->tile_rows;
+#endif
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extvp9param;
     }
 #endif

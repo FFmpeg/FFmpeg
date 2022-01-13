@@ -73,6 +73,16 @@ static const AVOption options[] = {
     { "profile2",  NULL, 0,                   AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_VP9_2   },  INT_MIN,  INT_MAX,  VE,  "profile" },
     { "profile3",  NULL, 0,                   AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_VP9_3   },  INT_MIN,  INT_MAX,  VE,  "profile" },
 
+#if QSV_HAVE_EXT_VP9_TILES
+    /* The minimum tile width in luma pixels is 256, set maximum tile_cols to 32 for 8K video */
+    { "tile_cols",  "Number of columns for tiled encoding",   OFFSET(qsv.tile_cols),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 32, VE },
+    /* Set maximum tile_rows to 4 per VP9 spec */
+    { "tile_rows",  "Number of rows for tiled encoding",      OFFSET(qsv.tile_rows),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 4, VE },
+#else
+    { "tile_cols",  "(not supported)",                        OFFSET(qsv.tile_cols),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0, VE },
+    { "tile_rows",  "(not supported)",                        OFFSET(qsv.tile_rows),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0, VE },
+#endif
+
     { NULL },
 };
 

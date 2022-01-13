@@ -3512,6 +3512,12 @@ These options are used by vp9_qsv
 @item profile2
 @item profile3
 @end table
+
+@item @var{tile_cols}
+Number of columns for tiled encoding (requires libmfx >= 1.29).
+
+@item @var{tile_rows}
+Number of rows for tiled encoding (requires libmfx  >= 1.29).
 @end table
 
 @section snow
