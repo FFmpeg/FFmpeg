@@ -1754,10 +1754,11 @@ static int mkv_write_tracks(AVFormatContext *s)
 
 static int mkv_write_simpletag(AVIOContext *pb, const AVDictionaryEntry *t)
 {
+    EBML_WRITER(4);
     uint8_t *key = av_strdup(t->key);
     uint8_t *p   = key;
     const uint8_t *lang = NULL;
-    ebml_master tag;
+    int ret;
 
     if (!key)
         return AVERROR(ENOMEM);
@@ -1775,15 +1776,15 @@ static int mkv_write_simpletag(AVIOContext *pb, const AVDictionaryEntry *t)
         p++;
     }
 
-    tag = start_ebml_master(pb, MATROSKA_ID_SIMPLETAG, 0);
-    put_ebml_string(pb, MATROSKA_ID_TAGNAME, key);
+    ebml_writer_open_master(&writer, MATROSKA_ID_SIMPLETAG);
+    ebml_writer_add_string(&writer, MATROSKA_ID_TAGNAME, key);
     if (lang)
-        put_ebml_string(pb, MATROSKA_ID_TAGLANG, lang);
-    put_ebml_string(pb, MATROSKA_ID_TAGSTRING, t->value);
-    end_ebml_master(pb, tag);
+        ebml_writer_add_string(&writer, MATROSKA_ID_TAGLANG, lang);
+    ebml_writer_add_string(&writer, MATROSKA_ID_TAGSTRING, t->value);
+    ret = ebml_writer_write(&writer, pb);
 
     av_freep(&key);
-    return 0;
+    return ret;
 }
 
 static int mkv_write_tag_targets(MatroskaMuxContext *mkv, AVIOContext **pb,
