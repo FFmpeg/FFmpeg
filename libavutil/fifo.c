@@ -194,26 +194,7 @@ int av_fifo_generic_peek_at(AVFifoBuffer *f, void *dest, int offset, int buf_siz
 int av_fifo_generic_peek(AVFifoBuffer *f, void *dest, int buf_size,
                          void (*func)(void *, void *, int))
 {
-    uint8_t *rptr = f->rptr;
-
-    if (buf_size > av_fifo_size(f))
-        return AVERROR(EINVAL);
-
-    do {
-        int len = FFMIN(f->end - rptr, buf_size);
-        if (func)
-            func(dest, rptr, len);
-        else {
-            memcpy(dest, rptr, len);
-            dest = (uint8_t *)dest + len;
-        }
-        rptr += len;
-        if (rptr >= f->end)
-            rptr -= f->end - f->buffer;
-        buf_size -= len;
-    } while (buf_size > 0);
-
-    return 0;
+    return av_fifo_generic_peek_at(f, dest, 0, buf_size, func);
 }
 
 int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size,
