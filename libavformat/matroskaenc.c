@@ -2175,36 +2175,13 @@ static void ebml_write_header(AVIOContext *pb,
     ebml_writer_write(&writer, pb);
 }
 
-static int mkv_write_header(AVFormatContext *s)
+static int mkv_write_info(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *pb = s->pb;
     const AVDictionaryEntry *tag;
-    int ret, i, version = 2;
     int64_t creation_time;
-
-    if (!IS_WEBM(mkv) ||
-        av_dict_get(s->metadata, "stereo_mode", NULL, 0) ||
-        av_dict_get(s->metadata, "alpha_mode", NULL, 0))
-        version = 4;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_OPUS ||
-            av_dict_get(s->streams[i]->metadata, "stereo_mode", NULL, 0) ||
-            av_dict_get(s->streams[i]->metadata, "alpha_mode", NULL, 0))
-            version = 4;
-    }
-
-    ebml_write_header(pb, s->oformat->name, version);
-    put_ebml_id(pb, MATROSKA_ID_SEGMENT);
-    put_ebml_size_unknown(pb, 8);
-    mkv->segment_offset = avio_tell(pb);
-
-    // We write a SeekHead at the beginning to point to all other level
-    // one elements (except Clusters).
-    mkv_start_seekhead(mkv, pb);
-
-    ret = start_ebml_master_crc32(&mkv->info.bc, mkv);
+    AVIOContext *pb;
+    int ret = start_ebml_master_crc32(&mkv->info.bc, mkv);
     if (ret < 0)
         return ret;
     pb = mkv->info.bc;
@@ -2253,11 +2230,40 @@ static int mkv_write_header(AVFormatContext *s)
             put_ebml_void(pb, 11);              // assumes double-precision float to be written
         }
     }
-    ret = end_ebml_master_crc32_tentatively(s->pb, &mkv->info,
-                                            mkv, MATROSKA_ID_INFO);
+    return end_ebml_master_crc32_tentatively(s->pb, &mkv->info,
+                                             mkv, MATROSKA_ID_INFO);
+}
+
+static int mkv_write_header(AVFormatContext *s)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int ret, version = 2;
+
+    if (!IS_WEBM(mkv) ||
+        av_dict_get(s->metadata, "stereo_mode", NULL, 0) ||
+        av_dict_get(s->metadata, "alpha_mode", NULL, 0))
+        version = 4;
+
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_OPUS ||
+            av_dict_get(s->streams[i]->metadata, "stereo_mode", NULL, 0) ||
+            av_dict_get(s->streams[i]->metadata, "alpha_mode", NULL, 0))
+            version = 4;
+    }
+
+    ebml_write_header(pb, s->oformat->name, version);
+    put_ebml_id(pb, MATROSKA_ID_SEGMENT);
+    put_ebml_size_unknown(pb, 8);
+    mkv->segment_offset = avio_tell(pb);
+
+    // We write a SeekHead at the beginning to point to all other level
+    // one elements (except Clusters).
+    mkv_start_seekhead(mkv, pb);
+
+    ret = mkv_write_info(s);
     if (ret < 0)
         return ret;
-    pb = s->pb;
 
     ret = mkv_write_tracks(s);
     if (ret < 0)
