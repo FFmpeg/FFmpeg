@@ -2057,30 +2057,35 @@ static int mkv_write_attachments(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         const AVStream *st = s->streams[i];
         mkv_track *track = &mkv->tracks[i];
-        ebml_master attached_file;
+        EBML_WRITER(6);
         const AVDictionaryEntry *t;
         const char *mimetype;
 
         if (st->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             continue;
 
-        attached_file = start_ebml_master(dyn_cp, MATROSKA_ID_ATTACHEDFILE, 0);
+        ebml_writer_open_master(&writer, MATROSKA_ID_ATTACHEDFILE);
 
         if (t = av_dict_get(st->metadata, "title", NULL, 0))
-            put_ebml_string(dyn_cp, MATROSKA_ID_FILEDESC, t->value);
+            ebml_writer_add_string(&writer, MATROSKA_ID_FILEDESC, t->value);
         if (!(t = av_dict_get(st->metadata, "filename", NULL, 0))) {
             av_log(s, AV_LOG_ERROR, "Attachment stream %d has no filename tag.\n", i);
             ffio_free_dyn_buf(&dyn_cp);
             return AVERROR(EINVAL);
         }
-        put_ebml_string(dyn_cp, MATROSKA_ID_FILENAME, t->value);
+        ebml_writer_add_string(&writer, MATROSKA_ID_FILENAME, t->value);
 
         mimetype = get_mimetype(st);
         av_assert0(mimetype);
-        put_ebml_string(dyn_cp, MATROSKA_ID_FILEMIMETYPE, mimetype);
-        put_ebml_binary(dyn_cp, MATROSKA_ID_FILEDATA, st->codecpar->extradata, st->codecpar->extradata_size);
-        put_ebml_uid(dyn_cp, MATROSKA_ID_FILEUID, track->uid);
-        end_ebml_master(dyn_cp, attached_file);
+        ebml_writer_add_string(&writer, MATROSKA_ID_FILEMIMETYPE, mimetype);
+        ebml_writer_add_bin(&writer, MATROSKA_ID_FILEDATA,
+                            st->codecpar->extradata, st->codecpar->extradata_size);
+        ebml_writer_add_uid(&writer, MATROSKA_ID_FILEUID, track->uid);
+        ret = ebml_writer_write(&writer, dyn_cp);
+        if (ret < 0) {
+            ffio_free_dyn_buf(&dyn_cp);
+            return ret;
+        }
     }
     return end_ebml_master_crc32(pb, &dyn_cp, mkv,
                                  MATROSKA_ID_ATTACHMENTS, 0, 0, 1);
