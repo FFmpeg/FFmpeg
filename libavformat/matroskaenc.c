@@ -214,10 +214,6 @@ typedef struct MatroskaMuxContext {
     uint32_t            segment_uid[4];
 } MatroskaMuxContext;
 
-/** 2 bytes * 7 for EBML IDs, 7 1-byte EBML lengths, 6 1-byte uint,
- * 8 byte for "matroska" doctype string */
-#define MAX_EBML_HEADER_SIZE 35
-
 /** 2 bytes * 3 for EBML IDs, 3 1-byte EBML lengths, 8 bytes for 64 bit
  * offset, 4 bytes for target EBML ID */
 #define MAX_SEEKENTRY_SIZE 21
@@ -461,6 +457,13 @@ static void ebml_writer_add_uid(EbmlWriter *writer, uint32_t id,
                                 uint64_t val)
 {
     EbmlElement *const elem = ebml_writer_add(writer, id, EBML_UID);
+    elem->priv.uint = val;
+}
+
+static void ebml_writer_add_uint(EbmlWriter *writer, uint32_t id,
+                                 uint64_t val)
+{
+    EbmlElement *elem = ebml_writer_add(writer, id, EBML_UINT);
     elem->priv.uint = val;
 }
 
@@ -2115,11 +2118,26 @@ static int64_t get_metadata_duration(AVFormatContext *s)
     return max;
 }
 
+static void ebml_write_header(AVIOContext *pb,
+                              const char *doctype, int version)
+{
+    EBML_WRITER(8);
+    ebml_writer_open_master(&writer, EBML_ID_HEADER);
+    ebml_writer_add_uint  (&writer, EBML_ID_EBMLVERSION,              1);
+    ebml_writer_add_uint  (&writer, EBML_ID_EBMLREADVERSION,          1);
+    ebml_writer_add_uint  (&writer, EBML_ID_EBMLMAXIDLENGTH,          4);
+    ebml_writer_add_uint  (&writer, EBML_ID_EBMLMAXSIZELENGTH,        8);
+    ebml_writer_add_string(&writer, EBML_ID_DOCTYPE,            doctype);
+    ebml_writer_add_uint  (&writer, EBML_ID_DOCTYPEVERSION,     version);
+    ebml_writer_add_uint  (&writer, EBML_ID_DOCTYPEREADVERSION,       2);
+    /* The size is bounded, so no need to check this. */
+    ebml_writer_write(&writer, pb);
+}
+
 static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
-    ebml_master ebml_header;
     const AVDictionaryEntry *tag;
     int ret, i, version = 2;
     int64_t creation_time;
@@ -2136,16 +2154,7 @@ static int mkv_write_header(AVFormatContext *s)
             version = 4;
     }
 
-    ebml_header = start_ebml_master(pb, EBML_ID_HEADER, MAX_EBML_HEADER_SIZE);
-    put_ebml_uint  (pb, EBML_ID_EBMLVERSION       ,           1);
-    put_ebml_uint  (pb, EBML_ID_EBMLREADVERSION   ,           1);
-    put_ebml_uint  (pb, EBML_ID_EBMLMAXIDLENGTH   ,           4);
-    put_ebml_uint  (pb, EBML_ID_EBMLMAXSIZELENGTH ,           8);
-    put_ebml_string(pb, EBML_ID_DOCTYPE           , s->oformat->name);
-    put_ebml_uint  (pb, EBML_ID_DOCTYPEVERSION    ,     version);
-    put_ebml_uint  (pb, EBML_ID_DOCTYPEREADVERSION,           2);
-    end_ebml_master(pb, ebml_header);
-
+    ebml_write_header(pb, s->oformat->name, version);
     put_ebml_id(pb, MATROSKA_ID_SEGMENT);
     put_ebml_size_unknown(pb, 8);
     mkv->segment_offset = avio_tell(pb);
