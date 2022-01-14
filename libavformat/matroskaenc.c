@@ -425,6 +425,28 @@ static void ebml_writer_open_master(EbmlWriter *writer, uint32_t id)
     writer->current_master_element = writer->nb_elements - 1;
 }
 
+static void ebml_writer_close_master(EbmlWriter *writer)
+{
+    EbmlElement *elem;
+    av_assert2(writer->current_master_element >= 0);
+    av_assert2(writer->current_master_element < writer->nb_elements);
+    elem = &writer->elements[writer->current_master_element];
+    av_assert2(elem->type == EBML_MASTER);
+    elem->priv.master.nb_elements = writer->nb_elements - writer->current_master_element - 1;
+    writer->current_master_element = elem->priv.master.containing_master;
+}
+
+static void ebml_writer_close_or_discard_master(EbmlWriter *writer)
+{
+    av_assert2(writer->nb_elements > 0);
+    if (writer->current_master_element == writer->nb_elements - 1) {
+        /* The master element has no children. Discard it. */
+        writer->nb_elements--;
+        return;
+    }
+    ebml_writer_close_master(writer);
+}
+
 static void ebml_writer_add_string(EbmlWriter *writer, uint32_t id,
                                    const char *str)
 {
@@ -1102,98 +1124,93 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
-static void mkv_write_video_color(AVIOContext *pb, const AVStream *st,
+#define MAX_VIDEO_COLOR_ELEMS 20
+static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
                                   const AVCodecParameters *par)
 {
-    /* 18 Elements with two bytes ID, one byte length field, 8 bytes payload
-     * a master element with two bytes ID and one byte length field
-     * plus another byte to stay clear of the end. */
-    uint8_t colour[(2 + 1 + 8) * 18 + (2 + 1) + 1];
-    FFIOContext buf;
-    AVIOContext *const dyn_cp = &buf.pub;
-    int colorinfo_size;
     const void *side_data;
 
-    ffio_init_context(&buf, colour, sizeof(colour), 1, NULL, NULL, NULL, NULL);
+    ebml_writer_open_master(writer, MATROSKA_ID_VIDEOCOLOR);
 
     if (par->color_trc != AVCOL_TRC_UNSPECIFIED &&
         par->color_trc < AVCOL_TRC_NB) {
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORTRANSFERCHARACTERISTICS,
-                      par->color_trc);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORTRANSFERCHARACTERISTICS,
+                             par->color_trc);
     }
     if (par->color_space != AVCOL_SPC_UNSPECIFIED &&
         par->color_space < AVCOL_SPC_NB) {
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORMATRIXCOEFF, par->color_space);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORMATRIXCOEFF,
+                             par->color_space);
     }
     if (par->color_primaries != AVCOL_PRI_UNSPECIFIED &&
         par->color_primaries < AVCOL_PRI_NB) {
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORPRIMARIES, par->color_primaries);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORPRIMARIES,
+                             par->color_primaries);
     }
     if (par->color_range != AVCOL_RANGE_UNSPECIFIED &&
         par->color_range < AVCOL_RANGE_NB) {
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORRANGE, par->color_range);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORRANGE, par->color_range);
     }
     if (par->chroma_location != AVCHROMA_LOC_UNSPECIFIED &&
         par->chroma_location <= AVCHROMA_LOC_TOP) {
         int xpos, ypos;
 
         avcodec_enum_to_chroma_pos(&xpos, &ypos, par->chroma_location);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORCHROMASITINGHORZ, (xpos >> 7) + 1);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORCHROMASITINGVERT, (ypos >> 7) + 1);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORCHROMASITINGHORZ,
+                             (xpos >> 7) + 1);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORCHROMASITINGVERT,
+                             (ypos >> 7) + 1);
     }
 
     side_data = av_stream_get_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
                                         NULL);
     if (side_data) {
         const AVContentLightMetadata *metadata = side_data;
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORMAXCLL,  metadata->MaxCLL);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOCOLORMAXFALL, metadata->MaxFALL);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORMAXCLL,
+                             metadata->MaxCLL);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOCOLORMAXFALL,
+                             metadata->MaxFALL);
     }
 
     side_data = av_stream_get_side_data(st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
                                         NULL);
     if (side_data) {
-        ebml_master meta_element = start_ebml_master(
-            dyn_cp, MATROSKA_ID_VIDEOCOLORMASTERINGMETA, 10 * (2 + 1 + 8));
         const AVMasteringDisplayMetadata *metadata = side_data;
+        ebml_writer_open_master(writer, MATROSKA_ID_VIDEOCOLORMASTERINGMETA);
         if (metadata->has_primaries) {
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_RX,
-                           av_q2d(metadata->display_primaries[0][0]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_RY,
-                           av_q2d(metadata->display_primaries[0][1]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_GX,
-                           av_q2d(metadata->display_primaries[1][0]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_GY,
-                           av_q2d(metadata->display_primaries[1][1]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_BX,
-                           av_q2d(metadata->display_primaries[2][0]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_BY,
-                           av_q2d(metadata->display_primaries[2][1]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_WHITEX,
-                           av_q2d(metadata->white_point[0]));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_WHITEY,
-                           av_q2d(metadata->white_point[1]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_RX,
+                                  av_q2d(metadata->display_primaries[0][0]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_RY,
+                                  av_q2d(metadata->display_primaries[0][1]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_GX,
+                                  av_q2d(metadata->display_primaries[1][0]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_GY,
+                                  av_q2d(metadata->display_primaries[1][1]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_BX,
+                                  av_q2d(metadata->display_primaries[2][0]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_BY,
+                                  av_q2d(metadata->display_primaries[2][1]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_WHITEX,
+                                  av_q2d(metadata->white_point[0]));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_WHITEY,
+                                  av_q2d(metadata->white_point[1]));
         }
         if (metadata->has_luminance) {
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_LUMINANCEMAX,
-                           av_q2d(metadata->max_luminance));
-            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN,
-                           av_q2d(metadata->min_luminance));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_LUMINANCEMAX,
+                                  av_q2d(metadata->max_luminance));
+            ebml_writer_add_float(writer, MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN,
+                                  av_q2d(metadata->min_luminance));
         }
-        end_ebml_master(dyn_cp, meta_element);
+        ebml_writer_close_or_discard_master(writer);
     }
 
-    colorinfo_size = avio_tell(dyn_cp);
-    if (colorinfo_size)
-        put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLOR, colour, colorinfo_size);
+    ebml_writer_close_or_discard_master(writer);
 }
 
-static void mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
-                                       const AVStream *st)
+#define MAX_VIDEO_PROJECTION_ELEMS 6
+static void mkv_write_video_projection(AVFormatContext *s, EbmlWriter *writer,
+                                       const AVStream *st, uint8_t private[])
 {
-    ebml_master projection;
-    uint8_t private[20];
-
     const AVSphericalMapping *spherical =
         (const AVSphericalMapping *)av_stream_get_side_data(st, AV_PKT_DATA_SPHERICAL,
                                                             NULL);
@@ -1208,93 +1225,92 @@ static void mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
         return;
     }
 
-    // Maximally 4 8-byte elements with id-length 2 + 1 byte length field
-    // and the private data of the AV_SPHERICAL_EQUIRECTANGULAR_TILE case
-    projection = start_ebml_master(pb, MATROSKA_ID_VIDEOPROJECTION,
-                                   4 * (2 + 1 + 8) + (2 + 1 + 20));
+    ebml_writer_open_master(writer, MATROSKA_ID_VIDEOPROJECTION);
 
     switch (spherical->projection) {
     case AV_SPHERICAL_EQUIRECTANGULAR:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
-                      MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                             MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
         break;
     case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
-                      MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                             MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
         AV_WB32(private,      0); // version + flags
         AV_WB32(private +  4, spherical->bound_top);
         AV_WB32(private +  8, spherical->bound_bottom);
         AV_WB32(private + 12, spherical->bound_left);
         AV_WB32(private + 16, spherical->bound_right);
-        put_ebml_binary(pb, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
-                        private, 20);
+        ebml_writer_add_bin(writer, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
+                            private, 20);
         break;
     case AV_SPHERICAL_CUBEMAP:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOPROJECTIONTYPE,
-                      MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                             MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP);
         AV_WB32(private,     0); // version + flags
         AV_WB32(private + 4, 0); // layout
         AV_WB32(private + 8, spherical->padding);
-        put_ebml_binary(pb, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
-                        private, 12);
+        ebml_writer_add_bin(writer, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
+                            private, 12);
         break;
     default:
         av_assert0(0);
     }
 
     if (spherical->yaw)
-        put_ebml_float(pb, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,
-                       (double) spherical->yaw   / (1 << 16));
+        ebml_writer_add_float(writer, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,
+                              (double) spherical->yaw   / (1 << 16));
     if (spherical->pitch)
-        put_ebml_float(pb, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH,
+        ebml_writer_add_float(writer, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH,
                        (double) spherical->pitch / (1 << 16));
     if (spherical->roll)
-        put_ebml_float(pb, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,
+        ebml_writer_add_float(writer, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,
                        (double) spherical->roll  / (1 << 16));
 
-    end_ebml_master(pb, projection);
+    ebml_writer_close_master(writer);
 }
 
-static void mkv_write_field_order(AVIOContext *pb, int is_webm,
+#define MAX_FIELD_ORDER_ELEMS 2
+static void mkv_write_field_order(EbmlWriter *writer, int is_webm,
                                   enum AVFieldOrder field_order)
 {
     switch (field_order) {
     case AV_FIELD_UNKNOWN:
         break;
     case AV_FIELD_PROGRESSIVE:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
-                      MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOFLAGINTERLACED,
+                             MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE);
         break;
     case AV_FIELD_TT:
     case AV_FIELD_BB:
     case AV_FIELD_TB:
     case AV_FIELD_BT:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
-                      MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED);
+        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOFLAGINTERLACED,
+                             MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED);
         if (!is_webm) {
             switch (field_order) {
             case AV_FIELD_TT:
-                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                              MATROSKA_VIDEO_FIELDORDER_TT);
+                ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOFIELDORDER,
+                                     MATROSKA_VIDEO_FIELDORDER_TT);
                 break;
             case AV_FIELD_BB:
-                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                              MATROSKA_VIDEO_FIELDORDER_BB);
+                ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOFIELDORDER,
+                                     MATROSKA_VIDEO_FIELDORDER_BB);
                 break;
             case AV_FIELD_TB:
-                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                              MATROSKA_VIDEO_FIELDORDER_TB);
+                ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOFIELDORDER,
+                                     MATROSKA_VIDEO_FIELDORDER_TB);
                 break;
             case AV_FIELD_BT:
-                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                              MATROSKA_VIDEO_FIELDORDER_BT);
+                ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOFIELDORDER,
+                                     MATROSKA_VIDEO_FIELDORDER_BT);
                 break;
             }
         }
     }
 }
 
-static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
+#define MAX_STEREO_MODE_ELEMS 1
+static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
                                  AVStream *st, int is_webm,
                                  int *h_width, int *h_height)
 {
@@ -1381,7 +1397,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
     }
 
     // write StereoMode if format is valid
-    put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, format);
+    ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOSTEREOMODE, format);
 
     return 0;
 }
@@ -1425,19 +1441,21 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
 {
     const AVDictionaryEntry *tag;
     int display_width_div = 1, display_height_div = 1;
-    ebml_master subinfo;
+    uint8_t color_space[4], projection_private[20];
+    EBML_WRITER(MAX_FIELD_ORDER_ELEMS + MAX_STEREO_MODE_ELEMS      +
+                MAX_VIDEO_COLOR_ELEMS + MAX_VIDEO_PROJECTION_ELEMS + 8);
     int ret;
 
-    subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
+    ebml_writer_open_master(&writer, MATROSKA_ID_TRACKVIDEO);
 
-    put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
-    put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
+    ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
+    ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
 
-    mkv_write_field_order(pb, IS_WEBM(mkv), par->field_order);
+    mkv_write_field_order(&writer, IS_WEBM(mkv), par->field_order);
 
     // check both side data and metadata for stereo information,
     // write the result to the bitstream if any is found
-    ret = mkv_write_stereo_mode(s, pb, st, IS_WEBM(mkv),
+    ret = mkv_write_stereo_mode(s, &writer, st, IS_WEBM(mkv),
                                 &display_width_div,
                                 &display_height_div);
     if (ret < 0)
@@ -1446,7 +1464,7 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
         ((tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
         (par->format == AV_PIX_FMT_YUVA420P)) {
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOALPHAMODE, 1);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOALPHAMODE, 1);
     }
 
     // write DisplayWidth and DisplayHeight, they contain the size of
@@ -1459,35 +1477,42 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
         }
         if (d_width != par->width || display_width_div != 1 || display_height_div != 1) {
             if (IS_WEBM(mkv) || display_width_div != 1 || display_height_div != 1) {
-                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
-                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
+                ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYWIDTH,
+                                     d_width / display_width_div);
+                ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYHEIGHT,
+                                     par->height / display_height_div);
             } else {
                 AVRational display_aspect_ratio;
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                             par->width  * (int64_t)st->sample_aspect_ratio.num,
                             par->height * (int64_t)st->sample_aspect_ratio.den,
                             1024 * 1024);
-                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH,  display_aspect_ratio.num);
-                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, display_aspect_ratio.den);
-                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_DAR);
+                ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYWIDTH,
+                                     display_aspect_ratio.num);
+                ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYHEIGHT,
+                                     display_aspect_ratio.den);
+                ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYUNIT,
+                                     MATROSKA_VIDEO_DISPLAYUNIT_DAR);
             }
         }
     } else if (display_width_div != 1 || display_height_div != 1) {
-        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , par->width / display_width_div);
-        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYWIDTH,
+                             par->width / display_width_div);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYHEIGHT,
+                             par->height / display_height_div);
     } else if (!IS_WEBM(mkv))
-        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEODISPLAYUNIT,
+                             MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
 
     if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
-        uint32_t color_space = av_le2ne32(par->codec_tag);
-        put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
+        AV_WL32(color_space, par->codec_tag);
+        ebml_writer_add_bin(&writer, MATROSKA_ID_VIDEOCOLORSPACE,
+                            color_space, sizeof(color_space));
     }
-    mkv_write_video_color(pb, st, par);
-    mkv_write_video_projection(s, pb, st);
+    mkv_write_video_color(&writer, st, par);
+    mkv_write_video_projection(s, &writer, st, projection_private);
 
-    end_ebml_master(pb, subinfo);
-
-    return 0;
+    return ebml_writer_write(&writer, pb);
 }
 
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
