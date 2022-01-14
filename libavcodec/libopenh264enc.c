@@ -220,26 +220,25 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 #endif
 
     switch (s->profile) {
-#if OPENH264_VER_AT_LEAST(1, 8)
     case FF_PROFILE_H264_HIGH:
         param.iEntropyCodingModeFlag = 1;
         av_log(avctx, AV_LOG_VERBOSE, "Using CABAC, "
                 "select EProfileIdc PRO_HIGH in libopenh264.\n");
         break;
-#else
     case FF_PROFILE_H264_MAIN:
         param.iEntropyCodingModeFlag = 1;
         av_log(avctx, AV_LOG_VERBOSE, "Using CABAC, "
                 "select EProfileIdc PRO_MAIN in libopenh264.\n");
         break;
-#endif
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
     case FF_PROFILE_UNKNOWN:
+        s->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
         param.iEntropyCodingModeFlag = 0;
         av_log(avctx, AV_LOG_VERBOSE, "Using CAVLC, "
                "select EProfileIdc PRO_BASELINE in libopenh264.\n");
         break;
     default:
+        s->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
         param.iEntropyCodingModeFlag = 0;
         av_log(avctx, AV_LOG_WARNING, "Unsupported profile, "
                "select EProfileIdc PRO_BASELINE in libopenh264.\n");
@@ -251,6 +250,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
     param.sSpatialLayers[0].fFrameRate          = param.fMaxFrameRate;
     param.sSpatialLayers[0].iSpatialBitrate     = param.iTargetBitrate;
     param.sSpatialLayers[0].iMaxSpatialBitrate  = param.iMaxBitrate;
+    param.sSpatialLayers[0].uiProfileIdc        = s->profile;
 
 #if OPENH264_VER_AT_LEAST(1, 7)
     if (avctx->sample_aspect_ratio.num && avctx->sample_aspect_ratio.den) {
