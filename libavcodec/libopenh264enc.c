@@ -193,7 +193,7 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 #endif
     param.bPrefixNalAddingCtrl       = 0;
     param.iLoopFilterDisableIdc      = !s->loopfilter;
-    param.iEntropyCodingModeFlag     = 0;
+    param.iEntropyCodingModeFlag     = s->coder >= 0 ? s->coder : 1;
     param.iMultipleThreadIdc         = avctx->thread_count;
 
     /* Allow specifying the libopenh264 profile through AVCodecContext. */
@@ -221,14 +221,14 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 
     switch (s->profile) {
     case FF_PROFILE_H264_HIGH:
-        param.iEntropyCodingModeFlag = 1;
-        av_log(avctx, AV_LOG_VERBOSE, "Using CABAC, "
-                "select EProfileIdc PRO_HIGH in libopenh264.\n");
+        av_log(avctx, AV_LOG_VERBOSE, "Using %s, "
+                "select EProfileIdc PRO_HIGH in libopenh264.\n",
+                param.iEntropyCodingModeFlag ? "CABAC" : "CAVLC");
         break;
     case FF_PROFILE_H264_MAIN:
-        param.iEntropyCodingModeFlag = 1;
-        av_log(avctx, AV_LOG_VERBOSE, "Using CABAC, "
-                "select EProfileIdc PRO_MAIN in libopenh264.\n");
+        av_log(avctx, AV_LOG_VERBOSE, "Using %s, "
+                "select EProfileIdc PRO_MAIN in libopenh264.\n",
+                param.iEntropyCodingModeFlag ? "CABAC" : "CAVLC");
         break;
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
     case FF_PROFILE_UNKNOWN:
