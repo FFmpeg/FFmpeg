@@ -330,6 +330,28 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
         }
     }
 
+#if OPENH264_VER_AT_LEAST(1, 6)
+    param.sSpatialLayers[0].uiVideoFormat = VF_UNDEF;
+    if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED) {
+        param.sSpatialLayers[0].bVideoSignalTypePresent = true;
+        param.sSpatialLayers[0].bFullRange = (avctx->color_range == AVCOL_RANGE_JPEG);
+    }
+
+    if (avctx->colorspace != AVCOL_SPC_UNSPECIFIED      ||
+        avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+        avctx->color_trc != AVCOL_TRC_UNSPECIFIED) {
+        param.sSpatialLayers[0].bVideoSignalTypePresent = true;
+        param.sSpatialLayers[0].bColorDescriptionPresent = true;
+    }
+
+    if (avctx->colorspace != AVCOL_SPC_UNSPECIFIED)
+        param.sSpatialLayers[0].uiColorMatrix = avctx->colorspace;
+    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
+        param.sSpatialLayers[0].uiColorPrimaries = avctx->color_primaries;
+    if (avctx->color_trc != AVCOL_TRC_UNSPECIFIED)
+        param.sSpatialLayers[0].uiTransferCharacteristics = avctx->color_trc;
+#endif
+
     if ((*s->encoder)->InitializeExt(s->encoder, &param) != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "Initialize failed\n");
         return AVERROR_UNKNOWN;
