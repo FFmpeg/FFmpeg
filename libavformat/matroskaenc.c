@@ -2012,12 +2012,13 @@ static int mkv_write_chapters(AVFormatContext *s)
     create_new_ids = mkv_new_chapter_ids_needed(s);
 
     for (unsigned i = 0; i < s->nb_chapters; i++) {
-        ebml_master chapteratom, chapterdisplay;
         const AVChapter *c   = s->chapters[i];
         int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         const AVDictionaryEntry *t;
         uint64_t uid = create_new_ids ? i + 1ULL : c->id;
+        EBML_WRITER(7);
+
         if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
@@ -2026,17 +2027,18 @@ static int mkv_write_chapters(AVFormatContext *s)
             goto fail;
         }
 
-        chapteratom = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERATOM, 0);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID, uid);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
+        ebml_writer_open_master(&writer, MATROSKA_ID_CHAPTERATOM);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_CHAPTERUID, uid);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
+        ebml_writer_add_uint(&writer, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
-            chapterdisplay = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERDISPLAY, 0);
-            put_ebml_string(dyn_cp, MATROSKA_ID_CHAPSTRING, t->value);
-            put_ebml_string(dyn_cp, MATROSKA_ID_CHAPLANG  , "und");
-            end_ebml_master(dyn_cp, chapterdisplay);
+            ebml_writer_open_master(&writer, MATROSKA_ID_CHAPTERDISPLAY);
+            ebml_writer_add_string(&writer, MATROSKA_ID_CHAPSTRING, t->value);
+            ebml_writer_add_string(&writer, MATROSKA_ID_CHAPLANG  , "und");
         }
-        end_ebml_master(dyn_cp, chapteratom);
+        ret = ebml_writer_write(&writer, dyn_cp);
+        if (ret < 0)
+            goto fail;
 
         if (tags && mkv_check_tag(c->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID)) {
             ret = mkv_write_tag(mkv, c->metadata, tags, NULL,
