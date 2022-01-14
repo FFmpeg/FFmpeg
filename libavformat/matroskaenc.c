@@ -1419,6 +1419,77 @@ static void mkv_write_dovi(AVFormatContext *s, AVIOContext *pb, AVStream *st)
 #endif
 }
 
+static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
+                                 AVStream *st, const AVCodecParameters *par,
+                                 AVIOContext *pb)
+{
+    const AVDictionaryEntry *tag;
+    int display_width_div = 1, display_height_div = 1;
+    ebml_master subinfo;
+    int ret;
+
+    subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
+
+    put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
+    put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
+
+    mkv_write_field_order(pb, IS_WEBM(mkv), par->field_order);
+
+    // check both side data and metadata for stereo information,
+    // write the result to the bitstream if any is found
+    ret = mkv_write_stereo_mode(s, pb, st, IS_WEBM(mkv),
+                                &display_width_div,
+                                &display_height_div);
+    if (ret < 0)
+        return ret;
+
+    if (((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
+        ((tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
+        (par->format == AV_PIX_FMT_YUVA420P)) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEOALPHAMODE, 1);
+    }
+
+    // write DisplayWidth and DisplayHeight, they contain the size of
+    // a single source view and/or the display aspect ratio
+    if (st->sample_aspect_ratio.num) {
+        int64_t d_width = av_rescale(par->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+        if (d_width > INT_MAX) {
+            av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
+            return AVERROR(EINVAL);
+        }
+        if (d_width != par->width || display_width_div != 1 || display_height_div != 1) {
+            if (IS_WEBM(mkv) || display_width_div != 1 || display_height_div != 1) {
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
+            } else {
+                AVRational display_aspect_ratio;
+                av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
+                            par->width  * (int64_t)st->sample_aspect_ratio.num,
+                            par->height * (int64_t)st->sample_aspect_ratio.den,
+                            1024 * 1024);
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH,  display_aspect_ratio.num);
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, display_aspect_ratio.den);
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_DAR);
+            }
+        }
+    } else if (display_width_div != 1 || display_height_div != 1) {
+        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , par->width / display_width_div);
+        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
+    } else if (!IS_WEBM(mkv))
+        put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
+
+    if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        uint32_t color_space = av_le2ne32(par->codec_tag);
+        put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
+    }
+    mkv_write_video_color(pb, st, par);
+    mkv_write_video_projection(s, pb, st);
+
+    end_ebml_master(pb, subinfo);
+
+    return 0;
+}
+
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                            AVStream *st, mkv_track *track, AVIOContext *pb,
                            int is_default)
@@ -1430,8 +1501,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     int bit_depth;
     int sample_rate = par->sample_rate;
     int output_sample_rate = 0;
-    int display_width_div = 1;
-    int display_height_div = 1;
     int j, ret;
     const AVDictionaryEntry *tag;
 
@@ -1553,64 +1622,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             ffformatcontext(s)->avoid_negative_ts_use_pts = 0;
         }
 
-        subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKVIDEO, 0);
-
-        put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
-        put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
-
-        mkv_write_field_order(pb, IS_WEBM(mkv), par->field_order);
-
-        // check both side data and metadata for stereo information,
-        // write the result to the bitstream if any is found
-        ret = mkv_write_stereo_mode(s, pb, st, IS_WEBM(mkv),
-                                    &display_width_div,
-                                    &display_height_div);
+        ret = mkv_write_track_video(s, mkv, st, par, pb);
         if (ret < 0)
             return ret;
-
-        if (((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
-            ((tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) && atoi(tag->value)) ||
-            (par->format == AV_PIX_FMT_YUVA420P)) {
-            put_ebml_uint(pb, MATROSKA_ID_VIDEOALPHAMODE, 1);
-        }
-
-        // write DisplayWidth and DisplayHeight, they contain the size of
-        // a single source view and/or the display aspect ratio
-        if (st->sample_aspect_ratio.num) {
-            int64_t d_width = av_rescale(par->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
-            if (d_width > INT_MAX) {
-                av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
-                return AVERROR(EINVAL);
-            }
-            if (d_width != par->width || display_width_div != 1 || display_height_div != 1) {
-                if (IS_WEBM(mkv) || display_width_div != 1 || display_height_div != 1) {
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
-                } else {
-                    AVRational display_aspect_ratio;
-                    av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
-                              par->width  * (int64_t)st->sample_aspect_ratio.num,
-                              par->height * (int64_t)st->sample_aspect_ratio.den,
-                              1024 * 1024);
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH,  display_aspect_ratio.num);
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, display_aspect_ratio.den);
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_DAR);
-                }
-            }
-        } else if (display_width_div != 1 || display_height_div != 1) {
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , par->width / display_width_div);
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
-        } else if (!IS_WEBM(mkv))
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
-
-        if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
-            uint32_t color_space = av_le2ne32(par->codec_tag);
-            put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
-        }
-        mkv_write_video_color(pb, st, par);
-        mkv_write_video_projection(s, pb, st);
-
-        end_ebml_master(pb, subinfo);
 
         if (!IS_WEBM(mkv))
             mkv_write_dovi(s, pb, st);
