@@ -2389,6 +2389,16 @@ static int mkv_reformat_wavpack(MatroskaMuxContext *mkv, AVIOContext *pb,
 }
 #endif
 
+static int mkv_reformat_av1(MatroskaMuxContext *mkv, AVIOContext *pb,
+                            const AVPacket *pkt, int *size)
+{
+    int ret = ff_av1_filter_obus(pb, pkt->data, pkt->size);
+    if (ret < 0)
+        return ret;
+    *size = ret;
+    return 0;
+}
+
 static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                            uint32_t blockid, const AVPacket *pkt, int keyframe)
 {
@@ -2426,9 +2436,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         err = ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
     } else
 #endif
-           if (par->codec_id == AV_CODEC_ID_AV1) {
-        err = ff_av1_filter_obus_buf(pkt->data, &data, &size, &offset);
-    } else if (track->reformat) {
+    if (track->reformat) {
         err = track->reformat(mkv, NULL, pkt, &size);
     } else
         data = pkt->data;
@@ -3106,6 +3114,9 @@ static int mkv_init(struct AVFormatContext *s)
             track->reformat = mkv_reformat_wavpack;
             break;
 #endif
+        case AV_CODEC_ID_AV1:
+            track->reformat = mkv_reformat_av1;
+            break;
         }
 
         if (s->flags & AVFMT_FLAG_BITEXACT) {
