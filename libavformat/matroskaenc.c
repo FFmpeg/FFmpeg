@@ -2427,13 +2427,10 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
            mkv->cluster_pos, track_number, keyframe != 0);
 
 #if CONFIG_MATROSKA_MUXER
-    if (par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 &&
+    if ((par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 ||
+         par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6) &&
         (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
         err = ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
-    } else if (par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6 &&
-               (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
-        /* extradata is Annex B, assume the bitstream is too and convert it */
-        err = ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
     } else
 #endif
     if (track->reformat) {
