@@ -2347,57 +2347,45 @@ static int mkv_blockgroup_size(int pkt_size, int track_num_size)
 }
 
 #if CONFIG_MATROSKA_MUXER
-static int mkv_strip_wavpack(const uint8_t *src, uint8_t **pdst, int *size)
+static int mkv_reformat_wavpack(MatroskaMuxContext *mkv, AVIOContext *pb,
+                                const AVPacket *pkt, int *size)
 {
-    uint8_t *dst;
-    int srclen = *size;
+    const uint8_t *src = pkt->data;
+    int srclen = pkt->size;
     int offset = 0;
     int ret;
-
-    dst = av_malloc(srclen);
-    if (!dst)
-        return AVERROR(ENOMEM);
 
     while (srclen >= WV_HEADER_SIZE) {
         WvHeader header;
 
         ret = ff_wv_parse_header(&header, src);
         if (ret < 0)
-            goto fail;
+            return ret;
         src    += WV_HEADER_SIZE;
         srclen -= WV_HEADER_SIZE;
 
-        if (srclen < header.blocksize) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        if (srclen < header.blocksize)
+            return AVERROR_INVALIDDATA;
 
-        if (header.initial) {
-            AV_WL32(dst + offset, header.samples);
-            offset += 4;
-        }
-        AV_WL32(dst + offset,     header.flags);
-        AV_WL32(dst + offset + 4, header.crc);
-        offset += 8;
+        offset += 4 * !!header.initial + 8 + 4 * !(header.initial && header.final);
+        if (pb) {
+            if (header.initial)
+                avio_wl32(pb, header.samples);
+            avio_wl32(pb, header.flags);
+            avio_wl32(pb, header.crc);
 
-        if (!(header.initial && header.final)) {
-            AV_WL32(dst + offset, header.blocksize);
-            offset += 4;
-        }
+            if (!(header.initial && header.final))
+                avio_wl32(pb, header.blocksize);
 
-        memcpy(dst + offset, src, header.blocksize);
+            avio_write(pb, src, header.blocksize);
+        }
         src    += header.blocksize;
         srclen -= header.blocksize;
         offset += header.blocksize;
     }
-
-    *pdst = dst;
     *size = offset;
 
     return 0;
-fail:
-    av_freep(&dst);
-    return ret;
 }
 #endif
 
@@ -2436,8 +2424,6 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
         /* extradata is Annex B, assume the bitstream is too and convert it */
         err = ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
-    } else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
-        err = mkv_strip_wavpack(pkt->data, &data, &size);
     } else
 #endif
            if (par->codec_id == AV_CODEC_ID_AV1) {
@@ -3111,7 +3097,16 @@ static int mkv_init(struct AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        const AVCodecParameters *const par = st->codecpar;
         mkv_track *track = &mkv->tracks[i];
+
+        switch (par->codec_id) {
+#if CONFIG_MATROSKA_MUXER
+        case AV_CODEC_ID_WAVPACK:
+            track->reformat = mkv_reformat_wavpack;
+            break;
+#endif
+        }
 
         if (s->flags & AVFMT_FLAG_BITEXACT) {
             track->uid = i + 1;
