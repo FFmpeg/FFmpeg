@@ -158,6 +158,8 @@ typedef struct mkv_cues {
     int             num_entries;
 } mkv_cues;
 
+struct MatroskaMuxContext;
+
 typedef struct mkv_track {
     int             write_dts;
     int             has_cue;
@@ -171,6 +173,13 @@ typedef struct mkv_track {
     int64_t         duration_offset;
     int64_t         codecpriv_offset;
     int64_t         ts_offset;
+    /* This callback will be called twice: First with a NULL AVIOContext
+     * to return the size of the (Simple)Block's data via size
+     * and a second time with the AVIOContext set when the data
+     * shall be written.
+     * The callback shall not return an error on the second call. */
+    int             (*reformat)(struct MatroskaMuxContext *, AVIOContext *,
+                                const AVPacket *, int *size);
 } mkv_track;
 
 typedef struct MatroskaMuxContext {
@@ -2433,6 +2442,8 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
 #endif
            if (par->codec_id == AV_CODEC_ID_AV1) {
         err = ff_av1_filter_obus_buf(pkt->data, &data, &size, &offset);
+    } else if (track->reformat) {
+        err = track->reformat(mkv, NULL, pkt, &size);
     } else
         data = pkt->data;
 
@@ -2483,9 +2494,13 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     put_ebml_num(pb, track_number, track->track_num_size);
     avio_wb16(pb, ts - mkv->cluster_pts);
     avio_w8(pb, (blockid == MATROSKA_ID_SIMPLEBLOCK && keyframe) ? (1 << 7) : 0);
+    if (track->reformat) {
+        track->reformat(mkv, pb, pkt, &size);
+    } else {
     avio_write(pb, data + offset, size);
     if (data != pkt->data)
         av_free(data);
+    }
 
     if (blockid == MATROSKA_ID_BLOCK && !keyframe)
         put_ebml_sint(pb, MATROSKA_ID_BLOCKREFERENCE, track->last_timestamp - ts);
