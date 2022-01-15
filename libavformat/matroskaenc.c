@@ -2095,6 +2095,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     int64_t discard_padding = 0;
     unsigned track_number = track->track_num;
     ebml_master block_group, block_additions, block_more;
+    int blockgroup_already_opened = blockid == MATROSKA_ID_BLOCK;
 
     ts += track->ts_offset;
 
@@ -2141,7 +2142,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     side_data = av_packet_get_side_data(pkt,
                                         AV_PKT_DATA_SKIP_SAMPLES,
                                         &side_data_size);
-    if (side_data && side_data_size >= 10) {
+    if (side_data && side_data_size >= 10 && !blockgroup_already_opened) {
         discard_padding = av_rescale_q(AV_RL32(side_data + 4),
                                        (AVRational){1, par->sample_rate},
                                        (AVRational){1, 1000000000});
@@ -2152,7 +2153,8 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                                         &side_data_size);
     if (side_data) {
         // Only the Codec-specific BlockMore (id == 1) is currently supported.
-        if (side_data_size < 8 || (additional_id = AV_RB64(side_data)) != 1) {
+        if (side_data_size < 8 || (additional_id = AV_RB64(side_data)) != 1 ||
+            blockgroup_already_opened) {
             side_data_size = 0;
         } else {
             side_data      += 8;
