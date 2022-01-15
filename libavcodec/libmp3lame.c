@@ -138,7 +138,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
 
     /* set specified parameters */
     if (lame_init_params(s->gfp) < 0) {
-        ret = -1;
+        ret = AVERROR_EXTERNAL;
         goto error;
     }
 
@@ -231,7 +231,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                    "lame: output buffer too small (buffer index: %d, free bytes: %d)\n",
                    s->buffer_index, s->buffer_size - s->buffer_index);
         }
-        return -1;
+        return AVERROR(ENOMEM);
     }
     s->buffer_index += lame_result;
     ret = realloc_buffer(s);
@@ -259,7 +259,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return AVERROR_BUG;
     } else if (ret) {
         av_log(avctx, AV_LOG_ERROR, "free format output not supported\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     len = hdr.frame_size;
     ff_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
