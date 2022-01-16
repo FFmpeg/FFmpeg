@@ -2735,22 +2735,22 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
 
     /* The WebM spec requires WebVTT to be muxed in BlockGroups;
      * so we force it even for packets without duration. */
-        ret = mkv_write_block(s, mkv, pb, par, track, pkt,
-                              keyframe, ts, write_duration,
-                              par->codec_id == AV_CODEC_ID_WEBVTT);
+    ret = mkv_write_block(s, mkv, pb, par, track, pkt,
+                          keyframe, ts, write_duration,
+                          par->codec_id == AV_CODEC_ID_WEBVTT);
+    if (ret < 0)
+        return ret;
+    if (keyframe && IS_SEEKABLE(s->pb, mkv) &&
+        (par->codec_type == AVMEDIA_TYPE_VIDEO    ||
+         par->codec_type == AVMEDIA_TYPE_SUBTITLE ||
+         !mkv->have_video && !track->has_cue)) {
+        ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
+                               mkv->cluster_pos, relative_packet_pos,
+                               write_duration);
         if (ret < 0)
             return ret;
-        if (keyframe && IS_SEEKABLE(s->pb, mkv) &&
-            (par->codec_type == AVMEDIA_TYPE_VIDEO    ||
-             par->codec_type == AVMEDIA_TYPE_SUBTITLE ||
-             !mkv->have_video && !track->has_cue)) {
-            ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
-                                   mkv->cluster_pos, relative_packet_pos,
-                                   write_duration);
-            if (ret < 0)
-                return ret;
-            track->has_cue = 1;
-        }
+        track->has_cue = 1;
+    }
 
     track->last_timestamp = ts;
     mkv->duration   = FFMAX(mkv->duration,   ts + duration);
