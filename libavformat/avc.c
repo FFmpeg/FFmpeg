@@ -70,7 +70,8 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end){
     return out;
 }
 
-int ff_avc_parse_nal_units(AVIOContext *pb, const uint8_t *buf_in, int size)
+static int avc_parse_nal_units(AVIOContext *pb, NALUList *list,
+                               const uint8_t *buf_in, int size)
 {
     const uint8_t *p = buf_in;
     const uint8_t *end = p + size;
@@ -79,17 +80,50 @@ int ff_avc_parse_nal_units(AVIOContext *pb, const uint8_t *buf_in, int size)
     size = 0;
     nal_start = ff_avc_find_startcode(p, end);
     for (;;) {
+        const size_t nalu_limit = SIZE_MAX / sizeof(*list->nalus);
         while (nal_start < end && !*(nal_start++));
         if (nal_start == end)
             break;
 
         nal_end = ff_avc_find_startcode(nal_start, end);
-        avio_wb32(pb, nal_end - nal_start);
-        avio_write(pb, nal_start, nal_end - nal_start);
+        if (pb) {
+            avio_wb32(pb, nal_end - nal_start);
+            avio_write(pb, nal_start, nal_end - nal_start);
+        } else if (list->nb_nalus >= nalu_limit) {
+            return AVERROR(ERANGE);
+        } else {
+            NALU *tmp = av_fast_realloc(list->nalus, &list->nalus_array_size,
+                                        (list->nb_nalus + 1) * sizeof(*list->nalus));
+            if (!tmp)
+                return AVERROR(ENOMEM);
+            list->nalus = tmp;
+            tmp[list->nb_nalus++] = (NALU){ .offset = nal_start - p,
+                                            .size   = nal_end - nal_start };
+        }
         size += 4 + nal_end - nal_start;
         nal_start = nal_end;
     }
     return size;
+}
+
+int ff_avc_parse_nal_units(AVIOContext *pb, const uint8_t *buf_in, int size)
+{
+    return avc_parse_nal_units(pb, NULL, buf_in, size);
+}
+
+int ff_nal_units_create_list(NALUList *list, const uint8_t *buf, int size)
+{
+    list->nb_nalus = 0;
+    return avc_parse_nal_units(NULL, list, buf, size);
+}
+
+void ff_nal_units_write_list(const NALUList *list, AVIOContext *pb,
+                             const uint8_t *buf)
+{
+    for (unsigned i = 0; i < list->nb_nalus; i++) {
+        avio_wb32(pb, list->nalus[i].size);
+        avio_write(pb, buf + list->nalus[i].offset, list->nalus[i].size);
+    }
 }
 
 int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
