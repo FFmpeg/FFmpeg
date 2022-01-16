@@ -86,7 +86,7 @@ fate-unknown_layout-ac3: CMD = md5 -auto_conversion_filters \
   -guess_layout_max 0 -f s32le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
   -f ac3 -flags +bitexact -c ac3_fixed
 
-FATE_FFMPEG-$(call ALLYES, FILE_PROTOCOL LAVFI_INDEV RAWVIDEO_DEMUXER      \
+FATE_SAMPLES_FFMPEG-$(call ALLYES, FILE_PROTOCOL LAVFI_INDEV RAWVIDEO_DEMUXER \
                            SINE_FILTER PCM_S16LE_DECODER RAWVIDEO_DECODER  \
                            ARESAMPLE_FILTER AMIX_FILTER MPEG4_ENCODER      \
                            AC3_FIXED_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) \
