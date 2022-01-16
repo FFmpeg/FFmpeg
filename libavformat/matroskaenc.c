@@ -167,6 +167,7 @@ typedef struct mkv_track {
     unsigned        track_num;
     int             track_num_size;
     int             sample_rate;
+    unsigned        offset;
     int64_t         sample_rate_offset;
     int64_t         last_timestamp;
     int64_t         duration;
@@ -2451,12 +2452,9 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         return err;
     }
 
-    if (CONFIG_MATROSKA_MUXER &&
-        par->codec_id == AV_CODEC_ID_PRORES && size >= 8) {
-        /* Matroska specification requires to remove the first QuickTime atom
-         */
-        size  -= 8;
-        offset = 8;
+    if (track->offset <= size) {
+        size  -= track->offset;
+        offset = track->offset;
     }
 
     side_data = av_packet_get_side_data(pkt,
@@ -3116,6 +3114,11 @@ static int mkv_init(struct AVFormatContext *s)
                  par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6) &&
                 (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
                 track->reformat = mkv_reformat_h2645;
+            break;
+        case AV_CODEC_ID_PRORES:
+            /* Matroska specification requires to remove
+             * the first QuickTime atom. */
+            track->offset = 8;
             break;
 #endif
         case AV_CODEC_ID_AV1:
