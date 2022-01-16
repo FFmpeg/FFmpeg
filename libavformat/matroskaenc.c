@@ -199,6 +199,8 @@ typedef struct MatroskaMuxContext {
     mkv_cues            cues;
     int64_t             cues_pos;
 
+    NALUList            h2645_nalu_list;
+
     AVPacket           *cur_audio_pkt;
 
     unsigned            nb_attachments;
@@ -747,6 +749,7 @@ static void mkv_deinit(AVFormatContext *s)
     ffio_free_dyn_buf(&mkv->track.bc);
     ffio_free_dyn_buf(&mkv->tags.bc);
 
+    av_freep(&mkv->h2645_nalu_list.nalus);
     av_freep(&mkv->cues.entries);
     av_freep(&mkv->tracks);
 }
@@ -2347,6 +2350,21 @@ static int mkv_blockgroup_size(int pkt_size, int track_num_size)
 }
 
 #if CONFIG_MATROSKA_MUXER
+static int mkv_reformat_h2645(MatroskaMuxContext *mkv, AVIOContext *pb,
+                              const AVPacket *pkt, int *size)
+{
+    int ret;
+    if (pb) {
+        ff_nal_units_write_list(&mkv->h2645_nalu_list, pb, pkt->data);
+    } else {
+        ret = ff_nal_units_create_list(&mkv->h2645_nalu_list, pkt->data, pkt->size);
+        if (ret < 0)
+            return ret;
+        *size = ret;
+    }
+    return 0;
+}
+
 static int mkv_reformat_wavpack(MatroskaMuxContext *mkv, AVIOContext *pb,
                                 const AVPacket *pkt, int *size)
 {
@@ -2426,13 +2444,6 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
            pkt->size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
            mkv->cluster_pos, track_number, keyframe != 0);
 
-#if CONFIG_MATROSKA_MUXER
-    if ((par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 ||
-         par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6) &&
-        (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1)) {
-        err = ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
-    } else
-#endif
     if (track->reformat) {
         err = track->reformat(mkv, NULL, pkt, &size);
     } else
@@ -2489,8 +2500,6 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         track->reformat(mkv, pb, pkt, &size);
     } else {
     avio_write(pb, data + offset, size);
-    if (data != pkt->data)
-        av_free(data);
     }
 
     if (blockid == MATROSKA_ID_BLOCK && !keyframe)
@@ -3109,6 +3118,13 @@ static int mkv_init(struct AVFormatContext *s)
 #if CONFIG_MATROSKA_MUXER
         case AV_CODEC_ID_WAVPACK:
             track->reformat = mkv_reformat_wavpack;
+            break;
+        case AV_CODEC_ID_H264:
+        case AV_CODEC_ID_HEVC:
+            if ((par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 ||
+                 par->codec_id == AV_CODEC_ID_HEVC && par->extradata_size > 6) &&
+                (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
+                track->reformat = mkv_reformat_h2645;
             break;
 #endif
         case AV_CODEC_ID_AV1:
