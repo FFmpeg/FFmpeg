@@ -2503,7 +2503,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                            AVIOContext *pb, const AVCodecParameters *par,
                            mkv_track *track, const AVPacket *pkt,
                            int keyframe, int64_t ts, uint64_t duration,
-                           int force_blockgroup)
+                           int force_blockgroup, int64_t relative_packet_pos)
 {
     uint8_t *side_data;
     size_t side_data_size;
@@ -2529,7 +2529,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
            "Writing block of size %d with pts %" PRId64 ", dts %" PRId64 ", "
            "duration %" PRId64 " at relative offset %" PRId64 " in cluster "
            "at offset %" PRId64 ". TrackNumber %u, keyframe %d\n",
-           pkt->size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
+           pkt->size, pkt->pts, pkt->dts, pkt->duration, relative_packet_pos,
            mkv->cluster_pos, track_number, keyframe != 0);
 
     side_data = av_packet_get_side_data(pkt,
@@ -2737,7 +2737,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
      * so we force it even for packets without duration. */
     ret = mkv_write_block(s, mkv, pb, par, track, pkt,
                           keyframe, ts, write_duration,
-                          par->codec_id == AV_CODEC_ID_WEBVTT);
+                          par->codec_id == AV_CODEC_ID_WEBVTT,
+                          relative_packet_pos);
     if (ret < 0)
         return ret;
     if (keyframe && IS_SEEKABLE(s->pb, mkv) &&
