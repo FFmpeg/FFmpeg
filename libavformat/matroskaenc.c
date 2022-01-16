@@ -286,7 +286,7 @@ static void put_ebml_uint(AVIOContext *pb, uint32_t elementid, uint64_t val)
 static void put_ebml_sint(AVIOContext *pb, uint32_t elementid, int64_t val)
 {
     int i, bytes = 1;
-    uint64_t tmp = 2*(val < 0 ? val^-1 : val);
+    uint64_t tmp = 2 * (uint64_t)(val < 0 ? val^-1 : val);
 
     while (tmp >>= 8)
         bytes++;
