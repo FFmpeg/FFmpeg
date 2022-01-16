@@ -2417,27 +2417,23 @@ static int mkv_reformat_av1(MatroskaMuxContext *mkv, AVIOContext *pb,
     return 0;
 }
 
-static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
-                           const AVPacket *pkt, int keyframe, uint64_t duration)
+static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
+                           AVIOContext *pb, const AVCodecParameters *par,
+                           mkv_track *track, const AVPacket *pkt,
+                           int keyframe, int64_t ts, uint64_t duration)
 {
-    MatroskaMuxContext *mkv = s->priv_data;
-    AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
-    mkv_track *track = &mkv->tracks[pkt->stream_index];
     uint8_t *data = NULL, *side_data = NULL;
     size_t side_data_size;
     int err = 0, offset = 0, size = pkt->size;
-    int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
     uint64_t additional_id;
     uint32_t blockid = MATROSKA_ID_SIMPLEBLOCK;
     int64_t discard_padding = 0;
     unsigned track_number = track->track_num;
     ebml_master block_group, block_additions, block_more;
 
-    ts += track->ts_offset;
-
     /* The following string is identical to the one in mkv_write_vtt_blocks
      * so that only one copy needs to exist in binaries. */
-    av_log(s, AV_LOG_DEBUG,
+    av_log(logctx, AV_LOG_DEBUG,
            "Writing block of size %d with pts %" PRId64 ", dts %" PRId64 ", "
            "duration %" PRId64 " at relative offset %" PRId64 " in cluster "
            "at offset %" PRId64 ". TrackNumber %u, keyframe %d\n",
@@ -2450,7 +2446,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         data = pkt->data;
 
     if (err < 0) {
-        av_log(s, AV_LOG_ERROR, "Error when reformatting data of "
+        av_log(logctx, AV_LOG_ERROR, "Error when reformatting data of "
                "a packet from stream %d.\n", pkt->stream_index);
         return err;
     }
@@ -2741,7 +2737,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
     relative_packet_pos = avio_tell(pb);
 
     if (par->codec_id != AV_CODEC_ID_WEBVTT) {
-        ret = mkv_write_block(s, pb, pkt, keyframe, write_duration);
+        ret = mkv_write_block(s, mkv, pb, par, track, pkt,
+                              keyframe, ts, write_duration);
         if (ret < 0)
             return ret;
         if (keyframe && IS_SEEKABLE(s->pb, mkv) &&
