@@ -252,16 +252,12 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
             return AVERROR(EINVAL);
         }
 
-        err = ff_vk_create_buf(vkctx, &s->params_buf,
-                               sizeof(*par),
-                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-        if (err)
-            return err;
+        RET(ff_vk_create_buf(vkctx, &s->params_buf,
+                             sizeof(*par),
+                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 
-        err = ff_vk_map_buffers(vkctx, &s->params_buf, (uint8_t **)&par, 1, 0);
-        if (err)
-            return err;
+        RET(ff_vk_map_buffers(vkctx, &s->params_buf, (uint8_t **)&par, 1, 0));
 
         ff_fill_rgb2yuv_table(lcoeffs, tmp_mat);
 
@@ -273,9 +269,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         par->yuv_matrix[3][3] = 1.0;
 
-        err = ff_vk_unmap_buffers(vkctx, &s->params_buf, 1, 1);
-        if (err)
-            return err;
+        RET(ff_vk_unmap_buffers(vkctx, &s->params_buf, 1, 1));
 
         s->params_desc.buffer = s->params_buf.buf;
         s->params_desc.range  = VK_WHOLE_SIZE;
@@ -475,11 +469,7 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
-    err = ff_vk_filter_config_output(outlink);
-    if (err < 0)
-        return err;
-
-    return 0;
+    return ff_vk_filter_config_output(outlink);
 }
 
 static void scale_vulkan_uninit(AVFilterContext *avctx)
