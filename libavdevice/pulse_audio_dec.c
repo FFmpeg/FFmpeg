@@ -259,7 +259,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = codec_id;
     st->codecpar->sample_rate = pd->sample_rate;
-    st->codecpar->channels    = pd->channels;
+    st->codecpar->ch_layout.nb_channels = pd->channels;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
     pd->timefilter = ff_timefilter_new(1000000.0 / pd->sample_rate,
