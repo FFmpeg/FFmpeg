@@ -200,7 +200,7 @@ static int parse_imf_asset_map_from_xml_dom(AVFormatContext *s,
                            elem_count + asset_map->asset_count,
                            sizeof(IMFAssetLocator));
     if (!tmp) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate IMF asset locators\n");
+        av_log(s, AV_LOG_ERROR, "Cannot allocate IMF asset locators\n");
         return AVERROR(ENOMEM);
     }
     asset_map->assets = tmp;
