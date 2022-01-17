@@ -3296,6 +3296,9 @@ to allow changing of frame type from P and B to I.
 @item @var{adaptive_b}
 This flag controls changing of frame type from B to P.
 
+@item @var{p_strategy}
+Enable P-pyramid: 0-default 1-simple 2-pyramid(bf need to be set to 0).
+
 @item @var{b_strategy}
 This option controls usage of B frames as reference.
 
@@ -3393,6 +3396,9 @@ Enable rate distortion optimization.
 
 @item @var{max_frame_size}
 Maximum encoded frame size in bytes.
+
+@item @var{p_strategy}
+Enable P-pyramid: 0-default 1-simple 2-pyramid(bf need to be set to 0).
 
 @item @var{dblk_idc}
 This option disable deblocking. It has value in range 0~2.

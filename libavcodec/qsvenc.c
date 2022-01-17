@@ -318,6 +318,14 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
     case MFX_B_REF_PYRAMID: av_log(avctx, AV_LOG_VERBOSE, "pyramid");   break;
     default:                av_log(avctx, AV_LOG_VERBOSE, "auto");      break;
     }
+
+    av_log(avctx, AV_LOG_VERBOSE, "; PRefType: ");
+    switch (co3->PRefType) {
+    case MFX_P_REF_DEFAULT: av_log(avctx, AV_LOG_VERBOSE, "default");   break;
+    case MFX_P_REF_SIMPLE:  av_log(avctx, AV_LOG_VERBOSE, "simple");    break;
+    case MFX_P_REF_PYRAMID: av_log(avctx, AV_LOG_VERBOSE, "pyramid");   break;
+    default:                av_log(avctx, AV_LOG_VERBOSE, "unknown");   break;
+    }
     av_log(avctx, AV_LOG_VERBOSE, "\n");
 #endif
 
@@ -936,6 +944,34 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 #if QSV_HAVE_CO3
         q->extco3.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION3;
         q->extco3.Header.BufferSz      = sizeof(q->extco3);
+
+        if (avctx->codec_id == AV_CODEC_ID_HEVC ||
+            avctx->codec_id == AV_CODEC_ID_H264) {
+#if QSV_HAVE_PREF
+            switch (q->p_strategy) {
+            case 0:
+                q->extco3.PRefType = MFX_P_REF_DEFAULT;
+                break;
+            case 1:
+                q->extco3.PRefType = MFX_P_REF_SIMPLE;
+                break;
+            case 2:
+                q->extco3.PRefType = MFX_P_REF_PYRAMID;
+                break;
+            default:
+                q->extco3.PRefType = MFX_P_REF_DEFAULT;
+                av_log(avctx, AV_LOG_WARNING,
+                       "invalid p_strategy, set to default\n");
+                break;
+            }
+            if (q->extco3.PRefType == MFX_P_REF_PYRAMID &&
+                avctx->max_b_frames != 0) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "Please set max_b_frames(-bf) to 0 to enable P-pyramid\n");
+            }
+#endif
+        }
+
 #if QSV_HAVE_GPB
         if (avctx->codec_id == AV_CODEC_ID_HEVC)
             q->extco3.GPB              = q->gpb ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
