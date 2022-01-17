@@ -248,14 +248,14 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
                " Only 48kHz is supported.\n");
         return -1;
     }
-    if (c->channels != 2 && c->channels != 8 && c->channels != 16) {
+    if (c->ch_layout.nb_channels != 2 && c->ch_layout.nb_channels != 8 && c->ch_layout.nb_channels != 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels!"
                " Only 2, 8 or 16 channels are supported.\n");
         return -1;
     }
     if (ctx->dlo->EnableAudioOutput(bmdAudioSampleRate48kHz,
                                     bmdAudioSampleType16bitInteger,
-                                    c->channels,
+                                    c->ch_layout.nb_channels,
                                     bmdAudioOutputStreamTimestamped) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not enable audio output!\n");
         return -1;
@@ -267,7 +267,7 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
 
     /* The device expects the sample rate to be fixed. */
     avpriv_set_pts_info(st, 64, 1, c->sample_rate);
-    ctx->channels = c->channels;
+    ctx->channels = c->ch_layout.nb_channels;
 
     ctx->audio = 1;
 
