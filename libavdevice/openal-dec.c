@@ -159,7 +159,7 @@ static int read_header(AVFormatContext *ctx)
     par = st->codecpar;
     par->codec_type = AVMEDIA_TYPE_AUDIO;
     par->sample_rate = ad->sample_rate;
-    par->channels = get_al_format_info(ad->sample_format)->channels;
+    par->ch_layout.nb_channels = get_al_format_info(ad->sample_format)->channels;
     par->codec_id = get_al_format_info(ad->sample_format)->codec_id;
 
     /* This is needed to read the audio data */
