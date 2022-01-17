@@ -835,9 +835,14 @@ static int rtp_parse_queued_packet(RTPDemuxContext *s, AVPacket *pkt)
     if (s->queue_len <= 0)
         return -1;
 
-    if (!has_next_packet(s))
+    if (!has_next_packet(s)) {
+        int pkt_missed  = s->queue->seq - s->seq - 1;
+
+        if (pkt_missed < 0)
+            pkt_missed += UINT16_MAX;
         av_log(s->ic, AV_LOG_WARNING,
-               "RTP: missed %d packets\n", s->queue->seq - s->seq - 1);
+               "RTP: missed %d packets\n", pkt_missed);
+    }
 
     /* Parse the first packet in the queue, and dequeue it */
     rv   = rtp_parse_packet_internal(s, pkt, s->queue->buf, s->queue->len);
