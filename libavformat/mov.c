@@ -5768,6 +5768,8 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (a.size == 0) {
             a.size = atom.size - total_size + 8;
         }
+        if (a.size < 0)
+            break;
         a.size -= 8;
         if (a.size < 0)
             break;
