@@ -40,11 +40,10 @@ typedef struct OpenMPTContext {
     const AVClass *class;
     openmpt_module *module;
 
-    int channels;
     double duration;
     /* options */
     int sample_rate;
-    int64_t layout;
+    AVChannelLayout ch_layout;
     int subsong;
 } OpenMPTContext;
 
@@ -53,7 +52,7 @@ typedef struct OpenMPTContext {
 #define D AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "sample_rate", "set sample rate",    OFFSET(sample_rate), AV_OPT_TYPE_INT,            { .i64 = 48000 },               1000, INT_MAX,   A | D },
-    { "layout",      "set channel layout", OFFSET(layout),      AV_OPT_TYPE_CHANNEL_LAYOUT, { .i64 = AV_CH_LAYOUT_STEREO }, 0,    INT64_MAX, A | D },
+    { "layout",      "set channel layout", OFFSET(ch_layout),   AV_OPT_TYPE_CHLAYOUT,       { .str = "stereo" },            0,    0,         A | D },
     { "subsong",     "set subsong",        OFFSET(subsong),     AV_OPT_TYPE_INT,            { .i64 = -2 },                  -2,   INT_MAX,   A | D, "subsong"},
     { "all",         "all",                0,                   AV_OPT_TYPE_CONST,          { .i64 = -1},                   0,    0,         A | D, "subsong" },
     { "auto",        "auto",               0,                   AV_OPT_TYPE_CONST,          { .i64 = -2},                   0,    0,         A | D, "subsong" },
@@ -120,8 +119,6 @@ static int read_header_openmpt(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
 #endif
 
-    openmpt->channels = av_get_channel_layout_nb_channels(openmpt->layout);
-
     if (openmpt->subsong >= openmpt_module_get_num_subsongs(openmpt->module)) {
         av_log(s, AV_LOG_ERROR, "Invalid subsong index: %d\n", openmpt->subsong);
         return AVERROR(EINVAL);
@@ -154,8 +151,10 @@ static int read_header_openmpt(AVFormatContext *s)
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_F32BE, AV_CODEC_ID_PCM_F32LE);
-    st->codecpar->channels    = openmpt->channels;
     st->codecpar->sample_rate = openmpt->sample_rate;
+    ret = av_channel_layout_copy(&st->codecpar->ch_layout, &openmpt->ch_layout);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -165,13 +164,13 @@ static int read_header_openmpt(AVFormatContext *s)
 static int read_packet_openmpt(AVFormatContext *s, AVPacket *pkt)
 {
     OpenMPTContext *openmpt = s->priv_data;
-    int n_samples = AUDIO_PKT_SIZE / (openmpt->channels ? openmpt->channels*4 : 4);
+    int n_samples = AUDIO_PKT_SIZE / (openmpt->ch_layout.nb_channels ? openmpt->ch_layout.nb_channels*4 : 4);
     int ret;
 
     if ((ret = av_new_packet(pkt, AUDIO_PKT_SIZE)) < 0)
         return ret;
 
-    switch (openmpt->channels) {
+    switch (openmpt->ch_layout.nb_channels) {
     case 1:
         ret = openmpt_module_read_float_mono(openmpt->module, openmpt->sample_rate,
                                              n_samples, (float *)pkt->data);
@@ -185,7 +184,7 @@ static int read_packet_openmpt(AVFormatContext *s, AVPacket *pkt)
                                                          n_samples, (float *)pkt->data);
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "Unsupported number of channels: %d", openmpt->channels);
+        av_log(s, AV_LOG_ERROR, "Unsupported number of channels: %d", openmpt->ch_layout.nb_channels);
         return AVERROR(EINVAL);
     }
 
@@ -194,7 +193,7 @@ static int read_packet_openmpt(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
     }
 
-    pkt->size = ret * (openmpt->channels * 4);
+    pkt->size = ret * (openmpt->ch_layout.nb_channels * 4);
 
     return 0;
 }
