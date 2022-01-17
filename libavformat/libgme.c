@@ -142,7 +142,7 @@ static int read_header_gme(AVFormatContext *s)
         st->duration = duration;
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE);
-    st->codecpar->channels    = 2;
+    st->codecpar->ch_layout.nb_channels = 2;
     st->codecpar->sample_rate = gme->sample_rate;
 
     return 0;
