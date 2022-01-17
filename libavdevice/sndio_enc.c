@@ -36,7 +36,7 @@ static av_cold int audio_write_header(AVFormatContext *s1)
 
     st             = s1->streams[0];
     s->sample_rate = st->codecpar->sample_rate;
-    s->channels    = st->codecpar->channels;
+    s->channels    = st->codecpar->ch_layout.nb_channels;
 
     ret = ff_sndio_open(s1, 1, s1->url);
 
