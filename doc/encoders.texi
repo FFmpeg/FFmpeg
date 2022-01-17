@@ -3453,6 +3453,10 @@ Insert the Access Unit Delimiter NAL.
 
 @item @var{pic_timing_sei}
 Insert picture timing SEI with pic_struct_syntax element.
+
+@item @var{transform_skip}
+Turn this option ON to enable transformskip. It is supported on platform equal
+or newer than ICL.
 @end table
 
 @subsection MPEG2 Options
