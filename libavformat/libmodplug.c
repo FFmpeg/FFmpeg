@@ -238,7 +238,7 @@ static int modplug_read_header(AVFormatContext *s)
     st->duration = ModPlug_GetLength(modplug->f);
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_CODEC_ID_PCM_S16LE;
-    st->codecpar->channels    = settings.mChannels;
+    st->codecpar->ch_layout.nb_channels = settings.mChannels;
     st->codecpar->sample_rate = settings.mFrequency;
 
     // timebase = 1/1000, 2ch 16bits 44.1kHz-> 2*2*44100
