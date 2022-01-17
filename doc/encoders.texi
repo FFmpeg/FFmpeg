@@ -3299,6 +3299,9 @@ This flag controls changing of frame type from B to P.
 @item @var{b_strategy}
 This option controls usage of B frames as reference.
 
+@item @var{dblk_idc}
+This option disable deblocking. It has value in range 0~2.
+
 @item @var{cavlc}
 If set, CAVLC is used; if unset, CABAC is used for encoding.
 
@@ -3390,6 +3393,9 @@ Enable rate distortion optimization.
 
 @item @var{max_frame_size}
 Maximum encoded frame size in bytes.
+
+@item @var{dblk_idc}
+This option disable deblocking. It has value in range 0~2.
 
 @item @var{idr_interval}
 Distance (in I-frames) between IDR frames.
