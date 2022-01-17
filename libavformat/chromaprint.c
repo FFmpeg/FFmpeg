@@ -92,7 +92,7 @@ static int write_header(AVFormatContext *s)
 
     st = s->streams[0];
 
-    if (st->codecpar->channels > 2) {
+    if (st->codecpar->ch_layout.nb_channels > 2) {
         av_log(s, AV_LOG_ERROR, "Only up to 2 channels are supported\n");
         return AVERROR(EINVAL);
     }
@@ -102,7 +102,7 @@ static int write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (!chromaprint_start(cpr->ctx, st->codecpar->sample_rate, st->codecpar->channels)) {
+    if (!chromaprint_start(cpr->ctx, st->codecpar->sample_rate, st->codecpar->ch_layout.nb_channels)) {
         av_log(s, AV_LOG_ERROR, "Failed to start chromaprint\n");
         return AVERROR_EXTERNAL;
     }
