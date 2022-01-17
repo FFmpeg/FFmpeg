@@ -3388,6 +3388,9 @@ intra refresh cycle.
 @item @var{rdo}
 Enable rate distortion optimization.
 
+@item @var{max_frame_size}
+Maximum encoded frame size in bytes.
+
 @item @var{idr_interval}
 Distance (in I-frames) between IDR frames.
 @table @samp

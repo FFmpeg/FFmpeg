@@ -862,8 +862,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             if (q->mbbrc >= 0)
                 q->extco2.MBBRC = q->mbbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
-            if (q->max_frame_size >= 0)
-                q->extco2.MaxFrameSize = q->max_frame_size;
 #if QSV_HAVE_MAX_SLICE_SIZE
             if (q->max_slice_size >= 0)
                 q->extco2.MaxSliceSize = q->max_slice_size;
@@ -892,6 +890,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         if (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC) {
             if (q->extbrc >= 0)
                 q->extco2.ExtBRC = q->extbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+            if (q->max_frame_size >= 0)
+                q->extco2.MaxFrameSize = q->max_frame_size;
 
 #if QSV_VERSION_ATLEAST(1, 9)
             if (avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) {
