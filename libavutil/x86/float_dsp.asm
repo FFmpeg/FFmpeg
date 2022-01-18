@@ -20,7 +20,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA 32
 pd_reverse: dd 7, 6, 5, 4, 3, 2, 1, 0
