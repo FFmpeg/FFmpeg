@@ -1,4 +1,4 @@
-90cf5a330659140d47ec11208f525908 *tests/data/fate/matroska-avoid-negative-ts.matroska
+804842437b2be0a1604ce33c6b08c800 *tests/data/fate/matroska-avoid-negative-ts.matroska
 973070 tests/data/fate/matroska-avoid-negative-ts.matroska
 #extradata 0:       22, 0x2885037c
 #tb 0: 1/1000

@@ -655,16 +655,33 @@ static void handle_avoid_negative_ts(FFFormatContext *si, FFStream *sti,
     if (si->avoid_negative_ts_status == AVOID_NEGATIVE_TS_UNKNOWN) {
         int use_pts = si->avoid_negative_ts_use_pts;
         int64_t ts = use_pts ? pkt->pts : pkt->dts;
+        AVRational tb = sti->pub.time_base;
 
         if (ts == AV_NOPTS_VALUE)
             return;
+
+        /* Peek into the muxing queue to improve our estimate
+         * of the lowest timestamp if av_interleaved_write_frame() is used. */
+        for (const PacketListEntry *pktl = si->packet_buffer.head;
+             pktl; pktl = pktl->next) {
+            AVRational cmp_tb = s->streams[pktl->pkt.stream_index]->time_base;
+            int64_t cmp_ts = use_pts ? pktl->pkt.pts : pktl->pkt.dts;
+            if (cmp_ts == AV_NOPTS_VALUE)
+                continue;
+            if (s->output_ts_offset)
+                cmp_ts += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, cmp_tb);
+            if (av_compare_ts(cmp_ts, cmp_tb, ts, tb) < 0) {
+                ts = cmp_ts;
+                tb = cmp_tb;
+            }
+        }
+
         if (ts < 0 ||
             ts > 0 && s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO) {
             for (unsigned i = 0; i < s->nb_streams; i++) {
                 AVStream *const st2  = s->streams[i];
                 FFStream *const sti2 = ffstream(st2);
-                sti2->mux_ts_offset = av_rescale_q_rnd(-ts,
-                                                       sti->pub.time_base,
+                sti2->mux_ts_offset = av_rescale_q_rnd(-ts, tb,
                                                        st2->time_base,
                                                        AV_ROUND_UP);
             }

@@ -101,8 +101,6 @@ fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv8
 # the first packet (with the overall lowest dts) is a video packet,
 # whereas an audio packet to be muxed later has the overall lowest pts
 # which happens to be negative and therefore needs to be shifted.
-# This is currently buggy (the timestamps are not shifted properly:
-# the first audio packet has negative pts).
 # (-ss 1.09 ensures that a video frame has the lowest dts of all packets;
 # yet there is an audio packet with the overall lowest pts. output_ts_offset
 # makes the pts of the audio packet, but not the leading video packet negative
