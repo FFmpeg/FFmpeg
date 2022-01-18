@@ -97,6 +97,23 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL \
                                += fate-matroska-dovi-write-config8
 fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov matroska "-c copy" "-map 0 -c copy -t 0.4" "" "-show_entries stream_side_data_list -select_streams v"
 
+# This tests the scenario like tickets #4536, #5784 where
+# the first packet (with the overall lowest dts) is a video packet,
+# whereas an audio packet to be muxed later has the overall lowest pts
+# which happens to be negative and therefore needs to be shifted.
+# This is currently buggy (the timestamps of the video frames muxed
+# before the first audio frame are not shifted).
+# (-ss 1.09 ensures that a video frame has the lowest dts of all packets;
+# yet there is an audio packet with the overall lowest pts. output_ts_offset
+# makes the pts of the audio packet, but not the leading video packet negative
+# so that we run into the above issue.)
+FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL MPEGTS_DEMUXER MPEGVIDEO_PARSER  \
+                             MPEG2VIDEO_DECODER EXTRACT_EXTRADATA_BSF       \
+                             MP3FLOAT_DECODER MATROSKA_MUXER                \
+                             MATROSKA_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
+                += fate-matroska-avoid-negative-ts
+fate-matroska-avoid-negative-ts: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/t.mpg matroska "-c copy -ss 1.09 -output_ts_offset -60ms" "-c copy -t 0.4"
+
 # This tests writing the MS-compatibility modes V_MS/VFW/FOURCC and A_MS/ACM.
 # It furthermore tests writing the Cues at the front if the cues_to_front
 # option is set and more than enough space has been reserved in advance.
