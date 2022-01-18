@@ -421,7 +421,7 @@ static int init_pts(AVFormatContext *s)
     if (s->avoid_negative_ts < 0) {
         av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
         if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
-            s->avoid_negative_ts = 0;
+            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_DISABLED;
         } else
             s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
     }

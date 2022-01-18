@@ -455,7 +455,7 @@ int main(int argc, char **argv)
     init_count_warnings();
     init_out("empty-moov-no-elst-no-adjust");
     av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
-    av_dict_set(&opts, "avoid_negative_ts", "0", 0);
+    av_dict_set(&opts, "avoid_negative_ts", "disabled", 0);
     init(1, 0);
     mux_gops(2);
     finish();
@@ -578,7 +578,7 @@ int main(int argc, char **argv)
     // one before.
     av_dict_set(&opts, "movflags", "frag_custom+empty_moov+dash+frag_discont", 0);
     av_dict_set(&opts, "fragment_index", "2", 0);
-    av_dict_set(&opts, "avoid_negative_ts", "0", 0);
+    av_dict_set(&opts, "avoid_negative_ts", "disabled", 0);
     av_dict_set(&opts, "use_editlist", "0", 0);
     init(0, 0);
     skip_gops(1);

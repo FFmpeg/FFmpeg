@@ -127,7 +127,7 @@ fail:
     s->avoid_negative_ts  = oc->avoid_negative_ts;
     ffformatcontext(s)->avoid_negative_ts_use_pts =
         ffformatcontext(oc)->avoid_negative_ts_use_pts;
-    oc->avoid_negative_ts = 0;
+    oc->avoid_negative_ts = AVFMT_AVOID_NEG_TS_DISABLED;
 
     return 0;
 }
