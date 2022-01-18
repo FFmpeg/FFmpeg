@@ -83,6 +83,17 @@ typedef struct FFFormatContext {
     int nb_interleaved_streams;
 
     /**
+     * Whether the timestamp shift offset has already been determined.
+     * -1: disabled, 0: not yet determined, 1: determined.
+     */
+    enum {
+        AVOID_NEGATIVE_TS_DISABLED = -1,
+        AVOID_NEGATIVE_TS_UNKNOWN  = 0,
+        AVOID_NEGATIVE_TS_KNOWN    = 1,
+    } avoid_negative_ts_status;
+#define AVOID_NEGATIVE_TS_ENABLED(status) ((status) >= 0)
+
+    /**
      * The interleavement function in use. Always set for muxers.
      */
     int (*interleave_packet)(struct AVFormatContext *s, AVPacket *pkt,
@@ -134,18 +145,6 @@ typedef struct FFFormatContext {
      * Sum of the size of packets in raw_packet_buffer, in bytes.
      */
     int raw_packet_buffer_size;
-
-    /**
-     * Offset to remap timestamps to be non-negative.
-     * Expressed in timebase units.
-     * @see AVStream.mux_ts_offset
-     */
-    int64_t offset;
-
-    /**
-     * Timebase for the timestamp offset.
-     */
-    AVRational offset_timebase;
 
 #if FF_API_COMPUTE_PKT_FIELDS2
     int missing_ts_warning;

@@ -174,7 +174,6 @@ AVFormatContext *avformat_alloc_context(void)
         return NULL;
     }
 
-    si->offset = AV_NOPTS_VALUE;
     si->shortest_end = AV_NOPTS_VALUE;
 
     return s;
