@@ -2024,7 +2024,7 @@ static int hls_read_header(AVFormatContext *s)
         if (seg && seg->key_type == KEY_SAMPLE_AES && pls->is_id3_timestamped &&
             pls->audio_setup_info.codec_id != AV_CODEC_ID_NONE) {
             void *iter = NULL;
-            while ((in_fmt = (const AVInputFormat *)av_demuxer_iterate(&iter)))
+            while ((in_fmt = av_demuxer_iterate(&iter)))
                 if (in_fmt->raw_codec_id == pls->audio_setup_info.codec_id)
                     break;
         } else {
