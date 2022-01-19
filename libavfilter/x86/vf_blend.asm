@@ -75,7 +75,7 @@ BLEND_INIT %1, 2, %3
         movu            m0, [topq + xq]
         movu            m1, [bottomq + xq]
         p%2             m0, m1
-        mova   [dstq + xq], m0
+        movu   [dstq + xq], m0
         add             xq, mmsize
     jl .loop
 BLEND_END
@@ -108,7 +108,7 @@ BLEND_INIT %1, 6, %4
 
         packus%3%2       m0, m1
 
-        mova  [dstq + xq], m0
+        movu  [dstq + xq], m0
         add            xq, mmsize
     jl .loop
 BLEND_END
@@ -148,7 +148,7 @@ BLEND_INIT multiply, 6
         MULTIPLY        m1, m3, m5
 
         packuswb       m0, m1
-        mova  [dstq + xq], m0
+        movu  [dstq + xq], m0
         add            xq, mmsize
     jl .loop
 BLEND_END
@@ -175,7 +175,7 @@ BLEND_INIT screen, 7
         SCREEN          m1, m3, m5, m6
 
         packuswb       m0, m1
-        mova  [dstq + xq], m0
+        movu  [dstq + xq], m0
         add            xq, mmsize
     jl .loop
 BLEND_END
@@ -196,7 +196,7 @@ BLEND_INIT %1, 3, %3
     pxor           m1, m2
     pavg%2         m0, m1
     pxor           m0, m2
-    mova  [dstq + xq], m0
+    movu  [dstq + xq], m0
     add            xq, mmsize
     jl .loop
 BLEND_END
@@ -230,7 +230,7 @@ BLEND_INIT %1, 6, %4
 
         packus%3%2     m0, m1
 
-        mova  [dstq + xq], m0
+        movu  [dstq + xq], m0
         add            xq, mmsize
     jl .loop
 BLEND_END
@@ -251,7 +251,7 @@ BLEND_INIT hardmix, 5
         pxor            m0, m3
         pcmpgtb         m1, m0
         pxor            m1, m2
-        mova   [dstq + xq], m1
+        movu   [dstq + xq], m1
         add             xq, mmsize
     jl .loop
 BLEND_END
@@ -304,7 +304,7 @@ BLEND_INIT %1, 4, %3
         mova            m2, m3
         psubus%2        m2, m1
         paddus%2        m2, m0
-        mova   [dstq + xq], m2
+        movu   [dstq + xq], m2
         add             xq, mmsize
     jl .loop
 BLEND_END
@@ -333,7 +333,7 @@ BLEND_INIT %1, 5, %4
         ABS2            m0, m3, m1, m4
 %endif
         packus%3%2      m0, m3
-        mova   [dstq + xq], m0
+        movu   [dstq + xq], m0
         add             xq, mmsize
     jl .loop
 BLEND_END
@@ -369,7 +369,7 @@ BLEND_INIT %1, 8, %4
         ABS2            m3, m7, m1, m6
 %endif
         packus%3%2      m3, m7
-        mova   [dstq + xq], m3
+        movu   [dstq + xq], m3
         add             xq, mmsize
     jl .loop
 BLEND_END
@@ -406,7 +406,7 @@ BLEND_INIT %1, 8, %4
         psub%3          m0, m4, m3
         psub%3          m1, m4, m7
         packus%3%2      m0, m1
-        mova   [dstq + xq], m0
+        movu   [dstq + xq], m0
         add             xq, mmsize
     jl .loop
 BLEND_END
