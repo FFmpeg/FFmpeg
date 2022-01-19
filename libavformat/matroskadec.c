@@ -2095,7 +2095,7 @@ static int matroska_parse_flac(AVFormatContext *s,
     return 0;
 }
 
-static int mkv_field_order(MatroskaDemuxContext *matroska, int64_t field_order)
+static int mkv_field_order(MatroskaDemuxContext *matroska, uint64_t field_order)
 {
     int minor, micro, bttb = 0;
 
