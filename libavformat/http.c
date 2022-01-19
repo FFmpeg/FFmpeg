@@ -72,7 +72,6 @@ typedef struct HTTPContext {
     uint64_t off, end_off, filesize;
     char *uri;
     char *location;
-    int cache_redirect;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
     char *http_proxy;
@@ -175,7 +174,6 @@ static const AVOption options[] = {
     { "resource", "The resource requested by a client", OFFSET(resource), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reply_code", "The http status code to return to a client", OFFSET(reply_code), AV_OPT_TYPE_INT, { .i64 = 200}, INT_MIN, 599, E},
     { "short_seek_size", "Threshold to favor readahead over seek.", OFFSET(short_seek_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D },
-    { "cache_redirect", "Save redirected URL for subsequent seek operations", OFFSET(cache_redirect), AV_OPT_TYPE_BOOL, { .i64 = FF_HTTP_CACHE_REDIRECT_DEFAULT }, 0, 1, D },
     { NULL }
 };
 
@@ -1938,8 +1936,8 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
             return s->off;
     }
 
-    /* if redirect caching is disabled, revert to the original uri */
-    if (!s->cache_redirect && strcmp(s->uri, s->location)) {
+    /* if the location changed (redirect), revert to the original uri */
+    if (strcmp(s->uri, s->location)) {
         char *new_uri;
         new_uri = av_strdup(s->uri);
         if (!new_uri)
