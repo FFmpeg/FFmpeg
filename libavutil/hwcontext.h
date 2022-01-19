@@ -571,6 +571,10 @@ enum {
  * possible with the given arguments and hwframe setup, while other return
  * values indicate that it failed somehow.
  *
+ * On failure, the destination frame will be left blank, except for the
+ * hw_frames_ctx/format fields thay may have been set by the caller - those will
+ * be preserved as they were.
+ *
  * @param dst Destination frame, to contain the mapping.
  * @param src Source frame, to be mapped.
  * @param flags Some combination of AV_HWFRAME_MAP_* flags.
