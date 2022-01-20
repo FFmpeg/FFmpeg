@@ -409,15 +409,76 @@ int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *
     return 0;
 }
 
-int ff_encode_preinit(AVCodecContext *avctx)
+static int encode_preinit_video(AVCodecContext *avctx)
 {
-    AVCodecInternal *avci = avctx->internal;
+        const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int i;
 
-    if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "The encoder timebase is not set.\n");
+    if (avctx->codec->pix_fmts) {
+        for (i = 0; avctx->codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++)
+            if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
+                break;
+        if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
+            av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is invalid or not supported\n",
+                   (char *)av_x_if_null(av_get_pix_fmt_name(avctx->pix_fmt), buf));
+            return AVERROR(EINVAL);
+        }
+        if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
+            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ411P ||
+            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ422P ||
+            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ440P ||
+            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ444P)
+            avctx->color_range = AVCOL_RANGE_JPEG;
+    }
+
+        if (    avctx->bits_per_raw_sample < 0
+            || (avctx->bits_per_raw_sample > 8 && pixdesc->comp[0].depth <= 8)) {
+            av_log(avctx, AV_LOG_WARNING, "Specified bit depth %d not possible with the specified pixel formats depth %d\n",
+                avctx->bits_per_raw_sample, pixdesc->comp[0].depth);
+            avctx->bits_per_raw_sample = pixdesc->comp[0].depth;
+        }
+        if (avctx->width <= 0 || avctx->height <= 0) {
+            av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
+            return AVERROR(EINVAL);
+        }
+
+    if (avctx->ticks_per_frame && avctx->time_base.num &&
+        avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
+        av_log(avctx, AV_LOG_ERROR,
+               "ticks_per_frame %d too large for the timebase %d/%d.",
+               avctx->ticks_per_frame,
+               avctx->time_base.num,
+               avctx->time_base.den);
         return AVERROR(EINVAL);
     }
+
+    if (avctx->hw_frames_ctx) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+        if (frames_ctx->format != avctx->pix_fmt) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Mismatching AVCodecContext.pix_fmt and AVHWFramesContext.format\n");
+            return AVERROR(EINVAL);
+        }
+        if (avctx->sw_pix_fmt != AV_PIX_FMT_NONE &&
+            avctx->sw_pix_fmt != frames_ctx->sw_format) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Mismatching AVCodecContext.sw_pix_fmt (%s) "
+                   "and AVHWFramesContext.sw_format (%s)\n",
+                   av_get_pix_fmt_name(avctx->sw_pix_fmt),
+                   av_get_pix_fmt_name(frames_ctx->sw_format));
+            return AVERROR(EINVAL);
+        }
+        avctx->sw_pix_fmt = frames_ctx->sw_format;
+    }
+
+    return 0;
+}
+
+static int encode_preinit_audio(AVCodecContext *avctx)
+{
+    int i;
 
     if (avctx->codec->sample_fmts) {
         for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
@@ -437,24 +498,6 @@ int ff_encode_preinit(AVCodecContext *avctx)
                    (char *)av_x_if_null(av_get_sample_fmt_name(avctx->sample_fmt), buf));
             return AVERROR(EINVAL);
         }
-    }
-    if (avctx->codec->pix_fmts) {
-        for (i = 0; avctx->codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++)
-            if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
-                break;
-        if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE) {
-            char buf[128];
-            snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
-            av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is invalid or not supported\n",
-                   (char *)av_x_if_null(av_get_pix_fmt_name(avctx->pix_fmt), buf));
-            return AVERROR(EINVAL);
-        }
-        if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ420P ||
-            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ411P ||
-            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ422P ||
-            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ440P ||
-            avctx->codec->pix_fmts[i] == AV_PIX_FMT_YUVJ444P)
-            avctx->color_range = AVCOL_RANGE_JPEG;
     }
     if (avctx->codec->supported_samplerates) {
         for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
@@ -511,19 +554,27 @@ FF_DISABLE_DEPRECATION_WARNINGS
     }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    if(avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-        const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
-        if (    avctx->bits_per_raw_sample < 0
-            || (avctx->bits_per_raw_sample > 8 && pixdesc->comp[0].depth <= 8)) {
-            av_log(avctx, AV_LOG_WARNING, "Specified bit depth %d not possible with the specified pixel formats depth %d\n",
-                avctx->bits_per_raw_sample, pixdesc->comp[0].depth);
-            avctx->bits_per_raw_sample = pixdesc->comp[0].depth;
-        }
-        if (avctx->width <= 0 || avctx->height <= 0) {
-            av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
-            return AVERROR(EINVAL);
-        }
+
+    return 0;
+}
+
+int ff_encode_preinit(AVCodecContext *avctx)
+{
+    AVCodecInternal *avci = avctx->internal;
+    int ret = 0;
+
+    if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "The encoder timebase is not set.\n");
+        return AVERROR(EINVAL);
     }
+
+    switch (avctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO: ret = encode_preinit_video(avctx); break;
+    case AVMEDIA_TYPE_AUDIO: ret = encode_preinit_audio(avctx); break;
+    }
+    if (ret < 0)
+        return ret;
+
     if (   (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
         && avctx->bit_rate>0 && avctx->bit_rate<1000) {
         av_log(avctx, AV_LOG_WARNING, "Bitrate %"PRId64" is extremely low, maybe you mean %"PRId64"k\n", avctx->bit_rate, avctx->bit_rate);
@@ -532,34 +583,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!avctx->rc_initial_buffer_occupancy)
         avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3LL / 4;
 
-    if (avctx->ticks_per_frame && avctx->time_base.num &&
-        avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
-        av_log(avctx, AV_LOG_ERROR,
-               "ticks_per_frame %d too large for the timebase %d/%d.",
-               avctx->ticks_per_frame,
-               avctx->time_base.num,
-               avctx->time_base.den);
-        return AVERROR(EINVAL);
-    }
-
-    if (avctx->hw_frames_ctx) {
-        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-        if (frames_ctx->format != avctx->pix_fmt) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Mismatching AVCodecContext.pix_fmt and AVHWFramesContext.format\n");
-            return AVERROR(EINVAL);
-        }
-        if (avctx->sw_pix_fmt != AV_PIX_FMT_NONE &&
-            avctx->sw_pix_fmt != frames_ctx->sw_format) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Mismatching AVCodecContext.sw_pix_fmt (%s) "
-                   "and AVHWFramesContext.sw_format (%s)\n",
-                   av_get_pix_fmt_name(avctx->sw_pix_fmt),
-                   av_get_pix_fmt_name(frames_ctx->sw_format));
-            return AVERROR(EINVAL);
-        }
-        avctx->sw_pix_fmt = frames_ctx->sw_format;
-    }
     if (avctx->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY)
         avctx->internal->intra_only_flag = AV_PKT_FLAG_KEY;
 
