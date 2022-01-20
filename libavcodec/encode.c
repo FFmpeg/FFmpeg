@@ -555,6 +555,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+    if (!avctx->bits_per_raw_sample)
+        avctx->bits_per_raw_sample = 8 * av_get_bytes_per_sample(avctx->sample_fmt);
+
     return 0;
 }
 
