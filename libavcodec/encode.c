@@ -411,7 +411,7 @@ int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *
 
 static int encode_preinit_video(AVCodecContext *avctx)
 {
-        const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int i;
 
     if (avctx->codec->pix_fmts) {
@@ -433,16 +433,16 @@ static int encode_preinit_video(AVCodecContext *avctx)
             avctx->color_range = AVCOL_RANGE_JPEG;
     }
 
-        if (    avctx->bits_per_raw_sample < 0
-            || (avctx->bits_per_raw_sample > 8 && pixdesc->comp[0].depth <= 8)) {
-            av_log(avctx, AV_LOG_WARNING, "Specified bit depth %d not possible with the specified pixel formats depth %d\n",
-                avctx->bits_per_raw_sample, pixdesc->comp[0].depth);
-            avctx->bits_per_raw_sample = pixdesc->comp[0].depth;
-        }
-        if (avctx->width <= 0 || avctx->height <= 0) {
-            av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
-            return AVERROR(EINVAL);
-        }
+    if (    avctx->bits_per_raw_sample < 0
+        || (avctx->bits_per_raw_sample > 8 && pixdesc->comp[0].depth <= 8)) {
+        av_log(avctx, AV_LOG_WARNING, "Specified bit depth %d not possible with the specified pixel formats depth %d\n",
+            avctx->bits_per_raw_sample, pixdesc->comp[0].depth);
+        avctx->bits_per_raw_sample = pixdesc->comp[0].depth;
+    }
+    if (avctx->width <= 0 || avctx->height <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "dimensions not set\n");
+        return AVERROR(EINVAL);
+    }
 
     if (avctx->ticks_per_frame && avctx->time_base.num &&
         avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
