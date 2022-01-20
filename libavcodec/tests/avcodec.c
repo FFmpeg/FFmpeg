@@ -76,7 +76,7 @@ int main(void){
             ERR_EXT("Codec %s has unsupported type %s\n",
                     get_type_string(codec->type));
         if (codec->type != AVMEDIA_TYPE_AUDIO) {
-            if (codec->channel_layouts || codec->sample_fmts ||
+            if (codec->ch_layouts || codec->sample_fmts ||
                 codec->supported_samplerates)
                 ERR("Non-audio codec %s has audio-only fields set\n");
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME |
