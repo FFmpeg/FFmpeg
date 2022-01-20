@@ -574,7 +574,7 @@ static int handle_file(struct Tracks *tracks, const char *file, int split,
             if (tracks->audio_track < 0)
                 tracks->audio_track = tracks->nb_tracks;
             tracks->nb_audio_tracks++;
-            track->channels    = st->codecpar->channels;
+            track->channels    = st->codecpar->ch_layout.nb_channels;
             track->sample_rate = st->codecpar->sample_rate;
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
                 track->fourcc    = "AACL";

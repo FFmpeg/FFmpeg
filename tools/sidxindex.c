@@ -191,7 +191,7 @@ static int handle_file(struct Tracks *tracks, const char *file)
                                                 track->timescale, AV_ROUND_UP));
 
         if (track->is_audio) {
-            track->channels    = st->codecpar->channels;
+            track->channels    = st->codecpar->ch_layout.nb_channels;
             track->sample_rate = st->codecpar->sample_rate;
         }
         if (track->is_video) {
