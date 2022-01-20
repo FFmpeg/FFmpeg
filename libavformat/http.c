@@ -333,10 +333,8 @@ static int redirect_cache_set(HTTPContext *s, const char *source, const char *de
     }
 
     ret = av_dict_set(&s->redirect_cache, source, value, AV_DICT_MATCH_CASE | AV_DICT_DONT_STRDUP_VAL);
-    if (ret < 0) {
-        av_free(value);
+    if (ret < 0)
         return ret;
-    }
 
     return 0;
 }
