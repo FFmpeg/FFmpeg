@@ -25,36 +25,48 @@
 #include "attributes.h"
 
 #ifdef TX_FLOAT
-#define TX_NAME(x) x ## _float
+#define TX_TAB(x) x ## _float
+#define TX_NAME(x) x ## _float_c
+#define TX_NAME_STR(x) x "_float_c"
+#define TX_TYPE(x) AV_TX_FLOAT_ ## x
+#define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE float
-typedef float FFTSample;
-typedef AVComplexFloat FFTComplex;
+typedef float TXSample;
+typedef AVComplexFloat TXComplex;
 #elif defined(TX_DOUBLE)
-#define TX_NAME(x) x ## _double
+#define TX_TAB(x) x ## _double
+#define TX_NAME(x) x ## _double_c
+#define TX_NAME_STR(x) x "_double_c"
+#define TX_TYPE(x) AV_TX_DOUBLE_ ## x
+#define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE double
-typedef double FFTSample;
-typedef AVComplexDouble FFTComplex;
+typedef double TXSample;
+typedef AVComplexDouble TXComplex;
 #elif defined(TX_INT32)
-#define TX_NAME(x) x ## _int32
+#define TX_TAB(x) x ## _int32
+#define TX_NAME(x) x ## _int32_c
+#define TX_NAME_STR(x) x "_int32_c"
+#define TX_TYPE(x) AV_TX_INT32_ ## x
+#define MULT(x, m) (((((int64_t)(x)) * (int64_t)(m)) + 0x40000000) >> 31)
 #define SCALE_TYPE float
-typedef int32_t FFTSample;
-typedef AVComplexInt32 FFTComplex;
+typedef int32_t TXSample;
+typedef AVComplexInt32 TXComplex;
 #else
-typedef void FFTComplex;
+typedef void TXComplex;
 #endif
 
 #if defined(TX_FLOAT) || defined(TX_DOUBLE)
 
-#define CMUL(dre, dim, are, aim, bre, bim)                                     \
-    do {                                                                       \
-        (dre) = (are) * (bre) - (aim) * (bim);                                 \
-        (dim) = (are) * (bim) + (aim) * (bre);                                 \
+#define CMUL(dre, dim, are, aim, bre, bim)      \
+    do {                                        \
+        (dre) = (are) * (bre) - (aim) * (bim);  \
+        (dim) = (are) * (bim) + (aim) * (bre);  \
     } while (0)
 
-#define SMUL(dre, dim, are, aim, bre, bim)                                     \
-    do {                                                                       \
-        (dre) = (are) * (bre) - (aim) * (bim);                                 \
-        (dim) = (are) * (bim) - (aim) * (bre);                                 \
+#define SMUL(dre, dim, are, aim, bre, bim)      \
+    do {                                        \
+        (dre) = (are) * (bre) - (aim) * (bim);  \
+        (dim) = (are) * (bim) - (aim) * (bre);  \
     } while (0)
 
 #define UNSCALE(x) (x)
@@ -65,91 +77,167 @@ typedef void FFTComplex;
 #elif defined(TX_INT32)
 
 /* Properly rounds the result */
-#define CMUL(dre, dim, are, aim, bre, bim)                                     \
-    do {                                                                       \
-        int64_t accu;                                                          \
-        (accu)  = (int64_t)(bre) * (are);                                      \
-        (accu) -= (int64_t)(bim) * (aim);                                      \
-        (dre)   = (int)(((accu) + 0x40000000) >> 31);                          \
-        (accu)  = (int64_t)(bim) * (are);                                      \
-        (accu) += (int64_t)(bre) * (aim);                                      \
-        (dim)   = (int)(((accu) + 0x40000000) >> 31);                          \
+#define CMUL(dre, dim, are, aim, bre, bim)             \
+    do {                                               \
+        int64_t accu;                                  \
+        (accu)  = (int64_t)(bre) * (are);              \
+        (accu) -= (int64_t)(bim) * (aim);              \
+        (dre)   = (int)(((accu) + 0x40000000) >> 31);  \
+        (accu)  = (int64_t)(bim) * (are);              \
+        (accu) += (int64_t)(bre) * (aim);              \
+        (dim)   = (int)(((accu) + 0x40000000) >> 31);  \
     } while (0)
 
-#define SMUL(dre, dim, are, aim, bre, bim)                                     \
-    do {                                                                       \
-        int64_t accu;                                                          \
-        (accu)  = (int64_t)(bre) * (are);                                      \
-        (accu) -= (int64_t)(bim) * (aim);                                      \
-        (dre)   = (int)(((accu) + 0x40000000) >> 31);                          \
-        (accu)  = (int64_t)(bim) * (are);                                      \
-        (accu) -= (int64_t)(bre) * (aim);                                      \
-        (dim)   = (int)(((accu) + 0x40000000) >> 31);                          \
+#define SMUL(dre, dim, are, aim, bre, bim)             \
+    do {                                               \
+        int64_t accu;                                  \
+        (accu)  = (int64_t)(bre) * (are);              \
+        (accu) -= (int64_t)(bim) * (aim);              \
+        (dre)   = (int)(((accu) + 0x40000000) >> 31);  \
+        (accu)  = (int64_t)(bim) * (are);              \
+        (accu) -= (int64_t)(bre) * (aim);              \
+        (dim)   = (int)(((accu) + 0x40000000) >> 31);  \
     } while (0)
 
-#define UNSCALE(x) ((double)x/2147483648.0)
+#define UNSCALE(x) ((double)(x)/2147483648.0)
 #define RESCALE(x) (av_clip64(lrintf((x) * 2147483648.0), INT32_MIN, INT32_MAX))
 
-#define FOLD(x, y) ((int)((x) + (unsigned)(y) + 32) >> 6)
+#define FOLD(x, y) ((int32_t)((x) + (unsigned)(y) + 32) >> 6)
 
-#endif
+#endif /* TX_INT32 */
 
-#define BF(x, y, a, b)                                                         \
-    do {                                                                       \
-        x = (a) - (b);                                                         \
-        y = (a) + (b);                                                         \
+#define BF(x, y, a, b)  \
+    do {                \
+        x = (a) - (b);  \
+        y = (a) + (b);  \
     } while (0)
 
-#define CMUL3(c, a, b)                                                         \
-    CMUL((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
+#define CMUL3(c, a, b) CMUL((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
 
-#define COSTABLE(size)                                                         \
-    DECLARE_ALIGNED(32, FFTSample, TX_NAME(ff_cos_##size))[size/4 + 1]
+/* Codelet flags, used to pick codelets. Must be a superset of enum AVTXFlags,
+ * but if it runs out of bits, it can be made separate. */
+typedef enum FFTXCodeletFlags {
+    FF_TX_OUT_OF_PLACE  = (1ULL << 63), /* Can be OR'd with AV_TX_INPLACE             */
+    FF_TX_ALIGNED       = (1ULL << 62), /* Cannot be OR'd with AV_TX_UNALIGNED        */
+    FF_TX_PRESHUFFLE    = (1ULL << 61), /* Codelet expects permuted coeffs            */
+    FF_TX_INVERSE_ONLY  = (1ULL << 60), /* For non-orthogonal inverse-only transforms */
+    FF_TX_FORWARD_ONLY  = (1ULL << 59), /* For non-orthogonal forward-only transforms */
+} FFTXCodeletFlags;
 
-/* Used by asm, reorder with care */
+typedef enum FFTXCodeletPriority {
+    FF_TX_PRIO_BASE = 0,               /* Baseline priority */
+
+    /* For SIMD, set base prio to the register size in bits and increment in
+     * steps of 64 depending on faster/slower features, like FMA. */
+
+    FF_TX_PRIO_MIN          = -131072, /* For naive implementations */
+    FF_TX_PRIO_MAX          =  32768,  /* For custom implementations/ASICs */
+} FFTXCodeletPriority;
+
+/* Codelet options */
+typedef struct FFTXCodeletOptions {
+    int invert_lookup;     /* If codelet is flagged as FF_TX_CODELET_PRESHUFFLE,
+                              invert the lookup direction for the map generated */
+} FFTXCodeletOptions;
+
+/* Maximum amount of subtransform functions, subtransforms and factors. Arbitrary. */
+#define TX_MAX_SUB 4
+
+typedef struct FFTXCodelet {
+    const char    *name;          /* Codelet name, for debugging */
+    av_tx_fn       function;      /* Codelet function, != NULL */
+    enum AVTXType  type;          /* Type of codelet transform */
+#define TX_TYPE_ANY INT32_MAX     /* Special type to allow all types */
+
+    uint64_t flags;               /* A combination of AVTXFlags and FFTXCodeletFlags
+                                   * that describe the codelet's properties. */
+
+    int factors[TX_MAX_SUB];      /* Length factors */
+#define TX_FACTOR_ANY -1          /* When used alone, signals that the codelet
+                                   * supports all factors. Otherwise, if other
+                                   * factors are present, it signals that whatever
+                                   * remains will be supported, as long as the
+                                   * other factors are a component of the length */
+
+    int min_len;                  /* Minimum length of transform, must be >= 1 */
+    int max_len;                  /* Maximum length of transform */
+#define TX_LEN_UNLIMITED -1       /* Special length value to permit all lengths */
+
+    int (*init)(AVTXContext *s,   /* Optional callback for current context initialization. */
+                const struct FFTXCodelet *cd,
+                uint64_t flags,
+                FFTXCodeletOptions *opts,
+                int len, int inv,
+                const void *scale);
+
+    int (*uninit)(AVTXContext *s); /* Optional callback for uninitialization. */
+
+    int cpu_flags;                 /* CPU flags. If any negative flags like
+                                    * SLOW are present, will avoid picking.
+                                    * 0x0 to signal it's a C codelet */
+#define FF_TX_CPU_FLAGS_ALL 0x0    /* Special CPU flag for C */
+
+    int prio;                      /* < 0 = least, 0 = no pref, > 0 = prefer */
+} FFTXCodelet;
+
 struct AVTXContext {
-    int n;              /* Non-power-of-two part */
-    int m;              /* Power-of-two part */
-    int inv;            /* Is inverse */
-    int type;           /* Type */
-    uint64_t flags;     /* Flags */
-    double scale;       /* Scale */
+    /* Fields the root transform and subtransforms use or may use.
+     * NOTE: This section is used by assembly, do not reorder or change */
+    int                len;             /* Length of the transform */
+    int                inv;             /* If transform is inverse */
+    int               *map;             /* Lookup table(s) */
+    TXComplex         *exp;             /* Any non-pre-baked multiplication factors needed */
+    TXComplex         *tmp;             /* Temporary buffer, if needed */
 
-    FFTComplex *exptab; /* MDCT exptab */
-    FFTComplex    *tmp; /* Temporary buffer needed for all compound transforms */
-    int        *pfatab; /* Input/Output mapping for compound transforms */
-    int        *revtab; /* Input mapping for power of two transforms */
-    int   *inplace_idx; /* Required indices to revtab for in-place transforms */
+    AVTXContext       *sub;             /* Subtransform context(s), if needed */
+    av_tx_fn           fn[TX_MAX_SUB];  /* Function(s) for the subtransforms */
+    int                nb_sub;          /* Number of subtransforms.
+                                         * The reason all of these are set here
+                                         * rather than in each separate context
+                                         * is to eliminate extra pointer
+                                         * dereferences. */
 
-    int      *revtab_c; /* Revtab for only the C transforms, needed because
-                         * checkasm makes us reuse the same context. */
-
-    av_tx_fn    top_tx; /* Used for computing transforms derived from other
-                         * transforms, like full-length iMDCTs and RDFTs.
-                         * NOTE: Do NOT use this to mix assembly with C code. */
+    /* Fields mainly useul/applicable for the root transform or initialization.
+     * Fields below are not used by assembly code. */
+    const FFTXCodelet *cd[TX_MAX_SUB];  /* Subtransform codelets */
+    const FFTXCodelet *cd_self;         /* Codelet for the current context */
+    enum AVTXType      type;            /* Type of transform */
+    uint64_t           flags;           /* A combination of AVTXFlags
+                                           and FFTXCodeletFlags flags
+                                           used when creating */
+    float              scale_f;
+    double             scale_d;
+    void              *opaque;          /* Free to use by implementations */
 };
 
-/* Checks if type is an MDCT */
-int ff_tx_type_is_mdct(enum AVTXType type);
+/* Create a subtransform in the current context with the given parameters.
+ * The flags parameter from FFTXCodelet.init() should be preserved as much
+ * as that's possible.
+ * MUST be called during the sub() callback of each codelet. */
+int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
+                     uint64_t flags, FFTXCodeletOptions *opts,
+                     int len, int inv, const void *scale);
 
 /*
  * Generates the PFA permutation table into AVTXContext->pfatab. The end table
  * is appended to the start table.
  */
-int ff_tx_gen_compound_mapping(AVTXContext *s);
+int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m);
 
 /*
  * Generates a standard-ish (slightly modified) Split-Radix revtab into
- * AVTXContext->revtab
+ * AVTXContext->map. Invert lookup changes how the mapping needs to be applied.
+ * If it's set to 0, it has to be applied like out[map[i]] = in[i], otherwise
+ * if it's set to 1, has to be applied as out[i] = in[map[i]]
  */
 int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup);
 
 /*
  * Generates an index into AVTXContext->inplace_idx that if followed in the
- * specific order,  allows the revtab to be done in-place. AVTXContext->revtab
- * must already exist.
+ * specific order, allows the revtab to be done in-place. The sub-transform
+ * and its map should already be initialized.
  */
-int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s, int *revtab);
+int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s);
 
 /*
  * This generates a parity-based revtab of length len and direction inv.
@@ -179,25 +267,26 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s, int *revtab);
  *
  * If length is smaller than basis/2 this function will not do anything.
  */
-void ff_tx_gen_split_radix_parity_revtab(int *revtab, int len, int inv,
-                                         int basis, int dual_stride);
+int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int invert_lookup,
+                                        int basis, int dual_stride);
 
-/* Templated init functions */
-int ff_tx_init_mdct_fft_float(AVTXContext *s, av_tx_fn *tx,
-                              enum AVTXType type, int inv, int len,
-                              const void *scale, uint64_t flags);
-int ff_tx_init_mdct_fft_double(AVTXContext *s, av_tx_fn *tx,
-                               enum AVTXType type, int inv, int len,
-                               const void *scale, uint64_t flags);
-int ff_tx_init_mdct_fft_int32(AVTXContext *s, av_tx_fn *tx,
-                              enum AVTXType type, int inv, int len,
-                              const void *scale, uint64_t flags);
+/* Typed init function to initialize shared tables. Will initialize all tables
+ * for all factors of a length. */
+void ff_tx_init_tabs_float (int len);
+void ff_tx_init_tabs_double(int len);
+void ff_tx_init_tabs_int32 (int len);
 
-typedef struct CosTabsInitOnce {
-    void (*func)(void);
-    AVOnce control;
-} CosTabsInitOnce;
+/* Typed init function to initialize an MDCT exptab in a context. */
+int  ff_tx_mdct_gen_exp_float (AVTXContext *s);
+int  ff_tx_mdct_gen_exp_double(AVTXContext *s);
+int  ff_tx_mdct_gen_exp_int32 (AVTXContext *s);
 
-void ff_tx_init_float_x86(AVTXContext *s, av_tx_fn *tx);
+/* Lists of codelets */
+extern const FFTXCodelet * const ff_tx_codelet_list_float_c       [];
+extern const FFTXCodelet * const ff_tx_codelet_list_float_x86     [];
+
+extern const FFTXCodelet * const ff_tx_codelet_list_double_c      [];
+
+extern const FFTXCodelet * const ff_tx_codelet_list_int32_c       [];
 
 #endif /* AVUTIL_TX_PRIV_H */

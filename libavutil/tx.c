@@ -16,19 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "cpu.h"
+#include "qsort.h"
+#include "bprint.h"
+
 #include "tx_priv.h"
 
-int ff_tx_type_is_mdct(enum AVTXType type)
-{
-    switch (type) {
-    case AV_TX_FLOAT_MDCT:
-    case AV_TX_DOUBLE_MDCT:
-    case AV_TX_INT32_MDCT:
-        return 1;
-    default:
-        return 0;
-    }
-}
+#define TYPE_IS(type, x)               \
+    (((x) == AV_TX_FLOAT_ ## type)  || \
+     ((x) == AV_TX_DOUBLE_ ## type) || \
+     ((x) == AV_TX_INT32_ ## type))
 
 /* Calculates the modular multiplicative inverse */
 static av_always_inline int mulinv(int n, int m)
@@ -42,22 +39,26 @@ static av_always_inline int mulinv(int n, int m)
 }
 
 /* Guaranteed to work for any n, m where gcd(n, m) == 1 */
-int ff_tx_gen_compound_mapping(AVTXContext *s)
+int ff_tx_gen_compound_mapping(AVTXContext *s, int n, int m)
 {
     int *in_map, *out_map;
-    const int n     = s->n;
-    const int m     = s->m;
-    const int inv   = s->inv;
-    const int len   = n*m;
-    const int m_inv = mulinv(m, n);
-    const int n_inv = mulinv(n, m);
-    const int mdct  = ff_tx_type_is_mdct(s->type);
+    const int inv = s->inv;
+    const int len = n*m;    /* Will not be equal to s->len for MDCTs */
+    const int mdct = TYPE_IS(MDCT, s->type);
+    int m_inv, n_inv;
 
-    if (!(s->pfatab = av_malloc(2*len*sizeof(*s->pfatab))))
+    /* Make sure the numbers are coprime */
+    if (av_gcd(n, m) != 1)
+        return AVERROR(EINVAL);
+
+    m_inv = mulinv(m, n);
+    n_inv = mulinv(n, m);
+
+    if (!(s->map = av_malloc(2*len*sizeof(*s->map))))
         return AVERROR(ENOMEM);
 
-    in_map  = s->pfatab;
-    out_map = s->pfatab + n*m;
+    in_map  = s->map;
+    out_map = s->map + len;
 
     /* Ruritanian map for input, CRT map for output, can be swapped */
     for (int j = 0; j < m; j++) {
@@ -92,48 +93,50 @@ int ff_tx_gen_compound_mapping(AVTXContext *s)
     return 0;
 }
 
-static inline int split_radix_permutation(int i, int m, int inverse)
+static inline int split_radix_permutation(int i, int len, int inv)
 {
-    m >>= 1;
-    if (m <= 1)
+    len >>= 1;
+    if (len <= 1)
         return i & 1;
-    if (!(i & m))
-        return split_radix_permutation(i, m, inverse) * 2;
-    m >>= 1;
-    return split_radix_permutation(i, m, inverse) * 4 + 1 - 2*(!(i & m) ^ inverse);
+    if (!(i & len))
+        return split_radix_permutation(i, len, inv) * 2;
+    len >>= 1;
+    return split_radix_permutation(i, len, inv) * 4 + 1 - 2*(!(i & len) ^ inv);
 }
 
 int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)
 {
-    const int m = s->m, inv = s->inv;
+    int len = s->len;
 
-    if (!(s->revtab = av_malloc(s->m*sizeof(*s->revtab))))
-        return AVERROR(ENOMEM);
-    if (!(s->revtab_c = av_malloc(m*sizeof(*s->revtab_c))))
+    if (!(s->map = av_malloc(len*sizeof(*s->map))))
         return AVERROR(ENOMEM);
 
-    /* Default */
-    for (int i = 0; i < m; i++) {
-        int k = -split_radix_permutation(i, m, inv) & (m - 1);
-        if (invert_lookup)
-            s->revtab[i] = s->revtab_c[i] = k;
-        else
-            s->revtab[i] = s->revtab_c[k] = i;
+    if (invert_lookup) {
+        for (int i = 0; i < s->len; i++)
+            s->map[i] = -split_radix_permutation(i, len, s->inv) & (len - 1);
+    } else {
+        for (int i = 0; i < s->len; i++)
+            s->map[-split_radix_permutation(i, len, s->inv) & (len - 1)] = i;
     }
 
     return 0;
 }
 
-int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s, int *revtab)
+int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s)
 {
-    int nb_inplace_idx = 0;
+    int *src_map, out_map_idx = 0, len = s->len;
 
-    if (!(s->inplace_idx = av_malloc(s->m*sizeof(*s->inplace_idx))))
+    if (!s->sub || !s->sub->map)
+        return AVERROR(EINVAL);
+
+    if (!(s->map = av_mallocz(len*sizeof(*s->map))))
         return AVERROR(ENOMEM);
 
+    src_map = s->sub->map;
+
     /* The first coefficient is always already in-place */
-    for (int src = 1; src < s->m; src++) {
-        int dst = revtab[src];
+    for (int src = 1; src < s->len; src++) {
+        int dst = src_map[src];
         int found = 0;
 
         if (dst <= src)
@@ -143,48 +146,53 @@ int ff_tx_gen_ptwo_inplace_revtab_idx(AVTXContext *s, int *revtab)
          * and if so, skips it, since to fully permute a loop we must only
          * enter it once. */
         do {
-            for (int j = 0; j < nb_inplace_idx; j++) {
-                if (dst == s->inplace_idx[j]) {
+            for (int j = 0; j < out_map_idx; j++) {
+                if (dst == s->map[j]) {
                     found = 1;
                     break;
                 }
             }
-            dst = revtab[dst];
+            dst = src_map[dst];
         } while (dst != src && !found);
 
         if (!found)
-            s->inplace_idx[nb_inplace_idx++] = src;
+            s->map[out_map_idx++] = src;
     }
 
-    s->inplace_idx[nb_inplace_idx++] = 0;
+    s->map[out_map_idx++] = 0;
 
     return 0;
 }
 
 static void parity_revtab_generator(int *revtab, int n, int inv, int offset,
                                     int is_dual, int dual_high, int len,
-                                    int basis, int dual_stride)
+                                    int basis, int dual_stride, int inv_lookup)
 {
     len >>= 1;
 
     if (len <= basis) {
-        int k1, k2, *even, *odd, stride;
+        int k1, k2, stride, even_idx, odd_idx;
 
         is_dual = is_dual && dual_stride;
         dual_high = is_dual & dual_high;
         stride = is_dual ? FFMIN(dual_stride, len) : 0;
 
-        even = &revtab[offset + dual_high*(stride - 2*len)];
-        odd  = &even[len + (is_dual && !dual_high)*len + dual_high*len];
+        even_idx = offset + dual_high*(stride - 2*len);
+        odd_idx  = even_idx + len + (is_dual && !dual_high)*len + dual_high*len;
 
         for (int i = 0; i < len; i++) {
             k1 = -split_radix_permutation(offset + i*2 + 0, n, inv) & (n - 1);
             k2 = -split_radix_permutation(offset + i*2 + 1, n, inv) & (n - 1);
-            *even++ = k1;
-            *odd++  = k2;
+            if (inv_lookup) {
+                revtab[even_idx++] = k1;
+                revtab[odd_idx++]  = k2;
+            } else {
+                revtab[k1] = even_idx++;
+                revtab[k2] = odd_idx++;
+            }
             if (stride && !((i + 1) % stride)) {
-                even += stride;
-                odd  += stride;
+                even_idx += stride;
+                odd_idx  += stride;
             }
         }
 
@@ -192,22 +200,52 @@ static void parity_revtab_generator(int *revtab, int n, int inv, int offset,
     }
 
     parity_revtab_generator(revtab, n, inv, offset,
-                            0, 0, len >> 0, basis, dual_stride);
+                            0, 0, len >> 0, basis, dual_stride, inv_lookup);
     parity_revtab_generator(revtab, n, inv, offset + (len >> 0),
-                            1, 0, len >> 1, basis, dual_stride);
+                            1, 0, len >> 1, basis, dual_stride, inv_lookup);
     parity_revtab_generator(revtab, n, inv, offset + (len >> 0) + (len >> 1),
-                            1, 1, len >> 1, basis, dual_stride);
+                            1, 1, len >> 1, basis, dual_stride, inv_lookup);
 }
 
-void ff_tx_gen_split_radix_parity_revtab(int *revtab, int len, int inv,
-                                         int basis, int dual_stride)
+int ff_tx_gen_split_radix_parity_revtab(AVTXContext *s, int invert_lookup,
+                                        int basis, int dual_stride)
 {
+    int len = s->len;
+    int inv = s->inv;
+
+    if (!(s->map = av_mallocz(len*sizeof(*s->map))))
+        return AVERROR(ENOMEM);
+
     basis >>= 1;
     if (len < basis)
-        return;
+        return AVERROR(EINVAL);
+
     av_assert0(!dual_stride || !(dual_stride & (dual_stride - 1)));
     av_assert0(dual_stride <= basis);
-    parity_revtab_generator(revtab, len, inv, 0, 0, 0, len, basis, dual_stride);
+    parity_revtab_generator(s->map, len, inv, 0, 0, 0, len,
+                            basis, dual_stride, invert_lookup);
+
+    return 0;
+}
+
+static void reset_ctx(AVTXContext *s)
+{
+    if (!s)
+        return;
+
+    if (s->sub)
+        for (int i = 0; i < s->nb_sub; i++)
+            reset_ctx(&s->sub[i]);
+
+    if (s->cd_self->uninit)
+        s->cd_self->uninit(s);
+
+    av_freep(&s->sub);
+    av_freep(&s->map);
+    av_freep(&s->exp);
+    av_freep(&s->tmp);
+
+    memset(s, 0, sizeof(*s));
 }
 
 av_cold void av_tx_uninit(AVTXContext **ctx)
@@ -215,53 +253,401 @@ av_cold void av_tx_uninit(AVTXContext **ctx)
     if (!(*ctx))
         return;
 
-    av_free((*ctx)->pfatab);
-    av_free((*ctx)->exptab);
-    av_free((*ctx)->revtab);
-    av_free((*ctx)->revtab_c);
-    av_free((*ctx)->inplace_idx);
-    av_free((*ctx)->tmp);
-
+    reset_ctx(*ctx);
     av_freep(ctx);
+}
+
+static av_cold int ff_tx_null_init(AVTXContext *s, const FFTXCodelet *cd,
+                                   uint64_t flags, FFTXCodeletOptions *opts,
+                                   int len, int inv, const void *scale)
+{
+    /* Can only handle one sample+type to one sample+type transforms */
+    if (TYPE_IS(MDCT, s->type))
+        return AVERROR(EINVAL);
+    return 0;
+}
+
+/* Null transform when the length is 1 */
+static void ff_tx_null(AVTXContext *s, void *_out, void *_in, ptrdiff_t stride)
+{
+    memcpy(_out, _in, stride);
+}
+
+static const FFTXCodelet ff_tx_null_def = {
+    .name       = "null",
+    .function   = ff_tx_null,
+    .type       = TX_TYPE_ANY,
+    .flags      = AV_TX_UNALIGNED | FF_TX_ALIGNED |
+                  FF_TX_OUT_OF_PLACE | AV_TX_INPLACE,
+    .factors[0] = TX_FACTOR_ANY,
+    .min_len    = 1,
+    .max_len    = 1,
+    .init       = ff_tx_null_init,
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_MAX,
+};
+
+static const FFTXCodelet * const ff_tx_null_list[] = {
+    &ff_tx_null_def,
+    NULL,
+};
+
+static void print_flags(AVBPrint *bp, uint64_t f)
+{
+    int prev = 0;
+    const char *sep = ", ";
+    av_bprintf(bp, "flags: [");
+    if ((f & FF_TX_ALIGNED) && ++prev)
+        av_bprintf(bp, "aligned");
+    if ((f & AV_TX_UNALIGNED) && ++prev)
+        av_bprintf(bp, "%sunaligned", prev > 1 ? sep : "");
+    if ((f & AV_TX_INPLACE) && ++prev)
+        av_bprintf(bp, "%sinplace", prev > 1 ? sep : "");
+    if ((f & FF_TX_OUT_OF_PLACE) && ++prev)
+        av_bprintf(bp, "%sout_of_place", prev > 1 ? sep : "");
+    if ((f & FF_TX_FORWARD_ONLY) && ++prev)
+        av_bprintf(bp, "%sfwd_only", prev > 1 ? sep : "");
+    if ((f & FF_TX_INVERSE_ONLY) && ++prev)
+        av_bprintf(bp, "%sinv_only", prev > 1 ? sep : "");
+    if ((f & FF_TX_PRESHUFFLE) && ++prev)
+        av_bprintf(bp, "%spreshuf", prev > 1 ? sep : "");
+    if ((f & AV_TX_FULL_IMDCT) && ++prev)
+        av_bprintf(bp, "%simdct_full", prev > 1 ? sep : "");
+    av_bprintf(bp, "]");
+}
+
+static void print_type(AVBPrint *bp, enum AVTXType type)
+{
+    av_bprintf(bp, "%s",
+               type == TX_TYPE_ANY       ? "any"         :
+               type == AV_TX_FLOAT_FFT   ? "fft_float"   :
+               type == AV_TX_FLOAT_MDCT  ? "mdct_float"  :
+               type == AV_TX_DOUBLE_FFT  ? "fft_double"  :
+               type == AV_TX_DOUBLE_MDCT ? "mdct_double" :
+               type == AV_TX_INT32_FFT   ? "fft_int32"   :
+               type == AV_TX_INT32_MDCT  ? "mdct_int32"  :
+               "unknown");
+}
+
+static void print_cd_info(const FFTXCodelet *cd, int prio, int print_prio)
+{
+    AVBPrint bp = { 0 };
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+
+    av_bprintf(&bp, "%s - type: ", cd->name);
+
+    print_type(&bp, cd->type);
+
+    av_bprintf(&bp, ", len: ");
+    if (cd->min_len != cd->max_len)
+        av_bprintf(&bp, "[%i, ", cd->min_len);
+
+    if (cd->max_len == TX_LEN_UNLIMITED)
+        av_bprintf(&bp, "∞");
+    else
+        av_bprintf(&bp, "%i", cd->max_len);
+
+    av_bprintf(&bp, "%s, factors: [", cd->min_len != cd->max_len ? "]" : "");
+    for (int i = 0; i < TX_MAX_SUB; i++) {
+        if (i && cd->factors[i])
+            av_bprintf(&bp, ", ");
+        if (cd->factors[i] == TX_FACTOR_ANY)
+            av_bprintf(&bp, "any");
+        else if (cd->factors[i])
+            av_bprintf(&bp, "%i", cd->factors[i]);
+        else
+            break;
+    }
+
+    av_bprintf(&bp, "], ");
+    print_flags(&bp, cd->flags);
+
+    if (print_prio)
+        av_bprintf(&bp, ", prio: %i", prio);
+
+    av_log(NULL, AV_LOG_VERBOSE, "%s\n", bp.str);
+}
+
+typedef struct TXCodeletMatch {
+    const FFTXCodelet *cd;
+    int prio;
+} TXCodeletMatch;
+
+static int cmp_matches(TXCodeletMatch *a, TXCodeletMatch *b)
+{
+    return FFDIFFSIGN(b->prio, a->prio);
+}
+
+/* We want all factors to completely cover the length */
+static inline int check_cd_factors(const FFTXCodelet *cd, int len)
+{
+    int all_flag = 0;
+
+    for (int i = 0; i < TX_MAX_SUB; i++) {
+        int factor = cd->factors[i];
+
+        /* Conditions satisfied */
+        if (len == 1)
+            return 1;
+
+        /* No more factors */
+        if (!factor) {
+            break;
+        } else if (factor == TX_FACTOR_ANY) {
+            all_flag = 1;
+            continue;
+        }
+
+        if (factor == 2) { /* Fast path */
+            int bits_2 = ff_ctz(len);
+            if (!bits_2)
+                return 0; /* Factor not supported */
+
+            len >>= bits_2;
+        } else {
+            int res = len % factor;
+            if (res)
+                return 0; /* Factor not supported */
+
+            while (!res) {
+                len /= factor;
+                res = len % factor;
+            }
+        }
+    }
+
+    return all_flag || (len == 1);
+}
+
+av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
+                             uint64_t flags, FFTXCodeletOptions *opts,
+                             int len, int inv, const void *scale)
+{
+    int ret = 0;
+    AVTXContext *sub = NULL;
+    TXCodeletMatch *cd_tmp, *cd_matches = NULL;
+    unsigned int cd_matches_size = 0;
+    int nb_cd_matches = 0;
+    AVBPrint bp = { 0 };
+
+    /* Array of all compiled codelet lists. Order is irrelevant. */
+    const FFTXCodelet * const * const codelet_list[] = {
+        ff_tx_codelet_list_float_c,
+        ff_tx_codelet_list_double_c,
+        ff_tx_codelet_list_int32_c,
+        ff_tx_null_list,
+#if ARCH_X86
+        ff_tx_codelet_list_float_x86,
+#endif
+    };
+    int codelet_list_num = FF_ARRAY_ELEMS(codelet_list);
+
+    /* We still accept functions marked with SLOW, even if the CPU is
+     * marked with the same flag, but we give them lower priority. */
+    const int cpu_flags = av_get_cpu_flags();
+    const int slow_mask = AV_CPU_FLAG_SSE2SLOW | AV_CPU_FLAG_SSE3SLOW  |
+                          AV_CPU_FLAG_ATOM     | AV_CPU_FLAG_SSSE3SLOW |
+                          AV_CPU_FLAG_AVXSLOW  | AV_CPU_FLAG_SLOW_GATHER;
+
+    /* Flags the transform wants */
+    uint64_t req_flags = flags;
+
+    /* Unaligned codelets are compatible with the aligned flag */
+    if (req_flags & FF_TX_ALIGNED)
+        req_flags |= AV_TX_UNALIGNED;
+
+    /* If either flag is set, both are okay, so don't check for an exact match */
+    if ((req_flags & AV_TX_INPLACE) && (req_flags & FF_TX_OUT_OF_PLACE))
+        req_flags &= ~(AV_TX_INPLACE | FF_TX_OUT_OF_PLACE);
+    if ((req_flags & FF_TX_ALIGNED) && (req_flags & AV_TX_UNALIGNED))
+        req_flags &= ~(FF_TX_ALIGNED | AV_TX_UNALIGNED);
+
+    /* Flags the codelet may require to be present */
+    uint64_t inv_req_mask = AV_TX_FULL_IMDCT | FF_TX_PRESHUFFLE;
+
+    /* Loop through all codelets in all codelet lists to find matches
+     * to the requirements */
+    while (codelet_list_num--) {
+        const FFTXCodelet * const * list = codelet_list[codelet_list_num];
+        const FFTXCodelet *cd = NULL;
+
+        while ((cd = *list++)) {
+            int max_factor = 0;
+
+            /* Check if the type matches */
+            if (cd->type != TX_TYPE_ANY && type != cd->type)
+                continue;
+
+            /* Check direction for non-orthogonal codelets */
+            if (((cd->flags & FF_TX_FORWARD_ONLY) && inv) ||
+                ((cd->flags & (FF_TX_INVERSE_ONLY | AV_TX_FULL_IMDCT)) && !inv))
+                continue;
+
+            /* Check if the requested flags match from both sides */
+            if (((req_flags    & cd->flags) != (req_flags)) ||
+                ((inv_req_mask & cd->flags) != (req_flags & inv_req_mask)))
+                continue;
+
+            /* Check if length is supported */
+            if ((len < cd->min_len) || (cd->max_len != -1 && (len > cd->max_len)))
+                continue;
+
+            /* Check if the CPU supports the required ISA */
+            if (!(!cd->cpu_flags || (cpu_flags & (cd->cpu_flags & ~slow_mask))))
+                continue;
+
+            /* Check for factors */
+            if (!check_cd_factors(cd, len))
+                continue;
+
+            /* Realloc array and append */
+            cd_tmp = av_fast_realloc(cd_matches, &cd_matches_size,
+                                     sizeof(*cd_tmp) * (nb_cd_matches + 1));
+            if (!cd_tmp) {
+                av_free(cd_matches);
+                return AVERROR(ENOMEM);
+            }
+
+            cd_matches                     = cd_tmp;
+            cd_matches[nb_cd_matches].cd   = cd;
+            cd_matches[nb_cd_matches].prio = cd->prio;
+
+            /* If the CPU has a SLOW flag, and the instruction is also flagged
+             * as being slow for such, reduce its priority */
+            if ((cpu_flags & cd->cpu_flags) & slow_mask)
+                cd_matches[nb_cd_matches].prio -= 64;
+
+            /* Prioritize aligned-only codelets */
+            if ((cd->flags & FF_TX_ALIGNED) && !(cd->flags & AV_TX_UNALIGNED))
+                cd_matches[nb_cd_matches].prio += 64;
+
+            /* Codelets for specific lengths are generally faster */
+            if ((len == cd->min_len) && (len == cd->max_len))
+                cd_matches[nb_cd_matches].prio += 64;
+
+            /* Forward-only or inverse-only transforms are generally better */
+            if ((cd->flags & (FF_TX_FORWARD_ONLY | FF_TX_INVERSE_ONLY)))
+                cd_matches[nb_cd_matches].prio += 64;
+
+            /* Larger factors are generally better */
+            for (int i = 0; i < TX_MAX_SUB; i++)
+                max_factor = FFMAX(cd->factors[i], max_factor);
+            if (max_factor)
+                cd_matches[nb_cd_matches].prio += 16*max_factor;
+
+            nb_cd_matches++;
+        }
+    }
+
+    /* No matches found */
+    if (!nb_cd_matches)
+        return AVERROR(ENOSYS);
+
+    /* Sort the list */
+    AV_QSORT(cd_matches, nb_cd_matches, TXCodeletMatch, cmp_matches);
+
+    /* Print debugging info */
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprintf(&bp, "For transform of length %i, %s, ", len,
+               inv ? "inverse" : "forward");
+    print_type(&bp, type);
+    av_bprintf(&bp, ", ");
+    print_flags(&bp, flags);
+    av_bprintf(&bp, ", found %i matches:", nb_cd_matches);
+    av_log(NULL, AV_LOG_VERBOSE, "%s\n", bp.str);
+
+    for (int i = 0; i < nb_cd_matches; i++) {
+        av_log(NULL, AV_LOG_VERBOSE, "    %i: ", i + 1);
+        print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 1);
+    }
+
+    if (!s->sub)
+        s->sub = sub = av_mallocz(TX_MAX_SUB*sizeof(*sub));
+
+    /* Attempt to initialize each */
+    for (int i = 0; i < nb_cd_matches; i++) {
+        const FFTXCodelet *cd = cd_matches[i].cd;
+        AVTXContext *sctx = &s->sub[s->nb_sub];
+
+        sctx->len        = len;
+        sctx->inv        = inv;
+        sctx->type       = type;
+        sctx->flags      = flags;
+        sctx->cd_self    = cd;
+
+        s->fn[s->nb_sub] = cd->function;
+        s->cd[s->nb_sub] = cd;
+
+        ret = 0;
+        if (cd->init)
+            ret = cd->init(sctx, cd, flags, opts, len, inv, scale);
+
+        if (ret >= 0) {
+            s->nb_sub++;
+            goto end;
+        }
+
+        s->fn[s->nb_sub] = NULL;
+        s->cd[s->nb_sub] = NULL;
+
+        reset_ctx(sctx);
+        if (ret == AVERROR(ENOMEM))
+            break;
+    }
+
+    av_free(sub);
+
+    if (ret >= 0)
+        ret = AVERROR(ENOSYS);
+
+end:
+    av_free(cd_matches);
+    return ret;
+}
+
+static void print_tx_structure(AVTXContext *s, int depth)
+{
+    const FFTXCodelet *cd = s->cd_self;
+
+    for (int i = 0; i <= depth; i++)
+        av_log(NULL, AV_LOG_VERBOSE, "    ");
+
+    print_cd_info(cd, cd->prio, 0);
+
+    for (int i = 0; i < s->nb_sub; i++)
+        print_tx_structure(&s->sub[i], depth + 1);
 }
 
 av_cold int av_tx_init(AVTXContext **ctx, av_tx_fn *tx, enum AVTXType type,
                        int inv, int len, const void *scale, uint64_t flags)
 {
-    int err;
-    AVTXContext *s = av_mallocz(sizeof(*s));
-    if (!s)
-        return AVERROR(ENOMEM);
+    int ret;
+    AVTXContext tmp = { 0 };
+    const double default_scale_d = 1.0;
+    const float  default_scale_f = 1.0f;
 
-    switch (type) {
-    case AV_TX_FLOAT_FFT:
-    case AV_TX_FLOAT_MDCT:
-        if ((err = ff_tx_init_mdct_fft_float(s, tx, type, inv, len, scale, flags)))
-            goto fail;
-        if (ARCH_X86)
-            ff_tx_init_float_x86(s, tx);
-        break;
-    case AV_TX_DOUBLE_FFT:
-    case AV_TX_DOUBLE_MDCT:
-        if ((err = ff_tx_init_mdct_fft_double(s, tx, type, inv, len, scale, flags)))
-            goto fail;
-        break;
-    case AV_TX_INT32_FFT:
-    case AV_TX_INT32_MDCT:
-        if ((err = ff_tx_init_mdct_fft_int32(s, tx, type, inv, len, scale, flags)))
-            goto fail;
-        break;
-    default:
-        err = AVERROR(EINVAL);
-        goto fail;
-    }
+    if (!len || type >= AV_TX_NB || !ctx || !tx)
+        return AVERROR(EINVAL);
 
-    *ctx = s;
+    if (!(flags & AV_TX_UNALIGNED))
+        flags |= FF_TX_ALIGNED;
+    if (!(flags & AV_TX_INPLACE))
+        flags |= FF_TX_OUT_OF_PLACE;
 
-    return 0;
+    if (!scale && ((type == AV_TX_FLOAT_MDCT) || (type == AV_TX_INT32_MDCT)))
+        scale = &default_scale_f;
+    else if (!scale && (type == AV_TX_DOUBLE_MDCT))
+        scale = &default_scale_d;
 
-fail:
-    av_tx_uninit(&s);
-    *tx = NULL;
-    return err;
+    ret = ff_tx_init_subtx(&tmp, type, flags, NULL, len, inv, scale);
+    if (ret < 0)
+        return ret;
+
+    *ctx = &tmp.sub[0];
+    *tx  = tmp.fn[0];
+
+    av_log(NULL, AV_LOG_VERBOSE, "Transform tree:\n");
+    print_tx_structure(*ctx, 0);
+
+    return ret;
 }

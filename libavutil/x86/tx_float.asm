@@ -31,6 +31,8 @@
 
 %include "x86util.asm"
 
+%define private_prefix ff_tx
+
 %if ARCH_X86_64
 %define ptr resq
 %else
@@ -39,25 +41,22 @@
 
 %assign i 16
 %rep 14
-cextern cos_ %+ i %+ _float ; ff_cos_i_float...
+cextern tab_ %+ i %+ _float ; ff_tab_i_float...
 %assign i (i << 1)
 %endrep
 
 struc AVTXContext
-    .n:           resd 1 ; Non-power-of-two part
-    .m:           resd 1 ; Power-of-two part
-    .inv:         resd 1 ; Is inverse
-    .type:        resd 1 ; Type
-    .flags:       resq 1 ; Flags
-    .scale:       resq 1 ; Scale
+    .len:          resd 1 ; Length
+    .inv           resd 1 ; Inverse flag
+    .map:           ptr 1 ; Lookup table(s)
+    .exp:           ptr 1 ; Exponentiation factors
+    .tmp:           ptr 1 ; Temporary data
 
-    .exptab:       ptr 1 ; MDCT exptab
-    .tmp:          ptr 1 ; Temporary buffer needed for all compound transforms
-    .pfatab:       ptr 1 ; Input/Output mapping for compound transforms
-    .revtab:       ptr 1 ; Input mapping for power of two transforms
-    .inplace_idx:  ptr 1 ; Required indices to revtab for in-place transforms
+    .sub:           ptr 1 ; Subcontexts
+    .fn:            ptr 4 ; Subcontext functions
+    .nb_sub:       resd 1 ; Subcontext count
 
-    .top_tx        ptr 1 ;  Used for transforms derived from other transforms
+    ; Everything else is inaccessible
 endstruc
 
 SECTION_RODATA 32
@@ -485,8 +484,8 @@ SECTION .text
     movaps [outq + 10*mmsize], tx1_o0
     movaps [outq + 14*mmsize], tx2_o0
 
-    movaps tw_e,           [cos_64_float + mmsize]
-    vperm2f128 tw_o, tw_o, [cos_64_float + 64 - 4*7 - mmsize], 0x23
+    movaps tw_e,           [tab_64_float + mmsize]
+    vperm2f128 tw_o, tw_o, [tab_64_float + 64 - 4*7 - mmsize], 0x23
 
     movaps m0, [outq +  1*mmsize]
     movaps m1, [outq +  3*mmsize]
@@ -710,8 +709,7 @@ FFT4 inv, 1
 
 INIT_XMM sse3
 cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
-    mov ctxq, [ctxq + AVTXContext.revtab]
-
+    mov ctxq, [ctxq + AVTXContext.map]
     LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq
     LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq
     LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq
@@ -733,8 +731,7 @@ cglobal fft8_float, 4, 4, 6, ctx, out, in, tmp
 
 INIT_YMM avx
 cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
-    mov ctxq, [ctxq + AVTXContext.revtab]
-
+    mov ctxq, [ctxq + AVTXContext.map]
     LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq, m2
     LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq, m3
 
@@ -754,7 +751,7 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
 %macro FFT16_FN 1
 INIT_YMM %1
 cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
-    mov ctxq, [ctxq + AVTXContext.revtab]
+    mov ctxq, [ctxq + AVTXContext.map]
 
     LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq, m4
     LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq, m5
@@ -786,7 +783,7 @@ FFT16_FN fma3
 %macro FFT32_FN 1
 INIT_YMM %1
 cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
-    mov ctxq, [ctxq + AVTXContext.revtab]
+    mov ctxq, [ctxq + AVTXContext.map]
 
     LOAD64_LUT m4, inq, ctxq, (mmsize/2)*4, tmpq,  m8,  m9
     LOAD64_LUT m5, inq, ctxq, (mmsize/2)*5, tmpq, m10, m11
@@ -800,8 +797,8 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq, m12, m13
     LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq, m14, m15
 
-    movaps m8,         [cos_32_float]
-    vperm2f128 m9, m9, [cos_32_float + 4*8 - 4*7], 0x23
+    movaps m8,         [tab_32_float]
+    vperm2f128 m9, m9, [tab_32_float + 4*8 - 4*7], 0x23
 
     FFT16 m0, m1, m2, m3, m10, m11, m12, m13
 
@@ -858,8 +855,8 @@ ALIGN 16
     POP lenq
     sub outq, (%1*4) + (%1*2) + (%1/2)
 
-    lea rtabq, [cos_ %+ %1 %+ _float]
-    lea itabq, [cos_ %+ %1 %+ _float + %1 - 4*7]
+    lea rtabq, [tab_ %+ %1 %+ _float]
+    lea itabq, [tab_ %+ %1 %+ _float + %1 - 4*7]
 
 %if %0 > 1
     cmp tgtq, %1
@@ -883,9 +880,9 @@ ALIGN 16
 
 %macro FFT_SPLIT_RADIX_FN 1
 INIT_YMM %1
-cglobal split_radix_fft_float, 4, 8, 16, 272, lut, out, in, len, tmp, itab, rtab, tgt
-    movsxd lenq, dword [lutq + AVTXContext.m]
-    mov lutq, [lutq + AVTXContext.revtab]
+cglobal fft_sr_float, 4, 8, 16, 272, lut, out, in, len, tmp, itab, rtab, tgt
+    movsxd lenq, dword [lutq + AVTXContext.len]
+    mov lutq, [lutq + AVTXContext.map]
     mov tgtq, lenq
 
 ; Bottom-most/32-point transform ===============================================
@@ -903,8 +900,8 @@ ALIGN 16
     LOAD64_LUT m2, inq, lutq, (mmsize/2)*2, tmpq, m12, m13
     LOAD64_LUT m3, inq, lutq, (mmsize/2)*3, tmpq, m14, m15
 
-    movaps m8,         [cos_32_float]
-    vperm2f128 m9, m9, [cos_32_float + 32 - 4*7], 0x23
+    movaps m8,         [tab_32_float]
+    vperm2f128 m9, m9, [tab_32_float + 32 - 4*7], 0x23
 
     FFT16 m0, m1, m2, m3, m10, m11, m12, m13
 
@@ -961,8 +958,8 @@ ALIGN 16
 
     FFT16 tx2_e0, tx2_e1, tx2_o0, tx2_o1, tmp1, tmp2, tw_e, tw_o
 
-    movaps tw_e,           [cos_64_float]
-    vperm2f128 tw_o, tw_o, [cos_64_float + 64 - 4*7], 0x23
+    movaps tw_e,           [tab_64_float]
+    vperm2f128 tw_o, tw_o, [tab_64_float + 64 - 4*7], 0x23
 
     add lutq, (mmsize/2)*8
     cmp tgtq, 64
@@ -989,8 +986,8 @@ ALIGN 16
     POP lenq
     sub outq, 24*mmsize
 
-    lea rtabq, [cos_128_float]
-    lea itabq, [cos_128_float + 128 - 4*7]
+    lea rtabq, [tab_128_float]
+    lea itabq, [tab_128_float + 128 - 4*7]
 
     cmp tgtq, 128
     je .deinterleave
@@ -1016,8 +1013,8 @@ ALIGN 16
     POP lenq
     sub outq, 48*mmsize
 
-    lea rtabq, [cos_256_float]
-    lea itabq, [cos_256_float + 256 - 4*7]
+    lea rtabq, [tab_256_float]
+    lea itabq, [tab_256_float + 256 - 4*7]
 
     cmp tgtq, 256
     je .deinterleave
@@ -1044,8 +1041,8 @@ ALIGN 16
     POP lenq
     sub outq, 96*mmsize
 
-    lea rtabq, [cos_512_float]
-    lea itabq, [cos_512_float + 512 - 4*7]
+    lea rtabq, [tab_512_float]
+    lea itabq, [tab_512_float + 512 - 4*7]
 
     cmp tgtq, 512
     je .deinterleave
@@ -1079,8 +1076,8 @@ ALIGN 16
     POP lenq
     sub outq, 192*mmsize
 
-    lea rtabq, [cos_1024_float]
-    lea itabq, [cos_1024_float + 1024 - 4*7]
+    lea rtabq, [tab_1024_float]
+    lea itabq, [tab_1024_float + 1024 - 4*7]
 
     cmp tgtq, 1024
     je .deinterleave
@@ -1160,8 +1157,8 @@ FFT_SPLIT_RADIX_DEF 131072
     vextractf128 [outq + 13*mmsize +  0], tw_e,   1
     vextractf128 [outq + 13*mmsize + 16], tx2_e0, 1
 
-    movaps tw_e,           [cos_64_float + mmsize]
-    vperm2f128 tw_o, tw_o, [cos_64_float + 64 - 4*7 - mmsize], 0x23
+    movaps tw_e,           [tab_64_float + mmsize]
+    vperm2f128 tw_o, tw_o, [tab_64_float + 64 - 4*7 - mmsize], 0x23
 
     movaps m0, [outq +  1*mmsize]
     movaps m1, [outq +  3*mmsize]

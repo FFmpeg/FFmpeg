@@ -52,6 +52,7 @@ enum AVTXType {
      * Standard MDCT with a sample data type of float, double or int32_t,
      * respecively. For the float and int32 variants, the scale type is
      * 'float', while for the double variant, it's 'double'.
+     * If scale is NULL, 1.0 will be used as a default.
      *
      * Length is the frame size, not the window size (which is 2x frame).
      * For forward transforms, the stride specifies the spacing between each
@@ -67,6 +68,9 @@ enum AVTXType {
     AV_TX_FLOAT_MDCT  = 1,
     AV_TX_DOUBLE_MDCT = 3,
     AV_TX_INT32_MDCT  = 5,
+
+    /* Not part of the API, do not use */
+    AV_TX_NB,
 };
 
 /**
