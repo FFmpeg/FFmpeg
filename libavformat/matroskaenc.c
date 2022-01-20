@@ -1305,17 +1305,21 @@ static void mkv_write_video_projection(AVFormatContext *s, EbmlWriter *writer,
 
     switch (spherical->projection) {
     case AV_SPHERICAL_EQUIRECTANGULAR:
-        ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOPROJECTIONTYPE,
-                             MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
-        break;
     case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
         ebml_writer_add_uint(writer, MATROSKA_ID_VIDEOPROJECTIONTYPE,
                              MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
         AV_WB32(private,      0); // version + flags
-        AV_WB32(private +  4, spherical->bound_top);
-        AV_WB32(private +  8, spherical->bound_bottom);
-        AV_WB32(private + 12, spherical->bound_left);
-        AV_WB32(private + 16, spherical->bound_right);
+        if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR) {
+            AV_WB32(private +  4, 0);
+            AV_WB32(private +  8, 0);
+            AV_WB32(private + 12, 0);
+            AV_WB32(private + 16, 0);
+        } else {
+            AV_WB32(private +  4, spherical->bound_top);
+            AV_WB32(private +  8, spherical->bound_bottom);
+            AV_WB32(private + 12, spherical->bound_left);
+            AV_WB32(private + 16, spherical->bound_right);
+        }
         ebml_writer_add_bin(writer, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
                             private, 20);
         break;
