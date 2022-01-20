@@ -94,7 +94,6 @@ static int init_filters(const char *filters_descr)
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
     static const enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
-    static const int64_t out_channel_layouts[] = { AV_CH_LAYOUT_MONO, -1 };
     static const int out_sample_rates[] = { 8000, -1 };
     const AVFilterLink *outlink;
     AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
@@ -106,12 +105,13 @@ static int init_filters(const char *filters_descr)
     }
 
     /* buffer audio source: the decoded frames from the decoder will be inserted here. */
-    if (!dec_ctx->channel_layout)
-        dec_ctx->channel_layout = av_get_default_channel_layout(dec_ctx->channels);
-    snprintf(args, sizeof(args),
-            "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=0x%"PRIx64,
+    if (dec_ctx->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+        av_channel_layout_default(&dec_ctx->ch_layout, dec_ctx->ch_layout.nb_channels);
+    ret = snprintf(args, sizeof(args),
+            "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=",
              time_base.num, time_base.den, dec_ctx->sample_rate,
-             av_get_sample_fmt_name(dec_ctx->sample_fmt), dec_ctx->channel_layout);
+             av_get_sample_fmt_name(dec_ctx->sample_fmt));
+    av_channel_layout_describe(&dec_ctx->ch_layout, args + ret, sizeof(args) - ret);
     ret = avfilter_graph_create_filter(&buffersrc_ctx, abuffersrc, "in",
                                        args, NULL, filter_graph);
     if (ret < 0) {
@@ -134,7 +134,7 @@ static int init_filters(const char *filters_descr)
         goto end;
     }
 
-    ret = av_opt_set_int_list(buffersink_ctx, "channel_layouts", out_channel_layouts, -1,
+    ret = av_opt_set(buffersink_ctx, "ch_layouts", "mono",
                               AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot set output channel layout\n");
@@ -185,7 +185,7 @@ static int init_filters(const char *filters_descr)
     /* Print summary of the sink buffer
      * Note: args buffer is reused to store channel layout string */
     outlink = buffersink_ctx->inputs[0];
-    av_get_channel_layout_string(args, sizeof(args), -1, outlink->channel_layout);
+    av_channel_layout_describe(&outlink->ch_layout, args, sizeof(args));
     av_log(NULL, AV_LOG_INFO, "Output: srate:%dHz fmt:%s chlayout:%s\n",
            (int)outlink->sample_rate,
            (char *)av_x_if_null(av_get_sample_fmt_name(outlink->format), "?"),
@@ -200,7 +200,7 @@ end:
 
 static void print_frame(const AVFrame *frame)
 {
-    const int n = frame->nb_samples * av_get_channel_layout_nb_channels(frame->channel_layout);
+    const int n = frame->nb_samples * frame->ch_layout.nb_channels;
     const uint16_t *p     = (uint16_t*)frame->data[0];
     const uint16_t *p_end = p + n;
 

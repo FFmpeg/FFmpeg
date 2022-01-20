@@ -80,7 +80,7 @@ static void fill_samples(double *dst, int nb_samples, int nb_channels, int sampl
 
 int main(int argc, char **argv)
 {
-    int64_t src_ch_layout = AV_CH_LAYOUT_STEREO, dst_ch_layout = AV_CH_LAYOUT_SURROUND;
+    AVChannelLayout src_ch_layout = AV_CHANNEL_LAYOUT_STEREO, dst_ch_layout = AV_CHANNEL_LAYOUT_SURROUND;
     int src_rate = 48000, dst_rate = 44100;
     uint8_t **src_data = NULL, **dst_data = NULL;
     int src_nb_channels = 0, dst_nb_channels = 0;
@@ -92,6 +92,7 @@ int main(int argc, char **argv)
     int dst_bufsize;
     const char *fmt;
     struct SwrContext *swr_ctx;
+    char buf[64];
     double t;
     int ret;
 
@@ -120,11 +121,11 @@ int main(int argc, char **argv)
     }
 
     /* set options */
-    av_opt_set_int(swr_ctx, "in_channel_layout",    src_ch_layout, 0);
+    av_opt_set_chlayout(swr_ctx, "in_chlayout",    &src_ch_layout, 0);
     av_opt_set_int(swr_ctx, "in_sample_rate",       src_rate, 0);
     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", src_sample_fmt, 0);
 
-    av_opt_set_int(swr_ctx, "out_channel_layout",    dst_ch_layout, 0);
+    av_opt_set_chlayout(swr_ctx, "out_chlayout",    &dst_ch_layout, 0);
     av_opt_set_int(swr_ctx, "out_sample_rate",       dst_rate, 0);
     av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", dst_sample_fmt, 0);
 
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 
     /* allocate source and destination samples buffers */
 
-    src_nb_channels = av_get_channel_layout_nb_channels(src_ch_layout);
+    src_nb_channels = src_ch_layout.nb_channels;
     ret = av_samples_alloc_array_and_samples(&src_data, &src_linesize, src_nb_channels,
                                              src_nb_samples, src_sample_fmt, 0);
     if (ret < 0) {
@@ -151,7 +152,7 @@ int main(int argc, char **argv)
         av_rescale_rnd(src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
 
     /* buffer is going to be directly written to a rawaudio file, no alignment */
-    dst_nb_channels = av_get_channel_layout_nb_channels(dst_ch_layout);
+    dst_nb_channels = dst_ch_layout.nb_channels;
     ret = av_samples_alloc_array_and_samples(&dst_data, &dst_linesize, dst_nb_channels,
                                              dst_nb_samples, dst_sample_fmt, 0);
     if (ret < 0) {
@@ -194,9 +195,10 @@ int main(int argc, char **argv)
 
     if ((ret = get_format_from_sample_fmt(&fmt, dst_sample_fmt)) < 0)
         goto end;
+    av_channel_layout_describe(&dst_ch_layout, buf, sizeof(buf));
     fprintf(stderr, "Resampling succeeded. Play the output file with the command:\n"
-            "ffplay -f %s -channel_layout %"PRId64" -channels %d -ar %d %s\n",
-            fmt, dst_ch_layout, dst_nb_channels, dst_rate, dst_filename);
+            "ffplay -f %s -channel_layout %s -channels %d -ar %d %s\n",
+            fmt, buf, dst_nb_channels, dst_rate, dst_filename);
 
 end:
     fclose(dst_file);

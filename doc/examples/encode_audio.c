@@ -70,26 +70,25 @@ static int select_sample_rate(const AVCodec *codec)
 }
 
 /* select layout with the highest channel count */
-static int select_channel_layout(const AVCodec *codec)
+static int select_channel_layout(const AVCodec *codec, AVChannelLayout *dst)
 {
-    const uint64_t *p;
-    uint64_t best_ch_layout = 0;
+    const AVChannelLayout *p, *best_ch_layout;
     int best_nb_channels   = 0;
 
-    if (!codec->channel_layouts)
-        return AV_CH_LAYOUT_STEREO;
+    if (!codec->ch_layouts)
+        return av_channel_layout_copy(dst, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
 
-    p = codec->channel_layouts;
-    while (*p) {
-        int nb_channels = av_get_channel_layout_nb_channels(*p);
+    p = codec->ch_layouts;
+    while (p->nb_channels) {
+        int nb_channels = p->nb_channels;
 
         if (nb_channels > best_nb_channels) {
-            best_ch_layout    = *p;
+            best_ch_layout   = p;
             best_nb_channels = nb_channels;
         }
         p++;
     }
-    return best_ch_layout;
+    return av_channel_layout_copy(dst, best_ch_layout);
 }
 
 static void encode(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt,
@@ -164,8 +163,9 @@ int main(int argc, char **argv)
 
     /* select other audio parameters supported by the encoder */
     c->sample_rate    = select_sample_rate(codec);
-    c->channel_layout = select_channel_layout(codec);
-    c->channels       = av_get_channel_layout_nb_channels(c->channel_layout);
+    ret = select_channel_layout(codec, &c->ch_layout);
+    if (ret < 0)
+        exit(1);
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
@@ -195,7 +195,9 @@ int main(int argc, char **argv)
 
     frame->nb_samples     = c->frame_size;
     frame->format         = c->sample_fmt;
-    frame->channel_layout = c->channel_layout;
+    ret = av_channel_layout_copy(&frame->ch_layout, &c->ch_layout);
+    if (ret < 0)
+        exit(1);
 
     /* allocate the data buffers */
     ret = av_frame_get_buffer(frame, 0);
@@ -218,7 +220,7 @@ int main(int argc, char **argv)
         for (j = 0; j < c->frame_size; j++) {
             samples[2*j] = (int)(sin(t) * 10000);
 
-            for (k = 1; k < c->channels; k++)
+            for (k = 1; k < c->ch_layout.nb_channels; k++)
                 samples[2*j + k] = samples[2*j];
             t += tincr;
         }

@@ -200,8 +200,7 @@ static int open_output_file(const char *filename,
 
     /* Set the basic encoder parameters.
      * The input file's sample rate is used to avoid a sample rate conversion. */
-    avctx->channels       = OUTPUT_CHANNELS;
-    avctx->channel_layout = av_get_default_channel_layout(OUTPUT_CHANNELS);
+    av_channel_layout_default(&avctx->ch_layout, OUTPUT_CHANNELS);
     avctx->sample_rate    = input_codec_context->sample_rate;
     avctx->sample_fmt     = output_codec->sample_fmts[0];
     avctx->bit_rate       = OUTPUT_BIT_RATE;
@@ -290,21 +289,18 @@ static int init_resampler(AVCodecContext *input_codec_context,
         /*
          * Create a resampler context for the conversion.
          * Set the conversion parameters.
-         * Default channel layouts based on the number of channels
-         * are assumed for simplicity (they are sometimes not detected
-         * properly by the demuxer and/or decoder).
          */
-        *resample_context = swr_alloc_set_opts(NULL,
-                                              av_get_default_channel_layout(output_codec_context->channels),
+        error = swr_alloc_set_opts2(resample_context,
+                                             &output_codec_context->ch_layout,
                                               output_codec_context->sample_fmt,
                                               output_codec_context->sample_rate,
-                                              av_get_default_channel_layout(input_codec_context->channels),
+                                             &input_codec_context->ch_layout,
                                               input_codec_context->sample_fmt,
                                               input_codec_context->sample_rate,
                                               0, NULL);
-        if (!*resample_context) {
+        if (error < 0) {
             fprintf(stderr, "Could not allocate resample context\n");
-            return AVERROR(ENOMEM);
+            return error;
         }
         /*
         * Perform a sanity check so that the number of converted samples is
@@ -332,7 +328,7 @@ static int init_fifo(AVAudioFifo **fifo, AVCodecContext *output_codec_context)
 {
     /* Create the FIFO buffer based on the specified output sample format. */
     if (!(*fifo = av_audio_fifo_alloc(output_codec_context->sample_fmt,
-                                      output_codec_context->channels, 1))) {
+                                      output_codec_context->ch_layout.nb_channels, 1))) {
         fprintf(stderr, "Could not allocate FIFO\n");
         return AVERROR(ENOMEM);
     }
@@ -450,7 +446,7 @@ static int init_converted_samples(uint8_t ***converted_input_samples,
      * Each pointer will later point to the audio samples of the corresponding
      * channels (although it may be NULL for interleaved formats).
      */
-    if (!(*converted_input_samples = calloc(output_codec_context->channels,
+    if (!(*converted_input_samples = calloc(output_codec_context->ch_layout.nb_channels,
                                             sizeof(**converted_input_samples)))) {
         fprintf(stderr, "Could not allocate converted input sample pointers\n");
         return AVERROR(ENOMEM);
@@ -459,7 +455,7 @@ static int init_converted_samples(uint8_t ***converted_input_samples,
     /* Allocate memory for the samples of all channels in one consecutive
      * block for convenience. */
     if ((error = av_samples_alloc(*converted_input_samples, NULL,
-                                  output_codec_context->channels,
+                                  output_codec_context->ch_layout.nb_channels,
                                   frame_size,
                                   output_codec_context->sample_fmt, 0)) < 0) {
         fprintf(stderr,
@@ -633,7 +629,7 @@ static int init_output_frame(AVFrame **frame,
      * Default channel layouts based on the number of channels
      * are assumed for simplicity. */
     (*frame)->nb_samples     = frame_size;
-    (*frame)->channel_layout = output_codec_context->channel_layout;
+    av_channel_layout_copy(&(*frame)->ch_layout, &output_codec_context->ch_layout);
     (*frame)->format         = output_codec_context->sample_fmt;
     (*frame)->sample_rate    = output_codec_context->sample_rate;
 

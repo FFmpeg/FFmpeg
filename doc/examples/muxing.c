@@ -170,16 +170,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
                     c->sample_rate = 44100;
             }
         }
-        c->channels        = av_get_channel_layout_nb_channels(c->channel_layout);
-        c->channel_layout = AV_CH_LAYOUT_STEREO;
-        if ((*codec)->channel_layouts) {
-            c->channel_layout = (*codec)->channel_layouts[0];
-            for (i = 0; (*codec)->channel_layouts[i]; i++) {
-                if ((*codec)->channel_layouts[i] == AV_CH_LAYOUT_STEREO)
-                    c->channel_layout = AV_CH_LAYOUT_STEREO;
-            }
-        }
-        c->channels        = av_get_channel_layout_nb_channels(c->channel_layout);
+        av_channel_layout_copy(&c->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
         ost->st->time_base = (AVRational){ 1, c->sample_rate };
         break;
 
@@ -224,7 +215,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 /* audio output */
 
 static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt,
-                                  uint64_t channel_layout,
+                                  const AVChannelLayout *channel_layout,
                                   int sample_rate, int nb_samples)
 {
     AVFrame *frame = av_frame_alloc();
@@ -236,7 +227,7 @@ static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt,
     }
 
     frame->format = sample_fmt;
-    frame->channel_layout = channel_layout;
+    av_channel_layout_copy(&frame->ch_layout, channel_layout);
     frame->sample_rate = sample_rate;
     frame->nb_samples = nb_samples;
 
@@ -281,9 +272,9 @@ static void open_audio(AVFormatContext *oc, const AVCodec *codec,
     else
         nb_samples = c->frame_size;
 
-    ost->frame     = alloc_audio_frame(c->sample_fmt, c->channel_layout,
+    ost->frame     = alloc_audio_frame(c->sample_fmt, &c->ch_layout,
                                        c->sample_rate, nb_samples);
-    ost->tmp_frame = alloc_audio_frame(AV_SAMPLE_FMT_S16, c->channel_layout,
+    ost->tmp_frame = alloc_audio_frame(AV_SAMPLE_FMT_S16, &c->ch_layout,
                                        c->sample_rate, nb_samples);
 
     /* copy the stream parameters to the muxer */
@@ -301,10 +292,10 @@ static void open_audio(AVFormatContext *oc, const AVCodec *codec,
     }
 
     /* set options */
-    av_opt_set_int       (ost->swr_ctx, "in_channel_count",   c->channels,       0);
+    av_opt_set_chlayout  (ost->swr_ctx, "in_chlayout",       &c->ch_layout,      0);
     av_opt_set_int       (ost->swr_ctx, "in_sample_rate",     c->sample_rate,    0);
     av_opt_set_sample_fmt(ost->swr_ctx, "in_sample_fmt",      AV_SAMPLE_FMT_S16, 0);
-    av_opt_set_int       (ost->swr_ctx, "out_channel_count",  c->channels,       0);
+    av_opt_set_chlayout  (ost->swr_ctx, "out_chlayout",      &c->ch_layout,      0);
     av_opt_set_int       (ost->swr_ctx, "out_sample_rate",    c->sample_rate,    0);
     av_opt_set_sample_fmt(ost->swr_ctx, "out_sample_fmt",     c->sample_fmt,     0);
 
@@ -330,7 +321,7 @@ static AVFrame *get_audio_frame(OutputStream *ost)
 
     for (j = 0; j <frame->nb_samples; j++) {
         v = (int)(sin(ost->t) * 10000);
-        for (i = 0; i < ost->enc->channels; i++)
+        for (i = 0; i < ost->enc->ch_layout.nb_channels; i++)
             *q++ = v;
         ost->t     += ost->tincr;
         ost->tincr += ost->tincr2;

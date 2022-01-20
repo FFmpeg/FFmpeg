@@ -345,7 +345,7 @@ int main (int argc, char **argv)
 
     if (audio_stream) {
         enum AVSampleFormat sfmt = audio_dec_ctx->sample_fmt;
-        int n_channels = audio_dec_ctx->channels;
+        int n_channels = audio_dec_ctx->ch_layout.nb_channels;
         const char *fmt;
 
         if (av_sample_fmt_is_planar(sfmt)) {
