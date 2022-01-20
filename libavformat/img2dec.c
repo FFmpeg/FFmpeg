@@ -1115,8 +1115,8 @@ static int gem_probe(const AVProbeData *p)
     int ret = 0;
     if ( AV_RB16(b     ) >= 1 && AV_RB16(b    ) <= 3  &&
          AV_RB16(b +  2) >= 8 && AV_RB16(b + 2) <= 779 &&
-        (AV_RB16(b +  4) > 0  || AV_RB16(b + 4) <= 8) &&
-        (AV_RB16(b +  6) > 0  || AV_RB16(b + 6) <= 8) &&
+        (AV_RB16(b +  4) > 0  && AV_RB16(b + 4) <= 32) && /* planes */
+        (AV_RB16(b +  6) > 0  && AV_RB16(b + 6) <= 8) && /* pattern_size */
          AV_RB16(b +  8) &&
          AV_RB16(b + 10) &&
          AV_RB16(b + 12) &&
