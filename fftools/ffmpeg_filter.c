@@ -949,8 +949,8 @@ static void cleanup_filtergraph(FilterGraph *fg)
 static int filter_is_buffersrc(const AVFilterContext *f)
 {
     return f->nb_inputs == 0 &&
-           (!strcmp(f->filter->name, "buffersrc") ||
-            !strcmp(f->filter->name, "abuffersrc"));
+           (!strcmp(f->filter->name, "buffer") ||
+            !strcmp(f->filter->name, "abuffer"));
 }
 
 static int graph_is_meta(AVFilterGraph *graph)
