@@ -37,6 +37,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
+#include "libavutil/display.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lzo.h"
@@ -2231,6 +2232,44 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
     return 0;
 }
 
+static int mkv_create_display_matrix(AVStream *st,
+                                     const MatroskaTrackVideoProjection *proj,
+                                     void *logctx)
+{
+    double pitch = proj->pitch, yaw = proj->yaw, roll = proj->roll;
+    int32_t *matrix;
+    int hflip;
+
+    if (pitch == 0.0 && yaw == 0.0 && roll == 0.0)
+        return 0;
+
+    /* Note: The following constants are exactly representable
+     * as floating-point numbers. */
+    if (pitch != 0.0 || (yaw != 0.0 && yaw != 180.0 && yaw != -180.0) ||
+        isnan(roll)) {
+        av_log(logctx, AV_LOG_WARNING, "Ignoring non-2D rectangular "
+               "projection in stream %u (yaw %f, pitch %f, roll %f)\n",
+               st->index, yaw, pitch, roll);
+        return 0;
+    }
+    matrix = (int32_t*)av_stream_new_side_data(st, AV_PKT_DATA_DISPLAYMATRIX,
+                                               9 * sizeof(*matrix));
+    if (!matrix)
+        return AVERROR(ENOMEM);
+
+    hflip = yaw != 0.0;
+    /* ProjectionPoseRoll is in the counter-clockwise direction
+     * whereas av_display_rotation_set() expects its argument
+     * to be oriented clockwise, so we need to negate roll.
+     * Furthermore, if hflip is set, we need to negate it again
+     * to account for the fact that the Matroska specifications
+     * require the yaw rotation to be applied first. */
+    av_display_rotation_set(matrix, roll * (2 * hflip - 1));
+    av_display_matrix_flip(matrix, hflip, 0);
+
+    return 0;
+}
+
 static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track,
                                       void *logctx)
 {
@@ -2249,6 +2288,8 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track,
     }
 
     switch (track->video.projection.type) {
+    case MATROSKA_VIDEO_PROJECTION_TYPE_RECTANGULAR:
+        return mkv_create_display_matrix(st, mkv_projection, logctx);
     case MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR:
         if (track->video.projection.private.size == 20) {
             t = AV_RB32(priv_data +  4);
@@ -2291,9 +2332,6 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track,
             return AVERROR_INVALIDDATA;
         }
         break;
-    case MATROSKA_VIDEO_PROJECTION_TYPE_RECTANGULAR:
-        /* No Spherical metadata */
-        return 0;
     default:
         av_log(logctx, AV_LOG_WARNING,
                "Unknown spherical metadata type %"PRIu64"\n",
