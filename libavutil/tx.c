@@ -262,7 +262,7 @@ static av_cold int ff_tx_null_init(AVTXContext *s, const FFTXCodelet *cd,
                                    int len, int inv, const void *scale)
 {
     /* Can only handle one sample+type to one sample+type transforms */
-    if (TYPE_IS(MDCT, s->type))
+    if (TYPE_IS(MDCT, s->type) || TYPE_IS(RDFT, s->type))
         return AVERROR(EINVAL);
     return 0;
 }
@@ -322,10 +322,13 @@ static void print_type(AVBPrint *bp, enum AVTXType type)
                type == TX_TYPE_ANY       ? "any"         :
                type == AV_TX_FLOAT_FFT   ? "fft_float"   :
                type == AV_TX_FLOAT_MDCT  ? "mdct_float"  :
+               type == AV_TX_FLOAT_RDFT  ? "rdft_float"  :
                type == AV_TX_DOUBLE_FFT  ? "fft_double"  :
                type == AV_TX_DOUBLE_MDCT ? "mdct_double" :
+               type == AV_TX_DOUBLE_RDFT ? "rdft_double" :
                type == AV_TX_INT32_FFT   ? "fft_int32"   :
                type == AV_TX_INT32_MDCT  ? "mdct_int32"  :
+               type == AV_TX_INT32_RDFT  ? "rdft_int32"  :
                "unknown");
 }
 

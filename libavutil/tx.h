@@ -69,6 +69,26 @@ enum AVTXType {
     AV_TX_DOUBLE_MDCT = 3,
     AV_TX_INT32_MDCT  = 5,
 
+    /**
+     * Real to complex and complex to real DFTs.
+     * For the float and int32 variants, the scale type is 'float', while for
+     * the double variant, it's a 'double'. If scale is NULL, 1.0 will be used
+     * as a default.
+     *
+     * The stride parameter must be set to the size of a single sample in bytes.
+     *
+     * The forward transform performs a real-to-complex DFT of N samples to
+     * N/2+1 complex values.
+     *
+     * The inverse transform performs a complex-to-real DFT of N/2+1 complex
+     * values to N real samples. The output is not normalized, but can be
+     * made so by setting the scale value to 1.0/len.
+     * NOTE: the inverse transform always overwrites the input.
+     */
+    AV_TX_FLOAT_RDFT  = 6,
+    AV_TX_DOUBLE_RDFT = 7,
+    AV_TX_INT32_RDFT  = 8,
+
     /* Not part of the API, do not use */
     AV_TX_NB,
 };

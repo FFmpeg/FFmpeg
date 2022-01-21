@@ -1277,6 +1277,134 @@ DECL_COMP_MDCT(7)
 DECL_COMP_MDCT(9)
 DECL_COMP_MDCT(15)
 
+static av_cold int TX_NAME(ff_tx_rdft_init)(AVTXContext *s,
+                                            const FFTXCodelet *cd,
+                                            uint64_t flags,
+                                            FFTXCodeletOptions *opts,
+                                            int len, int inv,
+                                            const void *scale)
+{
+    int ret;
+    double f, m;
+    TXSample *tab;
+
+    s->scale_d = *((SCALE_TYPE *)scale);
+    s->scale_f = s->scale_d;
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, NULL, len >> 1, inv, scale)))
+        return ret;
+
+    if (!(s->exp = av_mallocz((8 + (len >> 2) - 1)*sizeof(*s->exp))))
+        return AVERROR(ENOMEM);
+
+    tab = (TXSample *)s->exp;
+
+    f = 2*M_PI/len;
+
+    m = (inv ? 2*s->scale_d : s->scale_d);
+
+    *tab++ = RESCALE((inv ? 0.5 : 1.0) * m);
+    *tab++ = RESCALE(inv ? 0.5*m : 1.0);
+    *tab++ = RESCALE( m);
+    *tab++ = RESCALE(-m);
+
+    *tab++ = RESCALE( (0.5 - 0.0) * m);
+    *tab++ = RESCALE( (0.0 - 0.5) * m);
+    *tab++ = RESCALE( (0.5 - inv) * m);
+    *tab++ = RESCALE(-(0.5 - inv) * m);
+
+    for (int i = 0; i < len >> 2; i++)
+        *tab++ = RESCALE(cos(i*f));
+    for (int i = len >> 2; i >= 0; i--)
+        *tab++ = RESCALE(cos(i*f) * (inv ? +1.0 : -1.0));
+
+    return 0;
+}
+
+#define DECL_RDFT(name, inv)                                                   \
+static void TX_NAME(ff_tx_rdft_ ##name)(AVTXContext *s, void *_dst,            \
+                                       void *_src, ptrdiff_t stride)           \
+{                                                                              \
+    const int len2 = s->len >> 1;                                              \
+    const int len4 = s->len >> 2;                                              \
+    const TXSample *fact = (void *)s->exp;                                     \
+    const TXSample *tcos = fact + 8;                                           \
+    const TXSample *tsin = tcos + len4;                                        \
+    TXComplex *data = inv ? _src : _dst;                                       \
+    TXComplex t[3];                                                            \
+                                                                               \
+    if (!inv)                                                                  \
+        s->fn[0](&s->sub[0], data, _src, sizeof(TXComplex));                   \
+    else                                                                       \
+        data[0].im = data[len2].re;                                            \
+                                                                               \
+    /* The DC value's both components are real, but we need to change them     \
+     * into complex values. Also, the middle of the array is special-cased.    \
+     * These operations can be done before or after the loop. */               \
+    t[0].re = data[0].re;                                                      \
+    data[0].re = t[0].re + data[0].im;                                         \
+    data[0].im = t[0].re - data[0].im;                                         \
+    data[   0].re = MULT(fact[0], data[   0].re);                              \
+    data[   0].im = MULT(fact[1], data[   0].im);                              \
+    data[len4].re = MULT(fact[2], data[len4].re);                              \
+    data[len4].im = MULT(fact[3], data[len4].im);                              \
+                                                                               \
+    for (int i = 1; i < len4; i++) {                                           \
+        /* Separate even and odd FFTs */                                       \
+        t[0].re = MULT(fact[4], (data[i].re + data[len2 - i].re));             \
+        t[0].im = MULT(fact[5], (data[i].im - data[len2 - i].im));             \
+        t[1].re = MULT(fact[6], (data[i].im + data[len2 - i].im));             \
+        t[1].im = MULT(fact[7], (data[i].re - data[len2 - i].re));             \
+                                                                               \
+        /* Apply twiddle factors to the odd FFT and add to the even FFT */     \
+        CMUL(t[2].re, t[2].im, t[1].re, t[1].im, tcos[i], tsin[i]);            \
+                                                                               \
+        data[       i].re = t[0].re + t[2].re;                                 \
+        data[       i].im = t[2].im - t[0].im;                                 \
+        data[len2 - i].re = t[0].re - t[2].re;                                 \
+        data[len2 - i].im = t[2].im + t[0].im;                                 \
+    }                                                                          \
+                                                                               \
+    if (inv) {                                                                 \
+        s->fn[0](&s->sub[0], _dst, data, sizeof(TXComplex));                   \
+    } else {                                                                   \
+        /* Move [0].im to the last position, as convention requires */         \
+        data[len2].re = data[0].im;                                            \
+        data[   0].im = 0;                                                     \
+    }                                                                          \
+}
+
+DECL_RDFT(r2c, 0)
+DECL_RDFT(c2r, 1)
+
+static const FFTXCodelet TX_NAME(ff_tx_rdft_r2c_def) = {
+    .name       = TX_NAME_STR("rdft_r2c"),
+    .function   = TX_NAME(ff_tx_rdft_r2c),
+    .type       = TX_TYPE(RDFT),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE |
+                  FF_TX_OUT_OF_PLACE | FF_TX_FORWARD_ONLY,
+    .factors    = { 2, TX_FACTOR_ANY },
+    .min_len    = 2,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_rdft_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
+
+static const FFTXCodelet TX_NAME(ff_tx_rdft_c2r_def) = {
+    .name       = TX_NAME_STR("rdft_c2r"),
+    .function   = TX_NAME(ff_tx_rdft_c2r),
+    .type       = TX_TYPE(RDFT),
+    .flags      = AV_TX_UNALIGNED | AV_TX_INPLACE |
+                  FF_TX_OUT_OF_PLACE | FF_TX_INVERSE_ONLY,
+    .factors    = { 2, TX_FACTOR_ANY },
+    .min_len    = 2,
+    .max_len    = TX_LEN_UNLIMITED,
+    .init       = TX_NAME(ff_tx_rdft_init),
+    .cpu_flags  = FF_TX_CPU_FLAGS_ALL,
+    .prio       = FF_TX_PRIO_BASE,
+};
+
 int TX_TAB(ff_tx_mdct_gen_exp)(AVTXContext *s)
 {
     int len4 = s->len >> 1;
@@ -1340,6 +1468,8 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_mdct_naive_fwd_def),
     &TX_NAME(ff_tx_mdct_naive_inv_def),
     &TX_NAME(ff_tx_mdct_inv_full_def),
+    &TX_NAME(ff_tx_rdft_r2c_def),
+    &TX_NAME(ff_tx_rdft_c2r_def),
 
     NULL,
 };
