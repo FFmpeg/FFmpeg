@@ -384,7 +384,7 @@ YUV2GBRP_FN_DECL(gbrp14be,   opt); \
 YUV2GBRP_FN_DECL(gbrp16be,   opt); \
 YUV2GBRP_FN_DECL(gbrap16be,  opt); \
 YUV2GBRP_FN_DECL(gbrpf32be,  opt); \
-YUV2GBRP_FN_DECL(gbrapf32be, opt);
+YUV2GBRP_FN_DECL(gbrapf32be, opt)
 
 YUV2GBRP_DECL(sse2);
 YUV2GBRP_DECL(sse4);
@@ -405,35 +405,35 @@ void ff_planar_##fmt##_to_a_##opt(uint8_t *dst,                            \
 
 #define INPUT_PLANAR_RGBXX_A_DECL(fmt, opt) \
 INPUT_PLANAR_RGB_A_FN_DECL(fmt##le,  opt);  \
-INPUT_PLANAR_RGB_A_FN_DECL(fmt##be,  opt);
+INPUT_PLANAR_RGB_A_FN_DECL(fmt##be,  opt)
 
 #define INPUT_PLANAR_RGBXX_Y_DECL(fmt, opt) \
 INPUT_PLANAR_RGB_Y_FN_DECL(fmt##le,  opt);  \
-INPUT_PLANAR_RGB_Y_FN_DECL(fmt##be,  opt);
+INPUT_PLANAR_RGB_Y_FN_DECL(fmt##be,  opt)
 
 #define INPUT_PLANAR_RGBXX_UV_DECL(fmt, opt) \
 INPUT_PLANAR_RGB_UV_FN_DECL(fmt##le,  opt);  \
-INPUT_PLANAR_RGB_UV_FN_DECL(fmt##be,  opt);
+INPUT_PLANAR_RGB_UV_FN_DECL(fmt##be,  opt)
 
 #define INPUT_PLANAR_RGBXX_YUVA_DECL(fmt, opt) \
 INPUT_PLANAR_RGBXX_Y_DECL(fmt,  opt);          \
 INPUT_PLANAR_RGBXX_UV_DECL(fmt, opt);          \
-INPUT_PLANAR_RGBXX_A_DECL(fmt,  opt);
+INPUT_PLANAR_RGBXX_A_DECL(fmt,  opt)
 
 #define INPUT_PLANAR_RGBXX_YUV_DECL(fmt, opt) \
 INPUT_PLANAR_RGBXX_Y_DECL(fmt,  opt);         \
-INPUT_PLANAR_RGBXX_UV_DECL(fmt, opt);
+INPUT_PLANAR_RGBXX_UV_DECL(fmt, opt)
 
 #define INPUT_PLANAR_RGBXX_UVA_DECL(fmt, opt) \
 INPUT_PLANAR_RGBXX_UV_DECL(fmt, opt);         \
-INPUT_PLANAR_RGBXX_A_DECL(fmt,  opt);
+INPUT_PLANAR_RGBXX_A_DECL(fmt,  opt)
 
 #define INPUT_PLANAR_RGB_A_ALL_DECL(opt) \
 INPUT_PLANAR_RGB_A_FN_DECL(rgb,   opt);  \
 INPUT_PLANAR_RGBXX_A_DECL(rgb10,  opt);  \
 INPUT_PLANAR_RGBXX_A_DECL(rgb12,  opt);  \
 INPUT_PLANAR_RGBXX_A_DECL(rgb16,  opt);  \
-INPUT_PLANAR_RGBXX_A_DECL(rgbf32, opt);
+INPUT_PLANAR_RGBXX_A_DECL(rgbf32, opt)
 
 #define INPUT_PLANAR_RGB_Y_ALL_DECL(opt) \
 INPUT_PLANAR_RGB_Y_FN_DECL(rgb,   opt);  \
@@ -442,7 +442,7 @@ INPUT_PLANAR_RGBXX_Y_DECL(rgb10,  opt);  \
 INPUT_PLANAR_RGBXX_Y_DECL(rgb12,  opt);  \
 INPUT_PLANAR_RGBXX_Y_DECL(rgb14,  opt);  \
 INPUT_PLANAR_RGBXX_Y_DECL(rgb16,  opt);  \
-INPUT_PLANAR_RGBXX_Y_DECL(rgbf32, opt);
+INPUT_PLANAR_RGBXX_Y_DECL(rgbf32, opt)
 
 #define INPUT_PLANAR_RGB_UV_ALL_DECL(opt) \
 INPUT_PLANAR_RGB_UV_FN_DECL(rgb,    opt); \
@@ -451,7 +451,7 @@ INPUT_PLANAR_RGBXX_UV_DECL(rgb10,  opt);  \
 INPUT_PLANAR_RGBXX_UV_DECL(rgb12,  opt);  \
 INPUT_PLANAR_RGBXX_UV_DECL(rgb14,  opt);  \
 INPUT_PLANAR_RGBXX_UV_DECL(rgb16,  opt);  \
-INPUT_PLANAR_RGBXX_UV_DECL(rgbf32, opt);
+INPUT_PLANAR_RGBXX_UV_DECL(rgbf32, opt)
 
 INPUT_PLANAR_RGBXX_Y_DECL(rgbf32, sse2);
 INPUT_PLANAR_RGB_UV_ALL_DECL(sse2);
