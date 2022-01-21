@@ -407,7 +407,7 @@ retry:
             atom.size -= 16;
 
             if (!key && c->found_hdlr_mdta && c->meta_keys) {
-                uint32_t index = AV_RB32(&atom.type);
+                uint32_t index = av_bswap32(atom.type); // BE number has been read as LE
                 if (index < c->meta_keys_count && index > 0) {
                     key = c->meta_keys[index];
                 } else if (atom.type != MKTAG('c', 'o', 'v', 'r')) {
