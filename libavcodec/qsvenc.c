@@ -1844,17 +1844,17 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
         QSVPacket pkt;
         while (av_fifo_read(q->async_fifo, &pkt, 1) >= 0) {
 #if QSV_VERSION_ATLEAST(1, 26)
-        if (avctx->codec_id == AV_CODEC_ID_H264) {
-            mfxExtBuffer **enc_buf = pkt.bs->ExtParam;
-            mfxExtAVCEncodedFrameInfo *enc_info = (mfxExtAVCEncodedFrameInfo *)(*enc_buf);
-            av_freep(&enc_info);
-            av_freep(&enc_buf);
-        }
+            if (avctx->codec_id == AV_CODEC_ID_H264) {
+                mfxExtBuffer **enc_buf = pkt.bs->ExtParam;
+                mfxExtAVCEncodedFrameInfo *enc_info = (mfxExtAVCEncodedFrameInfo *)(*enc_buf);
+                av_freep(&enc_info);
+                av_freep(&enc_buf);
+            }
 #endif
-        av_freep(&pkt.sync);
-        av_freep(&pkt.bs);
-        av_packet_unref(&pkt.pkt);
-    }
+            av_freep(&pkt.sync);
+            av_freep(&pkt.bs);
+            av_packet_unref(&pkt.pkt);
+        }
         av_fifo_freep2(&q->async_fifo);
     }
 
