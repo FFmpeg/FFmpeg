@@ -3451,7 +3451,7 @@ static int xyz_to_dfisheye(const V360Context *s,
                            const float *vec, int width, int height,
                            int16_t us[4][4], int16_t vs[4][4], float *du, float *dv)
 {
-    const float ew = (width - 1) * 0.5f;
+    const float ew = width * 0.5f;
     const float eh = height;
 
     const float h     = hypotf(vec[0], vec[1]);
