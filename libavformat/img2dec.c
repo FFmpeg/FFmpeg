@@ -1112,7 +1112,6 @@ static int photocd_probe(const AVProbeData *p)
 static int gem_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
-    int ret = 0;
     if ( AV_RB16(b     ) >= 1 && AV_RB16(b    ) <= 3  &&
          AV_RB16(b +  2) >= 8 && AV_RB16(b + 2) <= 779 &&
         (AV_RB16(b +  4) > 0  && AV_RB16(b + 4) <= 32) && /* planes */
@@ -1121,13 +1120,13 @@ static int gem_probe(const AVProbeData *p)
          AV_RB16(b + 10) &&
          AV_RB16(b + 12) &&
          AV_RB16(b + 14)) {
-        ret = AVPROBE_SCORE_EXTENSION / 4;
         if (AV_RN32(b + 16) == AV_RN32("STTT") ||
             AV_RN32(b + 16) == AV_RN32("TIMG") ||
             AV_RN32(b + 16) == AV_RN32("XIMG"))
-            ret += 1;
+            return AVPROBE_SCORE_EXTENSION + 1;
+        return AVPROBE_SCORE_EXTENSION / 4;
     }
-    return ret;
+    return 0;
 }
 
 #define IMAGEAUTO_DEMUXER_0(imgname, codecid)
