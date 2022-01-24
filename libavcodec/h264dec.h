@@ -387,7 +387,6 @@ typedef struct H264Context {
     uint8_t (*non_zero_count)[48];
 
 #define LIST_NOT_USED -1 // FIXME rename?
-#define PART_NOT_AVAILABLE -2
 
     /**
      * block_offset[ 0..23] for frame macroblocks

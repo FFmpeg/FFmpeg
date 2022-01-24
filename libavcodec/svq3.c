@@ -49,13 +49,16 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegutils.h"
-#include "h264dec.h"
 #include "h264data.h"
+#include "h264dsp.h"
+#include "h264pred.h"
+#include "h264_parse.h"
 #include "golomb.h"
 #include "hpeldsp.h"
 #include "mathops.h"
 #include "rectangle.h"
 #include "tpeldsp.h"
+#include "videodsp.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>

@@ -86,6 +86,8 @@
 #define DC_129_PRED8x8         8
 //@}
 
+#define PART_NOT_AVAILABLE -2
+
 /**
  * Context for storing H.264 prediction functions
  */
