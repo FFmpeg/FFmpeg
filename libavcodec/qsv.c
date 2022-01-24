@@ -828,3 +828,30 @@ int ff_qsv_close_internal_session(QSVSession *qs)
 #endif
     return 0;
 }
+
+void ff_qsv_frame_add_ext_param (AVCodecContext *avctx, QSVFrame *frame,
+                                 mfxExtBuffer * param)
+{
+    int i;
+
+    for (i = 0; i < frame->num_ext_params; i++) {
+        mfxExtBuffer *ext_buffer = frame->ext_param[i];
+
+        if (ext_buffer->BufferId == param->BufferId) {
+            av_log(avctx, AV_LOG_WARNING, "A buffer with the same type has been "
+                   "added\n");
+            return;
+        }
+    }
+
+    if (frame->num_ext_params < QSV_MAX_FRAME_EXT_PARAMS) {
+        frame->ext_param[frame->num_ext_params] = param;
+        frame->num_ext_params++;
+        frame->surface.Data.NumExtParam = frame->num_ext_params;
+    } else {
+        av_log(avctx, AV_LOG_WARNING, "Ignore this extra buffer because do not "
+               "have enough space\n");
+    }
+
+
+}

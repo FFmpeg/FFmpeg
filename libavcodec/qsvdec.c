@@ -423,11 +423,13 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
 
         frame->surface.Data.MemId = &q->frames_ctx.mids[ret];
     }
-    frame->surface.Data.ExtParam    = &frame->ext_param;
-    frame->surface.Data.NumExtParam = 1;
-    frame->ext_param                = (mfxExtBuffer*)&frame->dec_info;
+
+    frame->surface.Data.ExtParam    = frame->ext_param;
+    frame->surface.Data.NumExtParam = 0;
+    frame->num_ext_params           = 0;
     frame->dec_info.Header.BufferId = MFX_EXTBUFF_DECODED_FRAME_INFO;
     frame->dec_info.Header.BufferSz = sizeof(frame->dec_info);
+    ff_qsv_frame_add_ext_param(avctx, frame, (mfxExtBuffer *)&frame->dec_info);
 
     frame->used = 1;
 
