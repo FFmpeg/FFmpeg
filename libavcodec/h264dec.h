@@ -31,7 +31,6 @@
 #include "libavutil/buffer.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
-#include "libavutil/thread.h"
 
 #include "cabac.h"
 #include "error_resilience.h"
@@ -45,8 +44,6 @@
 #include "h264qpel.h"
 #include "h274.h"
 #include "mpegutils.h"
-#include "parser.h"
-#include "qpeldsp.h"
 #include "rectangle.h"
 #include "videodsp.h"
 

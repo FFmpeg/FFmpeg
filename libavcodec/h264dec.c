@@ -30,6 +30,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "libavutil/video_enc_params.h"
 
 #include "internal.h"
