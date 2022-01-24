@@ -308,7 +308,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->sei.unregistered.x264_build = -1;
 
     h->next_outputed_poc = INT_MIN;
-    for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
         h->last_pocs[i] = INT_MIN;
 
     ff_h264_sei_uninit(&h->sei);
@@ -445,7 +445,7 @@ static void idr(H264Context *h)
     h->poc.prev_frame_num_offset = 0;
     h->poc.prev_poc_msb          = 1<<16;
     h->poc.prev_poc_lsb          = -1;
-    for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
         h->last_pocs[i] = INT_MIN;
 }
 

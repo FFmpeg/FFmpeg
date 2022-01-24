@@ -428,7 +428,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
     copy_picture_range(h->long_ref, h1->long_ref, 32, h, h1);
     copy_picture_range(h->delayed_pic, h1->delayed_pic,
-                       MAX_DELAYED_PIC_COUNT + 2, h, h1);
+                       FF_ARRAY_ELEMS(h->delayed_pic), h, h1);
 
     h->frame_recovered       = h1->frame_recovered;
 
