@@ -1281,6 +1281,15 @@ void ff_h264_init_cabac_states(const H264Context *h, H264SliceContext *sl)
     }
 }
 
+static av_always_inline uint16_t pack8to16(unsigned a, unsigned b)
+{
+#if HAVE_BIGENDIAN
+    return (b & 0xFF) + (a << 8);
+#else
+    return (a & 0xFF) + (b << 8);
+#endif
+}
+
 static int decode_cabac_field_decoding_flag(const H264Context *h, H264SliceContext *sl)
 {
     const int mbb_xy = sl->mb_xy - 2*h->mb_stride;

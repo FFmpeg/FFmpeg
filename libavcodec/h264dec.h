@@ -685,15 +685,6 @@ static av_always_inline uint32_t pack16to32(unsigned a, unsigned b)
 #endif
 }
 
-static av_always_inline uint16_t pack8to16(unsigned a, unsigned b)
-{
-#if HAVE_BIGENDIAN
-    return (b & 0xFF) + (a << 8);
-#else
-    return (a & 0xFF) + (b << 8);
-#endif
-}
-
 /**
  * Get the chroma qp.
  */
