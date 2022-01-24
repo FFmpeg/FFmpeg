@@ -24,8 +24,31 @@
 #ifndef AVCODEC_H264_PARSE_H
 #define AVCODEC_H264_PARSE_H
 
+#include "config.h"
+
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
+
 #include "get_bits.h"
 #include "h264_ps.h"
+
+// This table must be here because scan8[constant] must be known at compiletime
+static const uint8_t scan8[16 * 3 + 3] = {
+    4 +  1 * 8, 5 +  1 * 8, 4 +  2 * 8, 5 +  2 * 8,
+    6 +  1 * 8, 7 +  1 * 8, 6 +  2 * 8, 7 +  2 * 8,
+    4 +  3 * 8, 5 +  3 * 8, 4 +  4 * 8, 5 +  4 * 8,
+    6 +  3 * 8, 7 +  3 * 8, 6 +  4 * 8, 7 +  4 * 8,
+    4 +  6 * 8, 5 +  6 * 8, 4 +  7 * 8, 5 +  7 * 8,
+    6 +  6 * 8, 7 +  6 * 8, 6 +  7 * 8, 7 +  7 * 8,
+    4 +  8 * 8, 5 +  8 * 8, 4 +  9 * 8, 5 +  9 * 8,
+    6 +  8 * 8, 7 +  8 * 8, 6 +  9 * 8, 7 +  9 * 8,
+    4 + 11 * 8, 5 + 11 * 8, 4 + 12 * 8, 5 + 12 * 8,
+    6 + 11 * 8, 7 + 11 * 8, 6 + 12 * 8, 7 + 12 * 8,
+    4 + 13 * 8, 5 + 13 * 8, 4 + 14 * 8, 5 + 14 * 8,
+    6 + 13 * 8, 7 + 13 * 8, 6 + 14 * 8, 7 + 14 * 8,
+    0 +  0 * 8, 0 +  5 * 8, 0 + 10 * 8
+};
 
 /**
  * Memory management control operation opcode.
@@ -102,5 +125,14 @@ int ff_h264_decode_extradata(const uint8_t *data, int size, H264ParamSets *ps,
  * compute profile from sps
  */
 int ff_h264_get_profile(const SPS *sps);
+
+static av_always_inline uint32_t pack16to32(unsigned a, unsigned b)
+{
+#if HAVE_BIGENDIAN
+    return (b & 0xFFFF) + (a << 16);
+#else
+    return (a & 0xFFFF) + (b << 16);
+#endif
+}
 
 #endif /* AVCODEC_H264_PARSE_H */
