@@ -219,7 +219,7 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb,
 
     if (get_bits1(gb)) { // adaptive_ref_pic_marking_mode_flag
         int i;
-        for (i = 0; i < MAX_MMCO_COUNT; i++) {
+        for (i = 0; i < H264_MAX_MMCO_COUNT; i++) {
             MMCOOpcode opcode = get_ue_golomb_31(gb);
             if (opcode > (unsigned) MMCO_LONG) {
                 av_log(logctx, AV_LOG_ERROR,

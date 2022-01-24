@@ -849,7 +849,7 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
     } else {
         sl->explicit_ref_marking = get_bits1(gb);
         if (sl->explicit_ref_marking) {
-            for (i = 0; i < MAX_MMCO_COUNT; i++) {
+            for (i = 0; i < FF_ARRAY_ELEMS(sl->mmco); i++) {
                 MMCOOpcode opcode = get_ue_golomb_31(gb);
 
                 mmco[i].opcode = opcode;
