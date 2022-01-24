@@ -34,6 +34,7 @@
 #include "error_resilience.h"
 #include "h263.h"
 #include "h263data.h"
+#include "h263dec.h"
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpegutils.h"

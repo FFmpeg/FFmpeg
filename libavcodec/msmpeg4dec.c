@@ -29,6 +29,7 @@
 #include "msmpeg4.h"
 #include "libavutil/imgutils.h"
 #include "h263.h"
+#include "h263dec.h"
 #include "mpeg4video.h"
 #include "msmpeg4data.h"
 #include "vc1data.h"

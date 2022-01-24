@@ -33,6 +33,7 @@
 #include "error_resilience.h"
 #include "flv.h"
 #include "h263.h"
+#include "h263dec.h"
 #if FF_API_FLAG_TRUNCATED
 #include "h263_parser.h"
 #endif

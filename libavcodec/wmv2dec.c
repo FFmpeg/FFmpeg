@@ -19,7 +19,7 @@
  */
 
 #include "avcodec.h"
-#include "h263.h"
+#include "h263dec.h"
 #include "internal.h"
 #include "intrax8.h"
 #include "mathops.h"

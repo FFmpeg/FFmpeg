@@ -22,41 +22,14 @@
 
 #include <stdint.h>
 #include "libavutil/rational.h"
-#include "get_bits.h"
 #include "mpegvideo.h"
 #include "h263data.h"
-#include "rl.h"
 
 #define FF_ASPECT_EXTENDED 15
-#define INT_BIT (CHAR_BIT * sizeof(int))
-
-// The defines below define the number of bits that are read at once for
-// reading vlc values. Changing these may improve speed and data cache needs
-// be aware though that decreasing them may need the number of stages that is
-// passed to get_vlc* to be increased.
-#define H263_MV_VLC_BITS     9
-#define INTRA_MCBPC_VLC_BITS 6
-#define INTER_MCBPC_VLC_BITS 7
-#define CBPY_VLC_BITS 6
-#define TEX_VLC_BITS 9
 
 #define H263_GOB_HEIGHT(h) ((h) <= 400 ? 1 : (h) <= 800 ? 2 : 4)
 
-extern VLC ff_h263_intra_MCBPC_vlc;
-extern VLC ff_h263_inter_MCBPC_vlc;
-extern VLC ff_h263_cbpy_vlc;
-extern VLC ff_h263_mv_vlc;
-
-extern const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[];
-
-
-int ff_h263_decode_motion(MpegEncContext * s, int pred, int f_code);
 av_const int ff_h263_aspect_to_info(AVRational aspect);
-int ff_h263_decode_init(AVCodecContext *avctx);
-int ff_h263_decode_frame(AVCodecContext *avctx,
-                             void *data, int *got_frame,
-                             AVPacket *avpkt);
-int ff_h263_decode_end(AVCodecContext *avctx);
 void ff_h263_encode_mb(MpegEncContext *s,
                        int16_t block[6][64],
                        int motion_x, int motion_y);
@@ -65,27 +38,14 @@ void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line);
 int16_t *ff_h263_pred_motion(MpegEncContext * s, int block, int dir,
                              int *px, int *py);
 void ff_h263_encode_init(MpegEncContext *s);
-void ff_h263_decode_init_vlc(void);
 void ff_h263_init_rl_inter(void);
-int ff_h263_decode_picture_header(MpegEncContext *s);
 void ff_h263_update_motion_val(MpegEncContext * s);
 void ff_h263_loop_filter(MpegEncContext * s);
-int ff_h263_decode_mba(MpegEncContext *s);
 void ff_h263_encode_mba(MpegEncContext *s);
 void ff_init_qscale_tab(MpegEncContext *s);
 
 
-/**
- * Print picture info if FF_DEBUG_PICT_INFO is set.
- */
-void ff_h263_show_pict_info(MpegEncContext *s);
-
-int ff_intel_h263_decode_picture_header(MpegEncContext *s);
-int ff_h263_decode_mb(MpegEncContext *s,
-                      int16_t block[6][64]);
-
 void ff_clean_h263_qscales(MpegEncContext *s);
-int ff_h263_resync(MpegEncContext *s);
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
 
 

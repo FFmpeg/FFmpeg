@@ -21,7 +21,7 @@
 #include "libavutil/imgutils.h"
 
 #include "flv.h"
-#include "h263.h"
+#include "h263dec.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 
