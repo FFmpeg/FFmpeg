@@ -6743,8 +6743,9 @@ volume='if(lt(t,10),1,max(1-(t-10)/5,0))':eval=frame
 
 Detect the volume of the input video.
 
-The filter has no parameters. The input is not modified. Statistics about
-the volume will be printed in the log when the input stream end is reached.
+The filter has no parameters. It supports only 16-bit signed integer samples,
+so the input will be converted when needed. Statistics about the volume will
+be printed in the log when the input stream end is reached.
 
 In particular it will show the mean volume (root mean square), maximum
 volume (on a per-sample basis), and the beginning of a histogram of the
