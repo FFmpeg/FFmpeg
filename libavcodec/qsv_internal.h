@@ -76,6 +76,9 @@ typedef struct QSVFrame {
     mfxFrameSurface1 surface;
     mfxEncodeCtrl enc_ctrl;
     mfxExtDecodedFrameInfo dec_info;
+#if QSV_VERSION_ATLEAST(1, 34)
+    mfxExtAV1FilmGrainParam av1_film_grain_param;
+#endif
     mfxExtBuffer *ext_param[QSV_MAX_FRAME_EXT_PARAMS];
     int num_ext_params;
 

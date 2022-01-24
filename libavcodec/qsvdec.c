@@ -38,6 +38,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/time.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/film_grain_params.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -404,6 +405,11 @@ static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q,
     param->ExtParam    = q->ext_buffers;
     param->NumExtParam = q->nb_ext_buffers;
 
+#if QSV_VERSION_ATLEAST(1, 34)
+    if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 34) && avctx->codec_id == AV_CODEC_ID_AV1)
+        param->mfx.FilmGrain = (avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) ? 0 : param->mfx.FilmGrain;
+#endif
+
     return 0;
 }
 
@@ -443,6 +449,14 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
     frame->dec_info.Header.BufferId = MFX_EXTBUFF_DECODED_FRAME_INFO;
     frame->dec_info.Header.BufferSz = sizeof(frame->dec_info);
     ff_qsv_frame_add_ext_param(avctx, frame, (mfxExtBuffer *)&frame->dec_info);
+#if QSV_VERSION_ATLEAST(1, 34)
+    if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 34) && avctx->codec_id == AV_CODEC_ID_AV1) {
+        frame->av1_film_grain_param.Header.BufferId = MFX_EXTBUFF_AV1_FILM_GRAIN_PARAM;
+        frame->av1_film_grain_param.Header.BufferSz = sizeof(frame->av1_film_grain_param);
+        frame->av1_film_grain_param.FilmGrainFlags = 0;
+        ff_qsv_frame_add_ext_param(avctx, frame, (mfxExtBuffer *)&frame->av1_film_grain_param);
+    }
+#endif
 
     frame->used = 1;
 
@@ -512,6 +526,73 @@ static QSVFrame *find_frame(QSVContext *q, mfxFrameSurface1 *surf)
     }
     return NULL;
 }
+
+#if QSV_VERSION_ATLEAST(1, 34)
+static int qsv_export_film_grain(AVCodecContext *avctx, mfxExtAV1FilmGrainParam *ext_param, AVFrame *frame)
+{
+    AVFilmGrainParams *fgp;
+    AVFilmGrainAOMParams *aom;
+    int i;
+
+    if (!(ext_param->FilmGrainFlags & MFX_FILM_GRAIN_APPLY))
+        return 0;
+
+    fgp = av_film_grain_params_create_side_data(frame);
+
+    if (!fgp)
+        return AVERROR(ENOMEM);
+
+    fgp->type = AV_FILM_GRAIN_PARAMS_AV1;
+    fgp->seed = ext_param->GrainSeed;
+    aom = &fgp->codec.aom;
+
+    aom->chroma_scaling_from_luma = !!(ext_param->FilmGrainFlags & MFX_FILM_GRAIN_CHROMA_SCALING_FROM_LUMA);
+    aom->scaling_shift = ext_param->GrainScalingMinus8 + 8;
+    aom->ar_coeff_lag = ext_param->ArCoeffLag;
+    aom->ar_coeff_shift = ext_param->ArCoeffShiftMinus6 + 6;
+    aom->grain_scale_shift = ext_param->GrainScaleShift;
+    aom->overlap_flag = !!(ext_param->FilmGrainFlags & MFX_FILM_GRAIN_OVERLAP);
+    aom->limit_output_range = !!(ext_param->FilmGrainFlags & MFX_FILM_GRAIN_CLIP_TO_RESTRICTED_RANGE);
+
+    aom->num_y_points = ext_param->NumYPoints;
+
+    for (i = 0; i < aom->num_y_points; i++) {
+        aom->y_points[i][0] = ext_param->PointY[i].Value;
+        aom->y_points[i][1] = ext_param->PointY[i].Scaling;
+    }
+
+    aom->num_uv_points[0] = ext_param->NumCbPoints;
+
+    for (i = 0; i < aom->num_uv_points[0]; i++) {
+        aom->uv_points[0][i][0] = ext_param->PointCb[i].Value;
+        aom->uv_points[0][i][1] = ext_param->PointCb[i].Scaling;
+    }
+
+    aom->num_uv_points[1] = ext_param->NumCrPoints;
+
+    for (i = 0; i < aom->num_uv_points[1]; i++) {
+        aom->uv_points[1][i][0] = ext_param->PointCr[i].Value;
+        aom->uv_points[1][i][1] = ext_param->PointCr[i].Scaling;
+    }
+
+    for (i = 0; i < 24; i++)
+        aom->ar_coeffs_y[i] = ext_param->ArCoeffsYPlus128[i] - 128;
+
+    for (i = 0; i < 25; i++) {
+        aom->ar_coeffs_uv[0][i] = ext_param->ArCoeffsCbPlus128[i] - 128;
+        aom->ar_coeffs_uv[1][i] = ext_param->ArCoeffsCrPlus128[i] - 128;
+    }
+
+    aom->uv_mult[0] = ext_param->CbMult;
+    aom->uv_mult[1] = ext_param->CrMult;
+    aom->uv_mult_luma[0] = ext_param->CbLumaMult;
+    aom->uv_mult_luma[1] = ext_param->CrLumaMult;
+    aom->uv_offset[0] = ext_param->CbOffset;
+    aom->uv_offset[1] = ext_param->CrOffset;
+
+    return 0;
+}
+#endif
 
 static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
                       AVFrame *frame, int *got_frame,
@@ -617,6 +698,16 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         outsurf = &out_frame->surface;
 
         frame->pts = MFX_PTS_TO_PTS(outsurf->Data.TimeStamp, avctx->pkt_timebase);
+#if QSV_VERSION_ATLEAST(1, 34)
+        if ((avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
+            QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 34) &&
+            avctx->codec_id == AV_CODEC_ID_AV1) {
+            ret = qsv_export_film_grain(avctx, &out_frame->av1_film_grain_param, frame);
+
+            if (ret < 0)
+                return ret;
+        }
+#endif
 
         frame->repeat_pict =
             outsurf->Info.PicStruct & MFX_PICSTRUCT_FRAME_TRIPLING ? 4 :
