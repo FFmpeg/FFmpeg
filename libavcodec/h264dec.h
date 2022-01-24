@@ -103,19 +103,6 @@
 #define IS_8x8DCT(a)       ((a) & MB_TYPE_8x8DCT)
 
 /**
- * Memory management control operation opcode.
- */
-typedef enum MMCOOpcode {
-    MMCO_END = 0,
-    MMCO_SHORT2UNUSED,
-    MMCO_LONG2UNUSED,
-    MMCO_SHORT2LONG,
-    MMCO_SET_MAX_LONG,
-    MMCO_RESET,
-    MMCO_LONG,
-} MMCOOpcode;
-
-/**
  * Memory management control operation.
  */
 typedef struct MMCO {

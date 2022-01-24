@@ -27,6 +27,19 @@
 #include "get_bits.h"
 #include "h264_ps.h"
 
+/**
+ * Memory management control operation opcode.
+ */
+typedef enum MMCOOpcode {
+    MMCO_END = 0,
+    MMCO_SHORT2UNUSED,
+    MMCO_LONG2UNUSED,
+    MMCO_SHORT2LONG,
+    MMCO_SET_MAX_LONG,
+    MMCO_RESET,
+    MMCO_LONG,
+} MMCOOpcode;
+
 typedef struct H264PredWeightTable {
     int use_weight;
     int use_weight_chroma;
