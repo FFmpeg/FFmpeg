@@ -59,6 +59,7 @@ static const AVRational mfx_tb = { 1, 90000 };
 typedef struct QSVContext {
     // the session used for decoding
     mfxSession session;
+    mfxVersion ver;
 
     // the session we allocated internally, in case the caller did not provide
     // one
@@ -200,6 +201,18 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
         }
 
         q->session = q->internal_qs.session;
+    }
+
+    if (MFXQueryVersion(q->session, &q->ver) != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error querying the session version. \n");
+        q->session = NULL;
+
+        if (q->internal_qs.session) {
+            MFXClose(q->internal_qs.session);
+            q->internal_qs.session = NULL;
+        }
+
+        return AVERROR_EXTERNAL;
     }
 
     /* make sure the decoder is uninitialized */
