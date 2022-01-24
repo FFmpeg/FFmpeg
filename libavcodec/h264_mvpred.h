@@ -28,8 +28,6 @@
 #ifndef AVCODEC_H264_MVPRED_H
 #define AVCODEC_H264_MVPRED_H
 
-#include "internal.h"
-#include "avcodec.h"
 #include "h264dec.h"
 #include "mpegutils.h"
 #include "libavutil/avassert.h"
