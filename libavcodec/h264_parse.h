@@ -33,6 +33,9 @@
 #include "get_bits.h"
 #include "h264_ps.h"
 
+#define MB_TYPE_REF0       MB_TYPE_ACPRED // dirty but it fits in 16 bit
+#define MB_TYPE_8x8DCT     0x01000000
+
 // This table must be here because scan8[constant] must be known at compiletime
 static const uint8_t scan8[16 * 3 + 3] = {
     4 +  1 * 8, 5 +  1 * 8, 4 +  2 * 8, 5 +  2 * 8,

@@ -30,7 +30,7 @@
 
 #include "libavutil/avutil.h"
 
-#include "h264dec.h"
+#include "h264_parse.h"
 #include "h264data.h"
 #include "mpegutils.h"
 
