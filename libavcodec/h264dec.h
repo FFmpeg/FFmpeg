@@ -52,8 +52,6 @@
 
 #define H264_MAX_PICTURE_COUNT 36
 
-#define MAX_DELAYED_PIC_COUNT  16
-
 /* Compiling in interlaced support reduces the speed
  * of progressive decoding by about 2%. */
 #define ALLOW_INTERLACE
@@ -465,8 +463,8 @@ typedef struct H264Context {
     H264Ref default_ref[2];
     H264Picture *short_ref[32];
     H264Picture *long_ref[32];
-    H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
-    int last_pocs[MAX_DELAYED_PIC_COUNT];
+    H264Picture *delayed_pic[H264_MAX_DPB_FRAMES + 2]; // FIXME size?
+    int last_pocs[H264_MAX_DPB_FRAMES];
     H264Picture *next_output_pic;
     int next_outputed_poc;
     int poc_offset;         ///< PicOrderCnt_offset from SMPTE RDD-2006
