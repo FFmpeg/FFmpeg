@@ -44,7 +44,6 @@
 #include "h264pred.h"
 #include "h264qpel.h"
 #include "h274.h"
-#include "internal.h"
 #include "mpegutils.h"
 #include "parser.h"
 #include "qpeldsp.h"
@@ -831,16 +830,6 @@ static av_always_inline int get_dct8x8_allowed(const H264Context *h, H264SliceCo
         return !(AV_RN64A(sl->sub_mb_type) &
                  ((MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8 | MB_TYPE_DIRECT2) *
                   0x0001000100010001ULL));
-}
-
-static inline int find_start_code(const uint8_t *buf, int buf_size,
-                           int buf_index, int next_avc)
-{
-    uint32_t state = -1;
-
-    buf_index = avpriv_find_start_code(buf + buf_index, buf + next_avc + 1, &state) - buf - 1;
-
-    return FFMIN(buf_index, buf_size);
 }
 
 int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup);

@@ -64,6 +64,15 @@ typedef struct H264ParseContext {
     int last_frame_num, last_picture_structure;
 } H264ParseContext;
 
+static int find_start_code(const uint8_t *buf, int buf_size,
+                                  int buf_index, int next_avc)
+{
+    uint32_t state = -1;
+
+    buf_index = avpriv_find_start_code(buf + buf_index, buf + next_avc + 1, &state) - buf - 1;
+
+    return FFMIN(buf_index, buf_size);
+}
 
 static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
                                int buf_size, void *logctx)
