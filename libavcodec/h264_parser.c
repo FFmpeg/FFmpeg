@@ -247,7 +247,6 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                                   const uint8_t * const buf, int buf_size)
 {
     H264ParseContext *p = s->priv_data;
-    H264Context *h = avctx->priv_data;
     H2645RBSP rbsp = { NULL };
     H2645NAL nal = { NULL };
     int buf_index, next_avc;
@@ -553,11 +552,9 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 p->last_picture_structure = s->picture_structure;
                 p->last_frame_num = p->poc.frame_num;
             }
-            if (h && sps->timing_info_present_flag) {
+            if (sps->timing_info_present_flag) {
                 int64_t den = sps->time_scale;
-                if (p->sei.unregistered.x264_build >= 0)
-                    h->x264_build = p->sei.unregistered.x264_build;
-                if (h->x264_build < 44U)
+                if (p->sei.unregistered.x264_build < 44U)
                     den *= 2;
                 av_reduce(&avctx->framerate.den, &avctx->framerate.num,
                           sps->num_units_in_tick * avctx->ticks_per_frame, den, 1 << 30);
