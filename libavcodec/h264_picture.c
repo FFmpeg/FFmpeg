@@ -26,19 +26,10 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/imgutils.h"
-#include "internal.h"
-#include "cabac.h"
-#include "cabac_functions.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264dec.h"
-#include "h264data.h"
-#include "h264chroma.h"
-#include "h264_mvpred.h"
-#include "mathops.h"
 #include "mpegutils.h"
-#include "rectangle.h"
 #include "thread.h"
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)

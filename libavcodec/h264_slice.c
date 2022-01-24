@@ -27,8 +27,8 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/display.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/film_grain_params.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 #include "internal.h"
@@ -40,7 +40,6 @@
 #include "h264dec.h"
 #include "h264data.h"
 #include "h264chroma.h"
-#include "h264_mvpred.h"
 #include "h264_ps.h"
 #include "golomb.h"
 #include "mathops.h"
