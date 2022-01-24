@@ -68,7 +68,6 @@ void ff_h263_encode_init(MpegEncContext *s);
 void ff_h263_decode_init_vlc(void);
 void ff_h263_init_rl_inter(void);
 int ff_h263_decode_picture_header(MpegEncContext *s);
-int ff_h263_decode_gob_header(MpegEncContext *s);
 void ff_h263_update_motion_val(MpegEncContext * s);
 void ff_h263_loop_filter(MpegEncContext * s);
 int ff_h263_decode_mba(MpegEncContext *s);
