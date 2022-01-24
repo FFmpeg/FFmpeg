@@ -153,6 +153,11 @@ typedef struct H264ParamSets {
 } H264ParamSets;
 
 /**
+ * compute profile from sps
+ */
+int ff_h264_get_profile(const SPS *sps);
+
+/**
  * Decode SPS
  */
 int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,

@@ -124,11 +124,6 @@ int ff_h264_decode_extradata(const uint8_t *data, int size, H264ParamSets *ps,
                              int *is_avc, int *nal_length_size,
                              int err_recognition, void *logctx);
 
-/**
- * compute profile from sps
- */
-int ff_h264_get_profile(const SPS *sps);
-
 static av_always_inline uint32_t pack16to32(unsigned a, unsigned b)
 {
 #if HAVE_BIGENDIAN
