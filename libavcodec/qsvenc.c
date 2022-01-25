@@ -877,11 +877,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             if (q->mbbrc >= 0)
                 q->extco2.MBBRC = q->mbbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
-#if QSV_HAVE_MAX_SLICE_SIZE
-            if (q->max_slice_size >= 0)
-                q->extco2.MaxSliceSize = q->max_slice_size;
-#endif
-
 #if QSV_HAVE_TRELLIS
             if (avctx->trellis >= 0)
                 q->extco2.Trellis = (avctx->trellis == 0) ? MFX_TRELLIS_OFF : (MFX_TRELLIS_I | MFX_TRELLIS_P | MFX_TRELLIS_B);
@@ -907,6 +902,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco2.ExtBRC = q->extbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if (q->max_frame_size >= 0)
                 q->extco2.MaxFrameSize = q->max_frame_size;
+#if QSV_HAVE_MAX_SLICE_SIZE
+            if (q->max_slice_size >= 0)
+                q->extco2.MaxSliceSize = q->max_slice_size;
+#endif
 #if QSV_HAVE_DISABLEDEBLOCKIDC
             q->extco2.DisableDeblockingIdc = q->dblk_idc;
 #endif

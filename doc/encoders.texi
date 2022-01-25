@@ -3397,6 +3397,9 @@ Enable rate distortion optimization.
 @item @var{max_frame_size}
 Maximum encoded frame size in bytes.
 
+@item @var{max_slice_size}
+Maximum encoded slice size in bytes.
+
 @item @var{p_strategy}
 Enable P-pyramid: 0-default 1-simple 2-pyramid(bf need to be set to 0).
 
