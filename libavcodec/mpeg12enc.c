@@ -273,6 +273,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 
     if (s->current_picture.f->key_frame) {
         AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
+        int aspect_ratio_info;
 
         /* MPEG-1 header repeated every GOP */
         put_header(s, SEQ_START_CODE);
@@ -291,11 +292,11 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 
             if (error - 2 <= best_aspect_error) {
                 best_aspect_error    = error;
-                s->aspect_ratio_info = i;
+                aspect_ratio_info = i;
             }
         }
 
-        put_bits(&s->pb, 4, s->aspect_ratio_info);
+        put_bits(&s->pb, 4, aspect_ratio_info);
         put_bits(&s->pb, 4, s->frame_rate_index);
 
         if (s->avctx->rc_max_rate) {
