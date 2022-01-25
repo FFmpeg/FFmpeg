@@ -193,13 +193,13 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
         if (format == 8) {
             /* Custom Picture Format (CPFMT) */
-            s->aspect_ratio_info= ff_h263_aspect_to_info(s->avctx->sample_aspect_ratio);
+            unsigned aspect_ratio_info = ff_h263_aspect_to_info(s->avctx->sample_aspect_ratio);
 
-            put_bits(&s->pb,4,s->aspect_ratio_info);
+            put_bits(&s->pb,4, aspect_ratio_info);
             put_bits(&s->pb,9,(s->width >> 2) - 1);
             put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
             put_bits(&s->pb,9,(s->height >> 2));
-            if (s->aspect_ratio_info == FF_ASPECT_EXTENDED){
+            if (aspect_ratio_info == FF_ASPECT_EXTENDED){
                 put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.num);
                 put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
             }
