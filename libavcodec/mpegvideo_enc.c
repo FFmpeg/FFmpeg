@@ -350,9 +350,21 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Too many B-frames requested, maximum "
                "is %d.\n", MAX_B_FRAMES);
         avctx->max_b_frames = MAX_B_FRAMES;
+    } else if (avctx->max_b_frames < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "max b frames must be 0 or positive for mpegvideo based encoders\n");
+        return AVERROR(EINVAL);
     }
     s->max_b_frames = avctx->max_b_frames;
     s->codec_id     = avctx->codec->id;
+    if (s->max_b_frames                    &&
+        s->codec_id != AV_CODEC_ID_MPEG4      &&
+        s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
+        s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
+        av_log(avctx, AV_LOG_ERROR, "B-frames not supported by codec\n");
+        return AVERROR(EINVAL);
+    }
+
     s->strict_std_compliance = avctx->strict_std_compliance;
     s->quarter_sample     = (avctx->flags & AV_CODEC_FLAG_QPEL) != 0;
     s->rtp_mode           = !!s->rtp_payload_size;
@@ -496,19 +508,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if (s->quarter_sample && s->codec_id != AV_CODEC_ID_MPEG4) {
         av_log(avctx, AV_LOG_ERROR, "qpel not supported by codec\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (s->max_b_frames                    &&
-        s->codec_id != AV_CODEC_ID_MPEG4      &&
-        s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
-        s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
-        av_log(avctx, AV_LOG_ERROR, "B-frames not supported by codec\n");
-        return AVERROR(EINVAL);
-    }
-    if (s->max_b_frames < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "max b frames must be 0 or positive for mpegvideo based encoders\n");
         return AVERROR(EINVAL);
     }
 
