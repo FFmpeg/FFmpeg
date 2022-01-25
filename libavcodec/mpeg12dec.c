@@ -70,6 +70,7 @@ typedef struct Mpeg1Context {
     int save_width, save_height, save_progressive_seq;
     int rc_buffer_size;
     AVRational frame_rate_ext;  /* MPEG-2 specific framerate modificator */
+    unsigned frame_rate_index;
     int sync;                   /* Did we reach a sync point like a GOP/SEQ/KEYFrame? */
     int closed_gop;
     int tmpgexs;
@@ -1297,7 +1298,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
         if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
             // MPEG-1 fps
-            avctx->framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
+            avctx->framerate = ff_mpeg12_frame_rate_tab[s1->frame_rate_index];
             avctx->ticks_per_frame     = 1;
 
             avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
@@ -1305,8 +1306,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             // MPEG-2 fps
             av_reduce(&s->avctx->framerate.num,
                       &s->avctx->framerate.den,
-                      ff_mpeg12_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num,
-                      ff_mpeg12_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
+                      ff_mpeg12_frame_rate_tab[s1->frame_rate_index].num * s1->frame_rate_ext.num,
+                      ff_mpeg12_frame_rate_tab[s1->frame_rate_index].den * s1->frame_rate_ext.den,
                       1 << 30);
             avctx->ticks_per_frame = 2;
 
@@ -2110,11 +2111,11 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         if (avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_COMPLIANT))
             return AVERROR_INVALIDDATA;
     }
-    s->frame_rate_index = get_bits(&s->gb, 4);
-    if (s->frame_rate_index == 0 || s->frame_rate_index > 13) {
+    s1->frame_rate_index = get_bits(&s->gb, 4);
+    if (s1->frame_rate_index == 0 || s1->frame_rate_index > 13) {
         av_log(avctx, AV_LOG_WARNING,
-               "frame_rate_index %d is invalid\n", s->frame_rate_index);
-        s->frame_rate_index = 1;
+               "frame_rate_index %d is invalid\n", s1->frame_rate_index);
+        s1->frame_rate_index = 1;
     }
     s->bit_rate = get_bits(&s->gb, 18) * 400LL;
     if (check_marker(s->avctx, &s->gb, "in sequence header") == 0) {

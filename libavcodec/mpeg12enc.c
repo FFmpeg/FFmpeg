@@ -65,6 +65,7 @@ static uint32_t mpeg1_chr_dc_uni[512];
 typedef struct MPEG12EncContext {
     MpegEncContext mpeg;
     AVRational frame_rate_ext;
+    unsigned frame_rate_index;
 
     int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num
 
@@ -144,7 +145,7 @@ static int find_frame_rate_index(MPEG12EncContext *mpeg12)
                     || av_nearer_q(target, bestq, q) < 0
                     || ext.num==1 && ext.den==1 && av_nearer_q(target, bestq, q) == 0) {
                     bestq               = q;
-                    s->frame_rate_index = i;
+                    mpeg12->frame_rate_index   = i;
                     mpeg12->frame_rate_ext.num = ext.num;
                     mpeg12->frame_rate_ext.den = ext.den;
                 }
@@ -233,14 +234,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     mpeg12->drop_frame_timecode = mpeg12->drop_frame_timecode || !!(avctx->flags2 & AV_CODEC_FLAG2_DROP_FRAME_TIMECODE);
     if (mpeg12->drop_frame_timecode)
         mpeg12->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
-    if (mpeg12->drop_frame_timecode && s->frame_rate_index != 4) {
+    if (mpeg12->drop_frame_timecode && mpeg12->frame_rate_index != 4) {
         av_log(avctx, AV_LOG_ERROR,
                "Drop frame time code only allowed with 1001/30000 fps\n");
         return AVERROR(EINVAL);
     }
 
     if (mpeg12->tc_opt_str) {
-        AVRational rate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
+        AVRational rate = ff_mpeg12_frame_rate_tab[mpeg12->frame_rate_index];
         int ret = av_timecode_init_from_string(&mpeg12->tc, rate, mpeg12->tc_opt_str, s);
         if (ret < 0)
             return ret;
@@ -266,7 +267,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
     unsigned int vbv_buffer_size, fps, v;
     int constraint_parameter_flag;
-    AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
+    AVRational framerate = ff_mpeg12_frame_rate_tab[mpeg12->frame_rate_index];
     uint64_t time_code;
     int64_t best_aspect_error = INT64_MAX;
     AVRational aspect_ratio = s->avctx->sample_aspect_ratio;
@@ -300,7 +301,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     }
 
     put_bits(&s->pb, 4, aspect_ratio_info);
-    put_bits(&s->pb, 4, s->frame_rate_index);
+    put_bits(&s->pb, 4, mpeg12->frame_rate_index);
 
     if (s->avctx->rc_max_rate) {
         v = (s->avctx->rc_max_rate + 399) / 400;
