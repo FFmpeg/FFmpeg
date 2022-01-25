@@ -105,6 +105,8 @@ typedef struct Mpeg4DecContext {
     int xvid_build;
     int lavc_build;
 
+    int vo_type;
+
     /// flag for having shown the warning about invalid Divx B-frames
     int showed_packed_warning;
     /** does the stream contain the low_delay flag,

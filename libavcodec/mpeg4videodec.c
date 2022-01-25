@@ -2305,15 +2305,15 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     /* vol header */
     skip_bits(gb, 1);                   /* random access */
-    s->vo_type = get_bits(gb, 8);
+    ctx->vo_type = get_bits(gb, 8);
 
     /* If we are in studio profile (per vo_type), check if its all consistent
      * and if so continue pass control to decode_studio_vol_header().
      * elIf something is inconsistent, error out
      * else continue with (non studio) vol header decpoding.
      */
-    if (s->vo_type == CORE_STUDIO_VO_TYPE ||
-        s->vo_type == SIMPLE_STUDIO_VO_TYPE) {
+    if (ctx->vo_type == CORE_STUDIO_VO_TYPE ||
+        ctx->vo_type == SIMPLE_STUDIO_VO_TYPE) {
         if (s->avctx->profile != FF_PROFILE_UNKNOWN && s->avctx->profile != FF_PROFILE_MPEG4_SIMPLE_STUDIO)
             return AVERROR_INVALIDDATA;
         s->studio_profile = 1;
@@ -2360,7 +2360,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         /* is setting low delay flag only once the smartest thing to do?
          * low delay detection will not be overridden. */
         if (s->picture_number == 0) {
-            switch(s->vo_type) {
+            switch (ctx->vo_type) {
             case SIMPLE_VO_TYPE:
             case ADV_SIMPLE_VO_TYPE:
                 s->low_delay = 1;
@@ -2745,7 +2745,7 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
     }
 
     if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1)
-        if (s->codec_tag == AV_RL32("DIVX") && s->vo_type == 0 &&
+        if (s->codec_tag == AV_RL32("DIVX") && ctx->vo_type == 0 &&
             ctx->vol_control_parameters == 0)
             ctx->divx_version = 400;  // divx 4
 
@@ -3084,7 +3084,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                    s->top_field_first, s->quarter_sample ? 'q' : 'h',
                    s->data_partitioning, ctx->resync_marker,
                    ctx->num_sprite_warping_points, s->sprite_warping_accuracy,
-                   1 - s->no_rounding, s->vo_type,
+                   1 - s->no_rounding, ctx->vo_type,
                    ctx->vol_control_parameters ? " VOLC" : " ", ctx->intra_dc_threshold,
                    ctx->cplx_estimation_trash_i, ctx->cplx_estimation_trash_p,
                    ctx->cplx_estimation_trash_b,
@@ -3111,7 +3111,7 @@ end:
     /* detect buggy encoders which don't set the low_delay flag
      * (divx4/xvid/opendivx). Note we cannot detect divx5 without B-frames
      * easily (although it's buggy too) */
-    if (s->vo_type == 0 && ctx->vol_control_parameters == 0 &&
+    if (ctx->vo_type == 0 && ctx->vol_control_parameters == 0 &&
         ctx->divx_version == -1 && s->picture_number == 0) {
         av_log(s->avctx, AV_LOG_WARNING,
                "looks like this file was encoded with (divx4/(old)xvid/opendivx) -> forcing low_delay flag\n");
@@ -3471,7 +3471,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->divx_build                = s1->divx_build;
     s->xvid_build                = s1->xvid_build;
     s->lavc_build                = s1->lavc_build;
-    s->m.vo_type                 = s1->m.vo_type;
+    s->vo_type                   = s1->vo_type;
     s->showed_packed_warning     = s1->showed_packed_warning;
     s->vol_control_parameters    = s1->vol_control_parameters;
     s->cplx_estimation_trash_i   = s1->cplx_estimation_trash_i;

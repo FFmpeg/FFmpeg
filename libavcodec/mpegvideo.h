@@ -389,7 +389,6 @@ typedef struct MpegEncContext {
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no B-frames
-    int vo_type;
     PutBitContext tex_pb;            ///< used for data partitioned VOPs
     PutBitContext pb2;               ///< used for data partitioned VOPs
     int mpeg_quant;
