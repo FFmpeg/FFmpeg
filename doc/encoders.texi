@@ -3344,7 +3344,8 @@ Specifies intra refresh type. The major goal of intra refresh is improvement of
 error resilience without significant impact on encoded bitstream size caused by
 I frames. The SDK encoder achieves this by encoding part of each frame in
 refresh cycle using intra MBs. @var{none} means no refresh. @var{vertical} means
-vertical refresh, by column of MBs.
+vertical refresh, by column of MBs. To enable intra refresh, B frame should be
+set to 0.
 
 @item @var{int_ref_cycle_size}
 Specifies number of pictures within refresh cycle starting from 2. 0 and 1 are
@@ -3354,6 +3355,9 @@ invalid values.
 Specifies QP difference for inserted intra MBs. This is signed value in
 [-51, 51] range if target encoding bit-depth for luma samples is 8 and this
 range is [-63, 63] for 10 bit-depth or [-75, 75] for 12 bit-depth respectively.
+
+@item @var{int_ref_cycle_dist}
+Distance between the beginnings of the intra-refresh cycles in frames.
 
 @item @var{profile}
 @table @samp
@@ -3463,6 +3467,26 @@ Insert picture timing SEI with pic_struct_syntax element.
 @item @var{transform_skip}
 Turn this option ON to enable transformskip. It is supported on platform equal
 or newer than ICL.
+
+@item @var{int_ref_type}
+Specifies intra refresh type. The major goal of intra refresh is improvement of
+error resilience without significant impact on encoded bitstream size caused by
+I frames. The SDK encoder achieves this by encoding part of each frame in
+refresh cycle using intra MBs. @var{none} means no refresh. @var{vertical} means
+vertical refresh, by column of MBs. To enable intra refresh, B frame should be
+set to 0.
+
+@item @var{int_ref_cycle_size}
+Specifies number of pictures within refresh cycle starting from 2. 0 and 1 are
+invalid values.
+
+@item @var{int_ref_qp_delta}
+Specifies QP difference for inserted intra MBs. This is signed value in
+[-51, 51] range if target encoding bit-depth for luma samples is 8 and this
+range is [-63, 63] for 10 bit-depth or [-75, 75] for 12 bit-depth respectively.
+
+@item @var{int_ref_cycle_dist}
+Distance between the beginnings of the intra-refresh cycles in frames.
 @end table
 
 @subsection MPEG2 Options

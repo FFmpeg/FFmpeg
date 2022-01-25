@@ -195,6 +195,7 @@ typedef struct QSVEncContext {
     int int_ref_type;
     int int_ref_cycle_size;
     int int_ref_qp_delta;
+    int int_ref_cycle_dist;
     int recovery_point_sei;
 
     int repeat_pps;

@@ -364,6 +364,10 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #if QSV_VERSION_ATLEAST(1, 26)
     av_log(avctx, AV_LOG_VERBOSE, "TransformSkip: %s \n", print_threestate(co3->TransformSkip));
 #endif
+
+#if QSV_VERSION_ATLEAST(1, 16)
+    av_log(avctx, AV_LOG_VERBOSE, "IntRefCycleDist: %"PRId16"\n", co3->IntRefCycleDist);
+#endif
 }
 
 static void dump_video_vp9_param(AVCodecContext *avctx, QSVEncContext *q,
@@ -865,13 +869,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
 #if QSV_HAVE_CO2
         if (avctx->codec_id == AV_CODEC_ID_H264) {
-            if (q->int_ref_type >= 0)
-                q->extco2.IntRefType = q->int_ref_type;
-            if (q->int_ref_cycle_size >= 0)
-                q->extco2.IntRefCycleSize = q->int_ref_cycle_size;
-            if (q->int_ref_qp_delta != INT16_MIN)
-                q->extco2.IntRefQPDelta = q->int_ref_qp_delta;
-
             if (q->bitrate_limit >= 0)
                 q->extco2.BitrateLimit = q->bitrate_limit ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if (q->mbbrc >= 0)
@@ -900,6 +897,12 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco2.ExtBRC = q->extbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if (q->max_frame_size >= 0)
                 q->extco2.MaxFrameSize = q->max_frame_size;
+            if (q->int_ref_type >= 0)
+                q->extco2.IntRefType = q->int_ref_type;
+            if (q->int_ref_cycle_size >= 0)
+                q->extco2.IntRefCycleSize = q->int_ref_cycle_size;
+            if (q->int_ref_qp_delta != INT16_MIN)
+                q->extco2.IntRefQPDelta = q->int_ref_qp_delta;
 #if QSV_HAVE_MAX_SLICE_SIZE
             if (q->max_slice_size >= 0)
                 q->extco2.MaxSliceSize = q->max_slice_size;
@@ -973,6 +976,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 av_log(avctx, AV_LOG_WARNING,
                        "Please set max_b_frames(-bf) to 0 to enable P-pyramid\n");
             }
+#endif
+#if QSV_VERSION_ATLEAST(1, 16)
+            if (q->int_ref_cycle_dist >= 0)
+                q->extco3.IntRefCycleDist = q->int_ref_cycle_dist;
 #endif
         }
 
