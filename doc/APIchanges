@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-01-26 - af94ab7c7c0 - lavu 57.19.100 - tx.h
+  Add AV_TX_FLOAT_RDFT, AV_TX_DOUBLE_RDFT and AV_TX_INT32_RDFT.
+
 2022-01-04 - 78dc21b123e - lavu 57.16.100 - frame.h
   Add AV_FRAME_DATA_DOVI_METADATA.
 
