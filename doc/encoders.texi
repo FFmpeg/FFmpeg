@@ -3403,6 +3403,9 @@ Maximum encoded slice size in bytes.
 @item @var{p_strategy}
 Enable P-pyramid: 0-default 1-simple 2-pyramid(bf need to be set to 0).
 
+@item @var{b_strategy}
+This option controls usage of B frames as reference.
+
 @item @var{dblk_idc}
 This option disable deblocking. It has value in range 0~2.
 

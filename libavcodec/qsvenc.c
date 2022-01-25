@@ -888,8 +888,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             q->extco2.LookAheadDS = q->look_ahead_downsampling;
             q->extco2.RepeatPPS   = q->repeat_pps ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
-            if (q->b_strategy >= 0)
-                q->extco2.BRefType = q->b_strategy ? MFX_B_REF_PYRAMID : MFX_B_REF_OFF;
             if (q->adaptive_i >= 0)
                 q->extco2.AdaptiveI = q->adaptive_i ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             if (q->adaptive_b >= 0)
@@ -910,6 +908,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
             q->extco2.DisableDeblockingIdc = q->dblk_idc;
 #endif
 
+#if QSV_VERSION_ATLEAST(1, 8)
+            if (q->b_strategy >= 0)
+                q->extco2.BRefType = q->b_strategy ? MFX_B_REF_PYRAMID : MFX_B_REF_OFF;
+#endif
 #if QSV_VERSION_ATLEAST(1, 9)
             if (avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) {
                 av_log(avctx, AV_LOG_ERROR, "qmin and or qmax are set but invalid, please make sure min <= max\n");
