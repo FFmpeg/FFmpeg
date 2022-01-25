@@ -1222,8 +1222,8 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         if (ufep) {
             if (format == 6) {
                 /* Custom Picture Format (CPFMT) */
-                s->aspect_ratio_info = get_bits(&s->gb, 4);
-                ff_dlog(s->avctx, "aspect: %d\n", s->aspect_ratio_info);
+                int aspect_ratio_info = get_bits(&s->gb, 4);
+                ff_dlog(s->avctx, "aspect: %d\n", aspect_ratio_info);
                 /* aspect ratios:
                 0 - forbidden
                 1 - 1:1
@@ -1237,12 +1237,12 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
                 check_marker(s->avctx, &s->gb, "in dimensions");
                 height = get_bits(&s->gb, 9) * 4;
                 ff_dlog(s->avctx, "\nH.263+ Custom picture: %dx%d\n",width,height);
-                if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
+                if (aspect_ratio_info == FF_ASPECT_EXTENDED) {
                     /* expected dimensions */
                     s->avctx->sample_aspect_ratio.num= get_bits(&s->gb, 8);
                     s->avctx->sample_aspect_ratio.den= get_bits(&s->gb, 8);
                 }else{
-                    s->avctx->sample_aspect_ratio= ff_h263_pixel_aspect[s->aspect_ratio_info];
+                    s->avctx->sample_aspect_ratio= ff_h263_pixel_aspect[aspect_ratio_info];
                 }
             } else {
                 width = ff_h263_format[format][0];
