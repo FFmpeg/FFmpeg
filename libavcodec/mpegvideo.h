@@ -384,7 +384,6 @@ typedef struct MpegEncContext {
     int mcsel;
     int quant_precision;
     int quarter_sample;              ///< 1->qpel, 0->half pel ME/MC
-    int aspect_ratio_info; //FIXME remove
     int sprite_warping_accuracy;
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned

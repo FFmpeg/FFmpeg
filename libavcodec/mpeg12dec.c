@@ -65,6 +65,7 @@ typedef struct Mpeg1Context {
     uint8_t afd;
     int has_afd;
     int slice_count;
+    unsigned aspect_ratio_info;
     AVRational save_aspect;
     int save_width, save_height, save_progressive_seq;
     int rc_buffer_size;
@@ -1205,13 +1206,13 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
         // MPEG-1 aspect
-        AVRational aspect_inv = av_d2q(ff_mpeg1_aspect[s->aspect_ratio_info], 255);
+        AVRational aspect_inv = av_d2q(ff_mpeg1_aspect[s1->aspect_ratio_info], 255);
         avctx->sample_aspect_ratio = (AVRational) { aspect_inv.den, aspect_inv.num };
     } else { // MPEG-2
         // MPEG-2 aspect
-        if (s->aspect_ratio_info > 1) {
+        if (s1->aspect_ratio_info > 1) {
             AVRational dar =
-                av_mul_q(av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                av_mul_q(av_div_q(ff_mpeg2_aspect[s1->aspect_ratio_info],
                                   (AVRational) { s1->pan_scan.width,
                                                  s1->pan_scan.height }),
                          (AVRational) { s->width, s->height });
@@ -1224,25 +1225,25 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
                 (av_cmp_q(dar, (AVRational) { 4, 3 }) &&
                  av_cmp_q(dar, (AVRational) { 16, 9 }))) {
                 s->avctx->sample_aspect_ratio =
-                    av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                    av_div_q(ff_mpeg2_aspect[s1->aspect_ratio_info],
                              (AVRational) { s->width, s->height });
             } else {
                 s->avctx->sample_aspect_ratio =
-                    av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                    av_div_q(ff_mpeg2_aspect[s1->aspect_ratio_info],
                              (AVRational) { s1->pan_scan.width, s1->pan_scan.height });
 // issue1613 4/3 16/9 -> 16/9
 // res_change_ffmpeg_aspect.ts 4/3 225/44 ->4/3
 // widescreen-issue562.mpg 4/3 16/9 -> 16/9
 //                s->avctx->sample_aspect_ratio = av_mul_q(s->avctx->sample_aspect_ratio, (AVRational) {s->width, s->height});
                 ff_dlog(avctx, "aspect A %d/%d\n",
-                        ff_mpeg2_aspect[s->aspect_ratio_info].num,
-                        ff_mpeg2_aspect[s->aspect_ratio_info].den);
+                        ff_mpeg2_aspect[s1->aspect_ratio_info].num,
+                        ff_mpeg2_aspect[s1->aspect_ratio_info].den);
                 ff_dlog(avctx, "aspect B %d/%d\n", s->avctx->sample_aspect_ratio.num,
                         s->avctx->sample_aspect_ratio.den);
             }
         } else {
             s->avctx->sample_aspect_ratio =
-                ff_mpeg2_aspect[s->aspect_ratio_info];
+                ff_mpeg2_aspect[s1->aspect_ratio_info];
         }
     } // MPEG-2
 
@@ -2102,8 +2103,8 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         if (avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_COMPLIANT))
             return AVERROR_INVALIDDATA;
     }
-    s->aspect_ratio_info = get_bits(&s->gb, 4);
-    if (s->aspect_ratio_info == 0) {
+    s1->aspect_ratio_info = get_bits(&s->gb, 4);
+    if (s1->aspect_ratio_info == 0) {
         av_log(avctx, AV_LOG_ERROR, "aspect ratio has forbidden 0 value\n");
         if (avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_COMPLIANT))
             return AVERROR_INVALIDDATA;
@@ -2168,7 +2169,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%"PRId64", aspect_ratio_info: %d \n",
-               s1->rc_buffer_size, s->bit_rate, s->aspect_ratio_info);
+               s1->rc_buffer_size, s->bit_rate, s1->aspect_ratio_info);
 
     return 0;
 }
