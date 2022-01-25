@@ -106,6 +106,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
     int best_clock_code=1;
     int best_divisor=60;
     int best_error= INT_MAX;
+    int custom_pcf;
 
     if(s->h263_plus){
         for(i=0; i<2; i++){
@@ -120,7 +121,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
             }
         }
     }
-    s->custom_pcf= best_clock_code!=1 || best_divisor!=60;
+    custom_pcf = best_clock_code != 1 || best_divisor != 60;
     coded_frame_rate= 1800000;
     coded_frame_rate_base= (1000+best_clock_code)*best_divisor;
 
@@ -165,7 +166,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
         else
             put_bits(&s->pb, 3, format);
 
-        put_bits(&s->pb,1, s->custom_pcf);
+        put_bits(&s->pb,1, custom_pcf);
         put_bits(&s->pb,1, s->umvplus); /* Unrestricted Motion Vector */
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,s->obmc); /* Advanced Prediction Mode */
@@ -203,7 +204,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
                 put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
             }
         }
-        if(s->custom_pcf){
+        if (custom_pcf) {
             if(ufep){
                 put_bits(&s->pb, 1, best_clock_code);
                 put_bits(&s->pb, 7, best_divisor);
