@@ -258,7 +258,6 @@ static void update_duplicate_context_after_me(MpegEncContext *dst,
     COPY(lambda);
     COPY(lambda2);
     COPY(picture_in_gop_number);
-    COPY(gop_picture_number);
     COPY(frame_pred_frame_dct); // FIXME don't set in encode_header
     COPY(progressive_frame);    // FIXME don't set in encode_header
     COPY(partitioned_frame);    // FIXME don't set in encode_header
