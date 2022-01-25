@@ -443,7 +443,6 @@ typedef struct MpegEncContext {
     // picture structure defines are loaded from mpegutils.h
     int picture_structure;
 
-    int64_t timecode_frame_start; ///< GOP timecode frame start number, in non drop frame format
     int intra_dc_precision;
     int frame_pred_frame_dct;
     int top_field_first;

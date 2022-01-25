@@ -75,6 +75,7 @@ typedef struct Mpeg1Context {
     int tmpgexs;
     int first_slice;
     int extradata_decoded;
+    int64_t timecode_frame_start;  /*< GOP timecode frame start number, in non drop frame format */
 } Mpeg1Context;
 
 #define MB_TYPE_ZERO_MV   0x20000000
@@ -2443,7 +2444,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size * 8);
 
-    tc = s-> timecode_frame_start = get_bits(&s->gb, 25);
+    tc = s1->timecode_frame_start = get_bits(&s->gb, 25);
 
     s1->closed_gop = get_bits1(&s->gb);
     /* broken_link indicates that after editing the
@@ -2854,19 +2855,19 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
     if (ret<0 || *got_output) {
         s2->current_picture_ptr = NULL;
 
-        if (s2->timecode_frame_start != -1 && *got_output) {
+        if (s->timecode_frame_start != -1 && *got_output) {
             char tcbuf[AV_TIMECODE_STR_SIZE];
             AVFrameSideData *tcside = av_frame_new_side_data(picture,
                                                              AV_FRAME_DATA_GOP_TIMECODE,
                                                              sizeof(int64_t));
             if (!tcside)
                 return AVERROR(ENOMEM);
-            memcpy(tcside->data, &s2->timecode_frame_start, sizeof(int64_t));
+            memcpy(tcside->data, &s->timecode_frame_start, sizeof(int64_t));
 
-            av_timecode_make_mpeg_tc_string(tcbuf, s2->timecode_frame_start);
+            av_timecode_make_mpeg_tc_string(tcbuf, s->timecode_frame_start);
             av_dict_set(&picture->metadata, "timecode", tcbuf, 0);
 
-            s2->timecode_frame_start = -1;
+            s->timecode_frame_start = -1;
         }
     }
 
