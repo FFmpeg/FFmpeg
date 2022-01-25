@@ -66,6 +66,8 @@ typedef struct MPEG12EncContext {
     MpegEncContext mpeg;
     AVRational frame_rate_ext;
 
+    int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num
+
     int64_t timecode_frame_start; ///< GOP timecode frame start number, in non drop frame format
     AVTimecode tc;           ///< timecode context
     char *tc_opt_str;        ///< timecode option string
@@ -402,7 +404,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     time_code = s->current_picture_ptr->f->coded_picture_number +
                 mpeg12->timecode_frame_start;
 
-    s->gop_picture_number = s->current_picture_ptr->f->coded_picture_number;
+    mpeg12->gop_picture_number = s->current_picture_ptr->f->coded_picture_number;
 
     av_assert0(mpeg12->drop_frame_timecode == !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
     if (mpeg12->drop_frame_timecode)
@@ -413,7 +415,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 1);
     put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
     put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
-    put_bits(&s->pb, 1, !!(s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
+    put_bits(&s->pb, 1, !!(s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) ||
+                        s->intra_only || !mpeg12->gop_picture_number);
     put_bits(&s->pb, 1, 0);                     // broken link
 }
 
@@ -458,7 +461,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 
     // RAL: s->picture_number instead of s->fake_picture_number
     put_bits(&s->pb, 10,
-             (s->picture_number - s->gop_picture_number) & 0x3ff);
+             (s->picture_number - mpeg12->gop_picture_number) & 0x3ff);
     put_bits(&s->pb, 3, s->pict_type);
 
     s->vbv_delay_ptr = s->pb.buf + put_bytes_count(&s->pb, 0);

@@ -432,7 +432,6 @@ typedef struct MpegEncContext {
     GetBitContext gb;
 
     /* MPEG-1 specific */
-    int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num & MPEG-1 specific
     int last_mv_dir;         ///< last mv_dir, used for B-frame encoding
     uint8_t *vbv_delay_ptr;  ///< pointer to vbv_delay in the bitstream
 
