@@ -57,6 +57,12 @@ static uint32_t speedhq_chr_dc_uni[512];
 
 static uint8_t uni_speedhq_ac_vlc_len[64 * 64 * 2];
 
+typedef struct SpeedHQEncContext {
+    MpegEncContext m;
+
+    int slice_start;
+} SpeedHQEncContext;
+
 static av_cold void speedhq_init_static_data(void)
 {
     ff_rl_init(&ff_rl_speedhq, speedhq_static_rl_table_store);
@@ -124,24 +130,27 @@ av_cold int ff_speedhq_encode_init(MpegEncContext *s)
 
 void ff_speedhq_encode_picture_header(MpegEncContext *s)
 {
+    SpeedHQEncContext *ctx = (SpeedHQEncContext*)s;
+
     put_bits_le(&s->pb, 8, 100 - s->qscale * 2);  /* FIXME why doubled */
     put_bits_le(&s->pb, 24, 4);  /* no second field */
 
+    ctx->slice_start = 4;
     /* length of first slice, will be filled out later */
-    s->slice_start = 4;
     put_bits_le(&s->pb, 24, 0);
 }
 
 void ff_speedhq_end_slice(MpegEncContext *s)
 {
+    SpeedHQEncContext *ctx = (SpeedHQEncContext*)s;
     int slice_len;
 
     flush_put_bits_le(&s->pb);
-    slice_len = s->pb.buf_ptr - (s->pb.buf + s->slice_start);
-    AV_WL24(s->pb.buf + s->slice_start, slice_len);
+    slice_len = put_bytes_output(&s->pb) - ctx->slice_start;
+    AV_WL24(s->pb.buf + ctx->slice_start, slice_len);
 
     /* length of next slice, will be filled out later */
-    s->slice_start = s->pb.buf_ptr - s->pb.buf;
+    ctx->slice_start = put_bytes_output(&s->pb);
     put_bits_le(&s->pb, 24, 0);
 }
 
@@ -274,7 +283,7 @@ const FFCodec ff_speedhq_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SPEEDHQ,
     .p.priv_class   = &ff_mpv_enc_class,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(SpeedHQEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
