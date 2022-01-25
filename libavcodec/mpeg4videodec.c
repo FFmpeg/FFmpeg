@@ -2215,7 +2215,7 @@ static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id
 static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
-    int width, height;
+    int width, height, aspect_ratio_info;
     int bits_per_raw_sample;
     int rgb, chroma_format;
 
@@ -2270,12 +2270,12 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             s->height = height;
         }
     }
-    s->aspect_ratio_info = get_bits(gb, 4);
-    if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
+    aspect_ratio_info = get_bits(gb, 4);
+    if (aspect_ratio_info == FF_ASPECT_EXTENDED) {
         s->avctx->sample_aspect_ratio.num = get_bits(gb, 8);  // par_width
         s->avctx->sample_aspect_ratio.den = get_bits(gb, 8);  // par_height
     } else {
-        s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[s->aspect_ratio_info];
+        s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[aspect_ratio_info];
     }
     skip_bits(gb, 4); /* frame_rate_code */
     skip_bits(gb, 15); /* first_half_bit_rate */
@@ -2301,7 +2301,7 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
-    int width, height, vo_ver_id;
+    int width, height, vo_ver_id, aspect_ratio_info;
 
     /* vol header */
     skip_bits(gb, 1);                   /* random access */
@@ -2329,12 +2329,12 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     } else {
         vo_ver_id = 1;
     }
-    s->aspect_ratio_info = get_bits(gb, 4);
-    if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
+    aspect_ratio_info = get_bits(gb, 4);
+    if (aspect_ratio_info == FF_ASPECT_EXTENDED) {
         s->avctx->sample_aspect_ratio.num = get_bits(gb, 8);  // par_width
         s->avctx->sample_aspect_ratio.den = get_bits(gb, 8);  // par_height
     } else {
-        s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[s->aspect_ratio_info];
+        s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[aspect_ratio_info];
     }
 
     if ((ctx->vol_control_parameters = get_bits1(gb))) { /* vol control parameter */
