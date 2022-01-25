@@ -1629,13 +1629,17 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                     uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
                     int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
                     for(i = 0; i < 3; i++) {
+                        const int16_t *src = (*s->dpcm_macroblock)[i];
                         int idx = 0;
                         int vsub = i ? s->chroma_y_shift : 0;
                         int hsub = i ? s->chroma_x_shift : 0;
-                        for(h = 0; h < (16 >> vsub); h++){
-                            for(w = 0; w < (16 >> hsub); w++)
-                                dest_pcm[i][w] = (*s->dpcm_macroblock)[i][idx++];
+                        int lowres = lowres_flag ? s->avctx->lowres : 0;
+                        int step = 1 << lowres;
+                        for (h = 0; h < (16 >> (vsub + lowres)); h++){
+                            for (w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+                                dest_pcm[i][w] = src[idx];
                             dest_pcm[i] += linesize[i] / 2;
+                            src         += (16 >> hsub) * step;
                         }
                     }
                 } else {
@@ -1644,13 +1648,17 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                     int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
                     av_assert2(s->dpcm_direction == -1);
                     for(i = 0; i < 3; i++) {
+                        const int16_t *src = (*s->dpcm_macroblock)[i];
                         int idx = 0;
                         int vsub = i ? s->chroma_y_shift : 0;
                         int hsub = i ? s->chroma_x_shift : 0;
+                        int lowres = lowres_flag ? s->avctx->lowres : 0;
+                        int step = 1 << lowres;
                         dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
-                        for (h = (16 >> vsub) - 1; h >= 0; h--) {
-                            for (w = (16 >> hsub) - 1; w >= 0; w--)
-                                dest_pcm[i][w] = (*s->dpcm_macroblock)[i][idx++];
+                        for (h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+                            for (w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+                                dest_pcm[i][w] = src[idx];
+                            src += step * (16 >> hsub);
                             dest_pcm[i] -= linesize[i] / 2;
                         }
                     }
