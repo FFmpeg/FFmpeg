@@ -1648,8 +1648,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                         int vsub = i ? s->chroma_y_shift : 0;
                         int hsub = i ? s->chroma_x_shift : 0;
                         dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
-                        for(h = (16 >> vsub)-1; h >= 1; h--){
-                            for(w = (16 >> hsub)-1; w >= 1; w--)
+                        for (h = (16 >> vsub) - 1; h >= 0; h--) {
+                            for (w = (16 >> hsub) - 1; w >= 0; w--)
                                 dest_pcm[i][w] = (*s->dpcm_macroblock)[i][idx++];
                             dest_pcm[i] -= linesize[i] / 2;
                         }
