@@ -3471,6 +3471,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->divx_build                = s1->divx_build;
     s->xvid_build                = s1->xvid_build;
     s->lavc_build                = s1->lavc_build;
+    s->m.vo_type                 = s1->m.vo_type;
     s->showed_packed_warning     = s1->showed_packed_warning;
     s->vol_control_parameters    = s1->vol_control_parameters;
     s->cplx_estimation_trash_i   = s1->cplx_estimation_trash_i;
