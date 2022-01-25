@@ -961,14 +961,14 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
                                     int vo_number,
                                     int vol_number)
 {
-    int vo_ver_id;
+    int vo_ver_id, vo_type;
 
     if (s->max_b_frames || s->quarter_sample) {
         vo_ver_id  = 5;
-        s->vo_type = ADV_SIMPLE_VO_TYPE;
+        vo_type = ADV_SIMPLE_VO_TYPE;
     } else {
         vo_ver_id  = 1;
-        s->vo_type = SIMPLE_VO_TYPE;
+        vo_type = SIMPLE_VO_TYPE;
     }
 
     put_bits(&s->pb, 16, 0);
@@ -977,7 +977,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     put_bits(&s->pb, 16, 0x120 + vol_number);       /* video obj layer */
 
     put_bits(&s->pb, 1, 0);             /* random access vol */
-    put_bits(&s->pb, 8, s->vo_type);    /* video obj type indication */
+    put_bits(&s->pb, 8, vo_type);       /* video obj type indication */
     if (s->workaround_bugs & FF_BUG_MS) {
         put_bits(&s->pb, 1, 0);         /* is obj layer id= no */
     } else {
