@@ -357,10 +357,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     }
     s->max_b_frames = avctx->max_b_frames;
     s->codec_id     = avctx->codec->id;
-    if (s->max_b_frames                    &&
-        s->codec_id != AV_CODEC_ID_MPEG4      &&
-        s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
-        s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
+    if (s->max_b_frames && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
         av_log(avctx, AV_LOG_ERROR, "B-frames not supported by codec\n");
         return AVERROR(EINVAL);
     }
