@@ -264,16 +264,18 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
     unsigned int vbv_buffer_size, fps, v;
     int i, constraint_parameter_flag;
+    AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
     uint64_t time_code;
     int64_t best_aspect_error = INT64_MAX;
     AVRational aspect_ratio = s->avctx->sample_aspect_ratio;
+    int aspect_ratio_info;
+
+    if (!s->current_picture.f->key_frame)
+        return;
 
     if (aspect_ratio.num == 0 || aspect_ratio.den == 0)
         aspect_ratio = (AVRational){1,1};             // pixel aspect 1.1 (VGA)
 
-    if (s->current_picture.f->key_frame) {
-        AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
-        int aspect_ratio_info;
 
         /* MPEG-1 header repeated every GOP */
         put_header(s, SEQ_START_CODE);
@@ -414,7 +416,6 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
         put_bits(&s->pb, 1, !!(s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) || s->intra_only || !s->gop_picture_number);
         put_bits(&s->pb, 1, 0);                     // broken link
-    }
 }
 
 static inline void encode_mb_skip_run(MpegEncContext *s, int run)
