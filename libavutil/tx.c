@@ -455,6 +455,9 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     /* Flags the transform wants */
     uint64_t req_flags = flags;
 
+    /* Flags the codelet may require to be present */
+    uint64_t inv_req_mask = AV_TX_FULL_IMDCT | FF_TX_PRESHUFFLE;
+
     /* Unaligned codelets are compatible with the aligned flag */
     if (req_flags & FF_TX_ALIGNED)
         req_flags |= AV_TX_UNALIGNED;
@@ -464,9 +467,6 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
         req_flags &= ~(AV_TX_INPLACE | FF_TX_OUT_OF_PLACE);
     if ((req_flags & FF_TX_ALIGNED) && (req_flags & AV_TX_UNALIGNED))
         req_flags &= ~(FF_TX_ALIGNED | AV_TX_UNALIGNED);
-
-    /* Flags the codelet may require to be present */
-    uint64_t inv_req_mask = AV_TX_FULL_IMDCT | FF_TX_PRESHUFFLE;
 
     /* Loop through all codelets in all codelet lists to find matches
      * to the requirements */
