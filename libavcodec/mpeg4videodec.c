@@ -1105,7 +1105,8 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
  * @return <0 if an error occurred
  */
 static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
-                                     int n, int coded, int intra, int rvlc)
+                                     int n, int coded, int intra,
+                                     int use_intra_dc_vlc, int rvlc)
 {
     MpegEncContext *s = &ctx->m;
     int level, i, last, run, qmul, qadd;
@@ -1117,7 +1118,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
     // Note intra & rvlc should be optimized away if this is inlined
 
     if (intra) {
-        if (ctx->use_intra_dc_vlc) {
+        if (use_intra_dc_vlc) {
             /* DC coef */
             if (s->partitioned_frame) {
                 level = s->dc_val[0][s->block_index[n]];
@@ -1357,7 +1358,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
 
 not_coded:
     if (intra) {
-        if (!ctx->use_intra_dc_vlc) {
+        if (!use_intra_dc_vlc) {
             block[0] = ff_mpeg4_pred_dc(s, n, block[0], &dc_pred_dir, 0);
 
             i -= i >> 31;  // if (i == -1) i = 0;
@@ -1378,7 +1379,7 @@ not_coded:
 static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 {
     Mpeg4DecContext *ctx = s->avctx->priv_data;
-    int cbp, mb_type;
+    int cbp, mb_type, use_intra_dc_vlc;
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
 
     av_assert2(s == (void*)ctx);
@@ -1386,7 +1387,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
     mb_type = s->current_picture.mb_type[xy];
     cbp     = s->cbp_table[xy];
 
-    ctx->use_intra_dc_vlc = s->qscale < ctx->intra_dc_threshold;
+    use_intra_dc_vlc = s->qscale < ctx->intra_dc_threshold;
 
     if (s->current_picture.qscale_table[xy] != s->qscale)
         ff_set_qscale(s, s->current_picture.qscale_table[xy]);
@@ -1436,7 +1437,8 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
         s->bdsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, s->mb_intra, ctx->rvlc) < 0) {
+            if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, s->mb_intra,
+                                   use_intra_dc_vlc, ctx->rvlc) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "texture corrupted at %d %d %d\n",
                        s->mb_x, s->mb_y, s->mb_intra);
@@ -1763,6 +1765,8 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
         }
         s->current_picture.mb_type[xy] = mb_type;
     } else { /* I-Frame */
+        int use_intra_dc_vlc;
+
         do {
             cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
             if (cbpc < 0) {
@@ -1790,7 +1794,7 @@ intra:
         }
         cbp = (cbpc & 3) | (cbpy << 2);
 
-        ctx->use_intra_dc_vlc = s->qscale < ctx->intra_dc_threshold;
+        use_intra_dc_vlc = s->qscale < ctx->intra_dc_threshold;
 
         if (dquant)
             ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
@@ -1801,7 +1805,8 @@ intra:
         s->bdsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 1, 0) < 0)
+            if (mpeg4_decode_block(ctx, block[i], i, cbp & 32,
+                                   1, use_intra_dc_vlc, 0) < 0)
                 return AVERROR_INVALIDDATA;
             cbp += cbp;
         }
@@ -1810,7 +1815,7 @@ intra:
 
     /* decode each block */
     for (i = 0; i < 6; i++) {
-        if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 0, 0) < 0)
+        if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 0, 0, 0) < 0)
             return AVERROR_INVALIDDATA;
         cbp += cbp;
     }
@@ -3529,7 +3534,6 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->new_pred                  = s1->new_pred;
     s->enhancement_type          = s1->enhancement_type;
     s->scalability               = s1->scalability;
-    s->use_intra_dc_vlc          = s1->use_intra_dc_vlc;
     s->intra_dc_threshold        = s1->intra_dc_threshold;
     s->divx_version              = s1->divx_version;
     s->divx_build                = s1->divx_build;
