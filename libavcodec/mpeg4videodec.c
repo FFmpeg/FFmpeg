@@ -71,32 +71,33 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
                             uint8_t *dest_cr, int block_size, int uvlinesize,
                             int dct_linesize, int dct_offset)
 {
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
     const int act_block_size = block_size * 2;
 
-    if (s->dpcm_direction == 0) {
-        s->idsp.idct_put(dest_y,                               dct_linesize, (int16_t*)(*s->block32)[0]);
-        s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)(*s->block32)[1]);
-        s->idsp.idct_put(dest_y + dct_offset,                  dct_linesize, (int16_t*)(*s->block32)[2]);
-        s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)(*s->block32)[3]);
+    if (ctx->dpcm_direction == 0) {
+        s->idsp.idct_put(dest_y,                               dct_linesize, (int16_t*)ctx->block32[0]);
+        s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)ctx->block32[1]);
+        s->idsp.idct_put(dest_y + dct_offset,                  dct_linesize, (int16_t*)ctx->block32[2]);
+        s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)ctx->block32[3]);
 
         dct_linesize = uvlinesize << s->interlaced_dct;
         dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
 
-        s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)(*s->block32)[4]);
-        s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)(*s->block32)[5]);
-        s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)(*s->block32)[6]);
-        s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)(*s->block32)[7]);
+        s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)ctx->block32[4]);
+        s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)ctx->block32[5]);
+        s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)ctx->block32[6]);
+        s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)ctx->block32[7]);
         if (!s->chroma_x_shift){ //Chroma444
-            s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[8]);
-            s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[9]);
-            s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[10]);
-            s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[11]);
+            s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)ctx->block32[8]);
+            s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)ctx->block32[9]);
+            s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)ctx->block32[10]);
+            s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)ctx->block32[11]);
         }
-    } else if(s->dpcm_direction == 1) {
+    } else if (ctx->dpcm_direction == 1) {
         uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
         int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
         for (int i = 0; i < 3; i++) {
-            const uint16_t *src = (*s->dpcm_macroblock)[i];
+            const uint16_t *src = ctx->dpcm_macroblock[i];
             int vsub = i ? s->chroma_y_shift : 0;
             int hsub = i ? s->chroma_x_shift : 0;
             int lowres = s->avctx->lowres;
@@ -111,9 +112,9 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
     } else {
         uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
         int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
-        av_assert2(s->dpcm_direction == -1);
+        av_assert2(ctx->dpcm_direction == -1);
         for (int i = 0; i < 3; i++) {
-            const uint16_t *src = (*s->dpcm_macroblock)[i];
+            const uint16_t *src = ctx->dpcm_macroblock[i];
             int vsub = i ? s->chroma_y_shift : 0;
             int hsub = i ? s->chroma_x_shift : 0;
             int lowres = s->avctx->lowres;
@@ -2078,9 +2079,10 @@ static int mpeg4_decode_dpcm_macroblock(MpegEncContext *s, int16_t macroblock[25
 
 static int mpeg4_decode_studio_mb(MpegEncContext *s, int16_t block_[12][64])
 {
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
     int i;
 
-    s->dpcm_direction = 0;
+    ctx->dpcm_direction = 0;
 
     /* StudioMacroblock */
     /* Assumes I-VOP */
@@ -2094,15 +2096,15 @@ static int mpeg4_decode_studio_mb(MpegEncContext *s, int16_t block_[12][64])
         }
 
         for (i = 0; i < mpeg4_block_count[s->chroma_format]; i++) {
-            if (mpeg4_decode_studio_block(s, (*s->block32)[i], i) < 0)
+            if (mpeg4_decode_studio_block(s, ctx->block32[i], i) < 0)
                 return AVERROR_INVALIDDATA;
         }
     } else {
         /* DPCM */
         check_marker(s->avctx, &s->gb, "DPCM block start");
-        s->dpcm_direction = get_bits1(&s->gb) ? -1 : 1;
+        ctx->dpcm_direction = get_bits1(&s->gb) ? -1 : 1;
         for (i = 0; i < 3; i++) {
-            if (mpeg4_decode_dpcm_macroblock(s, (*s->dpcm_macroblock)[i], i) < 0)
+            if (mpeg4_decode_dpcm_macroblock(s, ctx->dpcm_macroblock[i], i) < 0)
                 return AVERROR_INVALIDDATA;
         }
     }

@@ -378,11 +378,6 @@ static int init_duplicate_context(MpegEncContext *s)
     }
 
     if (s->out_format == FMT_H263) {
-        if (!(s->block32         = av_mallocz(sizeof(*s->block32))) ||
-            !(s->dpcm_macroblock = av_mallocz(sizeof(*s->dpcm_macroblock))))
-            return AVERROR(ENOMEM);
-        s->dpcm_direction = 0;
-
         /* ac values */
         if (!FF_ALLOCZ_TYPED_ARRAY(s->ac_val_base,  yc_size))
             return AVERROR(ENOMEM);
@@ -434,8 +429,6 @@ static void free_duplicate_context(MpegEncContext *s)
     av_freep(&s->me.map);
     av_freep(&s->me.score_map);
     av_freep(&s->blocks);
-    av_freep(&s->block32);
-    av_freep(&s->dpcm_macroblock);
     av_freep(&s->ac_val_base);
     s->block = NULL;
 }
@@ -462,9 +455,6 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(me.score_map);
     COPY(blocks);
     COPY(block);
-    COPY(block32);
-    COPY(dpcm_macroblock);
-    COPY(dpcm_direction);
     COPY(start_mb_y);
     COPY(end_mb_y);
     COPY(me.map_generation);
@@ -678,10 +668,7 @@ static void clear_context(MpegEncContext *s)
     s->dct_error_sum = NULL;
     s->block = NULL;
     s->blocks = NULL;
-    s->block32 = NULL;
     memset(s->pblocks, 0, sizeof(s->pblocks));
-    s->dpcm_direction = 0;
-    s->dpcm_macroblock = NULL;
     s->ac_val_base = NULL;
     s->ac_val[0] =
     s->ac_val[1] =

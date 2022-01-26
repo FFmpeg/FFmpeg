@@ -117,6 +117,11 @@ typedef struct Mpeg4DecContext {
     int cplx_estimation_trash_b;
 
     int rgb;
+
+    int32_t block32[12][64];
+    // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
+    int dpcm_direction;
+    int16_t dpcm_macroblock[3][256];
 } Mpeg4DecContext;
 
 
