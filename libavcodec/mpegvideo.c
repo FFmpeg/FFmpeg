@@ -874,8 +874,6 @@ void ff_mpv_free_context_frame(MpegEncContext *s)
 /* init common structure for both encoder and decoder */
 void ff_mpv_common_end(MpegEncContext *s)
 {
-    int i;
-
     if (!s)
         return;
 
@@ -895,25 +893,14 @@ void ff_mpv_common_end(MpegEncContext *s)
         return;
 
     if (s->picture) {
-        for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            ff_free_picture_tables(&s->picture[i]);
-            ff_mpeg_unref_picture(s->avctx, &s->picture[i]);
-            av_frame_free(&s->picture[i].f);
-        }
+        for (int i = 0; i < MAX_PICTURE_COUNT; i++)
+            ff_mpv_picture_free(s->avctx, &s->picture[i]);
     }
     av_freep(&s->picture);
-    ff_free_picture_tables(&s->last_picture);
-    ff_mpeg_unref_picture(s->avctx, &s->last_picture);
-    av_frame_free(&s->last_picture.f);
-    ff_free_picture_tables(&s->current_picture);
-    ff_mpeg_unref_picture(s->avctx, &s->current_picture);
-    av_frame_free(&s->current_picture.f);
-    ff_free_picture_tables(&s->next_picture);
-    ff_mpeg_unref_picture(s->avctx, &s->next_picture);
-    av_frame_free(&s->next_picture.f);
-    ff_free_picture_tables(&s->new_picture);
-    ff_mpeg_unref_picture(s->avctx, &s->new_picture);
-    av_frame_free(&s->new_picture.f);
+    ff_mpv_picture_free(s->avctx, &s->last_picture);
+    ff_mpv_picture_free(s->avctx, &s->current_picture);
+    ff_mpv_picture_free(s->avctx, &s->next_picture);
+    ff_mpv_picture_free(s->avctx, &s->new_picture);
 
     s->context_initialized      = 0;
     s->context_reinit           = 0;
