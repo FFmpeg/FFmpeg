@@ -3,7 +3,8 @@ OBJS += x86/cpu.o                                                       \
         x86/float_dsp_init.o                                            \
         x86/imgutils_init.o                                             \
         x86/lls_init.o                                                  \
-        x86/tx_float_init.o                                             \
+
+OBJS-$(HAVE_X86ASM) += x86/tx_float_init.o                              \
 
 OBJS-$(CONFIG_PIXELUTILS) += x86/pixelutils_init.o                      \
 
