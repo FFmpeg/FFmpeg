@@ -465,7 +465,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
              (s->picture_number - mpeg12->gop_picture_number) & 0x3ff);
     put_bits(&s->pb, 3, s->pict_type);
 
-    s->vbv_delay_ptr = s->pb.buf + put_bytes_count(&s->pb, 0);
+    s->vbv_delay_pos = put_bytes_count(&s->pb, 0);
     put_bits(&s->pb, 16, 0xFFFF);               /* vbv_delay */
 
     // RAL: Forward f_code also needed for B-frames

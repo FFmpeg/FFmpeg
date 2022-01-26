@@ -1840,8 +1840,9 @@ vbv_retry:
             double inbits  = avctx->rc_max_rate *
                              av_q2d(avctx->time_base);
             int    minbits = s->frame_bits - 8 *
-                             (s->vbv_delay_ptr - s->pb.buf - 1);
+                             (s->vbv_delay_pos - 1);
             double bits    = s->rc_context.buffer_index + minbits - inbits;
+            uint8_t *const vbv_delay_ptr = s->pb.buf + s->vbv_delay_pos;
 
             if (bits < 0)
                 av_log(avctx, AV_LOG_ERROR,
@@ -1857,11 +1858,11 @@ vbv_retry:
 
             av_assert0(vbv_delay < 0xFFFF);
 
-            s->vbv_delay_ptr[0] &= 0xF8;
-            s->vbv_delay_ptr[0] |= vbv_delay >> 13;
-            s->vbv_delay_ptr[1]  = vbv_delay >> 5;
-            s->vbv_delay_ptr[2] &= 0x07;
-            s->vbv_delay_ptr[2] |= vbv_delay << 3;
+            vbv_delay_ptr[0] &= 0xF8;
+            vbv_delay_ptr[0] |= vbv_delay >> 13;
+            vbv_delay_ptr[1]  = vbv_delay >> 5;
+            vbv_delay_ptr[2] &= 0x07;
+            vbv_delay_ptr[2] |= vbv_delay << 3;
 
             props = av_cpb_properties_alloc(&props_size);
             if (!props)
@@ -2721,7 +2722,6 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
         && s->slice_context_count == 1
         && s->pb.buf == s->avctx->internal->byte_buffer) {
         int lastgob_pos = s->ptr_lastgob - s->pb.buf;
-        int vbv_pos     = s->vbv_delay_ptr - s->pb.buf;
 
         uint8_t *new_buffer = NULL;
         int new_buffer_size = 0;
@@ -2744,7 +2744,6 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
         s->avctx->internal->byte_buffer_size = new_buffer_size;
         rebase_put_bits(&s->pb, new_buffer, new_buffer_size);
         s->ptr_lastgob   = s->pb.buf + lastgob_pos;
-        s->vbv_delay_ptr = s->pb.buf + vbv_pos;
     }
     if (put_bytes_left(&s->pb, 0) < threshold)
         return AVERROR(EINVAL);

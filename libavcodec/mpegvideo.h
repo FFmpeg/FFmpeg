@@ -432,7 +432,7 @@ typedef struct MpegEncContext {
 
     /* MPEG-1 specific */
     int last_mv_dir;         ///< last mv_dir, used for B-frame encoding
-    uint8_t *vbv_delay_ptr;  ///< pointer to vbv_delay in the bitstream
+    int vbv_delay_pos;       ///< offset of vbv_delay in the bitstream
 
     /* MPEG-2-specific - I wished not to have to support this mess. */
     int progressive_sequence;
