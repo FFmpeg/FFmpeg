@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/rational.h"
 #include "h264.h"
 
 extern const uint8_t ff_h264_golomb_to_pict_type[5];
