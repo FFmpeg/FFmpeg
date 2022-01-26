@@ -657,7 +657,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     if (xvid_flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         /* In this case, we are claiming to be MPEG-4 */
         x->quicktime_format = 1;
-        avctx->codec_id     = AV_CODEC_ID_MPEG4;
     } else {
         /* We are claiming to be Xvid */
         x->quicktime_format = 0;
