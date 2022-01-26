@@ -290,7 +290,8 @@ fail:
 }
 
 /**
- * Deallocate a picture.
+ * Deallocate a picture; frees the picture tables in case they
+ * need to be reallocated anyway.
  */
 void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
 {
@@ -443,8 +444,6 @@ int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared)
 
     if (ret >= 0 && ret < MAX_PICTURE_COUNT) {
         if (picture[ret].needs_realloc) {
-            picture[ret].needs_realloc = 0;
-            ff_free_picture_tables(&picture[ret]);
             ff_mpeg_unref_picture(avctx, &picture[ret]);
         }
     }
