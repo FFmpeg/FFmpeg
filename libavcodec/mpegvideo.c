@@ -40,6 +40,7 @@
 #include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpeg4video.h"
 #include "mpegvideodata.h"
 #include "qpeldsp.h"
 #include "thread.h"
@@ -1602,67 +1603,10 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         } else {
             /* Only MPEG-4 Simple Studio Profile is supported in > 8-bit mode.
                TODO: Integrate 10-bit properly into mpegvideo.c so that ER works properly */
-            if (!is_mpeg12 && s->avctx->bits_per_raw_sample > 8) {
-                const int act_block_size = block_size * 2;
-
-                if(s->dpcm_direction == 0) {
-                    s->idsp.idct_put(dest_y,                           dct_linesize, (int16_t*)(*s->block32)[0]);
-                    s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)(*s->block32)[1]);
-                    s->idsp.idct_put(dest_y + dct_offset,              dct_linesize, (int16_t*)(*s->block32)[2]);
-                    s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)(*s->block32)[3]);
-
-                    dct_linesize = uvlinesize << s->interlaced_dct;
-                    dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
-
-                    s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)(*s->block32)[4]);
-                    s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)(*s->block32)[5]);
-                    s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)(*s->block32)[6]);
-                    s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)(*s->block32)[7]);
-                    if(!s->chroma_x_shift){//Chroma444
-                        s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[8]);
-                        s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[9]);
-                        s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[10]);
-                        s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[11]);
-                    }
-                } else if(s->dpcm_direction == 1) {
-                    int i, w, h;
-                    uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
-                    int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
-                    for(i = 0; i < 3; i++) {
-                        const int16_t *src = (*s->dpcm_macroblock)[i];
-                        int idx = 0;
-                        int vsub = i ? s->chroma_y_shift : 0;
-                        int hsub = i ? s->chroma_x_shift : 0;
-                        int lowres = lowres_flag ? s->avctx->lowres : 0;
-                        int step = 1 << lowres;
-                        for (h = 0; h < (16 >> (vsub + lowres)); h++){
-                            for (w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
-                                dest_pcm[i][w] = src[idx];
-                            dest_pcm[i] += linesize[i] / 2;
-                            src         += (16 >> hsub) * step;
-                        }
-                    }
-                } else {
-                    int i, w, h;
-                    uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
-                    int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
-                    av_assert2(s->dpcm_direction == -1);
-                    for(i = 0; i < 3; i++) {
-                        const int16_t *src = (*s->dpcm_macroblock)[i];
-                        int idx = 0;
-                        int vsub = i ? s->chroma_y_shift : 0;
-                        int hsub = i ? s->chroma_x_shift : 0;
-                        int lowres = lowres_flag ? s->avctx->lowres : 0;
-                        int step = 1 << lowres;
-                        dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
-                        for (h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
-                            for (w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
-                                dest_pcm[i][w] = src[idx];
-                            src += step * (16 >> hsub);
-                            dest_pcm[i] -= linesize[i] / 2;
-                        }
-                    }
-                }
+            if (!is_mpeg12 && CONFIG_MPEG4_DECODER && /* s->codec_id == AV_CODEC_ID_MPEG4 && */
+                s->avctx->bits_per_raw_sample > 8) {
+                ff_mpeg4_decode_studio(s, dest_y, dest_cb, dest_cr, block_size,
+                                       uvlinesize, dct_linesize, dct_offset);
             }
             /* dct only in intra block */
             else if (IS_ENCODER(s) || !IS_MPEG12(s)) {

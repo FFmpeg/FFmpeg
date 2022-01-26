@@ -67,6 +67,68 @@ static const int mb_type_b_map[4] = {
     MB_TYPE_L0      | MB_TYPE_16x16,
 };
 
+void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
+                            uint8_t *dest_cr, int block_size, int uvlinesize,
+                            int dct_linesize, int dct_offset)
+{
+    const int act_block_size = block_size * 2;
+
+    if (s->dpcm_direction == 0) {
+        s->idsp.idct_put(dest_y,                               dct_linesize, (int16_t*)(*s->block32)[0]);
+        s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)(*s->block32)[1]);
+        s->idsp.idct_put(dest_y + dct_offset,                  dct_linesize, (int16_t*)(*s->block32)[2]);
+        s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)(*s->block32)[3]);
+
+        dct_linesize = uvlinesize << s->interlaced_dct;
+        dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
+
+        s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)(*s->block32)[4]);
+        s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)(*s->block32)[5]);
+        s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)(*s->block32)[6]);
+        s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)(*s->block32)[7]);
+        if (!s->chroma_x_shift){ //Chroma444
+            s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[8]);
+            s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[9]);
+            s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[10]);
+            s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[11]);
+        }
+    } else if(s->dpcm_direction == 1) {
+        uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
+        int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
+        for (int i = 0; i < 3; i++) {
+            const uint16_t *src = (*s->dpcm_macroblock)[i];
+            int vsub = i ? s->chroma_y_shift : 0;
+            int hsub = i ? s->chroma_x_shift : 0;
+            int lowres = s->avctx->lowres;
+            int step = 1 << lowres;
+            for (int h = 0; h < (16 >> (vsub + lowres)); h++){
+                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+                    dest_pcm[i][w] = src[idx];
+                dest_pcm[i] += linesize[i] / 2;
+                src         += (16 >> hsub) * step;
+            }
+        }
+    } else {
+        uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
+        int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
+        av_assert2(s->dpcm_direction == -1);
+        for (int i = 0; i < 3; i++) {
+            const uint16_t *src = (*s->dpcm_macroblock)[i];
+            int vsub = i ? s->chroma_y_shift : 0;
+            int hsub = i ? s->chroma_x_shift : 0;
+            int lowres = s->avctx->lowres;
+            int step = 1 << lowres;
+            dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
+            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+                    dest_pcm[i][w] = src[idx];
+                src += step * (16 >> hsub);
+                dest_pcm[i] -= linesize[i] / 2;
+            }
+        }
+    }
+}
+
 /**
  * Predict the ac.
  * @param n block index (0-3 are luma, 4-5 are chroma)

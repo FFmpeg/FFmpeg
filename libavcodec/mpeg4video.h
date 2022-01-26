@@ -119,6 +119,10 @@ typedef struct Mpeg4DecContext {
     int rgb;
 } Mpeg4DecContext;
 
+
+void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
+                            uint8_t *dest_cr, int block_size, int uvlinesize,
+                            int dct_linesize, int dct_offset);
 void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],
                         int motion_x, int motion_y);
