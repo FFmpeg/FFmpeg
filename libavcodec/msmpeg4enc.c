@@ -148,8 +148,9 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
     ff_thread_once(&init_static_once, msmpeg4_encode_init_static);
 }
 
-static void find_best_tables(MpegEncContext * s)
+static void find_best_tables(MSMPEG4EncContext *ms)
 {
+    MpegEncContext *const s = &ms->s;
     int i;
     int best        = 0, best_size        = INT_MAX;
     int chroma_best = 0, best_chroma_size = INT_MAX;
@@ -169,9 +170,9 @@ static void find_best_tables(MpegEncContext * s)
                 int last;
                 const int last_size= size + chroma_size;
                 for(last=0; last<2; last++){
-                    int inter_count       = s->ac_stats[0][0][level][run][last] + s->ac_stats[0][1][level][run][last];
-                    int intra_luma_count  = s->ac_stats[1][0][level][run][last];
-                    int intra_chroma_count= s->ac_stats[1][1][level][run][last];
+                    int inter_count       = ms->ac_stats[0][0][level][run][last] + ms->ac_stats[0][1][level][run][last];
+                    int intra_luma_count  = ms->ac_stats[1][0][level][run][last];
+                    int intra_chroma_count= ms->ac_stats[1][1][level][run][last];
 
                     if(s->pict_type==AV_PICTURE_TYPE_I){
                         size       += intra_luma_count  *rl_length[i  ][level][run][last];
@@ -197,7 +198,7 @@ static void find_best_tables(MpegEncContext * s)
 
     if(s->pict_type==AV_PICTURE_TYPE_P) chroma_best= best;
 
-    memset(s->ac_stats, 0, sizeof(int)*(MAX_LEVEL+1)*(MAX_RUN+1)*2*2*2);
+    memset(ms->ac_stats, 0, sizeof(ms->ac_stats));
 
     s->rl_table_index       =        best;
     s->rl_chroma_table_index= chroma_best;
@@ -215,7 +216,9 @@ static void find_best_tables(MpegEncContext * s)
 /* write MSMPEG4 compatible frame header */
 void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
-    find_best_tables(s);
+    MSMPEG4EncContext *const ms = (MSMPEG4EncContext*)s;
+
+    find_best_tables(ms);
 
     align_put_bits(&s->pb);
     put_bits(&s->pb, 2, s->pict_type - 1);
@@ -553,6 +556,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
  * escape coding (same as H.263) and more VLC tables. */
 void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
 {
+    MSMPEG4EncContext *const ms = (MSMPEG4EncContext*)s;
     int level, run, last, i, j, last_index;
     int last_non_zero, sign, slevel;
     int code, run_diff, dc_pred_dir;
@@ -603,10 +607,10 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
             }
 
             if(level<=MAX_LEVEL && run<=MAX_RUN){
-                s->ac_stats[s->mb_intra][n>3][level][run][last]++;
+                ms->ac_stats[s->mb_intra][n>3][level][run][last]++;
             }
 
-            s->ac_stats[s->mb_intra][n > 3][40][63][0]++; //esc3 like
+            ms->ac_stats[s->mb_intra][n > 3][40][63][0]++; //esc3 like
 
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
@@ -679,7 +683,7 @@ const AVCodec ff_msmpeg4v2_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &ff_mpv_enc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(MSMPEG4EncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
@@ -693,7 +697,7 @@ const AVCodec ff_msmpeg4v3_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &ff_mpv_enc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(MSMPEG4EncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
@@ -707,7 +711,7 @@ const AVCodec ff_wmv1_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &ff_mpv_enc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(MSMPEG4EncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,

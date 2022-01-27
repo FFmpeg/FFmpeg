@@ -422,8 +422,6 @@ typedef struct MpegEncContext {
     int per_mb_rl_table;
     int esc3_level_length;
     int esc3_run_length;
-    /** [mb_intra][isChroma][level][run][last] */
-    int (*ac_stats)[2][MAX_LEVEL+1][MAX_RUN+1][2];
     int inter_intra_pred;
     int mspel;
 

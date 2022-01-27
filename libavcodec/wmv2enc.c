@@ -28,7 +28,7 @@
 #include "wmv2enc.h"
 
 typedef struct WMV2EncContext {
-    MpegEncContext s;
+    MSMPEG4EncContext msmpeg4;
     WMV2Context common;
     int j_type_bit;
     int j_type;
@@ -43,7 +43,7 @@ typedef struct WMV2EncContext {
 
 static int encode_ext_header(WMV2EncContext *w)
 {
-    MpegEncContext *const s = &w->s;
+    MpegEncContext *const s = &w->msmpeg4.s;
     PutBitContext pb;
     int code;
 
@@ -70,13 +70,13 @@ static int encode_ext_header(WMV2EncContext *w)
 static av_cold int wmv2_encode_init(AVCodecContext *avctx)
 {
     WMV2EncContext *const w = avctx->priv_data;
-    MpegEncContext *const s = &w->s;
+    MpegEncContext *const s = &w->msmpeg4.s;
 
     s->private_ctx = &w->common;
     if (ff_mpv_encode_init(avctx) < 0)
         return -1;
 
-    ff_wmv2_common_init(&w->s);
+    ff_wmv2_common_init(s);
 
     avctx->extradata_size = 4;
     avctx->extradata      = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);

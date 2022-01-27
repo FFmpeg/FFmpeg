@@ -813,12 +813,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     ff_pixblockdsp_init(&s->pdsp, avctx);
     ff_qpeldsp_init(&s->qdsp);
 
-    if (s->msmpeg4_version) {
-        int ac_stats_size = 2 * 2 * (MAX_LEVEL + 1) *  (MAX_RUN + 1) * 2 * sizeof(int);
-        if (!(s->ac_stats = av_mallocz(ac_stats_size)))
-            return AVERROR(ENOMEM);
-    }
-
     if (!(avctx->stats_out = av_mallocz(256))               ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix,          32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix,   32) ||
@@ -944,7 +938,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     ff_mpv_picture_free(avctx, &s->new_picture);
 
     av_freep(&avctx->stats_out);
-    av_freep(&s->ac_stats);
 
     if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
     if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
