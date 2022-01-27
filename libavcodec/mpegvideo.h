@@ -84,6 +84,9 @@ typedef struct MpegEncContext {
      *          offsets used in ASM. */
 
     struct AVCodecContext *avctx;
+    /* The following pointer is intended for codecs sharing code
+     * between decoder and encoder and in need of a common context to do so. */
+    void *private_ctx;
     /* the following parameters must be initialized before encoding */
     int width, height;///< picture size. must be a multiple of 16
     int gop_size;
