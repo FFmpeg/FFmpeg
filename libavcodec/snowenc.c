@@ -34,7 +34,7 @@
 #include "mathops.h"
 
 #include "mpegvideo.h"
-#include "h263.h"
+#include "h263enc.h"
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {

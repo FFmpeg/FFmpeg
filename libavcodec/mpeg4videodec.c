@@ -24,7 +24,6 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/thread.h"
 #include "error_resilience.h"
 #include "hwconfig.h"
@@ -36,6 +35,7 @@
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "h263.h"
+#include "h263data.h"
 #include "h263dec.h"
 #include "profiles.h"
 #include "threadframe.h"

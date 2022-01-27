@@ -27,6 +27,7 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "h263enc.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "profiles.h"

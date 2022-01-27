@@ -30,6 +30,7 @@
 #include "msmpeg4dec.h"
 #include "libavutil/imgutils.h"
 #include "h263.h"
+#include "h263data.h"
 #include "h263dec.h"
 #include "mpeg4video.h"
 #include "msmpeg4data.h"

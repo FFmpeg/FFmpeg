@@ -51,6 +51,7 @@
 #include "h261enc.h"
 #include "h263.h"
 #include "h263data.h"
+#include "h263enc.h"
 #include "mjpegenc_common.h"
 #include "mathops.h"
 #include "mpegutils.h"

@@ -35,6 +35,7 @@
 #include "libavutil/thread.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "h263data.h"
 #include "internal.h"
 #include "mpeg4video.h"
 #include "msmpeg4.h"
@@ -42,7 +43,6 @@
 #include "msmpeg4enc.h"
 #include "put_bits.h"
 #include "rl.h"
-#include "vc1data.h"
 
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 

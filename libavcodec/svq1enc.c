@@ -32,6 +32,7 @@
 #include "me_cmp.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "h263enc.h"
 #include "internal.h"
 #include "mpegutils.h"
 #include "packet_internal.h"
