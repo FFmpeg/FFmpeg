@@ -29,6 +29,7 @@
 #include "msmpeg4data.h"
 #include "simple_idct.h"
 #include "wmv2.h"
+#include "wmv2data.h"
 
 
 static void wmv2_add_block(Wmv2Context *w, int16_t *block1,
@@ -537,12 +538,17 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
 static av_cold int wmv2_decode_init(AVCodecContext *avctx)
 {
     Wmv2Context *const w = avctx->priv_data;
+    MpegEncContext *const s = &w->s;
     int ret;
 
     if ((ret = ff_msmpeg4_decode_init(avctx)) < 0)
         return ret;
 
     ff_wmv2_common_init(w);
+    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[0],
+                      ff_wmv2_scantableA);
+    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[1],
+                      ff_wmv2_scantableB);
 
     return ff_intrax8_common_init(avctx, &w->x8, &w->s.idsp,
                                   w->s.block, w->s.block_last_index,

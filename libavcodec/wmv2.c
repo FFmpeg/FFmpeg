@@ -20,11 +20,9 @@
 
 #include "avcodec.h"
 #include "idctdsp.h"
-#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
 #include "wmv2.h"
-#include "wmv2data.h"
 
 
 av_cold void ff_wmv2_common_init(Wmv2Context *w)
@@ -36,10 +34,6 @@ av_cold void ff_wmv2_common_init(Wmv2Context *w)
     s->idsp.perm_type = w->wdsp.idct_perm;
     ff_init_scantable_permutation(s->idsp.idct_permutation,
                                   w->wdsp.idct_perm);
-    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[0],
-                      ff_wmv2_scantableA);
-    ff_init_scantable(s->idsp.idct_permutation, &w->abt_scantable[1],
-                      ff_wmv2_scantableB);
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
                       ff_wmv1_scantable[1]);
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_h_scantable,
