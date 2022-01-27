@@ -517,11 +517,6 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
 
     sps->direct_8x8_inference_flag = get_bits1(gb);
 
-#ifndef ALLOW_INTERLACE
-    if (sps->mb_aff)
-        av_log(avctx, AV_LOG_ERROR,
-               "MBAFF support not included; enable it at compile-time.\n");
-#endif
     sps->crop = get_bits1(gb);
     if (sps->crop) {
         unsigned int crop_left   = get_ue_golomb(gb);
