@@ -116,13 +116,11 @@ typedef void TXComplex;
 
 /* Codelet flags, used to pick codelets. Must be a superset of enum AVTXFlags,
  * but if it runs out of bits, it can be made separate. */
-typedef enum FFTXCodeletFlags {
-    FF_TX_OUT_OF_PLACE  = (1ULL << 63), /* Can be OR'd with AV_TX_INPLACE             */
-    FF_TX_ALIGNED       = (1ULL << 62), /* Cannot be OR'd with AV_TX_UNALIGNED        */
-    FF_TX_PRESHUFFLE    = (1ULL << 61), /* Codelet expects permuted coeffs            */
-    FF_TX_INVERSE_ONLY  = (1ULL << 60), /* For non-orthogonal inverse-only transforms */
-    FF_TX_FORWARD_ONLY  = (1ULL << 59), /* For non-orthogonal forward-only transforms */
-} FFTXCodeletFlags;
+#define FF_TX_OUT_OF_PLACE (1ULL << 63) /* Can be OR'd with AV_TX_INPLACE             */
+#define FF_TX_ALIGNED      (1ULL << 62) /* Cannot be OR'd with AV_TX_UNALIGNED        */
+#define FF_TX_PRESHUFFLE   (1ULL << 61) /* Codelet expects permuted coeffs            */
+#define FF_TX_INVERSE_ONLY (1ULL << 60) /* For non-orthogonal inverse-only transforms */
+#define FF_TX_FORWARD_ONLY (1ULL << 59) /* For non-orthogonal forward-only transforms */
 
 typedef enum FFTXCodeletPriority {
     FF_TX_PRIO_BASE = 0,               /* Baseline priority */
@@ -149,8 +147,8 @@ typedef struct FFTXCodelet {
     enum AVTXType  type;          /* Type of codelet transform */
 #define TX_TYPE_ANY INT32_MAX     /* Special type to allow all types */
 
-    uint64_t flags;               /* A combination of AVTXFlags and FFTXCodeletFlags
-                                   * that describe the codelet's properties. */
+    uint64_t flags;               /* A combination of AVTXFlags and codelet
+                                   * flags that describe its properties. */
 
     int factors[TX_MAX_SUB];      /* Length factors */
 #define TX_FACTOR_ANY -1          /* When used alone, signals that the codelet
@@ -202,9 +200,8 @@ struct AVTXContext {
     const FFTXCodelet *cd[TX_MAX_SUB];  /* Subtransform codelets */
     const FFTXCodelet *cd_self;         /* Codelet for the current context */
     enum AVTXType      type;            /* Type of transform */
-    uint64_t           flags;           /* A combination of AVTXFlags
-                                           and FFTXCodeletFlags flags
-                                           used when creating */
+    uint64_t           flags;           /* A combination of AVTXFlags and
+                                         * codelet flags used when creating */
     float              scale_f;
     double             scale_d;
     void              *opaque;          /* Free to use by implementations */
