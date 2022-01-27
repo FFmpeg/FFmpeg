@@ -35,15 +35,7 @@
  * H261Context
  */
 typedef struct H261Context {
-    MpegEncContext s;
-
-    int current_mba;
-    int mba_diff;
     int mtype;
-    int current_mv_x;
-    int current_mv_y;
-    int gob_number;
-    int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
 } H261Context;
 
 #define MB_TYPE_H261_FIL 0x800000
