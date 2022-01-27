@@ -38,7 +38,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_EXTERNAL_WIN32_SEM     = 1ULL <<  7, /* VK_KHR_external_semaphore_win32 */
 #endif
 
-    FF_VK_EXT_NO_FLAG                = 1ULL << 63,
+    FF_VK_EXT_NO_FLAG                = 1ULL << 31,
 } FFVulkanExtensions;
 
 /* Macro containing every function that we utilize in our codebase */
