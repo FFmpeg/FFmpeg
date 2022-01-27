@@ -67,8 +67,8 @@ static const FFTXCodelet ff_tx_ ##fn## _def = {                                \
 
 #define DECL_SR_CD_DEF(fn_name, len, init_fn, fn_prio, cpu, fn_flags)          \
     DECL_CD_DEF(fn_name, FFT, len, len, 2, 0,                                  \
-                   fft_sr_codelet_init_ ##init_fn, fn_prio,                    \
-                   AV_CPU_FLAG_ ##cpu, fn_flags)                               \
+                fft_sr_codelet_init_ ##init_fn, fn_prio,                       \
+                AV_CPU_FLAG_ ##cpu, FF_TX_OUT_OF_PLACE | fn_flags)
 
 DECL_SR_CD_DEF(fft2_float_sse3,      2, b0_i0, 128, SSE3, AV_TX_INPLACE)
 DECL_SR_CD_DEF(fft2_ns_float_sse3,   2, b8_i0, 192, SSE3, AV_TX_INPLACE | FF_TX_PRESHUFFLE)
