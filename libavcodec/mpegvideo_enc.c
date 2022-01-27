@@ -56,7 +56,7 @@
 #include "mpegutils.h"
 #include "mjpegenc.h"
 #include "speedhqenc.h"
-#include "msmpeg4.h"
+#include "msmpeg4enc.h"
 #include "pixblockdsp.h"
 #include "qpeldsp.h"
 #include "faandct.h"

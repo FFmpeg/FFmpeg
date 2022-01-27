@@ -39,6 +39,7 @@
 #include "mpeg4video.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
+#include "msmpeg4enc.h"
 #include "put_bits.h"
 #include "rl.h"
 #include "vc1data.h"
