@@ -543,13 +543,6 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
         }
     }
 
-    /* No matches found */
-    if (!nb_cd_matches)
-        return AVERROR(ENOSYS);
-
-    /* Sort the list */
-    AV_QSORT(cd_matches, nb_cd_matches, TXCodeletMatch, cmp_matches);
-
     /* Print debugging info */
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&bp, "For transform of length %i, %s, ", len,
@@ -557,7 +550,16 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     print_type(&bp, type);
     av_bprintf(&bp, ", ");
     print_flags(&bp, flags);
-    av_bprintf(&bp, ", found %i matches:", nb_cd_matches);
+    av_bprintf(&bp, ", found %i matches%s", nb_cd_matches,
+               nb_cd_matches ? ":" : ".");
+
+    /* No matches found */
+    if (!nb_cd_matches)
+        return AVERROR(ENOSYS);
+
+    /* Sort the list */
+    AV_QSORT(cd_matches, nb_cd_matches, TXCodeletMatch, cmp_matches);
+
     av_log(NULL, AV_LOG_VERBOSE, "%s\n", bp.str);
 
     for (int i = 0; i < nb_cd_matches; i++) {
