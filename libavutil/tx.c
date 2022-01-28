@@ -601,9 +601,6 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
     av_free(sub);
 
-    if (ret >= 0)
-        ret = AVERROR(ENOSYS);
-
 end:
     av_free(cd_matches);
     return ret;
