@@ -61,7 +61,7 @@ typedef struct SnowEncContext {
     int scenechange_threshold;
 
     MECmpContext mecc;
-    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
+    MPVMainEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
     MPVPicture cur_pic, last_pic;
 #define ME_CACHE_SIZE 1024
     unsigned me_cache[ME_CACHE_SIZE];
@@ -160,7 +160,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowEncContext *const enc = avctx->priv_data;
     SnowContext *const s = &enc->com;
-    MpegEncContext *const mpv = &enc->m;
+    MpegEncContext *const mpv = &enc->m.s;
     int plane_index, ret;
     int i;
 
@@ -217,7 +217,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     mcf(12,12)
 
     ff_me_cmp_init(&enc->mecc, avctx);
-    ret = ff_me_init(&enc->m.me, avctx, &enc->mecc, 0);
+    ret = ff_me_init(&mpv->me, avctx, &enc->mecc, 0);
     if (ret < 0)
         return ret;
     ff_mpegvideoencdsp_init(&enc->mpvencdsp, avctx);
@@ -252,7 +252,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
     if((avctx->flags&AV_CODEC_FLAG_PASS2) || !(avctx->flags&AV_CODEC_FLAG_QSCALE)){
-        ret = ff_rate_control_init(mpv);
+        ret = ff_rate_control_init(&enc->m);
         if(ret < 0)
             return ret;
     }
@@ -369,7 +369,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
 {
     SnowContext      *const s = &enc->com;
-    MotionEstContext *const c = &enc->m.me;
+    MotionEstContext *const c = &enc->m.s.me;
     uint8_t p_buffer[1024];
     uint8_t i_buffer[1024];
     uint8_t p_state[sizeof(s->block_state)];
@@ -435,9 +435,9 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
     last_mv[2][0]= bottom->mx;
     last_mv[2][1]= bottom->my;
 
-    enc->m.mb_stride = 2;
-    enc->m.mb_x =
-    enc->m.mb_y = 0;
+    enc->m.s.mb_stride = 2;
+    enc->m.s.mb_x =
+    enc->m.s.mb_y = 0;
     c->skip= 0;
 
     av_assert1(c->  stride ==   stride);
@@ -446,7 +446,7 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
     c->penalty_factor    = get_penalty_factor(enc->lambda, enc->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(enc->lambda, enc->lambda2, c->avctx->me_sub_cmp);
     c->mb_penalty_factor = get_penalty_factor(enc->lambda, enc->lambda2, c->avctx->mb_cmp);
-    c->current_mv_penalty = c->mv_penalty[enc->m.f_code=1] + MAX_DMV;
+    c->current_mv_penalty = c->mv_penalty[enc->m.s.f_code=1] + MAX_DMV;
 
     c->xmin = - x*block_w - 16+3;
     c->ymin = - y*block_w - 16+3;
@@ -482,7 +482,7 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
     for(ref=0; ref<s->ref_frames; ref++){
         init_ref(c, current_data, s->last_picture[ref]->data, NULL, block_w*x, block_w*y, 0);
 
-        ref_score= ff_epzs_motion_search(&enc->m, &ref_mx, &ref_my, P, 0, /*ref_index*/ 0, last_mv,
+        ref_score = ff_epzs_motion_search(&enc->m.s, &ref_mx, &ref_my, P, 0, /*ref_index*/ 0, last_mv,
                                          (1<<16)>>shift, level-LOG2_MB_SIZE+4, block_w);
 
         av_assert2(ref_mx >= c->xmin);
@@ -490,8 +490,10 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
         av_assert2(ref_my >= c->ymin);
         av_assert2(ref_my <= c->ymax);
 
-        ref_score= c->sub_motion_search(&enc->m, &ref_mx, &ref_my, ref_score, 0, 0, level-LOG2_MB_SIZE+4, block_w);
-        ref_score= ff_get_mb_score(&enc->m, ref_mx, ref_my, 0, 0, level-LOG2_MB_SIZE+4, block_w, 0);
+        ref_score = c->sub_motion_search(&enc->m.s, &ref_mx, &ref_my, ref_score,
+                                         0, 0, level-LOG2_MB_SIZE+4, block_w);
+        ref_score = ff_get_mb_score(&enc->m.s, ref_mx, ref_my, 0, 0,
+                                    level-LOG2_MB_SIZE+4, block_w, 0);
         ref_score+= 2*av_log2(2*ref)*c->penalty_factor;
         if(s->ref_mvs[ref]){
             s->ref_mvs[ref][index][0]= ref_mx;
@@ -567,7 +569,7 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
         if (vard <= 64 || vard < varc)
             c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
-            c->scene_change_score += enc->m.qscale;
+            c->scene_change_score += enc->m.s.qscale;
     }
 
     if(level!=s->block_max_depth){
@@ -670,7 +672,7 @@ static int get_dc(SnowEncContext *enc, int mb_x, int mb_y, int plane_index)
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
     const int ref_stride= s->current_picture->linesize[plane_index];
     const uint8_t *src = s->input_picture->data[plane_index];
-    IDWTELEM *dst= (IDWTELEM*)enc->m.sc.obmc_scratchpad + plane_index*block_size*block_size*4; //FIXME change to unsigned
+    IDWTELEM *dst= (IDWTELEM*)enc->m.s.sc.obmc_scratchpad + plane_index*block_size*block_size*4; //FIXME change to unsigned
     const int b_stride = s->b_width << s->block_max_depth;
     const int w= p->width;
     const int h= p->height;
@@ -768,7 +770,7 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
     const int ref_stride= s->current_picture->linesize[plane_index];
     uint8_t *dst= s->current_picture->data[plane_index];
     const uint8_t *src = s->input_picture->data[plane_index];
-    IDWTELEM *pred= (IDWTELEM*)enc->m.sc.obmc_scratchpad + plane_index*block_size*block_size*4;
+    IDWTELEM *pred= (IDWTELEM*)enc->m.s.sc.obmc_scratchpad + plane_index*block_size*block_size*4;
     uint8_t *cur = s->scratchbuf;
     uint8_t *tmp = s->emu_edge_buffer;
     const int b_stride = s->b_width << s->block_max_depth;
@@ -831,19 +833,19 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
          * to improve the score of the whole frame, thus iterative motion
          * estimation does not always converge. */
         if(s->avctx->me_cmp == FF_CMP_W97)
-            distortion = ff_w97_32_c(&enc->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+            distortion = ff_w97_32_c(&enc->m.s, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else if(s->avctx->me_cmp == FF_CMP_W53)
-            distortion = ff_w53_32_c(&enc->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+            distortion = ff_w53_32_c(&enc->m.s, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else{
             distortion = 0;
             for(i=0; i<4; i++){
                 int off = sx+16*(i&1) + (sy+16*(i>>1))*ref_stride;
-                distortion += enc->m.me.me_cmp[0](&enc->m, src + off, dst + off, ref_stride, 16);
+                distortion += enc->m.s.me.me_cmp[0](&enc->m.s, src + off, dst + off, ref_stride, 16);
             }
         }
     }else{
         av_assert2(block_w==8);
-        distortion = enc->m.me.me_cmp[0](&enc->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
+        distortion = enc->m.s.me.me_cmp[0](&enc->m.s, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
     }
 
     if(plane_index==0){
@@ -909,7 +911,7 @@ static int get_4block_rd(SnowEncContext *enc, int mb_x, int mb_y, int plane_inde
         }
 
         av_assert1(block_w== 8 || block_w==16);
-        distortion += enc->m.me.me_cmp[block_w==8](&enc->m, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
+        distortion += enc->m.s.me.me_cmp[block_w==8](&enc->m.s, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
     }
 
     if(plane_index==0){
@@ -1706,11 +1708,11 @@ static int ratecontrol_1pass(SnowEncContext *enc, AVFrame *pict)
     coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
 
     if(pict->pict_type == AV_PICTURE_TYPE_I){
-        enc->m.mb_var_sum    = coef_sum;
-        enc->m.mc_mb_var_sum = 0;
+        enc->m.s.mb_var_sum    = coef_sum;
+        enc->m.s.mc_mb_var_sum = 0;
     }else{
-        enc->m.mc_mb_var_sum = coef_sum;
-        enc->m.mb_var_sum    = 0;
+        enc->m.s.mc_mb_var_sum = coef_sum;
+        enc->m.s.mb_var_sum    = 0;
     }
 
     pict->quality= ff_rate_estimate_qscale(&enc->m, 1);
@@ -1757,7 +1759,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     SnowEncContext *const enc = avctx->priv_data;
     SnowContext *const s = &enc->com;
-    MpegEncContext *const mpv = &enc->m;
+    MpegEncContext *const mpv = &enc->m.s;
     RangeCoder * const c= &s->c;
     AVCodecInternal *avci = avctx->internal;
     AVFrame *pic;
@@ -1793,10 +1795,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     mpv->picture_number = avctx->frame_num;
     if(avctx->flags&AV_CODEC_FLAG_PASS2){
-        mpv->pict_type = pic->pict_type = mpv->rc_context.entry[avctx->frame_num].new_pict_type;
+        mpv->pict_type = pic->pict_type = enc->m.rc_context.entry[avctx->frame_num].new_pict_type;
         s->keyframe = pic->pict_type == AV_PICTURE_TYPE_I;
         if(!(avctx->flags&AV_CODEC_FLAG_QSCALE)) {
-            pic->quality = ff_rate_estimate_qscale(mpv, 0);
+            pic->quality = ff_rate_estimate_qscale(&enc->m, 0);
             if (pic->quality < 0)
                 return -1;
         }
@@ -1877,7 +1879,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         mpv->qdsp = enc->qdsp; //move
         mpv->hdsp = s->hdsp;
-        ff_me_init_pic(&enc->m);
+        ff_me_init_pic(mpv);
         s->hdsp = mpv->hdsp;
     }
 
@@ -2043,17 +2045,19 @@ redo_frame:
 
     s->current_picture->pict_type = pic->pict_type;
     s->current_picture->quality = pic->quality;
-    mpv->frame_bits = 8 * (s->c.bytestream - s->c.bytestream_start);
-    mpv->p_tex_bits = mpv->frame_bits - mpv->misc_bits - mpv->mv_bits;
-    mpv->total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
+    enc->m.frame_bits = 8 * (s->c.bytestream - s->c.bytestream_start);
+    mpv->p_tex_bits = enc->m.frame_bits - mpv->misc_bits - mpv->mv_bits;
+    enc->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
     enc->cur_pic.display_picture_number =
     enc->cur_pic.coded_picture_number   = avctx->frame_num;
     enc->cur_pic.f->quality             = pic->quality;
-    if (enc->pass1_rc)
-        if (ff_rate_estimate_qscale(mpv, 0) < 0)
-            return -1;
+    if (enc->pass1_rc) {
+        ret = ff_rate_estimate_qscale(&enc->m, 0);
+        if (ret < 0)
+            return ret;
+    }
     if(avctx->flags&AV_CODEC_FLAG_PASS1)
-        ff_write_pass1_stats(mpv);
+        ff_write_pass1_stats(&enc->m);
     mpv->last_pict_type = mpv->pict_type;
 
     emms_c();
@@ -2088,10 +2092,10 @@ static av_cold int encode_end(AVCodecContext *avctx)
         av_freep(&s->ref_scores[i]);
     }
 
-    enc->m.me.temp = NULL;
-    av_freep(&enc->m.me.scratchpad);
-    av_freep(&enc->m.me.map);
-    av_freep(&enc->m.sc.obmc_scratchpad);
+    enc->m.s.me.temp = NULL;
+    av_freep(&enc->m.s.me.scratchpad);
+    av_freep(&enc->m.s.me.map);
+    av_freep(&enc->m.s.sc.obmc_scratchpad);
 
     av_freep(&avctx->stats_out);
 

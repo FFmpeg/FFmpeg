@@ -93,14 +93,14 @@ typedef struct RateControlContext{
     float *cplx_tab, *bits_tab;
 }RateControlContext;
 
-struct MpegEncContext;
+typedef struct MPVMainEncContext MPVMainEncContext;
 
 /* rate control */
-int ff_rate_control_init(struct MpegEncContext *s);
-float ff_rate_estimate_qscale(struct MpegEncContext *s, int dry_run);
-void ff_write_pass1_stats(struct MpegEncContext *s);
-int ff_vbv_update(struct MpegEncContext *s, int frame_size);
-void ff_get_2pass_fcode(struct MpegEncContext *s);
+int ff_rate_control_init(MPVMainEncContext *m);
+float ff_rate_estimate_qscale(MPVMainEncContext *m, int dry_run);
+void ff_write_pass1_stats(MPVMainEncContext *m);
+int ff_vbv_update(MPVMainEncContext *m, int frame_size);
+void ff_get_2pass_fcode(MPVMainEncContext *m);
 void ff_rate_control_uninit(RateControlContext *rcc);
 
 #endif /* AVCODEC_RATECONTROL_H */

@@ -32,6 +32,7 @@
 
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
+#include "ratecontrol.h"
 
 #define MPVENC_MAX_B_FRAMES 16
 
@@ -43,6 +44,13 @@ typedef struct MPVMainEncContext {
     int b_frame_strategy;
     int b_sensitivity;
     int brd_scale;
+
+    /* bit rate control */
+    int64_t total_bits;
+    int frame_bits;                ///< bits used for the current frame
+    int stuffing_bits;             ///< bits used for stuffing
+    int next_lambda;               ///< next lambda used for retrying to encode a frame
+    RateControlContext rc_context; ///< contains stuff only accessed in ratecontrol.c
 } MPVMainEncContext;
 
 #define MAX_FCODE        7
@@ -94,7 +102,7 @@ typedef struct MPVMainEncContext {
 
 #define FF_MPV_OFFSET(x) offsetof(MpegEncContext, x)
 #define FF_MPV_MAIN_OFFSET(x) offsetof(MPVMainEncContext, x)
-#define FF_RC_OFFSET(x)  offsetof(MpegEncContext, rc_context.x)
+#define FF_RC_OFFSET(x)  offsetof(MPVMainEncContext, rc_context.x)
 #define FF_MPV_OPT_FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 #define FF_MPV_COMMON_OPTS \
 FF_MPV_OPT_CMP_FUNC, \

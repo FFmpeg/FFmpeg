@@ -84,7 +84,7 @@
 #define QMAT_SHIFT_MMX 16
 #define QMAT_SHIFT 21
 
-static int encode_picture(MpegEncContext *s, const AVPacket *pkt);
+static int encode_picture(MPVMainEncContext *const s, const AVPacket *pkt);
 static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
 static void denoise_dct_c(MpegEncContext *s, int16_t *block);
@@ -1008,7 +1008,8 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 #endif
     }
 
-    if ((ret = ff_rate_control_init(s)) < 0)
+    ret = ff_rate_control_init(m);
+    if (ret < 0)
         return ret;
 
     if (m->b_frame_strategy == 2) {
@@ -1043,7 +1044,7 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     MPVMainEncContext *const m = avctx->priv_data;
     MpegEncContext    *const s = &m->s;
 
-    ff_rate_control_uninit(&s->rc_context);
+    ff_rate_control_uninit(&m->rc_context);
 
     ff_mpv_common_end(s);
     av_refstruct_pool_uninit(&s->picture_pool);
@@ -1622,7 +1623,7 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
             // FIXME check that the gop check above is +-1 correct
             av_refstruct_unref(&s->input_picture[0]);
 
-            ff_vbv_update(s, 0);
+            ff_vbv_update(m, 0);
 
             return 0;
         }
@@ -1642,15 +1643,15 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
             for (int i = 0; i < s->max_b_frames + 1; i++) {
                 int pict_num = s->input_picture[0]->display_picture_number + i;
 
-                if (pict_num >= s->rc_context.num_entries)
+                if (pict_num >= m->rc_context.num_entries)
                     break;
                 if (!s->input_picture[i]) {
-                    s->rc_context.entry[pict_num - 1].new_pict_type = AV_PICTURE_TYPE_P;
+                    m->rc_context.entry[pict_num - 1].new_pict_type = AV_PICTURE_TYPE_P;
                     break;
                 }
 
                 s->input_picture[i]->f->pict_type =
-                    s->rc_context.entry[pict_num].new_pict_type;
+                    m->rc_context.entry[pict_num].new_pict_type;
             }
         }
 
@@ -1918,7 +1919,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         //emms_c();
         frame_start(s);
 vbv_retry:
-        ret = encode_picture(s, pkt);
+        ret = encode_picture(m, pkt);
         if (growing_buffer) {
             av_assert0(s->pb.buf == avctx->internal->byte_buffer);
             pkt->data = s->pb.buf;
@@ -1933,14 +1934,14 @@ vbv_retry:
             ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);
 
         if (avctx->rc_buffer_size) {
-            RateControlContext *rcc = &s->rc_context;
+            RateControlContext *rcc = &m->rc_context;
             int max_size = FFMAX(rcc->buffer_index * avctx->rc_max_available_vbv_use, rcc->buffer_index - 500);
             int hq = (avctx->mb_decision == FF_MB_DECISION_RD || avctx->trellis);
             int min_step = hq ? 1 : (1<<(FF_LAMBDA_SHIFT + 7))/139;
 
             if (put_bits_count(&s->pb) > max_size &&
                 s->lambda < s->lmax) {
-                s->next_lambda = FFMAX(s->lambda + min_step, s->lambda *
+                m->next_lambda = FFMAX(s->lambda + min_step, s->lambda *
                                        (s->qscale + 1) / s->qscale);
                 if (s->adaptive_quant) {
                     int i;
@@ -1968,7 +1969,7 @@ vbv_retry:
         }
 
         if (avctx->flags & AV_CODEC_FLAG_PASS1)
-            ff_write_pass1_stats(s);
+            ff_write_pass1_stats(m);
 
         for (int i = 0; i < MPV_MAX_PLANES; i++)
             avctx->error[i] += s->encoding_error[i];
@@ -1982,10 +1983,10 @@ vbv_retry:
                                              s->misc_bits + s->i_tex_bits +
                                              s->p_tex_bits);
         flush_put_bits(&s->pb);
-        s->frame_bits  = put_bits_count(&s->pb);
+        m->frame_bits  = put_bits_count(&s->pb);
 
-        stuffing_count = ff_vbv_update(s, s->frame_bits);
-        s->stuffing_bits = 8*stuffing_count;
+        stuffing_count = ff_vbv_update(m, m->frame_bits);
+        m->stuffing_bits = 8*stuffing_count;
         if (stuffing_count) {
             if (put_bytes_left(&s->pb, 0) < stuffing_count + 50) {
                 av_log(avctx, AV_LOG_ERROR, "stuffing too large\n");
@@ -2009,10 +2010,10 @@ vbv_retry:
             break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
-                s->stuffing_bits = 0;
+                m->stuffing_bits = 0;
             }
             flush_put_bits(&s->pb);
-            s->frame_bits  = put_bits_count(&s->pb);
+            m->frame_bits  = put_bits_count(&s->pb);
         }
 
         /* update MPEG-1/2 vbv_delay for CBR */
@@ -2027,9 +2028,9 @@ vbv_retry:
             int vbv_delay, min_delay;
             double inbits  = avctx->rc_max_rate *
                              av_q2d(avctx->time_base);
-            int    minbits = s->frame_bits - 8 *
+            int    minbits = m->frame_bits - 8 *
                              (s->vbv_delay_pos - 1);
-            double bits    = s->rc_context.buffer_index + minbits - inbits;
+            double bits    = m->rc_context.buffer_index + minbits - inbits;
             uint8_t *const vbv_delay_ptr = s->pb.buf + s->vbv_delay_pos;
 
             if (bits < 0)
@@ -2064,7 +2065,7 @@ vbv_retry:
                 return ret;
             }
         }
-        s->total_bits     += s->frame_bits;
+        m->total_bits += m->frame_bits;
 
         pkt->pts = s->cur_pic.ptr->f->pts;
         pkt->duration = s->cur_pic.ptr->f->duration;
@@ -2089,14 +2090,14 @@ vbv_retry:
         if (s->mb_info)
             av_packet_shrink_side_data(pkt, AV_PKT_DATA_H263_MB_INFO, s->mb_info_size);
     } else {
-        s->frame_bits = 0;
+        m->frame_bits = 0;
     }
 
     ff_mpv_unref_picture(&s->cur_pic);
 
-    av_assert1((s->frame_bits & 7) == 0);
+    av_assert1((m->frame_bits & 7) == 0);
 
-    pkt->size = s->frame_bits / 8;
+    pkt->size = m->frame_bits / 8;
     *got_packet = !!pkt->size;
     return 0;
 }
@@ -3611,12 +3612,15 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     flush_put_bits(&dst->pb);
 }
 
-static int estimate_qp(MpegEncContext *s, int dry_run){
-    if (s->next_lambda){
-        s->cur_pic.ptr->f->quality = s->next_lambda;
-        if(!dry_run) s->next_lambda= 0;
+static int estimate_qp(MPVMainEncContext *const m, int dry_run)
+{
+    MpegEncContext *const s = &m->s;
+
+    if (m->next_lambda){
+        s->cur_pic.ptr->f->quality = m->next_lambda;
+        if(!dry_run) m->next_lambda= 0;
     } else if (!s->fixed_qscale) {
-        int quality = ff_rate_estimate_qscale(s, dry_run);
+        int quality = ff_rate_estimate_qscale(m, dry_run);
         s->cur_pic.ptr->f->quality = quality;
         if (s->cur_pic.ptr->f->quality < 0)
             return -1;
@@ -3661,8 +3665,9 @@ static void set_frame_distances(MpegEncContext * s){
     }
 }
 
-static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
+static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 {
+    MpegEncContext *const s = &m->s;
     int i, ret;
     int bits;
     int context_count = s->slice_context_count;
@@ -3689,9 +3694,10 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
     }
 
     if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
-        if (estimate_qp(s,1) < 0)
-            return -1;
-        ff_get_2pass_fcode(s);
+        ret = estimate_qp(m, 1);
+        if (ret < 0)
+            return ret;
+        ff_get_2pass_fcode(m);
     } else if (!(s->avctx->flags & AV_CODEC_FLAG_QSCALE)) {
         if(s->pict_type==AV_PICTURE_TYPE_B)
             s->lambda= s->last_lambda_for[s->pict_type];
@@ -3814,8 +3820,9 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         }
     }
 
-    if (estimate_qp(s, 0) < 0)
-        return -1;
+    ret = estimate_qp(m, 0);
+    if (ret < 0)
+        return ret;
 
     if (s->qscale < 3 && s->max_qcoeff <= 128 &&
         s->pict_type == AV_PICTURE_TYPE_I &&

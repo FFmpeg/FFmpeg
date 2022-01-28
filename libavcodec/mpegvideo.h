@@ -42,7 +42,6 @@
 #include "mpegvideoencdsp.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"
-#include "ratecontrol.h"
 #include "qpeldsp.h"
 #include "videodsp.h"
 
@@ -326,13 +325,6 @@ typedef struct MpegEncContext {
     int (*dct_error_sum)[64];
     int dct_count[2];
     uint16_t (*dct_offset)[64];
-
-    /* bit rate control */
-    int64_t total_bits;
-    int frame_bits;                ///< bits used for the current frame
-    int stuffing_bits;             ///< bits used for stuffing
-    int next_lambda;               ///< next lambda used for retrying to encode a frame
-    RateControlContext rc_context; ///< contains stuff only accessed in ratecontrol.c
 
     /* statistics, used for 2-pass encoding */
     int mv_bits;
