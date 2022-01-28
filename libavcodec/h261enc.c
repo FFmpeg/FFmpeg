@@ -141,13 +141,12 @@ void ff_h261_reorder_mb_index(MpegEncContext *s)
     }
 }
 
-static void h261_encode_motion(H261EncContext *h, int val)
+static void h261_encode_motion(PutBitContext *pb, int val)
 {
-    MpegEncContext *const s = &h->s;
     int sign, code;
     if (val == 0) {
         code = 0;
-        put_bits(&s->pb, ff_h261_mv_tab[code][1], ff_h261_mv_tab[code][0]);
+        put_bits(pb, ff_h261_mv_tab[code][1], ff_h261_mv_tab[code][0]);
     } else {
         if (val > 15)
             val -= 32;
@@ -155,8 +154,8 @@ static void h261_encode_motion(H261EncContext *h, int val)
             val += 32;
         sign = val < 0;
         code = sign ? -val : val;
-        put_bits(&s->pb, ff_h261_mv_tab[code][1], ff_h261_mv_tab[code][0]);
-        put_bits(&s->pb, 1, sign);
+        put_bits(pb, ff_h261_mv_tab[code][1], ff_h261_mv_tab[code][0]);
+        put_bits(pb, 1, sign);
     }
 }
 
@@ -314,8 +313,8 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
         mv_diff_y       = (motion_y >> 1) - s->last_mv[0][0][1];
         s->last_mv[0][0][0] = (motion_x >> 1);
         s->last_mv[0][0][1] = (motion_y >> 1);
-        h261_encode_motion(h, mv_diff_x);
-        h261_encode_motion(h, mv_diff_y);
+        h261_encode_motion(&s->pb, mv_diff_x);
+        h261_encode_motion(&s->pb, mv_diff_y);
     }
 
     if (HAS_CBP(com->mtype)) {
