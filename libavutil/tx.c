@@ -606,7 +606,7 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
             break;
     }
 
-    av_free(sub);
+    av_freep(&s->sub);
 
 end:
     av_free(cd_matches);
