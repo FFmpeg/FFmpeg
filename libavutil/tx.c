@@ -565,8 +565,13 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
         print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 1);
     }
 
-    if (!s->sub)
+    if (!s->sub) {
         s->sub = sub = av_mallocz(TX_MAX_SUB*sizeof(*sub));
+        if (!sub) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+    }
 
     /* Attempt to initialize each */
     for (int i = 0; i < nb_cd_matches; i++) {
