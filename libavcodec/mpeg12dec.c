@@ -39,6 +39,7 @@
 #include "error_resilience.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
+#include "internal.h"
 #include "mpeg_er.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"

@@ -26,6 +26,7 @@
  */
 
 #include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "put_bits.h"
 #include "rv10enc.h"
 

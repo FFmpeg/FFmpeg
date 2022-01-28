@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "nvdec.h"
 #include "decode.h"
 #include "vc1.h"

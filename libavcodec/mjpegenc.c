@@ -39,6 +39,7 @@
 #include "mpegvideo.h"
 #include "mjpeg.h"
 #include "mjpegenc.h"
+#include "mpegvideoenc.h"
 #include "profiles.h"
 
 /* The following is the private context of MJPEG/AMV decoder.

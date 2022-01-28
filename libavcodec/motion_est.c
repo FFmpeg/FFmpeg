@@ -35,7 +35,7 @@
 #include "mathops.h"
 #include "motion_est.h"
 #include "mpegutils.h"
-#include "mpegvideo.h"
+#include "mpegvideoenc.h"
 
 #define P_LEFT P[1]
 #define P_TOP P[2]

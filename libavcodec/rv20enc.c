@@ -27,6 +27,7 @@
 
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
+#include "mpegvideoenc.h"
 #include "h263data.h"
 #include "h263enc.h"
 #include "put_bits.h"

@@ -43,6 +43,7 @@
 #include "mpeg12enc.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "profiles.h"
 
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER

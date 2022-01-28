@@ -31,6 +31,7 @@
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "mpeg4videoenc.h"
+#include "mpegvideoenc.h"
 #include "profiles.h"
 
 /* The uni_DCtab_* tables below contain unified bits+length tables to encode DC

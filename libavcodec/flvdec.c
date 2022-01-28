@@ -22,6 +22,7 @@
 
 #include "flvdec.h"
 #include "h263dec.h"
+#include "internal.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 

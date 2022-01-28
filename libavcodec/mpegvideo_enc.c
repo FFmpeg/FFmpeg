@@ -49,6 +49,7 @@
 #include "mpeg12enc.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
+#include "mpegvideoenc.h"
 #include "h261enc.h"
 #include "h263.h"
 #include "h263data.h"

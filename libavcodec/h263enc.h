@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 #include "h263data.h"
-#include "mpegvideo.h"
+#include "mpegvideoenc.h"
 
 void ff_h263_encode_init(MpegEncContext *s);
 void ff_h263_encode_picture_header(MpegEncContext *s, int picture_number);

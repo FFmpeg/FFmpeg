@@ -31,7 +31,7 @@
 #include "avcodec.h"
 #include "ratecontrol.h"
 #include "mpegutils.h"
-#include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "libavutil/eval.h"
 
 void ff_write_pass1_stats(MpegEncContext *s)

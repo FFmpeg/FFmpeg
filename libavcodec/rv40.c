@@ -29,6 +29,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "golomb.h"

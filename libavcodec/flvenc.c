@@ -22,6 +22,7 @@
 #include "h263data.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
+#include "mpegvideoenc.h"
 
 void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number)
 {

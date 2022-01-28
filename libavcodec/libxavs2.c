@@ -24,8 +24,10 @@
 
 #include "xavs2.h"
 #include "encode.h"
+#include "internal.h"
 #include "mpeg12.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 #define xavs2_opt_set2(name, format, ...) do{ \
     char opt_str[16] = {0}; \

@@ -39,7 +39,6 @@
 #include "h263dsp.h"
 #include "hpeldsp.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "me_cmp.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
@@ -54,10 +53,7 @@
 #endif
 #include "mpegutils.h"
 #include "qpeldsp.h"
-#include "rl.h"
 #include "videodsp.h"
-
-#include "libavutil/opt.h"
 
 #define MAX_THREADS 32
 
@@ -302,7 +298,6 @@ typedef struct MpegEncContext {
     uint8_t *inter_ac_vlc_length;
     uint8_t *inter_ac_vlc_last_length;
     uint8_t *luma_dc_vlc_length;
-#define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
 
     int coded_score[12];
 
@@ -558,101 +553,6 @@ typedef struct MpegEncContext {
 #endif
 } MpegEncContext;
 
-/* mpegvideo_enc common options */
-#define FF_MPV_FLAG_SKIP_RD      0x0001
-#define FF_MPV_FLAG_STRICT_GOP   0x0002
-#define FF_MPV_FLAG_QP_RD        0x0004
-#define FF_MPV_FLAG_CBP_RD       0x0008
-#define FF_MPV_FLAG_NAQ          0x0010
-#define FF_MPV_FLAG_MV0          0x0020
-
-#define FF_MPV_OPT_CMP_FUNC \
-{ "sad",    "Sum of absolute differences, fast", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "sse",    "Sum of squared errors", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "satd",   "Sum of absolute Hadamard transformed differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SATD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "dct",    "Sum of absolute DCT transformed differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCT }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "psnr",   "Sum of squared quantization errors, low quality", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_PSNR }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "bit",    "Number of bits needed for the block", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_BIT }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "rd",     "Rate distortion optimal, slow", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_RD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "zero",   "Zero", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_ZERO }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "vsad",   "Sum of absolute vertical differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_VSAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "vsse",   "Sum of squared vertical differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_VSSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "nsse",   "Noise preserving sum of squared differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_NSSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "dct264", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCT264 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "dctmax", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_CHROMA }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{ "msad",   "Sum of absolute differences, median predicted", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_MEDIAN_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }
-
-#ifndef FF_MPV_OFFSET
-#define FF_MPV_OFFSET(x) offsetof(MpegEncContext, x)
-#endif
-#define FF_MPV_OPT_FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
-#define FF_MPV_COMMON_OPTS \
-FF_MPV_OPT_CMP_FUNC, \
-{ "mpv_flags",      "Flags common for all mpegvideo-based encoders.", FF_MPV_OFFSET(mpv_flags), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "skip_rd",        "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_SKIP_RD },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "strict_gop",     "Strictly enforce gop size",             0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_STRICT_GOP }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "qp_rd",          "Use rate distortion optimization for qp selection", 0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_QP_RD },  0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "cbp_rd",         "use rate distortion optimization for CBP",          0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_CBP_RD }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "naq",            "normalize adaptive quantization",                   0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_NAQ },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "mv0",            "always try a mb with mv=<0,0>",                     0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_MV0 },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
-{ "luma_elim_threshold",   "single coefficient elimination threshold for luminance (negative values also consider dc coefficient)",\
-                                                                      FF_MPV_OFFSET(luma_elim_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
-{ "chroma_elim_threshold", "single coefficient elimination threshold for chrominance (negative values also consider dc coefficient)",\
-                                                                      FF_MPV_OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
-{ "quantizer_noise_shaping", NULL,                                  FF_MPV_OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
-{ "error_rate", "Simulate errors in the bitstream to test error concealment.",                                                                                                  \
-                                                                    FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
-{"qsquish", "how to keep quantizer between qmin and qmax (0 = clip, 1 = use differentiable function)",                                                                          \
-                                                                    FF_MPV_OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, 99, FF_MPV_OPT_FLAGS},                        \
-{"rc_qmod_amp", "experimental quantizer modulation",                FF_MPV_OFFSET(rc_qmod_amp), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},           \
-{"rc_qmod_freq", "experimental quantizer modulation",               FF_MPV_OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS},             \
-{"rc_eq", "Set rate control equation. When computing the expression, besides the standard functions "                                                                           \
-          "defined in the section 'Expression Evaluation', the following functions are available: "                                                                             \
-          "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "                                                                           \
-          "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",                                                                         \
-                                                                    FF_MPV_OFFSET(rc_eq), AV_OPT_TYPE_STRING,                           .flags = FF_MPV_OPT_FLAGS },            \
-{"rc_init_cplx", "initial complexity for 1-pass encoding",          FF_MPV_OFFSET(rc_initial_cplx), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},       \
-{"rc_buf_aggressivity", "currently useless",                        FF_MPV_OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS}, \
-{"border_mask", "increase the quantizer for macroblocks close to borders", FF_MPV_OFFSET(border_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},    \
-{"lmin", "minimum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmin), AV_OPT_TYPE_INT, {.i64 =  2*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
-{"lmax", "maximum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 = 31*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
-{"ibias", "intra quant bias",                                       FF_MPV_OFFSET(intra_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
-{"pbias", "inter quant bias",                                       FF_MPV_OFFSET(inter_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
-{"motion_est", "motion estimation algorithm",                       FF_MPV_OFFSET(motion_est), AV_OPT_TYPE_INT, {.i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, FF_MPV_OPT_FLAGS, "motion_est" },   \
-{ "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
-{ "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
-{ "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
-{"skip_threshold", "Frame skip threshold",                          FF_MPV_OFFSET(frame_skip_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"skip_factor", "Frame skip factor",                                FF_MPV_OFFSET(frame_skip_factor), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"skip_exp", "Frame skip exponent",                                 FF_MPV_OFFSET(frame_skip_exp), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"skip_cmp", "Frame skip compare function",                         FF_MPV_OFFSET(frame_skip_cmp), AV_OPT_TYPE_INT, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
-{"sc_threshold", "Scene change threshold",                          FF_MPV_OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"noise_reduction", "Noise reduction",                              FF_MPV_OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"ps", "RTP payload size in bytes",                             FF_MPV_OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"mepc", "Motion estimation bitrate penalty compensation (1.0 = 256)", FF_MPV_OFFSET(me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"mepre", "pre motion estimation", FF_MPV_OFFSET(me_pre), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"intra_penalty", "Penalty for intra blocks in block decision", FF_MPV_OFFSET(intra_penalty), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX/2, FF_MPV_OPT_FLAGS }, \
-
-#define FF_MPV_COMMON_BFRAME_OPTS \
-{"b_strategy", "Strategy to choose between I/P/B-frames",      FF_MPV_OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, FF_MPV_OPT_FLAGS }, \
-{"b_sensitivity", "Adjust sensitivity of b_frame_strategy 1",  FF_MPV_OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.i64 = 40 }, 1, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"brd_scale", "Downscale frames for dynamic B-frame decision", FF_MPV_OFFSET(brd_scale), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 3, FF_MPV_OPT_FLAGS },
-
-#if FF_API_MPEGVIDEO_OPTS
-#define FF_MPV_DEPRECATED_MPEG_QUANT_OPT \
-    { "mpeg_quant", "Deprecated, does nothing", FF_MPV_OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#define FF_MPV_DEPRECATED_A53_CC_OPT \
-    { "a53cc",      "Deprecated, does nothing", FF_MPV_OFFSET(dummy),      AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#define FF_MPV_DEPRECATED_MATRIX_OPT \
-   { "force_duplicated_matrix", "Deprecated, does nothing", FF_MPV_OFFSET(dummy), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#define FF_MPV_DEPRECATED_BFRAME_OPTS \
-   { "b_strategy",    "Deprecated, does nothing", FF_MPV_OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 2, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED }, \
-   { "b_sensitivity", "Deprecated, does nothing", FF_MPV_OFFSET(b_sensitivity),    AV_OPT_TYPE_INT, { .i64 = 40 }, 1, INT_MAX, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED }, \
-   { "brd_scale",     "Deprecated, does nothing", FF_MPV_OFFSET(brd_scale),        AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 3, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#endif
-
-extern const AVClass ff_mpv_enc_class;
 
 /**
  * Set the given MpegEncContext to common defaults (same for encoding
@@ -660,8 +560,6 @@ extern const AVClass ff_mpv_enc_class;
  * state of the MpegEncContext.
  */
 void ff_mpv_common_defaults(MpegEncContext *s);
-
-void ff_dct_encode_init_x86(MpegEncContext *s);
 
 int ff_mpv_common_init(MpegEncContext *s);
 void ff_mpv_common_init_arm(MpegEncContext *s);
@@ -703,14 +601,6 @@ void ff_mpv_report_decode_progress(MpegEncContext *s);
 int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
 void ff_mpv_frame_end(MpegEncContext *s);
 
-int ff_mpv_encode_init(AVCodecContext *avctx);
-void ff_mpv_encode_init_x86(MpegEncContext *s);
-
-int ff_mpv_encode_end(AVCodecContext *avctx);
-int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
-                          const AVFrame *frame, int *got_packet);
-int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t size_increase);
-
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
@@ -719,19 +609,11 @@ void ff_print_debug_info(MpegEncContext *s, Picture *p, AVFrame *pict);
 
 int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_type);
 
-void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
-
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
 void ff_mpv_idct_init(MpegEncContext *s);
-int ff_dct_encode_init(MpegEncContext *s);
-void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
-                       const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
-int ff_dct_quantize_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
-void ff_block_permute(int16_t *block, uint8_t *permutation,
-                      const uint8_t *scantable, int last);
 void ff_init_block_index(MpegEncContext *s);
 
 void ff_mpv_motion(MpegEncContext *s,
@@ -754,15 +636,6 @@ static inline void ff_update_block_index(MpegEncContext *s){
     s->dest[0]+= 2*block_size;
     s->dest[1]+= (2 >> s->chroma_x_shift) * block_size;
     s->dest[2]+= (2 >> s->chroma_x_shift) * block_size;
-}
-
-static inline int get_bits_diff(MpegEncContext *s){
-    const int bits= put_bits_count(&s->pb);
-    const int last= s->last_bits;
-
-    s->last_bits = bits;
-
-    return bits - last;
 }
 
 static inline int mpeg_get_qscale(MpegEncContext *s)

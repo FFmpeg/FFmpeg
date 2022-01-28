@@ -27,7 +27,7 @@
 #include "copy_block.h"
 #include "simple_idct.h"
 #include "me_cmp.h"
-#include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "config.h"
 
 /* (i - 256) * (i - 256) */

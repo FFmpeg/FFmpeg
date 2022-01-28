@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "h263.h"
 #include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "msmpeg4.h"
 #include "msmpeg4enc.h"
 #include "msmpeg4data.h"
