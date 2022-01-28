@@ -1217,7 +1217,6 @@ static int encode_frame(AVCodecContext *c, AVFrame *frame, AVPacket *pkt)
 
 static int estimate_best_b_count(MpegEncContext *s)
 {
-    const AVCodec *codec = avcodec_find_encoder(s->avctx->codec_id);
     AVPacket *pkt;
     const int scale = s->brd_scale;
     int width  = s->width  >> scale;
@@ -1301,7 +1300,7 @@ static int estimate_best_b_count(MpegEncContext *s)
         c->time_base    = s->avctx->time_base;
         c->max_b_frames = s->max_b_frames;
 
-        ret = avcodec_open2(c, codec, NULL);
+        ret = avcodec_open2(c, s->avctx->codec, NULL);
         if (ret < 0)
             goto fail;
 
