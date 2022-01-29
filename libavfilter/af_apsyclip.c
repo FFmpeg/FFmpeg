@@ -87,7 +87,7 @@ static void generate_hann_window(float *window, float *inv_window, int size)
 
         window[i] = value;
         // 1/window to calculate unwindowed peak.
-        inv_window[i] = value > 0.01f ? 1.f / value : 0.f;
+        inv_window[i] = value > 0.1f ? 1.f / value : 0.f;
     }
 }
 
