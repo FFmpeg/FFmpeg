@@ -90,6 +90,7 @@ typedef struct Mpeg1Context {
     int tmpgexs;
     int first_slice;
     int extradata_decoded;
+    int vbv_delay;
     int64_t timecode_frame_start;  /*< GOP timecode frame start number, in non drop frame format */
 } Mpeg1Context;
 
@@ -953,7 +954,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             (s->bit_rate != 0x3FFFF*400)) {
             avctx->rc_max_rate = s->bit_rate;
         } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && s->bit_rate &&
-                   (s->bit_rate != 0x3FFFF*400 || s->vbv_delay != 0xFFFF)) {
+                   (s->bit_rate != 0x3FFFF*400 || s1->vbv_delay != 0xFFFF)) {
             avctx->bit_rate = s->bit_rate;
         }
         s1->save_aspect          = s->avctx->sample_aspect_ratio;
@@ -1024,7 +1025,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
 
     vbv_delay = get_bits(&s->gb, 16);
-    s->vbv_delay = vbv_delay;
+    s1->vbv_delay = vbv_delay;
     if (s->pict_type == AV_PICTURE_TYPE_P ||
         s->pict_type == AV_PICTURE_TYPE_B) {
         s->full_pel[0] = get_bits1(&s->gb);
