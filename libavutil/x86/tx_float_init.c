@@ -100,11 +100,11 @@ DECL_CD_DEF(fft_sr_ns_float_avx, FFT, 64, 131072, 2, 0, fft_sr_codelet_init_b8_i
 
 #if HAVE_AVX2_EXTERNAL
 DECL_CD_DEF(fft_sr_float_avx2, FFT, 64, 131072, 2, 0, fft_sr_codelet_init_b8_i2,
-            288, AV_CPU_FLAG_AVX2,
+            288, AV_CPU_FLAG_AVX2 | AV_CPU_FLAG_AVXSLOW,
             FF_TX_OUT_OF_PLACE)
 
 DECL_CD_DEF(fft_sr_ns_float_avx2, FFT, 64, 131072, 2, 0, fft_sr_codelet_init_b8_i2,
-            352, AV_CPU_FLAG_AVX2,
+            352, AV_CPU_FLAG_AVX2 | AV_CPU_FLAG_AVXSLOW,
             FF_TX_OUT_OF_PLACE | AV_TX_INPLACE | FF_TX_PRESHUFFLE)
 #endif
 #endif
