@@ -134,7 +134,7 @@ int ff_qsv_get_surface_base_handle(mfxFrameSurface1 *surf,
 #if CONFIG_D3D11VA
     case AV_HWDEVICE_TYPE_D3D11VA:
         base_handle[0] = handle_pair->first;
-        base_handle[1] = handle_pair->secode;
+        base_handle[1] = handle_pair->second;
         return 0;
 #endif
 #if CONFIG_DXVA2
