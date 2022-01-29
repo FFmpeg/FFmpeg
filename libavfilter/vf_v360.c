@@ -3479,7 +3479,7 @@ static int xyz_to_dfisheye(const V360Context *s,
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            us[i][j] = av_clip(u_shift + ui + j - 1, 0, width  - 1);
+            us[i][j] = u_shift + av_clip(ui + j - 1, 0, ew - 1);
             vs[i][j] = av_clip(          vi + i - 1, 0, height - 1);
         }
     }
