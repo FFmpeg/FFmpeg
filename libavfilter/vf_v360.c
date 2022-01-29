@@ -2941,8 +2941,8 @@ static int xyz_to_fisheye(const V360Context *s,
     const int visible = -0.5f < uf && uf < 0.5f && -0.5f < vf && vf < 0.5f;
     int ui, vi;
 
-    uf = (uf + 0.5f) * width;
-    vf = (vf + 0.5f) * height;
+    uf = scale(uf * 2.f, width);
+    vf = scale(vf * 2.f, height);
 
     ui = floorf(uf);
     vi = floorf(vf);
