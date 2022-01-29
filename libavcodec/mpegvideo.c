@@ -566,61 +566,13 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
 
     s->mb_index2xy[s->mb_height * s->mb_width] = (s->mb_height - 1) * s->mb_stride + s->mb_width; // FIXME really needed?
 
-    if (s->encoding) {
-        /* Allocate MV tables */
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->p_mv_table_base,            mv_table_size) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->b_forw_mv_table_base,       mv_table_size) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->b_back_mv_table_base,       mv_table_size) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->b_bidir_forw_mv_table_base, mv_table_size) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->b_bidir_back_mv_table_base, mv_table_size) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->b_direct_mv_table_base,     mv_table_size))
-            return AVERROR(ENOMEM);
-        s->p_mv_table            = s->p_mv_table_base + s->mb_stride + 1;
-        s->b_forw_mv_table       = s->b_forw_mv_table_base + s->mb_stride + 1;
-        s->b_back_mv_table       = s->b_back_mv_table_base + s->mb_stride + 1;
-        s->b_bidir_forw_mv_table = s->b_bidir_forw_mv_table_base + s->mb_stride + 1;
-        s->b_bidir_back_mv_table = s->b_bidir_back_mv_table_base + s->mb_stride + 1;
-        s->b_direct_mv_table     = s->b_direct_mv_table_base + s->mb_stride + 1;
-
-        /* Allocate MB type table */
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->mb_type,      mb_array_size) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->lambda_table, mb_array_size) ||
-            !FF_ALLOC_TYPED_ARRAY (s->cplx_tab,     mb_array_size) ||
-            !FF_ALLOC_TYPED_ARRAY (s->bits_tab,     mb_array_size))
-            return AVERROR(ENOMEM);
-
-#define ALLOCZ_ARRAYS(p, mult, numb) ((p) = av_calloc(numb, mult * sizeof(*(p))))
-        if (s->codec_id == AV_CODEC_ID_MPEG4 ||
-            (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
-            int16_t (*tmp1)[2];
-            uint8_t *tmp2;
-            if (!(tmp1 = ALLOCZ_ARRAYS(s->b_field_mv_table_base, 8, mv_table_size)) ||
-                !(tmp2 = ALLOCZ_ARRAYS(s->b_field_select_table[0][0], 2 * 4, mv_table_size)) ||
-                !ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * 2, mv_table_size))
-                return AVERROR(ENOMEM);
-
-            s->p_field_select_table[1] = s->p_field_select_table[0] + 2 * mv_table_size;
-            tmp1 += s->mb_stride + 1;
-
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 2; j++) {
-                    for (int k = 0; k < 2; k++) {
-                        s->b_field_mv_table[i][j][k] = tmp1;
-                        tmp1 += mv_table_size;
-                    }
-                    s->b_field_select_table[i][j] = tmp2;
-                    tmp2 += 2 * mv_table_size;
-                }
-            }
-        }
-    }
-
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
-        int16_t (*tmp)[2];
         /* interlaced direct mode decoding tables */
-        if (!(tmp = ALLOCZ_ARRAYS(s->p_field_mv_table_base, 4, mv_table_size)))
+        int16_t (*tmp)[2] = av_calloc(mv_table_size, 4 * sizeof(*tmp));
+        if (!tmp)
             return AVERROR(ENOMEM);
+        s->p_field_mv_table_base = tmp;
         tmp += s->mb_stride + 1;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
@@ -663,8 +615,6 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
 
 static void clear_context(MpegEncContext *s)
 {
-    int i, j, k;
-
     memset(&s->next_picture, 0, sizeof(s->next_picture));
     memset(&s->last_picture, 0, sizeof(s->last_picture));
     memset(&s->current_picture, 0, sizeof(s->current_picture));
@@ -693,31 +643,10 @@ static void clear_context(MpegEncContext *s)
     s->bitstream_buffer = NULL;
     s->allocated_bitstream_buffer_size = 0;
     s->picture          = NULL;
-    s->mb_type          = NULL;
-    s->p_mv_table_base  = NULL;
-    s->b_forw_mv_table_base = NULL;
-    s->b_back_mv_table_base = NULL;
-    s->b_bidir_forw_mv_table_base = NULL;
-    s->b_bidir_back_mv_table_base = NULL;
-    s->b_direct_mv_table_base = NULL;
-    s->p_mv_table            = NULL;
-    s->b_forw_mv_table       = NULL;
-    s->b_back_mv_table       = NULL;
-    s->b_bidir_forw_mv_table = NULL;
-    s->b_bidir_back_mv_table = NULL;
-    s->b_direct_mv_table     = NULL;
-    s->b_field_mv_table_base = NULL;
     s->p_field_mv_table_base = NULL;
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 2; j++) {
-            for (k = 0; k < 2; k++) {
-                s->b_field_mv_table[i][j][k] = NULL;
-            }
-            s->b_field_select_table[i][j] = NULL;
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
             s->p_field_mv_table[i][j] = NULL;
-        }
-        s->p_field_select_table[i] = NULL;
-    }
 
     s->dc_val_base = NULL;
     s->coded_block_base = NULL;
@@ -730,10 +659,6 @@ static void clear_context(MpegEncContext *s)
     s->er.error_status_table = NULL;
     s->er.er_temp_buffer = NULL;
     s->mb_index2xy = NULL;
-    s->lambda_table = NULL;
-
-    s->cplx_tab = NULL;
-    s->bits_tab = NULL;
 }
 
 /**
@@ -824,37 +749,12 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
 
 void ff_mpv_free_context_frame(MpegEncContext *s)
 {
-    int i, j, k;
-
     free_duplicate_contexts(s);
 
-    av_freep(&s->mb_type);
-    av_freep(&s->p_mv_table_base);
-    av_freep(&s->b_forw_mv_table_base);
-    av_freep(&s->b_back_mv_table_base);
-    av_freep(&s->b_bidir_forw_mv_table_base);
-    av_freep(&s->b_bidir_back_mv_table_base);
-    av_freep(&s->b_direct_mv_table_base);
-    s->p_mv_table            = NULL;
-    s->b_forw_mv_table       = NULL;
-    s->b_back_mv_table       = NULL;
-    s->b_bidir_forw_mv_table = NULL;
-    s->b_bidir_back_mv_table = NULL;
-    s->b_direct_mv_table     = NULL;
-    av_freep(&s->b_field_mv_table_base);
-    av_freep(&s->b_field_select_table[0][0]);
     av_freep(&s->p_field_mv_table_base);
-    av_freep(&s->p_field_select_table[0]);
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 2; j++) {
-            for (k = 0; k < 2; k++) {
-                s->b_field_mv_table[i][j][k] = NULL;
-            }
-            s->b_field_select_table[i][j] = NULL;
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
             s->p_field_mv_table[i][j] = NULL;
-        }
-        s->p_field_select_table[i] = NULL;
-    }
 
     av_freep(&s->dc_val_base);
     av_freep(&s->coded_block_base);
@@ -867,10 +767,6 @@ void ff_mpv_free_context_frame(MpegEncContext *s)
     av_freep(&s->er.error_status_table);
     av_freep(&s->er.er_temp_buffer);
     av_freep(&s->mb_index2xy);
-    av_freep(&s->lambda_table);
-
-    av_freep(&s->cplx_tab);
-    av_freep(&s->bits_tab);
 
     s->linesize = s->uvlinesize = 0;
 }

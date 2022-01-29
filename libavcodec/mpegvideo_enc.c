@@ -313,7 +313,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     AVCPBProperties *cpb_props;
     int i, ret;
-    int mb_array_size;
+    int mb_array_size, mv_table_size;
 
     mpv_encode_defaults(s);
 
@@ -824,11 +824,58 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_PICTURE_COUNT))
         return AVERROR(ENOMEM);
 
+    /* Allocate MV tables; the MV and MB tables will be copied
+     * to slice contexts by ff_update_duplicate_context().  */
+    mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->p_mv_table_base,            mv_table_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->b_forw_mv_table_base,       mv_table_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->b_back_mv_table_base,       mv_table_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->b_bidir_forw_mv_table_base, mv_table_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->b_bidir_back_mv_table_base, mv_table_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->b_direct_mv_table_base,     mv_table_size))
+        return AVERROR(ENOMEM);
+    s->p_mv_table            = s->p_mv_table_base + s->mb_stride + 1;
+    s->b_forw_mv_table       = s->b_forw_mv_table_base + s->mb_stride + 1;
+    s->b_back_mv_table       = s->b_back_mv_table_base + s->mb_stride + 1;
+    s->b_bidir_forw_mv_table = s->b_bidir_forw_mv_table_base + s->mb_stride + 1;
+    s->b_bidir_back_mv_table = s->b_bidir_back_mv_table_base + s->mb_stride + 1;
+    s->b_direct_mv_table     = s->b_direct_mv_table_base + s->mb_stride + 1;
+
+    /* Allocate MB type table */
     mb_array_size = s->mb_stride * s->mb_height;
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->mc_mb_var, mb_array_size) ||
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->mb_type,      mb_array_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->lambda_table, mb_array_size) ||
+        !FF_ALLOC_TYPED_ARRAY (s->cplx_tab,     mb_array_size) ||
+        !FF_ALLOC_TYPED_ARRAY (s->bits_tab,     mb_array_size) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->mc_mb_var,    mb_array_size) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->mb_var, mb_array_size) ||
         !(s->mb_mean = av_mallocz(mb_array_size)))
         return AVERROR(ENOMEM);
+
+#define ALLOCZ_ARRAYS(p, mult, numb) ((p) = av_calloc(numb, mult * sizeof(*(p))))
+    if (s->codec_id == AV_CODEC_ID_MPEG4 ||
+        (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
+        int16_t (*tmp1)[2];
+        uint8_t *tmp2;
+        if (!(tmp1 = ALLOCZ_ARRAYS(s->b_field_mv_table_base, 8, mv_table_size)) ||
+            !(tmp2 = ALLOCZ_ARRAYS(s->b_field_select_table[0][0], 2 * 4, mv_table_size)) ||
+            !ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * 2, mv_table_size))
+            return AVERROR(ENOMEM);
+
+        s->p_field_select_table[1] = s->p_field_select_table[0] + 2 * mv_table_size;
+        tmp1 += s->mb_stride + 1;
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    s->b_field_mv_table[i][j][k] = tmp1;
+                    tmp1 += mv_table_size;
+                }
+                s->b_field_select_table[i][j] = tmp2;
+                tmp2 += 2 * mv_table_size;
+            }
+        }
+    }
 
     if (s->noise_reduction) {
         if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
@@ -944,6 +991,22 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     av_frame_free(&s->new_picture);
 
     av_freep(&avctx->stats_out);
+
+    av_freep(&s->p_mv_table_base);
+    av_freep(&s->b_forw_mv_table_base);
+    av_freep(&s->b_back_mv_table_base);
+    av_freep(&s->b_bidir_forw_mv_table_base);
+    av_freep(&s->b_bidir_back_mv_table_base);
+    av_freep(&s->b_direct_mv_table_base);
+    av_freep(&s->b_field_mv_table_base);
+    av_freep(&s->b_field_select_table[0][0]);
+    av_freep(&s->p_field_select_table[0]);
+
+    av_freep(&s->mb_type);
+    av_freep(&s->lambda_table);
+
+    av_freep(&s->cplx_tab);
+    av_freep(&s->bits_tab);
 
     if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
     if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
