@@ -77,6 +77,7 @@ typedef struct MPVMainEncContext {
     /* bit rate control */
     int64_t total_bits;
     int frame_bits;                ///< bits used for the current frame
+    int header_bits;
     int stuffing_bits;             ///< bits used for stuffing
     int next_lambda;               ///< next lambda used for retrying to encode a frame
     int fixed_qscale;              ///< fixed qscale if non zero

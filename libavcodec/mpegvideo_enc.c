@@ -1928,7 +1928,7 @@ vbv_retry:
         frame_end(m);
 
        if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) && s->out_format == FMT_MJPEG)
-            ff_mjpeg_encode_picture_trailer(&s->pb, s->header_bits);
+            ff_mjpeg_encode_picture_trailer(&s->pb, m->header_bits);
 
         if (avctx->rc_buffer_size) {
             RateControlContext *rcc = &m->rc_context;
@@ -1976,7 +1976,7 @@ vbv_retry:
                                        s->pict_type);
 
         if (avctx->flags & AV_CODEC_FLAG_PASS1)
-            assert(put_bits_count(&s->pb) == s->header_bits + s->mv_bits +
+            assert(put_bits_count(&s->pb) == m->header_bits + s->mv_bits +
                                              s->misc_bits + s->i_tex_bits +
                                              s->p_tex_bits);
         flush_put_bits(&s->pb);
@@ -3933,7 +3933,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         av_assert0(0);
     }
     bits= put_bits_count(&s->pb);
-    s->header_bits= bits - s->last_bits;
+    m->header_bits = bits - s->last_bits;
 
     for(i=1; i<context_count; i++){
         update_duplicate_context_after_me(s->thread_context[i], s);

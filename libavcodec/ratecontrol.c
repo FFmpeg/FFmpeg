@@ -54,7 +54,7 @@ void ff_write_pass1_stats(MPVMainEncContext *const m)
              m->mc_mb_var_sum,
              m->mb_var_sum,
              s->i_count,
-             s->header_bits);
+             m->header_bits);
 }
 
 static AVRational get_fpsQ(AVCodecContext *avctx)

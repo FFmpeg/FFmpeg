@@ -119,8 +119,9 @@ void ff_mjpeg_amv_encode_picture_header(MpegEncContext *s)
  *
  * @param s The MpegEncContext.
  */
-static void mjpeg_encode_picture_frame(MpegEncContext *s)
+static void mjpeg_encode_picture_frame(MPVMainEncContext *const main)
 {
+    MpegEncContext *const s = &main->s;
     int nbits, code, table_id;
     MJpegContext *m = s->mjpeg_ctx;
     uint8_t  *huff_size[4] = { m->huff_size_dc_luminance,
@@ -134,7 +135,7 @@ static void mjpeg_encode_picture_frame(MpegEncContext *s)
     size_t total_bits = 0;
     size_t bytes_needed;
 
-    s->header_bits = get_bits_diff(s);
+    main->header_bits = get_bits_diff(s);
     // Estimate the total size first
     for (int i = 0; i < m->huff_ncode; i++) {
         table_id = m->huff_buffer[i].table_id;
@@ -240,6 +241,9 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 
 #if CONFIG_MJPEG_ENCODER
     if (m->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        /* HUFFMAN_TABLE_OPTIMAL is incompatible with slice threading,
+         * therefore the following cast is allowed. */
+        MPVMainEncContext *const main = (MPVMainEncContext*)s;
 
         mjpeg_build_optimal_huffman(m);
 
@@ -253,7 +257,7 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
         s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
 
         mjpeg_encode_picture_header(s);
-        mjpeg_encode_picture_frame(s);
+        mjpeg_encode_picture_frame(main);
     }
 #endif
 
