@@ -297,8 +297,6 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 
     s->mjpeg_ctx = m;
 
-    av_assert0(s->slice_context_count == 1);
-
     if (s->codec_id == AV_CODEC_ID_AMV || (s->avctx->active_thread_type & FF_THREAD_SLICE))
         m->huffman = HUFFMAN_TABLE_DEFAULT;
 

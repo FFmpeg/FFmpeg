@@ -90,8 +90,6 @@ av_cold int ff_speedhq_encode_init(MpegEncContext *s)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
-    av_assert0(s->slice_context_count == 1);
-
     if (s->width > 65500 || s->height > 65500) {
         av_log(s, AV_LOG_ERROR, "SpeedHQ does not support resolutions above 65500x65500\n");
         return AVERROR(EINVAL);
