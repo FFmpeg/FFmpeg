@@ -2418,7 +2418,9 @@ static av_always_inline void encode_mb(MpegEncContext *s, int motion_x, int moti
         encode_mb_internal(s, motion_x, motion_y, 16, 16, 12, 0, 0, CHROMA_444);
 }
 
-static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
+static inline void copy_context_before_encode(MpegEncContext *d,
+                                              const MpegEncContext *s)
+{
     int i;
 
     memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
@@ -2444,7 +2446,9 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     d->esc3_level_length= s->esc3_level_length;
 }
 
-static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
+static inline void copy_context_after_encode(MpegEncContext *d,
+                                             const MpegEncContext *s)
+{
     int i;
 
     memcpy(d->mv, s->mv, 2*4*2*sizeof(int));
@@ -2488,7 +2492,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
     int score;
     uint8_t *dest_backup[3];
 
-    copy_context_before_encode(s, backup, type);
+    copy_context_before_encode(s, backup);
 
     s->block= s->blocks[*next_block];
     s->pb= pb[*next_block];
@@ -2528,7 +2532,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
         *dmin= score;
         *next_block^=1;
 
-        copy_context_after_encode(best, s, type);
+        copy_context_after_encode(best, s);
     }
 }
 
@@ -2948,7 +2952,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 int next_block=0;
                 int pb_bits_count, pb2_bits_count, tex_pb_bits_count;
 
-                copy_context_before_encode(&backup_s, s, -1);
+                copy_context_before_encode(&backup_s, s);
                 backup_s.pb= s->pb;
                 best_s.data_partitioning= s->data_partitioning;
                 best_s.partitioned_frame= s->partitioned_frame;
@@ -3182,7 +3186,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 s->current_picture.qscale_table[xy] = best_s.qscale;
 
-                copy_context_after_encode(s, &best_s, -1);
+                copy_context_after_encode(s, &best_s);
 
                 pb_bits_count= put_bits_count(&s->pb);
                 flush_put_bits(&s->pb);
