@@ -203,8 +203,8 @@ static void find_best_tables(MSMPEG4EncContext *ms)
     ms->rl_table_index        =        best;
     ms->rl_chroma_table_index = chroma_best;
 
-    if(s->pict_type != s->last_non_b_pict_type){
-        ms->rl_table_index = 2;
+    if (s->pict_type != ms->m.last_non_b_pict_type) {
+        ms->rl_table_index= 2;
         if(s->pict_type==AV_PICTURE_TYPE_I)
             ms->rl_chroma_table_index = 1;
         else

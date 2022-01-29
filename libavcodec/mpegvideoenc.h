@@ -96,6 +96,9 @@ typedef struct MPVMainEncContext {
     int stuffing_bits;             ///< bits used for stuffing
     int next_lambda;               ///< next lambda used for retrying to encode a frame
     int fixed_qscale;              ///< fixed qscale if non zero
+    int last_lambda_for[5];        ///< last lambda for a specific pict type
+    int last_pict_type;            //FIXME removes
+    int last_non_b_pict_type;      ///< used for MPEG-4 gmc B-frames & ratecontrol
     RateControlContext rc_context; ///< contains stuff only accessed in ratecontrol.c
 
     int64_t mb_var_sum;            ///< sum of MB variance for current frame

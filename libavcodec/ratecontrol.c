@@ -940,10 +940,10 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
     /* update predictors */
     if (picture_number > 2 && !dry_run) {
         const int64_t last_var =
-            s->last_pict_type == AV_PICTURE_TYPE_I ? rcc->last_mb_var_sum
+            m->last_pict_type == AV_PICTURE_TYPE_I ? rcc->last_mb_var_sum
                                                    : rcc->last_mc_mb_var_sum;
         av_assert1(m->frame_bits >= m->stuffing_bits);
-        update_predictor(&rcc->pred[s->last_pict_type],
+        update_predictor(&rcc->pred[m->last_pict_type],
                          rcc->last_qscale,
                          sqrt(last_var),
                          m->frame_bits - m->stuffing_bits);
