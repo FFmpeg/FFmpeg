@@ -2433,8 +2433,6 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     d->i_tex_bits= s->i_tex_bits;
     d->p_tex_bits= s->p_tex_bits;
     d->i_count= s->i_count;
-    d->f_count= s->f_count;
-    d->b_count= s->b_count;
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
     d->last_bits= 0;
@@ -2462,8 +2460,6 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     d->i_tex_bits= s->i_tex_bits;
     d->p_tex_bits= s->p_tex_bits;
     d->i_count= s->i_count;
-    d->f_count= s->f_count;
-    d->b_count= s->b_count;
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
 
@@ -2767,8 +2763,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->i_tex_bits=0;
     s->p_tex_bits=0;
     s->i_count=0;
-    s->f_count=0;
-    s->b_count=0;
     s->skip_count=0;
 
     for(i=0; i<3; i++){
@@ -3398,8 +3392,6 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(i_tex_bits);
     MERGE(p_tex_bits);
     MERGE(i_count);
-    MERGE(f_count);
-    MERGE(b_count);
     MERGE(skip_count);
     MERGE(misc_bits);
     MERGE(current_picture.encoding_error[0]);

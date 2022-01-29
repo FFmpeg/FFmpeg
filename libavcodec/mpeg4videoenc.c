@@ -564,8 +564,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
             if (!mb_type) {
                 av_assert2(s->mv_dir & MV_DIRECT);
                 ff_h263_encode_motion_vector(s, motion_x, motion_y, 1);
-                s->b_count++;
-                s->f_count++;
             } else {
                 av_assert2(mb_type > 0 && mb_type < 4);
                 if (s->mv_type != MV_TYPE_FIELD) {
@@ -578,7 +576,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                         s->last_mv[0][1][0] = s->mv[0][0][0];
                         s->last_mv[0][0][1] =
                         s->last_mv[0][1][1] = s->mv[0][0][1];
-                        s->f_count++;
                     }
                     if (s->mv_dir & MV_DIR_BACKWARD) {
                         ff_h263_encode_motion_vector(s,
@@ -589,7 +586,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                         s->last_mv[1][1][0] = s->mv[1][0][0];
                         s->last_mv[1][0][1] =
                         s->last_mv[1][1][1] = s->mv[1][0][1];
-                        s->b_count++;
                     }
                 } else {
                     if (s->mv_dir & MV_DIR_FORWARD) {
@@ -609,7 +605,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                             s->last_mv[0][i][0] = s->mv[0][i][0];
                             s->last_mv[0][i][1] = s->mv[0][i][1] * 2;
                         }
-                        s->f_count++;
                     }
                     if (s->mv_dir & MV_DIR_BACKWARD) {
                         for (i = 0; i < 2; i++) {
@@ -620,7 +615,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                             s->last_mv[1][i][0] = s->mv[1][i][0];
                             s->last_mv[1][i][1] = s->mv[1][i][1] * 2;
                         }
-                        s->b_count++;
                     }
                 }
             }
@@ -796,8 +790,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
             if (interleaved_stats)
                 s->p_tex_bits += get_bits_diff(s);
-
-            s->f_count++;
         }
     } else {
         int cbp;

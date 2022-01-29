@@ -679,7 +679,6 @@ void ff_h263_encode_mb(MpegEncContext * s,
     if(interleaved_stats){
         if (!s->mb_intra) {
             s->p_tex_bits+= get_bits_diff(s);
-            s->f_count++;
         }else{
             s->i_tex_bits+= get_bits_diff(s);
             s->i_count++;
