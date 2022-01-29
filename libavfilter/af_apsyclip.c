@@ -292,10 +292,9 @@ static void calculate_mask_curve(AudioPsyClipContext *s,
         if (i == 0) {
             magnitude = FFABS(spectrum[0]);
         } else if (i == s->fft_size / 2) {
-            magnitude = FFABS(spectrum[1]);
+            magnitude = FFABS(spectrum[s->fft_size]);
         } else {
-            // although the negative frequencies are omitted because they are redundant,
-            // the magnitude of the positive frequencies are not doubled.
+            // Because the input signal is real, the + and - frequencies are redundant.
             // Multiply the magnitude by 2 to simulate adding up the + and - frequencies.
             magnitude = hypotf(spectrum[2 * i], spectrum[2 * i + 1]) * 2;
         }
@@ -315,10 +314,9 @@ static void calculate_mask_curve(AudioPsyClipContext *s,
     for (int i = s->num_psy_bins; i < s->fft_size / 2 + 1; i++) {
         float magnitude;
         if (i == s->fft_size / 2) {
-            magnitude = FFABS(spectrum[1]);
+            magnitude = FFABS(spectrum[s->fft_size]);
         } else {
-            // although the negative frequencies are omitted because they are redundant,
-            // the magnitude of the positive frequencies are not doubled.
+            // Because the input signal is real, the + and - frequencies are redundant.
             // Multiply the magnitude by 2 to simulate adding up the + and - frequencies.
             magnitude = hypotf(spectrum[2 * i], spectrum[2 * i + 1]) * 2;
         }
@@ -360,19 +358,20 @@ static void limit_clip_spectrum(AudioPsyClipContext *s,
     for (int i = 1; i < s->fft_size / 2; i++) {
         float real = clip_spectrum[i * 2];
         float imag = clip_spectrum[i * 2 + 1];
-        // although the negative frequencies are omitted because they are redundant,
-        // the magnitude of the positive frequencies are not doubled.
+        // Because the input signal is real, the + and - frequencies are redundant.
         // Multiply the magnitude by 2 to simulate adding up the + and - frequencies.
         relative_distortion_level = hypotf(real, imag) * 2 / mask_curve[i];
         if (relative_distortion_level > 1.0) {
             clip_spectrum[i * 2] /= relative_distortion_level;
             clip_spectrum[i * 2 + 1] /= relative_distortion_level;
+            clip_spectrum[s->fft_size * 2 - i * 2] /= relative_distortion_level;
+            clip_spectrum[s->fft_size * 2 - i * 2 + 1] /= relative_distortion_level;
         }
     }
     // bin N/2
-    relative_distortion_level = FFABS(clip_spectrum[1]) / mask_curve[s->fft_size / 2];
+    relative_distortion_level = FFABS(clip_spectrum[s->fft_size]) / mask_curve[s->fft_size / 2];
     if (relative_distortion_level > 1.f)
-        clip_spectrum[1] /= relative_distortion_level;
+        clip_spectrum[s->fft_size] /= relative_distortion_level;
 }
 
 static void r2c(float *buffer, int size)
