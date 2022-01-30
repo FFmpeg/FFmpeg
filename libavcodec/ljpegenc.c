@@ -239,7 +239,7 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     init_put_bits(&pb, pkt->data, pkt->size);
 
     ff_mjpeg_encode_picture_header(avctx, &pb, NULL, &s->scantable,
-                                   s->pred, s->matrix, s->matrix);
+                                   s->pred, s->matrix, s->matrix, 0);
 
     header_bits = put_bits_count(&pb);
 

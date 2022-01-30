@@ -61,7 +61,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
                               ScanTable *intra_scantable,
                               uint16_t luma_intra_matrix[64],
                               uint16_t chroma_intra_matrix[64],
-                              int hsample[3])
+                              int hsample[3], int use_slices)
 {
     int i, j, size;
     uint8_t *ptr;
@@ -92,7 +92,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         }
     }
 
-    if(avctx->active_thread_type & FF_THREAD_SLICE){
+    if (use_slices) {
         put_marker(p, DRI);
         put_bits(p, 16, 4);
         put_bits(p, 16, (avctx->width-1)/(8*hsample[0]) + 1);
@@ -217,7 +217,8 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     MJpegContext *m,
                                     ScanTable *intra_scantable, int pred,
                                     uint16_t luma_intra_matrix[64],
-                                    uint16_t chroma_intra_matrix[64])
+                                    uint16_t chroma_intra_matrix[64],
+                                    int use_slices)
 {
     const int lossless = !m;
     int hsample[4], vsample[4];
@@ -237,7 +238,8 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     jpeg_put_comments(avctx, pb);
 
     jpeg_table_header(avctx, pb, m, intra_scantable,
-                      luma_intra_matrix, chroma_intra_matrix, hsample);
+                      luma_intra_matrix, chroma_intra_matrix, hsample,
+                      use_slices);
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_marker(pb, SOF0 ); break;

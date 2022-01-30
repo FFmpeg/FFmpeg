@@ -82,7 +82,8 @@ static void mjpeg_encode_picture_header(MpegEncContext *s)
 {
     ff_mjpeg_encode_picture_header(s->avctx, &s->pb, s->mjpeg_ctx,
                                    &s->intra_scantable, 0,
-                                   s->intra_matrix, s->chroma_intra_matrix);
+                                   s->intra_matrix, s->chroma_intra_matrix,
+                                   s->slice_context_count > 1);
 
     s->esc_pos = put_bytes_count(&s->pb, 0);
     for (int i = 1; i < s->slice_context_count; i++)
@@ -251,7 +252,7 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 
     ff_mjpeg_escape_FF(pbc, s->esc_pos);
 
-    if ((s->avctx->active_thread_type & FF_THREAD_SLICE) && mb_y < s->mb_height - 1)
+    if (s->slice_context_count > 1 && mb_y < s->mb_height - 1)
         put_marker(pbc, RST0 + (mb_y&7));
     s->esc_pos = put_bytes_count(pbc, 0);
 
@@ -293,11 +294,14 @@ static int alloc_huffman(MpegEncContext *s)
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *const m = &((MJPEGEncContext*)s)->mjpeg;
-    int ret;
+    int ret, use_slices;
 
     s->mjpeg_ctx = m;
+    use_slices = s->avctx->slices > 0 ? s->avctx->slices > 1 :
+                 (s->avctx->active_thread_type & FF_THREAD_SLICE) &&
+                 s->avctx->thread_count > 1;
 
-    if (s->codec_id == AV_CODEC_ID_AMV || (s->avctx->active_thread_type & FF_THREAD_SLICE))
+    if (s->codec_id == AV_CODEC_ID_AMV || use_slices)
         m->huffman = HUFFMAN_TABLE_DEFAULT;
 
     if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
