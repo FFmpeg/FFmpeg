@@ -250,7 +250,7 @@ void ff_init_qscale_tab(MpegEncContext *s)
 }
 
 static void update_duplicate_context_after_me(MpegEncContext *dst,
-                                              MpegEncContext *src)
+                                              const MpegEncContext *src)
 {
 #define COPY(a) dst->a= src->a
     COPY(pict_type);

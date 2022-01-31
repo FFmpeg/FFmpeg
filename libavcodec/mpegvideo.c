@@ -469,7 +469,7 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 #undef COPY
 }
 
-int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src)
+int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
 {
     MpegEncContext bak;
     int i, ret;
