@@ -797,13 +797,11 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
     AVBPrint buf;
     xmlDoc *doc = NULL;
     int ret = 0;
-    int64_t filesize = 0;
 
-    filesize = avio_size(in);
-    filesize = filesize > 0 ? filesize : 8192;
-    av_bprint_init(&buf, filesize + 1, AV_BPRINT_SIZE_UNLIMITED);
-    ret = avio_read_to_bprint(in, &buf, UINT_MAX - 1);
-    if (ret < 0 || !avio_feof(in) || buf.len == 0) {
+    av_bprint_init(&buf, 0, INT_MAX); // xmlReadMemory uses integer length
+
+    ret = avio_read_to_bprint(in, &buf, SIZE_MAX);
+    if (ret < 0 || !avio_feof(in)) {
         av_log(NULL, AV_LOG_ERROR, "Cannot read IMF CPL\n");
         if (ret == 0)
             ret = AVERROR_INVALIDDATA;
@@ -812,8 +810,7 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
 
     LIBXML_TEST_VERSION
 
-    filesize = buf.len;
-    doc = xmlReadMemory(buf.str, filesize, NULL, NULL, 0);
+    doc = xmlReadMemory(buf.str, buf.len, NULL, NULL, 0);
     if (!doc) {
         av_log(NULL,
                 AV_LOG_ERROR,
