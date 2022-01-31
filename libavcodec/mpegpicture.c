@@ -334,7 +334,7 @@ void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
     memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
 }
 
-int ff_update_picture_tables(Picture *dst, Picture *src)
+int ff_update_picture_tables(Picture *dst, const Picture *src)
 {
     int i, ret;
 
