@@ -858,7 +858,7 @@ static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dm
    optimal mv.
  */
 static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx_ptr, int *my_ptr,
-                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
+                             int P[10][2], int src_index, int ref_index, const int16_t (*last_mv)[2],
                              int ref_mv_scale, int flags, int size, int h)
 {
     MotionEstContext * const c= &s->me;
@@ -976,7 +976,7 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
 //this function is dedicated to the brain damaged gcc
 int ff_epzs_motion_search(MpegEncContext *s, int *mx_ptr, int *my_ptr,
                           int P[10][2], int src_index, int ref_index,
-                          int16_t (*last_mv)[2], int ref_mv_scale,
+                          const int16_t (*last_mv)[2], int ref_mv_scale,
                           int size, int h)
 {
     MotionEstContext * const c= &s->me;
@@ -992,7 +992,7 @@ int ff_epzs_motion_search(MpegEncContext *s, int *mx_ptr, int *my_ptr,
 
 static int epzs_motion_search2(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr, int P[10][2],
-                             int src_index, int ref_index, int16_t (*last_mv)[2],
+                             int src_index, int ref_index, const int16_t (*last_mv)[2],
                              int ref_mv_scale, const int size)
 {
     MotionEstContext * const c= &s->me;
