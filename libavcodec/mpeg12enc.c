@@ -223,7 +223,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return ret;
 
     if (find_frame_rate_index(mpeg12) < 0) {
-        if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
                    avctx->time_base.den, avctx->time_base.num);
             return AVERROR(EINVAL);

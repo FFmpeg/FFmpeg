@@ -101,7 +101,6 @@ typedef struct MpegEncContext {
     int max_b_frames; ///< max number of B-frames for encoding
     int luma_elim_threshold;
     int chroma_elim_threshold;
-    int strict_std_compliance; ///< strictly follow the std (MPEG-4, ...)
     int workaround_bugs;       ///< workaround bugs in encoders which cannot be detected automatically
     int codec_tag;             ///< internal codec_tag upper case converted from avctx codec_tag
     /* the following fields are managed internally by the encoder */

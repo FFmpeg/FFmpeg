@@ -366,7 +366,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    s->strict_std_compliance = avctx->strict_std_compliance;
     s->quarter_sample     = (avctx->flags & AV_CODEC_FLAG_QPEL) != 0;
     s->rtp_mode           = !!s->rtp_payload_size;
     s->intra_dc_precision = avctx->intra_dc_precision;
@@ -581,7 +580,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if (avctx->flags & AV_CODEC_FLAG_LOW_DELAY) {
         if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
-            s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
+            avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
             av_log(avctx, AV_LOG_ERROR,
                    "low delay forcing is only available for mpeg2, "
                    "set strict_std_compliance to 'unofficial' or lower in order to allow it\n");
