@@ -36,18 +36,10 @@
 
 void ff_mpeg12_common_init(MpegEncContext *s);
 
-void ff_mpeg1_init_uni_ac_vlc(const RLTable *rl, uint8_t *uni_ac_vlc_len);
-
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
 #if FF_API_FLAG_TRUNCATED
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
 #endif
-
-void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
-void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
-                        int motion_x, int motion_y);
-void ff_mpeg1_encode_init(MpegEncContext *s);
-void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 
 void ff_mpeg12_find_best_frame_rate(AVRational frame_rate,
                                     int *code, int *ext_n, int *ext_d,

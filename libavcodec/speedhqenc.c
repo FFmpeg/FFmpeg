@@ -27,12 +27,11 @@
  * SpeedHQ encoder.
  */
 
-#include "libavutil/pixdesc.h"
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
-#include "mpeg12.h"
 #include "mpeg12data.h"
+#include "mpeg12enc.h"
 #include "mpegvideo.h"
 #include "speedhqenc.h"
 
