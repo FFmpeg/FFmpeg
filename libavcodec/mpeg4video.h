@@ -25,7 +25,6 @@
 
 #include <stdint.h>
 
-#include "get_bits.h"
 #include "mpegvideo.h"
 
 // shapes
@@ -70,18 +69,7 @@
 /* smaller packets likely don't contain a real frame */
 #define MAX_NVOP_SIZE 19
 
-void ff_mpeg4_encode_mb(MpegEncContext *s,
-                        int16_t block[6][64],
-                        int motion_x, int motion_y);
-void ff_set_mpeg4_time(MpegEncContext *s);
-int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
-
-void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
-void ff_mpeg4_stuffing(PutBitContext *pbc);
-void ff_mpeg4_init_partitions(MpegEncContext *s);
-void ff_mpeg4_merge_partitions(MpegEncContext *s);
-void ff_clean_mpeg4_qscales(MpegEncContext *s);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
 

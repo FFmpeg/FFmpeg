@@ -66,6 +66,7 @@
 #include "flv.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
+#include "mpeg4videoenc.h"
 #include "internal.h"
 #include "bytestream.h"
 #include "wmv2enc.h"
