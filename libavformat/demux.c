@@ -1360,7 +1360,8 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (p) {
                 AV_WL32(p, sti->skip_samples);
                 AV_WL32(p + 4, discard_padding);
-                av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d / discard %d\n", sti->skip_samples, discard_padding);
+                av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %u / discard %u\n",
+                       (unsigned)sti->skip_samples, (unsigned)discard_padding);
             }
             sti->skip_samples = 0;
         }
