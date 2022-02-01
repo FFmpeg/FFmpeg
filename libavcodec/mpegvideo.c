@@ -40,7 +40,7 @@
 #include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
-#include "mpeg4video.h"
+#include "mpeg4videodec.h"
 #include "mpegvideodata.h"
 #include "qpeldsp.h"
 #include "threadframe.h"

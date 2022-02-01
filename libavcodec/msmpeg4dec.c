@@ -32,7 +32,7 @@
 #include "h263.h"
 #include "h263data.h"
 #include "h263dec.h"
-#include "mpeg4video.h"
+#include "mpeg4videodec.h"
 #include "msmpeg4data.h"
 #include "wmv2dec.h"
 

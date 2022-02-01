@@ -70,86 +70,20 @@
 /* smaller packets likely don't contain a real frame */
 #define MAX_NVOP_SIZE 19
 
-typedef struct Mpeg4DecContext {
-    MpegEncContext m;
-
-    /// number of bits to represent the fractional part of time
-    int time_increment_bits;
-    int shape;
-    int vol_sprite_usage;
-    int sprite_brightness_change;
-    int num_sprite_warping_points;
-    /// sprite trajectory points
-    uint16_t sprite_traj[4][2];
-    /// sprite shift [isChroma]
-    int sprite_shift[2];
-
-    // reversible vlc
-    int rvlc;
-    /// could this stream contain resync markers
-    int resync_marker;
-    /// time distance of first I -> B, used for interlaced B-frames
-    int t_frame;
-
-    int new_pred;
-    int enhancement_type;
-    int scalability;
-
-    /// QP above which the ac VLC should be used for intra dc
-    int intra_dc_threshold;
-
-    /* bug workarounds */
-    int divx_version;
-    int divx_build;
-    int xvid_build;
-    int lavc_build;
-
-    int vo_type;
-
-    /// flag for having shown the warning about invalid Divx B-frames
-    int showed_packed_warning;
-    /** does the stream contain the low_delay flag,
-     *  used to work around buggy encoders. */
-    int vol_control_parameters;
-    int cplx_estimation_trash_i;
-    int cplx_estimation_trash_p;
-    int cplx_estimation_trash_b;
-
-    int rgb;
-
-    int32_t block32[12][64];
-    // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
-    int dpcm_direction;
-    int16_t dpcm_macroblock[3][256];
-} Mpeg4DecContext;
-
-
-void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
-                            uint8_t *dest_cr, int block_size, int uvlinesize,
-                            int dct_linesize, int dct_offset);
 void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],
                         int motion_x, int motion_y);
-void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
-                      int dir);
 void ff_set_mpeg4_time(MpegEncContext *s);
 int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
-int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
-                                   int header, int parse_only);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
 void ff_mpeg4_stuffing(PutBitContext *pbc);
 void ff_mpeg4_init_partitions(MpegEncContext *s);
 void ff_mpeg4_merge_partitions(MpegEncContext *s);
 void ff_clean_mpeg4_qscales(MpegEncContext *s);
-int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
-int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
-int ff_mpeg4_decode_studio_slice_header(Mpeg4DecContext *ctx);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
-int ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
-int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
 
 /**
  * @return the mb_type
