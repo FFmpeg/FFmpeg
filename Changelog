@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version 5.1:
 - dialogue enhance audio filter
+- dropped obsolete XvMC hwaccel
 
 
 version 5.0:

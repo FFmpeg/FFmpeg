@@ -44,10 +44,6 @@ av_cold void ff_blockdsp_init_x86(BlockDSPContext *c,
         c->clear_blocks = ff_clear_blocks_mmx;
     }
 
-    /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
-    if (CONFIG_XVMC && avctx->hwaccel && avctx->hwaccel->decode_mb)
-        return;
-
     if (EXTERNAL_SSE(cpu_flags)) {
         c->clear_block  = ff_clear_block_sse;
         c->clear_blocks = ff_clear_blocks_sse;

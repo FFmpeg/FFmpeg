@@ -78,8 +78,6 @@ typedef struct AVCodecHWConfigInternal {
     HW_CONFIG_HWACCEL(1, 1, 1, VIDEOTOOLBOX, VIDEOTOOLBOX, ff_ ## codec ## _videotoolbox_hwaccel)
 #define HWACCEL_D3D11VA(codec) \
     HW_CONFIG_HWACCEL(0, 0, 1, D3D11VA_VLD,  NONE,         ff_ ## codec ## _d3d11va_hwaccel)
-#define HWACCEL_XVMC(codec) \
-    HW_CONFIG_HWACCEL(0, 0, 1, XVMC,         NONE,         ff_ ## codec ## _xvmc_hwaccel)
 
 #define HW_CONFIG_ENCODER(device, frames, ad_hoc, format, device_type_) \
     &(const AVCodecHWConfigInternal) { \

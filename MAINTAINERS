@@ -266,7 +266,6 @@ Codecs:
   xan.c                                 Mike Melanson
   xbm*                                  Paul B Mahol
   xface                                 Stefano Sabatini
-  xvmc.c                                Ivan Kalvachev
   xwd*                                  Paul B Mahol
 
 Hardware acceleration:

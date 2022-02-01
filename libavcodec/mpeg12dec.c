@@ -51,7 +51,6 @@
 #include "profiles.h"
 #include "startcode.h"
 #include "thread.h"
-#include "xvmc_internal.h"
 
 #define A53_MAX_CC_COUNT 2000
 
@@ -763,9 +762,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             memset(s->last_mv, 0, sizeof(s->last_mv));
         }
         s->mb_intra = 1;
-        // if 1, we memcpy blocks in xvmcvideo
-        if ((CONFIG_MPEG1_XVMC_HWACCEL || CONFIG_MPEG2_XVMC_HWACCEL) && s->pack_pblocks)
-            ff_xvmc_pack_pblocks(s, -1); // inter are always full blocks
 
         if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
             if (s->avctx->flags2 & AV_CODEC_FLAG2_FAST) {
@@ -994,10 +990,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                 return AVERROR_INVALIDDATA;
             }
 
-            // if 1, we memcpy blocks in xvmcvideo
-            if ((CONFIG_MPEG1_XVMC_HWACCEL || CONFIG_MPEG2_XVMC_HWACCEL) && s->pack_pblocks)
-                ff_xvmc_pack_pblocks(s, cbp);
-
             if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
                 if (s->avctx->flags2 & AV_CODEC_FLAG2_FAST) {
                     for (i = 0; i < 6; i++) {
@@ -1115,9 +1107,6 @@ static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG1_NVDEC_HWACCEL
     AV_PIX_FMT_CUDA,
 #endif
-#if CONFIG_MPEG1_XVMC_HWACCEL
-    AV_PIX_FMT_XVMC,
-#endif
 #if CONFIG_MPEG1_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
 #endif
@@ -1128,9 +1117,6 @@ static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG2_NVDEC_HWACCEL
     AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_MPEG2_XVMC_HWACCEL
-    AV_PIX_FMT_XVMC,
 #endif
 #if CONFIG_MPEG2_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
@@ -1181,21 +1167,6 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
         pix_fmts = mpeg12_pixfmt_list_444;
 
     return ff_thread_get_format(avctx, pix_fmts);
-}
-
-static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
-{
-    // until then pix_fmt may be changed right after codec init
-    if (avctx->hwaccel)
-        if (avctx->idct_algo == FF_IDCT_AUTO)
-            avctx->idct_algo = FF_IDCT_NONE;
-
-    if (avctx->hwaccel && avctx->pix_fmt == AV_PIX_FMT_XVMC) {
-        Mpeg1Context *s1 = avctx->priv_data;
-        MpegEncContext *s = &s1->mpeg_enc_ctx;
-
-        s->pack_pblocks = 1;
-    }
 }
 
 /* Call this function when we know all parameters.
@@ -1321,7 +1292,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         } // MPEG-2
 
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
-        setup_hwaccel_for_pixfmt(avctx);
 
         /* Quantization matrices may need reordering
          * if DCT permutation is changed. */
@@ -1809,10 +1779,6 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     }
 
     for (;;) {
-        // If 1, we memcpy blocks in xvmcvideo.
-        if ((CONFIG_MPEG1_XVMC_HWACCEL || CONFIG_MPEG2_XVMC_HWACCEL) && s->pack_pblocks)
-            ff_xvmc_init_block(s); // set s->block
-
         if ((ret = mpeg_decode_mb(s, s->block)) < 0)
             return ret;
 
@@ -2166,7 +2132,6 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->codec_id             =
     s->avctx->codec_id      = AV_CODEC_ID_MPEG1VIDEO;
     s->out_format           = FMT_MPEG1;
-    s->swap_uv              = 0; // AFAIK VCR2 does not have SEQ_HEADER
     if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
 
@@ -2195,7 +2160,6 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->low_delay        = 1;
 
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
-    setup_hwaccel_for_pixfmt(avctx);
 
     ff_mpv_idct_init(s);
     if ((ret = ff_mpv_common_init(s)) < 0)
@@ -2222,7 +2186,6 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     if (s->codec_tag == AV_RL32("BW10")) {
         s->codec_id              = s->avctx->codec_id = AV_CODEC_ID_MPEG1VIDEO;
     } else {
-        s->swap_uv = 1; // in case of xvmc we need to swap uv for each MB
         s->codec_id              = s->avctx->codec_id = AV_CODEC_ID_MPEG2VIDEO;
     }
     s1->save_width           = s->width;
@@ -2925,9 +2888,6 @@ const AVCodec ff_mpeg1video_decoder = {
 #if CONFIG_MPEG1_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(mpeg1),
 #endif
-#if CONFIG_MPEG1_XVMC_HWACCEL
-                               HWACCEL_XVMC(mpeg1),
-#endif
                                NULL
                            },
 };
@@ -2972,9 +2932,6 @@ const AVCodec ff_mpeg2video_decoder = {
 #endif
 #if CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL
                         HWACCEL_VIDEOTOOLBOX(mpeg2),
-#endif
-#if CONFIG_MPEG2_XVMC_HWACCEL
-                        HWACCEL_XVMC(mpeg2),
 #endif
                         NULL
                     },
