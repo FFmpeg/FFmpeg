@@ -111,6 +111,7 @@
 #define FF_API_AV_MALLOCZ_ARRAY         (LIBAVUTIL_VERSION_MAJOR < 58)
 #define FF_API_FIFO_PEEK2               (LIBAVUTIL_VERSION_MAJOR < 58)
 #define FF_API_FIFO_OLD_API             (LIBAVUTIL_VERSION_MAJOR < 58)
+#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 58)
 
 /**
  * @}
