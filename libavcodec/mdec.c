@@ -33,8 +33,9 @@
 #include "blockdsp.h"
 #include "bswapdsp.h"
 #include "idctdsp.h"
-#include "mpeg12.h"
+#include "internal.h"
 #include "mpeg12data.h"
+#include "mpeg12dec.h"
 #include "thread.h"
 
 typedef struct MDECContext {

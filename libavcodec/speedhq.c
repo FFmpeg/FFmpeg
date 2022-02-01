@@ -31,11 +31,13 @@
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
+#include "blockdsp.h"
 #include "get_bits.h"
+#include "idctdsp.h"
 #include "internal.h"
 #include "libavutil/thread.h"
 #include "mathops.h"
-#include "mpeg12.h"
+#include "mpeg12dec.h"
 #include "mpeg12data.h"
 #include "mpeg12vlc.h"
 

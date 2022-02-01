@@ -42,6 +42,7 @@
 #include "mpeg_er.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
+#include "mpeg12dec.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
