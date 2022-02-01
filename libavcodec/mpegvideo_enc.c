@@ -70,7 +70,7 @@
 #include "internal.h"
 #include "bytestream.h"
 #include "wmv2enc.h"
-#include "rv10.h"
+#include "rv10enc.h"
 #include "packet_internal.h"
 #include <limits.h>
 #include "sp5x.h"

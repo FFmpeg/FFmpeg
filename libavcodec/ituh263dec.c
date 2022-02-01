@@ -42,7 +42,7 @@
 #include "mathops.h"
 #include "mpegutils.h"
 #include "unary.h"
-#include "rv10.h"
+#include "rv10dec.h"
 #include "mpeg4video.h"
 #include "mpegvideodata.h"
 #include "mpeg4videodec.h"

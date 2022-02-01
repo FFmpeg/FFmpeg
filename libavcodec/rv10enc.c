@@ -27,7 +27,7 @@
 
 #include "mpegvideo.h"
 #include "put_bits.h"
-#include "rv10.h"
+#include "rv10enc.h"
 
 int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {

@@ -30,7 +30,7 @@
 #include "h263data.h"
 #include "h263enc.h"
 #include "put_bits.h"
-#include "rv10.h"
+#include "rv10enc.h"
 
 void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?

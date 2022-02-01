@@ -1,5 +1,5 @@
 /*
- * RV10/RV20 decoder
+ * RV10/RV20 encoder
  *
  * This file is part of FFmpeg.
  *
@@ -18,16 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_RV10_H
-#define AVCODEC_RV10_H
-
-#include <stdint.h>
+#ifndef AVCODEC_RV10ENC_H
+#define AVCODEC_RV10ENC_H
 
 #include "mpegvideo.h"
-
-int ff_rv_decode_dc(MpegEncContext *s, int n);
 
 int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
-#endif /* AVCODEC_RV10_H */
+#endif /* AVCODEC_RV10ENC_H */
