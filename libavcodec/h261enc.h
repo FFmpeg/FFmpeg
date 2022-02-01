@@ -1,5 +1,5 @@
 /*
- * H.261 codec
+ * H.261 encoder
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2004 Maarten Daniels
  *
@@ -22,33 +22,19 @@
 
 /**
  * @file
- * H.261 codec.
+ * H.261 encoder header.
  */
 
-#ifndef AVCODEC_H261_H
-#define AVCODEC_H261_H
+#ifndef AVCODEC_H261ENC_H
+#define AVCODEC_H261ENC_H
 
 #include "mpegvideo.h"
-#include "rl.h"
 
-/**
- * H261Context
- */
-typedef struct H261Context {
-    int mtype;
-} H261Context;
+int ff_h261_get_picture_format(int width, int height);
+void ff_h261_reorder_mb_index(MpegEncContext *s);
+void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
+                       int motion_x, int motion_y);
+void ff_h261_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_h261_encode_init(MpegEncContext *s);
 
-#define MB_TYPE_H261_FIL 0x800000
-
-extern const uint8_t ff_h261_mba_code[35];
-extern const uint8_t ff_h261_mba_bits[35];
-extern const uint8_t ff_h261_mtype_code[10];
-extern const uint8_t ff_h261_mtype_bits[10];
-extern const int     ff_h261_mtype_map[10];
-extern const uint8_t ff_h261_mv_tab[17][2];
-extern const uint8_t ff_h261_cbp_tab[63][2];
-extern RLTable ff_h261_rl_tcoeff;
-
-void ff_h261_loop_filter(MpegEncContext *s);
-
-#endif /* AVCODEC_H261_H */
+#endif

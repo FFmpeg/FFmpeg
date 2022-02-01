@@ -32,6 +32,7 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h261.h"
+#include "h261enc.h"
 #include "mpegvideodata.h"
 
 static uint8_t uni_h261_rl_len [64*64*2*2];
