@@ -27,7 +27,7 @@
 #include "error_resilience.h"
 #include "internal.h"
 #include "mpeg_er.h"
-#include "msmpeg4.h"
+#include "msmpeg4dec.h"
 #include "qpeldsp.h"
 #include "vc1.h"
 #include "wmv2data.h"

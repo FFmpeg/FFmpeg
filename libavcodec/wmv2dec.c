@@ -29,6 +29,7 @@
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
+#include "msmpeg4dec.h"
 #include "simple_idct.h"
 #include "wmv2.h"
 #include "wmv2data.h"
