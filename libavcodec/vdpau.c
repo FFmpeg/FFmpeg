@@ -26,6 +26,7 @@
 #include "avcodec.h"
 #include "decode.h"
 #include "internal.h"
+#include "mpegvideodec.h"
 #include "vc1.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"

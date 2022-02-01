@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "msmpeg4data.h"
 #include "msmpeg4dec.h"
 #include "profiles.h"

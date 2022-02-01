@@ -24,7 +24,7 @@
 
 #include "dxva2_internal.h"
 #include "mpegutils.h"
-#include "mpegvideo.h"
+#include "mpegvideodec.h"
 
 #define MAX_SLICES 1024
 struct dxva2_picture_context {

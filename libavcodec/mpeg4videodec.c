@@ -32,6 +32,7 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
+#include "mpegvideodec.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "mpeg4videodec.h"

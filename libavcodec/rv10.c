@@ -39,6 +39,7 @@
 #include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "mpeg4video.h"
 #include "mpegvideodata.h"
 #include "rv10dec.h"

@@ -45,6 +45,7 @@
 #endif
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "msmpeg4dec.h"
 #include "qpeldsp.h"
 #include "thread.h"

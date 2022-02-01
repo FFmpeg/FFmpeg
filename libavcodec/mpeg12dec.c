@@ -47,6 +47,7 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
+#include "mpegvideodec.h"
 #include "profiles.h"
 #include "startcode.h"
 #include "thread.h"

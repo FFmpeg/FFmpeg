@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "threadframe.h"
 
 void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)

@@ -24,6 +24,7 @@
 #include "hwconfig.h"
 #include "mpeg4videodec.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "vaapi_decode.h"
 
 /** Reconstruct bitstream intra_dc_vlc_thr */

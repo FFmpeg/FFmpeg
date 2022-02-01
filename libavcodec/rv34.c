@@ -35,6 +35,7 @@
 #include "error_resilience.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "golomb.h"
 #include "internal.h"
 #include "mathops.h"

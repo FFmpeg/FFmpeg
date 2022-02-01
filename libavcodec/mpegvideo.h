@@ -44,7 +44,6 @@
 #include "mpegpicture.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
-#include "mpegvideodata.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
@@ -586,31 +585,13 @@ int ff_mpv_init_context_frame(MpegEncContext *s);
  */
 void ff_mpv_free_context_frame(MpegEncContext *s);
 
-int ff_mpv_common_frame_size_change(MpegEncContext *s);
 void ff_mpv_common_end(MpegEncContext *s);
 
-/**
- * Initialize the given MpegEncContext for decoding.
- * the changed fields will not depend upon
- * the prior state of the MpegEncContext.
- */
-void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx);
 void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64]);
-void ff_mpv_report_decode_progress(MpegEncContext *s);
-
-int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
-void ff_mpv_frame_end(MpegEncContext *s);
 
 void ff_clean_intra_table_entries(MpegEncContext *s);
-void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
-void ff_mpeg_flush(AVCodecContext *avctx);
-
-void ff_print_debug_info(MpegEncContext *s, Picture *p, AVFrame *pict);
-
-int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_type);
 
 int ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
-int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
 void ff_mpv_idct_init(MpegEncContext *s);
@@ -636,15 +617,6 @@ static inline void ff_update_block_index(MpegEncContext *s){
     s->dest[0]+= 2*block_size;
     s->dest[1]+= (2 >> s->chroma_x_shift) * block_size;
     s->dest[2]+= (2 >> s->chroma_x_shift) * block_size;
-}
-
-static inline int mpeg_get_qscale(MpegEncContext *s)
-{
-    int qscale = get_bits(&s->gb, 5);
-    if (s->q_scale_type)
-        return ff_mpeg2_non_linear_qscale[qscale];
-    else
-        return qscale << 1;
 }
 
 #endif /* AVCODEC_MPEGVIDEO_H */
