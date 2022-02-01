@@ -27,6 +27,8 @@
  * Public libavcodec XvMC header.
  */
 
+#pragma message("XvMC is no longer supported; this header is deprecated and will be removed")
+
 #include <X11/extensions/XvMC.h>
 
 #include "libavutil/attributes.h"
