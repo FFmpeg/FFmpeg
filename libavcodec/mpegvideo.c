@@ -44,7 +44,7 @@
 #include "mpegvideodata.h"
 #include "qpeldsp.h"
 #include "threadframe.h"
-#include "wmv2.h"
+#include "wmv2dec.h"
 #include <limits.h>
 
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,

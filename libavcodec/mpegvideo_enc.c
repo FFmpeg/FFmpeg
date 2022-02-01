@@ -67,7 +67,7 @@
 #include "mpeg4videodata.h"
 #include "internal.h"
 #include "bytestream.h"
-#include "wmv2.h"
+#include "wmv2enc.h"
 #include "rv10.h"
 #include "packet_internal.h"
 #include <limits.h>

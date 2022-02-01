@@ -49,7 +49,7 @@
 #include "msmpeg4.h"
 #include "qpeldsp.h"
 #include "thread.h"
-#include "wmv2.h"
+#include "wmv2dec.h"
 
 static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
 {

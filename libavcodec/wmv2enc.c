@@ -24,6 +24,7 @@
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
 #include "wmv2.h"
+#include "wmv2enc.h"
 
 typedef struct WMV2EncContext {
     MpegEncContext s;

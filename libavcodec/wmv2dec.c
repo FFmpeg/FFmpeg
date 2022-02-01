@@ -32,6 +32,7 @@
 #include "simple_idct.h"
 #include "wmv2.h"
 #include "wmv2data.h"
+#include "wmv2dec.h"
 
 typedef struct WMV2DecContext {
     MpegEncContext s;
