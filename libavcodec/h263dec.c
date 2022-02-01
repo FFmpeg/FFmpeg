@@ -27,11 +27,9 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
-#include "libavutil/video_enc_params.h"
-
 #include "avcodec.h"
 #include "error_resilience.h"
-#include "flv.h"
+#include "flvdec.h"
 #include "h263.h"
 #include "h263dec.h"
 #if FF_API_FLAG_TRUNCATED

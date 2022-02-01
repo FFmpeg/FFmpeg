@@ -28,7 +28,6 @@
  */
 
 #define UNCHECKED_BITSTREAM_READER 1
-#include <limits.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
@@ -43,7 +42,6 @@
 #include "mathops.h"
 #include "mpegutils.h"
 #include "unary.h"
-#include "flv.h"
 #include "rv10.h"
 #include "mpeg4video.h"
 #include "mpegvideodata.h"

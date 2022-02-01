@@ -34,12 +34,12 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
+#include "flvenc.h"
 #include "h263.h"
 #include "h263enc.h"
 #include "h263data.h"
 #include "mathops.h"
 #include "mpegutils.h"
-#include "flv.h"
 #include "internal.h"
 
 /**

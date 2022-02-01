@@ -1,5 +1,5 @@
 /*
- * FLV specific private header.
+ * FLV encoder header.
  *
  * This file is part of FFmpeg.
  *
@@ -18,17 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_FLV_H
-#define AVCODEC_FLV_H
+#ifndef AVCODEC_FLVENC_H
+#define AVCODEC_FLVENC_H
 
-#include "get_bits.h"
 #include "mpegvideo.h"
 #include "put_bits.h"
 
 void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run,
                            int last);
-
-int ff_flv_decode_picture_header(MpegEncContext *s);
 
 #endif /* AVCODEC_FLV_H */
