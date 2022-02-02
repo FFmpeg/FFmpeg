@@ -645,7 +645,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                     y = s->mb_y * 16;
 
                     offset = x + y * s->linesize;
-                    p_pic  = s->new_picture.f->data[0] + offset;
+                    p_pic  = s->new_picture->data[0] + offset;
 
                     s->mb_skipped = 1;
                     for (i = 0; i < s->max_b_frames; i++) {

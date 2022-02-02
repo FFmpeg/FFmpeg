@@ -153,10 +153,10 @@ typedef struct MpegEncContext {
     Picture next_picture;
 
     /**
-     * copy of the source picture structure for encoding.
+     * Reference to the source picture for encoding.
      * note, linesize & data, might not match the source picture (for field pictures)
      */
-    Picture new_picture;
+    AVFrame *new_picture;
 
     /**
      * copy of the current picture structure.

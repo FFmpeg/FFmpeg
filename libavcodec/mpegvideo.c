@@ -791,7 +791,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     if (!(s->next_picture.f    = av_frame_alloc()) ||
         !(s->last_picture.f    = av_frame_alloc()) ||
         !(s->current_picture.f = av_frame_alloc()) ||
-        !(s->new_picture.f     = av_frame_alloc()))
+        !(s->new_picture       = av_frame_alloc()))
         goto fail_nomem;
 
     if ((ret = ff_mpv_init_context_frame(s)))
@@ -902,7 +902,7 @@ void ff_mpv_common_end(MpegEncContext *s)
     ff_mpv_picture_free(s->avctx, &s->last_picture);
     ff_mpv_picture_free(s->avctx, &s->current_picture);
     ff_mpv_picture_free(s->avctx, &s->next_picture);
-    ff_mpv_picture_free(s->avctx, &s->new_picture);
+    av_frame_free(&s->new_picture);
 
     s->context_initialized      = 0;
     s->context_reinit           = 0;

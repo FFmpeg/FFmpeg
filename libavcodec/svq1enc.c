@@ -277,7 +277,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.last_picture.f->data[0]        = ref_plane;
         s->m.linesize                      =
         s->m.last_picture.f->linesize[0]    =
-        s->m.new_picture.f->linesize[0]     =
+        s->m.new_picture->linesize[0]      =
         s->m.current_picture.f->linesize[0] = stride;
         s->m.width                         = width;
         s->m.height                        = height;
@@ -327,7 +327,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.me.dia_size      = s->avctx->dia_size;
         s->m.first_slice_line = 1;
         for (y = 0; y < block_height; y++) {
-            s->m.new_picture.f->data[0] = src - y * 16 * stride; // ugly
+            s->m.new_picture->data[0]  = src - y * 16 * stride; // ugly
             s->m.mb_y                  = y;
 
             for (i = 0; i < 16 && i + 16 * y < height; i++) {
