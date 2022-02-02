@@ -1469,10 +1469,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     }
     if (!has_header(s->headers, "\r\nAccept: "))
         av_bprintf(&request, "Accept: */*\r\n");
-    // Note: we send this on purpose even when s->off is 0 when we're probing,
+    // Note: we send the Range header on purpose, even when we're probing,
     // since it allows us to detect more reliably if a (non-conforming)
     // server supports seeking by analysing the reply headers.
-    if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable == -1)) {
+    if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable != 0)) {
         av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
         if (s->end_off)
             av_bprintf(&request, "%"PRId64, s->end_off - 1);
