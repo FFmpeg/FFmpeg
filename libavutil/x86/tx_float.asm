@@ -707,7 +707,7 @@ cglobal fft4_ %+ %1 %+ _float, 4, 4, 3, ctx, out, in, stride
 FFT4 fwd, 0
 FFT4 inv, 1
 
-%macro FFT8_FN 2
+%macro FFT8_SSE_FN 2
 INIT_XMM sse3
 cglobal fft8_ %+ %1, 4, 4, 6, ctx, out, in, tmp
 %if %2
@@ -738,10 +738,10 @@ cglobal fft8_ %+ %1, 4, 4, 6, ctx, out, in, tmp
     RET
 %endmacro
 
-FFT8_FN float,    1
-FFT8_FN ns_float, 0
+FFT8_SSE_FN float,    1
+FFT8_SSE_FN ns_float, 0
 
-%macro FFT16_FN 2
+%macro FFT8_AVX_FN 2
 INIT_YMM avx
 cglobal fft8_ %+ %1, 4, 4, 4, ctx, out, in, tmp
 %if %2
@@ -767,8 +767,8 @@ cglobal fft8_ %+ %1, 4, 4, 4, ctx, out, in, tmp
     RET
 %endmacro
 
-FFT16_FN float,    1
-FFT16_FN ns_float, 0
+FFT8_AVX_FN float,    1
+FFT8_AVX_FN ns_float, 0
 
 %macro FFT16_FN 3
 INIT_YMM %1
