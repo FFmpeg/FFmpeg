@@ -234,20 +234,21 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     uint8_t *dest;
 
     if (*timestamp != data->timestamp) {
-        if (data->frame) {
+        if (data->frame && (!data->interlaced || data->field)) {
             /*
-             * if we're here, it means that two RTP packets didn't have the
-             * same timestamp, which is a sign that they were packets from two
-             * different frames, but we didn't get the flag RTP_FLAG_MARKER on
-             * the first one of these frames (last packet of a frame).
-             * Finalize the previous frame anyway by filling the AVPacket.
+             * if we're here, it means that we missed the cue to return
+             * the previous AVPacket, that cue being the RTP_FLAG_MARKER
+             * in the last packet of either the previous frame (progressive)
+             * or the previous second field (interlace). Let's finalize the
+             * previous frame (or pair of fields) anyway by filling the AVPacket.
              */
             av_log(ctx, AV_LOG_ERROR, "Missed previous RTP Marker\n");
             missed_last_packet = 1;
             rfc4175_finalize_packet(data, pkt, st->index);
         }
 
-        data->frame = av_malloc(data->frame_size);
+        if (!data->frame)
+            data->frame = av_malloc(data->frame_size);
 
         data->timestamp = *timestamp;
 
