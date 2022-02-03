@@ -458,6 +458,9 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 #if HAVE_X86ASM
         ff_tx_codelet_list_float_x86,
 #endif
+#if ARCH_AARCH64
+        ff_tx_codelet_list_float_aarch64,
+#endif
     };
     int codelet_list_num = FF_ARRAY_ELEMS(codelet_list);
 
