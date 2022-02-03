@@ -1529,11 +1529,6 @@ no_output_pic:
                     s->new_picture->data[i] += INPLACE_OFFSET;
             }
         }
-        ff_mpeg_unref_picture(s->avctx, &s->current_picture);
-        if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
-                                       s->current_picture_ptr)) < 0)
-            return ret;
-
         s->picture_number = s->new_picture->display_picture_number;
     }
     return 0;
