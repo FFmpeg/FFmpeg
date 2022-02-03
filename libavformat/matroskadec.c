@@ -1643,7 +1643,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
     case MATROSKA_TRACK_ENCODING_COMP_ZLIB:
     {
         z_stream zstream = { 0 };
-        if (inflateInit(&zstream) != Z_OK)
+        if (!pkt_size || inflateInit(&zstream) != Z_OK)
             return -1;
         zstream.next_in  = data;
         zstream.avail_in = isize;
@@ -1676,7 +1676,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
     case MATROSKA_TRACK_ENCODING_COMP_BZLIB:
     {
         bz_stream bzstream = { 0 };
-        if (BZ2_bzDecompressInit(&bzstream, 0, 0) != BZ_OK)
+        if (!pkt_size || BZ2_bzDecompressInit(&bzstream, 0, 0) != BZ_OK)
             return -1;
         bzstream.next_in  = data;
         bzstream.avail_in = isize;
