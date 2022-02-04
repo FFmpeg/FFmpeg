@@ -27,6 +27,10 @@
 
 #include <stdint.h>
 
+const uint8_t *avpriv_find_start_code(const uint8_t *p,
+                                      const uint8_t *end,
+                                      uint32_t *state);
+
 int ff_startcode_find_candidate_c(const uint8_t *buf, int size);
 
 #endif /* AVCODEC_STARTCODE_H */

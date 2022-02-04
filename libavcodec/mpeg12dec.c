@@ -34,14 +34,11 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
-#include "libavutil/video_enc_params.h"
 
 #include "avcodec.h"
-#include "bytestream.h"
 #include "error_resilience.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "mpeg_er.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
@@ -49,6 +46,7 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "profiles.h"
+#include "startcode.h"
 #include "thread.h"
 #include "xvmc_internal.h"
 

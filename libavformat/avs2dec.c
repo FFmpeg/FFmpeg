@@ -22,7 +22,7 @@
 
 #include "avformat.h"
 #include "rawdec.h"
-#include "libavcodec/internal.h"
+#include "libavcodec/startcode.h"
 #include "libavutil/intreadwrite.h"
 
 #define AVS2_ISSQH(x)  ((x) == 0xB0)

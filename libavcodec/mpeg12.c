@@ -29,18 +29,14 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/timecode.h"
 #include "libavutil/thread.h"
 
-#include "internal.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
-#include "error_resilience.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpegvideodata.h"
-#include "bytestream.h"
-#include "thread.h"
+#include "startcode.h"
 
 static const uint8_t table_mb_ptype[7][2] = {
     { 3, 5 }, // 0x01 MB_INTRA

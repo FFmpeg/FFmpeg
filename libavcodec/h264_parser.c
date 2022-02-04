@@ -27,7 +27,6 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
-#include <assert.h>
 #include <stdint.h>
 
 #include "libavutil/avutil.h"
@@ -46,9 +45,9 @@
 #include "h264_ps.h"
 #include "h2645_parse.h"
 #include "h264data.h"
-#include "internal.h"
 #include "mpegutils.h"
 #include "parser.h"
+#include "startcode.h"
 
 typedef struct H264ParseContext {
     ParseContext pc;

@@ -18,8 +18,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/common.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -31,6 +29,7 @@
 #include "h2645_parse.h"
 #include "h264.h"
 #include "hevc.h"
+#include "startcode.h"
 #include "vc1_common.h"
 
 typedef struct ExtractExtradataContext {

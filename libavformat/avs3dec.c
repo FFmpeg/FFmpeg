@@ -22,7 +22,7 @@
  */
 
 #include "libavcodec/avs3.h"
-#include "libavcodec/internal.h"
+#include "libavcodec/startcode.h"
 #include "avformat.h"
 #include "rawdec.h"
 

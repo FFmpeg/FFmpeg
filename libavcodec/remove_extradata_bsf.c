@@ -26,7 +26,7 @@
 #include "bsf_internal.h"
 #include "h264.h"
 #include "hevc.h"
-#include "internal.h"
+#include "startcode.h"
 #include "vc1_common.h"
 
 enum RemoveFreq {

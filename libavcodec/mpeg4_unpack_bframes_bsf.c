@@ -21,8 +21,8 @@
 
 #include "bsf.h"
 #include "bsf_internal.h"
-#include "internal.h"
 #include "mpeg4video.h"
+#include "startcode.h"
 
 typedef struct UnpackBFramesBSFContext {
     AVBufferRef *b_frame_ref;

@@ -21,7 +21,7 @@
 #include "cbs.h"
 #include "cbs_internal.h"
 #include "cbs_mpeg2.h"
-#include "internal.h"
+#include "startcode.h"
 
 
 #define HEADER(name) do { \

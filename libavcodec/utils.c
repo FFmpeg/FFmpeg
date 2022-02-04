@@ -27,7 +27,6 @@
 
 #include "config.h"
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -40,12 +39,9 @@
 #include "thread.h"
 #include "internal.h"
 #include "put_bits.h"
-#include "raw.h"
+#include "startcode.h"
 #include <stdlib.h>
-#include <stdarg.h>
-#include <stdatomic.h>
 #include <limits.h>
-#include <float.h>
 
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {

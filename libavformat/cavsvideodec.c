@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/startcode.h"
 #include "avformat.h"
 #include "rawdec.h"
-#include "libavcodec/internal.h"
 
 #define CAVS_SEQ_START_CODE       0x000001b0
 #define CAVS_PIC_I_START_CODE     0x000001b3

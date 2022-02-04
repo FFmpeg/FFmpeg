@@ -28,7 +28,7 @@
 #include "libavutil/opt.h"
 
 #include "libavcodec/ac3_parser_internal.h"
-#include "libavcodec/internal.h"
+#include "libavcodec/startcode.h"
 
 #include "avformat.h"
 #include "avio_internal.h"
