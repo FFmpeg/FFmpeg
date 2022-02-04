@@ -310,18 +310,21 @@ static void destroy_context(AVFContext* ctx)
     }
 }
 
-static void parse_device_name(AVFormatContext *s)
+static int parse_device_name(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
     ctx->url = av_strdup(s->url);
     char *save;
 
+    if (!ctx->url)
+        return AVERROR(ENOMEM);
     if (ctx->url[0] != ':') {
         ctx->video_filename = av_strtok(ctx->url,  ":", &save);
         ctx->audio_filename = av_strtok(NULL, ":", &save);
     } else {
         ctx->audio_filename = av_strtok(ctx->url,  ":", &save);
     }
+    return 0;
 }
 
 /**
@@ -760,6 +763,7 @@ static int get_audio_config(AVFormatContext *s)
 
 static int avf_read_header(AVFormatContext *s)
 {
+    int ret = 0;
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     uint32_t num_screens    = 0;
     AVFContext *ctx         = (AVFContext*)s->priv_data;
@@ -812,7 +816,9 @@ static int avf_read_header(AVFormatContext *s)
     }
 
     // parse input filename for video and audio device
-    parse_device_name(s);
+    ret = parse_device_name(s);
+    if (ret)
+        goto fail;
 
     // check for device index given in filename
     if (ctx->video_device_index == -1 && ctx->video_filename) {
@@ -1002,6 +1008,8 @@ static int avf_read_header(AVFormatContext *s)
 fail:
     [pool release];
     destroy_context(ctx);
+    if (ret)
+        return ret;
     return AVERROR(EIO);
 }
 
