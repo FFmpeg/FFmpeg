@@ -493,7 +493,7 @@ static int cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
         ref = (nal->data == nal->raw_data) ? frag->data_ref
                                            : packet->rbsp.rbsp_buffer_ref;
 
-        err = ff_cbs_insert_unit_data(frag, -1, nal->type,
+        err = ff_cbs_append_unit_data(frag, nal->type,
                             (uint8_t*)nal->data, size, ref);
         if (err < 0)
             return err;

@@ -789,18 +789,16 @@ int ff_cbs_insert_unit_content(CodedBitstreamFragment *frag,
     return 0;
 }
 
-int ff_cbs_insert_unit_data(CodedBitstreamFragment *frag,
-                            int position,
-                            CodedBitstreamUnitType type,
-                            uint8_t *data, size_t data_size,
-                            AVBufferRef *data_buf)
+static int cbs_insert_unit_data(CodedBitstreamFragment *frag,
+                                CodedBitstreamUnitType type,
+                                uint8_t *data, size_t data_size,
+                                AVBufferRef *data_buf,
+                                int position)
 {
     CodedBitstreamUnit *unit;
     AVBufferRef *data_ref;
     int err;
 
-    if (position == -1)
-        position = frag->nb_units;
     av_assert0(position >= 0 && position <= frag->nb_units);
 
     if (data_buf)
@@ -826,6 +824,16 @@ int ff_cbs_insert_unit_data(CodedBitstreamFragment *frag,
     unit->data_ref  = data_ref;
 
     return 0;
+}
+
+int ff_cbs_append_unit_data(CodedBitstreamFragment *frag,
+                            CodedBitstreamUnitType type,
+                            uint8_t *data, size_t data_size,
+                            AVBufferRef *data_buf)
+{
+    return cbs_insert_unit_data(frag, type,
+                                data, data_size, data_buf,
+                                frag->nb_units);
 }
 
 void ff_cbs_delete_unit(CodedBitstreamFragment *frag,

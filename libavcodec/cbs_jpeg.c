@@ -226,7 +226,7 @@ static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
             data_ref  = frag->data_ref;
         }
 
-        err = ff_cbs_insert_unit_data(frag, -1, marker,
+        err = ff_cbs_append_unit_data(frag, marker,
                                       data, data_size, data_ref);
         if (err < 0)
             return err;

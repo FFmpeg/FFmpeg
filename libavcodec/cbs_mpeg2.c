@@ -186,7 +186,7 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
            final     = 1;
         }
 
-        err = ff_cbs_insert_unit_data(frag, -1, unit_type, (uint8_t*)start,
+        err = ff_cbs_append_unit_data(frag, unit_type, (uint8_t*)start,
                                       unit_size, frag->data_ref);
         if (err < 0)
             return err;
