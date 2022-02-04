@@ -144,10 +144,8 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
                                     CodedBitstreamFragment *frag,
                                     int header)
 {
-    const uint8_t *start, *end;
-    CodedBitstreamUnitType unit_type;
+    const uint8_t *start;
     uint32_t start_code = -1;
-    size_t unit_size;
     int err;
 
     start = avpriv_find_start_code(frag->data, frag->data + frag->data_size,
@@ -158,7 +156,9 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
     }
 
     do {
-        unit_type = start_code & 0xff;
+        CodedBitstreamUnitType unit_type = start_code & 0xff;
+        const uint8_t *end;
+        size_t unit_size;
 
         // Reset start_code to ensure that avpriv_find_start_code()
         // really reads a new start code and does not reuse the old
