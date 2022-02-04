@@ -110,7 +110,7 @@ static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
     AVBufferRef *data_ref;
     uint8_t *data;
     size_t data_size;
-    int unit, start, end, marker, next_start, next_marker;
+    int start, end, marker, next_start, next_marker;
     int err, i, j, length;
 
     if (frag->data_size < 4) {
@@ -144,7 +144,7 @@ static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
     marker = frag->data[i];
     start  = i + 1;
 
-    for (unit = 0;; unit++) {
+    do {
         if (marker == JPEG_MARKER_EOI) {
             break;
         } else if (marker == JPEG_MARKER_SOS) {
@@ -226,16 +226,14 @@ static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
             data_ref  = frag->data_ref;
         }
 
-        err = ff_cbs_insert_unit_data(frag, unit, marker,
+        err = ff_cbs_insert_unit_data(frag, -1, marker,
                                       data, data_size, data_ref);
         if (err < 0)
             return err;
 
-        if (next_marker == -1)
-            break;
         marker = next_marker;
         start  = next_start;
-    }
+    } while (next_marker != -1);
 
     return 0;
 }
