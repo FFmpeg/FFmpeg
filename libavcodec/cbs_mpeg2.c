@@ -148,7 +148,8 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
     CodedBitstreamUnitType unit_type;
     uint32_t start_code = -1;
     size_t unit_size;
-    int err, i, final = 0;
+    int err;
+    int final = 0;
 
     start = avpriv_find_start_code(frag->data, frag->data + frag->data_size,
                                    &start_code);
@@ -157,7 +158,7 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
         return AVERROR_INVALIDDATA;
     }
 
-    for (i = 0;; i++) {
+    do {
         unit_type = start_code & 0xff;
 
         if (start == frag->data + frag->data_size) {
@@ -185,16 +186,13 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
            final     = 1;
         }
 
-        err = ff_cbs_insert_unit_data(frag, i, unit_type, (uint8_t*)start,
+        err = ff_cbs_insert_unit_data(frag, -1, unit_type, (uint8_t*)start,
                                       unit_size, frag->data_ref);
         if (err < 0)
             return err;
 
-        if (final)
-            break;
-
         start = end;
-    }
+    } while (!final);
 
     return 0;
 }
