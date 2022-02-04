@@ -24,7 +24,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "encode.h"
-#include "internal.h"
 
 #define ALIAS_HEADER_SIZE 10
 

@@ -28,7 +28,6 @@
 #include "hevc_ps.h"
 #include "hevc_sei.h"
 #include "h2645_parse.h"
-#include "internal.h"
 #include "parser.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes

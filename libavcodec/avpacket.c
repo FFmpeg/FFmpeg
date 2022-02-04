@@ -22,14 +22,12 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/common.h"
-#include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "libavutil/rational.h"
 
-#include "bytestream.h"
-#include "internal.h"
+#include "defs.h"
 #include "packet.h"
 #include "packet_internal.h"
 

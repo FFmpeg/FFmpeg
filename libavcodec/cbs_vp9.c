@@ -21,7 +21,6 @@
 #include "cbs.h"
 #include "cbs_internal.h"
 #include "cbs_vp9.h"
-#include "internal.h"
 
 
 static int cbs_vp9_read_s(CodedBitstreamContext *ctx, GetBitContext *gbc,

@@ -21,11 +21,9 @@
 #ifndef AVCODEC_DCA_XLL_H
 #define AVCODEC_DCA_XLL_H
 
-#include "libavutil/common.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
-#include "internal.h"
 #include "get_bits.h"
 #include "dca.h"
 #include "dcadsp.h"

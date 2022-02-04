@@ -22,7 +22,7 @@
 #ifndef AVCODEC_FLACDATA_H
 #define AVCODEC_FLACDATA_H
 
-#include "internal.h"
+#include <stdint.h>
 
 extern const int ff_flac_sample_rate_table[16];
 

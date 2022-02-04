@@ -28,7 +28,6 @@
 #include <inttypes.h>
 
 #include "libavutil/imgutils.h"
-#include "internal.h"
 #include "mathops.h"
 #include "avcodec.h"
 #include "h264data.h"

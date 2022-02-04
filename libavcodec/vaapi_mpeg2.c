@@ -23,7 +23,6 @@
 #include "hwconfig.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
-#include "internal.h"
 #include "vaapi_decode.h"
 
 /** Reconstruct bitstream f_code */

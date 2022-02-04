@@ -21,7 +21,6 @@
  */
 
 #include "hwconfig.h"
-#include "internal.h"
 #include "vaapi_decode.h"
 #include "vc1.h"
 #include "vc1data.h"

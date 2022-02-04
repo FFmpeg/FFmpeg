@@ -22,7 +22,6 @@
 
 #include "h263.h"
 #include "hwconfig.h"
-#include "internal.h"
 #include "mpeg4video.h"
 #include "mpegvideo.h"
 #include "vaapi_decode.h"

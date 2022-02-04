@@ -20,12 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "encode.h"
-#include "internal.h"
 #include "xwd.h"
 
 #define WINDOW_NAME         "lavcxwdenc"

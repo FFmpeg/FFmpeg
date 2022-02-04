@@ -33,7 +33,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "encode.h"
-#include "internal.h"
 
 static int fits_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)

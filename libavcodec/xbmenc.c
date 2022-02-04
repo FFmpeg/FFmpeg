@@ -22,7 +22,6 @@
 
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
 #include "mathops.h"
 
 #define ANSI_MIN_READLINE 509

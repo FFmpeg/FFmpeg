@@ -26,7 +26,6 @@
 #include <stdatomic.h>
 
 #include "libavutil/buffer.h"
-#include "libavutil/md5.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
@@ -41,7 +40,6 @@
 #include "hevc_sei.h"
 #include "hevcdsp.h"
 #include "h274.h"
-#include "internal.h"
 #include "thread.h"
 #include "videodsp.h"
 

@@ -20,10 +20,10 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 
+#include "avcodec.h"
 #include "cbs.h"
 #include "cbs_internal.h"
 #include "cbs_av1.h"
-#include "internal.h"
 
 
 static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,

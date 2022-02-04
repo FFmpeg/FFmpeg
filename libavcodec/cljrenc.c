@@ -24,12 +24,10 @@
  * Cirrus Logic AccuPak encoder.
  */
 
-#include "libavutil/common.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
 #include "put_bits.h"
 
 typedef struct CLJRContext {

@@ -24,7 +24,6 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
-#include "internal.h"
 #include "h264dec.h"
 #include "h264_ps.h"
 #include "hwconfig.h"

@@ -23,13 +23,8 @@
 #ifndef AVCODEC_SCPR_H
 #define AVCODEC_SCPR_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "avcodec.h"
 #include "bytestream.h"
-#include "internal.h"
 #include "scpr3.h"
 
 typedef struct RangeCoder {

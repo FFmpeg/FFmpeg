@@ -27,7 +27,6 @@
 #include "xface.h"
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
 #include "libavutil/avassert.h"
 
 typedef struct XFaceContext {

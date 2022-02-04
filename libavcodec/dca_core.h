@@ -21,13 +21,11 @@
 #ifndef AVCODEC_DCA_CORE_H
 #define AVCODEC_DCA_CORE_H
 
-#include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
-#include "internal.h"
 #include "get_bits.h"
 #include "dca.h"
 #include "dca_exss.h"

@@ -22,7 +22,6 @@
 
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
 
 static int yuv4_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)

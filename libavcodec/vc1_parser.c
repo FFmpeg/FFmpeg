@@ -29,7 +29,6 @@
 #include "parser.h"
 #include "vc1.h"
 #include "get_bits.h"
-#include "internal.h"
 
 /** The maximum number of bytes of a sequence, entry point or
  *  frame header whose values we pay any attention to */

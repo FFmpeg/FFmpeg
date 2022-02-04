@@ -25,7 +25,6 @@
 #include "rawdec.h"
 
 #include "libavutil/intreadwrite.h"
-#include "libavcodec/internal.h"
 
 static int ipu_read_probe(const AVProbeData *p)
 {

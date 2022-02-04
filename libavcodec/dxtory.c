@@ -29,7 +29,6 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "unary.h"
 #include "thread.h"
 

@@ -25,6 +25,7 @@
 #include "dcadec.h"
 #include "dcahuff.h"
 #include "dca_syncwords.h"
+#include "internal.h"
 #include "profiles.h"
 
 #define MIN_PACKET_SIZE     16

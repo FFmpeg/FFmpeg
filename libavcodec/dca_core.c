@@ -25,6 +25,7 @@
 #include "dcahuff.h"
 #include "dcamath.h"
 #include "dca_syncwords.h"
+#include "internal.h"
 
 #if ARCH_ARM
 #include "arm/dca.h"

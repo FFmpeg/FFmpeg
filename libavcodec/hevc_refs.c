@@ -22,9 +22,7 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/pixdesc.h"
 
-#include "internal.h"
 #include "thread.h"
 #include "hevc.h"
 #include "hevcdec.h"
