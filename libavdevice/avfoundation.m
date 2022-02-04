@@ -106,6 +106,7 @@ typedef struct
     int             audio_device_index;
     int             audio_stream_index;
 
+    char            *url;
     char            *video_filename;
     char            *audio_filename;
 
@@ -299,6 +300,7 @@ static void destroy_context(AVFContext* ctx)
     ctx->avf_delegate    = NULL;
     ctx->avf_audio_delegate = NULL;
 
+    av_freep(&ctx->url);
     av_freep(&ctx->audio_buffer);
 
     pthread_mutex_destroy(&ctx->frame_lock);
@@ -311,14 +313,14 @@ static void destroy_context(AVFContext* ctx)
 static void parse_device_name(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
-    char *tmp = av_strdup(s->url);
+    ctx->url = av_strdup(s->url);
     char *save;
 
-    if (tmp[0] != ':') {
-        ctx->video_filename = av_strtok(tmp,  ":", &save);
+    if (ctx->url[0] != ':') {
+        ctx->video_filename = av_strtok(ctx->url,  ":", &save);
         ctx->audio_filename = av_strtok(NULL, ":", &save);
     } else {
-        ctx->audio_filename = av_strtok(tmp,  ":", &save);
+        ctx->audio_filename = av_strtok(ctx->url,  ":", &save);
     }
 }
 
