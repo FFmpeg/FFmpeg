@@ -3850,12 +3850,16 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
             do {
                 int64_t desc_bytes = desc_end.end_offset - desc_beg.start_offset;
                 int64_t desc_ns = desc_end.end_time_ns - desc_beg.start_time_ns;
-                double desc_sec = desc_ns / nano_seconds_per_second;
-                double calc_bits_per_second = (desc_bytes * 8) / desc_sec;
+                double desc_sec, calc_bits_per_second, percent, mod_bits_per_second;
+                if (desc_bytes <= 0)
+                    return -1;
+
+                desc_sec = desc_ns / nano_seconds_per_second;
+                calc_bits_per_second = (desc_bytes * 8) / desc_sec;
 
                 // Drop the bps by the percentage of bytes buffered.
-                double percent = (desc_bytes - prebuffer_bytes) / desc_bytes;
-                double mod_bits_per_second = calc_bits_per_second * percent;
+                percent = (desc_bytes - prebuffer_bytes) / desc_bytes;
+                mod_bits_per_second = calc_bits_per_second * percent;
 
                 if (prebuffer < desc_sec) {
                     double search_sec =
