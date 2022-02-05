@@ -65,7 +65,7 @@ static int cas_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
         const uint8_t *src = in->data[p];
 
         if (!((1 << p) & s->planes)) {
-            av_image_copy_plane(dst, linesize, src + slice_start * linesize, in_linesize,
+            av_image_copy_plane(dst, linesize, src + slice_start * in_linesize, in_linesize,
                                 w, slice_end - slice_start);
             continue;
         }
@@ -128,12 +128,12 @@ static int cas_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs
         const int w1 = w - 1;
         const int h = s->planeheight[p];
         const int h1 = h - 1;
-        uint16_t *dst = (uint16_t *)out->data[p] + slice_start * linesize;
+        uint16_t *dst = ((uint16_t *)out->data[p]) + slice_start * linesize;
         const uint16_t *src = (const uint16_t *)in->data[p];
 
         if (!((1 << p) & s->planes)) {
-            av_image_copy_plane((uint8_t *)dst, linesize, (uint8_t *)(src + slice_start * linesize),
-                                in_linesize, w * 2, slice_end - slice_start);
+            av_image_copy_plane((uint8_t *)dst, linesize * 2, (uint8_t *)(src + slice_start * in_linesize),
+                                in_linesize * 2, w * 2, slice_end - slice_start);
             continue;
         }
 
