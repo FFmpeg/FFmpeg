@@ -186,7 +186,7 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state,
     if (RItype)
         temp += state->N[Q] >> 1;
 
-    for (k = 0; (state->N[Q] << k) < temp; k++)
+    for (k = 0; ((unsigned)state->N[Q] << k) < temp; k++)
         ;
 
 #ifdef JLS_BROKEN
