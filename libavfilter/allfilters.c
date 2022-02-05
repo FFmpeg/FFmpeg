@@ -115,6 +115,7 @@ extern const AVFilter ff_af_crossfeed;
 extern const AVFilter ff_af_crystalizer;
 extern const AVFilter ff_af_dcshift;
 extern const AVFilter ff_af_deesser;
+extern const AVFilter ff_af_dialoguenhance;
 extern const AVFilter ff_af_drmeter;
 extern const AVFilter ff_af_dynaudnorm;
 extern const AVFilter ff_af_earwax;

@@ -4182,6 +4182,34 @@ Default value is @var{o}.
 
 @end table
 
+@section dialoguenhance
+Enhance dialogue in stereo audio.
+
+This filter accepts stereo input and produce surround (3.0) channels output.
+The newly produced front center channel have enhanced speech dialogue originally
+available in both stereo channels.
+This filter outputs front left and front right channels same as available in stereo input.
+
+The filter accepts the following options:
+
+@table @option
+@item original
+Set the original center factor to keep in front center channel output.
+Allowed range is from 0 to 1. Default value is 1.
+
+@item enhance
+Set the dialogue enhance factor to put in front center channel output.
+Allowed range is from 0 to 3. Default value is 1.
+
+@item voice
+Set the voice detection factor.
+Allowed range is from 2 to 32. Default value is 2.
+@end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section drmeter
 Measure audio dynamic range.
 
