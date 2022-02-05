@@ -162,22 +162,30 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
                                  struct sockaddr *addr,
                                  void *logctx)
 {
+    int protocol, cmd;
+
+    switch (addr->sa_family) {
 #ifdef IP_MULTICAST_TTL
-    if (addr->sa_family == AF_INET) {
-        if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
-            ff_log_net_error(logctx, AV_LOG_ERROR, "setsockopt(IP_MULTICAST_TTL)");
-            return ff_neterrno();
-        }
-    }
+        case AF_INET:
+            protocol = IPPROTO_IP;
+            cmd      = IP_MULTICAST_TTL;
+            break;
 #endif
 #if defined(IPPROTO_IPV6) && defined(IPV6_MULTICAST_HOPS)
-    if (addr->sa_family == AF_INET6) {
-        if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &mcastTTL, sizeof(mcastTTL)) < 0) {
-            ff_log_net_error(logctx, AV_LOG_ERROR, "setsockopt(IPV6_MULTICAST_HOPS)");
-            return ff_neterrno();
-        }
-    }
+        case AF_INET6:
+            protocol = IPPROTO_IPV6;
+            cmd      = IPV6_MULTICAST_HOPS;
+            break;
 #endif
+        default:
+            return 0;
+    }
+
+    if (setsockopt(sockfd, protocol, cmd, &mcastTTL, sizeof(mcastTTL)) < 0) {
+        ff_log_net_error(logctx, AV_LOG_ERROR, "setsockopt(IPV4/IPV6 MULTICAST TTL)");
+        return ff_neterrno();
+    }
+
     return 0;
 }
 
