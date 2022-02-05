@@ -3377,6 +3377,7 @@ MpegTSContext *avpriv_mpegts_parse_open(AVFormatContext *s)
         return NULL;
     /* no stream case, currently used by RTP */
     ts->raw_packet_size = TS_PACKET_SIZE;
+    ts->max_packet_size = 2048000;
     ts->stream = s;
     ts->auto_guess = 1;
 
