@@ -175,7 +175,7 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
             cmd      = IP_MULTICAST_TTL;
             break;
 #endif
-#if defined(IPPROTO_IPV6) && defined(IPV6_MULTICAST_HOPS)
+#ifdef IPV6_MULTICAST_HOPS
         case AF_INET6:
             protocol = IPPROTO_IPV6;
             cmd      = IPV6_MULTICAST_HOPS;
