@@ -352,9 +352,6 @@ static int hap_decode(AVCodecContext *avctx, void *data,
 
         start_texture_section += ctx->texture_section_size + 4;
 
-        if (avctx->codec->update_thread_context)
-            ff_thread_finish_setup(avctx);
-
         /* Unpack the DXT texture */
         if (hap_can_use_tex_in_place(ctx)) {
             int tex_size;
