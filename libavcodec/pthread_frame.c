@@ -949,7 +949,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int flags)
 {
-    PerThreadContext *p = avctx->internal->thread_ctx;
+    PerThreadContext *p;
     int err;
 
     f->owner[0] = f->owner[1] = avctx;
@@ -957,6 +957,7 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
     if (!(avctx->active_thread_type & FF_THREAD_FRAME))
         return ff_get_buffer(avctx, f->f, flags);
 
+    p = avctx->internal->thread_ctx;
 FF_DISABLE_DEPRECATION_WARNINGS
     if (atomic_load(&p->state) != STATE_SETTING_UP &&
         (avctx->codec->update_thread_context
@@ -1020,10 +1021,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
 enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
 {
     enum AVPixelFormat res;
-    PerThreadContext *p = avctx->internal->thread_ctx;
+    PerThreadContext *p;
     if (!(avctx->active_thread_type & FF_THREAD_FRAME) || avctx->thread_safe_callbacks ||
         avctx->get_format == avcodec_default_get_format)
         return ff_get_format(avctx, fmt);
+
+    p = avctx->internal->thread_ctx;
     if (atomic_load(&p->state) != STATE_SETTING_UP) {
         av_log(avctx, AV_LOG_ERROR, "get_format() cannot be called after ff_thread_finish_setup()\n");
         return -1;
@@ -1057,7 +1060,7 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
 {
 #if FF_API_THREAD_SAFE_CALLBACKS
 FF_DISABLE_DEPRECATION_WARNINGS
-    PerThreadContext *p = avctx->internal->thread_ctx;
+    PerThreadContext *p;
     FrameThreadContext *fctx;
     AVFrame *dst;
     int ret = 0;
@@ -1084,6 +1087,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return;
     }
 
+    p    = avctx->internal->thread_ctx;
     fctx = p->parent;
     pthread_mutex_lock(&fctx->buffer_mutex);
 
