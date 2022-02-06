@@ -721,8 +721,9 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             s->bpp += byte_depth;
         }
 
-        ff_thread_release_buffer(avctx, &s->picture);
-        if ((ret = ff_thread_get_buffer(avctx, &s->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+        ff_thread_release_ext_buffer(avctx, &s->picture);
+        if ((ret = ff_thread_get_ext_buffer(avctx, &s->picture,
+                                            AV_GET_BUFFER_FLAG_REF)) < 0)
             return ret;
 
         p->pict_type        = AV_PICTURE_TYPE_I;
@@ -1560,7 +1561,7 @@ static int decode_frame_png(AVCodecContext *avctx,
         goto the_end;
 
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
-        ff_thread_release_buffer(avctx, &s->last_picture);
+        ff_thread_release_ext_buffer(avctx, &s->last_picture);
         FFSWAP(ThreadFrame, s->picture, s->last_picture);
     }
 
@@ -1624,9 +1625,9 @@ static int decode_frame_apng(AVCodecContext *avctx,
 
     if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
-            ff_thread_release_buffer(avctx, &s->picture);
+            ff_thread_release_ext_buffer(avctx, &s->picture);
         } else {
-            ff_thread_release_buffer(avctx, &s->last_picture);
+            ff_thread_release_ext_buffer(avctx, &s->last_picture);
             FFSWAP(ThreadFrame, s->picture, s->last_picture);
         }
     }
@@ -1677,7 +1678,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     src_frame = psrc->dispose_op == APNG_DISPOSE_OP_PREVIOUS ?
                 &psrc->last_picture : &psrc->picture;
 
-    ff_thread_release_buffer(dst, &pdst->last_picture);
+    ff_thread_release_ext_buffer(dst, &pdst->last_picture);
     if (src_frame && src_frame->f->data[0]) {
         ret = ff_thread_ref_frame(&pdst->last_picture, src_frame);
         if (ret < 0)
@@ -1712,9 +1713,9 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
 {
     PNGDecContext *s = avctx->priv_data;
 
-    ff_thread_release_buffer(avctx, &s->last_picture);
+    ff_thread_release_ext_buffer(avctx, &s->last_picture);
     av_frame_free(&s->last_picture.f);
-    ff_thread_release_buffer(avctx, &s->picture);
+    ff_thread_release_ext_buffer(avctx, &s->picture);
     av_frame_free(&s->picture.f);
     av_freep(&s->buffer);
     s->buffer_size = 0;

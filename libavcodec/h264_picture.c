@@ -40,7 +40,7 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
     if (!pic->f || !pic->f->buf[0])
         return;
 
-    ff_thread_release_buffer(h->avctx, &pic->tf);
+    ff_thread_release_ext_buffer(h->avctx, &pic->tf);
     ff_thread_release_buffer(h->avctx, &pic->tf_grain);
     av_buffer_unref(&pic->hwaccel_priv_buf);
 
@@ -155,7 +155,7 @@ int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture 
     av_assert0(src->tf.f == src->f);
 
     dst->tf.f = dst->f;
-    ff_thread_release_buffer(h->avctx, &dst->tf);
+    ff_thread_release_ext_buffer(h->avctx, &dst->tf);
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
         goto fail;

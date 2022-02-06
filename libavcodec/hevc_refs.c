@@ -36,7 +36,7 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 
     frame->flags &= ~flags;
     if (!frame->flags) {
-        ff_thread_release_buffer(s->avctx, &frame->tf);
+        ff_thread_release_ext_buffer(s->avctx, &frame->tf);
         ff_thread_release_buffer(s->avctx, &frame->tf_grain);
         frame->needs_fg = 0;
 
@@ -88,8 +88,8 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         if (frame->frame->buf[0])
             continue;
 
-        ret = ff_thread_get_buffer(s->avctx, &frame->tf,
-                                   AV_GET_BUFFER_FLAG_REF);
+        ret = ff_thread_get_ext_buffer(s->avctx, &frame->tf,
+                                       AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             return NULL;
 

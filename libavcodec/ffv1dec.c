@@ -842,7 +842,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     AVFrame *p;
 
     if (f->last_picture.f)
-        ff_thread_release_buffer(avctx, &f->last_picture);
+        ff_thread_release_ext_buffer(avctx, &f->last_picture);
     FFSWAP(ThreadFrame, f->picture, f->last_picture);
 
     f->cur = p = f->picture.f;
@@ -874,7 +874,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         p->key_frame = 0;
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &f->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+    ret = ff_thread_get_ext_buffer(avctx, &f->picture, AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
         return ret;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
@@ -966,7 +967,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     ff_thread_report_progress(&f->picture, INT_MAX, 0);
 
     if (f->last_picture.f)
-        ff_thread_release_buffer(avctx, &f->last_picture);
+        ff_thread_release_ext_buffer(avctx, &f->last_picture);
     if ((ret = av_frame_ref(data, f->picture.f)) < 0)
         return ret;
 
@@ -1037,7 +1038,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
 
-    ff_thread_release_buffer(dst, &fdst->picture);
+    ff_thread_release_ext_buffer(dst, &fdst->picture);
     if (fsrc->picture.f->data[0]) {
         if ((ret = ff_thread_ref_frame(&fdst->picture, &fsrc->picture)) < 0)
             return ret;

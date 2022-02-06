@@ -29,6 +29,7 @@
 #include "motion_est.h"
 #include "mpegpicture.h"
 #include "mpegutils.h"
+#include "threadframe.h"
 
 static void av_noinline free_picture_tables(Picture *pic)
 {
@@ -130,8 +131,8 @@ static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
             pic->f->height = avctx->height + 2 * EDGE_WIDTH;
         }
 
-        r = ff_thread_get_buffer(avctx, &pic->tf,
-                                 pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
+        r = ff_thread_get_ext_buffer(avctx, &pic->tf,
+                                     pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
     } else {
         pic->f->width  = avctx->width;
         pic->f->height = avctx->height;
@@ -321,7 +322,7 @@ void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
     if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
         avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
         avctx->codec_id != AV_CODEC_ID_MSS2)
-        ff_thread_release_buffer(avctx, &pic->tf);
+        ff_thread_release_ext_buffer(avctx, &pic->tf);
     else if (pic->f)
         av_frame_unref(pic->f);
 

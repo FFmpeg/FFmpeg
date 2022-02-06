@@ -191,8 +191,8 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
     av_assert0(!pic->f->data[0]);
 
     pic->tf.f = pic->f;
-    ret = ff_thread_get_buffer(h->avctx, &pic->tf, pic->reference ?
-                                                   AV_GET_BUFFER_FLAG_REF : 0);
+    ret = ff_thread_get_ext_buffer(h->avctx, &pic->tf,
+                                   pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
     if (ret < 0)
         goto fail;
 
@@ -1699,7 +1699,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                 ff_thread_await_progress(&prev->tf, INT_MAX, 0);
                 if (prev->field_picture)
                     ff_thread_await_progress(&prev->tf, INT_MAX, 1);
-                ff_thread_release_buffer(h->avctx, &h->short_ref[0]->tf);
+                ff_thread_release_ext_buffer(h->avctx, &h->short_ref[0]->tf);
                 h->short_ref[0]->tf.f = h->short_ref[0]->f;
                 ret = ff_thread_ref_frame(&h->short_ref[0]->tf, &prev->tf);
                 if (ret < 0)

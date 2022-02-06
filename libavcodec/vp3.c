@@ -333,11 +333,11 @@ static void vp3_decode_flush(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
 
     if (s->golden_frame.f)
-        ff_thread_release_buffer(avctx, &s->golden_frame);
+        ff_thread_release_ext_buffer(avctx, &s->golden_frame);
     if (s->last_frame.f)
-        ff_thread_release_buffer(avctx, &s->last_frame);
+        ff_thread_release_ext_buffer(avctx, &s->last_frame);
     if (s->current_frame.f)
-        ff_thread_release_buffer(avctx, &s->current_frame);
+        ff_thread_release_ext_buffer(avctx, &s->current_frame);
 }
 
 static av_cold int vp3_decode_end(AVCodecContext *avctx)
@@ -2507,25 +2507,25 @@ static int update_frames(AVCodecContext *avctx)
     int ret = 0;
 
     /* shuffle frames (last = current) */
-    ff_thread_release_buffer(avctx, &s->last_frame);
+    ff_thread_release_ext_buffer(avctx, &s->last_frame);
     ret = ff_thread_ref_frame(&s->last_frame, &s->current_frame);
     if (ret < 0)
         goto fail;
 
     if (s->keyframe) {
-        ff_thread_release_buffer(avctx, &s->golden_frame);
+        ff_thread_release_ext_buffer(avctx, &s->golden_frame);
         ret = ff_thread_ref_frame(&s->golden_frame, &s->current_frame);
     }
 
 fail:
-    ff_thread_release_buffer(avctx, &s->current_frame);
+    ff_thread_release_ext_buffer(avctx, &s->current_frame);
     return ret;
 }
 
 #if HAVE_THREADS
 static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, ThreadFrame *src)
 {
-    ff_thread_release_buffer(s->avctx, dst);
+    ff_thread_release_ext_buffer(s->avctx, dst);
     if (src->f->data[0])
         return ff_thread_ref_frame(dst, src);
     return 0;
@@ -2675,7 +2675,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I
                                                 : AV_PICTURE_TYPE_P;
     s->current_frame.f->key_frame = s->keyframe;
-    if ((ret = ff_thread_get_buffer(avctx, &s->current_frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_thread_get_ext_buffer(avctx, &s->current_frame,
+                                        AV_GET_BUFFER_FLAG_REF)) < 0)
         goto error;
 
     if (!s->edge_emu_buffer)
@@ -2734,10 +2735,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                    "vp3: first frame not a keyframe\n");
 
             s->golden_frame.f->pict_type = AV_PICTURE_TYPE_I;
-            if ((ret = ff_thread_get_buffer(avctx, &s->golden_frame,
-                                     AV_GET_BUFFER_FLAG_REF)) < 0)
+            if ((ret = ff_thread_get_ext_buffer(avctx, &s->golden_frame,
+                                                AV_GET_BUFFER_FLAG_REF)) < 0)
                 goto error;
-            ff_thread_release_buffer(avctx, &s->last_frame);
+            ff_thread_release_ext_buffer(avctx, &s->last_frame);
             if ((ret = ff_thread_ref_frame(&s->last_frame,
                                            &s->golden_frame)) < 0)
                 goto error;

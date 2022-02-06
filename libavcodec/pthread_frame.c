@@ -1057,6 +1057,11 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     return ret;
 }
 
+int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
+{
+    return ff_thread_get_buffer(avctx, f, flags);
+}
+
 void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
 {
 #if FF_API_THREAD_SAFE_CALLBACKS
@@ -1125,4 +1130,9 @@ fail:
         av_frame_unref(f->f);
     }
 #endif
+}
+
+void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f)
+{
+    ff_thread_release_buffer(avctx, f);
 }

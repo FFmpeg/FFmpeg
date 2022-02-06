@@ -93,7 +93,7 @@ static void vp9_tile_data_free(VP9TileData *td)
 
 static void vp9_frame_unref(AVCodecContext *avctx, VP9Frame *f)
 {
-    ff_thread_release_buffer(avctx, &f->tf);
+    ff_thread_release_ext_buffer(avctx, &f->tf);
     av_buffer_unref(&f->extradata);
     av_buffer_unref(&f->hwaccel_priv_buf);
     f->segmentation_map = NULL;
@@ -105,7 +105,7 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
     VP9Context *s = avctx->priv_data;
     int ret, sz;
 
-    ret = ff_thread_get_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF);
+    ret = ff_thread_get_ext_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF);
     if (ret < 0)
         return ret;
 
@@ -1237,9 +1237,9 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
     }
     av_buffer_pool_uninit(&s->frame_extradata_pool);
     for (i = 0; i < 8; i++) {
-        ff_thread_release_buffer(avctx, &s->s.refs[i]);
+        ff_thread_release_ext_buffer(avctx, &s->s.refs[i]);
         av_frame_free(&s->s.refs[i].f);
-        ff_thread_release_buffer(avctx, &s->next_refs[i]);
+        ff_thread_release_ext_buffer(avctx, &s->next_refs[i]);
         av_frame_free(&s->next_refs[i].f);
     }
 
@@ -1571,7 +1571,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
         ((AVFrame *)frame)->pkt_dts = pkt->dts;
         for (i = 0; i < 8; i++) {
             if (s->next_refs[i].f->buf[0])
-                ff_thread_release_buffer(avctx, &s->next_refs[i]);
+                ff_thread_release_ext_buffer(avctx, &s->next_refs[i]);
             if (s->s.refs[i].f->buf[0] &&
                 (ret = ff_thread_ref_frame(&s->next_refs[i], &s->s.refs[i])) < 0)
                 return ret;
@@ -1611,7 +1611,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
     // ref frame setup
     for (i = 0; i < 8; i++) {
         if (s->next_refs[i].f->buf[0])
-            ff_thread_release_buffer(avctx, &s->next_refs[i]);
+            ff_thread_release_ext_buffer(avctx, &s->next_refs[i]);
         if (s->s.h.refreshrefmask & (1 << i)) {
             ret = ff_thread_ref_frame(&s->next_refs[i], &s->s.frames[CUR_FRAME].tf);
         } else if (s->s.refs[i].f->buf[0]) {
@@ -1760,7 +1760,7 @@ finish:
     // ref frame setup
     for (i = 0; i < 8; i++) {
         if (s->s.refs[i].f->buf[0])
-            ff_thread_release_buffer(avctx, &s->s.refs[i]);
+            ff_thread_release_ext_buffer(avctx, &s->s.refs[i]);
         if (s->next_refs[i].f->buf[0] &&
             (ret = ff_thread_ref_frame(&s->s.refs[i], &s->next_refs[i])) < 0)
             return ret;
@@ -1783,7 +1783,7 @@ static void vp9_decode_flush(AVCodecContext *avctx)
     for (i = 0; i < 3; i++)
         vp9_frame_unref(avctx, &s->s.frames[i]);
     for (i = 0; i < 8; i++)
-        ff_thread_release_buffer(avctx, &s->s.refs[i]);
+        ff_thread_release_ext_buffer(avctx, &s->s.refs[i]);
 }
 
 static av_cold int vp9_decode_init(AVCodecContext *avctx)
@@ -1832,7 +1832,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     }
     for (i = 0; i < 8; i++) {
         if (s->s.refs[i].f->buf[0])
-            ff_thread_release_buffer(dst, &s->s.refs[i]);
+            ff_thread_release_ext_buffer(dst, &s->s.refs[i]);
         if (ssrc->next_refs[i].f->buf[0]) {
             if ((ret = ff_thread_ref_frame(&s->s.refs[i], &ssrc->next_refs[i])) < 0)
                 return ret;

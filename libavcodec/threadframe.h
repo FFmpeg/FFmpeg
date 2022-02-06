@@ -50,4 +50,28 @@ void ff_thread_report_progress(ThreadFrame *f, int progress, int field);
  */
 void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
 
+/**
+ * Wrapper around ff_get_buffer() for frame-multithreaded codecs.
+ * Call this function instead of ff_get_buffer() if you might need
+ * to wait for progress on this frame.
+ * Cannot be called after the codec has called ff_thread_finish_setup().
+ *
+ * @param avctx The current context.
+ * @param f The frame to write into.
+ * @note: It is fine to call this with codecs that do not support
+ *        frame threading.
+ */
+int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags);
+
+/**
+ * Unref a ThreadFrame.
+ *
+ * This is basically a wrapper around av_frame_unref() and should
+ * be called instead of it.
+ *
+ * @param avctx The current context.
+ * @param f The picture being released.
+ */
+void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f);
+
 #endif
