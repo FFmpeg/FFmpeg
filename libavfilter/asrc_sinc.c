@@ -22,8 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
-
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 
 #include "audio.h"
 #include "avfilter.h"
@@ -42,7 +41,8 @@ typedef struct SincContext {
     float *coeffs;
     int64_t pts;
 
-    RDFTContext *rdft, *irdft;
+    AVTXContext *tx, *itx;
+    av_tx_fn tx_fn, itx_fn;
 } SincContext;
 
 static int activate(AVFilterContext *ctx)
@@ -216,7 +216,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
 {
     float *pi_wraps, *work, phase1 = (phase > 50.f ? 100.f - phase : phase) / 50.f;
     int i, work_len, begin, end, imp_peak = 0, peak = 0;
-    float imp_sum = 0, peak_imp_sum = 0;
+    float imp_sum = 0, peak_imp_sum = 0, scale = 1.f;
     float prev_angle2 = 0, cum_2pi = 0, prev_angle1 = 0, cum_1pi = 0;
 
     for (i = *len, work_len = 2 * 2 * 8; i > 1; work_len <<= 1, i >>= 1);
@@ -229,17 +229,16 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
 
     memcpy(work, *h, *len * sizeof(*work));
 
-    av_rdft_end(s->rdft);
-    av_rdft_end(s->irdft);
-    s->rdft = s->irdft = NULL;
-    s->rdft  = av_rdft_init(av_log2(work_len), DFT_R2C);
-    s->irdft = av_rdft_init(av_log2(work_len), IDFT_C2R);
-    if (!s->rdft || !s->irdft) {
+    av_tx_uninit(&s->tx);
+    av_tx_uninit(&s->itx);
+    av_tx_init(&s->tx,  &s->tx_fn,  AV_TX_FLOAT_RDFT, 0, work_len, &scale, AV_TX_INPLACE);
+    av_tx_init(&s->itx, &s->itx_fn, AV_TX_FLOAT_RDFT, 1, work_len, &scale, AV_TX_INPLACE);
+    if (!s->tx || !s->itx) {
         av_free(work);
         return AVERROR(ENOMEM);
     }
 
-    av_rdft_calc(s->rdft, work);   /* Cepstral: */
+    s->tx_fn(s->tx, work, work, sizeof(float));   /* Cepstral: */
     UNPACK(work, work_len);
 
     for (i = 0; i <= work_len; i += 2) {
@@ -263,7 +262,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
     }
 
     PACK(work, work_len);
-    av_rdft_calc(s->irdft, work);
+    s->itx_fn(s->itx, work, work, sizeof(float));
 
     for (i = 0; i < work_len; i++)
         work[i] *= 2.f / work_len;
@@ -272,7 +271,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
         work[i] *= 2;
         work[i + work_len / 2] = 0;
     }
-    av_rdft_calc(s->rdft, work);
+    s->tx_fn(s->tx, work, work, sizeof(float));
 
     for (i = 2; i < work_len; i += 2)   /* Interpolate between linear & min phase */
         work[i + 1] = phase1 * i / work_len * pi_wraps[work_len >> 1] + (1 - phase1) * (work[i + 1] + pi_wraps[i >> 1]) - pi_wraps[i >> 1];
@@ -286,7 +285,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
         work[i + 1] = x * sinf(work[i + 1]);
     }
 
-    av_rdft_calc(s->irdft, work);
+    s->itx_fn(s->itx, work, work, sizeof(float));
     for (i = 0; i < work_len; i++)
         work[i] *= 2.f / work_len;
 
@@ -390,9 +389,8 @@ static int config_output(AVFilterLink *outlink)
         s->coeffs[i] = h[longer][i];
     av_free(h[longer]);
 
-    av_rdft_end(s->rdft);
-    av_rdft_end(s->irdft);
-    s->rdft = s->irdft = NULL;
+    av_tx_uninit(&s->tx);
+    av_tx_uninit(&s->itx);
 
     return 0;
 }
@@ -402,9 +400,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     SincContext *s = ctx->priv;
 
     av_freep(&s->coeffs);
-    av_rdft_end(s->rdft);
-    av_rdft_end(s->irdft);
-    s->rdft = s->irdft = NULL;
+    av_tx_uninit(&s->tx);
+    av_tx_uninit(&s->itx);
 }
 
 static const AVFilterPad sinc_outputs[] = {
