@@ -30,7 +30,7 @@
 #include "h264_ps.h"
 #include "mpegutils.h"
 #include "rectangle.h"
-#include "thread.h"
+#include "threadframe.h"
 
 #include <assert.h>
 

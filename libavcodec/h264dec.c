@@ -46,7 +46,7 @@
 #include "mpegutils.h"
 #include "profiles.h"
 #include "rectangle.h"
-#include "thread.h"
+#include "threadframe.h"
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 

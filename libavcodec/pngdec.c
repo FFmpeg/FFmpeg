@@ -36,6 +36,7 @@
 #include "png.h"
 #include "pngdsp.h"
 #include "thread.h"
+#include "threadframe.h"
 
 #include <zlib.h>
 

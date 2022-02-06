@@ -43,6 +43,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "thread.h"
+#include "threadframe.h"
 #include "videodsp.h"
 #include "vp3data.h"
 #include "vp4data.h"

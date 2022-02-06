@@ -33,6 +33,7 @@
 #include "mathops.h"
 #include "rectangle.h"
 #include "thread.h"
+#include "threadframe.h"
 #include "vp8.h"
 #include "vp8data.h"
 

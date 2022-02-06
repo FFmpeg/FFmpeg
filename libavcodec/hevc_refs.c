@@ -26,6 +26,7 @@
 #include "thread.h"
 #include "hevc.h"
 #include "hevcdec.h"
+#include "threadframe.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 {

@@ -34,7 +34,7 @@
 #include "h264dec.h"
 #include "h264_ps.h"
 #include "qpeldsp.h"
-#include "thread.h"
+#include "threadframe.h"
 
 static inline int get_lowest_part_list_y(H264SliceContext *sl,
                                          int n, int height, int y_offset, int list)

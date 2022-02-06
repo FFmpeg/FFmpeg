@@ -26,6 +26,7 @@
 #include "libavutil/internal.h"
 
 #include "hevcdec.h"
+#include "threadframe.h"
 
 #define LUMA 0
 #define CB 1

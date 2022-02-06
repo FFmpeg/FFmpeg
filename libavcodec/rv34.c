@@ -41,7 +41,7 @@
 #include "mpeg_er.h"
 #include "qpeldsp.h"
 #include "rectangle.h"
-#include "thread.h"
+#include "threadframe.h"
 
 #include "rv34vlc.h"
 #include "rv34data.h"

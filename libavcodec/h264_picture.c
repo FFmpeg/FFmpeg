@@ -30,7 +30,7 @@
 #include "avcodec.h"
 #include "h264dec.h"
 #include "mpegutils.h"
-#include "thread.h"
+#include "threadframe.h"
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {

@@ -38,7 +38,7 @@
 #include "h263.h"
 #include "h263dec.h"
 #include "profiles.h"
-#include "thread.h"
+#include "threadframe.h"
 #include "xvididct.h"
 #include "unary.h"
 

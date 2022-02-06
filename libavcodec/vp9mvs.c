@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "threadframe.h"
 #include "vp56.h"
 #include "vp9.h"
 #include "vp9data.h"

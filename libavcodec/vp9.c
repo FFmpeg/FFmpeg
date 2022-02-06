@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "profiles.h"
 #include "thread.h"
+#include "threadframe.h"
 #include "pthread_internal.h"
 
 #include "videodsp.h"

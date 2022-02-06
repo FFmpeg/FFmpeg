@@ -37,6 +37,7 @@
 #include "codec.h"
 #include "hwconfig.h"
 #include "thread.h"
+#include "threadframe.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "startcode.h"

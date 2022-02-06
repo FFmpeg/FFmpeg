@@ -29,6 +29,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "thread.h"
+#include "threadframe.h"
 #include "unary.h"
 #include "wavpack.h"
 #include "dsd.h"

@@ -34,7 +34,7 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "rectangle.h"
-#include "thread.h"
+#include "threadframe.h"
 
 /**
  * @param stride the number of MVs to get to the next row

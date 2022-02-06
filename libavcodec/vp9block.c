@@ -23,6 +23,7 @@
 
 #include "libavutil/avassert.h"
 
+#include "threadframe.h"
 #include "vp56.h"
 #include "vp9.h"
 #include "vp9data.h"

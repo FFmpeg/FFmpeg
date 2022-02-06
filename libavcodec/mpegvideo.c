@@ -43,7 +43,7 @@
 #include "mpeg4video.h"
 #include "mpegvideodata.h"
 #include "qpeldsp.h"
-#include "thread.h"
+#include "threadframe.h"
 #include "wmv2.h"
 #include <limits.h>
 

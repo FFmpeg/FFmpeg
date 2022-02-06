@@ -70,32 +70,6 @@ int ff_thread_decode_frame(AVCodecContext *avctx, AVFrame *picture,
  */
 void ff_thread_finish_setup(AVCodecContext *avctx);
 
-/**
- * Notify later decoding threads when part of their reference picture is ready.
- * Call this when some part of the picture is finished decoding.
- * Later calls with lower values of progress have no effect.
- *
- * @param f The picture being decoded.
- * @param progress Value, in arbitrary units, of how much of the picture has decoded.
- * @param field The field being decoded, for field-picture codecs.
- * 0 for top field or frame pictures, 1 for bottom field.
- */
-void ff_thread_report_progress(ThreadFrame *f, int progress, int field);
-
-/**
- * Wait for earlier decoding threads to finish reference pictures.
- * Call this before accessing some part of a picture, with a given
- * value for progress, and it will return after the responsible decoding
- * thread calls ff_thread_report_progress() with the same or
- * higher value for progress.
- *
- * @param f The picture being referenced.
- * @param progress Value, in arbitrary units, to wait for.
- * @param field The field being referenced, for field-picture codecs.
- * 0 for top field or frame pictures, 1 for bottom field.
- */
-void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
-
 #if FF_API_THREAD_SAFE_CALLBACKS
 /**
  * Wrapper around get_format() for frame-multithreaded codecs.

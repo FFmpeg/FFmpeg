@@ -37,6 +37,7 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
+#include "threadframe.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
                                                int is_signed)
