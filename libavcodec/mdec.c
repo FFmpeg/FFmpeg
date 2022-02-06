@@ -42,7 +42,6 @@ typedef struct MDECContext {
     BlockDSPContext bdsp;
     BswapDSPContext bbdsp;
     IDCTDSPContext idsp;
-    ThreadFrame frame;
     GetBitContext gb;
     ScanTable scantable;
     int version;
@@ -174,13 +173,13 @@ static int decode_frame(AVCodecContext *avctx,
     MDECContext * const a = avctx->priv_data;
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
-    ThreadFrame frame     = { .f = data };
+    AVFrame *const frame  = data;
     int ret;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    frame.f->pict_type = AV_PICTURE_TYPE_I;
-    frame.f->key_frame = 1;
+    frame->pict_type = AV_PICTURE_TYPE_I;
+    frame->key_frame = 1;
 
     av_fast_padded_malloc(&a->bitstream_buffer, &a->bitstream_buffer_size, buf_size);
     if (!a->bitstream_buffer)
@@ -202,7 +201,7 @@ static int decode_frame(AVCodecContext *avctx,
             if ((ret = decode_mb(a, a->block)) < 0)
                 return ret;
 
-            idct_put(a, frame.f, a->mb_x, a->mb_y);
+            idct_put(a, frame, a->mb_x, a->mb_y);
         }
     }
 

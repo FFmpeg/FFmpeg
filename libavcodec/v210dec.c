@@ -142,7 +142,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     V210DecContext *s = avctx->priv_data;
     ThreadData td;
     int ret, stride, aligned_input;
-    ThreadFrame frame = { .f = data };
     AVFrame *pic = data;
     const uint8_t *psrc = avpkt->data;
 
@@ -177,7 +176,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ff_v210dec_init(s);
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     pic->pict_type = AV_PICTURE_TYPE_I;

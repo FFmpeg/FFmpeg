@@ -34,7 +34,7 @@
 #include "mathops.h"
 #include "put_bits.h"
 #include "rangecoder.h"
-#include "thread.h"
+#include "threadframe.h"
 
 #ifdef __INTEL_COMPILER
 #undef av_flatten

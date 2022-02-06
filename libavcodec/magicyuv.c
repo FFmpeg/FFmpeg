@@ -431,7 +431,6 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
     MagicYUVContext *s = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     AVFrame *p = data;
     GetByteContext gb;
     uint32_t first_offset, offset, next_offset, header_size, slice_width;
@@ -641,7 +640,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     s->buf = avpkt->data;

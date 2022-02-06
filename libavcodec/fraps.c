@@ -140,7 +140,6 @@ static int decode_frame(AVCodecContext *avctx,
     FrapsContext * const s = avctx->priv_data;
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
-    ThreadFrame frame = { .f = data };
     AVFrame * const f = data;
     uint32_t header;
     unsigned int version,header_size;
@@ -227,7 +226,7 @@ static int decode_frame(AVCodecContext *avctx,
                                      : AVCOL_RANGE_JPEG;
     avctx->colorspace = version & 1 ? AVCOL_SPC_UNSPECIFIED : AVCOL_SPC_BT709;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, f, 0)) < 0)
         return ret;
 
     switch (version) {

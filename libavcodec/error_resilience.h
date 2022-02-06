@@ -24,7 +24,7 @@
 
 #include "avcodec.h"
 #include "me_cmp.h"
-#include "thread.h"
+#include "threadframe.h"
 
 ///< current MB is the first after a resync marker
 #define VP_START               1

@@ -568,8 +568,7 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
     img->frame->height = h;
 
     if (role == IMAGE_ROLE_ARGB && !img->is_alpha_primary) {
-        ThreadFrame pt = { .f = img->frame };
-        ret = ff_thread_get_buffer(s->avctx, &pt, 0);
+        ret = ff_thread_get_buffer(s->avctx, img->frame, 0);
     } else
         ret = av_frame_get_buffer(img->frame, 1);
     if (ret < 0)

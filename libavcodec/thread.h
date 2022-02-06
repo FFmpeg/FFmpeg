@@ -31,14 +31,6 @@
 
 #include "avcodec.h"
 
-typedef struct ThreadFrame {
-    AVFrame *f;
-    AVCodecContext *owner[2];
-    // progress->data is an array of 2 ints holding progress for top/bottom
-    // fields
-    AVBufferRef *progress;
-} ThreadFrame;
-
 /**
  * Wait for decoding threads to finish and reset internal state.
  * Called by avcodec_flush_buffers().
@@ -92,7 +84,7 @@ enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixe
  * @param avctx The current context.
  * @param f The frame to write into.
  */
-int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags);
+int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags);
 
 /**
  * Wrapper around release_buffer() frame-for multithreaded codecs.
@@ -105,9 +97,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags);
  * @param avctx The current context.
  * @param f The picture being released.
  */
-void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f);
-
-int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src);
+void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f);
 
 int ff_thread_init(AVCodecContext *s);
 int ff_slice_thread_execute_with_mainfunc(AVCodecContext *avctx,

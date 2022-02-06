@@ -21,8 +21,16 @@
 #ifndef AVCODEC_THREADFRAME_H
 #define AVCODEC_THREADFRAME_H
 
+#include "libavutil/frame.h"
 #include "avcodec.h"
-#include "thread.h"
+
+typedef struct ThreadFrame {
+    AVFrame *f;
+    AVCodecContext *owner[2];
+    // progress->data is an array of 2 ints holding progress for top/bottom
+    // fields
+    AVBufferRef *progress;
+} ThreadFrame;
 
 /**
  * Notify later decoding threads when part of their reference picture is ready.
@@ -73,5 +81,7 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags);
  * @param f The picture being released.
  */
 void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f);
+
+int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src);
 
 #endif

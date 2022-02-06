@@ -563,14 +563,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     UtvideoContext *c = avctx->priv_data;
+    AVFrame *const frame = data;
     int i, j;
     const uint8_t *plane_start[5];
     int plane_size, max_slice_size = 0, slice_start, slice_end, slice_size;
     int ret;
     GetByteContext gb;
-    ThreadFrame frame = { .f = data };
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     /* parse plane structure to get frame flags and validate slice offsets */
@@ -709,80 +709,80 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GBRAP:
         for (i = 0; i < c->planes; i++) {
-            ret = decode_plane(c, i, frame.f->data[i],
-                               frame.f->linesize[i], avctx->width,
+            ret = decode_plane(c, i, frame->data[i],
+                               frame->linesize[i], avctx->width,
                                avctx->height, plane_start[i],
                                c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median_planar(c, frame.f->data[i],
-                                          frame.f->linesize[i], avctx->width,
+                    restore_median_planar(c, frame->data[i],
+                                          frame->linesize[i], avctx->width,
                                           avctx->height, c->slices, 0);
                 } else {
-                    restore_median_planar_il(c, frame.f->data[i],
-                                             frame.f->linesize[i],
+                    restore_median_planar_il(c, frame->data[i],
+                                             frame->linesize[i],
                                              avctx->width, avctx->height, c->slices,
                                              0);
                 }
             } else if (c->frame_pred == PRED_GRADIENT) {
                 if (!c->interlaced) {
-                    restore_gradient_planar(c, frame.f->data[i],
-                                            frame.f->linesize[i], avctx->width,
+                    restore_gradient_planar(c, frame->data[i],
+                                            frame->linesize[i], avctx->width,
                                             avctx->height, c->slices, 0);
                 } else {
-                    restore_gradient_planar_il(c, frame.f->data[i],
-                                               frame.f->linesize[i],
+                    restore_gradient_planar_il(c, frame->data[i],
+                                               frame->linesize[i],
                                                avctx->width, avctx->height, c->slices,
                                                0);
                 }
             }
         }
-        c->utdsp.restore_rgb_planes(frame.f->data[2], frame.f->data[0], frame.f->data[1],
-                                    frame.f->linesize[2], frame.f->linesize[0], frame.f->linesize[1],
+        c->utdsp.restore_rgb_planes(frame->data[2], frame->data[0], frame->data[1],
+                                    frame->linesize[2], frame->linesize[0], frame->linesize[1],
                                     avctx->width, avctx->height);
         break;
     case AV_PIX_FMT_GBRAP10:
     case AV_PIX_FMT_GBRP10:
         for (i = 0; i < c->planes; i++) {
-            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i],
-                                 frame.f->linesize[i] / 2, avctx->width,
+            ret = decode_plane10(c, i, (uint16_t *)frame->data[i],
+                                 frame->linesize[i] / 2, avctx->width,
                                  avctx->height, plane_start[i],
                                  plane_start[i + 1] - 1024,
                                  c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
         }
-        c->utdsp.restore_rgb_planes10((uint16_t *)frame.f->data[2], (uint16_t *)frame.f->data[0], (uint16_t *)frame.f->data[1],
-                                      frame.f->linesize[2] / 2, frame.f->linesize[0] / 2, frame.f->linesize[1] / 2,
+        c->utdsp.restore_rgb_planes10((uint16_t *)frame->data[2], (uint16_t *)frame->data[0], (uint16_t *)frame->data[1],
+                                      frame->linesize[2] / 2, frame->linesize[0] / 2, frame->linesize[1] / 2,
                                       avctx->width, avctx->height);
         break;
     case AV_PIX_FMT_YUV420P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], frame.f->linesize[i],
+            ret = decode_plane(c, i, frame->data[i], frame->linesize[i],
                                avctx->width >> !!i, avctx->height >> !!i,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median_planar(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_median_planar(c, frame->data[i], frame->linesize[i],
                                           avctx->width >> !!i, avctx->height >> !!i,
                                           c->slices, !i);
                 } else {
-                    restore_median_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_median_planar_il(c, frame->data[i], frame->linesize[i],
                                              avctx->width  >> !!i,
                                              avctx->height >> !!i,
                                              c->slices, !i);
                 }
             } else if (c->frame_pred == PRED_GRADIENT) {
                 if (!c->interlaced) {
-                    restore_gradient_planar(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_gradient_planar(c, frame->data[i], frame->linesize[i],
                                             avctx->width >> !!i, avctx->height >> !!i,
                                             c->slices, !i);
                 } else {
-                    restore_gradient_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_gradient_planar_il(c, frame->data[i], frame->linesize[i],
                                                avctx->width  >> !!i,
                                                avctx->height >> !!i,
                                                c->slices, !i);
@@ -792,28 +792,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV422P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], frame.f->linesize[i],
+            ret = decode_plane(c, i, frame->data[i], frame->linesize[i],
                                avctx->width >> !!i, avctx->height,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median_planar(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_median_planar(c, frame->data[i], frame->linesize[i],
                                           avctx->width >> !!i, avctx->height,
                                           c->slices, 0);
                 } else {
-                    restore_median_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_median_planar_il(c, frame->data[i], frame->linesize[i],
                                              avctx->width >> !!i, avctx->height,
                                              c->slices, 0);
                 }
             } else if (c->frame_pred == PRED_GRADIENT) {
                 if (!c->interlaced) {
-                    restore_gradient_planar(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_gradient_planar(c, frame->data[i], frame->linesize[i],
                                             avctx->width >> !!i, avctx->height,
                                             c->slices, 0);
                 } else {
-                    restore_gradient_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_gradient_planar_il(c, frame->data[i], frame->linesize[i],
                                                avctx->width  >> !!i, avctx->height,
                                                c->slices, 0);
                 }
@@ -822,28 +822,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV444P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], frame.f->linesize[i],
+            ret = decode_plane(c, i, frame->data[i], frame->linesize[i],
                                avctx->width, avctx->height,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median_planar(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_median_planar(c, frame->data[i], frame->linesize[i],
                                           avctx->width, avctx->height,
                                           c->slices, 0);
                 } else {
-                    restore_median_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_median_planar_il(c, frame->data[i], frame->linesize[i],
                                              avctx->width, avctx->height,
                                              c->slices, 0);
                 }
             } else if (c->frame_pred == PRED_GRADIENT) {
                 if (!c->interlaced) {
-                    restore_gradient_planar(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_gradient_planar(c, frame->data[i], frame->linesize[i],
                                             avctx->width, avctx->height,
                                             c->slices, 0);
                 } else {
-                    restore_gradient_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                    restore_gradient_planar_il(c, frame->data[i], frame->linesize[i],
                                                avctx->width, avctx->height,
                                                c->slices, 0);
                 }
@@ -852,7 +852,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV420P10:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], frame.f->linesize[i] / 2,
+            ret = decode_plane10(c, i, (uint16_t *)frame->data[i], frame->linesize[i] / 2,
                                  avctx->width >> !!i, avctx->height >> !!i,
                                  plane_start[i], plane_start[i + 1] - 1024, c->frame_pred == PRED_LEFT);
             if (ret)
@@ -861,7 +861,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV422P10:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], frame.f->linesize[i] / 2,
+            ret = decode_plane10(c, i, (uint16_t *)frame->data[i], frame->linesize[i] / 2,
                                  avctx->width >> !!i, avctx->height,
                                  plane_start[i], plane_start[i + 1] - 1024, c->frame_pred == PRED_LEFT);
             if (ret)
@@ -870,9 +870,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     }
 
-    frame.f->key_frame = 1;
-    frame.f->pict_type = AV_PICTURE_TYPE_I;
-    frame.f->interlaced_frame = !!c->interlaced;
+    frame->key_frame = 1;
+    frame->pict_type = AV_PICTURE_TYPE_I;
+    frame->interlaced_frame = !!c->interlaced;
 
     *got_frame = 1;
 

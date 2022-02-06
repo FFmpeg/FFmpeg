@@ -2476,7 +2476,6 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
                                  int *got_frame, AVPacket *avpkt)
 {
     Jpeg2000DecoderContext *s = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     int ret;
 
@@ -2517,7 +2516,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
 
     /* get picture buffer */
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, picture, 0)) < 0)
         goto end;
     picture->pict_type = AV_PICTURE_TYPE_I;
     picture->key_frame = 1;

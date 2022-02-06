@@ -324,7 +324,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     uint8_t *buf            = avpkt->data;
     int buf_size            = avpkt->size;
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    ThreadFrame frame       = { .f = data };
     AVFrame *picture        = data;
     const AVPixFmtDescriptor *desc;
     int width, height, ret;
@@ -417,7 +416,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         if (image->comps[i].prec > avctx->bits_per_raw_sample)
             avctx->bits_per_raw_sample = image->comps[i].prec;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, picture, 0)) < 0)
         goto done;
 
     ret = !opj_decode(dec, stream, image);

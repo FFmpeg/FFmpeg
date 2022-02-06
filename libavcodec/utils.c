@@ -889,10 +889,9 @@ enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixe
     return ff_get_format(avctx, fmt);
 }
 
-int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
+int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags)
 {
-    f->owner[0] = f->owner[1] = avctx;
-    return ff_get_buffer(avctx, f->f, flags);
+    return ff_get_buffer(avctx, f, flags);
 }
 
 int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
@@ -901,10 +900,10 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     return ff_get_buffer(avctx, f->f, flags);
 }
 
-void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
+void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
 {
-    if (f->f)
-        av_frame_unref(f->f);
+    if (f)
+        av_frame_unref(f);
 }
 
 void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f)

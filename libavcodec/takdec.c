@@ -679,7 +679,6 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
 {
     TAKDecContext *s  = avctx->priv_data;
     AVFrame *frame    = data;
-    ThreadFrame tframe = { .f = data };
     GetBitContext *gb = &s->gb;
     int chan, i, ret, hsize;
 
@@ -742,7 +741,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                                              : s->ti.frame_samples;
 
     frame->nb_samples = s->nb_samples;
-    if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     ff_thread_finish_setup(avctx);
 

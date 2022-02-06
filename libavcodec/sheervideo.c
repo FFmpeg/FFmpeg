@@ -1805,7 +1805,6 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     SheerVideoContext *s = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     const SheerTable *table;
     AVFrame *p = data;
     GetBitContext gb;
@@ -1977,7 +1976,7 @@ static int decode_frame(AVCodecContext *avctx,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     if ((ret = init_get_bits8(&gb, avpkt->data + 20, avpkt->size - 20)) < 0)

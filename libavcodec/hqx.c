@@ -404,7 +404,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_picture_ptr, AVPacket *avpkt)
 {
     HQXContext *ctx = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
+    AVFrame *const frame = data;
     uint8_t *src = avpkt->data;
     uint32_t info_tag;
     int data_start;
@@ -499,7 +499,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_thread_get_buffer(avctx, &frame, 0);
+    ret = ff_thread_get_buffer(avctx, frame, 0);
     if (ret < 0)
         return ret;
 

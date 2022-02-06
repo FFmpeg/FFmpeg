@@ -24,14 +24,14 @@
 #include <stdint.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_av1.h"
-#include "thread.h"
 
 typedef struct AV1Frame {
-    ThreadFrame tf;
+    AVFrame *f;
 
     AVBufferRef *hwaccel_priv_buf;
     void *hwaccel_picture_private;

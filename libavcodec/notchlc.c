@@ -146,7 +146,7 @@ static int lz4_decompress(AVCodecContext *avctx,
     return bytestream2_tell_p(pb);
 }
 
-static int decode_blocks(AVCodecContext *avctx, AVFrame *p, ThreadFrame *frame,
+static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                          unsigned uncompressed_size)
 {
     NotchLCContext *s = avctx->priv_data;
@@ -221,7 +221,7 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p, ThreadFrame *frame,
         return AVERROR_INVALIDDATA;
     s->uv_count_offset = s->y_data_offset - s->a_data_offset;
 
-    if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     rgb = *gb;
@@ -464,7 +464,6 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     NotchLCContext *s = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     GetByteContext *gb = &s->gb;
     PutByteContext *pb = &s->pb;
     unsigned uncompressed_size;
@@ -513,7 +512,7 @@ static int decode_frame(AVCodecContext *avctx,
         bytestream2_init(gb, s->uncompressed_buffer, uncompressed_size);
     }
 
-    ret = decode_blocks(avctx, p, &frame, uncompressed_size);
+    ret = decode_blocks(avctx, p, uncompressed_size);
     if (ret < 0)
         return ret;
 

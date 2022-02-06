@@ -27,7 +27,7 @@
 
 #include "avcodec.h"
 #include "motion_est.h"
-#include "thread.h"
+#include "threadframe.h"
 
 #define MPEGVIDEO_MAX_PLANES 4
 #define MAX_PICTURE_COUNT 36

@@ -1016,7 +1016,7 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static int init_image(TiffContext *s, ThreadFrame *frame)
+static int init_image(TiffContext *s, AVFrame *frame)
 {
     int ret;
     int create_gray_palette = 0;
@@ -1177,11 +1177,11 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         return ret;
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (!create_gray_palette)
-            memcpy(frame->f->data[1], s->palette, sizeof(s->palette));
+            memcpy(frame->data[1], s->palette, sizeof(s->palette));
         else {
             /* make default grayscale pal */
             int i;
-            uint32_t *pal = (uint32_t *)frame->f->data[1];
+            uint32_t *pal = (uint32_t *)frame->data[1];
             for (i = 0; i < 1<<s->bpp; i++)
                 pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
@@ -1743,7 +1743,6 @@ static int decode_frame(AVCodecContext *avctx,
 {
     TiffContext *const s = avctx->priv_data;
     AVFrame *const p = data;
-    ThreadFrame frame = { .f = data };
     unsigned off, last_off;
     int le, ret, plane, planes;
     int i, j, entries, stride;
@@ -1894,7 +1893,7 @@ again:
     }
 
     /* now we have the data and may start decoding */
-    if ((ret = init_image(s, &frame)) < 0)
+    if ((ret = init_image(s, p)) < 0)
         return ret;
 
     if (!s->is_tiled || has_strip_bits) {

@@ -285,7 +285,6 @@ static int decode_frame(AVCodecContext *avctx,
     int TL[4] = { 128, 128, 128, 128 };
     int L[4]  = { 128, 128, 128, 128 };
     YLCContext *s = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     const uint8_t *buf = avpkt->data;
     int ret, x, y, toffset, boffset;
     AVFrame * const p = data;
@@ -307,7 +306,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (toffset >= boffset || boffset >= avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     av_fast_malloc(&s->buffer, &s->buffer_size,

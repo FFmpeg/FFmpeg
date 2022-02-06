@@ -33,7 +33,7 @@
 #include "libavutil/thread.h"
 
 #include "h264pred.h"
-#include "thread.h"
+#include "threadframe.h"
 #include "vp56.h"
 #include "vp8dsp.h"
 

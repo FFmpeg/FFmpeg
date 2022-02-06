@@ -606,7 +606,6 @@ static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
     PixletContext *ctx = avctx->priv_data;
     int i, w, h, width, height, ret, version;
     AVFrame *p = data;
-    ThreadFrame frame = { .f = data };
     uint32_t pktsize, depth;
 
     bytestream2_init(&ctx->gb, avpkt->data, avpkt->size);
@@ -673,20 +672,20 @@ static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = 1;
     p->color_range = AVCOL_RANGE_JPEG;
 
-    ret = ff_thread_get_buffer(avctx, &frame, 0);
+    ret = ff_thread_get_buffer(avctx, p, 0);
     if (ret < 0)
         return ret;
 
     for (i = 0; i < 3; i++) {
-        ret = decode_plane(avctx, i, avpkt, frame.f);
+        ret = decode_plane(avctx, i, avpkt, p);
         if (ret < 0)
             return ret;
         if (avctx->flags & AV_CODEC_FLAG_GRAY)
             break;
     }
 
-    postprocess_luma(avctx, frame.f, ctx->w, ctx->h, ctx->depth);
-    postprocess_chroma(frame.f, ctx->w >> 1, ctx->h >> 1, ctx->depth);
+    postprocess_luma(avctx, p, ctx->w, ctx->h, ctx->depth);
+    postprocess_chroma(p, ctx->w >> 1, ctx->h >> 1, ctx->depth);
 
     *got_frame = 1;
 

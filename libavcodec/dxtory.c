@@ -92,7 +92,6 @@ static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
                                 int id, int bpp, uint32_t vflipped)
 {
-    ThreadFrame frame = { .f = pic };
     int h;
     uint8_t *dst;
     int ret;
@@ -103,7 +102,7 @@ static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
     }
 
     avctx->pix_fmt = id;
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     do_vflip(avctx, pic, vflipped);
@@ -124,7 +123,6 @@ static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
                                 uint32_t vflipped)
 {
-    ThreadFrame frame = { .f = pic };
     int h, w;
     uint8_t *Y1, *Y2, *Y3, *Y4, *U, *V;
     int height, width, hmargin, vmargin;
@@ -137,7 +135,7 @@ static int dxtory_decode_v1_410(AVCodecContext *avctx, AVFrame *pic,
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     do_vflip(avctx, pic, vflipped);
@@ -220,7 +218,6 @@ static int dxtory_decode_v1_420(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
                                 uint32_t vflipped)
 {
-    ThreadFrame frame = { .f = pic };
     int h, w;
     uint8_t *Y1, *Y2, *U, *V;
     int height, width, hmargin, vmargin;
@@ -233,7 +230,7 @@ static int dxtory_decode_v1_420(AVCodecContext *avctx, AVFrame *pic,
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     do_vflip(avctx, pic, vflipped);
@@ -293,7 +290,6 @@ static int dxtory_decode_v1_444(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
                                 uint32_t vflipped)
 {
-    ThreadFrame frame = { .f = pic };
     int h, w;
     uint8_t *Y, *U, *V;
     int ret;
@@ -304,7 +300,7 @@ static int dxtory_decode_v1_444(AVCodecContext *avctx, AVFrame *pic,
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV444P;
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     do_vflip(avctx, pic, vflipped);
@@ -429,7 +425,6 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
                             enum AVPixelFormat fmt,
                             uint32_t vflipped)
 {
-    ThreadFrame frame = { .f = pic };
     GetByteContext gb, gb_check;
     GetBitContext  gb2;
     int nslices, slice, line = 0;
@@ -456,7 +451,7 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR_INVALIDDATA;
 
     avctx->pix_fmt = fmt;
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     do_vflip(avctx, pic, vflipped);

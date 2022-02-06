@@ -360,7 +360,6 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 {
     CLLCContext *ctx = avctx->priv_data;
     AVFrame *pic = data;
-    ThreadFrame frame = { .f = data };
     uint8_t *src = avpkt->data;
     uint32_t info_tag, info_offset;
     int data_size;
@@ -424,7 +423,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_YUV422P;
         avctx->bits_per_raw_sample = 8;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
             return ret;
 
         ret = decode_yuv_frame(ctx, &gb, pic);
@@ -437,7 +436,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_RGB24;
         avctx->bits_per_raw_sample = 8;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
             return ret;
 
         ret = decode_rgb24_frame(ctx, &gb, pic);
@@ -449,7 +448,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_ARGB;
         avctx->bits_per_raw_sample = 8;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
             return ret;
 
         ret = decode_argb_frame(ctx, &gb, pic);

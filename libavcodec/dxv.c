@@ -1042,7 +1042,7 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
                       int *got_frame, AVPacket *avpkt)
 {
     DXVContext *ctx = avctx->priv_data;
-    ThreadFrame tframe;
+    AVFrame *const frame = data;
     GetByteContext *gbc = &ctx->gbc;
     int (*decompress_tex)(AVCodecContext *avctx);
     const char *msgcomp, *msgtext;
@@ -1211,18 +1211,17 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    tframe.f = data;
-    ret = ff_thread_get_buffer(avctx, &tframe, 0);
+    ret = ff_thread_get_buffer(avctx, frame, 0);
     if (ret < 0)
         return ret;
 
     /* Now decompress the texture with the standard functions. */
     avctx->execute2(avctx, decompress_texture_thread,
-                    tframe.f, NULL, ctx->slice_count);
+                    frame, NULL, ctx->slice_count);
 
     /* Frame is ready to be output. */
-    tframe.f->pict_type = AV_PICTURE_TYPE_I;
-    tframe.f->key_frame = 1;
+    frame->pict_type = AV_PICTURE_TYPE_I;
+    frame->key_frame = 1;
     *got_frame = 1;
 
     return avpkt->size;

@@ -540,7 +540,6 @@ static int lag_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     unsigned int buf_size = avpkt->size;
     LagarithContext *l = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     AVFrame *const p  = data;
     uint8_t frametype;
     uint32_t offset_gu = 0, offset_bv = 0, offset_ry = 9;
@@ -569,7 +568,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
                 planes = 4;
             }
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
             return ret;
 
         if (frametype == FRAME_SOLID_RGBA) {
@@ -593,7 +592,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
             avctx->pix_fmt = AV_PIX_FMT_GBRAP;
         }
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame,0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, p,0)) < 0)
             return ret;
 
         for (i = 0; i < avctx->height; i++) {
@@ -614,7 +613,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
         if (frametype == FRAME_ARITH_RGB24 || frametype == FRAME_U_RGB24)
             avctx->pix_fmt = AV_PIX_FMT_GBRP;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
             return ret;
 
         offs[0] = offset_bv;
@@ -650,7 +649,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_ARITH_YUY2:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
             return ret;
 
         if (offset_ry >= buf_size ||
@@ -678,7 +677,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_ARITH_YV12:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
             return ret;
 
         if (offset_ry >= buf_size ||

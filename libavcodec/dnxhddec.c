@@ -618,7 +618,6 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DNXHDContext *ctx = avctx->priv_data;
-    ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     int first_field = 1;
     int ret, i;
@@ -650,7 +649,7 @@ decode_coding_unit:
         return ret;
 
     if (first_field) {
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, picture, 0)) < 0)
             return ret;
         picture->pict_type = AV_PICTURE_TYPE_I;
         picture->key_frame = 1;

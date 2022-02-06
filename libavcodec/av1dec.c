@@ -27,6 +27,7 @@
 #include "hwconfig.h"
 #include "internal.h"
 #include "profiles.h"
+#include "thread.h"
 
 /**< same with Div_Lut defined in spec 7.11.3.7 */
 static const uint16_t div_lut[AV1_DIV_LUT_NUM] = {
@@ -569,7 +570,7 @@ static int get_pixel_format(AVCodecContext *avctx)
 
 static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
 {
-    ff_thread_release_buffer(avctx, &f->tf);
+    ff_thread_release_buffer(avctx, f->f);
     av_buffer_unref(&f->hwaccel_priv_buf);
     f->hwaccel_picture_private = NULL;
     av_buffer_unref(&f->header_ref);
@@ -591,10 +592,10 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
 
     dst->raw_frame_header = src->raw_frame_header;
 
-    if (!src->tf.f->buf[0])
+    if (!src->f->buf[0])
         return 0;
 
-    ret = ff_thread_ref_frame(&dst->tf, &src->tf);
+    ret = av_frame_ref(dst->f, src->f);
     if (ret < 0)
         goto fail;
 
@@ -637,10 +638,10 @@ static av_cold int av1_decode_free(AVCodecContext *avctx)
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
         av1_frame_unref(avctx, &s->ref[i]);
-        av_frame_free(&s->ref[i].tf.f);
+        av_frame_free(&s->ref[i].f);
     }
     av1_frame_unref(avctx, &s->cur_frame);
-    av_frame_free(&s->cur_frame.tf.f);
+    av_frame_free(&s->cur_frame.f);
 
     av_buffer_unref(&s->seq_ref);
     av_buffer_unref(&s->header_ref);
@@ -741,16 +742,16 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
     s->pix_fmt = AV_PIX_FMT_NONE;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
-        s->ref[i].tf.f = av_frame_alloc();
-        if (!s->ref[i].tf.f) {
+        s->ref[i].f = av_frame_alloc();
+        if (!s->ref[i].f) {
             av_log(avctx, AV_LOG_ERROR,
                    "Failed to allocate reference frame buffer %d.\n", i);
             return AVERROR(ENOMEM);
         }
     }
 
-    s->cur_frame.tf.f = av_frame_alloc();
-    if (!s->cur_frame.tf.f) {
+    s->cur_frame.f = av_frame_alloc();
+    if (!s->cur_frame.f) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to allocate current frame buffer.\n");
         return AVERROR(ENOMEM);
@@ -803,10 +804,10 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
         return ret;
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, f->f, AV_GET_BUFFER_FLAG_REF)) < 0)
         goto fail;
 
-    frame = f->tf.f;
+    frame = f->f;
     frame->key_frame = header->frame_type == AV1_FRAME_KEY;
 
     switch (header->frame_type) {
@@ -905,7 +906,7 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame,
                             const AVPacket *pkt, int *got_frame)
 {
     AV1DecContext *s = avctx->priv_data;
-    const AVFrame *srcframe = s->cur_frame.tf.f;
+    const AVFrame *srcframe = s->cur_frame.f;
     int ret;
 
     // TODO: all layers
@@ -1101,7 +1102,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                     goto end;
                 }
 
-                if (s->cur_frame.tf.f->buf[0]) {
+                if (s->cur_frame.f->buf[0]) {
                     ret = set_output_frame(avctx, frame, pkt, got_frame);
                     if (ret < 0)
                         av_log(avctx, AV_LOG_ERROR, "Set output frame error.\n");
@@ -1121,7 +1122,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
             s->cur_frame.spatial_id  = header->spatial_id;
             s->cur_frame.temporal_id = header->temporal_id;
 
-            if (avctx->hwaccel && s->cur_frame.tf.f->buf[0]) {
+            if (avctx->hwaccel && s->cur_frame.f->buf[0]) {
                 ret = avctx->hwaccel->start_frame(avctx, unit->data,
                                                   unit->data_size);
                 if (ret < 0) {
@@ -1148,7 +1149,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
             if (ret < 0)
                 goto end;
 
-            if (avctx->hwaccel && s->cur_frame.tf.f->buf[0]) {
+            if (avctx->hwaccel && s->cur_frame.f->buf[0]) {
                 ret = avctx->hwaccel->decode_slice(avctx,
                                                    raw_tile_group->tile_data.data,
                                                    raw_tile_group->tile_data.data_size);
@@ -1171,7 +1172,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
         }
 
         if (raw_tile_group && (s->tile_num == raw_tile_group->tg_end + 1)) {
-            if (avctx->hwaccel && s->cur_frame.tf.f->buf[0]) {
+            if (avctx->hwaccel && s->cur_frame.f->buf[0]) {
                 ret = avctx->hwaccel->end_frame(avctx);
                 if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR, "HW accel end frame fail.\n");
@@ -1185,7 +1186,7 @@ static int av1_decode_frame(AVCodecContext *avctx, void *frame,
                 goto end;
             }
 
-            if (s->raw_frame_header->show_frame && s->cur_frame.tf.f->buf[0]) {
+            if (s->raw_frame_header->show_frame && s->cur_frame.f->buf[0]) {
                 ret = set_output_frame(avctx, frame, pkt, got_frame);
                 if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR, "Set output frame error\n");

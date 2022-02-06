@@ -46,6 +46,7 @@
 #include "hwconfig.h"
 #include "internal.h"
 #include "profiles.h"
+#include "thread.h"
 #include "threadframe.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
@@ -3027,7 +3028,7 @@ static int hevc_frame_start(HEVCContext *s)
         s->ref->frame_grain->format = s->ref->frame->format;
         s->ref->frame_grain->width = s->ref->frame->width;
         s->ref->frame_grain->height = s->ref->frame->height;
-        if ((ret = ff_thread_get_buffer(s->avctx, &s->ref->tf_grain, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(s->avctx, s->ref->frame_grain, 0)) < 0)
             goto fail;
     }
 
@@ -3534,7 +3535,7 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
         return ret;
 
     if (src->needs_fg) {
-        ret = ff_thread_ref_frame(&dst->tf_grain, &src->tf_grain);
+        ret = av_frame_ref(dst->frame_grain, src->frame_grain);
         if (ret < 0)
             return ret;
         dst->needs_fg = 1;
@@ -3653,7 +3654,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         s->DPB[i].frame_grain = av_frame_alloc();
         if (!s->DPB[i].frame_grain)
             goto fail;
-        s->DPB[i].tf_grain.f = s->DPB[i].frame_grain;
     }
 
     s->max_ra = INT_MAX;

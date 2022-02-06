@@ -174,7 +174,6 @@ static int cri_decode_frame(AVCodecContext *avctx, void *data,
 {
     CRIContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    ThreadFrame frame = { .f = data };
     int ret, bps, hflip = 0, vflip = 0;
     AVFrameSideData *rotation;
     int compressed = 0;
@@ -318,7 +317,7 @@ skip:
     if (!s->data || !s->data_size)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     avctx->bits_per_raw_sample = bps;

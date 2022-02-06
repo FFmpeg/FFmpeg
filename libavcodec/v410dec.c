@@ -89,7 +89,6 @@ static int v410_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
     ThreadData td;
-    ThreadFrame frame = { .f = data };
     AVFrame *pic = data;
     uint8_t *src = avpkt->data;
     int ret;
@@ -101,7 +100,7 @@ static int v410_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR(EINVAL);
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     pic->key_frame = 1;

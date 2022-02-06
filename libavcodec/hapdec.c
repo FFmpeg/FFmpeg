@@ -305,7 +305,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
                       int *got_frame, AVPacket *avpkt)
 {
     HapContext *ctx = avctx->priv_data;
-    ThreadFrame tframe;
+    AVFrame *const frame = data;
     int ret, i, t;
     int section_size;
     enum HapSectionType section_type;
@@ -330,8 +330,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     }
 
     /* Get the output frame ready to receive data */
-    tframe.f = data;
-    ret = ff_thread_get_buffer(avctx, &tframe, 0);
+    ret = ff_thread_get_buffer(avctx, frame, 0);
     if (ret < 0)
         return ret;
 
@@ -383,16 +382,15 @@ static int hap_decode(AVCodecContext *avctx, void *data,
 
         /* Use the decompress function on the texture, one block per thread */
         if (t == 0){
-            avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, ctx->slice_count);
+            avctx->execute2(avctx, decompress_texture_thread, frame, NULL, ctx->slice_count);
         } else{
-            tframe.f = data;
-            avctx->execute2(avctx, decompress_texture2_thread, tframe.f, NULL, ctx->slice_count);
+            avctx->execute2(avctx, decompress_texture2_thread, frame, NULL, ctx->slice_count);
         }
     }
 
     /* Frame is ready to be output */
-    tframe.f->pict_type = AV_PICTURE_TYPE_I;
-    tframe.f->key_frame = 1;
+    frame->pict_type = AV_PICTURE_TYPE_I;
+    frame->key_frame = 1;
     *got_frame = 1;
 
     return avpkt->size;
