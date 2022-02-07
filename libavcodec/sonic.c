@@ -1004,7 +1004,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
     // dequantize
     for (i = 0; i < s->num_taps; i++)
-        s->predictor_k[i] *= s->tap_quant[i];
+        s->predictor_k[i] *= (unsigned) s->tap_quant[i];
 
     if (s->lossless)
         quant = 1;
