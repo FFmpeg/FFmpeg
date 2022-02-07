@@ -29,6 +29,8 @@
 #define TX_NAME(x) x ## _float_c
 #define TX_NAME_STR(x) x "_float_c"
 #define TX_TYPE(x) AV_TX_FLOAT_ ## x
+#define TX_FN_NAME(fn, suffix) ff_tx_ ## fn ## _float_ ## suffix
+#define TX_FN_NAME_STR(fn, suffix) #fn "_float_" #suffix
 #define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE float
 typedef float TXSample;
@@ -38,6 +40,8 @@ typedef AVComplexFloat TXComplex;
 #define TX_NAME(x) x ## _double_c
 #define TX_NAME_STR(x) x "_double_c"
 #define TX_TYPE(x) AV_TX_DOUBLE_ ## x
+#define TX_FN_NAME(fn, suffix) ff_tx_ ## fn ## _double_ ## suffix
+#define TX_FN_NAME_STR(fn, suffix) #fn "_double_" #suffix
 #define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE double
 typedef double TXSample;
@@ -47,6 +51,8 @@ typedef AVComplexDouble TXComplex;
 #define TX_NAME(x) x ## _int32_c
 #define TX_NAME_STR(x) x "_int32_c"
 #define TX_TYPE(x) AV_TX_INT32_ ## x
+#define TX_FN_NAME(fn, suffix) ff_tx_ ## fn ## _int32_ ## suffix
+#define TX_FN_NAME_STR(fn, suffix) #fn "_int32_" #suffix
 #define MULT(x, m) (((((int64_t)(x)) * (int64_t)(m)) + 0x40000000) >> 31)
 #define SCALE_TYPE float
 typedef int32_t TXSample;
@@ -54,6 +60,24 @@ typedef AVComplexInt32 TXComplex;
 #else
 typedef void TXComplex;
 #endif
+
+#define TX_DECL_FN(fn, suffix) \
+    void TX_FN_NAME(fn, suffix)(AVTXContext *s, void *o, void *i, ptrdiff_t st);
+
+#define TX_DEF(fn, tx_type, len_min, len_max, f1, f2,                          \
+               p, init_fn, suffix, cf, cd_flags, cf2)                          \
+    &(const FFTXCodelet){                                                      \
+        .name       = TX_FN_NAME_STR(fn, suffix),                              \
+        .function   = TX_FN_NAME(fn, suffix),                                  \
+        .type       = TX_TYPE(tx_type),                                        \
+        .flags      = FF_TX_ALIGNED | FF_TX_OUT_OF_PLACE | cd_flags,           \
+        .factors    = { f1, f2 },                                              \
+        .min_len    = len_min,                                                 \
+        .max_len    = len_max,                                                 \
+        .init       = init_fn,                                                 \
+        .cpu_flags  = cf2 | AV_CPU_FLAG_ ## cf,                                \
+        .prio       = p,                                                       \
+    }
 
 #if defined(TX_FLOAT) || defined(TX_DOUBLE)
 
