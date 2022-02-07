@@ -1172,6 +1172,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 static const AVOption mpeg1_options[] = {
     COMMON_OPTS
     FF_MPV_COMMON_OPTS
+    FF_MPV_COMMON_MOTION_EST_OPTS
 #if FF_API_MPEGVIDEO_OPTS
     FF_MPV_DEPRECATED_MPEG_QUANT_OPT
     FF_MPV_DEPRECATED_A53_CC_OPT
@@ -1205,6 +1206,7 @@ static const AVOption mpeg2_options[] = {
     { LEVEL("low",     10) },
 #undef LEVEL
     FF_MPV_COMMON_OPTS
+    FF_MPV_COMMON_MOTION_EST_OPTS
 #if FF_API_MPEGVIDEO_OPTS
     { "mpeg_quant",       "Deprecated, does nothing", FF_MPV_OFFSET(mpeg_quant),
       AV_OPT_TYPE_INT, {.i64 = 1 }, 0, 1, VE | AV_OPT_FLAG_DEPRECATED },
