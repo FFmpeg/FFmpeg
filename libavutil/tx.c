@@ -274,7 +274,7 @@ static void ff_tx_null(AVTXContext *s, void *_out, void *_in, ptrdiff_t stride)
 }
 
 static const FFTXCodelet ff_tx_null_def = {
-    .name       = "null",
+    .name       = NULL_IF_CONFIG_SMALL("null"),
     .function   = ff_tx_null,
     .type       = TX_TYPE_ANY,
     .flags      = AV_TX_UNALIGNED | FF_TX_ALIGNED |
