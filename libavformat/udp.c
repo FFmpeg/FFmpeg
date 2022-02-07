@@ -164,6 +164,10 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
 {
     int protocol, cmd;
 
+    /* There is some confusion in the world whether IP_MULTICAST_TTL
+     * takes a byte or an int as an argument.
+     * BSD seems to indicate byte so we are going with that and use
+     * int and fall back to byte to be safe */
     switch (addr->sa_family) {
 #ifdef IP_MULTICAST_TTL
         case AF_INET:
@@ -182,8 +186,14 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
     }
 
     if (setsockopt(sockfd, protocol, cmd, &mcastTTL, sizeof(mcastTTL)) < 0) {
-        ff_log_net_error(logctx, AV_LOG_ERROR, "setsockopt(IPV4/IPV6 MULTICAST TTL)");
-        return ff_neterrno();
+        /* BSD compatibility */
+        unsigned char ttl = (unsigned char) mcastTTL;
+
+        ff_log_net_error(logctx, AV_LOG_DEBUG, "setsockopt(IPV4/IPV6 MULTICAST TTL)");
+        if (setsockopt(sockfd, protocol, cmd, &ttl, sizeof(ttl)) < 0) {
+            ff_log_net_error(logctx, AV_LOG_ERROR, "setsockopt(IPV4/IPV6 MULTICAST TTL)");
+            return ff_neterrno();
+        }
     }
 
     return 0;
