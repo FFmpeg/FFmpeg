@@ -674,6 +674,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
+            if (s->ttl < 0 || s->ttl > 255) {
+                av_log(h, AV_LOG_ERROR, "ttl(%d) should be in range [0,255]\n", s->ttl);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
         }
         if (av_find_info_tag(buf, sizeof(buf), "udplite_coverage", p)) {
             s->udplite_coverage = strtol(buf, NULL, 10);
