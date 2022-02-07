@@ -67,6 +67,8 @@ typedef struct MPVMainEncContext {
     int lmin, lmax;
     int vbv_ignore_qmax;
 
+    const uint8_t *fcode_tab;      ///< smallest fcode needed for each MV
+
     /* frame skip options */
     int frame_skip_threshold;
     int frame_skip_factor;

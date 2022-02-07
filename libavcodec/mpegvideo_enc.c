@@ -278,14 +278,15 @@ static av_cold void mpv_encode_init_static(void)
 /**
  * Set the given MpegEncContext to defaults for encoding.
  */
-static av_cold void mpv_encode_defaults(MpegEncContext *s)
+static av_cold void mpv_encode_defaults(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     static AVOnce init_static_once = AV_ONCE_INIT;
 
     ff_mpv_common_defaults(s);
 
-    if (!s->fcode_tab) {
-        s->fcode_tab = default_fcode_tab + MAX_MV;
+    if (!m->fcode_tab) {
+        m->fcode_tab = default_fcode_tab + MAX_MV;
         ff_thread_once(&init_static_once, mpv_encode_init_static);
     }
     if (!s->y_dc_scale_table) {
@@ -429,7 +430,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     int i, ret;
     int mb_array_size, mv_table_size;
 
-    mpv_encode_defaults(s);
+    mpv_encode_defaults(m);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUVJ444P:
@@ -3774,12 +3775,12 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 
     if(!s->umvplus){
         if(s->pict_type==AV_PICTURE_TYPE_P || s->pict_type==AV_PICTURE_TYPE_S) {
-            s->f_code= ff_get_best_fcode(s, s->p_mv_table, CANDIDATE_MB_TYPE_INTER);
+            s->f_code = ff_get_best_fcode(m, s->p_mv_table, CANDIDATE_MB_TYPE_INTER);
 
             if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
                 int a,b;
-                a= ff_get_best_fcode(s, s->p_field_mv_table[0][0], CANDIDATE_MB_TYPE_INTER_I); //FIXME field_select
-                b= ff_get_best_fcode(s, s->p_field_mv_table[1][1], CANDIDATE_MB_TYPE_INTER_I);
+                a = ff_get_best_fcode(m, s->p_field_mv_table[0][0], CANDIDATE_MB_TYPE_INTER_I); //FIXME field_select
+                b = ff_get_best_fcode(m, s->p_field_mv_table[1][1], CANDIDATE_MB_TYPE_INTER_I);
                 s->f_code= FFMAX3(s->f_code, a, b);
             }
 
@@ -3796,12 +3797,12 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         } else if (s->pict_type == AV_PICTURE_TYPE_B) {
             int a, b;
 
-            a = ff_get_best_fcode(s, s->b_forw_mv_table, CANDIDATE_MB_TYPE_FORWARD);
-            b = ff_get_best_fcode(s, s->b_bidir_forw_mv_table, CANDIDATE_MB_TYPE_BIDIR);
+            a = ff_get_best_fcode(m, s->b_forw_mv_table, CANDIDATE_MB_TYPE_FORWARD);
+            b = ff_get_best_fcode(m, s->b_bidir_forw_mv_table, CANDIDATE_MB_TYPE_BIDIR);
             s->f_code = FFMAX(a, b);
 
-            a = ff_get_best_fcode(s, s->b_back_mv_table, CANDIDATE_MB_TYPE_BACKWARD);
-            b = ff_get_best_fcode(s, s->b_bidir_back_mv_table, CANDIDATE_MB_TYPE_BIDIR);
+            a = ff_get_best_fcode(m, s->b_back_mv_table, CANDIDATE_MB_TYPE_BACKWARD);
+            b = ff_get_best_fcode(m, s->b_bidir_back_mv_table, CANDIDATE_MB_TYPE_BIDIR);
             s->b_code = FFMAX(a, b);
 
             ff_fix_long_mvs(s, NULL, 0, s->b_forw_mv_table, s->f_code, CANDIDATE_MB_TYPE_FORWARD, 1);

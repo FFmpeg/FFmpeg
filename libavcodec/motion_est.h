@@ -29,6 +29,7 @@
 #include "qpeldsp.h"
 
 struct MpegEncContext;
+typedef struct MPVMainEncContext MPVMainEncContext;
 
 #if ARCH_IA64 // Limit static arrays to avoid gcc failing "short data segment overflowed"
 #define MAX_MV 1024
@@ -136,7 +137,7 @@ int ff_epzs_motion_search(struct MpegEncContext *s, int *mx_ptr, int *my_ptr,
 int ff_get_mb_score(struct MpegEncContext *s, int mx, int my, int src_index,
                     int ref_index, int size, int h, int add_rate);
 
-int ff_get_best_fcode(struct MpegEncContext *s,
+int ff_get_best_fcode(MPVMainEncContext *m,
                       const int16_t (*mv_table)[2], int type);
 
 void ff_fix_long_p_mvs(struct MpegEncContext *s, int type);

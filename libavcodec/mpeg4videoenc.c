@@ -1319,7 +1319,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     m4->time_increment_bits     = av_log2(avctx->time_base.den - 1) + 1;
 
-    s->fcode_tab                = fcode_tab + MAX_MV;
+    m->fcode_tab                = fcode_tab + MAX_MV;
 
     s->min_qcoeff               = -2048;
     s->max_qcoeff               = 2047;
