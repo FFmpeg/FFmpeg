@@ -653,6 +653,10 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
 
     if (s->has_alpha) {
         s->alpha_context = av_mallocz(sizeof(VP56Context));
+        if (!s->alpha_context) {
+            ff_vp56_free(avctx);
+            return AVERROR(ENOMEM);
+        }
         ff_vp56_init_context(avctx, s->alpha_context,
                              s->flip == -1, s->has_alpha);
         ff_vp6dsp_init(&s->alpha_context->vp56dsp);
