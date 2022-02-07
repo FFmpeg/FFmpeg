@@ -27,10 +27,10 @@
 #ifdef TX_FLOAT
 #define TX_TAB(x) x ## _float
 #define TX_NAME(x) x ## _float_c
-#define TX_NAME_STR(x) x "_float_c"
+#define TX_NAME_STR(x) NULL_IF_CONFIG_SMALL(x "_float_c")
 #define TX_TYPE(x) AV_TX_FLOAT_ ## x
 #define TX_FN_NAME(fn, suffix) ff_tx_ ## fn ## _float_ ## suffix
-#define TX_FN_NAME_STR(fn, suffix) #fn "_float_" #suffix
+#define TX_FN_NAME_STR(fn, suffix) NULL_IF_CONFIG_SMALL(#fn "_float_" #suffix)
 #define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE float
 typedef float TXSample;
@@ -38,10 +38,10 @@ typedef AVComplexFloat TXComplex;
 #elif defined(TX_DOUBLE)
 #define TX_TAB(x) x ## _double
 #define TX_NAME(x) x ## _double_c
-#define TX_NAME_STR(x) x "_double_c"
+#define TX_NAME_STR(x) NULL_IF_CONFIG_SMALL(x "_double_c")
 #define TX_TYPE(x) AV_TX_DOUBLE_ ## x
 #define TX_FN_NAME(fn, suffix) ff_tx_ ## fn ## _double_ ## suffix
-#define TX_FN_NAME_STR(fn, suffix) #fn "_double_" #suffix
+#define TX_FN_NAME_STR(fn, suffix) NULL_IF_CONFIG_SMALL(#fn "_double_" #suffix)
 #define MULT(x, m) ((x) * (m))
 #define SCALE_TYPE double
 typedef double TXSample;
@@ -49,10 +49,10 @@ typedef AVComplexDouble TXComplex;
 #elif defined(TX_INT32)
 #define TX_TAB(x) x ## _int32
 #define TX_NAME(x) x ## _int32_c
-#define TX_NAME_STR(x) x "_int32_c"
+#define TX_NAME_STR(x) NULL_IF_CONFIG_SMALL(x "_int32_c")
 #define TX_TYPE(x) AV_TX_INT32_ ## x
 #define TX_FN_NAME(fn, suffix) ff_tx_ ## fn ## _int32_ ## suffix
-#define TX_FN_NAME_STR(fn, suffix) #fn "_int32_" #suffix
+#define TX_FN_NAME_STR(fn, suffix) NULL_IF_CONFIG_SMALL(#fn "_int32_" #suffix)
 #define MULT(x, m) (((((int64_t)(x)) * (int64_t)(m)) + 0x40000000) >> 31)
 #define SCALE_TYPE float
 typedef int32_t TXSample;
