@@ -2615,8 +2615,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         /* NOTE: A new stream can be added there if no header in file
          * (AVFMTCTX_NOHEADER). */
         ret = read_frame_internal(ic, pkt1);
-        if (ret == AVERROR(EAGAIN))
+        if (ret == AVERROR(EAGAIN)) {
+            read_size += 100;
             continue;
+        }
 
         if (ret < 0) {
             /* EOF or error*/
