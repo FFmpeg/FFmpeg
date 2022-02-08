@@ -1274,25 +1274,19 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
 
         ctx->slice_q = av_malloc(ctx->slices_per_picture * sizeof(*ctx->slice_q));
-        if (!ctx->slice_q) {
-            encode_close(avctx);
+        if (!ctx->slice_q)
             return AVERROR(ENOMEM);
-        }
 
         ctx->tdata = av_mallocz(avctx->thread_count * sizeof(*ctx->tdata));
-        if (!ctx->tdata) {
-            encode_close(avctx);
+        if (!ctx->tdata)
             return AVERROR(ENOMEM);
-        }
 
         for (j = 0; j < avctx->thread_count; j++) {
             ctx->tdata[j].nodes = av_malloc((ctx->slices_width + 1)
                                             * TRELLIS_WIDTH
                                             * sizeof(*ctx->tdata->nodes));
-            if (!ctx->tdata[j].nodes) {
-                encode_close(avctx);
+            if (!ctx->tdata[j].nodes)
                 return AVERROR(ENOMEM);
-            }
             for (i = min_quant; i < max_quant + 2; i++) {
                 ctx->tdata[j].nodes[i].prev_node = -1;
                 ctx->tdata[j].nodes[i].bits      = 0;
@@ -1415,5 +1409,5 @@ const AVCodec ff_prores_ks_encoder = {
                       },
     .priv_class     = &proresenc_class,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
