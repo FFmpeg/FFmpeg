@@ -1273,7 +1273,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     }
 
     if ((ret = create_vorbis_context(venc, avctx)) < 0)
-        goto error;
+        return ret;
 
     avctx->bit_rate = 0;
     if (avctx->flags & AV_CODEC_FLAG_QSCALE)
@@ -1283,7 +1283,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     venc->quality *= venc->quality;
 
     if ((ret = put_main_header(venc, (uint8_t**)&avctx->extradata)) < 0)
-        goto error;
+        return ret;
     avctx->extradata_size = ret;
 
     avctx->frame_size = 64;
@@ -1292,9 +1292,6 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     ff_af_queue_init(avctx, &venc->afq);
 
     return 0;
-error:
-    vorbis_encode_close(avctx);
-    return ret;
 }
 
 const AVCodec ff_vorbis_encoder = {
@@ -1309,5 +1306,5 @@ const AVCodec ff_vorbis_encoder = {
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
