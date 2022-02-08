@@ -163,47 +163,35 @@ static av_cold int decode_init(AVCodecContext *avctx)
     for (i = 0; i < 3; i++) {
         ret = init_ralf_vlc(&ctx->sets[i].filter_params, filter_param_def[i],
                             FILTERPARAM_ELEMENTS);
-        if (ret < 0) {
-            decode_close(avctx);
+        if (ret < 0)
             return ret;
-        }
         ret = init_ralf_vlc(&ctx->sets[i].bias, bias_def[i], BIAS_ELEMENTS);
-        if (ret < 0) {
-            decode_close(avctx);
+        if (ret < 0)
             return ret;
-        }
         ret = init_ralf_vlc(&ctx->sets[i].coding_mode, coding_mode_def[i],
                             CODING_MODE_ELEMENTS);
-        if (ret < 0) {
-            decode_close(avctx);
+        if (ret < 0)
             return ret;
-        }
         for (j = 0; j < 10; j++) {
             for (k = 0; k < 11; k++) {
                 ret = init_ralf_vlc(&ctx->sets[i].filter_coeffs[j][k],
                                     filter_coeffs_def[i][j][k],
                                     FILTER_COEFFS_ELEMENTS);
-                if (ret < 0) {
-                    decode_close(avctx);
+                if (ret < 0)
                     return ret;
-                }
             }
         }
         for (j = 0; j < 15; j++) {
             ret = init_ralf_vlc(&ctx->sets[i].short_codes[j],
                                 short_codes_def[i][j], SHORT_CODES_ELEMENTS);
-            if (ret < 0) {
-                decode_close(avctx);
+            if (ret < 0)
                 return ret;
-            }
         }
         for (j = 0; j < 125; j++) {
             ret = init_ralf_vlc(&ctx->sets[i].long_codes[j],
                                 long_codes_def[i][j], LONG_CODES_ELEMENTS);
-            if (ret < 0) {
-                decode_close(avctx);
+            if (ret < 0)
                 return ret;
-            }
         }
     }
 
@@ -539,5 +527,5 @@ const AVCodec ff_ralf_decoder = {
                       AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
