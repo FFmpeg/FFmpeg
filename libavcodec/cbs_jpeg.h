@@ -99,7 +99,7 @@ typedef struct JPEGRawHuffmanTable {
     uint8_t  Tc;
     uint8_t  Th;
     uint8_t  L[16];
-    uint8_t  V[224];
+    uint8_t  V[256];
 } JPEGRawHuffmanTable;
 
 typedef struct JPEGRawHuffmanTableSpecification {

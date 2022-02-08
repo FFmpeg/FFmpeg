@@ -84,12 +84,12 @@ static int FUNC(huffman_table)(CodedBitstreamContext *ctx, RWContext *rw,
     u(4, Th, 0, 3);
 
     for (i = 0; i < 16; i++)
-        us(8, L[i], i, 0, 224);
+        us(8, L[i], i, 0, 255);
 
     ij = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < current->L[i]; j++) {
-            if (ij >= 224)
+            if (ij >= FF_ARRAY_ELEMS(current->V))
                 return AVERROR_INVALIDDATA;
             us(8, V[ij], ij, 0, 255);
             ++ij;
