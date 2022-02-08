@@ -783,13 +783,10 @@ av_cold int ff_twinvq_decode_init(AVCodecContext *avctx)
     tctx->frames_per_packet = frames_per_packet;
 
     tctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!tctx->fdsp) {
-        ff_twinvq_decode_close(avctx);
+    if (!tctx->fdsp)
         return AVERROR(ENOMEM);
-    }
     if ((ret = init_mdct_win(tctx))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
-        ff_twinvq_decode_close(avctx);
         return ret;
     }
     init_bitstream_params(tctx);
