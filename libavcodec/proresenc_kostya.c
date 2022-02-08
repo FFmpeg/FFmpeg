@@ -1273,18 +1273,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
             }
         }
 
-        ctx->slice_q = av_malloc(ctx->slices_per_picture * sizeof(*ctx->slice_q));
+        ctx->slice_q = av_malloc_array(ctx->slices_per_picture, sizeof(*ctx->slice_q));
         if (!ctx->slice_q)
             return AVERROR(ENOMEM);
 
-        ctx->tdata = av_mallocz(avctx->thread_count * sizeof(*ctx->tdata));
+        ctx->tdata = av_calloc(avctx->thread_count, sizeof(*ctx->tdata));
         if (!ctx->tdata)
             return AVERROR(ENOMEM);
 
         for (j = 0; j < avctx->thread_count; j++) {
-            ctx->tdata[j].nodes = av_malloc((ctx->slices_width + 1)
-                                            * TRELLIS_WIDTH
-                                            * sizeof(*ctx->tdata->nodes));
+            ctx->tdata[j].nodes = av_malloc_array(ctx->slices_width + 1,
+                                                  TRELLIS_WIDTH
+                                                  * sizeof(*ctx->tdata->nodes));
             if (!ctx->tdata[j].nodes)
                 return AVERROR(ENOMEM);
             for (i = min_quant; i < max_quant + 2; i++) {
