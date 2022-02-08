@@ -115,7 +115,7 @@ int av_fifo_grow2(AVFifo *f, size_t inc)
                     (f->offset_w - copy) * f->elem_size);
             f->offset_w -= copy;
         } else
-            f->offset_w = f->nb_elems + copy;
+            f->offset_w = copy == inc ? 0 : f->nb_elems + copy;
     }
 
     f->nb_elems += inc;
