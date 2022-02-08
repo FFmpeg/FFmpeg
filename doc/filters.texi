@@ -11431,10 +11431,14 @@ It can be used to add padding with zeros from the left.
 @item gmtime
 The time at which the filter is running, expressed in UTC.
 It can accept an argument: a strftime() format string.
+The format string is extended to support the variable @var{%[1-6]N}
+which prints fractions of the second with optionally specified number of digits.
 
 @item localtime
 The time at which the filter is running, expressed in the local time zone.
 It can accept an argument: a strftime() format string.
+The format string is extended to support the variable @var{%[1-6]N}
+which prints fractions of the second with optionally specified number of digits.
 
 @item metadata
 Frame metadata. Takes one or two arguments.
