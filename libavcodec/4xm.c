@@ -1008,10 +1008,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     f->frame_buffer      = av_mallocz(avctx->width * avctx->height * 2);
     f->last_frame_buffer = av_mallocz(avctx->width * avctx->height * 2);
-    if (!f->frame_buffer || !f->last_frame_buffer) {
-        decode_end(avctx);
+    if (!f->frame_buffer || !f->last_frame_buffer)
         return AVERROR(ENOMEM);
-    }
 
     f->version = AV_RL32(avctx->extradata) >> 16;
     ff_blockdsp_init(&f->bdsp, avctx);
@@ -1038,5 +1036,5 @@ const AVCodec ff_fourxm_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
