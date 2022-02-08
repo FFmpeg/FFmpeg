@@ -1592,7 +1592,6 @@ static av_cold int g2m_decode_init(AVCodecContext *avctx)
 
     if ((ret = jpg_init(avctx, &c->jc)) != 0) {
         av_log(avctx, AV_LOG_ERROR, "Cannot initialise VLCs\n");
-        jpg_free_context(&c->jc);
         return AVERROR(ENOMEM);
     }
 
@@ -1633,5 +1632,5 @@ const AVCodec ff_g2m_decoder = {
     .close          = g2m_decode_end,
     .decode         = g2m_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
