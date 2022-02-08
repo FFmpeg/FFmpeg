@@ -1135,7 +1135,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         p->coef_stride = FFALIGN(p->dwt_width, 32);
         p->coef_buf = av_mallocz(p->coef_stride*p->dwt_height*sizeof(dwtcoef));
         if (!p->coef_buf)
-            goto alloc_fail;
+            return AVERROR(ENOMEM);
         for (level = s->wavelet_depth-1; level >= 0; level--) {
             w = w >> 1;
             h = h >> 1;
@@ -1154,7 +1154,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
                                       s->plane[i].coef_stride,
                                       s->plane[i].dwt_height,
                                       s->slice_width, s->slice_height))
-            goto alloc_fail;
+            return AVERROR(ENOMEM);
     }
 
     /* Slices */
@@ -1163,7 +1163,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
 
     s->slice_args = av_calloc(s->num_x*s->num_y, sizeof(SliceArgs));
     if (!s->slice_args)
-        goto alloc_fail;
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < 116; i++) {
         const uint64_t qf = ff_dirac_qscale_tab[i];
@@ -1183,11 +1183,6 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     }
 
     return 0;
-
-alloc_fail:
-    vc2_encode_end(avctx);
-    av_log(avctx, AV_LOG_ERROR, "Unable to allocate memory!\n");
-    return AVERROR(ENOMEM);
 }
 
 #define VC2ENC_FLAGS (AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
@@ -1234,10 +1229,10 @@ const AVCodec ff_vc2_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DIRAC,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(VC2EncContext),
     .init           = vc2_encode_init,
     .close          = vc2_encode_end,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .encode2        = vc2_encode_frame,
     .priv_class     = &vc2enc_class,
     .defaults       = vc2enc_defaults,
