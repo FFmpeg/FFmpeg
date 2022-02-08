@@ -276,6 +276,8 @@ av_cold int ff_vc2enc_init_transforms(VC2TransformContext *s, int p_stride,
 
 av_cold void ff_vc2enc_free_transforms(VC2TransformContext *s)
 {
-    av_free(s->buffer - s->padding);
-    s->buffer = NULL;
+    if (s->buffer) {
+        av_free(s->buffer - s->padding);
+        s->buffer = NULL;
+    }
 }
