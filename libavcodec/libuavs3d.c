@@ -208,7 +208,9 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, void *data, int *got_fr
                 }
                 avctx->has_b_frames  = !seqh->low_delay;
                 avctx->pix_fmt = seqh->bit_depth_internal == 8 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV420P10LE;
-                ff_set_dimensions(avctx, seqh->horizontal_size, seqh->vertical_size);
+                ret = ff_set_dimensions(avctx, seqh->horizontal_size, seqh->vertical_size);
+                if (ret < 0)
+                    return ret;
                 h->got_seqhdr = 1;
 
                 if (seqh->colour_description) {
