@@ -6043,6 +6043,8 @@ static int mov_read_senc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
         if (pb->eof_reached) {
             av_log(c->fc, AV_LOG_ERROR, "Hit EOF while reading senc\n");
+            if (ret >= 0)
+                av_encryption_info_free(encryption_index->encrypted_samples[i]);
             ret = AVERROR_INVALIDDATA;
         }
 
