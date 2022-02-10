@@ -249,10 +249,20 @@ void ff_gblur_init(GBlurContext *s)
         ff_gblur_init_x86(s);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    GBlurContext *s = ctx->priv;
+
+    av_freep(&s->buffer);
+    av_freep(&s->localbuf);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     GBlurContext *s = inlink->dst->priv;
+
+    uninit(inlink->dst);
 
     s->depth = desc->comp[0].depth;
     s->flt = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
@@ -377,14 +387,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (out != in)
         av_frame_free(&in);
     return ff_filter_frame(outlink, out);
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    GBlurContext *s = ctx->priv;
-
-    av_freep(&s->buffer);
-    av_freep(&s->localbuf);
 }
 
 static const AVFilterPad gblur_inputs[] = {
