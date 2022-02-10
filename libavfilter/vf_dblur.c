@@ -134,10 +134,19 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    DBlurContext *s = ctx->priv;
+
+    av_freep(&s->buffer);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     DBlurContext *s = inlink->dst->priv;
+
+    uninit(inlink->dst);
 
     s->depth = desc->comp[0].depth;
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
@@ -260,13 +269,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (out != in)
         av_frame_free(&in);
     return ff_filter_frame(outlink, out);
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    DBlurContext *s = ctx->priv;
-
-    av_freep(&s->buffer);
 }
 
 static const AVFilterPad dblur_inputs[] = {
