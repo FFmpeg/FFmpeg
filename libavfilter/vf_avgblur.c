@@ -187,11 +187,20 @@ static void build_lut(AVFilterContext *ctx, int max)
     }
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    AverageBlurContext *s = ctx->priv;
+
+    av_freep(&s->buffer);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AverageBlurContext *s = ctx->priv;
+
+    uninit(ctx);
 
     s->depth = desc->comp[0].depth;
     s->max = 1 << s->depth;
@@ -314,13 +323,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         build_lut(ctx, s->max);
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    AverageBlurContext *s = ctx->priv;
-
-    av_freep(&s->buffer);
 }
 
 static const AVFilterPad avgblur_inputs[] = {
