@@ -384,8 +384,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     GBlurContext *s = ctx->priv;
 
     av_freep(&s->buffer);
-    if (s->localbuf)
-        av_free(s->localbuf);
+    av_freep(&s->localbuf);
 }
 
 static const AVFilterPad gblur_inputs[] = {
