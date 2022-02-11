@@ -219,12 +219,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         p->got_frame = 0;
         p->result = codec->decode(avctx, p->frame, &p->got_frame, p->avpkt);
 
-        if ((p->result < 0 || !p->got_frame) && p->frame->buf[0]) {
-            if (avctx->codec->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS)
-                av_log(avctx, AV_LOG_ERROR, "A frame threaded decoder did not "
-                       "free the frame on failure. This is a bug, please report it.\n");
+        if ((p->result < 0 || !p->got_frame) && p->frame->buf[0])
             ff_thread_release_buffer(avctx, p->frame);
-        }
 
         if (atomic_load(&p->state) == STATE_SETTING_UP)
             ff_thread_finish_setup(avctx);
