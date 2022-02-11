@@ -169,8 +169,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
-    lock_avcodec(codec);
-
     avci = av_mallocz(sizeof(*avci));
     if (!avci) {
         ret = AVERROR(ENOMEM);
@@ -301,16 +299,17 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
     if (CONFIG_FRAME_THREAD_ENCODER && av_codec_is_encoder(avctx->codec)) {
-        unlock_avcodec(codec); //we will instantiate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx);
-        lock_avcodec(codec);
         if (ret < 0)
             goto free_and_end;
     }
 
     if (HAVE_THREADS
         && !(avci->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
+        /* Frame-threaded decoders call AVCodec.init for their child contexts. */
+        lock_avcodec(codec);
         ret = ff_thread_init(avctx);
+        unlock_avcodec(codec);
         if (ret < 0) {
             goto free_and_end;
         }
@@ -321,7 +320,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (!(avctx->active_thread_type & FF_THREAD_FRAME) ||
         avci->frame_thread_encoder) {
         if (avctx->codec->init) {
+            lock_avcodec(codec);
             ret = avctx->codec->init(avctx);
+            unlock_avcodec(codec);
             if (ret < 0) {
                 avci->needs_close = avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP;
                 goto free_and_end;
@@ -369,7 +370,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_assert0(*(const AVClass **)avctx->priv_data == codec->priv_class);
 
 end:
-    unlock_avcodec(codec);
 
     return ret;
 free_and_end:
