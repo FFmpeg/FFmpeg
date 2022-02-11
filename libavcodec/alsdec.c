@@ -2094,12 +2094,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->reverted_channels = NULL;
     }
 
-    channel_size      = sconf->frame_length + sconf->max_order;
-
-    ctx->prev_raw_samples = av_malloc_array(sconf->max_order, sizeof(*ctx->prev_raw_samples));
-    ctx->raw_buffer       = av_calloc(avctx->channels * channel_size, sizeof(*ctx->raw_buffer));
-    ctx->raw_samples      = av_malloc_array(avctx->channels, sizeof(*ctx->raw_samples));
-
     if (sconf->floating) {
         ctx->acf               = av_malloc_array(avctx->channels, sizeof(*ctx->acf));
         ctx->shift_value       = av_malloc_array(avctx->channels, sizeof(*ctx->shift_value));
@@ -2125,7 +2119,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
+    channel_size      = sconf->frame_length + sconf->max_order;
+
     // allocate previous raw sample buffer
+    ctx->prev_raw_samples = av_malloc_array(sconf->max_order, sizeof(*ctx->prev_raw_samples));
+    ctx->raw_buffer       = av_calloc(avctx->channels * channel_size, sizeof(*ctx->raw_buffer));
+    ctx->raw_samples      = av_malloc_array(avctx->channels, sizeof(*ctx->raw_samples));
     if (!ctx->prev_raw_samples || !ctx->raw_buffer|| !ctx->raw_samples) {
         av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
         return AVERROR(ENOMEM);
