@@ -652,10 +652,8 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     vp6_decode_init_context(s);
 
     if (s->has_alpha) {
-        s->alpha_context = av_mallocz(sizeof(VP56Context));
-        if (!s->alpha_context) {
-            return AVERROR(ENOMEM);
-        }
+        /* Can only happen for ff_vp6a_decoder */
+        s->alpha_context = &s[1];
         ret = ff_vp56_init_context(avctx, s->alpha_context,
                                    s->flip == -1, s->has_alpha);
         if (ret < 0)
@@ -691,7 +689,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
     if (s->alpha_context) {
         ff_vp56_free_context(s->alpha_context);
         vp6_decode_free_context(s->alpha_context);
-        av_freep(&s->alpha_context);
+        s->alpha_context = NULL;
     }
 
     return 0;
@@ -743,7 +741,7 @@ const AVCodec ff_vp6a_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP6A,
-    .priv_data_size = sizeof(VP56Context),
+    .priv_data_size = 2 /* Main context + alpha context */ * sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
