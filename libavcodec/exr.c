@@ -2351,5 +2351,6 @@ const AVCodec ff_exr_decoder = {
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                         AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
     .priv_class       = &exr_class,
 };
