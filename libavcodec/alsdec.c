@@ -1990,17 +1990,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if ((ret = read_specific_config(ctx)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Reading ALSSpecificConfig failed.\n");
-        goto fail;
+        return ret;
     }
 
     if ((ret = check_specific_config(ctx)) < 0) {
-        goto fail;
+        return ret;
     }
 
     if (sconf->bgmc) {
         ret = ff_bgmc_init(avctx, &ctx->bgmc_lut, &ctx->bgmc_lut_status);
         if (ret < 0)
-            goto fail;
+            return ret;
     }
     if (sconf->floating) {
         avctx->sample_fmt          = AV_SAMPLE_FMT_FLT;
@@ -2012,8 +2012,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if (avctx->bits_per_raw_sample > 32) {
             av_log(avctx, AV_LOG_ERROR, "Bits per raw sample %d larger than 32.\n",
                    avctx->bits_per_raw_sample);
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -2044,8 +2043,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         !ctx->quant_cof_buffer       || !ctx->lpc_cof_buffer ||
         !ctx->lpc_cof_reversed_buffer) {
         av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     // assign quantized parcor coefficient buffers
@@ -2069,8 +2067,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         !ctx->use_ltp  || !ctx->ltp_lag ||
         !ctx->ltp_gain || !ctx->ltp_gain_buffer) {
         av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     for (c = 0; c < num_buffers; c++)
@@ -2086,8 +2083,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
         if (!ctx->chan_data_buffer || !ctx->chan_data || !ctx->reverted_channels) {
             av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
 
         for (c = 0; c < num_buffers; c++)
@@ -2118,8 +2114,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if (!ctx->mlz || !ctx->acf || !ctx->shift_value || !ctx->last_shift_value
             || !ctx->last_acf_mantissa || !ctx->raw_mantissa) {
             av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
 
         ff_mlz_init_dict(avctx, ctx->mlz);
@@ -2133,8 +2128,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // allocate previous raw sample buffer
     if (!ctx->prev_raw_samples || !ctx->raw_buffer|| !ctx->raw_samples) {
         av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     // assign raw samples buffers
@@ -2151,17 +2145,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
                                           sizeof(*ctx->crc_buffer));
         if (!ctx->crc_buffer) {
             av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
     }
 
     ff_bswapdsp_init(&ctx->bdsp);
 
     return 0;
-
-fail:
-    return ret;
 }
 
 
