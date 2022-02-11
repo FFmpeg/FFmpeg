@@ -4066,6 +4066,10 @@ Set temperature in degrees Celsius. This is the temperature of the environment.
 Default is 20.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section crossfeed
 Apply headphone crossfeed filter.
 

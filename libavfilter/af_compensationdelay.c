@@ -40,7 +40,7 @@ typedef struct CompensationDelayContext {
 } CompensationDelayContext;
 
 #define OFFSET(x) offsetof(CompensationDelayContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define A (AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM)
 
 static const AVOption compensationdelay_options[] = {
     { "mm",   "set mm distance",    OFFSET(distance_mm), AV_OPT_TYPE_INT,    {.i64=0},    0,  10, A },
@@ -84,6 +84,7 @@ static int config_input(AVFilterLink *inlink)
     s->delay_frame->format         = inlink->format;
     s->delay_frame->nb_samples     = new_size;
     s->delay_frame->channel_layout = inlink->channel_layout;
+    s->delay_frame->channels       = inlink->channels;
 
     return av_frame_get_buffer(s->delay_frame, 0);
 }
@@ -91,6 +92,7 @@ static int config_input(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
     CompensationDelayContext *s = ctx->priv;
     const unsigned b_mask = s->buf_size - 1;
     const unsigned buf_size = s->buf_size;
@@ -101,7 +103,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int n, ch;
 
-    out = ff_get_audio_buffer(ctx->outputs[0], in->nb_samples);
+    out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);
@@ -127,8 +129,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     s->w_ptr = w_ptr;
 
+    if (ctx->is_disabled) {
+        av_frame_free(&out);
+        return ff_filter_frame(outlink, in);
+    }
+
     av_frame_free(&in);
-    return ff_filter_frame(ctx->outputs[0], out);
+    return ff_filter_frame(outlink, out);
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    CompensationDelayContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    s->delay = (s->distance_m * 100. + s->distance_cm * 1. + s->distance_mm * .1) *
+               COMP_DELAY_SOUND_FRONT_DELAY(s->temp) * outlink->sample_rate;
+
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -163,4 +187,6 @@ const AVFilter ff_af_compensationdelay = {
     FILTER_INPUTS(compensationdelay_inputs),
     FILTER_OUTPUTS(compensationdelay_outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
+    .process_command = process_command,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
