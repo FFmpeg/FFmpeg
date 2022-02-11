@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include "libavutil/imgutils.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -555,14 +556,13 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
  */
 static av_cold int rv40_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     RV34DecContext *r = avctx->priv_data;
     int ret;
 
     r->rv30 = 0;
     if ((ret = ff_rv34_decode_init(avctx)) < 0)
         return ret;
-    if(!aic_top_vlc.bits)
-        rv40_init_tables();
     r->parse_slice_header = rv40_parse_slice_header;
     r->decode_intra_types = rv40_decode_intra_types;
     r->decode_mb_info     = rv40_decode_mb_info;
@@ -570,6 +570,7 @@ static av_cold int rv40_decode_init(AVCodecContext *avctx)
     r->luma_dc_quant_i = rv40_luma_dc_quant[0];
     r->luma_dc_quant_p = rv40_luma_dc_quant[1];
     ff_rv40dsp_init(&r->rdsp);
+    ff_thread_once(&init_static_once, rv40_init_tables);
     return 0;
 }
 
@@ -590,5 +591,6 @@ const AVCodec ff_rv40_decoder = {
         AV_PIX_FMT_NONE
     },
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_rv34_decode_update_thread_context),
-    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |
+                             FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
