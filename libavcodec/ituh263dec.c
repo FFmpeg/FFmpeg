@@ -34,6 +34,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"
@@ -103,12 +104,8 @@ static VLC cbpc_b_vlc;
 
 /* init vlcs */
 
-/* XXX: find a better solution to handle static init */
-av_cold void ff_h263_decode_init_vlc(void)
+static av_cold void h263_decode_init_vlc(void)
 {
-    static volatile int done = 0;
-
-    if (!done) {
         INIT_VLC_STATIC(&ff_h263_intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 9,
                  ff_h263_intra_MCBPC_bits, 1, 1,
                  ff_h263_intra_MCBPC_code, 1, 1, 72);
@@ -130,8 +127,12 @@ av_cold void ff_h263_decode_init_vlc(void)
         INIT_VLC_STATIC(&cbpc_b_vlc, CBPC_B_VLC_BITS, 4,
                  &ff_cbpc_b_tab[0][1], 2, 1,
                  &ff_cbpc_b_tab[0][0], 2, 1, 8);
-        done = 1;
-    }
+}
+
+av_cold void ff_h263_decode_init_vlc(void)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&init_static_once, h263_decode_init_vlc);
 }
 
 int ff_h263_decode_mba(MpegEncContext *s)
