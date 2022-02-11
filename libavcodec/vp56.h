@@ -216,14 +216,12 @@ struct vp56_context {
 };
 
 
-int ff_vp56_init(AVCodecContext *avctx, int flip, int has_alpha);
 /**
  * Initializes an VP56Context. Expects its caller to clean up
  * in case of error.
  */
 int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
                           int flip, int has_alpha);
-int ff_vp56_free(AVCodecContext *avctx);
 int ff_vp56_free_context(VP56Context *s);
 void ff_vp56_init_dequant(VP56Context *s, int quantizer);
 int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,

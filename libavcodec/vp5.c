@@ -282,7 +282,7 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
     VP56Context *s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_vp56_init(avctx, 1, 0)) < 0)
+    if ((ret = ff_vp56_init_context(avctx, s, 1, 0)) < 0)
         return ret;
     ff_vp5dsp_init(&s->vp56dsp);
     s->vp56_coord_div = vp5_coord_div;
@@ -296,6 +296,12 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int vp56_free(AVCodecContext *avctx)
+{
+    VP56Context *const s = avctx->priv_data;
+    return ff_vp56_free_context(s);
+}
+
 const AVCodec ff_vp5_decoder = {
     .name           = "vp5",
     .long_name      = NULL_IF_CONFIG_SMALL("On2 VP5"),
@@ -303,7 +309,7 @@ const AVCodec ff_vp5_decoder = {
     .id             = AV_CODEC_ID_VP5,
     .priv_data_size = sizeof(VP56Context),
     .init           = vp5_decode_init,
-    .close          = ff_vp56_free,
+    .close          = vp56_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,

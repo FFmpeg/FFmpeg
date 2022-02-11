@@ -773,12 +773,6 @@ next:
     return 0;
 }
 
-av_cold int ff_vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
-{
-    VP56Context *s = avctx->priv_data;
-    return ff_vp56_init_context(avctx, s, flip, has_alpha);
-}
-
 av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
                                   int flip, int has_alpha)
 {
@@ -828,12 +822,6 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     }
 
     return 0;
-}
-
-av_cold int ff_vp56_free(AVCodecContext *avctx)
-{
-    VP56Context *s = avctx->priv_data;
-    return ff_vp56_free_context(s);
 }
 
 av_cold int ff_vp56_free_context(VP56Context *s)
