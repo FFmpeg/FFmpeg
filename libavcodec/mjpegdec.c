@@ -50,6 +50,7 @@
 #include "tiff.h"
 #include "exif.h"
 #include "bytestream.h"
+#include "tiff_common.h"
 
 
 static int init_default_huffman_tables(MJpegDecodeContext *s)

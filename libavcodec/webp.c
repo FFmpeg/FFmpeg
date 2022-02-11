@@ -49,6 +49,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "thread.h"
+#include "tiff_common.h"
 #include "vp8.h"
 
 #define VP8X_FLAG_ANIMATION             0x02
