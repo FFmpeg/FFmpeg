@@ -22,6 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/thread.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -293,22 +295,10 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
 }
 
 /* init all vlc decoding tables */
-av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
+static av_cold void msmpeg4_decode_init_static(void)
 {
-    MpegEncContext *s = avctx->priv_data;
-    static volatile int done = 0;
-    int ret;
     MVTable *mv;
 
-    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
-        return ret;
-
-    if (ff_h263_decode_init(avctx) < 0)
-        return -1;
-
-    ff_msmpeg4_common_init(s);
-
-    if (!done) {
         INIT_FIRST_VLC_RL(ff_rl_table[0], 642);
         INIT_FIRST_VLC_RL(ff_rl_table[1], 1104);
         INIT_FIRST_VLC_RL(ff_rl_table[2], 554);
@@ -373,8 +363,21 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         INIT_VLC_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
                  &ff_table_inter_intra[0][1], 2, 1,
                  &ff_table_inter_intra[0][0], 2, 1, 8);
-        done = 1;
-    }
+}
+
+av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    MpegEncContext *s = avctx->priv_data;
+    int ret;
+
+    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return ret;
+
+    if (ff_h263_decode_init(avctx) < 0)
+        return -1;
+
+    ff_msmpeg4_common_init(s);
 
     switch(s->msmpeg4_version){
     case 1:
@@ -394,6 +397,8 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     }
 
     s->slice_height= s->mb_height; //to avoid 1/0 if the first frame is not a keyframe
+
+    ff_thread_once(&init_static_once, msmpeg4_decode_init_static);
 
     return 0;
 }
@@ -867,7 +872,8 @@ const AVCodec ff_msmpeg4v1_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .max_lowres     = 3,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
@@ -885,7 +891,8 @@ const AVCodec ff_msmpeg4v2_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .max_lowres     = 3,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
@@ -903,7 +910,8 @@ const AVCodec ff_msmpeg4v3_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .max_lowres     = 3,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
@@ -921,7 +929,8 @@ const AVCodec ff_wmv1_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .max_lowres     = 3,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
