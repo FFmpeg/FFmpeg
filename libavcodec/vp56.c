@@ -800,10 +800,8 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->frames); i++) {
         s->frames[i] = av_frame_alloc();
-        if (!s->frames[i]) {
-            ff_vp56_free(avctx);
+        if (!s->frames[i])
             return AVERROR(ENOMEM);
-        }
     }
     s->edge_emu_buffer_alloc = NULL;
 
