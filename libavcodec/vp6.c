@@ -654,11 +654,12 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     if (s->has_alpha) {
         s->alpha_context = av_mallocz(sizeof(VP56Context));
         if (!s->alpha_context) {
-            ff_vp56_free(avctx);
             return AVERROR(ENOMEM);
         }
-        ff_vp56_init_context(avctx, s->alpha_context,
-                             s->flip == -1, s->has_alpha);
+        ret = ff_vp56_init_context(avctx, s->alpha_context,
+                                   s->flip == -1, s->has_alpha);
+        if (ret < 0)
+            return ret;
         ff_vp6dsp_init(&s->alpha_context->vp56dsp);
         vp6_decode_init_context(s->alpha_context);
     }
@@ -745,4 +746,5 @@ const AVCodec ff_vp6a_decoder = {
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
