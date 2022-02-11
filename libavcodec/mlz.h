@@ -57,7 +57,7 @@ typedef struct MLZ {
 
 /** Initialize the dictionary
  */
-void ff_mlz_init_dict(void* context, MLZ *mlz);
+int ff_mlz_init_dict(void *context, MLZ *mlz);
 
 /** Flush the dictionary
  */

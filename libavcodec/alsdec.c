@@ -2111,7 +2111,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
         }
 
-        ff_mlz_init_dict(avctx, ctx->mlz);
+        ret = ff_mlz_init_dict(avctx, ctx->mlz);
+        if (ret < 0)
+            return ret;
         ff_mlz_flush_dict(ctx->mlz);
 
         for (c = 0; c < avctx->channels; ++c) {
