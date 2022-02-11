@@ -423,12 +423,12 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
     if (frame->frame->format == AV_PIX_FMT_QSV) {
         frame->surface = *(mfxFrameSurface1*)frame->frame->data[3];
     } else {
-        frame->surface.Info = q->frame_info;
-
         frame->surface.Data.PitchLow = frame->frame->linesize[0];
         frame->surface.Data.Y        = frame->frame->data[0];
         frame->surface.Data.UV       = frame->frame->data[1];
     }
+
+    frame->surface.Info = q->frame_info;
 
     if (q->frames_ctx.mids) {
         ret = ff_qsv_find_surface_idx(&q->frames_ctx, frame);
