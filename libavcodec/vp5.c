@@ -312,5 +312,5 @@ const AVCodec ff_vp5_decoder = {
     .close          = vp56_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

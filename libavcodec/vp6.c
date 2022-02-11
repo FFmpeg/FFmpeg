@@ -721,7 +721,7 @@ const AVCodec ff_vp6_decoder = {
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 /* flash version, not flipped upside-down */
@@ -735,7 +735,7 @@ const AVCodec ff_vp6f_decoder = {
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 /* flash version, not flipped upside-down, with alpha channel */
@@ -749,5 +749,5 @@ const AVCodec ff_vp6a_decoder = {
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
