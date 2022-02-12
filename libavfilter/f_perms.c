@@ -42,14 +42,15 @@ typedef struct PermsContext {
 
 #define OFFSET(x) offsetof(PermsContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM
+#define TFLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption options[] = {
-    { "mode", "select permissions mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = MODE_NONE}, MODE_NONE, NB_MODES-1, FLAGS, "mode" },
-        { "none",   "do nothing",                       0, AV_OPT_TYPE_CONST, {.i64 = MODE_NONE},       INT_MIN, INT_MAX, FLAGS, "mode" },
-        { "ro",     "set all output frames read-only",  0, AV_OPT_TYPE_CONST, {.i64 = MODE_RO},         INT_MIN, INT_MAX, FLAGS, "mode" },
-        { "rw",     "set all output frames writable",   0, AV_OPT_TYPE_CONST, {.i64 = MODE_RW},         INT_MIN, INT_MAX, FLAGS, "mode" },
-        { "toggle", "switch permissions",               0, AV_OPT_TYPE_CONST, {.i64 = MODE_TOGGLE},     INT_MIN, INT_MAX, FLAGS, "mode" },
-        { "random", "set permissions randomly",         0, AV_OPT_TYPE_CONST, {.i64 = MODE_RANDOM},     INT_MIN, INT_MAX, FLAGS, "mode" },
+    { "mode", "select permissions mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = MODE_NONE}, MODE_NONE, NB_MODES-1, TFLAGS, "mode" },
+        { "none",   "do nothing",                       0, AV_OPT_TYPE_CONST, {.i64 = MODE_NONE},            0, 0, TFLAGS, "mode" },
+        { "ro",     "set all output frames read-only",  0, AV_OPT_TYPE_CONST, {.i64 = MODE_RO},              0, 0, TFLAGS, "mode" },
+        { "rw",     "set all output frames writable",   0, AV_OPT_TYPE_CONST, {.i64 = MODE_RW},              0, 0, TFLAGS, "mode" },
+        { "toggle", "switch permissions",               0, AV_OPT_TYPE_CONST, {.i64 = MODE_TOGGLE},          0, 0, TFLAGS, "mode" },
+        { "random", "set permissions randomly",         0, AV_OPT_TYPE_CONST, {.i64 = MODE_RANDOM},          0, 0, TFLAGS, "mode" },
     { "seed", "set the seed for the random mode", OFFSET(random_seed), AV_OPT_TYPE_INT64, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { NULL }
 };
@@ -57,16 +58,13 @@ static const AVOption options[] = {
 static av_cold int init(AVFilterContext *ctx)
 {
     PermsContext *s = ctx->priv;
+    uint32_t seed;
 
-    if (s->mode == MODE_RANDOM) {
-        uint32_t seed;
-
-        if (s->random_seed == -1)
-            s->random_seed = av_get_random_seed();
-        seed = s->random_seed;
-        av_log(ctx, AV_LOG_INFO, "random seed: 0x%08"PRIx32"\n", seed);
-        av_lfg_init(&s->lfg, seed);
-    }
+    if (s->random_seed == -1)
+        s->random_seed = av_get_random_seed();
+    seed = s->random_seed;
+    av_log(ctx, AV_LOG_INFO, "random seed: 0x%08"PRIx32"\n", seed);
+    av_lfg_init(&s->lfg, seed);
 
     return 0;
 }
@@ -140,6 +138,7 @@ const AVFilter ff_af_aperms = {
     FILTER_OUTPUTS(aperms_outputs),
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                    AVFILTER_FLAG_METADATA_ONLY,
+    .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_APERMS_FILTER */
 
@@ -170,5 +169,6 @@ const AVFilter ff_vf_perms = {
     .priv_class  = &perms_class,
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                    AVFILTER_FLAG_METADATA_ONLY,
+    .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_PERMS_FILTER */
