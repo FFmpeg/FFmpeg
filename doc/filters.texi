@@ -6436,15 +6436,23 @@ Set LFE output volume. By default, this is @var{1}.
 
 @item allx
 Set spread usage of stereo image across X axis for all channels.
+Allowed range is from @var{-1} to @var{15}.
+By default this value is negative @var{-1}, and thus unused.
 
 @item ally
 Set spread usage of stereo image across Y axis for all channels.
+Allowed range is from @var{-1} to @var{15}.
+By default this value is negative @var{-1}, and thus unused.
 
 @item fcx, flx, frx, blx, brx, slx, srx, bcx
 Set spread usage of stereo image across X axis for each channel.
+Allowed range is from @var{0.06} to @var{15}.
+By default this value is @var{0.5}.
 
 @item fcy, fly, fry, bly, bry, sly, sry, bcy
 Set spread usage of stereo image across Y axis for each channel.
+Allowed range is from @var{0.06} to @var{15}.
+By default this value is @var{0.5}.
 
 @item win_size
 Set window size. Allowed range is from @var{1024} to @var{65536}. Default size is @var{4096}.
