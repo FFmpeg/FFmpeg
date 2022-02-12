@@ -339,16 +339,16 @@ static void stereo_transform(float *x, float *y, float angle)
     else
         a = M_PI + 2 * (-2 * M_PI + reference) * (M_PI - fabsf(a)) * FFDIFFSIGN(a, 0) / (3 * M_PI);
 
-    *x = av_clipf(sinf(a) * r, -1, 1);
-    *y = av_clipf(cosf(a) * r, -1, 1);
+    *x = av_clipf(sinf(a) * r, -1.f, 1.f);
+    *y = av_clipf(cosf(a) * r, -1.f, 1.f);
 }
 
 static void stereo_position(float a, float p, float *x, float *y)
 {
     av_assert2(a >= -1.f && a <= 1.f);
     av_assert2(p >= 0.f && p <= M_PI);
-    *x = av_clipf(a+a*FFMAX(0, p*p-M_PI_2), -1, 1);
-    *y = av_clipf(cosf(a*M_PI_2+M_PI)*cosf(M_PI_2-p/M_PI)*M_LN10+1, -1, 1);
+    *x = av_clipf(a+a*FFMAX(0, p*p-M_PI_2), -1.f, 1.f);
+    *y = av_clipf(cosf(a*M_PI_2+M_PI)*cosf(M_PI_2-p/M_PI)*M_LN10+1, -1.f, 1.f);
 }
 
 static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,
