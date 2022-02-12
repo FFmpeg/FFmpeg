@@ -200,6 +200,8 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state,
 #endif
     ret = get_ur_golomb_jpegls(gb, k, state->limit - limit_add - 1,
                                state->qbpp);
+    if (ret < 0)
+        return -0x10000;
 
     /* decode mapped error */
     map = 0;
