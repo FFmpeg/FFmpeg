@@ -22,7 +22,7 @@
 #include "libavutil/audio_fifo.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "filters.h"
@@ -97,14 +97,17 @@ typedef struct AudioSurroundContext {
     int nb_in_channels;
     int nb_out_channels;
 
+    AVFrame *input_in;
     AVFrame *input;
     AVFrame *output;
+    AVFrame *output_out;
     AVFrame *overlap_buffer;
 
     int buf_size;
     int hop_size;
     AVAudioFifo *fifo;
-    RDFTContext **rdft, **irdft;
+    AVTXContext **rdft, **irdft;
+    av_tx_fn tx_fn, itx_fn;
     float *window_func_lut;
 
     int64_t pts;
@@ -203,7 +206,9 @@ static int config_input(AVFilterLink *inlink)
     s->nb_in_channels = inlink->channels;
 
     for (ch = 0; ch < inlink->channels; ch++) {
-        s->rdft[ch]  = av_rdft_init(ff_log2(s->buf_size), DFT_R2C);
+        float scale = 1.f;
+
+        av_tx_init(&s->rdft[ch], &s->tx_fn, AV_TX_FLOAT_RDFT, 0, s->buf_size, &scale, 0);
         if (!s->rdft[ch])
             return AVERROR(ENOMEM);
     }
@@ -240,7 +245,11 @@ static int config_input(AVFilterLink *inlink)
     if (ch >= 0)
         s->input_levels[ch] *= s->lfe_in;
 
-    s->input = ff_get_audio_buffer(inlink, s->buf_size * 2);
+    s->input_in = ff_get_audio_buffer(inlink, s->buf_size + 2);
+    if (!s->input_in)
+        return AVERROR(ENOMEM);
+
+    s->input = ff_get_audio_buffer(inlink, s->buf_size + 2);
     if (!s->input)
         return AVERROR(ENOMEM);
 
@@ -266,7 +275,9 @@ static int config_output(AVFilterLink *outlink)
     s->nb_out_channels = outlink->channels;
 
     for (ch = 0; ch < outlink->channels; ch++) {
-        s->irdft[ch] = av_rdft_init(ff_log2(s->buf_size), IDFT_C2R);
+        float iscale = 1.f;
+
+        av_tx_init(&s->irdft[ch], &s->itx_fn, AV_TX_FLOAT_RDFT, 0, s->buf_size, &iscale, 0);
         if (!s->irdft[ch])
             return AVERROR(ENOMEM);
     }
@@ -303,9 +314,10 @@ static int config_output(AVFilterLink *outlink)
     if (ch >= 0)
         s->output_levels[ch] *= s->lfe_out;
 
-    s->output = ff_get_audio_buffer(outlink, s->buf_size * 2);
+    s->output_out = ff_get_audio_buffer(outlink, s->buf_size + 2);
+    s->output = ff_get_audio_buffer(outlink, s->buf_size + 2);
     s->overlap_buffer = ff_get_audio_buffer(outlink, s->buf_size * 2);
-    if (!s->overlap_buffer || !s->output)
+    if (!s->overlap_buffer || !s->output || !s->output_out)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -1099,7 +1111,7 @@ static void filter_stereo(AVFilterContext *ctx)
     srcl = (float *)s->input->extended_data[0];
     srcr = (float *)s->input->extended_data[1];
 
-    for (n = 0; n < s->buf_size; n++) {
+    for (n = 0; n < s->buf_size / 2 + 1; n++) {
         float l_re = srcl[2 * n], r_re = srcr[2 * n];
         float l_im = srcl[2 * n + 1], r_im = srcr[2 * n + 1];
         float c_phase = atan2f(l_im + r_im, l_re + r_re);
@@ -1133,7 +1145,7 @@ static void filter_surround(AVFilterContext *ctx)
     srcr = (float *)s->input->extended_data[1];
     srcc = (float *)s->input->extended_data[2];
 
-    for (n = 0; n < s->buf_size; n++) {
+    for (n = 0; n < s->buf_size / 2 + 1; n++) {
         float l_re = srcl[2 * n], r_re = srcr[2 * n];
         float l_im = srcl[2 * n + 1], r_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -1169,7 +1181,7 @@ static void filter_2_1(AVFilterContext *ctx)
     srcr = (float *)s->input->extended_data[1];
     srclfe = (float *)s->input->extended_data[2];
 
-    for (n = 0; n < s->buf_size; n++) {
+    for (n = 0; n < s->buf_size / 2 + 1; n++) {
         float l_re = srcl[2 * n], r_re = srcr[2 * n];
         float l_im = srcl[2 * n + 1], r_im = srcr[2 * n + 1];
         float lfe_re = srclfe[2 * n], lfe_im = srclfe[2 * n + 1];
@@ -1206,7 +1218,7 @@ static void filter_5_0_side(AVFilterContext *ctx)
     srcsl = (float *)s->input->extended_data[3];
     srcsr = (float *)s->input->extended_data[4];
 
-    for (n = 0; n < s->buf_size; n++) {
+    for (n = 0; n < s->buf_size / 2 + 1; n++) {
         float fl_re = srcl[2 * n], fr_re = srcr[2 * n];
         float fl_im = srcl[2 * n + 1], fr_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -1264,7 +1276,7 @@ static void filter_5_1_side(AVFilterContext *ctx)
     srcsl = (float *)s->input->extended_data[4];
     srcsr = (float *)s->input->extended_data[5];
 
-    for (n = 0; n < s->buf_size; n++) {
+    for (n = 0; n < s->buf_size / 2 + 1; n++) {
         float fl_re = srcl[2 * n], fr_re = srcr[2 * n];
         float fl_im = srcl[2 * n + 1], fr_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -1323,7 +1335,7 @@ static void filter_5_1_back(AVFilterContext *ctx)
     srcbl = (float *)s->input->extended_data[4];
     srcbr = (float *)s->input->extended_data[5];
 
-    for (n = 0; n < s->buf_size; n++) {
+    for (n = 0; n < s->buf_size / 2 + 1; n++) {
         float fl_re = srcl[2 * n], fr_re = srcr[2 * n];
         float fl_im = srcl[2 * n + 1], fr_im = srcr[2 * n + 1];
         float c_re = srcc[2 * n], c_im = srcc[2 * n + 1];
@@ -1532,14 +1544,12 @@ static int fft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     float *dst;
     int n;
 
-    memset(s->input->extended_data[ch] + s->buf_size * sizeof(float), 0, s->buf_size * sizeof(float));
-
-    dst = (float *)s->input->extended_data[ch];
+    dst = (float *)s->input_in->extended_data[ch];
     for (n = 0; n < s->buf_size; n++) {
         dst[n] *= s->window_func_lut[n] * level_in;
     }
 
-    av_rdft_calc(s->rdft[ch], (float *)s->input->extended_data[ch]);
+    s->tx_fn(s->rdft[ch], (float *)s->input->extended_data[ch], dst, sizeof(float));
 
     return 0;
 }
@@ -1552,10 +1562,9 @@ static int ifft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     float *dst, *ptr;
     int n;
 
-    av_rdft_calc(s->irdft[ch], (float *)s->output->extended_data[ch]);
-
-    dst = (float *)s->output->extended_data[ch];
+    dst = (float *)s->output_out->extended_data[ch];
     ptr = (float *)s->overlap_buffer->extended_data[ch];
+    s->itx_fn(s->irdft[ch], dst, (float *)s->output->extended_data[ch], sizeof(float));
 
     memmove(s->overlap_buffer->extended_data[ch],
             s->overlap_buffer->extended_data[ch] + s->hop_size * sizeof(float),
@@ -1582,7 +1591,7 @@ static int filter_frame(AVFilterLink *inlink)
     AVFrame *out;
     int ret;
 
-    ret = av_audio_fifo_peek(s->fifo, (void **)s->input->extended_data, s->buf_size);
+    ret = av_audio_fifo_peek(s->fifo, (void **)s->input_in->extended_data, s->buf_size);
     if (ret < 0)
         return ret;
 
@@ -1664,18 +1673,17 @@ static int activate(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
-    int ch;
 
+    av_frame_free(&s->input_in);
     av_frame_free(&s->input);
     av_frame_free(&s->output);
+    av_frame_free(&s->output_out);
     av_frame_free(&s->overlap_buffer);
 
-    for (ch = 0; ch < s->nb_in_channels; ch++) {
-        av_rdft_end(s->rdft[ch]);
-    }
-    for (ch = 0; ch < s->nb_out_channels; ch++) {
-        av_rdft_end(s->irdft[ch]);
-    }
+    for (int ch = 0; ch < s->nb_in_channels; ch++)
+        av_tx_uninit(&s->rdft[ch]);
+    for (int ch = 0; ch < s->nb_out_channels; ch++)
+        av_tx_uninit(&s->irdft[ch]);
     av_freep(&s->input_levels);
     av_freep(&s->output_levels);
     av_freep(&s->rdft);
