@@ -27,12 +27,12 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/thread.h"
+#include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "fft.h"
 
 typedef struct QDMCTone {
     uint8_t mode;
@@ -66,8 +66,10 @@ typedef struct QDMCContext {
     float *buffer_ptr;
     int rndval;
 
-    DECLARE_ALIGNED(32, FFTComplex, cmplx)[2][512];
-    FFTContext fft_ctx;
+    DECLARE_ALIGNED(32, AVComplexFloat, cmplx_in)[2][512];
+    DECLARE_ALIGNED(32, AVComplexFloat, cmplx_out)[2][512];
+    AVTXContext *fft_ctx;
+    av_tx_fn itx_fn;
 } QDMCContext;
 
 static float sin_table[512];
@@ -207,6 +209,7 @@ static av_cold int qdmc_decode_init(AVCodecContext *avctx)
     static AVOnce init_static_once = AV_ONCE_INIT;
     QDMCContext *s = avctx->priv_data;
     int ret, fft_size, fft_order, size, g, j, x;
+    float scale = 1.f;
     GetByteContext b;
 
     ff_thread_once(&init_static_once, qdmc_init_static_data);
@@ -291,7 +294,7 @@ static av_cold int qdmc_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_fft_init(&s->fft_ctx, fft_order, 1);
+    ret = av_tx_init(&s->fft_ctx, &s->itx_fn, AV_TX_FLOAT_FFT, 1, 1 << fft_order, &scale, 0);
     if (ret < 0)
         return ret;
 
@@ -311,7 +314,7 @@ static av_cold int qdmc_decode_close(AVCodecContext *avctx)
 {
     QDMCContext *s = avctx->priv_data;
 
-    ff_fft_end(&s->fft_ctx);
+    av_tx_uninit(&s->fft_ctx);
 
     return 0;
 }
@@ -641,22 +644,21 @@ static int decode_frame(QDMCContext *s, GetBitContext *gb, int16_t *out)
 
         for (ch = 0; ch < s->nb_channels; ch++) {
             for (i = 0; i < s->subframe_size; i++) {
-                s->cmplx[ch][i].re = s->fft_buffer[ch + 2][s->fft_offset + n * s->subframe_size + i];
-                s->cmplx[ch][i].im = s->fft_buffer[ch + 0][s->fft_offset + n * s->subframe_size + i];
-                s->cmplx[ch][s->subframe_size + i].re = 0;
-                s->cmplx[ch][s->subframe_size + i].im = 0;
+                s->cmplx_in[ch][i].re = s->fft_buffer[ch + 2][s->fft_offset + n * s->subframe_size + i];
+                s->cmplx_in[ch][i].im = s->fft_buffer[ch + 0][s->fft_offset + n * s->subframe_size + i];
+                s->cmplx_in[ch][s->subframe_size + i].re = 0;
+                s->cmplx_in[ch][s->subframe_size + i].im = 0;
             }
         }
 
         for (ch = 0; ch < s->nb_channels; ch++) {
-            s->fft_ctx.fft_permute(&s->fft_ctx, s->cmplx[ch]);
-            s->fft_ctx.fft_calc(&s->fft_ctx, s->cmplx[ch]);
+            s->itx_fn(s->fft_ctx, s->cmplx_out[ch], s->cmplx_in[ch], sizeof(float));
         }
 
         r = &s->buffer_ptr[s->nb_channels * n * s->subframe_size];
         for (i = 0; i < 2 * s->subframe_size; i++) {
             for (ch = 0; ch < s->nb_channels; ch++) {
-                *r++ += s->cmplx[ch][i].re;
+                *r++ += s->cmplx_out[ch][i].re;
             }
         }
 
