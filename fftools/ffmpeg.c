@@ -2001,7 +2001,7 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
     if (ost->source_index != ist_index)
         return 0;
 
-    if (ost->finished)
+    if (ost->finished & MUXER_FINISHED)
         return 0;
 
     if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
@@ -2733,7 +2733,9 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         }
         ist->pts = ist->dts;
         ist->next_pts = ist->next_dts;
-    }
+    } else if (!ist->decoding_needed)
+        eof_reached = 1;
+
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
@@ -4213,11 +4215,12 @@ static int process_input(int file_index)
         for (i = 0; i < ifile->nb_streams; i++) {
             ist = input_streams[ifile->ist_index + i];
             avctx = ist->dec_ctx;
-            if (ist->decoding_needed) {
+            if (ist->processing_needed) {
                 ret = process_input_packet(ist, NULL, 1);
                 if (ret>0)
                     return 0;
-                avcodec_flush_buffers(avctx);
+                if (ist->decoding_needed)
+                    avcodec_flush_buffers(avctx);
             }
         }
 #if HAVE_THREADS
@@ -4247,7 +4250,7 @@ static int process_input(int file_index)
 
         for (i = 0; i < ifile->nb_streams; i++) {
             ist = input_streams[ifile->ist_index + i];
-            if (ist->decoding_needed) {
+            if (ist->processing_needed) {
                 ret = process_input_packet(ist, NULL, 0);
                 if (ret>0)
                     return 0;

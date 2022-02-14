@@ -2610,6 +2610,7 @@ loop_end:
         if (ost->encoding_needed && ost->source_index >= 0) {
             InputStream *ist = input_streams[ost->source_index];
             ist->decoding_needed |= DECODING_FOR_OST;
+            ist->processing_needed = 1;
 
             if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
                 ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -2622,6 +2623,9 @@ loop_end:
                     exit_program(1);
                 }
             }
+        } else if (ost->stream_copy && ost->source_index >= 0) {
+            InputStream *ist = input_streams[ost->source_index];
+            ist->processing_needed = 1;
         }
 
         /* set the filter output constraints */

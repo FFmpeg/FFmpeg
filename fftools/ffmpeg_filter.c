@@ -277,6 +277,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 
     ist->discard         = 0;
     ist->decoding_needed |= DECODING_FOR_FILTER;
+    ist->processing_needed = 1;
     ist->st->discard = AVDISCARD_NONE;
 
     ifilter = ALLOC_ARRAY_ELEM(fg->inputs, fg->nb_inputs);
