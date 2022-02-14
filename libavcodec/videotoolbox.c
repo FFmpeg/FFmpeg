@@ -29,6 +29,7 @@
 #include "libavutil/pixdesc.h"
 #include "bytestream.h"
 #include "decode.h"
+#include "internal.h"
 #include "h264dec.h"
 #include "hevcdec.h"
 #include "mpegvideo.h"
