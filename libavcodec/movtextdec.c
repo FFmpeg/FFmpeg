@@ -263,7 +263,7 @@ static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, uint64_t size)
 
 static int styles_equivalent(const StyleBox *a, const StyleBox *b)
 {
-#define CMP(field) a->field == b->field
+#define CMP(field) ((a)->field == (b)->field)
     return CMP(bold)  && CMP(italic)   && CMP(underline) && CMP(color) &&
            CMP(alpha) && CMP(fontsize) && CMP(font_id);
 #undef CMP
