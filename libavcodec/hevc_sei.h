@@ -78,6 +78,10 @@ typedef struct HEVCSEIDynamicHDRPlus {
     AVBufferRef *info;
 } HEVCSEIDynamicHDRPlus;
 
+typedef struct HEVCSEIDynamicHDRVivid {
+    AVBufferRef *info;
+} HEVCSEIDynamicHDRVivid;
+
 typedef struct HEVCSEIContentLight {
     int present;
     uint16_t max_content_light_level;
@@ -139,6 +143,7 @@ typedef struct HEVCSEI {
     HEVCSEIUnregistered unregistered;
     HEVCSEIMasteringDisplay mastering_display;
     HEVCSEIDynamicHDRPlus dynamic_hdr_plus;
+    HEVCSEIDynamicHDRVivid dynamic_hdr_vivid;
     HEVCSEIContentLight content_light;
     int active_seq_parameter_set_id;
     HEVCSEIAlternativeTransfer alternative_transfer;

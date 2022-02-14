@@ -24,6 +24,7 @@
 
 #include "atsc_a53.h"
 #include "dynamic_hdr10_plus.h"
+#include "dynamic_hdr_vivid.h"
 #include "golomb.h"
 #include "hevc_ps.h"
 #include "hevc_sei.h"
@@ -245,6 +246,34 @@ static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s
     return 0;
 }
 
+static int decode_registered_user_data_dynamic_hdr_vivid(HEVCSEIDynamicHDRVivid *s,
+                                                        GetBitContext *gb, int size)
+{
+    size_t meta_size;
+    int err;
+    AVDynamicHDRVivid *metadata = av_dynamic_hdr_vivid_alloc(&meta_size);
+    if (!metadata)
+        return AVERROR(ENOMEM);
+
+    err = ff_parse_itu_t_t35_to_dynamic_hdr_vivid(metadata,
+                                                  gb->buffer + get_bits_count(gb) / 8, size);
+    if (err < 0) {
+        av_free(metadata);
+        return err;
+    }
+
+    av_buffer_unref(&s->info);
+    s->info = av_buffer_create((uint8_t *)metadata, meta_size, NULL, NULL, 0);
+    if (!s->info) {
+        av_free(metadata);
+        return AVERROR(ENOMEM);
+    }
+
+    skip_bits_long(gb, size * 8);
+
+    return 0;
+}
+
 static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitContext *gb,
                                                          void *logctx, int size)
 {
@@ -263,9 +292,9 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
         size--;
     }
 
-    if (country_code != 0xB5) { // usa_country_code
+    if (country_code != 0xB5 && country_code != 0x26) { // usa_country_code and cn_country_code
         av_log(logctx, AV_LOG_VERBOSE,
-               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = %d)\n",
+               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = 0x%x)\n",
                country_code);
         goto end;
     }
@@ -273,6 +302,20 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitConte
     provider_code = get_bits(gb, 16);
 
     switch (provider_code) {
+    case 0x04: { // cuva_provider_code
+        const uint16_t cuva_provider_oriented_code = 0x0005;
+        uint16_t provider_oriented_code;
+
+        if (size < 2)
+            return AVERROR_INVALIDDATA;
+        size -= 2;
+
+        provider_oriented_code = get_bits(gb, 16);
+        if (provider_oriented_code == cuva_provider_oriented_code) {
+            return decode_registered_user_data_dynamic_hdr_vivid(&s->dynamic_hdr_vivid, gb, size);
+        }
+        break;
+    }
     case 0x3C: { // smpte_provider_code
         // A/341 Amendment - 2094-40
         const uint16_t smpte2094_40_provider_oriented_code = 0x0001;
@@ -559,4 +602,5 @@ void ff_hevc_reset_sei(HEVCSEI *s)
     s->unregistered.nb_buf_ref = 0;
     av_freep(&s->unregistered.buf_ref);
     av_buffer_unref(&s->dynamic_hdr_plus.info);
+    av_buffer_unref(&s->dynamic_hdr_vivid.info);
 }

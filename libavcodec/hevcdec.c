@@ -2984,6 +2984,17 @@ static int set_side_data(HEVCContext *s)
     if ((ret = ff_dovi_attach_side_data(&s->dovi_ctx, out)) < 0)
         return ret;
 
+    if (s->sei.dynamic_hdr_vivid.info) {
+        AVBufferRef *info_ref = av_buffer_ref(s->sei.dynamic_hdr_vivid.info);
+        if (!info_ref)
+            return AVERROR(ENOMEM);
+
+        if (!av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_DYNAMIC_HDR_VIVID, info_ref)) {
+            av_buffer_unref(&info_ref);
+            return AVERROR(ENOMEM);
+        }
+    }
+
     return 0;
 }
 
@@ -3774,6 +3785,10 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         return ret;
 
     ret = ff_dovi_ctx_replace(&s->dovi_ctx, &s0->dovi_ctx);
+    if (ret < 0)
+        return ret;
+
+    ret = av_buffer_replace(&s->sei.dynamic_hdr_vivid.info, s0->sei.dynamic_hdr_vivid.info);
     if (ret < 0)
         return ret;
 
