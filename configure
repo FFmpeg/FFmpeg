@@ -4403,11 +4403,7 @@ cc_default="${cross_prefix}${cc_default}"
 cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
-if ${cross_prefix}${ranlib_default} 2>&1 | grep -q "\-D "; then
-    ranlib_default="${cross_prefix}${ranlib_default} -D"
-else
-    ranlib_default="${cross_prefix}${ranlib_default}"
-fi
+ranlib_default="${cross_prefix}${ranlib_default}"
 strip_default="${cross_prefix}${strip_default}"
 windres_default="${cross_prefix}${windres_default}"
 
@@ -4439,6 +4435,10 @@ set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
     target_exec x86asmexe metalcc metallib
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
+
+if ${ranlib} 2>&1 | grep -q "\-D "; then
+    ranlib="${ranlib} -D"
+fi
 
 pkg_config_fail_message=""
 if ! $pkg_config --version >/dev/null 2>&1; then
