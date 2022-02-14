@@ -56,6 +56,7 @@
 #undef INT2FLOAT
 #undef FLOAT2INT
 #undef MDIV
+#undef LRINTF
 
 #if DEPTH < 32
 #define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / MAX))
@@ -66,6 +67,7 @@
 #define INT2FLOAT(x)  (x)
 #define FLOAT2INT(x)  (x)
 #define MDIV (0.125f * (1 << DEPTH))
+#define LRINTF(x) lrintf(x)
 #else
 #define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / 1.0))
 #define SCREEN(x, a, b)   (1.0 - (x) * ((1.0 - (a)) * (1.0 - (b)) / 1.0))
@@ -75,6 +77,7 @@
 #define INT2FLOAT(x) av_int2float(x)
 #define FLOAT2INT(x) av_float2int(x)
 #define MDIV 0.125f
+#define LRINTF(x) (x)
 #endif
 
 #define A top[j]
@@ -147,5 +150,5 @@ fn(geometric,  GEOMETRIC(A, B))
 fn(harmonic,   A == 0 && B == 0 ? 0 : 2LL * A * B / (A + B))
 fn(bleach,     (MAX - B) + (MAX - A) - MAX)
 fn(stain,      2 * MAX - A - B)
-fn(interpolate,lrintf(MAX * (2 - cosf(A * M_PI / MAX) - cosf(B * M_PI / MAX)) * 0.25f))
+fn(interpolate,LRINTF(MAX * (2 - cosf(A * M_PI / MAX) - cosf(B * M_PI / MAX)) * 0.25f))
 fn(hardoverlay,A == MAX ? MAX : FFMIN(MAX, MAX * B / (2 * MAX - 2 * A) * (A > HALF) + 2 * A * B / MAX * (A <= HALF)))
