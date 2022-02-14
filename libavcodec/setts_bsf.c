@@ -37,6 +37,8 @@ static const char *const var_names[] = {
     "PREV_INDTS",  ///< previous  input DTS
     "PREV_OUTPTS", ///< previous output PTS
     "PREV_OUTDTS", ///< previous output DTS
+    "NEXT_PTS",    ///< next input PTS
+    "NEXT_DTS",    ///< next input DTS
     "PTS",         ///< original PTS in the file of the frame
     "DTS",         ///< original DTS in the file of the frame
     "STARTPTS",    ///< PTS at start of movie
@@ -55,6 +57,8 @@ enum var_name {
     VAR_PREV_INDTS,
     VAR_PREV_OUTPTS,
     VAR_PREV_OUTDTS,
+    VAR_NEXT_PTS,
+    VAR_NEXT_DTS,
     VAR_PTS,
     VAR_DTS,
     VAR_STARTPTS,
@@ -76,22 +80,28 @@ typedef struct SetTSContext {
 
     int64_t start_pts;
     int64_t start_dts;
-    int64_t prev_inpts;
-    int64_t prev_indts;
-    int64_t prev_outpts;
-    int64_t prev_outdts;
 
     double var_values[VAR_VARS_NB];
 
     AVExpr *ts_expr;
     AVExpr *pts_expr;
     AVExpr *dts_expr;
+
+    AVPacket *prev_inpkt;
+    AVPacket *prev_outpkt;
+    AVPacket *cur_pkt;
 } SetTSContext;
 
 static int setts_init(AVBSFContext *ctx)
 {
     SetTSContext *s = ctx->priv_data;
     int ret;
+
+    s->prev_inpkt = av_packet_alloc();
+    s->prev_outpkt = av_packet_alloc();
+    s->cur_pkt = av_packet_alloc();
+    if (!s->prev_inpkt || !s->prev_outpkt || !s->cur_pkt)
+        return AVERROR(ENOMEM);
 
     if ((ret = av_expr_parse(&s->ts_expr, s->ts_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
@@ -118,10 +128,6 @@ static int setts_init(AVBSFContext *ctx)
     s->frame_number= 0;
     s->start_pts   = AV_NOPTS_VALUE;
     s->start_dts   = AV_NOPTS_VALUE;
-    s->prev_inpts  = AV_NOPTS_VALUE;
-    s->prev_indts  = AV_NOPTS_VALUE;
-    s->prev_outpts = AV_NOPTS_VALUE;
-    s->prev_outdts = AV_NOPTS_VALUE;
     s->var_values[VAR_NOPTS] = AV_NOPTS_VALUE;
 
     return 0;
@@ -134,24 +140,31 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     int ret;
 
     ret = ff_bsf_get_packet_ref(ctx, pkt);
-    if (ret < 0)
+    if (ret < 0 && (ret != AVERROR_EOF || !s->cur_pkt->data))
         return ret;
 
+    if (!s->cur_pkt->data) {
+         av_packet_move_ref(s->cur_pkt, pkt);
+         return AVERROR(EAGAIN);
+    }
+
     if (s->start_pts == AV_NOPTS_VALUE)
-        s->start_pts = pkt->pts;
+        s->start_pts = s->cur_pkt->pts;
 
     if (s->start_dts == AV_NOPTS_VALUE)
-        s->start_dts = pkt->dts;
+        s->start_dts = s->cur_pkt->dts;
 
     s->var_values[VAR_N]           = s->frame_number++;
-    s->var_values[VAR_TS]          = pkt->dts;
-    s->var_values[VAR_POS]         = pkt->pos;
-    s->var_values[VAR_PTS]         = pkt->pts;
-    s->var_values[VAR_DTS]         = pkt->dts;
-    s->var_values[VAR_PREV_INPTS]  = s->prev_inpts;
-    s->var_values[VAR_PREV_INDTS]  = s->prev_indts;
-    s->var_values[VAR_PREV_OUTPTS] = s->prev_outpts;
-    s->var_values[VAR_PREV_OUTDTS] = s->prev_outdts;
+    s->var_values[VAR_TS]          = s->cur_pkt->dts;
+    s->var_values[VAR_POS]         = s->cur_pkt->pos;
+    s->var_values[VAR_PTS]         = s->cur_pkt->pts;
+    s->var_values[VAR_DTS]         = s->cur_pkt->dts;
+    s->var_values[VAR_PREV_INPTS]  = s->prev_inpkt->pts;
+    s->var_values[VAR_PREV_INDTS]  = s->prev_inpkt->dts;
+    s->var_values[VAR_PREV_OUTPTS] = s->prev_outpkt->pts;
+    s->var_values[VAR_PREV_OUTDTS] = s->prev_outpkt->dts;
+    s->var_values[VAR_NEXT_PTS]    = pkt->pts;
+    s->var_values[VAR_NEXT_DTS]    = pkt->dts;
     s->var_values[VAR_STARTPTS]    = s->start_pts;
     s->var_values[VAR_STARTDTS]    = s->start_dts;
     s->var_values[VAR_TB]          = ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
@@ -160,26 +173,34 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
 
     if (s->pts_str) {
-        s->var_values[VAR_TS] = pkt->pts;
+        s->var_values[VAR_TS] = s->cur_pkt->pts;
         new_pts = llrint(av_expr_eval(s->pts_expr, s->var_values, NULL));
     } else {
         new_pts = new_ts;
     }
 
     if (s->dts_str) {
-        s->var_values[VAR_TS] = pkt->dts;
+        s->var_values[VAR_TS] = s->cur_pkt->dts;
         new_dts = llrint(av_expr_eval(s->dts_expr, s->var_values, NULL));
     } else {
         new_dts = new_ts;
     }
 
-    s->prev_inpts  = pkt->pts;
-    s->prev_indts  = pkt->dts;
-    s->prev_outpts = new_pts;
-    s->prev_outdts = new_dts;
+    av_packet_unref(s->prev_inpkt);
+    av_packet_unref(s->prev_outpkt);
+    av_packet_move_ref(s->prev_inpkt, s->cur_pkt);
+    av_packet_move_ref(s->cur_pkt, pkt);
+
+    ret = av_packet_ref(pkt, s->prev_inpkt);
+    if (ret < 0)
+        return ret;
 
     pkt->pts = new_pts;
     pkt->dts = new_dts;
+
+    ret = av_packet_ref(s->prev_outpkt, pkt);
+    if (ret < 0)
+        av_packet_unref(pkt);
 
     return ret;
 }
@@ -187,6 +208,10 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
 static void setts_close(AVBSFContext *bsf)
 {
     SetTSContext *s = bsf->priv_data;
+
+    av_packet_free(&s->prev_inpkt);
+    av_packet_free(&s->prev_outpkt);
+    av_packet_free(&s->cur_pkt);
 
     av_expr_free(s->ts_expr);
     s->ts_expr = NULL;

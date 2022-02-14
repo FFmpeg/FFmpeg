@@ -777,6 +777,12 @@ The previous output DTS.
 @item PREV_OUTPTS
 The previous output PTS.
 
+@item NEXT_DTS
+The next input DTS.
+
+@item NEXT_PTS
+The next input PTS.
+
 @item TB
 The timebase of stream packet belongs.
 
