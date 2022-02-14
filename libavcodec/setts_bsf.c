@@ -35,12 +35,16 @@ static const char *const var_names[] = {
     "POS",         ///< original position in the file of the frame
     "PREV_INPTS",  ///< previous  input PTS
     "PREV_INDTS",  ///< previous  input DTS
+    "PREV_INDURATION", ///< previous input duration
     "PREV_OUTPTS", ///< previous output PTS
     "PREV_OUTDTS", ///< previous output DTS
+    "PREV_OUTDURATION", ///< previous output duration
     "NEXT_PTS",    ///< next input PTS
     "NEXT_DTS",    ///< next input DTS
+    "NEXT_DURATION", ///< next input duration
     "PTS",         ///< original PTS in the file of the frame
     "DTS",         ///< original DTS in the file of the frame
+    "DURATION",    ///< original duration in the file of the frame
     "STARTPTS",    ///< PTS at start of movie
     "STARTDTS",    ///< DTS at start of movie
     "TB",          ///< timebase of the stream
@@ -55,12 +59,16 @@ enum var_name {
     VAR_POS,
     VAR_PREV_INPTS,
     VAR_PREV_INDTS,
+    VAR_PREV_INDUR,
     VAR_PREV_OUTPTS,
     VAR_PREV_OUTDTS,
+    VAR_PREV_OUTDUR,
     VAR_NEXT_PTS,
     VAR_NEXT_DTS,
+    VAR_NEXT_DUR,
     VAR_PTS,
     VAR_DTS,
+    VAR_DURATION,
     VAR_STARTPTS,
     VAR_STARTDTS,
     VAR_TB,
@@ -75,6 +83,7 @@ typedef struct SetTSContext {
     char *ts_str;
     char *pts_str;
     char *dts_str;
+    char *duration_str;
 
     int64_t frame_number;
 
@@ -86,6 +95,7 @@ typedef struct SetTSContext {
     AVExpr *ts_expr;
     AVExpr *pts_expr;
     AVExpr *dts_expr;
+    AVExpr *duration_expr;
 
     AVPacket *prev_inpkt;
     AVPacket *prev_outpkt;
@@ -106,6 +116,12 @@ static int setts_init(AVBSFContext *ctx)
     if ((ret = av_expr_parse(&s->ts_expr, s->ts_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error while parsing ts expression '%s'\n", s->ts_str);
+        return ret;
+    }
+
+    if ((ret = av_expr_parse(&s->duration_expr, s->duration_str,
+                             var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error while parsing duration expression '%s'\n", s->duration_str);
         return ret;
     }
 
@@ -136,7 +152,7 @@ static int setts_init(AVBSFContext *ctx)
 static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     SetTSContext *s = ctx->priv_data;
-    int64_t new_ts, new_pts, new_dts;
+    int64_t new_ts, new_pts, new_dts, new_duration;
     int ret;
 
     ret = ff_bsf_get_packet_ref(ctx, pkt);
@@ -159,18 +175,23 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     s->var_values[VAR_POS]         = s->cur_pkt->pos;
     s->var_values[VAR_PTS]         = s->cur_pkt->pts;
     s->var_values[VAR_DTS]         = s->cur_pkt->dts;
+    s->var_values[VAR_DURATION]    = s->cur_pkt->duration;
     s->var_values[VAR_PREV_INPTS]  = s->prev_inpkt->pts;
     s->var_values[VAR_PREV_INDTS]  = s->prev_inpkt->dts;
+    s->var_values[VAR_PREV_INDUR]  = s->prev_inpkt->duration;
     s->var_values[VAR_PREV_OUTPTS] = s->prev_outpkt->pts;
     s->var_values[VAR_PREV_OUTDTS] = s->prev_outpkt->dts;
+    s->var_values[VAR_PREV_OUTDUR] = s->prev_outpkt->duration;
     s->var_values[VAR_NEXT_PTS]    = pkt->pts;
     s->var_values[VAR_NEXT_DTS]    = pkt->dts;
+    s->var_values[VAR_NEXT_DUR]    = pkt->duration;
     s->var_values[VAR_STARTPTS]    = s->start_pts;
     s->var_values[VAR_STARTDTS]    = s->start_dts;
     s->var_values[VAR_TB]          = ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
     s->var_values[VAR_SR]          = ctx->par_in->sample_rate;
 
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
+    new_duration = llrint(av_expr_eval(s->duration_expr, s->var_values, NULL));
 
     if (s->pts_str) {
         s->var_values[VAR_TS] = s->cur_pkt->pts;
@@ -197,6 +218,7 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
 
     pkt->pts = new_pts;
     pkt->dts = new_dts;
+    pkt->duration = new_duration;
 
     ret = av_packet_ref(s->prev_outpkt, pkt);
     if (ret < 0)
@@ -228,6 +250,7 @@ static const AVOption options[] = {
     { "ts",  "set expression for packet PTS and DTS", OFFSET(ts_str),  AV_OPT_TYPE_STRING, {.str="TS"}, 0, 0, FLAGS },
     { "pts", "set expression for packet PTS", OFFSET(pts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "dts", "set expression for packet DTS", OFFSET(dts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
+    { "duration", "set expression for packet duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str="DURATION"}, 0, 0, FLAGS },
     { NULL },
 };
 

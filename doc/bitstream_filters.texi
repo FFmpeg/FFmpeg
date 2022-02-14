@@ -759,6 +759,9 @@ The demux timestamp in input.
 @item PTS
 The presentation timestamp in input.
 
+@item DURATION
+The duration in input.
+
 @item STARTDTS
 The DTS of the first packet.
 
@@ -771,17 +774,26 @@ The previous input DTS.
 @item PREV_INPTS
 The previous input PTS.
 
+@item PREV_INDURATION
+The previous input duration.
+
 @item PREV_OUTDTS
 The previous output DTS.
 
 @item PREV_OUTPTS
 The previous output PTS.
 
+@item PREV_OUTDURATION
+The previous output duration.
+
 @item NEXT_DTS
 The next input DTS.
 
 @item NEXT_PTS
 The next input PTS.
+
+@item NEXT_DURATION
+The next input duration.
 
 @item TB
 The timebase of stream packet belongs.
