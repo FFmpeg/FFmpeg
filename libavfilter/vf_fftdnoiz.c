@@ -22,8 +22,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/tx.h"
 #include "internal.h"
-#include "libavcodec/avfft.h"
 
 #define MAX_THREADS 32
 
@@ -42,7 +42,8 @@ typedef struct PlaneContext {
     float n;
 
     float *buffer[BSIZE];
-    FFTComplex *hdata[MAX_THREADS], *vdata[MAX_THREADS];
+    AVComplexFloat *hdata[MAX_THREADS], *vdata[MAX_THREADS];
+    AVComplexFloat *hdata_out[MAX_THREADS], *vdata_out[MAX_THREADS];
     int data_linesize;
     int buffer_linesize;
 } PlaneContext;
@@ -65,10 +66,11 @@ typedef struct FFTdnoizContext {
     int nb_threads;
     PlaneContext planes[4];
 
-    FFTContext *fft[MAX_THREADS], *ifft[MAX_THREADS];
+    AVTXContext *fft[MAX_THREADS], *ifft[MAX_THREADS];
+    av_tx_fn tx_fn, itx_fn;
 
-    void (*import_row)(FFTComplex *dst, uint8_t *src, int rw);
-    void (*export_row)(FFTComplex *src, uint8_t *dst, int rw, float scale, int depth);
+    void (*import_row)(AVComplexFloat *dst, uint8_t *src, int rw);
+    void (*export_row)(AVComplexFloat *src, uint8_t *dst, int rw, float scale, int depth);
 } FFTdnoizContext;
 
 #define OFFSET(x) offsetof(FFTdnoizContext, x)
@@ -125,7 +127,7 @@ typedef struct ThreadData {
     float *src, *dst;
 } ThreadData;
 
-static void import_row8(FFTComplex *dst, uint8_t *src, int rw)
+static void import_row8(AVComplexFloat *dst, uint8_t *src, int rw)
 {
     int j;
 
@@ -135,7 +137,7 @@ static void import_row8(FFTComplex *dst, uint8_t *src, int rw)
     }
 }
 
-static void export_row8(FFTComplex *src, uint8_t *dst, int rw, float scale, int depth)
+static void export_row8(AVComplexFloat *src, uint8_t *dst, int rw, float scale, int depth)
 {
     int j;
 
@@ -143,7 +145,7 @@ static void export_row8(FFTComplex *src, uint8_t *dst, int rw, float scale, int 
         dst[j] = av_clip_uint8(lrintf(src[j].re * scale));
 }
 
-static void import_row16(FFTComplex *dst, uint8_t *srcp, int rw)
+static void import_row16(AVComplexFloat *dst, uint8_t *srcp, int rw)
 {
     uint16_t *src = (uint16_t *)srcp;
     int j;
@@ -154,7 +156,7 @@ static void import_row16(FFTComplex *dst, uint8_t *srcp, int rw)
     }
 }
 
-static void export_row16(FFTComplex *src, uint8_t *dstp, int rw, float scale, int depth)
+static void export_row16(AVComplexFloat *src, uint8_t *dstp, int rw, float scale, int depth)
 {
     uint16_t *dst = (uint16_t *)dstp;
     int j;
@@ -191,8 +193,10 @@ static int config_input(AVFilterLink *inlink)
     s->nb_threads = FFMIN(ff_filter_get_nb_threads(ctx), MAX_THREADS);
 
     for (int i = 0; i < s->nb_threads; i++) {
-        s->fft[i]  = av_fft_init(s->block_bits, 0);
-        s->ifft[i] = av_fft_init(s->block_bits, 1);
+        float scale = 1.f, iscale = 1.f;
+
+        av_tx_init(&s->fft[i],  &s->tx_fn,  AV_TX_FLOAT_FFT, 0, 1 << s->block_bits, &scale,  0);
+        av_tx_init(&s->ifft[i], &s->itx_fn, AV_TX_FLOAT_FFT, 1, 1 << s->block_bits, &iscale, 0);
         if (!s->fft[i] || !s->ifft[i])
             return AVERROR(ENOMEM);
     }
@@ -210,7 +214,7 @@ static int config_input(AVFilterLink *inlink)
 
         av_log(ctx, AV_LOG_DEBUG, "nox:%d noy:%d size:%d\n", p->nox, p->noy, size);
 
-        p->buffer_linesize = p->b * p->nox * sizeof(FFTComplex);
+        p->buffer_linesize = p->b * p->nox * sizeof(AVComplexFloat);
         p->buffer[CURRENT] = av_calloc(p->b * p->noy, p->buffer_linesize);
         if (!p->buffer[CURRENT])
             return AVERROR(ENOMEM);
@@ -227,8 +231,11 @@ static int config_input(AVFilterLink *inlink)
         p->data_linesize = 2 * p->b * sizeof(float);
         for (int j = 0; j < s->nb_threads; j++) {
             p->hdata[j] = av_calloc(p->b, p->data_linesize);
+            p->hdata_out[j] = av_calloc(p->b, p->data_linesize);
             p->vdata[j] = av_calloc(p->b, p->data_linesize);
-            if (!p->hdata[j] || !p->vdata[j])
+            p->vdata_out[j] = av_calloc(p->b, p->data_linesize);
+            if (!p->hdata[j] || !p->vdata[j] ||
+                !p->hdata_out[j] || !p->vdata_out[j])
                 return AVERROR(ENOMEM);
         }
     }
@@ -250,11 +257,13 @@ static void import_plane(FFTdnoizContext *s,
     const int nox = p->nox;
     const int noy = p->noy;
     const int bpp = (s->depth + 7) / 8;
-    const int data_linesize = p->data_linesize / sizeof(FFTComplex);
+    const int data_linesize = p->data_linesize / sizeof(AVComplexFloat);
     const int slice_start = (noy * jobnr) / nb_jobs;
     const int slice_end = (noy * (jobnr+1)) / nb_jobs;
-    FFTComplex *hdata = p->hdata[jobnr];
-    FFTComplex *vdata = p->vdata[jobnr];
+    AVComplexFloat *hdata = p->hdata[jobnr];
+    AVComplexFloat *vdata = p->vdata[jobnr];
+    AVComplexFloat *hdata_out = p->hdata_out[jobnr];
+    AVComplexFloat *vdata_out = p->vdata_out[jobnr];
     int x, y, i, j;
 
     buffer_linesize /= sizeof(float);
@@ -264,7 +273,7 @@ static void import_plane(FFTdnoizContext *s,
             const int rw = FFMIN(block, width  - x * size);
             uint8_t *src = srcp + src_linesize * y * size + x * size * bpp;
             float *bdst = buffer + buffer_linesize * y * block + x * block * 2;
-            FFTComplex *ssrc, *dst = hdata;
+            AVComplexFloat *ssrc, *dst = hdata, *dst_out = hdata_out;
 
             for (i = 0; i < rh; i++) {
                 s->import_row(dst, src, rw);
@@ -272,14 +281,14 @@ static void import_plane(FFTdnoizContext *s,
                     dst[j].re = dst[block - j - 1].re;
                     dst[j].im = 0;
                 }
-                av_fft_permute(s->fft[jobnr], dst);
-                av_fft_calc(s->fft[jobnr], dst);
+                s->tx_fn(s->fft[jobnr], dst_out, dst, sizeof(float));
 
                 src += src_linesize;
                 dst += data_linesize;
+                dst_out += data_linesize;
             }
 
-            dst = hdata;
+            dst = hdata_out;
             for (; i < block; i++) {
                 for (j = 0; j < block; j++) {
                     dst[j].re = dst[(block - i - 1) * data_linesize + j].re;
@@ -287,16 +296,17 @@ static void import_plane(FFTdnoizContext *s,
                 }
             }
 
-            ssrc = hdata;
-            dst = vdata;
+            ssrc = hdata_out;
+            dst = vdata_out;
+            dst_out = vdata;
             for (i = 0; i < block; i++) {
                 for (j = 0; j < block; j++)
                     dst[j] = ssrc[j * data_linesize + i];
-                av_fft_permute(s->fft[jobnr], dst);
-                av_fft_calc(s->fft[jobnr], dst);
-                memcpy(bdst, dst, block * sizeof(FFTComplex));
+                s->tx_fn(s->fft[jobnr], dst_out, dst, sizeof(float));
+                memcpy(bdst, dst_out, block * sizeof(AVComplexFloat));
 
                 dst += data_linesize;
+                dst_out += data_linesize;
                 bdst += buffer_linesize;
             }
         }
@@ -319,12 +329,14 @@ static void export_plane(FFTdnoizContext *s,
     const int size = block - overlap;
     const int nox = p->nox;
     const int noy = p->noy;
-    const int data_linesize = p->data_linesize / sizeof(FFTComplex);
+    const int data_linesize = p->data_linesize / sizeof(AVComplexFloat);
     const float scale = 1.f / (block * block);
     const int slice_start = (noy * jobnr) / nb_jobs;
     const int slice_end = (noy * (jobnr+1)) / nb_jobs;
-    FFTComplex *hdata = p->hdata[jobnr];
-    FFTComplex *vdata = p->vdata[jobnr];
+    AVComplexFloat *hdata = p->hdata[jobnr];
+    AVComplexFloat *vdata = p->vdata[jobnr];
+    AVComplexFloat *hdata_out = p->hdata_out[jobnr];
+    AVComplexFloat *vdata_out = p->vdata_out[jobnr];
     int x, y, i, j;
 
     buffer_linesize /= sizeof(float);
@@ -336,28 +348,28 @@ static void export_plane(FFTdnoizContext *s,
             const int rh = y == 0 ? block : FFMIN(size, height - y * size - hoff);
             float *bsrc = buffer + buffer_linesize * y * block + x * block * 2;
             uint8_t *dst = dstp + dst_linesize * (y * size + hoff) + (x * size + woff) * bpp;
-            FFTComplex *hdst, *ddst = vdata;
+            AVComplexFloat *hdst, *ddst = vdata, *vdst = vdata_out, *hdst_out = hdata_out;
 
             hdst = hdata;
             for (i = 0; i < block; i++) {
-                memcpy(ddst, bsrc, block * sizeof(FFTComplex));
-                av_fft_permute(s->ifft[jobnr], ddst);
-                av_fft_calc(s->ifft[jobnr], ddst);
+                memcpy(ddst, bsrc, block * sizeof(AVComplexFloat));
+                s->itx_fn(s->ifft[jobnr], vdst, ddst, sizeof(float));
                 for (j = 0; j < block; j++) {
-                    hdst[j * data_linesize + i] = ddst[j];
+                    hdst[j * data_linesize + i] = vdst[j];
                 }
 
+                vdst += data_linesize;
                 ddst += data_linesize;
                 bsrc += buffer_linesize;
             }
 
             hdst = hdata + hoff * data_linesize;
             for (i = 0; i < rh; i++) {
-                av_fft_permute(s->ifft[jobnr], hdst);
-                av_fft_calc(s->ifft[jobnr], hdst);
-                s->export_row(hdst + woff, dst, rw, scale, depth);
+                s->itx_fn(s->ifft[jobnr], hdst_out, hdst, sizeof(float));
+                s->export_row(hdst_out + woff, dst, rw, scale, depth);
 
                 hdst += data_linesize;
+                hdst_out += data_linesize;
                 dst += dst_linesize;
             }
         }
@@ -717,6 +729,8 @@ static av_cold void uninit(AVFilterContext *ctx)
         for (int j = 0; j < s->nb_threads; j++) {
             av_freep(&p->hdata[j]);
             av_freep(&p->vdata[j]);
+            av_freep(&p->hdata_out[j]);
+            av_freep(&p->vdata_out[j]);
         }
 
         av_freep(&p->buffer[PREV]);
@@ -725,8 +739,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     for (i = 0; i < s->nb_threads; i++) {
-        av_fft_end(s->fft[i]);
-        av_fft_end(s->ifft[i]);
+        av_tx_uninit(&s->fft[i]);
+        av_tx_uninit(&s->ifft[i]);
     }
 
     av_frame_free(&s->prev);
