@@ -52,6 +52,7 @@ function ff_synth_filter_float_neon, export=1
         stp             x5,  x1,  [sp, #16]
         and             x7,  x7,  #~63
         and             w8,  w8,  #511
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7,  x30, [sp, #32]
         str             w8,  [x2]
         str             s0,  [sp, #48]
@@ -63,6 +64,7 @@ function ff_synth_filter_float_neon, export=1
         ldp             x2,  x4,  [sp]          // synct_buf_2, window
         ldp             x13, x9,  [sp, #16]     // out, synth_buf
         ldp             x0,  x30, [sp, #32]     // *synth_buf_offset
+        AARCH64_VALIDATE_LINK_REGISTER
         ldr             s0,  [sp, #48]
 
         add             x3,  x2,  #16*4         // synct_buf_2 + 16
