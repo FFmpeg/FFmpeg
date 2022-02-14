@@ -29,7 +29,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 #include "libavutil/eval.h"
 
 #define MAX_THREADS 32
@@ -51,16 +51,24 @@ typedef struct FFTFILTContext {
     int planewidth[MAX_PLANES];
     int planeheight[MAX_PLANES];
 
-    RDFTContext *hrdft[MAX_THREADS][MAX_PLANES];
-    RDFTContext *vrdft[MAX_THREADS][MAX_PLANES];
-    RDFTContext *ihrdft[MAX_THREADS][MAX_PLANES];
-    RDFTContext *ivrdft[MAX_THREADS][MAX_PLANES];
+    AVTXContext *hrdft[MAX_THREADS][MAX_PLANES];
+    AVTXContext *vrdft[MAX_THREADS][MAX_PLANES];
+    AVTXContext *ihrdft[MAX_THREADS][MAX_PLANES];
+    AVTXContext *ivrdft[MAX_THREADS][MAX_PLANES];
+
+    av_tx_fn htx_fn, ihtx_fn;
+    av_tx_fn vtx_fn, ivtx_fn;
+
     int rdft_hbits[MAX_PLANES];
     int rdft_vbits[MAX_PLANES];
+    size_t rdft_hstride[MAX_PLANES];
+    size_t rdft_vstride[MAX_PLANES];
     size_t rdft_hlen[MAX_PLANES];
     size_t rdft_vlen[MAX_PLANES];
-    FFTSample *rdft_hdata[MAX_PLANES];
-    FFTSample *rdft_vdata[MAX_PLANES];
+    float *rdft_hdata_in[MAX_PLANES];
+    float *rdft_vdata_in[MAX_PLANES];
+    float *rdft_hdata_out[MAX_PLANES];
+    float *rdft_vdata_out[MAX_PLANES];
 
     int dc[MAX_PLANES];
     char *weight_str[MAX_PLANES];
@@ -97,14 +105,14 @@ AVFILTER_DEFINE_CLASS(fftfilt);
 static inline double lum(void *priv, double x, double y, int plane)
 {
     FFTFILTContext *s = priv;
-    return s->rdft_vdata[plane][(int)x * s->rdft_vlen[plane] + (int)y];
+    return s->rdft_vdata_out[plane][(int)x * s->rdft_vstride[plane] + (int)y];
 }
 
 static double weight_Y(void *priv, double x, double y) { return lum(priv, x, y, Y); }
 static double weight_U(void *priv, double x, double y) { return lum(priv, x, y, U); }
 static double weight_V(void *priv, double x, double y) { return lum(priv, x, y, V); }
 
-static void copy_rev(FFTSample *dest, int w, int w2)
+static void copy_rev(float *dest, int w, int w2)
 {
     int i;
 
@@ -128,16 +136,19 @@ static int rdft_horizontal8(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 
         for (int i = slice_start; i < slice_end; i++) {
             const uint8_t *src = in->data[plane] + i * in->linesize[plane];
-            float *hdata = s->rdft_hdata[plane] + i * s->rdft_hlen[plane];
+            float *hdata_in = s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane];
 
             for (int j = 0; j < w; j++)
-                hdata[j] = src[j];
+                hdata_in[j] = src[j];
 
-            copy_rev(s->rdft_hdata[plane] + i * s->rdft_hlen[plane], w, s->rdft_hlen[plane]);
+            copy_rev(s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane], w, s->rdft_hlen[plane]);
         }
 
         for (int i = slice_start; i < slice_end; i++)
-            av_rdft_calc(s->hrdft[jobnr][plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+            s->htx_fn(s->hrdft[jobnr][plane],
+                      s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane],
+                      s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane],
+                      sizeof(float));
     }
 
     return 0;
@@ -156,16 +167,19 @@ static int rdft_horizontal16(AVFilterContext *ctx, void *arg, int jobnr, int nb_
 
         for (int i = slice_start; i < slice_end; i++) {
             const uint16_t *src = (const uint16_t *)(in->data[plane] + i * in->linesize[plane]);
-            float *hdata = s->rdft_hdata[plane] + i * s->rdft_hlen[plane];
+            float *hdata_in = s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane];
 
             for (int j = 0; j < w; j++)
-                hdata[j] = src[j];
+                hdata_in[j] = src[j];
 
-            copy_rev(s->rdft_hdata[plane] + i * s->rdft_hlen[plane], w, s->rdft_hlen[plane]);
+            copy_rev(s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane], w, s->rdft_hlen[plane]);
         }
 
         for (int i = slice_start; i < slice_end; i++)
-            av_rdft_calc(s->hrdft[jobnr][plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+            s->htx_fn(s->hrdft[jobnr][plane],
+                      s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane],
+                      s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane],
+                      sizeof(float));
     }
 
     return 0;
@@ -183,11 +197,14 @@ static int irdft_horizontal8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
         const int slice_end = (h * (jobnr+1)) / nb_jobs;
 
         for (int i = slice_start; i < slice_end; i++)
-            av_rdft_calc(s->ihrdft[jobnr][plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+            s->ihtx_fn(s->ihrdft[jobnr][plane],
+                       s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane],
+                       s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane],
+                       sizeof(float));
 
         for (int i = slice_start; i < slice_end; i++) {
-            const float scale = 4.f / (s->rdft_hlen[plane] * s->rdft_vlen[plane]);
-            const float *src = s->rdft_hdata[plane] + i * s->rdft_hlen[plane];
+            const float scale = 1.f / (s->rdft_hlen[plane] * s->rdft_vlen[plane]);
+            const float *src = s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane];
             uint8_t *dst = out->data[plane] + i * out->linesize[plane];
 
             for (int j = 0; j < w; j++)
@@ -211,11 +228,14 @@ static int irdft_horizontal16(AVFilterContext *ctx, void *arg, int jobnr, int nb
         const int slice_end = (h * (jobnr+1)) / nb_jobs;
 
         for (int i = slice_start; i < slice_end; i++)
-            av_rdft_calc(s->ihrdft[jobnr][plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+            s->ihtx_fn(s->ihrdft[jobnr][plane],
+                       s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane],
+                       s->rdft_hdata_in[plane] + i * s->rdft_hstride[plane],
+                       sizeof(float));
 
         for (int i = slice_start; i < slice_end; i++) {
-            const float scale = 4.f / (s->rdft_hlen[plane] * s->rdft_vlen[plane]);
-            const float *src = s->rdft_hdata[plane] + i * s->rdft_hlen[plane];
+            const float scale = 1.f / (s->rdft_hlen[plane] * s->rdft_vlen[plane]);
+            const float *src = s->rdft_hdata_out[plane] + i * s->rdft_hstride[plane];
             uint16_t *dst = (uint16_t *)(out->data[plane] + i * out->linesize[plane]);
 
             for (int j = 0; j < w; j++)
@@ -303,34 +323,50 @@ static int config_props(AVFilterLink *inlink)
 
         /* RDFT - Array initialization for Horizontal pass*/
         s->rdft_hlen[i] = 1 << (32 - ff_clz(w));
+        s->rdft_hstride[i] = FFALIGN(s->rdft_hlen[i] + 2, av_cpu_max_align());
         s->rdft_hbits[i] = av_log2(s->rdft_hlen[i]);
-        if (!(s->rdft_hdata[i] = av_malloc_array(h, s->rdft_hlen[i] * sizeof(FFTSample))))
+        if (!(s->rdft_hdata_in[i] = av_calloc(h, s->rdft_hstride[i] * sizeof(float))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->rdft_hdata_out[i] = av_calloc(h, s->rdft_hstride[i] * sizeof(float))))
             return AVERROR(ENOMEM);
 
         for (int j = 0; j < s->nb_threads; j++) {
-            if (!(s->hrdft[j][i] = av_rdft_init(s->rdft_hbits[i], DFT_R2C)))
+            float scale = 1.f, iscale = 1.f;
+
+            av_tx_init(&s->hrdft[j][i], &s->htx_fn, AV_TX_FLOAT_RDFT, 0, 1 << s->rdft_hbits[i], &scale, 0);
+            if (!s->hrdft[j][i])
                 return AVERROR(ENOMEM);
-            if (!(s->ihrdft[j][i] = av_rdft_init(s->rdft_hbits[i], IDFT_C2R)))
+            av_tx_init(&s->ihrdft[j][i], &s->ihtx_fn, AV_TX_FLOAT_RDFT, 1, 1 << s->rdft_hbits[i], &iscale, 0);
+            if (!s->ihrdft[j][i])
                 return AVERROR(ENOMEM);
         }
 
         /* RDFT - Array initialization for Vertical pass*/
         s->rdft_vlen[i] = 1 << (32 - ff_clz(h));
+        s->rdft_vstride[i] = FFALIGN(s->rdft_vlen[i] + 2, av_cpu_max_align());
         s->rdft_vbits[i] = av_log2(s->rdft_vlen[i]);
-        if (!(s->rdft_vdata[i] = av_malloc_array(s->rdft_hlen[i], s->rdft_vlen[i] * sizeof(FFTSample))))
+        if (!(s->rdft_vdata_in[i] = av_calloc(s->rdft_hstride[i], s->rdft_vstride[i] * sizeof(float))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->rdft_vdata_out[i] = av_calloc(s->rdft_hstride[i], s->rdft_vstride[i] * sizeof(float))))
             return AVERROR(ENOMEM);
 
         for (int j = 0; j < s->nb_threads; j++) {
-            if (!(s->vrdft[j][i] = av_rdft_init(s->rdft_vbits[i], DFT_R2C)))
+            float scale = 1.f, iscale = 1.f;
+
+            av_tx_init(&s->vrdft[j][i], &s->vtx_fn, AV_TX_FLOAT_RDFT, 0, 1 << s->rdft_vbits[i], &scale, 0);
+            if (!s->vrdft[j][i])
                 return AVERROR(ENOMEM);
-            if (!(s->ivrdft[j][i] = av_rdft_init(s->rdft_vbits[i], IDFT_C2R)))
+            av_tx_init(&s->ivrdft[j][i], &s->ivtx_fn, AV_TX_FLOAT_RDFT, 1, 1 << s->rdft_vbits[i], &iscale, 0);
+            if (!s->ivrdft[j][i])
                 return AVERROR(ENOMEM);
         }
     }
 
     /*Luminance value - Array initialization*/
     for (plane = 0; plane < 3; plane++) {
-        if(!(s->weight[plane] = av_malloc_array(s->rdft_hlen[plane], s->rdft_vlen[plane] * sizeof(double))))
+        if(!(s->weight[plane] = av_calloc(s->rdft_hlen[plane], s->rdft_vlen[plane] * sizeof(double))))
             return AVERROR(ENOMEM);
 
         if (s->eval_mode == EVAL_MODE_INIT)
@@ -360,7 +396,7 @@ static int multiply_data(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         /*Change user defined parameters*/
         for (int i = slice_start; i < slice_end; i++) {
             const double *weight = s->weight[plane] + i * s->rdft_vlen[plane];
-            float *vdata = s->rdft_vdata[plane] + i * s->rdft_vlen[plane];
+            float *vdata = s->rdft_vdata_out[plane] + i * s->rdft_vstride[plane];
 
             for (int j = 0; j < s->rdft_vlen[plane]; j++)
                 vdata[j] *= weight[j];
@@ -377,16 +413,18 @@ static int copy_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     for (int plane = 0; plane < s->nb_planes; plane++) {
         const int hlen = s->rdft_hlen[plane];
         const int vlen = s->rdft_vlen[plane];
+        const int hstride = s->rdft_hstride[plane];
+        const int vstride = s->rdft_vstride[plane];
         const int slice_start = (hlen * jobnr) / nb_jobs;
         const int slice_end = (hlen * (jobnr+1)) / nb_jobs;
         const int h = s->planeheight[plane];
-        FFTSample *hdata = s->rdft_hdata[plane];
-        FFTSample *vdata = s->rdft_vdata[plane];
+        float *hdata = s->rdft_hdata_out[plane];
+        float *vdata = s->rdft_vdata_in[plane];
 
         for (int i = slice_start; i < slice_end; i++) {
             for (int j = 0; j < h; j++)
-                vdata[i * vlen + j] = hdata[j * hlen + i];
-            copy_rev(vdata + i * vlen, h, vlen);
+                vdata[i * vstride + j] = hdata[j * hstride + i];
+            copy_rev(vdata + i * vstride, h, vlen);
         }
     }
 
@@ -403,7 +441,10 @@ static int rdft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         const int slice_end = (height * (jobnr+1)) / nb_jobs;
 
         for (int i = slice_start; i < slice_end; i++)
-            av_rdft_calc(s->vrdft[jobnr][plane], s->rdft_vdata[plane] + i * s->rdft_vlen[plane]);
+            s->vtx_fn(s->vrdft[jobnr][plane],
+                      s->rdft_vdata_out[plane] + i * s->rdft_vstride[plane],
+                      s->rdft_vdata_in[plane] + i * s->rdft_vstride[plane],
+                      sizeof(float));
     }
 
     return 0;
@@ -419,7 +460,10 @@ static int irdft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         const int slice_end = (height * (jobnr+1)) / nb_jobs;
 
         for (int i = slice_start; i < slice_end; i++)
-            av_rdft_calc(s->ivrdft[jobnr][plane], s->rdft_vdata[plane] + i * s->rdft_vlen[plane]);
+            s->ivtx_fn(s->ivrdft[jobnr][plane],
+                       s->rdft_vdata_in[plane] + i * s->rdft_vstride[plane],
+                       s->rdft_vdata_out[plane] + i * s->rdft_vstride[plane],
+                       sizeof(float));
     }
 
     return 0;
@@ -431,16 +475,17 @@ static int copy_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
         const int hlen = s->rdft_hlen[plane];
-        const int vlen = s->rdft_vlen[plane];
+        const int hstride = s->rdft_hstride[plane];
+        const int vstride = s->rdft_vstride[plane];
         const int slice_start = (hlen * jobnr) / nb_jobs;
         const int slice_end = (hlen * (jobnr+1)) / nb_jobs;
         const int h = s->planeheight[plane];
-        FFTSample *hdata = s->rdft_hdata[plane];
-        FFTSample *vdata = s->rdft_vdata[plane];
+        float *hdata = s->rdft_hdata_in[plane];
+        float *vdata = s->rdft_vdata_in[plane];
 
         for (int i = slice_start; i < slice_end; i++)
             for (int j = 0; j < h; j++)
-                hdata[j * hlen + i] = vdata[i * vlen + j];
+                hdata[j * hstride + i] = vdata[i * vstride + j];
     }
 
     return 0;
@@ -461,11 +506,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     av_frame_copy_props(out, in);
 
-    for (int plane = 0; plane < s->nb_planes; plane++) {
-        if (s->eval_mode == EVAL_MODE_FRAME)
-            do_eval(s, inlink, plane);
-    }
-
     ff_filter_execute(ctx, s->rdft_horizontal, in, NULL,
                       FFMIN(s->planeheight[1], s->nb_threads));
 
@@ -475,11 +515,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ff_filter_execute(ctx, rdft_vertical, NULL, NULL,
                       FFMIN(s->planeheight[1], s->nb_threads));
 
+    for (int plane = 0; plane < s->nb_planes; plane++) {
+        if (s->eval_mode == EVAL_MODE_FRAME)
+            do_eval(s, inlink, plane);
+    }
+
     ff_filter_execute(ctx, multiply_data, NULL, NULL,
                       FFMIN(s->planeheight[1], s->nb_threads));
 
     for (int plane = 0; plane < s->nb_planes; plane++)
-        s->rdft_vdata[plane][0] += s->rdft_hlen[plane] * s->rdft_vlen[plane] * s->dc[plane];
+        s->rdft_vdata_out[plane][0] += s->rdft_hlen[plane] * s->rdft_vlen[plane] * s->dc[plane] * (1 << (s->depth - 8));
 
     ff_filter_execute(ctx, irdft_vertical, NULL, NULL,
                       FFMIN(s->planeheight[1], s->nb_threads));
@@ -497,17 +542,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     FFTFILTContext *s = ctx->priv;
-    int i;
-    for (i = 0; i < MAX_PLANES; i++) {
-        av_free(s->rdft_hdata[i]);
-        av_free(s->rdft_vdata[i]);
+
+    for (int i = 0; i < MAX_PLANES; i++) {
+        av_freep(&s->rdft_hdata_in[i]);
+        av_freep(&s->rdft_vdata_in[i]);
+        av_freep(&s->rdft_hdata_out[i]);
+        av_freep(&s->rdft_vdata_out[i]);
         av_expr_free(s->weight_expr[i]);
-        av_free(s->weight[i]);
+        av_freep(&s->weight[i]);
         for (int j = 0; j < s->nb_threads; j++) {
-            av_rdft_end(s->hrdft[j][i]);
-            av_rdft_end(s->ihrdft[j][i]);
-            av_rdft_end(s->vrdft[j][i]);
-            av_rdft_end(s->ivrdft[j][i]);
+            av_tx_uninit(&s->hrdft[j][i]);
+            av_tx_uninit(&s->ihrdft[j][i]);
+            av_tx_uninit(&s->vrdft[j][i]);
+            av_tx_uninit(&s->ivrdft[j][i]);
         }
     }
 }
