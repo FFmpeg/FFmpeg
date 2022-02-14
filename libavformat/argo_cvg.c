@@ -345,7 +345,7 @@ static int argo_cvg_write_trailer(AVFormatContext *s)
 
     avio_wl32(s->pb, ctx->checksum);
 
-    if ((ret = avio_seek(s->pb, 0, SEEK_SET) < 0))
+    if ((ret = avio_seek(s->pb, 0, SEEK_SET)) < 0)
         return ret;
 
     avio_wl32(s->pb, (uint32_t)ctx->size);
