@@ -2628,6 +2628,8 @@ static int matroska_read_header(AVFormatContext *s)
 
     if (!matroska->time_scale)
         matroska->time_scale = 1000000;
+    if (isnan(matroska->duration))
+        matroska->duration = 0;
     if (matroska->duration)
         matroska->ctx->duration = matroska->duration * matroska->time_scale *
                                   1000 / AV_TIME_BASE;
