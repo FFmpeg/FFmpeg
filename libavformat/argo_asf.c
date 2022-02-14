@@ -422,7 +422,7 @@ static int argo_asf_write_trailer(AVFormatContext *s)
     ArgoASFMuxContext *ctx = s->priv_data;
     int64_t ret;
 
-    if ((ret = avio_seek(s->pb, ASF_FILE_HEADER_SIZE, SEEK_SET) < 0))
+    if ((ret = avio_seek(s->pb, ASF_FILE_HEADER_SIZE, SEEK_SET)) < 0)
         return ret;
 
     avio_wl32(s->pb, (uint32_t)ctx->nb_blocks);
