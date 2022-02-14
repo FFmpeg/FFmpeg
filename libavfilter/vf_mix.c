@@ -409,7 +409,7 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
 }
 
 static const AVOption tmix_options[] = {
-    { "frames", "set number of successive frames to mix", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3}, 1, 128, .flags = FLAGS },
+    { "frames", "set number of successive frames to mix", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3}, 1, 1024, .flags = FLAGS },
     { "weights", "set weight for each frame", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1 1"}, 0, 0, .flags = TFLAGS },
     { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = TFLAGS },
     { NULL },
