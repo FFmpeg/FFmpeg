@@ -889,6 +889,8 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
 
     /* apply the output bitstream filters */
     if (ost->bsf_ctx) {
+        if (pkt->flags & AV_PKT_FLAG_KEY)
+            ost->seen_kf = 1;
         ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
         if (ret < 0)
             goto finish;
@@ -2026,7 +2028,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
-        !ost->copy_initial_nonkeyframes)
+        !ost->copy_initial_nonkeyframes && !ost->seen_kf)
         return;
 
     if (!ost->frame_number && !ost->copy_prior_start) {
