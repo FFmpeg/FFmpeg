@@ -67,7 +67,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
         s->t3     = get_bits(&s->gb, 16);
         s->reset  = get_bits(&s->gb, 16);
 
-        if(s->avctx->debug & FF_DEBUG_PICT_INFO) {
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
             av_log(s->avctx, AV_LOG_DEBUG, "Coding parameters maxval:%d T1:%d T2:%d T3:%d reset:%d\n",
                    s->maxval, s->t1, s->t2, s->t3, s->reset);
         }
@@ -96,7 +96,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
         else
             maxtab = 65530/wt - 1;
 
-        if(s->avctx->debug & FF_DEBUG_PICT_INFO) {
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
             av_log(s->avctx, AV_LOG_DEBUG, "LSE palette %d tid:%d wt:%d maxtab:%d\n", id, tid, wt, maxtab);
         }
         if (maxtab >= 256) {
@@ -216,7 +216,7 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state,
         ret = ret >> 1;
     }
 
-    if(FFABS(ret) > 0xFFFF)
+    if (FFABS(ret) > 0xFFFF)
         return -0x10000;
     /* update state */
     state->A[Q] += FFABS(ret) - RItype;
