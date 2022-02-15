@@ -335,19 +335,14 @@ static int argo_cvg_write_trailer(AVFormatContext *s)
     ArgoCVGMuxContext *ctx = s->priv_data;
     int64_t ret;
 
+    ctx->checksum +=  (ctx->size      & 255)
+                   + ((ctx->size>> 8) & 255)
+                   + ((ctx->size>>16) & 255)
+                   +  (ctx->size>>24);
+
     av_log(s, AV_LOG_TRACE, "size     = %zu\n", ctx->size);
     av_log(s, AV_LOG_TRACE, "checksum = %u\n",  ctx->checksum);
 
-    /*
-     * NB: This is wrong. We're always slightly under the original.
-     *     Verified by remuxing. For reference (orig - remuxed):
-     *     - TCLD.CVG:     4706074 - 4705696 = 378
-     *     - DANLOOP1.CVG: 5684641 - 5684212 = 429
-     *     - CRYS.CVG:     2495499 - 2495367 = 132
-     *     - PICKUP88.CVG: 1348091 - 1347937 = 154
-     *     - SELECT1.CVG:   549987 - 549752  = 235
-     *     Also NB: it doesn't matter, the game doesn't check them.
-     */
     avio_wl32(s->pb, ctx->checksum);
 
     if ((ret = avio_seek(s->pb, 0, SEEK_SET) < 0))
