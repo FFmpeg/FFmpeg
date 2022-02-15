@@ -164,7 +164,7 @@ typedef struct SpeexSubmode {
 } SpeexSubmode;
 
 typedef struct SpeexMode {
-    int modeID; /** ID of the mode */
+    int modeID;                 /**< ID of the mode */
     int (*decode)(AVCodecContext *avctx, void *dec, GetBitContext *gb, float *out);
     int frame_size; /**< Size of frames used for decoding */
     int subframe_size; /**< Size of sub-frames used for decoding */
@@ -176,8 +176,8 @@ typedef struct SpeexMode {
 
 typedef struct DecoderState {
     const SpeexMode *mode;
-    int modeID; /** ID of the decoder mode */
-    int first; /** Is first frame  */
+    int modeID;             /**< ID of the decoder mode */
+    int first;              /**< Is first frame  */
     int full_frame_size; /**< Length of full-band frames */
     int is_wideband; /**< If wideband is present */
     int count_lost; /**< Was the last frame lost? */
@@ -186,12 +186,12 @@ typedef struct DecoderState {
     int nb_subframes; /**< Number of high-band sub-frames */
     int lpc_size; /**< Order of high-band LPC analysis */
     float last_ol_gain; /**< Open-loop gain for previous frame */
-    float *innov_save; /** If non-NULL, innovation is copied here */
+    float *innov_save;      /**< If non-NULL, innovation is copied here */
 
     /* This is used in packet loss concealment */
     int last_pitch; /**< Pitch of last correctly decoded frame */
     float last_pitch_gain; /**< Pitch gain of last correctly decoded frame */
-    uint32_t seed; /** Seed used for random number generation */
+    uint32_t seed;          /**< Seed used for random number generation */
 
     int encode_submode;
     const SpeexSubmode *const *submodes; /**< Sub-mode data */
