@@ -15684,6 +15684,9 @@ Specify scale, if it is set it will be multiplied with sum
 of each weight multiplied with pixel values to give final destination
 pixel value. By default @var{scale} is auto scaled to sum of weights.
 
+@item planes
+Set which planes to filter. Default is all. Allowed range is from 0 to 15.
+
 @item duration
 Specify how end of stream is determined.
 @table @samp
@@ -15704,6 +15707,7 @@ This filter supports the following commands:
 @table @option
 @item weights
 @item scale
+@item planes
 Syntax is same as option with same name.
 @end table
 
@@ -21131,6 +21135,9 @@ unset weights.
 Specify scale, if it is set it will be multiplied with sum
 of each weight multiplied with pixel values to give final destination
 pixel value. By default @var{scale} is auto scaled to sum of weights.
+
+@item planes
+Set which planes to filter. Default is all. Allowed range is from 0 to 15.
 @end table
 
 @subsection Examples
@@ -21161,6 +21168,7 @@ This filter supports the following commands:
 @table @option
 @item weights
 @item scale
+@item planes
 Syntax is same as option with same name.
 @end table
 
