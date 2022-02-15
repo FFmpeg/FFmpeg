@@ -166,37 +166,37 @@ typedef struct SpeexSubmode {
 typedef struct SpeexMode {
     int modeID;                 /**< ID of the mode */
     int (*decode)(AVCodecContext *avctx, void *dec, GetBitContext *gb, float *out);
-    int frame_size; /**< Size of frames used for decoding */
-    int subframe_size; /**< Size of sub-frames used for decoding */
-    int lpc_size; /**< Order of LPC filter */
-    float folding_gain; /**< Folding gain */
+    int frame_size;             /**< Size of frames used for decoding */
+    int subframe_size;          /**< Size of sub-frames used for decoding */
+    int lpc_size;               /**< Order of LPC filter */
+    float folding_gain;         /**< Folding gain */
     const SpeexSubmode *submodes[NB_SUBMODES]; /**< Sub-mode data for the mode */
-    int default_submode; /**< Default sub-mode to use when decoding */
+    int default_submode;        /**< Default sub-mode to use when decoding */
 } SpeexMode;
 
 typedef struct DecoderState {
     const SpeexMode *mode;
     int modeID;             /**< ID of the decoder mode */
     int first;              /**< Is first frame  */
-    int full_frame_size; /**< Length of full-band frames */
-    int is_wideband; /**< If wideband is present */
-    int count_lost; /**< Was the last frame lost? */
-    int frame_size; /**< Length of high-band frames */
-    int subframe_size; /**< Length of high-band sub-frames */
-    int nb_subframes; /**< Number of high-band sub-frames */
-    int lpc_size; /**< Order of high-band LPC analysis */
-    float last_ol_gain; /**< Open-loop gain for previous frame */
+    int full_frame_size;    /**< Length of full-band frames */
+    int is_wideband;        /**< If wideband is present */
+    int count_lost;         /**< Was the last frame lost? */
+    int frame_size;         /**< Length of high-band frames */
+    int subframe_size;      /**< Length of high-band sub-frames */
+    int nb_subframes;       /**< Number of high-band sub-frames */
+    int lpc_size;           /**< Order of high-band LPC analysis */
+    float last_ol_gain;     /**< Open-loop gain for previous frame */
     float *innov_save;      /**< If non-NULL, innovation is copied here */
 
     /* This is used in packet loss concealment */
-    int last_pitch; /**< Pitch of last correctly decoded frame */
-    float last_pitch_gain; /**< Pitch gain of last correctly decoded frame */
+    int last_pitch;         /**< Pitch of last correctly decoded frame */
+    float last_pitch_gain;  /**< Pitch gain of last correctly decoded frame */
     uint32_t seed;          /**< Seed used for random number generation */
 
     int encode_submode;
     const SpeexSubmode *const *submodes; /**< Sub-mode data */
-    int submodeID; /**< Activated sub-mode */
-    int lpc_enh_enabled; /**< 1 when LPC enhancer is on, 0 otherwise */
+    int submodeID;          /**< Activated sub-mode */
+    int lpc_enh_enabled;    /**< 1 when LPC enhancer is on, 0 otherwise */
 
     /* Vocoder data */
     float voc_m1;
@@ -205,10 +205,10 @@ typedef struct DecoderState {
     int voc_offset;
 
     int dtx_enabled;
-    int highpass_enabled; /**< Is the input filter enabled */
+    int highpass_enabled;   /**< Is the input filter enabled */
 
-    float *exc; /**< Start of excitation frame */
-    float mem_hp[2]; /**< High-pass filter memory */
+    float *exc;             /**< Start of excitation frame */
+    float mem_hp[2];        /**< High-pass filter memory */
     float exc_buf[NB_DEC_BUFFER]; /**< Excitation buffer */
     float old_qlsp[NB_ORDER]; /**< Quantized LSPs for previous frame */
     float interp_qlpc[NB_ORDER]; /**< Interpolated quantized LPCs */
