@@ -2679,8 +2679,13 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                                         AV_GET_BUFFER_FLAG_REF)) < 0)
         goto error;
 
-    if (!s->edge_emu_buffer)
+    if (!s->edge_emu_buffer) {
         s->edge_emu_buffer = av_malloc(9 * FFABS(s->current_frame.f->linesize[0]));
+        if (!s->edge_emu_buffer) {
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
+    }
 
     if (s->keyframe) {
         if (!s->theora) {
