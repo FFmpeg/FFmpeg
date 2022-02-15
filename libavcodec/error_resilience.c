@@ -1327,7 +1327,6 @@ void ff_er_frame_end(ERContext *s)
         }
     }
 
-ec_clean:
     /* clean a few tables */
     for (i = 0; i < s->mb_num; i++) {
         const int mb_xy = s->mb_index2xy[i];
