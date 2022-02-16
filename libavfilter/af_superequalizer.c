@@ -195,7 +195,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     float *fsamples = s->fsamples;
     int ch, i;
 
-    AVFrame *out = ff_get_audio_buffer(outlink, s->winlen);
+    AVFrame *out = ff_get_audio_buffer(outlink, in->nb_samples);
     float *src, *dst, *ptr;
 
     if (!out) {
@@ -231,7 +231,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             dst[i] += fsamples[i] / s->tabsize;
         for (i = s->winlen; i < s->tabsize; i++)
             dst[i]  = fsamples[i] / s->tabsize;
-        for (i = 0; i < s->winlen; i++)
+        for (i = 0; i < out->nb_samples; i++)
             ptr[i] = dst[i];
         for (i = 0; i < s->winlen; i++)
             dst[i] = dst[i+s->winlen];
