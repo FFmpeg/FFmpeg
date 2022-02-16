@@ -96,12 +96,12 @@ typedef struct IMFAssetLocatorMap {
 } IMFAssetLocatorMap;
 
 typedef struct IMFVirtualTrackResourcePlaybackCtx {
-    IMFAssetLocator *locator;
-    FFIMFTrackFileResource *resource;
-    AVFormatContext *ctx;
-    AVRational start_time;
-    AVRational end_time;
-    AVRational ts_offset;
+    IMFAssetLocator *locator;          /**< Location of the resource */
+    FFIMFTrackFileResource *resource;  /**< Underlying IMF CPL resource */
+    AVFormatContext *ctx;              /**< Context associated with the resource */
+    AVRational start_time;             /**< inclusive start time of the resource on the CPL timeline (s) */
+    AVRational end_time;               /**< exclusive end time of the resource on the CPL timeline (s) */
+    AVRational ts_offset;              /**< start_time minus the entry point into the resource (s) */
 } IMFVirtualTrackResourcePlaybackCtx;
 
 typedef struct IMFVirtualTrackPlaybackCtx {
