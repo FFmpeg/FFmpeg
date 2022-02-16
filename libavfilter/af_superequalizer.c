@@ -20,8 +20,7 @@
  */
 
 #include "libavutil/opt.h"
-
-#include "libavcodec/avfft.h"
+#include "libavutil/tx.h"
 
 #include "audio.h"
 #include "avfilter.h"
@@ -46,11 +45,12 @@ typedef struct SuperEqualizerContext {
     float aa;
     float iza;
     float *ires, *irest;
-    float *fsamples;
+    float *fsamples, *fsamples_out;
     int winlen, tabsize;
 
     AVFrame *in, *out;
-    RDFTContext *rdft, *irdft;
+    AVTXContext *rdft, *irdft;
+    av_tx_fn tx_fn, itx_fn;
 } SuperEqualizerContext;
 
 static const float bands[] = {
@@ -134,21 +134,26 @@ static void process_param(float *bc, EqParameter *param, float fs)
 
 static int equ_init(SuperEqualizerContext *s, int wb)
 {
-    int i,j;
+    float scale = 1.f, iscale = 1.f;
+    int i, j, ret;
 
-    s->rdft  = av_rdft_init(wb, DFT_R2C);
-    s->irdft = av_rdft_init(wb, IDFT_C2R);
-    if (!s->rdft || !s->irdft)
-        return AVERROR(ENOMEM);
+    ret = av_tx_init(&s->rdft, &s->tx_fn, AV_TX_FLOAT_RDFT, 0, 1 << wb, &scale, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = av_tx_init(&s->irdft, &s->itx_fn, AV_TX_FLOAT_RDFT, 1, 1 << wb, &iscale, 0);
+    if (ret < 0)
+        return ret;
 
     s->aa = 96;
     s->winlen = (1 << (wb-1))-1;
     s->tabsize  = 1 << wb;
 
-    s->ires     = av_calloc(s->tabsize, sizeof(float));
+    s->ires     = av_calloc(s->tabsize + 2, sizeof(float));
     s->irest    = av_calloc(s->tabsize, sizeof(float));
     s->fsamples = av_calloc(s->tabsize, sizeof(float));
-    if (!s->ires || !s->irest || !s->fsamples)
+    s->fsamples_out = av_calloc(s->tabsize + 2, sizeof(float));
+    if (!s->ires || !s->irest || !s->fsamples || !s->fsamples_out)
         return AVERROR(ENOMEM);
 
     for (i = 0; i <= M; i++) {
@@ -166,7 +171,6 @@ static void make_fir(SuperEqualizerContext *s, float *lbc, float *rbc, EqParamet
 {
     const int winlen = s->winlen;
     const int tabsize = s->tabsize;
-    float *nires;
     int i;
 
     if (fs <= 0)
@@ -178,10 +182,7 @@ static void make_fir(SuperEqualizerContext *s, float *lbc, float *rbc, EqParamet
     for (; i < tabsize; i++)
         s->irest[i] = 0;
 
-    av_rdft_calc(s->rdft, s->irest);
-    nires = s->ires;
-    for (i = 0; i < tabsize; i++)
-        nires[i] = s->irest[i];
+    s->tx_fn(s->rdft, s->ires, s->irest, sizeof(float));
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -190,6 +191,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     SuperEqualizerContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     const float *ires = s->ires;
+    float *fsamples_out = s->fsamples_out;
     float *fsamples = s->fsamples;
     int ch, i;
 
@@ -211,26 +213,24 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (; i < s->tabsize; i++)
             fsamples[i] = 0;
 
-        av_rdft_calc(s->rdft, fsamples);
+        s->tx_fn(s->rdft, fsamples_out, fsamples, sizeof(float));
 
-        fsamples[0] = ires[0] * fsamples[0];
-        fsamples[1] = ires[1] * fsamples[1];
-        for (i = 1; i < s->tabsize / 2; i++) {
+        for (i = 0; i <= s->tabsize / 2; i++) {
             float re, im;
 
-            re = ires[i*2  ] * fsamples[i*2] - ires[i*2+1] * fsamples[i*2+1];
-            im = ires[i*2+1] * fsamples[i*2] + ires[i*2  ] * fsamples[i*2+1];
+            re = ires[i*2  ] * fsamples_out[i*2] - ires[i*2+1] * fsamples_out[i*2+1];
+            im = ires[i*2+1] * fsamples_out[i*2] + ires[i*2  ] * fsamples_out[i*2+1];
 
-            fsamples[i*2  ] = re;
-            fsamples[i*2+1] = im;
+            fsamples_out[i*2  ] = re;
+            fsamples_out[i*2+1] = im;
         }
 
-        av_rdft_calc(s->irdft, fsamples);
+        s->itx_fn(s->irdft, fsamples, fsamples_out, sizeof(float));
 
         for (i = 0; i < s->winlen; i++)
-            dst[i] += fsamples[i] / s->tabsize * 2;
+            dst[i] += fsamples[i] / s->tabsize;
         for (i = s->winlen; i < s->tabsize; i++)
-            dst[i]  = fsamples[i] / s->tabsize * 2;
+            dst[i]  = fsamples[i] / s->tabsize;
         for (i = 0; i < s->winlen; i++)
             ptr[i] = dst[i];
         for (i = 0; i < s->winlen; i++)
@@ -302,8 +302,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->irest);
     av_freep(&s->ires);
     av_freep(&s->fsamples);
-    av_rdft_end(s->rdft);
-    av_rdft_end(s->irdft);
+    av_freep(&s->fsamples_out);
+    av_tx_uninit(&s->rdft);
+    av_tx_uninit(&s->irdft);
 }
 
 static const AVFilterPad superequalizer_inputs[] = {
