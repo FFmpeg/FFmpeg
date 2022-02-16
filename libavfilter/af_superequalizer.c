@@ -148,6 +148,8 @@ static int equ_init(SuperEqualizerContext *s, int wb)
     s->ires     = av_calloc(s->tabsize, sizeof(float));
     s->irest    = av_calloc(s->tabsize, sizeof(float));
     s->fsamples = av_calloc(s->tabsize, sizeof(float));
+    if (!s->ires || !s->irest || !s->fsamples)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i <= M; i++) {
         s->fact[i] = 1;
