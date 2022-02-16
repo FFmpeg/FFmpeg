@@ -34,6 +34,7 @@ HEADERS = adler32.h                                                     \
           frame.h                                                       \
           hash.h                                                        \
           hdr_dynamic_metadata.h                                        \
+          hdr_dynamic_vivid_metadata.h                                  \
           hmac.h                                                        \
           hwcontext.h                                                   \
           hwcontext_cuda.h                                              \
@@ -129,6 +130,7 @@ OBJS = adler32.o                                                        \
        frame.o                                                          \
        hash.o                                                           \
        hdr_dynamic_metadata.o                                           \
+       hdr_dynamic_vivid_metadata.o                                     \
        hmac.o                                                           \
        hwcontext.o                                                      \
        imgutils.o                                                       \
