@@ -25,6 +25,9 @@ proposal by a member of the General Assembly.
 They are part of the GA for two years, after which they need a confirmation by
 the GA.
 
+A script to generate the current members of the general assembly (minus members
+voted in) can be found in `tools/general_assembly.pl`.
+
 ## Voting
 
 Voting is done using a ranked voting system, currently running on https://vote.ffmpeg.org/ .
