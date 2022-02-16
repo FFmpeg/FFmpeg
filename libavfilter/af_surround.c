@@ -277,7 +277,7 @@ static int config_output(AVFilterLink *outlink)
     for (ch = 0; ch < outlink->channels; ch++) {
         float iscale = 1.f;
 
-        av_tx_init(&s->irdft[ch], &s->itx_fn, AV_TX_FLOAT_RDFT, 0, s->buf_size, &iscale, 0);
+        av_tx_init(&s->irdft[ch], &s->itx_fn, AV_TX_FLOAT_RDFT, 1, s->buf_size, &iscale, 0);
         if (!s->irdft[ch])
             return AVERROR(ENOMEM);
     }
