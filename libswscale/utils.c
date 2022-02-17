@@ -278,7 +278,7 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_P416LE]      = { 1, 1 },
 };
 
-void ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSize, int16_t *filter, int dstW){
+int ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSize, int16_t *filter, int dstW){
 #if ARCH_X86_64
     int i, j, k, l;
     int cpu_flags = av_get_cpu_flags();
@@ -292,6 +292,8 @@ void ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSiz
                     }
                     if (filterSize > 4){
                         int16_t *tmp2 = av_malloc(dstW * filterSize * 2);
+                        if (!tmp2)
+                            return AVERROR(ENOMEM);
                         memcpy(tmp2, filter, dstW * filterSize * 2);
                         for (i = 0; i < dstW; i += 16){//pixel
                             for (k = 0; k < filterSize / 4; ++k){//fcoeff
@@ -310,6 +312,7 @@ void ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSiz
             }
         }
     }
+    return 0;
 #endif
 }
 
@@ -1836,7 +1839,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                            get_local_pos(c, 0, 0, 0),
                            get_local_pos(c, 0, 0, 0))) < 0)
                 goto fail;
-            ff_shuffle_filter_coefficients(c, c->hLumFilterPos, c->hLumFilterSize, c->hLumFilter, dstW);
+            if (ff_shuffle_filter_coefficients(c, c->hLumFilterPos, c->hLumFilterSize, c->hLumFilter, dstW) < 0)
+                goto nomem;
             if ((ret = initFilter(&c->hChrFilter, &c->hChrFilterPos,
                            &c->hChrFilterSize, c->chrXInc,
                            c->chrSrcW, c->chrDstW, filterAlign, 1 << 14,
@@ -1846,7 +1850,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                            get_local_pos(c, c->chrSrcHSubSample, c->src_h_chr_pos, 0),
                            get_local_pos(c, c->chrDstHSubSample, c->dst_h_chr_pos, 0))) < 0)
                 goto fail;
-            ff_shuffle_filter_coefficients(c, c->hChrFilterPos, c->hChrFilterSize, c->hChrFilter, c->chrDstW);
+            if (ff_shuffle_filter_coefficients(c, c->hChrFilterPos, c->hChrFilterSize, c->hChrFilter, c->chrDstW) < 0)
+                goto nomem;
         }
     } // initialize horizontal stuff
 

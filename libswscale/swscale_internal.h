@@ -1144,5 +1144,5 @@ void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
 #define MAX_LINES_AHEAD 4
 
 //shuffle filter and filterPos for hyScale and hcScale filters in avx2
-void ff_shuffle_filter_coefficients(SwsContext *c, int* filterPos, int filterSize, int16_t *filter, int dstW);
+int ff_shuffle_filter_coefficients(SwsContext *c, int* filterPos, int filterSize, int16_t *filter, int dstW);
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */
