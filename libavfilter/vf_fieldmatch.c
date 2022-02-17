@@ -79,7 +79,7 @@ typedef struct FieldMatchContext {
     AVFrame *prv,  *src,  *nxt;     ///< main sliding window of 3 frames
     AVFrame *prv2, *src2, *nxt2;    ///< sliding window of the optional second stream
     int got_frame[2];               ///< frame request flag for each input stream
-    int hsub, vsub;                 ///< chroma subsampling values
+    int hsub[2], vsub[2];           ///< chroma subsampling values
     int bpc;                        ///< bytes per component
     uint32_t eof;                   ///< bitmask for end of stream
     int64_t lastscdiff;
@@ -153,14 +153,14 @@ static const AVOption fieldmatch_options[] = {
 
 AVFILTER_DEFINE_CLASS(fieldmatch);
 
-static int get_width(const FieldMatchContext *fm, const AVFrame *f, int plane)
+static int get_width(const FieldMatchContext *fm, const AVFrame *f, int plane, int input)
 {
-    return plane ? AV_CEIL_RSHIFT(f->width, fm->hsub) : f->width;
+    return plane ? AV_CEIL_RSHIFT(f->width, fm->hsub[input]) : f->width;
 }
 
-static int get_height(const FieldMatchContext *fm, const AVFrame *f, int plane)
+static int get_height(const FieldMatchContext *fm, const AVFrame *f, int plane, int input)
 {
-    return plane ? AV_CEIL_RSHIFT(f->height, fm->vsub) : f->height;
+    return plane ? AV_CEIL_RSHIFT(f->height, fm->vsub[input]) : f->height;
 }
 
 static int64_t luma_abs_diff(const AVFrame *f1, const AVFrame *f2)
@@ -202,8 +202,8 @@ static int calc_combed_score(const FieldMatchContext *fm, const AVFrame *src)
     for (plane = 0; plane < (fm->chroma ? 3 : 1); plane++) {
         const uint8_t *srcp = src->data[plane];
         const int src_linesize = src->linesize[plane];
-        const int width  = get_width (fm, src, plane);
-        const int height = get_height(fm, src, plane);
+        const int width  = get_width (fm, src, plane, INPUT_MAIN);
+        const int height = get_height(fm, src, plane, INPUT_MAIN);
         uint8_t *cmkp = fm->cmask_data[plane];
         const int cmk_linesize = fm->cmask_linesize[plane];
 
@@ -272,8 +272,8 @@ static int calc_combed_score(const FieldMatchContext *fm, const AVFrame *src)
         uint8_t *cmkp  = fm->cmask_data[0];
         uint8_t *cmkpU = fm->cmask_data[1];
         uint8_t *cmkpV = fm->cmask_data[2];
-        const int width  = AV_CEIL_RSHIFT(src->width,  fm->hsub);
-        const int height = AV_CEIL_RSHIFT(src->height, fm->vsub);
+        const int width  = AV_CEIL_RSHIFT(src->width,  fm->hsub[INPUT_MAIN]);
+        const int height = AV_CEIL_RSHIFT(src->height, fm->vsub[INPUT_MAIN]);
         const int cmk_linesize   = fm->cmask_linesize[0] << 1;
         const int cmk_linesizeUV = fm->cmask_linesize[2];
         uint8_t *cmkpp  = cmkp - (cmk_linesize>>1);
@@ -503,11 +503,11 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
         const int srcf_linesize = src_linesize << 1;
         int prv_linesize,  nxt_linesize;
         int prvf_linesize, nxtf_linesize;
-        const int width  = get_width (fm, src, plane);
-        const int height = get_height(fm, src, plane);
-        const int y0a = fm->y0 >> (plane ? fm->vsub : 0);
-        const int y1a = fm->y1 >> (plane ? fm->vsub : 0);
-        const int startx = (plane == 0 ? 8 : 8 >> fm->hsub);
+        const int width  = get_width (fm, src, plane, INPUT_MAIN);
+        const int height = get_height(fm, src, plane, INPUT_MAIN);
+        const int y0a = fm->y0 >> (plane ? fm->vsub[INPUT_MAIN] : 0);
+        const int y1a = fm->y1 >> (plane ? fm->vsub[INPUT_MAIN] : 0);
+        const int startx = (plane == 0 ? 8 : 8 >> fm->hsub[INPUT_MAIN]);
         const int stopx  = width - startx;
         const uint8_t *srcpf, *srcf, *srcnf;
         const uint8_t *prvpf, *prvnf, *nxtpf, *nxtnf;
@@ -607,20 +607,20 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
 }
 
 static void copy_fields(const FieldMatchContext *fm, AVFrame *dst,
-                        const AVFrame *src, int field)
+                        const AVFrame *src, int field, int input)
 {
     int plane;
     for (plane = 0; plane < 4 && src->data[plane] && src->linesize[plane]; plane++) {
-        const int plane_h = get_height(fm, src, plane);
+        const int plane_h = get_height(fm, src, plane, input);
         const int nb_copy_fields = (plane_h >> 1) + (field ? 0 : (plane_h & 1));
         av_image_copy_plane(dst->data[plane] + field*dst->linesize[plane], dst->linesize[plane] << 1,
                             src->data[plane] + field*src->linesize[plane], src->linesize[plane] << 1,
-                            get_width(fm, src, plane) * fm->bpc, nb_copy_fields);
+                            get_width(fm, src, plane, input) * fm->bpc, nb_copy_fields);
     }
 }
 
 static AVFrame *create_weave_frame(AVFilterContext *ctx, int match, int field,
-                                   const AVFrame *prv, AVFrame *src, const AVFrame *nxt)
+                                   const AVFrame *prv, AVFrame *src, const AVFrame *nxt, int input)
 {
     AVFrame *dst;
     FieldMatchContext *fm = ctx->priv;
@@ -628,18 +628,18 @@ static AVFrame *create_weave_frame(AVFilterContext *ctx, int match, int field,
     if (match == mC) {
         dst = av_frame_clone(src);
     } else {
-        AVFilterLink *outlink = ctx->outputs[0];
+        AVFilterLink *link = input == INPUT_CLEANSRC ? ctx->outputs[0] : ctx->inputs[INPUT_MAIN];
 
-        dst = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        dst = ff_get_video_buffer(link, link->w, link->h);
         if (!dst)
             return NULL;
         av_frame_copy_props(dst, src);
 
         switch (match) {
-        case mP: copy_fields(fm, dst, src, 1-field); copy_fields(fm, dst, prv,   field); break;
-        case mN: copy_fields(fm, dst, src, 1-field); copy_fields(fm, dst, nxt,   field); break;
-        case mB: copy_fields(fm, dst, src,   field); copy_fields(fm, dst, prv, 1-field); break;
-        case mU: copy_fields(fm, dst, src,   field); copy_fields(fm, dst, nxt, 1-field); break;
+        case mP: copy_fields(fm, dst, src, 1-field, input); copy_fields(fm, dst, prv,   field, input); break;
+        case mN: copy_fields(fm, dst, src, 1-field, input); copy_fields(fm, dst, nxt,   field, input); break;
+        case mB: copy_fields(fm, dst, src,   field, input); copy_fields(fm, dst, prv, 1-field, input); break;
+        case mU: copy_fields(fm, dst, src,   field, input); copy_fields(fm, dst, nxt, 1-field, input); break;
         default: av_assert0(0);
         }
     }
@@ -655,7 +655,8 @@ static int checkmm(AVFilterContext *ctx, int *combs, int m1, int m2,
     if (combs[mid] < 0) {                                                       \
         if (!gen_frames[mid])                                                   \
             gen_frames[mid] = create_weave_frame(ctx, mid, field,               \
-                                                 fm->prv, fm->src, fm->nxt);    \
+                                                 fm->prv, fm->src, fm->nxt,     \
+                                                 INPUT_MAIN);                   \
         combs[mid] = calc_combed_score(fm, gen_frames[mid]);                    \
     }                                                                           \
 } while (0)
@@ -724,7 +725,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (i = 0; i < FF_ARRAY_ELEMS(combs); i++) {
             if (i > mN && fm->combdbg == COMBDBG_PCN)
                 break;
-            gen_frames[i] = create_weave_frame(ctx, i, field, fm->prv, fm->src, fm->nxt);
+            gen_frames[i] = create_weave_frame(ctx, i, field, fm->prv, fm->src, fm->nxt, INPUT_MAIN);
             if (!gen_frames[i]) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
@@ -796,10 +797,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (fm->ppsrc) {
         /* field matching was based on a filtered/post-processed input, we now
          * pick the untouched fields from the clean source */
-        dst = create_weave_frame(ctx, match, field, fm->prv2, fm->src2, fm->nxt2);
+        dst = create_weave_frame(ctx, match, field, fm->prv2, fm->src2, fm->nxt2, INPUT_CLEANSRC);
     } else {
         if (!gen_frames[match]) { // XXX: is that possible?
-            dst = create_weave_frame(ctx, match, field, fm->prv, fm->src, fm->nxt);
+            dst = create_weave_frame(ctx, match, field, fm->prv, fm->src, fm->nxt, INPUT_MAIN);
         } else {
             dst = gen_frames[match];
             gen_frames[match] = NULL;
@@ -944,8 +945,13 @@ static int config_input(AVFilterLink *inlink)
         (ret = av_image_alloc(fm->cmask_data, fm->cmask_linesize, w, h, inlink->format, 32)) < 0)
         return ret;
 
-    fm->hsub = pix_desc->log2_chroma_w;
-    fm->vsub = pix_desc->log2_chroma_h;
+    fm->hsub[INPUT_MAIN] = pix_desc->log2_chroma_w;
+    fm->vsub[INPUT_MAIN] = pix_desc->log2_chroma_h;
+    if (fm->ppsrc) {
+        pix_desc = av_pix_fmt_desc_get(ctx->inputs[INPUT_CLEANSRC]->format);
+        fm->hsub[INPUT_CLEANSRC] = pix_desc->log2_chroma_w;
+        fm->vsub[INPUT_CLEANSRC] = pix_desc->log2_chroma_h;
+    }
 
     fm->tpitchy  = FFALIGN(w,      16);
     fm->tpitchuv = FFALIGN(w >> 1, 16);
