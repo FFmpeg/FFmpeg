@@ -1742,6 +1742,10 @@ where PTS values are set as as wallclock time at the source. For example, an
 encoding use case with decklink capture source where @option{video_pts} and
 @option{audio_pts} are set to @samp{abs_wallclock}.
 
+@item -empty_hdlr_name @var{bool}
+Enable to skip writing the name inside a @code{hdlr} box.
+Default is @code{false}.
+
 @item -movie_timescale @var{scale}
 Set the timescale written in the movie header box (@code{mvhd}).
 Range is 1 to INT_MAX. Default is 1000.
