@@ -139,6 +139,44 @@ typedef struct ThreadData {
     AVFrame **in, *out;
 } ThreadData;
 
+#define MIX_SLICE(type, fun, clip)                                                              \
+    for (int p = 0; p < s->nb_planes; p++) {                                                    \
+        const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
+        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
+        const int width = s->linesize[p] / sizeof(type);                                        \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
+        ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \
+                                                                                                \
+        if (!((1 << p) & s->planes)) {                                                          \
+            av_image_copy_plane((uint8_t *)dst, out->linesize[p],                               \
+                                in[0]->data[p] + slice_start * in[0]->linesize[p],              \
+                                in[0]->linesize[p],                                             \
+                                s->linesize[p], slice_end - slice_start);                       \
+            continue;                                                                           \
+        }                                                                                       \
+                                                                                                \
+        for (int y = slice_start; y < slice_end; y++) {                                         \
+            for (int x = 0; x < width; x++) {                                                   \
+                float val = 0.f;                                                                \
+                                                                                                \
+                for (int i = 0; i < s->nb_inputs; i++) {                                        \
+                    float src = *(type *)(in[i]->data[p] + y * in[i]->linesize[p] + x * sizeof(type));\
+                                                                                                \
+                    val += src * weights[i];                                                    \
+                }                                                                               \
+                                                                                                \
+                dst[x] = clip(fun(val * s->wfactor), 0, s->max);                                \
+            }                                                                                   \
+                                                                                                \
+            dst += dst_linesize;                                                                \
+        }                                                                                       \
+    }
+
+#define CLIP8(x, min, max) av_clip_uint8(x)
+#define CLIP16(x, min, max) av_clip(x, min, max)
+#define CLIPF(x, min, max) (x)
+#define NOP(x) (x)
+
 static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     MixContext *s = ctx->priv;
@@ -146,99 +184,13 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame **in = td->in;
     AVFrame *out = td->out;
     const float *weights = s->weights;
-    int i, p, x, y;
 
     if (s->depth <= 8) {
-        for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-            uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
-
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane(dst, out->linesize[p],
-                                    in[0]->data[p] + slice_start * in[0]->linesize[p],
-                                    in[0]->linesize[p],
-                                    s->linesize[p], slice_end - slice_start);
-                continue;
-            }
-
-            for (y = slice_start; y < slice_end; y++) {
-                for (x = 0; x < s->linesize[p]; x++) {
-                    float val = 0.f;
-
-                    for (i = 0; i < s->nb_inputs; i++) {
-                        uint8_t src = in[i]->data[p][y * in[i]->linesize[p] + x];
-
-                        val += src * weights[i];
-                    }
-
-                    dst[x] = av_clip_uint8(lrintf(val * s->wfactor));
-                }
-
-                dst += out->linesize[p];
-            }
-        }
+        MIX_SLICE(uint8_t, lrintf, CLIP8)
     } else if (s->depth <= 16) {
-        for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-            uint16_t *dst = (uint16_t *)(out->data[p] + slice_start * out->linesize[p]);
-
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane((uint8_t *)dst, out->linesize[p],
-                                    in[0]->data[p] + slice_start * in[0]->linesize[p],
-                                    in[0]->linesize[p],
-                                    s->linesize[p], slice_end - slice_start);
-                continue;
-            }
-
-            for (y = slice_start; y < slice_end; y++) {
-                for (x = 0; x < s->linesize[p] / 2; x++) {
-                    float val = 0.f;
-
-                    for (i = 0; i < s->nb_inputs; i++) {
-                        uint16_t src = AV_RN16(in[i]->data[p] + y * in[i]->linesize[p] + x * 2);
-
-                        val += src * weights[i];
-                    }
-
-                    dst[x] = av_clip(lrintf(val * s->wfactor), 0, s->max);
-                }
-
-                dst += out->linesize[p] / 2;
-            }
-        }
+        MIX_SLICE(uint16_t, lrintf, CLIP16)
     } else {
-        for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-            float *dst = (float *)(out->data[p] + slice_start * out->linesize[p]);
-            ptrdiff_t dst_linesize = out->linesize[p] / 4;
-
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane((uint8_t *)dst, out->linesize[p],
-                                    in[0]->data[p] + slice_start * in[0]->linesize[p],
-                                    in[0]->linesize[p],
-                                    s->linesize[p], slice_end - slice_start);
-                continue;
-            }
-
-            for (y = slice_start; y < slice_end; y++) {
-                for (x = 0; x < s->linesize[p] / 2; x++) {
-                    float val = 0.f;
-
-                    for (i = 0; i < s->nb_inputs; i++) {
-                        float src = *(float *)(in[i]->data[p] + y * in[i]->linesize[p] + x * 4);
-
-                        val += src * weights[i];
-                    }
-
-                    dst[x] = val * s->wfactor;
-                }
-
-                dst += dst_linesize;
-            }
-        }
+        MIX_SLICE(float, NOP, CLIPF)
     }
 
     return 0;
