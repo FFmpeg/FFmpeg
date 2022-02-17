@@ -81,7 +81,12 @@ AVFILTER_DEFINE_CLASS(extractplanes);
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP
 
 #define HIGHDEPTH_FORMATS(suf)                                 \
-        AV_PIX_FMT_YA16##suf, AV_PIX_FMT_GRAY16##suf,          \
+        AV_PIX_FMT_YA16##suf,                                  \
+        AV_PIX_FMT_GRAY9##suf,                                 \
+        AV_PIX_FMT_GRAY10##suf,                                \
+        AV_PIX_FMT_GRAY12##suf,                                \
+        AV_PIX_FMT_GRAY14##suf,                                \
+        AV_PIX_FMT_GRAY16##suf,                                \
         AV_PIX_FMT_YUV420P16##suf, AV_PIX_FMT_YUVA420P16##suf, \
         AV_PIX_FMT_YUV422P16##suf, AV_PIX_FMT_YUVA422P16##suf, \
         AV_PIX_FMT_YUV444P16##suf, AV_PIX_FMT_YUVA444P16##suf, \
