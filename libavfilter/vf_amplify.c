@@ -94,6 +94,54 @@ typedef struct ThreadData {
     AVFrame **in, *out;
 } ThreadData;
 
+#define AMPLIFY_SLICE(type, stype, clip)                                                        \
+    for (int p = 0; p < s->nb_planes; p++) {                                                    \
+        const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
+        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
+        ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \
+                                                                                                \
+        if (!((1 << p) & s->planes)) {                                                          \
+            av_image_copy_plane((uint8_t *)dst, out->linesize[p],                               \
+                                in[radius]->data[p] + slice_start * in[radius]->linesize[p],    \
+                                in[radius]->linesize[p],                                        \
+                                s->linesize[p], slice_end - slice_start);                       \
+            continue;                                                                           \
+        }                                                                                       \
+                                                                                                \
+        for (int y = slice_start; y < slice_end; y++) {                                         \
+            for (int x = 0; x < s->linesize[p] / sizeof(type); x++) {                           \
+                stype src = *(type *)(in[radius]->data[p] + y * in[radius]->linesize[p] + x * sizeof(type));\
+                float diff, avg;                                                                \
+                stype sum = 0;                                                                  \
+                                                                                                \
+                for (int i = 0; i < nb_inputs; i++) {                                           \
+                    sum += *(type *)(in[i]->data[p] + y * in[i]->linesize[p] + x * sizeof(type));\
+                }                                                                               \
+                                                                                                \
+                avg = sum / (float)nb_inputs;                                                   \
+                diff = src - avg;                                                               \
+                                                                                                \
+                if (fabsf(diff) < threshold && fabsf(diff) > tolerance) {                       \
+                    int amp;                                                                    \
+                    if (diff < 0) {                                                             \
+                        amp = -FFMIN(FFABS(diff * factor), llimit);                             \
+                    } else {                                                                    \
+                        amp = FFMIN(FFABS(diff * factor), hlimit);                              \
+                    }                                                                           \
+                    dst[x] = av_clip_uintp2_c(src + amp, depth);                                \
+                } else {                                                                        \
+                    dst[x] = src;                                                               \
+                }                                                                               \
+            }                                                                                   \
+                                                                                                \
+            dst += dst_linesize;                                                                \
+        }                                                                                       \
+    }
+
+#define CLIP8(x, depth) av_clip_uint8(x)
+#define CLIP16(x, depth) av_clip_uintp2_c(x, depth)
+
 static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     AmplifyContext *s = ctx->priv;
@@ -108,93 +156,11 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int llimit = s->llimit;
     const int hlimit = s->hlimit;
     const int depth = s->depth;
-    int i, p, x, y;
 
     if (s->depth <= 8) {
-        for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-            uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
-
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane(dst, out->linesize[p],
-                                    in[radius]->data[p] + slice_start * in[radius]->linesize[p],
-                                    in[radius]->linesize[p],
-                                    s->linesize[p], slice_end - slice_start);
-                continue;
-            }
-
-            for (y = slice_start; y < slice_end; y++) {
-                for (x = 0; x < s->linesize[p]; x++) {
-                    int src = in[radius]->data[p][y * in[radius]->linesize[p] + x];
-                    float diff, avg;
-                    int sum = 0;
-
-                    for (i = 0; i < nb_inputs; i++) {
-                        sum += in[i]->data[p][y * in[i]->linesize[p] + x];
-                    }
-
-                    avg = sum / (float)nb_inputs;
-                    diff = src - avg;
-                    if (fabsf(diff) < threshold && fabsf(diff) > tolerance) {
-                        int amp;
-                        if (diff < 0) {
-                            amp = -FFMIN(FFABS(diff * factor), llimit);
-                        } else {
-                            amp = FFMIN(FFABS(diff * factor), hlimit);
-                        }
-                        dst[x] = av_clip_uint8(src + amp);
-                    } else {
-                        dst[x] = src;
-                    }
-                }
-
-                dst += out->linesize[p];
-            }
-        }
+        AMPLIFY_SLICE(uint8_t, int, CLIP8)
     } else {
-        for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-            uint16_t *dst = (uint16_t *)(out->data[p] + slice_start * out->linesize[p]);
-
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane((uint8_t *)dst, out->linesize[p],
-                                    in[radius]->data[p] + slice_start * in[radius]->linesize[p],
-                                    in[radius]->linesize[p],
-                                    s->linesize[p], slice_end - slice_start);
-                continue;
-            }
-
-            for (y = slice_start; y < slice_end; y++) {
-                for (x = 0; x < s->linesize[p] / 2; x++) {
-                    int src = AV_RN16(in[radius]->data[p] + y * in[radius]->linesize[p] + x * 2);
-                    float diff, avg;
-                    int sum = 0;
-
-                    for (i = 0; i < nb_inputs; i++) {
-                        sum += AV_RN16(in[i]->data[p] + y * in[i]->linesize[p] + x * 2);
-                    }
-
-                    avg = sum / (float)nb_inputs;
-                    diff = src - avg;
-
-                    if (fabsf(diff) < threshold && fabsf(diff) > tolerance) {
-                        int amp;
-                        if (diff < 0) {
-                            amp = -FFMIN(FFABS(diff * factor), llimit);
-                        } else {
-                            amp = FFMIN(FFABS(diff * factor), hlimit);
-                        }
-                        dst[x] = av_clip_uintp2_c(src + amp, depth);
-                    } else {
-                        dst[x] = src;
-                    }
-                }
-
-                dst += out->linesize[p] / 2;
-            }
-        }
+        AMPLIFY_SLICE(uint16_t, int, CLIP16)
     }
 
     return 0;
