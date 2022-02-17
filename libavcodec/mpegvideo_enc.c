@@ -95,12 +95,6 @@ static uint8_t default_fcode_tab[MAX_MV * 2 + 1];
 static const AVOption mpv_generic_options[] = {
     FF_MPV_COMMON_OPTS
     FF_MPV_COMMON_MOTION_EST_OPTS
-#if FF_API_MPEGVIDEO_OPTS
-    FF_MPV_DEPRECATED_MPEG_QUANT_OPT
-    FF_MPV_DEPRECATED_A53_CC_OPT
-    FF_MPV_DEPRECATED_MATRIX_OPT
-    FF_MPV_DEPRECATED_BFRAME_OPTS
-#endif
     { NULL },
 };
 

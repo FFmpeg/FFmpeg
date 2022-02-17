@@ -114,19 +114,6 @@ FF_MPV_OPT_CMP_FUNC, \
 {"mepre", "pre motion estimation", FF_MPV_OFFSET(me_pre), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"intra_penalty", "Penalty for intra blocks in block decision", FF_MPV_OFFSET(intra_penalty), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX/2, FF_MPV_OPT_FLAGS }, \
 
-#if FF_API_MPEGVIDEO_OPTS
-#define FF_MPV_DEPRECATED_MPEG_QUANT_OPT \
-    { "mpeg_quant", "Deprecated, does nothing", FF_MPV_OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#define FF_MPV_DEPRECATED_A53_CC_OPT \
-    { "a53cc",      "Deprecated, does nothing", FF_MPV_OFFSET(dummy),      AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#define FF_MPV_DEPRECATED_MATRIX_OPT \
-   { "force_duplicated_matrix", "Deprecated, does nothing", FF_MPV_OFFSET(dummy), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#define FF_MPV_DEPRECATED_BFRAME_OPTS \
-   { "b_strategy",    "Deprecated, does nothing", FF_MPV_OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 2, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED }, \
-   { "b_sensitivity", "Deprecated, does nothing", FF_MPV_OFFSET(b_sensitivity),    AV_OPT_TYPE_INT, { .i64 = 40 }, 1, INT_MAX, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED }, \
-   { "brd_scale",     "Deprecated, does nothing", FF_MPV_OFFSET(brd_scale),        AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 3, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED },
-#endif
-
 extern const AVClass ff_mpv_enc_class;
 
 int ff_mpv_encode_init(AVCodecContext *avctx);

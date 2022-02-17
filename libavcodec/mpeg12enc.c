@@ -1142,6 +1142,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     } else {
         s->min_qcoeff = -2047;
         s->max_qcoeff = 2047;
+        s->mpeg_quant = 1;
     }
     if (s->intra_vlc_format) {
         s->intra_ac_vlc_length      =
@@ -1173,11 +1174,6 @@ static const AVOption mpeg1_options[] = {
     COMMON_OPTS
     FF_MPV_COMMON_OPTS
     FF_MPV_COMMON_MOTION_EST_OPTS
-#if FF_API_MPEGVIDEO_OPTS
-    FF_MPV_DEPRECATED_MPEG_QUANT_OPT
-    FF_MPV_DEPRECATED_A53_CC_OPT
-    FF_MPV_DEPRECATED_MATRIX_OPT
-#endif
     { NULL },
 };
 
@@ -1207,11 +1203,6 @@ static const AVOption mpeg2_options[] = {
 #undef LEVEL
     FF_MPV_COMMON_OPTS
     FF_MPV_COMMON_MOTION_EST_OPTS
-#if FF_API_MPEGVIDEO_OPTS
-    { "mpeg_quant",       "Deprecated, does nothing", FF_MPV_OFFSET(mpeg_quant),
-      AV_OPT_TYPE_INT, {.i64 = 1 }, 0, 1, VE | AV_OPT_FLAG_DEPRECATED },
-    FF_MPV_DEPRECATED_MATRIX_OPT
-#endif
     FF_MPEG2_PROFILE_OPTS
     { NULL },
 };
