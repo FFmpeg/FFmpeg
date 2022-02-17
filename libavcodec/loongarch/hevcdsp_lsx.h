@@ -85,4 +85,30 @@ MC(epel, hv, 32);
 
 #undef MC
 
+void ff_hevc_loop_filter_luma_h_8_lsx(uint8_t *src, ptrdiff_t stride,
+                                      int32_t beta, int32_t *tc,
+                                      uint8_t *p_is_pcm, uint8_t *q_is_pcm);
+
+void ff_hevc_loop_filter_luma_v_8_lsx(uint8_t *src, ptrdiff_t stride,
+                                      int32_t beta, int32_t *tc,
+                                      uint8_t *p_is_pcm, uint8_t *q_is_pcm);
+
+void ff_hevc_loop_filter_chroma_h_8_lsx(uint8_t *src, ptrdiff_t stride,
+                                        int32_t *tc, uint8_t *p_is_pcm,
+                                        uint8_t *q_is_pcm);
+
+void ff_hevc_loop_filter_chroma_v_8_lsx(uint8_t *src, ptrdiff_t stride,
+                                        int32_t *tc, uint8_t *p_is_pcm,
+                                        uint8_t *q_is_pcm);
+
+void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, uint8_t *src,
+                                   ptrdiff_t stride_dst,
+                                   int16_t *sao_offset_val,
+                                   int eo, int width, int height);
+
+void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_8x8_lsx(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_16x16_lsx(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_32x32_lsx(int16_t *coeffs, int col_limit);
+
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H

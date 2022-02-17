@@ -85,6 +85,25 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel[5][1][1] = ff_hevc_put_hevc_epel_hv16_8_lsx;
             c->put_hevc_epel[6][1][1] = ff_hevc_put_hevc_epel_hv24_8_lsx;
             c->put_hevc_epel[7][1][1] = ff_hevc_put_hevc_epel_hv32_8_lsx;
+
+            c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_8_lsx;
+
+            c->hevc_h_loop_filter_luma = ff_hevc_loop_filter_luma_h_8_lsx;
+            c->hevc_v_loop_filter_luma = ff_hevc_loop_filter_luma_v_8_lsx;
+
+            c->hevc_h_loop_filter_luma_c = ff_hevc_loop_filter_luma_h_8_lsx;
+            c->hevc_v_loop_filter_luma_c = ff_hevc_loop_filter_luma_v_8_lsx;
+
+            c->hevc_h_loop_filter_chroma = ff_hevc_loop_filter_chroma_h_8_lsx;
+            c->hevc_v_loop_filter_chroma = ff_hevc_loop_filter_chroma_v_8_lsx;
+
+            c->hevc_h_loop_filter_chroma_c = ff_hevc_loop_filter_chroma_h_8_lsx;
+            c->hevc_v_loop_filter_chroma_c = ff_hevc_loop_filter_chroma_v_8_lsx;
+
+            c->idct[0] = ff_hevc_idct_4x4_lsx;
+            c->idct[1] = ff_hevc_idct_8x8_lsx;
+            c->idct[2] = ff_hevc_idct_16x16_lsx;
+            c->idct[3] = ff_hevc_idct_32x32_lsx;
         }
     }
 }
