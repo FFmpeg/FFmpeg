@@ -56,10 +56,10 @@ typedef struct MixContext {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    int reject_flags = AV_PIX_FMT_FLAG_BITSTREAM |
-                       AV_PIX_FMT_FLAG_HWACCEL   |
-                       AV_PIX_FMT_FLAG_PAL;
-    int accept_flags = 0;
+    unsigned reject_flags = AV_PIX_FMT_FLAG_BITSTREAM |
+                            AV_PIX_FMT_FLAG_HWACCEL   |
+                            AV_PIX_FMT_FLAG_PAL;
+    unsigned accept_flags = 0;
 
     if (!HAVE_BIGENDIAN)
         reject_flags |= AV_PIX_FMT_FLAG_BE;
