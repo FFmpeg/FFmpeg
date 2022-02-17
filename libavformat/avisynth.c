@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdbool.h>
-
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 
@@ -502,24 +500,13 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     /* Read AviSynth+'s frame properties to set additional info.
      *
      * Due to a bug preventing the C interface from accessing frame
-     * properties in earlier versions of interface version 8, only
-     * enable this if we detect version 8.1 at the minimum. */
+     * properties in earlier versions of interface version 8, and
+     * previous attempts at being clever resulting in pre-8 versions
+     * of AviSynth+ segfaulting, only enable this if we detect
+     * version 9 at the minimum.  Technically, 8.1 works, but the time
+     * distance between 8.1 and 9 is very small, so just restrict it to 9. */
 
-    if (!avs_library.avs_get_env_property) {
-        av_log(s, AV_LOG_TRACE, "%s\n",
-               "avs_get_env_property does not exist in AviSynth library; frame properties won't be checked.");
-        frameprop = false;
-    } else {
-        if (avs_library.avs_get_env_property(avs->env, AVS_AEP_INTERFACE_BUGFIX)) {
-            av_log(s, AV_LOG_TRACE, "%s\n", "Using interface version 8.1 or higher, reading frame properties.");
-            frameprop = true;
-        } else {
-            av_log(s, AV_LOG_TRACE, "%s\n", "Using interface version 8.0, need 8.1+ to read frame properties.");
-            frameprop = false;
-        }
-    }
-
-    if (frameprop = true) {
+    if (avs_library.avs_get_version(avs->clip) >= 9) {
 
         frame  = avs_library.avs_get_frame(avs->clip, framedata);
         avsmap = avs_library.avs_get_frame_props_ro(avs->env, frame);
