@@ -59,8 +59,14 @@ static int query_formats(AVFilterContext *ctx)
     int reject_flags = AV_PIX_FMT_FLAG_BITSTREAM |
                        AV_PIX_FMT_FLAG_HWACCEL   |
                        AV_PIX_FMT_FLAG_PAL;
+    int accept_flags = 0;
 
-    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, reject_flags));
+    if (!HAVE_BIGENDIAN)
+        reject_flags |= AV_PIX_FMT_FLAG_BE;
+    else
+        accept_flags |= AV_PIX_FMT_FLAG_BE;
+
+    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(accept_flags, reject_flags));
 }
 
 static int parse_weights(AVFilterContext *ctx)
