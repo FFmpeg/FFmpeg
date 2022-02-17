@@ -142,6 +142,65 @@ BI_MC(epel, hv, 32);
 
 #undef BI_MC
 
+#define UNI_MC(PEL, DIR, WIDTH)                                              \
+void ff_hevc_put_hevc_uni_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,         \
+                                                       ptrdiff_t dst_stride, \
+                                                       uint8_t *src,         \
+                                                       ptrdiff_t src_stride, \
+                                                       int height,           \
+                                                       intptr_t mx,          \
+                                                       intptr_t my,          \
+                                                       int width)
+
+UNI_MC(qpel, h, 64);
+
+UNI_MC(qpel, v, 24);
+UNI_MC(qpel, v, 32);
+UNI_MC(qpel, v, 48);
+UNI_MC(qpel, v, 64);
+
+UNI_MC(qpel, hv, 8);
+UNI_MC(qpel, hv, 16);
+UNI_MC(qpel, hv, 24);
+UNI_MC(qpel, hv, 32);
+UNI_MC(qpel, hv, 48);
+UNI_MC(qpel, hv, 64);
+
+UNI_MC(epel, v, 24);
+UNI_MC(epel, v, 32);
+
+UNI_MC(epel, hv, 8);
+UNI_MC(epel, hv, 12);
+UNI_MC(epel, hv, 16);
+UNI_MC(epel, hv, 24);
+UNI_MC(epel, hv, 32);
+
+#undef UNI_MC
+
+#define UNI_W_MC(PEL, DIR, WIDTH)                                       \
+void ff_hevc_put_hevc_uni_w_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,  \
+                                                         ptrdiff_t      \
+                                                         dst_stride,    \
+                                                         uint8_t *src,  \
+                                                         ptrdiff_t      \
+                                                         src_stride,    \
+                                                         int height,    \
+                                                         int denom,     \
+                                                         int weight,    \
+                                                         int offset,    \
+                                                         intptr_t mx,   \
+                                                         intptr_t my,   \
+                                                         int width)
+
+UNI_W_MC(qpel, hv, 8);
+UNI_W_MC(qpel, hv, 16);
+UNI_W_MC(qpel, hv, 24);
+UNI_W_MC(qpel, hv, 32);
+UNI_W_MC(qpel, hv, 48);
+UNI_W_MC(qpel, hv, 64);
+
+#undef UNI_W_MC
+
 void ff_hevc_loop_filter_luma_h_8_lsx(uint8_t *src, ptrdiff_t stride,
                                       int32_t beta, int32_t *tc,
                                       uint8_t *p_is_pcm, uint8_t *q_is_pcm);

@@ -28,4 +28,6 @@ LSX-OBJS-$(CONFIG_VP9_DECODER)        += loongarch/vp9_mc_lsx.o \
 LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevcdsp_lsx.o \
                                          loongarch/hevc_idct_lsx.o \
                                          loongarch/hevc_lpf_sao_lsx.o \
-                                         loongarch/hevc_mc_bi_lsx.o
+                                         loongarch/hevc_mc_bi_lsx.o \
+                                         loongarch/hevc_mc_uni_lsx.o \
+                                         loongarch/hevc_mc_uniw_lsx.o
