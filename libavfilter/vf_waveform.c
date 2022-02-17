@@ -881,7 +881,7 @@ static av_always_inline void lowpass(WaveformContext *s,
         dst_data += dst_linesize * step;
     }
 
-    if (s->display != OVERLAY && column && !s->rgb) {
+    if (s->display != OVERLAY && column && !s->rgb && out->data[1] && out->data[2]) {
         const int bg = s->bg_color[0];
         const int dst_h = 256;
         const int t0 = s->tint[0];
@@ -905,7 +905,7 @@ static av_always_inline void lowpass(WaveformContext *s,
             dst0 += dst_linesize;
             dst1 += dst_linesize;
         }
-    } else if (s->display != OVERLAY && !s->rgb) {
+    } else if (s->display != OVERLAY && !s->rgb && out->data[1] && out->data[2]) {
         const int bg = s->bg_color[0];
         const int dst_w = 256;
         const int t0 = s->tint[0];
