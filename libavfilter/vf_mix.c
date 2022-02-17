@@ -172,7 +172,7 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 dst += out->linesize[p];
             }
         }
-    } else {
+    } else if (s->depth <= 16) {
         for (p = 0; p < s->nb_planes; p++) {
             const int slice_start = (s->height[p] * jobnr) / nb_jobs;
             const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
@@ -200,6 +200,37 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 }
 
                 dst += out->linesize[p] / 2;
+            }
+        }
+    } else {
+        for (p = 0; p < s->nb_planes; p++) {
+            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
+            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+            float *dst = (float *)(out->data[p] + slice_start * out->linesize[p]);
+            ptrdiff_t dst_linesize = out->linesize[p] / 4;
+
+            if (!((1 << p) & s->planes)) {
+                av_image_copy_plane((uint8_t *)dst, out->linesize[p],
+                                    in[0]->data[p] + slice_start * in[0]->linesize[p],
+                                    in[0]->linesize[p],
+                                    s->linesize[p], slice_end - slice_start);
+                continue;
+            }
+
+            for (y = slice_start; y < slice_end; y++) {
+                for (x = 0; x < s->linesize[p] / 2; x++) {
+                    float val = 0.f;
+
+                    for (i = 0; i < s->nb_inputs; i++) {
+                        float src = *(float *)(in[i]->data[p] + y * in[i]->linesize[p] + x * 4);
+
+                        val += src * weights[i];
+                    }
+
+                    dst[x] = val * s->wfactor;
+                }
+
+                dst += dst_linesize;
             }
         }
     }
