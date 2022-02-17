@@ -33,7 +33,7 @@
  *                Xiwei Gu   <guxiwei-hf@loongson.cn>
  *                Lu Wang    <wanglu@loongson.cn>
  *
- * This file is a header file for loongarch builtin extention.
+ * This file is a header file for loongarch builtin extension.
  *
  */
 
@@ -42,50 +42,50 @@
 
 /**
  * MAJOR version: Macro usage changes.
- * MINOR version: Add new functions, or bug fix.
+ * MINOR version: Add new functions, or bug fixes.
  * MICRO version: Comment changes or implementation changes.
  */
 #define LSOM_VERSION_MAJOR 1
-#define LSOM_VERSION_MINOR 0
-#define LSOM_VERSION_MICRO 3
+#define LSOM_VERSION_MINOR 1
+#define LSOM_VERSION_MICRO 0
 
 #define DUP2_ARG1(_INS, _IN0, _IN1, _OUT0, _OUT1) \
-{ \
-    _OUT0 = _INS(_IN0); \
-    _OUT1 = _INS(_IN1); \
-}
+  {                                               \
+    _OUT0 = _INS(_IN0);                           \
+    _OUT1 = _INS(_IN1);                           \
+  }
 
 #define DUP2_ARG2(_INS, _IN0, _IN1, _IN2, _IN3, _OUT0, _OUT1) \
-{ \
-    _OUT0 = _INS(_IN0, _IN1); \
-    _OUT1 = _INS(_IN2, _IN3); \
-}
+  {                                                           \
+    _OUT0 = _INS(_IN0, _IN1);                                 \
+    _OUT1 = _INS(_IN2, _IN3);                                 \
+  }
 
 #define DUP2_ARG3(_INS, _IN0, _IN1, _IN2, _IN3, _IN4, _IN5, _OUT0, _OUT1) \
-{ \
-    _OUT0 = _INS(_IN0, _IN1, _IN2); \
-    _OUT1 = _INS(_IN3, _IN4, _IN5); \
-}
+  {                                                                       \
+    _OUT0 = _INS(_IN0, _IN1, _IN2);                                       \
+    _OUT1 = _INS(_IN3, _IN4, _IN5);                                       \
+  }
 
 #define DUP4_ARG1(_INS, _IN0, _IN1, _IN2, _IN3, _OUT0, _OUT1, _OUT2, _OUT3) \
-{ \
-    DUP2_ARG1(_INS, _IN0, _IN1, _OUT0, _OUT1); \
-    DUP2_ARG1(_INS, _IN2, _IN3, _OUT2, _OUT3); \
-}
+  {                                                                         \
+    DUP2_ARG1(_INS, _IN0, _IN1, _OUT0, _OUT1);                              \
+    DUP2_ARG1(_INS, _IN2, _IN3, _OUT2, _OUT3);                              \
+  }
 
-#define DUP4_ARG2(_INS, _IN0, _IN1, _IN2, _IN3, _IN4, _IN5, _IN6, _IN7, \
-                  _OUT0, _OUT1, _OUT2, _OUT3) \
-{ \
-    DUP2_ARG2(_INS, _IN0, _IN1, _IN2, _IN3, _OUT0, _OUT1); \
-    DUP2_ARG2(_INS, _IN4, _IN5, _IN6, _IN7, _OUT2, _OUT3); \
-}
+#define DUP4_ARG2(_INS, _IN0, _IN1, _IN2, _IN3, _IN4, _IN5, _IN6, _IN7, _OUT0, \
+                  _OUT1, _OUT2, _OUT3)                                         \
+  {                                                                            \
+    DUP2_ARG2(_INS, _IN0, _IN1, _IN2, _IN3, _OUT0, _OUT1);                     \
+    DUP2_ARG2(_INS, _IN4, _IN5, _IN6, _IN7, _OUT2, _OUT3);                     \
+  }
 
-#define DUP4_ARG3(_INS, _IN0, _IN1, _IN2, _IN3, _IN4, _IN5, _IN6, _IN7, \
-                  _IN8, _IN9, _IN10, _IN11, _OUT0, _OUT1, _OUT2, _OUT3) \
-{ \
-    DUP2_ARG3(_INS, _IN0, _IN1, _IN2, _IN3, _IN4,  _IN5,  _OUT0, _OUT1); \
-    DUP2_ARG3(_INS, _IN6, _IN7, _IN8, _IN9, _IN10, _IN11, _OUT2, _OUT3); \
-}
+#define DUP4_ARG3(_INS, _IN0, _IN1, _IN2, _IN3, _IN4, _IN5, _IN6, _IN7, _IN8, \
+                  _IN9, _IN10, _IN11, _OUT0, _OUT1, _OUT2, _OUT3)             \
+  {                                                                           \
+    DUP2_ARG3(_INS, _IN0, _IN1, _IN2, _IN3, _IN4, _IN5, _OUT0, _OUT1);        \
+    DUP2_ARG3(_INS, _IN6, _IN7, _IN8, _IN9, _IN10, _IN11, _OUT2, _OUT3);      \
+  }
 
 #ifdef __loongarch_sx
 #include <lsxintrin.h>
@@ -94,11 +94,11 @@
  * Description : Dot product & addition of byte vector elements
  * Arguments   : Inputs  - in_c, in_h, in_l
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Signed byte elements from in_h are multiplied by
  *               signed byte elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
- *               Then the results plus to signed half word elements from in_c.
+ *               Then the results plus to signed half-word elements from in_c.
  * Example     : out = __lsx_vdp2add_h_b(in_c, in_h, in_l)
  *        in_c : 1,2,3,4, 1,2,3,4
  *        in_h : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
@@ -106,13 +106,13 @@
  *         out : 23,40,41,26, 23,40,41,26
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2add_h_b(__m128i in_c, __m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2add_h_b(__m128i in_c, __m128i in_h,
+                                        __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmaddwev_h_b(in_c, in_h, in_l);
-    out = __lsx_vmaddwod_h_b(out, in_h, in_l);
-    return out;
+  out = __lsx_vmaddwev_h_b(in_c, in_h, in_l);
+  out = __lsx_vmaddwod_h_b(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -120,35 +120,61 @@ static inline __m128i __lsx_vdp2add_h_b(__m128i in_c, __m128i in_h, __m128i in_l
  * Description : Dot product & addition of byte vector elements
  * Arguments   : Inputs  - in_c, in_h, in_l
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Unsigned byte elements from in_h are multiplied by
  *               unsigned byte elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
- *               The results plus to signed half word elements from in_c.
- * Example     : out = __lsx_vdp2add_h_b(in_c, in_h, in_l)
+ *               The results plus to signed half-word elements from in_c.
+ * Example     : out = __lsx_vdp2add_h_bu(in_c, in_h, in_l)
  *        in_c : 1,2,3,4, 1,2,3,4
  *        in_h : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
  *        in_l : 8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1
  *         out : 23,40,41,26, 23,40,41,26
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2add_h_bu(__m128i in_c, __m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2add_h_bu(__m128i in_c, __m128i in_h,
+                                         __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmaddwev_h_bu(in_c, in_h, in_l);
-    out = __lsx_vmaddwod_h_bu(out, in_h, in_l);
-    return out;
+  out = __lsx_vmaddwev_h_bu(in_c, in_h, in_l);
+  out = __lsx_vmaddwod_h_bu(out, in_h, in_l);
+  return out;
 }
 
 /*
  * =============================================================================
- * Description : Dot product & addition of half word vector elements
+ * Description : Dot product & addition of byte vector elements
  * Arguments   : Inputs  - in_c, in_h, in_l
  *               Outputs - out
- *               Retrun Type - __m128i
- * Details     : Signed half word elements from in_h are multiplied by
- *               signed half word elements from in_l, and then added adjacent to
+ *               Return Type - halfword
+ * Details     : Unsigned byte elements from in_h are multiplied by
+ *               signed byte elements from in_l, and then added adjacent to
+ *               each other to get results with the twice size of input.
+ *               The results plus to signed half-word elements from in_c.
+ * Example     : out = __lsx_vdp2add_h_bu_b(in_c, in_h, in_l)
+ *        in_c : 1,1,1,1, 1,1,1,1
+ *        in_h : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
+ *        in_l : -1,-2,-3,-4, -5,-6,-7,-8, 1,2,3,4, 5,6,7,8
+ *         out : -4,-24,-60,-112, 6,26,62,114
+ * =============================================================================
+ */
+static inline __m128i __lsx_vdp2add_h_bu_b(__m128i in_c, __m128i in_h,
+                                           __m128i in_l) {
+  __m128i out;
+
+  out = __lsx_vmaddwev_h_bu_b(in_c, in_h, in_l);
+  out = __lsx_vmaddwod_h_bu_b(out, in_h, in_l);
+  return out;
+}
+
+/*
+ * =============================================================================
+ * Description : Dot product & addition of half-word vector elements
+ * Arguments   : Inputs  - in_c, in_h, in_l
+ *               Outputs - out
+ *               Return Type - __m128i
+ * Details     : Signed half-word elements from in_h are multiplied by
+ *               signed half-word elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
  *               Then the results plus to signed word elements from in_c.
  * Example     : out = __lsx_vdp2add_h_b(in_c, in_h, in_l)
@@ -158,13 +184,13 @@ static inline __m128i __lsx_vdp2add_h_bu(__m128i in_c, __m128i in_h, __m128i in_
  *         out : 23,40,41,26
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2add_w_h(__m128i in_c, __m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2add_w_h(__m128i in_c, __m128i in_h,
+                                        __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmaddwev_w_h(in_c, in_h, in_l);
-    out = __lsx_vmaddwod_w_h(out, in_h, in_l);
-    return out;
+  out = __lsx_vmaddwev_w_h(in_c, in_h, in_l);
+  out = __lsx_vmaddwod_w_h(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -172,7 +198,7 @@ static inline __m128i __lsx_vdp2add_w_h(__m128i in_c, __m128i in_h, __m128i in_l
  * Description : Dot product of byte vector elements
  * Arguments   : Inputs  - in_h, in_l
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Signed byte elements from in_h are multiplied by
  *               signed byte elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
@@ -182,13 +208,12 @@ static inline __m128i __lsx_vdp2add_w_h(__m128i in_c, __m128i in_h, __m128i in_l
  *         out : 22,38,38,22, 22,38,38,22
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2_h_b(__m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2_h_b(__m128i in_h, __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmulwev_h_b(in_h, in_l);
-    out = __lsx_vmaddwod_h_b(out, in_h, in_l);
-    return out;
+  out = __lsx_vmulwev_h_b(in_h, in_l);
+  out = __lsx_vmaddwod_h_b(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -196,7 +221,7 @@ static inline __m128i __lsx_vdp2_h_b(__m128i in_h, __m128i in_l)
  * Description : Dot product of byte vector elements
  * Arguments   : Inputs  - in_h, in_l
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Unsigned byte elements from in_h are multiplied by
  *               unsigned byte elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
@@ -206,13 +231,12 @@ static inline __m128i __lsx_vdp2_h_b(__m128i in_h, __m128i in_l)
  *         out : 22,38,38,22, 22,38,38,22
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2_h_bu(__m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2_h_bu(__m128i in_h, __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmulwev_h_bu(in_h, in_l);
-    out = __lsx_vmaddwod_h_bu(out, in_h, in_l);
-    return out;
+  out = __lsx_vmulwev_h_bu(in_h, in_l);
+  out = __lsx_vmaddwod_h_bu(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -220,7 +244,7 @@ static inline __m128i __lsx_vdp2_h_bu(__m128i in_h, __m128i in_l)
  * Description : Dot product of byte vector elements
  * Arguments   : Inputs  - in_h, in_l
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Unsigned byte elements from in_h are multiplied by
  *               signed byte elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
@@ -230,13 +254,12 @@ static inline __m128i __lsx_vdp2_h_bu(__m128i in_h, __m128i in_l)
  *         out : 22,38,38,22, 22,38,38,6
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2_h_bu_b(__m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2_h_bu_b(__m128i in_h, __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmulwev_h_bu_b(in_h, in_l);
-    out = __lsx_vmaddwod_h_bu_b(out, in_h, in_l);
-    return out;
+  out = __lsx_vmulwev_h_bu_b(in_h, in_l);
+  out = __lsx_vmaddwod_h_bu_b(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -244,7 +267,7 @@ static inline __m128i __lsx_vdp2_h_bu_b(__m128i in_h, __m128i in_l)
  * Description : Dot product of byte vector elements
  * Arguments   : Inputs  - in_h, in_l
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Signed byte elements from in_h are multiplied by
  *               signed byte elements from in_l, and then added adjacent to
  *               each other to get results with the twice size of input.
@@ -254,19 +277,19 @@ static inline __m128i __lsx_vdp2_h_bu_b(__m128i in_h, __m128i in_l)
  *         out : 22,38,38,22
  * =============================================================================
  */
-static inline __m128i __lsx_vdp2_w_h(__m128i in_h, __m128i in_l)
-{
-    __m128i out;
+static inline __m128i __lsx_vdp2_w_h(__m128i in_h, __m128i in_l) {
+  __m128i out;
 
-    out = __lsx_vmulwev_w_h(in_h, in_l);
-    out = __lsx_vmaddwod_w_h(out, in_h, in_l);
-    return out;
+  out = __lsx_vmulwev_w_h(in_h, in_l);
+  out = __lsx_vmaddwod_w_h(out, in_h, in_l);
+  return out;
 }
 
 /*
  * =============================================================================
  * Description : Clip all halfword elements of input vector between min & max
- *               out = ((_in) < (min)) ? (min) : (((_in) > (max)) ? (max) : (_in))
+ *               out = ((_in) < (min)) ? (min) : (((_in) > (max)) ? (max) :
+ *               (_in))
  * Arguments   : Inputs  - _in  (input vector)
  *                       - min  (min threshold)
  *                       - max  (max threshold)
@@ -279,13 +302,12 @@ static inline __m128i __lsx_vdp2_w_h(__m128i in_h, __m128i in_l)
  *         out : 1,2,9,9, 1,9,9,9
  * =============================================================================
  */
-static inline __m128i __lsx_vclip_h(__m128i _in, __m128i min, __m128i max)
-{
-    __m128i out;
+static inline __m128i __lsx_vclip_h(__m128i _in, __m128i min, __m128i max) {
+  __m128i out;
 
-    out = __lsx_vmax_h(min, _in);
-    out = __lsx_vmin_h(max, out);
-    return out;
+  out = __lsx_vmax_h(min, _in);
+  out = __lsx_vmin_h(max, out);
+  return out;
 }
 
 /*
@@ -293,20 +315,19 @@ static inline __m128i __lsx_vclip_h(__m128i _in, __m128i min, __m128i max)
  * Description : Set each element of vector between 0 and 255
  * Arguments   : Inputs  - _in
  *               Outputs - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Signed byte elements from _in are clamped between 0 and 255.
  * Example     : out = __lsx_vclip255_h(_in)
  *         _in : -8,255,280,249, -8,255,280,249
  *         out : 0,255,255,249, 0,255,255,249
  * =============================================================================
  */
-static inline __m128i __lsx_vclip255_h(__m128i _in)
-{
-    __m128i out;
+static inline __m128i __lsx_vclip255_h(__m128i _in) {
+  __m128i out;
 
-    out = __lsx_vmaxi_h(_in, 0);
-    out = __lsx_vsat_hu(out, 7);
-    return out;
+  out = __lsx_vmaxi_h(_in, 0);
+  out = __lsx_vsat_hu(out, 7);
+  return out;
 }
 
 /*
@@ -314,20 +335,19 @@ static inline __m128i __lsx_vclip255_h(__m128i _in)
  * Description : Set each element of vector between 0 and 255
  * Arguments   : Inputs  - _in
  *               Outputs - out
- *               Retrun Type - word
+ *               Return Type - word
  * Details     : Signed byte elements from _in are clamped between 0 and 255.
  * Example     : out = __lsx_vclip255_w(_in)
  *         _in : -8,255,280,249
  *         out : 0,255,255,249
  * =============================================================================
  */
-static inline __m128i __lsx_vclip255_w(__m128i _in)
-{
-    __m128i out;
+static inline __m128i __lsx_vclip255_w(__m128i _in) {
+  __m128i out;
 
-    out = __lsx_vmaxi_w(_in, 0);
-    out = __lsx_vsat_wu(out, 7);
-    return out;
+  out = __lsx_vmaxi_w(_in, 0);
+  out = __lsx_vsat_wu(out, 7);
+  return out;
 }
 
 /*
@@ -343,12 +363,12 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  *   _in1(out) : 1,2,3,4
  * =============================================================================
  */
-#define LSX_SWAP(_in0, _in1)                                            \
-{                                                                       \
-    _in0 = __lsx_vxor_v(_in0, _in1);                                    \
-    _in1 = __lsx_vxor_v(_in0, _in1);                                    \
-    _in0 = __lsx_vxor_v(_in0, _in1);                                    \
-}                                                                       \
+#define LSX_SWAP(_in0, _in1)         \
+  {                                  \
+    _in0 = __lsx_vxor_v(_in0, _in1); \
+    _in1 = __lsx_vxor_v(_in0, _in1); \
+    _in0 = __lsx_vxor_v(_in0, _in1); \
+  }
 
 /*
  * =============================================================================
@@ -364,25 +384,27 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  * =============================================================================
  */
 #define LSX_TRANSPOSE4x4_W(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
-{                                                                              \
+  {                                                                            \
     __m128i _t0, _t1, _t2, _t3;                                                \
                                                                                \
-    _t0   = __lsx_vilvl_w(_in1, _in0);                                         \
-    _t1   = __lsx_vilvh_w(_in1, _in0);                                         \
-    _t2   = __lsx_vilvl_w(_in3, _in2);                                         \
-    _t3   = __lsx_vilvh_w(_in3, _in2);                                         \
+    _t0 = __lsx_vilvl_w(_in1, _in0);                                           \
+    _t1 = __lsx_vilvh_w(_in1, _in0);                                           \
+    _t2 = __lsx_vilvl_w(_in3, _in2);                                           \
+    _t3 = __lsx_vilvh_w(_in3, _in2);                                           \
     _out0 = __lsx_vilvl_d(_t2, _t0);                                           \
     _out1 = __lsx_vilvh_d(_t2, _t0);                                           \
     _out2 = __lsx_vilvl_d(_t3, _t1);                                           \
     _out3 = __lsx_vilvh_d(_t3, _t1);                                           \
-}
+  }
 
 /*
  * =============================================================================
  * Description : Transpose 8x8 block with byte elements in vectors
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7
- *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
- * Details     : The rows of the matrix become columns, and the columns become rows.
+ *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6,
+ *               _out7
+ * Details     : The rows of the matrix become columns, and the columns
+ *               become rows.
  * Example     : LSX_TRANSPOSE8x8_B
  *        _in0 : 00,01,02,03,04,05,06,07, 00,00,00,00,00,00,00,00
  *        _in1 : 10,11,12,13,14,15,16,17, 00,00,00,00,00,00,00,00
@@ -403,34 +425,35 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  *      _ out7 : 07,17,27,37,47,57,67,77, 00,00,00,00,00,00,00,00
  * =============================================================================
  */
-#define LSX_TRANSPOSE8x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                 \
-   __m128i zero = {0};                                                            \
-   __m128i shuf8 = {0x0F0E0D0C0B0A0908, 0x1716151413121110};                      \
-   __m128i _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                                \
-                                                                                  \
-   _t0 = __lsx_vilvl_b(_in2, _in0);                                               \
-   _t1 = __lsx_vilvl_b(_in3, _in1);                                               \
-   _t2 = __lsx_vilvl_b(_in6, _in4);                                               \
-   _t3 = __lsx_vilvl_b(_in7, _in5);                                               \
-   _t4 = __lsx_vilvl_b(_t1, _t0);                                                 \
-   _t5 = __lsx_vilvh_b(_t1, _t0);                                                 \
-   _t6 = __lsx_vilvl_b(_t3, _t2);                                                 \
-   _t7 = __lsx_vilvh_b(_t3, _t2);                                                 \
-   _out0 = __lsx_vilvl_w(_t6, _t4);                                               \
-   _out2 = __lsx_vilvh_w(_t6, _t4);                                               \
-   _out4 = __lsx_vilvl_w(_t7, _t5);                                               \
-   _out6 = __lsx_vilvh_w(_t7, _t5);                                               \
-   _out1 = __lsx_vshuf_b(zero, _out0, shuf8);                                     \
-   _out3 = __lsx_vshuf_b(zero, _out2, shuf8);                                     \
-   _out5 = __lsx_vshuf_b(zero, _out4, shuf8);                                     \
-   _out7 = __lsx_vshuf_b(zero, _out6, shuf8);                                     \
-}
+#define LSX_TRANSPOSE8x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                           _out7)                                           \
+  {                                                                         \
+    __m128i zero = { 0 };                                                   \
+    __m128i shuf8 = { 0x0F0E0D0C0B0A0908, 0x1716151413121110 };             \
+    __m128i _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                         \
+                                                                            \
+    _t0 = __lsx_vilvl_b(_in2, _in0);                                        \
+    _t1 = __lsx_vilvl_b(_in3, _in1);                                        \
+    _t2 = __lsx_vilvl_b(_in6, _in4);                                        \
+    _t3 = __lsx_vilvl_b(_in7, _in5);                                        \
+    _t4 = __lsx_vilvl_b(_t1, _t0);                                          \
+    _t5 = __lsx_vilvh_b(_t1, _t0);                                          \
+    _t6 = __lsx_vilvl_b(_t3, _t2);                                          \
+    _t7 = __lsx_vilvh_b(_t3, _t2);                                          \
+    _out0 = __lsx_vilvl_w(_t6, _t4);                                        \
+    _out2 = __lsx_vilvh_w(_t6, _t4);                                        \
+    _out4 = __lsx_vilvl_w(_t7, _t5);                                        \
+    _out6 = __lsx_vilvh_w(_t7, _t5);                                        \
+    _out1 = __lsx_vshuf_b(zero, _out0, shuf8);                              \
+    _out3 = __lsx_vshuf_b(zero, _out2, shuf8);                              \
+    _out5 = __lsx_vshuf_b(zero, _out4, shuf8);                              \
+    _out7 = __lsx_vshuf_b(zero, _out6, shuf8);                              \
+  }
 
 /*
  * =============================================================================
- * Description : Transpose 8x8 block with half word elements in vectors
+ * Description : Transpose 8x8 block with half-word elements in vectors
  * Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
  *               Outputs - out0, out1, out2, out3, out4, out5, out6, out7
  * Details     :
@@ -445,37 +468,38 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  *              70,71,72,73,74,75,76,77           07,17,27,37,47,57,67,77
  * =============================================================================
  */
-#define LSX_TRANSPOSE8x8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                 \
-    __m128i _s0, _s1, _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                     \
-                                                                                  \
-    _s0 = __lsx_vilvl_h(_in6, _in4);                                              \
-    _s1 = __lsx_vilvl_h(_in7, _in5);                                              \
-    _t0 = __lsx_vilvl_h(_s1, _s0);                                                \
-    _t1 = __lsx_vilvh_h(_s1, _s0);                                                \
-    _s0 = __lsx_vilvh_h(_in6, _in4);                                              \
-    _s1 = __lsx_vilvh_h(_in7, _in5);                                              \
-    _t2 = __lsx_vilvl_h(_s1, _s0);                                                \
-    _t3 = __lsx_vilvh_h(_s1, _s0);                                                \
-    _s0 = __lsx_vilvl_h(_in2, _in0);                                              \
-    _s1 = __lsx_vilvl_h(_in3, _in1);                                              \
-    _t4 = __lsx_vilvl_h(_s1, _s0);                                                \
-    _t5 = __lsx_vilvh_h(_s1, _s0);                                                \
-    _s0 = __lsx_vilvh_h(_in2, _in0);                                              \
-    _s1 = __lsx_vilvh_h(_in3, _in1);                                              \
-    _t6 = __lsx_vilvl_h(_s1, _s0);                                                \
-    _t7 = __lsx_vilvh_h(_s1, _s0);                                                \
-                                                                                  \
-    _out0 = __lsx_vpickev_d(_t0, _t4);                                            \
-    _out2 = __lsx_vpickev_d(_t1, _t5);                                            \
-    _out4 = __lsx_vpickev_d(_t2, _t6);                                            \
-    _out6 = __lsx_vpickev_d(_t3, _t7);                                            \
-    _out1 = __lsx_vpickod_d(_t0, _t4);                                            \
-    _out3 = __lsx_vpickod_d(_t1, _t5);                                            \
-    _out5 = __lsx_vpickod_d(_t2, _t6);                                            \
-    _out7 = __lsx_vpickod_d(_t3, _t7);                                            \
-}
+#define LSX_TRANSPOSE8x8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                           _out7)                                           \
+  {                                                                         \
+    __m128i _s0, _s1, _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;               \
+                                                                            \
+    _s0 = __lsx_vilvl_h(_in6, _in4);                                        \
+    _s1 = __lsx_vilvl_h(_in7, _in5);                                        \
+    _t0 = __lsx_vilvl_h(_s1, _s0);                                          \
+    _t1 = __lsx_vilvh_h(_s1, _s0);                                          \
+    _s0 = __lsx_vilvh_h(_in6, _in4);                                        \
+    _s1 = __lsx_vilvh_h(_in7, _in5);                                        \
+    _t2 = __lsx_vilvl_h(_s1, _s0);                                          \
+    _t3 = __lsx_vilvh_h(_s1, _s0);                                          \
+    _s0 = __lsx_vilvl_h(_in2, _in0);                                        \
+    _s1 = __lsx_vilvl_h(_in3, _in1);                                        \
+    _t4 = __lsx_vilvl_h(_s1, _s0);                                          \
+    _t5 = __lsx_vilvh_h(_s1, _s0);                                          \
+    _s0 = __lsx_vilvh_h(_in2, _in0);                                        \
+    _s1 = __lsx_vilvh_h(_in3, _in1);                                        \
+    _t6 = __lsx_vilvl_h(_s1, _s0);                                          \
+    _t7 = __lsx_vilvh_h(_s1, _s0);                                          \
+                                                                            \
+    _out0 = __lsx_vpickev_d(_t0, _t4);                                      \
+    _out2 = __lsx_vpickev_d(_t1, _t5);                                      \
+    _out4 = __lsx_vpickev_d(_t2, _t6);                                      \
+    _out6 = __lsx_vpickev_d(_t3, _t7);                                      \
+    _out1 = __lsx_vpickod_d(_t0, _t4);                                      \
+    _out3 = __lsx_vpickod_d(_t1, _t5);                                      \
+    _out5 = __lsx_vpickod_d(_t2, _t6);                                      \
+    _out7 = __lsx_vpickod_d(_t3, _t7);                                      \
+  }
 
 /*
  * =============================================================================
@@ -483,7 +507,8 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3      (input 8x4 byte block)
  *               Outputs - _out0, _out1, _out2, _out3  (output 4x8 byte block)
  *               Return Type - as per RTYPE
- * Details     : The rows of the matrix become columns, and the columns become rows.
+ * Details     : The rows of the matrix become columns, and the columns become
+ *               rows.
  * Example     : LSX_TRANSPOSE8x4_B
  *        _in0 : 00,01,02,03,00,00,00,00, 00,00,00,00,00,00,00,00
  *        _in1 : 10,11,12,13,00,00,00,00, 00,00,00,00,00,00,00,00
@@ -500,26 +525,26 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  *       _out3 : 03,13,23,33,43,53,63,73, 00,00,00,00,00,00,00,00
  * =============================================================================
  */
-#define LSX_TRANSPOSE8x4_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,       \
-                           _out0, _out1, _out2, _out3)                           \
-{                                                                                \
-    __m128i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                                  \
-                                                                                 \
-    _tmp0_m = __lsx_vpackev_w(_in4, _in0);                                       \
-    _tmp1_m = __lsx_vpackev_w(_in5, _in1);                                       \
-    _tmp2_m = __lsx_vilvl_b(_tmp1_m, _tmp0_m);                                   \
-    _tmp0_m = __lsx_vpackev_w(_in6, _in2);                                       \
-    _tmp1_m = __lsx_vpackev_w(_in7, _in3);                                       \
-                                                                                 \
-    _tmp3_m = __lsx_vilvl_b(_tmp1_m, _tmp0_m);                                   \
-    _tmp0_m = __lsx_vilvl_h(_tmp3_m, _tmp2_m);                                   \
-    _tmp1_m = __lsx_vilvh_h(_tmp3_m, _tmp2_m);                                   \
-                                                                                 \
-    _out0 = __lsx_vilvl_w(_tmp1_m, _tmp0_m);                                     \
-    _out2 = __lsx_vilvh_w(_tmp1_m, _tmp0_m);                                     \
-    _out1 = __lsx_vilvh_d(_out2, _out0);                                         \
-    _out3 = __lsx_vilvh_d(_out0, _out2);                                         \
-}
+#define LSX_TRANSPOSE8x4_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7, \
+                           _out0, _out1, _out2, _out3)                     \
+  {                                                                        \
+    __m128i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                            \
+                                                                           \
+    _tmp0_m = __lsx_vpackev_w(_in4, _in0);                                 \
+    _tmp1_m = __lsx_vpackev_w(_in5, _in1);                                 \
+    _tmp2_m = __lsx_vilvl_b(_tmp1_m, _tmp0_m);                             \
+    _tmp0_m = __lsx_vpackev_w(_in6, _in2);                                 \
+    _tmp1_m = __lsx_vpackev_w(_in7, _in3);                                 \
+                                                                           \
+    _tmp3_m = __lsx_vilvl_b(_tmp1_m, _tmp0_m);                             \
+    _tmp0_m = __lsx_vilvl_h(_tmp3_m, _tmp2_m);                             \
+    _tmp1_m = __lsx_vilvh_h(_tmp3_m, _tmp2_m);                             \
+                                                                           \
+    _out0 = __lsx_vilvl_w(_tmp1_m, _tmp0_m);                               \
+    _out2 = __lsx_vilvh_w(_tmp1_m, _tmp0_m);                               \
+    _out1 = __lsx_vilvh_d(_out2, _out0);                                   \
+    _out3 = __lsx_vilvh_d(_out0, _out2);                                   \
+  }
 
 /*
  * =============================================================================
@@ -547,29 +572,30 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  *              120,121,122,123,124,125,126,127
  * =============================================================================
  */
-#define LSX_TRANSPOSE16x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7, _in8,  \
-                            _in9, _in10, _in11, _in12, _in13, _in14, _in15, _out0, \
-                            _out1, _out2, _out3, _out4, _out5, _out6, _out7)       \
-{                                                                                  \
-    __m128i _tmp0, _tmp1, _tmp2, _tmp3, _tmp4, _tmp5, _tmp6, _tmp7;                \
-    __m128i _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                                \
-    DUP4_ARG2(__lsx_vilvl_b, _in2, _in0, _in3, _in1, _in6, _in4, _in7, _in5,       \
-              _tmp0, _tmp1, _tmp2, _tmp3);                                         \
-    DUP4_ARG2(__lsx_vilvl_b, _in10, _in8, _in11, _in9, _in14, _in12, _in15,        \
-              _in13, _tmp4, _tmp5, _tmp6, _tmp7);                                  \
-    DUP2_ARG2(__lsx_vilvl_b, _tmp1, _tmp0, _tmp3, _tmp2, _t0, _t2);                \
-    DUP2_ARG2(__lsx_vilvh_b, _tmp1, _tmp0, _tmp3, _tmp2, _t1, _t3);                \
-    DUP2_ARG2(__lsx_vilvl_b, _tmp5, _tmp4, _tmp7, _tmp6, _t4, _t6);                \
-    DUP2_ARG2(__lsx_vilvh_b, _tmp5, _tmp4, _tmp7, _tmp6, _t5, _t7);                \
-    DUP2_ARG2(__lsx_vilvl_w, _t2, _t0, _t3, _t1, _tmp0, _tmp4);                    \
-    DUP2_ARG2(__lsx_vilvh_w, _t2, _t0, _t3, _t1, _tmp2, _tmp6);                    \
-    DUP2_ARG2(__lsx_vilvl_w, _t6, _t4, _t7, _t5, _tmp1, _tmp5);                    \
-    DUP2_ARG2(__lsx_vilvh_w, _t6, _t4, _t7, _t5, _tmp3, _tmp7);                    \
-    DUP2_ARG2(__lsx_vilvl_d, _tmp1, _tmp0, _tmp3, _tmp2, _out0, _out2);            \
-    DUP2_ARG2(__lsx_vilvh_d, _tmp1, _tmp0, _tmp3, _tmp2, _out1, _out3);            \
-    DUP2_ARG2(__lsx_vilvl_d, _tmp5, _tmp4, _tmp7, _tmp6, _out4, _out6);            \
-    DUP2_ARG2(__lsx_vilvh_d, _tmp5, _tmp4, _tmp7, _tmp6, _out5, _out7);            \
-}
+#define LSX_TRANSPOSE16x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                            _in8, _in9, _in10, _in11, _in12, _in13, _in14,   \
+                            _in15, _out0, _out1, _out2, _out3, _out4, _out5, \
+                            _out6, _out7)                                    \
+  {                                                                          \
+    __m128i _tmp0, _tmp1, _tmp2, _tmp3, _tmp4, _tmp5, _tmp6, _tmp7;          \
+    __m128i _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                          \
+    DUP4_ARG2(__lsx_vilvl_b, _in2, _in0, _in3, _in1, _in6, _in4, _in7, _in5, \
+              _tmp0, _tmp1, _tmp2, _tmp3);                                   \
+    DUP4_ARG2(__lsx_vilvl_b, _in10, _in8, _in11, _in9, _in14, _in12, _in15,  \
+              _in13, _tmp4, _tmp5, _tmp6, _tmp7);                            \
+    DUP2_ARG2(__lsx_vilvl_b, _tmp1, _tmp0, _tmp3, _tmp2, _t0, _t2);          \
+    DUP2_ARG2(__lsx_vilvh_b, _tmp1, _tmp0, _tmp3, _tmp2, _t1, _t3);          \
+    DUP2_ARG2(__lsx_vilvl_b, _tmp5, _tmp4, _tmp7, _tmp6, _t4, _t6);          \
+    DUP2_ARG2(__lsx_vilvh_b, _tmp5, _tmp4, _tmp7, _tmp6, _t5, _t7);          \
+    DUP2_ARG2(__lsx_vilvl_w, _t2, _t0, _t3, _t1, _tmp0, _tmp4);              \
+    DUP2_ARG2(__lsx_vilvh_w, _t2, _t0, _t3, _t1, _tmp2, _tmp6);              \
+    DUP2_ARG2(__lsx_vilvl_w, _t6, _t4, _t7, _t5, _tmp1, _tmp5);              \
+    DUP2_ARG2(__lsx_vilvh_w, _t6, _t4, _t7, _t5, _tmp3, _tmp7);              \
+    DUP2_ARG2(__lsx_vilvl_d, _tmp1, _tmp0, _tmp3, _tmp2, _out0, _out2);      \
+    DUP2_ARG2(__lsx_vilvh_d, _tmp1, _tmp0, _tmp3, _tmp2, _out1, _out3);      \
+    DUP2_ARG2(__lsx_vilvl_d, _tmp5, _tmp4, _tmp7, _tmp6, _out4, _out6);      \
+    DUP2_ARG2(__lsx_vilvh_d, _tmp5, _tmp4, _tmp7, _tmp6, _out5, _out7);      \
+  }
 
 /*
  * =============================================================================
@@ -585,33 +611,33 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  * =============================================================================
  */
 #define LSX_BUTTERFLY_4_B(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
-{                                                                             \
+  {                                                                           \
     _out0 = __lsx_vadd_b(_in0, _in3);                                         \
     _out1 = __lsx_vadd_b(_in1, _in2);                                         \
     _out2 = __lsx_vsub_b(_in1, _in2);                                         \
     _out3 = __lsx_vsub_b(_in0, _in3);                                         \
-}
+  }
 #define LSX_BUTTERFLY_4_H(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
-{                                                                             \
+  {                                                                           \
     _out0 = __lsx_vadd_h(_in0, _in3);                                         \
     _out1 = __lsx_vadd_h(_in1, _in2);                                         \
     _out2 = __lsx_vsub_h(_in1, _in2);                                         \
     _out3 = __lsx_vsub_h(_in0, _in3);                                         \
-}
+  }
 #define LSX_BUTTERFLY_4_W(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
-{                                                                             \
+  {                                                                           \
     _out0 = __lsx_vadd_w(_in0, _in3);                                         \
     _out1 = __lsx_vadd_w(_in1, _in2);                                         \
     _out2 = __lsx_vsub_w(_in1, _in2);                                         \
     _out3 = __lsx_vsub_w(_in0, _in3);                                         \
-}
+  }
 #define LSX_BUTTERFLY_4_D(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
-{                                                                             \
+  {                                                                           \
     _out0 = __lsx_vadd_d(_in0, _in3);                                         \
     _out1 = __lsx_vadd_d(_in1, _in2);                                         \
     _out2 = __lsx_vsub_d(_in1, _in2);                                         \
     _out3 = __lsx_vsub_d(_in0, _in3);                                         \
-}
+  }
 
 /*
  * =============================================================================
@@ -630,59 +656,63 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  *              _out7 = _in0 - _in7;
  * =============================================================================
  */
-#define LSX_BUTTERFLY_8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                \
-    _out0 = __lsx_vadd_b(_in0, _in7);                                            \
-    _out1 = __lsx_vadd_b(_in1, _in6);                                            \
-    _out2 = __lsx_vadd_b(_in2, _in5);                                            \
-    _out3 = __lsx_vadd_b(_in3, _in4);                                            \
-    _out4 = __lsx_vsub_b(_in3, _in4);                                            \
-    _out5 = __lsx_vsub_b(_in2, _in5);                                            \
-    _out6 = __lsx_vsub_b(_in1, _in6);                                            \
-    _out7 = __lsx_vsub_b(_in0, _in7);                                            \
-}
+#define LSX_BUTTERFLY_8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                          _out7)                                           \
+  {                                                                        \
+    _out0 = __lsx_vadd_b(_in0, _in7);                                      \
+    _out1 = __lsx_vadd_b(_in1, _in6);                                      \
+    _out2 = __lsx_vadd_b(_in2, _in5);                                      \
+    _out3 = __lsx_vadd_b(_in3, _in4);                                      \
+    _out4 = __lsx_vsub_b(_in3, _in4);                                      \
+    _out5 = __lsx_vsub_b(_in2, _in5);                                      \
+    _out6 = __lsx_vsub_b(_in1, _in6);                                      \
+    _out7 = __lsx_vsub_b(_in0, _in7);                                      \
+  }
 
-#define LSX_BUTTERFLY_8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                \
-    _out0 = __lsx_vadd_h(_in0, _in7);                                            \
-    _out1 = __lsx_vadd_h(_in1, _in6);                                            \
-    _out2 = __lsx_vadd_h(_in2, _in5);                                            \
-    _out3 = __lsx_vadd_h(_in3, _in4);                                            \
-    _out4 = __lsx_vsub_h(_in3, _in4);                                            \
-    _out5 = __lsx_vsub_h(_in2, _in5);                                            \
-    _out6 = __lsx_vsub_h(_in1, _in6);                                            \
-    _out7 = __lsx_vsub_h(_in0, _in7);                                            \
-}
+#define LSX_BUTTERFLY_8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                          _out7)                                           \
+  {                                                                        \
+    _out0 = __lsx_vadd_h(_in0, _in7);                                      \
+    _out1 = __lsx_vadd_h(_in1, _in6);                                      \
+    _out2 = __lsx_vadd_h(_in2, _in5);                                      \
+    _out3 = __lsx_vadd_h(_in3, _in4);                                      \
+    _out4 = __lsx_vsub_h(_in3, _in4);                                      \
+    _out5 = __lsx_vsub_h(_in2, _in5);                                      \
+    _out6 = __lsx_vsub_h(_in1, _in6);                                      \
+    _out7 = __lsx_vsub_h(_in0, _in7);                                      \
+  }
 
-#define LSX_BUTTERFLY_8_W(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                \
-    _out0 = __lsx_vadd_w(_in0, _in7);                                            \
-    _out1 = __lsx_vadd_w(_in1, _in6);                                            \
-    _out2 = __lsx_vadd_w(_in2, _in5);                                            \
-    _out3 = __lsx_vadd_w(_in3, _in4);                                            \
-    _out4 = __lsx_vsub_w(_in3, _in4);                                            \
-    _out5 = __lsx_vsub_w(_in2, _in5);                                            \
-    _out6 = __lsx_vsub_w(_in1, _in6);                                            \
-    _out7 = __lsx_vsub_w(_in0, _in7);                                            \
-}
+#define LSX_BUTTERFLY_8_W(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                          _out7)                                           \
+  {                                                                        \
+    _out0 = __lsx_vadd_w(_in0, _in7);                                      \
+    _out1 = __lsx_vadd_w(_in1, _in6);                                      \
+    _out2 = __lsx_vadd_w(_in2, _in5);                                      \
+    _out3 = __lsx_vadd_w(_in3, _in4);                                      \
+    _out4 = __lsx_vsub_w(_in3, _in4);                                      \
+    _out5 = __lsx_vsub_w(_in2, _in5);                                      \
+    _out6 = __lsx_vsub_w(_in1, _in6);                                      \
+    _out7 = __lsx_vsub_w(_in0, _in7);                                      \
+  }
 
-#define LSX_BUTTERFLY_8_D(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                \
-    _out0 = __lsx_vadd_d(_in0, _in7);                                            \
-    _out1 = __lsx_vadd_d(_in1, _in6);                                            \
-    _out2 = __lsx_vadd_d(_in2, _in5);                                            \
-    _out3 = __lsx_vadd_d(_in3, _in4);                                            \
-    _out4 = __lsx_vsub_d(_in3, _in4);                                            \
-    _out5 = __lsx_vsub_d(_in2, _in5);                                            \
-    _out6 = __lsx_vsub_d(_in1, _in6);                                            \
-    _out7 = __lsx_vsub_d(_in0, _in7);                                            \
-}
+#define LSX_BUTTERFLY_8_D(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                          _out7)                                           \
+  {                                                                        \
+    _out0 = __lsx_vadd_d(_in0, _in7);                                      \
+    _out1 = __lsx_vadd_d(_in1, _in6);                                      \
+    _out2 = __lsx_vadd_d(_in2, _in5);                                      \
+    _out3 = __lsx_vadd_d(_in3, _in4);                                      \
+    _out4 = __lsx_vsub_d(_in3, _in4);                                      \
+    _out5 = __lsx_vsub_d(_in2, _in5);                                      \
+    _out6 = __lsx_vsub_d(_in1, _in6);                                      \
+    _out7 = __lsx_vsub_d(_in0, _in7);                                      \
+  }
 
-#endif //LSX
+#endif  // LSX
 
 #ifdef __loongarch_asx
 #include <lasxintrin.h>
@@ -700,13 +730,12 @@ static inline __m128i __lsx_vclip255_w(__m128i _in)
  * Example     : See out = __lasx_xvdp2_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2_h_bu(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2_h_bu(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_h_bu(in_h, in_l);
-    out = __lasx_xvmaddwod_h_bu(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmulwev_h_bu(in_h, in_l);
+  out = __lasx_xvmaddwod_h_bu(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -718,18 +747,17 @@ static inline __m256i __lasx_xvdp2_h_bu(__m256i in_h, __m256i in_l)
  * Details     : Signed byte elements from in_h are multiplied with
  *               signed byte elements from in_l producing a result
  *               twice the size of input i.e. signed halfword.
- *               Then this iniplication results of adjacent odd-even elements
+ *               Then this multiplication results of adjacent odd-even elements
  *               are added to the out vector
  * Example     : See out = __lasx_xvdp2_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2_h_b(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2_h_b(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_h_b(in_h, in_l);
-    out = __lasx_xvmaddwod_h_b(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmulwev_h_b(in_h, in_l);
+  out = __lasx_xvmaddwod_h_b(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -749,13 +777,12 @@ static inline __m256i __lasx_xvdp2_h_b(__m256i in_h, __m256i in_l)
  *         out : 22,38,38,22, 22,38,38,22
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2_w_h(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2_w_h(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_w_h(in_h, in_l);
-    out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmulwev_w_h(in_h, in_l);
+  out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -763,22 +790,21 @@ static inline __m256i __lasx_xvdp2_w_h(__m256i in_h, __m256i in_l)
  * Description : Dot product of word vector elements
  * Arguments   : Inputs - in_h, in_l
  *               Output - out
- *               Retrun Type - signed double
+ *               Return Type - signed double
  * Details     : Signed word elements from in_h are multiplied with
  *               signed word elements from in_l producing a result
- *               twice the size of input i.e. signed double word.
+ *               twice the size of input i.e. signed double-word.
  *               Then this multiplied results of adjacent odd-even elements
  *               are added to the out vector.
  * Example     : See out = __lasx_xvdp2_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2_d_w(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2_d_w(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_d_w(in_h, in_l);
-    out = __lasx_xvmaddwod_d_w(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmulwev_d_w(in_h, in_l);
+  out = __lasx_xvmaddwod_d_w(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -795,13 +821,12 @@ static inline __m256i __lasx_xvdp2_d_w(__m256i in_h, __m256i in_l)
  * Example     : See out = __lasx_xvdp2_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2_w_hu_h(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2_w_hu_h(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_w_hu_h(in_h, in_l);
-    out = __lasx_xvmaddwod_w_hu_h(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmulwev_w_hu_h(in_h, in_l);
+  out = __lasx_xvmaddwod_w_hu_h(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -809,7 +834,7 @@ static inline __m256i __lasx_xvdp2_w_hu_h(__m256i in_h, __m256i in_l)
  * Description : Dot product & addition of byte vector elements
  * Arguments   : Inputs - in_h, in_l
  *               Output - out
- *               Retrun Type - halfword
+ *               Return Type - halfword
  * Details     : Signed byte elements from in_h are multiplied with
  *               signed byte elements from in_l producing a result
  *               twice the size of input i.e. signed halfword.
@@ -818,13 +843,59 @@ static inline __m256i __lasx_xvdp2_w_hu_h(__m256i in_h, __m256i in_l)
  * Example     : See out = __lasx_xvdp2add_w_h(in_c, in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2add_h_b(__m256i in_c,__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2add_h_b(__m256i in_c, __m256i in_h,
+                                          __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmaddwev_h_b(in_c, in_h, in_l);
-    out = __lasx_xvmaddwod_h_b(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmaddwev_h_b(in_c, in_h, in_l);
+  out = __lasx_xvmaddwod_h_b(out, in_h, in_l);
+  return out;
+}
+
+/*
+ * =============================================================================
+ * Description : Dot product & addition of byte vector elements
+ * Arguments   : Inputs - in_h, in_l
+ *               Output - out
+ *               Return Type - halfword
+ * Details     : Unsigned byte elements from in_h are multiplied with
+ *               unsigned byte elements from in_l producing a result
+ *               twice the size of input i.e. signed halfword.
+ *               Then this multiplied results of adjacent odd-even elements
+ *               are added to the in_c vector.
+ * Example     : See out = __lasx_xvdp2add_w_h(in_c, in_h, in_l)
+ * =============================================================================
+ */
+static inline __m256i __lasx_xvdp2add_h_bu(__m256i in_c, __m256i in_h,
+                                           __m256i in_l) {
+  __m256i out;
+
+  out = __lasx_xvmaddwev_h_bu(in_c, in_h, in_l);
+  out = __lasx_xvmaddwod_h_bu(out, in_h, in_l);
+  return out;
+}
+
+/*
+ * =============================================================================
+ * Description : Dot product & addition of byte vector elements
+ * Arguments   : Inputs - in_h, in_l
+ *               Output - out
+ *               Return Type - halfword
+ * Details     : Unsigned byte elements from in_h are multiplied with
+ *               signed byte elements from in_l producing a result
+ *               twice the size of input i.e. signed halfword.
+ *               Then this multiplied results of adjacent odd-even elements
+ *               are added to the in_c vector.
+ * Example     : See out = __lasx_xvdp2add_w_h(in_c, in_h, in_l)
+ * =============================================================================
+ */
+static inline __m256i __lasx_xvdp2add_h_bu_b(__m256i in_c, __m256i in_h,
+                                             __m256i in_l) {
+  __m256i out;
+
+  out = __lasx_xvmaddwev_h_bu_b(in_c, in_h, in_l);
+  out = __lasx_xvmaddwod_h_bu_b(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -845,13 +916,13 @@ static inline __m256i __lasx_xvdp2add_h_b(__m256i in_c,__m256i in_h, __m256i in_
  *         out : 23,40,41,26, 23,40,41,26
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2add_w_h(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2add_w_h(__m256i in_c, __m256i in_h,
+                                          __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmaddwev_w_h(in_c, in_h, in_l);
-    out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmaddwev_w_h(in_c, in_h, in_l);
+  out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -868,13 +939,13 @@ static inline __m256i __lasx_xvdp2add_w_h(__m256i in_c, __m256i in_h, __m256i in
  * Example     : See out = __lasx_xvdp2add_w_h(in_c, in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2add_w_hu(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2add_w_hu(__m256i in_c, __m256i in_h,
+                                           __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmaddwev_w_hu(in_c, in_h, in_l);
-    out = __lasx_xvmaddwod_w_hu(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmaddwev_w_hu(in_c, in_h, in_l);
+  out = __lasx_xvmaddwod_w_hu(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -891,13 +962,13 @@ static inline __m256i __lasx_xvdp2add_w_hu(__m256i in_c, __m256i in_h, __m256i i
  * Example     : See out = __lasx_xvdp2add_w_h(in_c, in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2add_w_hu_h(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2add_w_hu_h(__m256i in_c, __m256i in_h,
+                                             __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmaddwev_w_hu_h(in_c, in_h, in_l);
-    out = __lasx_xvmaddwod_w_hu_h(out, in_h, in_l);
-    return out;
+  out = __lasx_xvmaddwev_w_hu_h(in_c, in_h, in_l);
+  out = __lasx_xvmaddwod_w_hu_h(out, in_h, in_l);
+  return out;
 }
 
 /*
@@ -915,14 +986,14 @@ static inline __m256i __lasx_xvdp2add_w_hu_h(__m256i in_c, __m256i in_h, __m256i
  * Example     : See out = __lasx_xvdp2sub_w_h(in_c, in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2sub_h_bu(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2sub_h_bu(__m256i in_c, __m256i in_h,
+                                           __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_h_bu(in_h, in_l);
-    out = __lasx_xvmaddwod_h_bu(out, in_h, in_l);
-    out = __lasx_xvsub_h(in_c, out);
-    return out;
+  out = __lasx_xvmulwev_h_bu(in_h, in_l);
+  out = __lasx_xvmaddwod_h_bu(out, in_h, in_l);
+  out = __lasx_xvsub_h(in_c, out);
+  return out;
 }
 
 /*
@@ -944,14 +1015,14 @@ static inline __m256i __lasx_xvdp2sub_h_bu(__m256i in_c, __m256i in_h, __m256i i
  *         out : -7,-3,0,0, 0,-1,0,-1
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp2sub_w_h(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp2sub_w_h(__m256i in_c, __m256i in_h,
+                                          __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_w_h(in_h, in_l);
-    out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
-    out = __lasx_xvsub_w(in_c, out);
-    return out;
+  out = __lasx_xvmulwev_w_h(in_h, in_l);
+  out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
+  out = __lasx_xvsub_w(in_c, out);
+  return out;
 }
 
 /*
@@ -960,10 +1031,10 @@ static inline __m256i __lasx_xvdp2sub_w_h(__m256i in_c, __m256i in_h, __m256i in
  * Arguments   : Inputs - in_h, in_l
  *               Output - out
  *               Return Type - signed word
- * Details     : Signed halfword elements from in_h are iniplied with
+ * Details     : Signed halfword elements from in_h are multiplied with
  *               signed halfword elements from in_l producing a result
  *               four times the size of input i.e. signed doubleword.
- *               Then this iniplication results of four adjacent elements
+ *               Then this multiplication results of four adjacent elements
  *               are added together and stored to the out vector.
  * Example     : out = __lasx_xvdp4_d_h(in_h, in_l)
  *        in_h :  3,1,3,0, 0,0,0,1, 0,0,1,-1, 0,0,0,1
@@ -971,14 +1042,13 @@ static inline __m256i __lasx_xvdp2sub_w_h(__m256i in_c, __m256i in_h, __m256i in
  *         out : -2,0,1,1
  * =============================================================================
  */
-static inline __m256i __lasx_xvdp4_d_h(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvdp4_d_h(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvmulwev_w_h(in_h, in_l);
-    out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
-    out = __lasx_xvhaddw_d_w(out, out);
-    return out;
+  out = __lasx_xvmulwev_w_h(in_h, in_l);
+  out = __lasx_xvmaddwod_w_h(out, in_h, in_l);
+  out = __lasx_xvhaddw_d_w(out, out);
+  return out;
 }
 
 /*
@@ -993,13 +1063,12 @@ static inline __m256i __lasx_xvdp4_d_h(__m256i in_h, __m256i in_l)
  * Example     : See out = __lasx_xvaddwh_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvaddwh_h_b(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddwh_h_b(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvilvh_b(in_h, in_l);
-    out = __lasx_xvhaddw_h_b(out, out);
-    return out;
+  out = __lasx_xvilvh_b(in_h, in_l);
+  out = __lasx_xvhaddw_h_b(out, out);
+  return out;
 }
 
 /*
@@ -1017,13 +1086,12 @@ static inline __m256i __lasx_xvaddwh_h_b(__m256i in_h, __m256i in_l)
  *         out : 1,0,0,-1, 1,0,0, 2
  * =============================================================================
  */
- static inline __m256i __lasx_xvaddwh_w_h(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddwh_w_h(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvilvh_h(in_h, in_l);
-    out = __lasx_xvhaddw_w_h(out, out);
-    return out;
+  out = __lasx_xvilvh_h(in_h, in_l);
+  out = __lasx_xvhaddw_w_h(out, out);
+  return out;
 }
 
 /*
@@ -1038,13 +1106,12 @@ static inline __m256i __lasx_xvaddwh_h_b(__m256i in_h, __m256i in_l)
  * Example     : See out = __lasx_xvaddwl_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvaddwl_h_b(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddwl_h_b(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvilvl_b(in_h, in_l);
-    out = __lasx_xvhaddw_h_b(out, out);
-    return out;
+  out = __lasx_xvilvl_b(in_h, in_l);
+  out = __lasx_xvhaddw_h_b(out, out);
+  return out;
 }
 
 /*
@@ -1062,13 +1129,12 @@ static inline __m256i __lasx_xvaddwl_h_b(__m256i in_h, __m256i in_l)
  *         out : 5,-1,4,2, 1,0,2,-1
  * =============================================================================
  */
-static inline __m256i __lasx_xvaddwl_w_h(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddwl_w_h(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvilvl_h(in_h, in_l);
-    out = __lasx_xvhaddw_w_h(out, out);
-    return out;
+  out = __lasx_xvilvl_h(in_h, in_l);
+  out = __lasx_xvhaddw_w_h(out, out);
+  return out;
 }
 
 /*
@@ -1083,13 +1149,12 @@ static inline __m256i __lasx_xvaddwl_w_h(__m256i in_h, __m256i in_l)
  * Example     : See out = __lasx_xvaddwl_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvaddwl_h_bu(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddwl_h_bu(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvilvl_b(in_h, in_l);
-    out = __lasx_xvhaddw_hu_bu(out, out);
-    return out;
+  out = __lasx_xvilvl_b(in_h, in_l);
+  out = __lasx_xvhaddw_hu_bu(out, out);
+  return out;
 }
 
 /*
@@ -1103,13 +1168,12 @@ static inline __m256i __lasx_xvaddwl_h_bu(__m256i in_h, __m256i in_l)
  * Example     : See out = __lasx_xvaddw_w_w_h(in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvaddw_h_h_bu(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddw_h_h_bu(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvsllwil_hu_bu(in_l, 0);
-    out = __lasx_xvadd_h(in_h, out);
-    return out;
+  out = __lasx_xvsllwil_hu_bu(in_l, 0);
+  out = __lasx_xvadd_h(in_h, out);
+  return out;
 }
 
 /*
@@ -1126,13 +1190,12 @@ static inline __m256i __lasx_xvaddw_h_h_bu(__m256i in_h, __m256i in_l)
  *         out : 2, 0,1,2, -1,0,1,1,
  * =============================================================================
  */
-static inline __m256i __lasx_xvaddw_w_w_h(__m256i in_h, __m256i in_l)
-{
-    __m256i out;
+static inline __m256i __lasx_xvaddw_w_w_h(__m256i in_h, __m256i in_l) {
+  __m256i out;
 
-    out = __lasx_xvsllwil_w_h(in_l, 0);
-    out = __lasx_xvadd_w(in_h, out);
-    return out;
+  out = __lasx_xvsllwil_w_h(in_l, 0);
+  out = __lasx_xvadd_w(in_h, out);
+  return out;
 }
 
 /*
@@ -1153,15 +1216,15 @@ static inline __m256i __lasx_xvaddw_w_w_h(__m256i in_h, __m256i in_l)
  *         out : 201, 602,1203,2004, -995, -1794,-2793,-3992
  * =============================================================================
  */
-static inline __m256i __lasx_xvmaddwl_w_h(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i tmp0, tmp1, out;
+static inline __m256i __lasx_xvmaddwl_w_h(__m256i in_c, __m256i in_h,
+                                          __m256i in_l) {
+  __m256i tmp0, tmp1, out;
 
-    tmp0 = __lasx_xvsllwil_w_h(in_h, 0);
-    tmp1 = __lasx_xvsllwil_w_h(in_l, 0);
-    tmp0 = __lasx_xvmul_w(tmp0, tmp1);
-    out  = __lasx_xvadd_w(tmp0, in_c);
-    return out;
+  tmp0 = __lasx_xvsllwil_w_h(in_h, 0);
+  tmp1 = __lasx_xvsllwil_w_h(in_l, 0);
+  tmp0 = __lasx_xvmul_w(tmp0, tmp1);
+  out = __lasx_xvadd_w(tmp0, in_c);
+  return out;
 }
 
 /*
@@ -1177,15 +1240,15 @@ static inline __m256i __lasx_xvmaddwl_w_h(__m256i in_c, __m256i in_h, __m256i in
  * Example     : See out = __lasx_xvmaddwl_w_h(in_c, in_h, in_l)
  * =============================================================================
  */
-static inline __m256i __lasx_xvmaddwh_w_h(__m256i in_c, __m256i in_h, __m256i in_l)
-{
-    __m256i tmp0, tmp1, out;
+static inline __m256i __lasx_xvmaddwh_w_h(__m256i in_c, __m256i in_h,
+                                          __m256i in_l) {
+  __m256i tmp0, tmp1, out;
 
-    tmp0 = __lasx_xvilvh_h(in_h, in_h);
-    tmp1 = __lasx_xvilvh_h(in_l, in_l);
-    tmp0 = __lasx_xvmulwev_w_h(tmp0, tmp1);
-    out  = __lasx_xvadd_w(tmp0, in_c);
-    return out;
+  tmp0 = __lasx_xvilvh_h(in_h, in_h);
+  tmp1 = __lasx_xvilvh_h(in_l, in_l);
+  tmp0 = __lasx_xvmulwev_w_h(tmp0, tmp1);
+  out = __lasx_xvadd_w(tmp0, in_c);
+  return out;
 }
 
 /*
@@ -1203,14 +1266,13 @@ static inline __m256i __lasx_xvmaddwh_w_h(__m256i in_c, __m256i in_h, __m256i in
  *         out : 6,1,3,0, 0,0,1,0
  * =============================================================================
  */
-static inline __m256i __lasx_xvmulwl_w_h(__m256i in_h, __m256i in_l)
-{
-    __m256i tmp0, tmp1, out;
+static inline __m256i __lasx_xvmulwl_w_h(__m256i in_h, __m256i in_l) {
+  __m256i tmp0, tmp1, out;
 
-    tmp0 = __lasx_xvsllwil_w_h(in_h, 0);
-    tmp1 = __lasx_xvsllwil_w_h(in_l, 0);
-    out  = __lasx_xvmul_w(tmp0, tmp1);
-    return out;
+  tmp0 = __lasx_xvsllwil_w_h(in_h, 0);
+  tmp1 = __lasx_xvsllwil_w_h(in_l, 0);
+  out = __lasx_xvmul_w(tmp0, tmp1);
+  return out;
 }
 
 /*
@@ -1228,39 +1290,39 @@ static inline __m256i __lasx_xvmulwl_w_h(__m256i in_h, __m256i in_l)
  *         out : 0,0,0,0, 0,0,0,1
  * =============================================================================
  */
-static inline __m256i __lasx_xvmulwh_w_h(__m256i in_h, __m256i in_l)
-{
-    __m256i tmp0, tmp1, out;
+static inline __m256i __lasx_xvmulwh_w_h(__m256i in_h, __m256i in_l) {
+  __m256i tmp0, tmp1, out;
 
-    tmp0 = __lasx_xvilvh_h(in_h, in_h);
-    tmp1 = __lasx_xvilvh_h(in_l, in_l);
-    out  = __lasx_xvmulwev_w_h(tmp0, tmp1);
-    return out;
+  tmp0 = __lasx_xvilvh_h(in_h, in_h);
+  tmp1 = __lasx_xvilvh_h(in_l, in_l);
+  out = __lasx_xvmulwev_w_h(tmp0, tmp1);
+  return out;
 }
 
 /*
  * =============================================================================
- * Description : The low half of the vector elements are expanded and
- *               added saturately after being doubled.
+ * Description : The low half of the vector elements are added to the high half
+ *               after being doubled, then saturated.
  * Arguments   : Inputs - in_h, in_l
  *               Output - out
- * Details     : The in_h vector adds the in_l vector saturately after the lower
- *               half of the two-fold zero extension (unsigned byte to unsigned
- *               halfword) and the results are stored to the out vector.
+ * Details     : The in_h vector adds the in_l vector after the lower half of
+ *               the two-fold zero extension (unsigned byte to unsigned
+ *               halfword) and then saturated. The results are stored to the out
+ *               vector.
  * Example     : out = __lasx_xvsaddw_hu_hu_bu(in_h, in_l)
  *        in_h : 2,65532,1,2, 1,0,0,0, 0,0,1,0, 1,0,0,1
- *        in_l : 3,6,3,0, 0,0,0,1, 0,0,1,1, 0,0,0,1, 3,18,3,0, 0,0,0,1, 0,0,1,1, 0,0,0,1
- *         out : 5,65535,4,2, 1,0,0,1, 3,18,4,0, 1,0,0,2,
+ *        in_l : 3,6,3,0, 0,0,0,1, 0,0,1,1, 0,0,0,1, 3,18,3,0, 0,0,0,1, 0,0,1,1,
+ *               0,0,0,1
+ *        out  : 5,65535,4,2, 1,0,0,1, 3,18,4,0, 1,0,0,2,
  * =============================================================================
  */
-static inline __m256i __lasx_xvsaddw_hu_hu_bu(__m256i in_h, __m256i in_l)
-{
-    __m256i tmp1, out;
-    __m256i zero = {0};
+static inline __m256i __lasx_xvsaddw_hu_hu_bu(__m256i in_h, __m256i in_l) {
+  __m256i tmp1, out;
+  __m256i zero = { 0 };
 
-    tmp1 = __lasx_xvilvl_b(zero, in_l);
-    out  = __lasx_xvsadd_hu(in_h, tmp1);
-    return out;
+  tmp1 = __lasx_xvilvl_b(zero, in_l);
+  out = __lasx_xvsadd_hu(in_h, tmp1);
+  return out;
 }
 
 /*
@@ -1279,13 +1341,12 @@ static inline __m256i __lasx_xvsaddw_hu_hu_bu(__m256i in_h, __m256i in_l)
  *         out : 1,2,9,9, 1,9,9,9, 4,4,4,4, 5,5,5,5
  * =============================================================================
  */
-static inline __m256i __lasx_xvclip_h(__m256i in, __m256i min, __m256i max)
-{
-    __m256i out;
+static inline __m256i __lasx_xvclip_h(__m256i in, __m256i min, __m256i max) {
+  __m256i out;
 
-    out = __lasx_xvmax_h(min, in);
-    out = __lasx_xvmin_h(max, out);
-    return out;
+  out = __lasx_xvmax_h(min, in);
+  out = __lasx_xvmin_h(max, out);
+  return out;
 }
 
 /*
@@ -1298,13 +1359,12 @@ static inline __m256i __lasx_xvclip_h(__m256i in, __m256i min, __m256i max)
  * Example     : See out = __lasx_xvclip255_w(in)
  * =============================================================================
  */
-static inline __m256i __lasx_xvclip255_h(__m256i in)
-{
-    __m256i out;
+static inline __m256i __lasx_xvclip255_h(__m256i in) {
+  __m256i out;
 
-    out = __lasx_xvmaxi_h(in, 0);
-    out = __lasx_xvsat_hu(out, 7);
-    return out;
+  out = __lasx_xvmaxi_h(in, 0);
+  out = __lasx_xvsat_hu(out, 7);
+  return out;
 }
 
 /*
@@ -1319,20 +1379,19 @@ static inline __m256i __lasx_xvclip255_h(__m256i in)
  *         out :  0,255,255,249,  0,255,255,249
  * =============================================================================
  */
-static inline __m256i __lasx_xvclip255_w(__m256i in)
-{
-    __m256i out;
+static inline __m256i __lasx_xvclip255_w(__m256i in) {
+  __m256i out;
 
-    out = __lasx_xvmaxi_w(in, 0);
-    out = __lasx_xvsat_wu(out, 7);
-    return out;
+  out = __lasx_xvmaxi_w(in, 0);
+  out = __lasx_xvsat_wu(out, 7);
+  return out;
 }
 
 /*
  * =============================================================================
  * Description : Indexed halfword element values are replicated to all
- *               elements in output vector. If 'indx < 8' use xvsplati_l_*,
- *               if 'indx >= 8' use xvsplati_h_*.
+ *               elements in output vector. If 'idx < 8' use xvsplati_l_*,
+ *               if 'idx >= 8' use xvsplati_h_*.
  * Arguments   : Inputs - in, idx
  *               Output - out
  * Details     : Idx element value from in vector is replicated to all
@@ -1344,20 +1403,19 @@ static inline __m256i __lasx_xvclip255_w(__m256i in)
  *         out : 11,11,11,11, 11,11,11,11, 11,11,11,11, 11,11,11,11
  * =============================================================================
  */
-static inline __m256i __lasx_xvsplati_l_h(__m256i in, int idx)
-{
-    __m256i out;
+static inline __m256i __lasx_xvsplati_l_h(__m256i in, int idx) {
+  __m256i out;
 
-    out = __lasx_xvpermi_q(in, in, 0x02);
-    out = __lasx_xvreplve_h(out, idx);
-    return out;
+  out = __lasx_xvpermi_q(in, in, 0x02);
+  out = __lasx_xvreplve_h(out, idx);
+  return out;
 }
 
 /*
  * =============================================================================
  * Description : Indexed halfword element values are replicated to all
- *               elements in output vector. If 'indx < 8' use xvsplati_l_*,
- *               if 'indx >= 8' use xvsplati_h_*.
+ *               elements in output vector. If 'idx < 8' use xvsplati_l_*,
+ *               if 'idx >= 8' use xvsplati_h_*.
  * Arguments   : Inputs - in, idx
  *               Output - out
  * Details     : Idx element value from in vector is replicated to all
@@ -1369,18 +1427,17 @@ static inline __m256i __lasx_xvsplati_l_h(__m256i in, int idx)
  *         out : 2,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2
  * =============================================================================
  */
-static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
-{
-    __m256i out;
+static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx) {
+  __m256i out;
 
-    out = __lasx_xvpermi_q(in, in, 0x13);
-    out = __lasx_xvreplve_h(out, idx);
-    return out;
+  out = __lasx_xvpermi_q(in, in, 0x13);
+  out = __lasx_xvreplve_h(out, idx);
+  return out;
 }
 
 /*
  * =============================================================================
- * Description : Transpose 4x4 block with double word elements in vectors
+ * Description : Transpose 4x4 block with double-word elements in vectors
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3
  *               Outputs - _out0, _out1, _out2, _out3
  * Example     : LASX_TRANSPOSE4x4_D
@@ -1395,24 +1452,26 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *       _out3 : 4,4,4,4
  * =============================================================================
  */
-#define LASX_TRANSPOSE4x4_D(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
-{                                                                               \
-    __m256i _tmp0, _tmp1, _tmp2, _tmp3;                                         \
-    _tmp0 = __lasx_xvilvl_d(_in1, _in0);                                        \
-    _tmp1 = __lasx_xvilvh_d(_in1, _in0);                                        \
-    _tmp2 = __lasx_xvilvl_d(_in3, _in2);                                        \
-    _tmp3 = __lasx_xvilvh_d(_in3, _in2);                                        \
-    _out0 = __lasx_xvpermi_q(_tmp2, _tmp0, 0x20);                               \
-    _out2 = __lasx_xvpermi_q(_tmp2, _tmp0, 0x31);                               \
-    _out1 = __lasx_xvpermi_q(_tmp3, _tmp1, 0x20);                               \
-    _out3 = __lasx_xvpermi_q(_tmp3, _tmp1, 0x31);                               \
-}
+#define LASX_TRANSPOSE4x4_D(_in0, _in1, _in2, _in3, _out0, _out1, _out2, \
+                            _out3)                                       \
+  {                                                                      \
+    __m256i _tmp0, _tmp1, _tmp2, _tmp3;                                  \
+    _tmp0 = __lasx_xvilvl_d(_in1, _in0);                                 \
+    _tmp1 = __lasx_xvilvh_d(_in1, _in0);                                 \
+    _tmp2 = __lasx_xvilvl_d(_in3, _in2);                                 \
+    _tmp3 = __lasx_xvilvh_d(_in3, _in2);                                 \
+    _out0 = __lasx_xvpermi_q(_tmp2, _tmp0, 0x20);                        \
+    _out2 = __lasx_xvpermi_q(_tmp2, _tmp0, 0x31);                        \
+    _out1 = __lasx_xvpermi_q(_tmp3, _tmp1, 0x20);                        \
+    _out3 = __lasx_xvpermi_q(_tmp3, _tmp1, 0x31);                        \
+  }
 
 /*
  * =============================================================================
  * Description : Transpose 8x8 block with word elements in vectors
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7
- *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+ *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6,
+ *               _out7
  * Example     : LASX_TRANSPOSE8x8_W
  *        _in0 : 1,2,3,4,5,6,7,8
  *        _in1 : 2,2,3,4,5,6,7,8
@@ -1433,38 +1492,39 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *       _out7 : 8,8,8,8,8,8,8,8
  * =============================================================================
  */
-#define LASX_TRANSPOSE8x8_W(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,         \
-                            _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7) \
-{                                                                                   \
-    __m256i _s0_m, _s1_m;                                                           \
-    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                                     \
-    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                                     \
-                                                                                    \
-    _s0_m   = __lasx_xvilvl_w(_in2, _in0);                                          \
-    _s1_m   = __lasx_xvilvl_w(_in3, _in1);                                          \
-    _tmp0_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                        \
-    _tmp1_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                        \
-    _s0_m   = __lasx_xvilvh_w(_in2, _in0);                                          \
-    _s1_m   = __lasx_xvilvh_w(_in3, _in1);                                          \
-    _tmp2_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                        \
-    _tmp3_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                        \
-    _s0_m   = __lasx_xvilvl_w(_in6, _in4);                                          \
-    _s1_m   = __lasx_xvilvl_w(_in7, _in5);                                          \
-    _tmp4_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                        \
-    _tmp5_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                        \
-    _s0_m   = __lasx_xvilvh_w(_in6, _in4);                                          \
-    _s1_m   = __lasx_xvilvh_w(_in7, _in5);                                          \
-    _tmp6_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                        \
-    _tmp7_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                        \
-    _out0 = __lasx_xvpermi_q(_tmp4_m, _tmp0_m, 0x20);                               \
-    _out1 = __lasx_xvpermi_q(_tmp5_m, _tmp1_m, 0x20);                               \
-    _out2 = __lasx_xvpermi_q(_tmp6_m, _tmp2_m, 0x20);                               \
-    _out3 = __lasx_xvpermi_q(_tmp7_m, _tmp3_m, 0x20);                               \
-    _out4 = __lasx_xvpermi_q(_tmp4_m, _tmp0_m, 0x31);                               \
-    _out5 = __lasx_xvpermi_q(_tmp5_m, _tmp1_m, 0x31);                               \
-    _out6 = __lasx_xvpermi_q(_tmp6_m, _tmp2_m, 0x31);                               \
-    _out7 = __lasx_xvpermi_q(_tmp7_m, _tmp3_m, 0x31);                               \
-}
+#define LASX_TRANSPOSE8x8_W(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                            _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                            _out7)                                           \
+  {                                                                          \
+    __m256i _s0_m, _s1_m;                                                    \
+    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                              \
+    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                              \
+                                                                             \
+    _s0_m = __lasx_xvilvl_w(_in2, _in0);                                     \
+    _s1_m = __lasx_xvilvl_w(_in3, _in1);                                     \
+    _tmp0_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                 \
+    _tmp1_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                 \
+    _s0_m = __lasx_xvilvh_w(_in2, _in0);                                     \
+    _s1_m = __lasx_xvilvh_w(_in3, _in1);                                     \
+    _tmp2_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                 \
+    _tmp3_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                 \
+    _s0_m = __lasx_xvilvl_w(_in6, _in4);                                     \
+    _s1_m = __lasx_xvilvl_w(_in7, _in5);                                     \
+    _tmp4_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                 \
+    _tmp5_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                 \
+    _s0_m = __lasx_xvilvh_w(_in6, _in4);                                     \
+    _s1_m = __lasx_xvilvh_w(_in7, _in5);                                     \
+    _tmp6_m = __lasx_xvilvl_w(_s1_m, _s0_m);                                 \
+    _tmp7_m = __lasx_xvilvh_w(_s1_m, _s0_m);                                 \
+    _out0 = __lasx_xvpermi_q(_tmp4_m, _tmp0_m, 0x20);                        \
+    _out1 = __lasx_xvpermi_q(_tmp5_m, _tmp1_m, 0x20);                        \
+    _out2 = __lasx_xvpermi_q(_tmp6_m, _tmp2_m, 0x20);                        \
+    _out3 = __lasx_xvpermi_q(_tmp7_m, _tmp3_m, 0x20);                        \
+    _out4 = __lasx_xvpermi_q(_tmp4_m, _tmp0_m, 0x31);                        \
+    _out5 = __lasx_xvpermi_q(_tmp5_m, _tmp1_m, 0x31);                        \
+    _out6 = __lasx_xvpermi_q(_tmp6_m, _tmp2_m, 0x31);                        \
+    _out7 = __lasx_xvpermi_q(_tmp7_m, _tmp3_m, 0x31);                        \
+  }
 
 /*
  * =============================================================================
@@ -1472,52 +1532,54 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,
  *                         _in8, _in9, _in10, _in11, _in12, _in13, _in14, _in15
  *                         (input 16x8 byte block)
- *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
- *                         (output 8x16 byte block)
- * Details     : The rows of the matrix become columns, and the columns become rows.
+ *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6,
+ *                         _out7 (output 8x16 byte block)
+ * Details     : The rows of the matrix become columns, and the columns become
+ *               rows.
  * Example     : See LASX_TRANSPOSE16x8_H
  * =============================================================================
  */
-#define LASX_TRANSPOSE16x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,         \
-                             _in8, _in9, _in10, _in11, _in12, _in13, _in14, _in15,   \
-                             _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7) \
-{                                                                                    \
-    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                                      \
-    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                                      \
-                                                                                     \
-    _tmp0_m = __lasx_xvilvl_b(_in2, _in0);                                           \
-    _tmp1_m = __lasx_xvilvl_b(_in3, _in1);                                           \
-    _tmp2_m = __lasx_xvilvl_b(_in6, _in4);                                           \
-    _tmp3_m = __lasx_xvilvl_b(_in7, _in5);                                           \
-    _tmp4_m = __lasx_xvilvl_b(_in10, _in8);                                          \
-    _tmp5_m = __lasx_xvilvl_b(_in11, _in9);                                          \
-    _tmp6_m = __lasx_xvilvl_b(_in14, _in12);                                         \
-    _tmp7_m = __lasx_xvilvl_b(_in15, _in13);                                         \
-    _out0 = __lasx_xvilvl_b(_tmp1_m, _tmp0_m);                                       \
-    _out1 = __lasx_xvilvh_b(_tmp1_m, _tmp0_m);                                       \
-    _out2 = __lasx_xvilvl_b(_tmp3_m, _tmp2_m);                                       \
-    _out3 = __lasx_xvilvh_b(_tmp3_m, _tmp2_m);                                       \
-    _out4 = __lasx_xvilvl_b(_tmp5_m, _tmp4_m);                                       \
-    _out5 = __lasx_xvilvh_b(_tmp5_m, _tmp4_m);                                       \
-    _out6 = __lasx_xvilvl_b(_tmp7_m, _tmp6_m);                                       \
-    _out7 = __lasx_xvilvh_b(_tmp7_m, _tmp6_m);                                       \
-    _tmp0_m = __lasx_xvilvl_w(_out2, _out0);                                         \
-    _tmp2_m = __lasx_xvilvh_w(_out2, _out0);                                         \
-    _tmp4_m = __lasx_xvilvl_w(_out3, _out1);                                         \
-    _tmp6_m = __lasx_xvilvh_w(_out3, _out1);                                         \
-    _tmp1_m = __lasx_xvilvl_w(_out6, _out4);                                         \
-    _tmp3_m = __lasx_xvilvh_w(_out6, _out4);                                         \
-    _tmp5_m = __lasx_xvilvl_w(_out7, _out5);                                         \
-    _tmp7_m = __lasx_xvilvh_w(_out7, _out5);                                         \
-    _out0 = __lasx_xvilvl_d(_tmp1_m, _tmp0_m);                                       \
-    _out1 = __lasx_xvilvh_d(_tmp1_m, _tmp0_m);                                       \
-    _out2 = __lasx_xvilvl_d(_tmp3_m, _tmp2_m);                                       \
-    _out3 = __lasx_xvilvh_d(_tmp3_m, _tmp2_m);                                       \
-    _out4 = __lasx_xvilvl_d(_tmp5_m, _tmp4_m);                                       \
-    _out5 = __lasx_xvilvh_d(_tmp5_m, _tmp4_m);                                       \
-    _out6 = __lasx_xvilvl_d(_tmp7_m, _tmp6_m);                                       \
-    _out7 = __lasx_xvilvh_d(_tmp7_m, _tmp6_m);                                       \
-}
+#define LASX_TRANSPOSE16x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                             _in8, _in9, _in10, _in11, _in12, _in13, _in14,   \
+                             _in15, _out0, _out1, _out2, _out3, _out4, _out5, \
+                             _out6, _out7)                                    \
+  {                                                                           \
+    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                               \
+    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                               \
+                                                                              \
+    _tmp0_m = __lasx_xvilvl_b(_in2, _in0);                                    \
+    _tmp1_m = __lasx_xvilvl_b(_in3, _in1);                                    \
+    _tmp2_m = __lasx_xvilvl_b(_in6, _in4);                                    \
+    _tmp3_m = __lasx_xvilvl_b(_in7, _in5);                                    \
+    _tmp4_m = __lasx_xvilvl_b(_in10, _in8);                                   \
+    _tmp5_m = __lasx_xvilvl_b(_in11, _in9);                                   \
+    _tmp6_m = __lasx_xvilvl_b(_in14, _in12);                                  \
+    _tmp7_m = __lasx_xvilvl_b(_in15, _in13);                                  \
+    _out0 = __lasx_xvilvl_b(_tmp1_m, _tmp0_m);                                \
+    _out1 = __lasx_xvilvh_b(_tmp1_m, _tmp0_m);                                \
+    _out2 = __lasx_xvilvl_b(_tmp3_m, _tmp2_m);                                \
+    _out3 = __lasx_xvilvh_b(_tmp3_m, _tmp2_m);                                \
+    _out4 = __lasx_xvilvl_b(_tmp5_m, _tmp4_m);                                \
+    _out5 = __lasx_xvilvh_b(_tmp5_m, _tmp4_m);                                \
+    _out6 = __lasx_xvilvl_b(_tmp7_m, _tmp6_m);                                \
+    _out7 = __lasx_xvilvh_b(_tmp7_m, _tmp6_m);                                \
+    _tmp0_m = __lasx_xvilvl_w(_out2, _out0);                                  \
+    _tmp2_m = __lasx_xvilvh_w(_out2, _out0);                                  \
+    _tmp4_m = __lasx_xvilvl_w(_out3, _out1);                                  \
+    _tmp6_m = __lasx_xvilvh_w(_out3, _out1);                                  \
+    _tmp1_m = __lasx_xvilvl_w(_out6, _out4);                                  \
+    _tmp3_m = __lasx_xvilvh_w(_out6, _out4);                                  \
+    _tmp5_m = __lasx_xvilvl_w(_out7, _out5);                                  \
+    _tmp7_m = __lasx_xvilvh_w(_out7, _out5);                                  \
+    _out0 = __lasx_xvilvl_d(_tmp1_m, _tmp0_m);                                \
+    _out1 = __lasx_xvilvh_d(_tmp1_m, _tmp0_m);                                \
+    _out2 = __lasx_xvilvl_d(_tmp3_m, _tmp2_m);                                \
+    _out3 = __lasx_xvilvh_d(_tmp3_m, _tmp2_m);                                \
+    _out4 = __lasx_xvilvl_d(_tmp5_m, _tmp4_m);                                \
+    _out5 = __lasx_xvilvh_d(_tmp5_m, _tmp4_m);                                \
+    _out6 = __lasx_xvilvl_d(_tmp7_m, _tmp6_m);                                \
+    _out7 = __lasx_xvilvh_d(_tmp7_m, _tmp6_m);                                \
+  }
 
 /*
  * =============================================================================
@@ -1525,9 +1587,10 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,
  *                         _in8, _in9, _in10, _in11, _in12, _in13, _in14, _in15
  *                         (input 16x8 byte block)
- *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
- *                         (output 8x16 byte block)
- * Details     : The rows of the matrix become columns, and the columns become rows.
+ *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6,
+ *                         _out7 (output 8x16 byte block)
+ * Details     : The rows of the matrix become columns, and the columns become
+ *               rows.
  * Example     : LASX_TRANSPOSE16x8_H
  *        _in0 : 1,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
  *        _in1 : 2,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
@@ -1556,72 +1619,73 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *       _out7 : 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
  * =============================================================================
  */
-#define LASX_TRANSPOSE16x8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,         \
-                             _in8, _in9, _in10, _in11, _in12, _in13, _in14, _in15,   \
-                             _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7) \
-   {                                                                                 \
-    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                                      \
-    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                                      \
-    __m256i _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                                  \
-                                                                                     \
-    _tmp0_m = __lasx_xvilvl_h(_in2, _in0);                                           \
-    _tmp1_m = __lasx_xvilvl_h(_in3, _in1);                                           \
-    _tmp2_m = __lasx_xvilvl_h(_in6, _in4);                                           \
-    _tmp3_m = __lasx_xvilvl_h(_in7, _in5);                                           \
-    _tmp4_m = __lasx_xvilvl_h(_in10, _in8);                                          \
-    _tmp5_m = __lasx_xvilvl_h(_in11, _in9);                                          \
-    _tmp6_m = __lasx_xvilvl_h(_in14, _in12);                                         \
-    _tmp7_m = __lasx_xvilvl_h(_in15, _in13);                                         \
-    _t0 = __lasx_xvilvl_h(_tmp1_m, _tmp0_m);                                         \
-    _t1 = __lasx_xvilvh_h(_tmp1_m, _tmp0_m);                                         \
-    _t2 = __lasx_xvilvl_h(_tmp3_m, _tmp2_m);                                         \
-    _t3 = __lasx_xvilvh_h(_tmp3_m, _tmp2_m);                                         \
-    _t4 = __lasx_xvilvl_h(_tmp5_m, _tmp4_m);                                         \
-    _t5 = __lasx_xvilvh_h(_tmp5_m, _tmp4_m);                                         \
-    _t6 = __lasx_xvilvl_h(_tmp7_m, _tmp6_m);                                         \
-    _t7 = __lasx_xvilvh_h(_tmp7_m, _tmp6_m);                                         \
-    _tmp0_m = __lasx_xvilvl_d(_t2, _t0);                                             \
-    _tmp2_m = __lasx_xvilvh_d(_t2, _t0);                                             \
-    _tmp4_m = __lasx_xvilvl_d(_t3, _t1);                                             \
-    _tmp6_m = __lasx_xvilvh_d(_t3, _t1);                                             \
-    _tmp1_m = __lasx_xvilvl_d(_t6, _t4);                                             \
-    _tmp3_m = __lasx_xvilvh_d(_t6, _t4);                                             \
-    _tmp5_m = __lasx_xvilvl_d(_t7, _t5);                                             \
-    _tmp7_m = __lasx_xvilvh_d(_t7, _t5);                                             \
-    _out0 = __lasx_xvpermi_q(_tmp1_m, _tmp0_m, 0x20);                                \
-    _out1 = __lasx_xvpermi_q(_tmp3_m, _tmp2_m, 0x20);                                \
-    _out2 = __lasx_xvpermi_q(_tmp5_m, _tmp4_m, 0x20);                                \
-    _out3 = __lasx_xvpermi_q(_tmp7_m, _tmp6_m, 0x20);                                \
-                                                                                     \
-    _tmp0_m = __lasx_xvilvh_h(_in2, _in0);                                           \
-    _tmp1_m = __lasx_xvilvh_h(_in3, _in1);                                           \
-    _tmp2_m = __lasx_xvilvh_h(_in6, _in4);                                           \
-    _tmp3_m = __lasx_xvilvh_h(_in7, _in5);                                           \
-    _tmp4_m = __lasx_xvilvh_h(_in10, _in8);                                          \
-    _tmp5_m = __lasx_xvilvh_h(_in11, _in9);                                          \
-    _tmp6_m = __lasx_xvilvh_h(_in14, _in12);                                         \
-    _tmp7_m = __lasx_xvilvh_h(_in15, _in13);                                         \
-    _t0 = __lasx_xvilvl_h(_tmp1_m, _tmp0_m);                                         \
-    _t1 = __lasx_xvilvh_h(_tmp1_m, _tmp0_m);                                         \
-    _t2 = __lasx_xvilvl_h(_tmp3_m, _tmp2_m);                                         \
-    _t3 = __lasx_xvilvh_h(_tmp3_m, _tmp2_m);                                         \
-    _t4 = __lasx_xvilvl_h(_tmp5_m, _tmp4_m);                                         \
-    _t5 = __lasx_xvilvh_h(_tmp5_m, _tmp4_m);                                         \
-    _t6 = __lasx_xvilvl_h(_tmp7_m, _tmp6_m);                                         \
-    _t7 = __lasx_xvilvh_h(_tmp7_m, _tmp6_m);                                         \
-    _tmp0_m = __lasx_xvilvl_d(_t2, _t0);                                             \
-    _tmp2_m = __lasx_xvilvh_d(_t2, _t0);                                             \
-    _tmp4_m = __lasx_xvilvl_d(_t3, _t1);                                             \
-    _tmp6_m = __lasx_xvilvh_d(_t3, _t1);                                             \
-    _tmp1_m = __lasx_xvilvl_d(_t6, _t4);                                             \
-    _tmp3_m = __lasx_xvilvh_d(_t6, _t4);                                             \
-    _tmp5_m = __lasx_xvilvl_d(_t7, _t5);                                             \
-    _tmp7_m = __lasx_xvilvh_d(_t7, _t5);                                             \
-    _out4 = __lasx_xvpermi_q(_tmp1_m, _tmp0_m, 0x20);                                \
-    _out5 = __lasx_xvpermi_q(_tmp3_m, _tmp2_m, 0x20);                                \
-    _out6 = __lasx_xvpermi_q(_tmp5_m, _tmp4_m, 0x20);                                \
-    _out7 = __lasx_xvpermi_q(_tmp7_m, _tmp6_m, 0x20);                                \
-}
+#define LASX_TRANSPOSE16x8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                             _in8, _in9, _in10, _in11, _in12, _in13, _in14,   \
+                             _in15, _out0, _out1, _out2, _out3, _out4, _out5, \
+                             _out6, _out7)                                    \
+  {                                                                           \
+    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                               \
+    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                               \
+    __m256i _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7;                           \
+                                                                              \
+    _tmp0_m = __lasx_xvilvl_h(_in2, _in0);                                    \
+    _tmp1_m = __lasx_xvilvl_h(_in3, _in1);                                    \
+    _tmp2_m = __lasx_xvilvl_h(_in6, _in4);                                    \
+    _tmp3_m = __lasx_xvilvl_h(_in7, _in5);                                    \
+    _tmp4_m = __lasx_xvilvl_h(_in10, _in8);                                   \
+    _tmp5_m = __lasx_xvilvl_h(_in11, _in9);                                   \
+    _tmp6_m = __lasx_xvilvl_h(_in14, _in12);                                  \
+    _tmp7_m = __lasx_xvilvl_h(_in15, _in13);                                  \
+    _t0 = __lasx_xvilvl_h(_tmp1_m, _tmp0_m);                                  \
+    _t1 = __lasx_xvilvh_h(_tmp1_m, _tmp0_m);                                  \
+    _t2 = __lasx_xvilvl_h(_tmp3_m, _tmp2_m);                                  \
+    _t3 = __lasx_xvilvh_h(_tmp3_m, _tmp2_m);                                  \
+    _t4 = __lasx_xvilvl_h(_tmp5_m, _tmp4_m);                                  \
+    _t5 = __lasx_xvilvh_h(_tmp5_m, _tmp4_m);                                  \
+    _t6 = __lasx_xvilvl_h(_tmp7_m, _tmp6_m);                                  \
+    _t7 = __lasx_xvilvh_h(_tmp7_m, _tmp6_m);                                  \
+    _tmp0_m = __lasx_xvilvl_d(_t2, _t0);                                      \
+    _tmp2_m = __lasx_xvilvh_d(_t2, _t0);                                      \
+    _tmp4_m = __lasx_xvilvl_d(_t3, _t1);                                      \
+    _tmp6_m = __lasx_xvilvh_d(_t3, _t1);                                      \
+    _tmp1_m = __lasx_xvilvl_d(_t6, _t4);                                      \
+    _tmp3_m = __lasx_xvilvh_d(_t6, _t4);                                      \
+    _tmp5_m = __lasx_xvilvl_d(_t7, _t5);                                      \
+    _tmp7_m = __lasx_xvilvh_d(_t7, _t5);                                      \
+    _out0 = __lasx_xvpermi_q(_tmp1_m, _tmp0_m, 0x20);                         \
+    _out1 = __lasx_xvpermi_q(_tmp3_m, _tmp2_m, 0x20);                         \
+    _out2 = __lasx_xvpermi_q(_tmp5_m, _tmp4_m, 0x20);                         \
+    _out3 = __lasx_xvpermi_q(_tmp7_m, _tmp6_m, 0x20);                         \
+                                                                              \
+    _tmp0_m = __lasx_xvilvh_h(_in2, _in0);                                    \
+    _tmp1_m = __lasx_xvilvh_h(_in3, _in1);                                    \
+    _tmp2_m = __lasx_xvilvh_h(_in6, _in4);                                    \
+    _tmp3_m = __lasx_xvilvh_h(_in7, _in5);                                    \
+    _tmp4_m = __lasx_xvilvh_h(_in10, _in8);                                   \
+    _tmp5_m = __lasx_xvilvh_h(_in11, _in9);                                   \
+    _tmp6_m = __lasx_xvilvh_h(_in14, _in12);                                  \
+    _tmp7_m = __lasx_xvilvh_h(_in15, _in13);                                  \
+    _t0 = __lasx_xvilvl_h(_tmp1_m, _tmp0_m);                                  \
+    _t1 = __lasx_xvilvh_h(_tmp1_m, _tmp0_m);                                  \
+    _t2 = __lasx_xvilvl_h(_tmp3_m, _tmp2_m);                                  \
+    _t3 = __lasx_xvilvh_h(_tmp3_m, _tmp2_m);                                  \
+    _t4 = __lasx_xvilvl_h(_tmp5_m, _tmp4_m);                                  \
+    _t5 = __lasx_xvilvh_h(_tmp5_m, _tmp4_m);                                  \
+    _t6 = __lasx_xvilvl_h(_tmp7_m, _tmp6_m);                                  \
+    _t7 = __lasx_xvilvh_h(_tmp7_m, _tmp6_m);                                  \
+    _tmp0_m = __lasx_xvilvl_d(_t2, _t0);                                      \
+    _tmp2_m = __lasx_xvilvh_d(_t2, _t0);                                      \
+    _tmp4_m = __lasx_xvilvl_d(_t3, _t1);                                      \
+    _tmp6_m = __lasx_xvilvh_d(_t3, _t1);                                      \
+    _tmp1_m = __lasx_xvilvl_d(_t6, _t4);                                      \
+    _tmp3_m = __lasx_xvilvh_d(_t6, _t4);                                      \
+    _tmp5_m = __lasx_xvilvl_d(_t7, _t5);                                      \
+    _tmp7_m = __lasx_xvilvh_d(_t7, _t5);                                      \
+    _out4 = __lasx_xvpermi_q(_tmp1_m, _tmp0_m, 0x20);                         \
+    _out5 = __lasx_xvpermi_q(_tmp3_m, _tmp2_m, 0x20);                         \
+    _out6 = __lasx_xvpermi_q(_tmp5_m, _tmp4_m, 0x20);                         \
+    _out7 = __lasx_xvpermi_q(_tmp7_m, _tmp6_m, 0x20);                         \
+  }
 
 /*
  * =============================================================================
@@ -1629,61 +1693,65 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3
  *               Outputs - _out0, _out1, _out2, _out3
  *               Return Type - signed halfword
- * Details     : The rows of the matrix become columns, and the columns become rows.
+ * Details     : The rows of the matrix become columns, and the columns become
+ *               rows.
  * Example     : See LASX_TRANSPOSE8x8_H
  * =============================================================================
  */
-#define LASX_TRANSPOSE4x4_H(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3)     \
-{                                                                                   \
-    __m256i _s0_m, _s1_m;                                                           \
-                                                                                    \
-    _s0_m = __lasx_xvilvl_h(_in1, _in0);                                            \
-    _s1_m = __lasx_xvilvl_h(_in3, _in2);                                            \
-    _out0 = __lasx_xvilvl_w(_s1_m, _s0_m);                                          \
-    _out2 = __lasx_xvilvh_w(_s1_m, _s0_m);                                          \
-    _out1 = __lasx_xvilvh_d(_out0, _out0);                                          \
-    _out3 = __lasx_xvilvh_d(_out2, _out2);                                          \
-}
+#define LASX_TRANSPOSE4x4_H(_in0, _in1, _in2, _in3, _out0, _out1, _out2, \
+                            _out3)                                       \
+  {                                                                      \
+    __m256i _s0_m, _s1_m;                                                \
+                                                                         \
+    _s0_m = __lasx_xvilvl_h(_in1, _in0);                                 \
+    _s1_m = __lasx_xvilvl_h(_in3, _in2);                                 \
+    _out0 = __lasx_xvilvl_w(_s1_m, _s0_m);                               \
+    _out2 = __lasx_xvilvh_w(_s1_m, _s0_m);                               \
+    _out1 = __lasx_xvilvh_d(_out0, _out0);                               \
+    _out3 = __lasx_xvilvh_d(_out2, _out2);                               \
+  }
 
 /*
  * =============================================================================
  * Description : Transpose input 8x8 byte block
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7
  *                         (input 8x8 byte block)
- *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
- *                         (output 8x8 byte block)
+ *               Outputs - _out0, _out1, _out2, _out3, _out4, _out5, _out6,
+ *                         _out7 (output 8x8 byte block)
  * Example     : See LASX_TRANSPOSE8x8_H
  * =============================================================================
  */
-#define LASX_TRANSPOSE8x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7, _out0,  \
-                            _out1, _out2, _out3, _out4, _out5, _out6, _out7)        \
-{                                                                                   \
-    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                                     \
-    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                                     \
-    _tmp0_m = __lasx_xvilvl_b(_in2, _in0);                                          \
-    _tmp1_m = __lasx_xvilvl_b(_in3, _in1);                                          \
-    _tmp2_m = __lasx_xvilvl_b(_in6, _in4);                                          \
-    _tmp3_m = __lasx_xvilvl_b(_in7, _in5);                                          \
-    _tmp4_m = __lasx_xvilvl_b(_tmp1_m, _tmp0_m);                                    \
-    _tmp5_m = __lasx_xvilvh_b(_tmp1_m, _tmp0_m);                                    \
-    _tmp6_m = __lasx_xvilvl_b(_tmp3_m, _tmp2_m);                                    \
-    _tmp7_m = __lasx_xvilvh_b(_tmp3_m, _tmp2_m);                                    \
-    _out0 = __lasx_xvilvl_w(_tmp6_m, _tmp4_m);                                      \
-    _out2 = __lasx_xvilvh_w(_tmp6_m, _tmp4_m);                                      \
-    _out4 = __lasx_xvilvl_w(_tmp7_m, _tmp5_m);                                      \
-    _out6 = __lasx_xvilvh_w(_tmp7_m, _tmp5_m);                                      \
-    _out1 = __lasx_xvbsrl_v(_out0, 8);                                              \
-    _out3 = __lasx_xvbsrl_v(_out2, 8);                                              \
-    _out5 = __lasx_xvbsrl_v(_out4, 8);                                              \
-    _out7 = __lasx_xvbsrl_v(_out6, 8);                                              \
-}
+#define LASX_TRANSPOSE8x8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                            _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                            _out7)                                           \
+  {                                                                          \
+    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                              \
+    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                              \
+    _tmp0_m = __lasx_xvilvl_b(_in2, _in0);                                   \
+    _tmp1_m = __lasx_xvilvl_b(_in3, _in1);                                   \
+    _tmp2_m = __lasx_xvilvl_b(_in6, _in4);                                   \
+    _tmp3_m = __lasx_xvilvl_b(_in7, _in5);                                   \
+    _tmp4_m = __lasx_xvilvl_b(_tmp1_m, _tmp0_m);                             \
+    _tmp5_m = __lasx_xvilvh_b(_tmp1_m, _tmp0_m);                             \
+    _tmp6_m = __lasx_xvilvl_b(_tmp3_m, _tmp2_m);                             \
+    _tmp7_m = __lasx_xvilvh_b(_tmp3_m, _tmp2_m);                             \
+    _out0 = __lasx_xvilvl_w(_tmp6_m, _tmp4_m);                               \
+    _out2 = __lasx_xvilvh_w(_tmp6_m, _tmp4_m);                               \
+    _out4 = __lasx_xvilvl_w(_tmp7_m, _tmp5_m);                               \
+    _out6 = __lasx_xvilvh_w(_tmp7_m, _tmp5_m);                               \
+    _out1 = __lasx_xvbsrl_v(_out0, 8);                                       \
+    _out3 = __lasx_xvbsrl_v(_out2, 8);                                       \
+    _out5 = __lasx_xvbsrl_v(_out4, 8);                                       \
+    _out7 = __lasx_xvbsrl_v(_out6, 8);                                       \
+  }
 
 /*
  * =============================================================================
  * Description : Transpose 8x8 block with halfword elements in vectors.
  * Arguments   : Inputs  - _in0, _in1, ~
  *               Outputs - _out0, _out1, ~
- * Details     : The rows of the matrix become columns, and the columns become rows.
+ * Details     : The rows of the matrix become columns, and the columns become
+ *               rows.
  * Example     : LASX_TRANSPOSE8x8_H
  *        _in0 : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
  *        _in1 : 8,2,3,4, 5,6,7,8, 8,2,3,4, 5,6,7,8
@@ -1704,40 +1772,41 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *       _out7 : 8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8
  * =============================================================================
  */
-#define LASX_TRANSPOSE8x8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7, _out0,  \
-                            _out1, _out2, _out3, _out4, _out5, _out6, _out7)        \
-{                                                                                   \
-    __m256i _s0_m, _s1_m;                                                           \
-    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                                     \
-    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                                     \
-                                                                                    \
-    _s0_m   = __lasx_xvilvl_h(_in6, _in4);                                          \
-    _s1_m   = __lasx_xvilvl_h(_in7, _in5);                                          \
-    _tmp0_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                        \
-    _tmp1_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                        \
-    _s0_m   = __lasx_xvilvh_h(_in6, _in4);                                          \
-    _s1_m   = __lasx_xvilvh_h(_in7, _in5);                                          \
-    _tmp2_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                        \
-    _tmp3_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                        \
-                                                                                    \
-    _s0_m   = __lasx_xvilvl_h(_in2, _in0);                                          \
-    _s1_m   = __lasx_xvilvl_h(_in3, _in1);                                          \
-    _tmp4_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                        \
-    _tmp5_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                        \
-    _s0_m   = __lasx_xvilvh_h(_in2, _in0);                                          \
-    _s1_m   = __lasx_xvilvh_h(_in3, _in1);                                          \
-    _tmp6_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                        \
-    _tmp7_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                        \
-                                                                                    \
-    _out0 = __lasx_xvpickev_d(_tmp0_m, _tmp4_m);                                    \
-    _out2 = __lasx_xvpickev_d(_tmp1_m, _tmp5_m);                                    \
-    _out4 = __lasx_xvpickev_d(_tmp2_m, _tmp6_m);                                    \
-    _out6 = __lasx_xvpickev_d(_tmp3_m, _tmp7_m);                                    \
-    _out1 = __lasx_xvpickod_d(_tmp0_m, _tmp4_m);                                    \
-    _out3 = __lasx_xvpickod_d(_tmp1_m, _tmp5_m);                                    \
-    _out5 = __lasx_xvpickod_d(_tmp2_m, _tmp6_m);                                    \
-    _out7 = __lasx_xvpickod_d(_tmp3_m, _tmp7_m);                                    \
-}
+#define LASX_TRANSPOSE8x8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                            _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                            _out7)                                           \
+  {                                                                          \
+    __m256i _s0_m, _s1_m;                                                    \
+    __m256i _tmp0_m, _tmp1_m, _tmp2_m, _tmp3_m;                              \
+    __m256i _tmp4_m, _tmp5_m, _tmp6_m, _tmp7_m;                              \
+                                                                             \
+    _s0_m = __lasx_xvilvl_h(_in6, _in4);                                     \
+    _s1_m = __lasx_xvilvl_h(_in7, _in5);                                     \
+    _tmp0_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                 \
+    _tmp1_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                 \
+    _s0_m = __lasx_xvilvh_h(_in6, _in4);                                     \
+    _s1_m = __lasx_xvilvh_h(_in7, _in5);                                     \
+    _tmp2_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                 \
+    _tmp3_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                 \
+                                                                             \
+    _s0_m = __lasx_xvilvl_h(_in2, _in0);                                     \
+    _s1_m = __lasx_xvilvl_h(_in3, _in1);                                     \
+    _tmp4_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                 \
+    _tmp5_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                 \
+    _s0_m = __lasx_xvilvh_h(_in2, _in0);                                     \
+    _s1_m = __lasx_xvilvh_h(_in3, _in1);                                     \
+    _tmp6_m = __lasx_xvilvl_h(_s1_m, _s0_m);                                 \
+    _tmp7_m = __lasx_xvilvh_h(_s1_m, _s0_m);                                 \
+                                                                             \
+    _out0 = __lasx_xvpickev_d(_tmp0_m, _tmp4_m);                             \
+    _out2 = __lasx_xvpickev_d(_tmp1_m, _tmp5_m);                             \
+    _out4 = __lasx_xvpickev_d(_tmp2_m, _tmp6_m);                             \
+    _out6 = __lasx_xvpickev_d(_tmp3_m, _tmp7_m);                             \
+    _out1 = __lasx_xvpickod_d(_tmp0_m, _tmp4_m);                             \
+    _out3 = __lasx_xvpickod_d(_tmp1_m, _tmp5_m);                             \
+    _out5 = __lasx_xvpickod_d(_tmp2_m, _tmp6_m);                             \
+    _out7 = __lasx_xvpickod_d(_tmp3_m, _tmp7_m);                             \
+  }
 
 /*
  * =============================================================================
@@ -1752,34 +1821,34 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *               _out3 = _in0 - _in3;
  * =============================================================================
  */
-#define LASX_BUTTERFLY_4_B(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3)  \
-{                                                                               \
-    _out0 = __lasx_xvadd_b(_in0, _in3);                                         \
-    _out1 = __lasx_xvadd_b(_in1, _in2);                                         \
-    _out2 = __lasx_xvsub_b(_in1, _in2);                                         \
-    _out3 = __lasx_xvsub_b(_in0, _in3);                                         \
-}
-#define LASX_BUTTERFLY_4_H(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3)  \
-{                                                                               \
-    _out0 = __lasx_xvadd_h(_in0, _in3);                                         \
-    _out1 = __lasx_xvadd_h(_in1, _in2);                                         \
-    _out2 = __lasx_xvsub_h(_in1, _in2);                                         \
-    _out3 = __lasx_xvsub_h(_in0, _in3);                                         \
-}
-#define LASX_BUTTERFLY_4_W(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3)  \
-{                                                                               \
-    _out0 = __lasx_xvadd_w(_in0, _in3);                                         \
-    _out1 = __lasx_xvadd_w(_in1, _in2);                                         \
-    _out2 = __lasx_xvsub_w(_in1, _in2);                                         \
-    _out3 = __lasx_xvsub_w(_in0, _in3);                                         \
-}
-#define LASX_BUTTERFLY_4_D(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3)  \
-{                                                                               \
-    _out0 = __lasx_xvadd_d(_in0, _in3);                                         \
-    _out1 = __lasx_xvadd_d(_in1, _in2);                                         \
-    _out2 = __lasx_xvsub_d(_in1, _in2);                                         \
-    _out3 = __lasx_xvsub_d(_in0, _in3);                                         \
-}
+#define LASX_BUTTERFLY_4_B(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
+  {                                                                            \
+    _out0 = __lasx_xvadd_b(_in0, _in3);                                        \
+    _out1 = __lasx_xvadd_b(_in1, _in2);                                        \
+    _out2 = __lasx_xvsub_b(_in1, _in2);                                        \
+    _out3 = __lasx_xvsub_b(_in0, _in3);                                        \
+  }
+#define LASX_BUTTERFLY_4_H(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
+  {                                                                            \
+    _out0 = __lasx_xvadd_h(_in0, _in3);                                        \
+    _out1 = __lasx_xvadd_h(_in1, _in2);                                        \
+    _out2 = __lasx_xvsub_h(_in1, _in2);                                        \
+    _out3 = __lasx_xvsub_h(_in0, _in3);                                        \
+  }
+#define LASX_BUTTERFLY_4_W(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
+  {                                                                            \
+    _out0 = __lasx_xvadd_w(_in0, _in3);                                        \
+    _out1 = __lasx_xvadd_w(_in1, _in2);                                        \
+    _out2 = __lasx_xvsub_w(_in1, _in2);                                        \
+    _out3 = __lasx_xvsub_w(_in0, _in3);                                        \
+  }
+#define LASX_BUTTERFLY_4_D(_in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3) \
+  {                                                                            \
+    _out0 = __lasx_xvadd_d(_in0, _in3);                                        \
+    _out1 = __lasx_xvadd_d(_in1, _in2);                                        \
+    _out2 = __lasx_xvsub_d(_in1, _in2);                                        \
+    _out3 = __lasx_xvsub_d(_in0, _in3);                                        \
+  }
 
 /*
  * =============================================================================
@@ -1798,59 +1867,63 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *               _out7 = _in0 - _in7;
  * =============================================================================
  */
-#define LASX_BUTTERFLY_8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                 \
-    _out0 = __lasx_xvadd_b(_in0, _in7);                                           \
-    _out1 = __lasx_xvadd_b(_in1, _in6);                                           \
-    _out2 = __lasx_xvadd_b(_in2, _in5);                                           \
-    _out3 = __lasx_xvadd_b(_in3, _in4);                                           \
-    _out4 = __lasx_xvsub_b(_in3, _in4);                                           \
-    _out5 = __lasx_xvsub_b(_in2, _in5);                                           \
-    _out6 = __lasx_xvsub_b(_in1, _in6);                                           \
-    _out7 = __lasx_xvsub_b(_in0, _in7);                                           \
-}
+#define LASX_BUTTERFLY_8_B(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                           _out7)                                           \
+  {                                                                         \
+    _out0 = __lasx_xvadd_b(_in0, _in7);                                     \
+    _out1 = __lasx_xvadd_b(_in1, _in6);                                     \
+    _out2 = __lasx_xvadd_b(_in2, _in5);                                     \
+    _out3 = __lasx_xvadd_b(_in3, _in4);                                     \
+    _out4 = __lasx_xvsub_b(_in3, _in4);                                     \
+    _out5 = __lasx_xvsub_b(_in2, _in5);                                     \
+    _out6 = __lasx_xvsub_b(_in1, _in6);                                     \
+    _out7 = __lasx_xvsub_b(_in0, _in7);                                     \
+  }
 
-#define LASX_BUTTERFLY_8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                 \
-    _out0 = __lasx_xvadd_h(_in0, _in7);                                           \
-    _out1 = __lasx_xvadd_h(_in1, _in6);                                           \
-    _out2 = __lasx_xvadd_h(_in2, _in5);                                           \
-    _out3 = __lasx_xvadd_h(_in3, _in4);                                           \
-    _out4 = __lasx_xvsub_h(_in3, _in4);                                           \
-    _out5 = __lasx_xvsub_h(_in2, _in5);                                           \
-    _out6 = __lasx_xvsub_h(_in1, _in6);                                           \
-    _out7 = __lasx_xvsub_h(_in0, _in7);                                           \
-}
+#define LASX_BUTTERFLY_8_H(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                           _out7)                                           \
+  {                                                                         \
+    _out0 = __lasx_xvadd_h(_in0, _in7);                                     \
+    _out1 = __lasx_xvadd_h(_in1, _in6);                                     \
+    _out2 = __lasx_xvadd_h(_in2, _in5);                                     \
+    _out3 = __lasx_xvadd_h(_in3, _in4);                                     \
+    _out4 = __lasx_xvsub_h(_in3, _in4);                                     \
+    _out5 = __lasx_xvsub_h(_in2, _in5);                                     \
+    _out6 = __lasx_xvsub_h(_in1, _in6);                                     \
+    _out7 = __lasx_xvsub_h(_in0, _in7);                                     \
+  }
 
-#define LASX_BUTTERFLY_8_W(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                 \
-    _out0 = __lasx_xvadd_w(_in0, _in7);                                           \
-    _out1 = __lasx_xvadd_w(_in1, _in6);                                           \
-    _out2 = __lasx_xvadd_w(_in2, _in5);                                           \
-    _out3 = __lasx_xvadd_w(_in3, _in4);                                           \
-    _out4 = __lasx_xvsub_w(_in3, _in4);                                           \
-    _out5 = __lasx_xvsub_w(_in2, _in5);                                           \
-    _out6 = __lasx_xvsub_w(_in1, _in6);                                           \
-    _out7 = __lasx_xvsub_w(_in0, _in7);                                           \
-}
+#define LASX_BUTTERFLY_8_W(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                           _out7)                                           \
+  {                                                                         \
+    _out0 = __lasx_xvadd_w(_in0, _in7);                                     \
+    _out1 = __lasx_xvadd_w(_in1, _in6);                                     \
+    _out2 = __lasx_xvadd_w(_in2, _in5);                                     \
+    _out3 = __lasx_xvadd_w(_in3, _in4);                                     \
+    _out4 = __lasx_xvsub_w(_in3, _in4);                                     \
+    _out5 = __lasx_xvsub_w(_in2, _in5);                                     \
+    _out6 = __lasx_xvsub_w(_in1, _in6);                                     \
+    _out7 = __lasx_xvsub_w(_in0, _in7);                                     \
+  }
 
-#define LASX_BUTTERFLY_8_D(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,        \
-                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7)\
-{                                                                                 \
-    _out0 = __lasx_xvadd_d(_in0, _in7);                                           \
-    _out1 = __lasx_xvadd_d(_in1, _in6);                                           \
-    _out2 = __lasx_xvadd_d(_in2, _in5);                                           \
-    _out3 = __lasx_xvadd_d(_in3, _in4);                                           \
-    _out4 = __lasx_xvsub_d(_in3, _in4);                                           \
-    _out5 = __lasx_xvsub_d(_in2, _in5);                                           \
-    _out6 = __lasx_xvsub_d(_in1, _in6);                                           \
-    _out7 = __lasx_xvsub_d(_in0, _in7);                                           \
-}
+#define LASX_BUTTERFLY_8_D(_in0, _in1, _in2, _in3, _in4, _in5, _in6, _in7,  \
+                           _out0, _out1, _out2, _out3, _out4, _out5, _out6, \
+                           _out7)                                           \
+  {                                                                         \
+    _out0 = __lasx_xvadd_d(_in0, _in7);                                     \
+    _out1 = __lasx_xvadd_d(_in1, _in6);                                     \
+    _out2 = __lasx_xvadd_d(_in2, _in5);                                     \
+    _out3 = __lasx_xvadd_d(_in3, _in4);                                     \
+    _out4 = __lasx_xvsub_d(_in3, _in4);                                     \
+    _out5 = __lasx_xvsub_d(_in2, _in5);                                     \
+    _out6 = __lasx_xvsub_d(_in1, _in6);                                     \
+    _out7 = __lasx_xvsub_d(_in0, _in7);                                     \
+  }
 
-#endif //LASX
+#endif  // LASX
 
 /*
  * =============================================================================
@@ -1863,15 +1936,13 @@ static inline __m256i __lasx_xvsplati_h_h(__m256i in, int idx)
  *               VP:1,2,3,4,
  * =============================================================================
  */
-#define VECT_PRINT(RTYPE, element_num, in0, enter)    \
-{                                                     \
-    RTYPE _tmp0 = (RTYPE)in0;                         \
-    int _i = 0;                                       \
-    if (enter)                                        \
-        printf("\nVP:");                              \
-    for(_i = 0; _i < element_num; _i++)               \
-        printf("%d,",_tmp0[_i]);                      \
-}
+#define VECT_PRINT(RTYPE, element_num, in0, enter)                 \
+  {                                                                \
+    RTYPE _tmp0 = (RTYPE)in0;                                      \
+    int _i = 0;                                                    \
+    if (enter) printf("\nVP:");                                    \
+    for (_i = 0; _i < element_num; _i++) printf("%d,", _tmp0[_i]); \
+  }
 
 #endif /* LOONGSON_INTRINSICS_H */
 #endif /* AVUTIL_LOONGARCH_LOONGSON_INTRINSICS_H */
