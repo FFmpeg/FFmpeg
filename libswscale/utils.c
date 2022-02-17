@@ -278,42 +278,48 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_P416LE]      = { 1, 1 },
 };
 
-int ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos, int filterSize, int16_t *filter, int dstW){
+int ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos,
+                                   int filterSize, int16_t *filter,
+                                   int dstW)
+{
 #if ARCH_X86_64
-    int i, j, k, l;
+    int i, j, k;
     int cpu_flags = av_get_cpu_flags();
+    // avx2 hscale filter processes 16 pixel blocks.
+    if (!filter || dstW % 16 != 0)
+        return 0;
     if (EXTERNAL_AVX2_FAST(cpu_flags) && !(cpu_flags & AV_CPU_FLAG_SLOW_GATHER)) {
-        if ((c->srcBpc == 8) && (c->dstBpc <= 14)){
-            if (dstW % 16 == 0){
-                if (filter != NULL){
-                    for (i = 0; i < dstW; i += 8){
-                        FFSWAP(int, filterPos[i + 2], filterPos[i+4]);
-                        FFSWAP(int, filterPos[i + 3], filterPos[i+5]);
-                    }
-                    if (filterSize > 4){
-                        int16_t *tmp2 = av_malloc(dstW * filterSize * 2);
-                        if (!tmp2)
-                            return AVERROR(ENOMEM);
-                        memcpy(tmp2, filter, dstW * filterSize * 2);
-                        for (i = 0; i < dstW; i += 16){//pixel
-                            for (k = 0; k < filterSize / 4; ++k){//fcoeff
-                                for (j = 0; j < 16; ++j){//inner pixel
-                                    for (l = 0; l < 4; ++l){//coeff
-                                        int from = i * filterSize + j * filterSize + k * 4 + l;
-                                        int to = (i) * filterSize + j * 4 + l + k * 64;
-                                        filter[to] = tmp2[from];
-                                    }
-                                }
-                            }
-                        }
-                        av_free(tmp2);
-                    }
-                }
-            }
+        if ((c->srcBpc == 8) && (c->dstBpc <= 14)) {
+           int16_t *filterCopy = NULL;
+           if (filterSize > 4) {
+               if (!FF_ALLOC_TYPED_ARRAY(filterCopy, dstW * filterSize))
+                   return AVERROR(ENOMEM);
+               memcpy(filterCopy, filter, dstW * filterSize * sizeof(int16_t));
+           }
+           // Do not swap filterPos for pixels which won't be processed by
+           // the main loop.
+           for (i = 0; i + 8 <= dstW; i += 8) {
+               FFSWAP(int, filterPos[i + 2], filterPos[i + 4]);
+               FFSWAP(int, filterPos[i + 3], filterPos[i + 5]);
+           }
+           if (filterSize > 4) {
+               // 16 pixels are processed at a time.
+               for (i = 0; i + 16 <= dstW; i += 16) {
+                   // 4 filter coeffs are processed at a time.
+                   for (k = 0; k + 4 <= filterSize; k += 4) {
+                       for (j = 0; j < 16; ++j) {
+                           int from = (i + j) * filterSize + k;
+                           int to = i * filterSize + j * 4 + k * 16;
+                           memcpy(&filter[to], &filterCopy[from], 4 * sizeof(int16_t));
+                       }
+                   }
+               }
+           }
+           av_free(filterCopy);
         }
     }
-    return 0;
 #endif
+    return 0;
 }
 
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)
