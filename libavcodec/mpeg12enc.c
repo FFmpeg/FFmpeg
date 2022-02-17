@@ -1157,7 +1157,7 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     s->c_dc_scale_table = ff_mpeg12_dc_scale_table[s->intra_dc_precision];
 
     s->me.mv_penalty = mv_penalty;
-    s->fcode_tab     = fcode_tab;
+    s->fcode_tab     = fcode_tab + MAX_MV;
     if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
         s->min_qcoeff = -255;
         s->max_qcoeff = 255;

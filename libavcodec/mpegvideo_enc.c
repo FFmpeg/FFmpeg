@@ -286,7 +286,7 @@ static void mpv_encode_defaults(MpegEncContext *s)
 
     ff_thread_once(&init_static_once, mpv_encode_init_static);
 
-    s->fcode_tab     = default_fcode_tab;
+    s->fcode_tab     = default_fcode_tab + MAX_MV;
 
     s->input_picture_number  = 0;
     s->picture_in_gop_number = 0;

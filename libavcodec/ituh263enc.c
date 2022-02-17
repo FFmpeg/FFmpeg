@@ -843,7 +843,7 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
         break;
     case AV_CODEC_ID_H263P:
         if(s->umvplus)
-            s->fcode_tab= umv_fcode_tab;
+            s->fcode_tab = umv_fcode_tab + MAX_MV;
         if(s->modified_quant){
             s->min_qcoeff= -2047;
             s->max_qcoeff=  2047;

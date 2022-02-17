@@ -1290,7 +1290,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     ff_thread_once(&init_static_once, mpeg4_encode_init_static);
 
-    s->fcode_tab                = fcode_tab;
+    s->fcode_tab                = fcode_tab + MAX_MV;
     s->min_qcoeff               = -2048;
     s->max_qcoeff               = 2047;
     s->intra_ac_vlc_length      = uni_mpeg4_intra_rl_len;

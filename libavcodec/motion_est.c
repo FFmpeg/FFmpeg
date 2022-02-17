@@ -1619,8 +1619,7 @@ int ff_get_best_fcode(MpegEncContext * s, const int16_t (*mv_table)[2], int type
                 if(s->mb_type[xy] & type){
                     int mx= mv_table[xy][0];
                     int my= mv_table[xy][1];
-                    int fcode= FFMAX(fcode_tab[mx + MAX_MV],
-                                     fcode_tab[my + MAX_MV]);
+                    int fcode = FFMAX(fcode_tab[mx], fcode_tab[my]);
                     int j;
 
                     if (mx >= range || mx < -range ||
