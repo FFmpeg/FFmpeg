@@ -1616,6 +1616,14 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
             qf->surface.Data.V     = qf->surface.Data.UV + 2;
             break;
 
+        case AV_PIX_FMT_X2RGB10:
+        case AV_PIX_FMT_BGRA:
+            qf->surface.Data.B         = qf->frame->data[0];
+            qf->surface.Data.G         = qf->frame->data[0] + 1;
+            qf->surface.Data.R         = qf->frame->data[0] + 2;
+            qf->surface.Data.A         = qf->frame->data[0] + 3;
+            break;
+
         default:
             /* should not reach here */
             av_assert0(0);

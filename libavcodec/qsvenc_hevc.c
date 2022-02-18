@@ -304,6 +304,12 @@ const AVCodec ff_hevc_qsv_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
+#if QSV_VERSION_ATLEAST(1, 17)
+                                                    AV_PIX_FMT_BGRA,
+#endif
+#if QSV_VERSION_ATLEAST(1, 9)
+                                                    AV_PIX_FMT_X2RGB10,
+#endif
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,
     .defaults       = qsv_enc_defaults,
