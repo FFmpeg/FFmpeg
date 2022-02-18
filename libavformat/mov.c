@@ -3137,6 +3137,8 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     unsigned int i, entries;
     uint8_t version;
     uint32_t grouping_type;
+    MOVSbgp *table, **tablep;
+    int *table_count;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -3146,28 +3148,34 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     version = avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
     grouping_type = avio_rl32(pb);
-    if (grouping_type != MKTAG( 'r','a','p',' '))
-        return 0; /* only support 'rap ' grouping */
+
+    if (grouping_type == MKTAG('r','a','p',' ')) {
+        tablep = &sc->rap_group;
+        table_count = &sc->rap_group_count;
+    } else {
+        return 0;
+    }
+
     if (version == 1)
         avio_rb32(pb); /* grouping_type_parameter */
 
     entries = avio_rb32(pb);
     if (!entries)
         return 0;
-    if (sc->rap_group)
-        av_log(c->fc, AV_LOG_WARNING, "Duplicated SBGP atom\n");
-    av_free(sc->rap_group);
-    sc->rap_group_count = 0;
-    sc->rap_group = av_malloc_array(entries, sizeof(*sc->rap_group));
-    if (!sc->rap_group)
+    if (*tablep)
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated SBGP %s atom\n", av_fourcc2str(grouping_type));
+    av_freep(tablep);
+    table = av_malloc_array(entries, sizeof(*table));
+    if (!table)
         return AVERROR(ENOMEM);
+    *tablep = table;
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
-        sc->rap_group[i].count = avio_rb32(pb); /* sample_count */
-        sc->rap_group[i].index = avio_rb32(pb); /* group_description_index */
+        table[i].count = avio_rb32(pb); /* sample_count */
+        table[i].index = avio_rb32(pb); /* group_description_index */
     }
 
-    sc->rap_group_count = i;
+    *table_count = i;
 
     if (pb->eof_reached) {
         av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted SBGP atom\n");
