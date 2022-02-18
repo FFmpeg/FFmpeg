@@ -36,6 +36,7 @@ typedef struct XMedianContext {
     const AVPixFmtDescriptor *desc;
     int nb_inputs;
     int nb_frames;
+    int nb_threads;
     int planes;
     float percentile;
 
@@ -48,6 +49,9 @@ typedef struct XMedianContext {
     int linesizes[4];
     int width[4];
     int height[4];
+
+    uint8_t **data;
+    int *linesize;
 
     AVFrame **frames;
     FFFrameSync fs;
@@ -129,6 +133,8 @@ static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int
     AVFrame **in = td->in;                                                                      \
     AVFrame *out = td->out;                                                                     \
     const int nb_inputs = s->nb_inputs;                                                         \
+    uint8_t **srcf = s->data + jobnr * nb_inputs;                                               \
+    int *linesize = s->linesize + jobnr * nb_inputs;                                            \
     const int radius = s->radius;                                                               \
     const int index = s->index;                                                                 \
     type values[256];                                                                           \
@@ -136,6 +142,7 @@ static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int
     for (int p = 0; p < s->nb_planes; p++) {                                                    \
         const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
         const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
+        const int width = s->width[p];                                                          \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
         ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \
                                                                                                 \
@@ -147,10 +154,16 @@ static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int
             continue;                                                                           \
         }                                                                                       \
                                                                                                 \
+        for (int i = 0; i < nb_inputs; i++)                                                     \
+            linesize[i] = in[i]->linesize[p];                                                   \
+                                                                                                \
+        for (int i = 0; i < nb_inputs; i++)                                                     \
+            srcf[i] = in[i]->data[p] + slice_start * linesize[i];                               \
+                                                                                                \
         for (int y = slice_start; y < slice_end; y++) {                                         \
-            for (int x = 0; x < s->width[p]; x++) {                                             \
+            for (int x = 0; x < width; x++) {                                                   \
                 for (int i = 0; i < nb_inputs; i++) {                                           \
-                    const type *src = (const type *)(in[i]->data[p] + y * in[i]->linesize[p]);  \
+                    const type *src = (const type *)srcf[i];                                    \
                     values[i] = src[x];                                                         \
                 }                                                                               \
                                                                                                 \
@@ -162,6 +175,8 @@ static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int
             }                                                                                   \
                                                                                                 \
             dst += dst_linesize;                                                                \
+            for (int i = 0; i < nb_inputs; i++)                                                 \
+                srcf[i] += linesize[i];                                                         \
         }                                                                                       \
     }                                                                                           \
                                                                                                 \
@@ -199,7 +214,7 @@ static int process_frame(FFFrameSync *fs)
         td.in = in;
         td.out = out;
         ff_filter_execute(ctx, s->median_frames, &td, NULL,
-                          FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+                          FFMIN(s->height[1], s->nb_threads));
     }
 
     return ff_filter_frame(outlink, out);
@@ -230,6 +245,7 @@ static int config_output(AVFilterLink *outlink)
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->depth = s->desc->comp[0].depth;
     s->max = (1 << s->depth) - 1;
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
 
     if (s->depth <= 8)
         s->median_frames = median_frames8;
@@ -243,6 +259,14 @@ static int config_output(AVFilterLink *outlink)
     s->width[0] = s->width[3] = inlink->w;
     s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
     s->height[0] = s->height[3] = inlink->h;
+
+    s->data = av_calloc(s->nb_threads * s->nb_inputs, sizeof(*s->data));
+    if (!s->data)
+        return AVERROR(ENOMEM);
+
+    s->linesize = av_calloc(s->nb_threads * s->nb_inputs, sizeof(*s->linesize));
+    if (!s->linesize)
+        return AVERROR(ENOMEM);
 
     if (!s->xmedian)
         return 0;
@@ -283,6 +307,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (int i = 0; i < s->nb_frames && s->frames && !s->xmedian; i++)
         av_frame_free(&s->frames[i]);
     av_freep(&s->frames);
+    av_freep(&s->data);
+    av_freep(&s->linesize);
 }
 
 static int activate(AVFilterContext *ctx)
