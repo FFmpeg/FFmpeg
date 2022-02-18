@@ -8575,12 +8575,12 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
         return ret;
 
     for (;;) {
-    sample = av_index_search_timestamp(st, timestamp, flags);
-    av_log(s, AV_LOG_TRACE, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
-    if (sample < 0 && sti->nb_index_entries && timestamp < sti->index_entries[0].timestamp)
-        sample = 0;
-    if (sample < 0) /* not sure what to do */
-        return AVERROR_INVALIDDATA;
+        sample = av_index_search_timestamp(st, timestamp, flags);
+        av_log(s, AV_LOG_TRACE, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
+        if (sample < 0 && sti->nb_index_entries && timestamp < sti->index_entries[0].timestamp)
+            sample = 0;
+        if (sample < 0) /* not sure what to do */
+            return AVERROR_INVALIDDATA;
 
         if (!sample || can_seek_to_key_sample(st, sample, timestamp))
             break;
