@@ -1037,11 +1037,16 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                                      srcRange, table, dstRange,
                                      brightness, contrast, saturation);
 
-            c->cascaded_context[1] = sws_getContext(tmp_width, tmp_height, tmp_format,
-                                                    dstW, dstH, c->dstFormat,
-                                                    c->flags, NULL, NULL, c->param);
+            c->cascaded_context[1] = sws_alloc_set_opts(tmp_width, tmp_height, tmp_format,
+                                                        dstW, dstH, c->dstFormat,
+                                                        c->flags, c->param);
             if (!c->cascaded_context[1])
                 return -1;
+            c->cascaded_context[1]->srcRange = srcRange;
+            c->cascaded_context[1]->dstRange = dstRange;
+            ret = sws_init_context(c->cascaded_context[1], NULL , NULL);
+            if (ret < 0)
+                return ret;
             sws_setColorspaceDetails(c->cascaded_context[1], inv_table,
                                      srcRange, table, dstRange,
                                      0, 1 << 16, 1 << 16);
