@@ -3152,6 +3152,9 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (grouping_type == MKTAG('r','a','p',' ')) {
         tablep = &sc->rap_group;
         table_count = &sc->rap_group_count;
+    } else if (grouping_type == MKTAG('s','y','n','c')) {
+        tablep = &sc->sync_group;
+        table_count = &sc->sync_group_count;
     } else {
         return 0;
     }
@@ -4371,6 +4374,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_freep(&sc->stps_data);
     av_freep(&sc->elst_data);
     av_freep(&sc->rap_group);
+    av_freep(&sc->sync_group);
 
     return 0;
 }
@@ -7710,6 +7714,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->stps_data);
         av_freep(&sc->elst_data);
         av_freep(&sc->rap_group);
+        av_freep(&sc->sync_group);
         av_freep(&sc->display_matrix);
         av_freep(&sc->index_ranges);
 
