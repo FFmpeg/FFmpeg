@@ -220,6 +220,8 @@ typedef struct MOVStreamContext {
     MOVSbgp *rap_group;
     unsigned int sync_group_count;
     MOVSbgp *sync_group;
+    uint8_t *sgpd_sync;
+    uint32_t sgpd_sync_count;
 
     int nb_frames_for_fps;
     int64_t duration_for_fps;
