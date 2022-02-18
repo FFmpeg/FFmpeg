@@ -45,7 +45,7 @@ typedef struct XMedianContext {
     int depth;
     int max;
     int nb_planes;
-    int linesize[4];
+    int linesizes[4];
     int width[4];
     int height[4];
 
@@ -107,100 +107,69 @@ typedef struct ThreadData {
     AVFrame **in, *out;
 } ThreadData;
 
-static int comparei(const void *p1, const void *p2)
+static int compare8(const void *p1, const void *p2)
 {
-    int left  = *(const int *)p1;
-    int right = *(const int *)p2;
+    int left  = *(const uint8_t *)p1;
+    int right = *(const uint8_t *)p2;
     return FFDIFFSIGN(left, right);
 }
 
-static int median_frames16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static int compare16(const void *p1, const void *p2)
 {
-    XMedianContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame **in = td->in;
-    AVFrame *out = td->out;
-    const int nb_inputs = s->nb_inputs;
-    const int radius = s->radius;
-    const int index = s->index;
-    int values[256];
-
-    for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-        uint16_t *dst = (uint16_t *)(out->data[p] + slice_start * out->linesize[p]);
-
-        if (!((1 << p) & s->planes)) {
-            av_image_copy_plane((uint8_t *)dst, out->linesize[p],
-                                in[radius]->data[p] + slice_start * in[radius]->linesize[p],
-                                in[radius]->linesize[p],
-                                s->linesize[p], slice_end - slice_start);
-            continue;
-        }
-
-        for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->width[p]; x++) {
-                for (int i = 0; i < nb_inputs; i++) {
-                    const uint16_t *src = (const uint16_t *)(in[i]->data[p] + y * in[i]->linesize[p]);
-                    values[i] = src[x];
-                }
-
-                AV_QSORT(values, nb_inputs, int, comparei);
-                if (nb_inputs & 1)
-                    dst[x] = values[index];
-                else
-                    dst[x] = (values[index] + values[index - 1]) >> 1;
-            }
-
-            dst += out->linesize[p] / 2;
-        }
-    }
-
-    return 0;
+    int left  = *(const uint16_t *)p1;
+    int right = *(const uint16_t *)p2;
+    return FFDIFFSIGN(left, right);
 }
 
-static int median_frames8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    XMedianContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame **in = td->in;
-    AVFrame *out = td->out;
-    const int nb_inputs = s->nb_inputs;
-    const int radius = s->radius;
-    const int index = s->index;
-    int values[256];
-
-    for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
-        uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
-
-        if (!((1 << p) & s->planes)) {
-            av_image_copy_plane(dst, out->linesize[p],
-                                in[radius]->data[p] + slice_start * in[radius]->linesize[p],
-                                in[radius]->linesize[p],
-                                s->linesize[p], slice_end - slice_start);
-            continue;
-        }
-
-        for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->width[p]; x++) {
-                for (int i = 0; i < nb_inputs; i++)
-                    values[i] = in[i]->data[p][y * in[i]->linesize[p] + x];
-
-                AV_QSORT(values, nb_inputs, int, comparei);
-                if (nb_inputs & 1)
-                    dst[x] = values[index];
-                else
-                    dst[x] = (values[index] + values[index - 1]) >> 1;
-            }
-
-            dst += out->linesize[p];
-        }
-    }
-
-    return 0;
+#define MEDIAN_SLICE(name, type, comparei)                                                      \
+static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)       \
+{                                                                                               \
+    XMedianContext *s = ctx->priv;                                                              \
+    ThreadData *td = arg;                                                                       \
+    AVFrame **in = td->in;                                                                      \
+    AVFrame *out = td->out;                                                                     \
+    const int nb_inputs = s->nb_inputs;                                                         \
+    const int radius = s->radius;                                                               \
+    const int index = s->index;                                                                 \
+    type values[256];                                                                           \
+                                                                                                \
+    for (int p = 0; p < s->nb_planes; p++) {                                                    \
+        const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
+        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
+        type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
+        ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \
+                                                                                                \
+        if (!((1 << p) & s->planes)) {                                                          \
+            av_image_copy_plane((uint8_t *)dst, out->linesize[p],                               \
+                                in[radius]->data[p] + slice_start * in[radius]->linesize[p],    \
+                                in[radius]->linesize[p],                                        \
+                                s->linesizes[p], slice_end - slice_start);                      \
+            continue;                                                                           \
+        }                                                                                       \
+                                                                                                \
+        for (int y = slice_start; y < slice_end; y++) {                                         \
+            for (int x = 0; x < s->width[p]; x++) {                                             \
+                for (int i = 0; i < nb_inputs; i++) {                                           \
+                    const type *src = (const type *)(in[i]->data[p] + y * in[i]->linesize[p]);  \
+                    values[i] = src[x];                                                         \
+                }                                                                               \
+                                                                                                \
+                AV_QSORT(values, nb_inputs, type, comparei);                                    \
+                if (nb_inputs & 1)                                                              \
+                    dst[x] = values[index];                                                     \
+                else                                                                            \
+                    dst[x] = (values[index] + values[index - 1]) >> 1;                          \
+            }                                                                                   \
+                                                                                                \
+            dst += dst_linesize;                                                                \
+        }                                                                                       \
+    }                                                                                           \
+                                                                                                \
+    return 0;                                                                                   \
 }
+
+MEDIAN_SLICE(8, uint8_t, compare8)
+MEDIAN_SLICE(16, uint16_t, compare16)
 
 static int process_frame(FFFrameSync *fs)
 {
@@ -267,7 +236,7 @@ static int config_output(AVFilterLink *outlink)
     else
         s->median_frames = median_frames16;
 
-    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+    if ((ret = av_image_fill_linesizes(s->linesizes, inlink->format, inlink->w)) < 0)
         return ret;
 
     s->width[1] = s->width[2] = AV_CEIL_RSHIFT(inlink->w, s->desc->log2_chroma_w);
