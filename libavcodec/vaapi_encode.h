@@ -345,6 +345,9 @@ typedef struct VAAPIEncodeContext {
     int             roi_warned;
 
     AVFrame         *frame;
+
+    // Whether the driver support vaSyncBuffer
+    int             has_sync_buffer_func;
 } VAAPIEncodeContext;
 
 enum {

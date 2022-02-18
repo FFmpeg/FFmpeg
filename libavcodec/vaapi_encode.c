@@ -150,11 +150,25 @@ static int vaapi_encode_wait(AVCodecContext *avctx,
            "(input surface %#x).\n", pic->display_order,
            pic->encode_order, pic->input_surface);
 
-    vas = vaSyncSurface(ctx->hwctx->display, pic->input_surface);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to sync to picture completion: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR(EIO);
+#if VA_CHECK_VERSION(1, 9, 0)
+    if (ctx->has_sync_buffer_func) {
+        vas = vaSyncBuffer(ctx->hwctx->display,
+                           pic->output_buffer,
+                           VA_TIMEOUT_INFINITE);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to sync to output buffer completion: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            return AVERROR(EIO);
+        }
+    } else
+#endif
+    { // If vaSyncBuffer is not implemented, try old version API.
+        vas = vaSyncSurface(ctx->hwctx->display, pic->input_surface);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to sync to picture completion: "
+                "%d (%s).\n", vas, vaErrorStr(vas));
+            return AVERROR(EIO);
+        }
     }
 
     // Input is definitely finished with now.
@@ -2521,6 +2535,14 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
             memcpy(avctx->extradata, data, avctx->extradata_size);
         }
     }
+
+#if VA_CHECK_VERSION(1, 9, 0)
+    // check vaSyncBuffer function
+    vas = vaSyncBuffer(ctx->hwctx->display, VA_INVALID_ID, 0);
+    if (vas != VA_STATUS_ERROR_UNIMPLEMENTED) {
+        ctx->has_sync_buffer_func = 1;
+    }
+#endif
 
     return 0;
 
