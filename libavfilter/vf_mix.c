@@ -35,6 +35,7 @@ typedef struct MixContext {
     const AVPixFmtDescriptor *desc;
     char *weights_str;
     int nb_inputs;
+    int nb_threads;
     int duration;
     float *weights;
     float scale;
@@ -47,8 +48,11 @@ typedef struct MixContext {
     int max;
     int planes;
     int nb_planes;
-    int linesize[4];
+    int linesizes[4];
     int height[4];
+
+    uint8_t **data;
+    int *linesize;
 
     AVFrame **frames;
     FFFrameSync fs;
@@ -143,7 +147,7 @@ typedef struct ThreadData {
     for (int p = 0; p < s->nb_planes; p++) {                                                    \
         const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
         const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
-        const int width = s->linesize[p] / sizeof(type);                                        \
+        const int width = s->linesizes[p] / sizeof(type);                                       \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
         ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \
                                                                                                 \
@@ -151,16 +155,22 @@ typedef struct ThreadData {
             av_image_copy_plane((uint8_t *)dst, out->linesize[p],                               \
                                 in[0]->data[p] + slice_start * in[0]->linesize[p],              \
                                 in[0]->linesize[p],                                             \
-                                s->linesize[p], slice_end - slice_start);                       \
+                                s->linesizes[p], slice_end - slice_start);                      \
             continue;                                                                           \
         }                                                                                       \
+                                                                                                \
+        for (int i = 0; i < s->nb_inputs; i++)                                                  \
+            linesize[i] = in[i]->linesize[p];                                                   \
+                                                                                                \
+        for (int i = 0; i < s->nb_inputs; i++)                                                  \
+            srcf[i] = in[i]->data[p] + slice_start * linesize[i];                               \
                                                                                                 \
         for (int y = slice_start; y < slice_end; y++) {                                         \
             for (int x = 0; x < width; x++) {                                                   \
                 float val = 0.f;                                                                \
                                                                                                 \
                 for (int i = 0; i < s->nb_inputs; i++) {                                        \
-                    float src = *(type *)(in[i]->data[p] + y * in[i]->linesize[p] + x * sizeof(type));\
+                    float src = *(type *)(srcf[i] + x * sizeof(type));                          \
                                                                                                 \
                     val += src * weights[i];                                                    \
                 }                                                                               \
@@ -169,6 +179,8 @@ typedef struct ThreadData {
             }                                                                                   \
                                                                                                 \
             dst += dst_linesize;                                                                \
+            for (int i = 0; i < s->nb_inputs; i++)                                              \
+                srcf[i] += linesize[i];                                                         \
         }                                                                                       \
     }
 
@@ -184,6 +196,8 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame **in = td->in;
     AVFrame *out = td->out;
     const float *weights = s->weights;
+    uint8_t **srcf = s->data + jobnr * s->nb_inputs;
+    int *linesize = s->linesize + jobnr * s->nb_inputs;
 
     if (s->depth <= 8) {
         MIX_SLICE(uint8_t, lrintf, CLIP8)
@@ -227,7 +241,7 @@ static int process_frame(FFFrameSync *fs)
     td.in = in;
     td.out = out;
     ff_filter_execute(ctx, mix_frames, &td, NULL,
-                      FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
+                      FFMIN(s->height[0], s->nb_threads));
 
     return ff_filter_frame(outlink, out);
 }
@@ -253,6 +267,7 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
     s->desc = av_pix_fmt_desc_get(outlink->format);
     if (!s->desc)
         return AVERROR_BUG;
@@ -260,11 +275,19 @@ static int config_output(AVFilterLink *outlink)
     s->depth = s->desc->comp[0].depth;
     s->max = (1 << s->depth) - 1;
 
-    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+    if ((ret = av_image_fill_linesizes(s->linesizes, inlink->format, inlink->w)) < 0)
         return ret;
 
     s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
     s->height[0] = s->height[3] = inlink->h;
+
+    s->data = av_calloc(s->nb_threads * s->nb_inputs, sizeof(*s->data));
+    if (!s->data)
+        return AVERROR(ENOMEM);
+
+    s->linesize = av_calloc(s->nb_threads * s->nb_inputs, sizeof(*s->linesize));
+    if (!s->linesize)
+        return AVERROR(ENOMEM);
 
     if (s->tmix)
         return 0;
@@ -303,6 +326,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     ff_framesync_uninit(&s->fs);
     av_freep(&s->weights);
+    av_freep(&s->data);
+    av_freep(&s->linesize);
 
     if (s->tmix) {
         for (i = 0; i < s->nb_frames && s->frames; i++)
