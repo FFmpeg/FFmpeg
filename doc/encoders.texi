@@ -3591,6 +3591,12 @@ will refer only to P- or I-frames.  When set to greater values multiple layers
 of B-frames will be present, frames in each layer only referring to frames in
 higher layers.
 
+@item async_depth
+Maximum processing parallelism. Increase this to improve single channel
+performance. This option doesn't work if driver doesn't implement vaSyncBuffer
+function. Please make sure there are enough hw_frames allocated if a large
+number of async_depth is used.
+
 @item rc_mode
 Set the rate control mode to use.  A given driver may only support a subset of
 modes.
