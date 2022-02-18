@@ -50,6 +50,7 @@
 #include "libavutil/dovi_meta.h"
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
+#include "libavcodec/hevc.h"
 #include "libavcodec/mpegaudiodecheader.h"
 #include "libavcodec/mlp_parse.h"
 #include "avformat.h"
@@ -3882,6 +3883,69 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     msc->current_index = msc->index_ranges[0].start;
 }
 
+static uint32_t get_sgpd_sync_index(const MOVStreamContext *sc, int nal_unit_type)
+{
+    for (uint32_t i = 0; i < sc->sgpd_sync_count; i++)
+        if (sc->sgpd_sync[i] == HEVC_NAL_CRA_NUT)
+            return i + 1;
+    return 0;
+}
+
+static int build_open_gop_key_points(AVStream *st)
+{
+    int k;
+    int sample_id = 0;
+    uint32_t cra_index;
+    MOVStreamContext *sc = st->priv_data;
+
+    if (st->codecpar->codec_id != AV_CODEC_ID_HEVC || !sc->sync_group_count)
+        return 0;
+
+    /* Build an unrolled index of the samples */
+    sc->sample_offsets_count = 0;
+    for (uint32_t i = 0; i < sc->ctts_count; i++)
+        sc->sample_offsets_count += sc->ctts_data[i].count;
+    av_freep(&sc->sample_offsets);
+    sc->sample_offsets = av_calloc(sc->sample_offsets_count, sizeof(*sc->sample_offsets));
+    if (!sc->sample_offsets)
+        return AVERROR(ENOMEM);
+    k = 0;
+    for (uint32_t i = 0; i < sc->ctts_count; i++)
+        for (int j = 0; j < sc->ctts_data[i].count; j++)
+             sc->sample_offsets[k++] = sc->ctts_data[i].duration;
+
+    /* The following HEVC NAL type reveal the use of open GOP sync points
+     * (TODO: BLA types may also be concerned) */
+    cra_index = get_sgpd_sync_index(sc, HEVC_NAL_CRA_NUT); /* Clean Random Access */
+    if (!cra_index)
+        return 0;
+
+    /* Build a list of open-GOP key samples */
+    sc->open_key_samples_count = 0;
+    for (uint32_t i = 0; i < sc->sync_group_count; i++)
+        if (sc->sync_group[i].index == cra_index)
+            sc->open_key_samples_count += sc->sync_group[i].count;
+    av_freep(&sc->open_key_samples);
+    sc->open_key_samples = av_calloc(sc->open_key_samples_count, sizeof(*sc->open_key_samples));
+    if (!sc->open_key_samples)
+        return AVERROR(ENOMEM);
+    k = 0;
+    for (uint32_t i = 0; i < sc->sync_group_count; i++) {
+        const MOVSbgp *sg = &sc->sync_group[i];
+        if (sg->index == cra_index)
+            for (uint32_t j = 0; j < sg->count; j++)
+                sc->open_key_samples[k++] = sample_id;
+        sample_id += sg->count;
+    }
+
+    /* Identify the minimal time step between samples */
+    sc->min_sample_duration = UINT_MAX;
+    for (uint32_t i = 0; i < sc->stts_count; i++)
+        sc->min_sample_duration = FFMIN(sc->min_sample_duration, sc->stts_data[i].duration);
+
+    return 0;
+}
+
 static void mov_build_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
@@ -3896,6 +3960,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     uint64_t stream_size = 0;
     MOVCtts *ctts_data_old = sc->ctts_data;
     unsigned int ctts_count_old = sc->ctts_count;
+
+    int ret = build_open_gop_key_points(st);
+    if (ret < 0)
+        return;
 
     if (sc->elst_count) {
         int i, edit_start_index = 0, multiple_edits = 0;
@@ -7774,6 +7842,8 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->rap_group);
         av_freep(&sc->sync_group);
         av_freep(&sc->sgpd_sync);
+        av_freep(&sc->sample_offsets);
+        av_freep(&sc->open_key_samples);
         av_freep(&sc->display_matrix);
         av_freep(&sc->index_ranges);
 
@@ -8446,6 +8516,49 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
     return 0;
 }
 
+static int is_open_key_sample(const MOVStreamContext *sc, int sample)
+{
+    // TODO: a bisect search would scale much better
+    for (int i = 0; i < sc->open_key_samples_count; i++) {
+        const int oks = sc->open_key_samples[i];
+        if (oks == sample)
+            return 1;
+        if (oks > sample) /* list is monotically increasing so we can stop early */
+            break;
+    }
+    return 0;
+}
+
+/*
+ * Some key sample may be key frames but not IDR frames, so a random access to
+ * them may not be allowed.
+ */
+static int can_seek_to_key_sample(AVStream *st, int sample, int64_t requested_pts)
+{
+    MOVStreamContext *sc = st->priv_data;
+    FFStream *const sti = ffstream(st);
+    int64_t key_sample_dts, key_sample_pts;
+
+    if (st->codecpar->codec_id != AV_CODEC_ID_HEVC)
+        return 1;
+
+    if (sample >= sc->sample_offsets_count)
+        return 1;
+
+    key_sample_dts = sti->index_entries[sample].timestamp;
+    key_sample_pts = key_sample_dts + sc->sample_offsets[sample] + sc->dts_shift;
+
+    /*
+     * If the sample needs to be presented before an open key sample, they may
+     * not be decodable properly, even though they come after in decoding
+     * order.
+     */
+    if (is_open_key_sample(sc, sample) && key_sample_pts > requested_pts)
+        return 0;
+
+    return 1;
+}
+
 static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, int flags)
 {
     MOVStreamContext *sc = st->priv_data;
@@ -8461,12 +8574,19 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
     if (ret < 0)
         return ret;
 
+    for (;;) {
     sample = av_index_search_timestamp(st, timestamp, flags);
     av_log(s, AV_LOG_TRACE, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
     if (sample < 0 && sti->nb_index_entries && timestamp < sti->index_entries[0].timestamp)
         sample = 0;
     if (sample < 0) /* not sure what to do */
         return AVERROR_INVALIDDATA;
+
+        if (!sample || can_seek_to_key_sample(st, sample, timestamp))
+            break;
+        timestamp -= FFMAX(sc->min_sample_duration, 1);
+    }
+
     mov_current_sample_set(sc, sample);
     av_log(s, AV_LOG_TRACE, "stream %d, found sample %d\n", st->index, sc->current_sample);
     /* adjust ctts index */
