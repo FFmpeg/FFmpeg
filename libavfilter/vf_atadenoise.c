@@ -52,6 +52,7 @@ typedef struct ATADenoiseContext {
     int nb_planes;
     int planewidth[4];
     int planeheight[4];
+    int linesizes[4];
 
     struct FFBufQueue q;
     void *data[4][SIZE];
@@ -363,7 +364,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
         if (!((1 << p) & s->planes)) {
             av_image_copy_plane(dst, out->linesize[p], src, in->linesize[p],
-                                w, slice_end - slice_start);
+                                s->linesizes[p], slice_end - slice_start);
             continue;
         }
 
@@ -389,7 +390,7 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx = inlink->dst;
     ATADenoiseContext *s = ctx->priv;
-    int depth;
+    int depth, ret;
 
     s->nb_planes = desc->nb_components;
 
@@ -400,6 +401,9 @@ static int config_input(AVFilterLink *inlink)
 
     depth = desc->comp[0].depth;
     s->filter_slice = filter_slice;
+
+    if ((ret = av_image_fill_linesizes(s->linesizes, inlink->format, inlink->w)) < 0)
+        return ret;
 
     for (int p = 0; p < s->nb_planes; p++) {
         if (depth == 8 && s->sigma[p] == INT16_MAX)
