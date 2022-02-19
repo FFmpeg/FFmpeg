@@ -244,7 +244,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     AviSynthContext *avs = s->priv_data;
     const AVS_Map *avsmap;
     AVS_VideoFrame *frame;
-    int framedata, error;
+    int error;
     int planar = 0; // 0: packed, 1: YUV, 2: Y8, 3: Planar RGB, 4: YUVA, 5: Planar RGBA
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -507,7 +507,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
     if (avs_library.avs_get_version(avs->clip) >= 9) {
 
-        frame  = avs_library.avs_get_frame(avs->clip, framedata);
+        frame  = avs_library.avs_get_frame(avs->clip, 0);
         avsmap = avs_library.avs_get_frame_props_ro(avs->env, frame);
 
         /* Field order */
