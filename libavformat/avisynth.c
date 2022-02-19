@@ -245,7 +245,6 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     const AVS_Map *avsmap;
     AVS_VideoFrame *frame;
     int framedata, error;
-    bool frameprop;
     int planar = 0; // 0: packed, 1: YUV, 2: Y8, 3: Planar RGB, 4: YUVA, 5: Planar RGBA
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
