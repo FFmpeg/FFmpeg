@@ -2730,8 +2730,11 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
     //Flush remaining frames that are cached in the decoder
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt->stream_index = i;
-        if (do_read_frames)
+        if (do_read_frames) {
             while (process_frame(w, ifile, frame, pkt, &(int){1}) > 0);
+            if (ifile->streams[i].dec_ctx)
+                avcodec_flush_buffers(ifile->streams[i].dec_ctx);
+        }
     }
 
 end:
