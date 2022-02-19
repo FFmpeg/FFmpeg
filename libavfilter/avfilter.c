@@ -1559,6 +1559,14 @@ int ff_outlink_get_status(AVFilterLink *link)
     return link->status_in;
 }
 
+int ff_inoutlink_check_flow(AVFilterLink *inlink, AVFilterLink *outlink)
+{
+    return ff_outlink_frame_wanted(outlink) ||
+           ff_inlink_check_available_frame(inlink) ||
+           inlink->status_out;
+}
+
+
 const AVClass *avfilter_get_class(void)
 {
     return &avfilter_class;

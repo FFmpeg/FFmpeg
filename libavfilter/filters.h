@@ -258,4 +258,12 @@ static inline void ff_outlink_set_status(AVFilterLink *link, int status, int64_t
     } \
 } while (0)
 
+/**
+ * Check for flow control between input and output.
+ * This is necessary for filters that may produce several output frames for
+ * a single input event, otherwise they may produce them all at once,
+ * causing excessive memory consumption.
+ */
+int ff_inoutlink_check_flow(AVFilterLink *inlink, AVFilterLink *outlink);
+
 #endif /* AVFILTER_FILTERS_H */
