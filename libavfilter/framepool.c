@@ -76,27 +76,25 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
     }
 
     if (!pool->linesize[0]) {
-        for(i = 1; i <= align; i += i) {
-            ret = av_image_fill_linesizes(pool->linesize, pool->format,
-                                          FFALIGN(pool->width, i));
-            if (ret < 0) {
-                goto fail;
-            }
-            if (!(pool->linesize[0] & (pool->align - 1)))
-                break;
+        ret = av_image_fill_linesizes(pool->linesize, pool->format,
+                                      FFALIGN(pool->width, align));
+        if (ret < 0) {
+            goto fail;
         }
 
         for (i = 0; i < 4 && pool->linesize[i]; i++) {
             pool->linesize[i] = FFALIGN(pool->linesize[i], pool->align);
+            if ((pool->linesize[i] & (pool->align - 1)))
+                goto fail;
         }
     }
 
     for (i = 0; i < 4 && pool->linesize[i]; i++) {
-        int h = FFALIGN(pool->height, 32);
+        int h = pool->height;
         if (i == 1 || i == 2)
             h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
 
-        pool->pools[i] = av_buffer_pool_init(pool->linesize[i] * h + 16 + 16 - 1,
+        pool->pools[i] = av_buffer_pool_init(pool->linesize[i] * h + align,
                                              alloc);
         if (!pool->pools[i])
             goto fail;

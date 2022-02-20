@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/cpu.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 
@@ -31,9 +32,6 @@
 #include "framepool.h"
 #include "internal.h"
 #include "video.h"
-
-#define BUFFER_ALIGN 32
-
 
 AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h)
 {
@@ -46,6 +44,7 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
     int pool_width = 0;
     int pool_height = 0;
     int pool_align = 0;
+    int align = av_cpu_max_align();
     enum AVPixelFormat pool_format = AV_PIX_FMT_NONE;
 
     if (link->hw_frames_ctx &&
@@ -65,7 +64,7 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
 
     if (!link->frame_pool) {
         link->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,
-                                                    link->format, BUFFER_ALIGN);
+                                                    link->format, align);
         if (!link->frame_pool)
             return NULL;
     } else {
@@ -76,11 +75,11 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
         }
 
         if (pool_width != w || pool_height != h ||
-            pool_format != link->format || pool_align != BUFFER_ALIGN) {
+            pool_format != link->format || pool_align != align) {
 
             ff_frame_pool_uninit((FFFramePool **)&link->frame_pool);
             link->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,
-                                                        link->format, BUFFER_ALIGN);
+                                                        link->format, align);
             if (!link->frame_pool)
                 return NULL;
         }

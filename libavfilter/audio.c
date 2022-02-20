@@ -22,14 +22,12 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/cpu.h"
 
 #include "audio.h"
 #include "avfilter.h"
 #include "framepool.h"
 #include "internal.h"
-
-#define BUFFER_ALIGN 0
-
 
 AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
@@ -41,12 +39,13 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
     AVFrame *frame = NULL;
     int channels = link->channels;
     int channel_layout_nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+    int align = av_cpu_max_align();
 
     av_assert0(channels == channel_layout_nb_channels || !channel_layout_nb_channels);
 
     if (!link->frame_pool) {
         link->frame_pool = ff_frame_pool_audio_init(av_buffer_allocz, channels,
-                                                    nb_samples, link->format, BUFFER_ALIGN);
+                                                    nb_samples, link->format, align);
         if (!link->frame_pool)
             return NULL;
     } else {
@@ -62,11 +61,11 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
         }
 
         if (pool_channels != channels || pool_nb_samples < nb_samples ||
-            pool_format != link->format || pool_align != BUFFER_ALIGN) {
+            pool_format != link->format || pool_align != align) {
 
             ff_frame_pool_uninit((FFFramePool **)&link->frame_pool);
             link->frame_pool = ff_frame_pool_audio_init(av_buffer_allocz, channels,
-                                                        nb_samples, link->format, BUFFER_ALIGN);
+                                                        nb_samples, link->format, align);
             if (!link->frame_pool)
                 return NULL;
         }
