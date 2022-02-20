@@ -82,6 +82,7 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+    AV_PIX_FMT_GRAYF32, AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
     AV_PIX_FMT_NONE
 };
 
@@ -103,6 +104,8 @@ MASKED(min8,  uint8_t,  <)
 MASKED(max8,  uint8_t,  >)
 MASKED(min16, uint16_t, <)
 MASKED(max16, uint16_t, >)
+MASKED(min32, float,    <)
+MASKED(max32, float,    >)
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -127,8 +130,10 @@ static int config_input(AVFilterLink *inlink)
 
     if (desc->comp[0].depth == 8)
         s->maskedminmax = s->maskedmin ? maskedmin8  : maskedmax8;
-    else
+    else if (desc->comp[0].depth <= 16)
         s->maskedminmax = s->maskedmin ? maskedmin16 : maskedmax16;
+    else
+        s->maskedminmax = s->maskedmin ? maskedmin32 : maskedmax32;
 
     return 0;
 }
