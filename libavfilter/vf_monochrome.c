@@ -107,7 +107,7 @@ static int monochrome_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
         for (int x = 0; x < width; x++) {
             PROCESS()
 
-            yptr[x] = av_clip_uint8(ny * max);
+            yptr[x] = av_clip_uint8(lrintf(ny * max));
         }
 
         yptr += ylinesize;
@@ -146,7 +146,7 @@ static int monochrome_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb
         for (int x = 0; x < width; x++) {
             PROCESS()
 
-            yptr[x] = av_clip_uintp2_c(ny * max, depth);
+            yptr[x] = av_clip_uintp2_c(lrintf(ny * max), depth);
         }
 
         yptr += ylinesize;
