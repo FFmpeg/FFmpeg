@@ -88,42 +88,29 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static void limiter8(const uint8_t *src, uint8_t *dst,
-                     ptrdiff_t slinesize, ptrdiff_t dlinesize,
-                     int w, int h, int min, int max)
-{
-    int x, y;
-
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            dst[x] = av_clip(src[x], min, max);
-        }
-
-        dst += dlinesize;
-        src += slinesize;
-    }
+#define LIMITER(n, type)                                        \
+static void limiter##n(const uint8_t *ssrc, uint8_t *ddst,      \
+                       ptrdiff_t slinesize, ptrdiff_t dlinesize,\
+                       int w, int h, int min, int max)          \
+{                                                               \
+    const type *src = (const type *)ssrc;                       \
+    type *dst = (type *)ddst;                                   \
+                                                                \
+    dlinesize /= sizeof(type);                                  \
+    slinesize /= sizeof(type);                                  \
+                                                                \
+    for (int y = 0; y < h; y++) {                               \
+        for (int x = 0; x < w; x++) {                           \
+            dst[x] = av_clip(src[x], min, max);                 \
+        }                                                       \
+                                                                \
+        dst += dlinesize;                                       \
+        src += slinesize;                                       \
+    }                                                           \
 }
 
-static void limiter16(const uint8_t *ssrc, uint8_t *ddst,
-                      ptrdiff_t slinesize, ptrdiff_t dlinesize,
-                      int w, int h, int min, int max)
-{
-    const uint16_t *src = (const uint16_t *)ssrc;
-    uint16_t *dst = (uint16_t *)ddst;
-    int x, y;
-
-    dlinesize /= 2;
-    slinesize /= 2;
-
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            dst[x] = av_clip(src[x], min, max);
-        }
-
-        dst += dlinesize;
-        src += slinesize;
-    }
-}
+LIMITER(8,  uint8_t)
+LIMITER(16, uint16_t)
 
 static int config_input(AVFilterLink *inlink)
 {
