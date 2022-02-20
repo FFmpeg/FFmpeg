@@ -42,8 +42,6 @@
 #include "formats.h"
 #include "internal.h"
 
-#define MAX_CHANNELS 63
-
 #define ABS_THRES    -70            ///< silence gate: we discard anything below this absolute (LUFS) threshold
 #define ABS_UP_THRES  10            ///< upper loud limit to consider (ABS_THRES being the minimum)
 #define HIST_GRAIN   100            ///< defines histogram precision
@@ -63,10 +61,10 @@ struct hist_entry {
 };
 
 struct integrator {
-    double *cache[MAX_CHANNELS];    ///< window of filtered samples (N ms)
+    double **cache;                 ///< window of filtered samples (N ms)
     int cache_pos;                  ///< focus on the last added bin in the cache array
     int cache_size;
-    double sum[MAX_CHANNELS];       ///< sum of the last N ms filtered samples (cache content)
+    double *sum;                    ///< sum of the last N ms filtered samples (cache content)
     int filled;                     ///< 1 if the cache is completely filled, 0 otherwise
     double rel_threshold;           ///< relative threshold
     double sum_kept_powers;         ///< sum of the powers (weighted sums) above absolute threshold
@@ -111,9 +109,9 @@ typedef struct EBUR128Context {
 
     /* Filter caches.
      * The mult by 3 in the following is for X[i], X[i-1] and X[i-2] */
-    double x[MAX_CHANNELS * 3];     ///< 3 input samples cache for each channel
-    double y[MAX_CHANNELS * 3];     ///< 3 pre-filter samples cache for each channel
-    double z[MAX_CHANNELS * 3];     ///< 3 RLB-filter samples cache for each channel
+    double *x;                      ///< 3 input samples cache for each channel
+    double *y;                      ///< 3 pre-filter samples cache for each channel
+    double *z;                      ///< 3 RLB-filter samples cache for each channel
     double pre_b[3];                ///< pre-filter numerator coefficients
     double pre_a[3];                ///< pre-filter denominator coefficients
     double rlb_b[3];                ///< rlb-filter numerator coefficients
@@ -430,12 +428,23 @@ static int config_audio_output(AVFilterLink *outlink)
                    AV_CH_SURROUND_DIRECT_LEFT               |AV_CH_SURROUND_DIRECT_RIGHT)
 
     ebur128->nb_channels  = nb_channels;
+    ebur128->x            = av_calloc(nb_channels, 3 * sizeof(*ebur128->x));
+    ebur128->y            = av_calloc(nb_channels, 3 * sizeof(*ebur128->y));
+    ebur128->z            = av_calloc(nb_channels, 3 * sizeof(*ebur128->z));
     ebur128->ch_weighting = av_calloc(nb_channels, sizeof(*ebur128->ch_weighting));
-    if (!ebur128->ch_weighting)
+    if (!ebur128->ch_weighting || !ebur128->x || !ebur128->y || !ebur128->z)
         return AVERROR(ENOMEM);
 
 #define I400_BINS(x)  ((x) * 4 / 10)
 #define I3000_BINS(x) ((x) * 3)
+
+    ebur128->i400.sum = av_calloc(nb_channels, sizeof(*ebur128->i400.sum));
+    ebur128->i3000.sum = av_calloc(nb_channels, sizeof(*ebur128->i3000.sum));
+    ebur128->i400.cache = av_calloc(nb_channels, sizeof(*ebur128->i400.cache));
+    ebur128->i3000.cache = av_calloc(nb_channels, sizeof(*ebur128->i3000.cache));
+    if (!ebur128->i400.sum || !ebur128->i3000.sum ||
+        !ebur128->i400.cache || !ebur128->i3000.cache)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < nb_channels; i++) {
         /* channel weighting */
@@ -993,16 +1002,25 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_INFO, "\n");
 
     av_freep(&ebur128->y_line_ref);
+    av_freep(&ebur128->x);
+    av_freep(&ebur128->y);
+    av_freep(&ebur128->z);
     av_freep(&ebur128->ch_weighting);
     av_freep(&ebur128->true_peaks);
     av_freep(&ebur128->sample_peaks);
     av_freep(&ebur128->true_peaks_per_frame);
+    av_freep(&ebur128->i400.sum);
+    av_freep(&ebur128->i3000.sum);
     av_freep(&ebur128->i400.histogram);
     av_freep(&ebur128->i3000.histogram);
     for (i = 0; i < ebur128->nb_channels; i++) {
-        av_freep(&ebur128->i400.cache[i]);
-        av_freep(&ebur128->i3000.cache[i]);
+        if (ebur128->i400.cache)
+            av_freep(&ebur128->i400.cache[i]);
+        if (ebur128->i3000.cache)
+            av_freep(&ebur128->i3000.cache[i]);
     }
+    av_freep(&ebur128->i400.cache);
+    av_freep(&ebur128->i3000.cache);
     av_frame_free(&ebur128->outpicref);
 #if CONFIG_SWRESAMPLE
     av_freep(&ebur128->swr_buf);
