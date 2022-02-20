@@ -1303,14 +1303,16 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid INT32INFO, extra_bits = %d (> 30)\n", val[0]);
                 continue;
-            } else if (val[0]) {
+            } else {
                 s->extra_bits = val[0];
-            } else if (val[1]) {
+            }
+            if (val[1])
                 s->shift = val[1];
-            } else if (val[2]) {
+            if (val[2]) {
                 s->and   = s->or = 1;
                 s->shift = val[2];
-            } else if (val[3]) {
+            }
+            if (val[3]) {
                 s->and   = 1;
                 s->shift = val[3];
             }
