@@ -56,6 +56,7 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+    AV_PIX_FMT_GRAYF32, AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
     AV_PIX_FMT_NONE
 };
 
@@ -157,7 +158,7 @@ static void maskedmerge##n(const uint8_t *bbsrc, const uint8_t *oosrc, \
                                                                        \
     for (int y = 0; y < h; y++) {                                      \
         for (int x = 0; x < w; x++) {                                  \
-            dst[x] = bsrc[x] + ((msrc[x] * (osrc[x] - bsrc[x]) + half) >> shift); \
+            dst[x] = bsrc[x] + ((msrc[x] * (osrc[x] - bsrc[x]) + half) shift); \
         }                                                              \
                                                                        \
         dst  += dlinesize;                                             \
@@ -167,8 +168,9 @@ static void maskedmerge##n(const uint8_t *bbsrc, const uint8_t *oosrc, \
     }                                                                  \
 }
 
-MASKEDMERGE(8,  uint8_t, 128, 8)
-MASKEDMERGE(16, uint16_t, hhalf, sshift)
+MASKEDMERGE(8,  uint8_t, 128, >> 8)
+MASKEDMERGE(16, uint16_t, hhalf, >> sshift)
+MASKEDMERGE(32, float, 0.f, + 0.f)
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -189,10 +191,12 @@ static int config_input(AVFilterLink *inlink)
     s->depth = desc->comp[0].depth;
     s->half = (1 << s->depth) / 2;
 
-    if (desc->comp[0].depth == 8)
+    if (s->depth == 8)
         s->maskedmerge = maskedmerge8;
-    else
+    else if (s->depth <= 16)
         s->maskedmerge = maskedmerge16;
+    else
+        s->maskedmerge = maskedmerge32;
 
     if (ARCH_X86)
         ff_maskedmerge_init_x86(s);
