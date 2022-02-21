@@ -131,6 +131,7 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
+    AV_PIX_FMT_GRAYF32, AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
     AV_PIX_FMT_NONE
 };
 
@@ -214,8 +215,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         float *bptr = s->buffer;
         const uint8_t *src = in->data[plane];
         const uint16_t *src16 = (const uint16_t *)in->data[plane];
+        const float *src32 = (const float *)in->data[plane];
         uint8_t *dst = out->data[plane];
         uint16_t *dst16 = (uint16_t *)out->data[plane];
+        float *dst32 = (float *)out->data[plane];
         int y, x;
 
         if (!(s->planes & (1 << plane))) {
@@ -234,13 +237,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 bptr += width;
                 src += in->linesize[plane];
             }
-        } else {
+        } else if (s->depth <= 16) {
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
                     bptr[x] = src16[x];
                 }
                 bptr += width;
                 src16 += in->linesize[plane] / 2;
+            }
+        } else {
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width; x++) {
+                    memcpy(bptr, src32, width * sizeof(float));
+                }
+                bptr += width;
+                src32 += in->linesize[plane] / 4;
             }
         }
 
@@ -255,13 +266,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 bptr += width;
                 dst += out->linesize[plane];
             }
-        } else {
+        } else if (s->depth <= 16) {
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
                     dst16[x] = av_clip_uintp2_c(lrintf(bptr[x]), s->depth);
                 }
                 bptr += width;
                 dst16 += out->linesize[plane] / 2;
+            }
+        } else {
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width; x++) {
+                    memcpy(dst32, bptr, width * sizeof(float));
+                }
+                bptr += width;
+                dst32 += out->linesize[plane] / 4;
             }
         }
     }
