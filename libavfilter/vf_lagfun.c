@@ -63,6 +63,7 @@ static const enum AVPixelFormat pixel_fmts[] = {
     AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
     AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+    AV_PIX_FMT_GRAYF32, AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
     AV_PIX_FMT_NONE
 };
 
@@ -70,7 +71,7 @@ typedef struct ThreadData {
     AVFrame *in, *out;
 } ThreadData;
 
-#define LAGFUN(name, type)                                                \
+#define LAGFUN(name, type, round)                                         \
 static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
                               int jobnr, int nb_jobs)                     \
 {                                                                         \
@@ -104,7 +105,7 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
                 if (ctx->is_disabled) {                                   \
                     dst[x] = src[x];                                      \
                 } else {                                                  \
-                    dst[x] = lrintf(v);                                   \
+                    dst[x] = round(v);                                    \
                 }                                                         \
             }                                                             \
                                                                           \
@@ -117,8 +118,9 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
     return 0;                                                             \
 }
 
-LAGFUN(8, uint8_t)
-LAGFUN(16, uint16_t)
+LAGFUN(8,  uint8_t,  lrintf)
+LAGFUN(16, uint16_t, lrintf)
+LAGFUN(32, float,          )
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -133,7 +135,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_BUG;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->depth = desc->comp[0].depth;
-    s->lagfun = s->depth <= 8 ? lagfun_frame8 : lagfun_frame16;
+    s->lagfun = s->depth <= 8 ? lagfun_frame8 : s->depth <= 16 ? lagfun_frame16 : lagfun_frame32;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
