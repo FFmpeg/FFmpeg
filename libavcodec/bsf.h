@@ -30,7 +30,28 @@
 #include "packet.h"
 
 /**
- * @addtogroup lavc_core
+ * @defgroup lavc_bsf Bitstream filters
+ * @ingroup libavc
+ *
+ * Bitstream filters transform encoded media data without decoding it. This
+ * allows e.g. manipulating various header values. Bitstream filters operate on
+ * @ref AVPacket "AVPackets".
+ *
+ * The bitstream filtering API is centered around two structures:
+ * AVBitStreamFilter and AVBSFContext. The former represents a bitstream filter
+ * in abstract, the latter a specific filtering process. Obtain an
+ * AVBitStreamFilter using av_bsf_get_by_name() or av_bsf_iterate(), then pass
+ * it to av_bsf_alloc() to create an AVBSFContext. Fill in the user-settable
+ * AVBSFContext fields, as described in its documentation, then call
+ * av_bsf_init() to prepare the filter context for use.
+ *
+ * Submit packets for filtering using av_bsf_send_packet(), obtain filtered
+ * results with av_bsf_receive_packet(). When no more input packets will be
+ * sent, submit a NULL AVPacket to signal the end of the stream to the filter.
+ * av_bsf_receive_packet() will then return trailing packets, if any are
+ * produced by the filter.
+ *
+ * Finally, free the filter context with av_bsf_free().
  * @{
  */
 
