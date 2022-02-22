@@ -220,16 +220,11 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
+    out->pts = in->pts;
 
-    if (s->pts == AV_NOPTS_VALUE)
-        s->pts = in->pts;
     s->in = in;
     ff_filter_execute(ctx, fir_channels, out, NULL,
                       FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
-
-    out->pts = s->pts;
-    if (s->pts != AV_NOPTS_VALUE)
-        s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     av_frame_free(&in);
     s->in = NULL;
@@ -773,7 +768,6 @@ static int config_output(AVFilterLink *outlink)
 
     s->nb_channels = outlink->channels;
     s->nb_coef_channels = ctx->inputs[1 + s->selir]->channels;
-    s->pts = AV_NOPTS_VALUE;
 
     return 0;
 }
