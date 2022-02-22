@@ -1628,7 +1628,7 @@ static int activate(AVFilterContext *ctx)
         return ret;
 
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        ff_outlink_set_status(ctx->outputs[0], status, pts);
+        ff_outlink_set_status(outlink, status, pts);
         return 0;
     }
 
