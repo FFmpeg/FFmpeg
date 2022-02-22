@@ -22,6 +22,7 @@
 
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "audio.h"
 #include "ebur128.h"
@@ -502,9 +503,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         ff_ebur128_add_frames_double(s->r128_out, dst, subframe_length);
 
         s->pts +=
-        out->nb_samples =
-        inlink->min_samples =
-        inlink->max_samples = subframe_length;
+        out->nb_samples = subframe_length;
 
         s->frame_type = INNER_FRAME;
         break;
@@ -636,15 +635,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int flush_frame(AVFilterLink *outlink)
 {
-    int ret;
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     LoudNormContext *s = ctx->priv;
+    int ret = 0;
 
-    ret = ff_request_frame(inlink);
-    if (ret == AVERROR_EOF && s->frame_type == INNER_FRAME) {
+    if (s->frame_type == INNER_FRAME) {
         double *src;
         double *buf;
         int nb_samples, n, c, offset;
@@ -679,6 +677,48 @@ static int request_frame(AVFilterLink *outlink)
         ret = filter_frame(inlink, frame);
     }
     return ret;
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    LoudNormContext *s = ctx->priv;
+    AVFrame *in = NULL;
+    int ret = 0, status;
+    int64_t pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (s->frame_type != LINEAR_MODE) {
+        int nb_samples;
+
+        if (s->frame_type == FIRST_FRAME) {
+            nb_samples = frame_size(inlink->sample_rate, 3000);
+        } else {
+            nb_samples = frame_size(inlink->sample_rate, 100);
+        }
+
+        ret = ff_inlink_consume_samples(inlink, nb_samples, nb_samples, &in);
+    } else {
+        ret = ff_inlink_consume_frame(inlink, &in);
+    }
+
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        ret = filter_frame(inlink, in);
+    if (ret < 0)
+        return ret;
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        ff_outlink_set_status(outlink, status, pts);
+        return flush_frame(outlink);
+    }
+
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -748,11 +788,6 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     init_gaussian_filter(s);
-
-    if (s->frame_type != LINEAR_MODE) {
-        inlink->min_samples =
-        inlink->max_samples = frame_size(inlink->sample_rate, 3000);
-    }
 
     s->pts = AV_NOPTS_VALUE;
     s->buf_index =
@@ -894,14 +929,12 @@ static const AVFilterPad avfilter_af_loudnorm_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
 };
 
 static const AVFilterPad avfilter_af_loudnorm_outputs[] = {
     {
         .name          = "default",
-        .request_frame = request_frame,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
 };
@@ -912,6 +945,7 @@ const AVFilter ff_af_loudnorm = {
     .priv_size     = sizeof(LoudNormContext),
     .priv_class    = &loudnorm_class,
     .init          = init,
+    .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_loudnorm_inputs),
     FILTER_OUTPUTS(avfilter_af_loudnorm_outputs),
