@@ -58,7 +58,6 @@ typedef struct MagicYUVContext {
     PutBitContext        pb;
     int                  planes;
     uint8_t              format;
-    AVFrame             *p;
     int                  slice_height;
     int                  nb_slices;
     int                  correlate;
