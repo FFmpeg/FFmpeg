@@ -31,6 +31,7 @@ extern const AVBitStreamFilter ff_av1_metadata_bsf;
 extern const AVBitStreamFilter ff_chomp_bsf;
 extern const AVBitStreamFilter ff_dump_extradata_bsf;
 extern const AVBitStreamFilter ff_dca_core_bsf;
+extern const AVBitStreamFilter ff_dv_error_marker_bsf;
 extern const AVBitStreamFilter ff_eac3_core_bsf;
 extern const AVBitStreamFilter ff_extract_extradata_bsf;
 extern const AVBitStreamFilter ff_filter_units_bsf;

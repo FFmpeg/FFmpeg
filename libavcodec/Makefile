@@ -1163,6 +1163,7 @@ OBJS-$(CONFIG_AV1_FRAME_SPLIT_BSF)        += av1_frame_split_bsf.o
 OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_DCA_CORE_BSF)               += dca_core_bsf.o
+OBJS-$(CONFIG_DV_ERROR_MARKER_BSF)        += dv_error_marker_bsf.o
 OBJS-$(CONFIG_EAC3_CORE_BSF)              += eac3_core_bsf.o
 OBJS-$(CONFIG_EXTRACT_EXTRADATA_BSF)      += extract_extradata_bsf.o    \
                                              av1_parse.o h2645_parse.o

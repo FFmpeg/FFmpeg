@@ -132,6 +132,36 @@ the header stored in extradata to the key packets:
 ffmpeg -i INPUT -map 0 -flags:v +global_header -c:v libx264 -bsf:v dump_extra out.ts
 @end example
 
+@section dv_error_marker
+
+Blocks in DV which are marked as damaged are replaced by blocks of the specified color.
+
+@table @option
+@item color
+The color to replace damaged blocks by
+@item sta
+A 16 bit mask which specifies which of the 16 possible error status values are
+to be replaced by colored blocks. 0xFFFE is the default which replaces all non 0
+error status values.
+@table @samp
+@item ok
+No error, no concealment
+@item err
+Error, No concealment
+@item res
+Reserved
+@item notok
+Error or concealment
+@item notres
+Not reserved
+@item Aa, Ba, Ca, Ab, Bb, Cb, A, B, C, a, b, erri, erru
+The specific error status code
+@end table
+see page 44-46 or section 5.5 of
+@url{http://web.archive.org/web/20060927044735/http://www.smpte.org/smpte_store/standards/pdf/s314m.pdf}
+
+@end table
+
 @section eac3_core
 
 Extract the core from a E-AC-3 stream, dropping extra channels.
