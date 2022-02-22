@@ -167,9 +167,9 @@ const AVBitStreamFilter *av_bsf_iterate(void **opaque);
  * av_bsf_init() before sending any data to the filter.
  *
  * @param filter the filter for which to allocate an instance.
- * @param ctx a pointer into which the pointer to the newly-allocated context
- *            will be written. It must be freed with av_bsf_free() after the
- *            filtering is done.
+ * @param[out] ctx a pointer into which the pointer to the newly-allocated context
+ *                 will be written. It must be freed with av_bsf_free() after the
+ *                 filtering is done.
  *
  * @return 0 on success, a negative AVERROR code on failure
  */
@@ -195,9 +195,11 @@ int av_bsf_init(AVBSFContext *ctx);
  * sending more empty packets does nothing) and will cause the filter to output
  * any packets it may have buffered internally.
  *
- * @return 0 on success. AVERROR(EAGAIN) if packets need to be retrieved from the
- * filter (using av_bsf_receive_packet()) before new input can be consumed. Another
- * negative AVERROR value if an error occurs.
+ * @return
+ *  - 0 on success.
+ *  - AVERROR(EAGAIN) if packets need to be retrieved from the filter (using
+ *    av_bsf_receive_packet()) before new input can be consumed.
+ *  - Another negative AVERROR value if an error occurs.
  */
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
 
@@ -214,10 +216,12 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
  *                 overwritten by the returned data. On failure, pkt is not
  *                 touched.
  *
- * @return 0 on success. AVERROR(EAGAIN) if more packets need to be sent to the
- * filter (using av_bsf_send_packet()) to get more output. AVERROR_EOF if there
- * will be no further output from the filter. Another negative AVERROR value if
- * an error occurs.
+ * @return
+ *  - 0 on success.
+ *  - AVERROR(EAGAIN) if more packets need to be sent to the filter (using
+ *    av_bsf_send_packet()) to get more output.
+ *  - AVERROR_EOF if there will be no further output from the filter.
+ *  - Another negative AVERROR value if an error occurs.
  *
  * @note one input packet may result in several output packets, so after sending
  * a packet with av_bsf_send_packet(), this function needs to be called
