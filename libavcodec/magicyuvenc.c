@@ -452,32 +452,30 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (s->correlate) {
+        uint8_t *const data[4] = { frame->data[1], frame->data[0],
+                                   frame->data[2], frame->data[3] };
+        const int linesize[4]  = { frame->linesize[1], frame->linesize[0],
+                                   frame->linesize[2], frame->linesize[3] };
         uint8_t *r, *g, *b;
-        AVFrame *p = av_frame_clone(frame);
 
-        g = p->data[0];
-        b = p->data[1];
-        r = p->data[2];
+        g = frame->data[0];
+        b = frame->data[1];
+        r = frame->data[2];
 
         for (i = 0; i < height; i++) {
             s->llvidencdsp.diff_bytes(b, b, g, width);
             s->llvidencdsp.diff_bytes(r, r, g, width);
-            g += p->linesize[0];
-            b += p->linesize[1];
-            r += p->linesize[2];
+            g += frame->linesize[0];
+            b += frame->linesize[1];
+            r += frame->linesize[2];
         }
-
-        FFSWAP(uint8_t*, p->data[0], p->data[1]);
-        FFSWAP(int, p->linesize[0], p->linesize[1]);
 
         for (i = 0; i < s->planes; i++) {
             for (slice = 0; slice < s->nb_slices; slice++) {
-                s->predict(s, p->data[i], s->slices[i], p->linesize[i],
-                               p->width, p->height);
+                s->predict(s, data[i], s->slices[i], linesize[i],
+                           frame->width, frame->height);
             }
         }
-
-        av_frame_free(&p);
     } else {
         for (i = 0; i < s->planes; i++) {
             for (slice = 0; slice < s->nb_slices; slice++) {
