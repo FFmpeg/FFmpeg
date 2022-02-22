@@ -67,6 +67,7 @@ typedef struct MagicYUVContext {
     uint8_t             *slices[4];
     unsigned             slice_pos[4];
     unsigned             tables_size;
+    uint8_t             *decorrelate_buf[2];
     HuffEntry            he[4][256];
     LLVidEncDSPContext   llvidencdsp;
     void (*predict)(struct MagicYUVContext *s, const uint8_t *src, uint8_t *dst,
@@ -189,6 +190,12 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         avctx->codec_tag = MKTAG('M', '8', 'G', '0');
         s->format = 0x6b;
         break;
+    }
+    if (s->correlate) {
+        s->decorrelate_buf[0] = av_calloc(2U * avctx->height, FFALIGN(avctx->width, 16));
+        if (!s->decorrelate_buf[0])
+            return AVERROR(ENOMEM);
+        s->decorrelate_buf[1] = s->decorrelate_buf[0] + avctx->height * FFALIGN(avctx->width, 16);
     }
 
     ff_llvidencdsp_init(&s->llvidencdsp);
@@ -452,22 +459,26 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (s->correlate) {
-        uint8_t *const data[4] = { frame->data[1], frame->data[0],
-                                   frame->data[2], frame->data[3] };
-        const int linesize[4]  = { frame->linesize[1], frame->linesize[0],
-                                   frame->linesize[2], frame->linesize[3] };
-        uint8_t *r, *g, *b;
+        uint8_t *r, *g, *b, *decorrelated[2] = { s->decorrelate_buf[0],
+                                                 s->decorrelate_buf[1] };
+        const int decorrelate_linesize = FFALIGN(width, 16);
+        const uint8_t *const data[4] = { decorrelated[0], frame->data[0],
+                                         decorrelated[1], frame->data[3] };
+        const int linesize[4]  = { decorrelate_linesize, frame->linesize[0],
+                                   decorrelate_linesize, frame->linesize[3] };
 
         g = frame->data[0];
         b = frame->data[1];
         r = frame->data[2];
 
         for (i = 0; i < height; i++) {
-            s->llvidencdsp.diff_bytes(b, b, g, width);
-            s->llvidencdsp.diff_bytes(r, r, g, width);
+            s->llvidencdsp.diff_bytes(decorrelated[0], b, g, width);
+            s->llvidencdsp.diff_bytes(decorrelated[1], r, g, width);
             g += frame->linesize[0];
             b += frame->linesize[1];
             r += frame->linesize[2];
+            decorrelated[0] += decorrelate_linesize;
+            decorrelated[1] += decorrelate_linesize;
         }
 
         for (i = 0; i < s->planes; i++) {
@@ -531,6 +542,7 @@ static av_cold int magy_encode_close(AVCodecContext *avctx)
 
     for (i = 0; i < s->planes; i++)
         av_freep(&s->slices[i]);
+    av_freep(&s->decorrelate_buf);
 
     return 0;
 }
