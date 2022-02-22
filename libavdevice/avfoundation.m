@@ -313,8 +313,9 @@ static void destroy_context(AVFContext* ctx)
 static int parse_device_name(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
-    ctx->url = av_strdup(s->url);
     char *save;
+
+    ctx->url = av_strdup(s->url);
 
     if (!ctx->url)
         return AVERROR(ENOMEM);
