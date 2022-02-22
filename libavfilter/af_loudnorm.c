@@ -86,7 +86,7 @@ typedef struct LoudNormContext {
     int attack_length;
     int release_length;
 
-    int64_t pts;
+    int64_t pts[30];
     enum FrameType frame_type;
     int above_threshold;
     int prev_nb_samples;
@@ -432,10 +432,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    if (s->pts == AV_NOPTS_VALUE)
-        s->pts = in->pts;
+    out->pts = s->pts[0];
+    memmove(s->pts, &s->pts[1], (FF_ARRAY_ELEMS(s->pts) - 1) * sizeof(s->pts[0]));
 
-    out->pts = s->pts;
     src = (const double *)in->data[0];
     dst = (double *)out->data[0];
     buf = s->buf;
@@ -502,7 +501,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         true_peak_limiter(s, dst, subframe_length, inlink->ch_layout.nb_channels);
         ff_ebur128_add_frames_double(s->r128_out, dst, subframe_length);
 
-        s->pts +=
         out->nb_samples = subframe_length;
 
         s->frame_type = INNER_FRAME;
@@ -567,7 +565,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (s->index >= 30)
             s->index -= 30;
         s->prev_nb_samples = in->nb_samples;
-        s->pts += in->nb_samples;
         break;
 
     case FINAL_FRAME:
@@ -625,13 +622,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         dst = (double *)out->data[0];
         ff_ebur128_add_frames_double(s->r128_out, dst, in->nb_samples);
-        s->pts += in->nb_samples;
         break;
     }
 
     if (in != out)
         av_frame_free(&in);
-
     return ff_filter_frame(outlink, out);
 }
 
@@ -706,8 +701,19 @@ static int activate(AVFilterContext *ctx)
 
     if (ret < 0)
         return ret;
-    if (ret > 0)
+    if (ret > 0) {
+        if (s->frame_type == FIRST_FRAME) {
+            const int nb_samples = frame_size(inlink->sample_rate, 100);
+
+            for (int i = 0; i < FF_ARRAY_ELEMS(s->pts); i++)
+                s->pts[i] = in->pts + i * nb_samples;
+        } else if (s->frame_type == LINEAR_MODE) {
+            s->pts[0] = in->pts;
+        } else {
+            s->pts[FF_ARRAY_ELEMS(s->pts) - 1] = in->pts;
+        }
         ret = filter_frame(inlink, in);
+    }
     if (ret < 0)
         return ret;
 
@@ -789,7 +795,6 @@ static int config_input(AVFilterLink *inlink)
 
     init_gaussian_filter(s);
 
-    s->pts = AV_NOPTS_VALUE;
     s->buf_index =
     s->prev_buf_index =
     s->limiter_buf_index = 0;
