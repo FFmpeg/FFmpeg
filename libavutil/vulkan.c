@@ -829,11 +829,12 @@ void ff_vk_print_shader(void *ctx, FFVkSPIRVShader *shd, int prio)
     int line = 0;
     const char *p = shd->src.str;
     const char *start = p;
+    const size_t len = strlen(p);
 
     AVBPrint buf;
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    for (int i = 0; i < strlen(p); i++) {
+    for (int i = 0; i < len; i++) {
         if (p[i] == '\n') {
             av_bprintf(&buf, "%i\t", ++line);
             av_bprint_append_data(&buf, start, &p[i] - start + 1);
