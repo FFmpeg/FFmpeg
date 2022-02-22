@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/audio_fifo.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/tx.h"
@@ -102,16 +101,13 @@ typedef struct AudioSurroundContext {
     AVFrame *output;
     AVFrame *output_out;
     AVFrame *overlap_buffer;
+    AVFrame *window;
 
     int buf_size;
     int hop_size;
-    AVAudioFifo *fifo;
     AVTXContext **rdft, **irdft;
     av_tx_fn tx_fn, itx_fn;
     float *window_func_lut;
-
-    int64_t pts;
-    int eof;
 
     void (*filter)(AVFilterContext *ctx);
     void (*upmix_stereo)(AVFilterContext *ctx,
@@ -245,16 +241,16 @@ static int config_input(AVFilterLink *inlink)
     if (ch >= 0)
         s->input_levels[ch] *= s->lfe_in;
 
-    s->input_in = ff_get_audio_buffer(inlink, s->buf_size + 2);
+    s->window = ff_get_audio_buffer(inlink, s->buf_size * 2);
+    if (!s->window)
+        return AVERROR(ENOMEM);
+
+    s->input_in = ff_get_audio_buffer(inlink, s->buf_size * 2);
     if (!s->input_in)
         return AVERROR(ENOMEM);
 
     s->input = ff_get_audio_buffer(inlink, s->buf_size + 2);
     if (!s->input)
-        return AVERROR(ENOMEM);
-
-    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, s->buf_size);
-    if (!s->fifo)
         return AVERROR(ENOMEM);
 
     s->lowcut = 1.f * s->lowcutf / (inlink->sample_rate * 0.5) * (s->buf_size / 2);
@@ -1513,7 +1509,6 @@ fail:
     }
 
     s->buf_size = 1 << av_log2(s->win_size);
-    s->pts = AV_NOPTS_VALUE;
 
     s->window_func_lut = av_calloc(s->buf_size, sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
@@ -1540,16 +1535,21 @@ fail:
 static int fft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 {
     AudioSurroundContext *s = ctx->priv;
+    float *src = (float *)s->input_in->extended_data[ch];
+    float *win = (float *)s->window->extended_data[ch];
+    const int offset = s->buf_size - s->hop_size;
     const float level_in = s->input_levels[ch];
-    float *dst;
-    int n;
+    AVFrame *in = arg;
 
-    dst = (float *)s->input_in->extended_data[ch];
-    for (n = 0; n < s->buf_size; n++) {
-        dst[n] *= s->window_func_lut[n] * level_in;
+    memmove(src, &src[s->hop_size], offset * sizeof(float));
+    memcpy(&src[offset], in->extended_data[ch], in->nb_samples * sizeof(float));
+    memset(&src[offset + in->nb_samples], 0, (s->hop_size - in->nb_samples) * sizeof(float));
+
+    for (int n = 0; n < s->buf_size; n++) {
+        win[n] = src[n] * s->window_func_lut[n] * level_in;
     }
 
-    s->tx_fn(s->rdft[ch], (float *)s->input->extended_data[ch], dst, sizeof(float));
+    s->tx_fn(s->rdft[ch], (float *)s->input->extended_data[ch], win, sizeof(float));
 
     return 0;
 }
@@ -1583,19 +1583,14 @@ static int ifft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioSurroundContext *s = ctx->priv;
     AVFrame *out;
-    int ret;
 
-    ret = av_audio_fifo_peek(s->fifo, (void **)s->input_in->extended_data, s->buf_size);
-    if (ret < 0)
-        return ret;
-
-    ff_filter_execute(ctx, fft_channel, NULL, NULL, inlink->channels);
+    ff_filter_execute(ctx, fft_channel, in, NULL, inlink->channels);
 
     s->filter(ctx);
 
@@ -1605,11 +1600,10 @@ static int filter_frame(AVFilterLink *inlink)
 
     ff_filter_execute(ctx, ifft_channel, out, NULL, outlink->channels);
 
-    out->pts = s->pts;
-    if (s->pts != AV_NOPTS_VALUE)
-        s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
-    av_audio_fifo_drain(s->fifo, FFMIN(av_audio_fifo_size(s->fifo), s->hop_size));
+    out->pts = in->pts;
+    out->nb_samples = in->nb_samples;
 
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
@@ -1624,48 +1618,21 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (!s->eof && av_audio_fifo_size(s->fifo) < s->buf_size) {
-        ret = ff_inlink_consume_frame(inlink, &in);
-        if (ret < 0)
-            return ret;
-
-        if (ret > 0) {
-            ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
-                                      in->nb_samples);
-            if (ret >= 0 && s->pts == AV_NOPTS_VALUE)
-                s->pts = in->pts;
-
-            av_frame_free(&in);
-            if (ret < 0)
-                return ret;
-        }
-    }
-
-    if ((av_audio_fifo_size(s->fifo) >= s->buf_size) ||
-        (av_audio_fifo_size(s->fifo) > 0 && s->eof)) {
-        ret = filter_frame(inlink);
-        if (av_audio_fifo_size(s->fifo) >= s->buf_size)
-            ff_filter_set_ready(ctx, 100);
+    ret = ff_inlink_consume_samples(inlink, s->hop_size, s->hop_size, &in);
+    if (ret < 0)
         return ret;
-    }
 
-    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        if (status == AVERROR_EOF) {
-            s->eof = 1;
-            if (av_audio_fifo_size(s->fifo) >= 0) {
-                ff_filter_set_ready(ctx, 100);
-                return 0;
-            }
-        }
-    }
+    if (ret > 0)
+        ret = filter_frame(inlink, in);
+    if (ret < 0)
+        return ret;
 
-    if (s->eof && av_audio_fifo_size(s->fifo) <= 0) {
-        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        ff_outlink_set_status(ctx->outputs[0], status, pts);
         return 0;
     }
 
-    if (!s->eof)
-        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
 }
@@ -1674,6 +1641,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
 
+    av_frame_free(&s->window);
     av_frame_free(&s->input_in);
     av_frame_free(&s->input);
     av_frame_free(&s->output);
@@ -1688,7 +1656,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->output_levels);
     av_freep(&s->rdft);
     av_freep(&s->irdft);
-    av_audio_fifo_free(s->fifo);
     av_freep(&s->window_func_lut);
 }
 
