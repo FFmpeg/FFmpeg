@@ -69,12 +69,12 @@ typedef struct MagicYUVContext {
     unsigned             tables_size;
     HuffEntry            he[4][256];
     LLVidEncDSPContext   llvidencdsp;
-    void (*predict)(struct MagicYUVContext *s, uint8_t *src, uint8_t *dst,
+    void (*predict)(struct MagicYUVContext *s, const uint8_t *src, uint8_t *dst,
                     ptrdiff_t stride, int width, int height);
 } MagicYUVContext;
 
 static void left_predict(MagicYUVContext *s,
-                         uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                          int width, int height)
 {
     uint8_t prev = 0;
@@ -98,7 +98,7 @@ static void left_predict(MagicYUVContext *s,
 }
 
 static void gradient_predict(MagicYUVContext *s,
-                             uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                             const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                              int width, int height)
 {
     int left = 0, top, lefttop;
@@ -126,7 +126,7 @@ static void gradient_predict(MagicYUVContext *s,
 }
 
 static void median_predict(MagicYUVContext *s,
-                           uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                           const uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                            int width, int height)
 {
     int left = 0, lefttop;
