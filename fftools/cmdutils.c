@@ -34,6 +34,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/version.h"
 #include "libavfilter/avfilter.h"
+#include "libavfilter/version.h"
 #include "libavdevice/avdevice.h"
 #include "libavdevice/version.h"
 #include "libswscale/swscale.h"

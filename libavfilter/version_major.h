@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VERSION_H
-#define AVFILTER_VERSION_H
+#ifndef AVFILTER_VERSION_MAJOR_H
+#define AVFILTER_VERSION_MAJOR_H
 
 /**
  * @file
@@ -27,22 +27,16 @@
  * Libavfilter version macros
  */
 
-#include "libavutil/version.h"
+#define LIBAVFILTER_VERSION_MAJOR   8
 
-#include "version_major.h"
+/**
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
+ */
 
-#define LIBAVFILTER_VERSION_MINOR  28
-#define LIBAVFILTER_VERSION_MICRO 100
+#define FF_API_SWS_PARAM_OPTION             (LIBAVFILTER_VERSION_MAJOR < 9)
+#define FF_API_BUFFERSINK_ALLOC             (LIBAVFILTER_VERSION_MAJOR < 9)
+#define FF_API_PAD_COUNT                    (LIBAVFILTER_VERSION_MAJOR < 9)
 
-
-#define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
-                                               LIBAVFILTER_VERSION_MINOR, \
-                                               LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_VERSION     AV_VERSION(LIBAVFILTER_VERSION_MAJOR,   \
-                                           LIBAVFILTER_VERSION_MINOR,   \
-                                           LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
-
-#define LIBAVFILTER_IDENT       "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
-
-#endif /* AVFILTER_VERSION_H */
+#endif /* AVFILTER_VERSION_MAJOR_H */

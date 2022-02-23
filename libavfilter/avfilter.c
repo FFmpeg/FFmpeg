@@ -43,6 +43,7 @@
 #include "formats.h"
 #include "framepool.h"
 #include "internal.h"
+#include "version.h"
 
 #include "libavutil/ffversion.h"
 const char av_filter_ffversion[] = "FFmpeg version " FFMPEG_VERSION;

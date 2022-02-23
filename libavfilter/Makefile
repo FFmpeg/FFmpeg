@@ -5,6 +5,7 @@ HEADERS = avfilter.h                                                    \
           buffersink.h                                                  \
           buffersrc.h                                                   \
           version.h                                                     \
+          version_major.h                                               \
 
 OBJS = allfilters.o                                                     \
        audio.o                                                          \
