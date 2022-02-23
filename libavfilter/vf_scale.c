@@ -138,6 +138,7 @@ typedef struct ScaleContext {
     char *out_color_matrix;
 
     int in_range;
+    int in_frame_range;
     int out_range;
 
     int out_h_chr_pos;
@@ -321,6 +322,8 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
     }
     scale->opts = *opts;
     *opts = NULL;
+
+    scale->in_frame_range = AVCOL_RANGE_UNSPECIFIED;
 
     return 0;
 }
@@ -544,6 +547,9 @@ static int config_props(AVFilterLink *outlink)
             if (scale->in_range != AVCOL_RANGE_UNSPECIFIED)
                 av_opt_set_int(s, "src_range",
                                scale->in_range == AVCOL_RANGE_JPEG, 0);
+            else if (scale->in_frame_range != AVCOL_RANGE_UNSPECIFIED)
+                av_opt_set_int(s, "src_range",
+                               scale->in_frame_range == AVCOL_RANGE_JPEG, 0);
             if (scale->out_range != AVCOL_RANGE_UNSPECIFIED)
                 av_opt_set_int(s, "dst_range",
                                scale->out_range == AVCOL_RANGE_JPEG, 0);
@@ -689,6 +695,13 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
                     in->format != link->format ||
                     in->sample_aspect_ratio.den != link->sample_aspect_ratio.den ||
                     in->sample_aspect_ratio.num != link->sample_aspect_ratio.num;
+
+    if (in->color_range != AVCOL_RANGE_UNSPECIFIED &&
+        scale->in_range == AVCOL_RANGE_UNSPECIFIED &&
+        in->color_range != scale->in_frame_range) {
+        scale->in_frame_range = in->color_range;
+        frame_changed = 1;
+    }
 
     if (scale->eval_mode == EVAL_MODE_FRAME || frame_changed) {
         unsigned vars_w[VARS_NB] = { 0 }, vars_h[VARS_NB] = { 0 };
