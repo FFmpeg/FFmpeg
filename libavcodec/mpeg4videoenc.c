@@ -33,6 +33,7 @@
 #include "mpeg4videoenc.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
+#include "version.h"
 
 /* The uni_DCtab_* tables below contain unified bits+length tables to encode DC
  * differences in MPEG-4. Unified in the sense that the specification specifies

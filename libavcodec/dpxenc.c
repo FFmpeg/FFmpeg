@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "encode.h"
 #include "internal.h"
+#include "version.h"
 
 typedef struct DPXContext {
     int big_endian;

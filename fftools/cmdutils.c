@@ -55,6 +55,7 @@
 #include "libavutil/ffversion.h"
 #include "libavutil/version.h"
 #include "libavcodec/bsf.h"
+#include "libavcodec/version.h"
 #include "cmdutils.h"
 #if HAVE_SYS_RESOURCE_H
 #include <sys/time.h>

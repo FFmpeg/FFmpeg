@@ -27,7 +27,8 @@
 
 #include "libavutil/version.h"
 
-#define LIBAVCODEC_VERSION_MAJOR  59
+#include "version_major.h"
+
 #define LIBAVCODEC_VERSION_MINOR  24
 #define LIBAVCODEC_VERSION_MICRO 100
 
@@ -40,31 +41,5 @@
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
-
-/**
- * FF_API_* defines may be placed below to indicate public API that will be
- * dropped at a future version bump. The defines themselves are not part of
- * the public API and may change, break or disappear at any time.
- *
- * @note, when bumping the major version it is recommended to manually
- * disable each FF_API_* in its own commit instead of disabling them all
- * at once through the bump. This improves the git bisect-ability of the change.
- */
-
-#define FF_API_OPENH264_SLICE_MODE (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_OPENH264_CABAC      (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_UNUSED_CODEC_CAPS   (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_THREAD_SAFE_CALLBACKS (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_GET_FRAME_CLASS     (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_AUTO_THREADS        (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_AVCTX_TIMEBASE    (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_MPEGVIDEO_OPTS      (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_FLAG_TRUNCATED      (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_SUB_TEXT_FORMAT     (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_MJPEG_PRED          (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_IDCT_NONE           (LIBAVCODEC_VERSION_MAJOR < 60)
-#define FF_API_SVTAV1_OPTS         (LIBAVCODEC_VERSION_MAJOR < 60)
 
 #endif /* AVCODEC_VERSION_H */

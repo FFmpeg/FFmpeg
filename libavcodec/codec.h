@@ -31,7 +31,7 @@
 #include "libavutil/samplefmt.h"
 
 #include "libavcodec/codec_id.h"
-#include "libavcodec/version.h"
+#include "libavcodec/version_major.h"
 
 /**
  * @addtogroup lavc_core

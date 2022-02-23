@@ -30,6 +30,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/version.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"

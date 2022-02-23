@@ -70,6 +70,7 @@
 #include "internal.h"
 #include "bytestream.h"
 #include "jpeg2000.h"
+#include "version.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"

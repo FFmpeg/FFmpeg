@@ -22,6 +22,7 @@ HEADERS = ac3_parser.h                                                  \
           qsv.h                                                         \
           vdpau.h                                                       \
           version.h                                                     \
+          version_major.h                                               \
           videotoolbox.h                                                \
           vorbis_parser.h                                               \
           xvmc.h                                                        \

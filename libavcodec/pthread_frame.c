@@ -33,7 +33,7 @@
 #include "pthread_internal.h"
 #include "thread.h"
 #include "threadframe.h"
-#include "version.h"
+#include "version_major.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"

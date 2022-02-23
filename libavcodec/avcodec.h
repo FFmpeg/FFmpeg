@@ -43,7 +43,7 @@
 #include "codec_id.h"
 #include "defs.h"
 #include "packet.h"
-#include "version.h"
+#include "version_major.h"
 
 /**
  * @defgroup libavc libavcodec

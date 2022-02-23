@@ -42,6 +42,7 @@
 #include "put_bits.h"
 #include "rle.h"
 #include "tiff.h"
+#include "version.h"
 
 #define TIFF_MAX_ENTRY 32
 

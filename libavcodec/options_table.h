@@ -28,7 +28,7 @@
 
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "version.h"
+#include "version_major.h"
 
 #define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C

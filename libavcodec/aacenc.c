@@ -41,6 +41,7 @@
 #include "mpeg4audio.h"
 #include "sinewin.h"
 #include "profiles.h"
+#include "version.h"
 
 #include "aac.h"
 #include "aactab.h"

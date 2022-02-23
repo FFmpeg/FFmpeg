@@ -34,6 +34,7 @@
 #include "h264_sei.h"
 #include "internal.h"
 #include "vaapi_encode.h"
+#include "version.h"
 
 enum {
     SEI_TIMING         = 0x01,

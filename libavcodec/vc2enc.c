@@ -26,6 +26,7 @@
 #include "encode.h"
 #include "put_bits.h"
 #include "internal.h"
+#include "version.h"
 
 #include "vc2enc_dwt.h"
 #include "diractab.h"

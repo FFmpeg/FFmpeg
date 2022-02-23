@@ -39,6 +39,7 @@
 #include "frame_thread_encoder.h"
 #include "internal.h"
 #include "thread.h"
+#include "version.h"
 
 #include "libavutil/ffversion.h"
 const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;

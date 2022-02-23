@@ -33,6 +33,7 @@
 #include "mjpegenc.h"
 #include "mjpegenc_common.h"
 #include "mjpeg.h"
+#include "version.h"
 
 /* table_class: 0 = DC coef, 1 = AC coefs */
 static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
