@@ -173,7 +173,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     // HLS uses a loop with sleep, we thus must breakout or we timeout
-    if (!strcmp(fmt->name, "hls"))
+    if (fmt && !strcmp(fmt->name, "hls"))
         interrupt_counter &= 31;
 
     if (!io_buffer_size || size / io_buffer_size > maxblocks)
