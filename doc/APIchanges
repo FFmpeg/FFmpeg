@@ -14,6 +14,16 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-03-16 - xxxxxxxxxx - all libraries - version.h, version_major.h
+  No longer implicitly include lib<name>/version.h in lib<name>/<name>.h.
+  Users who depend on defines from these files (LIB<name>_VERSION*,
+  LIB<name>_IDENT) must explicitly include these headers instead of
+  relying on them being included implicitly.
+  Add lib<name>/version_major.h as new installed headers, which only
+  contain the major version number (and corresponding API deprecation
+  defines). These headers are still implicitly included from the
+  library main headers.
+
 2022-03-10 - xxxxxxxxxx - lavu 57.23.100 - cpu.h
   Add AV_CPU_FLAG_AVX512ICL.
 
