@@ -3,6 +3,7 @@ DESC = FFmpeg image rescaling library
 
 HEADERS = swscale.h                                                     \
           version.h                                                     \
+          version_major.h                                               \
 
 OBJS = alphablend.o                                     \
        hscale.o                                         \

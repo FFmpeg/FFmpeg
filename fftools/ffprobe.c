@@ -55,6 +55,7 @@
 #include "libavdevice/avdevice.h"
 #include "libavdevice/version.h"
 #include "libswscale/swscale.h"
+#include "libswscale/version.h"
 #include "libswresample/swresample.h"
 #include "libswresample/version.h"
 #include "libpostproc/postprocess.h"

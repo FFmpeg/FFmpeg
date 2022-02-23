@@ -59,6 +59,7 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
+#include "version.h"
 
 static SwsVector *sws_getIdentityVec(void);
 static void sws_addVec(SwsVector *a, SwsVector *b);

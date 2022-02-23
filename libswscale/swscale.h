@@ -33,7 +33,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
-#include "version.h"
+#include "version_major.h"
 
 /**
  * @defgroup libsws libswscale
