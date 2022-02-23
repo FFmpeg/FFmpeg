@@ -14,6 +14,9 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-03-10 - xxxxxxxxxx - lavu 57.23.100 - cpu.h
+  Add AV_CPU_FLAG_AVX512ICL.
+
 2022-02-07 - xxxxxxxxxx - lavu 57.21.100 - fifo.h
   Deprecate AVFifoBuffer and the API around it, namely av_fifo_alloc(),
   av_fifo_alloc_array(), av_fifo_free(), av_fifo_freep(), av_fifo_reset(),

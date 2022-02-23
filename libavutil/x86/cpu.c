@@ -150,9 +150,13 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_AVX2;
 #if HAVE_AVX512 /* F, CD, BW, DQ, VL */
         if ((xcr0_lo & 0xe0) == 0xe0) { /* OPMASK/ZMM state */
-            if ((rval & AV_CPU_FLAG_AVX2) && (ebx & 0xd0030000) == 0xd0030000)
+            if ((rval & AV_CPU_FLAG_AVX2) && (ebx & 0xd0030000) == 0xd0030000) {
                 rval |= AV_CPU_FLAG_AVX512;
-
+#if HAVE_AVX512ICL
+                if ((ebx & 0xd0200000) == 0xd0200000 && (ecx & 0x5f42) == 0x5f42)
+                    rval |= AV_CPU_FLAG_AVX512ICL;
+#endif /* HAVE_AVX512ICL */
+            }
         }
 #endif /* HAVE_AVX512 */
 #endif /* HAVE_AVX2 */
