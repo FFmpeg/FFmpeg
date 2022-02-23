@@ -125,7 +125,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/samplefmt.h"
 
-#include "libswresample/version.h"
+#include "libswresample/version_major.h"
 
 /**
  * @name Option constants

@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
+#include "version.h"
 
 #include <float.h>
 
