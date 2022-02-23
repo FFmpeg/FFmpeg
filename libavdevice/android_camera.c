@@ -43,8 +43,6 @@
 #include "libavutil/threadmessage.h"
 #include "libavutil/time.h"
 
-#include "version.h"
-
 /* This image format is available on all Android devices
  * supporting the Camera2 API */
 #define IMAGE_FORMAT_ANDROID AIMAGE_FORMAT_YUV_420_888
