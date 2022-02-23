@@ -5215,7 +5215,7 @@ Range is -70.0 - -5.0. Default value is -24.0.
 
 @item LRA, lra
 Set loudness range target.
-Range is 1.0 - 20.0. Default value is 7.0.
+Range is 1.0 - 50.0. Default value is 7.0.
 
 @item TP, tp
 Set maximum true peak.

@@ -101,8 +101,8 @@ typedef struct LoudNormContext {
 static const AVOption loudnorm_options[] = {
     { "I",                "set integrated loudness target",    OFFSET(target_i),         AV_OPT_TYPE_DOUBLE,  {.dbl = -24.},   -70.,       -5.,  FLAGS },
     { "i",                "set integrated loudness target",    OFFSET(target_i),         AV_OPT_TYPE_DOUBLE,  {.dbl = -24.},   -70.,       -5.,  FLAGS },
-    { "LRA",              "set loudness range target",         OFFSET(target_lra),       AV_OPT_TYPE_DOUBLE,  {.dbl =  7.},     1.,        20.,  FLAGS },
-    { "lra",              "set loudness range target",         OFFSET(target_lra),       AV_OPT_TYPE_DOUBLE,  {.dbl =  7.},     1.,        20.,  FLAGS },
+    { "LRA",              "set loudness range target",         OFFSET(target_lra),       AV_OPT_TYPE_DOUBLE,  {.dbl =  7.},     1.,        50.,  FLAGS },
+    { "lra",              "set loudness range target",         OFFSET(target_lra),       AV_OPT_TYPE_DOUBLE,  {.dbl =  7.},     1.,        50.,  FLAGS },
     { "TP",               "set maximum true peak",             OFFSET(target_tp),        AV_OPT_TYPE_DOUBLE,  {.dbl = -2.},    -9.,         0.,  FLAGS },
     { "tp",               "set maximum true peak",             OFFSET(target_tp),        AV_OPT_TYPE_DOUBLE,  {.dbl = -2.},    -9.,         0.,  FLAGS },
     { "measured_I",       "measured IL of input file",         OFFSET(measured_i),       AV_OPT_TYPE_DOUBLE,  {.dbl =  0.},    -99.,        0.,  FLAGS },
