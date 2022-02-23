@@ -4,6 +4,7 @@ FFLIBS = avutil
 
 HEADERS = postprocess.h        \
           version.h            \
+          version_major.h      \
 
 OBJS = postprocess.o
 

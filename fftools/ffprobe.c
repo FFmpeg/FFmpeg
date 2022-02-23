@@ -57,6 +57,7 @@
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 #include "libpostproc/postprocess.h"
+#include "libpostproc/version.h"
 #include "cmdutils.h"
 
 #include "libavutil/thread.h"

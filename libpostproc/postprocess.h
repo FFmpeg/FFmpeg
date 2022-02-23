@@ -34,7 +34,7 @@
  * @{
  */
 
-#include "libpostproc/version.h"
+#include "libpostproc/version_major.h"
 
 /**
  * Return the LIBPOSTPROC_VERSION_INT constant.
