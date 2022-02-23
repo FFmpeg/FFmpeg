@@ -377,6 +377,8 @@ static int decode_audio_frame(AVFrame *frame,
     if (error < 0)
         return error;
 
+    *data_present = 0;
+    *finished = 0;
     /* Read one audio frame from the input file into a temporary packet. */
     if ((error = av_read_frame(input_format_context, input_packet)) < 0) {
         /* If we are at the end of the file, flush the decoder below. */
@@ -555,7 +557,7 @@ static int read_decode_convert_and_store(AVAudioFifo *fifo,
     AVFrame *input_frame = NULL;
     /* Temporary storage for the converted input samples. */
     uint8_t **converted_input_samples = NULL;
-    int data_present = 0;
+    int data_present;
     int ret = AVERROR_EXIT;
 
     /* Initialize temporary storage for one input frame. */
@@ -676,17 +678,16 @@ static int encode_audio_frame(AVFrame *frame,
         pts += frame->nb_samples;
     }
 
+    *data_present = 0;
     /* Send the audio frame stored in the temporary packet to the encoder.
      * The output audio stream encoder is used to do this. */
     error = avcodec_send_frame(output_codec_context, frame);
-    /* The encoder signals that it has nothing more to encode. */
-    if (error == AVERROR_EOF) {
-        error = 0;
-        goto cleanup;
-    } else if (error < 0) {
-        fprintf(stderr, "Could not send packet for encoding (error '%s')\n",
-                av_err2str(error));
-        goto cleanup;
+    /* Check for errors, but proceed with fetching encoded samples if the
+     *  encoder signals that it has nothing more to encode. */
+    if (error < 0 && error != AVERROR_EOF) {
+      fprintf(stderr, "Could not send packet for encoding (error '%s')\n",
+              av_err2str(error));
+      goto cleanup;
     }
 
     /* Receive one encoded frame from the encoder. */
@@ -857,7 +858,6 @@ int main(int argc, char **argv)
             int data_written;
             /* Flush the encoder as it may have delayed frames. */
             do {
-                data_written = 0;
                 if (encode_audio_frame(NULL, output_format_context,
                                        output_codec_context, &data_written))
                     goto cleanup;
