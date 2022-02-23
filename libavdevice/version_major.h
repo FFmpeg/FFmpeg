@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVDEVICE_VERSION_H
-#define AVDEVICE_VERSION_H
+#ifndef AVDEVICE_VERSION_MAJOR_H
+#define AVDEVICE_VERSION_MAJOR_H
 
 /**
  * @file
@@ -25,21 +25,13 @@
  * Libavdevice version macros
  */
 
-#include "libavutil/version.h"
+#define LIBAVDEVICE_VERSION_MAJOR  59
 
-#include "version_major.h"
+/**
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
+ */
+#define FF_API_DEVICE_CAPABILITIES (LIBAVDEVICE_VERSION_MAJOR < 60)
 
-#define LIBAVDEVICE_VERSION_MINOR   5
-#define LIBAVDEVICE_VERSION_MICRO 100
-
-#define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
-                                               LIBAVDEVICE_VERSION_MINOR, \
-                                               LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_VERSION     AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
-                                           LIBAVDEVICE_VERSION_MINOR, \
-                                           LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_BUILD       LIBAVDEVICE_VERSION_INT
-
-#define LIBAVDEVICE_IDENT       "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
-
-#endif /* AVDEVICE_VERSION_H */
+#endif /* AVDEVICE_VERSION_MAJOR_H */

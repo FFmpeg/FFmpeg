@@ -19,7 +19,7 @@
 #ifndef AVDEVICE_AVDEVICE_H
 #define AVDEVICE_AVDEVICE_H
 
-#include "version.h"
+#include "version_major.h"
 
 /**
  * @file

@@ -53,6 +53,7 @@
 #include "libavutil/timecode.h"
 #include "libavutil/timestamp.h"
 #include "libavdevice/avdevice.h"
+#include "libavdevice/version.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 #include "libpostproc/postprocess.h"

@@ -3,6 +3,7 @@ DESC    = FFmpeg device handling library
 
 HEADERS = avdevice.h                                                    \
           version.h                                                     \
+          version_major.h                                               \
 
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \

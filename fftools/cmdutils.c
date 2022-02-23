@@ -35,6 +35,7 @@
 #include "libavformat/version.h"
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
+#include "libavdevice/version.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 #include "libpostproc/postprocess.h"
