@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "libavformat/avformat.h"
+#include "libavformat/version.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/version.h"
 #include "libavutil/avassert.h"

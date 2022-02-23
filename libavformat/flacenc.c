@@ -30,6 +30,7 @@
 #include "flacenc.h"
 #include "id3v2.h"
 #include "internal.h"
+#include "version.h"
 #include "vorbiscomment.h"
 
 

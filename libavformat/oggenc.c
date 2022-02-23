@@ -31,6 +31,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "version.h"
 #include "vorbiscomment.h"
 
 #define MAX_PAGE_SIZE 65025

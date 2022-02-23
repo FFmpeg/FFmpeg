@@ -60,6 +60,7 @@
 #include "mov_chan.h"
 #include "movenc_ttml.h"
 #include "ttmlenc.h"
+#include "version.h"
 #include "vpcc.h"
 
 static const AVOption options[] = {

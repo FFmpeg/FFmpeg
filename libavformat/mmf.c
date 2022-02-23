@@ -26,6 +26,7 @@
 #include "pcm.h"
 #include "rawenc.h"
 #include "riff.h"
+#include "version.h"
 
 typedef struct MMFContext {
     int64_t atrpos, atsqpos, awapos;

@@ -34,6 +34,7 @@
 #include "rdt.h"
 #include "tls.h"
 #include "url.h"
+#include "version.h"
 
 static const struct RTSPStatusMessage {
     enum RTSPStatusCode code;

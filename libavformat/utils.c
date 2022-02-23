@@ -46,6 +46,7 @@
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
+#include "version.h"
 
 #include "libavutil/ffversion.h"
 const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;

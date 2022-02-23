@@ -58,6 +58,7 @@
 #include "avc.h"
 #include "mxf.h"
 #include "config.h"
+#include "version.h"
 
 extern const AVOutputFormat ff_mxf_d10_muxer;
 extern const AVOutputFormat ff_mxf_opatom_muxer;

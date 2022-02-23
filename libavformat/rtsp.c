@@ -50,6 +50,7 @@
 #include "url.h"
 #include "rtpenc.h"
 #include "mpegts.h"
+#include "version.h"
 
 /* Default timeout values for read packet in seconds  */
 #define READ_PACKET_TIMEOUT_S 10

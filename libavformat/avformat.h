@@ -319,7 +319,7 @@
 #include "libavutil/log.h"
 
 #include "avio.h"
-#include "libavformat/version.h"
+#include "libavformat/version_major.h"
 
 struct AVFormatContext;
 struct AVStream;

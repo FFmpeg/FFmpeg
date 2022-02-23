@@ -32,6 +32,7 @@
 #include "config.h"
 #include "compat/va_copy.h"
 #include "libavformat/avformat.h"
+#include "libavformat/version.h"
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"

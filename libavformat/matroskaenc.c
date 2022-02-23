@@ -35,6 +35,7 @@
 #include "isom.h"
 #include "matroska.h"
 #include "riff.h"
+#include "version.h"
 #include "vorbiscomment.h"
 #include "wv.h"
 

@@ -42,6 +42,7 @@
 #include "rtmpcrypt.h"
 #include "rtmppkt.h"
 #include "url.h"
+#include "version.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>

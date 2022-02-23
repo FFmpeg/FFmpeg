@@ -30,6 +30,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavformat/version.h"
 #include "pulse_audio_common.h"
 #include "timefilter.h"
 

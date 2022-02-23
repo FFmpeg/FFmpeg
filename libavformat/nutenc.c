@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "riff.h"
+#include "version.h"
 
 static int find_expected_header(AVCodecParameters *p, int size, int key_frame,
                                 uint8_t out[64])
