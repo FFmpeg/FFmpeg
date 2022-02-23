@@ -23,6 +23,8 @@
  * ASUS V1/V2 encoder.
  */
 
+#include "config_components.h"
+
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 

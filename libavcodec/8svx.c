@@ -37,6 +37,8 @@
  * http://aminet.net/mods/smpl/
  */
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "internal.h"

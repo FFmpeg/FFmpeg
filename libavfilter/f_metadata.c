@@ -23,6 +23,8 @@
  * filter for manipulating frame metadata
  */
 
+#include "config_components.h"
+
 #include <float.h>
 
 #include "libavutil/avassert.h"

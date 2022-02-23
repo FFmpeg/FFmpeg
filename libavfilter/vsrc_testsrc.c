@@ -33,6 +33,8 @@
  * allyuv, smptebars and smptehdbars are by Paul B Mahol.
  */
 
+#include "config_components.h"
+
 #include <float.h>
 
 #include "libavutil/avassert.h"

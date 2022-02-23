@@ -27,6 +27,8 @@
  * http://www.goice.co.jp/member/mo/formats/au.html
  */
 
+#include "config_components.h"
+
 #include "libavutil/bprint.h"
 #include "avformat.h"
 #include "internal.h"

@@ -25,6 +25,8 @@
  * MPEG-1/2 decoder
  */
 
+#include "config_components.h"
+
 #define UNCHECKED_BITSTREAM_READER 1
 #include <inttypes.h>
 

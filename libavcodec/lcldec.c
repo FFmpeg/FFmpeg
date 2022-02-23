@@ -37,6 +37,8 @@
  * Supports: BGR24 (RGB 24bpp)
  */
 
+#include "config_components.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 

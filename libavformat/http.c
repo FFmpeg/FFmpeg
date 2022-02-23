@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>

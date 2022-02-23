@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #include "libavutil/common.h"
 #include "libavutil/opt.h"

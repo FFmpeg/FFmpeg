@@ -26,6 +26,8 @@
  * (by Michael Niedermayer) and lavfi/avf_showwaves (by Stefano Sabatini).
  */
 
+#include "config_components.h"
+
 #include <float.h>
 #include <math.h>
 

@@ -27,6 +27,9 @@
 /**
  * Upmix delay samples from stereo to original channel layout.
  */
+
+#include "config_components.h"
+
 #include "ac3dec.h"
 #include "eac3dec.c"
 #include "ac3dec.c"

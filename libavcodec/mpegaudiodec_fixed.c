@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 #include "libavutil/samplefmt.h"
 
 #define USE_FLOATS 0

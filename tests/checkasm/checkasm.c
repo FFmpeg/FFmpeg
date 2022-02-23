@@ -21,6 +21,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #if CONFIG_LINUX_PERF
 # ifndef _GNU_SOURCE

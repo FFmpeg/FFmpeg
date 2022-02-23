@@ -28,6 +28,8 @@
  * huffyuv encoder
  */
 
+#include "config_components.h"
+
 #include "avcodec.h"
 #include "encode.h"
 #include "huffyuv.h"

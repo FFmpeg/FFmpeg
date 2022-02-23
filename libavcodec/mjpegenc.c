@@ -30,6 +30,8 @@
  * MJPEG encoder.
  */
 
+#include "config_components.h"
+
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"

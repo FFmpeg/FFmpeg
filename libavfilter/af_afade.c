@@ -23,6 +23,8 @@
  * fade audio filter
  */
 
+#include "config_components.h"
+
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"

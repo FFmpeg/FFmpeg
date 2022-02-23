@@ -25,6 +25,8 @@
  * Determines the duration for each packet.
  */
 
+#include "config_components.h"
+
 #include "libavutil/log.h"
 
 #include "get_bits.h"

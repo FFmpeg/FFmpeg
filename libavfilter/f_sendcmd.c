@@ -23,6 +23,8 @@
  * send commands filter
  */
 
+#include "config_components.h"
+
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/eval.h"

@@ -30,6 +30,8 @@
  * Theora decoder by Alex Beregszaszi
  */
 
+#include "config_components.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

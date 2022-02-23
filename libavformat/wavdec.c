@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "config_components.h"
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"

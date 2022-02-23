@@ -24,6 +24,8 @@
  * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}
  */
 
+#include "config_components.h"
+
 #include <float.h>
 #include <time.h>
 

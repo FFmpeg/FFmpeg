@@ -45,6 +45,8 @@
  * Includes
  ****************************************************************************/
 
+#include "config_components.h"
+
 #define _XOPEN_SOURCE 600
 #include <inttypes.h>
 #include <stdio.h>

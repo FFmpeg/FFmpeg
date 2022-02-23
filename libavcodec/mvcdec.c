@@ -24,6 +24,8 @@
  * Silicon Graphics Motion Video Compressor 1 & 2 decoder
  */
 
+#include "config_components.h"
+
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"

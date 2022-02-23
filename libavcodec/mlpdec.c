@@ -24,6 +24,8 @@
  * MLP decoder
  */
 
+#include "config_components.h"
+
 #include <stdint.h>
 
 #include "avcodec.h"

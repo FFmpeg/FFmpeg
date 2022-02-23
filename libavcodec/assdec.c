@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
+#include "config_components.h"
 #include "internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"

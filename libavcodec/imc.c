@@ -29,6 +29,7 @@
  *  Only mono is supported.
  */
 
+#include "config_components.h"
 
 #include <math.h>
 #include <stddef.h>

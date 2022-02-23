@@ -21,6 +21,7 @@
 #include <vpx/vpx_codec.h>
 #include "libvpx.h"
 #include "config.h"
+#include "config_components.h"
 
 #if CONFIG_LIBVPX_VP9_ENCODER
 #include <vpx/vpx_encoder.h>

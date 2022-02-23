@@ -30,6 +30,8 @@
  * iCEDraw File demuxer
  */
 
+#include "config_components.h"
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"

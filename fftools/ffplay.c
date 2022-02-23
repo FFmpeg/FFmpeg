@@ -24,6 +24,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 #include <inttypes.h>
 #include <math.h>
 #include <limits.h>

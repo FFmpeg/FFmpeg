@@ -27,6 +27,8 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "config_components.h"
+
 #include "avcodec.h"
 #include "error_resilience.h"
 #include "flvdec.h"

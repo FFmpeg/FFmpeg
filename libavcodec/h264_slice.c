@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"

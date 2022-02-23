@@ -27,6 +27,7 @@
 #define BITSTREAM_READER_LE
 
 #include "config.h"
+#include "config_components.h"
 #include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
 

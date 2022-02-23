@@ -25,6 +25,8 @@
  * that needs to write in the input frame.
  */
 
+#include "config_components.h"
+
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"

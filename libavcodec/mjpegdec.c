@@ -30,6 +30,8 @@
  * MJPEG decoder.
  */
 
+#include "config_components.h"
+
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"

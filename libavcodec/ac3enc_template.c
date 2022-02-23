@@ -26,6 +26,8 @@
  * AC-3 encoder float/fixed template
  */
 
+#include "config_components.h"
+
 #include <stdint.h>
 
 #include "libavutil/attributes.h"

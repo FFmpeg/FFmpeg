@@ -21,6 +21,8 @@
  * filter for manipulating frame side data
  */
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 #include "libavutil/frame.h"

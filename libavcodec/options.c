@@ -24,6 +24,8 @@
  * Options definition for AVCodecContext.
  */
 
+#include "config_components.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/avassert.h"

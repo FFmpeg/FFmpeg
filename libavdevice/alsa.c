@@ -28,6 +28,8 @@
  * @author Nicolas George ( nicolas george normalesup org )
  */
 
+#include "config_components.h"
+
 #include <alsa/asoundlib.h>
 #include "avdevice.h"
 #include "libavutil/avassert.h"

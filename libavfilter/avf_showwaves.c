@@ -23,6 +23,8 @@
  * audio to video multimedia filter
  */
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"

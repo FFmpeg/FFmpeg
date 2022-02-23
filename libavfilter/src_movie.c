@@ -27,6 +27,8 @@
  * @todo support a PTS correction mechanism
  */
 
+#include "config_components.h"
+
 #include <float.h>
 #include <stdint.h>
 

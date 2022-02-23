@@ -26,6 +26,8 @@
  * IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN bitmap decoder
  */
 
+#include "config_components.h"
+
 #include <stdint.h>
 
 #include "libavutil/imgutils.h"

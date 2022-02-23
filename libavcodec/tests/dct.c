@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

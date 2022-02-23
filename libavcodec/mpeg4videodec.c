@@ -22,6 +22,8 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "config_components.h"
+
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"

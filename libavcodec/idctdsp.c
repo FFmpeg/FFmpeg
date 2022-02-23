@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "avcodec.h"

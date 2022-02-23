@@ -22,6 +22,8 @@
 #ifndef AVCODEC_OPTIONS_TABLE_H
 #define AVCODEC_OPTIONS_TABLE_H
 
+#include "config_components.h"
+
 #include <float.h>
 #include <limits.h>
 #include <stdint.h>

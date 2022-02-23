@@ -30,6 +30,7 @@
 #include "asv.h"
 #include "avcodec.h"
 #include "blockdsp.h"
+#include "config_components.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpeg12data.h"

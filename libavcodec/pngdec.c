@@ -21,6 +21,8 @@
 
 //#define DEBUG
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/crc.h"

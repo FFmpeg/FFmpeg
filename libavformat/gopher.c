@@ -24,6 +24,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #include "libavutil/avstring.h"
 #include "avformat.h"

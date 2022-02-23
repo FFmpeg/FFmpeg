@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config_components.h"
+
 #include "libavutil/arm/asm.S"
 
 /* chroma_mc8(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int h, int x, int y) */

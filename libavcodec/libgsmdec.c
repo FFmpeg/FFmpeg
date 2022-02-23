@@ -28,6 +28,7 @@
 // The idiosyncrasies of GSM-in-WAV are explained at http://kbs.cs.tu-berlin.de/~jutta/toast.html
 
 #include "config.h"
+#include "config_components.h"
 #if HAVE_GSM_H
 #include <gsm.h>
 #else

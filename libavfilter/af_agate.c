@@ -23,6 +23,8 @@
  * Audio (Sidechain) Gate filter
  */
 
+#include "config_components.h"
+
 #include "libavutil/audio_fifo.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"

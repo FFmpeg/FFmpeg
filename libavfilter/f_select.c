@@ -23,6 +23,8 @@
  * filter for selecting which frame passes in the filterchain
  */
 
+#include "config_components.h"
+
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"

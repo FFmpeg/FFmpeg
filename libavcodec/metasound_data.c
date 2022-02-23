@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 #include "metasound_data.h"
 
 #if CONFIG_METASOUND_DECODER

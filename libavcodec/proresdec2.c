@@ -28,6 +28,8 @@
 
 #define LONG_BITSTREAM_READER
 
+#include "config_components.h"
+
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 

@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #include "nvenc.h"
 #include "hevc_sei.h"

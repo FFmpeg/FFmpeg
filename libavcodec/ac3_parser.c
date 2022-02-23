@@ -21,6 +21,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #include "libavutil/channel_layout.h"
 #include "parser.h"

@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "avi.h"
 #include "avio_internal.h"
+#include "config_components.h"
 #include "riff.h"
 #include "mpegts.h"
 #include "libavformat/avlanguage.h"

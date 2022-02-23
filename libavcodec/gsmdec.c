@@ -24,6 +24,8 @@
  * GSM decoder
  */
 
+#include "config_components.h"
+
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"

@@ -23,6 +23,8 @@
  * VP8/9 encoder support via libvpx
  */
 
+#include "config_components.h"
+
 #define VPX_DISABLE_CTRL_TYPECHECKS 1
 #define VPX_CODEC_DISABLE_COMPAT    1
 #include <vpx/vpx_encoder.h>

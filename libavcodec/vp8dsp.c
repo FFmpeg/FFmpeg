@@ -25,6 +25,8 @@
  * VP8 compatible video decoder
  */
 
+#include "config_components.h"
+
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 

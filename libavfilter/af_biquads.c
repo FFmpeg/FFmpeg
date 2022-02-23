@@ -62,6 +62,8 @@
  *               V
  */
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/ffmath.h"

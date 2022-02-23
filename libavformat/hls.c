@@ -27,6 +27,8 @@
  * https://www.rfc-editor.org/rfc/rfc8216.txt
  */
 
+#include "config_components.h"
+
 #include "libavformat/http.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avassert.h"

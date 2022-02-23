@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "config_components.h"
 #include "libavutil/thread.h"
 #include "codec.h"
 #include "codec_id.h"

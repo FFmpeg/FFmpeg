@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/flacdsp.h"
 #include "config.h"
+#include "config_components.h"
 
 void ff_flac_lpc_16_arm(int32_t *samples, const int coeffs[32], int order,
                         int qlevel, int len);

@@ -21,6 +21,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 #include <float.h>
 #include <stdint.h>
 #if HAVE_UNISTD_H

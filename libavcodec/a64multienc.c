@@ -24,6 +24,8 @@
  * a64 video encoder - multicolor modes
  */
 
+#include "config_components.h"
+
 #include "a64colors.h"
 #include "a64tables.h"
 #include "elbg.h"

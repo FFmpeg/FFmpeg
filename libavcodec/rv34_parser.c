@@ -24,6 +24,8 @@
  * RV30/40 parser
  */
 
+#include "config_components.h"
+
 #include "parser.h"
 #include "libavutil/intreadwrite.h"
 

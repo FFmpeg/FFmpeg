@@ -24,6 +24,8 @@
  * VC-1 and WMV3 decoder
  */
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"

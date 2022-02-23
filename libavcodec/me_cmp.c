@@ -29,6 +29,7 @@
 #include "me_cmp.h"
 #include "mpegvideoenc.h"
 #include "config.h"
+#include "config_components.h"
 
 /* (i - 256) * (i - 256) */
 const uint32_t ff_square_tab[512] = {

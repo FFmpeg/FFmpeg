@@ -31,6 +31,8 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */
 
+#include "config_components.h"
+
 #include <stdint.h>
 
 #include "libavutil/internal.h"

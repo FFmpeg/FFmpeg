@@ -22,6 +22,7 @@
 #include "libavcodec/flacdsp.h"
 #include "libavutil/x86/cpu.h"
 #include "config.h"
+#include "config_components.h"
 
 void ff_flac_lpc_32_sse4(int32_t *samples, const int coeffs[32], int order,
                          int qlevel, int len);

@@ -22,6 +22,8 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include "config_components.h"
+
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"

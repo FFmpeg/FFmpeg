@@ -23,6 +23,8 @@
  * Raw subtitles decoder
  */
 
+#include "config_components.h"
+
 #include "avcodec.h"
 #include "ass.h"
 #include "internal.h"
