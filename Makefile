@@ -159,7 +159,7 @@ clean::
 	$(RM) -rf coverage.info coverage.info.in lcov
 
 distclean:: clean
-	$(RM) .version avversion.h config.asm config.h mapfile  \
+	$(RM) .version config.asm config.h mapfile  \
 		ffbuild/.config ffbuild/config.* libavutil/avconfig.h \
 		version.h libavutil/ffversion.h libavcodec/codec_names.h \
 		libavcodec/bsf_list.c libavformat/protocol_list.c \
