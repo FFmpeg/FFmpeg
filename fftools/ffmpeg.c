@@ -527,11 +527,13 @@ static void ffmpeg_cleanup(int ret)
         for (j = 0; j < fg->nb_inputs; j++) {
             InputFilter *ifilter = fg->inputs[j];
             struct InputStream *ist = ifilter->ist;
-            AVFrame *frame;
 
-            while (av_fifo_read(ifilter->frame_queue, &frame, 1) >= 0)
-                av_frame_free(&frame);
-            av_fifo_freep2(&ifilter->frame_queue);
+            if (ifilter->frame_queue) {
+                AVFrame *frame;
+                while (av_fifo_read(ifilter->frame_queue, &frame, 1) >= 0)
+                    av_frame_free(&frame);
+                av_fifo_freep2(&ifilter->frame_queue);
+            }
             av_freep(&ifilter->displaymatrix);
             if (ist->sub2video.sub_queue) {
                 AVSubtitle sub;
