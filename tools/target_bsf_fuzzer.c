@@ -85,7 +85,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         extradata_size = bytestream2_get_le32(&gbc);
 
         bsf->par_in->sample_rate                = bytestream2_get_le32(&gbc);
-        bsf->par_in->channels                   = (unsigned)bytestream2_get_le32(&gbc) % FF_SANE_NB_CHANNELS;
+        bsf->par_in->ch_layout.nb_channels      = (unsigned)bytestream2_get_le32(&gbc) % FF_SANE_NB_CHANNELS;
         bsf->par_in->block_align                = bytestream2_get_le32(&gbc);
         keyframes                               = bytestream2_get_le64(&gbc);
         flushpattern                            = bytestream2_get_le64(&gbc);
