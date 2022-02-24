@@ -1750,6 +1750,10 @@ Default is @code{false}.
 Set the timescale written in the movie header box (@code{mvhd}).
 Range is 1 to INT_MAX. Default is 1000.
 
+@item -video_track_timescale @var{scale}
+Set the timescale used for video tracks. Range is 0 to INT_MAX.
+If set to @code{0}, the timescale is automatically set based on
+the native stream time base. Default is 0.
 @end table
 
 @subsection Example
