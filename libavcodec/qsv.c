@@ -424,7 +424,10 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
         return ret;
     }
 
-    MFXQueryIMPL(qs->session, &impl);
+    ret = MFXQueryIMPL(qs->session, &impl);
+    if (ret != MFX_ERR_NONE)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error querying the session attributes");
 
     switch (MFX_IMPL_BASETYPE(impl)) {
     case MFX_IMPL_SOFTWARE:
