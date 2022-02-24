@@ -37,6 +37,10 @@
 #include "avcodec.h"
 #include "profiles.h"
 
+#ifndef SVT_AV1_CHECK_VERSION
+#define SVT_AV1_CHECK_VERSION(major, minor, patch) 0
+#endif
+
 typedef enum eos_status {
     EOS_NOT_REACHED = 0,
     EOS_SENT,
