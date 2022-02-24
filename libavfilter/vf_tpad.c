@@ -148,6 +148,11 @@ static int activate(AVFilterContext *ctx)
                               frame->data, frame->linesize,
                               0, 0, frame->width, frame->height);
         } else if (s->stop_mode == 1) {
+            if (!s->cache_stop) {
+                s->pad_stop = 0;
+                ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+                return 0;
+            }
             frame = av_frame_clone(s->cache_stop);
             if (!frame)
                 return AVERROR(ENOMEM);
