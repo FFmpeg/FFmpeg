@@ -55,7 +55,7 @@
  * infinitely over the time and is thus more scalable.
  */
 struct hist_entry {
-    int count;                      ///< how many times the corresponding value occurred
+    unsigned count;                 ///< how many times the corresponding value occurred
     double energy;                  ///< E = 10^((L + 0.691) / 10)
     double loudness;                ///< L = -0.691 + 10 * log10(E)
 };
@@ -722,15 +722,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 #define I_GATE_THRES -10  // initially defined to -8 LU in the first EBU standard
 
             if (loudness_400 >= ABS_THRES) {
-                double integrated_sum = 0;
-                int nb_integrated = 0;
+                double integrated_sum = 0.0;
+                uint64_t nb_integrated = 0;
                 int gate_hist_pos = gate_update(&ebur128->i400, power_400,
                                                 loudness_400, I_GATE_THRES);
 
                 /* compute integrated loudness by summing the histogram values
                  * above the relative threshold */
                 for (i = gate_hist_pos; i < HIST_SIZE; i++) {
-                    const int nb_v = ebur128->i400.histogram[i].count;
+                    const unsigned nb_v = ebur128->i400.histogram[i].count;
                     nb_integrated  += nb_v;
                     integrated_sum += nb_v * ebur128->i400.histogram[i].energy;
                 }
@@ -751,14 +751,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             /* XXX: example code in EBU 3342 is ">=" but formula in BS.1770
              * specs is ">" */
             if (loudness_3000 >= ABS_THRES) {
-                int nb_powers = 0;
+                uint64_t nb_powers = 0;
                 int gate_hist_pos = gate_update(&ebur128->i3000, power_3000,
                                                 loudness_3000, LRA_GATE_THRES);
 
                 for (i = gate_hist_pos; i < HIST_SIZE; i++)
                     nb_powers += ebur128->i3000.histogram[i].count;
                 if (nb_powers) {
-                    int n, nb_pow;
+                    uint64_t n, nb_pow;
 
                     /* get lower loudness to consider */
                     n = 0;
