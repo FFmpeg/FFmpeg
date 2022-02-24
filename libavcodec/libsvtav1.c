@@ -68,7 +68,7 @@ typedef struct SvtContext {
     int hierarchical_level;
     int la_depth;
     int enc_mode;
-    int rc_mode;
+    int crf;
     int scd;
     int qp;
 
@@ -160,11 +160,32 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
 
     // Update param from options
     param->hierarchical_levels      = svt_enc->hierarchical_level;
-    param->enc_mode                 = svt_enc->enc_mode;
+
+    if (svt_enc->enc_mode >= 0)
+        param->enc_mode             = svt_enc->enc_mode;
+
     param->tier                     = svt_enc->tier;
-    param->rate_control_mode        = svt_enc->rc_mode;
+
+    if (avctx->bit_rate) {
+        param->target_bit_rate      = avctx->bit_rate;
+        if (avctx->rc_max_rate != avctx->bit_rate)
+            param->rate_control_mode = 1;
+        else
+            param->rate_control_mode = 2;
+    }
+    param->max_bit_rate             = avctx->rc_max_rate;
+    param->vbv_bufsize              = avctx->rc_buffer_size;
+
+    if (svt_enc->crf > 0) {
+        param->qp                   = svt_enc->crf;
+        param->rate_control_mode    = 0;
+        param->enable_tpl_la        = 1;
+    } else if (svt_enc->qp > 0) {
+        param->qp                   = svt_enc->qp;
+        param->rate_control_mode    = 0;
+        param->enable_tpl_la        = 0;
+    }
     param->scene_change_detection   = svt_enc->scd;
-    param->qp                       = svt_enc->qp;
 
     if (svt_enc->la_depth >= 0)
         param->look_ahead_distance  = svt_enc->la_depth;
@@ -224,8 +245,6 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->profile = FF_PROFILE_AV1_HIGH;
     }
 
-    param->target_bit_rate          = avctx->bit_rate;
-
     if (avctx->gop_size > 0)
         param->intra_period_length  = avctx->gop_size - 1;
 
@@ -237,8 +256,8 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->frame_rate_denominator = avctx->time_base.num * avctx->ticks_per_frame;
     }
 
-    param->enable_tpl_la = !!param->rate_control_mode;
-    if (param->rate_control_mode) {
+    avctx->bit_rate                 = param->target_bit_rate;
+    if (avctx->bit_rate) {
         param->max_qp_allowed       = avctx->qmax;
         param->min_qp_allowed       = avctx->qmin;
     }
@@ -508,8 +527,8 @@ static const AVOption options[] = {
     { "la_depth", "Look ahead distance [0, 120]", OFFSET(la_depth),
       AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 120, VE },
 
-    { "preset", "Encoding preset [0, 8]",
-      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = MAX_ENC_PRESET }, 0, MAX_ENC_PRESET, VE },
+    { "preset", "Encoding preset",
+      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_ENC_PRESET, VE },
 
     { "tier", "Set operating point tier", OFFSET(tier),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE, "tier" },
@@ -546,14 +565,10 @@ static const AVOption options[] = {
         { LEVEL("7.3", 73) },
 #undef LEVEL
 
-    { "rc", "Bit rate control mode", OFFSET(rc_mode),
-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, VE , "rc"},
-        { "cqp", "Constant quantizer", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "rc" },
-        { "vbr", "Variable Bit Rate, use a target bitrate for the entire stream", 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "rc" },
-        { "cvbr", "Constrained Variable Bit Rate, use a target bitrate for each GOP", 0, AV_OPT_TYPE_CONST,{ .i64 = 2 },  INT_MIN, INT_MAX, VE, "rc" },
-
-    { "qp", "Quantizer to use with cqp rate control mode", OFFSET(qp),
-      AV_OPT_TYPE_INT, { .i64 = 50 }, 0, 63, VE },
+    { "crf", "Constant Rate Factor value", OFFSET(crf),
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
+    { "qp", "Initial Quantizer level value", OFFSET(qp),
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
 
     { "sc_detection", "Scene change detection", OFFSET(scd),
       AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
@@ -574,10 +589,10 @@ static const AVClass class = {
 };
 
 static const AVCodecDefault eb_enc_defaults[] = {
-    { "b",         "7M"    },
+    { "b",         "0"    },
     { "flags",     "+cgop" },
     { "g",         "-1"    },
-    { "qmin",      "0"     },
+    { "qmin",      "1"     },
     { "qmax",      "63"    },
     { NULL },
 };

@@ -1775,27 +1775,14 @@ This is the default.
 @item high
 @end table
 
-@item rc
-Set the rate control mode to use.
-
-Possible modes:
-@table @option
-@item cqp
-Constant quantizer: use fixed values of qindex (dependent on the frame type)
-throughout the stream.  This mode is the default.
-
-@item vbr
-Variable bitrate: use a target bitrate for the whole stream.
-
-@item cvbr
-Constrained variable bitrate: use a target bitrate for each GOP.
-@end table
-
 @item qmax
 Set the maximum quantizer to use when using a bitrate mode.
 
 @item qmin
 Set the minimum quantizer to use when using a bitrate mode.
+
+@item crf
+Constant rate factor value used in crf rate control mode (0-63).
 
 @item qp
 Set the quantizer used in cqp rate control mode (0-63).
@@ -1807,8 +1794,8 @@ Enable scene change detection.
 Set number of frames to look ahead (0-120).
 
 @item preset
-Set the quality-speed tradeoff, in the range 0 to 8.  Higher values are
-faster but lower quality.  Defaults to 8 (highest speed).
+Set the quality-speed tradeoff, in the range 0 to 13.  Higher values are
+faster but lower quality.
 
 @item tile_rows
 Set log2 of the number of rows of tiles to use (0-6).
