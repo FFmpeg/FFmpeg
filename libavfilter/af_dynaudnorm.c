@@ -435,12 +435,16 @@ static double minimum_filter(cqueue *q)
 
 static double gaussian_filter(DynamicAudioNormalizerContext *s, cqueue *q, cqueue *tq)
 {
+    const double *weights = s->weights;
     double result = 0.0, tsum = 0.0;
     int i;
 
     for (i = 0; i < cqueue_size(q); i++) {
-        tsum += cqueue_peek(tq, i) * s->weights[i];
-        result += cqueue_peek(q, i) * s->weights[i] * cqueue_peek(tq, i);
+        double tq_item = cqueue_peek(tq, i);
+        double q_item = cqueue_peek(q, i);
+
+        tsum   += tq_item * weights[i];
+        result += tq_item * weights[i] * q_item;
     }
 
     if (tsum == 0.0)
