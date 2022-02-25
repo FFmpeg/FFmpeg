@@ -279,6 +279,7 @@ static int config_video_output(AVFilterLink *outlink)
     int i, x, y;
     uint8_t *p;
     AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
     EBUR128Context *ebur128 = ctx->priv;
     AVFrame *outpicref;
 
@@ -291,6 +292,8 @@ static int config_video_output(AVFilterLink *outlink)
     outlink->w = ebur128->w;
     outlink->h = ebur128->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
+    outlink->time_base = inlink->time_base;
+    outlink->frame_rate = av_make_q(10, 1);
 
 #define PAD 8
 
