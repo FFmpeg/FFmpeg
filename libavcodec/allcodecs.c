@@ -531,6 +531,7 @@ extern const AVCodec ff_xma2_decoder;
 /* PCM codecs */
 extern const AVCodec ff_pcm_alaw_encoder;
 extern const AVCodec ff_pcm_alaw_decoder;
+extern const AVCodec ff_pcm_bluray_encoder;
 extern const AVCodec ff_pcm_bluray_decoder;
 extern const AVCodec ff_pcm_dvd_encoder;
 extern const AVCodec ff_pcm_dvd_decoder;
