@@ -607,6 +607,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     uint32_t chunk;
     int ret;
 
+    if (avpkt->size < 4)
+        return AVERROR_INVALIDDATA;
+
     bytestream2_init(gb, avpkt->data, avpkt->size);
 
     if ((ret = ff_reget_buffer(avctx, frame, 0)) < 0)
