@@ -140,7 +140,6 @@ Component options:
   --disable-dwt            disable DWT code
   --disable-error-resilience disable error resilience code
   --disable-lsp            disable LSP code
-  --disable-lzo            disable LZO decoder code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
@@ -1975,7 +1974,6 @@ SUBSYSTEM_LIST="
     fast_unaligned
     fft
     lsp
-    lzo
     mdct
     pixelutils
     network
@@ -2780,7 +2778,6 @@ clearvideo_decoder_select="idctdsp"
 cllc_decoder_select="bswapdsp"
 comfortnoise_encoder_select="lpc"
 cook_decoder_select="audiodsp mdct sinewin"
-cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dca_encoder_select="mdct"
@@ -2896,7 +2893,7 @@ mxpeg_decoder_select="mjpeg_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 notchlc_decoder_select="lzf"
-nuv_decoder_select="idctdsp lzo"
+nuv_decoder_select="idctdsp"
 on2avc_decoder_select="mdct"
 opus_decoder_deps="swresample"
 opus_decoder_select="mdct15"
@@ -3423,7 +3420,7 @@ ivf_muxer_select="av1_metadata_bsf vp9_superframe_bsf"
 latm_muxer_select="aac_adtstoasc_bsf mpeg4audio"
 matroska_audio_muxer_select="matroska_muxer"
 matroska_demuxer_select="riffdec"
-matroska_demuxer_suggest="bzlib lzo zlib"
+matroska_demuxer_suggest="bzlib zlib"
 matroska_muxer_select="mpeg4audio riffenc vp9_superframe_bsf aac_adtstoasc_bsf"
 mlp_demuxer_select="mlp_parser"
 mmf_muxer_select="riffenc"

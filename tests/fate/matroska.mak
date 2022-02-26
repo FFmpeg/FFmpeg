@@ -28,7 +28,7 @@ FATE_MATROSKA-$(call ALLYES, MATROSKA_DEMUXER ZLIB) += fate-matroska-zlib-decomp
 fate-matroska-zlib-decompression: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/subtitle_zlib.mks -c:s copy
 
 # This tests that the matroska demuxer can decompress lzo compressed tracks.
-FATE_MATROSKA-$(call ALLYES, MATROSKA_DEMUXER LZO) += fate-matroska-lzo-decompression
+FATE_MATROSKA-$(CONFIG_MATROSKA_DEMUXER) += fate-matroska-lzo-decompression
 fate-matroska-lzo-decompression: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/lzo.mka -c copy
 
 # This tests that the matroska demuxer correctly propagates
