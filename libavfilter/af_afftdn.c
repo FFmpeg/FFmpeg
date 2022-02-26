@@ -20,7 +20,6 @@
 
 #include <float.h>
 
-#include "libavutil/audio_fifo.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -101,7 +100,6 @@ typedef struct AudioFFTDeNoiseContext {
     float   last_noise_balance;
     int64_t block_count;
 
-    int64_t pts;
     int     channels;
     int     sample_noise;
     int     sample_noise_start;
@@ -124,6 +122,8 @@ typedef struct AudioFFTDeNoiseContext {
 
     DeNoiseChannel *dnch;
 
+    AVFrame *winframe;
+
     double  max_gain;
     double  max_var;
     double  gain_scale;
@@ -138,8 +138,6 @@ typedef struct AudioFFTDeNoiseContext {
     double  vector_b[5];
     double  matrix_b[75];
     double  matrix_c[75];
-
-    AVAudioFifo *fifo;
 } AudioFFTDeNoiseContext;
 
 #define OFFSET(x) offsetof(AudioFFTDeNoiseContext, x)
@@ -620,7 +618,6 @@ static int config_input(AVFilterLink *inlink)
     if (!s->dnch)
         return AVERROR(ENOMEM);
 
-    s->pts = AV_NOPTS_VALUE;
     s->channels = inlink->channels;
     s->sample_rate = inlink->sample_rate;
     s->sample_advance = s->sample_rate / 80;
@@ -831,6 +828,10 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
+    s->winframe = ff_get_audio_buffer(inlink, s->window_length);
+    if (!s->winframe)
+        return AVERROR(ENOMEM);
+
     wscale = sqrt(16.0 / (9.0 * s->fft_length));
     sum = 0.0;
     for (int i = 0; i < s->window_length; i++) {
@@ -856,10 +857,6 @@ static int config_input(AVFilterLink *inlink)
         s->noise_band_edge[16] = i;
     }
     s->noise_band_count = s->noise_band_edge[16];
-
-    s->fifo = av_audio_fifo_alloc(inlink->format, inlink->channels, s->fft_length);
-    if (!s->fifo)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -1160,23 +1157,24 @@ static void get_auto_noise_levels(AudioFFTDeNoiseContext *s,
     }
 }
 
-static int output_frame(AVFilterLink *inlink)
+static int output_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioFFTDeNoiseContext *s = ctx->priv;
     const int output_mode = ctx->is_disabled ? IN_MODE : s->output_mode;
-    AVFrame *out = NULL, *in = NULL;
+    const int offset = s->window_length - s->sample_advance;
+    AVFrame *out = NULL;
     ThreadData td;
     int ret = 0;
 
-    in = ff_get_audio_buffer(outlink, s->window_length);
-    if (!in)
-        return AVERROR(ENOMEM);
+    for (int ch = 0; ch < s->channels; ch++) {
+        float *src = (float *)s->winframe->extended_data[ch];
 
-    ret = av_audio_fifo_peek(s->fifo, (void **)in->extended_data, s->window_length);
-    if (ret < 0)
-        goto end;
+        memmove(src, &src[s->sample_advance], offset * sizeof(float));
+        memcpy(&src[offset], in->extended_data[ch], in->nb_samples * sizeof(float));
+        memset(&src[offset + in->nb_samples], 0, (s->sample_advance - in->nb_samples) * sizeof(float));
+    }
 
     if (s->track_noise) {
         for (int ch = 0; ch < inlink->channels; ch++) {
@@ -1205,7 +1203,7 @@ static int output_frame(AVFilterLink *inlink)
         for (int ch = 0; ch < inlink->channels; ch++) {
             DeNoiseChannel *dnch = &s->dnch[ch];
 
-            sample_noise_block(s, dnch, in, ch);
+            sample_noise_block(s, dnch, s->winframe, ch);
         }
     }
 
@@ -1223,11 +1221,11 @@ static int output_frame(AVFilterLink *inlink)
     }
 
     s->block_count++;
-    td.in = in;
+    td.in = s->winframe;
     ff_filter_execute(ctx, filter_channel, &td, NULL,
                       FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
-    out = ff_get_audio_buffer(outlink, s->sample_advance);
+    out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -1236,20 +1234,20 @@ static int output_frame(AVFilterLink *inlink)
     for (int ch = 0; ch < inlink->channels; ch++) {
         DeNoiseChannel *dnch = &s->dnch[ch];
         double *src = dnch->out_samples;
-        float *orig = (float *)in->extended_data[ch];
+        const float *orig = (const float *)s->winframe->extended_data[ch];
         float *dst = (float *)out->extended_data[ch];
 
         switch (output_mode) {
         case IN_MODE:
-            for (int m = 0; m < s->sample_advance; m++)
+            for (int m = 0; m < out->nb_samples; m++)
                 dst[m] = orig[m];
             break;
         case OUT_MODE:
-            for (int m = 0; m < s->sample_advance; m++)
+            for (int m = 0; m < out->nb_samples; m++)
                 dst[m] = src[m];
             break;
         case NOISE_MODE:
-            for (int m = 0; m < s->sample_advance; m++)
+            for (int m = 0; m < out->nb_samples; m++)
                 dst[m] = orig[m] - src[m];
             break;
         default:
@@ -1261,13 +1259,11 @@ static int output_frame(AVFilterLink *inlink)
         memset(src + (s->window_length - s->sample_advance), 0, s->sample_advance * sizeof(*src));
     }
 
-    av_audio_fifo_drain(s->fifo, s->sample_advance);
+    out->pts = in->pts;
 
-    out->pts = s->pts;
     ret = ff_filter_frame(outlink, out);
     if (ret < 0)
         goto end;
-    s->pts += av_rescale_q(s->sample_advance, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 end:
     av_frame_free(&in);
 
@@ -1279,34 +1275,19 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     AudioFFTDeNoiseContext *s = ctx->priv;
-    AVFrame *frame = NULL;
+    AVFrame *in = NULL;
     int ret;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    ret = ff_inlink_consume_frame(inlink, &frame);
+    ret = ff_inlink_consume_samples(inlink, s->sample_advance, s->sample_advance, &in);
     if (ret < 0)
         return ret;
-
-    if (ret > 0) {
-        if (s->pts == AV_NOPTS_VALUE)
-            s->pts = frame->pts;
-
-        ret = av_audio_fifo_write(s->fifo, (void **)frame->extended_data, frame->nb_samples);
-        av_frame_free(&frame);
-        if (ret < 0)
-            return ret;
-    }
-
-    if (av_audio_fifo_size(s->fifo) >= s->window_length)
-        return output_frame(inlink);
+    if (ret > 0)
+        return output_frame(inlink, in);
 
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
-    if (ff_outlink_frame_wanted(outlink) &&
-        av_audio_fifo_size(s->fifo) < s->window_length) {
-        ff_inlink_request_frame(inlink);
-        return 0;
-    }
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
 }
@@ -1319,6 +1300,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->bin2band);
     av_freep(&s->band_alpha);
     av_freep(&s->band_beta);
+    av_frame_free(&s->winframe);
 
     if (s->dnch) {
         for (int ch = 0; ch < s->channels; ch++) {
@@ -1343,8 +1325,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         }
         av_freep(&s->dnch);
     }
-
-    av_audio_fifo_free(s->fifo);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
