@@ -33,8 +33,7 @@ static int av1_filter_obus(AVIOContext *pb, const uint8_t *buf,
                            int size, int *offset)
 {
     const uint8_t *start = buf, *end = buf + size;
-    int64_t obu_size;
-    int off, start_pos, type, temporal_id, spatial_id;
+    int off;
     enum {
         START_NOT_FOUND,
         START_FOUND,
@@ -44,6 +43,8 @@ static int av1_filter_obus(AVIOContext *pb, const uint8_t *buf,
 
     off = size = 0;
     while (buf < end) {
+        int64_t obu_size;
+        int start_pos, type, temporal_id, spatial_id;
         int len = parse_obu_header(buf, end - buf, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
         if (len < 0)
@@ -333,8 +334,6 @@ static int parse_sequence_header(AV1SequenceParameters *seq_params, const uint8_
 
 int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int size)
 {
-    int64_t obu_size;
-    int start_pos, type, temporal_id, spatial_id;
     int is_av1c;
 
     if (size <= 0)
@@ -373,6 +372,8 @@ int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int 
     }
 
     while (size > 0) {
+        int64_t obu_size;
+        int start_pos, type, temporal_id, spatial_id;
         int len = parse_obu_header(buf, size, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
         if (len < 0)
@@ -401,8 +402,6 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     PutBitContext pbc;
     uint8_t header[4], *meta;
     const uint8_t *seq;
-    int64_t obu_size;
-    int start_pos, type, temporal_id, spatial_id;
     int ret, nb_seq = 0, seq_size, meta_size;
 
     if (size <= 0)
@@ -427,6 +426,8 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
         return ret;
 
     while (size > 0) {
+        int64_t obu_size;
+        int start_pos, type, temporal_id, spatial_id;
         int len = parse_obu_header(buf, size, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
         if (len < 0) {
