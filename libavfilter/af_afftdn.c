@@ -1083,15 +1083,10 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
         s->noise_floor = new_noise_floor;
 }
 
-typedef struct ThreadData {
-    AVFrame *in;
-} ThreadData;
-
 static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     AudioFFTDeNoiseContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
+    AVFrame *in = arg;
     const int start = (in->channels * jobnr) / nb_jobs;
     const int end = (in->channels * (jobnr+1)) / nb_jobs;
 
@@ -1165,7 +1160,6 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
     const int output_mode = ctx->is_disabled ? IN_MODE : s->output_mode;
     const int offset = s->window_length - s->sample_advance;
     AVFrame *out;
-    ThreadData td;
 
     for (int ch = 0; ch < s->channels; ch++) {
         float *src = (float *)s->winframe->extended_data[ch];
@@ -1220,8 +1214,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->block_count++;
-    td.in = s->winframe;
-    ff_filter_execute(ctx, filter_channel, &td, NULL,
+    ff_filter_execute(ctx, filter_channel, s->winframe, NULL,
                       FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
     if (av_frame_is_writable(in)) {
