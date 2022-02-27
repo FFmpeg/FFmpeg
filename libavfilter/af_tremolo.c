@@ -137,4 +137,5 @@ const AVFilter ff_af_tremolo = {
     FILTER_INPUTS(avfilter_af_tremolo_inputs),
     FILTER_OUTPUTS(avfilter_af_tremolo_outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
