@@ -631,15 +631,20 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
     }
 }
 
-static void analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
+static int analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
 {
-    if (s->dc_correction) {
-        perform_dc_correction(s, frame);
+    if (s->dc_correction || s->compress_factor > DBL_EPSILON) {
+        int ret;
+
+        if ((ret = av_frame_make_writable(frame)) < 0)
+            return ret;
     }
 
-    if (s->compress_factor > DBL_EPSILON) {
+    if (s->dc_correction)
+        perform_dc_correction(s, frame);
+
+    if (s->compress_factor > DBL_EPSILON)
         perform_compression(s, frame);
-    }
 
     if (s->channels_coupled) {
         const local_gain gain = get_max_local_gain(s, frame, -1);
@@ -653,6 +658,8 @@ static void analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
         for (c = 0; c < s->channels; c++)
             update_gain_history(s, c, get_max_local_gain(s, frame, c));
     }
+
+    return 0;
 }
 
 static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *in,
@@ -684,7 +691,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     DynamicAudioNormalizerContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int ret = 1;
+    int ret;
 
     while (((s->queue.available >= s->filter_size) ||
             (s->eof && s->queue.available)) &&
@@ -712,9 +719,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (out != in)
             av_frame_free(&in);
         ret = ff_filter_frame(outlink, out);
+        if (ret < 0)
+            return ret;
     }
 
-    analyze_frame(s, in);
+    ret = analyze_frame(s, in);
+    if (ret < 0)
+        return ret;
     if (!s->eof) {
         ff_bufqueue_add(ctx, &s->queue, in);
         cqueue_enqueue(s->is_enabled, !ctx->is_disabled);
@@ -722,7 +733,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
     }
 
-    return ret;
+    return 1;
 }
 
 static int flush_buffer(DynamicAudioNormalizerContext *s, AVFilterLink *inlink,
