@@ -1282,64 +1282,64 @@ Denoise audio samples with FFT.
 A description of the accepted parameters follows.
 
 @table @option
-@item nr
+@item noise_reduction, nr
 Set the noise reduction in dB, allowed range is 0.01 to 97.
 Default value is 12 dB.
 
-@item nf
+@item noise_floor, nf
 Set the noise floor in dB, allowed range is -80 to -20.
 Default value is -50 dB.
 
-@item nt
+@item noise_type, nt
 Set the noise type.
 
 It accepts the following values:
 @table @option
-@item w
+@item white, w
 Select white noise.
 
-@item v
+@item vinyl, v
 Select vinyl noise.
 
-@item s
+@item shellac, s
 Select shellac noise.
 
-@item c
+@item custom, c
 Select custom noise, defined in @code{bn} option.
 
 Default value is white noise.
 @end table
 
-@item bn
+@item band_noise, bn
 Set custom band noise for every one of 15 bands.
 Bands are separated by ' ' or '|'.
 
-@item rf
+@item residual_floor, rf
 Set the residual floor in dB, allowed range is -80 to -20.
 Default value is -38 dB.
 
-@item tn
+@item track_noise, tn
 Enable noise tracking. By default is disabled.
 With this enabled, noise floor is automatically adjusted.
 
-@item tr
+@item track_residual, tr
 Enable residual tracking. By default is disabled.
 
-@item om
+@item output_mode, om
 Set the output mode.
 
 It accepts the following values:
 @table @option
-@item i
+@item input, i
 Pass input unchanged.
 
-@item o
+@item output, o
 Pass noise filtered out.
 
-@item n
+@item noise, n
 Pass only noise.
 
-Default value is @var{o}.
+Default value is @var{output}.
 @end table
 @end table
 
