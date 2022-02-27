@@ -71,7 +71,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-
     for (n = 0; n < in->nb_samples; n++) {
         double integer, decimal;
         decimal = modf(s->depth * s->wave_table[s->wave_table_index], &integer);
@@ -175,4 +174,5 @@ const AVFilter ff_af_vibrato = {
     FILTER_INPUTS(avfilter_af_vibrato_inputs),
     FILTER_OUTPUTS(avfilter_af_vibrato_outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
