@@ -647,23 +647,42 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
     }
 }
 
-static int analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
+static int analyze_frame(DynamicAudioNormalizerContext *s, AVFilterLink *outlink, AVFrame **frame)
 {
     if (s->dc_correction || s->compress_factor > DBL_EPSILON) {
         int ret;
 
-        if ((ret = av_frame_make_writable(frame)) < 0)
-            return ret;
+        if (!av_frame_is_writable(*frame)) {
+            AVFrame *out = ff_get_audio_buffer(outlink, (*frame)->nb_samples);
+
+            if (!out) {
+                av_frame_free(frame);
+                return AVERROR(ENOMEM);
+            }
+            ret = av_frame_copy_props(out, *frame);
+            if (ret < 0) {
+                av_frame_free(&out);
+                return ret;
+            }
+            ret = av_frame_copy(out, *frame);
+            if (ret < 0) {
+                av_frame_free(&out);
+                return ret;
+            }
+
+            av_frame_free(frame);
+            *frame = out;
+        }
     }
 
     if (s->dc_correction)
-        perform_dc_correction(s, frame);
+        perform_dc_correction(s, *frame);
 
     if (s->compress_factor > DBL_EPSILON)
-        perform_compression(s, frame);
+        perform_compression(s, *frame);
 
     if (s->channels_coupled) {
-        const local_gain gain = get_max_local_gain(s, frame, -1);
+        const local_gain gain = get_max_local_gain(s, *frame, -1);
         int c;
 
         for (c = 0; c < s->channels; c++)
@@ -672,7 +691,7 @@ static int analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
         int c;
 
         for (c = 0; c < s->channels; c++)
-            update_gain_history(s, c, get_max_local_gain(s, frame, c));
+            update_gain_history(s, c, get_max_local_gain(s, *frame, c));
     }
 
     return 0;
@@ -740,7 +759,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             return ret;
     }
 
-    ret = analyze_frame(s, in);
+    ret = analyze_frame(s, outlink, &in);
     if (ret < 0)
         return ret;
     if (!s->eof) {
