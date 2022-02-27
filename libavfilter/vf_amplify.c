@@ -96,8 +96,7 @@ typedef struct ThreadData {
 } ThreadData;
 
 #define AMPLIFY_SLICE(type, stype, clip)                                                        \
-    const stype llimit = s->llimit;                                                             \
-    const stype hlimit = s->hlimit;                                                             \
+    const stype limit[2] = { s->llimit, s->hlimit };                                            \
                                                                                                 \
     for (int p = 0; p < s->nb_planes; p++) {                                                    \
         const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
@@ -116,23 +115,19 @@ typedef struct ThreadData {
         for (int y = slice_start; y < slice_end; y++) {                                         \
             for (int x = 0; x < s->linesize[p] / sizeof(type); x++) {                           \
                 stype src = *(type *)(in[radius]->data[p] + y * in[radius]->linesize[p] + x * sizeof(type));\
-                float diff, avg;                                                                \
+                float diff, abs_diff, avg;                                                      \
                 stype sum = 0;                                                                  \
                                                                                                 \
                 for (int i = 0; i < nb_inputs; i++) {                                           \
                     sum += *(type *)(in[i]->data[p] + y * in[i]->linesize[p] + x * sizeof(type));\
                 }                                                                               \
                                                                                                 \
-                avg = sum / (float)nb_inputs;                                                   \
+                avg = sum * scale;                                                              \
                 diff = src - avg;                                                               \
+                abs_diff = fabsf(diff);                                                         \
                                                                                                 \
-                if (fabsf(diff) < threshold && fabsf(diff) > tolerance) {                       \
-                    stype amp;                                                                  \
-                    if (diff < 0) {                                                             \
-                        amp = -FFMIN(FFABS(diff * factor), llimit);                             \
-                    } else {                                                                    \
-                        amp = FFMIN(FFABS(diff * factor), hlimit);                              \
-                    }                                                                           \
+                if (abs_diff < threshold && abs_diff > tolerance) {                             \
+                    float amp = copysignf(fminf(abs_diff * factor, limit[diff >= 0]), diff);    \
                     dst[x] = clip(src + amp, depth);                                            \
                 } else {                                                                        \
                     dst[x] = src;                                                               \
@@ -143,8 +138,8 @@ typedef struct ThreadData {
         }                                                                                       \
     }
 
-#define CLIP8(x, depth) av_clip_uint8(x)
-#define CLIP16(x, depth) av_clip_uintp2_c(x, depth)
+#define CLIP8(x, depth) av_clip_uint8(lrintf(x))
+#define CLIP16(x, depth) av_clip_uintp2_c(lrintf(x), depth)
 #define NOP(x, depth) (x)
 
 static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -157,6 +152,7 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int nb_inputs = s->nb_inputs;
     const float threshold = s->threshold;
     const float tolerance = s->tolerance;
+    const float scale = 1.f / nb_inputs;
     const float factor = s->factor;
     const int depth = s->depth;
 
