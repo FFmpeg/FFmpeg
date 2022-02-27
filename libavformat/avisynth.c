@@ -78,6 +78,7 @@ typedef struct AviSynthLibrary {
     AVSC_DECLARE_FUNC(avs_is_planar_rgba);
     AVSC_DECLARE_FUNC(avs_get_frame_props_ro);
     AVSC_DECLARE_FUNC(avs_prop_get_int);
+    AVSC_DECLARE_FUNC(avs_prop_get_type);
     AVSC_DECLARE_FUNC(avs_get_env_property);
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
@@ -158,6 +159,7 @@ static av_cold int avisynth_load_library(void)
     LOAD_AVS_FUNC(avs_is_planar_rgba, 1);
     LOAD_AVS_FUNC(avs_get_frame_props_ro, 1);
     LOAD_AVS_FUNC(avs_prop_get_int, 1);
+    LOAD_AVS_FUNC(avs_prop_get_type, 1);
     LOAD_AVS_FUNC(avs_get_env_property, 1);
 #undef LOAD_AVS_FUNC
 
@@ -511,30 +513,38 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         avsmap = avs_library.avs_get_frame_props_ro(avs->env, frame);
 
         /* Field order */
-        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_FieldBased", 0, &error)) {
-        case 0:
-            st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
-            break;
-        case 1:
-            st->codecpar->field_order = AV_FIELD_BB;
-            break;
-        case 2:
-            st->codecpar->field_order = AV_FIELD_TT;
-            break;
-        default:
+        if(avs_library.avs_prop_get_type(avs->env, avsmap, "_FieldBased") == AVS_PROPTYPE_UNSET) {
             st->codecpar->field_order = AV_FIELD_UNKNOWN;
+        } else {
+            switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_FieldBased", 0, &error)) {
+            case 0:
+                st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
+                break;
+            case 1:
+                st->codecpar->field_order = AV_FIELD_BB;
+                break;
+            case 2:
+                st->codecpar->field_order = AV_FIELD_TT;
+                break;
+            default:
+                st->codecpar->field_order = AV_FIELD_UNKNOWN;
+            }
         }
 
         /* Color Range */
-        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ColorRange", 0, &error)) {
-        case 0:
-            st->codecpar->color_range = AVCOL_RANGE_JPEG;
-            break;
-        case 1:
-            st->codecpar->color_range = AVCOL_RANGE_MPEG;
-            break;
-        default:
+        if(avs_library.avs_prop_get_type(avs->env, avsmap, "_ColorRange") == AVS_PROPTYPE_UNSET) {
             st->codecpar->color_range = AVCOL_RANGE_UNSPECIFIED;
+        } else {
+            switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ColorRange", 0, &error)) {
+            case 0:
+                st->codecpar->color_range = AVCOL_RANGE_JPEG;
+                break;
+            case 1:
+                st->codecpar->color_range = AVCOL_RANGE_MPEG;
+                break;
+            default:
+                st->codecpar->color_range = AVCOL_RANGE_UNSPECIFIED;
+            }
         }
 
         /* Color Primaries */
@@ -637,75 +647,83 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         }
 
         /* Matrix coefficients */
-        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Matrix", 0, &error)) {
-        case 0:
-            st->codecpar->color_space = AVCOL_SPC_RGB;
-            break;
-        case 1:
-            st->codecpar->color_space = AVCOL_SPC_BT709;
-            break;
-        case 2:
+        if(avs_library.avs_prop_get_type(avs->env, avsmap, "_Matrix") == AVS_PROPTYPE_UNSET) {
             st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
-            break;
-        case 4:
-            st->codecpar->color_space = AVCOL_SPC_FCC;
-            break;
-        case 5:
-            st->codecpar->color_space = AVCOL_SPC_BT470BG;
-            break;
-        case 6:
-            st->codecpar->color_space = AVCOL_SPC_SMPTE170M;
-            break;
-        case 7:
-            st->codecpar->color_space = AVCOL_SPC_SMPTE240M;
-            break;
-        case 8:
-            st->codecpar->color_space = AVCOL_SPC_YCGCO;
-            break;
-        case 9:
-            st->codecpar->color_space = AVCOL_SPC_BT2020_NCL;
-            break;
-        case 10:
-            st->codecpar->color_space = AVCOL_SPC_BT2020_CL;
-            break;
-        case 11:
-            st->codecpar->color_space = AVCOL_SPC_SMPTE2085;
-            break;
-        case 12:
-            st->codecpar->color_space = AVCOL_SPC_CHROMA_DERIVED_NCL;
-            break;
-        case 13:
-            st->codecpar->color_space = AVCOL_SPC_CHROMA_DERIVED_CL;
-            break;
-        case 14:
-            st->codecpar->color_space = AVCOL_SPC_ICTCP;
-            break;
-        default:
-            st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
+        } else {
+            switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Matrix", 0, &error)) {
+            case 0:
+                st->codecpar->color_space = AVCOL_SPC_RGB;
+                break;
+            case 1:
+                st->codecpar->color_space = AVCOL_SPC_BT709;
+                break;
+            case 2:
+                st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
+                break;
+            case 4:
+                st->codecpar->color_space = AVCOL_SPC_FCC;
+                break;
+            case 5:
+                st->codecpar->color_space = AVCOL_SPC_BT470BG;
+                break;
+            case 6:
+                st->codecpar->color_space = AVCOL_SPC_SMPTE170M;
+                break;
+            case 7:
+                st->codecpar->color_space = AVCOL_SPC_SMPTE240M;
+                break;
+            case 8:
+                st->codecpar->color_space = AVCOL_SPC_YCGCO;
+                break;
+            case 9:
+                st->codecpar->color_space = AVCOL_SPC_BT2020_NCL;
+                break;
+            case 10:
+                st->codecpar->color_space = AVCOL_SPC_BT2020_CL;
+                break;
+            case 11:
+                st->codecpar->color_space = AVCOL_SPC_SMPTE2085;
+                break;
+            case 12:
+                st->codecpar->color_space = AVCOL_SPC_CHROMA_DERIVED_NCL;
+                break;
+            case 13:
+                st->codecpar->color_space = AVCOL_SPC_CHROMA_DERIVED_CL;
+                break;
+            case 14:
+                st->codecpar->color_space = AVCOL_SPC_ICTCP;
+                break;
+            default:
+                st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
+            }
         }
 
         /* Chroma Location */
-        switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ChromaLocation", 0, &error)) {
-        case 0:
-            st->codecpar->chroma_location = AVCHROMA_LOC_LEFT;
-            break;
-        case 1:
-            st->codecpar->chroma_location = AVCHROMA_LOC_CENTER;
-            break;
-        case 2:
-            st->codecpar->chroma_location = AVCHROMA_LOC_TOPLEFT;
-            break;
-        case 3:
-            st->codecpar->chroma_location = AVCHROMA_LOC_TOP;
-            break;
-        case 4:
-            st->codecpar->chroma_location = AVCHROMA_LOC_BOTTOMLEFT;
-            break;
-        case 5:
-            st->codecpar->chroma_location = AVCHROMA_LOC_BOTTOM;
-            break;
-        default:
+        if(avs_library.avs_prop_get_type(avs->env, avsmap, "_ChromaLocation") == AVS_PROPTYPE_UNSET) {
             st->codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+        } else {
+            switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ChromaLocation", 0, &error)) {
+            case 0:
+                st->codecpar->chroma_location = AVCHROMA_LOC_LEFT;
+                break;
+            case 1:
+                st->codecpar->chroma_location = AVCHROMA_LOC_CENTER;
+                break;
+            case 2:
+                st->codecpar->chroma_location = AVCHROMA_LOC_TOPLEFT;
+                break;
+            case 3:
+                st->codecpar->chroma_location = AVCHROMA_LOC_TOP;
+                break;
+            case 4:
+                st->codecpar->chroma_location = AVCHROMA_LOC_BOTTOMLEFT;
+                break;
+            case 5:
+                st->codecpar->chroma_location = AVCHROMA_LOC_BOTTOM;
+                break;
+            default:
+                st->codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+            }
         }
     } else {
         st->codecpar->field_order = AV_FIELD_UNKNOWN;
