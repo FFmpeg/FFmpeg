@@ -4389,6 +4389,9 @@ If input frame volume is above this value frame will be normalized.
 Otherwise frame may not be normalized at all. The default value is set
 to 0, which means all input frames will be normalized.
 This option is mostly useful if digital noise is not wanted to be amplified.
+
+@item channels, h
+Specify which channels to filter, by default all available channels are filtered.
 @end table
 
 @subsection Commands
