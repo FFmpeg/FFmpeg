@@ -1164,9 +1164,8 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
     AudioFFTDeNoiseContext *s = ctx->priv;
     const int output_mode = ctx->is_disabled ? IN_MODE : s->output_mode;
     const int offset = s->window_length - s->sample_advance;
-    AVFrame *out = NULL;
+    AVFrame *out;
     ThreadData td;
-    int ret = 0;
 
     for (int ch = 0; ch < s->channels; ch++) {
         float *src = (float *)s->winframe->extended_data[ch];
@@ -1225,10 +1224,16 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
     ff_filter_execute(ctx, filter_channel, &td, NULL,
                       FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
-    out = ff_get_audio_buffer(outlink, in->nb_samples);
-    if (!out) {
-        ret = AVERROR(ENOMEM);
-        goto end;
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_audio_buffer(outlink, in->nb_samples);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
+
+        out->pts = in->pts;
     }
 
     for (int ch = 0; ch < inlink->channels; ch++) {
@@ -1251,23 +1256,18 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
                 dst[m] = orig[m] - src[m];
             break;
         default:
+            if (in != out)
+                av_frame_free(&in);
             av_frame_free(&out);
-            ret = AVERROR_BUG;
-            goto end;
+            return AVERROR_BUG;
         }
         memmove(src, src + s->sample_advance, (s->window_length - s->sample_advance) * sizeof(*src));
         memset(src + (s->window_length - s->sample_advance), 0, s->sample_advance * sizeof(*src));
     }
 
-    out->pts = in->pts;
-
-    ret = ff_filter_frame(outlink, out);
-    if (ret < 0)
-        goto end;
-end:
-    av_frame_free(&in);
-
-    return ret;
+    if (out != in)
+        av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static int activate(AVFilterContext *ctx)
