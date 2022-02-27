@@ -248,7 +248,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             double sample = src[c] * level_in;
 
             sample = mix * samplereduction(s, &s->sr[c], sample) + src[c] * (1. - mix) * level_in;
-            dst[c] = bitreduction(s, sample) * level_out;
+            dst[c] = ctx->is_disabled ? src[c] : bitreduction(s, sample) * level_out;
         }
         src += c;
         dst += c;
@@ -342,4 +342,5 @@ const AVFilter ff_af_acrusher = {
     FILTER_OUTPUTS(avfilter_af_acrusher_outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = process_command,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
