@@ -4392,6 +4392,13 @@ This option is mostly useful if digital noise is not wanted to be amplified.
 
 @item channels, h
 Specify which channels to filter, by default all available channels are filtered.
+
+@item overlap, o
+Specify overlap for frames. If set to 0 (default) no frame overlapping is done.
+Using >0 and <1 values will make less conservative gain adjustments, like
+when framelen option is set to smaller value, if framelen option value is
+compensated for non-zero overlap then gain adjustments will be smoother across time
+compared to zero overlap case.
 @end table
 
 @subsection Commands
