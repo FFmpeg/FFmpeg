@@ -736,6 +736,8 @@ It accepts the following parameters:
 @item pts
 @item dts
 Set expressions for PTS, DTS or both.
+@item duration
+Set expression for duration.
 @end table
 
 The expressions are evaluated through the eval API and can contain the following
