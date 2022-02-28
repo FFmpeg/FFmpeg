@@ -661,11 +661,13 @@ static int analyze_frame(DynamicAudioNormalizerContext *s, AVFilterLink *outlink
             }
             ret = av_frame_copy_props(out, *frame);
             if (ret < 0) {
+                av_frame_free(frame);
                 av_frame_free(&out);
                 return ret;
             }
             ret = av_frame_copy(out, *frame);
             if (ret < 0) {
+                av_frame_free(frame);
                 av_frame_free(&out);
                 return ret;
             }
