@@ -198,7 +198,7 @@ typedef struct DrawTextContext {
     AVRational  tc_rate;            ///< frame rate for timecode
     AVTimecode  tc;                 ///< timecode context
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
-    int reload;                     ///< reload text file for each frame
+    int reload;                     ///< reload text file at specified frame interval
     int start_number;               ///< starting frame number for n/frame_num var
     char *text_source_string;       ///< the string to specify text data source
     enum AVFrameSideDataType text_source;
@@ -245,7 +245,7 @@ static const AVOption drawtext_options[]= {
     {"timecode_rate",   "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"r",               "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
-    {"reload",     "reload text file for each frame",                       OFFSET(reload),     AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"reload",     "reload text file at specified frame interval", OFFSET(reload),     AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
     { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
     {"fix_bounds", "check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
@@ -1565,7 +1565,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
     }
 
-    if (s->reload) {
+    if (s->reload && !(inlink->frame_count_out % s->reload)) {
         if ((ret = load_textfile(ctx)) < 0) {
             av_frame_free(&frame);
             return ret;

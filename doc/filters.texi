@@ -11278,8 +11278,10 @@ text data in detection bboxes of side data. So please do not use this parameter
 if you are not sure about the text source.
 
 @item reload
-If set to 1, the @var{textfile} will be reloaded before each frame.
-Be sure to update it atomically, or it may be read partially, or even fail.
+The @var{textfile} will be reloaded at specified frame interval.
+Be sure to update @var{textfile} atomically, or it may be read partially,
+or even fail.
+Range is 0 to INT_MAX. Default is 0.
 
 @item x
 @item y
