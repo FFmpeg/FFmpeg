@@ -47,7 +47,8 @@ static const char *const var_names[] = {
     "DURATION",    ///< original duration in the file of the frame
     "STARTPTS",    ///< PTS at start of movie
     "STARTDTS",    ///< DTS at start of movie
-    "TB",          ///< timebase of the stream
+    "TB",          ///< input timebase of the stream
+    "TB_OUT",      ///< output timebase of the stream
     "SR",          ///< sample rate of the stream
     "NOPTS",       ///< The AV_NOPTS_VALUE constant
     NULL
@@ -72,6 +73,7 @@ enum var_name {
     VAR_STARTPTS,
     VAR_STARTDTS,
     VAR_TB,
+    VAR_TB_OUT,
     VAR_SR,
     VAR_NOPTS,
     VAR_VARS_NB
@@ -84,6 +86,8 @@ typedef struct SetTSContext {
     char *pts_str;
     char *dts_str;
     char *duration_str;
+
+    AVRational time_base;
 
     int64_t frame_number;
 
@@ -141,11 +145,15 @@ static int setts_init(AVBSFContext *ctx)
         }
     }
 
+    if (s->time_base.den)
+        ctx->time_base_out = s->time_base;
+
     s->frame_number= 0;
     s->start_pts   = AV_NOPTS_VALUE;
     s->start_dts   = AV_NOPTS_VALUE;
     s->var_values[VAR_NOPTS] = AV_NOPTS_VALUE;
     s->var_values[VAR_TB]    = ctx->time_base_in.den ? av_q2d(ctx->time_base_in) : 0;
+    s->var_values[VAR_TB_OUT]= ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
     s->var_values[VAR_SR]    = ctx->par_in->sample_rate;
 
     return 0;
@@ -251,6 +259,7 @@ static const AVOption options[] = {
     { "pts", "set expression for packet PTS", OFFSET(pts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "dts", "set expression for packet DTS", OFFSET(dts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "duration", "set expression for packet duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str="DURATION"}, 0, 0, FLAGS },
+    { "time_base", "set output timebase", OFFSET(time_base), AV_OPT_TYPE_RATIONAL, {.dbl=0}, 0, 0, FLAGS },
     { NULL },
 };
 

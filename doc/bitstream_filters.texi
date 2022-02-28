@@ -800,6 +800,9 @@ The next input duration.
 @item TB
 The timebase of stream packet belongs.
 
+@item TB_OUT
+The output timebase.
+
 @item SR
 The sample rate of stream packet belongs.
 
