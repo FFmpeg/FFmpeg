@@ -385,13 +385,13 @@ static double find_peak_magnitude(AVFrame *frame, int channel)
             double *data_ptr = (double *)frame->extended_data[c];
 
             for (i = 0; i < frame->nb_samples; i++)
-                max = FFMAX(max, fabs(data_ptr[i]));
+                max = fmax(max, fabs(data_ptr[i]));
         }
     } else {
         double *data_ptr = (double *)frame->extended_data[channel];
 
         for (i = 0; i < frame->nb_samples; i++)
-            max = FFMAX(max, fabs(data_ptr[i]));
+            max = fmax(max, fabs(data_ptr[i]));
     }
 
     return max;
@@ -421,7 +421,7 @@ static double compute_frame_rms(AVFrame *frame, int channel)
         rms_value /= frame->nb_samples;
     }
 
-    return FFMAX(sqrt(rms_value), DBL_EPSILON);
+    return fmax(sqrt(rms_value), DBL_EPSILON);
 }
 
 static local_gain get_max_local_gain(DynamicAudioNormalizerContext *s, AVFrame *frame,
@@ -433,7 +433,7 @@ static local_gain get_max_local_gain(DynamicAudioNormalizerContext *s, AVFrame *
     local_gain gain;
 
     gain.threshold = peak_magnitude > s->threshold;
-    gain.max_gain  = bound(s->max_amplification, FFMIN(maximum_gain, rms_gain));
+    gain.max_gain  = bound(s->max_amplification, fmin(maximum_gain, rms_gain));
 
     return gain;
 }
@@ -444,7 +444,7 @@ static double minimum_filter(cqueue *q)
     int i;
 
     for (i = 0; i < cqueue_size(q); i++) {
-        min = FFMIN(min, cqueue_peek(q, i));
+        min = fmin(min, cqueue_peek(q, i));
     }
 
     return min;
@@ -475,7 +475,7 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
 {
     if (cqueue_empty(s->gain_history_original[channel])) {
         const int pre_fill_size = s->filter_size / 2;
-        const double initial_value = s->alt_boundary_mode ? gain.max_gain : FFMIN(1.0, gain.max_gain);
+        const double initial_value = s->alt_boundary_mode ? gain.max_gain : fmin(1.0, gain.max_gain);
 
         s->prev_amplification_factor[channel] = initial_value;
 
@@ -497,7 +497,7 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
 
             while (cqueue_size(s->gain_history_minimum[channel]) < pre_fill_size) {
                 input++;
-                initial_value = FFMIN(initial_value, cqueue_peek(s->gain_history_original[channel], input));
+                initial_value = fmin(initial_value, cqueue_peek(s->gain_history_original[channel], input));
                 cqueue_enqueue(s->gain_history_minimum[channel], initial_value);
             }
         }
@@ -516,7 +516,7 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
 
         smoothed = gaussian_filter(s, s->gain_history_minimum[channel], s->threshold_history[channel]);
         limit    = cqueue_peek(s->gain_history_original[channel], 0);
-        smoothed = FFMIN(smoothed, limit);
+        smoothed = fmin(smoothed, limit);
 
         cqueue_enqueue(s->gain_history_smoothed[channel], smoothed);
 
@@ -606,7 +606,7 @@ static double compute_frame_std_dev(DynamicAudioNormalizerContext *s,
         variance /= frame->nb_samples - 1;
     }
 
-    return FFMAX(sqrt(variance), DBL_EPSILON);
+    return fmax(sqrt(variance), DBL_EPSILON);
 }
 
 static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame)
@@ -616,7 +616,7 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
 
     if (s->channels_coupled) {
         const double standard_deviation = compute_frame_std_dev(s, frame, -1);
-        const double current_threshold  = FFMIN(1.0, s->compress_factor * standard_deviation);
+        const double current_threshold  = fmin(1.0, s->compress_factor * standard_deviation);
 
         const double prev_value = is_first_frame ? current_threshold : s->compress_threshold[0];
         double prev_actual_thresh, curr_actual_thresh;
@@ -641,7 +641,7 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
         for (c = 0; c < s->channels; c++) {
             const int bypass = bypass_channel(s, frame, c);
             const double standard_deviation = compute_frame_std_dev(s, frame, c);
-            const double current_threshold  = setup_compress_thresh(FFMIN(1.0, s->compress_factor * standard_deviation));
+            const double current_threshold  = setup_compress_thresh(fmin(1.0, s->compress_factor * standard_deviation));
             const double prev_value = is_first_frame ? current_threshold : s->compress_threshold[c];
             double prev_actual_thresh, curr_actual_thresh;
             double *dst_ptr;
@@ -820,7 +820,7 @@ static int flush_buffer(DynamicAudioNormalizerContext *s, AVFilterLink *inlink,
         double *dst_ptr = (double *)out->extended_data[c];
 
         for (i = 0; i < out->nb_samples; i++) {
-            dst_ptr[i] = s->alt_boundary_mode ? DBL_EPSILON : ((s->target_rms > DBL_EPSILON) ? FFMIN(s->peak_value, s->target_rms) : s->peak_value);
+            dst_ptr[i] = s->alt_boundary_mode ? DBL_EPSILON : ((s->target_rms > DBL_EPSILON) ? fmin(s->peak_value, s->target_rms) : s->peak_value);
             if (s->dc_correction) {
                 dst_ptr[i] *= ((i % 2) == 1) ? -1 : 1;
                 dst_ptr[i] += s->dc_correction_value[c];
