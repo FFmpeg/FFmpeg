@@ -145,6 +145,8 @@ static int setts_init(AVBSFContext *ctx)
     s->start_pts   = AV_NOPTS_VALUE;
     s->start_dts   = AV_NOPTS_VALUE;
     s->var_values[VAR_NOPTS] = AV_NOPTS_VALUE;
+    s->var_values[VAR_TB]    = ctx->time_base_in.den ? av_q2d(ctx->time_base_in) : 0;
+    s->var_values[VAR_SR]    = ctx->par_in->sample_rate;
 
     return 0;
 }
@@ -187,8 +189,6 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     s->var_values[VAR_NEXT_DUR]    = pkt->duration;
     s->var_values[VAR_STARTPTS]    = s->start_pts;
     s->var_values[VAR_STARTDTS]    = s->start_dts;
-    s->var_values[VAR_TB]          = ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
-    s->var_values[VAR_SR]          = ctx->par_in->sample_rate;
 
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
     new_duration = llrint(av_expr_eval(s->duration_expr, s->var_values, NULL));
