@@ -57,6 +57,8 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
     int i, ret;
     FFFramePool *pool;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+    ptrdiff_t linesizes[4];
+    size_t sizes[4];
 
     if (!desc)
         return NULL;
@@ -89,13 +91,19 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
         }
     }
 
-    for (i = 0; i < 4 && pool->linesize[i]; i++) {
-        int h = pool->height;
-        if (i == 1 || i == 2)
-            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+    for (i = 0; i < 4; i++)
+        linesizes[i] = pool->linesize[i];
 
-        pool->pools[i] = av_buffer_pool_init(pool->linesize[i] * h + align,
-                                             alloc);
+    if (av_image_fill_plane_sizes(sizes, pool->format,
+                                  pool->height,
+                                  linesizes) < 0) {
+        goto fail;
+    }
+
+    for (i = 0; i < 4 && sizes[i]; i++) {
+        if (sizes[i] > SIZE_MAX - align)
+            goto fail;
+        pool->pools[i] = av_buffer_pool_init(sizes[i] + align, alloc);
         if (!pool->pools[i])
             goto fail;
     }
