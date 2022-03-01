@@ -161,8 +161,8 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
                 }                                                                      \
             }                                                                          \
                                                                                        \
-            out_uptr[x] = su / cn;                                                     \
-            out_vptr[x] = sv / cn;                                                     \
+            out_uptr[x] = (su + (cn >> 1)) / cn;                                       \
+            out_vptr[x] = (sv + (cn >> 1)) / cn;                                       \
         }                                                                              \
                                                                                        \
         out_uptr += out_ulinesize / sizeof(type);                                      \
