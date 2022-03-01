@@ -44,14 +44,17 @@ typedef struct UnsharpFilterParam {
 typedef struct UnsharpContext {
     const AVClass *class;
     int lmsize_x, lmsize_y, cmsize_x, cmsize_y;
+    int amsize_x, amsize_y;
     float lamount, camount;
+    float aamount;
     UnsharpFilterParam luma;   ///< luma parameters (width, height, amount)
     UnsharpFilterParam chroma; ///< chroma parameters (width, height, amount)
+    UnsharpFilterParam alpha;  ///< alpha parameters (width, height, amount)
     int hsub, vsub;
+    int nb_planes;
     int bitdepth;
     int bps;
     int nb_threads;
-    int opencl;
     int (* apply_unsharp)(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
     int (* unsharp_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } UnsharpContext;

@@ -21585,6 +21585,23 @@ sharpen it, a value of zero will disable the effect.
 
 Default value is 0.0.
 
+@item alpha_msize_x, ax
+Set the alpha matrix horizontal size. It must be an odd integer
+between 3 and 23. The default value is 5.
+
+@item alpha_msize_y, ay
+Set the alpha matrix vertical size. It must be an odd integer
+between 3 and 23. The default value is 5.
+
+@item alpha_amount, aa
+Set the alpha effect strength. It must be a floating point number, reasonable
+values lay between -1.5 and 1.5.
+
+Negative values will blur the input video, while positive values will
+sharpen it, a value of zero will disable the effect.
+
+Default value is 0.0.
+
 @end table
 
 All parameters are optional and default to the equivalent of the
