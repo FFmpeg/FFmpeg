@@ -63,28 +63,62 @@ static av_cold int split_init(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = inlink->dst;
-    int i, ret = AVERROR_EOF;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFrame *in;
+    int status, ret;
+    int64_t pts;
 
-    for (i = 0; i < ctx->nb_outputs; i++) {
-        AVFrame *buf_out;
+    for (int i = 0; i < ctx->nb_outputs; i++) {
+        FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[i], ctx);
+    }
 
-        if (ff_outlink_get_status(ctx->outputs[i]))
-            continue;
-        buf_out = av_frame_clone(frame);
-        if (!buf_out) {
-            ret = AVERROR(ENOMEM);
-            break;
+    ret = ff_inlink_consume_frame(inlink, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0) {
+        for (int i = 0; i < ctx->nb_outputs; i++) {
+            AVFrame *buf_out;
+
+            if (ff_outlink_get_status(ctx->outputs[i]))
+                continue;
+            buf_out = av_frame_clone(in);
+            if (!buf_out) {
+                ret = AVERROR(ENOMEM);
+                break;
+            }
+
+            ret = ff_filter_frame(ctx->outputs[i], buf_out);
+            if (ret < 0)
+                break;
         }
 
-        ret = ff_filter_frame(ctx->outputs[i], buf_out);
+        av_frame_free(&in);
         if (ret < 0)
-            break;
+            return ret;
     }
-    av_frame_free(&frame);
-    return ret;
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        for (int i = 0; i < ctx->nb_outputs; i++) {
+            if (ff_outlink_get_status(ctx->outputs[i]))
+                continue;
+            ff_outlink_set_status(ctx->outputs[i], status, pts);
+        }
+        return 0;
+    }
+
+    for (int i = 0; i < ctx->nb_outputs; i++) {
+        if (ff_outlink_get_status(ctx->outputs[i]))
+            continue;
+
+        if (ff_outlink_frame_wanted(ctx->outputs[i])) {
+            ff_inlink_request_frame(inlink);
+            return 0;
+        }
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 #define OFFSET(x) offsetof(SplitContext, x)
@@ -100,7 +134,6 @@ static const AVFilterPad avfilter_vf_split_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
 };
 
@@ -110,6 +143,7 @@ const AVFilter ff_vf_split = {
     .priv_size   = sizeof(SplitContext),
     .priv_class  = &split_class,
     .init        = split_init,
+    .activate    = activate,
     FILTER_INPUTS(avfilter_vf_split_inputs),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
@@ -119,7 +153,6 @@ static const AVFilterPad avfilter_af_asplit_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
     },
 };
 
@@ -129,6 +162,7 @@ const AVFilter ff_af_asplit = {
     .priv_class  = &split_class,
     .priv_size   = sizeof(SplitContext),
     .init        = split_init,
+    .activate    = activate,
     FILTER_INPUTS(avfilter_af_asplit_inputs),
     .outputs     = NULL,
     .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
