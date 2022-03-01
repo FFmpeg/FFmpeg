@@ -3468,7 +3468,7 @@ static int xyz_to_dfisheye(const V360Context *s,
         u_shift = ceilf(ew);
     } else {
         u_shift = 0;
-        uf = ew - uf;
+        uf = ew - uf - 1.f;
     }
 
     ui = floorf(uf);
