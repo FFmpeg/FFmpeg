@@ -24,16 +24,16 @@
 #include "libavutil/avassert.h"
 #include "libavutil/detection_bbox.h"
 
-DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
+int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
     if (bytewidth < 0) {
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
     if (output->dt != DNN_FLOAT) {
         avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
-        return DNN_ERROR;
+        return AVERROR(ENOSYS);
     }
 
     switch (frame->format) {
@@ -51,7 +51,7 @@ DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *l
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32), frame->width * 3, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),   frame->width * 3, frame->height);
-            return DNN_ERROR;
+            return AVERROR(EINVAL);
         }
         sws_scale(sws_ctx, (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
                            (const int[4]){frame->width * 3 * sizeof(float), 0, 0, 0}, 0, frame->height,
@@ -82,7 +82,7 @@ DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *l
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32), frame->width, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),   frame->width, frame->height);
-            return DNN_ERROR;
+            return AVERROR(EINVAL);
         }
         sws_scale(sws_ctx, (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
                            (const int[4]){frame->width * sizeof(float), 0, 0, 0}, 0, frame->height,
@@ -91,22 +91,22 @@ DNNReturnType ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *l
         return DNN_SUCCESS;
     default:
         avpriv_report_missing_feature(log_ctx, "%s", av_get_pix_fmt_name(frame->format));
-        return DNN_ERROR;
+        return AVERROR(ENOSYS);
     }
 
     return DNN_SUCCESS;
 }
 
-DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
+int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int bytewidth = av_image_get_linesize(frame->format, frame->width, 0);
     if (bytewidth < 0) {
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
     if (input->dt != DNN_FLOAT) {
         avpriv_report_missing_feature(log_ctx, "data type rather than DNN_FLOAT");
-        return DNN_ERROR;
+        return AVERROR(ENOSYS);
     }
 
     switch (frame->format) {
@@ -124,7 +124,7 @@ DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *lo
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),  frame->width * 3, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32),frame->width * 3, frame->height);
-            return DNN_ERROR;
+            return AVERROR(EINVAL);
         }
         sws_scale(sws_ctx, (const uint8_t **)frame->data,
                            frame->linesize, 0, frame->height,
@@ -156,7 +156,7 @@ DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *lo
                 "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAY8),  frame->width, frame->height,
                 av_get_pix_fmt_name(AV_PIX_FMT_GRAYF32),frame->width, frame->height);
-            return DNN_ERROR;
+            return AVERROR(EINVAL);
         }
         sws_scale(sws_ctx, (const uint8_t **)frame->data,
                            frame->linesize, 0, frame->height,
@@ -166,7 +166,7 @@ DNNReturnType ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *lo
         break;
     default:
         avpriv_report_missing_feature(log_ctx, "%s", av_get_pix_fmt_name(frame->format));
-        return DNN_ERROR;
+        return AVERROR(ENOSYS);
     }
 
     return DNN_SUCCESS;
@@ -190,13 +190,14 @@ static enum AVPixelFormat get_pixel_format(DNNData *data)
     return AV_PIX_FMT_BGR24;
 }
 
-DNNReturnType ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index, void *log_ctx)
+int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index, void *log_ctx)
 {
     const AVPixFmtDescriptor *desc;
     int offsetx[4], offsety[4];
     uint8_t *bbox_data[4];
     struct SwsContext *sws_ctx;
     int linesizes[4];
+    int ret = DNN_SUCCESS;
     enum AVPixelFormat fmt;
     int left, top, width, height;
     const AVDetectionBBoxHeader *header;
@@ -221,13 +222,14 @@ DNNReturnType ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t 
                "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
                av_get_pix_fmt_name(frame->format), width, height,
                av_get_pix_fmt_name(fmt), input->width, input->height);
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
 
-    if (av_image_fill_linesizes(linesizes, fmt, input->width) < 0) {
+    ret = av_image_fill_linesizes(linesizes, fmt, input->width);
+    if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "unable to get linesizes with av_image_fill_linesizes");
         sws_freeContext(sws_ctx);
-        return DNN_ERROR;
+        return ret;
     }
 
     desc = av_pix_fmt_desc_get(frame->format);
@@ -246,13 +248,14 @@ DNNReturnType ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t 
 
     sws_freeContext(sws_ctx);
 
-    return DNN_SUCCESS;
+    return ret;
 }
 
-DNNReturnType ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
+int ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int linesizes[4];
+    int ret = DNN_SUCCESS;
     enum AVPixelFormat fmt = get_pixel_format(input);
     sws_ctx = sws_getContext(frame->width, frame->height, frame->format,
                              input->width, input->height, fmt,
@@ -262,18 +265,19 @@ DNNReturnType ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_c
             "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
             av_get_pix_fmt_name(frame->format), frame->width, frame->height,
             av_get_pix_fmt_name(fmt), input->width, input->height);
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
 
-    if (av_image_fill_linesizes(linesizes, fmt, input->width) < 0) {
+    ret = av_image_fill_linesizes(linesizes, fmt, input->width);
+    if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "unable to get linesizes with av_image_fill_linesizes");
         sws_freeContext(sws_ctx);
-        return DNN_ERROR;
+        return ret;
     }
 
     sws_scale(sws_ctx, (const uint8_t *const *)frame->data, frame->linesize, 0, frame->height,
                        (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
 
     sws_freeContext(sws_ctx);
-    return DNN_SUCCESS;
+    return ret;
 }
