@@ -5641,9 +5641,8 @@ static int check_pkt(AVFormatContext *s, AVPacket *pkt)
 
     duration = pkt->dts - ref;
     if (pkt->dts < ref || duration >= INT_MAX) {
-        av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" / timestamp: %"PRId64" is out of range for mov/mp4 format\n",
-            duration, pkt->dts
-        );
+        av_log(s, AV_LOG_WARNING, "Packet duration: %"PRId64" / dts: %"PRId64" is out of range\n",
+               duration, pkt->dts);
 
         pkt->dts = ref + 1;
         pkt->pts = AV_NOPTS_VALUE;
