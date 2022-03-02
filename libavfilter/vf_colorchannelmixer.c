@@ -77,6 +77,10 @@ static void preservel(float *r, float *g, float *b, float lin, float lout, float
 #define DEPTH 16
 #include "colorchannelmixer_template.c"
 
+#undef DEPTH
+#define DEPTH 32
+#include "colorchannelmixer_template.c"
+
 #define OFFSET(x) offsetof(ColorChannelMixerContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -125,6 +129,7 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_GBRP14,
     AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
+    AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
     AV_PIX_FMT_NONE
 };
 
@@ -278,6 +283,26 @@ static int filter_slice_rgb0_pl(AVFilterContext *ctx, void *arg, int jobnr, int 
     return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, -1, 4, 1, 8);
 }
 
+static int filter_slice_gbrp32(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_planar_32(ctx, arg, jobnr, nb_jobs, 0, 1, 0);
+}
+
+static int filter_slice_gbrap32(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_planar_32(ctx, arg, jobnr, nb_jobs, 1, 1, 0);
+}
+
+static int filter_slice_gbrp32_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_planar_32(ctx, arg, jobnr, nb_jobs, 0, 1, 1);
+}
+
+static int filter_slice_gbrap32_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_planar_32(ctx, arg, jobnr, nb_jobs, 1, 1, 1);
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -390,6 +415,14 @@ static int config_output(AVFilterLink *outlink)
     case AV_PIX_FMT_GBRAP16:
         s->filter_slice[0] = filter_slice_gbrap16;
         s->filter_slice[1] = filter_slice_gbrap16_pl;
+        break;
+    case AV_PIX_FMT_GBRPF32:
+        s->filter_slice[0] = filter_slice_gbrp32;
+        s->filter_slice[1] = filter_slice_gbrp32_pl;
+        break;
+    case AV_PIX_FMT_GBRAPF32:
+        s->filter_slice[0] = filter_slice_gbrap32;
+        s->filter_slice[1] = filter_slice_gbrap32_pl;
         break;
     }
 

@@ -21,10 +21,21 @@
 #include <float.h>
 
 #undef pixel
+#undef cpixel
+#undef ROUND
 #if DEPTH == 8
 #define pixel uint8_t
+#define cpixel int
+#define ROUND lrintf
 #elif DEPTH == 16
 #define pixel uint16_t
+#define cpixel int
+#define ROUND lrintf
+#else
+#define NOP(x) (x)
+#define pixel float
+#define cpixel float
+#define ROUND NOP
 #endif
 
 #undef fn
@@ -60,8 +71,22 @@ static av_always_inline int fn(filter_slice_rgba_planar)(AVFilterContext *ctx, v
             const pixel gin = srcg[j];
             const pixel bin = srcb[j];
             const pixel ain = have_alpha ? srca[j] : 0;
-            int rout, gout, bout;
+            cpixel rout, gout, bout;
 
+#if DEPTH == 32
+            rout = s->rr * rin +
+                   s->rg * gin +
+                   s->rb * bin +
+                   (have_alpha == 1 ? s->ra * ain : 0);
+            gout = s->gr * rin +
+                   s->gg * gin +
+                   s->gb * bin +
+                   (have_alpha == 1 ? s->ga * ain : 0);
+            bout = s->br * rin +
+                   s->bg * gin +
+                   s->bb * bin +
+                   (have_alpha == 1 ? s->ba * ain : 0);
+#else
             rout = s->lut[R][R][rin] +
                    s->lut[R][G][gin] +
                    s->lut[R][B][bin] +
@@ -74,31 +99,52 @@ static av_always_inline int fn(filter_slice_rgba_planar)(AVFilterContext *ctx, v
                    s->lut[B][G][gin] +
                    s->lut[B][B][bin] +
                    (have_alpha == 1 ? s->lut[B][A][ain] : 0);
+#endif
 
             if (pc) {
-                float frout = av_clipf(rout, 0.f, max);
-                float fgout = av_clipf(gout, 0.f, max);
-                float fbout = av_clipf(bout, 0.f, max);
-                float lin, lout;
+                float frout, fgout, fbout, lin, lout;
+
+#if DEPTH < 32
+                frout = av_clipf(rout, 0.f, max);
+                fgout = av_clipf(gout, 0.f, max);
+                fbout = av_clipf(bout, 0.f, max);
+#else
+                frout = rout;
+                fgout = gout;
+                fbout = bout;
+#endif
 
                 preserve_color(s->preserve_color, rin, gin, bin,
                                rout, gout, bout, max, &lin, &lout);
                 preservel(&frout, &fgout, &fbout, lin, lout, max);
 
-                rout = lrintf(lerpf(rout, frout, pa));
-                gout = lrintf(lerpf(gout, fgout, pa));
-                bout = lrintf(lerpf(bout, fbout, pa));
+                rout = ROUND(lerpf(rout, frout, pa));
+                gout = ROUND(lerpf(gout, fgout, pa));
+                bout = ROUND(lerpf(bout, fbout, pa));
             }
 
+#if DEPTH < 32
             dstr[j] = av_clip_uintp2(rout, depth);
             dstg[j] = av_clip_uintp2(gout, depth);
             dstb[j] = av_clip_uintp2(bout, depth);
+#else
+            dstr[j] = rout;
+            dstg[j] = gout;
+            dstb[j] = bout;
+#endif
 
             if (have_alpha == 1) {
+#if DEPTH < 32
                 dsta[j] = av_clip_uintp2(s->lut[A][R][rin] +
                                          s->lut[A][G][gin] +
                                          s->lut[A][B][bin] +
                                          s->lut[A][A][ain], depth);
+#else
+                dsta[j] = s->ar * rin +
+                          s->ag * gin +
+                          s->ab * bin +
+                          s->aa * ain;
+#endif
             }
         }
 
@@ -114,6 +160,8 @@ static av_always_inline int fn(filter_slice_rgba_planar)(AVFilterContext *ctx, v
 
     return 0;
 }
+
+#if DEPTH < 32
 
 static av_always_inline int fn(filter_slice_rgba_packed)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
                                                          int have_alpha, int step, int pc, int depth)
@@ -191,3 +239,5 @@ static av_always_inline int fn(filter_slice_rgba_packed)(AVFilterContext *ctx, v
 
     return 0;
 }
+
+#endif
