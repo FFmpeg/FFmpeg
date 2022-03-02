@@ -134,14 +134,14 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *context     = inlink->dst;
     DnnProcessingContext *ctx = context->priv;
-    DNNReturnType result;
+    int result;
     DNNData model_input;
     int check;
 
     result = ff_dnn_get_input(&ctx->dnnctx, &model_input);
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not get input from the model\n");
-        return AVERROR(EIO);
+        return result;
     }
 
     check = check_modelinput_inlink(&model_input, inlink);
@@ -194,14 +194,14 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *context = outlink->src;
     DnnProcessingContext *ctx = context->priv;
-    DNNReturnType result;
+    int result;
     AVFilterLink *inlink = context->inputs[0];
 
     // have a try run in case that the dnn model resize the frame
     result = ff_dnn_get_output(&ctx->dnnctx, inlink->w, inlink->h, &outlink->w, &outlink->h);
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
-        return AVERROR(EIO);
+        return result;
     }
 
     prepare_uv_scale(outlink);

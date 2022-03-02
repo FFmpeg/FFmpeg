@@ -76,7 +76,7 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *context = outlink->src;
     SRContext *ctx = context->priv;
-    DNNReturnType result;
+    int result;
     AVFilterLink *inlink = context->inputs[0];
     int out_width, out_height;
 
@@ -84,7 +84,7 @@ static int config_output(AVFilterLink *outlink)
     result = ff_dnn_get_output(&ctx->dnnctx, inlink->w, inlink->h, &out_width, &out_height);
     if (result != DNN_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
-        return AVERROR(EIO);
+        return result;
     }
 
     if (inlink->w != out_width || inlink->h != out_height) {
@@ -121,7 +121,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     SRContext *ctx = context->priv;
     AVFilterLink *outlink = context->outputs[0];
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    DNNReturnType dnn_result;
+    int dnn_result;
 
     if (!out){
         av_log(context, AV_LOG_ERROR, "could not allocate memory for output frame\n");
@@ -143,7 +143,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_log(ctx, AV_LOG_ERROR, "failed to execute loaded model\n");
         av_frame_free(&in);
         av_frame_free(&out);
-        return AVERROR(EIO);
+        return dnn_result;
     }
 
     do {
