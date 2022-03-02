@@ -96,7 +96,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                        base->linesize[p], overlay->linesize[p],
                        mask->linesize[p], out->linesize[p],
                        s->width[p], slice_end - slice_start,
-                       s->half, s->depth);
+                       s->half, s->max);
     }
 
     return 0;
@@ -138,13 +138,13 @@ static int process_frame(FFFrameSync *fs)
     return ff_filter_frame(outlink, out);
 }
 
-#define MASKEDMERGE(n, type, half, shift)                              \
+#define MASKEDMERGE(n, type, ctype, half, max, div)                    \
 static void maskedmerge##n(const uint8_t *bbsrc, const uint8_t *oosrc, \
                            const uint8_t *mmsrc, uint8_t *ddst,        \
                            ptrdiff_t blinesize, ptrdiff_t olinesize,   \
                            ptrdiff_t mlinesize, ptrdiff_t dlinesize,   \
                            int w, int h,                               \
-                           int hhalf, int sshift)                      \
+                           int hhalf, int mmax)                        \
 {                                                                      \
     const type *bsrc = (const type *)bbsrc;                            \
     const type *osrc = (const type *)oosrc;                            \
@@ -158,7 +158,10 @@ static void maskedmerge##n(const uint8_t *bbsrc, const uint8_t *oosrc, \
                                                                        \
     for (int y = 0; y < h; y++) {                                      \
         for (int x = 0; x < w; x++) {                                  \
-            dst[x] = bsrc[x] + ((msrc[x] * (osrc[x] - bsrc[x]) + half) shift); \
+            const type invm = max - msrc[x];                           \
+            const ctype r = ((ctype)(bsrc[x] * invm) +                 \
+                             (ctype)(msrc[x] * osrc[x] + half))  div;  \
+            dst[x] = r;                                                \
         }                                                              \
                                                                        \
         dst  += dlinesize;                                             \
@@ -168,9 +171,9 @@ static void maskedmerge##n(const uint8_t *bbsrc, const uint8_t *oosrc, \
     }                                                                  \
 }
 
-MASKEDMERGE(8,  uint8_t, 128, >> 8)
-MASKEDMERGE(16, uint16_t, hhalf, >> sshift)
-MASKEDMERGE(32, float, 0.f, + 0.f)
+MASKEDMERGE(8,  uint8_t,  uint16_t,   127, 255,  / 255)
+MASKEDMERGE(16, uint16_t, uint32_t, hhalf, mmax, / mmax)
+MASKEDMERGE(32, float,    float,      0.f, 1.f,  + 0.f)
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -189,7 +192,8 @@ static int config_input(AVFilterLink *inlink)
     s->width[0]  = s->width[3]  = inlink->w;
 
     s->depth = desc->comp[0].depth;
-    s->half = (1 << s->depth) / 2;
+    s->max  = (1 << s->depth) - 1;
+    s->half = s->max / 2;
 
     if (s->depth == 8)
         s->maskedmerge = maskedmerge8;

@@ -24,26 +24,28 @@
 
 SECTION_RODATA
 
-pw_128: times 8 dw 128
-pw_256: times 8 dw 256
+pw_127: times 8 dw 127
+pw_255: times 8 dw 255
+pw_32897: times 8 dw 32897
 
 SECTION .text
 
 INIT_XMM sse2
 %if ARCH_X86_64
-cglobal maskedmerge8, 8, 11, 7, bsrc, osrc, msrc, dst, blinesize, olinesize, mlinesize, dlinesize, w, h, x
+cglobal maskedmerge8, 8, 11, 8, bsrc, osrc, msrc, dst, blinesize, olinesize, mlinesize, dlinesize, w, h, x
     mov         wd, dword wm
     mov         hd, dword hm
 %else
-cglobal maskedmerge8, 5, 7, 7, bsrc, osrc, msrc, dst, blinesize, w, x
+cglobal maskedmerge8, 5, 7, 8, bsrc, osrc, msrc, dst, blinesize, w, x
     mov         wd, r8m
 %define olinesizeq r5mp
 %define mlinesizeq r6mp
 %define dlinesizeq r7mp
 %define hd r9mp
 %endif
-    mova        m4, [pw_256]
-    mova        m5, [pw_128]
+    mova        m4, [pw_255]
+    mova        m5, [pw_127]
+    mova        m7, [pw_32897]
     pxor        m6, m6
     add      bsrcq, wq
     add      osrcq, wq
@@ -66,7 +68,8 @@ cglobal maskedmerge8, 5, 7, 7, bsrc, osrc, msrc, dst, blinesize, w, x
         pmullw          m1, m3
         paddw           m1, m2
         paddw           m1, m5
-        psrlw           m1, 8
+        pmulhuw         m1, m7
+        psrlw           m1, 7
         packuswb        m1, m1
         movh   [dstq + xq], m1
         add             xq, mmsize / 2
