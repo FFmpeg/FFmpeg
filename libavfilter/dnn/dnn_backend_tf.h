@@ -31,9 +31,9 @@
 
 DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_params);
+int ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_params);
 DNNAsyncStatusType ff_dnn_get_result_tf(const DNNModel *model, AVFrame **in, AVFrame **out);
-DNNReturnType ff_dnn_flush_tf(const DNNModel *model);
+int ff_dnn_flush_tf(const DNNModel *model);
 
 void ff_dnn_free_model_tf(DNNModel **model);
 
