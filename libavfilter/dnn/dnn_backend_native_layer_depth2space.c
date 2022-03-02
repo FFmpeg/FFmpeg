@@ -98,5 +98,5 @@ int ff_dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_
         }
         output += output_linesize;
     }
-    return DNN_SUCCESS;
+    return 0;
 }

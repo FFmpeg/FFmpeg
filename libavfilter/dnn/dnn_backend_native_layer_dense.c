@@ -147,5 +147,5 @@ int ff_dnn_execute_layer_dense(DnnOperand *operands, const int32_t *input_operan
             output += dense_params->output_num;
         }
     }
-    return DNN_SUCCESS;
+    return 0;
 }

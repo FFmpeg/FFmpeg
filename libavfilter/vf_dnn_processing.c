@@ -139,7 +139,7 @@ static int config_input(AVFilterLink *inlink)
     int check;
 
     result = ff_dnn_get_input(&ctx->dnnctx, &model_input);
-    if (result != DNN_SUCCESS) {
+    if (result != 0) {
         av_log(ctx, AV_LOG_ERROR, "could not get input from the model\n");
         return result;
     }
@@ -199,7 +199,7 @@ static int config_output(AVFilterLink *outlink)
 
     // have a try run in case that the dnn model resize the frame
     result = ff_dnn_get_output(&ctx->dnnctx, inlink->w, inlink->h, &outlink->w, &outlink->h);
-    if (result != DNN_SUCCESS) {
+    if (result != 0) {
         av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
         return result;
     }
@@ -247,7 +247,7 @@ static int flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
     DNNAsyncStatusType async_state;
 
     ret = ff_dnn_flush(&ctx->dnnctx);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         return -1;
     }
 
@@ -296,7 +296,7 @@ static int activate(AVFilterContext *filter_ctx)
                 return AVERROR(ENOMEM);
             }
             av_frame_copy_props(out, in);
-            if (ff_dnn_execute_model(&ctx->dnnctx, in, out) != DNN_SUCCESS) {
+            if (ff_dnn_execute_model(&ctx->dnnctx, in, out) != 0) {
                 return AVERROR(EIO);
             }
         }

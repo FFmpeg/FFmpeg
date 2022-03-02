@@ -70,7 +70,7 @@ int ff_dnn_fill_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backe
     task->nb_output = exec_params->nb_output;
     task->output_names = exec_params->output_names;
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 /**
@@ -82,7 +82,7 @@ static void *async_thread_routine(void *args)
     DNNAsyncExecModule *async_module = args;
     void *request = async_module->args;
 
-    if (async_module->start_inference(request) != DNN_SUCCESS) {
+    if (async_module->start_inference(request) != 0) {
         return DNN_ASYNC_FAIL;
     }
     async_module->callback(request);
@@ -105,7 +105,7 @@ int ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module)
     async_module->start_inference = NULL;
     async_module->callback = NULL;
     async_module->args = NULL;
-    return DNN_SUCCESS;
+    return 0;
 }
 
 int ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module)
@@ -131,12 +131,12 @@ int ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module)
     }
 #else
     ret = async_module->start_inference(async_module->args);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         return ret;
     }
     async_module->callback(async_module->args);
 #endif
-    return DNN_SUCCESS;
+    return 0;
 }
 
 DNNAsyncStatusType ff_dnn_get_result_common(Queue *task_queue, AVFrame **in, AVFrame **out)

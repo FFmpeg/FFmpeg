@@ -57,12 +57,12 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
                            (const int[4]){frame->width * 3 * sizeof(float), 0, 0, 0}, 0, frame->height,
                            (uint8_t * const*)frame->data, frame->linesize);
         sws_freeContext(sws_ctx);
-        return DNN_SUCCESS;
+        return 0;
     case AV_PIX_FMT_GRAYF32:
         av_image_copy_plane(frame->data[0], frame->linesize[0],
                             output->data, bytewidth,
                             bytewidth, frame->height);
-        return DNN_SUCCESS;
+        return 0;
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
@@ -88,13 +88,13 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
                            (const int[4]){frame->width * sizeof(float), 0, 0, 0}, 0, frame->height,
                            (uint8_t * const*)frame->data, frame->linesize);
         sws_freeContext(sws_ctx);
-        return DNN_SUCCESS;
+        return 0;
     default:
         avpriv_report_missing_feature(log_ctx, "%s", av_get_pix_fmt_name(frame->format));
         return AVERROR(ENOSYS);
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
@@ -169,7 +169,7 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
         return AVERROR(ENOSYS);
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static enum AVPixelFormat get_pixel_format(DNNData *data)
@@ -197,7 +197,7 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     uint8_t *bbox_data[4];
     struct SwsContext *sws_ctx;
     int linesizes[4];
-    int ret = DNN_SUCCESS;
+    int ret = 0;
     enum AVPixelFormat fmt;
     int left, top, width, height;
     const AVDetectionBBoxHeader *header;
@@ -255,7 +255,7 @@ int ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
 {
     struct SwsContext *sws_ctx;
     int linesizes[4];
-    int ret = DNN_SUCCESS;
+    int ret = 0;
     enum AVPixelFormat fmt = get_pixel_format(input);
     sws_ctx = sws_getContext(frame->width, frame->height, frame->format,
                              input->width, input->height, fmt,

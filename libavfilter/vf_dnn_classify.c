@@ -213,7 +213,7 @@ static int dnn_classify_flush_frame(AVFilterLink *outlink, int64_t pts, int64_t 
     DNNAsyncStatusType async_state;
 
     ret = ff_dnn_flush(&ctx->dnnctx);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         return -1;
     }
 
@@ -253,7 +253,7 @@ static int dnn_classify_activate(AVFilterContext *filter_ctx)
         if (ret < 0)
             return ret;
         if (ret > 0) {
-            if (ff_dnn_execute_model_classification(&ctx->dnnctx, in, NULL, ctx->target) != DNN_SUCCESS) {
+            if (ff_dnn_execute_model_classification(&ctx->dnnctx, in, NULL, ctx->target) != 0) {
                 return AVERROR(EIO);
             }
         }

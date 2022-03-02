@@ -67,7 +67,7 @@ static int extract_lltask_from_task(TaskItem *task, Queue *lltask_queue)
         av_freep(&lltask);
         return AVERROR(ENOMEM);
     }
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static int get_input_native(void *model, DNNData *input, const char *input_name)
@@ -87,7 +87,7 @@ static int get_input_native(void *model, DNNData *input, const char *input_name)
             input->height = oprd->dims[1];
             input->width = oprd->dims[2];
             input->channels = oprd->dims[3];
-            return DNN_SUCCESS;
+            return 0;
         }
     }
 
@@ -112,12 +112,12 @@ static int get_output_native(void *model, const char *input_name, int input_widt
     };
 
     ret = ff_dnn_fill_gettingoutput_task(&task, &exec_params, native_model, input_height, input_width, ctx);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         goto err;
     }
 
     ret = extract_lltask_from_task(&task, native_model->lltask_queue);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         goto err;
     }
@@ -387,7 +387,7 @@ static int execute_model_native(Queue *lltask_queue)
                                                  native_model->layers[layer].output_operand_index,
                                                  native_model->layers[layer].params,
                                                  &native_model->ctx);
-        if (ret != DNN_SUCCESS) {
+        if (ret != 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed to execute model\n");
             goto err;
         }
@@ -451,7 +451,7 @@ int ff_dnn_execute_model_native(const DNNModel *model, DNNExecBaseParams *exec_p
     }
 
     ret = ff_dnn_fill_task(task, exec_params, native_model, ctx->options.async, 1);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_freep(&task);
         return ret;
     }
@@ -463,7 +463,7 @@ int ff_dnn_execute_model_native(const DNNModel *model, DNNExecBaseParams *exec_p
     }
 
     ret = extract_lltask_from_task(task, native_model->lltask_queue);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         return ret;
     }
@@ -477,7 +477,7 @@ int ff_dnn_flush_native(const DNNModel *model)
 
     if (ff_queue_size(native_model->lltask_queue) == 0) {
         // no pending task need to flush
-        return DNN_SUCCESS;
+        return 0;
     }
 
     // for now, use sync node with flush operation

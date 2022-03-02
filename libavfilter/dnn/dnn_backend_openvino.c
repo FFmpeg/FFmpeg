@@ -191,7 +191,7 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     }
     ie_blob_free(&input_blob);
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static void infer_completion_callback(void *args)
@@ -303,7 +303,7 @@ static void infer_completion_callback(void *args)
 
 static int init_model_ov(OVModel *ov_model, const char *input_name, const char *output_name)
 {
-    int ret = DNN_SUCCESS;
+    int ret = 0;
     OVContext *ctx = &ov_model->ctx;
     IEStatusCode status;
     ie_available_devices_t a_dev;
@@ -433,7 +433,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         goto err;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 
 err:
     ff_dnn_free_model_ov(&ov_model->model);
@@ -444,7 +444,7 @@ static int execute_model_ov(OVRequestItem *request, Queue *inferenceq)
 {
     IEStatusCode status;
     LastLevelTaskItem *lltask;
-    int ret = DNN_SUCCESS;
+    int ret = 0;
     TaskItem *task;
     OVContext *ctx;
     OVModel *ov_model;
@@ -452,7 +452,7 @@ static int execute_model_ov(OVRequestItem *request, Queue *inferenceq)
     if (ff_queue_size(inferenceq) == 0) {
         ie_infer_request_free(&request->infer_request);
         av_freep(&request);
-        return DNN_SUCCESS;
+        return 0;
     }
 
     lltask = ff_queue_peek_front(inferenceq);
@@ -462,7 +462,7 @@ static int execute_model_ov(OVRequestItem *request, Queue *inferenceq)
 
     if (task->async) {
         ret = fill_model_input_ov(ov_model, request);
-        if (ret != DNN_SUCCESS) {
+        if (ret != 0) {
             goto err;
         }
         status = ie_infer_set_completion_callback(request->infer_request, &request->callback);
@@ -477,10 +477,10 @@ static int execute_model_ov(OVRequestItem *request, Queue *inferenceq)
             ret = DNN_GENERIC_ERROR;
             goto err;
         }
-        return DNN_SUCCESS;
+        return 0;
     } else {
         ret = fill_model_input_ov(ov_model, request);
-        if (ret != DNN_SUCCESS) {
+        if (ret != 0) {
             goto err;
         }
         status = ie_infer_request_infer(request->infer_request);
@@ -490,7 +490,7 @@ static int execute_model_ov(OVRequestItem *request, Queue *inferenceq)
             goto err;
         }
         infer_completion_callback(request);
-        return (task->inference_done == task->inference_todo) ? DNN_SUCCESS : DNN_GENERIC_ERROR;
+        return (task->inference_done == task->inference_todo) ? 0 : DNN_GENERIC_ERROR;
     }
 err:
     if (ff_safe_queue_push_back(ov_model->request_queue, request) < 0) {
@@ -537,7 +537,7 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
             input->height   = input_resizable ? -1 : dims.dims[2];
             input->width    = input_resizable ? -1 : dims.dims[3];
             input->dt       = precision_to_datatype(precision);
-            return DNN_SUCCESS;
+            return 0;
         } else {
             //incorrect input name
             APPEND_STRING(all_input_names, model_input_name)
@@ -604,7 +604,7 @@ static int extract_lltask_from_task(DNNFunctionType func_type, TaskItem *task, Q
             av_freep(&lltask);
             return AVERROR(ENOMEM);
         }
-        return DNN_SUCCESS;
+        return 0;
     }
     case DFT_ANALYTICS_CLASSIFY:
     {
@@ -617,7 +617,7 @@ static int extract_lltask_from_task(DNNFunctionType func_type, TaskItem *task, Q
         task->inference_done = 0;
 
         if (!contain_valid_detection_bbox(frame)) {
-            return DNN_SUCCESS;
+            return 0;
         }
 
         sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
@@ -645,7 +645,7 @@ static int extract_lltask_from_task(DNNFunctionType func_type, TaskItem *task, Q
                 return AVERROR(ENOMEM);
             }
         }
-        return DNN_SUCCESS;
+        return 0;
     }
     default:
         av_assert0(!"should not reach here");
@@ -690,19 +690,19 @@ static int get_output_ov(void *model, const char *input_name, int input_width, i
 
     if (!ov_model->exe_network) {
         ret = init_model_ov(ov_model, input_name, output_name);
-        if (ret != DNN_SUCCESS) {
+        if (ret != 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return ret;
         }
     }
 
     ret = ff_dnn_fill_gettingoutput_task(&task, &exec_params, ov_model, input_height, input_width, ctx);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         goto err;
     }
 
     ret = extract_lltask_from_task(ov_model->model->func_type, &task, ov_model->lltask_queue, NULL);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         goto err;
     }
@@ -795,7 +795,7 @@ int ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_param
 
     if (!ov_model->exe_network) {
         ret = init_model_ov(ov_model, exec_params->input_name, exec_params->output_names[0]);
-        if (ret != DNN_SUCCESS) {
+        if (ret != 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return ret;
         }
@@ -808,7 +808,7 @@ int ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_param
     }
 
     ret = ff_dnn_fill_task(task, exec_params, ov_model, ctx->options.async, 1);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_freep(&task);
         return ret;
     }
@@ -820,7 +820,7 @@ int ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_param
     }
 
     ret = extract_lltask_from_task(model->func_type, task, ov_model->lltask_queue, exec_params);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         return ret;
     }
@@ -834,12 +834,12 @@ int ff_dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_param
             }
 
             ret = execute_model_ov(request, ov_model->lltask_queue);
-            if (ret != DNN_SUCCESS) {
+            if (ret != 0) {
                 return ret;
             }
         }
 
-        return DNN_SUCCESS;
+        return 0;
     }
     else {
         if (model->func_type == DFT_ANALYTICS_CLASSIFY) {
@@ -879,7 +879,7 @@ int ff_dnn_flush_ov(const DNNModel *model)
 
     if (ff_queue_size(ov_model->lltask_queue) == 0) {
         // no pending task need to flush
-        return DNN_SUCCESS;
+        return 0;
     }
 
     request = ff_safe_queue_pop_front(ov_model->request_queue);
@@ -889,7 +889,7 @@ int ff_dnn_flush_ov(const DNNModel *model)
     }
 
     ret = fill_model_input_ov(ov_model, request);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to fill model input.\n");
         return ret;
     }
@@ -904,7 +904,7 @@ int ff_dnn_flush_ov(const DNNModel *model)
         return DNN_GENERIC_ERROR;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 void ff_dnn_free_model_ov(DNNModel **model)

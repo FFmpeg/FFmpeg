@@ -151,7 +151,7 @@ static TFInferRequest *tf_create_inference_request(void)
  * Start synchronous inference for the TensorFlow model.
  *
  * @param request pointer to the TFRequestItem for inference
- * @retval DNN_SUCCESS if execution is successful
+ * @retval 0 if execution is successful
  * @retval AVERROR(EINVAL) if request is NULL
  * @retval DNN_GENERIC_ERROR if execution fails
  */
@@ -181,7 +181,7 @@ static int tf_start_inference(void *args)
         }
         return DNN_GENERIC_ERROR;
     }
-    return DNN_SUCCESS;
+    return 0;
 }
 
 /**
@@ -220,7 +220,7 @@ static int extract_lltask_from_task(TaskItem *task, Queue *lltask_queue)
         av_freep(&lltask);
         return AVERROR(ENOMEM);
     }
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static TF_Buffer *read_graph(const char *model_filename)
@@ -311,7 +311,7 @@ static int get_input_tf(void *model, DNNData *input, const char *input_name)
     input->width = dims[2];
     input->channels = dims[3];
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static int get_output_tf(void *model, const char *input_name, int input_width, int input_height,
@@ -331,12 +331,12 @@ static int get_output_tf(void *model, const char *input_name, int input_width, i
     };
 
     ret = ff_dnn_fill_gettingoutput_task(&task, &exec_params, tf_model, input_height, input_width, ctx);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         goto err;
     }
 
     ret = extract_lltask_from_task(&task, tf_model->lltask_queue);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract inference from task.\n");
         goto err;
     }
@@ -487,7 +487,7 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
         }
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 #define NAME_BUFFER_SIZE 256
@@ -606,7 +606,7 @@ static int add_conv_layer(TFModel *tf_model, TF_Operation *transpose_op, TF_Oper
         goto err;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 err:
     TF_DeleteTensor(kernel_tensor);
     TF_DeleteTensor(biases_tensor);
@@ -635,7 +635,7 @@ static int add_depth_to_space_layer(TFModel *tf_model, TF_Operation **cur_op,
         return DNN_GENERIC_ERROR;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static int add_pad_layer(TFModel *tf_model, TF_Operation **cur_op,
@@ -693,7 +693,7 @@ static int add_pad_layer(TFModel *tf_model, TF_Operation **cur_op,
         return DNN_GENERIC_ERROR;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static int add_maximum_layer(TFModel *tf_model, TF_Operation **cur_op,
@@ -742,7 +742,7 @@ static int add_maximum_layer(TFModel *tf_model, TF_Operation **cur_op,
         return DNN_GENERIC_ERROR;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 static int load_native_model(TFModel *tf_model, const char *model_filename)
@@ -808,7 +808,7 @@ static int load_native_model(TFModel *tf_model, const char *model_filename)
     for (layer = 0; layer < native_model->layers_num; ++layer){
         switch (native_model->layers[layer].type){
         case DLT_INPUT:
-            layer_add_res = DNN_SUCCESS;
+            layer_add_res = 0;
             break;
         case DLT_CONV2D:
             layer_add_res = add_conv_layer(tf_model, transpose_op, &op,
@@ -830,7 +830,7 @@ static int load_native_model(TFModel *tf_model, const char *model_filename)
             CLEANUP_ON_ERROR(tf_model);
         }
 
-        if (layer_add_res != DNN_SUCCESS){
+        if (layer_add_res != 0){
             CLEANUP_ON_ERROR(tf_model);
         }
     }
@@ -846,7 +846,7 @@ static int load_native_model(TFModel *tf_model, const char *model_filename)
 
     ff_dnn_free_model_native(&model);
 
-    return DNN_SUCCESS;
+    return 0;
 }
 
 DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx)
@@ -876,8 +876,8 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename, DNNFunctionType func_
         goto err;
     }
 
-    if (load_tf_model(tf_model, model_filename) != DNN_SUCCESS){
-        if (load_native_model(tf_model, model_filename) != DNN_SUCCESS){
+    if (load_tf_model(tf_model, model_filename) != 0){
+        if (load_native_model(tf_model, model_filename) != 0){
             goto err;
         }
     }
@@ -958,7 +958,7 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
     request->lltask = lltask;
 
     ret = get_input_tf(tf_model, &input, task->input_name);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         goto err;
     }
 
@@ -1032,7 +1032,7 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
         infer_request->tf_outputs[i].index = 0;
     }
 
-    return DNN_SUCCESS;
+    return 0;
 err:
     tf_free_request(infer_request);
     return ret;
@@ -1106,7 +1106,7 @@ static int execute_model_tf(TFRequestItem *request, Queue *lltask_queue)
 
     if (ff_queue_size(lltask_queue) == 0) {
         destroy_request_item(&request);
-        return DNN_SUCCESS;
+        return 0;
     }
 
     lltask = ff_queue_peek_front(lltask_queue);
@@ -1115,23 +1115,23 @@ static int execute_model_tf(TFRequestItem *request, Queue *lltask_queue)
     ctx = &tf_model->ctx;
 
     ret = fill_model_input_tf(tf_model, request);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         goto err;
     }
 
     if (task->async) {
-        if (ff_dnn_start_inference_async(ctx, &request->exec_module) != DNN_SUCCESS) {
+        if (ff_dnn_start_inference_async(ctx, &request->exec_module) != 0) {
             goto err;
         }
-        return DNN_SUCCESS;
+        return 0;
     }
     else {
         ret = tf_start_inference(request);
-        if (ret != DNN_SUCCESS) {
+        if (ret != 0) {
             goto err;
         }
         infer_completion_callback(request);
-        return (task->inference_done == task->inference_todo) ? DNN_SUCCESS : DNN_GENERIC_ERROR;
+        return (task->inference_done == task->inference_todo) ? 0 : DNN_GENERIC_ERROR;
     }
 err:
     tf_free_request(request->infer_request);
@@ -1161,7 +1161,7 @@ int ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_param
     }
 
     ret = ff_dnn_fill_task(task, exec_params, tf_model, ctx->options.async, 1);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_freep(&task);
         return ret;
     }
@@ -1173,7 +1173,7 @@ int ff_dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_param
     }
 
     ret = extract_lltask_from_task(task, tf_model->lltask_queue);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         return ret;
     }
@@ -1201,7 +1201,7 @@ int ff_dnn_flush_tf(const DNNModel *model)
 
     if (ff_queue_size(tf_model->lltask_queue) == 0) {
         // no pending task need to flush
-        return DNN_SUCCESS;
+        return 0;
     }
 
     request = ff_safe_queue_pop_front(tf_model->request_queue);
@@ -1211,7 +1211,7 @@ int ff_dnn_flush_tf(const DNNModel *model)
     }
 
     ret = fill_model_input_tf(tf_model, request);
-    if (ret != DNN_SUCCESS) {
+    if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to fill model input.\n");
         if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
             destroy_request_item(&request);

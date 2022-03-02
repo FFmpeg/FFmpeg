@@ -82,7 +82,7 @@ static int config_output(AVFilterLink *outlink)
 
     // have a try run in case that the dnn model resize the frame
     result = ff_dnn_get_output(&ctx->dnnctx, inlink->w, inlink->h, &out_width, &out_height);
-    if (result != DNN_SUCCESS) {
+    if (result != 0) {
         av_log(ctx, AV_LOG_ERROR, "could not get output from the model\n");
         return result;
     }
@@ -139,7 +139,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         dnn_result = ff_dnn_execute_model(&ctx->dnnctx, in, out);
     }
 
-    if (dnn_result != DNN_SUCCESS){
+    if (dnn_result != 0){
         av_log(ctx, AV_LOG_ERROR, "failed to execute loaded model\n");
         av_frame_free(&in);
         av_frame_free(&out);

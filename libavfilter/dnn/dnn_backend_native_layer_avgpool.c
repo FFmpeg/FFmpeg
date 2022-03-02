@@ -143,5 +143,5 @@ int ff_dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_ope
         }
     }
 
-    return DNN_SUCCESS;
+    return 0;
 }

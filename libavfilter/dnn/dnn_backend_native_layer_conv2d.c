@@ -190,7 +190,7 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
 #if HAVE_PTHREAD_CANCEL
     int thread_num = (ctx->options.conv2d_threads <= 0 || ctx->options.conv2d_threads > av_cpu_count())
         ? (av_cpu_count() + 1) : (ctx->options.conv2d_threads);
-    int ret = DNN_SUCCESS, thread_stride;
+    int ret = 0, thread_stride;
     ThreadParam *thread_param;
 #else
     ThreadParam thread_param = { 0 };
@@ -260,6 +260,6 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
     thread_param.thread_end = height - pad_size;
     dnn_execute_layer_conv2d_thread(&thread_param);
 
-    return DNN_SUCCESS;
+    return 0;
 #endif
 }

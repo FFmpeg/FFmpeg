@@ -32,8 +32,6 @@
 
 #define DNN_GENERIC_ERROR FFERRTAG('D','N','N','!')
 
-typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
-
 typedef enum {DNN_NATIVE, DNN_TF, DNN_OV} DNNBackendType;
 
 typedef enum {DNN_FLOAT = 1, DNN_UINT8 = 4} DNNDataType;

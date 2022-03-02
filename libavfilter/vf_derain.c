@@ -74,7 +74,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     dnn_result = ff_dnn_execute_model(&dr_context->dnnctx, in, out);
-    if (dnn_result != DNN_SUCCESS){
+    if (dnn_result != 0){
         av_log(ctx, AV_LOG_ERROR, "failed to execute model\n");
         av_frame_free(&in);
         return dnn_result;
