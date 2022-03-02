@@ -109,12 +109,12 @@ int ff_dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_ope
     output_operand->length = ff_calculate_operand_data_length(output_operand);
     if (output_operand->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
     output_operand->data = av_realloc(output_operand->data, output_operand->length);
     if (!output_operand->data) {
         av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
-        return DNN_ERROR;
+        return AVERROR(ENOMEM);
     }
     output = output_operand->data;
 
@@ -143,5 +143,5 @@ int ff_dnn_execute_layer_avg_pool(DnnOperand *operands, const int32_t *input_ope
         }
     }
 
-    return 0;
+    return DNN_SUCCESS;
 }

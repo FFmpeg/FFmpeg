@@ -211,12 +211,12 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
     output_operand->length = ff_calculate_operand_data_length(output_operand);
     if (output_operand->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
     tmp = av_realloc(output_operand->data, output_operand->length);
     if (!tmp) {
         av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
-        return DNN_ERROR;
+        return AVERROR(ENOMEM);
     }
     output_operand->data = tmp;
     thread_common_param.output_data = output_operand->data;
@@ -229,17 +229,19 @@ int ff_dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_opera
 #if HAVE_PTHREAD_CANCEL
     thread_param = av_malloc_array(thread_num, sizeof(*thread_param));
     if (!thread_param)
-        return DNN_ERROR;
+        return AVERROR(ENOMEM);
     thread_stride = (height - pad_size * 2) / thread_num;
     //create threads
     for (int i = 0; i < thread_num; i++){
+        int thread_ret = 0;
         thread_param[i].thread_common_param = &thread_common_param;
         thread_param[i].thread_start = thread_stride * i + pad_size;
         thread_param[i].thread_end = (i == thread_num - 1) ? (height - pad_size) : (thread_param[i].thread_start + thread_stride);
-        if (pthread_create(&thread_param[i].thread, NULL,
-                           dnn_execute_layer_conv2d_thread, &thread_param[i])) {
+        thread_ret = pthread_create(&thread_param[i].thread, NULL,
+                                    dnn_execute_layer_conv2d_thread, &thread_param[i]);
+        if (thread_ret) {
             thread_num = i;
-            ret = DNN_ERROR;
+            ret = AVERROR(thread_ret);
             break;
         }
     }

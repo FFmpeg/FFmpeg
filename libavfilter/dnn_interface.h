@@ -30,6 +30,8 @@
 #include "libavutil/frame.h"
 #include "avfilter.h"
 
+#define DNN_GENERIC_ERROR FFERRTAG('D','N','N','!')
+
 typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
 typedef enum {DNN_NATIVE, DNN_TF, DNN_OV} DNNBackendType;

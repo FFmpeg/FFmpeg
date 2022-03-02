@@ -159,12 +159,12 @@ int ff_dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_
     output->length = ff_calculate_operand_data_length(output);
     if (output->length <= 0) {
         av_log(ctx, AV_LOG_ERROR, "The output data length overflow\n");
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
     output->data = av_realloc(output->data, output->length);
     if (!output->data) {
         av_log(ctx, AV_LOG_ERROR, "Failed to reallocate memory for output\n");
-        return DNN_ERROR;
+        return AVERROR(ENOMEM);
     }
 
     switch (params->bin_op) {
@@ -188,6 +188,6 @@ int ff_dnn_execute_layer_math_binary(DnnOperand *operands, const int32_t *input_
         return 0;
     default:
         av_log(ctx, AV_LOG_ERROR, "Unmatch math binary operator\n");
-        return DNN_ERROR;
+        return AVERROR(EINVAL);
     }
 }
