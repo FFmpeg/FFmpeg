@@ -60,7 +60,7 @@ typedef struct DNNAsyncExecModule {
      * Synchronous inference function for the backend
      * with corresponding request item as the argument.
      */
-    DNNReturnType (*start_inference)(void *request);
+    int (*start_inference)(void *request);
 
     /**
      * Completion Callback for the backend.
@@ -92,20 +92,18 @@ int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func
  * @param async flag for async execution. Must be 0 or 1
  * @param do_ioproc flag for IO processing. Must be 0 or 1
  *
- * @retval DNN_SUCCESS if successful
- * @retval DNN_ERROR if flags are invalid or any parameter is NULL
+ * @returns DNN_SUCCESS if successful or error code otherwise.
  */
-DNNReturnType ff_dnn_fill_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int async, int do_ioproc);
+int ff_dnn_fill_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int async, int do_ioproc);
 
 /**
  * Join the Async Execution thread and set module pointers to NULL.
  *
  * @param async_module pointer to DNNAsyncExecModule module
  *
- * @retval DNN_SUCCESS if successful
- * @retval DNN_ERROR if async_module is NULL
+ * @returns DNN_SUCCESS if successful or error code otherwise.
  */
-DNNReturnType ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module);
+int ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module);
 
 /**
  * Start asynchronous inference routine for the TensorFlow
@@ -119,10 +117,9 @@ DNNReturnType ff_dnn_async_module_cleanup(DNNAsyncExecModule *async_module);
  * @param ctx pointer to the backend context
  * @param async_module pointer to DNNAsyncExecModule module
  *
- * @retval DNN_SUCCESS on the start of async inference.
- * @retval DNN_ERROR in case async inference cannot be started
+ * @returns DNN_SUCCESS on the start of async inference or error code otherwise.
  */
-DNNReturnType ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module);
+int ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module);
 
 /**
  * Extract input and output frame from the Task Queue after
@@ -149,9 +146,8 @@ DNNAsyncStatusType ff_dnn_get_result_common(Queue *task_queue, AVFrame **in, AVF
  * @param input_width width of input frame
  * @param ctx pointer to the backend context
  *
- * @retval DNN_SUCCESS if successful
- * @retval DNN_ERROR if allocation fails
+ * @returns DNN_SUCCESS if successful or error code otherwise.
  */
-DNNReturnType ff_dnn_fill_gettingoutput_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int input_height, int input_width, void *ctx);
+int ff_dnn_fill_gettingoutput_task(TaskItem *task, DNNExecBaseParams *exec_params, void *backend_model, int input_height, int input_width, void *ctx);
 
 #endif
