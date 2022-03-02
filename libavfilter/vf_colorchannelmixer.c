@@ -56,6 +56,27 @@ typedef struct ColorChannelMixerContext {
     int (*filter_slice[2])(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ColorChannelMixerContext;
 
+static float lerpf(float v0, float v1, float f)
+{
+    return v0 + (v1 - v0) * f;
+}
+
+static void preservel(float *r, float *g, float *b, float lin, float lout, float max)
+{
+    if (lout <= 0.f)
+        lout = 1.f / (max * 2.f);
+    *r *= lin / lout;
+    *g *= lin / lout;
+    *b *= lin / lout;
+}
+
+#define DEPTH 8
+#include "colorchannelmixer_template.c"
+
+#undef DEPTH
+#define DEPTH 16
+#include "colorchannelmixer_template.c"
+
 #define OFFSET(x) offsetof(ColorChannelMixerContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -107,484 +128,154 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static float lerpf(float v0, float v1, float f)
-{
-    return v0 + (v1 - v0) * f;
-}
-
-static void preservel(float *r, float *g, float *b, float lin, float lout, float max)
-{
-    if (lout <= 0.f)
-        lout = 1.f / (max * 2.f);
-    *r *= lin / lout;
-    *g *= lin / lout;
-    *b *= lin / lout;
-}
-
-static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
-                                                     int have_alpha, int pc)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const float pa = s->preserve_amount;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t *srcg = in->data[0] + slice_start * in->linesize[0];
-    const uint8_t *srcb = in->data[1] + slice_start * in->linesize[1];
-    const uint8_t *srcr = in->data[2] + slice_start * in->linesize[2];
-    const uint8_t *srca = in->data[3] + slice_start * in->linesize[3];
-    uint8_t *dstg = out->data[0] + slice_start * out->linesize[0];
-    uint8_t *dstb = out->data[1] + slice_start * out->linesize[1];
-    uint8_t *dstr = out->data[2] + slice_start * out->linesize[2];
-    uint8_t *dsta = out->data[3] + slice_start * out->linesize[3];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        for (j = 0; j < out->width; j++) {
-            const uint8_t rin = srcr[j];
-            const uint8_t gin = srcg[j];
-            const uint8_t bin = srcb[j];
-            const uint8_t ain = have_alpha ? srca[j] : 0;
-            int rout, gout, bout;
-
-            rout = s->lut[R][R][rin] +
-                   s->lut[R][G][gin] +
-                   s->lut[R][B][bin] +
-                   (have_alpha == 1 ? s->lut[R][A][ain] : 0);
-            gout = s->lut[G][R][rin] +
-                   s->lut[G][G][gin] +
-                   s->lut[G][B][bin] +
-                   (have_alpha == 1 ? s->lut[G][A][ain] : 0);
-            bout = s->lut[B][R][rin] +
-                   s->lut[B][G][gin] +
-                   s->lut[B][B][bin] +
-                   (have_alpha == 1 ? s->lut[B][A][ain] : 0);
-
-            if (pc) {
-                float frout = av_clipf(rout, 0.f, 255.f);
-                float fgout = av_clipf(gout, 0.f, 255.f);
-                float fbout = av_clipf(bout, 0.f, 255.f);
-                float lin, lout;
-
-                preserve_color(s->preserve_color, rin, gin, bin,
-                               rout, gout, bout, 255.f, &lin, &lout);
-                preservel(&frout, &fgout, &fbout, lin, lout, 255.f);
-
-                rout = lrintf(lerpf(rout, frout, pa));
-                gout = lrintf(lerpf(gout, fgout, pa));
-                bout = lrintf(lerpf(bout, fbout, pa));
-            }
-
-            dstr[j] = av_clip_uint8(rout);
-            dstg[j] = av_clip_uint8(gout);
-            dstb[j] = av_clip_uint8(bout);
-
-            if (have_alpha == 1) {
-                dsta[j] = av_clip_uint8(s->lut[A][R][rin] +
-                                        s->lut[A][G][gin] +
-                                        s->lut[A][B][bin] +
-                                        s->lut[A][A][ain]);
-            }
-        }
-
-        srcg += in->linesize[0];
-        srcb += in->linesize[1];
-        srcr += in->linesize[2];
-        srca += in->linesize[3];
-        dstg += out->linesize[0];
-        dstb += out->linesize[1];
-        dstr += out->linesize[2];
-        dsta += out->linesize[3];
-    }
-
-    return 0;
-}
-
-static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
-                                                       int have_alpha, int depth, int pc)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const float pa = s->preserve_amount;
-    const float max = (1 << depth) - 1;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint16_t *srcg = (const uint16_t *)(in->data[0] + slice_start * in->linesize[0]);
-    const uint16_t *srcb = (const uint16_t *)(in->data[1] + slice_start * in->linesize[1]);
-    const uint16_t *srcr = (const uint16_t *)(in->data[2] + slice_start * in->linesize[2]);
-    const uint16_t *srca = (const uint16_t *)(in->data[3] + slice_start * in->linesize[3]);
-    uint16_t *dstg = (uint16_t *)(out->data[0] + slice_start * out->linesize[0]);
-    uint16_t *dstb = (uint16_t *)(out->data[1] + slice_start * out->linesize[1]);
-    uint16_t *dstr = (uint16_t *)(out->data[2] + slice_start * out->linesize[2]);
-    uint16_t *dsta = (uint16_t *)(out->data[3] + slice_start * out->linesize[3]);
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        for (j = 0; j < out->width; j++) {
-            const uint16_t rin = srcr[j];
-            const uint16_t gin = srcg[j];
-            const uint16_t bin = srcb[j];
-            const uint16_t ain = have_alpha ? srca[j] : 0;
-            int rout, gout, bout;
-
-            rout = s->lut[R][R][rin] +
-                   s->lut[R][G][gin] +
-                   s->lut[R][B][bin] +
-                   (have_alpha == 1 ? s->lut[R][A][ain] : 0);
-            gout = s->lut[G][R][rin] +
-                   s->lut[G][G][gin] +
-                   s->lut[G][B][bin] +
-                   (have_alpha == 1 ? s->lut[G][A][ain] : 0);
-            bout = s->lut[B][R][rin] +
-                   s->lut[B][G][gin] +
-                   s->lut[B][B][bin] +
-                   (have_alpha == 1 ? s->lut[B][A][ain] : 0);
-
-            if (pc) {
-                float frout = av_clipf(rout, 0.f, max);
-                float fgout = av_clipf(gout, 0.f, max);
-                float fbout = av_clipf(bout, 0.f, max);
-                float lin, lout;
-
-                preserve_color(s->preserve_color, rin, gin, bin,
-                               rout, gout, bout, max, &lin, &lout);
-                preservel(&frout, &fgout, &fbout, lin, lout, max);
-
-                rout = lrintf(lerpf(rout, frout, pa));
-                gout = lrintf(lerpf(gout, fgout, pa));
-                bout = lrintf(lerpf(bout, fbout, pa));
-            }
-
-            dstr[j] = av_clip_uintp2(rout, depth);
-            dstg[j] = av_clip_uintp2(gout, depth);
-            dstb[j] = av_clip_uintp2(bout, depth);
-
-            if (have_alpha == 1) {
-                dsta[j] = av_clip_uintp2(s->lut[A][R][rin] +
-                                         s->lut[A][G][gin] +
-                                         s->lut[A][B][bin] +
-                                         s->lut[A][A][ain], depth);
-            }
-        }
-
-        srcg += in->linesize[0] / 2;
-        srcb += in->linesize[1] / 2;
-        srcr += in->linesize[2] / 2;
-        srca += in->linesize[3] / 2;
-        dstg += out->linesize[0] / 2;
-        dstb += out->linesize[1] / 2;
-        dstr += out->linesize[2] / 2;
-        dsta += out->linesize[3] / 2;
-    }
-
-    return 0;
-}
-
 static int filter_slice_gbrp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_planar(ctx, arg, jobnr, nb_jobs, 0, 0);
+    return filter_slice_rgba_planar_8(ctx, arg, jobnr, nb_jobs, 0, 8, 0);
 }
 
 static int filter_slice_gbrap(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_planar(ctx, arg, jobnr, nb_jobs, 1, 0);
+    return filter_slice_rgba_planar_8(ctx, arg, jobnr, nb_jobs, 1, 8, 0);
 }
 
 static int filter_slice_gbrp_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_planar(ctx, arg, jobnr, nb_jobs, 0, 1);
+    return filter_slice_rgba_planar_8(ctx, arg, jobnr, nb_jobs, 0, 8, 1);
 }
 
 static int filter_slice_gbrap_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_planar(ctx, arg, jobnr, nb_jobs, 1, 1);
+    return filter_slice_rgba_planar_8(ctx, arg, jobnr, nb_jobs, 1, 8, 1);
 }
 
 static int filter_slice_gbrp9(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 9, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 9, 0);
 }
 
 static int filter_slice_gbrp10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 10, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 10, 0);
 }
 
 static int filter_slice_gbrap10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 1, 10, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 1, 10, 0);
 }
 
 static int filter_slice_gbrp12(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 12, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 12, 0);
 }
 
 static int filter_slice_gbrap12(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 1, 12, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 1, 12, 0);
 }
 
 static int filter_slice_gbrp14(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 14, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 14, 0);
 }
 
 static int filter_slice_gbrp16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 16, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 16, 0);
 }
 
 static int filter_slice_gbrap16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 1, 16, 0);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 1, 16, 0);
 }
 
 static int filter_slice_gbrp9_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 9, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 9, 1);
 }
 
 static int filter_slice_gbrp10_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 10, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 10, 1);
 }
 
 static int filter_slice_gbrap10_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 1, 10, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 1, 10, 1);
 }
 
 static int filter_slice_gbrp12_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 12, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 12, 1);
 }
 
 static int filter_slice_gbrap12_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 1, 12, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 1, 12, 1);
 }
 
 static int filter_slice_gbrp14_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 14, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 14, 1);
 }
 
 static int filter_slice_gbrp16_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 0, 16, 1);
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 0, 16, 1);
 }
 
 static int filter_slice_gbrap16_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_planar(ctx, arg, jobnr, nb_jobs, 1, 16, 1);
-}
-
-static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
-                                                     int have_alpha, int step, int pc)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const float pa = s->preserve_amount;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t roffset = s->rgba_map[R];
-    const uint8_t goffset = s->rgba_map[G];
-    const uint8_t boffset = s->rgba_map[B];
-    const uint8_t aoffset = s->rgba_map[A];
-    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
-    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        const uint8_t *src = srcrow;
-        uint8_t *dst = dstrow;
-
-        for (j = 0; j < out->width * step; j += step) {
-            const uint8_t rin = src[j + roffset];
-            const uint8_t gin = src[j + goffset];
-            const uint8_t bin = src[j + boffset];
-            const uint8_t ain = src[j + aoffset];
-            int rout, gout, bout;
-
-            rout = s->lut[R][R][rin] +
-                   s->lut[R][G][gin] +
-                   s->lut[R][B][bin] +
-                   (have_alpha == 1 ? s->lut[R][A][ain] : 0);
-            gout = s->lut[G][R][rin] +
-                   s->lut[G][G][gin] +
-                   s->lut[G][B][bin] +
-                   (have_alpha == 1 ? s->lut[G][A][ain] : 0);
-            bout = s->lut[B][R][rin] +
-                   s->lut[B][G][gin] +
-                   s->lut[B][B][bin] +
-                   (have_alpha == 1 ? s->lut[B][A][ain] : 0);
-
-            if (pc) {
-                float frout = av_clipf(rout, 0.f, 255.f);
-                float fgout = av_clipf(gout, 0.f, 255.f);
-                float fbout = av_clipf(bout, 0.f, 255.f);
-                float lin, lout;
-
-                preserve_color(s->preserve_color, rin, gin, bin,
-                               rout, gout, bout, 255.f, &lin, &lout);
-                preservel(&frout, &fgout, &fbout, lin, lout, 255.f);
-
-                rout = lrintf(lerpf(rout, frout, pa));
-                gout = lrintf(lerpf(gout, fgout, pa));
-                bout = lrintf(lerpf(bout, fbout, pa));
-            }
-
-            dst[j + roffset] = av_clip_uint8(rout);
-            dst[j + goffset] = av_clip_uint8(gout);
-            dst[j + boffset] = av_clip_uint8(bout);
-
-            if (have_alpha == 1) {
-                dst[j + aoffset] = av_clip_uint8(s->lut[A][R][rin] +
-                                                 s->lut[A][G][gin] +
-                                                 s->lut[A][B][bin] +
-                                                 s->lut[A][A][ain]);
-            } else if (have_alpha == -1 && in != out)
-                dst[j + aoffset] = 0;
-        }
-
-        srcrow += in->linesize[0];
-        dstrow += out->linesize[0];
-    }
-
-    return 0;
-}
-
-static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
-                                                       int have_alpha, int step, int pc)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const float pa = s->preserve_amount;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t roffset = s->rgba_map[R];
-    const uint8_t goffset = s->rgba_map[G];
-    const uint8_t boffset = s->rgba_map[B];
-    const uint8_t aoffset = s->rgba_map[A];
-    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
-    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        const uint16_t *src = (const uint16_t *)srcrow;
-        uint16_t *dst = (uint16_t *)dstrow;
-
-        for (j = 0; j < out->width * step; j += step) {
-            const uint16_t rin = src[j + roffset];
-            const uint16_t gin = src[j + goffset];
-            const uint16_t bin = src[j + boffset];
-            const uint16_t ain = src[j + aoffset];
-            int rout, gout, bout;
-
-            rout = s->lut[R][R][rin] +
-                   s->lut[R][G][gin] +
-                   s->lut[R][B][bin] +
-                   (have_alpha == 1 ? s->lut[R][A][ain] : 0);
-            gout = s->lut[G][R][rin] +
-                   s->lut[G][G][gin] +
-                   s->lut[G][B][bin] +
-                   (have_alpha == 1 ? s->lut[G][A][ain] : 0);
-            bout = s->lut[B][R][rin] +
-                   s->lut[B][G][gin] +
-                   s->lut[B][B][bin] +
-                   (have_alpha == 1 ? s->lut[B][A][ain] : 0);
-
-            if (pc) {
-                float frout = av_clipf(rout, 0.f, 65535.f);
-                float fgout = av_clipf(gout, 0.f, 65535.f);
-                float fbout = av_clipf(bout, 0.f, 65535.f);
-                float lin, lout;
-
-                preserve_color(s->preserve_color, rin, gin, bin,
-                               rout, gout, bout, 65535.f, &lin, &lout);
-                preservel(&frout, &fgout, &fbout, lin, lout, 65535.f);
-
-                rout = lrintf(lerpf(rout, frout, pa));
-                gout = lrintf(lerpf(gout, fgout, pa));
-                bout = lrintf(lerpf(bout, fbout, pa));
-            }
-
-            dst[j + roffset] = av_clip_uint16(rout);
-            dst[j + goffset] = av_clip_uint16(gout);
-            dst[j + boffset] = av_clip_uint16(bout);
-
-            if (have_alpha == 1) {
-                dst[j + aoffset] = av_clip_uint16(s->lut[A][R][rin] +
-                                                  s->lut[A][G][gin] +
-                                                  s->lut[A][B][bin] +
-                                                  s->lut[A][A][ain]);
-            }
-        }
-
-        srcrow += in->linesize[0];
-        dstrow += out->linesize[0];
-    }
-
-    return 0;
+    return filter_slice_rgba_planar_16(ctx, arg, jobnr, nb_jobs, 1, 16, 1);
 }
 
 static int filter_slice_rgba64(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_packed(ctx, arg, jobnr, nb_jobs, 1, 4, 0);
+    return filter_slice_rgba_packed_16(ctx, arg, jobnr, nb_jobs, 1, 4, 0, 16);
 }
 
 static int filter_slice_rgb48(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_packed(ctx, arg, jobnr, nb_jobs, 0, 3, 0);
+    return filter_slice_rgba_packed_16(ctx, arg, jobnr, nb_jobs, 0, 3, 0, 16);
 }
 
 static int filter_slice_rgba64_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_packed(ctx, arg, jobnr, nb_jobs, 1, 4, 1);
+    return filter_slice_rgba_packed_16(ctx, arg, jobnr, nb_jobs, 1, 4, 1, 16);
 }
 
 static int filter_slice_rgb48_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba16_packed(ctx, arg, jobnr, nb_jobs, 0, 3, 1);
+    return filter_slice_rgba_packed_16(ctx, arg, jobnr, nb_jobs, 0, 3, 1, 16);
 }
 
 static int filter_slice_rgba(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, 1, 4, 0);
+    return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, 1, 4, 0, 8);
 }
 
 static int filter_slice_rgb24(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, 0, 3, 0);
+    return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, 0, 3, 0, 8);
 }
 
 static int filter_slice_rgb0(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, -1, 4, 0);
+    return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, -1, 4, 0, 8);
 }
 
 static int filter_slice_rgba_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, 1, 4, 1);
+    return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, 1, 4, 1, 8);
 }
 
 static int filter_slice_rgb24_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, 0, 3, 1);
+    return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, 0, 3, 1, 8);
 }
 
 static int filter_slice_rgb0_pl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, -1, 4, 1);
+    return filter_slice_rgba_packed_8(ctx, arg, jobnr, nb_jobs, -1, 4, 1, 8);
 }
 
 static int config_output(AVFilterLink *outlink)
