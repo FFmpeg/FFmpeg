@@ -5104,6 +5104,8 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb16(pb); // reserved
 
     item_count = avio_rb16(pb);
+    if (item_count == 0)
+        return AVERROR_INVALIDDATA;
 
     for (i = 0; i < item_count; i++) {
         int index;
