@@ -3698,7 +3698,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     index->track_id = track_id;
 
     index->item_count = avio_rb16(pb);
-    index->items = av_mallocz_array(index->item_count, sizeof(MOVFragmentIndexItem));
+    index->items = index->item_count ? av_mallocz_array(index->item_count, sizeof(MOVFragmentIndexItem)) : NULL;
 
     if (!index->items) {
         av_freep(&index);
