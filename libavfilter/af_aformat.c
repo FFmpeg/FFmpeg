@@ -62,19 +62,12 @@ AVFILTER_DEFINE_CLASS(aformat);
 
 #define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
 do {                                                                        \
-    char *next, *cur = str, sep;                                            \
+    char *next, *cur = str;                                                 \
     int ret;                                                                \
-                                                                            \
-    if (str && strchr(str, ',')) {                                          \
-        av_log(ctx, AV_LOG_WARNING, "This syntax is deprecated, use '|' to "\
-               "separate %s.\n", desc);                                     \
-        sep = ',';                                                          \
-    } else                                                                  \
-        sep = '|';                                                          \
                                                                             \
     while (cur) {                                                           \
         type fmt;                                                           \
-        next = strchr(cur, sep);                                            \
+        next = strchr(cur, '|');                                            \
         if (next)                                                           \
             *next++ = 0;                                                    \
                                                                             \
