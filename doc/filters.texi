@@ -25867,6 +25867,9 @@ Default value is @code{1024x256}.
 Specify list of colors separated by space or by '|' which will be used to
 draw channels. Unrecognized or missing colors will be replaced
 by white color.
+
+@item mode, m
+Set output mode. Can be @code{bars} or @code{trace}. Default is @code{bars}.
 @end table
 
 @section adrawgraph
