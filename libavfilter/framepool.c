@@ -56,12 +56,8 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
 {
     int i, ret;
     FFFramePool *pool;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
     ptrdiff_t linesizes[4];
     size_t sizes[4];
-
-    if (!desc)
-        return NULL;
 
     pool = av_mallocz(sizeof(FFFramePool));
     if (!pool)
@@ -105,12 +101,6 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
             goto fail;
         pool->pools[i] = av_buffer_pool_init(sizes[i] + align, alloc);
         if (!pool->pools[i])
-            goto fail;
-    }
-
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
-        pool->pools[1] = av_buffer_pool_init(AVPALETTE_SIZE, alloc);
-        if (!pool->pools[1])
             goto fail;
     }
 
