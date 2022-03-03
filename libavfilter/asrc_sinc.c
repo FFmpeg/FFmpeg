@@ -113,6 +113,9 @@ static float *make_lpf(int num_taps, float Fc, float beta, float rho,
     float *h = av_calloc(num_taps, sizeof(*h)), sum = 0;
     float mult = scale / bessel_I_0(beta), mult1 = 1.f / (.5f * m + rho);
 
+    if (!h)
+        return NULL;
+
     av_assert0(Fc >= 0 && Fc <= 1);
 
     for (i = 0; i <= m / 2; i++) {
