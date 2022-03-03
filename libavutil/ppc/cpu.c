@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 #elif defined(__OpenBSD__)
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/sysctl.h>
 #include <machine/cpu.h>
 #elif defined(__AMIGAOS4__)
