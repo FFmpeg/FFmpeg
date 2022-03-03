@@ -200,8 +200,6 @@ static void invert(float *h, int n)
     h[(n - 1) / 2] += 1;
 }
 
-#define PACK(h, n)   h[1] = h[n]
-#define UNPACK(h, n) h[n] = h[1], h[n + 1] = h[1] = 0;
 #define SQR(a) ((a) * (a))
 
 static float safe_log(float x)
@@ -239,7 +237,6 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
     }
 
     s->tx_fn(s->tx, work, work, sizeof(float));   /* Cepstral: */
-    UNPACK(work, work_len);
 
     for (i = 0; i <= work_len; i += 2) {
         float angle = atan2f(work[i + 1], work[i]);
@@ -261,7 +258,6 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
         work[i + 1] = 0;
     }
 
-    PACK(work, work_len);
     s->itx_fn(s->itx, work, work, sizeof(float));
 
     for (i = 0; i < work_len; i++)
