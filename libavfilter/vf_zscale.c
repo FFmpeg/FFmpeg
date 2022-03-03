@@ -44,8 +44,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 
-#define ZIMG_ALIGNMENT 32
-#define MIN_TILESIZE 64
+#define ZIMG_ALIGNMENT 64
 #define MAX_THREADS 64
 
 static const char *const var_names[] = {
@@ -118,7 +117,6 @@ typedef struct ZScaleContext {
 
     void *tmp[MAX_THREADS]; //separate for each thread;
     int nb_threads;
-    int slice_h;
 
     zimg_image_format src_format, dst_format;
     zimg_image_format alpha_src_format, alpha_dst_format;
@@ -566,48 +564,47 @@ static void format_init(zimg_image_format *format, AVFrame *frame, const AVPixFm
 }
 
 static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *desc, const AVPixFmtDescriptor *out_desc,
-                        ZScaleContext *s, int job_nr)
+                        AVFilterContext *ctx, int job_nr, int n_jobs)
 {
+    ZScaleContext *s = ctx->priv;
     int ret;
     size_t size;
     zimg_image_format src_format;
     zimg_image_format dst_format;
     zimg_image_format alpha_src_format;
     zimg_image_format alpha_dst_format;
+    const int in_slice_start  =  4 * ((((in->height  + 2) / 4) *  job_nr)   / n_jobs);
+    const int in_slice_end    = (job_nr == n_jobs-1) ? in->height  : 4 *  (((in->height  + 2) / 4) * (job_nr+1) / n_jobs);
+    const int out_slice_start =  4 * ((((out->height + 2) / 4) *  job_nr)   / n_jobs);
+    const int out_slice_end   = (job_nr == n_jobs-1) ? out->height : 4 *  (((out->height + 2) / 4) * (job_nr+1) / n_jobs);
 
     src_format = s->src_format;
     dst_format = s->dst_format;
     /* The input slice is specified through the active_region field,
     unlike the output slice.
-    according to zimg requirements input and output slices should have even dimentions */
+    according to zimg requirements input and output slices should have even dimensions */
     src_format.active_region.width = in->width;
-    src_format.active_region.height = s->slice_h;
+    src_format.active_region.height = in_slice_end - in_slice_start;
     src_format.active_region.left = 0;
-    src_format.active_region.top = job_nr * src_format.active_region.height;
+    src_format.active_region.top = in_slice_start;
     //dst now is the single tile only!!
     dst_format.width = out->width;
-    dst_format.height = ((unsigned int)(out->height / s->nb_threads)) & 0xfffffffe;
-
-    //the last slice could differ from the previous ones due to the slices division "tail"
-    if (job_nr == (s->nb_threads - 1)) {
-        src_format.active_region.height = src_format.height - src_format.active_region.top;
-        dst_format.height = out->height - job_nr * dst_format.height;
-    }
+    dst_format.height = out_slice_end - out_slice_start;
 
     if (s->graph[job_nr]) {
         zimg_filter_graph_free(s->graph[job_nr]);
     }
     s->graph[job_nr] = zimg_filter_graph_build(&src_format, &dst_format, &s->params);
     if (!s->graph[job_nr])
-        return print_zimg_error(NULL);
+        return print_zimg_error(ctx);
 
     ret = zimg_filter_graph_get_tmp_size(s->graph[job_nr], &size);
     if (ret)
-        return print_zimg_error(NULL);
+        return print_zimg_error(ctx);
 
     if (s->tmp[job_nr])
         av_freep(&s->tmp[job_nr]);
-    s->tmp[job_nr] = av_malloc(size);
+    s->tmp[job_nr] = av_calloc(size, 1);
     if (!s->tmp[job_nr])
         return AVERROR(ENOMEM);
 
@@ -617,25 +614,19 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
         /* The input slice is specified through the active_region field, unlike the output slice.
         according to zimg requirements input and output slices should have even dimentions */
         alpha_src_format.active_region.width = in->width;
-        alpha_src_format.active_region.height = s->slice_h;
+        alpha_src_format.active_region.height = in_slice_end - in_slice_start;
         alpha_src_format.active_region.left = 0;
-        alpha_src_format.active_region.top = job_nr * alpha_src_format.active_region.height;
+        alpha_src_format.active_region.top = in_slice_start;
         //dst now is the single tile only!!
         alpha_dst_format.width = out->width;
-        alpha_dst_format.height = ((unsigned int)(out->height / s->nb_threads)) & 0xfffffffe;
-
-        //the last slice could differ from the previous ones due to the slices division "tail"
-        if (job_nr == (s->nb_threads - 1)) {
-            alpha_src_format.active_region.height = alpha_src_format.height - alpha_src_format.active_region.top;
-            alpha_dst_format.height = out->height - job_nr * alpha_dst_format.height;
-        }
+        alpha_dst_format.height = out_slice_end - out_slice_start;
 
         if (s->alpha_graph[job_nr]) {
             zimg_filter_graph_free(s->alpha_graph[job_nr]);
         }
         s->alpha_graph[job_nr] = zimg_filter_graph_build(&alpha_src_format, &alpha_dst_format, &s->alpha_params);
         if (!s->alpha_graph[job_nr])
-            return print_zimg_error(NULL);
+            return print_zimg_error(ctx);
      }
     return 0;
 }
@@ -702,12 +693,11 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
     ThreadData *td = data;
     int ret = 0;
     int p;
-    int out_sampl;
     int need_gb;
     ZScaleContext *s = ctx->priv;
     zimg_image_buffer_const src_buf = { ZIMG_API_VERSION };
     zimg_image_buffer dst_buf = { ZIMG_API_VERSION };
-    int  dst_tile_height = ((unsigned int)(td->out->height / n_jobs)) & 0xfffffffe;
+    const int out_slice_start = 4 * ((((td->out->height + 2) / 4) * job_nr) / n_jobs);
 
     /* create zimg filter graphs for each thread
      only if not created earlier or there is some change in frame parameters */
@@ -720,12 +710,13 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
             compare_zimg_graph_builder_params(&s->alpha_params, &s->alpha_params_tmp);
 
     if (need_gb){
-        ret = graphs_build(td->in, td->out, td->desc, td->odesc, s, job_nr);
+        ret = graphs_build(td->in, td->out, td->desc, td->odesc, ctx, job_nr, n_jobs);
         if (ret < 0)
             return print_zimg_error(ctx);
     }
-    out_sampl = FFMAX3(td->out->linesize[0], td->out->linesize[1], td->out->linesize[2]);
     for (int i = 0; i < 3; i++) {
+        const int vsamp = i >= 1 ? td->odesc->log2_chroma_h : 0;
+
         p = td->desc->comp[i].plane;
 
         src_buf.plane[i].data = td->in->data[p];
@@ -733,7 +724,7 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
         src_buf.plane[i].mask = -1;
 
         p = td->odesc->comp[i].plane;
-        dst_buf.plane[i].data = td->out->data[p] + td->out->linesize[p] * dst_tile_height * td->out->linesize[p] / out_sampl * job_nr;
+        dst_buf.plane[i].data = td->out->data[p] + td->out->linesize[p] * (out_slice_start >> vsamp);
         dst_buf.plane[i].stride = td->out->linesize[p];
         dst_buf.plane[i].mask = -1;
     }
@@ -746,7 +737,7 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
         src_buf.plane[0].stride = td->in->linesize[3];
         src_buf.plane[0].mask = -1;
 
-        dst_buf.plane[0].data = td->out->data[3] + td->out->linesize[3] * dst_tile_height  * job_nr;
+        dst_buf.plane[0].data = td->out->data[3] + td->out->linesize[3] * out_slice_start;
         dst_buf.plane[0].stride = td->out->linesize[3];
         dst_buf.plane[0].mask = -1;
 
@@ -804,8 +795,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         link->dst->inputs[0]->w      = in->width;
         link->dst->inputs[0]->h      = in->height;
 
-        s->nb_threads = FFMIN(ff_filter_get_nb_threads(ctx), link->h / MIN_TILESIZE);
-        s->slice_h = ((unsigned int)(link->h / s->nb_threads)) & 0xfffffffe; // slice_h should be even for zimg
+        s->nb_threads = FFMIN(ff_filter_get_nb_threads(ctx), link->h / 8);
         s->in_colorspace = in->colorspace;
         s->in_trc = in->color_trc;
         s->in_primaries = in->color_primaries;
