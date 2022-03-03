@@ -52,6 +52,7 @@ typedef struct GEQContext {
     AVFrame *picref;            ///< current input buffer
     uint8_t *dst;               ///< reference pointer to the 8bits output
     uint16_t *dst16;            ///< reference pointer to the 16bits output
+    float *dst32;               ///< reference pointer to the 32bits output
     double values[VAR_VARS_NB]; ///< expression values
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
@@ -114,13 +115,19 @@ static inline double getpix(void *priv, double x, double y, int plane)
         x -= xi;
         y -= yi;
 
-        if (geq->bps > 8) {
+        if (geq->bps > 8 && geq->bps <= 16) {
             const uint16_t *src16 = (const uint16_t*)src;
             linesize /= 2;
 
             return (1-y)*((1-x)*src16[xi +  yi    * linesize] + x*src16[xi + 1 +  yi    * linesize])
                   +   y *((1-x)*src16[xi + (yi+1) * linesize] + x*src16[xi + 1 + (yi+1) * linesize]);
-        } else {
+        } else if (geq->bps == 32) {
+            const float *src32 = (const float*)src;
+            linesize /= 4;
+
+            return (1-y)*((1-x)*src32[xi +  yi    * linesize] + x*src32[xi + 1 +  yi    * linesize])
+                  +   y *((1-x)*src32[xi + (yi+1) * linesize] + x*src32[xi + 1 + (yi+1) * linesize]);
+        } else if (geq->bps == 8) {
             return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
                   +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
         }
@@ -128,15 +135,22 @@ static inline double getpix(void *priv, double x, double y, int plane)
         xi = av_clipd(x, 0, w - 1);
         yi = av_clipd(y, 0, h - 1);
 
-        if (geq->bps > 8) {
+        if (geq->bps > 8 && geq->bps <= 16) {
             const uint16_t *src16 = (const uint16_t*)src;
             linesize /= 2;
 
             return src16[xi + yi * linesize];
-        } else {
+        } else if (geq->bps == 32) {
+            const float *src32 = (const float*)src;
+            linesize /= 4;
+
+            return src32[xi + yi * linesize];
+        } else if (geq->bps == 8) {
             return src[xi + yi * linesize];
         }
     }
+
+    return 0;
 }
 
 static int calculate_sums(GEQContext *geq, int plane, int w, int h)
@@ -150,10 +164,12 @@ static int calculate_sums(GEQContext *geq, int plane, int w, int h)
         geq->pixel_sums[plane] = av_malloc_array(w, h * sizeof (*geq->pixel_sums[plane]));
     if (!geq->pixel_sums[plane])
         return AVERROR(ENOMEM);
-    if (geq->bps > 8)
+    if (geq->bps == 32)
+        linesize /= 4;
+    else if (geq->bps > 8 && geq->bps <= 16)
         linesize /= 2;
     for (yi = 0; yi < h; yi ++) {
-        if (geq->bps > 8) {
+        if (geq->bps > 8 && geq->bps <= 16) {
             const uint16_t *src16 = (const uint16_t*)src;
             double linesum = 0;
 
@@ -161,11 +177,19 @@ static int calculate_sums(GEQContext *geq, int plane, int w, int h)
                 linesum += src16[xi + yi * linesize];
                 geq->pixel_sums[plane][xi + yi * w] = linesum;
             }
-        } else {
+        } else if (geq->bps == 8) {
             double linesum = 0;
 
             for (xi = 0; xi < w; xi ++) {
                 linesum += src[xi + yi * linesize];
+                geq->pixel_sums[plane][xi + yi * w] = linesum;
+            }
+        } else if (geq->bps == 32) {
+            const float *src32 = (const float*)src;
+            double linesum = 0;
+
+            for (xi = 0; xi < w; xi ++) {
+                linesum += src32[xi + yi * linesize];
                 geq->pixel_sums[plane][xi + yi * w] = linesum;
             }
         }
@@ -249,8 +273,10 @@ static av_cold int geq_init(AVFilterContext *ctx)
         if (!geq->expr_str[V]) geq->expr_str[V] = av_strdup(geq->expr_str[U]);
     }
 
-    if (!geq->expr_str[A]) {
+    if (!geq->expr_str[A] && geq->bps != 32) {
         geq->expr_str[A] = av_asprintf("%d", (1<<geq->bps) - 1);
+    } else {
+        geq->expr_str[A] = av_asprintf("%f", 1.f);
     }
     if (!geq->expr_str[G])
         geq->expr_str[G] = av_strdup("g(X,Y)");
@@ -322,6 +348,7 @@ static int geq_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P16,  AV_PIX_FMT_YUV422P16,  AV_PIX_FMT_YUV420P16,
         AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAYF32,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat rgb_pix_fmts[] = {
@@ -331,6 +358,7 @@ static int geq_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
         AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
         AV_PIX_FMT_NONE
     };
     const enum AVPixelFormat *pix_fmts = geq->is_rgb ? rgb_pix_fmts : yuv_pix_fmts;
@@ -390,7 +418,7 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
             }
             ptr += linesize;
         }
-    } else {
+    } else if (geq->bps <= 16) {
         uint16_t *ptr16 = geq->dst16 + (linesize/2) * slice_start;
         for (y = slice_start; y < slice_end; y++) {
             values[VAR_Y] = y;
@@ -399,6 +427,16 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
                 ptr16[x] = av_expr_eval(geq->e[plane][jobnr], values, geq);
             }
             ptr16 += linesize/2;
+        }
+    } else {
+        float *ptr32 = geq->dst32 + (linesize/4) * slice_start;
+        for (y = slice_start; y < slice_end; y++) {
+            values[VAR_Y] = y;
+            for (x = 0; x < width; x++) {
+                values[VAR_X] = x;
+                ptr32[x] = av_expr_eval(geq->e[plane][jobnr], values, geq);
+            }
+            ptr32 += linesize/4;
         }
     }
 
@@ -433,6 +471,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         geq->dst = out->data[plane];
         geq->dst16 = (uint16_t*)out->data[plane];
+        geq->dst32 = (float*)out->data[plane];
 
         geq->values[VAR_W]  = width;
         geq->values[VAR_H]  = height;
