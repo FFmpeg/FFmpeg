@@ -15096,7 +15096,7 @@ expression
 
 @end table
 
-All expressions default to "val".
+All expressions default to "clipval".
 
 @subsection Commands
 
