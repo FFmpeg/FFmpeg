@@ -71,7 +71,10 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P,
+                                                       AV_SAMPLE_FMT_U8P,  AV_SAMPLE_FMT_S64P,
+                                                       AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP,
+                                                       AV_SAMPLE_FMT_NONE };
     static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE };
     int ret;
 
@@ -144,18 +147,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void count_bits(AudioBitScopeContext *s, uint32_t sample, int max)
-{
-    int i;
-
-    for (i = 0; i < max; i++) {
-        if (sample & (1U << i))
-            s->counter[i]++;
-    }
-}
-
-
-#define BARS(type, depth)                                                   \
+#define BARS(type, depth, one)                                              \
     for (int ch = 0; ch < inlink->channels; ch++) {                         \
         const type *in = (const type *)insamples->extended_data[ch];        \
         const int w = outpicref->width / inlink->channels;                  \
@@ -163,8 +155,12 @@ static void count_bits(AudioBitScopeContext *s, uint32_t sample, int max)
         const uint32_t color = AV_RN32(&s->fg[4 * ch]);                     \
                                                                             \
         memset(s->counter, 0, sizeof(s->counter));                          \
-        for (int i = 0; i < insamples->nb_samples; i++)                     \
-            count_bits(s, in[i], depth);                                    \
+        for (int i = 0; i < insamples->nb_samples; i++) {                   \
+            for (int j = 0; j < depth; j++) {                               \
+                if (in[i] & (one << j))                                     \
+                    s->counter[j]++;                                        \
+            }                                                               \
+        }                                                                   \
                                                                             \
         for (int b = 0; b < depth; b++) {                                   \
             for (int j = 1; j < h - 1; j++) {                               \
@@ -178,7 +174,7 @@ static void count_bits(AudioBitScopeContext *s, uint32_t sample, int max)
         }                                                                   \
     }
 
-#define TRACE(type, depth)                                                  \
+#define TRACE(type, depth, one)                                             \
     for (int ch = 0; ch < inlink->channels; ch++) {                         \
         const int w = outpicref->width / inlink->channels;                  \
         const type *in = (const type *)insamples->extended_data[ch];        \
@@ -186,8 +182,12 @@ static void count_bits(AudioBitScopeContext *s, uint32_t sample, int max)
         int wv;                                                             \
                                                                             \
         memset(s->counter, 0, sizeof(s->counter));                          \
-        for (int i = 0; i < insamples->nb_samples; i++)                     \
-            count_bits(s, in[i], depth);                                    \
+        for (int i = 0; i < insamples->nb_samples; i++) {                   \
+            for (int j = 0; j < depth; j++) {                               \
+                if (in[i] & (one << j))                                     \
+                    s->counter[j]++;                                        \
+            }                                                               \
+        }                                                                   \
                                                                             \
         for (int b = 0; b < depth; b++) {                                   \
             uint8_t colors[4];                                              \
@@ -236,11 +236,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     outpicref->sample_aspect_ratio = (AVRational){1,1};
 
     switch (insamples->format) {
-    case AV_SAMPLE_FMT_S16P:
-        if (s->mode == 0) { BARS(uint16_t, 16) } else { TRACE(uint16_t, 16) }
+    case AV_SAMPLE_FMT_U8P:
+        if (s->mode == 0) { BARS(uint8_t,   8, 1) } else { TRACE(uint8_t,   8, 1) }
         break;
+    case AV_SAMPLE_FMT_S16P:
+        if (s->mode == 0) { BARS(uint16_t, 16, 1) } else { TRACE(uint16_t, 16, 1) }
+        break;
+    case AV_SAMPLE_FMT_FLTP:
     case AV_SAMPLE_FMT_S32P:
-        if (s->mode == 0) { BARS(uint32_t, 32) } else { TRACE(uint32_t, 32) }
+        if (s->mode == 0) { BARS(uint32_t, 32, 1U) } else { TRACE(uint32_t, 32, 1U) }
+        break;
+    case AV_SAMPLE_FMT_DBLP:
+    case AV_SAMPLE_FMT_S64P:
+        if (s->mode == 0) { BARS(uint64_t, 64, 1ULL) } else { TRACE(uint64_t, 64, 1ULL) }
         break;
     }
 
