@@ -126,6 +126,12 @@ fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entr
 
 fate-mov-mp4-extended-atom: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact -select_streams v $(TARGET_SAMPLES)/mov/extended_atom_size_probe
 
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL OGG_DEMUXER            \
+                                       VORBIS_DECODER MP4_MUXER MOV_DEMUXER \
+                                       FRAMECRC_MUXER PIPE_PROTOCOL)        \
+                          += fate-mov-mp4-chapters
+fate-mov-mp4-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg mp4 "-c copy" "-c copy -t 0.1" "" "-show_chapters"
+
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER MJPEG_DECODER \
                                        SCALE_FILTER PNG_ENCODER PNG_DECODER    \
                                        MP4_MUXER FRAMECRC_MUXER PIPE_PROTOCOL) \

@@ -1,0 +1,50 @@
+1fd844c2f5bf77c3344e88e30ad994e1 *tests/data/fate/mov-mp4-chapters.mp4
+111248 tests/data/fate/mov-mp4-chapters.mp4
+#extradata 0:     3469, 0xc6769ddc
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: vorbis
+#sample_rate 0: 44100
+#channel_layout 0: 4
+#channel_layout_name 0: mono
+0,       -256,       -256,      256,       28, 0xefcf103e, F=0x5
+0,          0,          0,     1152,      198, 0xfbbe5eb5
+0,       1152,       1152,     2944,      198, 0xabd95c6c
+0,       4096,       4096,      256,       41, 0x954b12a5
+0,       4352,       4352,      256,       41, 0xbccd1463
+[CHAPTER]
+id=0
+time_base=1/1000
+start=0
+start_time=0.000000
+end=5000
+end_time=5.000000
+TAG:title=start
+[/CHAPTER]
+[CHAPTER]
+id=1
+time_base=1/1000
+start=5000
+start_time=5.000000
+end=10500
+end_time=10.500000
+TAG:title=Five Seconds
+[/CHAPTER]
+[CHAPTER]
+id=2
+time_base=1/1000
+start=10500
+start_time=10.500000
+end=15000
+end_time=15.000000
+TAG:title=Ten point 5 seconds
+[/CHAPTER]
+[CHAPTER]
+id=3
+time_base=1/1000
+start=15000
+start_time=15.000000
+end=19849
+end_time=19.849000
+TAG:title=15 sec - over soon
+[/CHAPTER]
