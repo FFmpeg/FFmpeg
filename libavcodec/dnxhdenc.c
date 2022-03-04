@@ -1228,6 +1228,9 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
             ctx->mb_qscale[mb] = ctx->qscale + 1;
             ctx->mb_bits[mb]   = ctx->mb_rc[rc + ctx->m.mb_num].bits;
         }
+
+        if (max_bits > ctx->frame_bits)
+            return AVERROR(EINVAL);
     }
     return 0;
 }

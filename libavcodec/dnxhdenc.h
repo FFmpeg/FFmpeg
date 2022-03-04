@@ -34,7 +34,7 @@
 #include "dnxhddata.h"
 
 typedef struct RCCMPEntry {
-    uint16_t mb;
+    uint32_t mb;
     int value;
 } RCCMPEntry;
 
