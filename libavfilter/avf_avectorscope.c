@@ -275,6 +275,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
     s->outpicref->pts = insamples->pts;
 
+    av_frame_make_writable(s->outpicref);
     ff_filter_execute(ctx, fade, NULL, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (zoom < 1) {
