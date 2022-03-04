@@ -818,6 +818,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 y_loudness_lu_graph = lu_to_y(ebur128, loudness_3000 - ebur128->target);
                 y_loudness_lu_gauge = lu_to_y(ebur128, gauge_value);
 
+                av_frame_make_writable(pic);
                 /* draw the graph using the short-term loudness */
                 p = pic->data[0] + ebur128->graph.y*pic->linesize[0] + ebur128->graph.x*3;
                 for (y = 0; y < ebur128->graph.h; y++) {
