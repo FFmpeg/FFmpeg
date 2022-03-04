@@ -227,6 +227,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     if (s->mode == 1) {
+        av_frame_make_writable(s->outpicref);
         outpicref = av_frame_clone(s->outpicref);
         if (!outpicref)
             return AVERROR(ENOMEM);
