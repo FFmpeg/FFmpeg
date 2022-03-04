@@ -44,7 +44,7 @@
 #include "internal.h"
 
 typedef struct BlockInfo {
-    uint8_t *pos;
+    const uint8_t *pos;
     int      size;
 } BlockInfo;
 
@@ -59,7 +59,8 @@ typedef struct FlashSVContext {
     int             ver;
     const uint32_t *pal;
     int             is_keyframe;
-    uint8_t        *keyframedata;
+    const uint8_t  *keyframedata;
+    AVBufferRef    *keyframedata_buf;
     uint8_t        *keyframe;
     BlockInfo      *blocks;
     uint8_t        *deflate_block;
@@ -138,7 +139,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+static int flashsv2_prime(FlashSVContext *s, const uint8_t *src, int size)
 {
     z_stream zs;
     int zret; // Zlib return code
@@ -355,10 +356,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* we care for keyframes only in Screen Video v2 */
     s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
     if (s->is_keyframe) {
-        int err;
-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+        int err = av_buffer_replace(&s->keyframedata_buf, avpkt->buf);
+        if (err < 0)
             return err;
-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
+        s->keyframedata = avpkt->data;
     }
     if(s->ver == 2 && !s->blocks)
         s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part) *
@@ -566,7 +567,7 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
 
-    av_freep(&s->keyframedata);
+    av_buffer_unref(&s->keyframedata_buf);
     av_freep(&s->blocks);
     av_freep(&s->keyframe);
     av_freep(&s->deflate_block);
