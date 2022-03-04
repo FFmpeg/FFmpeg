@@ -181,6 +181,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    av_frame_make_writable(s->out);
     if (s->dmode == SEPARATE) {
         for (y = 0; y < w; y++) {
             s->combine_buffer[3 * y    ] = 0;
