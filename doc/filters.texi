@@ -13432,11 +13432,20 @@ Display number of frames taken from filter.
 @item frame_count_out
 Display number of frames given out from filter.
 
+@item frame_count_delta
+Display delta number of frames between above two values.
+
 @item pts
 Display current filtered frame pts.
 
+@item pts_delta
+Display pts delta between current and previous frame.
+
 @item time
 Display current filtered frame time.
+
+@item time_delta
+Display time delta between current and previous frame.
 
 @item timebase
 Display time base for filter link.
@@ -13458,6 +13467,9 @@ Display number of samples taken from filter.
 
 @item sample_count_out
 Display number of samples given out from filter.
+
+@item sample_count_delta
+Display delta number of samples between above two values.
 @end table
 
 @item rate, r
