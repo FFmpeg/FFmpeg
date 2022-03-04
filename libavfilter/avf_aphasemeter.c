@@ -266,6 +266,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             memset(out->data[0] + i * out->linesize[0], 0, outlink->w * 4);
     } else if (s->do_video) {
         out = s->out;
+        av_frame_make_writable(s->out);
         for (i = outlink->h - 1; i >= 10; i--)
             memmove(out->data[0] + (i  ) * out->linesize[0],
                     out->data[0] + (i-1) * out->linesize[0],
