@@ -760,15 +760,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     AVFrame *out = NULL;
     ThreadData td;
 
-    if (!(out = ff_get_video_buffer(outlink, outlink->w, outlink->h))) {
-        ret =  AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    av_frame_copy_props(out, in);
-    out->width  = outlink->w;
-    out->height = outlink->h;
-
     //we need to use this filter if something is different for an input and output only
     //otherwise - just copy the input frame to the output
     if ((link->w != outlink->w) ||
@@ -783,6 +774,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         (s->src_format.pixel_type !=s->dst_format.pixel_type) ||
         (s->src_format.transfer_characteristics !=s->dst_format.transfer_characteristics)
     ){
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            ret =  AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        av_frame_copy_props(out, in);
+
         if ((ret = realign_frame(desc, &in)) < 0)
             goto fail;
 
@@ -879,8 +878,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                     memset(out->data[3] + y * out->linesize[3], 0xff, outlink->w);
             }
         }
-    }
-    else {
+    } else {
         /*no need for any filtering */
         return ff_filter_frame(outlink, in);
     }
