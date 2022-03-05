@@ -25969,6 +25969,18 @@ replace old rows with new ones.
 scroll from top to bottom.
 @end table
 Default is @code{replace}.
+
+@item hmode
+Set histogram mode.
+
+It accepts the following values:
+@table @samp
+@item abs
+Use absolute values of samples.
+@item sign
+Use untouched values of samples.
+@end table
+Default is @code{abs}.
 @end table
 
 @section aphasemeter
