@@ -677,7 +677,7 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             avctx->pix_fmt = AV_PIX_FMT_RGBA64BE;
         } else if ((s->bits_per_pixel == 1 || s->bits_per_pixel == 2 || s->bits_per_pixel == 4 || s->bits_per_pixel == 8) &&
                 s->color_type == PNG_COLOR_TYPE_PALETTE) {
-            avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            avctx->pix_fmt = avctx->codec_id == AV_CODEC_ID_APNG ? AV_PIX_FMT_RGBA : AV_PIX_FMT_PAL8;
         } else if (s->bit_depth == 1 && s->bits_per_pixel == 1 && avctx->codec_id != AV_CODEC_ID_APNG) {
             avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
         } else if (s->bit_depth == 8 &&
@@ -1022,7 +1022,6 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
     if (blend_op == APNG_BLEND_OP_OVER && !s->has_trns && (
             avctx->pix_fmt == AV_PIX_FMT_RGB24 ||
             avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
-            avctx->pix_fmt == AV_PIX_FMT_PAL8 ||
             avctx->pix_fmt == AV_PIX_FMT_GRAY8 ||
             avctx->pix_fmt == AV_PIX_FMT_GRAY16BE ||
             avctx->pix_fmt == AV_PIX_FMT_MONOBLACK
@@ -1070,13 +1069,13 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
     ptrdiff_t      dst_stride = p->linesize[0];
     const uint8_t *src        = s->last_picture.f->data[0];
     ptrdiff_t      src_stride = s->last_picture.f->linesize[0];
+    const int      bpp        = s->color_type == PNG_COLOR_TYPE_PALETTE ? 4 : s->bpp;
 
     size_t x, y;
 
     if (s->blend_op == APNG_BLEND_OP_OVER &&
         avctx->pix_fmt != AV_PIX_FMT_RGBA &&
-        avctx->pix_fmt != AV_PIX_FMT_GRAY8A &&
-        avctx->pix_fmt != AV_PIX_FMT_PAL8) {
+        avctx->pix_fmt != AV_PIX_FMT_GRAY8A) {
         avpriv_request_sample(avctx, "Blending with pixel format %s",
                               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR_PATCHWELCOME;
@@ -1095,7 +1094,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 
         for (y = s->last_y_offset; y < s->last_y_offset + s->last_h; y++) {
             memset(s->background_buf + src_stride * y +
-                   s->bpp * s->last_x_offset, 0, s->bpp * s->last_w);
+                   bpp * s->last_x_offset, 0, bpp * s->last_w);
         }
 
         src = s->background_buf;
@@ -1103,22 +1102,22 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 
     // copy unchanged rectangles from the last frame
     for (y = 0; y < s->y_offset; y++)
-        memcpy(dst + y * dst_stride, src + y * src_stride, p->width * s->bpp);
+        memcpy(dst + y * dst_stride, src + y * src_stride, p->width * bpp);
     for (y = s->y_offset; y < s->y_offset + s->cur_h; y++) {
-        memcpy(dst + y * dst_stride, src + y * src_stride, s->x_offset * s->bpp);
-        memcpy(dst + y * dst_stride + (s->x_offset + s->cur_w) * s->bpp,
-               src + y * src_stride + (s->x_offset + s->cur_w) * s->bpp,
-               (p->width - s->cur_w - s->x_offset) * s->bpp);
+        memcpy(dst + y * dst_stride, src + y * src_stride, s->x_offset * bpp);
+        memcpy(dst + y * dst_stride + (s->x_offset + s->cur_w) * bpp,
+               src + y * src_stride + (s->x_offset + s->cur_w) * bpp,
+               (p->width - s->cur_w - s->x_offset) * bpp);
     }
     for (y = s->y_offset + s->cur_h; y < p->height; y++)
-        memcpy(dst + y * dst_stride, src + y * src_stride, p->width * s->bpp);
+        memcpy(dst + y * dst_stride, src + y * src_stride, p->width * bpp);
 
     if (s->blend_op == APNG_BLEND_OP_OVER) {
         // Perform blending
         for (y = s->y_offset; y < s->y_offset + s->cur_h; ++y) {
-            uint8_t       *foreground = dst + dst_stride * y + s->bpp * s->x_offset;
-            const uint8_t *background = src + src_stride * y + s->bpp * s->x_offset;
-            for (x = s->x_offset; x < s->x_offset + s->cur_w; ++x, foreground += s->bpp, background += s->bpp) {
+            uint8_t       *foreground = dst + dst_stride * y + bpp * s->x_offset;
+            const uint8_t *background = src + src_stride * y + bpp * s->x_offset;
+            for (x = s->x_offset; x < s->x_offset + s->cur_w; ++x, foreground += bpp, background += bpp) {
                 size_t b;
                 uint8_t foreground_alpha, background_alpha, output_alpha;
                 uint8_t output[10];
@@ -1137,32 +1136,21 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                     foreground_alpha = foreground[1];
                     background_alpha = background[1];
                     break;
-
-                case AV_PIX_FMT_PAL8:
-                    foreground_alpha = s->palette[foreground[0]] >> 24;
-                    background_alpha = s->palette[background[0]] >> 24;
-                    break;
                 }
 
                 if (foreground_alpha == 255)
                     continue;
 
                 if (foreground_alpha == 0) {
-                    memcpy(foreground, background, s->bpp);
-                    continue;
-                }
-
-                if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-                    // TODO: Alpha blending with PAL8 will likely need the entire image converted over to RGBA first
-                    avpriv_request_sample(avctx, "Alpha blending palette samples");
+                    memcpy(foreground, background, bpp);
                     continue;
                 }
 
                 output_alpha = foreground_alpha + FAST_DIV255((255 - foreground_alpha) * background_alpha);
 
-                av_assert0(s->bpp <= 10);
+                av_assert0(bpp <= 10);
 
-                for (b = 0; b < s->bpp - 1; ++b) {
+                for (b = 0; b < bpp - 1; ++b) {
                     if (output_alpha == 0) {
                         output[b] = 0;
                     } else if (background_alpha == 255) {
@@ -1172,7 +1160,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
                     }
                 }
                 output[b] = output_alpha;
-                memcpy(foreground, output, s->bpp);
+                memcpy(foreground, output, bpp);
             }
         }
     }
@@ -1367,6 +1355,21 @@ exit_loop:
 
     if (s->bits_per_pixel <= 4)
         handle_small_bpp(s, p);
+
+    if (s->color_type == PNG_COLOR_TYPE_PALETTE && avctx->codec_id == AV_CODEC_ID_APNG) {
+        for (int y = 0; y < s->height; y++) {
+            uint8_t *row = &p->data[0][p->linesize[0] * y];
+
+            for (int x = s->width - 1; x >= 0; x--) {
+                const uint8_t idx = row[x];
+
+                row[4*x+2] =  s->palette[idx]        & 0xFF;
+                row[4*x+1] = (s->palette[idx] >> 8 ) & 0xFF;
+                row[4*x+0] = (s->palette[idx] >> 16) & 0xFF;
+                row[4*x+3] =  s->palette[idx] >> 24;
+            }
+        }
+    }
 
     /* apply transparency if needed */
     if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE) {
