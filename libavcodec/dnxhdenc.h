@@ -100,7 +100,7 @@ typedef struct DNXHDEncContext {
     unsigned qscale;
     unsigned lambda;
 
-    uint16_t *mb_bits;
+    uint32_t *mb_bits;
     uint8_t  *mb_qscale;
 
     RCCMPEntry *mb_cmp;
