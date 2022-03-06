@@ -359,7 +359,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 if (s->h - H > 0) {
                     h = aa * 255;
 
-                    s->out->data[0][s->ypos * s->out->linesize[0] + n] = av_clip(h, 0, 255);
+                    s->out->data[0][s->ypos * s->out->linesize[0] + n] = av_clip_uint8(h);
                     s->out->data[1][s->ypos * s->out->linesize[1] + n] = 127;
                     s->out->data[2][s->ypos * s->out->linesize[2] + n] = 127;
                     s->out->data[3][s->ypos * s->out->linesize[3] + n] = 255;
@@ -373,9 +373,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     if (s->out->data[0][y * s->out->linesize[0] + n] != old)
                         break;
                     old = s->out->data[0][y * s->out->linesize[0] + n];
-                    s->out->data[0][y * s->out->linesize[0] + n] = av_clip(yf, 0, 255);
-                    s->out->data[1][y * s->out->linesize[1] + n] = av_clip(128.f+uf, 0, 255);
-                    s->out->data[2][y * s->out->linesize[2] + n] = av_clip(128.f+vf, 0, 255);
+                    s->out->data[0][y * s->out->linesize[0] + n] = av_clip_uint8(yf);
+                    s->out->data[1][y * s->out->linesize[1] + n] = av_clip_uint8(128.f+uf);
+                    s->out->data[2][y * s->out->linesize[2] + n] = av_clip_uint8(128.f+vf);
                     s->out->data[3][y * s->out->linesize[3] + n] = 255;
                 }
 
