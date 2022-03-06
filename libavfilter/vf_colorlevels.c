@@ -219,7 +219,7 @@ static int colorlevels_slice_8_planar(AVFilterContext *ctx, void *arg, int jobnr
 static int colorlevels_slice_9_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 9;
     DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
     return 0;
 }
@@ -227,7 +227,7 @@ static int colorlevels_slice_9_planar(AVFilterContext *ctx, void *arg, int jobnr
 static int colorlevels_slice_10_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 10;
     DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
     return 0;
 }
@@ -235,7 +235,7 @@ static int colorlevels_slice_10_planar(AVFilterContext *ctx, void *arg, int jobn
 static int colorlevels_slice_12_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 12;
     DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
     return 0;
 }
@@ -243,7 +243,7 @@ static int colorlevels_slice_12_planar(AVFilterContext *ctx, void *arg, int jobn
 static int colorlevels_slice_14_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 14;
     DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
     return 0;
 }
@@ -265,7 +265,7 @@ static int colorlevels_preserve_slice_8_planar(AVFilterContext *ctx, void *arg, 
 static int colorlevels_preserve_slice_9_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 9;
     DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
     return 0;
 }
@@ -273,7 +273,7 @@ static int colorlevels_preserve_slice_9_planar(AVFilterContext *ctx, void *arg, 
 static int colorlevels_preserve_slice_10_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 10;
     DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
     return 0;
 }
@@ -281,7 +281,7 @@ static int colorlevels_preserve_slice_10_planar(AVFilterContext *ctx, void *arg,
 static int colorlevels_preserve_slice_12_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 12;
     DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
     return 0;
 }
@@ -289,7 +289,7 @@ static int colorlevels_preserve_slice_12_planar(AVFilterContext *ctx, void *arg,
 static int colorlevels_preserve_slice_14_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorLevelsContext *s = ctx->priv;
-    const int depth = s->depth;
+    const int depth = 14;
     DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
     return 0;
 }
