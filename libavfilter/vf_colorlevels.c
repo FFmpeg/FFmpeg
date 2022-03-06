@@ -44,6 +44,9 @@ typedef struct ColorLevelsContext {
     int preserve_color;
 
     int nb_comp;
+    int depth;
+    int max;
+    int planar;
     int bpp;
     int step;
     uint8_t rgba_map[4];
@@ -85,8 +88,8 @@ static const AVOption colorlevels_options[] = {
 AVFILTER_DEFINE_CLASS(colorlevels);
 
 typedef struct ThreadData {
-    const uint8_t *srcrow;
-    uint8_t *dstrow;
+    const uint8_t *srcrow[4];
+    uint8_t *dstrow[4];
     int dst_linesize;
     int src_linesize;
 
@@ -98,8 +101,7 @@ typedef struct ThreadData {
     int omin[4];
 } ThreadData;
 
-#define DO_COMMON(type, clip, preserve)                                         \
-    ColorLevelsContext *s = ctx->priv;                                          \
+#define DO_COMMON(type, clip, preserve, planar)                                 \
     const ThreadData *td = arg;                                                 \
     const int linesize = s->linesize;                                           \
     const int step = s->step;                                                   \
@@ -108,12 +110,14 @@ typedef struct ThreadData {
     const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;                  \
     const int src_linesize = td->src_linesize / sizeof(type);                   \
     const int dst_linesize = td->dst_linesize / sizeof(type);                   \
-    const type *srcrow = (const type *)td->srcrow + src_linesize * slice_start; \
-    type *dstrow = (type *)td->dstrow + dst_linesize * slice_start;             \
-    const uint8_t offset_r = s->rgba_map[R];                                    \
-    const uint8_t offset_g = s->rgba_map[G];                                    \
-    const uint8_t offset_b = s->rgba_map[B];                                    \
-    const uint8_t offset_a = s->rgba_map[A];                                    \
+    const type *src_r = (const type *)(td->srcrow[R]) + src_linesize * slice_start; \
+    const type *src_g = (const type *)(td->srcrow[G]) + src_linesize * slice_start; \
+    const type *src_b = (const type *)(td->srcrow[B]) + src_linesize * slice_start; \
+    const type *src_a = (const type *)(td->srcrow[A]) + src_linesize * slice_start; \
+    type *dst_r = (type *)(td->dstrow[R]) + src_linesize * slice_start;         \
+    type *dst_g = (type *)(td->dstrow[G]) + src_linesize * slice_start;         \
+    type *dst_b = (type *)(td->dstrow[B]) + src_linesize * slice_start;         \
+    type *dst_a = (type *)(td->dstrow[A]) + src_linesize * slice_start;         \
     const int imin_r = td->imin[R];                                             \
     const int imin_g = td->imin[G];                                             \
     const int imin_b = td->imin[B];                                             \
@@ -126,14 +130,6 @@ typedef struct ThreadData {
     const float coeff_g = td->coeff[G];                                         \
     const float coeff_b = td->coeff[B];                                         \
     const float coeff_a = td->coeff[A];                                         \
-    const type *src_r = srcrow + offset_r;                                      \
-    const type *src_g = srcrow + offset_g;                                      \
-    const type *src_b = srcrow + offset_b;                                      \
-    const type *src_a = srcrow + offset_a;                                      \
-    type *dst_r = dstrow + offset_r;                                            \
-    type *dst_g = dstrow + offset_g;                                            \
-    type *dst_b = dstrow + offset_b;                                            \
-    type *dst_a = dstrow + offset_a;                                            \
                                                                                 \
     for (int y = slice_start; y < slice_end; y++) {                             \
         for (int x = 0; x < linesize; x += step) {                              \
@@ -142,7 +138,7 @@ typedef struct ThreadData {
             ig = src_g[x];                                                      \
             ib = src_b[x];                                                      \
             if (preserve) {                                                     \
-                float ratio, icolor, ocolor, max = (1<<(8*sizeof(type)))-1;     \
+                float ratio, icolor, ocolor, max = s->max;                      \
                                                                                 \
                 or = (ir - imin_r) * coeff_r + omin_r;                          \
                 og = (ig - imin_g) * coeff_g + omin_g;                          \
@@ -158,18 +154,18 @@ typedef struct ThreadData {
                     ob *= ratio;                                                \
                 }                                                               \
                                                                                 \
-                dst_r[x] = clip(or);                                            \
-                dst_g[x] = clip(og);                                            \
-                dst_b[x] = clip(ob);                                            \
+                dst_r[x] = clip(or, depth);                                     \
+                dst_g[x] = clip(og, depth);                                     \
+                dst_b[x] = clip(ob, depth);                                     \
             } else {                                                            \
-                dst_r[x] = clip((ir - imin_r) * coeff_r + omin_r);              \
-                dst_g[x] = clip((ig - imin_g) * coeff_g + omin_g);              \
-                dst_b[x] = clip((ib - imin_b) * coeff_b + omin_b);              \
+                dst_r[x] = clip((ir - imin_r) * coeff_r + omin_r, depth);       \
+                dst_g[x] = clip((ig - imin_g) * coeff_g + omin_g, depth);       \
+                dst_b[x] = clip((ib - imin_b) * coeff_b + omin_b, depth);       \
             }                                                                   \
         }                                                                       \
                                                                                 \
         for (int x = 0; x < linesize && s->nb_comp == 4; x += step)             \
-            dst_a[x] = clip((src_a[x] - imin_a) * coeff_a + omin_a);            \
+            dst_a[x] = clip((src_a[x] - imin_a) * coeff_a + omin_a, depth);     \
                                                                                 \
         src_r += src_linesize;                                                  \
         src_g += src_linesize;                                                  \
@@ -182,31 +178,126 @@ typedef struct ThreadData {
         dst_a += dst_linesize;                                                  \
     }
 
+#define CLIP8(x, depth) av_clip_uint8(x)
+#define CLIP16(x, depth) av_clip_uint16(x)
+
 static int colorlevels_slice_8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    DO_COMMON(uint8_t, av_clip_uint8, 0)
-
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint8_t, CLIP8, 0, 0)
     return 0;
 }
 
 static int colorlevels_slice_16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    DO_COMMON(uint16_t, av_clip_uint16, 0)
-
+    ColorLevelsContext *s = ctx->priv;\
+    DO_COMMON(uint16_t, CLIP16, 0, 0)
     return 0;
 }
 
 static int colorlevels_preserve_slice_8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    DO_COMMON(uint8_t, av_clip_uint8, 1)
-
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint8_t, CLIP8, 1, 0)
     return 0;
 }
 
 static int colorlevels_preserve_slice_16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    DO_COMMON(uint16_t, av_clip_uint16, 1)
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint16_t, CLIP16, 1, 0)
+    return 0;
+}
 
+static int colorlevels_slice_8_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint8_t, CLIP8, 0, 1)
+    return 0;
+}
+
+static int colorlevels_slice_9_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
+    return 0;
+}
+
+static int colorlevels_slice_10_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
+    return 0;
+}
+
+static int colorlevels_slice_12_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
+    return 0;
+}
+
+static int colorlevels_slice_14_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 0, 1)
+    return 0;
+}
+
+static int colorlevels_slice_16_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint16_t, CLIP16, 0, 1)
+    return 0;
+}
+
+static int colorlevels_preserve_slice_8_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint8_t, CLIP8, 1, 1)
+    return 0;
+}
+
+static int colorlevels_preserve_slice_9_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
+    return 0;
+}
+
+static int colorlevels_preserve_slice_10_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
+    return 0;
+}
+
+static int colorlevels_preserve_slice_12_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
+    return 0;
+}
+
+static int colorlevels_preserve_slice_14_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    const int depth = s->depth;
+    DO_COMMON(uint16_t, av_clip_uintp2, 1, 1)
+    return 0;
+}
+
+static int colorlevels_preserve_slice_16_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ColorLevelsContext *s = ctx->priv;
+    DO_COMMON(uint16_t, CLIP16, 1, 1)
     return 0;
 }
 
@@ -217,16 +308,48 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     s->nb_comp = desc->nb_components;
-    s->bpp = desc->comp[0].depth >> 3;
-    s->step = av_get_padded_bits_per_pixel(desc) >> (3 + (s->bpp == 2));
+    s->planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    s->depth = desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
+    s->bpp = (desc->comp[0].depth + 7) >> 3;
+    s->step = s->planar ? 1 : av_get_padded_bits_per_pixel(desc) >> (3 + (s->bpp == 2));
     s->linesize = inlink->w * s->step;
     ff_fill_rgba_map(s->rgba_map, inlink->format);
 
-    s->colorlevels_slice[0] = colorlevels_slice_8;
-    s->colorlevels_slice[1] = colorlevels_preserve_slice_8;
-    if (s->bpp == 2) {
-        s->colorlevels_slice[0] = colorlevels_slice_16;
-        s->colorlevels_slice[1] = colorlevels_preserve_slice_16;
+    if (!s->planar) {
+        s->colorlevels_slice[0] = colorlevels_slice_8;
+        s->colorlevels_slice[1] = colorlevels_preserve_slice_8;
+        if (s->bpp == 2) {
+            s->colorlevels_slice[0] = colorlevels_slice_16;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_16;
+        }
+    } else {
+        switch (s->depth) {
+        case 8:
+            s->colorlevels_slice[0] = colorlevels_slice_8_planar;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_8_planar;
+            break;
+        case 9:
+            s->colorlevels_slice[0] = colorlevels_slice_9_planar;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_9_planar;
+            break;
+        case 10:
+            s->colorlevels_slice[0] = colorlevels_slice_10_planar;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_10_planar;
+            break;
+        case 12:
+            s->colorlevels_slice[0] = colorlevels_slice_12_planar;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_12_planar;
+            break;
+        case 14:
+            s->colorlevels_slice[0] = colorlevels_slice_14_planar;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_14_planar;
+            break;
+        case 16:
+            s->colorlevels_slice[0] = colorlevels_slice_16_planar;
+            s->colorlevels_slice[1] = colorlevels_preserve_slice_16_planar;
+            break;
+        }
     }
 
     return 0;
@@ -255,8 +378,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.h             = inlink->h;
     td.dst_linesize  = out->linesize[0];
     td.src_linesize  = in->linesize[0];
-    td.srcrow        = in->data[0];
-    td.dstrow        = out->data[0];
+    if (s->planar) {
+        td.srcrow[R] = in->data[2];
+        td.dstrow[R] = out->data[2];
+        td.srcrow[G] = in->data[0];
+        td.dstrow[G] = out->data[0];
+        td.srcrow[B] = in->data[1];
+        td.dstrow[B] = out->data[1];
+        td.srcrow[A] = in->data[3];
+        td.dstrow[A] = out->data[3];
+    } else {
+        td.srcrow[R] = in->data[0]  + s->rgba_map[R] * s->bpp;
+        td.dstrow[R] = out->data[0] + s->rgba_map[R] * s->bpp;
+        td.srcrow[G] = in->data[0]  + s->rgba_map[G] * s->bpp;
+        td.dstrow[G] = out->data[0] + s->rgba_map[G] * s->bpp;
+        td.srcrow[B] = in->data[0]  + s->rgba_map[B] * s->bpp;
+        td.dstrow[B] = out->data[0] + s->rgba_map[B] * s->bpp;
+        td.srcrow[A] = in->data[0]  + s->rgba_map[A] * s->bpp;
+        td.dstrow[A] = out->data[0] + s->rgba_map[A] * s->bpp;
+    }
 
     switch (s->bpp) {
     case 1:
@@ -378,7 +518,13 @@ const AVFilter ff_vf_colorlevels = {
                    AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
                    AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
                    AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
-                   AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA),
+                   AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+                   AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
+                   AV_PIX_FMT_GBRP9,
+                   AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+                   AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+                   AV_PIX_FMT_GBRP14,
+                   AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
