@@ -42,6 +42,7 @@ typedef struct GradientsContext {
     float speed;
 
     uint8_t color_rgba[8][4];
+    float  color_rgbaf[8][4];
     int nb_colors;
     int x0, y0, x1, y1;
     float fx0, fy0, fx1, fy1;
@@ -82,6 +83,13 @@ static const AVOption gradients_options[] = {
 };
 
 AVFILTER_DEFINE_CLASS(gradients);
+
+static float lerpf(float a, float b, float x)
+{
+    const float y = 1.f - x;
+
+    return a * y + b * x;
+}
 
 static uint32_t lerp_color(uint8_t c0[4], uint8_t c1[4], float x)
 {
@@ -137,6 +145,37 @@ static uint64_t lerp_colors16(uint8_t arr[3][4], int nb_colors, float step)
     i = floorf(scl);
 
     return lerp_color16(arr[i], arr[i + 1], scl - i);
+}
+
+static void lerp_colors32(float arr[3][4], int nb_colors, float step,
+                          float *r, float *g, float *b, float *a)
+{
+    float scl, x;
+    int i;
+
+    if (nb_colors == 1 || step <= 0.0) {
+        *r = arr[0][0];
+        *g = arr[0][1];
+        *b = arr[0][2];
+        *a = arr[0][3];
+        return;
+    } else if (step >= 1.0) {
+        i = nb_colors - 1;
+        *r = arr[i][0];
+        *g = arr[i][1];
+        *b = arr[i][2];
+        *a = arr[i][3];
+        return;
+    }
+
+    scl = step * (nb_colors - 1);
+    i = floorf(scl);
+    x = scl - i;
+
+    *r = lerpf(arr[i][0], arr[i + 1][0], x);
+    *g = lerpf(arr[i][1], arr[i + 1][1], x);
+    *b = lerpf(arr[i][2], arr[i + 1][2], x);
+    *a = lerpf(arr[i][3], arr[i + 1][3], x);
 }
 
 static float project(float origin_x, float origin_y,
@@ -203,7 +242,42 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     }
 
     return 0;
-}static int config_output(AVFilterLink *inlink)
+}
+
+static int draw_gradients_slice32_planar(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    GradientsContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const int width  = frame->width;
+    const int height = frame->height;
+    const int start = (height *  job   ) / nb_jobs;
+    const int end   = (height * (job+1)) / nb_jobs;
+    const int linesize_g = frame->linesize[0] / 4;
+    const int linesize_b = frame->linesize[1] / 4;
+    const int linesize_r = frame->linesize[2] / 4;
+    const int linesize_a = frame->linesize[3] / 4;
+    float *dst_g = (float *)frame->data[0] + start * linesize_g;
+    float *dst_b = (float *)frame->data[0] + start * linesize_b;
+    float *dst_r = (float *)frame->data[0] + start * linesize_r;
+    float *dst_a = (float *)frame->data[0] + start * linesize_a;
+
+    for (int y = start; y < end; y++) {
+        for (int x = 0; x < width; x++) {
+            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y);
+            lerp_colors32(s->color_rgbaf, s->nb_colors, factor,
+                          &dst_r[x], &dst_g[x], &dst_b[x], &dst_a[x]);
+        }
+
+        dst_g += linesize_g;
+        dst_b += linesize_b;
+        dst_r += linesize_r;
+        dst_a += linesize_a;
+    }
+
+    return 0;
+}
+
+static int config_output(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->src;
     GradientsContext *s = ctx->priv;
@@ -220,7 +294,19 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
         s->seed = av_get_random_seed();
     av_lfg_init(&s->lfg, s->seed);
 
-    s->draw_slice = desc->comp[0].depth == 16 ? draw_gradients_slice16 : draw_gradients_slice;
+    switch (desc->comp[0].depth) {
+    case 8:
+        s->draw_slice = draw_gradients_slice;
+        break;
+    case 16:
+        s->draw_slice = draw_gradients_slice16;
+        break;
+    case 32:
+        s->draw_slice = draw_gradients_slice32_planar;
+        break;
+    default:
+        return AVERROR_BUG;
+    }
 
     if (s->x0 < 0 || s->x0 >= s->w)
         s->x0 = av_lfg_get(&s->lfg) % s->w;
@@ -230,6 +316,11 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
         s->x1 = av_lfg_get(&s->lfg) % s->w;
     if (s->y1 < 0 || s->y1 >= s->h)
         s->y1 = av_lfg_get(&s->lfg) % s->h;
+
+    for (int n = 0; n < 8; n++) {
+        for (int c = 0; c < 4; c++)
+            s->color_rgbaf[n][c] = s->color_rgba[n][c] / 255.f;
+    }
 
     return 0;
 }
@@ -290,7 +381,7 @@ const AVFilter ff_vsrc_gradients = {
     .priv_class    = &gradients_class,
     .inputs        = NULL,
     FILTER_OUTPUTS(gradients_outputs),
-    FILTER_PIXFMTS(AV_PIX_FMT_RGBA, AV_PIX_FMT_RGBA64),
+    FILTER_PIXFMTS(AV_PIX_FMT_RGBA, AV_PIX_FMT_RGBA64, AV_PIX_FMT_GBRAPF32),
     .activate      = activate,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
