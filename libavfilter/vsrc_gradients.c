@@ -76,9 +76,13 @@ static const AVOption gradients_options[] = {
     {"nb_colors", "set the number of colors", OFFSET(nb_colors), AV_OPT_TYPE_INT,  {.i64=2},          2, 8, FLAGS },
     {"n",         "set the number of colors", OFFSET(nb_colors), AV_OPT_TYPE_INT,  {.i64=2},          2, 8, FLAGS },
     {"seed",      "set the seed",   OFFSET(seed),          AV_OPT_TYPE_INT64,      {.i64=-1},        -1, UINT32_MAX, FLAGS },
-    {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
-    {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },\
-    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },\
+    {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
+    {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
+    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },
+    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 1, FLAGS, "type" },
+    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 1, FLAGS, "type" },
+    {"linear",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=0},          0, 0, FLAGS, "type" },
+    {"radial",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=1},          0, 0, FLAGS, "type" },
     {NULL},
 };
 
@@ -180,19 +184,19 @@ static void lerp_colors32(float arr[3][4], int nb_colors, float step,
 
 static float project(float origin_x, float origin_y,
                      float dest_x, float dest_y,
-                     int point_x, int point_y)
+                     int point_x, int point_y, int type)
 {
     // Rise and run of line.
     float od_x = dest_x - origin_x;
     float od_y = dest_y - origin_y;
 
     // Distance-squared of line.
-    float od_s_q = od_x * od_x + od_y * od_y;
+    float od_s_q = type ? sqrtf(od_x * od_x + od_y * od_y) : od_x * od_x + od_y * od_y;
 
     // Rise and run of projection.
     float op_x = point_x - origin_x;
     float op_y = point_y - origin_y;
-    float op_x_od = op_x * od_x + op_y * od_y;
+    float op_x_od = type ? sqrtf(op_x * op_x + op_y * op_y) : op_x * od_x + op_y * od_y;
 
     // Normalize and clamp range.
     return av_clipf(op_x_od / od_s_q, 0.f, 1.f);
@@ -211,7 +215,7 @@ static int draw_gradients_slice(AVFilterContext *ctx, void *arg, int job, int nb
 
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
-            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y);
+            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
             dst[x] = lerp_colors(s->color_rgba, s->nb_colors, factor);
         }
 
@@ -234,7 +238,7 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
 
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
-            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y);
+            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
             dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, factor);
         }
 
@@ -263,7 +267,7 @@ static int draw_gradients_slice32_planar(AVFilterContext *ctx, void *arg, int jo
 
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
-            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y);
+            float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
             lerp_colors32(s->color_rgbaf, s->nb_colors, factor,
                           &dst_r[x], &dst_g[x], &dst_b[x], &dst_a[x]);
         }
