@@ -46,6 +46,8 @@ static const char *const var_names[] = {
     "TS",    /* interval start time in seconds */
     "TE",    /* interval end time in seconds */
     "TI",    /* interval interpolated value: TI = (T - TS) / (TE - TS) */
+    "W",     /* width for video frames */
+    "H",     /* height for video frames */
     NULL
 };
 
@@ -57,6 +59,8 @@ enum var_name {
     VAR_TS,
     VAR_TE,
     VAR_TI,
+    VAR_W,
+    VAR_H,
     VAR_VARS_NB
 };
 
@@ -531,6 +535,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
                         var_values[VAR_TS]  = start;
                         var_values[VAR_TE]  = end;
                         var_values[VAR_TI]  = (current - start) / (end - start);
+                        var_values[VAR_W]   = ref->width;
+                        var_values[VAR_H]   = ref->height;
 
                         if ((ret = av_expr_parse_and_eval(&res, cmd->arg, var_names, var_values,
                                                           NULL, NULL, NULL, NULL, NULL, 0, NULL)) < 0) {

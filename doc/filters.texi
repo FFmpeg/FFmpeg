@@ -27041,6 +27041,12 @@ The end time in seconds of the current command interval.
 
 @item TI
 The interpolated time of the current command interval, TI = (T - TS) / (TE - TS).
+
+@item W
+The video frame width.
+
+@item H
+The video frame height.
 @end table
 
 @end table
