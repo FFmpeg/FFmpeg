@@ -81,7 +81,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
                            par->channels == 1 && par->channel_layout && par->channel_layout != AV_CH_LAYOUT_MONO ||
                            par->channels == 2 && par->channel_layout && par->channel_layout != AV_CH_LAYOUT_STEREO ||
                            par->sample_rate > 48000 ||
-                           par->codec_id == AV_CODEC_ID_EAC3 ||
+                           par->codec_id == AV_CODEC_ID_EAC3 || par->codec_id == AV_CODEC_ID_DFPWM ||
                            av_get_bits_per_sample(par->codec_id) > 16;
 
     if (waveformatextensible)
@@ -188,7 +188,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
         /* dwChannelMask */
         avio_wl32(pb, write_channel_mask ? par->channel_layout : 0);
         /* GUID + next 3 */
-        if (par->codec_id == AV_CODEC_ID_EAC3) {
+        if (par->codec_id == AV_CODEC_ID_EAC3 || par->codec_id == AV_CODEC_ID_DFPWM) {
             ff_put_guid(pb, ff_get_codec_guid(par->codec_id, ff_codec_wav_guids));
         } else {
             avio_wl32(pb, par->codec_tag);
