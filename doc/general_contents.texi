@@ -578,6 +578,7 @@ library:
 @item raw aptX                  @tab X @tab X
 @item raw aptX HD               @tab X @tab X
 @item raw Chinese AVS video     @tab X @tab X
+@item raw DFPWM                 @tab X @tab X
 @item raw Dirac                 @tab X @tab X
 @item raw DNxHD                 @tab X @tab X
 @item raw DTS                   @tab X @tab X

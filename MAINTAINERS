@@ -416,6 +416,7 @@ Muxers/Demuxers:
   dashdec.c                             Steven Liu
   dashenc.c                             Karthick Jeyapal
   daud.c                                Reimar Doeffinger
+  dfpwmdec.c                            Jack Bruienne
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86
   dtshddec.c                            Paul B Mahol

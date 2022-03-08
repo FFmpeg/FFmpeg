@@ -192,6 +192,19 @@ const AVOutputFormat ff_data_muxer = {
 };
 #endif
 
+#if CONFIG_DFPWM_MUXER
+const AVOutputFormat ff_dfpwm_muxer = {
+    .name              = "dfpwm",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw DFPWM1a"),
+    .extensions        = "dfpwm",
+    .audio_codec       = AV_CODEC_ID_DFPWM,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .init              = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_DIRAC_MUXER
 const AVOutputFormat ff_dirac_muxer = {
     .name              = "dirac",

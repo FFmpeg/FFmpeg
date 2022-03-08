@@ -5,7 +5,7 @@ version 5.1:
 - dialogue enhance audio filter
 - dropped obsolete XvMC hwaccel
 - pcm-bluray encoder
-- DFPWM audio encoder/decoder
+- DFPWM audio encoder/decoder and raw muxer/demuxer
 
 
 version 5.0:
