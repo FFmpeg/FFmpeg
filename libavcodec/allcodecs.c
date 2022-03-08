@@ -437,6 +437,8 @@ extern const AVCodec ff_bmv_audio_decoder;
 extern const AVCodec ff_cook_decoder;
 extern const AVCodec ff_dca_encoder;
 extern const AVCodec ff_dca_decoder;
+extern const AVCodec ff_dfpwm_encoder;
+extern const AVCodec ff_dfpwm_decoder;
 extern const AVCodec ff_dolby_e_decoder;
 extern const AVCodec ff_dsd_lsbf_decoder;
 extern const AVCodec ff_dsd_msbf_decoder;

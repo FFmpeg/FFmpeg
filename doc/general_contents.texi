@@ -1194,6 +1194,7 @@ following image formats are supported:
 @item CRI HCA                @tab     @tab X
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
+@item DFPWM                  @tab  X  @tab  X
 @item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X
 @item Discworld II BMV Audio @tab     @tab  X
 @item COOK                   @tab     @tab  X

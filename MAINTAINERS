@@ -161,6 +161,7 @@ Codecs:
   cscd.c                                Reimar Doeffinger
   cuviddec.c                            Timo Rothenpieler
   dca*                                  foo86
+  dfpwm*                                Jack Bruienne
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
   dolby_e*                              foo86
