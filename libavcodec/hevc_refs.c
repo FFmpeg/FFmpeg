@@ -401,9 +401,9 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
 
     if (!s->avctx->hwaccel) {
         if (!s->ps.sps->pixel_shift) {
-            for (i = 0; frame->frame->buf[i]; i++)
-                memset(frame->frame->buf[i]->data, 1 << (s->ps.sps->bit_depth - 1),
-                       frame->frame->buf[i]->size);
+            for (i = 0; frame->frame->data[i]; i++)
+                memset(frame->frame->data[i], 1 << (s->ps.sps->bit_depth - 1),
+                       frame->frame->linesize[i] * AV_CEIL_RSHIFT(s->ps.sps->height, s->ps.sps->vshift[i]));
         } else {
             for (i = 0; frame->frame->data[i]; i++)
                 for (y = 0; y < (s->ps.sps->height >> s->ps.sps->vshift[i]); y++) {
