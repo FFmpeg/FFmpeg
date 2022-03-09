@@ -19,7 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <stdint.h>
+
+#if HAVE_SYS_RESOURCE_H
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 
 #include "ffmpeg.h"
 #include "cmdutils.h"
@@ -3497,6 +3504,19 @@ static int opt_progress(void *optctx, const char *opt, const char *arg)
         return ret;
     }
     progress_avio = avio;
+    return 0;
+}
+
+int opt_timelimit(void *optctx, const char *opt, const char *arg)
+{
+#if HAVE_SETRLIMIT
+    int lim = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
+    struct rlimit rl = { lim, lim + 1 };
+    if (setrlimit(RLIMIT_CPU, &rl))
+        perror("setrlimit");
+#else
+    av_log(NULL, AV_LOG_WARNING, "-%s not implemented on this OS\n", opt);
+#endif
     return 0;
 }
 

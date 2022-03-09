@@ -48,10 +48,6 @@
 #include "libavutil/opt.h"
 #include "cmdutils.h"
 #include "opt_common.h"
-#if HAVE_SYS_RESOURCE_H
-#include <sys/time.h>
-#include <sys/resource.h>
-#endif
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -795,19 +791,6 @@ do {                                                                           \
 
     av_log(NULL, AV_LOG_DEBUG, "Finished splitting the commandline.\n");
 
-    return 0;
-}
-
-int opt_timelimit(void *optctx, const char *opt, const char *arg)
-{
-#if HAVE_SETRLIMIT
-    int lim = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-    struct rlimit rl = { lim, lim + 1 };
-    if (setrlimit(RLIMIT_CPU, &rl))
-        perror("setrlimit");
-#else
-    av_log(NULL, AV_LOG_WARNING, "-%s not implemented on this OS\n", opt);
-#endif
     return 0;
 }
 
