@@ -633,8 +633,6 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
  */
 void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
 
-#define media_type_string av_get_media_type_string
-
 #define GROW_ARRAY(array, nb_elems)\
     array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
 

@@ -1608,7 +1608,7 @@ static void print_final_stats(int64_t total_size)
             total_packets += ist->nb_packets;
 
             av_log(NULL, AV_LOG_VERBOSE, "  Input stream #%d:%d (%s): ",
-                   i, j, media_type_string(type));
+                   i, j, av_get_media_type_string(type));
             av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
                    ist->nb_packets, ist->data_size);
 
@@ -1642,7 +1642,7 @@ static void print_final_stats(int64_t total_size)
             total_packets += ost->packets_written;
 
             av_log(NULL, AV_LOG_VERBOSE, "  Output stream #%d:%d (%s): ",
-                   i, j, media_type_string(type));
+                   i, j, av_get_media_type_string(type));
             if (ost->encoding_needed) {
                 av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" frames encoded",
                        ost->frames_encoded);

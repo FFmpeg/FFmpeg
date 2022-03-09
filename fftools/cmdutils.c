@@ -1980,7 +1980,7 @@ static void show_help_filter(const char *name)
     count = avfilter_filter_pad_count(f, 0);
     for (i = 0; i < count; i++) {
         printf("       #%d: %s (%s)\n", i, avfilter_pad_get_name(f->inputs, i),
-               media_type_string(avfilter_pad_get_type(f->inputs, i)));
+               av_get_media_type_string(avfilter_pad_get_type(f->inputs, i)));
     }
     if (f->flags & AVFILTER_FLAG_DYNAMIC_INPUTS)
         printf("        dynamic (depending on the options)\n");
@@ -1991,7 +1991,7 @@ static void show_help_filter(const char *name)
     count = avfilter_filter_pad_count(f, 1);
     for (i = 0; i < count; i++) {
         printf("       #%d: %s (%s)\n", i, avfilter_pad_get_name(f->outputs, i),
-               media_type_string(avfilter_pad_get_type(f->outputs, i)));
+               av_get_media_type_string(avfilter_pad_get_type(f->outputs, i)));
     }
     if (f->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS)
         printf("        dynamic (depending on the options)\n");
