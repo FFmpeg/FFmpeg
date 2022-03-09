@@ -1054,7 +1054,7 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     SETUP_QUEUE(enc_index)
     SETUP_QUEUE(dec_index)
 
-#undef ADD_QUEUE
+#undef SETUP_QUEUE
 
     av_free(qf);
 
