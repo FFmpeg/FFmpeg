@@ -33,8 +33,6 @@
 #define WEIGHT_LUT_NBITS 20
 #define WEIGHT_LUT_SIZE  (1<<WEIGHT_LUT_NBITS)
 
-#define SQR(x) ((x) * (x))
-
 typedef struct AudioNLMeansContext {
     const AVClass *class;
 
@@ -75,8 +73,8 @@ enum OutModes {
 #define AFT AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption anlmdn_options[] = {
-    { "strength", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AFT },
-    { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AFT },
+    { "strength", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10000, AFT },
+    { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10000, AFT },
     { "patch", "set patch duration", OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AFT },
     { "p", "set patch duration",     OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AFT },
     { "research", "set research duration",  OFFSET(rd), AV_OPT_TYPE_DURATION, {.i64=6000}, 2000, 300000, AFT },
@@ -86,19 +84,26 @@ static const AVOption anlmdn_options[] = {
     {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AFT, "mode" },
     {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AFT, "mode" },
     {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},0,  0, AFT, "mode" },
-    { "smooth", "set smooth factor", OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 15, AFT },
-    { "m", "set smooth factor",      OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 15, AFT },
+    { "smooth", "set smooth factor", OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 1000, AFT },
+    { "m", "set smooth factor",      OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 1000, AFT },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(anlmdn);
+
+static inline float sqrdiff(float x, float y)
+{
+    const float diff = x - y;
+
+    return diff * diff;
+}
 
 static float compute_distance_ssd_c(const float *f1, const float *f2, ptrdiff_t K)
 {
     float distance = 0.;
 
     for (int k = -K; k <= K; k++)
-        distance += SQR(f1[k] - f2[k]);
+        distance += sqrdiff(f1[k], f2[k]);
 
     return distance;
 }
@@ -110,7 +115,7 @@ static void compute_cache_c(float *cache, const float *f,
     int v = 0;
 
     for (int j = jj; j < jj + S; j++, v++)
-        cache[v] += -SQR(f[i - K - 1] - f[j - K - 1]) + SQR(f[i + K] - f[j + K]);
+        cache[v] += -sqrdiff(f[i - K - 1], f[j - K - 1]) + sqrdiff(f[i + K], f[j + K]);
 }
 
 void ff_anlmdn_init(AudioNLMDNDSPContext *dsp)
@@ -213,7 +218,9 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     float *cache = (float *)s->cache->extended_data[ch];
     const float sw = (65536.f / (4 * K + 2)) / sqrtf(s->a);
     float *dst = (float *)out->extended_data[ch] + s->offset;
-    const float smooth = s->m;
+    const float *const weight_lut = s->weight_lut;
+    const float pdiff_lut_scale = s->pdiff_lut_scale;
+    const float smooth = fminf(s->m, WEIGHT_LUT_SIZE / pdiff_lut_scale);
 
     for (int i = S; i < s->H + S; i++) {
         float P = 0.f, Q = 0.f;
@@ -231,26 +238,24 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
         }
 
         for (int j = 0; j < 2 * S && !ctx->is_disabled; j++) {
-            const float distance = cache[j];
+            float distance = cache[j];
             unsigned weight_lut_idx;
             float w;
 
-            if (distance < 0.f) {
-                cache[j] = 0.f;
-                continue;
-            }
+            if (distance < 0.f)
+                cache[j] = distance = 0.f;
             w = distance * sw;
             if (w >= smooth)
                 continue;
-            weight_lut_idx = w * s->pdiff_lut_scale;
+            weight_lut_idx = w * pdiff_lut_scale;
             av_assert2(weight_lut_idx < WEIGHT_LUT_SIZE);
-            w = s->weight_lut[weight_lut_idx];
+            w = weight_lut[weight_lut_idx];
             P += w * f[i - S + j + (j >= S)];
             Q += w;
         }
 
         P += f[i];
-        Q += 1;
+        Q += 1.f;
 
         switch (om) {
         case IN_MODE:    dst[i - S] = f[i];           break;
