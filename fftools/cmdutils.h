@@ -44,8 +44,6 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
-extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
-extern AVFormatContext *avformat_opts;
 extern AVDictionary *sws_dict;
 extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts;
