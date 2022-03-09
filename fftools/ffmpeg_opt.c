@@ -23,6 +23,7 @@
 
 #include "ffmpeg.h"
 #include "cmdutils.h"
+#include "opt_common.h"
 
 #include "libavformat/avformat.h"
 

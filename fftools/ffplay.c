@@ -60,6 +60,7 @@
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
+#include "opt_common.h"
 
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
