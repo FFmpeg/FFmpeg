@@ -1,4 +1,3 @@
-
 /*
  * ffmpeg option parsing
  *
