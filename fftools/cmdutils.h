@@ -67,11 +67,6 @@ void exit_program(int ret) av_noreturn;
 void init_dynload(void);
 
 /**
- * Initialize the cmdutils option system, in particular
- * allocate the *_opts contexts.
- */
-void init_opts(void);
-/**
  * Uninitialize the cmdutils option system, in particular
  * free the *_opts contexts and their contents.
  */
@@ -107,8 +102,6 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg);
 int opt_report(void *optctx, const char *opt, const char *arg);
 
 int opt_max_alloc(void *optctx, const char *opt, const char *arg);
-
-int opt_codec_debug(void *optctx, const char *opt, const char *arg);
 
 /**
  * Limit the execution time.
