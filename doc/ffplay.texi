@@ -34,10 +34,6 @@ various FFmpeg APIs.
 Force displayed width.
 @item -y @var{height}
 Force displayed height.
-@item -s @var{size}
-Set frame size (WxH or abbreviation), needed for videos which do
-not contain a header with the frame size like raw YUV.  This option
-has been deprecated in favor of private options, try -video_size.
 @item -fs
 Start in fullscreen mode.
 @item -an
@@ -126,10 +122,6 @@ Read @var{input_url}.
 
 @section Advanced options
 @table @option
-@item -pix_fmt @var{format}
-Set pixel format.
-This option has been deprecated in favor of private options, try -pixel_format.
-
 @item -stats
 Print several playback statistics, in particular show the stream
 duration, the codec parameters, the current position in the stream and
