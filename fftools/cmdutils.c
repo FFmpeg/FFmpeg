@@ -303,6 +303,12 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
 int parse_option(void *optctx, const char *opt, const char *arg,
                  const OptionDef *options)
 {
+    static const OptionDef opt_avoptions = {
+        .name       = "AVOption passthrough",
+        .flags      = HAS_ARG,
+        .u.func_arg = opt_default,
+    };
+
     const OptionDef *po;
     int ret;
 
@@ -316,7 +322,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
         arg = "1";
 
     if (!po->name)
-        po = find_option(options, "default");
+        po = &opt_avoptions;
     if (!po->name) {
         av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
         return AVERROR(EINVAL);
