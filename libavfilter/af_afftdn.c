@@ -309,20 +309,9 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
                           double *prior, double *prior_band_excit, int track_noise)
 {
     double d1, d2, d3, gain;
-    int n, i1;
+    int n = 0, i1;
 
-    d1 = fft_data[0].re * fft_data[0].re;
-    dnch->noisy_data[0] = d1;
-    d2 = d1 / dnch->abs_var[0];
-    d3 = RATIO * prior[0] + RRATIO * fmax(d2 - 1.0, 0.0);
-    gain = d3 / (1.0 + d3);
-    gain *= (gain + M_PI_4 / fmax(d2, 1.0E-6));
-    prior[0] = (d2 * gain);
-    dnch->clean_data[0] = (d1 * gain);
-    gain = sqrt(gain);
-    dnch->gain[0] = gain;
-    n = 0;
-    for (int i = 1; i < s->fft_length2; i++) {
+    for (int i = 0; i < s->fft_length2; i++) {
         d1 = fft_data[i].re * fft_data[i].re + fft_data[i].im * fft_data[i].im;
         if (d1 > s->sample_floor)
             n = i;
@@ -337,19 +326,7 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
         gain = sqrt(gain);
         dnch->gain[i] = gain;
     }
-    d1 = fft_data[0].im * fft_data[0].im;
-    if (d1 > s->sample_floor)
-        n = s->fft_length2;
 
-    dnch->noisy_data[s->fft_length2] = d1;
-    d2 = d1 / dnch->abs_var[s->fft_length2];
-    d3 = RATIO * prior[s->fft_length2] + RRATIO * fmax(d2 - 1.0, 0.0);
-    gain = d3 / (1.0 + d3);
-    gain *= gain + M_PI_4 / fmax(d2, 1.0E-6);
-    prior[s->fft_length2] = d2 * gain;
-    dnch->clean_data[s->fft_length2] = d1 * gain;
-    gain = sqrt(gain);
-    dnch->gain[s->fft_length2] = gain;
     if (n > s->fft_length2 - 2) {
         n = s->bin_count;
         i1 = s->noise_band_count;
@@ -472,7 +449,7 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
         dnch->gain[s->fft_length2] = limit_gain(dnch->gain[s->fft_length2], s->max_gain);
     }
 
-    for (int i = 1; i < s->fft_length2; i++) {
+    for (int i = 0; i < s->fft_length2; i++) {
         if (dnch->amt[i] > dnch->abs_var[i]) {
             dnch->gain[i] = 1.0;
         } else if (dnch->amt[i] > dnch->min_abs_var[i]) {
@@ -483,13 +460,7 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
         }
     }
 
-    gain = dnch->gain[0];
-    dnch->clean_data[0] = (gain * gain * dnch->noisy_data[0]);
-    fft_data[0].re *= gain;
-    gain = dnch->gain[s->fft_length2];
-    dnch->clean_data[s->fft_length2] = (gain * gain * dnch->noisy_data[s->fft_length2]);
-    fft_data[0].im *= gain;
-    for (int i = 1; i < s->fft_length2; i++) {
+    for (int i = 0; i < s->fft_length2; i++) {
         gain = dnch->gain[i];
         dnch->clean_data[i] = (gain * gain * dnch->noisy_data[i]);
         fft_data[i].re *= gain;
@@ -911,10 +882,6 @@ static void sample_noise_block(AudioFFTDeNoiseContext *s,
     k = 0;
     n = j;
     edgemax = fmin(s->fft_length2, s->noise_band_edge[15]);
-    dnch->fft_out[s->fft_length2].re = dnch->fft_out[0].im;
-    dnch->fft_out[0].im = 0.0;
-    dnch->fft_out[s->fft_length2].im = 0.0;
-
     for (int i = j; i <= edgemax; i++) {
         if ((i == j) && (i < edgemax)) {
             if (j > edge) {
