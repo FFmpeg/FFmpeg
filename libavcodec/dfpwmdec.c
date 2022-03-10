@@ -83,7 +83,7 @@ static av_cold int dfpwm_dec_init(struct AVCodecContext *ctx)
 {
     DFPWMState *state = ctx->priv_data;
 
-    if (ctx->channels <= 0) {
+    if (ctx->ch_layout.nb_channels <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR(EINVAL);
     }
@@ -106,7 +106,7 @@ static int dfpwm_dec_frame(struct AVCodecContext *ctx, void *data,
     AVFrame *frame = data;
     int ret;
 
-    frame->nb_samples = packet->size * 8 / ctx->channels;
+    frame->nb_samples = packet->size * 8 / ctx->ch_layout.nb_channels;
     if (frame->nb_samples <= 0) {
         av_log(ctx, AV_LOG_ERROR, "invalid number of samples in packet\n");
         return AVERROR_INVALIDDATA;

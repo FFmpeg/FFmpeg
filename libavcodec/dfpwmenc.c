@@ -93,7 +93,7 @@ static int dfpwm_enc_frame(struct AVCodecContext *ctx, struct AVPacket *packet,
     const struct AVFrame *frame, int *got_packet)
 {
     DFPWMState *state = ctx->priv_data;
-    int size = frame->nb_samples * frame->channels / 8 + (frame->nb_samples % 8 > 0 ? 1 : 0);
+    int size = frame->nb_samples * frame->ch_layout.nb_channels / 8 + (frame->nb_samples % 8 > 0 ? 1 : 0);
     int ret = ff_get_encode_buffer(ctx, packet, size, 0);
 
     if (ret) {
