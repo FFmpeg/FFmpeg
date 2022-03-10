@@ -48,7 +48,7 @@ static int dfpwm_read_header(AVFormatContext *s)
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = s->iformat->raw_codec_id;
     par->sample_rate = s1->sample_rate;
-    par->channels    = s1->channels;
+    par->ch_layout.nb_channels = s1->channels;
     par->bits_per_coded_sample = 1;
     par->block_align = 1;
 
