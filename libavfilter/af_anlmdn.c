@@ -50,6 +50,7 @@ typedef struct AudioNLMeansContext {
     int N;
     int H;
 
+    AVFrame *in;
     AVFrame *cache;
     AVFrame *window;
 
@@ -201,6 +202,8 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     AVFrame *out = arg;
     const int S = s->S;
     const int K = s->K;
+    const int N = s->N;
+    const int H = s->H;
     const int om = s->om;
     const float *f = (const float *)(s->window->extended_data[ch]) + K;
     float *cache = (float *)s->cache->extended_data[ch];
@@ -209,8 +212,15 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     const float *const weight_lut = s->weight_lut;
     const float pdiff_lut_scale = s->pdiff_lut_scale;
     const float smooth = fminf(s->m, WEIGHT_LUT_SIZE / pdiff_lut_scale);
+    const int offset = N - H;
+    float *src = (float *)s->window->extended_data[ch];
+    const AVFrame *const in = s->in;
 
-    for (int i = S; i < s->H + S; i++) {
+    memmove(src, &src[H], offset * sizeof(float));
+    memcpy(&src[offset], in->extended_data[ch], in->nb_samples * sizeof(float));
+    memset(&src[offset + in->nb_samples], 0, (H - in->nb_samples) * sizeof(float));
+
+    for (int i = S; i < H + S; i++) {
         float P = 0.f, Q = 0.f;
         int v = 0;
 
@@ -260,25 +270,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioNLMeansContext *s = ctx->priv;
-    const int offset = s->N - s->H;
     AVFrame *out;
 
-    out = ff_get_audio_buffer(outlink, in->nb_samples);
-    if (!out)
-        return AVERROR(ENOMEM);
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_audio_buffer(outlink, in->nb_samples);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
 
-    for (int ch = 0; ch < in->channels; ch++) {
-        float *src = (float *)s->window->extended_data[ch];
-
-        memmove(src, &src[s->H], offset * sizeof(float));
-        memcpy(&src[offset], in->extended_data[ch], in->nb_samples * sizeof(float));
-        memset(&src[offset + in->nb_samples], 0, (s->H - in->nb_samples) * sizeof(float));
+        out->pts = in->pts;
     }
 
+    s->in = in;
     ff_filter_execute(ctx, filter_channel, out, NULL, inlink->channels);
 
-    out->pts = in->pts;
-    av_frame_free(&in);
+    if (out != in)
+        av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
