@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "av1_parse.h"
+#include "decode.h"
 #include "av1dec.h"
 #include "atsc_a53.h"
 #include "bytestream.h"
@@ -865,8 +866,7 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
     if (avctx->hwaccel) {
         const AVHWAccel *hwaccel = avctx->hwaccel;
         if (hwaccel->frame_priv_data_size) {
-            f->hwaccel_priv_buf =
-                av_buffer_allocz(hwaccel->frame_priv_data_size);
+            f->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(avctx, hwaccel);
             if (!f->hwaccel_priv_buf) {
                 ret = AVERROR(ENOMEM);
                 goto fail;

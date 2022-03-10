@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timecode.h"
 #include "internal.h"
+#include "decode.h"
 #include "cabac.h"
 #include "cabac_functions.h"
 #include "decode.h"
@@ -212,7 +213,7 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
         const AVHWAccel *hwaccel = h->avctx->hwaccel;
         av_assert0(!pic->hwaccel_picture_private);
         if (hwaccel->frame_priv_data_size) {
-            pic->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+            pic->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(h->avctx, hwaccel);
             if (!pic->hwaccel_priv_buf)
                 return AVERROR(ENOMEM);
             pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;

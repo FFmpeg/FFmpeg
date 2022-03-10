@@ -23,6 +23,7 @@
 
 #include "libavutil/avassert.h"
 
+#include "decode.h"
 #include "thread.h"
 #include "hevc.h"
 #include "hevcdec.h"
@@ -121,7 +122,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
             const AVHWAccel *hwaccel = s->avctx->hwaccel;
             av_assert0(!frame->hwaccel_picture_private);
             if (hwaccel->frame_priv_data_size) {
-                frame->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+                frame->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(s->avctx, hwaccel);
                 if (!frame->hwaccel_priv_buf)
                     goto fail;
                 frame->hwaccel_picture_private = frame->hwaccel_priv_buf->data;

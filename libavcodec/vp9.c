@@ -136,7 +136,7 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
         const AVHWAccel *hwaccel = avctx->hwaccel;
         av_assert0(!f->hwaccel_picture_private);
         if (hwaccel->frame_priv_data_size) {
-            f->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+            f->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(avctx, hwaccel);
             if (!f->hwaccel_priv_buf)
                 goto fail;
             f->hwaccel_picture_private = f->hwaccel_priv_buf->data;

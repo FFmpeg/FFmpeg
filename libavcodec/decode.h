@@ -150,4 +150,15 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
+/**
+ * Allocate a hwaccel frame private data and create an AVBufferRef
+ * from it.
+ *
+ * @param     avctx   The codec context which to attach as an opaque value
+ * @param     hwaccel The hwaccel for which to allocate
+ * @return            The allocated buffer
+ */
+AVBufferRef *ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx,
+                                         const AVHWAccel *hwaccel);
+
 #endif /* AVCODEC_DECODE_H */

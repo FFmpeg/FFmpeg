@@ -109,7 +109,7 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
     if (s->avctx->hwaccel) {
         const AVHWAccel *hwaccel = s->avctx->hwaccel;
         if (hwaccel->frame_priv_data_size) {
-            f->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
+            f->hwaccel_priv_buf = ff_hwaccel_frame_priv_alloc(s->avctx, hwaccel);
             if (!f->hwaccel_priv_buf)
                 goto fail;
             f->hwaccel_picture_private = f->hwaccel_priv_buf->data;
