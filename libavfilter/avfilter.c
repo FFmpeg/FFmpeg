@@ -862,13 +862,17 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
                 return ret;
             }
         } else {
-            av_dict_set(options, key, value, 0);
-            if (!av_opt_find(ctx->priv, key, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
+            o = av_opt_find(ctx->priv, key, NULL, 0,
+                            AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+            if (!o) {
                 av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
                 av_free(value);
                 av_free(parsed_key);
                 return AVERROR_OPTION_NOT_FOUND;
             }
+            av_dict_set(options, key, value,
+                        (o->type == AV_OPT_TYPE_FLAGS &&
+                         (value[0] == '-' || value[0] == '+')) ? AV_DICT_APPEND : 0);
         }
 
         av_free(value);
