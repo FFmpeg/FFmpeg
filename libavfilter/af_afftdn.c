@@ -876,70 +876,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void preprocess(AVComplexFloat *in, int len)
-{
-    double d1, d2, d3, d4, d5, d6, d7, d8, d9, d10;
-    int n, i, k;
-
-    d5 = 2.0 * M_PI / len;
-    d8 = sin(0.5 * d5);
-    d8 = -2.0 * d8 * d8;
-    d7 = sin(d5);
-    d9 = 1.0 + d8;
-    d6 = d7;
-    n = len / 2;
-
-    for (i = 1; i < len / 4; i++) {
-        k = n - i;
-        d2 = 0.5 * (in[i].re + in[k].re);
-        d1 = 0.5 * (in[i].im - in[k].im);
-        d4 = 0.5 * (in[i].im + in[k].im);
-        d3 = 0.5 * (in[k].re - in[i].re);
-        in[i].re = d2 + d9 * d4 + d6 * d3;
-        in[i].im = d1 + d9 * d3 - d6 * d4;
-        in[k].re = d2 - d9 * d4 - d6 * d3;
-        in[k].im = -d1 + d9 * d3 - d6 * d4;
-        d10 = d9;
-        d9 += d9 * d8 - d6 * d7;
-        d6 += d6 * d8 + d10 * d7;
-    }
-
-    d2 = in[0].re;
-    in[0].re = d2 + in[0].im;
-    in[0].im = d2 - in[0].im;
-}
-
-static void postprocess(AVComplexFloat *in, int len)
-{
-    double d1, d2, d3, d4, d5, d6, d7, d8, d9, d10;
-    int n, i, k;
-
-    d5 = 2.0 * M_PI / len;
-    d8 = sin(0.5 * d5);
-    d8 = -2.0 * d8 * d8;
-    d7 = sin(d5);
-    d9 = 1.0 + d8;
-    d6 = d7;
-    n = len / 2;
-    for (i = 1; i < len / 4; i++) {
-        k = n - i;
-        d2 = 0.5 * (in[i].re + in[k].re);
-        d1 = 0.5 * (in[i].im - in[k].im);
-        d4 = 0.5 * (in[i].re - in[k].re);
-        d3 = 0.5 * (in[i].im + in[k].im);
-        in[i].re = d2 - d9 * d3 - d6 * d4;
-        in[i].im = d1 + d9 * d4 - d6 * d3;
-        in[k].re = d2 + d9 * d3 + d6 * d4;
-        in[k].im = -d1 + d9 * d4 - d6 * d3;
-        d10 = d9;
-        d9 += d9 * d8 - d6 * d7;
-        d6 += d6 * d8 + d10 * d7;
-    }
-    d2 = in[0].re;
-    in[0].re = 0.5 * (d2 + in[0].im);
-    in[0].im = 0.5 * (d2 - in[0].im);
-}
-
 static void init_sample_noise(DeNoiseChannel *dnch)
 {
     for (int i = 0; i < 15; i++) {
@@ -969,8 +905,6 @@ static void sample_noise_block(AudioFFTDeNoiseContext *s,
     }
 
     dnch->tx_fn(dnch->fft, dnch->fft_out, dnch->fft_in, sizeof(float));
-
-    preprocess(dnch->fft_out, s->fft_length);
 
     edge = s->noise_band_edge[0];
     j = edge;
@@ -1132,12 +1066,10 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 
         dnch->tx_fn(dnch->fft, dnch->fft_out, dnch->fft_in, sizeof(float));
 
-        preprocess(dnch->fft_out, s->fft_length);
         process_frame(s, dnch, dnch->fft_out,
                       dnch->prior,
                       dnch->prior_band_excit,
                       s->track_noise);
-        postprocess(dnch->fft_out, s->fft_length);
 
         dnch->itx_fn(dnch->ifft, dnch->fft_in, dnch->fft_out, sizeof(float));
 
