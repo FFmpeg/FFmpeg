@@ -4013,7 +4013,8 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
     CueDesc cue_desc;
     int i;
 
-    if (ts >= matroska->duration * matroska->time_scale) return (CueDesc) {-1, -1, -1, -1};
+    if (ts >= (int64_t)(matroska->duration * matroska->time_scale))
+        return (CueDesc) {-1, -1, -1, -1};
     for (i = 1; i < nb_index_entries; i++) {
         if (index_entries[i - 1].timestamp * matroska->time_scale <= ts &&
             index_entries[i].timestamp * matroska->time_scale > ts) {
