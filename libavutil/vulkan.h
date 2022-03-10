@@ -390,9 +390,7 @@ int ff_vk_add_exec_dep(FFVulkanContext *s, FFVkExecContext *e, AVFrame *frame,
                        VkPipelineStageFlagBits in_wait_dst_flag);
 
 /**
- * Submits a command buffer to the queue for execution.
- * Will block until execution has finished in order to simplify resource
- * management.
+ * Submits a command buffer to the queue for execution. Will not block.
  */
 int ff_vk_submit_exec_queue(FFVulkanContext *s, FFVkExecContext *e);
 
