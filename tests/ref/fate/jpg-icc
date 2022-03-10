@@ -1,0 +1,42 @@
+0a323df5cdfb9574e329b9831be054a6 *tests/data/fate/jpg-icc.mjpeg
+11010 tests/data/fate/jpg-icc.mjpeg
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 128x128
+#sar 0: 1/1
+0,          0,          0,        1,    49152, 0xaac06b42
+[FRAME]
+media_type=video
+stream_index=0
+key_frame=1
+pts=0
+pts_time=0.000000
+pkt_dts=0
+pkt_dts_time=0.000000
+best_effort_timestamp=0
+best_effort_timestamp_time=0.000000
+pkt_duration=1
+pkt_duration_time=0.040000
+pkt_pos=0
+pkt_size=11010
+width=128
+height=128
+pix_fmt=yuvj444p
+sample_aspect_ratio=1:1
+pict_type=I
+coded_picture_number=0
+display_picture_number=0
+interlaced_frame=0
+top_field_first=0
+repeat_pict=0
+color_range=pc
+color_space=bt470bg
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=center
+[SIDE_DATA]
+side_data_type=ICC profile
+size=3144
+[/SIDE_DATA]
+[/FRAME]

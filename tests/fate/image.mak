@@ -337,9 +337,13 @@ fate-jpg-12bpp: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/12bpp.jpg -
 FATE_JPG += fate-jpg-jfif
 fate-jpg-jfif: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/20242.jpg
 
+FATE_JPG_TRANSCODE-$(call ENCDEC, MJPEG, IMAGE2) += fate-jpg-icc
+fate-jpg-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png mjpeg "-vf scale" "" "" "-show_frames"
+
 FATE_JPG-$(call DEMDEC, IMAGE2, MJPEG) += $(FATE_JPG)
 FATE_IMAGE += $(FATE_JPG-yes)
-fate-jpg: $(FATE_JPG-yes)
+FATE_IMAGE_TRANSCODE += $(FATE_JPG_TRANSCODE-yes)
+fate-jpg: $(FATE_JPG-yes) $(FATE_JPG_TRANSCODE-yes)
 
 FATE_JPEGLS += fate-jpegls-2bpc
 fate-jpegls-2bpc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpegls/4.jls

@@ -29,8 +29,10 @@
 
 struct MJpegContext;
 
+int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
+                                  size_t *max_pkt_size);
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
-                                    struct MJpegContext *m,
+                                    const AVFrame *frame, struct MJpegContext *m,
                                     ScanTable *intra_scantable, int pred,
                                     uint16_t luma_intra_matrix[64],
                                     uint16_t chroma_intra_matrix[64],

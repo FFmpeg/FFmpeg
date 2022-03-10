@@ -1684,9 +1684,11 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     /* output? */
     if (s->new_picture->data[0]) {
         int growing_buffer = context_count == 1 && !pkt->data && !s->data_partitioning;
-        int pkt_size = growing_buffer ? FFMAX(s->mb_width*s->mb_height*64+10000, avctx->internal->byte_buffer_size) - AV_INPUT_BUFFER_PADDING_SIZE
+        size_t pkt_size = growing_buffer ? FFMAX(s->mb_width*s->mb_height*64+10000, avctx->internal->byte_buffer_size) - AV_INPUT_BUFFER_PADDING_SIZE
                                               :
                                               s->mb_width*s->mb_height*(MAX_MB_BYTES+100)+10000;
+        if ((ret = ff_mjpeg_add_icc_profile_size(avctx, s->new_picture, &pkt_size)) < 0)
+            return ret;
         if ((ret = ff_alloc_packet(avctx, pkt, pkt_size)) < 0)
             return ret;
         if (s->mb_info) {
