@@ -5433,6 +5433,10 @@ lv2=p=http\\\\://www.openavproductions.com/artyfx#bitta:c=crush=0.3
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports all options that are exported by plugin as commands.
+
 @section mcompand
 Multiband Compress or expand the audio's dynamic range.
 

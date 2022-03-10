@@ -538,6 +538,26 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    LV2Context *s = ctx->priv;
+    const LilvPort *port;
+    LilvNode *sym;
+    int index;
+
+    sym  = lilv_new_string(s->world, cmd);
+    port = lilv_plugin_get_port_by_symbol(s->plugin, sym);
+    lilv_node_free(sym);
+    if (!port) {
+        av_log(s, AV_LOG_WARNING, "Unknown option: <%s>\n", cmd);
+    } else {
+        index = lilv_port_get_index(s->plugin, port);
+        s->controls[index] = atof(args);
+    }
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     LV2Context *s = ctx->priv;
@@ -578,6 +598,7 @@ const AVFilter ff_af_lv2 = {
     .priv_class    = &lv2_class,
     .init          = init,
     .uninit        = uninit,
+    .process_command = process_command,
     .inputs        = 0,
     FILTER_OUTPUTS(lv2_outputs),
     FILTER_QUERY_FUNC(query_formats),
