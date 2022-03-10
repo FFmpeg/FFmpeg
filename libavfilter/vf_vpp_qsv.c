@@ -703,6 +703,9 @@ static int vpp_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUYV422,
         AV_PIX_FMT_RGB32,
         AV_PIX_FMT_P010,
+#if CONFIG_VAAPI
+        AV_PIX_FMT_UYVY422,
+#endif
         AV_PIX_FMT_QSV,
         AV_PIX_FMT_NONE
     };
