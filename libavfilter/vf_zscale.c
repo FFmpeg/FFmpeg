@@ -762,7 +762,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     //we need to use this filter if something is different for an input and output only
     //otherwise - just copy the input frame to the output
-    if ((link->w != outlink->w) ||
+    if ((link->format != outlink->format) ||
+        (link->w != outlink->w) ||
         (link->h != outlink->h) ||
         (s->src_format.chroma_location != s->dst_format.chroma_location) ||
         (s->src_format.color_family !=s->dst_format.color_family) ||
