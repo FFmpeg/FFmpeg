@@ -91,6 +91,7 @@ QPEL_TABLE  4, 1, b, avx512icl_h
 QPEL_TABLE  8, 1, b, avx512icl_h
 QPEL_TABLE  8, 1, d, avx512icl_v
 QPEL_TABLE 16, 1, b, avx512icl_h
+QPEL_TABLE 32, 1, b, avx512icl_h
 
 pb_qpel_shuffle_index: db  0,  1,  2,  3
                        db  1,  2,  3,  4
@@ -1736,12 +1737,17 @@ HEVC_PUT_HEVC_QPEL_HV 16, 10
 ; required: m0-m5
 ; %1: dst register index
 ; %2: name for src
-%macro QPEL_H_LOAD_COMPUTE 2
+; %3: optional offset
+%macro QPEL_H_LOAD_COMPUTE 2-3
+%assign %%offset 0
+%if %0 == 3
+%assign %%offset %3
+%endif
     pxor            m%1, m%1
 %if mmsize == 64
-    movu            ym4, [%2q - 3]
+    movu            ym4, [%2q + %%offset - 3]
 %else
-    movu            xm4, [%2q - 3]
+    movu            xm4, [%2q + %%offset - 3]
 %endif
     vpermb           m5, m2, m4
     vpermb           m4, m3, m4
@@ -1760,6 +1766,10 @@ cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 8, dst, src, srcstride, height, mx, tmp
     movq             [dstq], xm6
 %else
     vpmovdw          [dstq], m6
+%endif
+%if %1 == 32
+    QPEL_H_LOAD_COMPUTE   7, src, 16
+    vpmovdw     [dstq + 32], m7
 %endif
     LOOP_END            dst, src, srcstride
     RET
@@ -1837,6 +1847,7 @@ HEVC_PUT_HEVC_QPEL_HV_AVX512ICL 8, 8
 
 INIT_ZMM avx512icl
 HEVC_PUT_HEVC_QPEL_AVX512ICL 16, 8
+HEVC_PUT_HEVC_QPEL_AVX512ICL 32, 8
 
 %endif
 %endif
