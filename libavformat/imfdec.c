@@ -904,14 +904,6 @@ static int imf_probe(const AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static void rescale_interval(AVRational tb_in, AVRational tb_out,
-                             int64_t *min_ts, int64_t *ts, int64_t *max_ts)
-{
-    *ts = av_rescale_q(*ts, tb_in, tb_out);
-    *min_ts = av_rescale_q_rnd(*min_ts, tb_in, tb_out, AV_ROUND_UP | AV_ROUND_PASS_MINMAX);
-    *max_ts = av_rescale_q_rnd(*max_ts, tb_in, tb_out, AV_ROUND_DOWN | AV_ROUND_PASS_MINMAX);
-}
-
 static int coherent_ts(int64_t ts, AVRational in_tb, AVRational out_tb)
 {
     int dst_num;
@@ -937,13 +929,13 @@ static int imf_seek(AVFormatContext *s, int stream_index, int64_t min_ts,
 
     /* rescale timestamps to Composition edit units */
     if (stream_index < 0)
-        rescale_interval(AV_TIME_BASE_Q,
-                         av_make_q(c->cpl->edit_rate.den, c->cpl->edit_rate.num),
-                         &min_ts, &ts, &max_ts);
+        ff_rescale_interval(AV_TIME_BASE_Q,
+                            av_make_q(c->cpl->edit_rate.den, c->cpl->edit_rate.num),
+                            &min_ts, &ts, &max_ts);
     else
-        rescale_interval(s->streams[stream_index]->time_base,
-                         av_make_q(c->cpl->edit_rate.den, c->cpl->edit_rate.num),
-                         &min_ts, &ts, &max_ts);
+        ff_rescale_interval(s->streams[stream_index]->time_base,
+                            av_make_q(c->cpl->edit_rate.den, c->cpl->edit_rate.num),
+                            &min_ts, &ts, &max_ts);
 
     /* requested timestamp bounds are too close */
     if (max_ts < min_ts)
