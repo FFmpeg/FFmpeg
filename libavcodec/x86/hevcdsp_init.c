@@ -879,6 +879,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->add_residual[3] = ff_hevc_add_residual_32_8_avx2;
         }
         if (EXTERNAL_AVX512ICL(cpu_flags) && ARCH_X86_64) {
+            c->put_hevc_qpel[1][0][1] = ff_hevc_put_hevc_qpel_h4_8_avx512icl;
             c->put_hevc_qpel[3][0][1] = ff_hevc_put_hevc_qpel_h8_8_avx512icl;
             c->put_hevc_qpel[5][0][1] = ff_hevc_put_hevc_qpel_h16_8_avx512icl;
             c->put_hevc_qpel[3][1][1] = ff_hevc_put_hevc_qpel_hv8_8_avx512icl;

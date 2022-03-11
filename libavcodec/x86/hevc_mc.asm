@@ -87,6 +87,7 @@ QPEL_TABLE 12, 4, w, sse4
 QPEL_TABLE  8,16, b, avx2
 QPEL_TABLE 10, 8, w, avx2
 
+QPEL_TABLE  4, 1, b, avx512icl_h
 QPEL_TABLE  8, 1, b, avx512icl_h
 QPEL_TABLE  8, 1, d, avx512icl_v
 QPEL_TABLE 16, 1, b, avx512icl_h
@@ -1754,7 +1755,12 @@ cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 8, dst, src, srcstride, height, mx, tmp
     QPEL_LOAD_SHUF   2, 3
 .loop:
     QPEL_H_LOAD_COMPUTE   6, src
+%if %1 == 4
+    vpmovdw             xm6, m6
+    movq             [dstq], xm6
+%else
     vpmovdw          [dstq], m6
+%endif
     LOOP_END            dst, src, srcstride
     RET
 %endmacro
@@ -1821,6 +1827,9 @@ cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 7, 27, dst, src, srcstride, height, mx, m
 
 %if ARCH_X86_64
 %if HAVE_AVX512ICL_EXTERNAL
+
+INIT_XMM avx512icl
+HEVC_PUT_HEVC_QPEL_AVX512ICL 4, 8
 
 INIT_YMM avx512icl
 HEVC_PUT_HEVC_QPEL_AVX512ICL 8, 8
