@@ -57,6 +57,7 @@ static int mjpegb_decode_frame(AVCodecContext *avctx,
     buf_end = buf + buf_size;
     s->got_picture = 0;
     s->adobe_transform = -1;
+    s->buf_size = buf_size;
 
 read_header:
     /* reset on every SOI */
