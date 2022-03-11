@@ -154,6 +154,25 @@ static int imf_uri_is_dos_abs_path(const char *string)
     return 0;
 }
 
+static int imf_time_to_ts(int64_t *ts, AVRational t, AVRational time_base)
+{
+    int dst_num;
+    int dst_den;
+    AVRational r;
+
+    r = av_div_q(t, time_base);
+
+    if ((av_reduce(&dst_num, &dst_den, r.num, r.den, INT64_MAX) != 1))
+        return 1;
+
+    if (dst_den != 1)
+        return 1;
+
+    *ts = dst_num;
+
+    return 0;
+}
+
 /**
  * Parse a ASSETMAP XML file to extract the UUID-URI mapping of assets.
  * @param s the current format context, if any (can be NULL).
@@ -770,25 +789,6 @@ static int get_resource_context_for_timestamp(AVFormatContext *s, IMFVirtualTrac
 
     av_log(s, AV_LOG_ERROR, "Could not find IMF track resource to read\n");
     return AVERROR_STREAM_NOT_FOUND;
-}
-
-static int imf_time_to_ts(int64_t *ts, AVRational t, AVRational time_base)
-{
-    int dst_num;
-    int dst_den;
-    AVRational r;
-
-    r = av_div_q(t, time_base);
-
-    if ((av_reduce(&dst_num, &dst_den, r.num, r.den, INT64_MAX) != 1))
-        return 1;
-
-    if (dst_den != 1)
-        return 1;
-
-    *ts = dst_num;
-
-    return 0;
 }
 
 static int imf_read_packet(AVFormatContext *s, AVPacket *pkt)
