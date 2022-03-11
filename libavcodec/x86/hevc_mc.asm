@@ -92,6 +92,7 @@ QPEL_TABLE  8, 1, b, avx512icl_h
 QPEL_TABLE  8, 1, d, avx512icl_v
 QPEL_TABLE 16, 1, b, avx512icl_h
 QPEL_TABLE 32, 1, b, avx512icl_h
+QPEL_TABLE 64, 1, b, avx512icl_h
 
 pb_qpel_shuffle_index: db  0,  1,  2,  3
                        db  1,  2,  3,  4
@@ -1767,9 +1768,15 @@ cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 8, dst, src, srcstride, height, mx, tmp
 %else
     vpmovdw          [dstq], m6
 %endif
-%if %1 == 32
+%if %1 > 16
     QPEL_H_LOAD_COMPUTE   7, src, 16
     vpmovdw     [dstq + 32], m7
+%endif
+%if %1 > 32
+    QPEL_H_LOAD_COMPUTE   6, src, 32
+    QPEL_H_LOAD_COMPUTE   7, src, 48
+    vpmovdw     [dstq + 64], m6
+    vpmovdw     [dstq + 96], m7
 %endif
     LOOP_END            dst, src, srcstride
     RET
@@ -1848,6 +1855,7 @@ HEVC_PUT_HEVC_QPEL_HV_AVX512ICL 8, 8
 INIT_ZMM avx512icl
 HEVC_PUT_HEVC_QPEL_AVX512ICL 16, 8
 HEVC_PUT_HEVC_QPEL_AVX512ICL 32, 8
+HEVC_PUT_HEVC_QPEL_AVX512ICL 64, 8
 
 %endif
 %endif

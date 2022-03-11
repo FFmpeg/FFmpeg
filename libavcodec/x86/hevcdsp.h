@@ -237,6 +237,7 @@ void ff_hevc_put_hevc_qpel_h4_8_avx512icl(int16_t *dst, uint8_t *_src, ptrdiff_t
 void ff_hevc_put_hevc_qpel_h8_8_avx512icl(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_hevc_qpel_h16_8_avx512icl(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_hevc_qpel_h32_8_avx512icl(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width);
+void ff_hevc_put_hevc_qpel_h64_8_avx512icl(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_hevc_qpel_hv8_8_avx512icl(int16_t *dst, uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width);
 
 ///////////////////////////////////////////////////////////////////////////////
