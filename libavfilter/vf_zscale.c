@@ -627,7 +627,7 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
         s->alpha_graph[job_nr] = zimg_filter_graph_build(&alpha_src_format, &alpha_dst_format, &s->alpha_params);
         if (!s->alpha_graph[job_nr])
             return print_zimg_error(ctx);
-     }
+    }
     return 0;
 }
 
@@ -728,9 +728,11 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
         dst_buf.plane[i].stride = td->out->linesize[p];
         dst_buf.plane[i].mask = -1;
     }
+    if (!s->graph[job_nr])
+        return AVERROR(EINVAL);
     ret = zimg_filter_graph_process(s->graph[job_nr], &src_buf, &dst_buf, s->tmp[job_nr], 0, 0, 0, 0);
     if (ret)
-        return  print_zimg_error(ctx);
+        return print_zimg_error(ctx);
 
     if (td->desc->flags & AV_PIX_FMT_FLAG_ALPHA && td->odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
         src_buf.plane[0].data = td->in->data[3];
@@ -741,6 +743,8 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
         dst_buf.plane[0].stride = td->out->linesize[3];
         dst_buf.plane[0].mask = -1;
 
+        if (!s->alpha_graph[job_nr])
+            return AVERROR(EINVAL);
         ret = zimg_filter_graph_process(s->alpha_graph[job_nr], &src_buf, &dst_buf, s->tmp[job_nr], 0, 0, 0, 0);
         if (ret)
             return print_zimg_error(ctx);
@@ -854,7 +858,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         td.desc = desc;
         td.odesc = odesc;
 
-        ff_filter_execute(ctx, filter_slice, &td, NULL, s->nb_threads);
+        ret = ff_filter_execute(ctx, filter_slice, &td, NULL, s->nb_threads);
+        if (ret < 0 || !s->graph[0]) {
+            av_frame_free(&in);
+            av_frame_free(&out);
+            if (ret >= 0)
+                ret = AVERROR(EINVAL);
+            return ret;
+        }
 
         s->src_format_tmp = s->src_format;
         s->dst_format_tmp = s->dst_format;
@@ -899,8 +910,14 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     for (int i = 0; i < s->nb_threads; i++) {
         av_freep(&s->tmp[i]);
-        zimg_filter_graph_free(s->graph[i]);
-        zimg_filter_graph_free(s->alpha_graph[i]);
+        if (s->graph[i]) {
+            zimg_filter_graph_free(s->graph[i]);
+            s->graph[i] = NULL;
+        }
+        if (s->alpha_graph[i]) {
+            zimg_filter_graph_free(s->alpha_graph[i]);
+            s->alpha_graph[i] = NULL;
+        }
     }
 }
 
