@@ -1026,7 +1026,12 @@ static void vaapi_unmap_from_drm(AVHWFramesContext *dst_fc,
 static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
                               const AVFrame *src, int flags)
 {
+#if VA_CHECK_VERSION(1, 1, 0)
     VAAPIFramesContext     *src_vafc = src_fc->internal->priv;
+    int use_prime2;
+#else
+    int k;
+#endif
     AVHWFramesContext      *dst_fc =
         (AVHWFramesContext*)dst->hw_frames_ctx->data;
     AVVAAPIDeviceContext  *dst_dev = dst_fc->device_ctx->hwctx;
@@ -1034,9 +1039,27 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
     const VAAPIFormatDescriptor *format_desc;
     VASurfaceID surface_id;
     VAStatus vas = VA_STATUS_SUCCESS;
-    int use_prime2;
     uint32_t va_fourcc;
     int err, i, j;
+
+#if !VA_CHECK_VERSION(1, 1, 0)
+    unsigned long buffer_handle;
+    VASurfaceAttribExternalBuffers buffer_desc;
+    VASurfaceAttrib attrs[2] = {
+        {
+            .type  = VASurfaceAttribMemoryType,
+            .flags = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypeInteger,
+            .value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME,
+        },
+        {
+            .type  = VASurfaceAttribExternalBufferDescriptor,
+            .flags = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypePointer,
+            .value.value.p = &buffer_desc,
+        }
+    };
+#endif
 
     desc = (AVDRMFrameDescriptor*)src->data[0];
 
@@ -1072,6 +1095,7 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
     format_desc = vaapi_format_from_fourcc(va_fourcc);
     av_assert0(format_desc);
 
+#if VA_CHECK_VERSION(1, 1, 0)
     use_prime2 = !src_vafc->prime_2_import_unsupported &&
                  desc->objects[0].format_modifier != DRM_FORMAT_MOD_INVALID;
     if (use_prime2) {
@@ -1183,6 +1207,37 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
                                &surface_id, 1,
                                buffer_attrs, FF_ARRAY_ELEMS(buffer_attrs));
     }
+#else
+    buffer_handle = desc->objects[0].fd;
+    buffer_desc.pixel_format = va_fourcc;
+    buffer_desc.width        = src_fc->width;
+    buffer_desc.height       = src_fc->height;
+    buffer_desc.data_size    = desc->objects[0].size;
+    buffer_desc.buffers      = &buffer_handle;
+    buffer_desc.num_buffers  = 1;
+    buffer_desc.flags        = 0;
+
+    k = 0;
+    for (i = 0; i < desc->nb_layers; i++) {
+        for (j = 0; j < desc->layers[i].nb_planes; j++) {
+            buffer_desc.pitches[k] = desc->layers[i].planes[j].pitch;
+            buffer_desc.offsets[k] = desc->layers[i].planes[j].offset;
+            ++k;
+        }
+    }
+    buffer_desc.num_planes = k;
+
+    if (format_desc->chroma_planes_swapped &&
+        buffer_desc.num_planes == 3) {
+        FFSWAP(uint32_t, buffer_desc.pitches[1], buffer_desc.pitches[2]);
+        FFSWAP(uint32_t, buffer_desc.offsets[1], buffer_desc.offsets[2]);
+    }
+
+    vas = vaCreateSurfaces(dst_dev->display, format_desc->rt_format,
+                           src->width, src->height,
+                           &surface_id, 1,
+                           attrs, FF_ARRAY_ELEMS(attrs));
+#endif
     if (vas != VA_STATUS_SUCCESS) {
         av_log(dst_fc, AV_LOG_ERROR, "Failed to create surface from DRM "
                "object: %d (%s).\n", vas, vaErrorStr(vas));
