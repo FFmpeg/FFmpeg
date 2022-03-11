@@ -89,6 +89,7 @@ QPEL_TABLE 10, 8, w, avx2
 
 QPEL_TABLE  8, 1, b, avx512icl_h
 QPEL_TABLE  8, 1, d, avx512icl_v
+QPEL_TABLE 16, 1, b, avx512icl_h
 
 pb_qpel_shuffle_index: db  0,  1,  2,  3
                        db  1,  2,  3,  4
@@ -98,6 +99,14 @@ pb_qpel_shuffle_index: db  0,  1,  2,  3
                        db  5,  6,  7,  8
                        db  6,  7,  8,  9
                        db  7,  8,  9, 10
+                       db  8,  9, 10, 11
+                       db  9, 10, 11, 12
+                       db 10, 11, 12, 13
+                       db 11, 12, 13, 14
+                       db 12, 13, 14, 15
+                       db 13, 14, 15, 16
+                       db 14, 15, 16, 17
+                       db 15, 16, 17, 18
                        db  4,  5,  6,  7
                        db  5,  6,  7,  8
                        db  6,  7,  8,  9
@@ -106,6 +115,14 @@ pb_qpel_shuffle_index: db  0,  1,  2,  3
                        db  9, 10, 11, 12
                        db 10, 11, 12, 13
                        db 11, 12, 13, 14
+                       db 12, 13, 14, 15
+                       db 13, 14, 15, 16
+                       db 14, 15, 16, 17
+                       db 15, 16, 17, 18
+                       db 16, 17, 18, 19
+                       db 17, 18, 19, 20
+                       db 18, 19, 20, 21
+                       db 19, 20, 21, 22
 
 SECTION .text
 
@@ -1712,7 +1729,7 @@ HEVC_PUT_HEVC_QPEL_HV 16, 10
 
 %macro QPEL_LOAD_SHUF 2
     movu m%1, [pb_qpel_shuffle_index +  0]
-    movu m%2, [pb_qpel_shuffle_index + 32]
+    movu m%2, [pb_qpel_shuffle_index + 64]
 %endmacro
 
 ; required: m0-m5
@@ -1720,7 +1737,11 @@ HEVC_PUT_HEVC_QPEL_HV 16, 10
 ; %2: name for src
 %macro QPEL_H_LOAD_COMPUTE 2
     pxor            m%1, m%1
+%if mmsize == 64
+    movu            ym4, [%2q - 3]
+%else
     movu            xm4, [%2q - 3]
+%endif
     vpermb           m5, m2, m4
     vpermb           m4, m3, m4
     vpdpbusd        m%1, m5, m0
@@ -1804,6 +1825,9 @@ cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 7, 27, dst, src, srcstride, height, mx, m
 INIT_YMM avx512icl
 HEVC_PUT_HEVC_QPEL_AVX512ICL 8, 8
 HEVC_PUT_HEVC_QPEL_HV_AVX512ICL 8, 8
+
+INIT_ZMM avx512icl
+HEVC_PUT_HEVC_QPEL_AVX512ICL 16, 8
 
 %endif
 %endif
