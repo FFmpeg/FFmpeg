@@ -388,9 +388,17 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     for (i = 0; i < avctx->height; i++) {
         if(version == 0x100) {
             int j;
-            for(j = 0; j < avctx->width; j++) {
-                dst[j] = buf[ (i&3)*(avctx->width /4) + (j/4) +
-                             ((j&3)*(avctx->height/4) + (i/4))*avctx->width];
+            const uint8_t *buf1 = buf + (i&3)*(avctx->width/4) + (i/4)*avctx->width;
+            int stride = (avctx->height/4)*avctx->width;
+            for(j = 0; j < avctx->width/4; j++) {
+                dst[4*j+0] = buf1[j + 0*stride];
+                dst[4*j+1] = buf1[j + 1*stride];
+                dst[4*j+2] = buf1[j + 2*stride];
+                dst[4*j+3] = buf1[j + 3*stride];
+            }
+            j *= 4;
+            for(; j < avctx->width; j++) {
+                dst[j] = buf1[(j/4) + (j&3)*stride];
             }
         } else {
             memcpy(dst, buf, avctx->width);
