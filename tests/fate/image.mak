@@ -385,11 +385,15 @@ FATE_PNG_PROBE += fate-png-side-data
 fate-png-side-data: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames \
     -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png
 
+FATE_PNG_TRANSCODE-$(call ENCDEC, PNG, IMAGE2) += fate-png-icc
+fate-png-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png image2 "-c png" "" "" "-show_frames"
+
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_PNG_PROBE-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG_PROBE)
 FATE_IMAGE += $(FATE_PNG-yes)
 FATE_IMAGE_PROBE += $(FATE_PNG_PROBE-yes)
-fate-png: $(FATE_PNG-yes) $(FATE_PNG_PROBE-yes)
+FATE_IMAGE_TRANSCODE += $(FATE_PNG_TRANSCODE-yes)
+fate-png: $(FATE_PNG-yes) $(FATE_PNG_PROBE-yes) $(FATE_PNG_TRANSCODE-yes)
 
 FATE_IMAGE-$(call DEMDEC, IMAGE2, PTX) += fate-ptx
 fate-ptx: CMD = framecrc -i $(TARGET_SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24 -vf scale
@@ -551,8 +555,10 @@ fate-xbm: $(FATE_XBM-yes)
 
 FATE_IMAGE += $(FATE_IMAGE-yes)
 FATE_IMAGE_PROBE += $(FATE_IMAGE_PROBE-yes)
+FATE_IMAGE_TRANSCODE += $(FATE_IMAGE_TRANSCODE-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_IMAGE)
 FATE_SAMPLES_FFPROBE += $(FATE_IMAGE_PROBE)
+FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_IMAGE_TRANSCODE)
 
-fate-image: $(FATE_IMAGE) $(FATE_IMAGE_PROBE)
+fate-image: $(FATE_IMAGE) $(FATE_IMAGE_PROBE) $(FATE_IMAGE_TRANSCODE)

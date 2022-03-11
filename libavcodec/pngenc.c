@@ -236,7 +236,8 @@ static void png_write_chunk(uint8_t **f, uint32_t tag,
     bytestream_put_be32(f, av_bswap32(tag));
     if (length > 0) {
         crc = av_crc(crc_table, crc, buf, length);
-        memcpy(*f, buf, length);
+        if (*f != buf)
+            memcpy(*f, buf, length);
         *f += length;
     }
     bytestream_put_be32(f, ~crc);
@@ -345,10 +346,53 @@ static int png_get_gama(enum AVColorTransferCharacteristic trc, uint8_t *buf)
     return 1;
 }
 
+static int png_write_iccp(PNGEncContext *s, const AVFrameSideData *sd)
+{
+    z_stream *const zstream = &s->zstream.zstream;
+    const AVDictionaryEntry *entry;
+    const char *name;
+    uint8_t *start, *buf;
+    int ret;
+
+    if (!sd || !sd->size)
+        return 0;
+    zstream->next_in  = sd->data;
+    zstream->avail_in = sd->size;
+
+    /* write the chunk contents first */
+    start = s->bytestream + 8; /* make room for iCCP tag + length */
+    buf = start;
+
+    /* profile description */
+    entry = av_dict_get(sd->metadata, "name", NULL, 0);
+    name = (entry && entry->value[0]) ? entry->value : "icc";
+    for (int i = 0;; i++) {
+        char c = (i == 79) ? 0 : name[i];
+        bytestream_put_byte(&buf, c);
+        if (!c)
+            break;
+    }
+
+    /* compression method and profile data */
+    bytestream_put_byte(&buf, 0);
+    zstream->next_out  = buf;
+    zstream->avail_out = s->bytestream_end - buf;
+    ret = deflate(zstream, Z_FINISH);
+    deflateReset(zstream);
+    if (ret != Z_STREAM_END)
+        return AVERROR_EXTERNAL;
+
+    /* rewind to the start and write the chunk header/crc */
+    png_write_chunk(&s->bytestream, MKTAG('i', 'C', 'C', 'P'), start,
+                    zstream->next_out - start);
+    return 0;
+}
+
 static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
 {
     AVFrameSideData *side_data;
     PNGEncContext *s = avctx->priv_data;
+    int ret;
 
     /* write png header */
     AV_WB32(s->buf, avctx->width);
@@ -401,7 +445,11 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
     if (png_get_gama(pict->color_trc, s->buf))
         png_write_chunk(&s->bytestream, MKTAG('g', 'A', 'M', 'A'), s->buf, 4);
 
-    /* put the palette if needed */
+    side_data = av_frame_get_side_data(pict, AV_FRAME_DATA_ICC_PROFILE);
+    if ((ret = png_write_iccp(s, side_data)))
+        return ret;
+
+    /* put the palette if needed, must be after colorspace information */
     if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
         int has_alpha, alpha, i;
         unsigned int v;
@@ -525,6 +573,34 @@ the_end:
     return ret;
 }
 
+static int add_icc_profile_size(AVCodecContext *avctx, const AVFrame *pict,
+                                uint64_t *max_packet_size)
+{
+    PNGEncContext *s = avctx->priv_data;
+    const AVFrameSideData *sd;
+    const int hdr_size = 128;
+    uint64_t new_pkt_size;
+    uLong bound;
+
+    if (!pict)
+        return 0;
+    sd = av_frame_get_side_data(pict, AV_FRAME_DATA_ICC_PROFILE);
+    if (!sd || !sd->size)
+        return 0;
+    if (sd->size != (uLong) sd->size)
+        return AVERROR_INVALIDDATA;
+
+    bound = deflateBound(&s->zstream.zstream, sd->size);
+    if (bound > INT32_MAX - hdr_size)
+        return AVERROR_INVALIDDATA;
+
+    new_pkt_size = *max_packet_size + bound + hdr_size;
+    if (new_pkt_size < *max_packet_size)
+        return AVERROR_INVALIDDATA;
+    *max_packet_size = new_pkt_size;
+    return 0;
+}
+
 static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *pict, int *got_packet)
 {
@@ -541,6 +617,8 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
             enc_row_size +
             12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
         );
+    if ((ret = add_icc_profile_size(avctx, pict, &max_packet_size)))
+        return ret;
     ret = ff_alloc_packet(avctx, pkt, max_packet_size);
     if (ret < 0)
         return ret;
@@ -870,6 +948,8 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
             enc_row_size +
             (4 + 12) * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // fdAT * ceil(enc_row_size / IOBUF_SIZE)
         );
+    if ((ret = add_icc_profile_size(avctx, pict, &max_packet_size)))
+        return ret;
     if (max_packet_size > INT_MAX)
         return AVERROR(ENOMEM);
 

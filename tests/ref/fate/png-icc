@@ -1,0 +1,43 @@
+a50d37a0e72bddea2fcbba6fb773e2a0 *tests/data/fate/png-icc.image2
+49397 tests/data/fate/png-icc.image2
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 128x128
+#sar 0: 2835/2835
+0,          0,          0,        1,    49152, 0xe0013dee
+[FRAME]
+media_type=video
+stream_index=0
+key_frame=1
+pts=0
+pts_time=0.000000
+pkt_dts=0
+pkt_dts_time=0.000000
+best_effort_timestamp=0
+best_effort_timestamp_time=0.000000
+pkt_duration=1
+pkt_duration_time=0.040000
+pkt_pos=0
+pkt_size=49397
+width=128
+height=128
+pix_fmt=rgb24
+sample_aspect_ratio=1:1
+pict_type=I
+coded_picture_number=0
+display_picture_number=0
+interlaced_frame=0
+top_field_first=0
+repeat_pict=0
+color_range=pc
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
+[SIDE_DATA]
+side_data_type=ICC profile
+name=Photoshop ICC profile
+size=3144
+[/SIDE_DATA]
+[/FRAME]
