@@ -433,24 +433,7 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
     for (int i = 0; i < s->bin_count; i++)
         dnch->amt[i] = dnch->band_amt[s->bin2band[i]];
 
-    if (dnch->amt[0] > dnch->abs_var[0]) {
-        dnch->gain[0] = 1.0;
-    } else if (dnch->amt[0] > dnch->min_abs_var[0]) {
-        double limit = sqrt(dnch->abs_var[0] / dnch->amt[0]);
-        dnch->gain[0] = limit_gain(dnch->gain[0], limit);
-    } else {
-        dnch->gain[0] = limit_gain(dnch->gain[0], s->max_gain);
-    }
-    if (dnch->amt[s->fft_length2] > dnch->abs_var[s->fft_length2]) {
-        dnch->gain[s->fft_length2] = 1.0;
-    } else if (dnch->amt[s->fft_length2] > dnch->min_abs_var[s->fft_length2]) {
-        double limit = sqrt(dnch->abs_var[s->fft_length2] / dnch->amt[s->fft_length2]);
-        dnch->gain[s->fft_length2] = limit_gain(dnch->gain[s->fft_length2], limit);
-    } else {
-        dnch->gain[s->fft_length2] = limit_gain(dnch->gain[s->fft_length2], s->max_gain);
-    }
-
-    for (int i = 0; i < s->fft_length2; i++) {
+    for (int i = 0; i <= s->fft_length2; i++) {
         if (dnch->amt[i] > dnch->abs_var[i]) {
             dnch->gain[i] = 1.0;
         } else if (dnch->amt[i] > dnch->min_abs_var[i]) {
