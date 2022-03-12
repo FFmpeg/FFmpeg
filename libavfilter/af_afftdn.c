@@ -881,7 +881,7 @@ static void sample_noise_block(AudioFFTDeNoiseContext *s,
     int edge, j, k, n, edgemax;
 
     for (int i = 0; i < s->window_length; i++) {
-        dnch->fft_in[i].re = s->window[i] * src[i] * (1LL << 24);
+        dnch->fft_in[i].re = s->window[i] * src[i] * (1LL << 23);
         dnch->fft_in[i].im = 0.0;
     }
 
@@ -1031,7 +1031,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         }
 
         for (int m = 0; m < s->window_length; m++) {
-            dnch->fft_in[m].re = s->window[m] * src[m] * (1LL << 24);
+            dnch->fft_in[m].re = s->window[m] * src[m] * (1LL << 23);
             dnch->fft_in[m].im = 0;
         }
 
@@ -1050,7 +1050,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         dnch->itx_fn(dnch->ifft, dnch->fft_in, dnch->fft_out, sizeof(float));
 
         for (int m = 0; m < s->window_length; m++)
-            dst[m] += s->window[m] * dnch->fft_in[m].re / (1LL << 24);
+            dst[m] += s->window[m] * dnch->fft_in[m].re / (1LL << 23);
     }
 
     return 0;
