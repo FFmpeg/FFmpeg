@@ -536,14 +536,14 @@ static void set_band_parameters(AudioFFTDeNoiseContext *s,
 static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
 {
     DeNoiseChannel *dnch = &s->dnch[ch];
-    char *p, *arg, *saveptr = NULL;
+    char *custom_noise_str, *p, *arg, *saveptr = NULL;
     double band_noise[NB_PROFILE_BANDS] = { 0.f };
     int ret;
 
     if (!s->band_noise_str)
         return;
 
-    p = av_strdup(s->band_noise_str);
+    custom_noise_str = p = av_strdup(s->band_noise_str);
     if (!p)
         return;
 
@@ -562,7 +562,7 @@ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
         band_noise[i] = av_clipd(band_noise[i], -24., 24.);
     }
 
-    av_free(p);
+    av_free(custom_noise_str);
     memcpy(dnch->band_noise, band_noise, sizeof(band_noise));
 }
 
