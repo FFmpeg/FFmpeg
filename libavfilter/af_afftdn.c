@@ -66,7 +66,7 @@ typedef struct DeNoiseChannel {
     double     *abs_var;
     double     *rel_var;
     double     *min_abs_var;
-    AVComplexFloat *fft_in;
+    float      *fft_in;
     AVComplexFloat *fft_out;
     AVTXContext *fft, *ifft;
     av_tx_fn   tx_fn, itx_fn;
@@ -606,7 +606,7 @@ static int config_input(AVFilterLink *inlink)
     s->sample_advance = s->sample_rate / 80;
     s->window_length = 3 * s->sample_advance;
     s->fft_length2 = 1 << (32 - ff_clz(s->window_length));
-    s->fft_length = s->fft_length2 * 2;
+    s->fft_length = s->fft_length2;
     s->buffer_length = s->fft_length * 2;
     s->bin_count = s->fft_length2 + 1;
 
@@ -662,7 +662,7 @@ static int config_input(AVFilterLink *inlink)
 
     for (int ch = 0; ch < inlink->channels; ch++) {
         DeNoiseChannel *dnch = &s->dnch[ch];
-        float scale = 0.f;
+        float scale = 1.f;
 
         switch (s->noise_type) {
         case WHITE_NOISE:
@@ -711,12 +711,12 @@ static int config_input(AVFilterLink *inlink)
         dnch->abs_var = av_calloc(s->bin_count, sizeof(*dnch->abs_var));
         dnch->rel_var = av_calloc(s->bin_count, sizeof(*dnch->rel_var));
         dnch->min_abs_var = av_calloc(s->bin_count, sizeof(*dnch->min_abs_var));
-        dnch->fft_in = av_calloc(s->fft_length2 + 1, sizeof(*dnch->fft_in));
+        dnch->fft_in = av_calloc(s->fft_length2, sizeof(*dnch->fft_in));
         dnch->fft_out = av_calloc(s->fft_length2 + 1, sizeof(*dnch->fft_out));
-        ret = av_tx_init(&dnch->fft, &dnch->tx_fn, AV_TX_FLOAT_FFT, 0, s->fft_length2, &scale, 0);
+        ret = av_tx_init(&dnch->fft, &dnch->tx_fn, AV_TX_FLOAT_RDFT, 0, s->fft_length2, &scale, 0);
         if (ret < 0)
             return ret;
-        ret = av_tx_init(&dnch->ifft, &dnch->itx_fn, AV_TX_FLOAT_FFT, 1, s->fft_length2, &scale, 0);
+        ret = av_tx_init(&dnch->ifft, &dnch->itx_fn, AV_TX_FLOAT_RDFT, 1, s->fft_length2, &scale, 0);
         if (ret < 0)
             return ret;
         dnch->spread_function = av_calloc(s->number_of_bands * s->number_of_bands,
@@ -816,7 +816,7 @@ static int config_input(AVFilterLink *inlink)
     if (!s->winframe)
         return AVERROR(ENOMEM);
 
-    wscale = sqrt(16.0 / (9.0 * s->fft_length));
+    wscale = sqrt(8.0 / (9.0 * s->fft_length));
     sum = 0.0;
     for (int i = 0; i < s->window_length; i++) {
         double d10 = sin(i * M_PI / s->window_length);
@@ -863,15 +863,11 @@ static void sample_noise_block(AudioFFTDeNoiseContext *s,
     double mag2, var = 0.0, avr = 0.0, avi = 0.0;
     int edge, j, k, n, edgemax;
 
-    for (int i = 0; i < s->window_length; i++) {
-        dnch->fft_in[i].re = s->window[i] * src[i] * (1LL << 23);
-        dnch->fft_in[i].im = 0.0;
-    }
+    for (int i = 0; i < s->window_length; i++)
+        dnch->fft_in[i] = s->window[i] * src[i] * (1LL << 23);
 
-    for (int i = s->window_length; i < s->fft_length2; i++) {
-        dnch->fft_in[i].re = 0.0;
-        dnch->fft_in[i].im = 0.0;
-    }
+    for (int i = s->window_length; i < s->fft_length2; i++)
+        dnch->fft_in[i] = 0.0;
 
     dnch->tx_fn(dnch->fft, dnch->fft_out, dnch->fft_in, sizeof(float));
 
@@ -1013,15 +1009,11 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             dnch->sfm_threshold += dnch->sfm_alpha * (0.5 + (1.0 / 640) * dnch->sfm_fail_total);
         }
 
-        for (int m = 0; m < s->window_length; m++) {
-            dnch->fft_in[m].re = s->window[m] * src[m] * (1LL << 23);
-            dnch->fft_in[m].im = 0;
-        }
+        for (int m = 0; m < s->window_length; m++)
+            dnch->fft_in[m] = s->window[m] * src[m] * (1LL << 23);
 
-        for (int m = s->window_length; m < s->fft_length2; m++) {
-            dnch->fft_in[m].re = 0;
-            dnch->fft_in[m].im = 0;
-        }
+        for (int m = s->window_length; m < s->fft_length2; m++)
+            dnch->fft_in[m] = 0;
 
         dnch->tx_fn(dnch->fft, dnch->fft_out, dnch->fft_in, sizeof(float));
 
@@ -1033,7 +1025,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         dnch->itx_fn(dnch->ifft, dnch->fft_in, dnch->fft_out, sizeof(float));
 
         for (int m = 0; m < s->window_length; m++)
-            dst[m] += s->window[m] * dnch->fft_in[m].re / (1LL << 23);
+            dst[m] += s->window[m] * dnch->fft_in[m] / (1LL << 23);
     }
 
     return 0;
