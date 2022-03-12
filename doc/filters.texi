@@ -1341,6 +1341,12 @@ Pass only noise.
 
 Default value is @var{output}.
 @end table
+
+@item adaptivity, ad
+Set the adaptivity factor, used how fast to adapt gains adjustments per
+each frequency bin. Value @var{0} enables instant adaptation, while higher values
+react much slower.
+Allowed range is from @var{0} to @var{1}. Default value is @var{0.5}.
 @end table
 
 @subsection Commands

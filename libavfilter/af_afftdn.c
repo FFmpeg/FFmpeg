@@ -30,8 +30,6 @@
 #include "filters.h"
 
 #define C       (M_LN10 * 0.1)
-#define RATIO    0.98
-#define RRATIO  (1.0 - RATIO)
 #define NB_PROFILE_BANDS (15)
 
 enum OutModes {
@@ -103,6 +101,7 @@ typedef struct AudioFFTDeNoiseContext {
     int     track_noise;
     int     track_residual;
     int     output_mode;
+    float   ratio;
 
     float   last_residual_floor;
     float   last_noise_floor;
@@ -182,6 +181,8 @@ static const AVOption afftdn_options[] = {
     {  "o", "output",                     0,                       AV_OPT_TYPE_CONST,  {.i64 = OUT_MODE},      0,  0, AFR, "mode" },
     {  "noise", "noise",                  0,                       AV_OPT_TYPE_CONST,  {.i64 = NOISE_MODE},    0,  0, AFR, "mode" },
     {  "n", "noise",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = NOISE_MODE},    0,  0, AFR, "mode" },
+    { "adaptivity", "set adaptivity factor",OFFSET(ratio),         AV_OPT_TYPE_FLOAT,  {.dbl = 0.5},           0,  1, AFR },
+    { "ad",         "set adaptivity factor",OFFSET(ratio),         AV_OPT_TYPE_FLOAT,  {.dbl = 0.5},           0,  1, AFR },
     { NULL }
 };
 
@@ -315,6 +316,8 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
                           AVComplexFloat *fft_data,
                           double *prior, double *prior_band_excit, int track_noise)
 {
+    const double ratio = s->ratio;
+    const double rratio = 1. - ratio;
     double d1, d2, d3, gain;
     int n = 0, i1;
 
@@ -325,7 +328,7 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
 
         dnch->noisy_data[i] = d1;
         d2 = d1 / dnch->abs_var[i];
-        d3 = RATIO * prior[i] + RRATIO * fmax(d2 - 1.0, 0.0);
+        d3 = ratio * prior[i] + rratio * fmax(d2 - 1.0, 0.0);
         gain = d3 / (1.0 + d3);
         gain *= (gain + M_PI_4 / fmax(d2, 1.0E-6));
         prior[i] = d2 * gain;
@@ -802,7 +805,7 @@ static int config_input(AVFilterLink *inlink)
         }
 
         for (int i = 0; i <= s->fft_length2; i++)
-            prior[i] = RRATIO;
+            prior[i] = 1.0 - s->ratio;
         for (int i = 0; i < s->buffer_length; i++)
             dnch->out_samples[i] = 0;
 
