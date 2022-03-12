@@ -932,7 +932,13 @@ static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, i
 
 static int mxf_read_strong_ref_array(AVIOContext *pb, UID **refs, int *count)
 {
-    *count = avio_rb32(pb);
+    unsigned c = avio_rb32(pb);
+
+    //avio_read() used int
+    if (c > INT_MAX / sizeof(UID))
+        return AVERROR_PATCHWELCOME;
+    *count = c;
+
     av_free(*refs);
     *refs = av_calloc(*count, sizeof(UID));
     if (!*refs) {
