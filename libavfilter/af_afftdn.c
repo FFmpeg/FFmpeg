@@ -50,7 +50,7 @@ enum NoiseType {
 };
 
 typedef struct DeNoiseChannel {
-    int         band_noise[NB_PROFILE_BANDS];
+    double      band_noise[NB_PROFILE_BANDS];
     double      noise_band_auto_var[NB_PROFILE_BANDS];
     double      noise_band_sample[NB_PROFILE_BANDS];
     double     *amt;
@@ -181,9 +181,9 @@ static const AVOption afftdn_options[] = {
 
 AVFILTER_DEFINE_CLASS(afftdn);
 
-static int get_band_noise(AudioFFTDeNoiseContext *s,
-                          int band, double a,
-                          double b, double c)
+static double get_band_noise(AudioFFTDeNoiseContext *s,
+                             int band, double a,
+                             double b, double c)
 {
     double d1, d2, d3;
 
@@ -194,7 +194,7 @@ static int get_band_noise(AudioFFTDeNoiseContext *s,
     d3 = s->band_centre[band] / c;
     d3 = 10.0 * log(1.0 + d3 * d3) / M_LN10;
 
-    return lrint(-d1 + d2 - d3);
+    return -d1 + d2 - d3;
 }
 
 static void factor(double *array, int size)
@@ -230,9 +230,9 @@ static void solve(double *matrix, double *vector, int size)
     }
 }
 
-static int process_get_band_noise(AudioFFTDeNoiseContext *s,
-                                  DeNoiseChannel *dnch,
-                                  int band)
+static double process_get_band_noise(AudioFFTDeNoiseContext *s,
+                                     DeNoiseChannel *dnch,
+                                     int band)
 {
     double product, sum, f;
     int i = 0;
@@ -257,7 +257,7 @@ static int process_get_band_noise(AudioFFTDeNoiseContext *s,
         product *= f;
     }
 
-    return lrint(sum);
+    return sum;
 }
 
 static void calculate_sfm(AudioFFTDeNoiseContext *s,
@@ -537,7 +537,8 @@ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
 {
     DeNoiseChannel *dnch = &s->dnch[ch];
     char *p, *arg, *saveptr = NULL;
-    int i, ret, band_noise[NB_PROFILE_BANDS] = { 0 };
+    double band_noise[NB_PROFILE_BANDS] = { 0.f };
+    int ret;
 
     if (!s->band_noise_str)
         return;
@@ -546,19 +547,19 @@ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
     if (!p)
         return;
 
-    for (i = 0; i < NB_PROFILE_BANDS; i++) {
+    for (int i = 0; i < NB_PROFILE_BANDS; i++) {
         if (!(arg = av_strtok(p, "| ", &saveptr)))
             break;
 
         p = NULL;
 
-        ret = av_sscanf(arg, "%d", &band_noise[i]);
+        ret = av_sscanf(arg, "%f", &band_noise[i]);
         if (ret != 1) {
-            av_log(s, AV_LOG_ERROR, "Custom band noise must be integer.\n");
+            av_log(s, AV_LOG_ERROR, "Custom band noise must be float.\n");
             break;
         }
 
-        band_noise[i] = av_clip(band_noise[i], -24, 24);
+        band_noise[i] = av_clipd(band_noise[i], -24., 24.);
     }
 
     av_free(p);
@@ -594,7 +595,7 @@ static void set_parameters(AudioFFTDeNoiseContext *s)
     }
 }
 
-static void reduce_mean(int *band_noise)
+static void reduce_mean(double *band_noise)
 {
     double mean = 0.f;
 
@@ -683,7 +684,7 @@ static int config_input(AVFilterLink *inlink)
         switch (s->noise_type) {
         case WHITE_NOISE:
             for (i = 0; i < NB_PROFILE_BANDS; i++)
-                dnch->band_noise[i] = 0;
+                dnch->band_noise[i] = 0.;
             break;
         case VINYL_NOISE:
             for (i = 0; i < NB_PROFILE_BANDS; i++)
@@ -956,7 +957,7 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
                               double *sample_noise,
                               int new_profile)
 {
-    int new_band_noise[NB_PROFILE_BANDS];
+    double new_band_noise[NB_PROFILE_BANDS];
     double temp[NB_PROFILE_BANDS];
     double sum = 0.0, d1;
     float new_noise_floor;
@@ -995,9 +996,9 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
     if (new_profile) {
         av_log(s, AV_LOG_INFO, "bn=");
         for (int m = 0; m < NB_PROFILE_BANDS; m++) {
-            new_band_noise[m] = lrint(temp[m]);
-            new_band_noise[m] = av_clip(new_band_noise[m], -24, 24);
-            av_log(s, AV_LOG_INFO, "%d ", new_band_noise[m]);
+            new_band_noise[m] = temp[m];
+            new_band_noise[m] = av_clipd(new_band_noise[m], -24.0, 24.0);
+            av_log(s, AV_LOG_INFO, "%f ", new_band_noise[m]);
         }
         av_log(s, AV_LOG_INFO, "\n");
         memcpy(dnch->band_noise, new_band_noise, sizeof(new_band_noise));
