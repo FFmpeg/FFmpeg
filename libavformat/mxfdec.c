@@ -884,7 +884,7 @@ static int mxf_read_strong_ref_array(AVIOContext *pb, UID **refs, int *count)
     *count = c;
 
     av_free(*refs);
-    *refs = av_calloc(*count, sizeof(UID));
+    *refs = av_malloc_array(*count, sizeof(UID));
     if (!*refs) {
         *count = 0;
         return AVERROR(ENOMEM);
