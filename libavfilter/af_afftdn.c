@@ -594,6 +594,18 @@ static void set_parameters(AudioFFTDeNoiseContext *s)
     }
 }
 
+static void reduce_mean(int *band_noise)
+{
+    double mean = 0.f;
+
+    for (int i = 0; i < NB_PROFILE_BANDS; i++)
+        mean += band_noise[i];
+    mean /= NB_PROFILE_BANDS;
+
+    for (int i = 0; i < NB_PROFILE_BANDS; i++)
+        band_noise[i] -= mean;
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -666,7 +678,7 @@ static int config_input(AVFilterLink *inlink)
 
     for (int ch = 0; ch < inlink->channels; ch++) {
         DeNoiseChannel *dnch = &s->dnch[ch];
-        float scale;
+        float scale = 0.f;
 
         switch (s->noise_type) {
         case WHITE_NOISE:
@@ -675,11 +687,11 @@ static int config_input(AVFilterLink *inlink)
             break;
         case VINYL_NOISE:
             for (i = 0; i < NB_PROFILE_BANDS; i++)
-                dnch->band_noise[i] = get_band_noise(s, i, 50.0, 500.5, 2125.0) + FFMAX(i - 7, 0);
+                dnch->band_noise[i] = get_band_noise(s, i, 50.0, 500.5, 2125.0);
             break;
         case SHELLAC_NOISE:
             for (i = 0; i < NB_PROFILE_BANDS; i++)
-                dnch->band_noise[i] = get_band_noise(s, i, 1.0, 500.0, 1.0E10) + FFMAX(i - 12, -5);
+                dnch->band_noise[i] = get_band_noise(s, i, 1.0, 500.0, 1.0E10);
             break;
         case CUSTOM_NOISE:
             read_custom_noise(s, ch);
@@ -688,6 +700,7 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR_BUG;
         }
 
+        reduce_mean(dnch->band_noise);
 
         dnch->sfm_threshold = 0.8;
         dnch->sfm_alpha = 0.05;
@@ -974,12 +987,6 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
         sum += temp[m];
 
     d1 = (int)(sum / NB_PROFILE_BANDS - 0.5);
-    if (!new_profile)
-        i = lrint(temp[7] - d1);
-
-    for (d1 -= dnch->band_noise[7] - i; d1 > -20.0; d1 -= 1.0)
-        ;
-
     for (int m = 0; m < NB_PROFILE_BANDS; m++)
         temp[m] -= d1;
 
