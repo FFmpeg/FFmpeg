@@ -1347,6 +1347,26 @@ Set the adaptivity factor, used how fast to adapt gains adjustments per
 each frequency bin. Value @var{0} enables instant adaptation, while higher values
 react much slower.
 Allowed range is from @var{0} to @var{1}. Default value is @var{0.5}.
+
+@item noise_link, nl
+Set the noise link used for multichannel audio.
+
+It accepts the following values:
+@table @option
+@item none
+Use unchanged channel's noise floor.
+
+@item min
+Use measured min noise floor of all channels.
+
+@item max
+Use measured max noise floor of all channels.
+
+@item average
+Use measured average noise floor of all channels.
+
+Default value is @var{min}.
+@end table
 @end table
 
 @subsection Commands

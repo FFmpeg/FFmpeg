@@ -41,6 +41,14 @@ enum OutModes {
     NB_MODES
 };
 
+enum NoiseLinkType {
+    NONE_LINK,
+    MIN_LINK,
+    MAX_LINK,
+    AVERAGE_LINK,
+    NB_LINK
+};
+
 enum NoiseType {
     WHITE_NOISE,
     VINYL_NOISE,
@@ -103,6 +111,7 @@ typedef struct AudioFFTDeNoiseContext {
     int     track_noise;
     int     track_residual;
     int     output_mode;
+    int     noise_floor_link;
     float   ratio;
 
     float   last_residual_floor;
@@ -185,6 +194,12 @@ static const AVOption afftdn_options[] = {
     {  "n", "noise",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = NOISE_MODE},    0,  0, AFR, "mode" },
     { "adaptivity", "set adaptivity factor",OFFSET(ratio),         AV_OPT_TYPE_FLOAT,  {.dbl = 0.5},           0,  1, AFR },
     { "ad",         "set adaptivity factor",OFFSET(ratio),         AV_OPT_TYPE_FLOAT,  {.dbl = 0.5},           0,  1, AFR },
+    { "noise_link", "set the noise floor link",OFFSET(noise_floor_link),AV_OPT_TYPE_INT,{.i64 = MIN_LINK},     0,  NB_LINK-1, AFR, "link" },
+    { "nl", "set the noise floor link",        OFFSET(noise_floor_link),AV_OPT_TYPE_INT,{.i64 = MIN_LINK},     0,  NB_LINK-1, AFR, "link" },
+    {  "none",    "none",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = NONE_LINK},     0,  0, AFR, "link" },
+    {  "min",     "min",                  0,                       AV_OPT_TYPE_CONST,  {.i64 = MIN_LINK},      0,  0, AFR, "link" },
+    {  "max",     "max",                  0,                       AV_OPT_TYPE_CONST,  {.i64 = MAX_LINK},      0,  0, AFR, "link" },
+    {  "average", "average",              0,                       AV_OPT_TYPE_CONST,  {.i64 = AVERAGE_LINK},  0,  0, AFR, "link" },
     { NULL }
 };
 
@@ -1103,12 +1118,32 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     if (s->track_noise) {
+        double average = 0.0, min = DBL_MAX, max = -DBL_MAX;
+
         for (int ch = 0; ch < inlink->channels; ch++) {
             DeNoiseChannel *dnch = &s->dnch[ch];
             double levels[NB_PROFILE_BANDS];
 
             get_auto_noise_levels(s, dnch, levels);
             set_noise_profile(s, dnch, levels, 0);
+            average += dnch->noise_floor;
+            max = fmax(max, dnch->noise_floor);
+            min = fmin(min, dnch->noise_floor);
+        }
+
+        average /= inlink->channels;
+
+        for (int ch = 0; ch < inlink->channels; ch++) {
+            DeNoiseChannel *dnch = &s->dnch[ch];
+
+            switch (s->noise_floor_link) {
+            case MIN_LINK:     dnch->noise_floor = min;     break;
+            case MAX_LINK:     dnch->noise_floor = max;     break;
+            case AVERAGE_LINK: dnch->noise_floor = average; break;
+            case NONE_LINK:
+            default:
+                break;
+            }
 
             if (dnch->noise_floor != dnch->last_noise_floor)
                 set_parameters(s, dnch, 1, 0);
