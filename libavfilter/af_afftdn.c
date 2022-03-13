@@ -31,6 +31,8 @@
 
 #define C       (M_LN10 * 0.1)
 #define NB_PROFILE_BANDS (15)
+#define SFM_FLAGS_SIZE (512)
+#define SFM_FLAGS_MASK (SFM_FLAGS_SIZE - 1)
 
 enum OutModes {
     IN_MODE,
@@ -77,7 +79,7 @@ typedef struct DeNoiseChannel {
     double      sfm_threshold;
     double      sfm_alpha;
     double      sfm_results[3];
-    int         sfm_fail_flags[512];
+    int         sfm_fail_flags[SFM_FLAGS_SIZE];
     int         sfm_fail_total;
     double      noise_reduction;
     double      last_noise_reduction;
@@ -412,7 +414,7 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
             for (int i = 0; i < NB_PROFILE_BANDS; i++)
                 dnch->noise_band_auto_var[i] *= sum;
         } else if (dnch->sfm_results[2] >= dnch->sfm_threshold) {
-            dnch->sfm_fail_flags[s->block_count & 0x1FF] = 1;
+            dnch->sfm_fail_flags[s->block_count & SFM_FLAGS_MASK] = 1;
             dnch->sfm_fail_total += 1;
         }
     }
@@ -703,13 +705,13 @@ static int config_input(AVFilterLink *inlink)
 
         dnch->sfm_threshold = 0.8;
         dnch->sfm_alpha = 0.05;
-        for (i = 0; i < 512; i++)
+        for (i = 0; i < SFM_FLAGS_SIZE; i++)
             dnch->sfm_fail_flags[i] = 0;
 
         dnch->sfm_fail_total = 0;
         j = FFMAX((int)(10.0 * (1.3 - dnch->sfm_threshold)), 1);
 
-        for (i = 0; i < 512; i += j) {
+        for (i = 0; i < SFM_FLAGS_SIZE; i += j) {
             dnch->sfm_fail_flags[i] = 1;
             dnch->sfm_fail_total += 1;
         }
@@ -1023,13 +1025,13 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         double *dst = dnch->out_samples;
 
         if (s->track_noise) {
-            int i = s->block_count & 0x1FF;
+            int i = s->block_count & SFM_FLAGS_MASK;
 
             if (dnch->sfm_fail_flags[i])
                 dnch->sfm_fail_total--;
             dnch->sfm_fail_flags[i] = 0;
             dnch->sfm_threshold *= 1.0 - dnch->sfm_alpha;
-            dnch->sfm_threshold += dnch->sfm_alpha * (0.5 + (1.0 / 640) * dnch->sfm_fail_total);
+            dnch->sfm_threshold += dnch->sfm_alpha * ((1.0 / SFM_FLAGS_SIZE) * dnch->sfm_fail_total);
         }
 
         for (int m = 0; m < s->window_length; m++)
