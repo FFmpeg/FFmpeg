@@ -89,6 +89,7 @@ typedef struct VulkanDevicePriv {
     /* Features */
     VkPhysicalDeviceVulkan11Features device_features_1_1;
     VkPhysicalDeviceVulkan12Features device_features_1_2;
+    VkPhysicalDeviceVulkan13Features device_features_1_3;
 
     /* Queues */
     uint32_t qfs[5];
@@ -346,7 +347,6 @@ static const VulkanOptExtension optional_device_exts[] = {
     /* Misc or required by other extensions */
     { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,                  FF_VK_EXT_NO_FLAG                },
     { VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,         FF_VK_EXT_NO_FLAG                },
-    { VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,                FF_VK_EXT_NO_FLAG                },
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
@@ -1326,9 +1326,13 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     };
+    VkPhysicalDeviceVulkan13Features dev_features_1_3 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+        .pNext = &timeline_features,
+    };
     VkPhysicalDeviceVulkan12Features dev_features_1_2 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-        .pNext = &timeline_features,
+        .pNext = &dev_features_1_3,
     };
     VkPhysicalDeviceVulkan11Features dev_features_1_1 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
@@ -1340,8 +1344,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     };
 
     VkDeviceCreateInfo dev_info = {
-        .sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext                = &hwctx->device_features,
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     };
 
     hwctx->device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -1349,6 +1352,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->device_features_1_1.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
     p->device_features_1_1.pNext = &p->device_features_1_2;
     p->device_features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    p->device_features_1_2.pNext = &p->device_features_1_3;
+    p->device_features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
     ctx->free = vulkan_device_free;
 
     /* Create an instance if not given one */
@@ -1379,6 +1384,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     }
     p->device_features_1_2.timelineSemaphore = 1;
     p->device_features_1_1.samplerYcbcrConversion = dev_features_1_1.samplerYcbcrConversion;
+    p->device_features_1_3.synchronization2 = dev_features_1_3.synchronization2;
+
+    dev_info.pNext = &hwctx->device_features;
 
     /* Setup queue family */
     if ((err = setup_queue_families(ctx, &dev_info)))

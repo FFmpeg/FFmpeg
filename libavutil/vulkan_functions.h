@@ -145,7 +145,10 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              UpdateDescriptorSetWithTemplate)         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateDescriptorUpdateTemplate)          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyDescriptorUpdateTemplate)         \
-                                                                                         \
+                                                                                           \
+    /* sync2 */                                                                            \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdPipelineBarrier2)                       \
+                                                                                           \
     /* Pipeline */                                                                       \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreatePipelineLayout)                    \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyPipelineLayout)                   \
