@@ -289,8 +289,8 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (ff_inlink_queued_frames(ctx->inputs[INPUT_MAIN]) > 0 &&
-        (dm->ppsrc && ff_inlink_queued_frames(ctx->inputs[INPUT_CLEANSRC]) > 0)) {
+    if (ff_inlink_queued_frames(ctx->inputs[INPUT_MAIN]) > 0 && (!dm->ppsrc ||
+        (dm->ppsrc && ff_inlink_queued_frames(ctx->inputs[INPUT_CLEANSRC]) > 0))) {
         ff_filter_set_ready(ctx, 100);
     } else if (ff_outlink_frame_wanted(ctx->outputs[0])) {
         if (dm->got_frame[INPUT_MAIN] == 0)
