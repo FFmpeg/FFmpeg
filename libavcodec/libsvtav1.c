@@ -188,11 +188,10 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     if (svt_enc->crf > 0) {
         param->qp                   = svt_enc->crf;
         param->rate_control_mode    = 0;
-        param->enable_tpl_la        = 1;
     } else if (svt_enc->qp > 0) {
         param->qp                   = svt_enc->qp;
         param->rate_control_mode    = 0;
-        param->enable_tpl_la        = 0;
+        param->enable_adaptive_quantization = 0;
     }
 
 #if SVT_AV1_CHECK_VERSION(0, 9, 1)
