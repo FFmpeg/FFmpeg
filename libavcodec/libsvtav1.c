@@ -65,17 +65,19 @@ typedef struct SvtContext {
 
     // User options.
     AVDictionary *svtav1_opts;
+#if FF_API_SVTAV1_OPTS
     int hierarchical_level;
     int la_depth;
-    int enc_mode;
-    int crf;
     int scd;
-    int qp;
 
     int tier;
 
     int tile_columns;
     int tile_rows;
+#endif
+    int enc_mode;
+    int crf;
+    int qp;
 } SvtContext;
 
 static const struct {
@@ -159,12 +161,19 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     AVDictionaryEntry *en = NULL;
 
     // Update param from options
+#if FF_API_SVTAV1_OPTS
     param->hierarchical_levels      = svt_enc->hierarchical_level;
+    param->tier                     = svt_enc->tier;
+    param->scene_change_detection   = svt_enc->scd;
+    param->tile_columns             = svt_enc->tile_columns;
+    param->tile_rows                = svt_enc->tile_rows;
+
+    if (svt_enc->la_depth >= 0)
+        param->look_ahead_distance  = svt_enc->la_depth;
+#endif
 
     if (svt_enc->enc_mode >= 0)
         param->enc_mode             = svt_enc->enc_mode;
-
-    param->tier                     = svt_enc->tier;
 
     if (avctx->bit_rate) {
         param->target_bit_rate      = avctx->bit_rate;
@@ -185,13 +194,6 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->rate_control_mode    = 0;
         param->enable_tpl_la        = 0;
     }
-    param->scene_change_detection   = svt_enc->scd;
-
-    if (svt_enc->la_depth >= 0)
-        param->look_ahead_distance  = svt_enc->la_depth;
-
-    param->tile_columns = svt_enc->tile_columns;
-    param->tile_rows    = svt_enc->tile_rows;
 
 #if SVT_AV1_CHECK_VERSION(0, 9, 1)
     while ((en = av_dict_get(svt_enc->svtav1_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {
@@ -519,21 +521,22 @@ static av_cold int eb_enc_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(SvtContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "hielevel", "Hierarchical prediction levels setting", OFFSET(hierarchical_level),
-      AV_OPT_TYPE_INT, { .i64 = 4 }, 3, 4, VE , "hielevel"},
+#if FF_API_SVTAV1_OPTS
+    { "hielevel", "Hierarchical prediction levels setting (Deprecated, use svtav1-params)", OFFSET(hierarchical_level),
+      AV_OPT_TYPE_INT, { .i64 = 4 }, 3, 4, VE | AV_OPT_FLAG_DEPRECATED , "hielevel"},
         { "3level", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 3 },  INT_MIN, INT_MAX, VE, "hielevel" },
         { "4level", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 4 },  INT_MIN, INT_MAX, VE, "hielevel" },
 
-    { "la_depth", "Look ahead distance [0, 120]", OFFSET(la_depth),
-      AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 120, VE },
+    { "la_depth", "Look ahead distance [0, 120] (Deprecated, use svtav1-params)", OFFSET(la_depth),
+      AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 120, VE | AV_OPT_FLAG_DEPRECATED },
 
-    { "preset", "Encoding preset",
-      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_ENC_PRESET, VE },
-
-    { "tier", "Set operating point tier", OFFSET(tier),
-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE, "tier" },
+    { "tier", "Set operating point tier (Deprecated, use svtav1-params)", OFFSET(tier),
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE | AV_OPT_FLAG_DEPRECATED, "tier" },
         { "main", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, VE, "tier" },
         { "high", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "tier" },
+#endif
+    { "preset", "Encoding preset",
+      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_ENC_PRESET, VE },
 
     FF_AV1_PROFILE_OPTS
 
@@ -569,12 +572,13 @@ static const AVOption options[] = {
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
     { "qp", "Initial Quantizer level value", OFFSET(qp),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
+#if FF_API_SVTAV1_OPTS
+    { "sc_detection", "Scene change detection (Deprecated, use svtav1-params)", OFFSET(scd),
+      AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE | AV_OPT_FLAG_DEPRECATED },
 
-    { "sc_detection", "Scene change detection", OFFSET(scd),
-      AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-
-    { "tile_columns", "Log2 of number of tile columns to use", OFFSET(tile_columns), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, VE},
-    { "tile_rows", "Log2 of number of tile rows to use", OFFSET(tile_rows), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 6, VE},
+    { "tile_columns", "Log2 of number of tile columns to use (Deprecated, use svtav1-params)", OFFSET(tile_columns), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 4, VE | AV_OPT_FLAG_DEPRECATED },
+    { "tile_rows", "Log2 of number of tile rows to use (Deprecated, use svtav1-params)", OFFSET(tile_rows), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 6, VE | AV_OPT_FLAG_DEPRECATED },
+#endif
 
     { "svtav1-params", "Set the SVT-AV1 configuration using a :-separated list of key=value parameters", OFFSET(svtav1_opts), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
 
