@@ -326,23 +326,22 @@ static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
     double *band_excit = dnch->band_excit;
     double *band_amt = dnch->band_amt;
     double *gain = dnch->gain;
-    double d1, d2, d3;
     int n = 0, i1;
 
     for (int i = 0; i < s->fft_length2; i++) {
-        double new_gain;
+        double new_gain, mag, mag_abs_var, new_mag_abs_var;
 
-        d1 = fft_data[i].re * fft_data[i].re + fft_data[i].im * fft_data[i].im;
-        if (d1 > sample_floor)
+        mag = fft_data[i].re * fft_data[i].re + fft_data[i].im * fft_data[i].im;
+        if (mag > sample_floor)
             n = i;
 
-        dnch->noisy_data[i] = d1;
-        d2 = d1 / abs_var[i];
-        d3 = ratio * prior[i] + rratio * fmax(d2 - 1.0, 0.0);
-        new_gain = d3 / (1.0 + d3);
-        new_gain *= (new_gain + M_PI_4 / fmax(d2, 1.0E-6));
-        prior[i] = d2 * new_gain;
-        dnch->clean_data[i] = d1 * new_gain;
+        dnch->noisy_data[i] = mag;
+        mag_abs_var = mag / abs_var[i];
+        new_mag_abs_var = ratio * prior[i] + rratio * fmax(mag_abs_var - 1.0, 0.0);
+        new_gain = new_mag_abs_var / (1.0 + new_mag_abs_var);
+        new_gain *= (new_gain + M_PI_4 / fmax(mag_abs_var, 1.0E-6));
+        prior[i] = mag_abs_var * new_gain;
+        dnch->clean_data[i] = mag * new_gain;
         new_gain = sqrt(new_gain);
         gain[i] = new_gain;
     }
