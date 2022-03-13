@@ -580,7 +580,7 @@ static void set_parameters(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch, int 
         if (update_var || dnch->last_residual_floor != dnch->residual_floor) {
             update_var = 1;
             dnch->last_residual_floor = dnch->residual_floor;
-            dnch->last_noise_reduction = fmax(dnch->last_noise_floor - dnch->last_residual_floor, 0);
+            dnch->last_noise_reduction = fmax(dnch->last_noise_floor - dnch->last_residual_floor + 100., 0);
             dnch->max_gain = exp(dnch->last_noise_reduction * (0.5 * C));
         }
     } else if (update_var || dnch->noise_reduction != dnch->last_noise_reduction) {
@@ -998,11 +998,11 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
     for (int m = 0; m < NB_PROFILE_BANDS; m++)
         sum += temp[m];
 
-    d1 = (int)(sum / NB_PROFILE_BANDS - 0.5);
+    d1 = sum / NB_PROFILE_BANDS;
     for (int m = 0; m < NB_PROFILE_BANDS; m++)
         temp[m] -= d1;
 
-    new_noise_floor = d1 + 2.5;
+    new_noise_floor = round(d1) + 2.5;
 
     if (new_profile) {
         av_log(s, AV_LOG_INFO, "bn=");
