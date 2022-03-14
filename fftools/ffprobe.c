@@ -3828,7 +3828,9 @@ static int opt_input_file(void *optctx, const char *arg)
     }
     if (!strcmp(arg, "-"))
         arg = "fd:";
-    input_filename = arg;
+    input_filename = av_strdup(arg);
+    if (!input_filename)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -3849,15 +3851,18 @@ static int opt_output_file_o(void *optctx, const char *opt, const char *arg)
     }
     if (!strcmp(arg, "-"))
         arg = "fd:";
-    output_filename = arg;
+    output_filename = av_strdup(arg);
+    if (!output_filename)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
 
 static int opt_print_filename(void *optctx, const char *opt, const char *arg)
 {
-    print_input_filename = arg;
-    return 0;
+    av_freep(&print_input_filename);
+    print_input_filename = av_strdup(arg);
+    return print_input_filename ? 0 : AVERROR(ENOMEM);
 }
 
 void show_help_default(const char *opt, const char *arg)
@@ -4287,6 +4292,9 @@ int main(int argc, char **argv)
 
 end:
     av_freep(&output_format);
+    av_freep(&output_filename);
+    av_freep(&input_filename);
+    av_freep(&print_input_filename);
     av_freep(&read_intervals);
     av_hash_freep(&hash);
 
