@@ -12318,7 +12318,9 @@ case of @code{b} it will use only bottom field.
 If line starts with @code{#} or @code{;} that line is skipped.
 
 @item mode
-Can be item @code{absolute} or @code{relative}. Default is @code{absolute}.
+Can be item @code{absolute} or @code{relative} or @code{pattern}. Default is @code{absolute}.
+The @code{pattern} mode is same as @code{relative} mode, except at last entry of file if there
+are more frames to process than @code{hint} file is seek back to start.
 @end table
 
 Example of first several lines of @code{hint} file for @code{relative} mode:
