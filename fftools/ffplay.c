@@ -400,7 +400,10 @@ static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
     if (ret < 0)
         return ret;
 
-    vfilters_list[nb_vfilters - 1] = arg;
+    vfilters_list[nb_vfilters - 1] = av_strdup(arg);
+    if (!vfilters_list[nb_vfilters - 1])
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -1305,7 +1308,13 @@ static void do_exit(VideoState *is)
     if (window)
         SDL_DestroyWindow(window);
     uninit_opts();
+    for (int i = 0; i < nb_vfilters; i++)
+        av_freep(&vfilters_list[i]);
     av_freep(&vfilters_list);
+    av_freep(&video_codec_name);
+    av_freep(&audio_codec_name);
+    av_freep(&subtitle_codec_name);
+    av_freep(&input_filename);
     avformat_network_deinit();
     if (show_status)
         printf("\n");
@@ -3595,7 +3604,9 @@ static int opt_input_file(void *optctx, const char *filename)
     }
     if (!strcmp(filename, "-"))
         filename = "fd:";
-    input_filename = filename;
+    input_filename = av_strdup(filename);
+    if (!input_filename)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -3603,6 +3614,7 @@ static int opt_input_file(void *optctx, const char *filename)
 static int opt_codec(void *optctx, const char *opt, const char *arg)
 {
    const char *spec = strchr(opt, ':');
+   const char **name;
    if (!spec) {
        av_log(NULL, AV_LOG_ERROR,
               "No media specifier was specified in '%s' in option '%s'\n",
@@ -3610,16 +3622,20 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
        return AVERROR(EINVAL);
    }
    spec++;
+
    switch (spec[0]) {
-   case 'a' :    audio_codec_name = arg; break;
-   case 's' : subtitle_codec_name = arg; break;
-   case 'v' :    video_codec_name = arg; break;
+   case 'a' : name = &audio_codec_name;    break;
+   case 's' : name = &subtitle_codec_name; break;
+   case 'v' : name = &video_codec_name;    break;
    default:
        av_log(NULL, AV_LOG_ERROR,
               "Invalid media specifier '%s' in option '%s'\n", spec, opt);
        return AVERROR(EINVAL);
    }
-   return 0;
+
+   av_freep(name);
+   *name = av_strdup(arg);
+   return *name ? 0 : AVERROR(ENOMEM);
 }
 
 static int dummy;
