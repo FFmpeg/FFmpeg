@@ -31,6 +31,7 @@
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/x509v3.h>
 
 /**
  * Returns a heap‐allocated null‐terminated string containing
@@ -938,8 +939,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     }
     ret = openssl_init_ca_key_cert(h);
     if (ret < 0) goto fail;
-    // Note, this doesn't check that the peer certificate actually matches
-    // the requested hostname.
+
     if (c->verify)
         SSL_CTX_set_verify(p->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
     p->ssl = SSL_new(p->ctx);
@@ -953,8 +953,17 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     ret = init_bio_method(h);
     if (ret < 0)
         goto fail;
-    if (!c->listen && !c->numerichost)
+    if (!c->listen && !c->numerichost) {
+        // By default OpenSSL does too lax wildcard matching
+        SSL_set_hostflags(p->ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+        if (!SSL_set1_host(p->ssl, c->host)) {
+            av_log(h, AV_LOG_ERROR, "Failed to set hostname for TLS/SSL verification: %s\n",
+                openssl_get_error(p));
+            ret = AVERROR_EXTERNAL;
+            goto fail;
+        }
         SSL_set_tlsext_host_name(p->ssl, c->host);
+    }
     ret = c->listen ? SSL_accept(p->ssl) : SSL_connect(p->ssl);
     if (ret == 0) {
         av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
