@@ -1760,7 +1760,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
     // instance id
     mxf_write_local_tag(s, 16, 0x3C0A);
-    mxf_write_uuid(pb, IndexTableSegment, 0);
+    mxf_write_uuid(pb, IndexTableSegment, mxf->last_indexed_edit_unit);
 
     // index edit rate
     mxf_write_local_tag(s, 8, 0x3F0B);
