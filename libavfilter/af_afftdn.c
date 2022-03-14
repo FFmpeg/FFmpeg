@@ -329,13 +329,15 @@ static double limit_gain(double a, double b)
     return 1.0;
 }
 
-static void process_frame(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
+static void process_frame(AVFilterContext *ctx,
+                          AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch,
                           AVComplexFloat *fft_data,
                           double *prior, double *prior_band_excit, int track_noise)
 {
+    AVFilterLink *outlink = ctx->outputs[0];
     const double sample_floor = s->sample_floor;
     const double *abs_var = dnch->abs_var;
-    const double ratio = s->ratio;
+    const double ratio = outlink->frame_count_out ? s->ratio : 1.0;
     const double rratio = 1. - ratio;
     const int *bin2band = s->bin2band;
     double *band_excit = dnch->band_excit;
@@ -784,7 +786,6 @@ static int config_input(AVFilterLink *inlink)
     for (int ch = 0; ch < inlink->channels; ch++) {
         DeNoiseChannel *dnch = &s->dnch[ch];
         double *prior_band_excit = dnch->prior_band_excit;
-        double *prior = dnch->prior;
         double min, max;
         double p1, p2;
 
@@ -828,8 +829,6 @@ static int config_input(AVFilterLink *inlink)
             dnch->band_excit[i] = av_clipd(dnch->band_excit[i], min, max);
         }
 
-        for (int i = 0; i <= s->fft_length2; i++)
-            prior[i] = 1.0 - s->ratio;
         for (int i = 0; i < s->buffer_length; i++)
             dnch->out_samples[i] = 0;
 
@@ -1067,7 +1066,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 
         dnch->tx_fn(dnch->fft, dnch->fft_out, fft_in, sizeof(float));
 
-        process_frame(s, dnch, dnch->fft_out,
+        process_frame(ctx, s, dnch, dnch->fft_out,
                       dnch->prior,
                       dnch->prior_band_excit,
                       s->track_noise);
