@@ -467,7 +467,7 @@ static void process_frame(AVFilterContext *ctx,
     for (int i = 0; i < s->bin_count; i++)
         dnch->amt[i] = band_amt[bin2band[i]];
 
-    for (int i = 0; i <= s->fft_length2; i++) {
+    for (int i = 0; i < s->bin_count; i++) {
         if (dnch->amt[i] > abs_var[i]) {
             gain[i] = 1.0;
         } else if (dnch->amt[i] > dnch->min_abs_var[i]) {
@@ -523,7 +523,7 @@ static void set_band_parameters(AudioFFTDeNoiseContext *s,
 
     d5 = 0.0;
     band_noise = process_get_band_noise(s, dnch, 0);
-    for (int m = j; m <= s->fft_length2; m++) {
+    for (int m = j; m < s->bin_count; m++) {
         if (m == j) {
             i = j;
             d5 = band_noise;
@@ -612,7 +612,7 @@ static void set_parameters(AudioFFTDeNoiseContext *s, DeNoiseChannel *dnch, int 
     if (update_var) {
         set_band_parameters(s, dnch);
 
-        for (int i = 0; i <= s->fft_length2; i++) {
+        for (int i = 0; i < s->bin_count; i++) {
             dnch->abs_var[i] = fmax(dnch->max_var * dnch->rel_var[i], 1.0);
             dnch->min_abs_var[i] = dnch->gain_scale * dnch->abs_var[i];
         }
@@ -691,7 +691,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     sdiv = s->sample_rate / 17640.0;
-    for (i = 0; i <= s->fft_length2; i++)
+    for (i = 0; i < s->bin_count; i++)
         s->bin2band[i] = lrint(sdiv * freq2bark((0.5 * i * s->sample_rate) / s->fft_length2));
 
     s->number_of_bands = s->bin2band[s->fft_length2] + 1;
@@ -809,7 +809,7 @@ static int config_input(AVFilterLink *inlink)
             prior_band_excit[m] = 0.0;
         }
 
-        for (m = 0; m <= s->fft_length2; m++)
+        for (m = 0; m < s->bin_count; m++)
             dnch->band_excit[s->bin2band[m]] += 1.0;
 
         j = 0;
@@ -840,7 +840,7 @@ static int config_input(AVFilterLink *inlink)
 
     j = 0;
     sar = s->sample_advance / s->sample_rate;
-    for (int i = 0; i <= s->fft_length2; i++) {
+    for (int i = 0; i < s->bin_count; i++) {
         if ((i == s->fft_length2) || (s->bin2band[i] > j)) {
             double d6 = (i - 1) * s->sample_rate / s->fft_length;
             double d7 = fmin(0.008 + 2.2 / d6, 0.03);
