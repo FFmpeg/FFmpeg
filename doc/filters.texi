@@ -1367,6 +1367,10 @@ Use measured average noise floor of all channels.
 
 Default value is @var{min}.
 @end table
+
+@item band_multiplier, bm
+Set the band multiplier factor, used how much to spread bands across frequency bins.
+Allowed range is from @var{0.2} to @var{5}. Default value is @var{1.25}.
 @end table
 
 @subsection Commands

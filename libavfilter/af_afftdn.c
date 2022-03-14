@@ -113,6 +113,7 @@ typedef struct AudioFFTDeNoiseContext {
     int     output_mode;
     int     noise_floor_link;
     float   ratio;
+    float   band_multiplier;
 
     float   last_residual_floor;
     float   last_noise_floor;
@@ -200,6 +201,8 @@ static const AVOption afftdn_options[] = {
     {  "min",     "min",                  0,                       AV_OPT_TYPE_CONST,  {.i64 = MIN_LINK},      0,  0, AFR, "link" },
     {  "max",     "max",                  0,                       AV_OPT_TYPE_CONST,  {.i64 = MAX_LINK},      0,  0, AFR, "link" },
     {  "average", "average",              0,                       AV_OPT_TYPE_CONST,  {.i64 = AVERAGE_LINK},  0,  0, AFR, "link" },
+    { "band_multiplier", "set band multiplier",OFFSET(band_multiplier), AV_OPT_TYPE_FLOAT,{.dbl = 1.25},       0.2,5, AF  },
+    { "bm",       "set band multiplier",       OFFSET(band_multiplier), AV_OPT_TYPE_FLOAT,{.dbl = 1.25},       0.2,5, AF  },
     { NULL }
 };
 
@@ -690,7 +693,7 @@ static int config_input(AVFilterLink *inlink)
     if (!s->window || !s->bin2band)
         return AVERROR(ENOMEM);
 
-    sdiv = s->sample_rate / 17640.0;
+    sdiv = s->band_multiplier;
     for (i = 0; i < s->bin_count; i++)
         s->bin2band[i] = lrint(sdiv * freq2bark((0.5 * i * s->sample_rate) / s->fft_length2));
 
