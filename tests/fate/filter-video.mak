@@ -424,6 +424,12 @@ FATE_FILTER_SAMPLES-$(call ALLYES, MATROSKA_DEMUXER OVERLAY_FILTER H264_DECODER 
 fate-filter-overlay-dvdsub-2397: tests/data/filtergraphs/overlay-dvdsub-2397
 fate-filter-overlay-dvdsub-2397: CMD = framecrc -auto_conversion_filters -flags bitexact -i $(TARGET_SAMPLES)/filter/242_4.mkv -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay-dvdsub-2397 -c:a copy
 
+FATE_FILTER_EPX-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER EPX_FILTER) = fate-filter-ep2x fate-filter-ep3x
+FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_EPX-yes)
+fate-filter-ep2x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,format=rgb32,epx=2,scale,format=bgra
+fate-filter-ep3x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,format=rgb32,epx=3,scale,format=bgra
+fate-filter-epx: $(FATE_FILTER_EPX-yes)
+
 FATE_FILTER_HQX-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER HQX_FILTER) = fate-filter-hq2x fate-filter-hq3x fate-filter-hq4x
 FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_HQX-yes)
 fate-filter-hq2x: CMD = framecrc -i $(TARGET_SAMPLES)/filter/pixelart%d.png -vf scale,format=rgb32,hqx=2,scale,format=bgra
