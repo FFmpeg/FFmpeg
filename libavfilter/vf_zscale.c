@@ -632,7 +632,7 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
     return 0;
 }
 
-static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame)
+static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame, int needs_copy)
 {
     AVFrame *aligned = NULL;
     int ret = 0, plane, planes;
@@ -654,10 +654,10 @@ static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame)
             if ((ret = av_frame_get_buffer(aligned, ZIMG_ALIGNMENT)) < 0)
                 goto fail;
 
-            if ((ret = av_frame_copy(aligned, *frame)) < 0)
+            if (needs_copy && (ret = av_frame_copy(aligned, *frame)) < 0)
                 goto fail;
 
-            if ((ret = av_frame_copy_props(aligned, *frame)) < 0)
+            if (needs_copy && (ret = av_frame_copy_props(aligned, *frame)) < 0)
                 goto fail;
 
             av_frame_free(frame);
@@ -786,9 +786,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             goto fail;
         }
 
+        if ((ret = realign_frame(odesc, &out, 0)) < 0)
+            goto fail;
+
         av_frame_copy_props(out, in);
 
-        if ((ret = realign_frame(desc, &in)) < 0)
+        if ((ret = realign_frame(desc, &in, 1)) < 0)
             goto fail;
 
         snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
