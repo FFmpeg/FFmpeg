@@ -117,6 +117,7 @@ typedef struct ZScaleContext {
 
     void *tmp[MAX_THREADS]; //separate for each thread;
     int nb_threads;
+    int jobs_ret[MAX_THREADS];
 
     zimg_image_format src_format, dst_format;
     zimg_image_format alpha_src_format, alpha_dst_format;
@@ -858,12 +859,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         td.desc = desc;
         td.odesc = odesc;
 
-        ret = ff_filter_execute(ctx, filter_slice, &td, NULL, s->nb_threads);
-        if (ret < 0 || !s->graph[0]) {
+        memset(s->jobs_ret, 0, s->nb_threads * sizeof(*s->jobs_ret));
+        ret = ff_filter_execute(ctx, filter_slice, &td, s->jobs_ret, s->nb_threads);
+        for (int i = 0; ret >= 0 && i < s->nb_threads; i++)
+            if (s->jobs_ret[i] < 0)
+                ret = s->jobs_ret[i];
+        if (ret < 0) {
             av_frame_free(&in);
             av_frame_free(&out);
-            if (ret >= 0)
-                ret = AVERROR(EINVAL);
             return ret;
         }
 
