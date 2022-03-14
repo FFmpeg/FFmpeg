@@ -124,6 +124,9 @@ static void uninit_options(OptionsContext *o)
 #if FFMPEG_OPT_MAP_CHANNEL
     av_freep(&o->audio_channel_maps);
 #endif
+
+    for (i = 0; i < o->nb_attachments; i++)
+        av_freep(&o->attachments[i]);
     av_freep(&o->attachments);
 
     av_dict_free(&o->streamid);
@@ -494,7 +497,10 @@ static int opt_attach(void *optctx, const char *opt, const char *arg)
     if (ret < 0)
         return ret;
 
-    o->attachments[o->nb_attachments - 1] = arg;
+    o->attachments[o->nb_attachments - 1] = av_strdup(arg);
+    if (!o->attachments[o->nb_attachments - 1])
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
