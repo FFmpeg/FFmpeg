@@ -174,7 +174,7 @@ static int config_output(AVFilterLink *outlink)
         }                                                                   \
     }
 
-#define TRACE(type, depth, one)                                             \
+#define DO_TRACE(type, depth, one)                                          \
     for (int ch = 0; ch < inlink->channels; ch++) {                         \
         const int w = outpicref->width / inlink->channels;                  \
         const type *in = (const type *)insamples->extended_data[ch];        \
@@ -238,18 +238,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     switch (insamples->format) {
     case AV_SAMPLE_FMT_U8P:
-        if (s->mode == 0) { BARS(uint8_t,   8, 1) } else { TRACE(uint8_t,   8, 1) }
+        if (s->mode == 0) { BARS(uint8_t,   8, 1) } else { DO_TRACE(uint8_t,   8, 1) }
         break;
     case AV_SAMPLE_FMT_S16P:
-        if (s->mode == 0) { BARS(uint16_t, 16, 1) } else { TRACE(uint16_t, 16, 1) }
+        if (s->mode == 0) { BARS(uint16_t, 16, 1) } else { DO_TRACE(uint16_t, 16, 1) }
         break;
     case AV_SAMPLE_FMT_FLTP:
     case AV_SAMPLE_FMT_S32P:
-        if (s->mode == 0) { BARS(uint32_t, 32, 1U) } else { TRACE(uint32_t, 32, 1U) }
+        if (s->mode == 0) { BARS(uint32_t, 32, 1U) } else { DO_TRACE(uint32_t, 32, 1U) }
         break;
     case AV_SAMPLE_FMT_DBLP:
     case AV_SAMPLE_FMT_S64P:
-        if (s->mode == 0) { BARS(uint64_t, 64, 1ULL) } else { TRACE(uint64_t, 64, 1ULL) }
+        if (s->mode == 0) { BARS(uint64_t, 64, 1ULL) } else { DO_TRACE(uint64_t, 64, 1ULL) }
         break;
     }
 
