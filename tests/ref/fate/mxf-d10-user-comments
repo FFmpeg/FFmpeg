@@ -1,4 +1,4 @@
-6dc13ae283257e898e069e5041ac8435 *tests/data/fate/mxf-d10-user-comments.mxf_d10
+8c831b8e01aa4c86e98ab87930d06f3e *tests/data/fate/mxf-d10-user-comments.mxf_d10
 3782189 tests/data/fate/mxf-d10-user-comments.mxf_d10
 #extradata 0:       34, 0x716b05c4
 #tb 0: 1/25
@@ -13,8 +13,8 @@
 0,          3,          4,        1,   150000, 0x9bbe6feb, F=0x0
 [FORMAT]
 TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010900
-TAG:uid=adab4424-2f25-4dc7-92ff-29bd000c0000
-TAG:generation_uid=adab4424-2f25-4dc7-92ff-29bd000c0001
+TAG:uid=adab4424-2f25-4dc7-92ff-000c00000000
+TAG:generation_uid=adab4424-2f25-4dc7-92ff-000c00000001
 TAG:company_name=FATE-company
 TAG:product_name=FATE-test
 TAG:product_version_num=0.0.0.0.0
