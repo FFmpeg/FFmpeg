@@ -451,6 +451,10 @@ fate-filter-concat: CMD = framecrc -filter_complex_script $(TARGET_PATH)/tests/d
 fate-filter-concat-vfr: tests/data/filtergraphs/concat-vfr
 fate-filter-concat-vfr: CMD = framecrc -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/concat-vfr
 
+FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER CHROMASHIFT_FILTER) += fate-filter-chromashift-smear fate-filter-chromashift-wrap
+fate-filter-chromashift-smear: CMD = framecrc -lavfi testsrc2=r=5:d=1,chromashift=cbh=-1:cbv=1:crh=2:crv=-2:edge=smear -pix_fmt yuv420p
+fate-filter-chromashift-wrap:  CMD = framecrc -lavfi testsrc2=r=5:d=1,chromashift=cbh=-1:cbv=1:crh=2:crv=-2:edge=wrap  -pix_fmt yuv420p
+
 FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER FPS_FILTER DECIMATE_FILTER) += fate-filter-decimate
 fate-filter-decimate: CMD = framecrc -lavfi testsrc2=r=24:d=10,fps=60,decimate=5,decimate=4,decimate=3 -pix_fmt yuv420p
 
