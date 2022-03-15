@@ -1071,7 +1071,7 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
     compression_level = avctx->compression_level == FF_COMPRESSION_DEFAULT
                       ? Z_DEFAULT_COMPRESSION
                       : av_clip(avctx->compression_level, 0, 9);
-    if (deflateInit2(&s->zstream, compression_level, Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+    if (deflateInit(&s->zstream, compression_level) != Z_OK)
         return -1;
 
     return 0;
