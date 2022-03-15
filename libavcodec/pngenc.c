@@ -528,7 +528,7 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
     PNGEncContext *s = avctx->priv_data;
     int ret;
     int enc_row_size;
-    size_t max_packet_size;
+    uint64_t max_packet_size;
 
     enc_row_size    = deflateBound(&s->zstream, (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
@@ -537,8 +537,6 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
             enc_row_size +
             12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
         );
-    if (max_packet_size > INT_MAX)
-        return AVERROR(ENOMEM);
     ret = ff_alloc_packet(avctx, pkt, max_packet_size);
     if (ret < 0)
         return ret;
@@ -845,7 +843,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
     PNGEncContext *s = avctx->priv_data;
     int ret;
     int enc_row_size;
-    size_t max_packet_size;
+    uint64_t max_packet_size;
     APNGFctlChunk fctl_chunk = {0};
 
     if (pict && s->color_type == PNG_COLOR_TYPE_PALETTE) {
