@@ -19,6 +19,43 @@ API changes, most recent first:
   contain the major version number (and corresponding API deprecation
   defines).
 
+2022-03-15 - cdba98bb80 - swr 4.5.100 - swresample.h
+  Add swr_alloc_set_opts2() and swr_build_matrix2().
+  Deprecate swr_alloc_set_opts() and swr_build_matrix().
+
+2022-03-15 - cdba98bb80 - lavfi 8.28.100 - avfilter.h buffersink.h buffersrc.h
+  Update AVFilterLink for the new channel layout API: add ch_layout,
+  deprecate channel_layout.
+
+  Update the buffersink filter sink for the new channel layout API:
+  add av_buffersink_get_ch_layout() and the ch_layouts option,
+  deprecate av_buffersink_get_channel_layout() and the channel_layouts option.
+
+  Update AVBufferSrcParameters for the new channel layout API:
+  add ch_layout, deprecate channel_layout.
+
+2022-03-15 - cdba98bb80 - lavf 59.19.100 - avformat.h
+  Add AV_DISPOSITION_NON_DIEGETIC.
+
+2022-03-15 - cdba98bb80 - lavc 59.24.100 - avcodec.h codec_par.h
+  Update AVCodecParameters for the new channel layout API: add ch_layout,
+  deprecate channels/channel_layout.
+
+  Update AVCodecContext for the new channel layout API: add ch_layout,
+  deprecate channels/channel_layout.
+
+  Update AVCodec for the new channel layout API: add ch_layouts,
+  deprecate channel_layouts.
+
+2022-03-15 - cdba98bb80 - lavu 57.24.100 - channel_layout.h frame.h opt.h
+  Add new channel layout API based on the AVChannelLayout struct.
+  Add support for Ambisonic audio.
+  Deprecate previous channel layout API based on uint64 bitmasks.
+
+  Add AV_OPT_TYPE_CHLAYOUT option type, deprecate AV_OPT_TYPE_CHANNEL_LAYOUT.
+  Update AVFrame for the new channel layout API: add ch_layout, deprecate
+  channels/channel_layout.
+
 2022-03-10 - xxxxxxxxxx - lavu 57.23.100 - cpu.h
   Add AV_CPU_FLAG_AVX512ICL.
 
