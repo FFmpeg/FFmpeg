@@ -26,6 +26,7 @@
 #include "lossless_videoencdsp.h"
 #include "png.h"
 #include "apng.h"
+#include "zlib_wrapper.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
@@ -56,7 +57,7 @@ typedef struct PNGEncContext {
 
     int filter_type;
 
-    z_stream zstream;
+    FFZStream zstream;
     uint8_t buf[IOBUF_SIZE];
     int dpi;                     ///< Physical pixel density, in dots per inch, if set
     int dpm;                     ///< Physical pixel density, in dots per meter, if set
@@ -272,19 +273,20 @@ static void png_write_image_data(AVCodecContext *avctx,
 static int png_write_row(AVCodecContext *avctx, const uint8_t *data, int size)
 {
     PNGEncContext *s = avctx->priv_data;
+    z_stream *const zstream = &s->zstream.zstream;
     int ret;
 
-    s->zstream.avail_in = size;
-    s->zstream.next_in  = data;
-    while (s->zstream.avail_in > 0) {
-        ret = deflate(&s->zstream, Z_NO_FLUSH);
+    zstream->avail_in = size;
+    zstream->next_in  = data;
+    while (zstream->avail_in > 0) {
+        ret = deflate(zstream, Z_NO_FLUSH);
         if (ret != Z_OK)
             return -1;
-        if (s->zstream.avail_out == 0) {
+        if (zstream->avail_out == 0) {
             if (s->bytestream_end - s->bytestream > IOBUF_SIZE + 100)
                 png_write_image_data(avctx, s->buf, IOBUF_SIZE);
-            s->zstream.avail_out = IOBUF_SIZE;
-            s->zstream.next_out  = s->buf;
+            zstream->avail_out = IOBUF_SIZE;
+            zstream->next_out  = s->buf;
         }
     }
     return 0;
@@ -432,6 +434,7 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
 static int encode_frame(AVCodecContext *avctx, const AVFrame *pict)
 {
     PNGEncContext *s       = avctx->priv_data;
+    z_stream *const zstream = &s->zstream.zstream;
     const AVFrame *const p = pict;
     int y, len, ret;
     int row_size, pass_row_size;
@@ -459,8 +462,8 @@ static int encode_frame(AVCodecContext *avctx, const AVFrame *pict)
     }
 
     /* put each row */
-    s->zstream.avail_out = IOBUF_SIZE;
-    s->zstream.next_out  = s->buf;
+    zstream->avail_out = IOBUF_SIZE;
+    zstream->next_out  = s->buf;
     if (s->is_progressive) {
         int pass;
 
@@ -496,14 +499,14 @@ static int encode_frame(AVCodecContext *avctx, const AVFrame *pict)
     }
     /* compress last bytes */
     for (;;) {
-        ret = deflate(&s->zstream, Z_FINISH);
+        ret = deflate(zstream, Z_FINISH);
         if (ret == Z_OK || ret == Z_STREAM_END) {
-            len = IOBUF_SIZE - s->zstream.avail_out;
+            len = IOBUF_SIZE - zstream->avail_out;
             if (len > 0 && s->bytestream_end - s->bytestream > len + 100) {
                 png_write_image_data(avctx, s->buf, len);
             }
-            s->zstream.avail_out = IOBUF_SIZE;
-            s->zstream.next_out  = s->buf;
+            zstream->avail_out = IOBUF_SIZE;
+            zstream->next_out  = s->buf;
             if (ret == Z_STREAM_END)
                 break;
         } else {
@@ -518,7 +521,7 @@ the_end:
     av_freep(&crow_base);
     av_freep(&progressive_buf);
     av_freep(&top_buf);
-    deflateReset(&s->zstream);
+    deflateReset(zstream);
     return ret;
 }
 
@@ -530,7 +533,8 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
     int enc_row_size;
     uint64_t max_packet_size;
 
-    enc_row_size    = deflateBound(&s->zstream, (avctx->width * s->bits_per_pixel + 7) >> 3);
+    enc_row_size    = deflateBound(&s->zstream.zstream,
+                                   (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
         AV_INPUT_BUFFER_MIN_SIZE + // headers
         avctx->height * (
@@ -858,7 +862,8 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    enc_row_size    = deflateBound(&s->zstream, (avctx->width * s->bits_per_pixel + 7) >> 3);
+    enc_row_size    = deflateBound(&s->zstream.zstream,
+                                   (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
         AV_INPUT_BUFFER_MIN_SIZE + // headers
         avctx->height * (
@@ -1065,23 +1070,17 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
     }
     s->bits_per_pixel = ff_png_get_nb_channels(s->color_type) * s->bit_depth;
 
-    s->zstream.zalloc = ff_png_zalloc;
-    s->zstream.zfree  = ff_png_zfree;
-    s->zstream.opaque = NULL;
     compression_level = avctx->compression_level == FF_COMPRESSION_DEFAULT
                       ? Z_DEFAULT_COMPRESSION
                       : av_clip(avctx->compression_level, 0, 9);
-    if (deflateInit(&s->zstream, compression_level) != Z_OK)
-        return -1;
-
-    return 0;
+    return ff_deflate_init(&s->zstream, compression_level, avctx);
 }
 
 static av_cold int png_enc_close(AVCodecContext *avctx)
 {
     PNGEncContext *s = avctx->priv_data;
 
-    deflateEnd(&s->zstream);
+    ff_deflate_end(&s->zstream);
     av_frame_free(&s->last_frame);
     av_frame_free(&s->prev_frame);
     av_freep(&s->last_frame_packet);
