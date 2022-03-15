@@ -21,6 +21,7 @@
 
 #include <zlib.h>
 
+#include "config.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -36,6 +37,7 @@ static void free_wrapper(void *opaque, void *ptr)
     av_free(ptr);
 }
 
+#if CONFIG_INFLATE_WRAPPER
 int ff_inflate_init(FFZStream *z, void *logctx)
 {
     z_stream *const zstream = &z->zstream;
@@ -66,3 +68,35 @@ void ff_inflate_end(FFZStream *z)
         inflateEnd(&z->zstream);
     }
 }
+#endif
+
+#if CONFIG_DEFLATE_WRAPPER
+int ff_deflate_init(FFZStream *z, int level, void *logctx)
+{
+    z_stream *const zstream = &z->zstream;
+    int zret;
+
+    z->inited = 0;
+    zstream->zalloc = alloc_wrapper;
+    zstream->zfree  = free_wrapper;
+    zstream->opaque = Z_NULL;
+
+    zret = deflateInit(zstream, level);
+    if (zret == Z_OK) {
+        z->inited = 1;
+    } else {
+        av_log(logctx, AV_LOG_ERROR, "deflateInit error %d, message: %s\n",
+               zret, zstream->msg ? zstream->msg : "");
+        return AVERROR_EXTERNAL;
+    }
+    return 0;
+}
+
+void ff_deflate_end(FFZStream *z)
+{
+    if (z->inited) {
+        z->inited = 0;
+        deflateEnd(&z->zstream);
+    }
+}
+#endif

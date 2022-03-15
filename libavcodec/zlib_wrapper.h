@@ -48,4 +48,14 @@ int ff_inflate_init(FFZStream *zstream, void *logctx);
  */
 void ff_inflate_end(FFZStream *zstream);
 
+/**
+ * Wrapper around deflateInit(). It works analogously to ff_inflate_init().
+ */
+int ff_deflate_init(FFZStream *zstream, int level, void *logctx);
+
+/**
+ * Wrapper around deflateEnd(). It works analogously to ff_inflate_end().
+ */
+void ff_deflate_end(FFZStream *zstream);
+
 #endif /* AVCODEC_ZLIB_WRAPPER_H */

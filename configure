@@ -2433,6 +2433,7 @@ CONFIG_EXTRA="
     cbs_jpeg
     cbs_mpeg2
     cbs_vp9
+    deflate_wrapper
     dirac_parse
     dnn
     dovi_rpu
@@ -2711,6 +2712,7 @@ cbs_jpeg_select="cbs"
 cbs_mpeg2_select="cbs"
 cbs_vp9_select="cbs"
 dct_select="rdft"
+deflate_wrapper_deps="zlib"
 dirac_parse_select="golomb"
 dovi_rpu_select="golomb"
 dnn_suggest="libtensorflow libopenvino"
