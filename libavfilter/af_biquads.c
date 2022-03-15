@@ -875,8 +875,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         return ff_filter_frame(outlink, buf);
 
     ret = av_channel_layout_copy(&s->ch_layout, &inlink->ch_layout);
-    if (ret < 0)
+    if (ret < 0) {
+        av_frame_free(&buf);
         return ret;
+    }
     if (strcmp(s->ch_layout_str, "all"))
         av_channel_layout_from_string(&s->ch_layout,
                                       s->ch_layout_str);
