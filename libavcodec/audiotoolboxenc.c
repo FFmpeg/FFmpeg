@@ -610,7 +610,7 @@ static const AVOption options[] = {
         .version    = LIBAVUTIL_VERSION_INT, \
     };
 
-#define FFAT_ENC(NAME, ID, PROFILES, ...) \
+#define FFAT_ENC(NAME, ID, PROFILES, CAPS, CHANNEL_LAYOUTS, CH_LAYOUTS) \
     FFAT_ENC_CLASS(NAME) \
     const AVCodec ff_##NAME##_at_encoder = { \
         .name           = #NAME "_at", \
@@ -624,7 +624,9 @@ static const AVOption options[] = {
         .flush          = ffat_encode_flush, \
         .priv_class     = &ffat_##NAME##_enc_class, \
         .capabilities   = AV_CODEC_CAP_DELAY | \
-                          AV_CODEC_CAP_ENCODER_FLUSH __VA_ARGS__, \
+                          AV_CODEC_CAP_ENCODER_FLUSH CAPS, \
+        .channel_layouts= CHANNEL_LAYOUTS, \
+        .ch_layouts     = CH_LAYOUTS, \
         .sample_fmts    = (const enum AVSampleFormat[]) { \
             AV_SAMPLE_FMT_S16, \
             AV_SAMPLE_FMT_U8,  AV_SAMPLE_FMT_NONE \
@@ -634,6 +636,23 @@ static const AVOption options[] = {
         .wrapper_name   = "at", \
     };
 
+static const AVChannelLayout aac_at_ch_layouts[] = {
+    AV_CHANNEL_LAYOUT_MONO,
+    AV_CHANNEL_LAYOUT_STEREO,
+    AV_CHANNEL_LAYOUT_SURROUND,
+    AV_CHANNEL_LAYOUT_4POINT0,
+    AV_CHANNEL_LAYOUT_5POINT0,
+    AV_CHANNEL_LAYOUT_5POINT1,
+    AV_CHANNEL_LAYOUT_6POINT0,
+    AV_CHANNEL_LAYOUT_6POINT1,
+    AV_CHANNEL_LAYOUT_7POINT0,
+    AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
+    AV_CHANNEL_LAYOUT_QUAD,
+    AV_CHANNEL_LAYOUT_OCTAGONAL,
+    { 0 },
+};
+
+#if FF_API_OLD_CHANNEL_LAYOUT
 static const uint64_t aac_at_channel_layouts[] = {
     AV_CH_LAYOUT_MONO,
     AV_CH_LAYOUT_STEREO,
@@ -649,10 +668,11 @@ static const uint64_t aac_at_channel_layouts[] = {
     AV_CH_LAYOUT_OCTAGONAL,
     0,
 };
+#endif
 
-FFAT_ENC(aac,          AV_CODEC_ID_AAC,          aac_profiles, , .channel_layouts = aac_at_channel_layouts)
+FFAT_ENC(aac,          AV_CODEC_ID_AAC,          aac_profiles, , aac_at_channel_layouts, aac_at_ch_layouts)
 //FFAT_ENC(adpcm_ima_qt, AV_CODEC_ID_ADPCM_IMA_QT, NULL)
-FFAT_ENC(alac,         AV_CODEC_ID_ALAC,         NULL, | AV_CODEC_CAP_VARIABLE_FRAME_SIZE)
-FFAT_ENC(ilbc,         AV_CODEC_ID_ILBC,         NULL)
-FFAT_ENC(pcm_alaw,     AV_CODEC_ID_PCM_ALAW,     NULL)
-FFAT_ENC(pcm_mulaw,    AV_CODEC_ID_PCM_MULAW,    NULL)
+FFAT_ENC(alac,         AV_CODEC_ID_ALAC,         NULL, | AV_CODEC_CAP_VARIABLE_FRAME_SIZE, NULL, NULL)
+FFAT_ENC(ilbc,         AV_CODEC_ID_ILBC,         NULL, , NULL, NULL)
+FFAT_ENC(pcm_alaw,     AV_CODEC_ID_PCM_ALAW,     NULL, , NULL, NULL)
+FFAT_ENC(pcm_mulaw,    AV_CODEC_ID_PCM_MULAW,    NULL, , NULL, NULL)
