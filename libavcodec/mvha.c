@@ -32,6 +32,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "lossless_videodsp.h"
+#include "zlib_wrapper.h"
 
 #include <zlib.h>
 
@@ -43,7 +44,7 @@ typedef struct MVHAContext {
     uint32_t          prob[256];
     VLC               vlc;
 
-    z_stream          zstream;
+    FFZStream         zstream;
     LLVidDSPContext   llviddsp;
 } MVHAContext;
 
@@ -168,21 +169,22 @@ static int decode_frame(AVCodecContext *avctx,
         return ret;
 
     if (type == MKTAG('L','Z','Y','V')) {
-        ret = inflateReset(&s->zstream);
+        z_stream *const zstream = &s->zstream.zstream;
+        ret = inflateReset(zstream);
         if (ret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
             return AVERROR_EXTERNAL;
         }
 
-        s->zstream.next_in  = avpkt->data + 8;
-        s->zstream.avail_in = avpkt->size - 8;
+        zstream->next_in  = avpkt->data + 8;
+        zstream->avail_in = avpkt->size - 8;
 
         for (int p = 0; p < 3; p++) {
             for (int y = 0; y < avctx->height; y++) {
-                s->zstream.next_out  = frame->data[p] + (avctx->height - y - 1) * frame->linesize[p];
-                s->zstream.avail_out = avctx->width >> (p > 0);
+                zstream->next_out  = frame->data[p] + (avctx->height - y - 1) * frame->linesize[p];
+                zstream->avail_out = avctx->width >> (p > 0);
 
-                ret = inflate(&s->zstream, Z_SYNC_FLUSH);
+                ret = inflate(zstream, Z_SYNC_FLUSH);
                 if (ret != Z_OK && ret != Z_STREAM_END) {
                     av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", ret);
                     return AVERROR_EXTERNAL;
@@ -279,29 +281,19 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     MVHAContext *s = avctx->priv_data;
-    int zret;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
-    s->zstream.zalloc = Z_NULL;
-    s->zstream.zfree = Z_NULL;
-    s->zstream.opaque = Z_NULL;
-    zret = inflateInit(&s->zstream);
-    if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return AVERROR_EXTERNAL;
-    }
-
     ff_llviddsp_init(&s->llviddsp);
 
-    return 0;
+    return ff_inflate_init(&s->zstream, avctx);
 }
 
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     MVHAContext *s = avctx->priv_data;
 
-    inflateEnd(&s->zstream);
+    ff_inflate_end(&s->zstream);
     ff_free_vlc(&s->vlc);
 
     return 0;
