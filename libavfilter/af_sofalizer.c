@@ -252,7 +252,7 @@ static int get_speaker_pos(AVFilterContext *ctx,
     AVChannelLayout *channel_layout = &ctx->inputs[0]->ch_layout;
     float azim[64] = { 0 };
     float elev[64] = { 0 };
-    int m, ch, n_conv = ctx->inputs[0]->ch_layout.nb_channels; /* get no. input channels */
+    int ch, n_conv = ctx->inputs[0]->ch_layout.nb_channels; /* get no. input channels */
 
     if (n_conv < 0 || n_conv > 64)
         return AVERROR(EINVAL);
@@ -263,8 +263,8 @@ static int get_speaker_pos(AVFilterContext *ctx,
         parse_speaker_pos(ctx);
 
     /* set speaker positions according to input channel configuration: */
-    for (m = 0, ch = 0; ch < n_conv && m < 64; m++) {
-        int chan = av_channel_layout_channel_from_index(channel_layout, m);
+    for (ch = 0; ch < n_conv; ch++) {
+        int chan = av_channel_layout_channel_from_index(channel_layout, ch);
 
         switch (chan) {
         case AV_CHAN_FRONT_LEFT:          azim[ch] =  30;      break;
@@ -303,9 +303,9 @@ static int get_speaker_pos(AVFilterContext *ctx,
             return AVERROR(EINVAL);
         }
 
-        if (s->vspkrpos[m].set) {
-            azim[ch] = s->vspkrpos[m].azim;
-            elev[ch] = s->vspkrpos[m].elev;
+        if (s->vspkrpos[ch].set) {
+            azim[ch] = s->vspkrpos[ch].azim;
+            elev[ch] = s->vspkrpos[ch].elev;
         }
     }
 
