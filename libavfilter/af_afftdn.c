@@ -30,6 +30,7 @@
 #include "filters.h"
 
 #define C       (M_LN10 * 0.1)
+#define SOLVE_SIZE (5)
 #define NB_PROFILE_BANDS (15)
 #define SFM_FLAGS_SIZE (512)
 #define SFM_FLAGS_MASK (SFM_FLAGS_SIZE - 1)
@@ -152,10 +153,10 @@ typedef struct AudioFFTDeNoiseContext {
 
     int     noise_band_edge[NB_PROFILE_BANDS + 2];
     int     noise_band_count;
-    double  matrix_a[25];
-    double  vector_b[5];
-    double  matrix_b[5 * NB_PROFILE_BANDS];
-    double  matrix_c[5 * NB_PROFILE_BANDS];
+    double  matrix_a[SOLVE_SIZE * SOLVE_SIZE];
+    double  vector_b[SOLVE_SIZE];
+    double  matrix_b[SOLVE_SIZE * NB_PROFILE_BANDS];
+    double  matrix_c[SOLVE_SIZE * NB_PROFILE_BANDS];
 } AudioFFTDeNoiseContext;
 
 #define OFFSET(x) offsetof(AudioFFTDeNoiseContext, x)
@@ -267,19 +268,19 @@ static double process_get_band_noise(AudioFFTDeNoiseContext *s,
     if (band < NB_PROFILE_BANDS)
         return dnch->band_noise[band];
 
-    for (int j = 0; j < 5; j++) {
+    for (int j = 0; j < SOLVE_SIZE; j++) {
         sum = 0.0;
         for (int k = 0; k < NB_PROFILE_BANDS; k++)
             sum += s->matrix_b[i++] * dnch->band_noise[k];
         s->vector_b[j] = sum;
     }
 
-    solve(s->matrix_a, s->vector_b, 5);
+    solve(s->matrix_a, s->vector_b, SOLVE_SIZE);
     f = (0.5 * s->sample_rate) / s->band_centre[NB_PROFILE_BANDS-1];
     f = 15.0 + log(f / 1.5) / log(1.5);
     sum = 0.0;
     product = 1.0;
-    for (int j = 0; j < 5; j++) {
+    for (int j = 0; j < SOLVE_SIZE; j++) {
         sum += product * s->vector_b[j];
         product *= f;
     }
@@ -670,24 +671,24 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
-    for (j = 0; j < 5; j++) {
-        for (k = 0; k < 5; k++) {
-            s->matrix_a[j + k * 5] = 0.0;
+    for (j = 0; j < SOLVE_SIZE; j++) {
+        for (k = 0; k < SOLVE_SIZE; k++) {
+            s->matrix_a[j + k * SOLVE_SIZE] = 0.0;
             for (m = 0; m < NB_PROFILE_BANDS; m++)
-                s->matrix_a[j + k * 5] += pow(m, j + k);
+                s->matrix_a[j + k * SOLVE_SIZE] += pow(m, j + k);
         }
     }
 
-    factor(s->matrix_a, 5);
+    factor(s->matrix_a, SOLVE_SIZE);
 
     i = 0;
-    for (j = 0; j < 5; j++)
+    for (j = 0; j < SOLVE_SIZE; j++)
         for (k = 0; k < NB_PROFILE_BANDS; k++)
             s->matrix_b[i++] = pow(k, j);
 
     i = 0;
     for (j = 0; j < NB_PROFILE_BANDS; j++)
-        for (k = 0; k < 5; k++)
+        for (k = 0; k < SOLVE_SIZE; k++)
             s->matrix_c[i++] = pow(j, k);
 
     s->window = av_calloc(s->window_length, sizeof(*s->window));
@@ -997,17 +998,17 @@ static void set_noise_profile(AudioFFTDeNoiseContext *s,
         temp[m] = sample_noise[m];
 
     if (new_profile) {
-        for (int m = 0; m < 5; m++) {
+        for (int m = 0; m < SOLVE_SIZE; m++) {
             sum = 0.0;
             for (n = 0; n < NB_PROFILE_BANDS; n++)
                 sum += s->matrix_b[i++] * temp[n];
             s->vector_b[m] = sum;
         }
-        solve(s->matrix_a, s->vector_b, 5);
+        solve(s->matrix_a, s->vector_b, SOLVE_SIZE);
         i = 0;
         for (int m = 0; m < NB_PROFILE_BANDS; m++) {
             sum = 0.0;
-            for (n = 0; n < 5; n++)
+            for (n = 0; n < SOLVE_SIZE; n++)
                 sum += s->matrix_c[i++] * s->vector_b[n];
             temp[m] = sum;
         }
