@@ -363,7 +363,7 @@ static void process_frame(AVFilterContext *ctx,
     int n = 0, i1;
 
     for (int i = 0; i < s->fft_length2; i++) {
-        double new_gain, mag, mag_abs_var, new_mag_abs_var;
+        double sqr_new_gain, new_gain, mag, mag_abs_var, new_mag_abs_var;
 
         mag = fft_data[i].re * fft_data[i].re + fft_data[i].im * fft_data[i].im;
         if (mag > sample_floor)
@@ -373,10 +373,9 @@ static void process_frame(AVFilterContext *ctx,
         mag_abs_var = mag / abs_var[i];
         new_mag_abs_var = ratio * prior[i] + rratio * fmax(mag_abs_var - 1.0, 0.0);
         new_gain = new_mag_abs_var / (1.0 + new_mag_abs_var);
-        new_gain *= (new_gain + M_PI_4 / fmax(mag_abs_var, 1.0E-6));
-        prior[i] = mag_abs_var * new_gain;
-        dnch->clean_data[i] = mag * new_gain;
-        new_gain = sqrt(new_gain);
+        sqr_new_gain = new_gain * new_gain;
+        prior[i] = mag_abs_var * sqr_new_gain;
+        dnch->clean_data[i] = mag * sqr_new_gain;
         gain[i] = new_gain;
     }
 
