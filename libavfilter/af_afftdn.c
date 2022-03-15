@@ -974,7 +974,7 @@ static void finish_sample_noise(AudioFFTDeNoiseContext *s,
         dnch->noise_band_var[i] -= dnch->noise_band_avr[i] * dnch->noise_band_avr[i] +
                                    dnch->noise_band_avi[i] * dnch->noise_band_avi[i];
         dnch->noise_band_auto_var[i] = dnch->noise_band_var[i];
-        sample_noise[i] = (1.0 / C) * log(dnch->noise_band_var[i] / s->floor) - 100.0;
+        sample_noise[i] = 10.0 * log10(dnch->noise_band_var[i] / s->floor) - 100.0;
     }
     if (s->noise_band_count < NB_PROFILE_BANDS) {
         for (int i = s->noise_band_count; i < NB_PROFILE_BANDS; i++)
@@ -1091,7 +1091,7 @@ static void get_auto_noise_levels(AudioFFTDeNoiseContext *s,
 {
     if (s->noise_band_count > 0) {
         for (int i = 0; i < s->noise_band_count; i++) {
-            levels[i] = (1.0 / C) * log(dnch->noise_band_auto_var[i] / s->floor) - 100.0;
+            levels[i] = 10.0 * log10(dnch->noise_band_auto_var[i] / s->floor) - 100.0;
         }
         if (s->noise_band_count < NB_PROFILE_BANDS) {
             for (int i = s->noise_band_count; i < NB_PROFILE_BANDS; i++)
