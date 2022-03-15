@@ -737,14 +737,10 @@ int av_channel_layout_describe_bprint(const AVChannelLayout *channel_layout,
             av_bprintf(bp, "%d channels (", channel_layout->nb_channels);
         for (i = 0; i < channel_layout->nb_channels; i++) {
             enum AVChannel ch = av_channel_layout_channel_from_index(channel_layout, i);
-            const char *channel = get_channel_name(ch);
 
             if (i)
                 av_bprintf(bp, "+");
-            if (channel)
-                av_bprintf(bp, "%s", channel);
-            else
-                av_bprintf(bp, "USR%d", ch);
+            av_channel_name_bprint(bp, ch);
             if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM &&
                 channel_layout->u.map[i].name[0])
                 av_bprintf(bp, "@%s", channel_layout->u.map[i].name);
