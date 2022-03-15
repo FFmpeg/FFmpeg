@@ -27,6 +27,8 @@
 #include "pixfmt.h"
 #include "frame.h"
 
+typedef struct AVVkFrame AVVkFrame;
+
 /**
  * @file
  * API-specific header for AV_HWDEVICE_TYPE_VULKAN.
@@ -135,6 +137,19 @@ typedef struct AVVulkanDeviceContext {
      */
     int queue_family_decode_index;
     int nb_decode_queues;
+
+    /**
+     * Locks a queue, preventing other threads from submitting any command
+     * buffers to this queue.
+     * If set to NULL, will be set to lavu-internal functions that utilize a
+     * mutex.
+     */
+    void (*lock_queue)(struct AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index);
+
+    /**
+     * Similar to lock_queue(), unlocks a queue. Must only be called after locking.
+     */
+    void (*unlock_queue)(struct AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index);
 } AVVulkanDeviceContext;
 
 /**
@@ -195,6 +210,21 @@ typedef struct AVVulkanFramesContext {
      * av_hwframe_ctx_init().
      */
     AVVkFrameFlags flags;
+
+    /**
+     * Locks a frame, preventing other threads from changing frame properties.
+     * Users SHOULD only ever lock just before command submission in order
+     * to get accurate frame properties, and unlock immediately after command
+     * submission without waiting for it to finish.
+     *
+     * If unset, will be set to lavu-internal functions that utilize a mutex.
+     */
+    void (*lock_frame)(struct AVHWFramesContext *fc, AVVkFrame *vkf);
+
+    /**
+     * Similar to lock_frame(), unlocks a frame. Must only be called after locking.
+     */
+    void (*unlock_frame)(struct AVHWFramesContext *fc, AVVkFrame *vkf);
 } AVVulkanFramesContext;
 
 /*
@@ -210,7 +240,7 @@ typedef struct AVVulkanFramesContext {
  * @note the size of this structure is not part of the ABI, to allocate
  * you must use @av_vk_frame_alloc().
  */
-typedef struct AVVkFrame {
+struct AVVkFrame {
     /**
      * Vulkan images to which the memory is bound to.
      */
@@ -264,6 +294,12 @@ typedef struct AVVkFrame {
      * Describes the binding offset of each plane to the VkDeviceMemory.
      */
     ptrdiff_t offset[AV_NUM_DATA_POINTERS];
+
+    /**
+     * Queue family of the images. Must be VK_QUEUE_FAMILY_IGNORED if
+     * the image was allocated with the CONCURRENT concurrency option.
+     */
+    uint32_t queue_family[AV_NUM_DATA_POINTERS];
 } AVVkFrame;
 
 /**
