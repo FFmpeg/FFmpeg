@@ -252,8 +252,8 @@ typedef struct ChannelList {
 static enum AVChannel channel_list_pop(ChannelList *chl, int idx)
 {
     enum AVChannel ret = chl->ch[idx];
-    memcpy(chl->ch + idx, chl->ch + idx + 1,
-           (chl->nb_ch - idx - 1) * sizeof(*chl->ch));
+    memmove(chl->ch + idx, chl->ch + idx + 1,
+            (chl->nb_ch - idx - 1) * sizeof(*chl->ch));
     chl->nb_ch--;
     return ret;
 }
