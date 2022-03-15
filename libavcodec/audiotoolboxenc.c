@@ -186,7 +186,7 @@ static int remap_layout(AudioChannelLayout *layout, const AVChannelLayout *in_la
     for (i = 0; i < in_layout->nb_channels; i++) {
         int c, label;
 
-        c = av_channel_layout_get_channel(in_layout, i);
+        c = av_channel_layout_channel_from_index(in_layout, i);
         if (c < 0 || c >= 64)
             return AVERROR(EINVAL);
         label = get_channel_label(c);
