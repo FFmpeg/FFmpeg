@@ -220,7 +220,7 @@ static int get_aac_tag(const AVChannelLayout *in_layout)
     };
     int i;
 
-    for (i = 0; i < FF_ARRAY_ELEMS; i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(map); i++)
         if (!av_channel_layout_compare(in_layout, &map[i].chl))
             return map[i].tag;
 
