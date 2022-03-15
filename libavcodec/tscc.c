@@ -41,6 +41,7 @@
 #include "decode.h"
 #include "internal.h"
 #include "msrledec.h"
+#include "zlib_wrapper.h"
 
 #include <zlib.h>
 
@@ -57,8 +58,7 @@ typedef struct TsccContext {
     unsigned char* decomp_buf;
     GetByteContext gb;
     int height;
-    int zlib_init_ok;
-    z_stream zstream;
+    FFZStream zstream;
 
     uint32_t pal[256];
 } CamtasiaContext;
@@ -69,6 +69,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CamtasiaContext * const c = avctx->priv_data;
+    z_stream *const zstream = &c->zstream.zstream;
     AVFrame *frame = c->frame;
     int ret;
     int palette_has_changed = 0;
@@ -77,16 +78,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         palette_has_changed = ff_copy_palette(c->pal, avpkt, avctx);
     }
 
-    ret = inflateReset(&c->zstream);
+    ret = inflateReset(zstream);
     if (ret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
         return AVERROR_UNKNOWN;
     }
-    c->zstream.next_in   = buf;
-    c->zstream.avail_in  = buf_size;
-    c->zstream.next_out = c->decomp_buf;
-    c->zstream.avail_out = c->decomp_size;
-    ret = inflate(&c->zstream, Z_FINISH);
+    zstream->next_in   = buf;
+    zstream->avail_in  = buf_size;
+    zstream->next_out  = c->decomp_buf;
+    zstream->avail_out = c->decomp_size;
+    ret = inflate(zstream, Z_FINISH);
     // Z_DATA_ERROR means empty picture
     if (ret == Z_DATA_ERROR && !palette_has_changed) {
         return buf_size;
@@ -102,7 +103,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (ret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
-                         c->decomp_size - c->zstream.avail_out);
+                         c->decomp_size - zstream->avail_out);
         ff_msrle_decode(avctx, frame, c->bpp, &c->gb);
     }
 
@@ -123,7 +124,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;
-    int zret; // Zlib return code
 
     c->avctx = avctx;
 
@@ -151,21 +151,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    c->zstream.zalloc = Z_NULL;
-    c->zstream.zfree = Z_NULL;
-    c->zstream.opaque = Z_NULL;
-    zret = inflateInit(&c->zstream);
-    if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return AVERROR_UNKNOWN;
-    }
-    c->zlib_init_ok = 1;
-
     c->frame = av_frame_alloc();
     if (!c->frame)
         return AVERROR(ENOMEM);
 
-    return 0;
+    return ff_inflate_init(&c->zstream, avctx);
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)
@@ -174,9 +164,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     av_freep(&c->decomp_buf);
     av_frame_free(&c->frame);
-
-    if (c->zlib_init_ok)
-        inflateEnd(&c->zstream);
+    ff_inflate_end(&c->zstream);
 
     return 0;
 }
