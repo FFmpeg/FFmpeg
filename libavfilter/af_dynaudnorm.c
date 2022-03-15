@@ -129,17 +129,13 @@ AVFILTER_DEFINE_CLASS(dynaudnorm);
 static av_cold int init(AVFilterContext *ctx)
 {
     DynamicAudioNormalizerContext *s = ctx->priv;
-    int ret = 0;
 
     if (!(s->filter_size & 1)) {
         av_log(ctx, AV_LOG_WARNING, "filter size %d is invalid. Changing to an odd value.\n", s->filter_size);
         s->filter_size |= 1;
     }
 
-    if (strcmp(s->channels_to_filter, "all"))
-        ret = av_channel_layout_from_string(&s->ch_layout, s->channels_to_filter);
-
-    return ret;
+    return 0;
 }
 
 static inline int frame_size(int sample_rate, int frame_len_msec)
@@ -851,6 +847,12 @@ static int activate(AVFilterContext *ctx)
     AVFrame *in = NULL;
     int ret = 0, status;
     int64_t pts;
+
+    ret = av_channel_layout_copy(&s->ch_layout, &inlink->ch_layout);
+    if (ret < 0)
+        return ret;
+    if (strcmp(s->channels_to_filter, "all"))
+        av_channel_layout_from_string(&s->ch_layout, s->channels_to_filter);
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
