@@ -2991,7 +2991,7 @@ xma2_decoder_select="wmapro_decoder"
 ylc_decoder_select="bswapdsp"
 zerocodec_decoder_select="inflate_wrapper"
 zlib_decoder_select="inflate_wrapper"
-zlib_encoder_deps="zlib"
+zlib_encoder_select="deflate_wrapper"
 zmbv_decoder_select="inflate_wrapper"
 zmbv_encoder_select="deflate_wrapper"
 
