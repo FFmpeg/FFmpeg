@@ -1177,7 +1177,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
 
             finish_sample_noise(s, dnch, sample_noise);
             set_noise_profile(s, dnch, sample_noise, 1);
-            set_band_parameters(s, dnch);
+            set_parameters(s, dnch, 1, 1);
         }
         s->sample_noise = 0;
         s->sample_noise_end = 0;
