@@ -587,6 +587,7 @@ int av_channel_layout_from_string(AVChannelLayout *channel_layout,
             av_free(channel);
             av_free(chname);
         }
+        av_free(chlist);
 
         return 0;
     }
