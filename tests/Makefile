@@ -133,6 +133,7 @@ include $(SRC_PATH)/tests/fate/dfa.mak
 include $(SRC_PATH)/tests/fate/dnn.mak
 include $(SRC_PATH)/tests/fate/dnxhd.mak
 include $(SRC_PATH)/tests/fate/dpcm.mak
+include $(SRC_PATH)/tests/fate/dvvideo.mak
 include $(SRC_PATH)/tests/fate/ea.mak
 include $(SRC_PATH)/tests/fate/exif.mak
 include $(SRC_PATH)/tests/fate/ffmpeg.mak
