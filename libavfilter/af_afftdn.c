@@ -564,18 +564,20 @@ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
         return;
 
     for (int i = 0; i < NB_PROFILE_BANDS; i++) {
+        float noise;
+
         if (!(arg = av_strtok(p, "| ", &saveptr)))
             break;
 
         p = NULL;
 
-        ret = av_sscanf(arg, "%f", &band_noise[i]);
+        ret = av_sscanf(arg, "%f", &noise);
         if (ret != 1) {
             av_log(s, AV_LOG_ERROR, "Custom band noise must be float.\n");
             break;
         }
 
-        band_noise[i] = av_clipd(band_noise[i], -24., 24.);
+        band_noise[i] = av_clipd(noise, -24., 24.);
     }
 
     av_free(custom_noise_str);
