@@ -20,11 +20,12 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "zlib_wrapper.h"
 #include "libavutil/common.h"
 
 typedef struct ZeroCodecContext {
     AVFrame  *previous_frame;
-    z_stream zstream;
+    FFZStream zstream;
 } ZeroCodecContext;
 
 static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
@@ -33,7 +34,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     ZeroCodecContext *zc = avctx->priv_data;
     AVFrame *pic         = data;
     AVFrame *prev_pic    = zc->previous_frame;
-    z_stream *zstream    = &zc->zstream;
+    z_stream *const zstream = &zc->zstream.zstream;
     uint8_t *prev        = prev_pic->data[0];
     uint8_t *dst;
     int i, j, zret, ret;
@@ -106,7 +107,7 @@ static av_cold int zerocodec_decode_close(AVCodecContext *avctx)
 
     av_frame_free(&zc->previous_frame);
 
-    inflateEnd(&zc->zstream);
+    ff_inflate_end(&zc->zstream);
 
     return 0;
 }
@@ -114,27 +115,15 @@ static av_cold int zerocodec_decode_close(AVCodecContext *avctx)
 static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
 {
     ZeroCodecContext *zc = avctx->priv_data;
-    z_stream *zstream    = &zc->zstream;
-    int zret;
 
     avctx->pix_fmt             = AV_PIX_FMT_UYVY422;
     avctx->bits_per_raw_sample = 8;
-
-    zstream->zalloc = Z_NULL;
-    zstream->zfree  = Z_NULL;
-    zstream->opaque = Z_NULL;
-
-    zret = inflateInit(zstream);
-    if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not initialize inflate: %d.\n", zret);
-        return AVERROR(ENOMEM);
-    }
 
     zc->previous_frame = av_frame_alloc();
     if (!zc->previous_frame)
         return AVERROR(ENOMEM);
 
-    return 0;
+    return ff_inflate_init(&zc->zstream, avctx);
 }
 
 static void zerocodec_decode_flush(AVCodecContext *avctx)
