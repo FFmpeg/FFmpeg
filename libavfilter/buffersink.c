@@ -330,24 +330,22 @@ static int asink_query_formats(AVFilterContext *ctx)
                        "Conflicting ch_layouts and list of channel_counts/channel_layouts. Ignoring the former\n");
             else
 #endif
-            while (cur && *cur) {
-                char *chl = av_get_token(&cur, "|,");
-                if (!chl)
-                    return AVERROR(ENOMEM);
-                if (*cur)
-                    cur++;
+            while (cur) {
+                char *next = strchr(cur, '|');
+                if (next)
+                    *next++ = 0;
 
-                ret = av_channel_layout_from_string(&layout, chl);
+                ret = av_channel_layout_from_string(&layout, cur);
                 if (ret < 0) {
-                    av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", chl);
-                    av_free(chl);
+                    av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", cur);
                     return ret;
                 }
                 ret = ff_add_channel_layout(&layouts, &layout);
                 av_channel_layout_uninit(&layout);
-                av_free(chl);
                 if (ret < 0)
                     return ret;
+
+                cur = next;
             }
         }
 
