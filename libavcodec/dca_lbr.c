@@ -1730,6 +1730,7 @@ int ff_dca_lbr_filter_frame(DCALbrDecoder *s, AVFrame *frame)
     const int8_t *reorder;
     uint64_t channel_mask = channel_layouts[ch_conf];
 
+    nchannels = av_popcount64(channel_mask);
     avctx->sample_rate = s->sample_rate;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     avctx->bits_per_raw_sample = 0;
