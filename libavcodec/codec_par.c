@@ -78,6 +78,7 @@ int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src
     codec_parameters_reset(dst);
     memcpy(dst, src, sizeof(*dst));
 
+    dst->ch_layout      = (AVChannelLayout){0};
     dst->extradata      = NULL;
     dst->extradata_size = 0;
     if (src->extradata) {
