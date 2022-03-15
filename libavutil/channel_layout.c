@@ -690,14 +690,14 @@ static int ambisonic_order(const AVChannelLayout *channel_layout)
 /**
  * If the custom layout is n-th order standard-order ambisonic, with optional
  * extra non-diegetic channels at the end, write its string description in bp.
- * Return a negative error code on error.
+ * Return a negative error code otherwise.
  */
 static int try_describe_ambisonic(AVBPrint *bp, const AVChannelLayout *channel_layout)
 {
     int nb_ambi_channels;
     int order = ambisonic_order(channel_layout);
     if (order < 0)
-        return 0;
+        return order;
 
     av_bprintf(bp, "ambisonic %d", order);
 
@@ -749,8 +749,8 @@ int av_channel_layout_describe_bprint(const AVChannelLayout *channel_layout,
     case AV_CHANNEL_ORDER_CUSTOM:
         if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
             int res = try_describe_ambisonic(bp, channel_layout);
-            if (res < 0 || bp->len)
-                return res;
+            if (res >= 0)
+                return 0;
         }
         if (channel_layout->nb_channels)
             av_bprintf(bp, "%d channels (", channel_layout->nb_channels);
