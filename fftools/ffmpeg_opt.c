@@ -765,32 +765,6 @@ int assert_file_overwrite(const char *filename)
     return 0;
 }
 
-/* read file contents into a string */
-char *file_read(const char *filename)
-{
-    AVIOContext *pb      = NULL;
-    int ret = avio_open(&pb, filename, AVIO_FLAG_READ);
-    AVBPrint bprint;
-    char *str;
-
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error opening file %s.\n", filename);
-        return NULL;
-    }
-
-    av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
-    ret = avio_read_to_bprint(pb, &bprint, SIZE_MAX);
-    avio_closep(&pb);
-    if (ret < 0) {
-        av_bprint_finalize(&bprint, NULL);
-        return NULL;
-    }
-    ret = av_bprint_finalize(&bprint, &str);
-    if (ret < 0)
-        return NULL;
-    return str;
-}
-
 /* arg format is "output-stream-index:streamid-value". */
 static int opt_streamid(void *optctx, const char *opt, const char *arg)
 {

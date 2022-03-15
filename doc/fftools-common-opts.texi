@@ -13,6 +13,15 @@ corresponding value to true. They can be set to false by prefixing
 the option name with "no". For example using "-nofoo"
 will set the boolean option with name "foo" to false.
 
+Options that take arguments support a special syntax where the argument given on
+the command line is interpreted as a path to the file from which the actual
+argument value is loaded. To use this feature, add a forward slash '/'
+immediately before the option name (after the leading dash). E.g.
+@example
+ffmpeg -i INPUT -/filter:v filter.script OUTPUT
+@end example
+will load a filtergraph description from the file named @file{filter.script}.
+
 @anchor{Stream specifiers}
 @section Stream specifiers
 Some options are applied per-stream, e.g. bitrate or codec. Stream specifiers

@@ -652,7 +652,6 @@ void remove_avoptions(AVDictionary **a, AVDictionary *b);
 int check_avoptions(AVDictionary *m);
 
 int assert_file_overwrite(const char *filename);
-char *file_read(const char *filename);
 AVDictionary *strip_specifiers(const AVDictionary *dict);
 int find_codec(void *logctx, const char *name,
                enum AVMediaType type, int encoder, const AVCodec **codec);
