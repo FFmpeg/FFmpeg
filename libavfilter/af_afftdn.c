@@ -35,6 +35,13 @@
 #define SFM_FLAGS_SIZE (512)
 #define SFM_FLAGS_MASK (SFM_FLAGS_SIZE - 1)
 
+enum SampleNoiseModes {
+    SAMPLE_NONE,
+    SAMPLE_START,
+    SAMPLE_STOP,
+    NB_SAMPLEMODES
+};
+
 enum OutModes {
     IN_MODE,
     OUT_MODE,
@@ -124,8 +131,7 @@ typedef struct AudioFFTDeNoiseContext {
 
     int     channels;
     int     sample_noise;
-    int     sample_noise_start;
-    int     sample_noise_end;
+    int     sample_noise_mode;
     float   sample_rate;
     int     buffer_length;
     int     fft_length;
@@ -204,6 +210,13 @@ static const AVOption afftdn_options[] = {
     {  "average", "average",              0,                       AV_OPT_TYPE_CONST,  {.i64 = AVERAGE_LINK},  0,  0, AFR, "link" },
     { "band_multiplier", "set band multiplier",OFFSET(band_multiplier), AV_OPT_TYPE_FLOAT,{.dbl = 1.25},       0.2,5, AF  },
     { "bm",       "set band multiplier",       OFFSET(band_multiplier), AV_OPT_TYPE_FLOAT,{.dbl = 1.25},       0.2,5, AF  },
+    { "sample_noise", "set sample noise mode",OFFSET(sample_noise_mode),AV_OPT_TYPE_INT,{.i64 = SAMPLE_NONE},  0,  NB_SAMPLEMODES-1, AFR, "sample" },
+    { "sn",           "set sample noise mode",OFFSET(sample_noise_mode),AV_OPT_TYPE_INT,{.i64 = SAMPLE_NONE},  0,  NB_SAMPLEMODES-1, AFR, "sample" },
+    {  "none",    "none",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_NONE},   0,  0, AFR, "sample" },
+    {  "start",   "start",                0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_START},  0,  0, AFR, "sample" },
+    {  "begin",   "start",                0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_START},  0,  0, AFR, "sample" },
+    {  "stop",    "stop",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_STOP},   0,  0, AFR, "sample" },
+    {  "end",     "stop",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_STOP},   0,  0, AFR, "sample" },
     { NULL }
 };
 
@@ -1155,13 +1168,13 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    if (s->sample_noise_start) {
+    if (s->sample_noise_mode == SAMPLE_START) {
         for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
             DeNoiseChannel *dnch = &s->dnch[ch];
 
             init_sample_noise(dnch);
         }
-        s->sample_noise_start = 0;
+        s->sample_noise_mode = SAMPLE_NONE;
         s->sample_noise = 1;
     }
 
@@ -1173,7 +1186,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    if (s->sample_noise_end) {
+    if (s->sample_noise_mode == SAMPLE_STOP) {
         for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
             DeNoiseChannel *dnch = &s->dnch[ch];
             double sample_noise[NB_PROFILE_BANDS];
@@ -1183,7 +1196,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
             set_parameters(s, dnch, 1, 1);
         }
         s->sample_noise = 0;
-        s->sample_noise_end = 0;
+        s->sample_noise_mode = SAMPLE_NONE;
     }
 
     s->block_count++;
@@ -1297,36 +1310,23 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     AudioFFTDeNoiseContext *s = ctx->priv;
-    int need_reset = 0;
     int ret = 0;
 
-    if (!strcmp(cmd, "sample_noise") ||
-        !strcmp(cmd, "sn")) {
-        if (!strcmp(args, "start")) {
-            s->sample_noise_start = 1;
-            s->sample_noise_end = 0;
-        } else if (!strcmp(args, "end") ||
-                   !strcmp(args, "stop")) {
-            s->sample_noise_start = 0;
-            s->sample_noise_end = 1;
-        }
-    } else {
-        ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
-        if (ret < 0)
-            return ret;
-        need_reset = 1;
-    }
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
 
-    if (need_reset) {
-        for (int ch = 0; ch < s->channels; ch++) {
-            DeNoiseChannel *dnch = &s->dnch[ch];
+    if (!strcmp(cmd, "sample_noise") || !strcmp(cmd, "sn"))
+        return 0;
 
-            dnch->noise_reduction = s->noise_reduction;
-            dnch->noise_floor     = s->noise_floor;
-            dnch->residual_floor  = s->residual_floor;
+    for (int ch = 0; ch < s->channels; ch++) {
+        DeNoiseChannel *dnch = &s->dnch[ch];
 
-            set_parameters(s, dnch, 1, 1);
-        }
+        dnch->noise_reduction = s->noise_reduction;
+        dnch->noise_floor     = s->noise_floor;
+        dnch->residual_floor  = s->residual_floor;
+
+        set_parameters(s, dnch, 1, 1);
     }
 
     return 0;
