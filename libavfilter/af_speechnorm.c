@@ -104,8 +104,8 @@ static const AVOption speechnorm_options[] = {
     { "r",     "set the expansion raising amount", OFFSET(raise_amount), AV_OPT_TYPE_DOUBLE, {.dbl=0.001}, 0.0, 1.0, FLAGS },
     { "fall", "set the compression raising amount", OFFSET(fall_amount), AV_OPT_TYPE_DOUBLE, {.dbl=0.001}, 0.0, 1.0, FLAGS },
     { "f",    "set the compression raising amount", OFFSET(fall_amount), AV_OPT_TYPE_DOUBLE, {.dbl=0.001}, 0.0, 1.0, FLAGS },
-    { "channels", "set channels to filter", OFFSET(ch_layout_str), AV_OPT_TYPE_STRING, {.str="all"}, INT64_MIN, INT64_MAX, FLAGS },
-    { "h",        "set channels to filter", OFFSET(ch_layout_str), AV_OPT_TYPE_STRING, {.str="all"}, INT64_MIN, INT64_MAX, FLAGS },
+    { "channels", "set channels to filter", OFFSET(ch_layout_str), AV_OPT_TYPE_STRING, {.str="all"}, 0, 0, FLAGS },
+    { "h",        "set channels to filter", OFFSET(ch_layout_str), AV_OPT_TYPE_STRING, {.str="all"}, 0, 0, FLAGS },
     { "invert", "set inverted filtering", OFFSET(invert), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "i",      "set inverted filtering", OFFSET(invert), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "link", "set linked channels filtering", OFFSET(link), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
@@ -462,6 +462,13 @@ static int activate(AVFilterContext *ctx)
     int ret, status;
     int64_t pts;
 
+    ret = av_channel_layout_copy(&s->ch_layout, &inlink->ch_layout);
+    if (ret < 0)
+        return ret;
+    if (strcmp(s->ch_layout_str, "all"))
+        av_channel_layout_from_string(&s->ch_layout,
+                                      s->ch_layout_str);
+
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
     ret = filter_frame(ctx);
@@ -547,18 +554,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx)
-{
-    SpeechNormalizerContext *s = ctx->priv;
-    int ret;
-
-    if (strcmp(s->ch_layout_str, "all"))
-        ret = av_channel_layout_from_string(&s->ch_layout,
-                                            s->ch_layout_str);
-
-    return ret;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     SpeechNormalizerContext *s = ctx->priv;
@@ -589,7 +584,6 @@ const AVFilter ff_af_speechnorm = {
     .priv_size       = sizeof(SpeechNormalizerContext),
     .priv_class      = &speechnorm_class,
     .activate        = activate,
-    .init            = init,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
