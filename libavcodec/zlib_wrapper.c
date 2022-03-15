@@ -23,7 +23,18 @@
 
 #include "libavutil/error.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "zlib_wrapper.h"
+
+static void *alloc_wrapper(void *opaque, uInt items, uInt size)
+{
+    return av_malloc_array(items, size);
+}
+
+static void free_wrapper(void *opaque, void *ptr)
+{
+    av_free(ptr);
+}
 
 int ff_inflate_init(FFZStream *z, void *logctx)
 {
@@ -33,8 +44,8 @@ int ff_inflate_init(FFZStream *z, void *logctx)
     z->inited = 0;
     zstream->next_in  = Z_NULL;
     zstream->avail_in = 0;
-    zstream->zalloc   = Z_NULL;
-    zstream->zfree    = Z_NULL;
+    zstream->zalloc   = alloc_wrapper;
+    zstream->zfree    = free_wrapper;
     zstream->opaque   = Z_NULL;
 
     zret = inflateInit(zstream);
