@@ -705,29 +705,20 @@ static int try_describe_ambisonic(AVBPrint *bp, const AVChannelLayout *channel_l
     nb_ambi_channels = (order + 1) * (order + 1);
     if (nb_ambi_channels < channel_layout->nb_channels) {
         AVChannelLayout extra = { 0 };
-        char buf[128];
 
         if (channel_layout->order == AV_CHANNEL_ORDER_AMBISONIC) {
             extra.order       = AV_CHANNEL_ORDER_NATIVE;
             extra.nb_channels = av_popcount64(channel_layout->u.mask);
             extra.u.mask      = channel_layout->u.mask;
         } else {
-            const AVChannelCustom *map = channel_layout->u.map;
-
             extra.order       = AV_CHANNEL_ORDER_CUSTOM;
             extra.nb_channels = channel_layout->nb_channels - nb_ambi_channels;
-            extra.u.map       = av_calloc(extra.nb_channels, sizeof(*extra.u.map));
-            if (!extra.u.map)
-                return AVERROR(ENOMEM);
-
-            memcpy(extra.u.map, &map[nb_ambi_channels],
-                   sizeof(*extra.u.map) * extra.nb_channels);
+            extra.u.map       = channel_layout->u.map + nb_ambi_channels;
         }
 
-        av_channel_layout_describe(&extra, buf, sizeof(buf));
-        av_channel_layout_uninit(&extra);
-
-        av_bprintf(bp, "+%s", buf);
+        av_bprint_chars(bp, '+', 1);
+        av_channel_layout_describe_bprint(&extra, bp);
+        /* Not calling uninit here on extra because we don't own the u.map pointer */
     }
 
     return 0;
