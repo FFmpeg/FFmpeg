@@ -204,19 +204,19 @@ static int get_aac_tag(const AVChannelLayout *in_layout)
         AVChannelLayout chl;
         int tag;
     } map[] = {
-        { AV_CH_LAYOUT_MONO,              kAudioChannelLayoutTag_Mono },
-        { AV_CH_LAYOUT_STEREO,            kAudioChannelLayoutTag_Stereo },
-        { AV_CH_LAYOUT_QUAD,              kAudioChannelLayoutTag_AAC_Quadraphonic },
-        { AV_CH_LAYOUT_OCTAGONAL,         kAudioChannelLayoutTag_AAC_Octagonal },
-        { AV_CH_LAYOUT_SURROUND,          kAudioChannelLayoutTag_AAC_3_0 },
-        { AV_CH_LAYOUT_4POINT0,           kAudioChannelLayoutTag_AAC_4_0 },
-        { AV_CH_LAYOUT_5POINT0,           kAudioChannelLayoutTag_AAC_5_0 },
-        { AV_CH_LAYOUT_5POINT1,           kAudioChannelLayoutTag_AAC_5_1 },
-        { AV_CH_LAYOUT_6POINT0,           kAudioChannelLayoutTag_AAC_6_0 },
-        { AV_CH_LAYOUT_6POINT1,           kAudioChannelLayoutTag_AAC_6_1 },
-        { AV_CH_LAYOUT_7POINT0,           kAudioChannelLayoutTag_AAC_7_0 },
-        { AV_CH_LAYOUT_7POINT1_WIDE_BACK, kAudioChannelLayoutTag_AAC_7_1 },
-        { AV_CH_LAYOUT_7POINT1,           kAudioChannelLayoutTag_MPEG_7_1_C },
+        { AV_CHANNEL_LAYOUT_MONO,              kAudioChannelLayoutTag_Mono },
+        { AV_CHANNEL_LAYOUT_STEREO,            kAudioChannelLayoutTag_Stereo },
+        { AV_CHANNEL_LAYOUT_QUAD,              kAudioChannelLayoutTag_AAC_Quadraphonic },
+        { AV_CHANNEL_LAYOUT_OCTAGONAL,         kAudioChannelLayoutTag_AAC_Octagonal },
+        { AV_CHANNEL_LAYOUT_SURROUND,          kAudioChannelLayoutTag_AAC_3_0 },
+        { AV_CHANNEL_LAYOUT_4POINT0,           kAudioChannelLayoutTag_AAC_4_0 },
+        { AV_CHANNEL_LAYOUT_5POINT0,           kAudioChannelLayoutTag_AAC_5_0 },
+        { AV_CHANNEL_LAYOUT_5POINT1,           kAudioChannelLayoutTag_AAC_5_1 },
+        { AV_CHANNEL_LAYOUT_6POINT0,           kAudioChannelLayoutTag_AAC_6_0 },
+        { AV_CHANNEL_LAYOUT_6POINT1,           kAudioChannelLayoutTag_AAC_6_1 },
+        { AV_CHANNEL_LAYOUT_7POINT0,           kAudioChannelLayoutTag_AAC_7_0 },
+        { AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK, kAudioChannelLayoutTag_AAC_7_1 },
+        { AV_CHANNEL_LAYOUT_7POINT1,           kAudioChannelLayoutTag_MPEG_7_1_C },
     };
     int i;
 
