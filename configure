@@ -2461,6 +2461,7 @@ CONFIG_EXTRA="
     idctdsp
     iirfilter
     mdct15
+    inflate_wrapper
     intrax8
     iso_media
     ividsp
@@ -2722,6 +2723,7 @@ faanidct_select="idctdsp"
 h264dsp_select="startcode"
 hevcparse_select="atsc_a53 golomb"
 frame_thread_encoder_deps="encoders threads"
+inflate_wrapper_deps="zlib"
 intrax8_select="blockdsp idctdsp"
 iso_media_select="mpeg4audio"
 mdct_select="fft"
