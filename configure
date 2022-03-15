@@ -2995,7 +2995,7 @@ zerocodec_decoder_select="inflate_wrapper"
 zlib_decoder_select="inflate_wrapper"
 zlib_encoder_deps="zlib"
 zmbv_decoder_select="inflate_wrapper"
-zmbv_encoder_deps="zlib"
+zmbv_encoder_select="deflate_wrapper"
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"

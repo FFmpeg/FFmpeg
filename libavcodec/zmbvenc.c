@@ -32,6 +32,7 @@
 #include "avcodec.h"
 #include "encode.h"
 #include "internal.h"
+#include "zlib_wrapper.h"
 
 #include <zlib.h>
 
@@ -74,8 +75,7 @@ typedef struct ZmbvEncContext {
     int keyint, curfrm;
     int bypp;
     enum ZmbvFormat fmt;
-    int zlib_init_ok;
-    z_stream zstream;
+    FFZStream zstream;
 
     int score_tab[ZMBV_BLOCK * ZMBV_BLOCK * 4 + 1];
 } ZmbvEncContext;
@@ -169,6 +169,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     ZmbvEncContext * const c = avctx->priv_data;
+    z_stream  *const zstream = &c->zstream.zstream;
     const AVFrame * const p = pict;
     uint8_t *src, *prev, *buf;
     uint32_t *palptr;
@@ -262,21 +263,21 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (keyframe)
-        deflateReset(&c->zstream);
+        deflateReset(zstream);
 
-    c->zstream.next_in = c->work_buf;
-    c->zstream.avail_in = work_size;
-    c->zstream.total_in = 0;
+    zstream->next_in   = c->work_buf;
+    zstream->avail_in  = work_size;
+    zstream->total_in  = 0;
 
-    c->zstream.next_out = c->comp_buf;
-    c->zstream.avail_out = c->comp_size;
-    c->zstream.total_out = 0;
-    if(deflate(&c->zstream, Z_SYNC_FLUSH) != Z_OK){
+    zstream->next_out  = c->comp_buf;
+    zstream->avail_out = c->comp_size;
+    zstream->total_out = 0;
+    if (deflate(zstream, Z_SYNC_FLUSH) != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Error compressing data\n");
         return -1;
     }
 
-    pkt_size = c->zstream.total_out + 1 + 6*keyframe;
+    pkt_size = zstream->total_out + 1 + 6 * keyframe;
     if ((ret = ff_get_encode_buffer(avctx, pkt, pkt_size, 0)) < 0)
         return ret;
     buf = pkt->data;
@@ -292,7 +293,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         *buf++ = ZMBV_BLOCK; // block height
         pkt->flags |= AV_PKT_FLAG_KEY;
     }
-    memcpy(buf, c->comp_buf, c->zstream.total_out);
+    memcpy(buf, c->comp_buf, zstream->total_out);
 
     *got_packet = 1;
 
@@ -307,8 +308,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     av_freep(&c->work_buf);
 
     av_freep(&c->prev_buf);
-    if (c->zlib_init_ok)
-        deflateEnd(&c->zstream);
+    ff_deflate_end(&c->zstream);
 
     return 0;
 }
@@ -319,7 +319,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     ZmbvEncContext * const c = avctx->priv_data;
-    int zret; // Zlib return code
     int i;
     int lvl = 9;
     int prev_size, prev_offset;
@@ -408,17 +407,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     c->prev = c->prev_buf + prev_offset;
 
-    c->zstream.zalloc = Z_NULL;
-    c->zstream.zfree = Z_NULL;
-    c->zstream.opaque = Z_NULL;
-    zret = deflateInit(&c->zstream, lvl);
-    if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return -1;
-    }
-    c->zlib_init_ok = 1;
-
-    return 0;
+    return ff_deflate_init(&c->zstream, lvl, avctx);
 }
 
 const AVCodec ff_zmbv_encoder = {
