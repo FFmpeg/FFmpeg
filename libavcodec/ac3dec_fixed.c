@@ -50,6 +50,7 @@
 #define FFT_FLOAT 0
 #define USE_FIXED 1
 #include "ac3dec.h"
+#include "codec_internal.h"
 
 
 static const int end_freq_inv_tab[8] =

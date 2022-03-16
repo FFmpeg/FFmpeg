@@ -27,7 +27,7 @@
 #include "canopus.h"
 #include "get_bits.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "thread.h"
 
 #define VLC_BITS 7

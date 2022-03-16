@@ -35,6 +35,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "jpegtables.h"
 #include "mjpegenc_common.h"
 #include "mjpegenc_huffman.h"

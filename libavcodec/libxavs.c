@@ -27,8 +27,8 @@
 #include <float.h>
 #include <xavs.h>
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "packet_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"

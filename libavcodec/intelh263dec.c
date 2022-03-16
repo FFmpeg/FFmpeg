@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "internal.h"
+#include "codec_internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263data.h"

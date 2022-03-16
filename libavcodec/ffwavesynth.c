@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 

@@ -29,6 +29,7 @@
 #include "audio_frame_queue.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "libavformat/isom.h"

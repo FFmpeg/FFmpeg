@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "copy_block.h"
 #include "mathops.h"
 #include "blockdsp.h"

@@ -64,7 +64,7 @@
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "fft.h"
 #include "lpc.h"

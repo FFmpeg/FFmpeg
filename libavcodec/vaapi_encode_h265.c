@@ -30,10 +30,10 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h265.h"
+#include "codec_internal.h"
 #include "h265_profile_level.h"
 #include "hevc.h"
 #include "hevc_sei.h"
-#include "internal.h"
 #include "put_bits.h"
 #include "vaapi_encode.h"
 

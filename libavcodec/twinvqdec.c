@@ -24,8 +24,8 @@
 
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "twinvq.h"
 #include "metasound_data.h"
 #include "twinvq_data.h"

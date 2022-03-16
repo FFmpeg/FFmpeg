@@ -38,6 +38,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "decode.h"
 #include "internal.h"
 #include "msrledec.h"

@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "pthread_internal.h"

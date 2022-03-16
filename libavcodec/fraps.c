@@ -40,7 +40,7 @@
 #include "huffman.h"
 #include "bytestream.h"
 #include "bswapdsp.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "thread.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')

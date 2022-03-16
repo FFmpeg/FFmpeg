@@ -21,7 +21,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 typedef struct IMM5Context {
     AVCodecContext *h264_avctx;   // wrapper context for H264

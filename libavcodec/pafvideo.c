@@ -24,6 +24,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "copy_block.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 

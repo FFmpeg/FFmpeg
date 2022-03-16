@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h261.h"

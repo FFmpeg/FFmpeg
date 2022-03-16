@@ -22,7 +22,7 @@
  */
 
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "v210dec.h"
 #include "libavutil/bswap.h"
 #include "libavutil/internal.h"

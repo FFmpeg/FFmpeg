@@ -35,7 +35,7 @@
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 #include "codec.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 typedef struct LibWebPContextCommon {
     AVClass *class;         // class for AVOptions

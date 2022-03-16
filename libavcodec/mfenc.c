@@ -27,6 +27,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct MFContext {

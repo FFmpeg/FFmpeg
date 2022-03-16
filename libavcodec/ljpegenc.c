@@ -36,9 +36,9 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "jpegtables.h"
 #include "mathops.h"
 #include "mjpegenc_common.h"

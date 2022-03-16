@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "decode.h"
 #include "h264_parse.h"
 #include "h264_ps.h"

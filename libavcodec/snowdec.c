@@ -22,8 +22,8 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "snow_dwt.h"
-#include "internal.h"
 #include "snow.h"
 
 #include "rangecoder.h"

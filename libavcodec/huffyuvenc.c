@@ -31,11 +31,11 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "huffyuv.h"
 #include "huffman.h"
 #include "huffyuvencdsp.h"
-#include "internal.h"
 #include "lossless_videoencdsp.h"
 #include "put_bits.h"
 #include "libavutil/opt.h"

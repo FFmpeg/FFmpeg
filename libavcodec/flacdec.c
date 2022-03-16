@@ -37,7 +37,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "bytestream.h"
 #include "golomb.h"

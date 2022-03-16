@@ -24,6 +24,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "hwconfig.h"
 #include "internal.h"

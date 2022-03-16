@@ -29,9 +29,9 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
-#include "internal.h"
 #include "bytestream.h"
 #include "audio_frame_queue.h"
+#include "codec_internal.h"
 
 typedef struct OpusEncContext {
     AVClass *av_class;

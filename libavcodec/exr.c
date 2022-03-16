@@ -49,6 +49,7 @@
 #include "bswapdsp.h"
 #endif
 
+#include "codec_internal.h"
 #include "exrdsp.h"
 #include "get_bits.h"
 #include "internal.h"

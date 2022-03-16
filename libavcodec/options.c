@@ -27,7 +27,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"

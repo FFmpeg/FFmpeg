@@ -35,6 +35,7 @@
 #include "libavutil/thread.h"
 #include "libavutil/video_enc_params.h"
 
+#include "codec_internal.h"
 #include "internal.h"
 #include "error_resilience.h"
 #include "avcodec.h"

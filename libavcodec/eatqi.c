@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "bswapdsp.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "aandcttab.h"
 #include "eaidct.h"

@@ -28,6 +28,7 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "codec_id.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct {

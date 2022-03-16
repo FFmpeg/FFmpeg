@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "version.h"

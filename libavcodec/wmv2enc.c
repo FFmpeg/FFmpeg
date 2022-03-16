@@ -19,6 +19,7 @@
  */
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "h263.h"
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"

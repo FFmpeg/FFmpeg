@@ -42,6 +42,7 @@
 #include "libavutil/mem.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct ScreenpressoContext {

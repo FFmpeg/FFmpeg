@@ -66,8 +66,8 @@
 
 #include <float.h>
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "bytestream.h"
 #include "jpeg2000.h"
 #include "version.h"

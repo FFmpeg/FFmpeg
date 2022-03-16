@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "bethsoftvideo.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct BethsoftvidContext {

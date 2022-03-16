@@ -29,7 +29,7 @@
 #include "ass_split.h"
 #include "ass.h"
 #include "bytestream.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 #define STYLE_FLAG_BOLD         (1<<0)
 #define STYLE_FLAG_ITALIC       (1<<1)

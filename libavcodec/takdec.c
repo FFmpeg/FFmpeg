@@ -33,7 +33,7 @@
 #include "audiodsp.h"
 #include "thread.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "unary.h"
 #include "tak.h"
 #include "takdsp.h"

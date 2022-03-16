@@ -36,12 +36,12 @@
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "dv.h"
 #include "dv_profile_internal.h"
 #include "dv_tablegen.h"
 #include "encode.h"
 #include "fdctdsp.h"
-#include "internal.h"
 #include "mathops.h"
 #include "me_cmp.h"
 #include "pixblockdsp.h"

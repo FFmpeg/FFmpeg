@@ -24,6 +24,8 @@
 
 #include "libavutil/channel_layout.h"
 #include "aptx.h"
+#include "codec_internal.h"
+#include "internal.h"
 
 /*
  * Half-band QMF synthesis filter realized with a polyphase FIR filter.

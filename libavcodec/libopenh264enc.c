@@ -30,6 +30,7 @@
 #include "libavutil/mathematics.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "libopenh264.h"

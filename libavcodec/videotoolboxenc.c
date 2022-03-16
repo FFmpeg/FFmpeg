@@ -30,6 +30,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/hwcontext_videotoolbox.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include <pthread.h>
 #include "atsc_a53.h"

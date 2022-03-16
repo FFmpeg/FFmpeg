@@ -25,6 +25,7 @@
  * MxPEG decoder
  */
 
+#include "codec_internal.h"
 #include "internal.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"

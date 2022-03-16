@@ -30,6 +30,7 @@
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "mathops.h"

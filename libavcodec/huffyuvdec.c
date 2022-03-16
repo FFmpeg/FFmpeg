@@ -35,10 +35,10 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "huffyuv.h"
 #include "huffyuvdsp.h"
-#include "internal.h"
 #include "lossless_videodsp.h"
 #include "thread.h"
 #include "libavutil/imgutils.h"

@@ -26,6 +26,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bswapdsp.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define MAX_HUFF_CODES 16

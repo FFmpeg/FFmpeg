@@ -33,6 +33,7 @@
 #include "mpeg4audio.h"
 #include "bgmc.h"
 #include "bswapdsp.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "mlz.h"
 #include "libavutil/samplefmt.h"

@@ -31,6 +31,7 @@
 #include "config_components.h"
 
 #include "ac3dec.h"
+#include "codec_internal.h"
 #include "eac3dec.c"
 #include "ac3dec.c"
 

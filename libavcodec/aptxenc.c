@@ -24,6 +24,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "aptx.h"
+#include "codec_internal.h"
 #include "encode.h"
 
 /*

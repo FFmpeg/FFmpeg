@@ -26,7 +26,7 @@
 #include "libavutil/bprint.h"
 #include "ass_split.h"
 #include "ass.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 #define WEBVTT_STACK_SIZE 64
 typedef struct {

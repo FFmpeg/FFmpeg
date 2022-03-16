@@ -23,8 +23,8 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "put_bits.h"
 #include "audio_frame_queue.h"
 #include "libavutil/channel_layout.h"

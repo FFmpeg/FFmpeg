@@ -34,6 +34,7 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8

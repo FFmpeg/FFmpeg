@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "codec_internal.h"
 #include "mpegaudioenc_template.c"
 
 const AVCodec ff_mp2fixed_encoder = {

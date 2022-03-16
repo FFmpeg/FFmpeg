@@ -28,7 +28,7 @@
  */
 
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/internal.h"

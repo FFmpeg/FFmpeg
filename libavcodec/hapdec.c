@@ -37,8 +37,8 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "hap.h"
-#include "internal.h"
 #include "snappy.h"
 #include "texturedsp.h"
 #include "thread.h"

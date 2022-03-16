@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "bytestream.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #include <zlib.h>

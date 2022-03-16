@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "blockdsp.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "fdctdsp.h"
 #include "internal.h"

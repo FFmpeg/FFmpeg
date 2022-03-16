@@ -41,6 +41,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "faxcompr.h"
 #include "internal.h"
 #include "lzw.h"

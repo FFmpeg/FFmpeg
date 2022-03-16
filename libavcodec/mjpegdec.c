@@ -38,6 +38,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "blockdsp.h"
+#include "codec_internal.h"
 #include "copy_block.h"
 #include "decode.h"
 #include "hwconfig.h"

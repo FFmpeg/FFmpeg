@@ -20,6 +20,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "amfenc.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define OFFSET(x) offsetof(AmfContext, x)

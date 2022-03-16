@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
 #include "put_golomb.h"

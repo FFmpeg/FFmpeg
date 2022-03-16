@@ -27,7 +27,7 @@
 #include "libavutil/bprint.h"
 #include "ass_split.h"
 #include "ass.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 
 #define SRT_STACK_SIZE 64

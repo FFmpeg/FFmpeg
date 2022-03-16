@@ -44,6 +44,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "fft.h"
 #include "internal.h"

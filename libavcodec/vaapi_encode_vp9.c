@@ -26,7 +26,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "vaapi_encode.h"
 
 #define VP9_MAX_QUANT 255

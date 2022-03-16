@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 static av_cold int v408_decode_init(AVCodecContext *avctx)

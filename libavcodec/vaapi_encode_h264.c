@@ -29,10 +29,10 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h264.h"
+#include "codec_internal.h"
 #include "h264.h"
 #include "h264_levels.h"
 #include "h264_sei.h"
-#include "internal.h"
 #include "vaapi_encode.h"
 #include "version.h"
 

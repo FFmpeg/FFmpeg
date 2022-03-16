@@ -34,9 +34,9 @@
 
 #include "avcodec.h"
 #include "celp_math.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "g723_1.h"
-#include "internal.h"
 
 #define BITSTREAM_WRITER_LE
 #include "put_bits.h"

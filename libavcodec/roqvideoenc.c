@@ -61,6 +61,7 @@
 #include "libavutil/opt.h"
 #include "roqvideo.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "elbg.h"
 #include "encode.h"
 #include "internal.h"

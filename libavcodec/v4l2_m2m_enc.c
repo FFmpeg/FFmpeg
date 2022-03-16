@@ -26,10 +26,10 @@
 #include <search.h>
 #include "encode.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/internal.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/opt.h"
+#include "codec_internal.h"
 #include "profiles.h"
 #include "v4l2_context.h"
 #include "v4l2_m2m.h"

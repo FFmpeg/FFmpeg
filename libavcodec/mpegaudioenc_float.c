@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #define USE_FLOATS 1
+#include "codec_internal.h"
 #include "mpegaudioenc_template.c"
 
 const AVCodec ff_mp2_encoder = {

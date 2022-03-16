@@ -39,8 +39,8 @@
 #include "libavutil/common.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "gsm.h"
 
 static av_cold int libgsm_encode_close(AVCodecContext *avctx) {

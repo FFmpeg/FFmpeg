@@ -37,6 +37,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "g722.h"
 #include "internal.h"

@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define BLOCK_HEIGHT 112u

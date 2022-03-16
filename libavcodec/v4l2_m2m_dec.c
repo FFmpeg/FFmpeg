@@ -27,8 +27,8 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
+#include "codec_internal.h"
 #include "libavcodec/decode.h"
-#include "libavcodec/internal.h"
 
 #include "v4l2_context.h"
 #include "v4l2_m2m.h"

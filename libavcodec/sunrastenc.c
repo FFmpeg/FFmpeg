@@ -23,8 +23,8 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "sunrast.h"
 
 typedef struct SUNRASTContext {

@@ -22,7 +22,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "put_bits.h"
 
 /**

@@ -25,8 +25,8 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 
 /** Maximum RLE code for bulk copy */
 #define MAX_RLE_BULK   127

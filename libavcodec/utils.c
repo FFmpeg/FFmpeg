@@ -35,6 +35,7 @@
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 #include "codec.h"
+#include "codec_internal.h"
 #include "hwconfig.h"
 #include "thread.h"
 #include "threadframe.h"

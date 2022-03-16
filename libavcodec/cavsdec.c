@@ -30,6 +30,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "cavs.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "mpeg12data.h"
 #include "startcode.h"

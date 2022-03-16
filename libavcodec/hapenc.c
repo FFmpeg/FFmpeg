@@ -39,9 +39,9 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "hap.h"
-#include "internal.h"
 #include "texturedsp.h"
 
 #define HAP_MAX_CHUNKS 64

@@ -20,8 +20,8 @@
  */
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "bytestream.h"
 #include "lossless_videoencdsp.h"
 #include "png.h"

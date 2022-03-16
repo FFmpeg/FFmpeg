@@ -91,6 +91,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/thread.h"
+#include "internal.h"
 
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];

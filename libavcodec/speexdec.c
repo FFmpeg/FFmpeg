@@ -55,6 +55,7 @@
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "speexdata.h"

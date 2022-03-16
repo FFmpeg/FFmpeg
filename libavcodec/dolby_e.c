@@ -25,6 +25,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 
+#include "codec_internal.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "dolby_e.h"

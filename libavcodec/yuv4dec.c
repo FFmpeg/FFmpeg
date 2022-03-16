@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 static av_cold int yuv4_decode_init(AVCodecContext *avctx)

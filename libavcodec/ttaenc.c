@@ -22,6 +22,7 @@
 #include "ttadata.h"
 #include "ttaencdsp.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
 #include "internal.h"

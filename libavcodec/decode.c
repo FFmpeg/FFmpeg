@@ -42,6 +42,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "bsf.h"
+#include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
 #include "internal.h"

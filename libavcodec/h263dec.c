@@ -30,6 +30,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "error_resilience.h"
 #include "flvdec.h"
 #include "h263.h"

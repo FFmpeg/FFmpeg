@@ -38,6 +38,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "config_components.h"
 #include "encode.h"
 #include "internal.h"

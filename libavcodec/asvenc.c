@@ -31,10 +31,10 @@
 #include "aandcttab.h"
 #include "asv.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "dct.h"
 #include "encode.h"
 #include "fdctdsp.h"
-#include "internal.h"
 #include "mpeg12data.h"
 
 static inline void asv1_put_level(PutBitContext *pb, int level)

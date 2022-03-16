@@ -43,6 +43,7 @@
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "dv.h"
 #include "dv_profile_internal.h"
 #include "dvdata.h"

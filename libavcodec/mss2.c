@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "codec_internal.h"
 #include "error_resilience.h"
 #include "internal.h"
 #include "mpeg_er.h"

@@ -23,6 +23,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #ifdef AACDECODER_LIB_VL0

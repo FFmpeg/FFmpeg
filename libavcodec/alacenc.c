@@ -22,9 +22,9 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "internal.h"
 #include "lpc.h"
 #include "mathops.h"
 #include "alac_data.h"

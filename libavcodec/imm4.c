@@ -29,6 +29,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "codec_internal.h"
 #include "copy_block.h"
 #include "get_bits.h"
 #include "idctdsp.h"

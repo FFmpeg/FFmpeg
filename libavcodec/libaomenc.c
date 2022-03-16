@@ -38,6 +38,7 @@
 #include "av1.h"
 #include "avcodec.h"
 #include "bsf.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"

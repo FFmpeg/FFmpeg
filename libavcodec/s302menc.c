@@ -22,8 +22,8 @@
 
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "mathops.h"
 #include "put_bits.h"
 

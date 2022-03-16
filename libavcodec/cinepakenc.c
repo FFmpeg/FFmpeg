@@ -44,9 +44,9 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "elbg.h"
 #include "encode.h"
-#include "internal.h"
 
 #define CVID_HEADER_SIZE 10
 #define STRIP_HEADER_SIZE 12

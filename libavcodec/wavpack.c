@@ -26,8 +26,8 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "thread.h"
 #include "threadframe.h"
 #include "unary.h"

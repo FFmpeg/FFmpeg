@@ -28,8 +28,8 @@
 #include "libavutil/float_dsp.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "fft.h"
 #include "mathops.h"
 #include "vorbis.h"

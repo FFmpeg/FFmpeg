@@ -28,6 +28,7 @@
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define HNM4_CHUNK_ID_PL 19536

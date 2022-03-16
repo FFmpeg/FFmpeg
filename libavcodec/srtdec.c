@@ -27,8 +27,8 @@
 #include "libavutil/parseutils.h"
 #include "avcodec.h"
 #include "ass.h"
+#include "codec_internal.h"
 #include "htmlsubtitles.h"
-#include "internal.h"
 
 static int srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
                        const char *in, int x1, int y1, int x2, int y2)

@@ -25,6 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 

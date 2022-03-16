@@ -27,6 +27,7 @@
  */
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "hpeldsp.h"
 #include "me_cmp.h"

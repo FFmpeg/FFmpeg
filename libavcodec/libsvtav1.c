@@ -31,6 +31,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
+#include "codec_internal.h"
 #include "internal.h"
 #include "encode.h"
 #include "packet_internal.h"

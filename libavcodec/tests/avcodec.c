@@ -19,6 +19,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/codec.h"
 #include "libavcodec/codec_desc.h"
+#include "libavcodec/codec_internal.h"
 #include "libavcodec/internal.h"
 
 static const char *get_type_string(enum AVMediaType type)

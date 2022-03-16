@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "thread.h"
 #include "jpeg2000.h"

@@ -23,7 +23,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "thread.h"
 
 typedef struct ThreadData {

@@ -27,9 +27,9 @@
  */
 
 #define AC3ENC_FLOAT 1
-#include "internal.h"
 #include "audiodsp.h"
 #include "ac3enc.h"
+#include "codec_internal.h"
 #include "eac3enc.h"
 #include "kbdwin.h"
 

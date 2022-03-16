@@ -42,6 +42,7 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct RpzaContext {

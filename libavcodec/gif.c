@@ -35,8 +35,8 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "lzw.h"
 #include "gif.h"
 

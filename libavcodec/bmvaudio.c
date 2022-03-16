@@ -23,6 +23,7 @@
 #include "libavutil/common.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 static const int bmv_aud_mults[16] = {

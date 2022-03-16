@@ -46,6 +46,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/mem_internal.h"
 
+#include "codec_internal.h"
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegutils.h"

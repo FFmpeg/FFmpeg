@@ -31,6 +31,7 @@
 #include "binkdata.h"
 #include "binkdsp.h"
 #include "blockdsp.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
 #include "internal.h"

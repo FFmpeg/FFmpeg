@@ -42,6 +42,7 @@
 #include "bytestream.h"
 #include "adpcm.h"
 #include "adpcm_data.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 /**

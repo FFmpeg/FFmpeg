@@ -38,6 +38,7 @@
 #include "libavutil/stereo3d.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "mathops.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"

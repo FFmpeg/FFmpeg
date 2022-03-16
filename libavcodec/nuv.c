@@ -29,6 +29,7 @@
 #include "libavutil/lzo.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "rtjpeg.h"

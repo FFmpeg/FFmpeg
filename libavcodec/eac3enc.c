@@ -28,6 +28,7 @@
 
 #include "libavutil/attributes.h"
 #include "ac3enc.h"
+#include "codec_internal.h"
 #include "eac3enc.h"
 #include "eac3_data.h"
 

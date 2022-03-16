@@ -34,6 +34,7 @@
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "celp_math.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "g723_1.h"

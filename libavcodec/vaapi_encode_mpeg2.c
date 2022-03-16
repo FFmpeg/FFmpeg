@@ -25,7 +25,7 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_mpeg2.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "mpeg12.h"
 #include "vaapi_encode.h"
 

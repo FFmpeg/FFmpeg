@@ -33,9 +33,9 @@
 #include "bytestream.h"
 #include "cfhd.h"
 #include "cfhdencdsp.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "internal.h"
 #include "thread.h"
 
 /* Derived from existing tables from decoder */

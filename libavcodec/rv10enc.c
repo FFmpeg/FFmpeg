@@ -25,6 +25,7 @@
  * RV10 encoder
  */
 
+#include "codec_internal.h"
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
 #include "put_bits.h"

@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "cga_data.h"
 #include "bintext.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define FONT_WIDTH 8

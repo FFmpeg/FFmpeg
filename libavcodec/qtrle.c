@@ -38,6 +38,7 @@
 #include "avcodec.h"
 #include "decode.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct QtrleContext {

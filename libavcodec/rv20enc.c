@@ -25,6 +25,7 @@
  * RV20 encoder
  */
 
+#include "codec_internal.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "mpegvideoenc.h"

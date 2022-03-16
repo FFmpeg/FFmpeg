@@ -30,6 +30,7 @@
 #include "libavutil/xga_font_data.h"
 #include "avcodec.h"
 #include "cga_data.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define ATTR_BOLD         0x01  /**< Bold/Bright-foreground (mode 1) */

@@ -31,6 +31,7 @@
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "error_resilience.h"
 #include "h263.h"
 #include "h263data.h"

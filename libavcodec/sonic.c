@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "get_bits.h"
 #include "golomb.h"

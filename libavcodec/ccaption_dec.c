@@ -21,7 +21,7 @@
 
 #include "avcodec.h"
 #include "ass.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "libavutil/opt.h"
 
 #define SCREEN_ROWS 15

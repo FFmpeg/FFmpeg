@@ -27,7 +27,7 @@
 #include "mathops.h"
 #include "avcodec.h"
 #include "bytestream.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "lzf.h"
 #include "texturedsp.h"
 #include "thread.h"

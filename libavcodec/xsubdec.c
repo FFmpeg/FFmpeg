@@ -24,7 +24,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bytestream.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 static av_cold int decode_init(AVCodecContext *avctx) {
     avctx->pix_fmt = AV_PIX_FMT_PAL8;

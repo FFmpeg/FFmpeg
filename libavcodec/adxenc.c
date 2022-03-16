@@ -22,8 +22,8 @@
 #include "avcodec.h"
 #include "adx.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "put_bits.h"
 
 /**

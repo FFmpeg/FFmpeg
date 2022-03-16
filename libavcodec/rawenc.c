@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "raw.h"
 #include "internal.h"

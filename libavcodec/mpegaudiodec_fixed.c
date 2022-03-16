@@ -24,6 +24,7 @@
 
 #define USE_FLOATS 0
 
+#include "codec_internal.h"
 #include "mpegaudio.h"
 
 #define SHR(a,b)       (((int)(a))>>(b))

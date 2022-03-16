@@ -29,7 +29,7 @@
 #include "bytestream.h"
 #include "cbs.h"
 #include "cbs_jpeg.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "jpegtables.h"
 #include "mjpeg.h"
 #include "put_bits.h"

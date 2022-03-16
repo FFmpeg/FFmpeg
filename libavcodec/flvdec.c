@@ -20,9 +20,9 @@
 
 #include "libavutil/imgutils.h"
 
+#include "codec_internal.h"
 #include "flvdec.h"
 #include "h263dec.h"
-#include "internal.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 

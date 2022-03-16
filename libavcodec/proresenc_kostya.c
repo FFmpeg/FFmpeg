@@ -27,12 +27,12 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "fdctdsp.h"
 #include "put_bits.h"
 #include "profiles.h"
 #include "bytestream.h"
-#include "internal.h"
 #include "proresdata.h"
 
 #define CFACTOR_Y422 2

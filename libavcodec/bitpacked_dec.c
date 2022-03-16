@@ -27,7 +27,7 @@
  */
 
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "libavutil/imgutils.h"
 #include "thread.h"

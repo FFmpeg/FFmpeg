@@ -35,7 +35,6 @@
 #include "libavutil/mem_internal.h"
 
 #include "audiodsp.h"
-#include "internal.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 

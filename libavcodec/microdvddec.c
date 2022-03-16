@@ -31,7 +31,7 @@
 #include "libavutil/bprint.h"
 #include "avcodec.h"
 #include "ass.h"
-#include "internal.h"
+#include "codec_internal.h"
 
 static int indexof(const char *s, int c)
 {

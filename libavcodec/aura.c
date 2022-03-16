@@ -24,6 +24,7 @@
  */
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "libavutil/internal.h"
 

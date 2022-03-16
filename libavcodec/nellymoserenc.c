@@ -42,9 +42,9 @@
 
 #include "audio_frame_queue.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "fft.h"
-#include "internal.h"
 #include "nellymoser.h"
 #include "sinewin.h"
 

@@ -23,6 +23,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "bytestream.h"

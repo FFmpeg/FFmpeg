@@ -28,9 +28,9 @@
 
 #include "a64colors.h"
 #include "a64tables.h"
+#include "codec_internal.h"
 #include "elbg.h"
 #include "encode.h"
-#include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"

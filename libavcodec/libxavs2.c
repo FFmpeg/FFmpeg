@@ -23,8 +23,8 @@
  */
 
 #include "xavs2.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "mpeg12.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"

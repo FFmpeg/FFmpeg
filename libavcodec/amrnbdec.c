@@ -55,6 +55,7 @@
 #include "acelp_pitch_delay.h"
 #include "lsp.h"
 #include "amr.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #include "amrnbdata.h"

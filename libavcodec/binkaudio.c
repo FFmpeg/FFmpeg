@@ -39,6 +39,7 @@
 #include "dct.h"
 #include "decode.h"
 #include "get_bits.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "rdft.h"
 #include "wma_freqs.h"

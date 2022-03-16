@@ -24,7 +24,7 @@
 
 #include "libavutil/cpu.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "codec_internal.h"
 #include "davs2.h"
 
 typedef struct DAVS2Context {

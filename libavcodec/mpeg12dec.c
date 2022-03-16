@@ -38,6 +38,7 @@
 #include "libavutil/timecode.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "error_resilience.h"
 #include "hwconfig.h"
 #include "idctdsp.h"

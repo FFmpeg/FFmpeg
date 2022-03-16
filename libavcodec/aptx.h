@@ -25,7 +25,6 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "internal.h"
 #include "mathops.h"
 #include "audio_frame_queue.h"
 

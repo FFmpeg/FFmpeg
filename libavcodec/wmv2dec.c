@@ -21,8 +21,8 @@
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "h263dec.h"
-#include "internal.h"
 #include "intrax8.h"
 #include "mathops.h"
 #include "mpegutils.h"

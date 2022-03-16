@@ -36,6 +36,7 @@
 #include "acelp_filters.h"
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define AMR_USE_16BIT_TABLES

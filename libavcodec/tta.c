@@ -38,10 +38,10 @@
 #include "ttadata.h"
 #include "ttadsp.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "thread.h"
 #include "unary.h"
-#include "internal.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2

@@ -30,6 +30,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "dca.h"
 #include "dcaadpcm.h"
 #include "dcamath.h"

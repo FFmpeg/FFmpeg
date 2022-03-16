@@ -27,8 +27,8 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "bmp.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 
 static const uint32_t monoblack_pal[] = { 0x000000, 0xFFFFFF };
 static const uint32_t rgb565_masks[]  = { 0xF800, 0x07E0, 0x001F };

@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "get_bits.h"
 #include "put_bits.h"

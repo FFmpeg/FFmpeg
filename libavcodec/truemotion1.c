@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
