@@ -1240,29 +1240,29 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_dca_encoder = {
-    .name                  = "dca",
-    .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_DTS,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
+const FFCodec ff_dca_encoder = {
+    .p.name                = "dca",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_DTS,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
     .priv_data_size        = sizeof(DCAEncContext),
     .init                  = encode_init,
     .close                 = encode_close,
     .encode2               = encode_frame,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
+    .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = sample_rates,
+    .p.supported_samplerates = sample_rates,
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
+    .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   AV_CH_LAYOUT_2_2,
                                                   AV_CH_LAYOUT_5POINT0,
                                                   AV_CH_LAYOUT_5POINT1,
                                                   0 },
 #endif
-    .ch_layouts       = (const AVChannelLayout[]){
+    .p.ch_layouts     = (const AVChannelLayout[]){
         AV_CHANNEL_LAYOUT_MONO,
         AV_CHANNEL_LAYOUT_STEREO,
         AV_CHANNEL_LAYOUT_2_2,
@@ -1271,5 +1271,5 @@ const AVCodec ff_dca_encoder = {
         { 0 },
     },
     .defaults              = defaults,
-    .priv_class            = &dcaenc_class,
+    .p.priv_class          = &dcaenc_class,
 };

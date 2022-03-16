@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "mathops.h"
 
@@ -226,14 +227,14 @@ static const AVClass s302m_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_s302m_decoder = {
-    .name           = "s302m",
-    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_S302M,
+const FFCodec ff_s302m_decoder = {
+    .p.name         = "s302m",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_S302M,
+    .p.priv_class   = &s302m_class,
     .priv_data_size = sizeof(S302Context),
     .decode         = s302m_decode_frame,
-    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
-    .priv_class     = &s302m_class,
 };

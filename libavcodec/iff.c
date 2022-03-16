@@ -1911,16 +1911,16 @@ static int decode_frame(AVCodecContext *avctx,
 }
 
 #if CONFIG_IFF_ILBM_DECODER
-const AVCodec ff_iff_ilbm_decoder = {
-    .name           = "iff",
-    .long_name      = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_IFF_ILBM,
+const FFCodec ff_iff_ilbm_decoder = {
+    .p.name         = "iff",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_IFF_ILBM,
     .priv_data_size = sizeof(IffContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

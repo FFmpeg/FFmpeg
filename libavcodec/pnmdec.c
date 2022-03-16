@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "pnm.h"
@@ -331,73 +332,73 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
 
 
 #if CONFIG_PGM_DECODER
-const AVCodec ff_pgm_decoder = {
-    .name           = "pgm",
-    .long_name      = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PGM,
+const FFCodec ff_pgm_decoder = {
+    .p.name         = "pgm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PGM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
 #if CONFIG_PGMYUV_DECODER
-const AVCodec ff_pgmyuv_decoder = {
-    .name           = "pgmyuv",
-    .long_name      = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PGMYUV,
+const FFCodec ff_pgmyuv_decoder = {
+    .p.name         = "pgmyuv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PGMYUV,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
 #if CONFIG_PPM_DECODER
-const AVCodec ff_ppm_decoder = {
-    .name           = "ppm",
-    .long_name      = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PPM,
+const FFCodec ff_ppm_decoder = {
+    .p.name         = "ppm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PPM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
 #if CONFIG_PBM_DECODER
-const AVCodec ff_pbm_decoder = {
-    .name           = "pbm",
-    .long_name      = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PBM,
+const FFCodec ff_pbm_decoder = {
+    .p.name         = "pbm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PBM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
 #if CONFIG_PAM_DECODER
-const AVCodec ff_pam_decoder = {
-    .name           = "pam",
-    .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PAM,
+const FFCodec ff_pam_decoder = {
+    .p.name         = "pam",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PAM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
 #if CONFIG_PFM_DECODER
-const AVCodec ff_pfm_decoder = {
-    .name           = "pfm",
-    .long_name      = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PFM,
+const FFCodec ff_pfm_decoder = {
+    .p.name         = "pfm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PFM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

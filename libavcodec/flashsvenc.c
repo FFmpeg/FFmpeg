@@ -257,15 +257,15 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_flashsv_encoder = {
-    .name           = "flashsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_FLASHSV,
+const FFCodec ff_flashsv_encoder = {
+    .p.name         = "flashsv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Flash Screen Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_FLASHSV,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv_encode_init,
     .encode2        = flashsv_encode_frame,
     .close          = flashsv_encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
+    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

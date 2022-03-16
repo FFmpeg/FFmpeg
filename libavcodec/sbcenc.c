@@ -343,26 +343,26 @@ static const AVClass sbc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_sbc_encoder = {
-    .name                  = "sbc",
-    .long_name             = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_SBC,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+const FFCodec ff_sbc_encoder = {
+    .p.name                = "sbc",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_SBC,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size        = sizeof(SBCEncContext),
     .init                  = sbc_encode_init,
     .encode2               = sbc_encode_frame,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
+    .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO, 0},
 #endif
-    .ch_layouts            = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
+    .p.ch_layouts          = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
                                                          AV_CHANNEL_LAYOUT_STEREO,
                                                          { 0 } },
-    .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
+    .p.sample_fmts         = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                              AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = (const int[]) { 16000, 32000, 44100, 48000, 0 },
-    .priv_class            = &sbc_class,
-    .profiles              = NULL_IF_CONFIG_SMALL(ff_sbc_profiles),
+    .p.supported_samplerates = (const int[]) { 16000, 32000, 44100, 48000, 0 },
+    .p.priv_class          = &sbc_class,
+    .p.profiles            = NULL_IF_CONFIG_SMALL(ff_sbc_profiles),
 };

@@ -343,16 +343,16 @@ the_end:
     return buf_ptr - buf;
 }
 
-const AVCodec ff_mxpeg_decoder = {
-    .name           = "mxpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("Mobotix MxPEG video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MXPEG,
+const FFCodec ff_mxpeg_decoder = {
+    .p.name         = "mxpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Mobotix MxPEG video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MXPEG,
     .priv_data_size = sizeof(MXpegDecodeContext),
     .init           = mxpeg_decode_init,
     .close          = mxpeg_decode_end,
     .decode         = mxpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .max_lowres     = 3,
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.max_lowres   = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

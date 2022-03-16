@@ -120,13 +120,13 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_avui_decoder = {
-    .name         = "avui",
-    .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_AVUI,
+const FFCodec ff_avui_decoder = {
+    .p.name         = "avui",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AVUI,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = avui_decode_init,
     .decode       = avui_decode_frame,
-    .capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

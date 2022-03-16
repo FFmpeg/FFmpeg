@@ -860,15 +860,15 @@ static av_cold int mss3_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_msa1_decoder = {
-    .name           = "msa1",
-    .long_name      = NULL_IF_CONFIG_SMALL("MS ATC Screen"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MSA1,
+const FFCodec ff_msa1_decoder = {
+    .p.name         = "msa1",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MS ATC Screen"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MSA1,
     .priv_data_size = sizeof(MSS3Context),
     .init           = mss3_decode_init,
     .close          = mss3_decode_end,
     .decode         = mss3_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

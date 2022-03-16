@@ -114,30 +114,30 @@ static void gsm_flush(AVCodecContext *avctx)
 }
 
 #if CONFIG_GSM_DECODER
-const AVCodec ff_gsm_decoder = {
-    .name           = "gsm",
-    .long_name      = NULL_IF_CONFIG_SMALL("GSM"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_GSM,
+const FFCodec ff_gsm_decoder = {
+    .p.name         = "gsm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("GSM"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_GSM,
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_GSM_MS_DECODER
-const AVCodec ff_gsm_ms_decoder = {
-    .name           = "gsm_ms",
-    .long_name      = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_GSM_MS,
+const FFCodec ff_gsm_ms_decoder = {
+    .p.name         = "gsm_ms",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_GSM_MS,
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

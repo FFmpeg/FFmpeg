@@ -291,19 +291,19 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_rv30_decoder = {
-    .name                  = "rv30",
-    .long_name             = NULL_IF_CONFIG_SMALL("RealVideo 3.0"),
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_RV30,
+const FFCodec ff_rv30_decoder = {
+    .p.name                = "rv30",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("RealVideo 3.0"),
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_RV30,
     .priv_data_size        = sizeof(RV34DecContext),
     .init                  = rv30_decode_init,
     .close                 = ff_rv34_decode_end,
     .decode                = ff_rv34_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = ff_mpeg_flush,
-    .pix_fmts              = (const enum AVPixelFormat[]) {
+    .p.pix_fmts            = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_NONE
     },

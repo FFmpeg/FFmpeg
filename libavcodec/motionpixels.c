@@ -346,15 +346,15 @@ end:
     return buf_size;
 }
 
-const AVCodec ff_motionpixels_decoder = {
-    .name           = "motionpixels",
-    .long_name      = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MOTIONPIXELS,
+const FFCodec ff_motionpixels_decoder = {
+    .p.name         = "motionpixels",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MOTIONPIXELS,
     .priv_data_size = sizeof(MotionPixelsContext),
     .init           = mp_decode_init,
     .close          = mp_decode_end,
     .decode         = mp_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };

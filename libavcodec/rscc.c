@@ -363,16 +363,16 @@ end:
     return ret;
 }
 
-const AVCodec ff_rscc_decoder = {
-    .name           = "rscc",
-    .long_name      = NULL_IF_CONFIG_SMALL("innoHeim/Rsupport Screen Capture Codec"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_RSCC,
+const FFCodec ff_rscc_decoder = {
+    .p.name         = "rscc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("innoHeim/Rsupport Screen Capture Codec"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_RSCC,
     .init           = rscc_init,
     .decode         = rscc_decode_frame,
     .close          = rscc_close,
     .priv_data_size = sizeof(RsccContext),
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

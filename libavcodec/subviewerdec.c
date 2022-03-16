@@ -66,11 +66,11 @@ static int subviewer_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-const AVCodec ff_subviewer_decoder = {
-    .name           = "subviewer",
-    .long_name      = NULL_IF_CONFIG_SMALL("SubViewer subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_SUBVIEWER,
+const FFCodec ff_subviewer_decoder = {
+    .p.name         = "subviewer",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SubViewer subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_SUBVIEWER,
     .decode         = subviewer_decode_frame,
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,

@@ -249,17 +249,17 @@ static av_cold int av1_init(AVCodecContext *avctx)
     return aom_init(avctx, aom_codec_av1_dx());
 }
 
-const AVCodec ff_libaom_av1_decoder = {
-    .name           = "libaom-av1",
-    .long_name      = NULL_IF_CONFIG_SMALL("libaom AV1"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AV1,
+const FFCodec ff_libaom_av1_decoder = {
+    .p.name         = "libaom-av1",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libaom AV1"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AV1,
     .priv_data_size = sizeof(AV1DecodeContext),
     .init           = av1_init,
     .close          = aom_free,
     .decode         = aom_decode,
-    .capabilities   = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
-    .wrapper_name   = "libaom",
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
+    .p.wrapper_name = "libaom",
 };

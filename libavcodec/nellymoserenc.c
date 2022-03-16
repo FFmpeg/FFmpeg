@@ -413,19 +413,19 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_nellymoser_encoder = {
-    .name           = "nellymoser",
-    .long_name      = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_NELLYMOSER,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+const FFCodec ff_nellymoser_encoder = {
+    .p.name         = "nellymoser",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_NELLYMOSER,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(NellyMoserEncodeContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
-    .ch_layouts     = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
+    .p.ch_layouts   = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -871,18 +871,18 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 }
 #endif
 
-const AVCodec ff_prores_decoder = {
-    .name           = "prores",
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PRORES,
+const FFCodec ff_prores_decoder = {
+    .p.name         = "prores",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL

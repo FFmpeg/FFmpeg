@@ -1151,25 +1151,25 @@ static int mf_close(AVCodecContext *avctx)
         .option     = OPTS,                                                    \
         .version    = LIBAVUTIL_VERSION_INT,                                   \
     };                                                                         \
-    const AVCodec ff_ ## NAME ## _mf_encoder = {                               \
-        .priv_class     = &ff_ ## NAME ## _mf_encoder_class,                   \
-        .name           = #NAME "_mf",                                         \
-        .long_name      = NULL_IF_CONFIG_SMALL(#ID " via MediaFoundation"),    \
-        .type           = AVMEDIA_TYPE_ ## MEDIATYPE,                          \
-        .id             = AV_CODEC_ID_ ## ID,                                  \
+    const FFCodec ff_ ## NAME ## _mf_encoder = {                               \
+        .p.priv_class   = &ff_ ## NAME ## _mf_encoder_class,                   \
+        .p.name         = #NAME "_mf",                                         \
+        .p.long_name    = NULL_IF_CONFIG_SMALL(#ID " via MediaFoundation"),    \
+        .p.type         = AVMEDIA_TYPE_ ## MEDIATYPE,                          \
+        .p.id           = AV_CODEC_ID_ ## ID,                                  \
         .priv_data_size = sizeof(MFContext),                                   \
         .init           = mf_init,                                             \
         .close          = mf_close,                                            \
         .receive_packet = mf_receive_packet,                                   \
         EXTRA                                                                  \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
                           AV_CODEC_CAP_DR1,                                    \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |                       \
                           FF_CODEC_CAP_INIT_CLEANUP,                           \
     };
 
 #define AFMTS \
-        .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,    \
+        .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,    \
                                                          AV_SAMPLE_FMT_NONE },
 
 MF_ENCODER(AUDIO, aac,         AAC, NULL, AFMTS);
@@ -1204,7 +1204,7 @@ static const AVOption venc_opts[] = {
 };
 
 #define VFMTS \
-        .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,       \
+        .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,       \
                                                         AV_PIX_FMT_YUV420P,    \
                                                         AV_PIX_FMT_NONE },
 

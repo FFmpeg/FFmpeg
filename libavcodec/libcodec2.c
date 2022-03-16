@@ -23,6 +23,7 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "libavutil/opt.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "codec2utils.h"
@@ -176,39 +177,39 @@ static int libcodec2_encode(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_libcodec2_decoder = {
-    .name                   = "libcodec2",
-    .long_name              = NULL_IF_CONFIG_SMALL("codec2 decoder using libcodec2"),
-    .type                   = AVMEDIA_TYPE_AUDIO,
-    .id                     = AV_CODEC_ID_CODEC2,
+const FFCodec ff_libcodec2_decoder = {
+    .p.name                 = "libcodec2",
+    .p.long_name            = NULL_IF_CONFIG_SMALL("codec2 decoder using libcodec2"),
+    .p.type                 = AVMEDIA_TYPE_AUDIO,
+    .p.id                   = AV_CODEC_ID_CODEC2,
+    .p.capabilities         = AV_CODEC_CAP_CHANNEL_CONF,
+    .p.supported_samplerates = (const int[]){ 8000, 0 },
+    .p.sample_fmts          = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+    .p.ch_layouts           = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .priv_data_size         = sizeof(LibCodec2Context),
     .init                   = libcodec2_init_decoder,
     .close                  = libcodec2_close,
     .decode                 = libcodec2_decode,
-    .capabilities           = AV_CODEC_CAP_CHANNEL_CONF,
-    .supported_samplerates  = (const int[]){ 8000, 0 },
-    .sample_fmts            = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts        = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+    .p.channel_layouts      = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 #endif
-    .ch_layouts             = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
 };
 
-const AVCodec ff_libcodec2_encoder = {
-    .name                   = "libcodec2",
-    .long_name              = NULL_IF_CONFIG_SMALL("codec2 encoder using libcodec2"),
-    .type                   = AVMEDIA_TYPE_AUDIO,
-    .id                     = AV_CODEC_ID_CODEC2,
-    .capabilities           = AV_CODEC_CAP_DR1,
+const FFCodec ff_libcodec2_encoder = {
+    .p.name                 = "libcodec2",
+    .p.long_name            = NULL_IF_CONFIG_SMALL("codec2 encoder using libcodec2"),
+    .p.type                 = AVMEDIA_TYPE_AUDIO,
+    .p.id                   = AV_CODEC_ID_CODEC2,
+    .p.capabilities         = AV_CODEC_CAP_DR1,
+    .p.supported_samplerates = (const int[]){ 8000, 0 },
+    .p.sample_fmts          = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+    .p.ch_layouts           = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
+    .p.priv_class           = &libcodec2_enc_class,
     .priv_data_size         = sizeof(LibCodec2Context),
     .init                   = libcodec2_init_encoder,
     .close                  = libcodec2_close,
     .encode2                = libcodec2_encode,
-    .supported_samplerates  = (const int[]){ 8000, 0 },
-    .sample_fmts            = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts        = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+    .p.channel_layouts      = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 #endif
-    .ch_layouts             = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
-    .priv_class             = &libcodec2_enc_class,
 };

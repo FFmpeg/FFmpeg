@@ -944,17 +944,17 @@ static const AVClass ccaption_dec_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_ccaption_decoder = {
-    .name           = "cc_dec",
-    .long_name      = NULL_IF_CONFIG_SMALL("Closed Caption (EIA-608 / CEA-708)"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_EIA_608,
+const FFCodec ff_ccaption_decoder = {
+    .p.name         = "cc_dec",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Closed Caption (EIA-608 / CEA-708)"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_EIA_608,
+    .p.priv_class   = &ccaption_dec_class,
+    .p.capabilities = AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(CCaptionSubContext),
     .init           = init_decoder,
     .close          = close_decoder,
     .flush          = flush_decoder,
     .decode         = decode,
-    .priv_class     = &ccaption_dec_class,
-    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

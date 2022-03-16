@@ -1419,16 +1419,16 @@ static void flush(AVCodecContext *avctx)
     c->frame_num = 0;
 }
 
-const AVCodec ff_bink_decoder = {
-    .name           = "binkvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("Bink video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_BINKVIDEO,
+const FFCodec ff_bink_decoder = {
+    .p.name         = "binkvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Bink video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_BINKVIDEO,
     .priv_data_size = sizeof(BinkContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
     .flush          = flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

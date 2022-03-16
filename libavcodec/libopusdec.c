@@ -231,21 +231,21 @@ static const AVClass libopusdec_class = {
 };
 
 
-const AVCodec ff_libopus_decoder = {
-    .name           = "libopus",
-    .long_name      = NULL_IF_CONFIG_SMALL("libopus Opus"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_OPUS,
+const FFCodec ff_libopus_decoder = {
+    .p.name         = "libopus",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libopus Opus"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_OPUS,
     .priv_data_size = sizeof(struct libopus_context),
     .init           = libopus_decode_init,
     .close          = libopus_decode_close,
     .decode         = libopus_decode,
     .flush          = libopus_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &libopusdec_class,
-    .wrapper_name   = "libopus",
+    .p.priv_class   = &libopusdec_class,
+    .p.wrapper_name = "libopus",
 };

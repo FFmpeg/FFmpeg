@@ -726,15 +726,15 @@ static av_cold int speedhq_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_speedhq_decoder = {
-    .name           = "speedhq",
-    .long_name      = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SPEEDHQ,
+const FFCodec ff_speedhq_decoder = {
+    .p.name         = "speedhq",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SPEEDHQ,
     .priv_data_size = sizeof(SHQContext),
     .init           = speedhq_decode_init,
     .decode         = speedhq_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif /* CONFIG_SPEEDHQ_DECODER */

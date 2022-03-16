@@ -388,16 +388,16 @@ static av_cold int cdg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_cdgraphics_decoder = {
-    .name           = "cdgraphics",
-    .long_name      = NULL_IF_CONFIG_SMALL("CD Graphics video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_CDGRAPHICS,
+const FFCodec ff_cdgraphics_decoder = {
+    .p.name         = "cdgraphics",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("CD Graphics video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_CDGRAPHICS,
     .priv_data_size = sizeof(CDGraphicsContext),
     .init           = cdg_decode_init,
     .close          = cdg_decode_end,
     .decode         = cdg_decode_frame,
     .flush          = cdg_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

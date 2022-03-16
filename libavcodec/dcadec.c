@@ -411,20 +411,20 @@ static const AVClass dcadec_class = {
     .category   = AV_CLASS_CATEGORY_DECODER,
 };
 
-const AVCodec ff_dca_decoder = {
-    .name           = "dca",
-    .long_name      = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_DTS,
+const FFCodec ff_dca_decoder = {
+    .p.name         = "dca",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_DTS,
     .priv_data_size = sizeof(DCAContext),
     .init           = dcadec_init,
     .decode         = dcadec_decode_frame,
     .close          = dcadec_close,
     .flush          = dcadec_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE },
-    .priv_class     = &dcadec_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
+    .p.priv_class   = &dcadec_class,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

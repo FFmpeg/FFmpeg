@@ -1261,16 +1261,16 @@ static int dxv_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_dxv_decoder = {
-    .name           = "dxv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Resolume DXV"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_DXV,
+const FFCodec ff_dxv_decoder = {
+    .p.name         = "dxv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Resolume DXV"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_DXV,
     .init           = dxv_init,
     .decode         = dxv_decode,
     .close          = dxv_close,
     .priv_data_size = sizeof(DXVContext),
-    .capabilities   = AV_CODEC_CAP_DR1 |
+    .p.capabilities = AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_SLICE_THREADS |
                       AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |

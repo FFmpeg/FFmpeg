@@ -99,11 +99,11 @@ static int webvtt_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-const AVCodec ff_webvtt_decoder = {
-    .name           = "webvtt",
-    .long_name      = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_WEBVTT,
+const FFCodec ff_webvtt_decoder = {
+    .p.name         = "webvtt",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_WEBVTT,
     .decode         = webvtt_decode_frame,
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,

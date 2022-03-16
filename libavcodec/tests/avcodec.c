@@ -37,14 +37,14 @@ do {                                                            \
 #define ERR(msg)           ERR_INTERNAL(msg, )
 #define ERR_EXT(msg, ...)  ERR_INTERNAL(msg, , __VA_ARGS__)
 
-static int priv_data_size_wrong(const AVCodec *codec)
+static int priv_data_size_wrong(const FFCodec *codec)
 {
     if (codec->priv_data_size < 0 ||
-        codec->priv_class && codec->priv_data_size < sizeof(AVClass*))
+        codec->p.priv_class && codec->priv_data_size < sizeof(AVClass*))
         return 1;
-    if (!codec->priv_class || !codec->priv_class->option)
+    if (!codec->p.priv_class || !codec->p.priv_class->option)
         return 0;
-    for (const AVOption *opt = codec->priv_class->option; opt->name; opt++) {
+    for (const AVOption *opt = codec->p.priv_class->option; opt->name; opt++) {
         if (opt->offset >= codec->priv_data_size ||
             opt->type == AV_OPT_TYPE_CONST && opt->offset != 0 ||
             opt->type != AV_OPT_TYPE_CONST && (opt->offset < sizeof(AVClass*) || opt->offset < 0)) {
@@ -62,6 +62,7 @@ int main(void){
     int ret = 0;
 
     while (codec = av_codec_iterate(&iter)) {
+        const FFCodec *const codec2 = ffcodec(codec);
         const AVCodecDescriptor *desc;
         int is_decoder, is_encoder;
 
@@ -88,14 +89,14 @@ int main(void){
         if (codec->type != AVMEDIA_TYPE_VIDEO) {
             if (codec->pix_fmts || codec->supported_framerates)
                 ERR("Non-video codec %s has video-only fields set\n");
-            if (codec->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)
+            if (codec2->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)
                 ERR("Non-video codec %s exports cropping\n");
         }
-        if (codec->caps_internal  & FF_CODEC_CAP_SLICE_THREAD_HAS_MF &&
+        if (codec2->caps_internal  & FF_CODEC_CAP_SLICE_THREAD_HAS_MF &&
             !(codec->capabilities & AV_CODEC_CAP_SLICE_THREADS))
             ERR("Codec %s wants mainfunction despite not being "
                 "slice-threading capable");
-        if (codec->caps_internal  & FF_CODEC_CAP_AUTO_THREADS &&
+        if (codec2->caps_internal  & FF_CODEC_CAP_AUTO_THREADS &&
             !(codec->capabilities & (AV_CODEC_CAP_FRAME_THREADS |
                                      AV_CODEC_CAP_SLICE_THREADS |
                                      AV_CODEC_CAP_OTHER_THREADS)))
@@ -108,11 +109,11 @@ int main(void){
             continue;
         }
         if (is_encoder) {
-            if (codec->type == AVMEDIA_TYPE_SUBTITLE ^ !!codec->encode_sub)
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE ^ !!codec2->encode_sub)
                 ERR("Encoder %s is both subtitle encoder and not subtitle encoder.");
-            if (!!codec->encode_sub + !!codec->encode2 + !!codec->receive_packet != 1)
+            if (!!codec2->encode_sub + !!codec2->encode2 + !!codec2->receive_packet != 1)
                 ERR("Encoder %s does not implement exactly one encode API.\n");
-            if (codec->update_thread_context || codec->update_thread_context_for_user || codec->bsfs)
+            if (codec2->update_thread_context || codec2->update_thread_context_for_user || codec2->bsfs)
                 ERR("Encoder %s has decoder-only thread functions or bsf.\n");
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (!codec->sample_fmts) {
@@ -120,7 +121,7 @@ int main(void){
                     ret = 1;
                 }
             }
-            if (codec->caps_internal & (FF_CODEC_CAP_ALLOCATE_PROGRESS |
+            if (codec2->caps_internal & (FF_CODEC_CAP_ALLOCATE_PROGRESS |
                                         FF_CODEC_CAP_SETS_PKT_DTS |
                                         FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                                         FF_CODEC_CAP_EXPORTS_CROPPING |
@@ -134,26 +135,26 @@ int main(void){
                 codec->capabilities & AV_CODEC_CAP_ENCODER_FLUSH)
                 ERR("Frame-threaded encoder %s claims to support flushing\n");
         } else {
-            if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec->decode)
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec2->decode)
                 ERR("Subtitle decoder %s does not implement decode callback\n");
-            if (codec->type == AVMEDIA_TYPE_SUBTITLE && codec->bsfs)
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE && codec2->bsfs)
                 ERR("Automatic bitstream filtering unsupported for subtitles; "
                     "yet decoder %s has it set\n");
-            if (!!codec->decode + !!codec->receive_frame != 1)
+            if (!!codec2->decode + !!codec2->receive_frame != 1)
                 ERR("Decoder %s does not implement exactly one decode API.\n");
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME    |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE |
                                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |
                                        AV_CODEC_CAP_ENCODER_FLUSH))
                 ERR("Decoder %s has encoder-only capabilities\n");
-            if (codec->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS &&
+            if (codec2->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS &&
                 !(codec->capabilities & AV_CODEC_CAP_FRAME_THREADS))
                 ERR("Decoder %s wants allocated progress without supporting"
                     "frame threads\n");
         }
-        if (priv_data_size_wrong(codec))
+        if (priv_data_size_wrong(codec2))
             ERR_EXT("Private context of codec %s is impossibly-sized (size %d).",
-                    codec->priv_data_size);
+                    codec2->priv_data_size);
         if (!(desc = avcodec_descriptor_get(codec->id))) {
             ERR("Codec %s lacks a corresponding descriptor\n");
         } else if (desc->type != codec->type)

@@ -451,21 +451,21 @@ static const AVCodecDefault svc_enc_defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_libopenh264_encoder = {
-    .name           = "libopenh264",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_OTHER_THREADS,
+const FFCodec ff_libopenh264_encoder = {
+    .p.name         = "libopenh264",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H264,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_OTHER_THREADS,
     .priv_data_size = sizeof(SVCContext),
     .init           = svc_encode_init,
     .encode2        = svc_encode_frame,
     .close          = svc_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_AUTO_THREADS,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
     .defaults       = svc_enc_defaults,
-    .priv_class     = &class,
-    .wrapper_name   = "libopenh264",
+    .p.priv_class   = &class,
+    .p.wrapper_name = "libopenh264",
 };

@@ -188,17 +188,17 @@ static av_cold int fastaudio_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_fastaudio_decoder = {
-    .name           = "fastaudio",
-    .long_name      = NULL_IF_CONFIG_SMALL("MobiClip FastAudio"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_FASTAUDIO,
+const FFCodec ff_fastaudio_decoder = {
+    .p.name         = "fastaudio",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MobiClip FastAudio"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_FASTAUDIO,
     .priv_data_size = sizeof(FastAudioContext),
     .init           = fastaudio_init,
     .decode         = fastaudio_decode,
     .close          = fastaudio_close,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

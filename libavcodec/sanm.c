@@ -1516,15 +1516,15 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return pkt->size;
 }
 
-const AVCodec ff_sanm_decoder = {
-    .name           = "sanm",
-    .long_name      = NULL_IF_CONFIG_SMALL("LucasArts SANM/Smush video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SANM,
+const FFCodec ff_sanm_decoder = {
+    .p.name         = "sanm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LucasArts SANM/Smush video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SANM,
     .priv_data_size = sizeof(SANMVideoContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

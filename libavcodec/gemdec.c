@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 static const uint32_t gem_color_palette[16]={
@@ -351,12 +352,12 @@ static av_cold int gem_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_gem_decoder = {
-    .name           = "gem",
-    .long_name      = NULL_IF_CONFIG_SMALL("GEM Raster image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_GEM,
+const FFCodec ff_gem_decoder = {
+    .p.name         = "gem",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("GEM Raster image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_GEM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .decode         = gem_decode_frame,
     .close          = gem_close,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };

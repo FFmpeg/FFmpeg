@@ -473,16 +473,16 @@ static av_cold int hap_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_hap_decoder = {
-    .name           = "hap",
-    .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HAP,
+const FFCodec ff_hap_decoder = {
+    .p.name         = "hap",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HAP,
     .init           = hap_init,
     .decode         = hap_decode,
     .close          = hap_close,
     .priv_data_size = sizeof(HapContext),
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS |
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS |
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,

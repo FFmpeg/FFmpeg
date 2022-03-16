@@ -400,17 +400,17 @@ av_cold void ff_h261_encode_init(MpegEncContext *s)
     ff_thread_once(&init_static_once, h261_encode_init_static);
 }
 
-const AVCodec ff_h261_encoder = {
-    .name           = "h261",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H261,
-    .priv_class     = &ff_mpv_enc_class,
+const FFCodec ff_h261_encoder = {
+    .p.name         = "h261",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("H.261"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H261,
+    .p.priv_class   = &ff_mpv_enc_class,
     .priv_data_size = sizeof(H261EncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
 };

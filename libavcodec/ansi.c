@@ -481,16 +481,16 @@ static const AVCodecDefault ansi_defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_ansi_decoder = {
-    .name           = "ansi",
-    .long_name      = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_ANSI,
+const FFCodec ff_ansi_decoder = {
+    .p.name         = "ansi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_ANSI,
     .priv_data_size = sizeof(AnsiContext),
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .defaults       = ansi_defaults,
 };

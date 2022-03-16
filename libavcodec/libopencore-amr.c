@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 
@@ -133,16 +134,16 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     return packet_size;
 }
 
-const AVCodec ff_libopencore_amrnb_decoder = {
-    .name           = "libopencore_amrnb",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AMR_NB,
+const FFCodec ff_libopencore_amrnb_decoder = {
+    .p.name         = "libopencore_amrnb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
     .decode         = amr_nb_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_DECODER */
 
@@ -288,19 +289,19 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_libopencore_amrnb_encoder = {
-    .name           = "libopencore_amrnb",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AMR_NB,
+const FFCodec ff_libopencore_amrnb_encoder = {
+    .p.name         = "libopencore_amrnb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_encode_init,
     .encode2        = amr_nb_encode_frame,
     .close          = amr_nb_encode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &amrnb_class,
+    .p.priv_class   = &amrnb_class,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_ENCODER */
 
@@ -373,17 +374,17 @@ static int amr_wb_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_libopencore_amrwb_decoder = {
-    .name           = "libopencore_amrwb",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-WB (Adaptive Multi-Rate Wide-Band)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AMR_WB,
+const FFCodec ff_libopencore_amrwb_decoder = {
+    .p.name         = "libopencore_amrwb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenCORE AMR-WB (Adaptive Multi-Rate Wide-Band)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AMR_WB,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.wrapper_name = "libopencore_amrwb",
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,
     .decode         = amr_wb_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .wrapper_name   = "libopencore_amrwb",
 };
 
 #endif /* CONFIG_LIBOPENCORE_AMRWB_DECODER */

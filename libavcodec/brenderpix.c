@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define HEADER1_CHUNK    0x03
@@ -285,11 +286,11 @@ static int pix_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-const AVCodec ff_brender_pix_decoder = {
-    .name         = "brender_pix",
-    .long_name    = NULL_IF_CONFIG_SMALL("BRender PIX image"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_BRENDER_PIX,
+const FFCodec ff_brender_pix_decoder = {
+    .p.name         = "brender_pix",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("BRender PIX image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_BRENDER_PIX,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .decode       = pix_decode_frame,
-    .capabilities = AV_CODEC_CAP_DR1,
 };

@@ -113,7 +113,7 @@ typedef struct AVCodecInternal {
     EncodeSimpleContext es;
 
     /**
-     * If this is set, then AVCodec->close (if existing) needs to be called
+     * If this is set, then FFCodec->close (if existing) needs to be called
      * for the parent AVCodecContext.
      */
     int needs_close;

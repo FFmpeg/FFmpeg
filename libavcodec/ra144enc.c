@@ -535,23 +535,23 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 
-const AVCodec ff_ra_144_encoder = {
-    .name           = "real_144",
-    .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_RA_144,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+const FFCodec ff_ra_144_encoder = {
+    .p.name         = "real_144",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_RA_144,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(RA144Context),
     .init           = ra144_encode_init,
     .encode2        = ra144_encode_frame,
     .close          = ra144_encode_close,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = (const int[]){ 8000, 0 },
+    .p.supported_samplerates = (const int[]){ 8000, 0 },
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+    .p.channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 #endif
-    .ch_layouts     = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
+    .p.ch_layouts   = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

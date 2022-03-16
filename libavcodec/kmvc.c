@@ -405,14 +405,14 @@ static av_cold int decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-const AVCodec ff_kmvc_decoder = {
-    .name           = "kmvc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_KMVC,
+const FFCodec ff_kmvc_decoder = {
+    .p.name         = "kmvc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_KMVC,
     .priv_data_size = sizeof(KmvcContext),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -80,28 +80,28 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 static const enum AVPixelFormat pix_fmt[] = { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE };
 
 #if CONFIG_AYUV_ENCODER
-const AVCodec ff_ayuv_encoder = {
-    .name         = "ayuv",
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_AYUV,
-    .capabilities = AV_CODEC_CAP_DR1,
+const FFCodec ff_ayuv_encoder = {
+    .p.name       = "ayuv",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
+    .p.type       = AVMEDIA_TYPE_VIDEO,
+    .p.id         = AV_CODEC_ID_AYUV,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
-    .pix_fmts     = pix_fmt,
+    .p.pix_fmts   = pix_fmt,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_V408_ENCODER
-const AVCodec ff_v408_encoder = {
-    .name         = "v408",
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_V408,
-    .capabilities = AV_CODEC_CAP_DR1,
+const FFCodec ff_v408_encoder = {
+    .p.name       = "v408",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
+    .p.type       = AVMEDIA_TYPE_VIDEO,
+    .p.id         = AV_CODEC_ID_V408,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
-    .pix_fmts     = pix_fmt,
+    .p.pix_fmts   = pix_fmt,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

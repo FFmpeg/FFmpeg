@@ -494,18 +494,18 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 #if CONFIG_FLASHSV_DECODER
-const AVCodec ff_flashsv_decoder = {
-    .name           = "flashsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_FLASHSV,
+const FFCodec ff_flashsv_decoder = {
+    .p.name         = "flashsv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_FLASHSV,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv_decode_init,
     .close          = flashsv_decode_end,
     .decode         = flashsv_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
 };
 #endif /* CONFIG_FLASHSV_DECODER */
 
@@ -561,17 +561,17 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_flashsv2_decoder = {
-    .name           = "flashsv2",
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_FLASHSV2,
+const FFCodec ff_flashsv2_decoder = {
+    .p.name         = "flashsv2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_FLASHSV2,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv2_decode_init,
     .close          = flashsv2_decode_end,
     .decode         = flashsv_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
 };
 #endif /* CONFIG_FLASHSV2_DECODER */

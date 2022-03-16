@@ -291,17 +291,17 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_hevc_qsv_encoder = {
-    .name           = "hevc_qsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("HEVC (Intel Quick Sync Video acceleration)"),
+const FFCodec ff_hevc_qsv_encoder = {
+    .p.name         = "hevc_qsv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("HEVC (Intel Quick Sync Video acceleration)"),
     .priv_data_size = sizeof(QSVHEVCEncContext),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HEVC,
     .init           = qsv_enc_init,
     .encode2        = qsv_enc_frame,
     .close          = qsv_enc_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
 #if QSV_VERSION_ATLEAST(1, 17)
@@ -311,9 +311,9 @@ const AVCodec ff_hevc_qsv_encoder = {
                                                     AV_PIX_FMT_X2RGB10,
 #endif
                                                     AV_PIX_FMT_NONE },
-    .priv_class     = &class,
+    .p.priv_class   = &class,
     .defaults       = qsv_enc_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name   = "qsv",
+    .p.wrapper_name = "qsv",
     .hw_configs     = ff_qsv_enc_hw_configs,
 };

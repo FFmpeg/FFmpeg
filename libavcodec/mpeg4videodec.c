@@ -3662,16 +3662,16 @@ static const AVClass mpeg4_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_mpeg4_decoder = {
-    .name                  = "mpeg4",
-    .long_name             = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_MPEG4,
+const FFCodec ff_mpeg4_decoder = {
+    .p.name                = "mpeg4",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_MPEG4,
     .priv_data_size        = sizeof(Mpeg4DecContext),
     .init                  = decode_init,
     .close                 = ff_h263_decode_end,
     .decode                = ff_h263_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
+    .p.capabilities        = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
 #if FF_API_FLAG_TRUNCATED
                              AV_CODEC_CAP_TRUNCATED |
 #endif
@@ -3680,12 +3680,12 @@ const AVCodec ff_mpeg4_decoder = {
                              FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,
     .flush                 = ff_mpeg_flush,
-    .max_lowres            = 3,
-    .pix_fmts              = ff_h263_hwaccel_pixfmt_list_420,
-    .profiles              = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
+    .p.max_lowres          = 3,
+    .p.pix_fmts            = ff_h263_hwaccel_pixfmt_list_420,
+    .p.profiles            = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .update_thread_context_for_user = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context_for_user),
-    .priv_class = &mpeg4_class,
+    .p.priv_class = &mpeg4_class,
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_MPEG4_NVDEC_HWACCEL
                                HWACCEL_NVDEC(mpeg4),

@@ -106,13 +106,13 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-const AVCodec ff_m101_decoder = {
-    .name           = "m101",
-    .long_name      = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_M101,
+const FFCodec ff_m101_decoder = {
+    .p.name         = "m101",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_M101,
     .init           = m101_decode_init,
     .decode         = m101_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

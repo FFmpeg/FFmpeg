@@ -419,15 +419,15 @@ err:
     return AVERROR_INVALIDDATA;
 }
 
-const AVCodec ff_ulti_decoder = {
-    .name           = "ultimotion",
-    .long_name      = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_ULTI,
+const FFCodec ff_ulti_decoder = {
+    .p.name         = "ultimotion",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_ULTI,
     .priv_data_size = sizeof(UltimotionDecodeContext),
     .init           = ulti_decode_init,
     .close          = ulti_decode_end,
     .decode         = ulti_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

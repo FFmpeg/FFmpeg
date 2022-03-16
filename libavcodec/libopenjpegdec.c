@@ -31,6 +31,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "thread.h"
 
@@ -501,16 +502,16 @@ static const AVClass openjpeg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_libopenjpeg_decoder = {
-    .name           = "libopenjpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_JPEG2000,
+const FFCodec ff_libopenjpeg_decoder = {
+    .p.name         = "libopenjpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_JPEG2000,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.max_lowres   = 31,
+    .p.priv_class   = &openjpeg_class,
+    .p.wrapper_name = "libopenjpeg",
     .priv_data_size = sizeof(LibOpenJPEGContext),
     .init           = libopenjpeg_decode_init,
     .decode         = libopenjpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .max_lowres     = 31,
-    .priv_class     = &openjpeg_class,
-    .wrapper_name   = "libopenjpeg",
 };

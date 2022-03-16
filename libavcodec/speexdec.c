@@ -1577,15 +1577,15 @@ static av_cold int speex_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_speex_decoder = {
-    .name           = "speex",
-    .long_name      = NULL_IF_CONFIG_SMALL("Speex"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_SPEEX,
+const FFCodec ff_speex_decoder = {
+    .p.name         = "speex",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Speex"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_SPEEX,
     .init           = speex_decode_init,
     .decode         = speex_decode_frame,
     .close          = speex_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(SpeexContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

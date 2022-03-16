@@ -400,36 +400,36 @@ static const AVCodecDefault defaults[] = {
 #endif
 
 #if CONFIG_ADPCM_G726_ENCODER
-const AVCodec ff_adpcm_g726_encoder = {
-    .name           = "g726",
-    .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ADPCM_G726,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+const FFCodec ff_adpcm_g726_encoder = {
+    .p.name         = "g726",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ADPCM_G726,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     .encode2        = g726_encode_frame,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &g726_class,
+    .p.priv_class   = &g726_class,
     .defaults       = defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
 #if CONFIG_ADPCM_G726LE_ENCODER
-const AVCodec ff_adpcm_g726le_encoder = {
-    .name           = "g726le",
-    .long_name      = NULL_IF_CONFIG_SMALL("G.726 little endian ADPCM (\"right-justified\")"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ADPCM_G726LE,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
+const FFCodec ff_adpcm_g726le_encoder = {
+    .p.name         = "g726le",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.726 little endian ADPCM (\"right-justified\")"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ADPCM_G726LE,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     .encode2        = g726_encode_frame,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &g726_class,
+    .p.priv_class   = &g726_class,
     .defaults       = defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
@@ -503,31 +503,31 @@ static void g726_decode_flush(AVCodecContext *avctx)
 #endif
 
 #if CONFIG_ADPCM_G726_DECODER
-const AVCodec ff_adpcm_g726_decoder = {
-    .name           = "g726",
-    .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ADPCM_G726,
+const FFCodec ff_adpcm_g726_decoder = {
+    .p.name         = "g726",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ADPCM_G726,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
 #if CONFIG_ADPCM_G726LE_DECODER
-const AVCodec ff_adpcm_g726le_decoder = {
-    .name           = "g726le",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ADPCM_G726LE,
+const FFCodec ff_adpcm_g726le_decoder = {
+    .p.name         = "g726le",
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ADPCM_G726LE,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

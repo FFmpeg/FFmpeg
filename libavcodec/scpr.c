@@ -668,16 +668,16 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_scpr_decoder = {
-    .name             = "scpr",
-    .long_name        = NULL_IF_CONFIG_SMALL("ScreenPressor"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_SCPR,
+const FFCodec ff_scpr_decoder = {
+    .p.name           = "scpr",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("ScreenPressor"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_SCPR,
     .priv_data_size   = sizeof(SCPRContext),
     .init             = decode_init,
     .close            = decode_close,
     .decode           = decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1,
+    .p.capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
 };

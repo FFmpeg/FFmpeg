@@ -279,15 +279,15 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_vb_decoder = {
-    .name           = "vb",
-    .long_name      = NULL_IF_CONFIG_SMALL("Beam Software VB"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VB,
+const FFCodec ff_vb_decoder = {
+    .p.name         = "vb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Beam Software VB"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_VB,
     .priv_data_size = sizeof(VBDecContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

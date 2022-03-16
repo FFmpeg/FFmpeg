@@ -266,11 +266,11 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
-const AVCodec ff_yop_decoder = {
-    .name           = "yop",
-    .long_name      = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_YOP,
+const FFCodec ff_yop_decoder = {
+    .p.name         = "yop",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_YOP,
     .priv_data_size = sizeof(YopDecContext),
     .init           = yop_decode_init,
     .close          = yop_decode_close,

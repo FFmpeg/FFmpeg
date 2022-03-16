@@ -87,13 +87,13 @@ static av_cold int tmv_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_tmv_decoder = {
-    .name           = "tmv",
-    .long_name      = NULL_IF_CONFIG_SMALL("8088flex TMV"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_TMV,
+const FFCodec ff_tmv_decoder = {
+    .p.name         = "tmv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("8088flex TMV"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_TMV,
     .init           = tmv_decode_init,
     .decode         = tmv_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

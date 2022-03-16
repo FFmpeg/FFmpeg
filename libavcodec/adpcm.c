@@ -2286,17 +2286,17 @@ static const enum AVSampleFormat sample_fmts_both[] = { AV_SAMPLE_FMT_S16,
 
 #define ADPCM_DECODER_0(id_, sample_fmts_, name_, long_name_)
 #define ADPCM_DECODER_1(id_, sample_fmts_, name_, long_name_) \
-const AVCodec ff_ ## name_ ## _decoder = {                  \
-    .name           = #name_,                               \
-    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
-    .type           = AVMEDIA_TYPE_AUDIO,                   \
-    .id             = id_,                                  \
+const FFCodec ff_ ## name_ ## _decoder = {                  \
+    .p.name         = #name_,                               \
+    .p.long_name    = NULL_IF_CONFIG_SMALL(long_name_),     \
+    .p.type         = AVMEDIA_TYPE_AUDIO,                   \
+    .p.id           = id_,                                  \
+    .p.capabilities = AV_CODEC_CAP_DR1,                     \
+    .p.sample_fmts  = sample_fmts_,                         \
     .priv_data_size = sizeof(ADPCMDecodeContext),           \
     .init           = adpcm_decode_init,                    \
     .decode         = adpcm_decode_frame,                   \
     .flush          = adpcm_flush,                          \
-    .capabilities   = AV_CODEC_CAP_DR1,                     \
-    .sample_fmts    = sample_fmts_,                         \
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 };
 #define ADPCM_DECODER_2(enabled, codec_id, name, sample_fmts, long_name) \

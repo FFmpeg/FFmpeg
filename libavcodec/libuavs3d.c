@@ -247,20 +247,20 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, void *data, int *got_fr
     return buf_ptr - buf;
 }
 
-const AVCodec ff_libuavs3d_decoder = {
-    .name           = "libuavs3d",
-    .long_name      = NULL_IF_CONFIG_SMALL("libuavs3d AVS3-P2/IEEE1857.10"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AVS3,
+const FFCodec ff_libuavs3d_decoder = {
+    .p.name         = "libuavs3d",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libuavs3d AVS3-P2/IEEE1857.10"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AVS3,
     .priv_data_size = sizeof(uavs3d_context),
     .init           = libuavs3d_init,
     .close          = libuavs3d_end,
     .decode         = libuavs3d_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .flush          = libuavs3d_flush,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_YUV420P10LE,
                                                      AV_PIX_FMT_NONE },
-    .wrapper_name   = "libuavs3d",
+    .p.wrapper_name = "libuavs3d",
 };

@@ -1719,34 +1719,34 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
 }
 
 #if CONFIG_APNG_DECODER
-const AVCodec ff_apng_decoder = {
-    .name           = "apng",
-    .long_name      = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_APNG,
+const FFCodec ff_apng_decoder = {
+    .p.name         = "apng",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_APNG,
     .priv_data_size = sizeof(PNGDecContext),
     .init           = png_dec_init,
     .close          = png_dec_end,
     .decode         = decode_frame_apng,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
 #endif
 
 #if CONFIG_PNG_DECODER
-const AVCodec ff_png_decoder = {
-    .name           = "png",
-    .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PNG,
+const FFCodec ff_png_decoder = {
+    .p.name         = "png",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGDecContext),
     .init           = png_dec_init,
     .close          = png_dec_end,
     .decode         = decode_frame_png,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM | FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
 };

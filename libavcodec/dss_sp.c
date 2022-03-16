@@ -773,14 +773,14 @@ static int dss_sp_decode_frame(AVCodecContext *avctx, void *data,
     return DSS_SP_FRAME_SIZE;
 }
 
-const AVCodec ff_dss_sp_decoder = {
-    .name           = "dss_sp",
-    .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_DSS_SP,
+const FFCodec ff_dss_sp_decoder = {
+    .p.name         = "dss_sp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_DSS_SP,
     .priv_data_size = sizeof(DssSpContext),
     .init           = dss_sp_decode_init,
     .decode         = dss_sp_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

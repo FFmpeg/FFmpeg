@@ -457,16 +457,16 @@ static const AVClass photocd_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_photocd_decoder = {
-    .name           = "photocd",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PHOTOCD,
+const FFCodec ff_photocd_decoder = {
+    .p.name         = "photocd",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PHOTOCD,
     .priv_data_size = sizeof(PhotoCDContext),
-    .priv_class     = &photocd_class,
+    .p.priv_class   = &photocd_class,
     .init           = photocd_decode_init,
     .close          = photocd_decode_close,
     .decode         = photocd_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("Kodak Photo CD"),
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Kodak Photo CD"),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

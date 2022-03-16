@@ -27,6 +27,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "internal.h"
 
@@ -139,18 +140,18 @@ static int amr_wb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_libvo_amrwbenc_encoder = {
-    .name           = "libvo_amrwbenc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Android VisualOn AMR-WB "
+const FFCodec ff_libvo_amrwbenc_encoder = {
+    .p.name         = "libvo_amrwbenc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Android VisualOn AMR-WB "
                                            "(Adaptive Multi-Rate Wide-Band)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AMR_WB,
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AMR_WB,
+    .p.priv_class   = &amrwb_class,
+    .p.wrapper_name = "libvo_amrwbenc",
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_encode_init,
     .encode2        = amr_wb_encode_frame,
     .close          = amr_wb_encode_close,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &amrwb_class,
-    .wrapper_name   = "libvo_amrwbenc",
 };

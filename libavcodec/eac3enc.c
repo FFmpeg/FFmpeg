@@ -250,24 +250,24 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 
 
 FF_DISABLE_DEPRECATION_WARNINGS
-const AVCodec ff_eac3_encoder = {
-    .name            = "eac3",
-    .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
-    .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = AV_CODEC_ID_EAC3,
-    .capabilities    = AV_CODEC_CAP_DR1,
+const FFCodec ff_eac3_encoder = {
+    .p.name          = "eac3",
+    .p.long_name     = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
+    .p.type          = AVMEDIA_TYPE_AUDIO,
+    .p.id            = AV_CODEC_ID_EAC3,
+    .p.capabilities  = AV_CODEC_CAP_DR1,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ff_ac3_float_encode_init,
     .encode2         = ff_ac3_float_encode_frame,
     .close           = ff_ac3_encode_close,
-    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
+    .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
-    .priv_class      = &eac3enc_class,
-    .supported_samplerates = ff_ac3_sample_rate_tab,
+    .p.priv_class    = &eac3enc_class,
+    .p.supported_samplerates = ff_ac3_sample_rate_tab,
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts = ff_ac3_channel_layouts,
+    .p.channel_layouts = ff_ac3_channel_layouts,
 #endif
-    .ch_layouts      = ff_ac3_ch_layouts,
+    .p.ch_layouts    = ff_ac3_ch_layouts,
     .defaults        = ff_ac3_enc_defaults,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

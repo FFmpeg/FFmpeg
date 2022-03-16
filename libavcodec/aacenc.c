@@ -1137,20 +1137,20 @@ static const AVCodecDefault aac_encode_defaults[] = {
     { NULL }
 };
 
-const AVCodec ff_aac_encoder = {
-    .name           = "aac",
-    .long_name      = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AAC,
+const FFCodec ff_aac_encoder = {
+    .p.name         = "aac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AAC,
     .priv_data_size = sizeof(AACEncContext),
     .init           = aac_encode_init,
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
     .defaults       = aac_encode_defaults,
-    .supported_samplerates = ff_mpeg4audio_sample_rates,
+    .p.supported_samplerates = ff_mpeg4audio_sample_rates,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
+    .p.capabilities = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
-    .priv_class     = &aacenc_class,
+    .p.priv_class   = &aacenc_class,
 };

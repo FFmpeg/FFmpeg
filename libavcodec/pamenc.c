@@ -127,14 +127,14 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_pam_encoder = {
-    .name           = "pam",
-    .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PAM,
-    .capabilities   = AV_CODEC_CAP_DR1,
+const FFCodec ff_pam_encoder = {
+    .p.name         = "pam",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PAM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .encode2        = pam_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,

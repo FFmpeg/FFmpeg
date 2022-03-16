@@ -2723,7 +2723,7 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     s->next_framep[VP56_FRAME_CURRENT] = curframe;
 
-    if (avctx->codec->update_thread_context)
+    if (ffcodec(avctx->codec)->update_thread_context)
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
@@ -2939,32 +2939,32 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 #endif /* CONFIG_VP8_DECODER */
 
 #if CONFIG_VP7_DECODER
-const AVCodec ff_vp7_decoder = {
-    .name                  = "vp7",
-    .long_name             = NULL_IF_CONFIG_SMALL("On2 VP7"),
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_VP7,
+const FFCodec ff_vp7_decoder = {
+    .p.name                = "vp7",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("On2 VP7"),
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_VP7,
     .priv_data_size        = sizeof(VP8Context),
     .init                  = vp7_decode_init,
     .close                 = ff_vp8_decode_free,
     .decode                = vp7_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DR1,
+    .p.capabilities        = AV_CODEC_CAP_DR1,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush                 = vp8_decode_flush,
 };
 #endif /* CONFIG_VP7_DECODER */
 
 #if CONFIG_VP8_DECODER
-const AVCodec ff_vp8_decoder = {
-    .name                  = "vp8",
-    .long_name             = NULL_IF_CONFIG_SMALL("On2 VP8"),
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_VP8,
+const FFCodec ff_vp8_decoder = {
+    .p.name                = "vp8",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("On2 VP8"),
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_VP8,
     .priv_data_size        = sizeof(VP8Context),
     .init                  = ff_vp8_decode_init,
     .close                 = ff_vp8_decode_free,
     .decode                = ff_vp8_decode_frame,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                              AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,

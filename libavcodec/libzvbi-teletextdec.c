@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "libavcodec/ass.h"
+#include "codec_internal.h"
 #include "libavcodec/dvbtxt.h"
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
@@ -810,17 +811,17 @@ static const AVClass teletext_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_libzvbi_teletext_decoder = {
-    .name      = "libzvbi_teletextdec",
-    .long_name = NULL_IF_CONFIG_SMALL("Libzvbi DVB teletext decoder"),
-    .type      = AVMEDIA_TYPE_SUBTITLE,
-    .id        = AV_CODEC_ID_DVB_TELETEXT,
+const FFCodec ff_libzvbi_teletext_decoder = {
+    .p.name         = "libzvbi_teletextdec",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Libzvbi DVB teletext decoder"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_DVB_TELETEXT,
+    .p.capabilities = AV_CODEC_CAP_DELAY,
+    .p.priv_class   = &teletext_class,
+    .p.wrapper_name = "libzvbi",
     .priv_data_size = sizeof(TeletextContext),
     .init      = teletext_init_decoder,
     .close     = teletext_close_decoder,
     .decode    = teletext_decode_frame,
-    .capabilities = AV_CODEC_CAP_DELAY,
     .flush     = teletext_flush,
-    .priv_class= &teletext_class,
-    .wrapper_name = "libzvbi",
 };

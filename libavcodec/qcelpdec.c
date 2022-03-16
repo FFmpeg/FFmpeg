@@ -791,14 +791,14 @@ erasure:
     return buf_size;
 }
 
-const AVCodec ff_qcelp_decoder = {
-    .name           = "qcelp",
-    .long_name      = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_QCELP,
+const FFCodec ff_qcelp_decoder = {
+    .p.name         = "qcelp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_QCELP,
     .init           = qcelp_decode_init,
     .decode         = qcelp_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(QCELPContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

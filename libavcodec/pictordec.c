@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "cga_data.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct PicContext {
@@ -280,12 +281,12 @@ finish:
     return avpkt->size;
 }
 
-const AVCodec ff_pictor_decoder = {
-    .name           = "pictor",
-    .long_name      = NULL_IF_CONFIG_SMALL("Pictor/PC Paint"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PICTOR,
+const FFCodec ff_pictor_decoder = {
+    .p.name         = "pictor",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Pictor/PC Paint"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PICTOR,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PicContext),
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };

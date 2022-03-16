@@ -44,10 +44,10 @@ void ff_thread_flush(AVCodecContext *avctx);
  * Returns the next available frame in picture. *got_picture_ptr
  * will be 0 if none is available.
  * The return value on success is the size of the consumed packet for
- * compatibility with AVCodec.decode. This means the decoder
+ * compatibility with FFCodec.decode. This means the decoder
  * has to consume the full packet.
  *
- * Parameters are the same as AVCodec.decode.
+ * Parameters are the same as FFCodec.decode.
  */
 int ff_thread_decode_frame(AVCodecContext *avctx, AVFrame *picture,
                            int *got_picture_ptr, AVPacket *avpkt);

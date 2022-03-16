@@ -81,12 +81,12 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_rawvideo_encoder = {
-    .name           = "rawvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_RAWVIDEO,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+const FFCodec ff_rawvideo_encoder = {
+    .p.name         = "rawvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_RAWVIDEO,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .init           = raw_encode_init,
     .encode2        = raw_encode,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

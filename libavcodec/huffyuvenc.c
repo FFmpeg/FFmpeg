@@ -1049,18 +1049,18 @@ static const AVClass ff_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_huffyuv_encoder = {
-    .name           = "huffyuv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HUFFYUV,
+const FFCodec ff_huffyuv_encoder = {
+    .p.name         = "huffyuv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HUFFYUV,
     .priv_data_size = sizeof(HYuvContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
-    .priv_class     = &normal_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
+    .p.priv_class   = &normal_class,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
@@ -1069,18 +1069,18 @@ const AVCodec ff_huffyuv_encoder = {
 };
 
 #if CONFIG_FFVHUFF_ENCODER
-const AVCodec ff_ffvhuff_encoder = {
-    .name           = "ffvhuff",
-    .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_FFVHUFF,
+const FFCodec ff_ffvhuff_encoder = {
+    .p.name         = "ffvhuff",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_FFVHUFF,
     .priv_data_size = sizeof(HYuvContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
-    .priv_class     = &ff_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
+    .p.priv_class   = &ff_class,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_GBRP,

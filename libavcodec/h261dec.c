@@ -681,16 +681,16 @@ static av_cold int h261_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_h261_decoder = {
-    .name           = "h261",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H261,
+const FFCodec ff_h261_decoder = {
+    .p.name         = "h261",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("H.261"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H261,
     .priv_data_size = sizeof(H261DecContext),
     .init           = h261_decode_init,
     .close          = h261_decode_end,
     .decode         = h261_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
-    .max_lowres     = 3,
+    .p.max_lowres   = 3,
 };

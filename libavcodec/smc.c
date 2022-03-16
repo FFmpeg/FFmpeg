@@ -469,15 +469,15 @@ static av_cold int smc_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_smc_decoder = {
-    .name           = "smc",
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SMC,
+const FFCodec ff_smc_decoder = {
+    .p.name         = "smc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SMC,
     .priv_data_size = sizeof(SmcContext),
     .init           = smc_decode_init,
     .close          = smc_decode_end,
     .decode         = smc_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

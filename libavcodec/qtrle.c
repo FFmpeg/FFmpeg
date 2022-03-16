@@ -582,16 +582,16 @@ static av_cold int qtrle_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_qtrle_decoder = {
-    .name           = "qtrle",
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_QTRLE,
+const FFCodec ff_qtrle_decoder = {
+    .p.name         = "qtrle",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_QTRLE,
     .priv_data_size = sizeof(QtrleContext),
     .init           = qtrle_decode_init,
     .close          = qtrle_decode_end,
     .decode         = qtrle_decode_frame,
     .flush          = qtrle_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

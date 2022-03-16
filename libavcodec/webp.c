@@ -1556,15 +1556,15 @@ static av_cold int webp_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_webp_decoder = {
-    .name           = "webp",
-    .long_name      = NULL_IF_CONFIG_SMALL("WebP image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WEBP,
+const FFCodec ff_webp_decoder = {
+    .p.name         = "webp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("WebP image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_WEBP,
     .priv_data_size = sizeof(WebPContext),
     .init           = webp_decode_init,
     .decode         = webp_decode_frame,
     .close          = webp_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

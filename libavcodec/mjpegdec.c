@@ -3012,20 +3012,20 @@ static const AVClass mjpegdec_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_mjpeg_decoder = {
-    .name           = "mjpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MJPEG,
+const FFCodec ff_mjpeg_decoder = {
+    .p.name         = "mjpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .receive_frame  = ff_mjpeg_receive_frame,
     .flush          = decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .max_lowres     = 3,
-    .priv_class     = &mjpegdec_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.max_lowres   = 3,
+    .p.priv_class   = &mjpegdec_class,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM | FF_CODEC_CAP_SETS_PKT_DTS,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
@@ -3040,35 +3040,35 @@ const AVCodec ff_mjpeg_decoder = {
 };
 #endif
 #if CONFIG_THP_DECODER
-const AVCodec ff_thp_decoder = {
-    .name           = "thp",
-    .long_name      = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_THP,
+const FFCodec ff_thp_decoder = {
+    .p.name         = "thp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_THP,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .receive_frame  = ff_mjpeg_receive_frame,
     .flush          = decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .max_lowres     = 3,
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.max_lowres   = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
 
 #if CONFIG_SMVJPEG_DECODER
-const AVCodec ff_smvjpeg_decoder = {
-    .name           = "smvjpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("SMV JPEG"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SMVJPEG,
+const FFCodec ff_smvjpeg_decoder = {
+    .p.name         = "smvjpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SMV JPEG"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SMVJPEG,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .receive_frame  = ff_mjpeg_receive_frame,
     .flush          = decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING |
                       FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_CLEANUP,
 };

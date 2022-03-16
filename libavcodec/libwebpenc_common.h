@@ -34,7 +34,6 @@
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
-#include "codec.h"
 #include "codec_internal.h"
 
 typedef struct LibWebPContextCommon {

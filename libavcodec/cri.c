@@ -424,15 +424,15 @@ static av_cold int cri_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_cri_decoder = {
-    .name           = "cri",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_CRI,
+const FFCodec ff_cri_decoder = {
+    .p.name         = "cri",
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_CRI,
     .priv_data_size = sizeof(CRIContext),
     .init           = cri_decode_init,
     .decode         = cri_decode_frame,
     .close          = cri_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .long_name      = NULL_IF_CONFIG_SMALL("Cintel RAW"),
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Cintel RAW"),
 };

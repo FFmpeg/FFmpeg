@@ -2356,16 +2356,16 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return buf_idx;
 }
 
-const AVCodec ff_dirac_decoder = {
-    .name           = "dirac",
-    .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_DIRAC,
+const FFCodec ff_dirac_decoder = {
+    .p.name         = "dirac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(DiracContext),
     .init           = dirac_decode_init,
     .close          = dirac_decode_end,
     .decode         = dirac_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush          = dirac_decode_flush,
 };

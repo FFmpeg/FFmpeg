@@ -118,16 +118,16 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
     return s->decoder.no_of_bytes;
 }
 
-const AVCodec ff_libilbc_decoder = {
-    .name           = "libilbc",
-    .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ILBC,
+const FFCodec ff_libilbc_decoder = {
+    .p.name         = "libilbc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ILBC,
     .priv_data_size = sizeof(ILBCDecContext),
     .init           = ilbc_decode_init,
     .decode         = ilbc_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .priv_class     = &ilbc_dec_class,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.priv_class   = &ilbc_dec_class,
 };
 
 typedef struct ILBCEncContext {
@@ -200,17 +200,17 @@ static const AVCodecDefault ilbc_encode_defaults[] = {
     { NULL }
 };
 
-const AVCodec ff_libilbc_encoder = {
-    .name           = "libilbc",
-    .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ILBC,
+const FFCodec ff_libilbc_encoder = {
+    .p.name         = "libilbc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ILBC,
     .priv_data_size = sizeof(ILBCEncContext),
     .init           = ilbc_encode_init,
     .encode2        = ilbc_encode_frame,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .defaults       = ilbc_encode_defaults,
-    .priv_class     = &ilbc_enc_class,
-    .wrapper_name   = "libbilbc",
+    .p.priv_class   = &ilbc_enc_class,
+    .p.wrapper_name = "libbilbc",
 };

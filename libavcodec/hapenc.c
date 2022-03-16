@@ -349,17 +349,17 @@ static const AVClass hapenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_hap_encoder = {
-    .name           = "hap",
-    .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HAP,
+const FFCodec ff_hap_encoder = {
+    .p.name         = "hap",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HAP,
     .priv_data_size = sizeof(HapContext),
-    .priv_class     = &hapenc_class,
+    .p.priv_class   = &hapenc_class,
     .init           = hap_init,
     .encode2        = hap_encode,
     .close          = hap_close,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE,
     },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |

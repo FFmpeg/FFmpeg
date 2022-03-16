@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "libavcodec/ass.h"
+#include "codec_internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -380,16 +381,16 @@ static const AVClass aribb24_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_libaribb24_decoder = {
-    .name      = "libaribb24",
-    .long_name = NULL_IF_CONFIG_SMALL("libaribb24 ARIB STD-B24 caption decoder"),
-    .type      = AVMEDIA_TYPE_SUBTITLE,
-    .id        = AV_CODEC_ID_ARIB_CAPTION,
+const FFCodec ff_libaribb24_decoder = {
+    .p.name         = "libaribb24",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libaribb24 ARIB STD-B24 caption decoder"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_ARIB_CAPTION,
+    .p.priv_class   = &aribb24_class,
+    .p.wrapper_name = "libaribb24",
     .priv_data_size = sizeof(Libaribb24Context),
     .init      = libaribb24_init,
     .close     = libaribb24_close,
     .decode    = libaribb24_decode,
     .flush     = libaribb24_flush,
-    .priv_class= &aribb24_class,
-    .wrapper_name = "libaribb24",
 };

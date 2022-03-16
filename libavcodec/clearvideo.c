@@ -767,15 +767,15 @@ static av_cold int clv_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_clearvideo_decoder = {
-    .name           = "clearvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_CLEARVIDEO,
+const FFCodec ff_clearvideo_decoder = {
+    .p.name         = "clearvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_CLEARVIDEO,
     .priv_data_size = sizeof(CLVContext),
     .init           = clv_decode_init,
     .close          = clv_decode_end,
     .decode         = clv_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

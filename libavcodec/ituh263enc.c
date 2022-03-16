@@ -901,13 +901,13 @@ static const AVClass h263_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_h263_encoder = {
-    .name           = "h263",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H263,
-    .pix_fmts= (const enum AVPixelFormat[]){AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE},
-    .priv_class     = &h263_class,
+const FFCodec ff_h263_encoder = {
+    .p.name         = "h263",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H263,
+    .p.pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE},
+    .p.priv_class   = &h263_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_mpv_encode_init,
@@ -936,14 +936,14 @@ static const AVClass h263p_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_h263p_encoder = {
-    .name           = "h263p",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H263P,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .priv_class     = &h263p_class,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
+const FFCodec ff_h263p_encoder = {
+    .p.name         = "h263p",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H263P,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .p.priv_class   = &h263p_class,
+    .p.capabilities = AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_mpv_encode_init,

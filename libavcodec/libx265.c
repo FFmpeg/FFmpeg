@@ -693,14 +693,14 @@ static const enum AVPixelFormat x265_csp_twelve[] = {
     AV_PIX_FMT_NONE
 };
 
-static av_cold void libx265_encode_init_csp(AVCodec *codec)
+static av_cold void libx265_encode_init_csp(FFCodec *codec)
 {
     if (x265_api_get(12))
-        codec->pix_fmts = x265_csp_twelve;
+        codec->p.pix_fmts = x265_csp_twelve;
     else if (x265_api_get(10))
-        codec->pix_fmts = x265_csp_ten;
+        codec->p.pix_fmts = x265_csp_ten;
     else if (x265_api_get(8))
-        codec->pix_fmts = x265_csp_eight;
+        codec->p.pix_fmts = x265_csp_eight;
 }
 
 #define OFFSET(x) offsetof(libx265Context, x)
@@ -740,21 +740,21 @@ static const AVCodecDefault x265_defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libx265_encoder = {
-    .name             = "libx265",
-    .long_name        = NULL_IF_CONFIG_SMALL("libx265 H.265 / HEVC"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_HEVC,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+FFCodec ff_libx265_encoder = {
+    .p.name           = "libx265",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("libx265 H.265 / HEVC"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_HEVC,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_OTHER_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .p.priv_class     = &class,
+    .p.wrapper_name   = "libx265",
     .init             = libx265_encode_init,
     .init_static_data = libx265_encode_init_csp,
     .encode2          = libx265_encode_frame,
     .close            = libx265_encode_close,
     .priv_data_size   = sizeof(libx265Context),
-    .priv_class       = &class,
     .defaults         = x265_defaults,
     .caps_internal    = FF_CODEC_CAP_AUTO_THREADS,
-    .wrapper_name     = "libx265",
 };

@@ -245,24 +245,24 @@ static const AVClass vaapi_encode_vp8_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_vp8_vaapi_encoder = {
-    .name           = "vp8_vaapi",
-    .long_name      = NULL_IF_CONFIG_SMALL("VP8 (VAAPI)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP8,
+const FFCodec ff_vp8_vaapi_encoder = {
+    .p.name         = "vp8_vaapi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("VP8 (VAAPI)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_VP8,
     .priv_data_size = sizeof(VAAPIEncodeVP8Context),
     .init           = &vaapi_encode_vp8_init,
     .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &ff_vaapi_encode_close,
-    .priv_class     = &vaapi_encode_vp8_class,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
+    .p.priv_class   = &vaapi_encode_vp8_class,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_vp8_defaults,
-    .pix_fmts = (const enum AVPixelFormat[]) {
+    .p.pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
     .hw_configs     = ff_vaapi_encode_hw_configs,
-    .wrapper_name   = "vaapi",
+    .p.wrapper_name = "vaapi",
 };

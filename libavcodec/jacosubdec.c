@@ -194,11 +194,11 @@ end:
     return avpkt->size;
 }
 
-const AVCodec ff_jacosub_decoder = {
-    .name           = "jacosub",
-    .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_JACOSUB,
+const FFCodec ff_jacosub_decoder = {
+    .p.name         = "jacosub",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("JACOsub subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_JACOSUB,
     .init           = ff_ass_subtitle_header_default,
     .decode         = jacosub_decode_frame,
     .flush          = ff_ass_decoder_flush,

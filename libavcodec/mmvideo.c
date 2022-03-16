@@ -239,15 +239,15 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_mmvideo_decoder = {
-    .name           = "mmvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MMVIDEO,
+const FFCodec ff_mmvideo_decoder = {
+    .p.name         = "mmvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MMVIDEO,
     .priv_data_size = sizeof(MmContext),
     .init           = mm_decode_init,
     .close          = mm_decode_end,
     .decode         = mm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

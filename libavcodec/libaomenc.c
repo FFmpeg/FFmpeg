@@ -1229,19 +1229,19 @@ static const enum AVPixelFormat av1_pix_fmts_highbd_with_gray[] = {
     AV_PIX_FMT_NONE
 };
 
-static av_cold void av1_init_static(AVCodec *codec)
+static av_cold void av1_init_static(FFCodec *codec)
 {
     int supports_monochrome = aom_codec_version() >= 20001;
     aom_codec_caps_t codec_caps = aom_codec_get_caps(aom_codec_av1_cx());
     if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH)
-        codec->pix_fmts = supports_monochrome ? av1_pix_fmts_highbd_with_gray :
-                                                av1_pix_fmts_highbd;
+        codec->p.pix_fmts = supports_monochrome ? av1_pix_fmts_highbd_with_gray :
+                                                  av1_pix_fmts_highbd;
     else
-        codec->pix_fmts = supports_monochrome ? av1_pix_fmts_with_gray :
-                                                av1_pix_fmts;
+        codec->p.pix_fmts = supports_monochrome ? av1_pix_fmts_with_gray :
+                                                  av1_pix_fmts;
 
     if (aom_codec_version_major() < 2)
-        codec->capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
+        codec->p.capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
 }
 
 static av_cold int av1_init(AVCodecContext *avctx)
@@ -1341,21 +1341,21 @@ static const AVClass class_aom = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_libaom_av1_encoder = {
-    .name           = "libaom-av1",
-    .long_name      = NULL_IF_CONFIG_SMALL("libaom AV1"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AV1,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+FFCodec ff_libaom_av1_encoder = {
+    .p.name         = "libaom-av1",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libaom AV1"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AV1,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_OTHER_THREADS,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
+    .p.priv_class   = &class_aom,
+    .p.wrapper_name = "libaom",
     .priv_data_size = sizeof(AOMContext),
     .init           = av1_init,
     .encode2        = aom_encode,
     .close          = aom_free,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
-    .priv_class     = &class_aom,
     .defaults       = defaults,
     .init_static_data = av1_init_static,
-    .wrapper_name   = "libaom",
 };

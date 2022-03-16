@@ -842,33 +842,33 @@ static av_cold int siren_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_siren_decoder = {
-    .name           = "siren",
-    .long_name      = NULL_IF_CONFIG_SMALL("Siren"),
+const FFCodec ff_siren_decoder = {
+    .p.name         = "siren",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Siren"),
     .priv_data_size = sizeof(SirenContext),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_SIREN,
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_SIREN,
     .init           = siren_init,
     .close          = siren_close,
     .decode         = siren_decode,
     .flush          = siren_flush,
-    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };
 
-const AVCodec ff_msnsiren_decoder = {
-    .name           = "msnsiren",
-    .long_name      = NULL_IF_CONFIG_SMALL("MSN Siren"),
+const FFCodec ff_msnsiren_decoder = {
+    .p.name         = "msnsiren",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MSN Siren"),
     .priv_data_size = sizeof(SirenContext),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_MSNSIREN,
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_MSNSIREN,
     .init           = siren_init,
     .close          = siren_close,
     .decode         = siren_decode,
     .flush          = siren_flush,
-    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,

@@ -160,16 +160,16 @@ static av_cold int msrle_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_msrle_decoder = {
-    .name           = "msrle",
-    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft RLE"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MSRLE,
+const FFCodec ff_msrle_decoder = {
+    .p.name         = "msrle",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Microsoft RLE"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MSRLE,
     .priv_data_size = sizeof(MsrleContext),
     .init           = msrle_decode_init,
     .close          = msrle_decode_end,
     .decode         = msrle_decode_frame,
     .flush          = msrle_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -1393,21 +1393,21 @@ static const AVClass proresenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_prores_ks_encoder = {
-    .name           = "prores_ks",
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PRORES,
+const FFCodec ff_prores_ks_encoder = {
+    .p.name         = "prores_ks",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.capabilities = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
                           AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
                       },
-    .priv_class     = &proresenc_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+    .p.priv_class   = &proresenc_class,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

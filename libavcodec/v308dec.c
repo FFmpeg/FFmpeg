@@ -73,13 +73,13 @@ static int v308_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_v308_decoder = {
-    .name         = "v308",
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_V308,
+const FFCodec ff_v308_decoder = {
+    .p.name       = "v308",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
+    .p.type       = AVMEDIA_TYPE_VIDEO,
+    .p.id         = AV_CODEC_ID_V308,
     .init         = v308_decode_init,
     .decode       = v308_decode_frame,
-    .capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

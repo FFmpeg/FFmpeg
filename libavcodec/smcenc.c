@@ -548,16 +548,16 @@ static int smc_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_smc_encoder = {
-    .name           = "smc",
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SMC,
+const FFCodec ff_smc_encoder = {
+    .p.name         = "smc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SMC,
     .priv_data_size = sizeof(SMCContext),
     .init           = smc_encode_init,
     .encode2        = smc_encode_frame,
     .close          = smc_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
                                                      AV_PIX_FMT_NONE},
 };

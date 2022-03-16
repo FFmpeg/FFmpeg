@@ -897,18 +897,18 @@ static const AVClass xvid_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_libxvid_encoder = {
-    .name           = "libxvid",
-    .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG4,
+const FFCodec ff_libxvid_encoder = {
+    .p.name         = "libxvid",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(struct xvid_context),
     .init           = xvid_encode_init,
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .priv_class     = &xvid_class,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .p.priv_class   = &xvid_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name   = "libxvid",
+    .p.wrapper_name = "libxvid",
 };

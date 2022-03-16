@@ -23,6 +23,7 @@
 #include "libavutil/avstring.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "mathops.h"
 
@@ -136,11 +137,11 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_xbm_decoder = {
-    .name         = "xbm",
-    .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_XBM,
+const FFCodec ff_xbm_decoder = {
+    .p.name       = "xbm",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
+    .p.type       = AVMEDIA_TYPE_VIDEO,
+    .p.id         = AV_CODEC_ID_XBM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .decode       = xbm_decode_frame,
-    .capabilities = AV_CODEC_CAP_DR1,
 };

@@ -520,15 +520,15 @@ static av_cold int sga_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_sga_decoder = {
-    .name           = "sga",
-    .long_name      = NULL_IF_CONFIG_SMALL("Digital Pictures SGA Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SGA_VIDEO,
+const FFCodec ff_sga_decoder = {
+    .p.name         = "sga",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Digital Pictures SGA Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SGA_VIDEO,
     .priv_data_size = sizeof(SGAVideoContext),
     .init           = sga_decode_init,
     .decode         = sga_decode_frame,
     .close          = sga_decode_end,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

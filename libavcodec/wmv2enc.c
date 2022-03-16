@@ -233,17 +233,17 @@ void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
         s->p_tex_bits += get_bits_diff(s);
 }
 
-const AVCodec ff_wmv2_encoder = {
-    .name           = "wmv2",
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WMV2,
-    .priv_class     = &ff_mpv_enc_class,
+const FFCodec ff_wmv2_encoder = {
+    .p.name         = "wmv2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_WMV2,
+    .p.priv_class   = &ff_mpv_enc_class,
     .priv_data_size = sizeof(WMV2EncContext),
     .init           = wmv2_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
 };

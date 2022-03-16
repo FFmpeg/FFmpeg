@@ -936,19 +936,19 @@ static const AVClass omx_mpeg4enc_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-const AVCodec ff_mpeg4_omx_encoder = {
-    .name             = "mpeg4_omx",
-    .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL MPEG-4 video encoder"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_MPEG4,
+const FFCodec ff_mpeg4_omx_encoder = {
+    .p.name           = "mpeg4_omx",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("OpenMAX IL MPEG-4 video encoder"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_MPEG4,
     .priv_data_size   = sizeof(OMXCodecContext),
     .init             = omx_encode_init,
     .encode2          = omx_encode_frame,
     .close            = omx_encode_end,
-    .pix_fmts         = omx_encoder_pix_fmts,
-    .capabilities     = AV_CODEC_CAP_DELAY,
+    .p.pix_fmts       = omx_encoder_pix_fmts,
+    .p.capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .priv_class       = &omx_mpeg4enc_class,
+    .p.priv_class     = &omx_mpeg4enc_class,
 };
 
 static const AVClass omx_h264enc_class = {
@@ -957,17 +957,17 @@ static const AVClass omx_h264enc_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-const AVCodec ff_h264_omx_encoder = {
-    .name             = "h264_omx",
-    .long_name        = NULL_IF_CONFIG_SMALL("OpenMAX IL H.264 video encoder"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_H264,
+const FFCodec ff_h264_omx_encoder = {
+    .p.name           = "h264_omx",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("OpenMAX IL H.264 video encoder"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_H264,
     .priv_data_size   = sizeof(OMXCodecContext),
     .init             = omx_encode_init,
     .encode2          = omx_encode_frame,
     .close            = omx_encode_end,
-    .pix_fmts         = omx_encoder_pix_fmts,
-    .capabilities     = AV_CODEC_CAP_DELAY,
+    .p.pix_fmts       = omx_encoder_pix_fmts,
+    .p.capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .priv_class       = &omx_h264enc_class,
+    .p.priv_class     = &omx_h264enc_class,
 };

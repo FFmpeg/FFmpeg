@@ -132,13 +132,13 @@ static int sgirle_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_sgirle_decoder = {
-    .name           = "sgirle",
-    .long_name      = NULL_IF_CONFIG_SMALL("Silicon Graphics RLE 8-bit video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SGIRLE,
+const FFCodec ff_sgirle_decoder = {
+    .p.name         = "sgirle",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Silicon Graphics RLE 8-bit video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SGIRLE,
     .init           = sgirle_decode_init,
     .decode         = sgirle_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -2961,18 +2961,18 @@ static const AVClass wavpack_encoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_wavpack_encoder = {
-    .name           = "wavpack",
-    .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_WAVPACK,
+const FFCodec ff_wavpack_encoder = {
+    .p.name         = "wavpack",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("WavPack"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_WAVPACK,
     .priv_data_size = sizeof(WavPackEncodeContext),
-    .priv_class     = &wavpack_encoder_class,
+    .p.priv_class   = &wavpack_encoder_class,
     .init           = wavpack_encode_init,
     .encode2        = wavpack_encode_frame,
     .close          = wavpack_encode_close,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8P,
+    .p.capabilities = AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8P,
                                                      AV_SAMPLE_FMT_S16P,
                                                      AV_SAMPLE_FMT_S32P,
                                                      AV_SAMPLE_FMT_FLTP,

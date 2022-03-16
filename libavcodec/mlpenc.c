@@ -2206,42 +2206,42 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
 }
 
 #if CONFIG_MLP_ENCODER
-const AVCodec ff_mlp_encoder = {
-    .name                   ="mlp",
-    .long_name              = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
-    .type                   = AVMEDIA_TYPE_AUDIO,
-    .id                     = AV_CODEC_ID_MLP,
+const FFCodec ff_mlp_encoder = {
+    .p.name                 ="mlp",
+    .p.long_name            = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
+    .p.type                 = AVMEDIA_TYPE_AUDIO,
+    .p.id                   = AV_CODEC_ID_MLP,
     .priv_data_size         = sizeof(MLPEncodeContext),
     .init                   = mlp_encode_init,
     .encode2                = mlp_encode_frame,
     .close                  = mlp_encode_close,
-    .capabilities           = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
-    .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
+    .p.capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
+    .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
+    .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts        = ff_mlp_channel_layouts,
+    .p.channel_layouts      = ff_mlp_channel_layouts,
 #endif
-    .ch_layouts             = ff_mlp_ch_layouts,
+    .p.ch_layouts           = ff_mlp_ch_layouts,
     .caps_internal          = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 #if CONFIG_TRUEHD_ENCODER
-const AVCodec ff_truehd_encoder = {
-    .name                   ="truehd",
-    .long_name              = NULL_IF_CONFIG_SMALL("TrueHD"),
-    .type                   = AVMEDIA_TYPE_AUDIO,
-    .id                     = AV_CODEC_ID_TRUEHD,
+const FFCodec ff_truehd_encoder = {
+    .p.name                 ="truehd",
+    .p.long_name            = NULL_IF_CONFIG_SMALL("TrueHD"),
+    .p.type                 = AVMEDIA_TYPE_AUDIO,
+    .p.id                   = AV_CODEC_ID_TRUEHD,
     .priv_data_size         = sizeof(MLPEncodeContext),
     .init                   = mlp_encode_init,
     .encode2                = mlp_encode_frame,
     .close                  = mlp_encode_close,
-    .capabilities           = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts            = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
-    .supported_samplerates  = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
+    .p.capabilities         = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_EXPERIMENTAL,
+    .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
+    .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts        = (const uint64_t[]) {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_5POINT1_BACK, 0},
+    .p.channel_layouts      = (const uint64_t[]) {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0_BACK, AV_CH_LAYOUT_5POINT1_BACK, 0},
 #endif
-    .ch_layouts             = (const AVChannelLayout[]) {
+    .p.ch_layouts           = (const AVChannelLayout[]) {
                                   AV_CHANNEL_LAYOUT_STEREO,
                                   AV_CHANNEL_LAYOUT_5POINT0_BACK,
                                   AV_CHANNEL_LAYOUT_5POINT1_BACK,

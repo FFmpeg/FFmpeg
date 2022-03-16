@@ -20,6 +20,7 @@
  */
 
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 enum PsdCompr {
@@ -545,12 +546,12 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_psd_decoder = {
-    .name             = "psd",
-    .long_name        = NULL_IF_CONFIG_SMALL("Photoshop PSD file"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_PSD,
+const FFCodec ff_psd_decoder = {
+    .p.name           = "psd",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Photoshop PSD file"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_PSD,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size   = sizeof(PSDContext),
     .decode           = decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

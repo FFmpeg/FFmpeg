@@ -75,11 +75,11 @@ static int realtext_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-const AVCodec ff_realtext_decoder = {
-    .name           = "realtext",
-    .long_name      = NULL_IF_CONFIG_SMALL("RealText subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_REALTEXT,
+const FFCodec ff_realtext_decoder = {
+    .p.name         = "realtext",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RealText subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_REALTEXT,
     .decode         = realtext_decode_frame,
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,

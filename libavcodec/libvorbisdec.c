@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct OggVorbisDecContext {
@@ -210,14 +211,14 @@ static int oggvorbis_decode_close(AVCodecContext *avccontext) {
 }
 
 
-const AVCodec ff_libvorbis_decoder = {
-    .name           = "libvorbis",
-    .long_name      = NULL_IF_CONFIG_SMALL("libvorbis"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_VORBIS,
+const FFCodec ff_libvorbis_decoder = {
+    .p.name         = "libvorbis",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libvorbis"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_VORBIS,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(OggVorbisDecContext),
     .init           = oggvorbis_decode_init,
     .decode         = oggvorbis_decode_frame,
     .close          = oggvorbis_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,
 };

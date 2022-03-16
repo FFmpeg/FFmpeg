@@ -630,31 +630,31 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 #if CONFIG_MSZH_DECODER
-const AVCodec ff_mszh_decoder = {
-    .name           = "mszh",
-    .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) MSZH"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MSZH,
+const FFCodec ff_mszh_decoder = {
+    .p.name         = "mszh",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) MSZH"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MSZH,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 
 #if CONFIG_ZLIB_DECODER
-const AVCodec ff_zlib_decoder = {
-    .name           = "zlib",
-    .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_ZLIB,
+const FFCodec ff_zlib_decoder = {
+    .p.name         = "zlib",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_ZLIB,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

@@ -116,15 +116,15 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 }
 
 #define DSD_DECODER(id_, name_, long_name_) \
-const AVCodec ff_ ## name_ ## _decoder = { \
-    .name         = #name_, \
-    .long_name    = NULL_IF_CONFIG_SMALL(long_name_), \
-    .type         = AVMEDIA_TYPE_AUDIO, \
-    .id           = AV_CODEC_ID_##id_, \
+const FFCodec ff_ ## name_ ## _decoder = { \
+    .p.name       = #name_, \
+    .p.long_name  = NULL_IF_CONFIG_SMALL(long_name_), \
+    .p.type       = AVMEDIA_TYPE_AUDIO, \
+    .p.id         = AV_CODEC_ID_##id_, \
     .init         = decode_init, \
     .decode       = decode_frame, \
-    .capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS, \
-    .sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP, \
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS, \
+    .p.sample_fmts = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP, \
                                                    AV_SAMPLE_FMT_NONE }, \
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE, \
 };

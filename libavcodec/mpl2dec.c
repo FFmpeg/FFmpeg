@@ -82,11 +82,11 @@ static int mpl2_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_mpl2_decoder = {
-    .name           = "mpl2",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPL2 subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_MPL2,
+const FFCodec ff_mpl2_decoder = {
+    .p.name         = "mpl2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MPL2 subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_MPL2,
     .decode         = mpl2_decode_frame,
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,

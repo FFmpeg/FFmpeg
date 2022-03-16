@@ -342,15 +342,15 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_eamad_decoder = {
-    .name           = "eamad",
-    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Madcow Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MAD,
+const FFCodec ff_eamad_decoder = {
+    .p.name         = "eamad",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Electronic Arts Madcow Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MAD,
     .priv_data_size = sizeof(MadContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

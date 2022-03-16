@@ -270,17 +270,17 @@ static int pcm_bluray_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_pcm_bluray_encoder = {
-    .name                  = "pcm_bluray",
-    .long_name             = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for Blu-ray media"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_PCM_BLURAY,
+const FFCodec ff_pcm_bluray_encoder = {
+    .p.name                = "pcm_bluray",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for Blu-ray media"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_PCM_BLURAY,
     .priv_data_size        = sizeof(BlurayPCMEncContext),
     .init                  = pcm_bluray_encode_init,
     .encode2               = pcm_bluray_encode_frame,
-    .supported_samplerates = (const int[]) { 48000, 96000, 192000, 0 },
+    .p.supported_samplerates = (const int[]) { 48000, 96000, 192000, 0 },
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts = (const uint64_t[]) {
+    .p.channel_layouts = (const uint64_t[]) {
         AV_CH_LAYOUT_MONO,
         AV_CH_LAYOUT_STEREO,
         AV_CH_LAYOUT_SURROUND,
@@ -293,7 +293,7 @@ const AVCodec ff_pcm_bluray_encoder = {
         AV_CH_LAYOUT_7POINT1,
         0 },
 #endif
-    .ch_layouts     = (const AVChannelLayout[]) {
+    .p.ch_layouts   = (const AVChannelLayout[]) {
         AV_CHANNEL_LAYOUT_MONO,
         AV_CHANNEL_LAYOUT_STEREO,
         AV_CHANNEL_LAYOUT_SURROUND,
@@ -305,8 +305,8 @@ const AVCodec ff_pcm_bluray_encoder = {
         AV_CHANNEL_LAYOUT_7POINT0,
         AV_CHANNEL_LAYOUT_7POINT1,
         { 0 } },
-    .sample_fmts           = (const enum AVSampleFormat[]) {
+    .p.sample_fmts         = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE },
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
 };

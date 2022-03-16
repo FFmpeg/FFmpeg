@@ -270,18 +270,18 @@ int ff_speedhq_mb_y_order_to_mb(int mb_y_order, int mb_height, int *first_in_sli
 }
 
 #if CONFIG_SPEEDHQ_ENCODER
-const AVCodec ff_speedhq_encoder = {
-    .name           = "speedhq",
-    .long_name      = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SPEEDHQ,
-    .priv_class     = &ff_mpv_enc_class,
+const FFCodec ff_speedhq_encoder = {
+    .p.name         = "speedhq",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SPEEDHQ,
+    .p.priv_class   = &ff_mpv_enc_class,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_NONE
     },

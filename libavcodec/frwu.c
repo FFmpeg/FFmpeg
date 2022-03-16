@@ -116,15 +116,15 @@ static const AVClass frwu_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_frwu_decoder = {
-    .name           = "frwu",
-    .long_name      = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_FRWU,
+const FFCodec ff_frwu_decoder = {
+    .p.name         = "frwu",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_FRWU,
     .priv_data_size = sizeof(FRWUContext),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .priv_class     = &frwu_class,
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.priv_class   = &frwu_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

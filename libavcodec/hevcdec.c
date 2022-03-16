@@ -3875,23 +3875,23 @@ static const AVClass hevc_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_hevc_decoder = {
-    .name                  = "hevc",
-    .long_name             = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_HEVC,
+const FFCodec ff_hevc_decoder = {
+    .p.name                = "hevc",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("HEVC (High Efficiency Video Coding)"),
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_HEVC,
     .priv_data_size        = sizeof(HEVCContext),
-    .priv_class            = &hevc_decoder_class,
+    .p.priv_class          = &hevc_decoder_class,
     .init                  = hevc_decode_init,
     .close                 = hevc_decode_free,
     .decode                = hevc_decode_frame,
     .flush                 = hevc_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(hevc_update_thread_context),
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
-    .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+    .p.profiles            = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_HEVC_DXVA2_HWACCEL
                                HWACCEL_DXVA2(hevc),

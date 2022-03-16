@@ -729,16 +729,16 @@ static int qdmc_decode_frame(AVCodecContext *avctx, void *data,
     return ret;
 }
 
-const AVCodec ff_qdmc_decoder = {
-    .name             = "qdmc",
-    .long_name        = NULL_IF_CONFIG_SMALL("QDesign Music Codec 1"),
-    .type             = AVMEDIA_TYPE_AUDIO,
-    .id               = AV_CODEC_ID_QDMC,
+const FFCodec ff_qdmc_decoder = {
+    .p.name           = "qdmc",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("QDesign Music Codec 1"),
+    .p.type           = AVMEDIA_TYPE_AUDIO,
+    .p.id             = AV_CODEC_ID_QDMC,
     .priv_data_size   = sizeof(QDMCContext),
     .init             = qdmc_decode_init,
     .close            = qdmc_decode_close,
     .decode           = qdmc_decode_frame,
     .flush            = qdmc_flush,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };

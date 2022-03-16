@@ -26,6 +26,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 typedef struct LibSpeexContext {
@@ -190,16 +191,16 @@ static av_cold void libspeex_decode_flush(AVCodecContext *avctx)
     speex_bits_reset(&s->bits);
 }
 
-const AVCodec ff_libspeex_decoder = {
-    .name           = "libspeex",
-    .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_SPEEX,
+const FFCodec ff_libspeex_decoder = {
+    .p.name         = "libspeex",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libspeex Speex"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_SPEEX,
+    .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.wrapper_name = "libspeex",
     .priv_data_size = sizeof(LibSpeexContext),
     .init           = libspeex_decode_init,
     .close          = libspeex_decode_close,
     .decode         = libspeex_decode_frame,
     .flush          = libspeex_decode_flush,
-    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .wrapper_name   = "libspeex",
 };

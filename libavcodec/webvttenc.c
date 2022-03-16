@@ -211,11 +211,11 @@ static av_cold int webvtt_encode_init(AVCodecContext *avctx)
     return s->ass_ctx ? 0 : AVERROR_INVALIDDATA;
 }
 
-const AVCodec ff_webvtt_encoder = {
-    .name           = "webvtt",
-    .long_name      = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_WEBVTT,
+const FFCodec ff_webvtt_encoder = {
+    .p.name         = "webvtt",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_WEBVTT,
     .priv_data_size = sizeof(WebVTTContext),
     .init           = webvtt_encode_init,
     .encode_sub     = webvtt_encode_frame,

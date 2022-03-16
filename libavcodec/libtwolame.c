@@ -209,19 +209,19 @@ static const int twolame_samplerates[] = {
     16000, 22050, 24000, 32000, 44100, 48000, 0
 };
 
-const AVCodec ff_libtwolame_encoder = {
-    .name           = "libtwolame",
-    .long_name      = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_MP2,
+const FFCodec ff_libtwolame_encoder = {
+    .p.name         = "libtwolame",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_MP2,
     .priv_data_size = sizeof(TWOLAMEContext),
     .init           = twolame_encode_init,
     .encode2        = twolame_encode_frame,
     .close          = twolame_encode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .p.capabilities = AV_CODEC_CAP_DELAY,
     .defaults       = twolame_defaults,
-    .priv_class     = &twolame_class,
-    .sample_fmts    = (const enum AVSampleFormat[]) {
+    .p.priv_class   = &twolame_class,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT,
         AV_SAMPLE_FMT_FLTP,
         AV_SAMPLE_FMT_S16,
@@ -229,16 +229,16 @@ const AVCodec ff_libtwolame_encoder = {
         AV_SAMPLE_FMT_NONE
     },
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts = (const uint64_t[]) {
+    .p.channel_layouts = (const uint64_t[]) {
         AV_CH_LAYOUT_MONO,
         AV_CH_LAYOUT_STEREO,
         0 },
 #endif
-    .ch_layouts      = (const AVChannelLayout[]) {
+    .p.ch_layouts    = (const AVChannelLayout[]) {
         AV_CHANNEL_LAYOUT_MONO,
         AV_CHANNEL_LAYOUT_STEREO,
         { 0 },
     },
-    .supported_samplerates = twolame_samplerates,
-    .wrapper_name   = "libtwolame",
+    .p.supported_samplerates = twolame_samplerates,
+    .p.wrapper_name = "libtwolame",
 };

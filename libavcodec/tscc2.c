@@ -356,15 +356,15 @@ static av_cold int tscc2_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_tscc2_decoder = {
-    .name           = "tscc2",
-    .long_name      = NULL_IF_CONFIG_SMALL("TechSmith Screen Codec 2"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_TSCC2,
+const FFCodec ff_tscc2_decoder = {
+    .p.name         = "tscc2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TechSmith Screen Codec 2"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_TSCC2,
     .priv_data_size = sizeof(TSCC2Context),
     .init           = tscc2_decode_init,
     .close          = tscc2_decode_end,
     .decode         = tscc2_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };

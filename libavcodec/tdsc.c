@@ -622,16 +622,16 @@ static int tdsc_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_tdsc_decoder = {
-    .name           = "tdsc",
-    .long_name      = NULL_IF_CONFIG_SMALL("TDSC"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_TDSC,
+const FFCodec ff_tdsc_decoder = {
+    .p.name         = "tdsc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TDSC"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_TDSC,
     .init           = tdsc_init,
     .decode         = tdsc_decode_frame,
     .close          = tdsc_close,
     .priv_data_size = sizeof(TDSCContext),
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

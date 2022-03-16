@@ -27,9 +27,9 @@
 #include <unistd.h>
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
-#include "internal.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
@@ -561,23 +561,23 @@ static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
 
 #define RKMPP_DEC(NAME, ID, BSFS) \
     RKMPP_DEC_CLASS(NAME) \
-    const AVCodec ff_##NAME##_rkmpp_decoder = { \
-        .name           = #NAME "_rkmpp", \
-        .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (rkmpp)"), \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = ID, \
+    const FFCodec ff_##NAME##_rkmpp_decoder = { \
+        .p.name         = #NAME "_rkmpp", \
+        .p.long_name    = NULL_IF_CONFIG_SMALL(#NAME " (rkmpp)"), \
+        .p.type         = AVMEDIA_TYPE_VIDEO, \
+        .p.id           = ID, \
         .priv_data_size = sizeof(RKMPPDecodeContext), \
         .init           = rkmpp_init_decoder, \
         .close          = rkmpp_close_decoder, \
         .receive_frame  = rkmpp_receive_frame, \
         .flush          = rkmpp_flush, \
-        .priv_class     = &rkmpp_##NAME##_dec_class, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
-        .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_DRM_PRIME, \
+        .p.priv_class   = &rkmpp_##NAME##_dec_class, \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
+        .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_DRM_PRIME, \
                                                          AV_PIX_FMT_NONE}, \
         .hw_configs     = rkmpp_hw_configs, \
         .bsfs           = BSFS, \
-        .wrapper_name   = "rkmpp", \
+        .p.wrapper_name = "rkmpp", \
     };
 
 RKMPP_DEC(h264,  AV_CODEC_ID_H264,          "h264_mp4toannexb")

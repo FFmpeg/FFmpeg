@@ -274,16 +274,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_dpx_encoder = {
-    .name           = "dpx",
-    .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_DPX,
-    .capabilities   = AV_CODEC_CAP_DR1,
+const FFCodec ff_dpx_encoder = {
+    .p.name         = "dpx",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_DPX,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(DPXContext),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_RGB24,    AV_PIX_FMT_RGBA, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE,

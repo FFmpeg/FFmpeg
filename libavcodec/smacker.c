@@ -723,26 +723,26 @@ error:
     return ret;
 }
 
-const AVCodec ff_smacker_decoder = {
-    .name           = "smackvid",
-    .long_name      = NULL_IF_CONFIG_SMALL("Smacker video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SMACKVIDEO,
+const FFCodec ff_smacker_decoder = {
+    .p.name         = "smackvid",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Smacker video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SMACKVIDEO,
     .priv_data_size = sizeof(SmackVContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
 
-const AVCodec ff_smackaud_decoder = {
-    .name           = "smackaud",
-    .long_name      = NULL_IF_CONFIG_SMALL("Smacker audio"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_SMACKAUDIO,
+const FFCodec ff_smackaud_decoder = {
+    .p.name         = "smackaud",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Smacker audio"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_SMACKAUDIO,
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

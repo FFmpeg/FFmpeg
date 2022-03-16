@@ -26,6 +26,7 @@
 #include "libavutil/timecode.h"
 #include "bytestream.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 enum DPX_TRC {
@@ -762,11 +763,11 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-const AVCodec ff_dpx_decoder = {
-    .name           = "dpx",
-    .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_DPX,
+const FFCodec ff_dpx_decoder = {
+    .p.name         = "dpx",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_DPX,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
 };

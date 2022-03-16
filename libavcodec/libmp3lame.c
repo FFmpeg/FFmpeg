@@ -328,32 +328,32 @@ static const int libmp3lame_sample_rates[] = {
     44100, 48000,  32000, 22050, 24000, 16000, 11025, 12000, 8000, 0
 };
 
-const AVCodec ff_libmp3lame_encoder = {
-    .name                  = "libmp3lame",
-    .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_MP3,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+const FFCodec ff_libmp3lame_encoder = {
+    .p.name                = "libmp3lame",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_MP3,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size        = sizeof(LAMEContext),
     .init                  = mp3lame_encode_init,
     .encode2               = mp3lame_encode_frame,
     .close                 = mp3lame_encode_close,
-    .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P,
+    .p.sample_fmts         = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P,
                                                              AV_SAMPLE_FMT_FLTP,
                                                              AV_SAMPLE_FMT_S16P,
                                                              AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = libmp3lame_sample_rates,
+    .p.supported_samplerates = libmp3lame_sample_rates,
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
+    .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
 #endif
-    .ch_layouts            = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
+    .p.ch_layouts          = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
                                                          AV_CHANNEL_LAYOUT_STEREO,
                                                          { 0 },
     },
-    .priv_class            = &libmp3lame_class,
+    .p.priv_class          = &libmp3lame_class,
     .defaults              = libmp3lame_defaults,
-    .wrapper_name          = "libmp3lame",
+    .p.wrapper_name        = "libmp3lame",
 };

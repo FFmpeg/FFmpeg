@@ -1005,17 +1005,17 @@ static av_cold int on2avc_decode_close(AVCodecContext *avctx)
 }
 
 
-const AVCodec ff_on2avc_decoder = {
-    .name           = "on2avc",
-    .long_name      = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ON2AVC,
+const FFCodec ff_on2avc_decoder = {
+    .p.name         = "on2avc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ON2AVC,
     .priv_data_size = sizeof(On2AVCContext),
     .init           = on2avc_decode_init,
     .decode         = on2avc_decode_frame,
     .close          = on2avc_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

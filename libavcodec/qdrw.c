@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 enum QuickdrawOpcodes {
@@ -514,11 +515,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 }
 
-const AVCodec ff_qdraw_decoder = {
-    .name           = "qdraw",
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_QDRAW,
+const FFCodec ff_qdraw_decoder = {
+    .p.name         = "qdraw",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_QDRAW,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };

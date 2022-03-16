@@ -24,6 +24,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 
 #define MIN_ELEMENT ' '
@@ -436,13 +437,13 @@ static av_cold int xpm_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_xpm_decoder = {
-    .name           = "xpm",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_XPM,
+const FFCodec ff_xpm_decoder = {
+    .p.name         = "xpm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("XPM (X PixMap) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_XPM,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(XPMDecContext),
     .close          = xpm_decode_close,
     .decode         = xpm_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("XPM (X PixMap) image")
 };

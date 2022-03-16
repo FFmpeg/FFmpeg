@@ -64,11 +64,11 @@ static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
 }
 
 #if CONFIG_SSA_DECODER
-const AVCodec ff_ssa_decoder = {
-    .name         = "ssa",
-    .long_name    = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
-    .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_ASS,
+const FFCodec ff_ssa_decoder = {
+    .p.name       = "ssa",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
+    .p.type       = AVMEDIA_TYPE_SUBTITLE,
+    .p.id         = AV_CODEC_ID_ASS,
     .init         = ass_decode_init,
     .decode       = ass_decode_frame,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
@@ -76,11 +76,11 @@ const AVCodec ff_ssa_decoder = {
 #endif
 
 #if CONFIG_ASS_DECODER
-const AVCodec ff_ass_decoder = {
-    .name         = "ass",
-    .long_name    = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
-    .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_ASS,
+const FFCodec ff_ass_decoder = {
+    .p.name       = "ass",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
+    .p.type       = AVMEDIA_TYPE_SUBTITLE,
+    .p.id         = AV_CODEC_ID_ASS,
     .init         = ass_decode_init,
     .decode       = ass_decode_frame,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,

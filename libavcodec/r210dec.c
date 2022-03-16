@@ -104,38 +104,38 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 }
 
 #if CONFIG_R210_DECODER
-const AVCodec ff_r210_decoder = {
-    .name           = "r210",
-    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_R210,
+const FFCodec ff_r210_decoder = {
+    .p.name         = "r210",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_R210,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_R10K_DECODER
-const AVCodec ff_r10k_decoder = {
-    .name           = "r10k",
-    .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_R10K,
+const FFCodec ff_r10k_decoder = {
+    .p.name         = "r10k",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_R10K,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_AVRP_DECODER
-const AVCodec ff_avrp_decoder = {
-    .name           = "avrp",
-    .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AVRP,
+const FFCodec ff_avrp_decoder = {
+    .p.name         = "avrp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AVRP,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

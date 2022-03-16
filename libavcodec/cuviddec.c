@@ -943,7 +943,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    if (avctx->codec->bsfs) {
+    if (ffcodec(avctx->codec)->bsfs) {
         const AVCodecParameters *par = avctx->internal->bsf->par_out;
         extradata = par->extradata;
         extradata_size = par->extradata_size;
@@ -1103,27 +1103,27 @@ static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
     }; \
-    const AVCodec ff_##x##_cuvid_decoder = { \
-        .name           = #x "_cuvid", \
-        .long_name      = NULL_IF_CONFIG_SMALL("Nvidia CUVID " #X " decoder"), \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = AV_CODEC_ID_##X, \
+    const FFCodec ff_##x##_cuvid_decoder = { \
+        .p.name         = #x "_cuvid", \
+        .p.long_name    = NULL_IF_CONFIG_SMALL("Nvidia CUVID " #X " decoder"), \
+        .p.type         = AVMEDIA_TYPE_VIDEO, \
+        .p.id           = AV_CODEC_ID_##X, \
         .priv_data_size = sizeof(CuvidContext), \
-        .priv_class     = &x##_cuvid_class, \
+        .p.priv_class   = &x##_cuvid_class, \
         .init           = cuvid_decode_init, \
         .close          = cuvid_decode_end, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
         .bsfs           = bsf_name, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .caps_internal  = FF_CODEC_CAP_SETS_FRAME_PROPS, \
-        .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
+        .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
                                                         AV_PIX_FMT_P010, \
                                                         AV_PIX_FMT_P016, \
                                                         AV_PIX_FMT_NONE }, \
         .hw_configs     = cuvid_hw_configs, \
-        .wrapper_name   = "cuvid", \
+        .p.wrapper_name = "cuvid", \
     };
 
 #if CONFIG_AV1_CUVID_DECODER && defined(CUVID_HAS_AV1_SUPPORT)

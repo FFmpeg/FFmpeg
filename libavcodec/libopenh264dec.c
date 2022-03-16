@@ -157,18 +157,18 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-const AVCodec ff_libopenh264_decoder = {
-    .name           = "libopenh264",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
+const FFCodec ff_libopenh264_decoder = {
+    .p.name         = "libopenh264",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(SVCContext),
     .init           = svc_decode_init,
     .decode         = svc_decode_frame,
     .close          = svc_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .bsfs           = "h264_mp4toannexb",
-    .wrapper_name   = "libopenh264",
+    .p.wrapper_name = "libopenh264",
 };

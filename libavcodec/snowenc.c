@@ -1912,21 +1912,21 @@ static const AVClass snowenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_snow_encoder = {
-    .name           = "snow",
-    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SNOW,
+const FFCodec ff_snow_encoder = {
+    .p.name         = "snow",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Snow"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     },
-    .priv_class     = &snowenc_class,
+    .p.priv_class   = &snowenc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

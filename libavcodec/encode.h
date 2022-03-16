@@ -47,7 +47,7 @@ int ff_get_encode_buffer(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, i
 /**
  * Check AVPacket size and allocate data.
  *
- * Encoders supporting AVCodec.encode2() can use this as a convenience to
+ * Encoders supporting FFCodec.encode2() can use this as a convenience to
  * obtain a big enough buffer for the encoded bitstream.
  *
  * @param avctx   the AVCodecContext of the encoder
@@ -61,7 +61,7 @@ int ff_alloc_packet(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
 
 /*
  * Perform encoder initialization and validation.
- * Called when opening the encoder, before the AVCodec.init() call.
+ * Called when opening the encoder, before the FFCodec.init() call.
  */
 int ff_encode_preinit(AVCodecContext *avctx);
 

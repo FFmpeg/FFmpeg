@@ -169,21 +169,21 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_s302m_encoder = {
-    .name                  = "s302m",
-    .long_name             = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_S302M,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL |
+const FFCodec ff_s302m_encoder = {
+    .p.name                = "s302m",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_S302M,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL |
                              AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
     .priv_data_size        = sizeof(S302MEncContext),
     .init                  = s302m_encode_init,
     .encode2               = s302m_encode2_frame,
-    .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
+    .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = (const int[]) { 48000, 0 },
- /* .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
+    .p.supported_samplerates = (const int[]) { 48000, 0 },
+ /* .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
                                                   AV_CH_LAYOUT_QUAD,
                                                   AV_CH_LAYOUT_5POINT1_BACK,
                                                   AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX,

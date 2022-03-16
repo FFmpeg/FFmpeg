@@ -569,17 +569,17 @@ static const AVClass tiffenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_tiff_encoder = {
-    .name           = "tiff",
-    .long_name      = NULL_IF_CONFIG_SMALL("TIFF image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_TIFF,
+const FFCodec ff_tiff_encoder = {
+    .p.name         = "tiff",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TIFF image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_TIFF,
     .priv_data_size = sizeof(TiffEncoderContext),
     .init           = encode_init,
     .close          = encode_close,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_RGBA64LE,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_YA16LE,
@@ -588,6 +588,6 @@ const AVCodec ff_tiff_encoder = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_NONE
     },
-    .priv_class     = &tiffenc_class,
+    .p.priv_class   = &tiffenc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

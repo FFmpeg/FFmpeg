@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "encode.h"
 
 #define ALIAS_HEADER_SIZE 10
@@ -100,13 +101,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_alias_pix_encoder = {
-    .name      = "alias_pix",
-    .long_name = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
-    .type      = AVMEDIA_TYPE_VIDEO,
-    .id        = AV_CODEC_ID_ALIAS_PIX,
+const FFCodec ff_alias_pix_encoder = {
+    .p.name    = "alias_pix",
+    .p.long_name = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
+    .p.type    = AVMEDIA_TYPE_VIDEO,
+    .p.id      = AV_CODEC_ID_ALIAS_PIX,
     .encode2   = encode_frame,
-    .pix_fmts  = (const enum AVPixelFormat[]) {
+    .p.pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
 };

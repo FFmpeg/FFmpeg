@@ -843,17 +843,17 @@ static const AVClass rpza_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_rpza_encoder = {
-    .name           = "rpza",
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_RPZA,
+const FFCodec ff_rpza_encoder = {
+    .p.name         = "rpza",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_RPZA,
     .priv_data_size = sizeof(RpzaContext),
-    .priv_class     = &rpza_class,
+    .p.priv_class   = &rpza_class,
     .init           = rpza_encode_init,
     .encode2        = rpza_encode_frame,
     .close          = rpza_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB555,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB555,
                                                      AV_PIX_FMT_NONE},
 };

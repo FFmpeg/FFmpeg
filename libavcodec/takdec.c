@@ -942,18 +942,18 @@ static av_cold int tak_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_tak_decoder = {
-    .name             = "tak",
-    .long_name        = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
-    .type             = AVMEDIA_TYPE_AUDIO,
-    .id               = AV_CODEC_ID_TAK,
+const FFCodec ff_tak_decoder = {
+    .p.name           = "tak",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
+    .p.type           = AVMEDIA_TYPE_AUDIO,
+    .p.id             = AV_CODEC_ID_TAK,
     .priv_data_size   = sizeof(TAKDecContext),
     .init             = tak_decode_init,
     .close            = tak_decode_close,
     .decode           = tak_decode_frame,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_CHANNEL_CONF,
-    .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                         AV_SAMPLE_FMT_S16P,
                                                         AV_SAMPLE_FMT_S32P,
                                                         AV_SAMPLE_FMT_NONE },

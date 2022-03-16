@@ -288,14 +288,14 @@ static av_cold int sgi_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_sgi_decoder = {
-    .name           = "sgi",
-    .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SGI,
+const FFCodec ff_sgi_decoder = {
+    .p.name         = "sgi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SGI image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiState),
     .decode         = decode_frame,
     .init           = sgi_decode_init,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

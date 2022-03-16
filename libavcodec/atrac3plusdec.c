@@ -391,12 +391,12 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->codec_id == AV_CODEC_ID_ATRAC3P ? FFMIN(avctx->block_align, avpkt->size) : avpkt->size;
 }
 
-const AVCodec ff_atrac3p_decoder = {
-    .name           = "atrac3plus",
-    .long_name      = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ATRAC3P,
-    .capabilities   = AV_CODEC_CAP_DR1,
+const FFCodec ff_atrac3p_decoder = {
+    .p.name         = "atrac3plus",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ATRAC3P,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,
@@ -404,12 +404,12 @@ const AVCodec ff_atrac3p_decoder = {
     .decode         = atrac3p_decode_frame,
 };
 
-const AVCodec ff_atrac3pal_decoder = {
-    .name           = "atrac3plusal",
-    .long_name      = NULL_IF_CONFIG_SMALL("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ATRAC3PAL,
-    .capabilities   = AV_CODEC_CAP_DR1,
+const FFCodec ff_atrac3pal_decoder = {
+    .p.name         = "atrac3plusal",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ATRAC3PAL,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,

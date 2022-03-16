@@ -399,16 +399,16 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_qtrle_encoder = {
-    .name           = "qtrle",
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_QTRLE,
+const FFCodec ff_qtrle_encoder = {
+    .p.name         = "qtrle",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_QTRLE,
     .priv_data_size = sizeof(QtrleEncContext),
     .init           = qtrle_encode_init,
     .encode2        = qtrle_encode_frame,
     .close          = qtrle_encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB555BE, AV_PIX_FMT_ARGB, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,

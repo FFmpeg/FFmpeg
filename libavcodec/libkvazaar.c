@@ -318,16 +318,16 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_libkvazaar_encoder = {
-    .name             = "libkvazaar",
-    .long_name        = NULL_IF_CONFIG_SMALL("libkvazaar H.265 / HEVC"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_HEVC,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+const FFCodec ff_libkvazaar_encoder = {
+    .p.name           = "libkvazaar",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("libkvazaar H.265 / HEVC"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_HEVC,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_OTHER_THREADS,
-    .pix_fmts         = pix_fmts,
+    .p.pix_fmts       = pix_fmts,
 
-    .priv_class       = &class,
+    .p.priv_class     = &class,
     .priv_data_size   = sizeof(LibkvazaarContext),
     .defaults         = defaults,
 
@@ -338,5 +338,5 @@ const AVCodec ff_libkvazaar_encoder = {
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_AUTO_THREADS,
 
-    .wrapper_name     = "libkvazaar",
+    .p.wrapper_name   = "libkvazaar",
 };

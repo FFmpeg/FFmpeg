@@ -829,24 +829,24 @@ static const AVClass ffmmal_dec_class = {
 };
 
 #define FFMMAL_DEC(NAME, ID) \
-    const AVCodec ff_##NAME##_mmal_decoder = { \
-        .name           = #NAME "_mmal", \
-        .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (mmal)"), \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = ID, \
+    const FFCodec ff_##NAME##_mmal_decoder = { \
+        .p.name         = #NAME "_mmal", \
+        .p.long_name    = NULL_IF_CONFIG_SMALL(#NAME " (mmal)"), \
+        .p.type         = AVMEDIA_TYPE_VIDEO, \
+        .p.id           = ID, \
         .priv_data_size = sizeof(MMALDecodeContext), \
         .init           = ffmmal_init_decoder, \
         .close          = ffmmal_close_decoder, \
         .receive_frame  = ffmmal_receive_frame, \
         .flush          = ffmmal_flush, \
-        .priv_class     = &ffmmal_dec_class, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
+        .p.priv_class   = &ffmmal_dec_class, \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
         .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS, \
-        .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL, \
+        .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL, \
                                                          AV_PIX_FMT_YUV420P, \
                                                          AV_PIX_FMT_NONE}, \
         .hw_configs     = mmal_hw_configs, \
-        .wrapper_name   = "mmal", \
+        .p.wrapper_name = "mmal", \
     };
 
 FFMMAL_DEC(h264, AV_CODEC_ID_H264)

@@ -847,16 +847,16 @@ static const AVCodecDefault vqa_defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_vqa_decoder = {
-    .name           = "vqavideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA (Vector Quantized Animation) video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WS_VQA,
+const FFCodec ff_vqa_decoder = {
+    .p.name         = "vqavideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Westwood Studios VQA (Vector Quantized Animation) video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_WS_VQA,
     .priv_data_size = sizeof(VqaContext),
     .init           = vqa_decode_init,
     .close          = vqa_decode_end,
     .decode         = vqa_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .defaults       = vqa_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

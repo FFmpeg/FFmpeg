@@ -19,6 +19,11 @@
 #ifndef AVCODEC_CODEC_INTERNAL_H
 #define AVCODEC_CODEC_INTERNAL_H
 
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
+#include "codec.h"
+
 /**
  * The codec does not modify any global variables in the init function,
  * allowing to call the init function without locking any global mutexes.
@@ -70,13 +75,136 @@
 #define FF_CODEC_CAP_SETS_FRAME_PROPS       (1 << 8)
 
 /**
- * AVCodec.codec_tags termination value
+ * FFCodec.codec_tags termination value
  */
 #define FF_CODEC_TAGS_END -1
 
-struct AVCodecDefault {
+typedef struct AVCodecDefault {
     const char *key;
     const char *value;
-};
+} AVCodecDefault;
+
+struct AVCodecContext;
+struct AVSubtitle;
+struct AVPacket;
+
+typedef struct FFCodec {
+    /**
+     * The public AVCodec. See codec.h for it.
+     */
+    AVCodec p;
+
+    /**
+     * Internal codec capabilities FF_CODEC_CAP_*.
+     */
+    int caps_internal;
+
+    int priv_data_size;
+    /**
+     * @name Frame-level threading support functions
+     * @{
+     */
+    /**
+     * Copy necessary context variables from a previous thread context to the current one.
+     * If not defined, the next thread will start automatically; otherwise, the codec
+     * must call ff_thread_finish_setup().
+     *
+     * dst and src will (rarely) point to the same context, in which case memcpy should be skipped.
+     */
+    int (*update_thread_context)(struct AVCodecContext *dst, const struct AVCodecContext *src);
+
+    /**
+     * Copy variables back to the user-facing context
+     */
+    int (*update_thread_context_for_user)(struct AVCodecContext *dst, const struct AVCodecContext *src);
+    /** @} */
+
+    /**
+     * Private codec-specific defaults.
+     */
+    const AVCodecDefault *defaults;
+
+    /**
+     * Initialize codec static data, called from av_codec_iterate().
+     *
+     * This is not intended for time consuming operations as it is
+     * run for every codec regardless of that codec being used.
+     */
+    void (*init_static_data)(struct FFCodec *codec);
+
+    int (*init)(struct AVCodecContext *);
+    int (*encode_sub)(struct AVCodecContext *, uint8_t *buf, int buf_size,
+                      const struct AVSubtitle *sub);
+    /**
+     * Encode data to an AVPacket.
+     *
+     * @param      avctx          codec context
+     * @param      avpkt          output AVPacket
+     * @param[in]  frame          AVFrame containing the raw data to be encoded
+     * @param[out] got_packet_ptr encoder sets to 0 or 1 to indicate that a
+     *                            non-empty packet was returned in avpkt.
+     * @return 0 on success, negative error code on failure
+     */
+    int (*encode2)(struct AVCodecContext *avctx, struct AVPacket *avpkt,
+                   const struct AVFrame *frame, int *got_packet_ptr);
+    /**
+     * Decode picture or subtitle data.
+     *
+     * @param      avctx          codec context
+     * @param      outdata        codec type dependent output struct
+     * @param[out] got_frame_ptr  decoder sets to 0 or 1 to indicate that a
+     *                            non-empty frame or subtitle was returned in
+     *                            outdata.
+     * @param[in]  avpkt          AVPacket containing the data to be decoded
+     * @return amount of bytes read from the packet on success, negative error
+     *         code on failure
+     */
+    int (*decode)(struct AVCodecContext *avctx, void *outdata,
+                  int *got_frame_ptr, struct AVPacket *avpkt);
+    int (*close)(struct AVCodecContext *);
+    /**
+     * Encode API with decoupled frame/packet dataflow. This function is called
+     * to get one output packet. It should call ff_encode_get_frame() to obtain
+     * input data.
+     */
+    int (*receive_packet)(struct AVCodecContext *avctx, struct AVPacket *avpkt);
+
+    /**
+     * Decode API with decoupled packet/frame dataflow. This function is called
+     * to get one output frame. It should call ff_decode_get_packet() to obtain
+     * input data.
+     */
+    int (*receive_frame)(struct AVCodecContext *avctx, struct AVFrame *frame);
+    /**
+     * Flush buffers.
+     * Will be called when seeking
+     */
+    void (*flush)(struct AVCodecContext *);
+
+    /**
+     * Decoding only, a comma-separated list of bitstream filters to apply to
+     * packets before decoding.
+     */
+    const char *bsfs;
+
+    /**
+     * Array of pointers to hardware configurations supported by the codec,
+     * or NULL if no hardware supported.  The array is terminated by a NULL
+     * pointer.
+     *
+     * The user can only access this field via avcodec_get_hw_config().
+     */
+    const struct AVCodecHWConfigInternal *const *hw_configs;
+
+    /**
+     * List of supported codec_tags, terminated by FF_CODEC_TAGS_END.
+     */
+    const uint32_t *codec_tags;
+} FFCodec;
+
+static av_always_inline const FFCodec *ffcodec(const AVCodec *codec)
+{
+    return (const FFCodec*)codec;
+}
 
 #endif /* AVCODEC_CODEC_INTERNAL_H */

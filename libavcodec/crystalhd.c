@@ -774,22 +774,22 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
     }; \
-    const AVCodec ff_##x##_crystalhd_decoder = { \
-        .name           = #x "_crystalhd", \
-        .long_name      = NULL_IF_CONFIG_SMALL("CrystalHD " #X " decoder"), \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = AV_CODEC_ID_##X, \
+    const FFCodec ff_##x##_crystalhd_decoder = { \
+        .p.name         = #x "_crystalhd", \
+        .p.long_name    = NULL_IF_CONFIG_SMALL("CrystalHD " #X " decoder"), \
+        .p.type         = AVMEDIA_TYPE_VIDEO, \
+        .p.id           = AV_CODEC_ID_##X, \
         .priv_data_size = sizeof(CHDContext), \
-        .priv_class     = &x##_crystalhd_class, \
+        .p.priv_class   = &x##_crystalhd_class, \
         .init           = init, \
         .close          = uninit, \
         .receive_frame  = crystalhd_receive_frame, \
         .flush          = flush, \
         .bsfs           = bsf_name, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .caps_internal  = FF_CODEC_CAP_SETS_FRAME_PROPS, \
-        .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE}, \
-        .wrapper_name   = "crystalhd", \
+        .p.pix_fmts     = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE}, \
+        .p.wrapper_name = "crystalhd", \
     };
 
 #if CONFIG_H264_CRYSTALHD_DECODER

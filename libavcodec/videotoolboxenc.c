@@ -2723,18 +2723,18 @@ static const AVClass h264_videotoolbox_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_h264_videotoolbox_encoder = {
-    .name             = "h264_videotoolbox",
-    .long_name        = NULL_IF_CONFIG_SMALL("VideoToolbox H.264 Encoder"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_H264,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+const FFCodec ff_h264_videotoolbox_encoder = {
+    .p.name           = "h264_videotoolbox",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("VideoToolbox H.264 Encoder"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_H264,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size   = sizeof(VTEncContext),
-    .pix_fmts         = avc_pix_fmts,
+    .p.pix_fmts       = avc_pix_fmts,
     .init             = vtenc_init,
     .encode2          = vtenc_frame,
     .close            = vtenc_close,
-    .priv_class       = &h264_videotoolbox_class,
+    .p.priv_class     = &h264_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
 };
@@ -2757,22 +2757,22 @@ static const AVClass hevc_videotoolbox_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_hevc_videotoolbox_encoder = {
-    .name             = "hevc_videotoolbox",
-    .long_name        = NULL_IF_CONFIG_SMALL("VideoToolbox H.265 Encoder"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_HEVC,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+const FFCodec ff_hevc_videotoolbox_encoder = {
+    .p.name           = "hevc_videotoolbox",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("VideoToolbox H.265 Encoder"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_HEVC,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_HARDWARE,
     .priv_data_size   = sizeof(VTEncContext),
-    .pix_fmts         = hevc_pix_fmts,
+    .p.pix_fmts       = hevc_pix_fmts,
     .init             = vtenc_init,
     .encode2          = vtenc_frame,
     .close            = vtenc_close,
-    .priv_class       = &hevc_videotoolbox_class,
+    .p.priv_class     = &hevc_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name     = "videotoolbox",
+    .p.wrapper_name   = "videotoolbox",
 };
 
 static const AVOption prores_options[] = {
@@ -2796,20 +2796,20 @@ static const AVClass prores_videotoolbox_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_prores_videotoolbox_encoder = {
-    .name             = "prores_videotoolbox",
-    .long_name        = NULL_IF_CONFIG_SMALL("VideoToolbox ProRes Encoder"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_PRORES,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+const FFCodec ff_prores_videotoolbox_encoder = {
+    .p.name           = "prores_videotoolbox",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("VideoToolbox ProRes Encoder"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_PRORES,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_HARDWARE,
     .priv_data_size   = sizeof(VTEncContext),
-    .pix_fmts         = prores_pix_fmts,
+    .p.pix_fmts       = prores_pix_fmts,
     .init             = vtenc_init,
     .encode2          = vtenc_frame,
     .close            = vtenc_close,
-    .priv_class       = &prores_videotoolbox_class,
+    .p.priv_class     = &prores_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name     = "videotoolbox",
+    .p.wrapper_name   = "videotoolbox",
 };

@@ -27,6 +27,7 @@
 #include "libavutil/samplefmt.h"
 
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
@@ -151,7 +152,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return -1;
     }
 
-    ret = avctx->codec->encode_sub(avctx, buf, buf_size, sub);
+    ret = ffcodec(avctx->codec)->encode_sub(avctx, buf, buf_size, sub);
     avctx->frame_number++;
     return ret;
 }
@@ -176,6 +177,7 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
     AVCodecInternal   *avci = avctx->internal;
     EncodeSimpleContext *es = &avci->es;
     AVFrame          *frame = es->in_frame;
+    const FFCodec *const codec = ffcodec(avctx->codec);
     int got_packet;
     int ret;
 
@@ -200,7 +202,7 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
 
     got_packet = 0;
 
-    av_assert0(avctx->codec->encode2);
+    av_assert0(codec->encode2);
 
     if (CONFIG_FRAME_THREAD_ENCODER &&
         avci->frame_thread_encoder && (avctx->active_thread_type & FF_THREAD_FRAME))
@@ -210,7 +212,7 @@ static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
          *  no sense to use the properties of the current frame anyway). */
         ret = ff_thread_video_encode_frame(avctx, avpkt, frame, &got_packet);
     else {
-        ret = avctx->codec->encode2(avctx, avpkt, frame, &got_packet);
+        ret = codec->encode2(avctx, avpkt, frame, &got_packet);
         if (avctx->codec->type == AVMEDIA_TYPE_VIDEO && !ret && got_packet &&
             !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
@@ -290,8 +292,8 @@ static int encode_receive_packet_internal(AVCodecContext *avctx, AVPacket *avpkt
             return AVERROR(EINVAL);
     }
 
-    if (avctx->codec->receive_packet) {
-        ret = avctx->codec->receive_packet(avctx, avpkt);
+    if (ffcodec(avctx->codec)->receive_packet) {
+        ret = ffcodec(avctx->codec)->receive_packet(avctx, avpkt);
         if (ret < 0)
             av_packet_unref(avpkt);
         else

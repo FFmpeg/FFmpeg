@@ -535,16 +535,16 @@ static av_cold int hqx_decode_init(AVCodecContext *avctx)
     return ff_hqx_init_vlcs(ctx);
 }
 
-const AVCodec ff_hqx_decoder = {
-    .name           = "hqx",
-    .long_name      = NULL_IF_CONFIG_SMALL("Canopus HQX"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HQX,
+const FFCodec ff_hqx_decoder = {
+    .p.name         = "hqx",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Canopus HQX"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HQX,
     .priv_data_size = sizeof(HQXContext),
     .init           = hqx_decode_init,
     .decode         = hqx_decode_frame,
     .close          = hqx_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS |
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS |
                       AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,

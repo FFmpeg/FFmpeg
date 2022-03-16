@@ -1206,20 +1206,20 @@ static const AVClass dvvideo_encode_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_dvvideo_encoder = {
-    .name           = "dvvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_DVVIDEO,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
+const FFCodec ff_dvvideo_encoder = {
+    .p.name         = "dvvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_DVVIDEO,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_encode_init,
     .encode2        = dvvideo_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
-    .priv_class     = &dvvideo_encode_class,
+    .p.priv_class   = &dvvideo_encode_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

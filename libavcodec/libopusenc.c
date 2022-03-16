@@ -583,21 +583,21 @@ static const int libopus_sample_rates[] = {
     48000, 24000, 16000, 12000, 8000, 0,
 };
 
-const AVCodec ff_libopus_encoder = {
-    .name            = "libopus",
-    .long_name       = NULL_IF_CONFIG_SMALL("libopus Opus"),
-    .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = AV_CODEC_ID_OPUS,
+const FFCodec ff_libopus_encoder = {
+    .p.name          = "libopus",
+    .p.long_name     = NULL_IF_CONFIG_SMALL("libopus Opus"),
+    .p.type          = AVMEDIA_TYPE_AUDIO,
+    .p.id            = AV_CODEC_ID_OPUS,
     .priv_data_size  = sizeof(LibopusEncContext),
     .init            = libopus_encode_init,
     .encode2         = libopus_encode,
     .close           = libopus_encode_close,
-    .capabilities    = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.capabilities  = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_FLT,
                                                       AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = libopus_sample_rates,
-    .priv_class      = &libopus_class,
+    .p.supported_samplerates = libopus_sample_rates,
+    .p.priv_class    = &libopus_class,
     .defaults        = libopus_defaults,
-    .wrapper_name    = "libopus",
+    .p.wrapper_name  = "libopus",
 };

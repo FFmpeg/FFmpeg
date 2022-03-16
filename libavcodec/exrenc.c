@@ -534,18 +534,18 @@ static const AVClass exr_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_exr_encoder = {
-    .name           = "exr",
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenEXR image"),
+const FFCodec ff_exr_encoder = {
+    .p.name         = "exr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenEXR image"),
     .priv_data_size = sizeof(EXRContext),
-    .priv_class     = &exr_class,
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_EXR,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.priv_class   = &exr_class,
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_EXR,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
                                                  AV_PIX_FMT_GBRPF32,
                                                  AV_PIX_FMT_GBRAPF32,
                                                  AV_PIX_FMT_NONE },

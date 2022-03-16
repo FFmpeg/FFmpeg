@@ -1194,16 +1194,16 @@ static av_cold int cinepak_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_cinepak_encoder = {
-    .name           = "cinepak",
-    .long_name      = NULL_IF_CONFIG_SMALL("Cinepak"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_CINEPAK,
+const FFCodec ff_cinepak_encoder = {
+    .p.name         = "cinepak",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Cinepak"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_CINEPAK,
     .priv_data_size = sizeof(CinepakEncContext),
     .init           = cinepak_encode_init,
     .encode2        = cinepak_encode_frame,
     .close          = cinepak_encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE },
-    .priv_class     = &cinepak_class,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE },
+    .p.priv_class   = &cinepak_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

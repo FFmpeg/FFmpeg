@@ -98,13 +98,13 @@ static int aura_decode_frame(AVCodecContext *avctx,
     return pkt->size;
 }
 
-const AVCodec ff_aura2_decoder = {
-    .name           = "aura2",
-    .long_name      = NULL_IF_CONFIG_SMALL("Auravision Aura 2"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AURA2,
+const FFCodec ff_aura2_decoder = {
+    .p.name         = "aura2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Auravision Aura 2"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AURA2,
     .init           = aura_decode_init,
     .decode         = aura_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

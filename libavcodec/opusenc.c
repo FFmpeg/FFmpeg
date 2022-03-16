@@ -725,26 +725,26 @@ static const AVCodecDefault opusenc_defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_opus_encoder = {
-    .name           = "opus",
-    .long_name      = NULL_IF_CONFIG_SMALL("Opus"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_OPUS,
+const FFCodec ff_opus_encoder = {
+    .p.name         = "opus",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Opus"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_OPUS,
     .defaults       = opusenc_defaults,
-    .priv_class     = &opusenc_class,
+    .p.priv_class   = &opusenc_class,
     .priv_data_size = sizeof(OpusEncContext),
     .init           = opus_encode_init,
     .encode2        = opus_encode_frame,
     .close          = opus_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .capabilities   = AV_CODEC_CAP_EXPERIMENTAL | AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
-    .supported_samplerates = (const int []){ 48000, 0 },
+    .p.capabilities = AV_CODEC_CAP_EXPERIMENTAL | AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
+    .p.supported_samplerates = (const int []){ 48000, 0 },
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts = (const uint64_t []){ AV_CH_LAYOUT_MONO,
+    .p.channel_layouts = (const uint64_t []){ AV_CH_LAYOUT_MONO,
                                             AV_CH_LAYOUT_STEREO, 0 },
 #endif
-    .ch_layouts      = (const AVChannelLayout []){ AV_CHANNEL_LAYOUT_MONO,
+    .p.ch_layouts    = (const AVChannelLayout []){ AV_CHANNEL_LAYOUT_MONO,
                                                    AV_CHANNEL_LAYOUT_STEREO, { 0 } },
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
 };

@@ -189,16 +189,16 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-const AVCodec ff_adpcm_adx_encoder = {
-    .name           = "adpcm_adx",
-    .long_name      = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ADPCM_ADX,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+const FFCodec ff_adpcm_adx_encoder = {
+    .p.name         = "adpcm_adx",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ADPCM_ADX,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_encode_init,
     .encode2        = adx_encode_frame,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

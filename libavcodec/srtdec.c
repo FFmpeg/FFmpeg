@@ -91,11 +91,11 @@ static int srt_decode_frame(AVCodecContext *avctx,
 
 #if CONFIG_SRT_DECODER
 /* deprecated decoder */
-const AVCodec ff_srt_decoder = {
-    .name         = "srt",
-    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
-    .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_SUBRIP,
+const FFCodec ff_srt_decoder = {
+    .p.name       = "srt",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .p.type       = AVMEDIA_TYPE_SUBTITLE,
+    .p.id         = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
     .flush        = ff_ass_decoder_flush,
@@ -105,11 +105,11 @@ const AVCodec ff_srt_decoder = {
 #endif
 
 #if CONFIG_SUBRIP_DECODER
-const AVCodec ff_subrip_decoder = {
-    .name         = "subrip",
-    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
-    .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_SUBRIP,
+const FFCodec ff_subrip_decoder = {
+    .p.name       = "subrip",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .p.type       = AVMEDIA_TYPE_SUBTITLE,
+    .p.id         = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
     .flush        = ff_ass_decoder_flush,

@@ -119,14 +119,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return s->block_size;
 }
 
-const AVCodec ff_dvaudio_decoder = {
-    .name           = "dvaudio",
-    .long_name      = NULL_IF_CONFIG_SMALL("Ulead DV Audio"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_DVAUDIO,
+const FFCodec ff_dvaudio_decoder = {
+    .p.name         = "dvaudio",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Ulead DV Audio"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_DVAUDIO,
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(DVAudioContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

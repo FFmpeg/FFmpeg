@@ -585,21 +585,21 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
 
 #define FFAT_DEC(NAME, ID, bsf_name) \
     FFAT_DEC_CLASS(NAME) \
-    const AVCodec ff_##NAME##_at_decoder = { \
-        .name           = #NAME "_at", \
-        .long_name      = NULL_IF_CONFIG_SMALL(#NAME " (AudioToolbox)"), \
-        .type           = AVMEDIA_TYPE_AUDIO, \
-        .id             = ID, \
+    const FFCodec ff_##NAME##_at_decoder = { \
+        .p.name         = #NAME "_at", \
+        .p.long_name    = NULL_IF_CONFIG_SMALL(#NAME " (AudioToolbox)"), \
+        .p.type         = AVMEDIA_TYPE_AUDIO, \
+        .p.id           = ID, \
         .priv_data_size = sizeof(ATDecodeContext), \
         .init           = ffat_init_decoder, \
         .close          = ffat_close_decoder, \
         .decode         = ffat_decode, \
         .flush          = ffat_decode_flush, \
-        .priv_class     = &ffat_##NAME##_dec_class, \
+        .p.priv_class   = &ffat_##NAME##_dec_class, \
         .bsfs           = bsf_name, \
-        .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF, \
+        .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF, \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP, \
-        .wrapper_name   = "at", \
+        .p.wrapper_name = "at", \
     };
 
 FFAT_DEC(aac,          AV_CODEC_ID_AAC, "aac_adtstoasc")

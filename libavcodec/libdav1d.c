@@ -573,19 +573,19 @@ static const AVClass libdav1d_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_libdav1d_decoder = {
-    .name           = "libdav1d",
-    .long_name      = NULL_IF_CONFIG_SMALL("dav1d AV1 decoder by VideoLAN"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AV1,
+const FFCodec ff_libdav1d_decoder = {
+    .p.name         = "libdav1d",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("dav1d AV1 decoder by VideoLAN"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AV1,
     .priv_data_size = sizeof(Libdav1dContext),
     .init           = libdav1d_init,
     .close          = libdav1d_close,
     .flush          = libdav1d_flush,
     .receive_frame  = libdav1d_receive_frame,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_SETS_PKT_DTS |
                       FF_CODEC_CAP_AUTO_THREADS,
-    .priv_class     = &libdav1d_class,
-    .wrapper_name   = "libdav1d",
+    .p.priv_class   = &libdav1d_class,
+    .p.wrapper_name = "libdav1d",
 };

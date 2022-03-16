@@ -1097,16 +1097,16 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 
-const AVCodec ff_amrnb_decoder = {
-    .name           = "amrnb",
-    .long_name      = NULL_IF_CONFIG_SMALL("AMR-NB (Adaptive Multi-Rate NarrowBand)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AMR_NB,
+const FFCodec ff_amrnb_decoder = {
+    .p.name         = "amrnb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AMR-NB (Adaptive Multi-Rate NarrowBand)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRChannelsContext),
     .init           = amrnb_decode_init,
     .decode         = amrnb_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

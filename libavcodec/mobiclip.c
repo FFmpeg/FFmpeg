@@ -1340,16 +1340,16 @@ static av_cold int mobiclip_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_mobiclip_decoder = {
-    .name           = "mobiclip",
-    .long_name      = NULL_IF_CONFIG_SMALL("MobiClip Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MOBICLIP,
+const FFCodec ff_mobiclip_decoder = {
+    .p.name         = "mobiclip",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MobiClip Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MOBICLIP,
     .priv_data_size = sizeof(MobiClipContext),
     .init           = mobiclip_init,
     .decode         = mobiclip_decode,
     .flush          = mobiclip_flush,
     .close          = mobiclip_close,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

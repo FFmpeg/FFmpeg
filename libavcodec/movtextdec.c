@@ -592,13 +592,13 @@ static const AVClass mov_text_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_movtext_decoder = {
-    .name         = "mov_text",
-    .long_name    = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
-    .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = AV_CODEC_ID_MOV_TEXT,
+const FFCodec ff_movtext_decoder = {
+    .p.name       = "mov_text",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
+    .p.type       = AVMEDIA_TYPE_SUBTITLE,
+    .p.id         = AV_CODEC_ID_MOV_TEXT,
     .priv_data_size = sizeof(MovTextContext),
-    .priv_class   = &mov_text_decoder_class,
+    .p.priv_class = &mov_text_decoder_class,
     .init         = mov_text_init,
     .decode       = mov_text_decode_frame,
     .close        = mov_text_decode_close,

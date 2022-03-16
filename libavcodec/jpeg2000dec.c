@@ -2571,17 +2571,17 @@ static const AVClass jpeg2000_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_jpeg2000_decoder = {
-    .name             = "jpeg2000",
-    .long_name        = NULL_IF_CONFIG_SMALL("JPEG 2000"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_JPEG2000,
-    .capabilities     = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_DR1,
+const FFCodec ff_jpeg2000_decoder = {
+    .p.name           = "jpeg2000",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_JPEG2000,
+    .p.capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_DR1,
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
     .init             = jpeg2000_decode_init,
     .decode           = jpeg2000_decode_frame,
-    .priv_class       = &jpeg2000_class,
-    .max_lowres       = 5,
-    .profiles         = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
+    .p.priv_class     = &jpeg2000_class,
+    .p.max_lowres     = 5,
+    .p.profiles       = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -245,16 +245,16 @@ static void lscr_decode_flush(AVCodecContext *avctx)
     av_frame_unref(s->last_picture);
 }
 
-const AVCodec ff_lscr_decoder = {
-    .name           = "lscr",
-    .long_name      = NULL_IF_CONFIG_SMALL("LEAD Screen Capture"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_LSCR,
+const FFCodec ff_lscr_decoder = {
+    .p.name         = "lscr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LEAD Screen Capture"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_LSCR,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(LSCRContext),
     .init           = lscr_decode_init,
     .close          = lscr_decode_close,
     .decode         = decode_frame_lscr,
     .flush          = lscr_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

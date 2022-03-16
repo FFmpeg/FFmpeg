@@ -59,38 +59,38 @@ static const AVClass ac3_eac3_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_ac3_decoder = {
-    .name           = "ac3",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_AC3,
+const FFCodec ff_ac3_decoder = {
+    .p.name         = "ac3",
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AC3,
     .priv_data_size = sizeof (AC3DecodeContext),
     .init           = ac3_decode_init,
     .close          = ac3_decode_end,
     .decode         = ac3_decode_frame,
-    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
-    .priv_class     = &ac3_eac3_decoder_class,
+    .p.priv_class   = &ac3_eac3_decoder_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 #if CONFIG_EAC3_DECODER
-const AVCodec ff_eac3_decoder = {
-    .name           = "eac3",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_EAC3,
+const FFCodec ff_eac3_decoder = {
+    .p.name         = "eac3",
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_EAC3,
     .priv_data_size = sizeof (AC3DecodeContext),
     .init           = ac3_decode_init,
     .close          = ac3_decode_end,
     .decode         = ac3_decode_frame,
-    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
-    .priv_class     = &ac3_eac3_decoder_class,
+    .p.priv_class   = &ac3_eac3_decoder_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

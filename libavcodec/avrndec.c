@@ -90,14 +90,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-const AVCodec ff_avrn_decoder = {
-    .name           = "avrn",
-    .long_name      = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AVRN,
+const FFCodec ff_avrn_decoder = {
+    .p.name         = "avrn",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AVRN,
     .priv_data_size = sizeof(AVRnContext),
     .init           = init,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

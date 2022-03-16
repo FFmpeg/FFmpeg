@@ -1588,19 +1588,19 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_svq3_decoder = {
-    .name           = "svq3",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SVQ3,
+const FFCodec ff_svq3_decoder = {
+    .p.name         = "svq3",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SVQ3,
     .priv_data_size = sizeof(SVQ3Context),
     .init           = svq3_decode_init,
     .close          = svq3_decode_end,
     .decode         = svq3_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND |
+    .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND |
                       AV_CODEC_CAP_DR1             |
                       AV_CODEC_CAP_DELAY,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P,
                                                      AV_PIX_FMT_NONE},
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

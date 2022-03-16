@@ -410,17 +410,17 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return ff_deflate_init(&c->zstream, lvl, avctx);
 }
 
-const AVCodec ff_zmbv_encoder = {
-    .name           = "zmbv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_ZMBV,
-    .capabilities   = AV_CODEC_CAP_DR1,
+const FFCodec ff_zmbv_encoder = {
+    .p.name         = "zmbv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_ZMBV,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(ZmbvEncContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
+    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
                                                      AV_PIX_FMT_RGB555LE,
                                                      AV_PIX_FMT_RGB565LE,
 #ifdef ZMBV_ENABLE_24BPP

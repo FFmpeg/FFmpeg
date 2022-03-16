@@ -651,24 +651,24 @@ static const AVClass mjpeg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_mjpeg_encoder = {
-    .name           = "mjpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MJPEG,
+const FFCodec ff_mjpeg_encoder = {
+    .p.name         = "mjpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MJPEGEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = ff_mpv_encode_picture,
     .close          = mjpeg_encode_close,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_NONE
     },
-    .priv_class     = &mjpeg_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
+    .p.priv_class   = &mjpeg_class,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
 };
 #endif
 
@@ -680,19 +680,19 @@ static const AVClass amv_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_amv_encoder = {
-    .name           = "amv",
-    .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_AMV,
+const FFCodec ff_amv_encoder = {
+    .p.name         = "amv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AMV Video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MJPEGEncContext),
     .init           = ff_mpv_encode_init,
     .encode2        = amv_encode_picture,
     .close          = mjpeg_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
     },
-    .priv_class     = &amv_class,
+    .p.priv_class   = &amv_class,
 };
 #endif

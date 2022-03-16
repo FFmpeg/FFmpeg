@@ -411,15 +411,15 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 #define DPCM_DECODER(id_, name_, long_name_)                \
-const AVCodec ff_ ## name_ ## _decoder = {                        \
-    .name           = #name_,                               \
-    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
-    .type           = AVMEDIA_TYPE_AUDIO,                   \
-    .id             = id_,                                  \
+const FFCodec ff_ ## name_ ## _decoder = {                  \
+    .p.name         = #name_,                               \
+    .p.long_name    = NULL_IF_CONFIG_SMALL(long_name_),     \
+    .p.type         = AVMEDIA_TYPE_AUDIO,                   \
+    .p.id           = id_,                                  \
+    .p.capabilities = AV_CODEC_CAP_DR1,                     \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
     .decode         = dpcm_decode_frame,                    \
-    .capabilities   = AV_CODEC_CAP_DR1,                     \
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 }
 

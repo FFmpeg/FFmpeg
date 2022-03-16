@@ -243,15 +243,15 @@ static const AVCodecDefault idcin_defaults[] = {
     { NULL },
 };
 
-const AVCodec ff_idcin_decoder = {
-    .name           = "idcinvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_IDCIN,
+const FFCodec ff_idcin_decoder = {
+    .p.name         = "idcinvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_IDCIN,
     .priv_data_size = sizeof(IdcinContext),
     .init           = idcin_decode_init,
     .decode         = idcin_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .defaults       = idcin_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

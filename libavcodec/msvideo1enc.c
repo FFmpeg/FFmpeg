@@ -302,15 +302,15 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_msvideo1_encoder = {
-    .name           = "msvideo1",
-    .long_name = NULL_IF_CONFIG_SMALL("Microsoft Video-1"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MSVIDEO1,
+const FFCodec ff_msvideo1_encoder = {
+    .p.name         = "msvideo1",
+    .p.long_name = NULL_IF_CONFIG_SMALL("Microsoft Video-1"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MSVIDEO1,
     .priv_data_size = sizeof(Msvideo1EncContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_RGB555, AV_PIX_FMT_NONE},
+    .p.pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_RGB555, AV_PIX_FMT_NONE},
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

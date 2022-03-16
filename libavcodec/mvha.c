@@ -300,16 +300,16 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_mvha_decoder = {
-    .name             = "mvha",
-    .long_name        = NULL_IF_CONFIG_SMALL("MidiVid Archive Codec"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_MVHA,
+const FFCodec ff_mvha_decoder = {
+    .p.name           = "mvha",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("MidiVid Archive Codec"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_MVHA,
     .priv_data_size   = sizeof(MVHAContext),
     .init             = decode_init,
     .close            = decode_close,
     .decode           = decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1,
+    .p.capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
 };

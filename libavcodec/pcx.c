@@ -25,6 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -249,11 +250,11 @@ end:
     return ret;
 }
 
-const AVCodec ff_pcx_decoder = {
-    .name         = "pcx",
-    .long_name    = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_PCX,
+const FFCodec ff_pcx_decoder = {
+    .p.name       = "pcx",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
+    .p.type       = AVMEDIA_TYPE_VIDEO,
+    .p.id         = AV_CODEC_ID_PCX,
     .decode       = pcx_decode_frame,
-    .capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
 };

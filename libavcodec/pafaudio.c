@@ -74,13 +74,13 @@ static int paf_audio_decode(AVCodecContext *avctx, void *data,
     return pkt->size;
 }
 
-const AVCodec ff_paf_audio_decoder = {
-    .name         = "paf_audio",
-    .long_name    = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
-    .type         = AVMEDIA_TYPE_AUDIO,
-    .id           = AV_CODEC_ID_PAF_AUDIO,
+const FFCodec ff_paf_audio_decoder = {
+    .p.name       = "paf_audio",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
+    .p.type       = AVMEDIA_TYPE_AUDIO,
+    .p.id         = AV_CODEC_ID_PAF_AUDIO,
     .init         = paf_audio_init,
     .decode       = paf_audio_decode,
-    .capabilities = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -1085,35 +1085,35 @@ static av_cold void flush(AVCodecContext *avctx)
 }
 
 #if CONFIG_IMC_DECODER
-const AVCodec ff_imc_decoder = {
-    .name           = "imc",
-    .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_IMC,
+const FFCodec ff_imc_decoder = {
+    .p.name         = "imc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_IMC,
     .priv_data_size = sizeof(IMCContext),
     .init           = imc_decode_init,
     .close          = imc_decode_close,
     .decode         = imc_decode_frame,
     .flush          = flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_IAC_DECODER
-const AVCodec ff_iac_decoder = {
-    .name           = "iac",
-    .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_IAC,
+const FFCodec ff_iac_decoder = {
+    .p.name         = "iac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_IAC,
     .priv_data_size = sizeof(IMCContext),
     .init           = imc_decode_init,
     .close          = imc_decode_close,
     .decode         = imc_decode_frame,
     .flush          = flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+    .p.capabilities = AV_CODEC_CAP_DR1,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

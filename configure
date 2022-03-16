@@ -3985,8 +3985,8 @@ OUTDEV_LIST=$(find_things_extern muxer AVOutputFormat libavdevice/alldevices.c o
 INDEV_LIST=$(find_things_extern demuxer AVInputFormat libavdevice/alldevices.c indev)
 MUXER_LIST=$(find_things_extern muxer AVOutputFormat libavformat/allformats.c)
 DEMUXER_LIST=$(find_things_extern demuxer AVInputFormat libavformat/allformats.c)
-ENCODER_LIST=$(find_things_extern encoder AVCodec libavcodec/allcodecs.c)
-DECODER_LIST=$(find_things_extern decoder AVCodec libavcodec/allcodecs.c)
+ENCODER_LIST=$(find_things_extern encoder FFCodec libavcodec/allcodecs.c)
+DECODER_LIST=$(find_things_extern decoder FFCodec libavcodec/allcodecs.c)
 CODEC_LIST="
     $ENCODER_LIST
     $DECODER_LIST
@@ -7867,7 +7867,7 @@ print_enabled_components(){
 }
 
 print_enabled_components libavfilter/filter_list.c AVFilter filter_list $FILTER_LIST
-print_enabled_components libavcodec/codec_list.c AVCodec codec_list $CODEC_LIST
+print_enabled_components libavcodec/codec_list.c FFCodec codec_list $CODEC_LIST
 print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
 print_enabled_components libavformat/demuxer_list.c AVInputFormat demuxer_list $DEMUXER_LIST

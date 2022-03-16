@@ -20,6 +20,7 @@
  */
 #include "avcodec.h"
 #include "bytestream.h"
+#include "codec_internal.h"
 #include "libavutil/colorspace.h"
 
 typedef struct DVBSubtitleContext {
@@ -505,11 +506,11 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
     return q - outbuf;
 }
 
-const AVCodec ff_dvbsub_encoder = {
-    .name           = "dvbsub",
-    .long_name      = NULL_IF_CONFIG_SMALL("DVB subtitles"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_DVB_SUBTITLE,
+const FFCodec ff_dvbsub_encoder = {
+    .p.name         = "dvbsub",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DVB subtitles"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
     .encode_sub     = dvbsub_encode,
 };

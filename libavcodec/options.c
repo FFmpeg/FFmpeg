@@ -68,8 +68,10 @@ static const AVClass *codec_child_class_iterate(void **iter)
 static AVClassCategory get_category(void *ptr)
 {
     AVCodecContext* avctx = ptr;
-    if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
-    else                                     return AV_CLASS_CATEGORY_ENCODER;
+    if (avctx->codec && ffcodec(avctx->codec)->decode)
+        return AV_CLASS_CATEGORY_DECODER;
+    else
+        return AV_CLASS_CATEGORY_ENCODER;
 }
 
 static const AVClass av_codec_context_class = {
@@ -86,6 +88,7 @@ static const AVClass av_codec_context_class = {
 
 static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
 {
+    const FFCodec *const codec2 = ffcodec(codec);
     int flags=0;
     memset(s, 0, sizeof(AVCodecContext));
 
@@ -122,8 +125,8 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
 
     s->reordered_opaque    = AV_NOPTS_VALUE;
-    if(codec && codec->priv_data_size){
-        s->priv_data = av_mallocz(codec->priv_data_size);
+    if(codec && codec2->priv_data_size){
+        s->priv_data = av_mallocz(codec2->priv_data_size);
         if (!s->priv_data)
             return AVERROR(ENOMEM);
         if(codec->priv_class){
@@ -131,9 +134,9 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
             av_opt_set_defaults(s->priv_data);
         }
     }
-    if (codec && codec->defaults) {
+    if (codec && codec2->defaults) {
         int ret;
-        const AVCodecDefault *d = codec->defaults;
+        const AVCodecDefault *d = codec2->defaults;
         while (d->key) {
             ret = av_opt_set(s, d->key, d->value, 0);
             av_assert0(ret >= 0);

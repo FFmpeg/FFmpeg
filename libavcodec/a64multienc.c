@@ -393,32 +393,32 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 }
 
 #if CONFIG_A64MULTI_ENCODER
-const AVCodec ff_a64multi_encoder = {
-    .name           = "a64multi",
-    .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_A64_MULTI,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+const FFCodec ff_a64multi_encoder = {
+    .p.name         = "a64multi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_A64_MULTI,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_encode_init,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
-    .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_A64MULTI5_ENCODER
-const AVCodec ff_a64multi5_encoder = {
-    .name           = "a64multi5",
-    .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64, extended with 5th color (colram)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_A64_MULTI5,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+const FFCodec ff_a64multi5_encoder = {
+    .p.name         = "a64multi5",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64, extended with 5th color (colram)"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_A64_MULTI5,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_encode_init,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
-    .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

@@ -278,16 +278,16 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_mvdv_decoder = {
-    .name           = "mvdv",
-    .long_name      = NULL_IF_CONFIG_SMALL("MidiVid VQ"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MVDV,
+const FFCodec ff_mvdv_decoder = {
+    .p.name         = "mvdv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MidiVid VQ"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MVDV,
     .priv_data_size = sizeof(MidiVidContext),
     .init           = decode_init,
     .decode         = decode_frame,
     .flush          = decode_flush,
     .close          = decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

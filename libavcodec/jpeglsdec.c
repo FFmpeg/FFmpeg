@@ -552,16 +552,16 @@ end:
     return ret;
 }
 
-const AVCodec ff_jpegls_decoder = {
-    .name           = "jpegls",
-    .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_JPEGLS,
+const FFCodec ff_jpegls_decoder = {
+    .p.name         = "jpegls",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("JPEG-LS"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_JPEGLS,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .receive_frame  = ff_mjpeg_receive_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SETS_PKT_DTS,
 };

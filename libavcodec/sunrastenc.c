@@ -208,16 +208,16 @@ static const AVClass sunrast_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_sunrast_encoder = {
-    .name           = "sunrast",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SUNRAST,
+const FFCodec ff_sunrast_encoder = {
+    .p.name         = "sunrast",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_SUNRAST,
     .priv_data_size = sizeof(SUNRASTContext),
     .init           = sunrast_encode_init,
     .encode2        = sunrast_encode_frame,
-    .priv_class     = &sunrast_class,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24,
+    .p.priv_class   = &sunrast_class,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24,
                                                   AV_PIX_FMT_PAL8,
                                                   AV_PIX_FMT_GRAY8,
                                                   AV_PIX_FMT_MONOWHITE,

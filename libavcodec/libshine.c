@@ -25,8 +25,8 @@
 #include "libavutil/intreadwrite.h"
 #include "audio_frame_queue.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodecheader.h"
 
@@ -131,27 +131,27 @@ static const int libshine_sample_rates[] = {
     44100, 48000, 32000, 0
 };
 
-const AVCodec ff_libshine_encoder = {
-    .name                  = "libshine",
-    .long_name             = NULL_IF_CONFIG_SMALL("libshine MP3 (MPEG audio layer 3)"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_MP3,
-    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+const FFCodec ff_libshine_encoder = {
+    .p.name                = "libshine",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("libshine MP3 (MPEG audio layer 3)"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_MP3,
+    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size        = sizeof(SHINEContext),
     .init                  = libshine_encode_init,
     .encode2               = libshine_encode_frame,
     .close                 = libshine_encode_close,
-    .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
+    .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
                                                             AV_SAMPLE_FMT_NONE },
-    .supported_samplerates = libshine_sample_rates,
+    .p.supported_samplerates = libshine_sample_rates,
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
+    .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
 #endif
-    .ch_layouts            = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
+    .p.ch_layouts          = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
                                                          AV_CHANNEL_LAYOUT_STEREO,
                                                          { 0 },
     },
-    .wrapper_name          = "libshine",
+    .p.wrapper_name        = "libshine",
 };

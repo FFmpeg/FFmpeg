@@ -25,6 +25,7 @@
  */
 
 #include "config.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "libwebpenc_common.h"
 
@@ -124,18 +125,18 @@ static int libwebp_anim_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_libwebp_anim_encoder = {
-    .name           = "libwebp_anim",
-    .long_name      = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WEBP,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .pix_fmts       = ff_libwebpenc_pix_fmts,
-    .priv_class     = &ff_libwebpenc_class,
+const FFCodec ff_libwebp_anim_encoder = {
+    .p.name         = "libwebp_anim",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libwebp WebP image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_WEBP,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+    .p.pix_fmts     = ff_libwebpenc_pix_fmts,
+    .p.priv_class   = &ff_libwebpenc_class,
+    .p.wrapper_name = "libwebp",
     .priv_data_size = sizeof(LibWebPAnimContext),
     .defaults       = ff_libwebp_defaults,
     .init           = libwebp_anim_encode_init,
     .encode2        = libwebp_anim_encode_frame,
     .close          = libwebp_anim_encode_close,
-    .wrapper_name   = "libwebp",
 };

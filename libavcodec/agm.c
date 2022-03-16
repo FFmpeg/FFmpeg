@@ -1286,17 +1286,17 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_agm_decoder = {
-    .name             = "agm",
-    .long_name        = NULL_IF_CONFIG_SMALL("Amuse Graphics Movie"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_AGM,
+const FFCodec ff_agm_decoder = {
+    .p.name           = "agm",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Amuse Graphics Movie"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_AGM,
+    .p.capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size   = sizeof(AGMContext),
     .init             = decode_init,
     .close            = decode_close,
     .decode           = decode_frame,
     .flush            = decode_flush,
-    .capabilities     = AV_CODEC_CAP_DR1,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_EXPORTS_CROPPING,

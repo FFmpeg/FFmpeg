@@ -693,16 +693,16 @@ static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
     return pktsize;
 }
 
-const AVCodec ff_pixlet_decoder = {
-    .name             = "pixlet",
-    .long_name        = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_PIXLET,
+const FFCodec ff_pixlet_decoder = {
+    .p.name           = "pixlet",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_PIXLET,
     .init             = pixlet_init,
     .close            = pixlet_close,
     .decode           = pixlet_decode_frame,
     .priv_data_size   = sizeof(PixletContext),
-    .capabilities     = AV_CODEC_CAP_DR1 |
+    .p.capabilities   = AV_CODEC_CAP_DR1 |
                         AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,

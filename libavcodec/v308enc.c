@@ -70,14 +70,14 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-const AVCodec ff_v308_encoder = {
-    .name         = "v308",
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
-    .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = AV_CODEC_ID_V308,
-    .capabilities = AV_CODEC_CAP_DR1,
+const FFCodec ff_v308_encoder = {
+    .p.name       = "v308",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
+    .p.type       = AVMEDIA_TYPE_VIDEO,
+    .p.id         = AV_CODEC_ID_V308,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v308_encode_init,
     .encode2      = v308_encode_frame,
-    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
+    .p.pix_fmts   = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -611,16 +611,16 @@ static const AVClass alac_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_alac_decoder = {
-    .name           = "alac",
-    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ALAC,
+const FFCodec ff_alac_decoder = {
+    .p.name         = "alac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_ALAC,
     .priv_data_size = sizeof(ALACContext),
     .init           = alac_decode_init,
     .close          = alac_decode_close,
     .decode         = alac_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
-    .priv_class     = &alac_class
+    .p.priv_class   = &alac_class
 };

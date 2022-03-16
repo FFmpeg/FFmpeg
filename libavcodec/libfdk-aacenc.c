@@ -475,25 +475,25 @@ static const int aac_sample_rates[] = {
     24000, 22050, 16000, 12000, 11025, 8000, 0
 };
 
-const AVCodec ff_libfdk_aac_encoder = {
-    .name                  = "libfdk_aac",
-    .long_name             = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
-    .type                  = AVMEDIA_TYPE_AUDIO,
-    .id                    = AV_CODEC_ID_AAC,
+const FFCodec ff_libfdk_aac_encoder = {
+    .p.name                = "libfdk_aac",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
+    .p.type                = AVMEDIA_TYPE_AUDIO,
+    .p.id                  = AV_CODEC_ID_AAC,
     .priv_data_size        = sizeof(AACContext),
     .init                  = aac_encode_init,
     .encode2               = aac_encode_frame,
     .close                 = aac_encode_close,
-    .capabilities          = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
-    .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .p.capabilities        = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
+    .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
-    .priv_class            = &aac_enc_class,
+    .p.priv_class          = &aac_enc_class,
     .defaults              = aac_encode_defaults,
-    .profiles              = profiles,
-    .supported_samplerates = aac_sample_rates,
-    .wrapper_name          = "libfdk",
+    .p.profiles            = profiles,
+    .p.supported_samplerates = aac_sample_rates,
+    .p.wrapper_name        = "libfdk",
 #if FF_API_OLD_CHANNEL_LAYOUT
-    .channel_layouts       = aac_channel_layout,
+    .p.channel_layouts     = aac_channel_layout,
 #endif
-    .ch_layouts            = aac_ch_layouts,
+    .p.ch_layouts          = aac_ch_layouts,
 };

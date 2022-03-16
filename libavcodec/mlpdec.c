@@ -1416,32 +1416,32 @@ static const AVClass truehd_decoder_class = {
 };
 
 #if CONFIG_MLP_DECODER
-const AVCodec ff_mlp_decoder = {
-    .name           = "mlp",
-    .long_name      = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_MLP,
+const FFCodec ff_mlp_decoder = {
+    .p.name         = "mlp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_MLP,
     .priv_data_size = sizeof(MLPDecodeContext),
-    .priv_class     = &mlp_decoder_class,
+    .p.priv_class   = &mlp_decoder_class,
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
     .flush          = mlp_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_TRUEHD_DECODER
-const AVCodec ff_truehd_decoder = {
-    .name           = "truehd",
-    .long_name      = NULL_IF_CONFIG_SMALL("TrueHD"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_TRUEHD,
+const FFCodec ff_truehd_decoder = {
+    .p.name         = "truehd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TrueHD"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_TRUEHD,
     .priv_data_size = sizeof(MLPDecodeContext),
-    .priv_class     = &truehd_decoder_class,
+    .p.priv_class   = &truehd_decoder_class,
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
     .flush          = mlp_decode_flush,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif /* CONFIG_TRUEHD_DECODER */

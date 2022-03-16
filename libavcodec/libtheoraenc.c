@@ -37,8 +37,8 @@
 #include "libavutil/log.h"
 #include "libavutil/base64.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "encode.h"
-#include "internal.h"
 
 /* libtheora includes */
 #include <theora/theoraenc.h>
@@ -367,19 +367,19 @@ static av_cold int encode_close(AVCodecContext* avc_context)
 }
 
 /** AVCodec struct exposed to libavcodec */
-const AVCodec ff_libtheora_encoder = {
-    .name           = "libtheora",
-    .long_name      = NULL_IF_CONFIG_SMALL("libtheora Theora"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_THEORA,
-    .capabilities   = AV_CODEC_CAP_DR1 |
+const FFCodec ff_libtheora_encoder = {
+    .p.name         = "libtheora",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("libtheora Theora"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_THEORA,
+    .p.capabilities = AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_DELAY /* for statsfile summary */,
     .priv_data_size = sizeof(TheoraContext),
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },
-    .wrapper_name   = "libtheora",
+    .p.wrapper_name = "libtheora",
 };

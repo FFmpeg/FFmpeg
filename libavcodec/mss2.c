@@ -847,15 +847,15 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_mss2_decoder = {
-    .name           = "mss2",
-    .long_name      = NULL_IF_CONFIG_SMALL("MS Windows Media Video V9 Screen"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MSS2,
+const FFCodec ff_mss2_decoder = {
+    .p.name         = "mss2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MS Windows Media Video V9 Screen"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_MSS2,
     .priv_data_size = sizeof(MSS2Context),
     .init           = mss2_decode_init,
     .close          = mss2_decode_end,
     .decode         = mss2_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

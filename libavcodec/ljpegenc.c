@@ -321,18 +321,18 @@ static const AVClass ljpeg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_ljpeg_encoder = {
-    .name           = "ljpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_LJPEG,
+const FFCodec ff_ljpeg_encoder = {
+    .p.name         = "ljpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_LJPEG,
     .priv_data_size = sizeof(LJpegEncContext),
-    .priv_class     = &ljpeg_class,
+    .p.priv_class   = &ljpeg_class,
     .init           = ljpeg_encode_init,
     .encode2        = ljpeg_encode_frame,
     .close          = ljpeg_encode_close,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGR24   , AV_PIX_FMT_BGRA    , AV_PIX_FMT_BGR0,
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUV420P , AV_PIX_FMT_YUV444P , AV_PIX_FMT_YUV422P,

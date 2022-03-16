@@ -658,23 +658,23 @@ static const AVClass flac_decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_flac_decoder = {
-    .name           = "flac",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_FLAC,
+const FFCodec ff_flac_decoder = {
+    .p.name         = "flac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACContext),
     .init           = flac_decode_init,
     .close          = flac_decode_close,
     .decode         = flac_decode_frame,
-    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_FRAME_THREADS,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_S32,
                                                       AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },
-    .priv_class     = &flac_decoder_class,
+    .p.priv_class   = &flac_decoder_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

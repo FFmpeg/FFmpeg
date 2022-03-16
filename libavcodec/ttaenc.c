@@ -202,17 +202,17 @@ static av_cold int tta_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_tta_encoder = {
-    .name           = "tta",
-    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_TTA,
+const FFCodec ff_tta_encoder = {
+    .p.name         = "tta",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_TTA,
     .priv_data_size = sizeof(TTAEncContext),
     .init           = tta_encode_init,
     .close          = tta_encode_close,
     .encode2        = tta_encode_frame,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8,
+    .p.capabilities = AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },

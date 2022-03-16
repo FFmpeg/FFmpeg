@@ -996,20 +996,20 @@ static const AVClass adpcm_encoder_class = {
 
 #define ADPCM_ENCODER_0(id_, name_, sample_fmts_, capabilities_, long_name_)
 #define ADPCM_ENCODER_1(id_, name_, sample_fmts_, capabilities_, long_name_) \
-const AVCodec ff_ ## name_ ## _encoder = {                                 \
-    .name           = #name_,                                              \
-    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),                    \
-    .type           = AVMEDIA_TYPE_AUDIO,                                  \
-    .id             = id_,                                                 \
+const FFCodec ff_ ## name_ ## _encoder = {                                 \
+    .p.name         = #name_,                                              \
+    .p.long_name    = NULL_IF_CONFIG_SMALL(long_name_),                    \
+    .p.type         = AVMEDIA_TYPE_AUDIO,                                  \
+    .p.id           = id_,                                                 \
+    .p.sample_fmts  = sample_fmts_,                                        \
+    .p.ch_layouts   = ch_layouts,                                          \
+    .p.capabilities = capabilities_ | AV_CODEC_CAP_DR1,                    \
+    .p.priv_class   = &adpcm_encoder_class,                                \
     .priv_data_size = sizeof(ADPCMEncodeContext),                          \
     .init           = adpcm_encode_init,                                   \
     .encode2        = adpcm_encode_frame,                                  \
     .close          = adpcm_encode_close,                                  \
-    .sample_fmts    = sample_fmts_,                                        \
-    .ch_layouts     = ch_layouts,                                          \
-    .capabilities   = capabilities_ | AV_CODEC_CAP_DR1,                    \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE, \
-    .priv_class     = &adpcm_encoder_class,                                \
 };
 #define ADPCM_ENCODER_2(enabled, codec_id, name, sample_fmts, capabilities, long_name) \
     ADPCM_ENCODER_ ## enabled(codec_id, name, sample_fmts, capabilities, long_name)

@@ -1069,16 +1069,16 @@ static const AVClass h264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_h264_decoder = {
-    .name                  = "h264",
-    .long_name             = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_H264,
+const FFCodec ff_h264_decoder = {
+    .p.name                = "h264",
+    .p.long_name           = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    .p.type                = AVMEDIA_TYPE_VIDEO,
+    .p.id                  = AV_CODEC_ID_H264,
     .priv_data_size        = sizeof(H264Context),
     .init                  = h264_decode_init,
     .close                 = h264_decode_end,
     .decode                = h264_decode_frame,
-    .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
+    .p.capabilities        = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
@@ -1110,6 +1110,6 @@ const AVCodec ff_h264_decoder = {
     .flush                 = h264_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
     .update_thread_context_for_user = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context_for_user),
-    .profiles              = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
-    .priv_class            = &h264_class,
+    .p.profiles            = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
+    .p.priv_class          = &h264_class,
 };

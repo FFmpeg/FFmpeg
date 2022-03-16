@@ -219,22 +219,22 @@ static const AVClass h264_nvenc_class = {
     .version = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_h264_nvenc_encoder = {
-    .name           = "h264_nvenc",
-    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
+const FFCodec ff_h264_nvenc_encoder = {
+    .p.name         = "h264_nvenc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_H264,
     .init           = ff_nvenc_encode_init,
     .receive_packet = ff_nvenc_receive_packet,
     .close          = ff_nvenc_encode_close,
     .flush          = ff_nvenc_encode_flush,
     .priv_data_size = sizeof(NvencContext),
-    .priv_class     = &h264_nvenc_class,
+    .p.priv_class   = &h264_nvenc_class,
     .defaults       = defaults,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_ENCODER_FLUSH | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .pix_fmts       = ff_nvenc_pix_fmts,
-    .wrapper_name   = "nvenc",
+    .p.pix_fmts     = ff_nvenc_pix_fmts,
+    .p.wrapper_name = "nvenc",
     .hw_configs     = ff_nvenc_hw_configs,
 };

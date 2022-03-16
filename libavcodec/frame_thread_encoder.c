@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
@@ -103,7 +104,7 @@ static void * attribute_align_arg worker(void *v){
         frame = task->indata;
         pkt   = task->outdata;
 
-        ret = avctx->codec->encode2(avctx, pkt, frame, &got_packet);
+        ret = ffcodec(avctx->codec)->encode2(avctx, pkt, frame, &got_packet);
         if(got_packet) {
             int ret2 = av_packet_make_refcounted(pkt);
             if (ret >= 0 && ret2 < 0)

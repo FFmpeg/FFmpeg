@@ -200,22 +200,22 @@ static const AVClass hevc_nvenc_class = {
     .version = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_hevc_nvenc_encoder = {
-    .name           = "hevc_nvenc",
-    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC hevc encoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
+const FFCodec ff_hevc_nvenc_encoder = {
+    .p.name         = "hevc_nvenc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NVIDIA NVENC hevc encoder"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_HEVC,
     .init           = ff_nvenc_encode_init,
     .receive_packet = ff_nvenc_receive_packet,
     .close          = ff_nvenc_encode_close,
     .flush          = ff_nvenc_encode_flush,
     .priv_data_size = sizeof(NvencContext),
-    .priv_class     = &hevc_nvenc_class,
+    .p.priv_class   = &hevc_nvenc_class,
     .defaults       = defaults,
-    .pix_fmts       = ff_nvenc_pix_fmts,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
+    .p.pix_fmts     = ff_nvenc_pix_fmts,
+    .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_ENCODER_FLUSH | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .wrapper_name   = "nvenc",
+    .p.wrapper_name = "nvenc",
     .hw_configs     = ff_nvenc_hw_configs,
 };

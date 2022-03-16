@@ -940,34 +940,34 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
 };
 
-const AVCodec ff_prores_aw_encoder = {
-    .name           = "prores_aw",
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PRORES,
-    .pix_fmts       = pix_fmts,
+const FFCodec ff_prores_aw_encoder = {
+    .p.name         = "prores_aw",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PRORES,
+    .p.pix_fmts     = pix_fmts,
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
-    .priv_class     = &prores_enc_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
+    .p.priv_class   = &prores_enc_class,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
-const AVCodec ff_prores_encoder = {
-    .name           = "prores",
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_PRORES,
-    .pix_fmts       = pix_fmts,
+const FFCodec ff_prores_encoder = {
+    .p.name         = "prores",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Apple ProRes"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_PRORES,
+    .p.pix_fmts     = pix_fmts,
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
-    .capabilities   = AV_CODEC_CAP_FRAME_THREADS,
-    .priv_class     = &prores_enc_class,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+    .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
+    .p.priv_class   = &prores_enc_class,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

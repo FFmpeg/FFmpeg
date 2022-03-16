@@ -1263,47 +1263,47 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return (get_bits_count(&s->gb) + 31) / 32 * 4 + table_size;
 }
 
-const AVCodec ff_huffyuv_decoder = {
-    .name             = "huffyuv",
-    .long_name        = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_HUFFYUV,
+const FFCodec ff_huffyuv_decoder = {
+    .p.name           = "huffyuv",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_HUFFYUV,
     .priv_data_size   = sizeof(HYuvContext),
     .init             = decode_init,
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                         AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 #if CONFIG_FFVHUFF_DECODER
-const AVCodec ff_ffvhuff_decoder = {
-    .name             = "ffvhuff",
-    .long_name        = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_FFVHUFF,
+const FFCodec ff_ffvhuff_decoder = {
+    .p.name           = "ffvhuff",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_FFVHUFF,
     .priv_data_size   = sizeof(HYuvContext),
     .init             = decode_init,
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                         AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif /* CONFIG_FFVHUFF_DECODER */
 
 #if CONFIG_HYMT_DECODER
-const AVCodec ff_hymt_decoder = {
-    .name             = "hymt",
-    .long_name        = NULL_IF_CONFIG_SMALL("HuffYUV MT"),
-    .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = AV_CODEC_ID_HYMT,
+const FFCodec ff_hymt_decoder = {
+    .p.name           = "hymt",
+    .p.long_name      = NULL_IF_CONFIG_SMALL("HuffYUV MT"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_HYMT,
     .priv_data_size   = sizeof(HYuvContext),
     .init             = decode_init,
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                         AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -202,16 +202,16 @@ static const AVClass targa_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_targa_encoder = {
-    .name           = "targa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_TARGA,
+const FFCodec ff_targa_encoder = {
+    .p.name         = "targa",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_TARGA,
     .priv_data_size = sizeof(TargaContext),
-    .priv_class     = &targa_class,
+    .p.priv_class   = &targa_class,
     .init           = targa_encode_init,
     .encode2        = targa_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,
         AV_PIX_FMT_NONE
     },

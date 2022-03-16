@@ -474,18 +474,18 @@ static const AVClass jpegls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_jpegls_encoder = {
-    .name           = "jpegls",
-    .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_JPEGLS,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+const FFCodec ff_jpegls_encoder = {
+    .p.name         = "jpegls",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("JPEG-LS"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_JPEGLS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size = sizeof(JPEGLSContext),
-    .priv_class     = &jpegls_class,
+    .p.priv_class   = &jpegls_class,
     .init           = encode_jpegls_init,
     .encode2        = encode_picture_ls,
     .close          = encode_jpegls_close,
-    .pix_fmts       = (const enum AVPixelFormat[]) {
+    .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE

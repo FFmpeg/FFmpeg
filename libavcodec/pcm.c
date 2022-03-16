@@ -554,15 +554,15 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
 
 #define PCM_ENCODER_0(id_, sample_fmt_, name_, long_name_)
 #define PCM_ENCODER_1(id_, sample_fmt_, name_, long_name_)                  \
-const AVCodec ff_ ## name_ ## _encoder = {                                  \
-    .name         = #name_,                                                 \
-    .long_name    = NULL_IF_CONFIG_SMALL(long_name_),                       \
-    .type         = AVMEDIA_TYPE_AUDIO,                                     \
-    .id           = AV_CODEC_ID_ ## id_,                                    \
-    .capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,    \
+const FFCodec ff_ ## name_ ## _encoder = {                                  \
+    .p.name       = #name_,                                                 \
+    .p.long_name  = NULL_IF_CONFIG_SMALL(long_name_),                       \
+    .p.type       = AVMEDIA_TYPE_AUDIO,                                     \
+    .p.id         = AV_CODEC_ID_ ## id_,                                    \
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,    \
     .init         = pcm_encode_init,                                        \
     .encode2      = pcm_encode_frame,                                       \
-    .sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_,             \
+    .p.sample_fmts = (const enum AVSampleFormat[]){ sample_fmt_,             \
                                                    AV_SAMPLE_FMT_NONE },    \
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,                          \
 }
@@ -576,16 +576,16 @@ const AVCodec ff_ ## name_ ## _encoder = {                                  \
 
 #define PCM_DECODER_0(id, sample_fmt, name, long_name)
 #define PCM_DECODER_1(id_, sample_fmt_, name_, long_name_)                  \
-const AVCodec ff_ ## name_ ## _decoder = {                                  \
-    .name           = #name_,                                               \
-    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),                     \
-    .type           = AVMEDIA_TYPE_AUDIO,                                   \
-    .id             = AV_CODEC_ID_ ## id_,                                  \
+const FFCodec ff_ ## name_ ## _decoder = {                                  \
+    .p.name         = #name_,                                               \
+    .p.long_name    = NULL_IF_CONFIG_SMALL(long_name_),                     \
+    .p.type         = AVMEDIA_TYPE_AUDIO,                                   \
+    .p.id           = AV_CODEC_ID_ ## id_,                                  \
     .priv_data_size = sizeof(PCMDecode),                                    \
     .init           = pcm_decode_init,                                      \
     .decode         = pcm_decode_frame,                                     \
-    .capabilities   = AV_CODEC_CAP_DR1,                                     \
-    .sample_fmts    = (const enum AVSampleFormat[]){ sample_fmt_,           \
+    .p.capabilities = AV_CODEC_CAP_DR1,                                     \
+    .p.sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_,           \
                                                      AV_SAMPLE_FMT_NONE },  \
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,                         \
 }

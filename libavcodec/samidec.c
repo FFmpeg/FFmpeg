@@ -181,11 +181,11 @@ static void sami_flush(AVCodecContext *avctx)
         sami->readorder = 0;
 }
 
-const AVCodec ff_sami_decoder = {
-    .name           = "sami",
-    .long_name      = NULL_IF_CONFIG_SMALL("SAMI subtitle"),
-    .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = AV_CODEC_ID_SAMI,
+const FFCodec ff_sami_decoder = {
+    .p.name         = "sami",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SAMI subtitle"),
+    .p.type         = AVMEDIA_TYPE_SUBTITLE,
+    .p.id           = AV_CODEC_ID_SAMI,
     .priv_data_size = sizeof(SAMIContext),
     .init           = sami_init,
     .close          = sami_close,

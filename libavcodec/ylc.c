@@ -451,15 +451,15 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-const AVCodec ff_ylc_decoder = {
-    .name           = "ylc",
-    .long_name      = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_YLC,
+const FFCodec ff_ylc_decoder = {
+    .p.name         = "ylc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_YLC,
     .priv_data_size = sizeof(YLCContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

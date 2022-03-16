@@ -270,16 +270,16 @@ static const AVClass sgi_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVCodec ff_sgi_encoder = {
-    .name      = "sgi",
-    .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
-    .type      = AVMEDIA_TYPE_VIDEO,
-    .id        = AV_CODEC_ID_SGI,
+const FFCodec ff_sgi_encoder = {
+    .p.name    = "sgi",
+    .p.long_name = NULL_IF_CONFIG_SMALL("SGI image"),
+    .p.type    = AVMEDIA_TYPE_VIDEO,
+    .p.id      = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiContext),
-    .priv_class = &sgi_class,
+    .p.priv_class = &sgi_class,
     .init      = encode_init,
     .encode2   = encode_frame,
-    .pix_fmts  = (const enum AVPixelFormat[]) {
+    .p.pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB48BE,
         AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_RGBA64BE,

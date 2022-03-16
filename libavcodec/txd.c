@@ -25,6 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "bytestream.h"
 #include "avcodec.h"
+#include "codec_internal.h"
 #include "internal.h"
 #include "texturedsp.h"
 
@@ -163,11 +164,11 @@ unsupported:
     return AVERROR_PATCHWELCOME;
 }
 
-const AVCodec ff_txd_decoder = {
-    .name           = "txd",
-    .long_name      = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_TXD,
+const FFCodec ff_txd_decoder = {
+    .p.name         = "txd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
+    .p.type         = AVMEDIA_TYPE_VIDEO,
+    .p.id           = AV_CODEC_ID_TXD,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .decode         = txd_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
 };
