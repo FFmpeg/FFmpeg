@@ -169,7 +169,6 @@ struct channel_layout_name {
 static const struct channel_layout_name channel_layout_map[] = {
     { "mono",           AV_CHANNEL_LAYOUT_MONO                },
     { "stereo",         AV_CHANNEL_LAYOUT_STEREO              },
-    { "stereo",         AV_CHANNEL_LAYOUT_STEREO_DOWNMIX      },
     { "2.1",            AV_CHANNEL_LAYOUT_2POINT1             },
     { "3.0",            AV_CHANNEL_LAYOUT_SURROUND            },
     { "3.0(back)",      AV_CHANNEL_LAYOUT_2_1                 },
