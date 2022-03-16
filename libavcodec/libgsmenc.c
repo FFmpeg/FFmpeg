@@ -111,7 +111,7 @@ static int libgsm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static const AVCodecDefault libgsm_defaults[] = {
+static const FFCodecDefault libgsm_defaults[] = {
     { "b",                "13000" },
     { NULL },
 };

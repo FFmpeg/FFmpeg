@@ -582,7 +582,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVCodecDefault librav1e_defaults[] = {
+static const FFCodecDefault librav1e_defaults[] = {
     { "b",           "0" },
     { "g",           "0" },
     { "keyint_min",  "0" },

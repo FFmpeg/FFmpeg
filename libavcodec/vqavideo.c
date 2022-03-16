@@ -842,7 +842,7 @@ static av_cold int vqa_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVCodecDefault vqa_defaults[] = {
+static const FFCodecDefault vqa_defaults[] = {
     { "max_pixels", "640*480" },
     { NULL },
 };

@@ -1347,7 +1347,7 @@ static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVCodecDefault dnxhd_defaults[] = {
+static const FFCodecDefault dnxhd_defaults[] = {
     { "qmax", "1024" }, /* Maximum quantization scale factor allowed for VC-3 */
     { NULL },
 };

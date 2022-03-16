@@ -79,10 +79,10 @@
  */
 #define FF_CODEC_TAGS_END -1
 
-typedef struct AVCodecDefault {
+typedef struct FFCodecDefault {
     const char *key;
     const char *value;
-} AVCodecDefault;
+} FFCodecDefault;
 
 struct AVCodecContext;
 struct AVSubtitle;
@@ -122,7 +122,7 @@ typedef struct FFCodec {
     /**
      * Private codec-specific defaults.
      */
-    const AVCodecDefault *defaults;
+    const FFCodecDefault *defaults;
 
     /**
      * Initialize codec static data, called from av_codec_iterate().

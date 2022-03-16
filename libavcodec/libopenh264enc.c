@@ -443,7 +443,7 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static const AVCodecDefault svc_enc_defaults[] = {
+static const FFCodecDefault svc_enc_defaults[] = {
     { "b",         "0"     },
     { "g",         "-1"    },
     { "qmin",      "-1"    },

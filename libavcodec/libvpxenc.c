@@ -1903,7 +1903,7 @@ static const AVOption vp9_options[] = {
 #undef COMMON_OPTIONS
 #undef LEGACY_OPTIONS
 
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "b",                 "0" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },

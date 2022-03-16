@@ -405,7 +405,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVCodecDefault v4l2_m2m_defaults[] = {
+static const FFCodecDefault v4l2_m2m_defaults[] = {
     { "qmin", "-1" },
     { "qmax", "-1" },
     { NULL },

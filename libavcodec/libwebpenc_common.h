@@ -59,6 +59,6 @@ int ff_libwebp_get_frame(AVCodecContext *avctx, LibWebPContextCommon *s,
 
 extern const enum AVPixelFormat ff_libwebpenc_pix_fmts[];
 extern const AVClass ff_libwebpenc_class;
-extern const AVCodecDefault ff_libwebp_defaults[];
+extern const FFCodecDefault ff_libwebp_defaults[];
 
 #endif /* AVCODEC_LIBWEBPENC_COMMON_H */

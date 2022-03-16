@@ -393,7 +393,7 @@ static const AVClass g726_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "b", "0" },
     { NULL },
 };

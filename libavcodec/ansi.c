@@ -476,7 +476,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVCodecDefault ansi_defaults[] = {
+static const FFCodecDefault ansi_defaults[] = {
     { "max_pixels", "640*480" },
     { NULL },
 };

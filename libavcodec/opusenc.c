@@ -719,7 +719,7 @@ static const AVClass opusenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault opusenc_defaults[] = {
+static const FFCodecDefault opusenc_defaults[] = {
     { "b", "0" },
     { "compression_level", "10" },
     { NULL },

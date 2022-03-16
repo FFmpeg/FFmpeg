@@ -319,7 +319,7 @@ static const AVClass libmp3lame_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault libmp3lame_defaults[] = {
+static const FFCodecDefault libmp3lame_defaults[] = {
     { "b",          "0" },
     { NULL },
 };

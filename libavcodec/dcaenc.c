@@ -1235,7 +1235,7 @@ static const AVClass dcaenc_class = {
     .version = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "b",          "1411200" },
     { NULL },
 };

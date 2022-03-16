@@ -359,7 +359,7 @@ static av_cold int amf_encode_init_h264(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "refs",       "-1"  },
     { "aspect",     "0"   },
     { "qmin",       "-1"  },

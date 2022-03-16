@@ -199,7 +199,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "b", "2M" },
     { "qmin", "-1" },
     { "qmax", "-1" },

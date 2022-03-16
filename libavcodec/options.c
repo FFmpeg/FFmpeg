@@ -136,7 +136,7 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     }
     if (codec && codec2->defaults) {
         int ret;
-        const AVCodecDefault *d = codec2->defaults;
+        const FFCodecDefault *d = codec2->defaults;
         while (d->key) {
             ret = av_opt_set(s, d->key, d->value, 0);
             av_assert0(ret >= 0);

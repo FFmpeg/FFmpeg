@@ -1179,7 +1179,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVCodecDefault x264_defaults[] = {
+static const FFCodecDefault x264_defaults[] = {
     { "b",                "0" },
     { "bf",               "-1" },
     { "flags2",           "0" },

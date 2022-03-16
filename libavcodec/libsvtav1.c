@@ -588,7 +588,7 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault eb_enc_defaults[] = {
+static const FFCodecDefault eb_enc_defaults[] = {
     { "b",         "0"    },
     { "flags",     "+cgop" },
     { "g",         "-1"    },

@@ -195,7 +195,7 @@ static int ilbc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static const AVCodecDefault ilbc_encode_defaults[] = {
+static const FFCodecDefault ilbc_encode_defaults[] = {
     { "b", "0" },
     { NULL }
 };

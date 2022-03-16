@@ -1233,7 +1233,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "b", "6300" },
     { NULL },
 };

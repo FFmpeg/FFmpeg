@@ -74,7 +74,7 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault qsv_enc_defaults[] = {
+static const FFCodecDefault qsv_enc_defaults[] = {
     { "global_quality",  "80" },
     { NULL },
 };

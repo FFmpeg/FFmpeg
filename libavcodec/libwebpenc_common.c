@@ -27,7 +27,7 @@
 #include "libavutil/opt.h"
 #include "libwebpenc_common.h"
 
-const AVCodecDefault ff_libwebp_defaults[] = {
+const FFCodecDefault ff_libwebp_defaults[] = {
     { "compression_level",  "4"  },
     { "global_quality",     "-1" },
     { NULL },

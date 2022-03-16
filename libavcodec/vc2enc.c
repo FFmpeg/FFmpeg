@@ -1212,7 +1212,7 @@ static const AVClass vc2enc_class = {
     .version = LIBAVUTIL_VERSION_INT
 };
 
-static const AVCodecDefault vc2enc_defaults[] = {
+static const FFCodecDefault vc2enc_defaults[] = {
     { "b",              "600000000"   },
     { NULL },
 };

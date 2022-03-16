@@ -293,7 +293,7 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
 
     return 0;
 }
-static const AVCodecDefault defaults[] = {
+static const FFCodecDefault defaults[] = {
     { "refs",       "-1"  },
     { "aspect",     "0"   },
     { "b",          "2M"  },

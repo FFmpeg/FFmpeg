@@ -238,7 +238,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static const AVCodecDefault idcin_defaults[] = {
+static const FFCodecDefault idcin_defaults[] = {
     { "max_pixels", "320*240" },
     { NULL },
 };

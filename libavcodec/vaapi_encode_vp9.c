@@ -271,7 +271,7 @@ static const AVOption vaapi_encode_vp9_options[] = {
     { NULL },
 };
 
-static const AVCodecDefault vaapi_encode_vp9_defaults[] = {
+static const FFCodecDefault vaapi_encode_vp9_defaults[] = {
     { "b",              "0"   },
     { "bf",             "0"   },
     { "g",              "250" },

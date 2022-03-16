@@ -1132,7 +1132,7 @@ static const AVClass aacenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault aac_encode_defaults[] = {
+static const FFCodecDefault aac_encode_defaults[] = {
     { "b", "0" },
     { NULL }
 };

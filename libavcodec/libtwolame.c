@@ -200,7 +200,7 @@ static const AVClass twolame_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault twolame_defaults[] = {
+static const FFCodecDefault twolame_defaults[] = {
     { "b", "0" },
     { NULL },
 };

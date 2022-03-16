@@ -779,7 +779,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static const AVCodecDefault mp2_defaults[] = {
+static const FFCodecDefault mp2_defaults[] = {
     { "b", "0" },
     { NULL },
 };

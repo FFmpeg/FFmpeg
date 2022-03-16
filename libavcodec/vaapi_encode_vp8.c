@@ -229,7 +229,7 @@ static const AVOption vaapi_encode_vp8_options[] = {
     { NULL },
 };
 
-static const AVCodecDefault vaapi_encode_vp8_defaults[] = {
+static const FFCodecDefault vaapi_encode_vp8_defaults[] = {
     { "b",              "0"   },
     { "bf",             "0"   },
     { "g",              "120" },

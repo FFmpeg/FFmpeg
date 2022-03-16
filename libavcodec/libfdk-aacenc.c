@@ -435,7 +435,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
-static const AVCodecDefault aac_encode_defaults[] = {
+static const FFCodecDefault aac_encode_defaults[] = {
     { "b", "0" },
     { NULL }
 };

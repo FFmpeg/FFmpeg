@@ -573,7 +573,7 @@ static const AVClass libopus_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault libopus_defaults[] = {
+static const FFCodecDefault libopus_defaults[] = {
     { "b",                 "0" },
     { "compression_level", "10" },
     { NULL },

@@ -416,7 +416,7 @@ static const AVClass xavs_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault xavs_defaults[] = {
+static const FFCodecDefault xavs_defaults[] = {
     { "b",                "0" },
     { NULL },
 };

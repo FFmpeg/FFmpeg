@@ -670,7 +670,7 @@ static const AVOption vaapi_encode_mpeg2_options[] = {
     { NULL },
 };
 
-static const AVCodecDefault vaapi_encode_mpeg2_defaults[] = {
+static const FFCodecDefault vaapi_encode_mpeg2_defaults[] = {
     { "b",              "0"   },
     { "bf",             "1"   },
     { "g",              "120" },

@@ -1282,7 +1282,7 @@ static const AVOption vaapi_encode_h265_options[] = {
     { NULL },
 };
 
-static const AVCodecDefault vaapi_encode_h265_defaults[] = {
+static const FFCodecDefault vaapi_encode_h265_defaults[] = {
     { "b",              "0"   },
     { "bf",             "2"   },
     { "g",              "120" },

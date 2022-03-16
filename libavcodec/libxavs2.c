@@ -279,7 +279,7 @@ static const AVClass libxavs2 = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVCodecDefault xavs2_defaults[] = {
+static const FFCodecDefault xavs2_defaults[] = {
     { "b",                "0" },
     { "g",                "48"},
     { "bf",               "7" },
