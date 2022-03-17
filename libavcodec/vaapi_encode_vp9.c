@@ -184,6 +184,17 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     return 0;
 }
 
+static av_cold int vaapi_encode_vp9_get_encoder_caps(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    // Surfaces must be aligned to 64x64 superblock boundaries.
+    ctx->surface_width  = FFALIGN(avctx->width,  64);
+    ctx->surface_height = FFALIGN(avctx->height, 64);
+
+    return 0;
+}
+
 static av_cold int vaapi_encode_vp9_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext     *ctx = avctx->priv_data;
@@ -231,6 +242,7 @@ static const VAAPIEncodeType vaapi_encode_type_vp9 = {
 
     .picture_priv_data_size = sizeof(VAAPIEncodeVP9Picture),
 
+    .get_encoder_caps      = &vaapi_encode_vp9_get_encoder_caps,
     .configure             = &vaapi_encode_vp9_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP9),
@@ -250,10 +262,6 @@ static av_cold int vaapi_encode_vp9_init(AVCodecContext *avctx)
     // but there isn't any reason to do so - the one usable driver (i965)
     // can write its own headers and there is no metadata to include.
     ctx->desired_packed_headers = 0;
-
-    // Surfaces must be aligned to superblock boundaries.
-    ctx->surface_width  = FFALIGN(avctx->width,  64);
-    ctx->surface_height = FFALIGN(avctx->height, 64);
 
     return ff_vaapi_encode_init(avctx);
 }

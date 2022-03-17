@@ -55,6 +55,10 @@ typedef struct VAAPIEncodeH265Picture {
 typedef struct VAAPIEncodeH265Context {
     VAAPIEncodeContext common;
 
+    // Encoder features.
+    uint32_t ctu_size;
+    uint32_t min_cb_size;
+
     // User options.
     int qp;
     int aud;
@@ -1091,6 +1095,27 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
+static av_cold int vaapi_encode_h265_get_encoder_caps(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
+
+    if (!priv->ctu_size) {
+        priv->ctu_size     = 32;
+        priv->min_cb_size  = 16;
+    }
+    av_log(avctx, AV_LOG_VERBOSE, "Using CTU size %dx%d, "
+           "min CB size %dx%d.\n", priv->ctu_size, priv->ctu_size,
+           priv->min_cb_size, priv->min_cb_size);
+
+    ctx->surface_width  = FFALIGN(avctx->width,  priv->min_cb_size);
+    ctx->surface_height = FFALIGN(avctx->height, priv->min_cb_size);
+
+    ctx->slice_block_width = ctx->slice_block_height = priv->ctu_size;
+
+    return 0;
+}
+
 static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
@@ -1160,6 +1185,7 @@ static const VAAPIEncodeType vaapi_encode_type_h265 = {
 
     .default_quality       = 25,
 
+    .get_encoder_caps      = &vaapi_encode_h265_get_encoder_caps,
     .configure             = &vaapi_encode_h265_configure,
 
     .picture_priv_data_size = sizeof(VAAPIEncodeH265Picture),
@@ -1204,12 +1230,6 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
         VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.
         VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
         VA_ENC_PACKED_HEADER_MISC;      // SEI
-
-    ctx->surface_width  = FFALIGN(avctx->width,  16);
-    ctx->surface_height = FFALIGN(avctx->height, 16);
-
-    // CTU size is currently hard-coded to 32.
-    ctx->slice_block_width = ctx->slice_block_height = 32;
 
     if (priv->qp > 0)
         ctx->explicit_qp = priv->qp;

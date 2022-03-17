@@ -210,9 +210,6 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
     // adding them anyway.
     ctx->desired_packed_headers = 0;
 
-    ctx->surface_width  = FFALIGN(avctx->width,  16);
-    ctx->surface_height = FFALIGN(avctx->height, 16);
-
     return ff_vaapi_encode_init(avctx);
 }
 

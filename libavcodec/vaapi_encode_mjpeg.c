@@ -434,6 +434,20 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
+static av_cold int vaapi_encode_mjpeg_get_encoder_caps(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    const AVPixFmtDescriptor *desc;
+
+    desc = av_pix_fmt_desc_get(ctx->input_frames->sw_format);
+    av_assert0(desc);
+
+    ctx->surface_width  = FFALIGN(avctx->width,  8 << desc->log2_chroma_w);
+    ctx->surface_height = FFALIGN(avctx->height, 8 << desc->log2_chroma_h);
+
+    return 0;
+}
+
 static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext       *ctx = avctx->priv_data;
@@ -483,6 +497,7 @@ static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
     .flags                 = FLAG_CONSTANT_QUALITY_ONLY |
                              FLAG_INTRA_ONLY,
 
+    .get_encoder_caps      = &vaapi_encode_mjpeg_get_encoder_caps,
     .configure             = &vaapi_encode_mjpeg_configure,
 
     .default_quality       = 80,
@@ -508,9 +523,6 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
     // The JPEG image header - see note above.
     ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_RAW_DATA;
-
-    ctx->surface_width  = FFALIGN(avctx->width,  8);
-    ctx->surface_height = FFALIGN(avctx->height, 8);
 
     return ff_vaapi_encode_init(avctx);
 }
