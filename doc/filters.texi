@@ -1319,7 +1319,7 @@ Set the residual floor in dB, allowed range is -80 to -20.
 Default value is -38 dB.
 
 @item track_noise, tn
-Enable noise tracking. By default is disabled.
+Enable noise floor tracking. By default is disabled.
 With this enabled, noise floor is automatically adjusted.
 
 @item track_residual, tr
@@ -1347,6 +1347,11 @@ Set the adaptivity factor, used how fast to adapt gains adjustments per
 each frequency bin. Value @var{0} enables instant adaptation, while higher values
 react much slower.
 Allowed range is from @var{0} to @var{1}. Default value is @var{0.5}.
+
+@item floor_offset, fo
+Set the noise floor offset factor. This option is used to adjust offset applied to measured
+noise floor. It is only effective when noise floor tracking is enabled.
+Allowed range is from @var{-2.0} to @var{2.0}. Default value is @var{1.0}.
 
 @item noise_link, nl
 Set the noise link used for multichannel audio.

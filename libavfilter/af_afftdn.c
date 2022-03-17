@@ -117,6 +117,7 @@ typedef struct AudioFFTDeNoiseContext {
     int     noise_floor_link;
     float   ratio;
     float   band_multiplier;
+    float   floor_offset;
 
     float   last_residual_floor;
     float   last_noise_floor;
@@ -196,6 +197,8 @@ static const AVOption afftdn_options[] = {
     {  "n", "noise",                      0,                       AV_OPT_TYPE_CONST,  {.i64 = NOISE_MODE},    0,  0, AFR, "mode" },
     { "adaptivity", "set adaptivity factor",OFFSET(ratio),         AV_OPT_TYPE_FLOAT,  {.dbl = 0.5},           0,  1, AFR },
     { "ad",         "set adaptivity factor",OFFSET(ratio),         AV_OPT_TYPE_FLOAT,  {.dbl = 0.5},           0,  1, AFR },
+    { "floor_offset", "set noise floor offset factor",OFFSET(floor_offset), AV_OPT_TYPE_FLOAT, {.dbl = 1.0},  -2,  2, AFR },
+    { "fo",           "set noise floor offset factor",OFFSET(floor_offset), AV_OPT_TYPE_FLOAT, {.dbl = 1.0},  -2,  2, AFR },
     { "noise_link", "set the noise floor link",OFFSET(noise_floor_link),AV_OPT_TYPE_INT,{.i64 = MIN_LINK},     0,  NB_LINK-1, AFR, "link" },
     { "nl", "set the noise floor link",        OFFSET(noise_floor_link),AV_OPT_TYPE_INT,{.i64 = MIN_LINK},     0,  NB_LINK-1, AFR, "link" },
     {  "none",    "none",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = NONE_LINK},     0,  0, AFR, "link" },
@@ -381,11 +384,11 @@ static void process_frame(AVFilterContext *ctx,
 
         flatness = num / den;
         if (flatness > 0.8) {
-            const double offset = floor_offset(noisy_data, s->bin_count, den);
+            const double offset = s->floor_offset * floor_offset(noisy_data, s->bin_count, den);
             const double new_floor = av_clipd(10.0 * log10(den) - 100.0 + offset, -90., -20.);
 
             dnch->noise_floor = 0.1 * new_floor + dnch->noise_floor * 0.9;
-            set_parameters(s, dnch, 1, 0);
+            set_parameters(s, dnch, 1, 1);
         }
     }
 
