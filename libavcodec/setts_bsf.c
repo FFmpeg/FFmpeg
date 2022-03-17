@@ -145,7 +145,7 @@ static int setts_init(AVBSFContext *ctx)
         }
     }
 
-    if (s->time_base.den)
+    if (s->time_base.num > 0 && s->time_base.den > 0)
         ctx->time_base_out = s->time_base;
 
     s->frame_number= 0;
@@ -259,7 +259,7 @@ static const AVOption options[] = {
     { "pts", "set expression for packet PTS", OFFSET(pts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "dts", "set expression for packet DTS", OFFSET(dts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "duration", "set expression for packet duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str="DURATION"}, 0, 0, FLAGS },
-    { "time_base", "set output timebase", OFFSET(time_base), AV_OPT_TYPE_RATIONAL, {.dbl=0}, 0, 0, FLAGS },
+    { "time_base", "set output timebase", OFFSET(time_base), AV_OPT_TYPE_RATIONAL, {.dbl=0}, 0, INT_MAX, FLAGS },
     { NULL },
 };
 
