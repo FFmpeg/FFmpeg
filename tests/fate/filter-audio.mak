@@ -104,6 +104,11 @@ fate-filter-chorus: tests/data/asynth-22050-1.wav
 fate-filter-chorus: SRC = $(TARGET_PATH)/tests/data/asynth-22050-1.wav
 fate-filter-chorus: CMD = framecrc -i $(SRC) -frames:a 10 -af aresample,chorus=0.050001:0.050002:64:0.050001:0.025003:2.00004,aresample
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, CRYSTALIZER, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-crystalizer
+fate-filter-crystalizer: tests/data/asynth-44100-2.wav
+fate-filter-crystalizer: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-crystalizer: CMD = framecrc -i $(SRC) -af aresample,crystalizer=2:0,crystalizer=-2:0,aresample
+
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, DCSHIFT, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-dcshift
 fate-filter-dcshift: tests/data/asynth-44100-2.wav
 fate-filter-dcshift: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
