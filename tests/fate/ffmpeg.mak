@@ -216,6 +216,8 @@ fate-ffmpeg-bsf-remove-e: $(SAMPLES)/mpeg2/matrixbench_mpeg2.lq1.mpg
 fate-ffmpeg-bsf-remove-e: CMD = transcode "mpeg" $(TARGET_SAMPLES)/mpeg2/matrixbench_mpeg2.lq1.mpg\
                           avi "-vbsf remove_extra=e" "-codec copy"
 
+FATE_SAMPLES_FFMPEG-$(call ALLYES, APNG_DEMUXER SETTS_BSF) += fate-ffmpeg-setts-bsf
+fate-ffmpeg-setts-bsf: CMD = framecrc -i $(TARGET_SAMPLES)/apng/clock.png -c:v copy -bsf:v "setts=duration=if(eq(NEXT_PTS\,NOPTS)\,PREV_OUTDURATION\,(NEXT_PTS-PTS)/2):ts=PTS/2" -fflags +bitexact
 
 FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)
 
