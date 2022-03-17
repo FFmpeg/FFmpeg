@@ -874,7 +874,7 @@ static int imf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 int64_t nbsamples = av_rescale_q(pkt->duration,
                                                  st->time_base,
                                                  av_make_q(1, st->codecpar->sample_rate));
-                av_shrink_packet(pkt, nbsamples * st->codecpar->channels * bytes_per_sample);
+                av_shrink_packet(pkt, nbsamples * st->codecpar->ch_layout.nb_channels * bytes_per_sample);
 
             } else {
                 /* in all other cases, use side data to skip samples */
