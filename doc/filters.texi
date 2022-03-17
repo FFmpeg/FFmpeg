@@ -1311,7 +1311,7 @@ Default value is white noise.
 @end table
 
 @item band_noise, bn
-Set custom band noise for every one of 15 bands.
+Set custom band noise profile for every one of 15 bands.
 Bands are separated by ' ' or '|'.
 
 @item residual_floor, rf
@@ -1376,30 +1376,25 @@ Default value is @var{min}.
 @item band_multiplier, bm
 Set the band multiplier factor, used how much to spread bands across frequency bins.
 Allowed range is from @var{0.2} to @var{5}. Default value is @var{1.25}.
+
+@item sample_noise, sn
+Toggle capturing and measurement of noise profile from input audio.
+
+It accepts the following values:
+@table @option
+@item start, begin
+Start sample noise capture.
+
+@item stop, end
+Stop sample noise capture and measure new noise band profile.
+
+Default value is @code{none}.
+@end table
 @end table
 
 @subsection Commands
 
-This filter supports the following commands:
-@table @option
-@item sample_noise, sn
-Start or stop measuring noise profile.
-Syntax for the command is : "start" or "stop" string.
-After measuring noise profile is stopped it will be
-automatically applied in filtering.
-
-@item noise_reduction, nr
-Change noise reduction. Argument is single float number.
-Syntax for the command is : "@var{noise_reduction}"
-
-@item noise_floor, nf
-Change noise floor. Argument is single float number.
-Syntax for the command is : "@var{noise_floor}"
-
-@item output_mode, om
-Change output mode operation.
-Syntax for the command is : "i", "o" or "n" string.
-@end table
+This filter supports the some above mentioned options as @ref{commands}.
 
 @section afftfilt
 Apply arbitrary expressions to samples in frequency domain.
