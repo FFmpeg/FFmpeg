@@ -56,6 +56,9 @@ typedef struct VAAPIEncodeH265Context {
     VAAPIEncodeContext common;
 
     // Encoder features.
+    uint32_t va_features;
+    // Block size info.
+    uint32_t va_bs;
     uint32_t ctu_size;
     uint32_t min_cb_size;
 
@@ -427,9 +430,9 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
             vps->vps_max_latency_increase_plus1[i];
     }
 
-    // These have to come from the capabilities of the encoder.  We have no
-    // way to query them, so just hardcode parameters which work on the Intel
-    // driver.
+    // These values come from the capabilities of the first encoder
+    // implementation in the i965 driver on Intel Skylake.  They may
+    // fail badly with other platforms or drivers.
     // CTB size from 8x8 to 32x32.
     sps->log2_min_luma_coding_block_size_minus3   = 0;
     sps->log2_diff_max_min_luma_coding_block_size = 2;
@@ -446,6 +449,42 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     sps->sps_temporal_mvp_enabled_flag       = 0;
 
     sps->pcm_enabled_flag = 0;
+
+// update sps setting according to queried result
+#if VA_CHECK_VERSION(1, 13, 0)
+    if (priv->va_features) {
+        VAConfigAttribValEncHEVCFeatures features = { .value = priv->va_features };
+
+        // Enable feature if get queried result is VA_FEATURE_SUPPORTED | VA_FEATURE_REQUIRED
+        sps->amp_enabled_flag =
+            !!features.bits.amp;
+        sps->sample_adaptive_offset_enabled_flag =
+            !!features.bits.sao;
+        sps->sps_temporal_mvp_enabled_flag =
+            !!features.bits.temporal_mvp;
+        sps->pcm_enabled_flag =
+            !!features.bits.pcm;
+    }
+
+    if (priv->va_bs) {
+        VAConfigAttribValEncHEVCBlockSizes bs = { .value = priv->va_bs };
+        sps->log2_min_luma_coding_block_size_minus3 =
+            ff_ctz(priv->min_cb_size) - 3;
+        sps->log2_diff_max_min_luma_coding_block_size =
+            ff_ctz(priv->ctu_size) - ff_ctz(priv->min_cb_size);
+
+        sps->log2_min_luma_transform_block_size_minus2 =
+            bs.bits.log2_min_luma_transform_block_size_minus2;
+        sps->log2_diff_max_min_luma_transform_block_size =
+            bs.bits.log2_max_luma_transform_block_size_minus2 -
+            bs.bits.log2_min_luma_transform_block_size_minus2;
+
+        sps->max_transform_hierarchy_depth_inter =
+            bs.bits.max_max_transform_hierarchy_depth_inter;
+        sps->max_transform_hierarchy_depth_intra =
+            bs.bits.max_max_transform_hierarchy_depth_intra;
+    }
+#endif
 
     // STRPSs should ideally be here rather than defined individually in
     // each slice, but the structure isn't completely fixed so for now
@@ -538,6 +577,23 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
     pps->cu_qp_delta_enabled_flag = (ctx->va_rc_mode != VA_RC_CQP);
     pps->diff_cu_qp_delta_depth   = 0;
+
+// update pps setting according to queried result
+#if VA_CHECK_VERSION(1, 13, 0)
+    if (priv->va_features) {
+        VAConfigAttribValEncHEVCFeatures features = { .value = priv->va_features };
+        if (ctx->va_rc_mode != VA_RC_CQP)
+            pps->cu_qp_delta_enabled_flag =
+                !!features.bits.cu_qp_delta;
+
+        pps->transform_skip_enabled_flag =
+            !!features.bits.transform_skip;
+        // set diff_cu_qp_delta_depth as its max value if cu_qp_delta enabled. Otherwise
+        // 0 will make cu_qp_delta invalid.
+        if (pps->cu_qp_delta_enabled_flag)
+            pps->diff_cu_qp_delta_depth = sps->log2_diff_max_min_luma_coding_block_size;
+    }
+#endif
 
     if (ctx->tile_rows && ctx->tile_cols) {
         int uniform_spacing;
@@ -640,8 +696,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         .coded_buf = VA_INVALID_ID,
 
-        .collocated_ref_pic_index = 0xff,
-
+        .collocated_ref_pic_index = sps->sps_temporal_mvp_enabled_flag ?
+                                    0 : 0xff,
         .last_picture = 0,
 
         .pic_init_qp            = pps->init_qp_minus26 + 26,
@@ -674,6 +730,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
             .entropy_coding_sync_enabled_flag = pps->entropy_coding_sync_enabled_flag,
             .loop_filter_across_tiles_enabled_flag =
                 pps->loop_filter_across_tiles_enabled_flag,
+            .pps_loop_filter_across_slices_enabled_flag =
+                pps->pps_loop_filter_across_slices_enabled_flag,
             .scaling_list_data_present_flag = (sps->sps_scaling_list_data_present_flag |
                                                pps->pps_scaling_list_data_present_flag),
             .screen_content_flag            = 0,
@@ -1001,10 +1059,13 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
         sh->num_long_term_sps  = 0;
         sh->num_long_term_pics = 0;
 
+        // when this flag is not present, it is inerred to 1.
+        sh->collocated_from_l0_flag = 1;
         sh->slice_temporal_mvp_enabled_flag =
             sps->sps_temporal_mvp_enabled_flag;
         if (sh->slice_temporal_mvp_enabled_flag) {
-            sh->collocated_from_l0_flag = sh->slice_type == HEVC_SLICE_B;
+            if (sh->slice_type == HEVC_SLICE_B)
+                sh->collocated_from_l0_flag = 1;
             sh->collocated_ref_idx      = 0;
         }
 
@@ -1104,6 +1165,47 @@ static av_cold int vaapi_encode_h265_get_encoder_caps(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH265Context *priv = avctx->priv_data;
+
+#if VA_CHECK_VERSION(1, 13, 0)
+    {
+        VAConfigAttribValEncHEVCBlockSizes block_size;
+        VAConfigAttrib attr;
+        VAStatus vas;
+
+        attr.type = VAConfigAttribEncHEVCFeatures;
+        vas = vaGetConfigAttributes(ctx->hwctx->display, ctx->va_profile,
+                                    ctx->va_entrypoint, &attr, 1);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to query encoder "
+                   "features, using guessed defaults.\n");
+            return AVERROR_EXTERNAL;
+        } else if (attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+            av_log(avctx, AV_LOG_WARNING, "Driver does not advertise "
+                   "encoder features, using guessed defaults.\n");
+        } else {
+            priv->va_features = attr.value;
+        }
+
+        attr.type = VAConfigAttribEncHEVCBlockSizes;
+        vas = vaGetConfigAttributes(ctx->hwctx->display, ctx->va_profile,
+                                    ctx->va_entrypoint, &attr, 1);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to query encoder "
+                   "block size, using guessed defaults.\n");
+            return AVERROR_EXTERNAL;
+        } else if (attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+            av_log(avctx, AV_LOG_WARNING, "Driver does not advertise "
+                   "encoder block size, using guessed defaults.\n");
+        } else {
+            priv->va_bs = block_size.value = attr.value;
+
+            priv->ctu_size =
+                1 << block_size.bits.log2_max_coding_tree_block_size_minus3 + 3;
+            priv->min_cb_size =
+                1 << block_size.bits.log2_min_luma_coding_block_size_minus3 + 3;
+        }
+    }
+#endif
 
     if (!priv->ctu_size) {
         priv->ctu_size     = 32;
