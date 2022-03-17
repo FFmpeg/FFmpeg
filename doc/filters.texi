@@ -1396,6 +1396,30 @@ Default value is @code{none}.
 
 This filter supports the some above mentioned options as @ref{commands}.
 
+@subsection Examples
+
+@itemize
+@item
+Reduce white noise by 10dB, and use previously measured noise floor of -40dB:
+@example
+afftdn=nr=10:nf=-40
+@end example
+
+@item
+Reduce white noise by 10dB, also set initial noise floor to -80dB and enable automatic
+tracking of noise floor so noise floor will gradually change during processing:
+@example
+afftdn=nr=10:nf=-80:tn=1
+@end example
+
+@item
+Reduce noise by 20dB, using noise floor of -40dB and using commands to take noise profile
+of first 0.4 seconds of input audio:
+@example
+asendcmd=0.0 afftdn sn start,asendcmd=0.4 afftdn sn stop,afftdn=nr=20:nf=-40
+@end example
+@end itemize
+
 @section afftfilt
 Apply arbitrary expressions to samples in frequency domain.
 
