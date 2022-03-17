@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/reverse.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"

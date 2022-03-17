@@ -39,6 +39,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/reverse.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"

@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/reverse.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"

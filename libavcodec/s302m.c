@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
+#include "libavutil/reverse.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "internal.h"
