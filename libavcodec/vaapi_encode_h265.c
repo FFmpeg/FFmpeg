@@ -303,17 +303,21 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     ptl->general_profile_idc   = avctx->profile;
     ptl->general_tier_flag     = priv->tier;
 
-    if (chroma_format == 1) {
-        ptl->general_profile_compatibility_flag[1] = bit_depth ==  8;
-        ptl->general_profile_compatibility_flag[2] = bit_depth <= 10;
+    ptl->general_profile_compatibility_flag[ptl->general_profile_idc] = 1;
+
+    if (ptl->general_profile_compatibility_flag[1])
+        ptl->general_profile_compatibility_flag[2] = 1;
+    if (ptl->general_profile_compatibility_flag[3]) {
+        ptl->general_profile_compatibility_flag[1] = 1;
+        ptl->general_profile_compatibility_flag[2] = 1;
     }
-    ptl->general_profile_compatibility_flag[4] = 1;
 
     ptl->general_progressive_source_flag    = 1;
     ptl->general_interlaced_source_flag     = 0;
     ptl->general_non_packed_constraint_flag = 1;
     ptl->general_frame_only_constraint_flag = 1;
 
+    ptl->general_max_14bit_constraint_flag = bit_depth <= 14;
     ptl->general_max_12bit_constraint_flag = bit_depth <= 12;
     ptl->general_max_10bit_constraint_flag = bit_depth <= 10;
     ptl->general_max_8bit_constraint_flag  = bit_depth ==  8;
@@ -323,6 +327,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     ptl->general_max_monochrome_constraint_flag = chroma_format == 0;
 
     ptl->general_intra_constraint_flag = ctx->gop_size == 1;
+    ptl->general_one_picture_only_constraint_flag = 0;
 
     ptl->general_lower_bit_rate_constraint_flag = 1;
 
