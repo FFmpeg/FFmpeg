@@ -55,6 +55,7 @@ OBJS = ac3_parser.o                                                     \
        qsv_api.o                                                        \
        raw.o                                                            \
        utils.o                                                          \
+       vlc.o                                                            \
        vorbis_parser.o                                                  \
        xiph.o                                                           \
 
