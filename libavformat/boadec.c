@@ -57,7 +57,7 @@ static int read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rl32(s->pb);
     st->codecpar->ch_layout.nb_channels    = avio_rl32(s->pb);
     if (st->codecpar->ch_layout.nb_channels > FF_SANE_NB_CHANNELS ||
-        st->codecpar->ch_layout.order <= 0)
+        st->codecpar->ch_layout.nb_channels <= 0)
         return AVERROR(ENOSYS);
     ffformatcontext(s)->data_offset = data_offset = avio_rl32(s->pb);
     avio_r8(s->pb);
