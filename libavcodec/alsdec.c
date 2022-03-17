@@ -1986,7 +1986,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     unsigned int c;
     unsigned int channel_size;
     int num_buffers, ret;
-    int channels = avctx->ch_layout.nb_channels;
+    int channels;
     ALSDecContext *ctx = avctx->priv_data;
     ALSSpecificConfig *sconf = &ctx->sconf;
     ctx->avctx = avctx;
@@ -2000,6 +2000,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Reading ALSSpecificConfig failed.\n");
         return ret;
     }
+    channels = avctx->ch_layout.nb_channels;
 
     if ((ret = check_specific_config(ctx)) < 0) {
         return ret;
