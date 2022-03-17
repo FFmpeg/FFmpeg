@@ -35,7 +35,6 @@
 #include "avcodec.h"
 #include "encode.h"
 #include "codec_internal.h"
-#include "internal.h"
 #include "put_bits.h"
 #include "put_golomb.h"
 #include "rangecoder.h"

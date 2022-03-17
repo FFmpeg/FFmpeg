@@ -25,14 +25,10 @@
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */
 
-#include "libavutil/mem_internal.h"
-
 #include "avcodec.h"
-#include "get_bits.h"
 #include "golomb.h"
 #include "h264chroma.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "mathops.h"
 #include "qpeldsp.h"
 #include "cavs.h"

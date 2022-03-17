@@ -33,7 +33,7 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "fdctdsp.h"
-#include "internal.h"
+#include "mathops.h"
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
 #include "pixblockdsp.h"

@@ -30,6 +30,7 @@
 #define MAX_NEG_CROP 1024
 
 extern const uint32_t ff_inverse[257];
+extern const uint8_t ff_log2_run[41];
 extern const uint8_t ff_sqrt_tab[256];
 extern const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP];
 extern const uint8_t ff_zigzag_direct[64];
@@ -124,6 +125,8 @@ static inline av_const int median4(int a, int b, int c, int d)
     }
 }
 #endif
+
+#define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
 #ifndef sign_extend
 static inline av_const int sign_extend(int val, unsigned bits)

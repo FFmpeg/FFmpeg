@@ -44,8 +44,6 @@
 
 #define FF_SANE_NB_CHANNELS 512U
 
-#define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
-
 #if HAVE_SIMD_ALIGN_64
 #   define STRIDE_ALIGN 64 /* AVX-512 */
 #elif HAVE_SIMD_ALIGN_32
@@ -158,8 +156,6 @@ typedef struct AVCodecInternal {
 #endif
     AVChannelLayout initial_ch_layout;
 } AVCodecInternal;
-
-extern const uint8_t ff_log2_run[41];
 
 /**
  * Return the index into tab at which {a,b} match elements {[0],[1]} of tab.

@@ -34,7 +34,6 @@
 #include "get_bits.h"
 #include "put_bits.h"
 #include "put_golomb.h"
-#include "internal.h"
 #include "mathops.h"
 #include "mjpeg.h"
 #include "jpegls.h"
