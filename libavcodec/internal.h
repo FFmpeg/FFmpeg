@@ -35,8 +35,6 @@
 #include "bsf.h"
 #include "config.h"
 
-#define FF_DEFAULT_QUANT_BIAS 999999
-
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
 #define FF_QSCALE_TYPE_H264  2

@@ -29,7 +29,6 @@
 #define AVCODEC_MPEGVIDEOENC_H
 
 #include "libavutil/opt.h"
-#include "internal.h"
 #include "mpegvideo.h"
 
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
@@ -41,6 +40,8 @@
 #define FF_MPV_FLAG_CBP_RD       0x0008
 #define FF_MPV_FLAG_NAQ          0x0010
 #define FF_MPV_FLAG_MV0          0x0020
+
+#define FF_DEFAULT_QUANT_BIAS 999999
 
 #define FF_MPV_OPT_CMP_FUNC \
 { "sad",    "Sum of absolute differences, fast", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
