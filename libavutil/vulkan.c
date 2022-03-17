@@ -205,7 +205,7 @@ static int vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
     return 0;
 }
 
-int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
+int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size, void *pNext,
                      VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags)
 {
     int err;
@@ -215,7 +215,7 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
 
     VkBufferCreateInfo buf_spawn = {
         .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext       = NULL,
+        .pNext       = pNext,
         .usage       = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .size        = size, /* Gets FFALIGNED during alloc if host visible
