@@ -91,9 +91,6 @@ typedef struct SetTSContext {
 
     int64_t frame_number;
 
-    int64_t start_pts;
-    int64_t start_dts;
-
     double var_values[VAR_VARS_NB];
 
     AVExpr *ts_expr;
@@ -149,8 +146,8 @@ static int setts_init(AVBSFContext *ctx)
         ctx->time_base_out = s->time_base;
 
     s->frame_number= 0;
-    s->start_pts   = AV_NOPTS_VALUE;
-    s->start_dts   = AV_NOPTS_VALUE;
+    s->var_values[VAR_STARTPTS] = AV_NOPTS_VALUE;
+    s->var_values[VAR_STARTDTS] = AV_NOPTS_VALUE;
     s->var_values[VAR_NOPTS] = AV_NOPTS_VALUE;
     s->var_values[VAR_TB]    = ctx->time_base_in.den ? av_q2d(ctx->time_base_in) : 0;
     s->var_values[VAR_TB_OUT]= ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
@@ -174,11 +171,11 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
          return AVERROR(EAGAIN);
     }
 
-    if (s->start_pts == AV_NOPTS_VALUE)
-        s->start_pts = s->cur_pkt->pts;
+    if (s->var_values[VAR_STARTPTS] == AV_NOPTS_VALUE)
+        s->var_values[VAR_STARTPTS] = s->cur_pkt->pts;
 
-    if (s->start_dts == AV_NOPTS_VALUE)
-        s->start_dts = s->cur_pkt->dts;
+    if (s->var_values[VAR_STARTDTS] == AV_NOPTS_VALUE)
+        s->var_values[VAR_STARTDTS] = s->cur_pkt->dts;
 
     s->var_values[VAR_N]           = s->frame_number++;
     s->var_values[VAR_TS]          = s->cur_pkt->dts;
@@ -195,8 +192,6 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     s->var_values[VAR_NEXT_PTS]    = pkt->pts;
     s->var_values[VAR_NEXT_DTS]    = pkt->dts;
     s->var_values[VAR_NEXT_DUR]    = pkt->duration;
-    s->var_values[VAR_STARTPTS]    = s->start_pts;
-    s->var_values[VAR_STARTDTS]    = s->start_dts;
 
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
     new_duration = llrint(av_expr_eval(s->duration_expr, s->var_values, NULL));
