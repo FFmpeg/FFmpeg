@@ -125,6 +125,7 @@ typedef struct AudioFFTDeNoiseContext {
 
     int     channels;
     int     sample_noise;
+    int     sample_noise_blocks;
     int     sample_noise_mode;
     float   sample_rate;
     int     buffer_length;
@@ -1039,6 +1040,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
         }
         s->sample_noise_mode = SAMPLE_NONE;
         s->sample_noise = 1;
+        s->sample_noise_blocks = 0;
     }
 
     if (s->sample_noise) {
@@ -1047,6 +1049,7 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
 
             sample_noise_block(s, dnch, s->winframe, ch);
         }
+        s->sample_noise_blocks++;
     }
 
     if (s->sample_noise_mode == SAMPLE_STOP) {
@@ -1054,11 +1057,14 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
             DeNoiseChannel *dnch = &s->dnch[ch];
             double sample_noise[NB_PROFILE_BANDS];
 
+            if (s->sample_noise_blocks <= 0)
+                break;
             finish_sample_noise(s, dnch, sample_noise);
             set_noise_profile(s, dnch, sample_noise);
             set_parameters(s, dnch, 1, 1);
         }
         s->sample_noise = 0;
+        s->sample_noise_blocks = 0;
         s->sample_noise_mode = SAMPLE_NONE;
     }
 
