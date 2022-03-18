@@ -244,6 +244,8 @@ static void setts_close(AVBSFContext *bsf)
     s->pts_expr = NULL;
     av_expr_free(s->dts_expr);
     s->dts_expr = NULL;
+    av_expr_free(s->duration_expr);
+    s->duration_expr = NULL;
 }
 
 #define OFFSET(x) offsetof(SetTSContext, x)
