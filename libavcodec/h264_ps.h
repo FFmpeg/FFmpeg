@@ -103,6 +103,7 @@ typedef struct SPS {
  * Picture parameter set
  */
 typedef struct PPS {
+    unsigned int pps_id;
     unsigned int sps_id;
     int cabac;                  ///< entropy_coding_mode_flag
     int pic_order_present;      ///< pic_order_present_flag

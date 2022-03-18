@@ -731,6 +731,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     if (!(bit_length & 7) && pps->data_size < sizeof(pps->data))
         pps->data[pps->data_size++] = 0x80;
 
+    pps->pps_id = pps_id;
     pps->sps_id = get_ue_golomb_31(gb);
     if ((unsigned)pps->sps_id >= MAX_SPS_COUNT ||
         !ps->sps_list[pps->sps_id]) {
