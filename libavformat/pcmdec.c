@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
@@ -33,6 +34,7 @@ typedef struct PCMAudioDemuxerContext {
     AVClass *class;
     int sample_rate;
     int channels;
+    AVChannelLayout ch_layout;
 } PCMAudioDemuxerContext;
 
 static int pcm_read_header(AVFormatContext *s)
@@ -50,7 +52,13 @@ static int pcm_read_header(AVFormatContext *s)
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = s->iformat->raw_codec_id;
     par->sample_rate = s1->sample_rate;
-    par->ch_layout.nb_channels = s1->channels;
+    if (s1->channels)
+        par->ch_layout.nb_channels = s1->channels;
+    else {
+        int ret = av_channel_layout_copy(&par->ch_layout, &s1->ch_layout);
+        if (ret < 0)
+            return ret;
+    }
 
     av_opt_get(s->pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
     if (mime_type && s->iformat->mime_type) {
@@ -78,8 +86,10 @@ static int pcm_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
             par->sample_rate = rate;
-            if (channels > 0)
+            if (channels > 0) {
+                av_channel_layout_uninit(&par->ch_layout);
                 par->ch_layout.nb_channels = channels;
+            }
             if (little_endian)
                 par->codec_id = AV_CODEC_ID_PCM_S16LE;
         }
@@ -98,7 +108,8 @@ static int pcm_read_header(AVFormatContext *s)
 
 static const AVOption pcm_options[] = {
     { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 44100}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "channels",    "", offsetof(PCMAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 1}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(PCMAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "ch_layout",   "", offsetof(PCMAudioDemuxerContext, ch_layout),   AV_OPT_TYPE_CHLAYOUT, {.str = "mono"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 static const AVClass pcm_demuxer_class = {
