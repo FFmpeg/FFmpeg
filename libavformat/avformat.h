@@ -320,6 +320,12 @@
 
 #include "avio.h"
 #include "libavformat/version_major.h"
+#ifndef HAVE_AV_CONFIG_H
+/* When included as part of the ffmpeg build, only include the major version
+ * to avoid unnecessary rebuilds. When included externally, keep including
+ * the full version information. */
+#include "libavformat/version.h"
+#endif
 
 struct AVFormatContext;
 struct AVStream;

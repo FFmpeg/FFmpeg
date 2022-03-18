@@ -34,6 +34,12 @@
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "version_major.h"
+#ifndef HAVE_AV_CONFIG_H
+/* When included as part of the ffmpeg build, only include the major version
+ * to avoid unnecessary rebuilds. When included externally, keep including
+ * the full version information. */
+#include "version.h"
+#endif
 
 /**
  * @defgroup libsws libswscale

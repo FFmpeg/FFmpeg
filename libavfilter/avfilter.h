@@ -48,6 +48,12 @@
 #include "libavutil/rational.h"
 
 #include "libavfilter/version_major.h"
+#ifndef HAVE_AV_CONFIG_H
+/* When included as part of the ffmpeg build, only include the major version
+ * to avoid unnecessary rebuilds. When included externally, keep including
+ * the full version information. */
+#include "libavfilter/version.h"
+#endif
 
 /**
  * Return the LIBAVFILTER_VERSION_INT constant.
