@@ -89,7 +89,7 @@ typedef struct QSVContext {
     uint32_t fourcc;
     mfxFrameInfo frame_info;
     AVBufferPool *pool;
-
+    int suggest_pool_size;
     int initialized;
 
     // options set by the caller
@@ -276,7 +276,7 @@ static int qsv_decode_preinit(AVCodecContext *avctx, QSVContext *q, enum AVPixel
         hwframes_ctx->height            = FFALIGN(avctx->coded_height, 32);
         hwframes_ctx->format            = AV_PIX_FMT_QSV;
         hwframes_ctx->sw_format         = avctx->sw_pix_fmt;
-        hwframes_ctx->initial_pool_size = 64 + avctx->extra_hw_frames;
+        hwframes_ctx->initial_pool_size = q->suggest_pool_size + 16 + avctx->extra_hw_frames;
         frames_hwctx->frame_type        = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
 
         ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
@@ -794,6 +794,9 @@ static int qsv_process_data(AVCodecContext *avctx, QSVContext *q,
     }
 
     if (q->reinit_flag || !q->session || !q->initialized) {
+        mfxFrameAllocRequest request;
+        memset(&request, 0, sizeof(request));
+
         q->reinit_flag = 0;
         ret = qsv_decode_header(avctx, q, pkt, pix_fmt, &param);
         if (ret < 0) {
@@ -803,11 +806,18 @@ static int qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                 av_log(avctx, AV_LOG_ERROR, "Error decoding header\n");
             goto reinit_fail;
         }
+        param.IOPattern = q->iopattern;
 
         q->orig_pix_fmt = avctx->pix_fmt = pix_fmt = ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC);
 
         avctx->coded_width  = param.mfx.FrameInfo.Width;
         avctx->coded_height = param.mfx.FrameInfo.Height;
+
+        ret = MFXVideoDECODE_QueryIOSurf(q->session, &param, &request);
+        if (ret < 0)
+            return ff_qsv_print_error(avctx, ret, "Error querying IO surface");
+
+        q->suggest_pool_size = request.NumFrameSuggested;
 
         ret = qsv_decode_preinit(avctx, q, pix_fmt, &param);
         if (ret < 0)
