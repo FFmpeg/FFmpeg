@@ -83,7 +83,6 @@ typedef struct QSVContext {
 
     AVFifo *async_fifo;
     int zero_consume_run;
-    int buffered_count;
     int reinit_flag;
 
     enum AVPixelFormat orig_pix_fmt;
@@ -654,8 +653,6 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         ++q->zero_consume_run;
         if (q->zero_consume_run > 1)
             ff_qsv_print_warning(avctx, ret, "A decode call did not consume any data");
-    } else if (!*sync && bs.DataOffset) {
-        ++q->buffered_count;
     } else {
         q->zero_consume_run = 0;
     }
@@ -788,20 +785,24 @@ static int qsv_process_data(AVCodecContext *avctx, QSVContext *q,
     if (!avctx->coded_height)
         avctx->coded_height = 720;
 
-    ret = qsv_decode_header(avctx, q, pkt, pix_fmt, &param);
-
-    if (q->reinit_flag || (ret >= 0 && (q->orig_pix_fmt != ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC) ||
-        avctx->coded_width  != param.mfx.FrameInfo.Width ||
-        avctx->coded_height != param.mfx.FrameInfo.Height))) {
+    /* decode zero-size pkt to flush the buffered pkt before reinit */
+    if (q->reinit_flag) {
         AVPacket zero_pkt = {0};
+        ret = qsv_decode(avctx, q, frame, got_frame, &zero_pkt);
+        if (ret < 0 || *got_frame)
+            return ret;
+    }
 
-        if (q->buffered_count) {
-            q->reinit_flag = 1;
-            /* decode zero-size pkt to flush the buffered pkt before reinit */
-            q->buffered_count--;
-            return qsv_decode(avctx, q, frame, got_frame, &zero_pkt);
-        }
+    if (q->reinit_flag || !q->session || !q->initialized) {
         q->reinit_flag = 0;
+        ret = qsv_decode_header(avctx, q, pkt, pix_fmt, &param);
+        if (ret < 0) {
+            if (ret == AVERROR(EAGAIN))
+                av_log(avctx, AV_LOG_INFO, "More data is required to decode header\n");
+            else
+                av_log(avctx, AV_LOG_ERROR, "Error decoding header\n");
+            goto reinit_fail;
+        }
 
         q->orig_pix_fmt = avctx->pix_fmt = pix_fmt = ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC);
 
