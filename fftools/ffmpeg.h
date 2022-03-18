@@ -96,6 +96,8 @@ typedef struct OptionsContext {
 
     SpecifierOpt *codec_names;
     int        nb_codec_names;
+    SpecifierOpt *audio_ch_layouts;
+    int        nb_audio_ch_layouts;
     SpecifierOpt *audio_channels;
     int        nb_audio_channels;
     SpecifierOpt *audio_sample_rate;

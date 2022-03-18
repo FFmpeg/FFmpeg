@@ -55,6 +55,7 @@
 
 static const char *const opt_name_codec_names[]               = {"c", "codec", "acodec", "vcodec", "scodec", "dcodec", NULL};
 static const char *const opt_name_audio_channels[]            = {"ac", NULL};
+static const char *const opt_name_audio_ch_layouts[]          = {"channel_layout", NULL};
 static const char *const opt_name_audio_sample_rate[]         = {"ar", NULL};
 static const char *const opt_name_frame_rates[]               = {"r", NULL};
 static const char *const opt_name_max_frame_rates[]           = {"fpsmax", NULL};
@@ -1124,6 +1125,14 @@ static int open_input_file(OptionsContext *o, const char *filename)
             av_dict_set_int(&o->g->format_opts, "channels", o->audio_channels[o->nb_audio_channels - 1].u.i, 0);
         }
     }
+    if (o->nb_audio_ch_layouts) {
+        const AVClass *priv_class;
+        if (file_iformat && (priv_class = file_iformat->priv_class) &&
+            av_opt_find(&priv_class, "ch_layout", NULL, 0,
+                        AV_OPT_SEARCH_FAKE_OBJ)) {
+            av_dict_set(&o->g->format_opts, "ch_layout", o->audio_ch_layouts[o->nb_audio_ch_layouts - 1].u.str, 0);
+        }
+    }
     if (o->nb_frame_rates) {
         const AVClass *priv_class;
         /* set the format-level framerate option;
@@ -1946,12 +1955,34 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
 
     if (!ost->stream_copy) {
         int channels = 0;
+        char *layout = NULL;
         char *sample_fmt = NULL;
 
         MATCH_PER_STREAM_OPT(audio_channels, i, channels, oc, st);
         if (channels) {
             audio_enc->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
             audio_enc->ch_layout.nb_channels = channels;
+        }
+
+        MATCH_PER_STREAM_OPT(audio_ch_layouts, str, layout, oc, st);
+        if (layout) {
+            if (av_channel_layout_from_string(&audio_enc->ch_layout, layout) < 0) {
+#if FF_API_OLD_CHANNEL_LAYOUT
+                uint64_t mask;
+                AV_NOWARN_DEPRECATED({
+                mask = av_get_channel_layout(layout);
+                })
+                if (!mask) {
+#endif
+                    av_log(NULL, AV_LOG_FATAL, "Unknown channel layout: %s\n", layout);
+                    exit_program(1);
+#if FF_API_OLD_CHANNEL_LAYOUT
+                }
+                av_log(NULL, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
+                       layout);
+                av_channel_layout_from_mask(&audio_enc->ch_layout, mask);
+#endif
+            }
         }
 
         MATCH_PER_STREAM_OPT(sample_fmts, str, sample_fmt, oc, st);
@@ -3235,54 +3266,6 @@ static int opt_timecode(void *optctx, const char *opt, const char *arg)
     return ret;
 }
 
-static int opt_channel_layout(void *optctx, const char *opt, const char *arg)
-{
-    OptionsContext *o = optctx;
-    char layout_str[32];
-    char *stream_str;
-    char *ac_str;
-    int ret, ac_str_size;
-    AVChannelLayout layout = { 0 };
-
-    ret = av_channel_layout_from_string(&layout, arg);
-    if (ret < 0) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-        uint64_t mask;
-        AV_NOWARN_DEPRECATED({
-        mask = av_get_channel_layout(arg);
-        })
-        if (!mask) {
-#endif
-        av_log(NULL, AV_LOG_ERROR, "Unknown channel layout: %s\n", arg);
-        return AVERROR(EINVAL);
-#if FF_API_OLD_CHANNEL_LAYOUT
-        }
-        av_log(NULL, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
-               arg);
-        av_channel_layout_from_mask(&layout, mask);
-#endif
-    }
-
-    ret = opt_default_new(o, opt, arg);
-    if (ret < 0)
-        return ret;
-
-    /* set 'ac' option based on channel layout */
-    snprintf(layout_str, sizeof(layout_str), "%d", layout.nb_channels);
-    stream_str = strchr(opt, ':');
-    ac_str_size = 3 + (stream_str ? strlen(stream_str) : 0);
-    ac_str = av_mallocz(ac_str_size);
-    if (!ac_str)
-        return AVERROR(ENOMEM);
-    av_strlcpy(ac_str, "ac", 3);
-    if (stream_str)
-        av_strlcat(ac_str, stream_str, ac_str_size);
-    ret = parse_option(o, ac_str, layout_str, options);
-    av_free(ac_str);
-
-    return ret;
-}
-
 static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -3827,8 +3810,8 @@ const OptionDef options[] = {
     { "sample_fmt",     OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_SPEC |
                         OPT_STRING | OPT_INPUT | OPT_OUTPUT,                       { .off = OFFSET(sample_fmts) },
         "set sample format", "format" },
-    { "channel_layout", OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_PERFILE |
-                        OPT_INPUT | OPT_OUTPUT,                                    { .func_arg = opt_channel_layout },
+    { "channel_layout", OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_SPEC |
+                        OPT_STRING | OPT_INPUT | OPT_OUTPUT,                       { .off = OFFSET(audio_ch_layouts) },
         "set channel layout", "layout" },
     { "af",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_filters },
         "set audio filters", "filter_graph" },
