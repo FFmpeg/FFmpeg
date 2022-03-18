@@ -88,7 +88,7 @@ int main(int argc, char **argv)
         }
     }
 
-    av_dict_set(&format_opts, "channels", "1", 0);
+    av_dict_set(&format_opts, "ch_layout", "mono", 0);
     av_dict_set(&format_opts, "sample_rate", "22050", 0);
 
     if (argc < 2) {
