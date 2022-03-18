@@ -226,6 +226,7 @@ static int decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
 /* returns non zero if the provided SPS scaling matrix has been filled */
 static int decode_scaling_matrices(GetBitContext *gb, const SPS *sps,
                                     const PPS *pps, int is_sps,
+                                    int present_flag,
                                     uint8_t(*scaling_matrix4)[16],
                                     uint8_t(*scaling_matrix8)[64])
 {
@@ -237,7 +238,7 @@ static int decode_scaling_matrices(GetBitContext *gb, const SPS *sps,
         fallback_sps ? sps->scaling_matrix8[3] : default_scaling8[1]
     };
     int ret = 0;
-    if (get_bits1(gb)) {
+    if (present_flag) {
         ret |= decode_scaling_list(gb, scaling_matrix4[0], 16, default_scaling4[0], fallback[0]);        // Intra, Y
         ret |= decode_scaling_list(gb, scaling_matrix4[1], 16, default_scaling4[0], scaling_matrix4[0]); // Intra, Cr
         ret |= decode_scaling_list(gb, scaling_matrix4[2], 16, default_scaling4[0], scaling_matrix4[1]); // Intra, Cb
@@ -368,7 +369,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
             goto fail;
         }
         sps->transform_bypass = get_bits1(gb);
-        ret = decode_scaling_matrices(gb, sps, NULL, 1,
+        ret = decode_scaling_matrices(gb, sps, NULL, 1, get_bits1(gb),
                                       sps->scaling_matrix4, sps->scaling_matrix8);
         if (ret < 0)
             goto fail;
@@ -803,7 +804,9 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     bits_left = bit_length - get_bits_count(gb);
     if (bits_left > 0 && more_rbsp_data_in_pps(sps, avctx)) {
         pps->transform_8x8_mode = get_bits1(gb);
+        pps->pic_scaling_matrix_present_flag = get_bits1(gb);
         ret = decode_scaling_matrices(gb, sps, pps, 0,
+                                pps->pic_scaling_matrix_present_flag,
                                 pps->scaling_matrix4, pps->scaling_matrix8);
         if (ret < 0)
             goto fail;
