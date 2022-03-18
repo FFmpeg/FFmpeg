@@ -117,12 +117,6 @@ typedef struct AudioFFTDeNoiseContext {
     float   band_multiplier;
     float   floor_offset;
 
-    float   last_residual_floor;
-    float   last_noise_floor;
-    float   last_noise_reduction;
-    float   last_noise_balance;
-    int64_t block_count;
-
     int     channels;
     int     sample_noise;
     int     sample_noise_blocks;
@@ -1068,7 +1062,6 @@ static int output_frame(AVFilterLink *inlink, AVFrame *in)
         s->sample_noise_mode = SAMPLE_NONE;
     }
 
-    s->block_count++;
     ff_filter_execute(ctx, filter_channel, s->winframe, NULL,
                       FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
