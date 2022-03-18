@@ -399,21 +399,10 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                 goto fail;
             }
 
+            layout.order = AV_CHANNEL_ORDER_AMBISONIC;
             layout.nb_channels = channels;
-            if (channels == (ambisonic_order + 1) * (ambisonic_order + 1)) {
-                layout.order = AV_CHANNEL_ORDER_AMBISONIC;
-            } else {
-                layout.order = AV_CHANNEL_ORDER_CUSTOM;
-                layout.u.map = av_calloc(channels, sizeof(*layout.u.map));
-                if (!layout.u.map) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
-                }
-                for (i = 0; i < channels - 2; i++)
-                    layout.u.map[i].id = AV_CHAN_AMBISONIC_BASE + i;
-                layout.u.map[channels - 2].id = AV_CHAN_FRONT_LEFT;
-                layout.u.map[channels - 1].id = AV_CHAN_FRONT_RIGHT;
-            }
+            if (channels != ((ambisonic_order + 1) * (ambisonic_order + 1)))
+                layout.u.mask = AV_CH_LAYOUT_STEREO;
         } else {
             layout.order       = AV_CHANNEL_ORDER_UNSPEC;
             layout.nb_channels = channels;
