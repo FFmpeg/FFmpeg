@@ -631,6 +631,13 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
 
     } while (ret == MFX_WRN_DEVICE_BUSY || ret == MFX_ERR_MORE_SURFACE);
 
+    if (ret == MFX_ERR_INCOMPATIBLE_VIDEO_PARAM) {
+        q->reinit_flag = 1;
+        av_log(avctx, AV_LOG_DEBUG, "Video parameter change\n");
+        av_freep(&sync);
+        return 0;
+    }
+
     if (ret != MFX_ERR_NONE &&
         ret != MFX_ERR_MORE_DATA &&
         ret != MFX_WRN_VIDEO_PARAM_CHANGED &&
@@ -783,9 +790,9 @@ static int qsv_process_data(AVCodecContext *avctx, QSVContext *q,
 
     ret = qsv_decode_header(avctx, q, pkt, pix_fmt, &param);
 
-    if (ret >= 0 && (q->orig_pix_fmt != ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC) ||
+    if (q->reinit_flag || (ret >= 0 && (q->orig_pix_fmt != ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC) ||
         avctx->coded_width  != param.mfx.FrameInfo.Width ||
-        avctx->coded_height != param.mfx.FrameInfo.Height)) {
+        avctx->coded_height != param.mfx.FrameInfo.Height))) {
         AVPacket zero_pkt = {0};
 
         if (q->buffered_count) {
