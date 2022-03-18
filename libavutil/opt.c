@@ -1729,6 +1729,10 @@ void av_opt_free(void *obj)
             av_dict_free((AVDictionary **)(((uint8_t *)obj) + o->offset));
             break;
 
+        case AV_OPT_TYPE_CHLAYOUT:
+            av_channel_layout_uninit((AVChannelLayout *)(((uint8_t *)obj) + o->offset));
+            break;
+
         default:
             break;
         }
