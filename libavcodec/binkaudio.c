@@ -44,6 +44,7 @@
 #include "rdft.h"
 #include "wma_freqs.h"
 
+#define MAX_DCT_CHANNELS 6
 #define MAX_CHANNELS 2
 #define BINK_BLOCK_MAX_SIZE (MAX_CHANNELS << 11)
 
@@ -52,13 +53,14 @@ typedef struct BinkAudioContext {
     int version_b;          ///< Bink version 'b'
     int first;
     int channels;
+    int ch_offset;
     int frame_len;          ///< transform size (samples)
     int overlap_len;        ///< overlap size (samples)
     int block_size;
     int num_bands;
     float root;
     unsigned int bands[26];
-    float previous[MAX_CHANNELS][BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
+    float previous[MAX_DCT_CHANNELS][BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
     float quant_table[96];
     AVPacket *pkt;
     union {
@@ -75,6 +77,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int sample_rate_half;
     int i, ret;
     int frame_len_bits;
+    int max_channels = avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT ? MAX_CHANNELS : MAX_DCT_CHANNELS;
     int channels = avctx->ch_layout.nb_channels;
 
     /* determine frame length */
@@ -86,7 +89,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         frame_len_bits = 11;
     }
 
-    if (channels < 1 || channels > MAX_CHANNELS) {
+    if (channels < 1 || channels > max_channels) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels: %d\n", channels);
         return AVERROR_INVALIDDATA;
     }
@@ -111,7 +114,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->frame_len     = 1 << frame_len_bits;
     s->overlap_len   = s->frame_len / 16;
-    s->block_size    = (s->frame_len - s->overlap_len) * s->channels;
+    s->block_size    = (s->frame_len - s->overlap_len) * FFMIN(MAX_CHANNELS, s->channels);
     sample_rate_half = (sample_rate + 1LL) / 2;
     if (avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT)
         s->root = 2.0 / (sqrt(s->frame_len) * 32768.0);
@@ -167,7 +170,8 @@ static const uint8_t rle_length_tab[16] = {
  * @param[out] out Output buffer (must contain s->block_size elements)
  * @return 0 on success, negative error code on failure
  */
-static int decode_block(BinkAudioContext *s, float **out, int use_dct)
+static int decode_block(BinkAudioContext *s, float **out, int use_dct,
+                        int channels, int ch_offset)
 {
     int ch, i, j, k;
     float q, quant[25];
@@ -177,8 +181,8 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
     if (use_dct)
         skip_bits(gb, 2);
 
-    for (ch = 0; ch < s->channels; ch++) {
-        FFTSample *coeffs = out[ch];
+    for (ch = 0; ch < channels; ch++) {
+        FFTSample *coeffs = out[ch + ch_offset];
 
         if (s->version_b) {
             if (get_bits_left(gb) < 64)
@@ -253,17 +257,17 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
             s->trans.rdft.rdft_calc(&s->trans.rdft, coeffs);
     }
 
-    for (ch = 0; ch < s->channels; ch++) {
+    for (ch = 0; ch < channels; ch++) {
         int j;
-        int count = s->overlap_len * s->channels;
+        int count = s->overlap_len * channels;
         if (!s->first) {
             j = ch;
-            for (i = 0; i < s->overlap_len; i++, j += s->channels)
-                out[ch][i] = (s->previous[ch][i] * (count - j) +
-                                      out[ch][i] *          j) / count;
+            for (i = 0; i < s->overlap_len; i++, j += channels)
+                out[ch + ch_offset][i] = (s->previous[ch + ch_offset][i] * (count - j) +
+                                      out[ch + ch_offset][i] *          j) / count;
         }
-        memcpy(s->previous[ch], &out[ch][s->frame_len - s->overlap_len],
-               s->overlap_len * sizeof(*s->previous[ch]));
+        memcpy(s->previous[ch + ch_offset], &out[ch + ch_offset][s->frame_len - s->overlap_len],
+               s->overlap_len * sizeof(*s->previous[ch + ch_offset]));
     }
 
     s->first = 0;
@@ -294,6 +298,7 @@ static int binkaudio_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     GetBitContext *gb = &s->gb;
     int ret;
 
+again:
     if (!s->pkt->data) {
         ret = ff_decode_get_packet(avctx, s->pkt);
         if (ret < 0)
@@ -314,22 +319,31 @@ static int binkaudio_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 
     /* get output buffer */
-    frame->nb_samples = s->frame_len;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
+    if (s->ch_offset == 0) {
+        frame->nb_samples = s->frame_len;
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+    }
 
     if (decode_block(s, (float **)frame->extended_data,
-                     avctx->codec->id == AV_CODEC_ID_BINKAUDIO_DCT)) {
+                     avctx->codec->id == AV_CODEC_ID_BINKAUDIO_DCT,
+                     FFMIN(MAX_CHANNELS, s->channels - s->ch_offset), s->ch_offset)) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete packet\n");
         return AVERROR_INVALIDDATA;
     }
+    s->ch_offset += MAX_CHANNELS;
     get_bits_align32(gb);
     if (!get_bits_left(gb)) {
         memset(gb, 0, sizeof(*gb));
         av_packet_unref(s->pkt);
     }
+    if (s->ch_offset >= s->channels) {
+        s->ch_offset = 0;
+    } else {
+        goto again;
+    }
 
-    frame->nb_samples = s->block_size / avctx->ch_layout.nb_channels;
+    frame->nb_samples = s->block_size / FFMIN(avctx->ch_layout.nb_channels, MAX_CHANNELS);
 
     return 0;
 fail:
@@ -344,6 +358,7 @@ static void decode_flush(AVCodecContext *avctx)
     /* s->pkt coincides with avctx->internal->in_pkt
      * and is unreferenced generically when flushing. */
     s->first = 1;
+    s->ch_offset = 0;
 }
 
 const FFCodec ff_binkaudio_rdft_decoder = {
