@@ -32,8 +32,6 @@
 #define C       (M_LN10 * 0.1)
 #define SOLVE_SIZE (5)
 #define NB_PROFILE_BANDS (15)
-#define SFM_FLAGS_SIZE (512)
-#define SFM_FLAGS_MASK (SFM_FLAGS_SIZE - 1)
 
 enum SampleNoiseModes {
     SAMPLE_NONE,
