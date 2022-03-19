@@ -247,60 +247,6 @@ static int decompress_chunks_thread(AVCodecContext *avctx, void *arg,
     return 0;
 }
 
-static int decompress_texture_thread_internal(AVCodecContext *avctx, void *arg,
-                                              int slice, int thread_nb, int texture_num)
-{
-    HapContext *ctx = avctx->priv_data;
-    AVFrame *frame = arg;
-    const uint8_t *d = ctx->tex_data;
-    int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
-    int h_block = avctx->coded_height / TEXTURE_BLOCK_H;
-    int x, y;
-    int start_slice, end_slice;
-    int base_blocks_per_slice = h_block / ctx->slice_count;
-    int remainder_blocks = h_block % ctx->slice_count;
-
-    /* When the frame height (in blocks) doesn't divide evenly between the
-     * number of slices, spread the remaining blocks evenly between the first
-     * operations */
-    start_slice = slice * base_blocks_per_slice;
-    /* Add any extra blocks (one per slice) that have been added before this slice */
-    start_slice += FFMIN(slice, remainder_blocks);
-
-    end_slice = start_slice + base_blocks_per_slice;
-    /* Add an extra block if there are still remainder blocks to be accounted for */
-    if (slice < remainder_blocks)
-        end_slice++;
-
-    for (y = start_slice; y < end_slice; y++) {
-        uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
-        int off  = y * w_block;
-        for (x = 0; x < w_block; x++) {
-            if (texture_num == 0) {
-                ctx->tex_fun(p + x * 4 * ctx->uncompress_pix_size, frame->linesize[0],
-                             d + (off + x) * ctx->tex_rat);
-            } else {
-                ctx->tex_fun2(p + x * 4 * ctx->uncompress_pix_size, frame->linesize[0],
-                              d + (off + x) * ctx->tex_rat2);
-            }
-        }
-    }
-
-    return 0;
-}
-
-static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
-                                     int slice, int thread_nb)
-{
-    return decompress_texture_thread_internal(avctx, arg, slice, thread_nb, 0);
-}
-
-static int decompress_texture2_thread(AVCodecContext *avctx, void *arg,
-                                      int slice, int thread_nb)
-{
-    return decompress_texture_thread_internal(avctx, arg, slice, thread_nb, 1);
-}
-
 static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
                       int *got_frame, AVPacket *avpkt)
 {
@@ -309,11 +255,8 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
     int section_size;
     enum HapSectionType section_type;
     int start_texture_section = 0;
-    int tex_rat[2] = {0, 0};
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
-
-    tex_rat[0] = ctx->tex_rat;
 
     /* check for multi texture header */
     if (ctx->texture_count == 2) {
@@ -325,7 +268,6 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
             return AVERROR_INVALIDDATA;
         }
         start_texture_section = 4;
-        tex_rat[1] = ctx->tex_rat2;
     }
 
     /* Get the output frame ready to receive data */
@@ -343,7 +285,7 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
 
         if (ctx->tex_size != (avctx->coded_width  / TEXTURE_BLOCK_W)
             *(avctx->coded_height / TEXTURE_BLOCK_H)
-            *tex_rat[t]) {
+            *ctx->dec[t].tex_ratio) {
             av_log(avctx, AV_LOG_ERROR, "uncompressed size mismatches\n");
             return AVERROR_INVALIDDATA;
         }
@@ -354,11 +296,11 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
         if (hap_can_use_tex_in_place(ctx)) {
             int tex_size;
             /* Only DXTC texture compression in a contiguous block */
-            ctx->tex_data = ctx->gbc.buffer;
+            ctx->dec[t].tex_data.in = ctx->gbc.buffer;
             tex_size = FFMIN(ctx->texture_section_size, bytestream2_get_bytes_left(&ctx->gbc));
             if (tex_size < (avctx->coded_width  / TEXTURE_BLOCK_W)
                 *(avctx->coded_height / TEXTURE_BLOCK_H)
-                *tex_rat[t]) {
+                *ctx->dec[t].tex_ratio) {
                 av_log(avctx, AV_LOG_ERROR, "Insufficient data\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -376,15 +318,12 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
                     return ctx->chunk_results[i];
             }
 
-            ctx->tex_data = ctx->tex_buf;
+            ctx->dec[t].tex_data.in = ctx->tex_buf;
         }
 
-        /* Use the decompress function on the texture, one block per thread */
-        if (t == 0){
-            avctx->execute2(avctx, decompress_texture_thread, frame, NULL, ctx->slice_count);
-        } else{
-            avctx->execute2(avctx, decompress_texture2_thread, frame, NULL, ctx->slice_count);
-        }
+        ctx->dec[t].frame_data.out = frame->data[0];
+        ctx->dec[t].stride = frame->linesize[0];
+        avctx->execute2(avctx, ff_texturedsp_decompress_thread, &ctx->dec[t], NULL, ctx->dec[t].slice_count);
     }
 
     /* Frame is ready to be output */
@@ -414,40 +353,44 @@ static av_cold int hap_init(AVCodecContext *avctx)
     ff_texturedsp_init(&ctx->dxtc);
 
     ctx->texture_count  = 1;
-    ctx->uncompress_pix_size = 4;
+    ctx->dec[0].raw_ratio = 16;
+    ctx->dec[0].slice_count = av_clip(avctx->thread_count, 1,
+                                      avctx->coded_height / TEXTURE_BLOCK_H);
 
     switch (avctx->codec_tag) {
     case MKTAG('H','a','p','1'):
         texture_name = "DXT1";
-        ctx->tex_rat = 8;
-        ctx->tex_fun = ctx->dxtc.dxt1_block;
+        ctx->dec[0].tex_ratio = 8;
+        ctx->dec[0].tex_funct = ctx->dxtc.dxt1_block;
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     case MKTAG('H','a','p','5'):
         texture_name = "DXT5";
-        ctx->tex_rat = 16;
-        ctx->tex_fun = ctx->dxtc.dxt5_block;
+        ctx->dec[0].tex_ratio = 16;
+        ctx->dec[0].tex_funct = ctx->dxtc.dxt5_block;
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case MKTAG('H','a','p','Y'):
         texture_name = "DXT5-YCoCg-scaled";
-        ctx->tex_rat = 16;
-        ctx->tex_fun = ctx->dxtc.dxt5ys_block;
+        ctx->dec[0].tex_ratio = 16;
+        ctx->dec[0].tex_funct = ctx->dxtc.dxt5ys_block;
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     case MKTAG('H','a','p','A'):
         texture_name = "RGTC1";
-        ctx->tex_rat = 8;
-        ctx->tex_fun = ctx->dxtc.rgtc1u_gray_block;
+        ctx->dec[0].tex_ratio = 8;
+        ctx->dec[0].tex_funct = ctx->dxtc.rgtc1u_gray_block;
+        ctx->dec[0].raw_ratio = 4;
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-        ctx->uncompress_pix_size = 1;
         break;
     case MKTAG('H','a','p','M'):
         texture_name  = "DXT5-YCoCg-scaled / RGTC1";
-        ctx->tex_rat  = 16;
-        ctx->tex_rat2 = 8;
-        ctx->tex_fun  = ctx->dxtc.dxt5ys_block;
-        ctx->tex_fun2 = ctx->dxtc.rgtc1u_alpha_block;
+        ctx->dec[0].tex_ratio = 16;
+        ctx->dec[1].tex_ratio = 8;
+        ctx->dec[0].tex_funct = ctx->dxtc.dxt5ys_block;
+        ctx->dec[1].tex_funct = ctx->dxtc.rgtc1u_alpha_block;
+        ctx->dec[1].raw_ratio = 16;
+        ctx->dec[1].slice_count = ctx->dec[0].slice_count;
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
         ctx->texture_count = 2;
         break;
@@ -456,9 +399,6 @@ static av_cold int hap_init(AVCodecContext *avctx)
     }
 
     av_log(avctx, AV_LOG_DEBUG, "%s texture\n", texture_name);
-
-    ctx->slice_count = av_clip(avctx->thread_count, 1,
-                               avctx->coded_height / TEXTURE_BLOCK_H);
 
     return 0;
 }
