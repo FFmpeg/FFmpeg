@@ -652,3 +652,7 @@ av_cold void ff_texturedsp_init(TextureDSPContext *c)
     c->rgtc2u_block       = rgtc2u_block;
     c->dxn3dc_block       = dxn3dc_block;
 }
+
+#define TEXTUREDSP_FUNC_NAME ff_texturedsp_decompress_thread
+#define TEXTUREDSP_TEX_FUNC(a, b, c) tex_funct(a, b, c)
+#include "texturedsp_template.c"

@@ -39,6 +39,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "avcodec.h"
+
 #define TEXTURE_BLOCK_W 4
 #define TEXTURE_BLOCK_H 4
 
@@ -60,7 +62,28 @@ typedef struct TextureDSPContext {
     int (*dxn3dc_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
 } TextureDSPContext;
 
+typedef struct TextureDSPThreadContext {
+    union {
+        const uint8_t *in;       // Input frame data
+        uint8_t *out;            // Output frame data
+    } frame_data;
+    ptrdiff_t stride;            // Frame linesize
+    union {
+        const uint8_t *in;       // Compressed texture for decompression
+        uint8_t *out;            // Compressed texture of compression
+    } tex_data;
+    int tex_ratio;               // Number of compressed bytes in a texture block
+    int raw_ratio;               // Number bytes in a line of a raw block
+    int slice_count;             // Number of slices for threaded operations
+
+    /* Pointer to the selected compress or decompress function. */
+    int (*tex_funct)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+} TextureDSPThreadContext;
+
 void ff_texturedsp_init(TextureDSPContext *c);
 void ff_texturedspenc_init(TextureDSPContext *c);
+
+int ff_texturedsp_decompress_thread(AVCodecContext *avctx, void *arg, int slice, int thread_nb);
+int ff_texturedsp_compress_thread(AVCodecContext *avctx, void *arg, int slice, int thread_nb);
 
 #endif /* AVCODEC_TEXTUREDSP_H */

@@ -670,3 +670,7 @@ av_cold void ff_texturedspenc_init(TextureDSPContext *c)
     c->dxt5ys_block       = dxt5ys_block;
     c->rgtc1u_alpha_block = rgtc1u_alpha_block;
 }
+
+#define TEXTUREDSP_FUNC_NAME ff_texturedsp_compress_thread
+#define TEXTUREDSP_TEX_FUNC(a, b, c) tex_funct(c, b, a)
+#include "texturedsp_template.c"
