@@ -122,7 +122,7 @@ static int alp_read_header(AVFormatContext *s)
     par->format                 = AV_SAMPLE_FMT_S16;
     par->sample_rate            = hdr->sample_rate;
 
-    if (hdr->num_channels > 2)
+    if (hdr->num_channels > 2 || hdr->num_channels == 0)
         return AVERROR_INVALIDDATA;
 
     av_channel_layout_default(&par->ch_layout, hdr->num_channels);
