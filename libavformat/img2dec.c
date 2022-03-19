@@ -37,6 +37,7 @@
 #include "internal.h"
 #include "img2.h"
 #include "libavcodec/mjpeg.h"
+#include "libavcodec/vbn.h"
 #include "libavcodec/xwd.h"
 #include "subtitles.h"
 
@@ -1131,6 +1132,16 @@ static int gem_probe(const AVProbeData *p)
     return 0;
 }
 
+static int vbn_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+    if (AV_RL32(b    ) == VBN_MAGIC &&
+        AV_RL32(b + 4) == VBN_MAJOR &&
+        AV_RL32(b + 8) == VBN_MINOR)
+        return AVPROBE_SCORE_MAX - 1;
+    return 0;
+}
+
 #define IMAGEAUTO_DEMUXER_0(imgname, codecid)
 #define IMAGEAUTO_DEMUXER_1(imgname, codecid)\
 const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
@@ -1181,6 +1192,7 @@ IMAGEAUTO_DEMUXER(sgi,       SGI)
 IMAGEAUTO_DEMUXER(sunrast,   SUNRAST)
 IMAGEAUTO_DEMUXER(svg,       SVG)
 IMAGEAUTO_DEMUXER(tiff,      TIFF)
+IMAGEAUTO_DEMUXER(vbn,       VBN)
 IMAGEAUTO_DEMUXER(webp,      WEBP)
 IMAGEAUTO_DEMUXER(xbm,       XBM)
 IMAGEAUTO_DEMUXER(xpm,       XPM)
