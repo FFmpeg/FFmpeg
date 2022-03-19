@@ -140,7 +140,7 @@ static int apm_read_header(AVFormatContext *s)
     if (par->bits_per_coded_sample != 4)
         return AVERROR_INVALIDDATA;
 
-    if (channels > 2)
+    if (channels > 2 || channels == 0)
         return AVERROR_INVALIDDATA;
 
     av_channel_layout_default(&par->ch_layout, channels);
