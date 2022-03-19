@@ -400,7 +400,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         if (s->slide == SCROLL) {
             for (p = 0; p < 4; p++) {
-                for (y = s->h; y >= H + 1; y--) {
+                for (y = s->h - 1; y >= H + 1; y--) {
                     memmove(s->out->data[p] + (y  ) * s->out->linesize[p],
                             s->out->data[p] + (y-1) * s->out->linesize[p], w);
                 }
