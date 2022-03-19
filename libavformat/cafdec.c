@@ -241,6 +241,8 @@ static void read_info_chunk(AVFormatContext *s, int64_t size)
         char value[1024];
         avio_get_str(pb, INT_MAX, key, sizeof(key));
         avio_get_str(pb, INT_MAX, value, sizeof(value));
+        if (!*key)
+            continue;
         av_dict_set(&s->metadata, key, value, 0);
     }
 }
