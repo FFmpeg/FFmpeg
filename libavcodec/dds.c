@@ -106,12 +106,7 @@ typedef struct DDSContext {
     int bpp;
     enum DDSPostProc postproc;
 
-    const uint8_t *tex_data; // Compressed texture
-    int tex_ratio;           // Compression ratio
-    int slice_count;         // Number of slices for threaded operations
-
-    /* Pointer to the selected compress or decompress function. */
-    int (*tex_funct)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+    TextureDSPThreadContext dec;
 } DDSContext;
 
 static int parse_pixel_format(AVCodecContext *avctx)
@@ -170,35 +165,36 @@ static int parse_pixel_format(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
 
     if (ctx->compressed) {
+        ctx->dec.raw_ratio = 16;
         switch (fourcc) {
         case MKTAG('D', 'X', 'T', '1'):
-            ctx->tex_ratio = 8;
-            ctx->tex_funct = ctx->texdsp.dxt1a_block;
+            ctx->dec.tex_ratio = 8;
+            ctx->dec.tex_funct = ctx->texdsp.dxt1a_block;
             break;
         case MKTAG('D', 'X', 'T', '2'):
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.dxt2_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.dxt2_block;
             break;
         case MKTAG('D', 'X', 'T', '3'):
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.dxt3_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.dxt3_block;
             break;
         case MKTAG('D', 'X', 'T', '4'):
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.dxt4_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.dxt4_block;
             break;
         case MKTAG('D', 'X', 'T', '5'):
-            ctx->tex_ratio = 16;
+            ctx->dec.tex_ratio = 16;
             if (ycocg_scaled)
-                ctx->tex_funct = ctx->texdsp.dxt5ys_block;
+                ctx->dec.tex_funct = ctx->texdsp.dxt5ys_block;
             else if (ycocg_classic)
-                ctx->tex_funct = ctx->texdsp.dxt5y_block;
+                ctx->dec.tex_funct = ctx->texdsp.dxt5y_block;
             else
-                ctx->tex_funct = ctx->texdsp.dxt5_block;
+                ctx->dec.tex_funct = ctx->texdsp.dxt5_block;
             break;
         case MKTAG('R', 'X', 'G', 'B'):
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.dxt5_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.dxt5_block;
             /* This format may be considered as a normal map,
              * but it is handled differently in a separate postproc. */
             ctx->postproc = DDS_SWIZZLE_RXGB;
@@ -206,25 +202,25 @@ static int parse_pixel_format(AVCodecContext *avctx)
             break;
         case MKTAG('A', 'T', 'I', '1'):
         case MKTAG('B', 'C', '4', 'U'):
-            ctx->tex_ratio = 8;
-            ctx->tex_funct = ctx->texdsp.rgtc1u_block;
+            ctx->dec.tex_ratio = 8;
+            ctx->dec.tex_funct = ctx->texdsp.rgtc1u_block;
             break;
         case MKTAG('B', 'C', '4', 'S'):
-            ctx->tex_ratio = 8;
-            ctx->tex_funct = ctx->texdsp.rgtc1s_block;
+            ctx->dec.tex_ratio = 8;
+            ctx->dec.tex_funct = ctx->texdsp.rgtc1s_block;
             break;
         case MKTAG('A', 'T', 'I', '2'):
             /* RGT2 variant with swapped R and G (3Dc)*/
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.dxn3dc_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.dxn3dc_block;
             break;
         case MKTAG('B', 'C', '5', 'U'):
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.rgtc2u_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.rgtc2u_block;
             break;
         case MKTAG('B', 'C', '5', 'S'):
-            ctx->tex_ratio = 16;
-            ctx->tex_funct = ctx->texdsp.rgtc2s_block;
+            ctx->dec.tex_ratio = 16;
+            ctx->dec.tex_funct = ctx->texdsp.rgtc2s_block;
             break;
         case MKTAG('U', 'Y', 'V', 'Y'):
             ctx->compressed = 0;
@@ -299,40 +295,40 @@ static int parse_pixel_format(AVCodecContext *avctx)
                 avctx->colorspace = AVCOL_SPC_RGB;
             case DXGI_FORMAT_BC1_TYPELESS:
             case DXGI_FORMAT_BC1_UNORM:
-                ctx->tex_ratio = 8;
-                ctx->tex_funct = ctx->texdsp.dxt1a_block;
+                ctx->dec.tex_ratio = 8;
+                ctx->dec.tex_funct = ctx->texdsp.dxt1a_block;
                 break;
             case DXGI_FORMAT_BC2_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
             case DXGI_FORMAT_BC2_TYPELESS:
             case DXGI_FORMAT_BC2_UNORM:
-                ctx->tex_ratio = 16;
-                ctx->tex_funct = ctx->texdsp.dxt3_block;
+                ctx->dec.tex_ratio = 16;
+                ctx->dec.tex_funct = ctx->texdsp.dxt3_block;
                 break;
             case DXGI_FORMAT_BC3_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
             case DXGI_FORMAT_BC3_TYPELESS:
             case DXGI_FORMAT_BC3_UNORM:
-                ctx->tex_ratio = 16;
-                ctx->tex_funct = ctx->texdsp.dxt5_block;
+                ctx->dec.tex_ratio = 16;
+                ctx->dec.tex_funct = ctx->texdsp.dxt5_block;
                 break;
             case DXGI_FORMAT_BC4_TYPELESS:
             case DXGI_FORMAT_BC4_UNORM:
-                ctx->tex_ratio = 8;
-                ctx->tex_funct = ctx->texdsp.rgtc1u_block;
+                ctx->dec.tex_ratio = 8;
+                ctx->dec.tex_funct = ctx->texdsp.rgtc1u_block;
                 break;
             case DXGI_FORMAT_BC4_SNORM:
-                ctx->tex_ratio = 8;
-                ctx->tex_funct = ctx->texdsp.rgtc1s_block;
+                ctx->dec.tex_ratio = 8;
+                ctx->dec.tex_funct = ctx->texdsp.rgtc1s_block;
                 break;
             case DXGI_FORMAT_BC5_TYPELESS:
             case DXGI_FORMAT_BC5_UNORM:
-                ctx->tex_ratio = 16;
-                ctx->tex_funct = ctx->texdsp.rgtc2u_block;
+                ctx->dec.tex_ratio = 16;
+                ctx->dec.tex_funct = ctx->texdsp.rgtc2u_block;
                 break;
             case DXGI_FORMAT_BC5_SNORM:
-                ctx->tex_ratio = 16;
-                ctx->tex_funct = ctx->texdsp.rgtc2s_block;
+                ctx->dec.tex_ratio = 16;
+                ctx->dec.tex_funct = ctx->texdsp.rgtc2s_block;
                 break;
             default:
                 av_log(avctx, AV_LOG_ERROR,
@@ -434,43 +430,6 @@ static int parse_pixel_format(AVCodecContext *avctx)
     return 0;
 }
 
-static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
-                                     int slice, int thread_nb)
-{
-    DDSContext *ctx = avctx->priv_data;
-    AVFrame *frame = arg;
-    const uint8_t *d = ctx->tex_data;
-    int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
-    int h_block = avctx->coded_height / TEXTURE_BLOCK_H;
-    int x, y;
-    int start_slice, end_slice;
-    int base_blocks_per_slice = h_block / ctx->slice_count;
-    int remainder_blocks = h_block % ctx->slice_count;
-
-    /* When the frame height (in blocks) doesn't divide evenly between the
-     * number of slices, spread the remaining blocks evenly between the first
-     * operations */
-    start_slice = slice * base_blocks_per_slice;
-    /* Add any extra blocks (one per slice) that have been added before this slice */
-    start_slice += FFMIN(slice, remainder_blocks);
-
-    end_slice = start_slice + base_blocks_per_slice;
-    /* Add an extra block if there are still remainder blocks to be accounted for */
-    if (slice < remainder_blocks)
-        end_slice++;
-
-    for (y = start_slice; y < end_slice; y++) {
-        uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
-        int off  = y * w_block;
-        for (x = 0; x < w_block; x++) {
-            ctx->tex_funct(p + x * 16, frame->linesize[0],
-                           d + (off + x) * ctx->tex_ratio);
-        }
-    }
-
-    return 0;
-}
-
 static void do_swizzle(AVFrame *frame, int x, int y)
 {
     int i;
@@ -513,7 +472,7 @@ static void run_postproc(AVCodecContext *avctx, AVFrame *frame)
          * http://www.realtimecollisiondetection.net/blog/?p=28 */
         av_log(avctx, AV_LOG_DEBUG, "Post-processing normal map.\n");
 
-        x_off = ctx->tex_ratio == 8 ? 0 : 3;
+        x_off = ctx->dec.tex_ratio == 8 ? 0 : 3;
         for (i = 0; i < frame->linesize[0] * frame->height; i += 4) {
             uint8_t *src = frame->data[0] + i;
             int x = src[x_off];
@@ -663,9 +622,9 @@ static int dds_decode(AVCodecContext *avctx, AVFrame *frame,
 
     if (ctx->compressed) {
         int size = (avctx->coded_height / TEXTURE_BLOCK_H) *
-                   (avctx->coded_width / TEXTURE_BLOCK_W) * ctx->tex_ratio;
-        ctx->slice_count = av_clip(avctx->thread_count, 1,
-                                   avctx->coded_height / TEXTURE_BLOCK_H);
+                   (avctx->coded_width / TEXTURE_BLOCK_W) * ctx->dec.tex_ratio;
+        ctx->dec.slice_count = av_clip(avctx->thread_count, 1,
+                                       avctx->coded_height / TEXTURE_BLOCK_H);
 
         if (bytestream2_get_bytes_left(gbc) < size) {
             av_log(avctx, AV_LOG_ERROR,
@@ -675,8 +634,10 @@ static int dds_decode(AVCodecContext *avctx, AVFrame *frame,
         }
 
         /* Use the decompress function on the texture, one block per thread. */
-        ctx->tex_data = gbc->buffer;
-        avctx->execute2(avctx, decompress_texture_thread, frame, NULL, ctx->slice_count);
+        ctx->dec.tex_data.in = gbc->buffer;
+        ctx->dec.frame_data.out = frame->data[0];
+        ctx->dec.stride = frame->linesize[0];
+        avctx->execute2(avctx, ff_texturedsp_decompress_thread, &ctx->dec, NULL, ctx->dec.slice_count);
     } else if (!ctx->paletted && ctx->bpp == 4 && avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         uint8_t *dst = frame->data[0];
         int x, y, i;
