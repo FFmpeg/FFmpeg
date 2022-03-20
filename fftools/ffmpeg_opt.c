@@ -1116,13 +1116,12 @@ static int open_input_file(OptionsContext *o, const char *filename)
     }
     if (o->nb_audio_channels) {
         const AVClass *priv_class;
-        /* because we set audio_channels based on both the "ac" and
-         * "channel_layout" options, we need to check that the specified
-         * demuxer actually has the "channels" option before setting it */
         if (file_iformat && (priv_class = file_iformat->priv_class) &&
-            av_opt_find(&priv_class, "channels", NULL, 0,
+            av_opt_find(&priv_class, "ch_layout", NULL, 0,
                         AV_OPT_SEARCH_FAKE_OBJ)) {
-            av_dict_set_int(&o->g->format_opts, "channels", o->audio_channels[o->nb_audio_channels - 1].u.i, 0);
+            char buf[32];
+            snprintf(buf, sizeof(buf), "%dC", o->audio_channels[o->nb_audio_channels - 1].u.i);
+            av_dict_set(&o->g->format_opts, "ch_layout", buf, 0);
         }
     }
     if (o->nb_audio_ch_layouts) {
