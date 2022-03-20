@@ -55,7 +55,7 @@
 
 static const char *const opt_name_codec_names[]               = {"c", "codec", "acodec", "vcodec", "scodec", "dcodec", NULL};
 static const char *const opt_name_audio_channels[]            = {"ac", NULL};
-static const char *const opt_name_audio_ch_layouts[]          = {"channel_layout", NULL};
+static const char *const opt_name_audio_ch_layouts[]          = {"channel_layout", "ch_layout", NULL};
 static const char *const opt_name_audio_sample_rate[]         = {"ar", NULL};
 static const char *const opt_name_frame_rates[]               = {"r", NULL};
 static const char *const opt_name_max_frame_rates[]           = {"fpsmax", NULL};
@@ -3811,6 +3811,9 @@ const OptionDef options[] = {
                         OPT_STRING | OPT_INPUT | OPT_OUTPUT,                       { .off = OFFSET(sample_fmts) },
         "set sample format", "format" },
     { "channel_layout", OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_SPEC |
+                        OPT_STRING | OPT_INPUT | OPT_OUTPUT,                       { .off = OFFSET(audio_ch_layouts) },
+        "set channel layout", "layout" },
+    { "ch_layout",      OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_SPEC |
                         OPT_STRING | OPT_INPUT | OPT_OUTPUT,                       { .off = OFFSET(audio_ch_layouts) },
         "set channel layout", "layout" },
     { "af",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_filters },
