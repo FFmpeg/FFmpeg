@@ -1315,10 +1315,12 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             if ((ret = av_new_packet(&asf_st->pkt, asf_st->packet_obj_size)) < 0)
                 return ret;
             asf_st->seq              = asf->packet_seq;
-            if (asf->ts_is_pts) {
-                asf_st->pkt.pts          = asf->packet_frag_timestamp - asf->hdr.preroll;
-            } else
-                asf_st->pkt.dts          = asf->packet_frag_timestamp - asf->hdr.preroll;
+            if (asf->packet_frag_timestamp != AV_NOPTS_VALUE) {
+                if (asf->ts_is_pts) {
+                    asf_st->pkt.pts          = asf->packet_frag_timestamp - asf->hdr.preroll;
+                } else
+                    asf_st->pkt.dts          = asf->packet_frag_timestamp - asf->hdr.preroll;
+            }
             asf_st->pkt.stream_index = asf->stream_index;
             asf_st->pkt.pos          = asf_st->packet_pos = asf->packet_pos;
             asf_st->pkt_clean        = 0;
