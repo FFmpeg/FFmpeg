@@ -140,12 +140,12 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
         audio_offset    = avio_rl32(pb);
         avio_rl32(pb);
         video_offset    = avio_rl32(pb);
-        audio_size      = video_offset - audio_offset;
-        bfi->video_size = chunk_size - video_offset;
-        if (audio_size < 0 || bfi->video_size < 0) {
+        if (audio_offset < 0 || video_offset < audio_offset || chunk_size < video_offset) {
             av_log(s, AV_LOG_ERROR, "Invalid audio/video offsets or chunk size\n");
             return AVERROR_INVALIDDATA;
         }
+        audio_size      = video_offset - audio_offset;
+        bfi->video_size = chunk_size - video_offset;
 
         //Tossing an audio packet at the audio decoder.
         ret = av_get_packet(pb, pkt, audio_size);
