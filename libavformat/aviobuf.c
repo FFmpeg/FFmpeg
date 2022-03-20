@@ -1005,6 +1005,9 @@ int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
     if (buf_size <= s->buf_end - s->buf_ptr)
         return 0;
 
+    if (buf_size > INT_MAX - max_buffer_size)
+        return AVERROR(EINVAL);
+
     buf_size += max_buffer_size - 1;
 
     if (buf_size + s->buf_ptr - s->buffer <= s->buffer_size || s->seekable || !s->read_packet)
