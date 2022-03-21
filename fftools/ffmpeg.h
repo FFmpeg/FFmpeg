@@ -437,7 +437,6 @@ typedef struct InputFile {
     AVThreadMessageQueue *in_thread_queue;
     pthread_t thread;           /* thread reading from this file */
     int non_blocking;           /* reading packets from the thread should not block */
-    int joined;                 /* the thread has been joined */
     int thread_queue_size;      /* maximum number of queued packets */
 } InputFile;
 

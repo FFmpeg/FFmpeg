@@ -3696,7 +3696,6 @@ static void free_input_thread(int i)
         av_packet_free(&pkt);
 
     pthread_join(f->thread, NULL);
-    f->joined = 1;
     av_thread_message_queue_free(&f->in_thread_queue);
 }
 
