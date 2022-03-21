@@ -1383,6 +1383,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f = ALLOC_ARRAY_ELEM(input_files, nb_input_files);
 
     f->ctx        = ic;
+    f->index      = nb_input_files - 1;
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
     f->recording_time = o->recording_time;
@@ -1398,11 +1399,11 @@ static int open_input_file(OptionsContext *o, const char *filename)
 
     f->readrate = o->readrate ? o->readrate : 0.0;
     if (f->readrate < 0.0f) {
-        av_log(NULL, AV_LOG_ERROR, "Option -readrate for Input #%d is %0.3f; it must be non-negative.\n", nb_input_files, f->readrate);
+        av_log(NULL, AV_LOG_ERROR, "Option -readrate for Input #%d is %0.3f; it must be non-negative.\n", f->index, f->readrate);
         exit_program(1);
     }
     if (f->readrate && f->rate_emu) {
-        av_log(NULL, AV_LOG_WARNING, "Both -readrate and -re set for Input #%d. Using -readrate %0.3f.\n", nb_input_files, f->readrate);
+        av_log(NULL, AV_LOG_WARNING, "Both -readrate and -re set for Input #%d. Using -readrate %0.3f.\n", f->index, f->readrate);
         f->rate_emu = 0;
     }
 
@@ -1435,7 +1436,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
         if (!(option->flags & AV_OPT_FLAG_DECODING_PARAM)) {
             av_log(NULL, AV_LOG_ERROR, "Codec AVOption %s (%s) specified for "
                    "input file #%d (%s) is not a decoding option.\n", e->key,
-                   option->help ? option->help : "", nb_input_files - 1,
+                   option->help ? option->help : "", f->index,
                    filename);
             exit_program(1);
         }
@@ -1445,7 +1446,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
                "likely reason is either wrong type (e.g. a video option with "
                "no video streams) or that it is a private option of some decoder "
                "which was not actually used for any stream.\n", e->key,
-               option->help ? option->help : "", nb_input_files - 1, filename);
+               option->help ? option->help : "", f->index, filename);
     }
     av_dict_free(&unused_opts);
 

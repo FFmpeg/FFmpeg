@@ -408,6 +408,8 @@ typedef struct InputStream {
 } InputStream;
 
 typedef struct InputFile {
+    int index;
+
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
     int eagain;           /* true if last read attempt returned EAGAIN */
