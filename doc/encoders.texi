@@ -3266,6 +3266,14 @@ Enable rate distortion optimization.
 @item @var{max_frame_size}
 Maximum encoded frame size in bytes.
 
+@item @var{max_frame_size_i}
+Maximum encoded frame size for I frames in bytes. If this value is set as larger
+than zero, then for I frames the value set by max_frame_size is ignored.
+
+@item @var{max_frame_size_p}
+Maximum encoded frame size for P frames in bytes. If this value is set as larger
+than zero, then for P frames the value set by max_frame_size is ignored.
+
 @item @var{max_slice_size}
 Maximum encoded slice size in bytes.
 
@@ -3281,6 +3289,11 @@ by the QSV encoder, it will be changed to be in the range.
 Setting this flag enables macroblock level bitrate control that generally
 improves subjective visual quality. Enabling this flag may have negative impact
 on performance and objective visual quality metric.
+
+@item @var{low_delay_brc}
+Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
+more accurate bitrate control to minimize the variance of bitstream size frame
+by frame. Value: -1-default 0-off 1-on
 
 @item @var{adaptive_i}
 This flag controls insertion of I frames by the QSV encoder. Turn ON this flag
@@ -3394,6 +3407,14 @@ Enable rate distortion optimization.
 @item @var{max_frame_size}
 Maximum encoded frame size in bytes.
 
+@item @var{max_frame_size_i}
+Maximum encoded frame size for I frames in bytes. If this value is set as larger
+than zero, then for I frames the value set by max_frame_size is ignored.
+
+@item @var{max_frame_size_p}
+Maximum encoded frame size for P frames in bytes. If this value is set as larger
+than zero, then for P frames the value set by max_frame_size is ignored.
+
 @item @var{max_slice_size}
 Maximum encoded slice size in bytes.
 
@@ -3401,6 +3422,11 @@ Maximum encoded slice size in bytes.
 Setting this flag enables macroblock level bitrate control that generally
 improves subjective visual quality. Enabling this flag may have negative impact
 on performance and objective visual quality metric.
+
+@item @var{low_delay_brc}
+Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
+more accurate bitrate control to minimize the variance of bitstream size frame
+by frame. Value: -1-default 0-off 1-on
 
 @item @var{p_strategy}
 Enable P-pyramid: 0-default 1-simple 2-pyramid(bf need to be set to 0).

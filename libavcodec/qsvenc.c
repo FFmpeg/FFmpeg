@@ -376,6 +376,13 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #if QSV_VERSION_ATLEAST(1, 16)
     av_log(avctx, AV_LOG_VERBOSE, "IntRefCycleDist: %"PRId16"\n", co3->IntRefCycleDist);
 #endif
+#if QSV_VERSION_ATLEAST(1, 23)
+    av_log(avctx, AV_LOG_VERBOSE, "LowDelayBRC: %s\n", print_threestate(co3->LowDelayBRC));
+#endif
+#if QSV_VERSION_ATLEAST(1, 19)
+    av_log(avctx, AV_LOG_VERBOSE, "MaxFrameSizeI: %d; ", co3->MaxFrameSizeI);
+    av_log(avctx, AV_LOG_VERBOSE, "MaxFrameSizeP: %d\n", co3->MaxFrameSizeP);
+#endif
 }
 
 static void dump_video_vp9_param(AVCodecContext *avctx, QSVEncContext *q,
@@ -990,6 +997,16 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 #if QSV_VERSION_ATLEAST(1, 16)
             if (q->int_ref_cycle_dist >= 0)
                 q->extco3.IntRefCycleDist = q->int_ref_cycle_dist;
+#endif
+#if QSV_VERSION_ATLEAST(1, 23)
+            if (q->low_delay_brc >= 0)
+                q->extco3.LowDelayBRC = q->low_delay_brc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+#endif
+#if QSV_VERSION_ATLEAST(1, 19)
+            if (q->max_frame_size_p >= 0)
+                q->extco3.MaxFrameSizeI = q->max_frame_size_i;
+            if (q->max_frame_size_p >= 0)
+                q->extco3.MaxFrameSizeP = q->max_frame_size_p;
 #endif
         }
 
