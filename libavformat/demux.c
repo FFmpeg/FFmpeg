@@ -2957,6 +2957,9 @@ find_stream_info_err:
             av_freep(&sti->info);
         }
         avcodec_close(sti->avctx);
+        // FIXME: avcodec_close() frees AVOption settable fields which includes ch_layout,
+        //        so we need to restore it.
+        av_channel_layout_copy(&sti->avctx->ch_layout, &st->codecpar->ch_layout);
         av_bsf_free(&sti->extract_extradata.bsf);
     }
     if (ic->pb) {
