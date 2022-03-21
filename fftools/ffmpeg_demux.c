@@ -45,6 +45,12 @@ static void *input_thread(void *arg)
             av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
             break;
         }
+
+        if (do_pkt_dump) {
+            av_pkt_dump_log2(NULL, AV_LOG_INFO, pkt, do_hex_dump,
+                             f->ctx->streams[pkt->stream_index]);
+        }
+
         queue_pkt = av_packet_alloc();
         if (!queue_pkt) {
             av_packet_unref(pkt);

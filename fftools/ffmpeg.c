@@ -3831,10 +3831,6 @@ static int process_input(int file_index)
 
     reset_eagain();
 
-    if (do_pkt_dump) {
-        av_pkt_dump_log2(NULL, AV_LOG_INFO, pkt, do_hex_dump,
-                         is->streams[pkt->stream_index]);
-    }
     /* the following test is needed in case new streams appear
        dynamically in stream : we ignore them */
     if (pkt->stream_index >= ifile->nb_streams) {
