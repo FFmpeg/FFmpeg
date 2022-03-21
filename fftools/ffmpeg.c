@@ -3904,16 +3904,14 @@ static int process_input(int file_index)
         return ret;
     }
     if (ret < 0 && ifile->loop) {
-        AVCodecContext *avctx;
         for (i = 0; i < ifile->nb_streams; i++) {
             ist = input_streams[ifile->ist_index + i];
-            avctx = ist->dec_ctx;
             if (ist->processing_needed) {
                 ret = process_input_packet(ist, NULL, 1);
                 if (ret>0)
                     return 0;
                 if (ist->decoding_needed)
-                    avcodec_flush_buffers(avctx);
+                    avcodec_flush_buffers(ist->dec_ctx);
             }
         }
         free_input_thread(file_index);
