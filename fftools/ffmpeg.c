@@ -3537,15 +3537,6 @@ static int check_keyboard_interaction(int64_t cur_time)
     if (key == '+') av_log_set_level(av_log_get_level()+10);
     if (key == '-') av_log_set_level(av_log_get_level()-10);
     if (key == 's') qp_hist     ^= 1;
-    if (key == 'h'){
-        if (do_hex_dump){
-            do_hex_dump = do_pkt_dump = 0;
-        } else if(do_pkt_dump){
-            do_hex_dump = 1;
-        } else
-            do_pkt_dump = 1;
-        av_log_set_level(AV_LOG_DEBUG);
-    }
     if (key == 'c' || key == 'C'){
         char buf[4096], target[64], command[256], arg[256] = {0};
         double time;
