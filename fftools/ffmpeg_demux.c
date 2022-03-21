@@ -20,12 +20,27 @@
 
 #include "libavutil/error.h"
 #include "libavutil/time.h"
+#include "libavutil/timestamp.h"
 #include "libavutil/thread.h"
 #include "libavutil/threadmessage.h"
 
 #include "libavcodec/packet.h"
 
 #include "libavformat/avformat.h"
+
+static void report_new_stream(InputFile *file, const AVPacket *pkt)
+{
+    AVStream *st = file->ctx->streams[pkt->stream_index];
+
+    if (pkt->stream_index < file->nb_streams_warn)
+        return;
+    av_log(file->ctx, AV_LOG_WARNING,
+           "New %s stream %d:%d at pos:%"PRId64" and DTS:%ss\n",
+           av_get_media_type_string(st->codecpar->codec_type),
+           file->index, pkt->stream_index,
+           pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
+    file->nb_streams_warn = pkt->stream_index + 1;
+}
 
 static void *input_thread(void *arg)
 {
@@ -49,6 +64,14 @@ static void *input_thread(void *arg)
         if (do_pkt_dump) {
             av_pkt_dump_log2(NULL, AV_LOG_INFO, pkt, do_hex_dump,
                              f->ctx->streams[pkt->stream_index]);
+        }
+
+        /* the following test is needed in case new streams appear
+           dynamically in stream : we ignore them */
+        if (pkt->stream_index >= f->nb_streams) {
+            report_new_stream(f, pkt);
+            av_packet_unref(pkt);
+            continue;
         }
 
         queue_pkt = av_packet_alloc();

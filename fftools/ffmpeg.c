@@ -3277,21 +3277,6 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
     return ret;
 }
 
-static void report_new_stream(int input_index, AVPacket *pkt)
-{
-    InputFile *file = input_files[input_index];
-    AVStream *st = file->ctx->streams[pkt->stream_index];
-
-    if (pkt->stream_index < file->nb_streams_warn)
-        return;
-    av_log(file->ctx, AV_LOG_WARNING,
-           "New %s stream %d:%d at pos:%"PRId64" and DTS:%ss\n",
-           av_get_media_type_string(st->codecpar->codec_type),
-           input_index, pkt->stream_index,
-           pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
-    file->nb_streams_warn = pkt->stream_index + 1;
-}
-
 static int transcode_init(void)
 {
     int ret = 0, i, j, k;
@@ -3830,13 +3815,6 @@ static int process_input(int file_index)
     }
 
     reset_eagain();
-
-    /* the following test is needed in case new streams appear
-       dynamically in stream : we ignore them */
-    if (pkt->stream_index >= ifile->nb_streams) {
-        report_new_stream(file_index, pkt);
-        goto discard_packet;
-    }
 
     ist = input_streams[ifile->ist_index + pkt->stream_index];
 
