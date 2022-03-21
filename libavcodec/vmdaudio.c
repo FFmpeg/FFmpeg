@@ -85,7 +85,7 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
     }
 
     av_channel_layout_uninit(&avctx->ch_layout);
-    av_channel_layout_default(&avctx->ch_layout, channels == 1);
+    av_channel_layout_default(&avctx->ch_layout, channels);
 
     if (avctx->bits_per_coded_sample == 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
