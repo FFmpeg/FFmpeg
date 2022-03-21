@@ -1383,9 +1383,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->pkt = av_packet_alloc();
     if (!f->pkt)
         exit_program(1);
-#if HAVE_THREADS
     f->thread_queue_size = o->thread_queue_size;
-#endif
 
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);

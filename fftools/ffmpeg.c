@@ -161,9 +161,7 @@ static struct termios oldtty;
 static int restore_tty;
 #endif
 
-#if HAVE_THREADS
 static void free_input_threads(void);
-#endif
 
 /* sub2video hack:
    Convert subtitles to video with alpha to insert them in filter graphs.
@@ -593,9 +591,7 @@ static void ffmpeg_cleanup(int ret)
 
         av_freep(&output_streams[i]);
     }
-#if HAVE_THREADS
     free_input_threads();
-#endif
     for (i = 0; i < nb_input_files; i++) {
         avformat_close_input(&input_files[i]->ctx);
         av_packet_free(&input_files[i]->pkt);
@@ -3670,7 +3666,6 @@ static int check_keyboard_interaction(int64_t cur_time)
     return 0;
 }
 
-#if HAVE_THREADS
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
@@ -3788,7 +3783,6 @@ static int get_input_packet_mt(InputFile *f, AVPacket **pkt)
                                         f->non_blocking ?
                                         AV_THREAD_MESSAGE_NONBLOCK : 0);
 }
-#endif
 
 static int get_input_packet(InputFile *f, AVPacket **pkt)
 {
@@ -3811,10 +3805,8 @@ static int get_input_packet(InputFile *f, AVPacket **pkt)
         }
     }
 
-#if HAVE_THREADS
     if (f->thread_queue_size)
         return get_input_packet_mt(f, pkt);
-#endif
     *pkt = f->pkt;
     return av_read_frame(f->ctx, *pkt);
 }
@@ -3954,15 +3946,11 @@ static int process_input(int file_index)
                     avcodec_flush_buffers(avctx);
             }
         }
-#if HAVE_THREADS
         free_input_thread(file_index);
-#endif
         ret = seek_to_start(ifile, is);
-#if HAVE_THREADS
         thread_ret = init_input_thread(file_index);
         if (thread_ret < 0)
             return thread_ret;
-#endif
         if (ret < 0)
             av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
         else
@@ -4204,11 +4192,9 @@ static int process_input(int file_index)
     process_input_packet(ist, pkt, 0);
 
 discard_packet:
-#if HAVE_THREADS
     if (ifile->thread_queue_size)
         av_packet_free(&pkt);
     else
-#endif
     av_packet_unref(pkt);
 
     return 0;
@@ -4375,10 +4361,8 @@ static int transcode(void)
 
     timer_start = av_gettime_relative();
 
-#if HAVE_THREADS
     if ((ret = init_input_threads()) < 0)
         goto fail;
-#endif
 
     while (!received_sigterm) {
         int64_t cur_time= av_gettime_relative();
@@ -4403,9 +4387,7 @@ static int transcode(void)
         /* dump report by using the output first video and audio streams */
         print_report(0, timer_start, cur_time);
     }
-#if HAVE_THREADS
     free_input_threads();
-#endif
 
     /* at the end of stream, we must flush the decoder buffers */
     for (i = 0; i < nb_input_streams; i++) {
@@ -4459,9 +4441,7 @@ static int transcode(void)
     ret = 0;
 
  fail:
-#if HAVE_THREADS
     free_input_threads();
-#endif
 
     if (output_streams) {
         for (i = 0; i < nb_output_streams; i++) {

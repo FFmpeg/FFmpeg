@@ -5,6 +5,7 @@ version <next>:
 - Radiance HDR image support
 - ddagrab (Desktop Duplication) video capture filter
 - ffmpeg -shortest_buf_duration option
+- ffmpeg now requires threading to be built
 
 
 version 5.1:
