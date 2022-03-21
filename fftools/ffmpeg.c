@@ -3713,10 +3713,8 @@ static int init_input_thread(int i)
     int ret;
     InputFile *f = input_files[i];
 
-    if (f->thread_queue_size < 0)
-        f->thread_queue_size = (nb_input_files > 1 ? 8 : 0);
-    if (!f->thread_queue_size)
-        return 0;
+    if (f->thread_queue_size <= 0)
+        f->thread_queue_size = (nb_input_files > 1 ? 8 : 1);
 
     if (f->ctx->pb ? !f->ctx->pb->seekable :
         strcmp(f->ctx->iformat->name, "lavfi"))
@@ -3747,13 +3745,6 @@ static int init_input_threads(void)
     return 0;
 }
 
-static int get_input_packet_mt(InputFile *f, AVPacket **pkt)
-{
-    return av_thread_message_queue_recv(f->in_thread_queue, pkt,
-                                        f->non_blocking ?
-                                        AV_THREAD_MESSAGE_NONBLOCK : 0);
-}
-
 static int get_input_packet(InputFile *f, AVPacket **pkt)
 {
     if (f->readrate || f->rate_emu) {
@@ -3775,10 +3766,9 @@ static int get_input_packet(InputFile *f, AVPacket **pkt)
         }
     }
 
-    if (f->thread_queue_size)
-        return get_input_packet_mt(f, pkt);
-    *pkt = f->pkt;
-    return av_read_frame(f->ctx, *pkt);
+    return av_thread_message_queue_recv(f->in_thread_queue, pkt,
+                                        f->non_blocking ?
+                                        AV_THREAD_MESSAGE_NONBLOCK : 0);
 }
 
 static int got_eagain(void)
@@ -4162,10 +4152,7 @@ static int process_input(int file_index)
     process_input_packet(ist, pkt, 0);
 
 discard_packet:
-    if (ifile->thread_queue_size)
-        av_packet_free(&pkt);
-    else
-    av_packet_unref(pkt);
+    av_packet_free(&pkt);
 
     return 0;
 }
