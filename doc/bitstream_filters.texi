@@ -247,12 +247,16 @@ Modify metadata embedded in an H.264 stream.
 Insert or remove AUD NAL units in all access units of the stream.
 
 @table @samp
+@item pass
 @item insert
 @item remove
 @end table
 
+Default is pass.
+
 @item sample_aspect_ratio
 Set the sample aspect ratio of the stream in the VUI parameters.
+See H.264 table E-1.
 
 @item overscan_appropriate_flag
 Set whether the stream is suitable for display using overscan
@@ -310,6 +314,37 @@ insert the string ``hello'' associated with the given UUID.
 
 @item delete_filler
 Deletes both filler NAL units and filler SEI messages.
+
+@item display_orientation
+Insert, extract or remove Display orientation SEI messages.
+See H.264 section D.1.27 and D.2.27 for syntax and semantics.
+
+@table @samp
+@item pass
+@item insert
+@item remove
+@item extract
+@end table
+
+Default is pass.
+
+Insert mode works in conjunction with @code {rotate} and @code{flip} options.
+Any pre-existing Display orientation messages will be removed in insert or remove mode.
+Extract mode attaches the display matrix to the packet as side data.
+
+@item rotate
+Set rotation in display orientation SEI (anticlockwise angle in degrees).
+Range is -360 to +360. Default is NaN.
+
+@item flip
+Set flip in display orientation SEI.
+
+@table @samp
+@item horizontal
+@item vertical
+@end table
+
+Default is unset.
 
 @item level
 Set the level in the SPS.  Refer to H.264 section A.3 and tables A-1
