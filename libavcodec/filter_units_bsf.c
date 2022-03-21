@@ -235,12 +235,12 @@ static const AVClass filter_units_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVBitStreamFilter ff_filter_units_bsf = {
-    .name           = "filter_units",
+const FFBitStreamFilter ff_filter_units_bsf = {
+    .p.name         = "filter_units",
+    .p.codec_ids    = ff_cbs_all_codec_ids,
+    .p.priv_class   = &filter_units_class,
     .priv_data_size = sizeof(FilterUnitsContext),
-    .priv_class     = &filter_units_class,
     .init           = &filter_units_init,
     .close          = &filter_units_close,
     .filter         = &filter_units_filter,
-    .codec_ids      = ff_cbs_all_codec_ids,
 };

@@ -54,8 +54,8 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_DTS, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_dca_core_bsf = {
-    .name      = "dca_core",
-    .filter    = dca_core_filter,
-    .codec_ids = codec_ids,
+const FFBitStreamFilter ff_dca_core_bsf = {
+    .p.name      = "dca_core",
+    .p.codec_ids = codec_ids,
+    .filter      = dca_core_filter,
 };

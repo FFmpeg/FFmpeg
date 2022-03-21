@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avstring.h"
-#include "libavutil/common.h"
+#include "libavutil/log.h"
 #include "libavutil/opt.h"
 
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_bsf.h"
 #include "cbs_vp9.h"
@@ -135,12 +135,12 @@ static const enum AVCodecID vp9_metadata_codec_ids[] = {
     AV_CODEC_ID_VP9, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_vp9_metadata_bsf = {
-    .name           = "vp9_metadata",
+const FFBitStreamFilter ff_vp9_metadata_bsf = {
+    .p.name         = "vp9_metadata",
+    .p.codec_ids    = vp9_metadata_codec_ids,
+    .p.priv_class   = &vp9_metadata_class,
     .priv_data_size = sizeof(VP9MetadataContext),
-    .priv_class     = &vp9_metadata_class,
     .init           = &vp9_metadata_init,
     .close          = &ff_cbs_bsf_generic_close,
     .filter         = &ff_cbs_bsf_generic_filter,
-    .codec_ids      = vp9_metadata_codec_ids,
 };

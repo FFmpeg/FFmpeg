@@ -128,11 +128,11 @@ static const AVClass dv_error_marker_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVBitStreamFilter ff_dv_error_marker_bsf = {
-    .name           = "dv_error_marker",
+const FFBitStreamFilter ff_dv_error_marker_bsf = {
+    .p.name         = "dv_error_marker",
+    .p.codec_ids    = (const enum AVCodecID []){ AV_CODEC_ID_DVVIDEO, AV_CODEC_ID_NONE },
+    .p.priv_class   = &dv_error_marker_class,
     .priv_data_size = sizeof(DVErrorMarkerContext),
-    .priv_class     = &dv_error_marker_class,
     .init           = dv_error_marker_init,
     .filter         = dv_error_marker_filter,
-    .codec_ids      =  (const enum AVCodecID []){ AV_CODEC_ID_DVVIDEO, AV_CODEC_ID_NONE },
 };

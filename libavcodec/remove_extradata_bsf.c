@@ -245,9 +245,9 @@ static const AVClass remove_extradata_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVBitStreamFilter ff_remove_extradata_bsf = {
-    .name           = "remove_extra",
+const FFBitStreamFilter ff_remove_extradata_bsf = {
+    .p.name         = "remove_extra",
+    .p.priv_class   = &remove_extradata_class,
     .priv_data_size = sizeof(RemoveExtradataContext),
-    .priv_class     = &remove_extradata_class,
     .filter         = remove_extradata,
 };

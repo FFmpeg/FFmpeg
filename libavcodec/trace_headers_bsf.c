@@ -117,11 +117,11 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *pkt)
     return err;
 }
 
-const AVBitStreamFilter ff_trace_headers_bsf = {
-    .name           = "trace_headers",
+const FFBitStreamFilter ff_trace_headers_bsf = {
+    .p.name         = "trace_headers",
+    .p.codec_ids    = ff_cbs_all_codec_ids,
     .priv_data_size = sizeof(TraceHeadersContext),
     .init           = &trace_headers_init,
     .close          = &trace_headers_close,
     .filter         = &trace_headers,
-    .codec_ids      = ff_cbs_all_codec_ids,
 };

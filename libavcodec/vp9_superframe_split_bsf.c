@@ -155,12 +155,12 @@ static void vp9_superframe_split_uninit(AVBSFContext *ctx)
     av_packet_free(&s->buffer_pkt);
 }
 
-const AVBitStreamFilter ff_vp9_superframe_split_bsf = {
-    .name = "vp9_superframe_split",
+const FFBitStreamFilter ff_vp9_superframe_split_bsf = {
+    .p.name         = "vp9_superframe_split",
+    .p.codec_ids    = (const enum AVCodecID []){ AV_CODEC_ID_VP9, AV_CODEC_ID_NONE },
     .priv_data_size = sizeof(VP9SFSplitContext),
     .init           = vp9_superframe_split_init,
     .flush          = vp9_superframe_split_flush,
     .close          = vp9_superframe_split_uninit,
     .filter         = vp9_superframe_split_filter,
-    .codec_ids      = (const enum AVCodecID []){ AV_CODEC_ID_VP9, AV_CODEC_ID_NONE },
 };

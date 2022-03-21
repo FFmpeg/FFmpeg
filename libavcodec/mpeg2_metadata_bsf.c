@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_bsf.h"
 #include "cbs_mpeg2.h"
@@ -232,12 +232,12 @@ static const enum AVCodecID mpeg2_metadata_codec_ids[] = {
     AV_CODEC_ID_MPEG2VIDEO, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_mpeg2_metadata_bsf = {
-    .name           = "mpeg2_metadata",
+const FFBitStreamFilter ff_mpeg2_metadata_bsf = {
+    .p.name         = "mpeg2_metadata",
+    .p.codec_ids    = mpeg2_metadata_codec_ids,
+    .p.priv_class   = &mpeg2_metadata_class,
     .priv_data_size = sizeof(MPEG2MetadataContext),
-    .priv_class     = &mpeg2_metadata_class,
     .init           = &mpeg2_metadata_init,
     .close          = &ff_cbs_bsf_generic_close,
     .filter         = &ff_cbs_bsf_generic_filter,
-    .codec_ids      = mpeg2_metadata_codec_ids,
 };

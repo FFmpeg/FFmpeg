@@ -123,8 +123,8 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_MP3, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_mp3_header_decompress_bsf = {
-    .name      = "mp3decomp",
-    .filter    = mp3_header_decompress,
-    .codec_ids = codec_ids,
+const FFBitStreamFilter ff_mp3_header_decompress_bsf = {
+    .p.name      = "mp3decomp",
+    .p.codec_ids = codec_ids,
+    .filter      = mp3_header_decompress,
 };

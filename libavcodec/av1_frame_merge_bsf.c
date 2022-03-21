@@ -156,12 +156,12 @@ static const enum AVCodecID av1_frame_merge_codec_ids[] = {
     AV_CODEC_ID_AV1, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_av1_frame_merge_bsf = {
-    .name           = "av1_frame_merge",
+const FFBitStreamFilter ff_av1_frame_merge_bsf = {
+    .p.name         = "av1_frame_merge",
+    .p.codec_ids    = av1_frame_merge_codec_ids,
     .priv_data_size = sizeof(AV1FMergeContext),
     .init           = av1_frame_merge_init,
     .flush          = av1_frame_merge_flush,
     .close          = av1_frame_merge_close,
     .filter         = av1_frame_merge_filter,
-    .codec_ids      = av1_frame_merge_codec_ids,
 };

@@ -57,8 +57,8 @@ fail:
     return ret;
 }
 
-const AVBitStreamFilter ff_text2movsub_bsf = {
-    .name   = "text2movsub",
+const FFBitStreamFilter ff_text2movsub_bsf = {
+    .p.name = "text2movsub",
     .filter = text2movsub,
 };
 
@@ -81,7 +81,7 @@ static int mov2textsub(AVBSFContext *ctx, AVPacket *pkt)
     return 0;
 }
 
-const AVBitStreamFilter ff_mov2textsub_bsf = {
-    .name   = "mov2textsub",
+const FFBitStreamFilter ff_mov2textsub_bsf = {
+    .p.name = "mov2textsub",
     .filter = mov2textsub,
 };

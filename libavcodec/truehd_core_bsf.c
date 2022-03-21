@@ -173,10 +173,10 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_TRUEHD, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_truehd_core_bsf = {
-    .name           = "truehd_core",
+const FFBitStreamFilter ff_truehd_core_bsf = {
+    .p.name         = "truehd_core",
+    .p.codec_ids    = codec_ids,
     .priv_data_size = sizeof(TrueHDCoreContext),
     .filter         = truehd_core_filter,
     .flush          = truehd_core_flush,
-    .codec_ids      = codec_ids,
 };

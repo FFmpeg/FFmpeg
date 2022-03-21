@@ -67,7 +67,7 @@ typedef struct CBSBSFContext {
  *
  * Since it calls the update_fragment() function immediately to deal with
  * extradata, this should be called after any codec-specific setup is done
- * (probably at the end of the AVBitStreamFilter.init function).
+ * (probably at the end of the FFBitStreamFilter.init function).
  */
 int ff_cbs_bsf_generic_init(AVBSFContext *bsf, const CBSBSFType *type);
 
@@ -75,7 +75,7 @@ int ff_cbs_bsf_generic_init(AVBSFContext *bsf, const CBSBSFType *type);
  * Close a generic CBS BSF instance.
  *
  * If no other deinitialisation is required then this function can be used
- * directly as AVBitStreamFilter.close.
+ * directly as FFBitStreamFilter.close.
  */
 void ff_cbs_bsf_generic_close(AVBSFContext *bsf);
 
@@ -88,7 +88,7 @@ void ff_cbs_bsf_generic_close(AVBSFContext *bsf);
  * the same thing to that new extradata to form the output side-data first.
  *
  * If the BSF does not do anything else then this function can be used
- * directly as AVBitStreamFilter.filter.
+ * directly as FFBitStreamFilter.filter.
  */
 int ff_cbs_bsf_generic_filter(AVBSFContext *bsf, AVPacket *pkt);
 

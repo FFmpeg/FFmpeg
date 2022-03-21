@@ -69,8 +69,8 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_MPEG2VIDEO, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_imx_dump_header_bsf = {
-    .name      = "imxdump",
-    .filter    = imx_dump_header,
-    .codec_ids = codec_ids,
+const FFBitStreamFilter ff_imx_dump_header_bsf = {
+    .p.name      = "imxdump",
+    .p.codec_ids = codec_ids,
+    .filter      = imx_dump_header,
 };

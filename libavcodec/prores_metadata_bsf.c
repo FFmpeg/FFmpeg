@@ -166,11 +166,11 @@ static const AVClass prores_metadata_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVBitStreamFilter ff_prores_metadata_bsf = {
-    .name       = "prores_metadata",
-    .init       = prores_metadata_init,
-    .filter     = prores_metadata,
+const FFBitStreamFilter ff_prores_metadata_bsf = {
+    .p.name         = "prores_metadata",
+    .p.codec_ids    = codec_ids,
+    .p.priv_class   = &prores_metadata_class,
     .priv_data_size = sizeof(ProresMetadataContext),
-    .priv_class = &prores_metadata_class,
-    .codec_ids  = codec_ids,
+    .init           = prores_metadata_init,
+    .filter         = prores_metadata,
 };

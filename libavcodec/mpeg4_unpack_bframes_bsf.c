@@ -155,12 +155,12 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_MPEG4, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
-    .name           = "mpeg4_unpack_bframes",
+const FFBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
+    .p.name         = "mpeg4_unpack_bframes",
+    .p.codec_ids    = codec_ids,
     .priv_data_size = sizeof(UnpackBFramesBSFContext),
     .init           = mpeg4_unpack_bframes_init,
     .filter         = mpeg4_unpack_bframes_filter,
     .flush          = mpeg4_unpack_bframes_close_flush,
     .close          = mpeg4_unpack_bframes_close_flush,
-    .codec_ids      = codec_ids,
 };

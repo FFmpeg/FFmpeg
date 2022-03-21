@@ -209,13 +209,13 @@ static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_pcm_rechunk_bsf = {
-    .name           = "pcm_rechunk",
+const FFBitStreamFilter ff_pcm_rechunk_bsf = {
+    .p.name         = "pcm_rechunk",
+    .p.codec_ids    = codec_ids,
+    .p.priv_class   = &pcm_rechunk_class,
     .priv_data_size = sizeof(PCMContext),
-    .priv_class     = &pcm_rechunk_class,
     .filter         = rechunk_filter,
     .init           = init,
     .flush          = flush,
     .close          = uninit,
-    .codec_ids      = codec_ids,
 };

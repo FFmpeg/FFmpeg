@@ -24,56 +24,57 @@
 #include "bsf.h"
 #include "bsf_internal.h"
 
-extern const AVBitStreamFilter ff_aac_adtstoasc_bsf;
-extern const AVBitStreamFilter ff_av1_frame_merge_bsf;
-extern const AVBitStreamFilter ff_av1_frame_split_bsf;
-extern const AVBitStreamFilter ff_av1_metadata_bsf;
-extern const AVBitStreamFilter ff_chomp_bsf;
-extern const AVBitStreamFilter ff_dump_extradata_bsf;
-extern const AVBitStreamFilter ff_dca_core_bsf;
-extern const AVBitStreamFilter ff_dv_error_marker_bsf;
-extern const AVBitStreamFilter ff_eac3_core_bsf;
-extern const AVBitStreamFilter ff_extract_extradata_bsf;
-extern const AVBitStreamFilter ff_filter_units_bsf;
-extern const AVBitStreamFilter ff_h264_metadata_bsf;
-extern const AVBitStreamFilter ff_h264_mp4toannexb_bsf;
-extern const AVBitStreamFilter ff_h264_redundant_pps_bsf;
-extern const AVBitStreamFilter ff_hapqa_extract_bsf;
-extern const AVBitStreamFilter ff_hevc_metadata_bsf;
-extern const AVBitStreamFilter ff_hevc_mp4toannexb_bsf;
-extern const AVBitStreamFilter ff_imx_dump_header_bsf;
-extern const AVBitStreamFilter ff_mjpeg2jpeg_bsf;
-extern const AVBitStreamFilter ff_mjpega_dump_header_bsf;
-extern const AVBitStreamFilter ff_mp3_header_decompress_bsf;
-extern const AVBitStreamFilter ff_mpeg2_metadata_bsf;
-extern const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf;
-extern const AVBitStreamFilter ff_mov2textsub_bsf;
-extern const AVBitStreamFilter ff_noise_bsf;
-extern const AVBitStreamFilter ff_null_bsf;
-extern const AVBitStreamFilter ff_opus_metadata_bsf;
-extern const AVBitStreamFilter ff_pcm_rechunk_bsf;
-extern const AVBitStreamFilter ff_prores_metadata_bsf;
-extern const AVBitStreamFilter ff_remove_extradata_bsf;
-extern const AVBitStreamFilter ff_setts_bsf;
-extern const AVBitStreamFilter ff_text2movsub_bsf;
-extern const AVBitStreamFilter ff_trace_headers_bsf;
-extern const AVBitStreamFilter ff_truehd_core_bsf;
-extern const AVBitStreamFilter ff_vp9_metadata_bsf;
-extern const AVBitStreamFilter ff_vp9_raw_reorder_bsf;
-extern const AVBitStreamFilter ff_vp9_superframe_bsf;
-extern const AVBitStreamFilter ff_vp9_superframe_split_bsf;
+extern const FFBitStreamFilter ff_aac_adtstoasc_bsf;
+extern const FFBitStreamFilter ff_av1_frame_merge_bsf;
+extern const FFBitStreamFilter ff_av1_frame_split_bsf;
+extern const FFBitStreamFilter ff_av1_metadata_bsf;
+extern const FFBitStreamFilter ff_chomp_bsf;
+extern const FFBitStreamFilter ff_dump_extradata_bsf;
+extern const FFBitStreamFilter ff_dca_core_bsf;
+extern const FFBitStreamFilter ff_dv_error_marker_bsf;
+extern const FFBitStreamFilter ff_eac3_core_bsf;
+extern const FFBitStreamFilter ff_extract_extradata_bsf;
+extern const FFBitStreamFilter ff_filter_units_bsf;
+extern const FFBitStreamFilter ff_h264_metadata_bsf;
+extern const FFBitStreamFilter ff_h264_mp4toannexb_bsf;
+extern const FFBitStreamFilter ff_h264_redundant_pps_bsf;
+extern const FFBitStreamFilter ff_hapqa_extract_bsf;
+extern const FFBitStreamFilter ff_hevc_metadata_bsf;
+extern const FFBitStreamFilter ff_hevc_mp4toannexb_bsf;
+extern const FFBitStreamFilter ff_imx_dump_header_bsf;
+extern const FFBitStreamFilter ff_mjpeg2jpeg_bsf;
+extern const FFBitStreamFilter ff_mjpega_dump_header_bsf;
+extern const FFBitStreamFilter ff_mp3_header_decompress_bsf;
+extern const FFBitStreamFilter ff_mpeg2_metadata_bsf;
+extern const FFBitStreamFilter ff_mpeg4_unpack_bframes_bsf;
+extern const FFBitStreamFilter ff_mov2textsub_bsf;
+extern const FFBitStreamFilter ff_noise_bsf;
+extern const FFBitStreamFilter ff_null_bsf;
+extern const FFBitStreamFilter ff_opus_metadata_bsf;
+extern const FFBitStreamFilter ff_pcm_rechunk_bsf;
+extern const FFBitStreamFilter ff_prores_metadata_bsf;
+extern const FFBitStreamFilter ff_remove_extradata_bsf;
+extern const FFBitStreamFilter ff_setts_bsf;
+extern const FFBitStreamFilter ff_text2movsub_bsf;
+extern const FFBitStreamFilter ff_trace_headers_bsf;
+extern const FFBitStreamFilter ff_truehd_core_bsf;
+extern const FFBitStreamFilter ff_vp9_metadata_bsf;
+extern const FFBitStreamFilter ff_vp9_raw_reorder_bsf;
+extern const FFBitStreamFilter ff_vp9_superframe_bsf;
+extern const FFBitStreamFilter ff_vp9_superframe_split_bsf;
 
 #include "libavcodec/bsf_list.c"
 
 const AVBitStreamFilter *av_bsf_iterate(void **opaque)
 {
     uintptr_t i = (uintptr_t)*opaque;
-    const AVBitStreamFilter *f = bitstream_filters[i];
+    const FFBitStreamFilter *f = bitstream_filters[i];
 
-    if (f)
+    if (f) {
         *opaque = (void*)(i + 1);
-
-    return f;
+        return &f->p;
+    }
+    return NULL;
 }
 
 const AVBitStreamFilter *av_bsf_get_by_name(const char *name)

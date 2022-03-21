@@ -39,7 +39,7 @@ static int chomp_filter(AVBSFContext *ctx, AVPacket *pkt)
 /**
  * This filter removes a string of NULL bytes from the end of a packet.
  */
-const AVBitStreamFilter ff_chomp_bsf = {
-    .name   = "chomp",
+const FFBitStreamFilter ff_chomp_bsf = {
+    .p.name = "chomp",
     .filter = chomp_filter,
 };

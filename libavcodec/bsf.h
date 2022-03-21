@@ -128,20 +128,6 @@ typedef struct AVBitStreamFilter {
      * code to this class.
      */
     const AVClass *priv_class;
-
-    /*****************************************************************
-     * No fields below this line are part of the public API. They
-     * may not be used outside of libavcodec and can be changed and
-     * removed at will.
-     * New public fields should be added right above.
-     *****************************************************************
-     */
-
-    int priv_data_size;
-    int (*init)(AVBSFContext *ctx);
-    int (*filter)(AVBSFContext *ctx, AVPacket *pkt);
-    void (*close)(AVBSFContext *ctx);
-    void (*flush)(AVBSFContext *ctx);
 } AVBitStreamFilter;
 
 /**

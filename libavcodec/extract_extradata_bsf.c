@@ -422,11 +422,11 @@ static const AVClass extract_extradata_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVBitStreamFilter ff_extract_extradata_bsf = {
-    .name           = "extract_extradata",
-    .codec_ids      = codec_ids,
+const FFBitStreamFilter ff_extract_extradata_bsf = {
+    .p.name         = "extract_extradata",
+    .p.codec_ids    = codec_ids,
+    .p.priv_class   = &extract_extradata_class,
     .priv_data_size = sizeof(ExtractExtradataContext),
-    .priv_class     = &extract_extradata_class,
     .init           = extract_extradata_init,
     .filter         = extract_extradata_filter,
     .close          = extract_extradata_close,

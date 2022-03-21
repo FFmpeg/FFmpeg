@@ -24,6 +24,19 @@
 #include "bsf.h"
 #include "packet.h"
 
+typedef struct FFBitStreamFilter {
+    /**
+     * The public AVBitStreamFilter. See bsf.h for it.
+     */
+    AVBitStreamFilter p;
+
+    int priv_data_size;
+    int (*init)(AVBSFContext *ctx);
+    int (*filter)(AVBSFContext *ctx, AVPacket *pkt);
+    void (*close)(AVBSFContext *ctx);
+    void (*flush)(AVBSFContext *ctx);
+} FFBitStreamFilter;
+
 /**
  * Called by the bitstream filters to get the next packet for filtering.
  * The filter is responsible for either freeing the packet or passing it to the

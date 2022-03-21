@@ -20,6 +20,7 @@
 #include "libavutil/opt.h"
 
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_bsf.h"
 #include "cbs_h265.h"
@@ -498,12 +499,12 @@ static const enum AVCodecID h265_metadata_codec_ids[] = {
     AV_CODEC_ID_HEVC, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_hevc_metadata_bsf = {
-    .name           = "hevc_metadata",
+const FFBitStreamFilter ff_hevc_metadata_bsf = {
+    .p.name         = "hevc_metadata",
+    .p.codec_ids    = h265_metadata_codec_ids,
+    .p.priv_class   = &h265_metadata_class,
     .priv_data_size = sizeof(H265MetadataContext),
-    .priv_class     = &h265_metadata_class,
     .init           = &h265_metadata_init,
     .close          = &ff_cbs_bsf_generic_close,
     .filter         = &ff_cbs_bsf_generic_filter,
-    .codec_ids      = h265_metadata_codec_ids,
 };

@@ -20,6 +20,7 @@
 #include "libavutil/opt.h"
 
 #include "bsf.h"
+#include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_bsf.h"
 #include "cbs_av1.h"
@@ -219,12 +220,12 @@ static const enum AVCodecID av1_metadata_codec_ids[] = {
     AV_CODEC_ID_AV1, AV_CODEC_ID_NONE,
 };
 
-const AVBitStreamFilter ff_av1_metadata_bsf = {
-    .name           = "av1_metadata",
+const FFBitStreamFilter ff_av1_metadata_bsf = {
+    .p.name         = "av1_metadata",
+    .p.codec_ids    = av1_metadata_codec_ids,
+    .p.priv_class   = &av1_metadata_class,
     .priv_data_size = sizeof(AV1MetadataContext),
-    .priv_class     = &av1_metadata_class,
     .init           = &av1_metadata_init,
     .close          = &ff_cbs_bsf_generic_close,
     .filter         = &ff_cbs_bsf_generic_filter,
-    .codec_ids      = av1_metadata_codec_ids,
 };
