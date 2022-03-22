@@ -25,7 +25,6 @@
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
-#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avutil.h"
 #include "libavutil/opt.h"
