@@ -552,8 +552,8 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                 if (!device)
                     goto fail;
 
-                device->device_name = av_strdup(friendly_name);
-                device->device_description = av_strdup(unique_name);
+                device->device_name = av_strdup(unique_name);
+                device->device_description = av_strdup(friendly_name);
                 if (!device->device_name || !device->device_description)
                     goto fail;
 
