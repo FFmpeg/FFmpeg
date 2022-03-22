@@ -22,6 +22,7 @@
 #ifndef AVFILTER_PP7_H
 #define AVFILTER_PP7_H
 
+#include "libavutil/video_enc_params.h"
 #include "avfilter.h"
 
 typedef struct PP7Context {
@@ -30,7 +31,7 @@ typedef struct PP7Context {
 
     int qp;
     int mode;
-    int qscale_type;
+    enum AVVideoEncParamsType qscale_type;
     int hsub;
     int vsub;
     int temp_stride;

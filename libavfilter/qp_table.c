@@ -18,9 +18,6 @@
 
 #include <stdint.h>
 
-// for FF_QSCALE_TYPE_*
-#include "libavcodec/internal.h"
-
 #include "libavutil/frame.h"
 #include "libavutil/mem.h"
 #include "libavutil/video_enc_params.h"
@@ -28,7 +25,7 @@
 #include "qp_table.h"
 
 int ff_qp_table_extract(AVFrame *frame, int8_t **table, int *table_w, int *table_h,
-                        int *qscale_type)
+                        enum AVVideoEncParamsType *qscale_type)
 {
     AVFrameSideData *sd;
     AVVideoEncParams *par;
@@ -55,7 +52,7 @@ int ff_qp_table_extract(AVFrame *frame, int8_t **table, int *table_w, int *table
     if (table_h)
         *table_h = mb_h;
     if (qscale_type)
-        *qscale_type = FF_QSCALE_TYPE_MPEG2;
+        *qscale_type = par->type;
 
     if (par->nb_blocks == 0) {
         memset(*table, par->qp, nb_mb);

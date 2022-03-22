@@ -32,6 +32,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/video_enc_params.h"
 #include "libavcodec/avcodec.h"
 #include "internal.h"
 #include "qp_table.h"
@@ -45,7 +46,7 @@ typedef struct USPPContext {
     int log2_count;
     int hsub, vsub;
     int qp;
-    int qscale_type;
+    enum AVVideoEncParamsType qscale_type;
     int temp_stride[3];
     uint8_t *src[3];
     uint16_t *temp[3];
