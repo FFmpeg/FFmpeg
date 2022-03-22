@@ -18,6 +18,7 @@
 
 #include "ffmpeg.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/error.h"
 #include "libavutil/time.h"
 #include "libavutil/timestamp.h"
@@ -142,7 +143,6 @@ static void *input_thread(void *arg)
                 /* fallthrough to the error path */
             }
 
-            av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
             break;
         }
 
@@ -162,7 +162,7 @@ static void *input_thread(void *arg)
         msg.pkt = av_packet_alloc();
         if (!msg.pkt) {
             av_packet_unref(pkt);
-            av_thread_message_queue_set_err_recv(f->in_thread_queue, AVERROR(ENOMEM));
+            ret = AVERROR(ENOMEM);
             break;
         }
         av_packet_move_ref(msg.pkt, pkt);
@@ -181,10 +181,12 @@ static void *input_thread(void *arg)
                        "Unable to send packet to main thread: %s\n",
                        av_err2str(ret));
             av_packet_free(&msg.pkt);
-            av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
             break;
         }
     }
+
+    av_assert0(ret < 0);
+    av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
 
     return NULL;
 }
