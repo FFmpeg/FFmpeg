@@ -165,6 +165,17 @@ static void *input_thread(void *arg)
             continue;
         }
 
+        if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
+            av_log(NULL, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+                   "%s: corrupt input packet in stream %d\n",
+                   f->ctx->url, pkt->stream_index);
+            if (exit_on_error) {
+                av_packet_unref(pkt);
+                ret = AVERROR_INVALIDDATA;
+                break;
+            }
+        }
+
         msg.pkt = av_packet_alloc();
         if (!msg.pkt) {
             av_packet_unref(pkt);

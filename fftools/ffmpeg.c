@@ -3729,13 +3729,6 @@ static int process_input(int file_index)
     if (ist->discard)
         goto discard_packet;
 
-    if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
-        av_log(NULL, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
-               "%s: corrupt input packet in stream %d\n", is->url, pkt->stream_index);
-        if (exit_on_error)
-            exit_program(1);
-    }
-
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
