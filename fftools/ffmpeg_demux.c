@@ -117,9 +117,15 @@ static int seek_to_start(InputFile *ifile)
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
-    AVPacket *pkt = f->pkt;
+    AVPacket *pkt;
     unsigned flags = f->non_blocking ? AV_THREAD_MESSAGE_NONBLOCK : 0;
     int ret = 0;
+
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        ret = AVERROR(ENOMEM);
+        goto finish;
+    }
 
     while (1) {
         DemuxMsg msg = { NULL };
@@ -185,8 +191,11 @@ static void *input_thread(void *arg)
         }
     }
 
+finish:
     av_assert0(ret < 0);
     av_thread_message_queue_set_err_recv(f->in_thread_queue, ret);
+
+    av_packet_free(&pkt);
 
     return NULL;
 }

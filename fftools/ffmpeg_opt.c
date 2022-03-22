@@ -1407,9 +1407,6 @@ static int open_input_file(OptionsContext *o, const char *filename)
         f->rate_emu = 0;
     }
 
-    f->pkt = av_packet_alloc();
-    if (!f->pkt)
-        exit_program(1);
     f->thread_queue_size = o->thread_queue_size;
 
     /* check if all codec options have been used */

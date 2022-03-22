@@ -437,8 +437,6 @@ typedef struct InputFile {
     float readrate;
     int accurate_seek;
 
-    AVPacket *pkt;
-
     AVThreadMessageQueue *in_thread_queue;
     pthread_t thread;           /* thread reading from this file */
     int non_blocking;           /* reading packets from the thread should not block */
