@@ -382,6 +382,15 @@ refcmp_metadata(){
         -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
 }
 
+cmp_metadata(){
+    refcmp=$1
+    pixfmt=$2
+    fuzz=${3:-0.001}
+    ffmpeg $FLAGS $ENC_OPTS \
+        -lavfi "testsrc2=size=300x200:rate=1:duration=5,format=${pixfmt},${refcmp},metadata=print:file=-" \
+        -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
+}
+
 pixfmt_conversion(){
     conversion="${test#pixfmt-}"
     outdir="tests/data/pixfmt"

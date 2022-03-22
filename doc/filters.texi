@@ -20512,6 +20512,29 @@ ffmpeg -i input1.mkv -i input2.mkv -filter_complex "[0:v][1:v] signature=nb_inpu
 
 @end itemize
 
+@anchor{siti}
+@section siti
+
+Calculate Spatial Info (SI) and Temporal Info (TI) scores for a video, as defined
+in ITU-T P.910: Subjective video quality assessment methods for multimedia
+applications. Available PDF at @url{https://www.itu.int/rec/T-REC-P.910-199909-S/en }.
+
+It accepts the following option:
+
+@table @option
+@item print_summary
+If set to 1, Summary statistics will be printed to the console. Default 0.
+@end table
+
+@subsection Examples
+@itemize
+@item
+To calculate SI/TI metrics and print summary:
+@example
+ffmpeg -i input.mp4 -vf siti=print_summary=1 -f null -
+@end example
+@end itemize
+
 @anchor{smartblur}
 @section smartblur
 

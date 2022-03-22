@@ -879,6 +879,9 @@ fate-filter-refcmp-ssim-rgb: CMD = refcmp_metadata ssim rgb24 0.015
 FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) SSIM_FILTER) += fate-filter-refcmp-ssim-yuv
 fate-filter-refcmp-ssim-yuv: CMD = refcmp_metadata ssim yuv422p 0.015
 
+FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) SITI_FILTER) += fate-filter-refcmp-siti-yuv
+fate-filter-refcmp-siti-yuv: CMD = cmp_metadata siti yuv420p 0.015
+
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_FILTER_SAMPLES-yes)
 FATE_FFMPEG += $(FATE_FILTER-yes)

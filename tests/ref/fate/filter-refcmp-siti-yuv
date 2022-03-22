@@ -1,0 +1,15 @@
+frame:0    pts:0       pts_time:0
+lavfi.siti.si=106.72
+lavfi.siti.ti=0.00
+frame:1    pts:1       pts_time:1
+lavfi.siti.si=109.40
+lavfi.siti.ti=28.00
+frame:2    pts:2       pts_time:2
+lavfi.siti.si=109.29
+lavfi.siti.ti=28.38
+frame:3    pts:3       pts_time:3
+lavfi.siti.si=113.27
+lavfi.siti.ti=33.42
+frame:4    pts:4       pts_time:4
+lavfi.siti.si=110.87
+lavfi.siti.ti=30.53

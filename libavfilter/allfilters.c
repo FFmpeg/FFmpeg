@@ -432,6 +432,7 @@ extern const AVFilter ff_vf_shuffleplanes;
 extern const AVFilter ff_vf_sidedata;
 extern const AVFilter ff_vf_signalstats;
 extern const AVFilter ff_vf_signature;
+extern const AVFilter ff_vf_siti;
 extern const AVFilter ff_vf_smartblur;
 extern const AVFilter ff_vf_sobel;
 extern const AVFilter ff_vf_sobel_opencl;
