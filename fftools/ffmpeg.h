@@ -715,5 +715,6 @@ int init_input_threads(void);
 int init_input_thread(int i);
 void free_input_threads(void);
 void free_input_thread(int i);
+int seek_to_start(InputFile *ifile, AVFormatContext *is);
 
 #endif /* FFTOOLS_FFMPEG_H */
