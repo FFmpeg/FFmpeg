@@ -34,8 +34,6 @@
 #include "internal.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
 
 #include "qsvvpp.h"
 #include "transpose.h"
