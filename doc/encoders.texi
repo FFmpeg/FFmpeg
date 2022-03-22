@@ -3773,6 +3773,22 @@ required to produce a stream usable with all decoders.
 
 @end table
 
+@section vbn
+
+Vizrt Binary Image encoder.
+
+This format is used by the broadcast vendor Vizrt for quick texture streaming.
+Advanced features of the format such as LZW compression of texture data or
+generation of mipmaps are not supported.
+
+@subsection Options
+
+@table @option
+@item format @var{string}
+Sets the texture compression used by the VBN file. Can be @var{dxt1},
+@var{dxt5} or @var{raw}. Default is @var{dxt5}.
+@end table
+
 @section vc2
 
 SMPTE VC-2 (previously BBC Dirac Pro). This codec was primarily aimed at
