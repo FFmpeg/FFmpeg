@@ -70,14 +70,18 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             ret = WebPAnimEncoderAssemble(s->enc, &assembled_data);
             if (ret) {
                 ret = ff_get_encode_buffer(avctx, pkt, assembled_data.size, 0);
-                if (ret < 0)
+                if (ret < 0) {
+                    WebPDataClear(&assembled_data);
                     return ret;
+                }
                 memcpy(pkt->data, assembled_data.bytes, assembled_data.size);
+                WebPDataClear(&assembled_data);
                 s->done = 1;
                 pkt->pts = pkt->dts = s->first_frame_pts;
                 *got_packet = 1;
                 return 0;
             } else {
+                WebPDataClear(&assembled_data);
                 av_log(s, AV_LOG_ERROR,
                        "WebPAnimEncoderAssemble() failed with error: %d\n",
                        VP8_ENC_ERROR_OUT_OF_MEMORY);
