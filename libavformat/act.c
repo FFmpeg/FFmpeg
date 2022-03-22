@@ -18,11 +18,12 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "riff.h"
 #include "internal.h"
-#include "libavcodec/get_bits.h"
 
 #define CHUNK_SIZE 512
 #define RIFF_TAG MKTAG('R','I','F','F')

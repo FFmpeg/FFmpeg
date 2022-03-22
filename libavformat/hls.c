@@ -30,6 +30,7 @@
 #include "config_components.h"
 
 #include "libavformat/http.h"
+#include "libavutil/aes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"

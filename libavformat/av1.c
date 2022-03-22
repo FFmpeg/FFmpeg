@@ -23,7 +23,7 @@
 #include "libavutil/mem.h"
 #include "libavcodec/av1.h"
 #include "libavcodec/av1_parse.h"
-#include "libavcodec/profiles.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/put_bits.h"
 #include "av1.h"
 #include "avio.h"

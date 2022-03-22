@@ -24,18 +24,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/time_internal.h"
-#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "internal.h"
-#include "avio_internal.h"
 #include "flv.h"
 
 #define VALIDATE_INDEX_TS_THRESH 2500

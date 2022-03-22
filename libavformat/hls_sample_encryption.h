@@ -29,12 +29,13 @@
 #ifndef AVFORMAT_HLS_SAMPLE_ENCRYPTION_H
 #define AVFORMAT_HLS_SAMPLE_ENCRYPTION_H
 
+#include <stddef.h>
 #include <stdint.h>
 
+#include "libavcodec/codec_id.h"
+#include "libavcodec/packet.h"
 #include "avformat.h"
-#include "libavcodec/avcodec.h"
 
-#include "libavutil/aes.h"
 
 #define HLS_MAX_ID3_TAGS_DATA_LEN       138
 #define HLS_MAX_AUDIO_SETUP_DATA_LEN    10

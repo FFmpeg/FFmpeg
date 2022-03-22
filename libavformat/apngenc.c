@@ -22,14 +22,12 @@
  */
 
 #include "avformat.h"
-#include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavcodec/png.h"
-#include "libavcodec/apng.h"
 
 typedef struct APNGMuxContext {
     AVClass *class;

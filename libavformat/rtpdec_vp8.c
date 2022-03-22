@@ -27,10 +27,10 @@
  * @see http://tools.ietf.org/html/draft-ietf-payload-vp8-05
  */
 
-#include "libavcodec/bytestream.h"
+#include "libavutil/intreadwrite.h"
 
 #include "avio_internal.h"
-#include "rtpdec_formats.h"
+#include "rtpdec.h"
 
 struct PayloadContext {
     AVIOContext *data;

@@ -26,6 +26,7 @@
  * https://developer.apple.com/library/ios/documentation/AudioVideo/Conceptual/HLS_Sample_Encryption
  */
 
+#include "libavutil/aes.h"
 #include "libavutil/channel_layout.h"
 
 #include "hls_sample_encryption.h"
