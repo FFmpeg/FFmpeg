@@ -499,9 +499,8 @@ static int get_pixel_format(AVCodecContext *avctx)
 
     if (pix_fmt == AV_PIX_FMT_NONE)
         return -1;
-    s->pix_fmt = pix_fmt;
 
-    switch (s->pix_fmt) {
+    switch (pix_fmt) {
     case AV_PIX_FMT_YUV420P:
 #if CONFIG_AV1_DXVA2_HWACCEL
         *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
@@ -544,7 +543,7 @@ static int get_pixel_format(AVCodecContext *avctx)
         break;
     }
 
-    *fmtp++ = s->pix_fmt;
+    *fmtp++ = pix_fmt;
     *fmtp = AV_PIX_FMT_NONE;
 
     ret = ff_thread_get_format(avctx, pix_fmts);
@@ -562,6 +561,7 @@ static int get_pixel_format(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    s->pix_fmt = pix_fmt;
     avctx->pix_fmt = ret;
 
     return 0;
