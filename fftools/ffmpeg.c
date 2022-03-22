@@ -3628,6 +3628,37 @@ static void reset_eagain(void)
         output_streams[i]->unavailable = 0;
 }
 
+static void decode_flush(InputFile *ifile)
+{
+    for (int i = 0; i < ifile->nb_streams; i++) {
+        InputStream *ist = input_streams[ifile->ist_index + i];
+        int ret;
+
+        if (!ist->processing_needed)
+            continue;
+
+        do {
+            ret = process_input_packet(ist, NULL, 1);
+        } while (ret > 0);
+
+        if (ist->decoding_needed) {
+            /* report last frame duration to the demuxer thread */
+            if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+                LastFrameDuration dur;
+
+                dur.stream_idx = i;
+                dur.duration   = av_rescale_q(ist->nb_samples,
+                                              (AVRational){ 1, ist->dec_ctx->sample_rate},
+                                              ist->st->time_base);
+
+                av_thread_message_queue_send(ifile->audio_duration_queue, &dur, 0);
+            }
+
+            avcodec_flush_buffers(ist->dec_ctx);
+        }
+    }
+}
+
 /*
  * Return
  * - 0 -- one packet was read and processed
@@ -3641,7 +3672,7 @@ static int process_input(int file_index)
     AVFormatContext *is;
     InputStream *ist;
     AVPacket *pkt;
-    int ret, thread_ret, i, j;
+    int ret, i, j;
     int64_t duration;
     int64_t pkt_dts;
     int disable_discontinuity_correction = copy_ts;
@@ -3653,30 +3684,10 @@ static int process_input(int file_index)
         ifile->eagain = 1;
         return ret;
     }
-    if (ret < 0 && ifile->loop) {
-        for (i = 0; i < ifile->nb_streams; i++) {
-            ist = input_streams[ifile->ist_index + i];
-            if (ist->processing_needed) {
-                ret = process_input_packet(ist, NULL, 1);
-                if (ret>0)
-                    return 0;
-                if (ist->decoding_needed)
-                    avcodec_flush_buffers(ist->dec_ctx);
-            }
-        }
-        free_input_thread(file_index);
-        ret = seek_to_start(ifile, is);
-        thread_ret = init_input_thread(file_index);
-        if (thread_ret < 0)
-            return thread_ret;
-        if (ret < 0)
-            av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
-        else
-            ret = ifile_get_packet(ifile, &pkt);
-        if (ret == AVERROR(EAGAIN)) {
-            ifile->eagain = 1;
-            return ret;
-        }
+    if (ret == 1) {
+        /* the input file is looped: flush the decoders */
+        decode_flush(ifile);
+        return AVERROR(EAGAIN);
     }
     if (ret < 0) {
         if (ret != AVERROR_EOF) {

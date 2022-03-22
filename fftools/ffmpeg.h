@@ -407,6 +407,11 @@ typedef struct InputStream {
     int got_output;
 } InputStream;
 
+typedef struct LastFrameDuration {
+    int     stream_idx;
+    int64_t duration;
+} LastFrameDuration;
+
 typedef struct InputFile {
     int index;
 
@@ -438,6 +443,11 @@ typedef struct InputFile {
     pthread_t thread;           /* thread reading from this file */
     int non_blocking;           /* reading packets from the thread should not block */
     int thread_queue_size;      /* maximum number of queued packets */
+
+    /* when looping the input file, this queue is used by decoders to report
+     * the last frame duration back to the demuxer thread */
+    AVThreadMessageQueue *audio_duration_queue;
+    int                   audio_duration_queue_size;
 } InputFile;
 
 enum forced_keyframes_const {
@@ -710,11 +720,18 @@ int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);
 
+/**
+ * Get next input packet from the demuxer.
+ *
+ * @param pkt the packet is written here when this function returns 0
+ * @return
+ * - 0 when a packet has been read successfully
+ * - 1 when stream end was reached, but the stream is looped;
+ *     caller should flush decoders and read from this demuxer again
+ * - a negative error code on failure
+ */
 int ifile_get_packet(InputFile *f, AVPacket **pkt);
 int init_input_threads(void);
-int init_input_thread(int i);
 void free_input_threads(void);
-void free_input_thread(int i);
-int seek_to_start(InputFile *ifile, AVFormatContext *is);
 
 #endif /* FFTOOLS_FFMPEG_H */
