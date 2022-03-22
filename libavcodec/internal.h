@@ -35,9 +35,6 @@
 #include "bsf.h"
 #include "config.h"
 
-#define FF_QSCALE_TYPE_MPEG1 0
-#define FF_QSCALE_TYPE_MPEG2 1
-
 #define FF_SANE_NB_CHANNELS 512U
 
 #if HAVE_SIMD_ALIGN_64

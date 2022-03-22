@@ -513,7 +513,7 @@ void ff_print_debug_info(MpegEncContext *s, Picture *p, AVFrame *pict)
 int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_type)
 {
     AVVideoEncParams *par;
-    int mult = (qp_type == FF_QSCALE_TYPE_MPEG1) ? 2 : 1;
+    int mult = (qp_type == FF_MPV_QSCALE_TYPE_MPEG1) ? 2 : 1;
     unsigned int nb_mb = p->alloc_mb_height * p->alloc_mb_width;
 
     if (!(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS))

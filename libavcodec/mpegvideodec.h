@@ -35,6 +35,9 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 
+#define FF_MPV_QSCALE_TYPE_MPEG1 0
+#define FF_MPV_QSCALE_TYPE_MPEG2 1
+
 /**
  * Initialize the given MpegEncContext for decoding.
  * the changed fields will not depend upon
