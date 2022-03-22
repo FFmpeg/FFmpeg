@@ -132,6 +132,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
         // if the old/new fields are set inconsistently, prefer the old ones
         if (param->channel_layout && (param->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
                                       param->ch_layout.u.mask != param->channel_layout)) {
+            av_channel_layout_uninit(&s->ch_layout);
             av_channel_layout_from_mask(&s->ch_layout, param->channel_layout);
 FF_ENABLE_DEPRECATION_WARNINGS
         } else
