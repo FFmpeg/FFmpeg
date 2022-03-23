@@ -3503,6 +3503,21 @@ Maximum video quantizer scale for B frame.
 
 @item @var{min_qp_b}
 Minimum video quantizer scale for B frame.
+
+@item @var{scenario}
+Provides a hint to encoder about the scenario for the encoding session.
+@table @samp
+@item unknown
+@item displayremoting
+@item videoconference
+@item archive
+@item livestreaming
+@item cameracapture
+@item videosurveillance
+@item gamestreaming
+@item remotegaming
+@end table
+
 @end table
 
 @subsection HEVC Options
@@ -3651,6 +3666,21 @@ Maximum video quantizer scale for B frame.
 
 @item @var{min_qp_b}
 Minimum video quantizer scale for B frame.
+
+@item @var{scenario}
+Provides a hint to encoder about the scenario for the encoding session.
+@table @samp
+@item unknown
+@item displayremoting
+@item videoconference
+@item archive
+@item livestreaming
+@item cameracapture
+@item videosurveillance
+@item gamestreaming
+@item remotegaming
+@end table
+
 @end table
 
 @subsection MPEG2 Options
