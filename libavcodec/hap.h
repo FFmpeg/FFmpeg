@@ -80,9 +80,7 @@ typedef struct HapContext {
     int texture_count;      /* 2 for HAQA, 1 for other version */
     int texture_section_size; /* size of the part of the texture section (for HAPQA) */
 
-    /* Pointer to the selected compress function (encoder only) */
-    int (*tex_fun)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
-
+    TextureDSPThreadContext enc;
     TextureDSPThreadContext dec[2];
 } HapContext;
 
