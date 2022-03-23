@@ -412,6 +412,7 @@ int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *
 
 int ff_encode_preinit(AVCodecContext *avctx)
 {
+    AVCodecInternal *avci = avctx->internal;
     int i;
 
     if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
@@ -562,6 +563,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     if (avctx->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY)
         avctx->internal->intra_only_flag = AV_PKT_FLAG_KEY;
+
+    if (ffcodec(avctx->codec)->cb.encode) {
+        avci->es.in_frame = av_frame_alloc();
+        if (!avci->es.in_frame)
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
