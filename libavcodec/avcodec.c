@@ -284,9 +284,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ret < 0)
         goto free_and_end;
 
-    if (!HAVE_THREADS)
-        av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
-
     if (CONFIG_FRAME_THREAD_ENCODER && av_codec_is_encoder(avctx->codec)) {
         ret = ff_frame_thread_encoder_init(avctx);
         if (ret < 0)
