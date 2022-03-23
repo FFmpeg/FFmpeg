@@ -1405,6 +1405,8 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     int override_dimensions = 1;
     int ret;
 
+    av_assert0(av_codec_is_decoder(avctx->codec));
+
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         if ((unsigned)avctx->width > INT_MAX - STRIDE_ALIGN ||
             (ret = av_image_check_size2(FFALIGN(avctx->width, STRIDE_ALIGN), avctx->height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx)) < 0 || avctx->pix_fmt<0) {

@@ -595,12 +595,12 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (!s->current_picture->data[0]) {
-        if ((ret = ff_get_buffer(avctx, s->current_picture, 0)) < 0) {
+        if ((ret = ff_encode_alloc_frame(avctx, s->current_picture)) < 0) {
             return ret;
         }
     }
     if (!s->last_picture->data[0]) {
-        ret = ff_get_buffer(avctx, s->last_picture, 0);
+        ret = ff_encode_alloc_frame(avctx, s->last_picture);
         if (ret < 0)
             return ret;
     }

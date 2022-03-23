@@ -45,6 +45,11 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame);
 int ff_get_encode_buffer(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int flags);
 
 /**
+ * Allocate buffers for a frame. Encoder equivalent to ff_get_buffer().
+ */
+int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame);
+
+/**
  * Check AVPacket size and allocate data.
  *
  * Encoders supporting FFCodec.encode2() can use this as a convenience to

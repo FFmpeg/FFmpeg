@@ -26,6 +26,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "encode.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
 #include "mpegutils.h"
@@ -123,14 +124,15 @@ static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
     int r, ret;
 
     pic->tf.f = pic->f;
-    if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
-        avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
-        avctx->codec_id != AV_CODEC_ID_MSS2) {
-        if (edges_needed) {
-            pic->f->width  = avctx->width  + 2 * EDGE_WIDTH;
-            pic->f->height = avctx->height + 2 * EDGE_WIDTH;
-        }
 
+    if (edges_needed) {
+        pic->f->width  = avctx->width  + 2 * EDGE_WIDTH;
+        pic->f->height = avctx->height + 2 * EDGE_WIDTH;
+
+        r = ff_encode_alloc_frame(avctx, pic->f);
+    } else if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
+               avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
+               avctx->codec_id != AV_CODEC_ID_MSS2) {
         r = ff_thread_get_ext_buffer(avctx, &pic->tf,
                                      pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
     } else {

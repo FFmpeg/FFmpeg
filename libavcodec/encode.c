@@ -597,3 +597,37 @@ int ff_encode_preinit(AVCodecContext *avctx)
 
     return 0;
 }
+
+int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    int ret;
+
+    switch (avctx->codec->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        frame->format = avctx->pix_fmt;
+        if (frame->width <= 0 || frame->height <= 0) {
+            frame->width  = FFMAX(avctx->width,  avctx->coded_width);
+            frame->height = FFMAX(avctx->height, avctx->coded_height);
+        }
+
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        frame->sample_rate = avctx->sample_rate;
+        frame->format      = avctx->sample_fmt;
+        if (!frame->ch_layout.nb_channels) {
+            ret = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout);
+            if (ret < 0)
+                return ret;
+        }
+        break;
+    }
+
+    ret = avcodec_default_get_buffer2(avctx, frame, 0);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        av_frame_unref(frame);
+        return ret;
+    }
+
+    return 0;
+}

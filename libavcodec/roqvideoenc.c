@@ -1081,8 +1081,8 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (enc->first_frame) {
         /* Alloc memory for the reconstruction data (we must know the stride
          for that) */
-        if ((ret = ff_get_buffer(avctx, roq->current_frame, 0)) < 0 ||
-            (ret = ff_get_buffer(avctx, roq->last_frame,    0)) < 0)
+        if ((ret = ff_encode_alloc_frame(avctx, roq->current_frame)) < 0 ||
+            (ret = ff_encode_alloc_frame(avctx, roq->last_frame   )) < 0)
             return ret;
 
         /* Before the first video frame, write a "video info" chunk */

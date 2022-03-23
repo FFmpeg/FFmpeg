@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "encode.h"
 #include "me_cmp.h"
 #include "snow_dwt.h"
 #include "internal.h"
@@ -76,8 +77,11 @@ int ff_snow_get_buffer(SnowContext *s, AVFrame *frame)
     if (edges_needed) {
         frame->width  += 2 * EDGE_WIDTH;
         frame->height += 2 * EDGE_WIDTH;
-    }
-    if ((ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+
+        ret = ff_encode_alloc_frame(s->avctx, frame);
+    } else
+        ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
         return ret;
     if (edges_needed) {
         for (i = 0; frame->data[i]; i++) {
