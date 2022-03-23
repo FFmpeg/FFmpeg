@@ -1683,7 +1683,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     /* output? */
     if (s->new_picture->data[0]) {
-        int growing_buffer = context_count == 1 && !pkt->data && !s->data_partitioning;
+        int growing_buffer = context_count == 1 && !s->data_partitioning;
         size_t pkt_size = 10000 + s->mb_width * s->mb_height *
                                   (growing_buffer ? 64 : (MAX_MB_BYTES + 100));
         if (CONFIG_MJPEG_ENCODER && avctx->codec_id == AV_CODEC_ID_MJPEG) {
