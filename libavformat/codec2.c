@@ -21,7 +21,6 @@
 
 #include "config_components.h"
 
-#include <memory.h>
 #include "libavcodec/codec2utils.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
