@@ -155,12 +155,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     avci->buffer_frame = av_frame_alloc();
     avci->buffer_pkt = av_packet_alloc();
-    avci->in_pkt = av_packet_alloc();
-    avci->last_pkt_props = av_packet_alloc();
-    avci->pkt_props = av_fifo_alloc2(1, sizeof(*avci->last_pkt_props),
-                                     AV_FIFO_FLAG_AUTO_GROW);
-    if (!avci->buffer_frame || !avci->buffer_pkt          ||
-        !avci->in_pkt || !avci->last_pkt_props || !avci->pkt_props) {
+    if (!avci->buffer_frame || !avci->buffer_pkt) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }

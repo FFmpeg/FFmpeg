@@ -1527,6 +1527,7 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 
 int ff_decode_preinit(AVCodecContext *avctx)
 {
+    AVCodecInternal *avci = avctx->internal;
     int ret = 0;
 
     /* if the decoder init function was already called previously,
@@ -1604,6 +1605,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS) {
         avctx->export_side_data |= AV_CODEC_EXPORT_DATA_MVS;
     }
+
+    avci->in_pkt         = av_packet_alloc();
+    avci->last_pkt_props = av_packet_alloc();
+    avci->pkt_props      = av_fifo_alloc2(1, sizeof(*avci->last_pkt_props),
+                                          AV_FIFO_FLAG_AUTO_GROW);
+    if (!avci->in_pkt || !avci->last_pkt_props || !avci->pkt_props)
+        return AVERROR(ENOMEM);
 
     ret = decode_bsfs_init(avctx);
     if (ret < 0)
