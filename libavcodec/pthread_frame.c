@@ -791,7 +791,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     p->parent = fctx;
     p->avctx  = copy;
 
-    copy->internal = av_memdup(avctx->internal, sizeof(*avctx->internal));
+    copy->internal = av_mallocz(sizeof(*copy->internal));
     if (!copy->internal)
         return AVERROR(ENOMEM);
     copy->internal->thread_ctx = p;
