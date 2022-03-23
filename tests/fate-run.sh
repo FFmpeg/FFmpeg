@@ -391,6 +391,17 @@ cmp_metadata(){
         -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
 }
 
+refcmp_metadata_files(){
+    refcmp=$1
+    pixfmt=$2
+    file1=$3
+    file2=$4
+    fuzz=${5:-0.001}
+    ffmpeg -auto_conversion_filters $FLAGS -i $file1 $FLAGS -i $file2 $ENC_OPTS \
+        -lavfi "[0:v]format=${pixfmt}[v0];[1:v]format=${pixfmt}[v1];[v0][v1]${refcmp},metadata=print:file=-" \
+        -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
+}
+
 pixfmt_conversion(){
     conversion="${test#pixfmt-}"
     outdir="tests/data/pixfmt"

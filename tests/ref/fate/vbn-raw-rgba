@@ -1,0 +1,11 @@
+frame:0    pts:0       pts_time:0
+lavfi.psnr.mse.r=0.000000
+lavfi.psnr.psnr.r=inf
+lavfi.psnr.mse.g=0.000000
+lavfi.psnr.psnr.g=inf
+lavfi.psnr.mse.b=0.000000
+lavfi.psnr.psnr.b=inf
+lavfi.psnr.mse.a=0.000000
+lavfi.psnr.psnr.a=inf
+lavfi.psnr.mse_avg=0.000000
+lavfi.psnr.psnr_avg=inf
