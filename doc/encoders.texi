@@ -2261,11 +2261,10 @@ and compression tools used, and varies the combination of these tools. This
 maps to the @var{method} option in libwebp. The valid range is 0 to 6.
 Default is 4.
 
-@item -qscale @var{float}
-For lossy encoding, this controls image quality, 0 to 100. For lossless
-encoding, this controls the effort and time spent at compressing more. The
-default value is 75. Note that for usage via libavcodec, this option is called
-@var{global_quality} and must be multiplied by @var{FF_QP2LAMBDA}.
+@item -quality @var{float}
+For lossy encoding, this controls image quality. For lossless encoding, this
+controls the effort and time spent in compression.
+Range is 0 to 100. Default is 75.
 
 @item -preset @var{type}
 Configuration preset. This does some automatic settings based on the general
