@@ -168,7 +168,7 @@ typedef struct H264Ref {
 } H264Ref;
 
 typedef struct H264SliceContext {
-    struct H264Context *h264;
+    const struct H264Context *h264;
     GetBitContext gb;
     ERContext *er;
 
