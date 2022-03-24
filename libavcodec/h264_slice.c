@@ -2931,9 +2931,6 @@ int ff_h264_execute_decode_slices(H264Context *h)
             int slice_idx;
 
             sl                 = &h->slice_ctx[i];
-            if (CONFIG_ERROR_RESILIENCE) {
-                sl->er.error_count = 0;
-            }
 
             /* make sure none of those slices overlap */
             slice_idx = sl->mb_y * h->mb_width + sl->mb_x;
@@ -2954,10 +2951,6 @@ int ff_h264_execute_decode_slices(H264Context *h)
         /* pull back stuff from slices to master context */
         sl                   = &h->slice_ctx[context_count - 1];
         h->mb_y              = sl->mb_y;
-        if (CONFIG_ERROR_RESILIENCE) {
-            for (i = 1; i < context_count; i++)
-                h->slice_ctx[0].er.error_count += h->slice_ctx[i].er.error_count;
-        }
 
         if (h->postpone_filter) {
             h->postpone_filter = 0;
