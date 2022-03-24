@@ -776,8 +776,6 @@ end:
         if (sl->ref_count[1])
             ff_h264_set_erpic(&h->er.next_pic, sl->ref_list[1][0].parent);
 
-        h->er.ref_count = sl->ref_count[0];
-
         ff_er_frame_end(&h->er);
         if (use_last_pic)
             memset(&sl->ref_list[0][0], 0, sizeof(sl->ref_list[0][0]));
