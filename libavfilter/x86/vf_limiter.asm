@@ -41,7 +41,7 @@ cglobal limiter_8bit, 6, 7, 3, src, dst, slinesize, dlinesize, w, h, x
     .loop:
         movu           m0, [srcq + xq]
         CLIPUB         m0, m1, m2
-        mova    [dstq+xq], m0
+        movu    [dstq+xq], m0
         add            xq, mmsize
     jl .loop
 
@@ -69,7 +69,7 @@ cglobal limiter_16bit, 6, 7, 3, src, dst, slinesize, dlinesize, w, h, x
         movu           m0, [srcq + xq]
         pmaxuw         m0, m1
         pminuw         m0, m2
-        mova    [dstq+xq], m0
+        movu    [dstq+xq], m0
         add            xq, mmsize
     jl .loop
 
