@@ -340,6 +340,12 @@ int main(void)
     CHANNEL_LAYOUT_CHANNEL_FROM_INDEX(11);
     printf("On \"ambisonic 2+stereo\" layout with 11: %21d\n", ret);
 
+    printf("\nTesting av_channel_layout_subset\n");
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_STEREO);
+    printf("On \"ambisonic 2+stereo\" layout with AV_CH_LAYOUT_STEREO:  0x%"PRIx64"\n", mask);
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_QUAD);
+    printf("On \"ambisonic 2+stereo\" layout with AV_CH_LAYOUT_QUAD:    0x%"PRIx64"\n", mask);
+
     av_channel_layout_uninit(&layout);
     av_bprint_finalize(&bp, NULL);
 

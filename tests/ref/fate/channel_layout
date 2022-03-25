@@ -173,3 +173,7 @@ On "ambisonic 2+stereo" layout with 0:                   1024
 On "ambisonic 2+stereo" layout with 9:                      0
 On "ambisonic 2+stereo" layout with 10:                     1
 On "ambisonic 2+stereo" layout with 11:                    -1
+
+Testing av_channel_layout_subset
+On "ambisonic 2+stereo" layout with AV_CH_LAYOUT_STEREO:  0x3
+On "ambisonic 2+stereo" layout with AV_CH_LAYOUT_QUAD:    0x3
