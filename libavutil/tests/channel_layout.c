@@ -31,7 +31,8 @@
 #define CHANNEL_LAYOUT_FROM_MASK(x)                                        \
     av_channel_layout_uninit(&layout);                                     \
     av_bprint_clear(&bp);                                                  \
-    if (!av_channel_layout_from_mask(&layout, x))                          \
+    if (!av_channel_layout_from_mask(&layout, x) &&                        \
+         av_channel_layout_check(&layout))                                 \
         av_channel_layout_describe_bprint(&layout, &bp);                   \
     else                                                                   \
         av_bprintf(&bp, "fail");
@@ -39,7 +40,8 @@
 #define CHANNEL_LAYOUT_FROM_STRING(x)                                      \
     av_channel_layout_uninit(&layout);                                     \
     av_bprint_clear(&bp);                                                  \
-    if (!av_channel_layout_from_string(&layout, x))                        \
+    if (!av_channel_layout_from_string(&layout, x) &&                      \
+         av_channel_layout_check(&layout))                                 \
         av_channel_layout_describe_bprint(&layout, &bp);                   \
     else                                                                   \
         av_bprintf(&bp, "fail");
