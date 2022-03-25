@@ -103,6 +103,11 @@ On 5.1(side) layout with "SL":                     4
 On 5.1(side) layout with "SR":                     5
 On 5.1(side) layout with "BC":                    -1
 
+Testing av_channel_layout_subset
+On 5.1(side) layout with AV_CH_LAYOUT_STEREO:    0x3
+On 5.1(side) layout with AV_CH_LAYOUT_2POINT1:   0xb
+On 5.1(side) layout with AV_CH_LAYOUT_4POINT1:   0xf
+
 ==Custom layouts==
 
 Testing av_channel_layout_from_string
@@ -146,6 +151,10 @@ On "FR+FL@Foo+USR63@Foo" layout with 0:                     1
 On "FR+FL@Foo+USR63@Foo" layout with 1:                     0
 On "FR+FL@Foo+USR63@Foo" layout with 2:                    63
 On "FR+FL@Foo+USR63@Foo" layout with 3:                    -1
+
+Testing av_channel_layout_subset
+On "FR+FL@Foo+USR63@Foo" layout with AV_CH_LAYOUT_STEREO: 0x3
+On "FR+FL@Foo+USR63@Foo" layout with AV_CH_LAYOUT_QUAD:   0x3
 
 ==Ambisonic layouts==
 

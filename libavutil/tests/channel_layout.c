@@ -49,6 +49,9 @@
     if (ret < 0)                                                           \
         ret = -1
 
+#define CHANNEL_LAYOUT_SUBSET(x)                                           \
+    mask = av_channel_layout_subset(&layout, x)
+
 #define CHANNEL_LAYOUT_INDEX_FROM_CHANNEL(x)                               \
     ret = av_channel_layout_index_from_channel(&layout, x);                \
     if (ret < 0)                                                           \
@@ -70,6 +73,7 @@ int main(void)
     AVChannelLayout layout = { 0 };
     AVBPrint bp;
     void *iter = NULL;
+    uint64_t mask;
     int ret;
 
     av_bprint_init(&bp, 64, AV_BPRINT_SIZE_AUTOMATIC);
@@ -216,6 +220,14 @@ int main(void)
     CHANNEL_LAYOUT_INDEX_FROM_STRING("BC");
     printf("On 5.1(side) layout with \"BC\": %21d\n", ret);
 
+    printf("\nTesting av_channel_layout_subset\n");
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_STEREO);
+    printf("On 5.1(side) layout with AV_CH_LAYOUT_STEREO:    0x%"PRIx64"\n", mask);
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_2POINT1);
+    printf("On 5.1(side) layout with AV_CH_LAYOUT_2POINT1:   0x%"PRIx64"\n", mask);
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_4POINT1);
+    printf("On 5.1(side) layout with AV_CH_LAYOUT_4POINT1:   0x%"PRIx64"\n", mask);
+
     printf("\n==Custom layouts==\n");
 
     printf("\nTesting av_channel_layout_from_string\n");
@@ -291,6 +303,12 @@ int main(void)
     printf("On \"FR+FL@Foo+USR63@Foo\" layout with 2: %21d\n", ret);
     CHANNEL_LAYOUT_CHANNEL_FROM_INDEX(3);
     printf("On \"FR+FL@Foo+USR63@Foo\" layout with 3: %21d\n", ret);
+
+    printf("\nTesting av_channel_layout_subset\n");
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_STEREO);
+    printf("On \"FR+FL@Foo+USR63@Foo\" layout with AV_CH_LAYOUT_STEREO: 0x%"PRIx64"\n", mask);
+    CHANNEL_LAYOUT_SUBSET(AV_CH_LAYOUT_QUAD);
+    printf("On \"FR+FL@Foo+USR63@Foo\" layout with AV_CH_LAYOUT_QUAD:   0x%"PRIx64"\n", mask);
 
     printf("\n==Ambisonic layouts==\n");
 
