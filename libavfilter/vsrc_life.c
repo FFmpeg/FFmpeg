@@ -284,6 +284,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = life->w;
     outlink->h = life->h;
     outlink->time_base = av_inv_q(life->frame_rate);
+    outlink->frame_rate = life->frame_rate;
 
     return 0;
 }
