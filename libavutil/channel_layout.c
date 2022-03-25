@@ -89,7 +89,8 @@ void av_channel_name_bprint(AVBPrint *bp, enum AVChannel channel_id)
     if (channel_id >= AV_CHAN_AMBISONIC_BASE &&
         channel_id <= AV_CHAN_AMBISONIC_END)
         av_bprintf(bp, "AMBI%d", channel_id - AV_CHAN_AMBISONIC_BASE);
-    else if ((unsigned)channel_id < FF_ARRAY_ELEMS(channel_names))
+    else if ((unsigned)channel_id < FF_ARRAY_ELEMS(channel_names) &&
+             channel_names[channel_id].name)
         av_bprintf(bp, "%s", channel_names[channel_id].name);
     else if (channel_id == AV_CHAN_NONE)
         av_bprintf(bp, "NONE");
@@ -115,7 +116,8 @@ void av_channel_description_bprint(AVBPrint *bp, enum AVChannel channel_id)
     if (channel_id >= AV_CHAN_AMBISONIC_BASE &&
         channel_id <= AV_CHAN_AMBISONIC_END)
         av_bprintf(bp, "ambisonic ACN %d", channel_id - AV_CHAN_AMBISONIC_BASE);
-    else if ((unsigned)channel_id < FF_ARRAY_ELEMS(channel_names))
+    else if ((unsigned)channel_id < FF_ARRAY_ELEMS(channel_names) &&
+             channel_names[channel_id].description)
         av_bprintf(bp, "%s", channel_names[channel_id].description);
     else
         av_bprintf(bp, "user %d", channel_id);
