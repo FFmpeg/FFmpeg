@@ -26,6 +26,33 @@
 #include <libplacebo/utils/libav.h>
 #include <libplacebo/vulkan.h>
 
+enum {
+    TONE_MAP_AUTO,
+    TONE_MAP_CLIP,
+    TONE_MAP_BT2390,
+    TONE_MAP_BT2446A,
+    TONE_MAP_SPLINE,
+    TONE_MAP_REINHARD,
+    TONE_MAP_MOBIUS,
+    TONE_MAP_HABLE,
+    TONE_MAP_GAMMA,
+    TONE_MAP_LINEAR,
+    TONE_MAP_COUNT,
+};
+
+static const struct pl_tone_map_function * const tonemapping_funcs[TONE_MAP_COUNT] = {
+    [TONE_MAP_AUTO]     = &pl_tone_map_auto,
+    [TONE_MAP_CLIP]     = &pl_tone_map_clip,
+    [TONE_MAP_BT2390]   = &pl_tone_map_bt2390,
+    [TONE_MAP_BT2446A]  = &pl_tone_map_bt2446a,
+    [TONE_MAP_SPLINE]   = &pl_tone_map_spline,
+    [TONE_MAP_REINHARD] = &pl_tone_map_reinhard,
+    [TONE_MAP_MOBIUS]   = &pl_tone_map_mobius,
+    [TONE_MAP_HABLE]    = &pl_tone_map_hable,
+    [TONE_MAP_GAMMA]    = &pl_tone_map_gamma,
+    [TONE_MAP_LINEAR]   = &pl_tone_map_linear,
+};
+
 typedef struct LibplaceboContext {
     /* lavfi vulkan*/
     FFVulkanContext vkctx;
@@ -91,12 +118,16 @@ typedef struct LibplaceboContext {
 
     /* pl_color_map_params */
     int intent;
+    int gamut_mode;
     int tonemapping;
     float tonemapping_param;
+    int tonemapping_mode;
+    int inverse_tonemapping;
+    float crosstalk;
+    int tonemapping_lut_size;
+    /* for backwards compatibility */
     float desat_str;
     float desat_exp;
-    float desat_base;
-    float max_boost;
     int gamut_warning;
     int gamut_clipping;
 
@@ -281,6 +312,8 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
     int err = 0, ok;
     LibplaceboContext *s = avctx->priv;
     struct pl_render_params params;
+    enum pl_tone_map_mode tonemapping_mode = s->tonemapping_mode;
+    enum pl_gamut_mode gamut_mode = s->gamut_mode;
     struct pl_frame image, target;
     ok = pl_map_avframe_ex(s->gpu, &image, pl_avframe_params(
         .frame    = in,
@@ -304,6 +337,24 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
         float aspect = pl_rect2df_aspect(&target.crop) * av_q2d(s->target_sar);
         pl_rect2df_aspect_set(&target.crop, aspect, s->pad_crop_ratio);
     }
+
+    /* backwards compatibility with older API */
+    if (!tonemapping_mode && (s->desat_str >= 0.0f || s->desat_exp >= 0.0f)) {
+        float str = s->desat_str < 0.0f ? 0.9f : s->desat_str;
+        float exp = s->desat_exp < 0.0f ? 0.2f : s->desat_exp;
+        if (str >= 0.9f && exp <= 0.1f) {
+            tonemapping_mode = PL_TONE_MAP_RGB;
+        } else if (str > 0.1f) {
+            tonemapping_mode = PL_TONE_MAP_HYBRID;
+        } else {
+            tonemapping_mode = PL_TONE_MAP_LUMA;
+        }
+    }
+
+    if (s->gamut_warning)
+        gamut_mode = PL_GAMUT_WARN;
+    if (s->gamut_clipping)
+        gamut_mode = PL_GAMUT_DESATURATE;
 
     /* Update render params */
     params = (struct pl_render_params) {
@@ -338,14 +389,13 @@ static int process_frames(AVFilterContext *avctx, AVFrame *out, AVFrame *in)
 
         .color_map_params = pl_color_map_params(
             .intent = s->intent,
-            .tone_mapping_algo = s->tonemapping,
+            .gamut_mode = gamut_mode,
+            .tone_mapping_function = tonemapping_funcs[s->tonemapping],
             .tone_mapping_param = s->tonemapping_param,
-            .desaturation_strength = s->desat_str,
-            .desaturation_exponent = s->desat_exp,
-            .desaturation_base = s->desat_base,
-            .max_boost = s->max_boost,
-            .gamut_warning = s->gamut_warning,
-            .gamut_clipping = s->gamut_clipping,
+            .tone_mapping_mode = tonemapping_mode,
+            .inverse_tone_mapping = s->inverse_tonemapping,
+            .tone_mapping_crosstalk = s->crosstalk,
+            .lut_size = s->tonemapping_lut_size,
         ),
 
         .dither_params = s->dithering < 0 ? NULL : pl_dither_params(
@@ -616,21 +666,37 @@ static const AVOption libplacebo_options[] = {
         { "relative", "Relative colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_RELATIVE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
         { "absolute", "Absolute colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_ABSOLUTE_COLORIMETRIC}, 0, 0, STATIC, "intent" },
         { "saturation", "Saturation mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_SATURATION}, 0, 0, STATIC, "intent" },
-    { "tonemapping", "Tone-mapping algorithm", OFFSET(tonemapping), AV_OPT_TYPE_INT, {.i64 = PL_TONE_MAPPING_BT_2390}, 0, PL_TONE_MAPPING_ALGORITHM_COUNT - 1, DYNAMIC, "tonemap" },
-        { "clip", "Hard-clipping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_CLIP}, 0, 0, STATIC, "tonemap" },
-        { "mobius", "Mobius tone-mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_MOBIUS}, 0, 0, STATIC, "tonemap" },
-        { "reinhard", "Reinhard tone-mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_REINHARD}, 0, 0, STATIC, "tonemap" },
-        { "hable", "Hable/Filmic tone-mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_HABLE}, 0, 0, STATIC, "tonemap" },
-        { "gamma", "Gamma tone-mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_GAMMA}, 0, 0, STATIC, "tonemap" },
-        { "linear", "Linear tone-mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_LINEAR}, 0, 0, STATIC, "tonemap" },
-        { "bt.2390", "ITU-R BT.2390 tone-mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAPPING_BT_2390}, 0, 0, STATIC, "tonemap" },
+    { "gamut_mode", "Gamut-mapping mode", OFFSET(gamut_mode), AV_OPT_TYPE_INT, {.i64 = PL_GAMUT_CLIP}, 0, PL_GAMUT_MODE_COUNT - 1, DYNAMIC, "gamut_mode" },
+        { "clip", "Hard-clip gamut boundary", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_CLIP}, 0, 0, STATIC, "gamut_mode" },
+        { "warn", "Highlight out-of-gamut colors", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_WARN}, 0, 0, STATIC, "gamut_mode" },
+        { "darken", "Darken image to fit gamut", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_DARKEN}, 0, 0, STATIC, "gamut_mode" },
+        { "desaturate", "Colorimetrically desaturate colors", 0, AV_OPT_TYPE_CONST, {.i64 = PL_GAMUT_DESATURATE}, 0, 0, STATIC, "gamut_mode" },
+    { "tonemapping", "Tone-mapping algorithm", OFFSET(tonemapping), AV_OPT_TYPE_INT, {.i64 = TONE_MAP_AUTO}, 0, TONE_MAP_COUNT - 1, DYNAMIC, "tonemap" },
+        { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_AUTO}, 0, 0, STATIC, "tonemap" },
+        { "clip", "No tone mapping (clip", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_CLIP}, 0, 0, STATIC, "tonemap" },
+        { "bt.2390", "ITU-R BT.2390 EETF", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_BT2390}, 0, 0, STATIC, "tonemap" },
+        { "bt.2446a", "ITU-R BT.2446 Method A", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_BT2446A}, 0, 0, STATIC, "tonemap" },
+        { "spline", "Single-pivot polynomial spline", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_SPLINE}, 0, 0, STATIC, "tonemap" },
+        { "reinhard", "Reinhard", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_REINHARD}, 0, 0, STATIC, "tonemap" },
+        { "mobius", "Mobius", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_MOBIUS}, 0, 0, STATIC, "tonemap" },
+        { "hable", "Filmic tone-mapping (Hable)", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_HABLE}, 0, 0, STATIC, "tonemap" },
+        { "gamma", "Gamma function with knee", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_GAMMA}, 0, 0, STATIC, "tonemap" },
+        { "linear", "Perceptually linear stretch", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_LINEAR}, 0, 0, STATIC, "tonemap" },
     { "tonemapping_param", "Tunable parameter for some tone-mapping functions", OFFSET(tonemapping_param), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 100.0, .flags = DYNAMIC },
-    { "desaturation_strength", "Desaturation strength", OFFSET(desat_str), AV_OPT_TYPE_FLOAT, {.dbl = 0.90}, 0.0, 1.0, DYNAMIC },
-    { "desaturation_exponent", "Desaturation exponent", OFFSET(desat_exp), AV_OPT_TYPE_FLOAT, {.dbl = 0.2}, 0.0, 10.0, DYNAMIC },
-    { "desaturation_base", "Desaturation base", OFFSET(desat_base), AV_OPT_TYPE_FLOAT, {.dbl = 0.18}, 0.0, 10.0, DYNAMIC },
-    { "max_boost", "Tone-mapping maximum boost", OFFSET(max_boost), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 1.0, 10.0, DYNAMIC },
-    { "gamut_warning", "Highlight out-of-gamut colors", OFFSET(gamut_warning), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
-    { "gamut_clipping", "Enable colorimetric gamut clipping", OFFSET(gamut_clipping), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
+    { "tonemapping_mode", "Tone-mapping mode", OFFSET(tonemapping_mode), AV_OPT_TYPE_INT, {.i64 = PL_TONE_MAP_AUTO}, 0, PL_TONE_MAP_MODE_COUNT - 1, DYNAMIC, "tonemap_mode" },
+        { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_AUTO}, 0, 0, STATIC, "tonemap_mode" },
+        { "rgb", "Per-channel (RGB)", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_RGB}, 0, 0, STATIC, "tonemap_mode" },
+        { "max", "Maximum component", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_MAX}, 0, 0, STATIC, "tonemap_mode" },
+        { "hybrid", "Hybrid of Luma/RGB", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_HYBRID}, 0, 0, STATIC, "tonemap_mode" },
+        { "luma", "Luminance", 0, AV_OPT_TYPE_CONST, {.i64 = PL_TONE_MAP_LUMA}, 0, 0, STATIC, "tonemap_mode" },
+    { "inverse_tonemapping", "Inverse tone mapping (range expansion)", OFFSET(inverse_tonemapping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
+    { "tonemapping_crosstalk", "Crosstalk factor for tone-mapping", OFFSET(crosstalk), AV_OPT_TYPE_FLOAT, {.dbl = 0.04}, 0.0, 0.30, DYNAMIC },
+    { "tonemapping_lut_size", "Tone-mapping LUT size", OFFSET(tonemapping_lut_size), AV_OPT_TYPE_INT, {.i64 = 256}, 2, 1024, DYNAMIC },
+    /* deprecated options for backwards compatibility, defaulting to -1 to not override the new defaults */
+    { "desaturation_strength", "Desaturation strength", OFFSET(desat_str), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 1.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "desaturation_exponent", "Desaturation exponent", OFFSET(desat_exp), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 10.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "gamut_warning", "Highlight out-of-gamut colors", OFFSET(gamut_warning), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "gamut_clipping", "Enable colorimetric gamut clipping", OFFSET(gamut_clipping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
 
     { "dithering", "Dither method to use", OFFSET(dithering), AV_OPT_TYPE_INT, {.i64 = PL_DITHER_BLUE_NOISE}, -1, PL_DITHER_METHOD_COUNT - 1, DYNAMIC, "dither" },
         { "none", "Disable dithering", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, STATIC, "dither" },
