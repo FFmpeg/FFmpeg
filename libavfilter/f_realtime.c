@@ -66,7 +66,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 }
 
 #define OFFSET(x) offsetof(RealtimeContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption options[] = {
     { "limit", "sleep time limit", OFFSET(limit), AV_OPT_TYPE_DURATION, { .i64 = 2000000 }, 0, INT64_MAX, FLAGS },
     { "speed", "speed factor", OFFSET(speed), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, DBL_MIN, DBL_MAX, FLAGS },
@@ -100,6 +100,7 @@ const AVFilter ff_vf_realtime = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_realtime_inputs),
     FILTER_OUTPUTS(avfilter_vf_realtime_outputs),
+    .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_REALTIME_FILTER */
 
@@ -128,5 +129,6 @@ const AVFilter ff_af_arealtime = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(arealtime_inputs),
     FILTER_OUTPUTS(arealtime_outputs),
+    .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_AREALTIME_FILTER */

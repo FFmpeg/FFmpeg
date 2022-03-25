@@ -26757,6 +26757,10 @@ A processing speed faster than what is possible without these filters cannot
 be achieved.
 @end table
 
+@subsection Commands
+
+Both filters supports the all above options as @ref{commands}.
+
 @section segment, asegment
 
 Split single input stream into multiple streams.
