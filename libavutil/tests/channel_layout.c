@@ -206,6 +206,8 @@ int main(void)
     printf("With \"2 channels (FR+FL)\": %34s\n", bp.str);
     CHANNEL_LAYOUT_FROM_STRING("ambisonic 1+FR+FL");
     printf("With \"ambisonic 1+FR+FL\": %35s\n", bp.str);
+    CHANNEL_LAYOUT_FROM_STRING("ambisonic 2+FC@Foo");
+    printf("With \"ambisonic 2+FC@Foo\": %34s\n", bp.str);
     CHANNEL_LAYOUT_FROM_STRING("FL@Foo+FR@Bar");
     printf("With \"FL@Foo+FR@Bar\": %39s\n", bp.str);
     CHANNEL_LAYOUT_FROM_STRING("FR+FL@Foo+USR63@Foo");

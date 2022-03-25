@@ -78,6 +78,7 @@ Testing av_channel_layout_from_string
 With "FL+FR+FC+BL+BR+LFE":    6 channels (FL+FR+FC+BL+BR+LFE)
 With "2 channels (FR+FL)":                 2 channels (FR+FL)
 With "ambisonic 1+FR+FL":      ambisonic 1+2 channels (FR+FL)
+With "ambisonic 2+FC@Foo":    ambisonic 2+1 channels (FC@Foo)
 With "FL@Foo+FR@Bar":              2 channels (FL@Foo+FR@Bar)
 With "FR+FL@Foo+USR63@Foo":  3 channels (FR+FL@Foo+USR63@Foo)
 
