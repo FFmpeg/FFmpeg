@@ -14793,6 +14793,510 @@ ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Ca
 
 @end itemize
 
+@section libplacebo
+
+Flexible GPU-accelerated processing filter based on libplacebo
+(@url{https://code.videolan.org/videolan/libplacebo}). Note that this filter
+currently only accepts Vulkan input frames.
+
+@subsection Options
+
+The options for this filter are divided into the following sections:
+
+@subsubsection Output mode
+These options control the overall output mode. By default, libplacebo will try
+to preserve the source colorimetry and size as best as it can, but it will
+apply any embedded film grain, dolby vision metadata or anamorphic SAR present
+in source frames.
+@table @option
+@item w
+@item h
+Set the output video dimension expression. Default value is the input dimension.
+
+Allows for the same expressions as the @ref{scale} filter.
+
+@item format
+Set the output format override. If unset (the default), frames will be output
+in the same format as the respective input frames. Otherwise, format conversion
+will be performed.
+
+@item force_original_aspect_ratio
+@item force_divisible_by
+Work the same as the identical @ref{scale} filter options.
+
+@item normalize_sar
+If enabled (the default), output frames will always have a pixel aspect ratio
+of 1:1. If disabled, any aspect ratio mismatches, including those from e.g.
+anamorphic video sources, are forwarded to the output pixel aspect ratio.
+
+@item pad_crop_ratio
+Specifies a ratio (between @code{0.0} and @code{1.0}) between padding and
+cropping when the input aspect ratio does not match the output aspect ratio and
+@option{normalize_sar} is in effect. The default of @code{0.0} always pads the
+content with black borders, while a value of @code{1.0} always crops off parts
+of the content. Intermediate values are possible, leading to a mix of the two
+approaches.
+
+@item colorspace
+@item color_primaries
+@item color_trc
+@item range
+Configure the colorspace that output frames will be delivered in. The default
+value of @code{auto} outputs frames in the same format as the input frames,
+leading to no change. For any other value, conversion will be performed.
+
+See the @ref{setparams} filter for a list of possible values.
+
+@item apply_filmgrain
+Apply film grain (e.g. AV1 or H.274) if present in source frames, and strip
+it from the output. Enabled by default.
+
+@item apply_dolbyvision
+Apply Dolby Vision RPU metadata if present in source frames, and strip it from
+the output. Enabled by default. Note that Dolby Vision will always output
+BT.2020+PQ, overriding the usual input frame metadata. These will also be
+picked as the values of @code{auto} for the respective frame output options.
+@end table
+
+@subsubsection Scaling
+The options in this section control how libplacebo performs upscaling and (if
+necessary) downscaling. Note that libplacebo will always internally operate on
+4:4:4 content, so any sub-sampled chroma formats such as @code{yuv420p} will
+necessarily be upsampled and downsampled as part of the rendering process. That
+means scaling might be in effect even if the source and destination resolution
+are the same.
+@table @option
+@item upscaler
+@item downscaler
+Configure the filter kernel used for upscaling and downscaling. The respective
+defaults are @code{spline36} and @code{mitchell}. For a full list of possible
+values, pass @code{help} to these options. The most important values are:
+@table @samp
+
+@item none
+Forces the use of built-in GPU texture sampling (typically bilinear). Extremely
+fast but poor quality, especially when downscaling.
+
+@item bilinear
+Bilinear interpolation. Can generally be done for free on GPUs, except when
+doing so would lead to aliasing. Fast and low quality.
+
+@item nearest
+Nearest-neighbour interpolation. Sharp but highly aliasing.
+
+@item oversample
+Algorithm that looks visually similar to nearest-neighbour interpolation but
+tries to preserve pixel aspect ratio. Good for pixel art, since it results in
+minimal distortion of the artistic appearance.
+
+@item lanczos
+Standard sinc-sinc interpolation kernel.
+
+@item spline36
+Cubic spline approximation of lanczos. No difference in performance, but has
+very slightly less ringing.
+
+@item ewa_lanczos
+Elliptically weighted average version of lanczos, based on a jinc-sinc kernel.
+This is also popularly referred to as just "Jinc scaling". Slow but very high
+quality.
+
+@item gaussian
+Gaussian kernel. Has certain ideal mathematical properties, but subjectively
+very blurry.
+
+@item mitchell
+Cubic BC spline with parameters recommended by Mitchell and Netravali. Very
+little ringing.
+@end table
+
+@item lut_entries
+Configures the size of scaler LUTs, ranging from @code{1} to @code{256}. The
+default of @code{0} will pick libplacebo's internal default, typically
+@code{64}.
+
+@item antiringing
+Enables anti-ringing (for non-EWA filters). The value (between @code{0.0} and
+@code{1.0}) configures the strength of the anti-ringing algorithm. May increase
+aliasing if set too high. Disabled by default.
+
+@item sigmoid
+Enable sigmoidal compression during upscaling. Reduces ringing slightly.
+Enabled by default.
+@end table
+
+@subsubsection Debanding
+Libplacebo comes with a built-in debanding filter that is good at counteracting
+many common sources of banding and blocking. Turning this on is highly
+recommended whenever quality is desired.
+@table @option
+@item deband
+Enable (fast) debanding algorithm. Disabled by default.
+
+@item deband_iterations
+Number of deband iterations of the debanding algorithm. Each iteration is
+performed with progressively increased radius (and diminished threshold).
+Recommended values are in the range @code{1} to @code{4}. Defaults to @code{1}.
+
+@item deband_threshold
+Debanding filter strength. Higher numbers lead to more aggressive debanding.
+Defaults to @code{4.0}.
+
+@item deband_radius
+Debanding filter radius. A higher radius is better for slow gradients, while
+a lower radius is better for steep gradients. Defaults to @code{16.0}.
+
+@item deband_grain
+Amount of extra output grain to add. Helps hide imperfections. Defaults to
+@code{6.0}.
+@end table
+
+@subsubsection Color adjustment
+A collection of subjective color controls. Not very rigorous, so the exact
+effect will vary somewhat depending on the input primaries and colorspace.
+@table @option
+@item brightness
+Brightness boost, between @code{-1.0} and @code{1.0}. Defaults to @code{0.0}.
+
+@item contrast
+Contrast gain, between @code{0.0} and @code{16.0}. Defaults to @code{1.0}.
+
+@item saturation
+Saturation gain, between @code{0.0} and @code{16.0}. Defaults to @code{1.0}.
+
+@item hue
+Hue shift in radians, between @code{-3.14} and @code{3.14}. Defaults to
+@code{0.0}. This will rotate the UV subvector, defaulting to BT.709
+coefficients for RGB inputs.
+
+@item gamma
+Gamma adjustment, between @code{0.0} and @code{16.0}. Defaults to @code{1.0}.
+
+@item cones
+Cone model to use for color blindness simulation. Accepts any combination of
+@code{l}, @code{m} and @code{s}. Here are some examples:
+@table @samp
+@item m
+Deuteranomaly / deuteranopia (affecting 3%-4% of the population)
+@item l
+Protanomaly / protanopia (affecting 1%-2% of the population)
+@item l+m
+Monochromacy (very rare)
+@item l+m+s
+Achromatopsy (complete loss of daytime vision, extremely rare)
+@end table
+
+@item cone-strength
+Gain factor for the cones specified by @code{cones}, between @code{0.0} and
+@code{10.0}. A value of @code{1.0} results in no change to color vision. A
+value of @code{0.0} (the default) simulates complete loss of those cones. Values
+above @code{1.0} result in exaggerating the differences between cones, which
+may help compensate for reduced color vision.
+@end table
+
+@subsubsection Peak detection
+To help deal with sources that only have static HDR10 metadata (or no tagging
+whatsoever), libplacebo uses its own internal frame analysis compute shader to
+analyze source frames and adapt the tone mapping function in realtime. If this
+is too slow, or if exactly reproducible frame-perfect results are needed, it's
+recommended to turn this feature off.
+@table @option
+@item peak_detect
+Enable HDR peak detection. Ignores static MaxCLL/MaxFALL values in favor of
+dynamic detection from the input. Note that the detected values do not get
+written back to the output frames, they merely guide the internal tone mapping
+process. Enabled by default.
+
+@item smoothing_period
+Peak detection smoothing period, between @code{0.0} and @code{1000.0}. Higher
+values result in peak detection becoming less responsive to changes in the
+input. Defaults to @code{100.0}.
+
+@item minimum_peak
+Lower bound on the detected peak (relative to SDR white), between @code{0.0}
+and @code{100.0}. Defaults to @code{1.0}.
+
+@item scene_threshold_low
+@item scene_threshold_high
+Lower and upper thresholds for scene change detection. Expressed in a
+logarithmic scale between @code{0.0} and @code{100.0}. Default to @code{5.5}
+and @code{10.0}, respectively. Setting either to a negative value disables
+this functionality.
+
+@item overshoot
+Peak smoothing overshoot margin, between @code{0.0} and @code{1.0}. Provides a
+safety margin to prevent clipping as a result of peak smoothing. Defaults to
+@code{0.05}, corresponding to a margin of 5%.
+@end table
+
+@subsubsection Tone mapping
+The options in this section control how libplacebo performs tone-mapping and
+gamut-mapping when dealing with mismatches between wide-gamut or HDR content.
+In general, libplacebo relies on accurate source tagging and mastering display
+gamut information to produce the best results.
+@table @option
+@item intent
+Rendering intent to use when adapting between different primary color gamuts
+(after tone-mapping).
+@table @samp
+@item perceptual
+Perceptual gamut mapping. Currently equivalent to relative colorimetric.
+@item relative
+Relative colorimetric. This is the default.
+@item absolute
+Absolute colorimetric.
+@item saturation
+Saturation mapping. Forcibly stretches the source gamut to the target gamut.
+@end table
+
+@item gamut_mode
+How to handle out-of-gamut colors that can occur as a result of colorimetric
+gamut mapping.
+@table @samp
+@item clip
+Do nothing, simply clip out-of-range colors to the RGB volume. This is the
+default.
+@item warn
+Highlight out-of-gamut pixels (by coloring them pink).
+@item darken
+Linearly reduces content brightness to preserves saturated details, followed by
+clipping the remaining out-of-gamut colors. As the name implies, this makes
+everything darker, but provides a good balance between preserving details and
+colors.
+@item desaturate
+Hard-desaturates out-of-gamut colors towards white, while preserving the
+luminance. Has a tendency to shift colors.
+@end table
+
+@item tonemapping
+Tone-mapping algorithm to use. Available values are:
+@table @samp
+@item auto
+Automatic selection based on internal heuristics. This is the default.
+@item clip
+Performs no tone-mapping, just clips out-of-range colors. Retains perfect color
+accuracy for in-range colors but completely destroys out-of-range information.
+Does not perform any black point adaptation. Not configurable.
+@item bt.2390
+EETF from the ITU-R Report BT.2390, a hermite spline roll-off with linear
+segment. The knee point offset is configurable. Note that this parameter
+defaults to @code{1.0}, rather than the value of @code{0.5} from the ITU-R
+spec.
+@item bt.2446a
+EETF from ITU-R Report BT.2446, method A. Designed for well-mastered HDR
+sources. Can be used for both forward and inverse tone mapping. Not
+configurable.
+@item spline
+Simple spline consisting of two polynomials, joined by a single pivot point.
+The parameter gives the pivot point (in PQ space), defaulting to @code{0.30}.
+Can be used for both forward and inverse tone mapping.
+@item reinhard
+Simple non-linear, global tone mapping algorithm. The parameter specifies the
+local contrast coefficient at the display peak. Essentially, a parameter of
+@code{0.5} implies that the reference white will be about half as bright as
+when clipping. Defaults to @code{0.5}, which results in the simplest
+formulation of this function.
+@item mobius
+Generalization of the reinhard tone mapping algorithm to support an additional
+linear slope near black. The tone mapping parameter indicates the trade-off
+between the linear section and the non-linear section. Essentially, for a given
+parameter @var{x}, every color value below @var{x} will be mapped linearly,
+while higher values get non-linearly tone-mapped. Values near @code{1.0} make
+this curve behave like @code{clip}, while values near @code{0.0} make this
+curve behave like @code{reinhard}. The default value is @code{0.3}, which
+provides a good balance between colorimetric accuracy and preserving
+out-of-gamut details.
+@item hable
+Piece-wise, filmic tone-mapping algorithm developed by John Hable for use in
+Uncharted 2, inspired by a similar tone-mapping algorithm used by Kodak.
+Popularized by its use in video games with HDR rendering. Preserves both dark
+and bright details very well, but comes with the drawback of changing the
+average brightness quite significantly. This is sort of similar to
+@code{reinhard} with parameter @code{0.24}.
+@item gamma
+Fits a gamma (power) function to transfer between the source and target color
+spaces, effectively resulting in a perceptual hard-knee joining two roughly
+linear sections. This preserves details at all scales fairly accurately, but
+can result in an image with a muted or dull appearance. The parameter is used
+as the cutoff point, defaulting to @code{0.5}.
+@item linear
+Linearly stretches the input range to the output range, in PQ space. This will
+preserve all details accurately, but results in a significantly different
+average brightness. Can be used for inverse tone-mapping in addition to regular
+tone-mapping. The parameter can be used as an additional linear gain
+coefficient (defaulting to @code{1.0}).
+@end table
+
+@item tonemapping_param
+For tunable tone mapping functions, this parameter can be used to fine-tune the
+curve behavior. Refer to the documentation of @code{tonemapping}. The default
+value of @code{0.0} is replaced by the curve's preferred default setting.
+
+@item tonemapping_mode
+This option determines how the tone mapping function specified by
+@code{tonemapping} is applied to the colors in a scene. Possible values are:
+@table @samp
+@item auto
+Automatic selection based on internal heuristics. This is the default.
+@item rgb
+Apply the function per-channel in the RGB colorspace.
+Per-channel tone-mapping in RGB. Guarantees no clipping and heavily desaturates
+the output, but distorts the colors quite significantly. Very similar to the
+"Hollywood" look and feel.
+@item max
+Tone-mapping is performed on the brightest component found in the signal. Good
+at preserving details in highlights, but has a tendency to crush blacks.
+@item hybrid
+Tone-map per-channel for highlights and linearly (luma-based) for
+midtones/shadows, based on a fixed gamma @code{2.4} coefficient curve.
+@item luma
+Tone-map linearly on the luma component (CIE Y), and adjust (desaturate) the
+chromaticities to compensate using a simple constant factor. This is
+essentially the mode used in ITU-R BT.2446 method A.
+@end table
+
+@item inverse_tonemapping
+If enabled, this filter will also attempt stretching SDR signals to fill HDR
+output color volumes. Disabled by default.
+
+@item tonemapping_crosstalk
+Extra tone-mapping crosstalk factor, between @code{0.0} and @code{0.3}. This
+can help reduce issues tone-mapping certain bright spectral colors. Defaults to
+@code{0.04}.
+
+@item tonemapping_lut_size
+Size of the tone-mapping LUT, between @code{2} and @code{1024}. Defaults to
+@code{256}. Note that this figure is squared when combined with
+@code{peak_detect}.
+@end table
+
+@subsubsection Dithering
+By default, libplacebo will dither whenever necessary, which includes rendering
+to any integer format below 16-bit precision. It's recommended to always leave
+this on, since not doing so may result in visible banding in the output, even
+if the @code{debanding} filter is enabled. If maximum performance is needed,
+use @code{ordered_fixed} instead of disabling dithering.
+@table @option
+@item dithering
+Dithering method to use. Accepts the following values:
+@table @samp
+@item none
+Disables dithering completely. May result in visible banding.
+@item blue
+Dither with pseudo-blue noise. This is the default.
+@item ordered
+Tunable ordered dither pattern.
+@item ordered_fixed
+Faster ordered dither with a fixed size of @code{6}. Texture-less.
+@item white
+Dither with white noise. Texture-less.
+@end table
+
+@item dither_lut_size
+Dither LUT size, as log base2 between @code{1} and @code{8}. Defaults to
+@code{6}, corresponding to a LUT size of @code{64x64}.
+
+@item dither_temporal
+Enables temporal dithering. Disabled by default.
+@end table
+
+@subsubsection Custom shaders
+libplacebo supports a number of custom shaders based on the mpv .hook GLSL
+syntax. A collection of such shaders can be found here:
+@url{https://github.com/mpv-player/mpv/wiki/User-Scripts#user-shaders}
+
+A full description of the mpv shader format is beyond the scope of this
+section, but a summary can be found here:
+@url{https://mpv.io/manual/master/#options-glsl-shader}
+@table @option
+@item custom_shader_path
+Specifies a path to a custom shader file to load at runtime.
+
+@item custom_shader_bin
+Specifies a complete custom shader as a raw string.
+@end table
+
+@subsubsection Debugging / performance
+All of the options in this section default off. They may be of assistance when
+attempting to squeeze the maximum performance at the cost of quality.
+@table @option
+@item skip_aa
+Disable anti-aliasing when downscaling.
+
+@item polar_cutoff
+Truncate polar (EWA) scaler kernels below this absolute magnitude, between
+@code{0.0} and @code{1.0}.
+
+@item disable_linear
+Disable linear light scaling.
+
+@item disable_builtin
+Disable built-in GPU sampling (forces LUT).
+
+@item force_icc_lut
+Force the use of a full ICC 3DLUT for gamut mapping.
+
+@item disable_fbos
+Forcibly disable FBOs, resulting in loss of almost all functionality, but
+offering the maximum possible speed.
+@end table
+
+@subsection Commands
+This filter supports almost all of the above options as @ref{commands}.
+
+@subsection Examples
+@itemize
+@item
+Complete example for how to initialize the Vulkan device, upload frames to the
+GPU, perform filter conversion to yuv420p, and download frames back to the CPU
+for output. Note that in specific cases you can get around the need to perform
+format conversion by specifying the correct @code{format} filter option
+corresponding to the input frames.
+@example
+ffmpeg -i $INPUT -init_hw_device vulkan -vf hwupload,libplacebo=format=yuv420p,hwdownload,format=yuv420p $OUTPUT
+@end example
+
+@item
+Tone-map input to standard gamut BT.709 output:
+@example
+libplacebo=colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv
+@end example
+
+@item
+Rescale input to fit into standard 1080p, with high quality scaling:
+@example
+libplacebo=w=1920:h=1080:force_original_aspect_ratio=decrease:normalize_sar=true:upscaler=ewa_lanczos:downscaler=ewa_lanczos
+@end example
+
+@item
+Convert input to standard sRGB JPEG:
+@example
+libplacebo=format=yuv420p:colorspace=bt470bg:color_primaries=bt709:color_trc=iec61966-2-1:range=pc
+@end example
+
+@item
+Use higher quality debanding settings:
+@example
+libplacebo=deband=true:deband_iterations=3:deband_radius=8:deband_threshold=6
+@end example
+
+@item
+Run this filter on the CPU, on systems with Mesa installed (and with the most
+expensive options disabled):
+@example
+ffmpeg ... -init_hw_device vulkan:llvmpipe ... -vf libplacebo=upscaler=none:downscaler=none:peak_detect=false
+@end example
+
+@item
+Suppress CPU-based AV1/H.274 film grain application in the decoder, in favor of
+doing it with this filter. Note that this is only a gain if the frames are
+either already on the GPU, or if you're using libplacebo for other purposes,
+since otherwise the VRAM roundtrip will more than offset any expected speedup.
+@example
+ffmpeg -export_side_data +film_grain ... -vf libplacebo=apply_filmgrain=true
+@end example
+@end itemize
+
 @section libvmaf
 
 Calulate the VMAF (Video Multi-Method Assessment Fusion) score for a
