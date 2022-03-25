@@ -517,6 +517,7 @@ Protocols:
   bluray.c                              Petri Hintukainen
   ftp.c                                 Lukasz Marek
   http.c                                Ronald S. Bultje
+  libsrt.c                              Zhao Zhili
   libssh.c                              Lukasz Marek
   libzmq.c                              Andriy Gelman
   mms*.c                                Ronald S. Bultje
