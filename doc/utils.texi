@@ -719,6 +719,8 @@ FL+FR+FC+BL+BR+BC+SL+SR
 FL+FR+FC+BL+BR+BC+SL+SR+WL+WR+TBL+TBR+TBC+TFC+TFL+TFR
 @item downmix
 DL+DR
+@item 22.2
+FL+FR+FC+LFE+BL+BR+FLC+FRC+BC+SL+SR+TC+TFL+TFC+TFR+TBL+TBC+TBR+LFE2+TSL+TSR+BFC+BFL+BFR
 @end table
 
 A custom channel layout can be specified as a sequence of terms, separated by
