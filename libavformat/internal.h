@@ -183,6 +183,11 @@ typedef struct FFFormatContext {
      * Set if chapter ids are strictly monotonic.
      */
     int chapter_ids_monotonic;
+
+    /**
+     * Contexts and child contexts do not contain a metadata option
+     */
+    int metafree;
 } FFFormatContext;
 
 static av_always_inline FFFormatContext *ffformatcontext(AVFormatContext *s)

@@ -1407,12 +1407,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    av_opt_get_dict_val(s, "metadata", AV_OPT_SEARCH_CHILDREN, &metadata);
-    if (metadata) {
-        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
-        av_dict_copy(&s->metadata, metadata, 0);
-        av_dict_free(&metadata);
-        av_opt_set_dict_val(s, "metadata", NULL, AV_OPT_SEARCH_CHILDREN);
+    if (!si->metafree) {
+        int metaret = av_opt_get_dict_val(s, "metadata", AV_OPT_SEARCH_CHILDREN, &metadata);
+        if (metadata) {
+            s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
+            av_dict_copy(&s->metadata, metadata, 0);
+            av_dict_free(&metadata);
+            av_opt_set_dict_val(s, "metadata", NULL, AV_OPT_SEARCH_CHILDREN);
+        }
+        si->metafree = metaret == AVERROR_OPTION_NOT_FOUND;
     }
 
     if (s->debug & FF_FDEBUG_TS)
