@@ -429,7 +429,11 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
 
  restart:
 
+#if SRT_VERSION_VALUE >= 0x010401
+    fd = srt_create_socket();
+#else
     fd = srt_socket(cur_ai->ai_family, cur_ai->ai_socktype, 0);
+#endif
     if (fd < 0) {
         ret = libsrt_neterrno(h);
         goto fail;
