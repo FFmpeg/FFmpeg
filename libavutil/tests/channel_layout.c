@@ -66,13 +66,32 @@
 
 int main(void)
 {
+    const AVChannelLayout *playout;
     AVChannelLayout layout = { 0 };
     AVBPrint bp;
+    void *iter = NULL;
     int ret;
 
     av_bprint_init(&bp, 64, AV_BPRINT_SIZE_AUTOMATIC);
 
-    printf("Testing av_channel_name\n");
+    printf("Testing av_channel_layout_standard\n");
+    while (playout = av_channel_layout_standard(&iter)) {
+        av_channel_layout_describe_bprint(playout, &bp);
+        printf("%-14s ", bp.str);
+        av_bprint_clear(&bp);
+        for (int i = 0; i < 63; i++) {
+            int idx = av_channel_layout_index_from_channel(playout, i);
+            if (idx >= 0) {
+                if (idx)
+                    av_bprintf(&bp, "+");
+                av_channel_name_bprint(&bp, i);
+            }
+        }
+        printf("%s\n", bp.str);
+        av_bprint_clear(&bp);
+    }
+
+    printf("\nTesting av_channel_name\n");
     CHANNEL_NAME(AV_CHAN_FRONT_LEFT);
     printf("With AV_CHAN_FRONT_LEFT: %27s\n", bp.str);
     CHANNEL_NAME(AV_CHAN_FRONT_RIGHT);
