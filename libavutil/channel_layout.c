@@ -119,6 +119,8 @@ void av_channel_description_bprint(AVBPrint *bp, enum AVChannel channel_id)
     else if ((unsigned)channel_id < FF_ARRAY_ELEMS(channel_names) &&
              channel_names[channel_id].description)
         av_bprintf(bp, "%s", channel_names[channel_id].description);
+    else if (channel_id == AV_CHAN_NONE)
+        av_bprintf(bp, "none");
     else
         av_bprintf(bp, "user %d", channel_id);
 }
