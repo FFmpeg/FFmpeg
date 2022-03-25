@@ -997,7 +997,7 @@ int show_layouts(void *optctx, const char *opt, const char *arg)
            "NAME           DESCRIPTION\n");
     for (i = 0; i < 63; i++) {
         av_channel_name(buf, sizeof(buf), i);
-        if (!strcmp(buf, "?"))
+        if (strstr(buf, "USR"))
             continue;
         av_channel_description(buf2, sizeof(buf2), i);
         printf("%-14s %s\n", buf, buf2);
@@ -1006,11 +1006,14 @@ int show_layouts(void *optctx, const char *opt, const char *arg)
            "NAME           DECOMPOSITION\n");
     while (ch_layout = av_channel_layout_standard(&iter)) {
             av_channel_layout_describe(ch_layout, buf, sizeof(buf));
-            av_channel_name(buf2, sizeof(buf2), i);
             printf("%-14s ", buf);
-            for (i = 0; i < 63; i++)
-                if (av_channel_layout_index_from_channel(ch_layout, i) >= 0)
-                    printf("%s%s", i ? "+" : "", buf2);
+            for (i = 0; i < 63; i++) {
+                int idx = av_channel_layout_index_from_channel(ch_layout, i);
+                if (idx >= 0) {
+                    av_channel_name(buf2, sizeof(buf2), i);
+                    printf("%s%s", idx ? "+" : "", buf2);
+                }
+            }
             printf("\n");
     }
     return 0;
