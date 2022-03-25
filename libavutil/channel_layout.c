@@ -989,12 +989,16 @@ uint64_t av_channel_layout_subset(const AVChannelLayout *channel_layout,
     uint64_t ret = 0;
     int i;
 
-    if (channel_layout->order == AV_CHANNEL_ORDER_NATIVE)
+    switch (channel_layout->order) {
+    case AV_CHANNEL_ORDER_NATIVE:
+    case AV_CHANNEL_ORDER_AMBISONIC:
         return channel_layout->u.mask & mask;
-
-    for (i = 0; i < 64; i++)
-        if (mask & (1ULL << i) && av_channel_layout_index_from_channel(channel_layout, i) >= 0)
-            ret |= (1ULL << i);
+    case AV_CHANNEL_ORDER_CUSTOM:
+        for (i = 0; i < 64; i++)
+            if (mask & (1ULL << i) && av_channel_layout_index_from_channel(channel_layout, i) >= 0)
+                ret |= (1ULL << i);
+        break;
+    }
 
     return ret;
 }
