@@ -27,7 +27,6 @@
  * overlapped 8x8 block sums, rather than the original gaussian weights.
  */
 
-#include "config.h"
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
