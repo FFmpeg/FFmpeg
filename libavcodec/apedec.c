@@ -959,7 +959,7 @@ static void long_filter_high_3800(int32_t *buffer, int order, int shift, int len
             dotprod += delay[j] * (unsigned)coeffs[j];
             coeffs[j] += ((delay[j] >> 31) | 1) * sign;
         }
-        buffer[i] -= dotprod >> shift;
+        buffer[i] -= (unsigned)(dotprod >> shift);
         for (j = 0; j < order - 1; j++)
             delay[j] = delay[j + 1];
         delay[order - 1] = buffer[i];
