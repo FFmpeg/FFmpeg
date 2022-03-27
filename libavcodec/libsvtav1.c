@@ -178,6 +178,9 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
             param->rate_control_mode = 1;
         else
             param->rate_control_mode = 2;
+
+        param->max_qp_allowed       = avctx->qmax;
+        param->min_qp_allowed       = avctx->qmin;
     }
     param->max_bit_rate             = avctx->rc_max_rate;
     param->vbv_bufsize              = avctx->rc_buffer_size;
@@ -190,6 +193,37 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->rate_control_mode    = 0;
         param->enable_adaptive_quantization = 0;
     }
+
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    param->color_primaries          = avctx->color_primaries;
+    param->matrix_coefficients      = (desc->flags & AV_PIX_FMT_FLAG_RGB) ?
+                                      AVCOL_SPC_RGB : avctx->colorspace;
+    param->transfer_characteristics = avctx->color_trc;
+
+    if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED)
+        param->color_range = avctx->color_range == AVCOL_RANGE_JPEG;
+    else
+        param->color_range = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
+
+    if (avctx->profile != FF_PROFILE_UNKNOWN)
+        param->profile = avctx->profile;
+
+    if (avctx->level != FF_LEVEL_UNKNOWN)
+        param->level = avctx->level;
+
+    if (avctx->gop_size > 0)
+        param->intra_period_length  = avctx->gop_size - 1;
+
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        param->frame_rate_numerator   = avctx->framerate.num;
+        param->frame_rate_denominator = avctx->framerate.den;
+    } else {
+        param->frame_rate_numerator   = avctx->time_base.den;
+        param->frame_rate_denominator = avctx->time_base.num * avctx->ticks_per_frame;
+    }
+
+    /* 2 = IDR, closed GOP, 1 = CRA, open GOP */
+    param->intra_refresh_type = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ? 2 : 1;
 
 #if SVT_AV1_CHECK_VERSION(0, 9, 1)
     while ((en = av_dict_get(svt_enc->svtav1_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {
@@ -214,7 +248,6 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     param->source_width     = avctx->width;
     param->source_height    = avctx->height;
 
-    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     param->encoder_bit_depth = desc->comp[0].depth;
 
     if (desc->log2_chroma_w == 1 && desc->log2_chroma_h == 1)
@@ -228,22 +261,6 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         return AVERROR(EINVAL);
     }
 
-    param->color_primaries          = avctx->color_primaries;
-    param->matrix_coefficients      = (desc->flags & AV_PIX_FMT_FLAG_RGB) ?
-                                      AVCOL_SPC_RGB : avctx->colorspace;
-    param->transfer_characteristics = avctx->color_trc;
-
-    if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED)
-        param->color_range = avctx->color_range == AVCOL_RANGE_JPEG;
-    else
-        param->color_range = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
-
-    if (avctx->profile != FF_PROFILE_UNKNOWN)
-        param->profile = avctx->profile;
-
-    if (avctx->level != FF_LEVEL_UNKNOWN)
-        param->level = avctx->level;
-
     if ((param->encoder_color_format == EB_YUV422 || param->encoder_bit_depth > 10)
          && param->profile != FF_PROFILE_AV1_PROFESSIONAL ) {
         av_log(avctx, AV_LOG_WARNING, "Forcing Professional profile\n");
@@ -253,25 +270,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->profile = FF_PROFILE_AV1_HIGH;
     }
 
-    if (avctx->gop_size > 0)
-        param->intra_period_length  = avctx->gop_size - 1;
-
-    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
-        param->frame_rate_numerator   = avctx->framerate.num;
-        param->frame_rate_denominator = avctx->framerate.den;
-    } else {
-        param->frame_rate_numerator   = avctx->time_base.den;
-        param->frame_rate_denominator = avctx->time_base.num * avctx->ticks_per_frame;
-    }
-
     avctx->bit_rate                 = param->target_bit_rate;
-    if (avctx->bit_rate) {
-        param->max_qp_allowed       = avctx->qmax;
-        param->min_qp_allowed       = avctx->qmin;
-    }
-
-    /* 2 = IDR, closed GOP, 1 = CRA, open GOP */
-    param->intra_refresh_type = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ? 2 : 1;
 
     return 0;
 }
