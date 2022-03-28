@@ -1,0 +1,42 @@
+497848e1bc5c9dcd416124b6f739d733 *tests/data/fate/mov-channel-description.mov
+4242044 tests/data/fate/mov-channel-description.mov
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: 1 channels (FL)
+#tb 1: 1/44100
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 44100
+#channel_layout_name 1: 1 channels (FR)
+#tb 2: 1/44100
+#media_type 2: audio
+#codec_id 2: pcm_s16le
+#sample_rate 2: 44100
+#channel_layout_name 2: mono
+#tb 3: 1/44100
+#media_type 3: audio
+#codec_id 3: pcm_s16le
+#sample_rate 3: 44100
+#channel_layout_name 3: 1 channels (LFE)
+#tb 4: 1/44100
+#media_type 4: audio
+#codec_id 4: pcm_s16le
+#sample_rate 4: 44100
+#channel_layout_name 4: 1 channels (BL)
+#tb 5: 1/44100
+#media_type 5: audio
+#codec_id 5: pcm_s16le
+#sample_rate 5: 44100
+#channel_layout_name 5: 1 channels (BR)
+#tb 6: 1/44100
+#media_type 6: audio
+#codec_id 6: pcm_s16le
+#sample_rate 6: 44100
+#channel_layout_name 6: 1 channels (DL)
+#tb 7: 1/44100
+#media_type 7: audio
+#codec_id 7: pcm_s16le
+#sample_rate 7: 44100
+#channel_layout_name 7: 1 channels (DR)
