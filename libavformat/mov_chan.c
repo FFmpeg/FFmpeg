@@ -485,12 +485,18 @@ static uint64_t mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
     return layout_map[i].layout;
 }
 
-static uint32_t mov_get_channel_mask(uint32_t label)
+static uint64_t mov_get_channel_mask(uint32_t label)
 {
     if (label == 0)
         return 0;
     if (label <= 18)
         return 1U << (label - 1);
+    if (label == 35)
+        return AV_CH_WIDE_LEFT;
+    if (label == 36)
+        return AV_CH_WIDE_RIGHT;
+    if (label == 37)
+        return AV_CH_LOW_FREQUENCY_2;
     if (label == 38)
         return AV_CH_STEREO_LEFT;
     if (label == 39)
@@ -557,8 +563,8 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
 int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
                      int64_t size)
 {
-    uint32_t layout_tag, bitmap, num_descr, label_mask;
-    uint64_t mask = 0;
+    uint32_t layout_tag, bitmap, num_descr;
+    uint64_t label_mask, mask = 0;
     int i;
 
     if (size < 12)
@@ -590,7 +596,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         avio_rl32(pb);                      // mCoordinates[2]
         size -= 20;
         if (layout_tag == 0) {
-            uint32_t mask_incr = mov_get_channel_mask(label);
+            uint64_t mask_incr = mov_get_channel_mask(label);
             if (mask_incr == 0) {
                 label_mask = 0;
                 break;
