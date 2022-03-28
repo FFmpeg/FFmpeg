@@ -329,6 +329,7 @@ again:
                      avctx->codec->id == AV_CODEC_ID_BINKAUDIO_DCT,
                      FFMIN(MAX_CHANNELS, s->channels - s->ch_offset), s->ch_offset)) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete packet\n");
+        s->ch_offset = 0;
         return AVERROR_INVALIDDATA;
     }
     s->ch_offset += MAX_CHANNELS;
@@ -347,6 +348,7 @@ again:
 
     return 0;
 fail:
+    s->ch_offset = 0;
     av_packet_unref(s->pkt);
     return ret;
 }
