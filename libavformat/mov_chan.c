@@ -485,7 +485,7 @@ static uint64_t mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
     return layout_map[i].layout;
 }
 
-static uint32_t mov_get_channel_label(uint32_t label)
+static uint32_t mov_get_channel_mask(uint32_t label)
 {
     if (label == 0)
         return 0;
@@ -590,7 +590,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         avio_rl32(pb);                      // mCoordinates[2]
         size -= 20;
         if (layout_tag == 0) {
-            uint32_t mask_incr = mov_get_channel_label(label);
+            uint32_t mask_incr = mov_get_channel_mask(label);
             if (mask_incr == 0) {
                 label_mask = 0;
                 break;
