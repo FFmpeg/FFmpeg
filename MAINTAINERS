@@ -354,6 +354,7 @@ Filters:
   vf_il.c                               Paul B Mahol
   vf_(t)interlace                       Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_lenscorrection.c                   Daniel Oberhoff
+  vf_libplacebo.c                       Niklas Haas
   vf_mergeplanes.c                      Paul B Mahol
   vf_mestimate.c                        Davinder Singh
   vf_minterpolate.c                     Davinder Singh
@@ -620,6 +621,7 @@ Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Lynne                         FE50 139C 6805 72CA FD52 1F8D A2FE A5F0 3F03 4464
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
 Nicolas George                24CE 01CE 9ACC 5CEB 74D8 8D9D B063 D997 36E5 4C93
+Niklas Haas (haasn)           1DDB 8076 B14D 5B48 32FC 99D9 EB52 DA9C 02BA 6FB4
 Nikolay Aleksandrov           8978 1D8C FB71 588E 4B27 EAA8 C4F0 B5FC E011 13B1
 Panagiotis Issaris            6571 13A3 33D9 3726 F728 AA98 F643 B12E ECF3 E029
 Peter Ross                    A907 E02F A6E5 0CD2 34CD 20D2 6760 79C5 AC40 DD6B
