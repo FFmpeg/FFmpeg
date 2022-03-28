@@ -113,6 +113,7 @@ typedef struct ZScaleContext {
     int in_h_chr_pos;
     int in_v_chr_pos;
 
+    int first_time;
     int force_original_aspect_ratio;
 
     void *tmp[MAX_THREADS]; //separate for each thread;
@@ -321,12 +322,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = w;
     outlink->h = h;
 
-    if (inlink->w == outlink->w &&
-        inlink->h == outlink->h &&
-        inlink->format == outlink->format)
-        ;
-    else {
-    }
+    s->first_time = 1;
 
     if (inlink->sample_aspect_ratio.num){
         outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
@@ -770,6 +766,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if ((link->format != outlink->format) ||
         (link->w != outlink->w) ||
         (link->h != outlink->h) ||
+        s->first_time ||
         (s->src_format.chroma_location != s->dst_format.chroma_location) ||
         (s->src_format.color_family !=s->dst_format.color_family) ||
         (s->src_format.color_primaries !=s->dst_format.color_primaries) ||
@@ -821,6 +818,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             s->primaries_in, s->trc_in, s->range_in, s->chromal_in);
         format_init(&s->dst_format, out, odesc, s->colorspace,
             s->primaries, s->trc, s->range, s->chromal);
+        s->first_time = 0;
 
         s->params.dither_type = s->dither;
         s->params.cpu_type = ZIMG_CPU_AUTO;
