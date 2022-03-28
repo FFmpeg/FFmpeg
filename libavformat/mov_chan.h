@@ -30,6 +30,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavcodec/codec_id.h"
+#include "libavcodec/codec_par.h"
 #include "avformat.h"
 
 /**
@@ -41,9 +42,10 @@
  * @param[out] bitmap          channel bitmap
  * @return                     channel layout tag
  */
-uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
-                                       const AVChannelLayout *ch_layout,
-                                       uint32_t *bitmap);
+int ff_mov_get_channel_layout_tag(const AVCodecParameters *par,
+                                       uint32_t *layout,
+                                       uint32_t *bitmap,
+                                       uint32_t **pchannel_desc);
 
 /**
  * Read 'chan' tag from the input stream.

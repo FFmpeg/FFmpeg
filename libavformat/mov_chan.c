@@ -504,9 +504,29 @@ static uint64_t mov_get_channel_mask(uint32_t label)
     return 0;
 }
 
-uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
-                                       const AVChannelLayout *ch_layout,
-                                       uint32_t *bitmap)
+static uint32_t mov_get_channel_label(enum AVChannel channel)
+{
+    if (channel < 0)
+        return 0;
+    if (channel <= AV_CHAN_TOP_BACK_RIGHT)
+        return channel + 1;
+    if (channel == AV_CHAN_WIDE_LEFT)
+        return 35;
+    if (channel == AV_CHAN_WIDE_RIGHT)
+        return 36;
+    if (channel == AV_CHAN_LOW_FREQUENCY_2)
+        return 37;
+    if (channel == AV_CHAN_STEREO_LEFT)
+        return 38;
+    if (channel == AV_CHAN_STEREO_RIGHT)
+        return 39;
+    return 0;
+}
+
+int ff_mov_get_channel_layout_tag(const AVCodecParameters *par,
+                                  uint32_t *layout,
+                                  uint32_t *bitmap,
+                                  uint32_t **pchannel_desc)
 {
     int i, j;
     uint32_t tag = 0;
@@ -514,7 +534,7 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
 
     /* find the layout list for the specified codec */
     for (i = 0; mov_codec_ch_layouts[i].codec_id != AV_CODEC_ID_NONE; i++) {
-        if (mov_codec_ch_layouts[i].codec_id == codec_id)
+        if (mov_codec_ch_layouts[i].codec_id == par->codec_id)
             break;
     }
     if (mov_codec_ch_layouts[i].codec_id != AV_CODEC_ID_NONE)
@@ -525,7 +545,7 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
         const struct MovChannelLayoutMap *layout_map;
 
         /* get the layout map based on the channel count */
-        channels = ch_layout->nb_channels;
+        channels = par->ch_layout.nb_channels;
         if (channels > 9)
             channels = 0;
         layout_map = mov_ch_layout_map[channels];
@@ -536,8 +556,8 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
                 continue;
             for (j = 0; layout_map[j].tag != 0; j++) {
                 if (layout_map[j].tag    == layouts[i] &&
-                    (ch_layout->order == AV_CHANNEL_ORDER_NATIVE &&
-                     layout_map[j].layout == ch_layout->u.mask))
+                    (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
+                     layout_map[j].layout == par->ch_layout.u.mask))
                     break;
             }
             if (layout_map[j].tag)
@@ -546,18 +566,39 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
         tag = layouts[i];
     }
 
-    /* if no tag was found, use channel bitmap as a backup if possible */
-    if (tag == 0 && av_channel_layout_check(ch_layout) &&
-        ch_layout->order == AV_CHANNEL_ORDER_NATIVE &&
-        ch_layout->u.mask < 0x40000) {
-        tag     = MOV_CH_LAYOUT_USE_BITMAP;
-        *bitmap = (uint32_t)ch_layout->u.mask;
-    } else
-        *bitmap = 0;
+    *layout = tag;
+    *bitmap = 0;
+    *pchannel_desc = NULL;
 
-    /* TODO: set channel descriptions as a secondary backup */
+    /* if no tag was found, use channel bitmap or description as a backup if possible */
+    if (tag == 0) {
+        uint32_t *channel_desc;
+        if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
+            par->ch_layout.u.mask < 0x40000) {
+            *layout = MOV_CH_LAYOUT_USE_BITMAP;
+            *bitmap = (uint32_t)par->ch_layout.u.mask;
+            return 0;
+        } else if (par->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+            return AVERROR(ENOSYS);
 
-    return tag;
+        channel_desc = av_malloc_array(par->ch_layout.nb_channels, sizeof(*channel_desc));
+        if (!channel_desc)
+            return AVERROR(ENOMEM);
+
+        for (i = 0; i < par->ch_layout.nb_channels; i++) {
+            channel_desc[i] =
+                mov_get_channel_label(av_channel_layout_channel_from_index(&par->ch_layout, i));
+
+            if (channel_desc[i] == 0) {
+                av_free(channel_desc);
+                return AVERROR(ENOSYS);
+            }
+        }
+
+        *pchannel_desc = channel_desc;
+    }
+
+    return 0;
 }
 
 int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
