@@ -2390,6 +2390,7 @@ static int init_complex_filters(void)
 static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_size_us)
 {
     int nb_av_enc = 0, nb_interleaved = 0;
+    int limit_frames = 0, limit_frames_av_enc = 0;
 
 #define IS_AV_ENC(ost, type)  \
     (ost->encoding_needed && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO))
@@ -2404,14 +2405,19 @@ static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_si
 
         nb_interleaved += IS_INTERLEAVED(type);
         nb_av_enc      += IS_AV_ENC(ost, type);
+
+        limit_frames        |=  ost->max_frames < INT64_MAX;
+        limit_frames_av_enc |= (ost->max_frames < INT64_MAX) && IS_AV_ENC(ost, type);
     }
 
-    if (!(nb_interleaved > 1 && of->shortest))
+    if (!((nb_interleaved > 1 && of->shortest) ||
+          (nb_interleaved > 0 && limit_frames)))
         return 0;
 
-    /* if we have more than one encoded audio/video streams, then we
+    /* if we have more than one encoded audio/video streams, or at least
+     * one encoded audio/video stream is frame-limited, then we
      * synchronize them before encoding */
-    if (nb_av_enc > 1) {
+    if ((of->shortest && nb_av_enc > 1) || limit_frames_av_enc) {
         of->sq_encode = sq_alloc(SYNC_QUEUE_FRAMES, buf_size_us);
         if (!of->sq_encode)
             return AVERROR(ENOMEM);
@@ -2423,13 +2429,17 @@ static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_si
             if (!IS_AV_ENC(ost, type))
                 continue;
 
-            ost->sq_idx_encode = sq_add_stream(of->sq_encode);
+            ost->sq_idx_encode = sq_add_stream(of->sq_encode,
+                                               of->shortest || ost->max_frames < INT64_MAX);
             if (ost->sq_idx_encode < 0)
                 return ost->sq_idx_encode;
 
             ost->sq_frame = av_frame_alloc();
             if (!ost->sq_frame)
                 return AVERROR(ENOMEM);
+
+            if (ost->max_frames != INT64_MAX)
+                sq_limit_frames(of->sq_encode, ost->sq_idx_encode, ost->max_frames);
         }
     }
 
@@ -2447,9 +2457,13 @@ static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_si
             if (!IS_INTERLEAVED(type))
                 continue;
 
-            ost->sq_idx_mux = sq_add_stream(of->sq_mux);
+            ost->sq_idx_mux = sq_add_stream(of->sq_mux,
+                                            of->shortest || ost->max_frames < INT64_MAX);
             if (ost->sq_idx_mux < 0)
                 return ost->sq_idx_mux;
+
+            if (ost->max_frames != INT64_MAX)
+                sq_limit_frames(of->sq_mux, ost->sq_idx_mux, ost->max_frames);
         }
     }
 

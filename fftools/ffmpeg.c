@@ -3478,12 +3478,6 @@ static int need_output(void)
 
         if (ost->finished || of_finished(of))
             continue;
-        if (ost->frame_number >= ost->max_frames) {
-            int j;
-            for (j = 0; j < of->ctx->nb_streams; j++)
-                close_output_stream(output_streams[of->ost_index + j]);
-            continue;
-        }
 
         return 1;
     }

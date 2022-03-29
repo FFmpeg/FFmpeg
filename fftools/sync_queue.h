@@ -51,17 +51,26 @@ void       sq_free(SyncQueue **sq);
 /**
  * Add a new stream to the sync queue.
  *
+ * @param limiting whether the stream is limiting, i.e. no other stream can be
+ *                 longer than this one
  * @return
  * - a non-negative stream index on success
  * - a negative error code on error
  */
-int sq_add_stream(SyncQueue *sq);
+int sq_add_stream(SyncQueue *sq, int limiting);
 
 /**
  * Set the timebase for the stream with index stream_idx. Should be called
  * before sending any frames for this stream.
  */
 void sq_set_tb(SyncQueue *sq, unsigned int stream_idx, AVRational tb);
+
+/**
+ * Limit the number of output frames for stream with index stream_idx
+ * to max_frames.
+ */
+void sq_limit_frames(SyncQueue *sq, unsigned int stream_idx,
+                     uint64_t max_frames);
 
 /**
  * Submit a frame for the stream with index stream_idx.

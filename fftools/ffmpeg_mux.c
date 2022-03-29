@@ -237,19 +237,11 @@ void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 
     if (pkt) {
         /*
-         * Audio encoders may split the packets --  #frames in != #packets out.
-         * But there is no reordering, so we can limit the number of output packets
-         * by simply dropping them here.
          * Counting encoded video frames needs to be done separately because of
          * reordering, see do_video_out().
          */
-        if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed)) {
-            if (ost->frame_number >= ost->max_frames) {
-                av_packet_unref(pkt);
-                return;
-            }
+        if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed))
             ost->frame_number++;
-        }
     }
 
     if (of->mux->header_written) {
