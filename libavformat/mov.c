@@ -5025,7 +5025,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 // pts = frag_stream_info->sidx_pts;
                 dts = frag_stream_info->sidx_pts - sc->time_offset;
                 av_log(c->fc, AV_LOG_DEBUG, "found sidx time %"PRId64
-                        ", using it for pts\n", pts);
+                        ", using it for dts\n", frag_stream_info->sidx_pts);
             } else {
                 dts = sc->track_end - sc->time_offset;
                 av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
