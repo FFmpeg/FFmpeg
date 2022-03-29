@@ -34,18 +34,18 @@
 #include "config.h"
 
 #define LOOP_FILTER(EXT) \
-void ff_vc1_v_loop_filter4_ ## EXT(uint8_t *src, int stride, int pq); \
-void ff_vc1_h_loop_filter4_ ## EXT(uint8_t *src, int stride, int pq); \
-void ff_vc1_v_loop_filter8_ ## EXT(uint8_t *src, int stride, int pq); \
-void ff_vc1_h_loop_filter8_ ## EXT(uint8_t *src, int stride, int pq); \
+void ff_vc1_v_loop_filter4_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq); \
+void ff_vc1_h_loop_filter4_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq); \
+void ff_vc1_v_loop_filter8_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq); \
+void ff_vc1_h_loop_filter8_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq); \
 \
-static void vc1_v_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
+static void vc1_v_loop_filter16_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq) \
 { \
     ff_vc1_v_loop_filter8_ ## EXT(src,   stride, pq); \
     ff_vc1_v_loop_filter8_ ## EXT(src+8, stride, pq); \
 } \
 \
-static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
+static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq) \
 { \
     ff_vc1_h_loop_filter8_ ## EXT(src,          stride, pq); \
     ff_vc1_h_loop_filter8_ ## EXT(src+8*stride, stride, pq); \
@@ -56,9 +56,9 @@ LOOP_FILTER(mmxext)
 LOOP_FILTER(sse2)
 LOOP_FILTER(ssse3)
 
-void ff_vc1_h_loop_filter8_sse4(uint8_t *src, int stride, int pq);
+void ff_vc1_h_loop_filter8_sse4(uint8_t *src, ptrdiff_t stride, int pq);
 
-static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
+static void vc1_h_loop_filter16_sse4(uint8_t *src, ptrdiff_t stride, int pq)
 {
     ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
     ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);

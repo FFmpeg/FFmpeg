@@ -36,7 +36,7 @@
 #include "startcode.h"
 
 /* Apply overlap transform to horizontal edge */
-static void vc1_v_overlap_c(uint8_t *src, int stride)
+static void vc1_v_overlap_c(uint8_t *src, ptrdiff_t stride)
 {
     int i;
     int a, b, c, d;
@@ -60,7 +60,7 @@ static void vc1_v_overlap_c(uint8_t *src, int stride)
 }
 
 /* Apply overlap transform to vertical edge */
-static void vc1_h_overlap_c(uint8_t *src, int stride)
+static void vc1_h_overlap_c(uint8_t *src, ptrdiff_t stride)
 {
     int i;
     int a, b, c, d;
@@ -109,7 +109,7 @@ static void vc1_v_s_overlap_c(int16_t *top, int16_t *bottom)
     }
 }
 
-static void vc1_h_s_overlap_c(int16_t *left, int16_t *right, int left_stride, int right_stride, int flags)
+static void vc1_h_s_overlap_c(int16_t *left, int16_t *right, ptrdiff_t left_stride, ptrdiff_t right_stride, int flags)
 {
     int i;
     int a, b, c, d;
@@ -146,7 +146,7 @@ static void vc1_h_s_overlap_c(int16_t *left, int16_t *right, int left_stride, in
  * @return whether other 3 pairs should be filtered or not
  * @see 8.6
  */
-static av_always_inline int vc1_filter_line(uint8_t *src, int stride, int pq)
+static av_always_inline int vc1_filter_line(uint8_t *src, ptrdiff_t stride, int pq)
 {
     int a0 = (2 * (src[-2 * stride] - src[1 * stride]) -
               5 * (src[-1 * stride] - src[0 * stride]) + 4) >> 3;
@@ -195,7 +195,7 @@ static av_always_inline int vc1_filter_line(uint8_t *src, int stride, int pq)
  * @param pq block quantizer
  * @see 8.6
  */
-static inline void vc1_loop_filter(uint8_t *src, int step, int stride,
+static inline void vc1_loop_filter(uint8_t *src, int step, ptrdiff_t stride,
                                    int len, int pq)
 {
     int i;
@@ -212,32 +212,32 @@ static inline void vc1_loop_filter(uint8_t *src, int step, int stride,
     }
 }
 
-static void vc1_v_loop_filter4_c(uint8_t *src, int stride, int pq)
+static void vc1_v_loop_filter4_c(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, 1, stride, 4, pq);
 }
 
-static void vc1_h_loop_filter4_c(uint8_t *src, int stride, int pq)
+static void vc1_h_loop_filter4_c(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, stride, 1, 4, pq);
 }
 
-static void vc1_v_loop_filter8_c(uint8_t *src, int stride, int pq)
+static void vc1_v_loop_filter8_c(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, 1, stride, 8, pq);
 }
 
-static void vc1_h_loop_filter8_c(uint8_t *src, int stride, int pq)
+static void vc1_h_loop_filter8_c(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, stride, 1, 8, pq);
 }
 
-static void vc1_v_loop_filter16_c(uint8_t *src, int stride, int pq)
+static void vc1_v_loop_filter16_c(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, 1, stride, 16, pq);
 }
 
-static void vc1_h_loop_filter16_c(uint8_t *src, int stride, int pq)
+static void vc1_h_loop_filter16_c(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, stride, 1, 16, pq);
 }

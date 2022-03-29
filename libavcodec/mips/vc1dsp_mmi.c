@@ -1375,7 +1375,7 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 }
 
 /* Apply overlap transform to horizontal edge */
-void ff_vc1_h_overlap_mmi(uint8_t *src, int stride)
+void ff_vc1_h_overlap_mmi(uint8_t *src, ptrdiff_t stride)
 {
     int i;
     int a, b, c, d;
@@ -1398,7 +1398,7 @@ void ff_vc1_h_overlap_mmi(uint8_t *src, int stride)
     }
 }
 
-void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, int left_stride, int right_stride, int flags)
+void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, ptrdiff_t left_stride, ptrdiff_t right_stride, int flags)
 {
     int i;
     int a, b, c, d;
@@ -1428,7 +1428,7 @@ void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, int left_stride, int 
 }
 
 /* Apply overlap transform to vertical edge */
-void ff_vc1_v_overlap_mmi(uint8_t *src, int stride)
+void ff_vc1_v_overlap_mmi(uint8_t *src, ptrdiff_t stride)
 {
     int i;
     int a, b, c, d;
@@ -1551,32 +1551,32 @@ static inline void vc1_loop_filter(uint8_t *src, int step, int stride,
     }
 }
 
-void ff_vc1_v_loop_filter4_mmi(uint8_t *src, int stride, int pq)
+void ff_vc1_v_loop_filter4_mmi(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, 1, stride, 4, pq);
 }
 
-void ff_vc1_h_loop_filter4_mmi(uint8_t *src, int stride, int pq)
+void ff_vc1_h_loop_filter4_mmi(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, stride, 1, 4, pq);
 }
 
-void ff_vc1_v_loop_filter8_mmi(uint8_t *src, int stride, int pq)
+void ff_vc1_v_loop_filter8_mmi(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, 1, stride, 8, pq);
 }
 
-void ff_vc1_h_loop_filter8_mmi(uint8_t *src, int stride, int pq)
+void ff_vc1_h_loop_filter8_mmi(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, stride, 1, 8, pq);
 }
 
-void ff_vc1_v_loop_filter16_mmi(uint8_t *src, int stride, int pq)
+void ff_vc1_v_loop_filter16_mmi(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, 1, stride, 16, pq);
 }
 
-void ff_vc1_h_loop_filter16_mmi(uint8_t *src, int stride, int pq)
+void ff_vc1_h_loop_filter16_mmi(uint8_t *src, ptrdiff_t stride, int pq)
 {
     vc1_loop_filter(src, stride, 1, 16, pq);
 }

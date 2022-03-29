@@ -166,17 +166,17 @@ void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
 void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
 void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
 
-void ff_vc1_v_overlap_mmi(uint8_t *src, int stride);
-void ff_vc1_h_overlap_mmi(uint8_t *src, int stride);
+void ff_vc1_v_overlap_mmi(uint8_t *src, ptrdiff_t stride);
+void ff_vc1_h_overlap_mmi(uint8_t *src, ptrdiff_t stride);
 void ff_vc1_v_s_overlap_mmi(int16_t *top, int16_t *bottom);
-void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, int left_stride, int right_stride, int flags);
+void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, ptrdiff_t left_stride, ptrdiff_t right_stride, int flags);
 
-void ff_vc1_v_loop_filter4_mmi(uint8_t *src, int stride, int pq);
-void ff_vc1_h_loop_filter4_mmi(uint8_t *src, int stride, int pq);
-void ff_vc1_v_loop_filter8_mmi(uint8_t *src, int stride, int pq);
-void ff_vc1_h_loop_filter8_mmi(uint8_t *src, int stride, int pq);
-void ff_vc1_v_loop_filter16_mmi(uint8_t *src, int stride, int pq);
-void ff_vc1_h_loop_filter16_mmi(uint8_t *src, int stride, int pq);
+void ff_vc1_v_loop_filter4_mmi(uint8_t *src, ptrdiff_t stride, int pq);
+void ff_vc1_h_loop_filter4_mmi(uint8_t *src, ptrdiff_t stride, int pq);
+void ff_vc1_v_loop_filter8_mmi(uint8_t *src, ptrdiff_t stride, int pq);
+void ff_vc1_h_loop_filter8_mmi(uint8_t *src, ptrdiff_t stride, int pq);
+void ff_vc1_v_loop_filter16_mmi(uint8_t *src, ptrdiff_t stride, int pq);
+void ff_vc1_h_loop_filter16_mmi(uint8_t *src, ptrdiff_t stride, int pq);
 
 void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
