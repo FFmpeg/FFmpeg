@@ -4781,7 +4781,8 @@ static int mov_write_sidx_tag(AVIOContext *pb,
 
     if (track->entry) {
         entries = 1;
-        presentation_time = track->cluster[0].dts + track->cluster[0].cts;
+        presentation_time = track->cluster[0].dts + track->cluster[0].cts -
+                            track->start_dts - track->start_cts;
         duration = track->end_pts -
                    (track->cluster[0].dts + track->cluster[0].cts);
         starts_with_SAP = track->cluster[0].flags & MOV_SYNC_SAMPLE;
@@ -4796,6 +4797,9 @@ static int mov_write_sidx_tag(AVIOContext *pb,
         if (entries <= 0)
             return 0;
         presentation_time = track->frag_info[0].time;
+        /* presentation_time <= 0 is handled by mov_add_tfra_entries() */
+        if (presentation_time > 0)
+            presentation_time -= track->start_dts + track->start_cts;
     }
 
     avio_wb32(pb, 0); /* size */
