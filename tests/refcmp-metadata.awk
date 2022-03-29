@@ -50,13 +50,16 @@ BEGIN {
 }
 
 END {
+    result = result && (NR == ref_nr);
     if (result) {
         for (i = 1; i <= ref_nr; i++)
             print ref_lines[i];
     } else {
         for (i = 1; i <= NR; i++)
             print cmp_lines[i];
-        if (NR != ref_nr)
+        if (NR == 0)
+            print "[refcmp] no input" > "/dev/stderr";
+        else if (NR != ref_nr)
             print "[refcmp] lines: " NR " != " ref_nr > "/dev/stderr";
         if (delta_max >= fuzz)
             print "[refcmp] delta_max: " delta_max " >= " fuzz > "/dev/stderr";
