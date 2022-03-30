@@ -459,7 +459,7 @@ const FFCodec ff_libopenh264_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_OTHER_THREADS,
     .priv_data_size = sizeof(SVCContext),
     .init           = svc_encode_init,
-    .encode2        = svc_encode_frame,
+    FF_CODEC_ENCODE_CB(svc_encode_frame),
     .close          = svc_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_AUTO_THREADS,

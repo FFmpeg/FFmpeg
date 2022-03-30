@@ -104,7 +104,7 @@ static void * attribute_align_arg worker(void *v){
         frame = task->indata;
         pkt   = task->outdata;
 
-        ret = ffcodec(avctx->codec)->encode2(avctx, pkt, frame, &got_packet);
+        ret = ffcodec(avctx->codec)->cb.encode(avctx, pkt, frame, &got_packet);
         if(got_packet) {
             int ret2 = av_packet_make_refcounted(pkt);
             if (ret >= 0 && ret2 < 0)

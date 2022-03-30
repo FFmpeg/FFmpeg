@@ -381,7 +381,7 @@ const FFCodec ff_metasound_decoder = {
     .priv_data_size = sizeof(TwinVQContext),
     .init           = metasound_decode_init,
     .close          = ff_twinvq_decode_close,
-    .decode         = ff_twinvq_decode_frame,
+    FF_CODEC_DECODE_CB(ff_twinvq_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },

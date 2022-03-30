@@ -77,7 +77,7 @@ const FFCodec ff_v308_encoder = {
     .p.id         = AV_CODEC_ID_V308,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v308_encode_init,
-    .encode2      = v308_encode_frame,
+    FF_CODEC_ENCODE_CB(v308_encode_frame),
     .p.pix_fmts   = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

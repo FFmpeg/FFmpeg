@@ -854,7 +854,7 @@ const FFCodec ff_cfhd_encoder = {
     .p.priv_class     = &cfhd_class,
     .init             = cfhd_encode_init,
     .close            = cfhd_encode_close,
-    .encode2          = cfhd_encode_frame,
+    FF_CODEC_ENCODE_CB(cfhd_encode_frame),
     .p.capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .p.pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10,

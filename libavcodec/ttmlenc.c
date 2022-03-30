@@ -390,7 +390,7 @@ const FFCodec ff_ttml_encoder = {
     .p.id           = AV_CODEC_ID_TTML,
     .priv_data_size = sizeof(TTMLContext),
     .init           = ttml_encode_init,
-    .encode_sub     = ttml_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(ttml_encode_frame),
     .close          = ttml_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

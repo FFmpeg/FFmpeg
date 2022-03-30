@@ -955,6 +955,6 @@ const FFCodec ff_ccaption_decoder = {
     .init           = init_decoder,
     .close          = close_decoder,
     .flush          = flush_decoder,
-    .decode_sub     = decode,
+    FF_CODEC_DECODE_SUB_CB(decode),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

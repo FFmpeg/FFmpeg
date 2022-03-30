@@ -179,7 +179,7 @@ const FFCodec ff_s302m_encoder = {
                              AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
     .priv_data_size        = sizeof(S302MEncContext),
     .init                  = s302m_encode_init,
-    .encode2               = s302m_encode2_frame,
+    FF_CODEC_ENCODE_CB(s302m_encode2_frame),
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },

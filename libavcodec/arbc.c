@@ -218,7 +218,7 @@ const FFCodec ff_arbc_decoder = {
     .p.id           = AV_CODEC_ID_ARBC,
     .priv_data_size = sizeof(ARBCContext),
     .init           = decode_init,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .flush          = decode_flush,
     .close          = decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,

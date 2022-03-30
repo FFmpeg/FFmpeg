@@ -116,7 +116,7 @@ const FFCodec ff_fits_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FITS,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .encode2        = fits_encode_frame,
+    FF_CODEC_ENCODE_CB(fits_encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_GBRAP16BE,
                                                      AV_PIX_FMT_GBRP16BE,
                                                      AV_PIX_FMT_GBRP,

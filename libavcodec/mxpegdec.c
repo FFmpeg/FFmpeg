@@ -350,7 +350,7 @@ const FFCodec ff_mxpeg_decoder = {
     .priv_data_size = sizeof(MXpegDecodeContext),
     .init           = mxpeg_decode_init,
     .close          = mxpeg_decode_end,
-    .decode         = mxpeg_decode_frame,
+    FF_CODEC_DECODE_CB(mxpeg_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,

@@ -111,7 +111,7 @@ const FFCodec ff_m101_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_M101,
     .init           = m101_decode_init,
-    .decode         = m101_decode_frame,
+    FF_CODEC_DECODE_CB(m101_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

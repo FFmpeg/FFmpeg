@@ -216,7 +216,7 @@ const FFCodec ff_libtwolame_encoder = {
     .p.id           = AV_CODEC_ID_MP2,
     .priv_data_size = sizeof(TWOLAMEContext),
     .init           = twolame_encode_init,
-    .encode2        = twolame_encode_frame,
+    FF_CODEC_ENCODE_CB(twolame_encode_frame),
     .close          = twolame_encode_close,
     .p.capabilities = AV_CODEC_CAP_DELAY,
     .defaults       = twolame_defaults,

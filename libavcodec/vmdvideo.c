@@ -472,7 +472,7 @@ const FFCodec ff_vmdvideo_decoder = {
     .priv_data_size = sizeof(VmdVideoContext),
     .init           = vmdvideo_decode_init,
     .close          = vmdvideo_decode_end,
-    .decode         = vmdvideo_decode_frame,
+    FF_CODEC_DECODE_CB(vmdvideo_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -555,7 +555,7 @@ const FFCodec ff_smc_encoder = {
     .p.id           = AV_CODEC_ID_SMC,
     .priv_data_size = sizeof(SMCContext),
     .init           = smc_encode_init,
-    .encode2        = smc_encode_frame,
+    FF_CODEC_ENCODE_CB(smc_encode_frame),
     .close          = smc_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,

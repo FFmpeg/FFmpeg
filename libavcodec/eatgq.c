@@ -253,7 +253,7 @@ const FFCodec ff_eatgq_decoder = {
     .p.id           = AV_CODEC_ID_TGQ,
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
-    .decode         = tgq_decode_frame,
+    FF_CODEC_DECODE_CB(tgq_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

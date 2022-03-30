@@ -79,7 +79,7 @@ const FFCodec ff_yuv4_decoder = {
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_YUV4,
     .init         = yuv4_decode_init,
-    .decode       = yuv4_decode_frame,
+    FF_CODEC_DECODE_CB(yuv4_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

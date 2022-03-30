@@ -1401,7 +1401,7 @@ const FFCodec ff_prores_ks_encoder = {
     .priv_data_size = sizeof(ProresContext),
     .init           = encode_init,
     .close          = encode_close,
-    .encode2        = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .p.capabilities = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,

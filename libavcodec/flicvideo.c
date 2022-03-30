@@ -1112,7 +1112,7 @@ const FFCodec ff_flic_decoder = {
     .priv_data_size = sizeof(FlicDecodeContext),
     .init           = flic_decode_init,
     .close          = flic_decode_end,
-    .decode         = flic_decode_frame,
+    FF_CODEC_DECODE_CB(flic_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

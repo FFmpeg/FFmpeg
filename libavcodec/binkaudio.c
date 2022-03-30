@@ -372,7 +372,7 @@ const FFCodec ff_binkaudio_rdft_decoder = {
     .init           = decode_init,
     .flush          = decode_flush,
     .close          = decode_end,
-    .receive_frame  = binkaudio_receive_frame,
+    FF_CODEC_RECEIVE_FRAME_CB(binkaudio_receive_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
@@ -386,7 +386,7 @@ const FFCodec ff_binkaudio_dct_decoder = {
     .init           = decode_init,
     .flush          = decode_flush,
     .close          = decode_end,
-    .receive_frame  = binkaudio_receive_frame,
+    FF_CODEC_RECEIVE_FRAME_CB(binkaudio_receive_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

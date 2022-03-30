@@ -701,7 +701,7 @@ const FFCodec ff_magicyuv_decoder = {
     .priv_data_size   = sizeof(MagicYUVContext),
     .init             = magy_decode_init,
     .close            = magy_decode_end,
-    .decode           = magy_decode_frame,
+    FF_CODEC_DECODE_CB(magy_decode_frame),
     .p.capabilities   = AV_CODEC_CAP_DR1 |
                         AV_CODEC_CAP_FRAME_THREADS |
                         AV_CODEC_CAP_SLICE_THREADS,

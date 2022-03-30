@@ -582,7 +582,7 @@ const FFCodec ff_libdav1d_decoder = {
     .init           = libdav1d_init,
     .close          = libdav1d_close,
     .flush          = libdav1d_flush,
-    .receive_frame  = libdav1d_receive_frame,
+    FF_CODEC_RECEIVE_FRAME_CB(libdav1d_receive_frame),
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_SETS_PKT_DTS |
                       FF_CODEC_CAP_AUTO_THREADS,

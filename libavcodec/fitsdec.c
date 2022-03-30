@@ -329,5 +329,5 @@ const FFCodec ff_fits_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
     .p.priv_class   = &fits_decoder_class,
     .priv_data_size = sizeof(FITSContext),
-    .decode         = fits_decode_frame,
+    FF_CODEC_DECODE_CB(fits_decode_frame),
 };

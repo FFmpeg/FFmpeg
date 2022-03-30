@@ -92,5 +92,5 @@ const FFCodec ff_ptx_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PTX,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = ptx_decode_frame,
+    FF_CODEC_DECODE_CB(ptx_decode_frame),
 };

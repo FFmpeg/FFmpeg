@@ -238,7 +238,7 @@ const FFCodec ff_libopus_decoder = {
     .priv_data_size = sizeof(struct libopus_context),
     .init           = libopus_decode_init,
     .close          = libopus_decode_close,
-    .decode         = libopus_decode,
+    FF_CODEC_DECODE_CB(libopus_decode),
     .flush          = libopus_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,

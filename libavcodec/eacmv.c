@@ -237,7 +237,7 @@ const FFCodec ff_eacmv_decoder = {
     .priv_data_size = sizeof(CmvContext),
     .init           = cmv_decode_init,
     .close          = cmv_decode_end,
-    .decode         = cmv_decode_frame,
+    FF_CODEC_DECODE_CB(cmv_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

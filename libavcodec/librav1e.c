@@ -620,7 +620,7 @@ const FFCodec ff_librav1e_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AV1,
     .init           = librav1e_encode_init,
-    .receive_packet = librav1e_receive_packet,
+    FF_CODEC_RECEIVE_PACKET_CB(librav1e_receive_packet),
     .close          = librav1e_encode_close,
     .priv_data_size = sizeof(librav1eContext),
     .p.priv_class   = &class,

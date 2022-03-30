@@ -822,6 +822,6 @@ const FFCodec ff_libzvbi_teletext_decoder = {
     .priv_data_size = sizeof(TeletextContext),
     .init      = teletext_init_decoder,
     .close     = teletext_close_decoder,
-    .decode_sub = teletext_decode_frame,
+    FF_CODEC_DECODE_SUB_CB(teletext_decode_frame),
     .flush     = teletext_flush,
 };

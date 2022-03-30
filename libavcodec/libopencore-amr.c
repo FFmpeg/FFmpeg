@@ -141,7 +141,7 @@ const FFCodec ff_libopencore_amrnb_decoder = {
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
-    .decode         = amr_nb_decode_frame,
+    FF_CODEC_DECODE_CB(amr_nb_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_DECODER */
@@ -295,7 +295,7 @@ const FFCodec ff_libopencore_amrnb_encoder = {
     .p.id           = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_encode_init,
-    .encode2        = amr_nb_encode_frame,
+    FF_CODEC_ENCODE_CB(amr_nb_encode_frame),
     .close          = amr_nb_encode_close,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
@@ -382,7 +382,7 @@ const FFCodec ff_libopencore_amrwb_decoder = {
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,
-    .decode         = amr_wb_decode_frame,
+    FF_CODEC_DECODE_CB(amr_wb_decode_frame),
 };
 
 #endif /* CONFIG_LIBOPENCORE_AMRWB_DECODER */

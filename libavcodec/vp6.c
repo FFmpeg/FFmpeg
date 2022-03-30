@@ -720,7 +720,7 @@ const FFCodec ff_vp6_decoder = {
     .priv_data_size = sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
-    .decode         = ff_vp56_decode_frame,
+    FF_CODEC_DECODE_CB(ff_vp56_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
@@ -734,7 +734,7 @@ const FFCodec ff_vp6f_decoder = {
     .priv_data_size = sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
-    .decode         = ff_vp56_decode_frame,
+    FF_CODEC_DECODE_CB(ff_vp56_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
@@ -748,7 +748,7 @@ const FFCodec ff_vp6a_decoder = {
     .priv_data_size = 2 /* Main context + alpha context */ * sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
-    .decode         = ff_vp56_decode_frame,
+    FF_CODEC_DECODE_CB(ff_vp56_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

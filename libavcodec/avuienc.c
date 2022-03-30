@@ -99,6 +99,6 @@ const FFCodec ff_avui_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_EXPERIMENTAL,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
     .init         = avui_encode_init,
-    .encode2      = avui_encode_frame,
+    FF_CODEC_ENCODE_CB(avui_encode_frame),
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -430,7 +430,7 @@ const FFCodec ff_libxavs_encoder = {
                       AV_CODEC_CAP_OTHER_THREADS,
     .priv_data_size = sizeof(XavsContext),
     .init           = XAVS_init,
-    .encode2        = XAVS_frame,
+    FF_CODEC_ENCODE_CB(XAVS_frame),
     .close          = XAVS_close,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },

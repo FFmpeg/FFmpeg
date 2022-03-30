@@ -837,7 +837,7 @@ static const AVClass ffmmal_dec_class = {
         .priv_data_size = sizeof(MMALDecodeContext), \
         .init           = ffmmal_init_decoder, \
         .close          = ffmmal_close_decoder, \
-        .receive_frame  = ffmmal_receive_frame, \
+        FF_CODEC_RECEIVE_FRAME_CB(ffmmal_receive_frame), \
         .flush          = ffmmal_flush, \
         .p.priv_class   = &ffmmal_dec_class, \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \

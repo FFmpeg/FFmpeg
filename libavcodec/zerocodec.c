@@ -140,7 +140,7 @@ const FFCodec ff_zerocodec_decoder = {
     .p.id           = AV_CODEC_ID_ZEROCODEC,
     .priv_data_size = sizeof(ZeroCodecContext),
     .init           = zerocodec_decode_init,
-    .decode         = zerocodec_decode_frame,
+    FF_CODEC_DECODE_CB(zerocodec_decode_frame),
     .flush          = zerocodec_decode_flush,
     .close          = zerocodec_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,

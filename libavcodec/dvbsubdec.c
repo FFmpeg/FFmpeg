@@ -1746,7 +1746,7 @@ const FFCodec ff_dvbsub_decoder = {
     .priv_data_size = sizeof(DVBSubContext),
     .init           = dvbsub_init_decoder,
     .close          = dvbsub_close_decoder,
-    .decode_sub     = dvbsub_decode,
+    FF_CODEC_DECODE_SUB_CB(dvbsub_decode),
     .p.priv_class   = &dvbsubdec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

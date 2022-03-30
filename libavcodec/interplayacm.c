@@ -639,7 +639,7 @@ const FFCodec ff_interplay_acm_decoder = {
     .p.id           = AV_CODEC_ID_INTERPLAY_ACM,
     .init           = decode_init,
     .close          = decode_close,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(InterplayACMContext),

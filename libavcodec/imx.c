@@ -187,7 +187,7 @@ const FFCodec ff_simbiosis_imx_decoder = {
     .p.id           = AV_CODEC_ID_SIMBIOSIS_IMX,
     .priv_data_size = sizeof(SimbiosisIMXContext),
     .init           = imx_decode_init,
-    .decode         = imx_decode_frame,
+    FF_CODEC_DECODE_CB(imx_decode_frame),
     .close          = imx_decode_close,
     .flush          = imx_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1,

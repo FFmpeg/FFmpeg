@@ -197,7 +197,7 @@ const FFCodec ff_adpcm_adx_decoder = {
     .p.id           = AV_CODEC_ID_ADPCM_ADX,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_decode_init,
-    .decode         = adx_decode_frame,
+    FF_CODEC_DECODE_CB(adx_decode_frame),
     .flush          = adx_decode_flush,
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,

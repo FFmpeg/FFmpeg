@@ -1596,7 +1596,7 @@ const FFCodec ff_svq3_decoder = {
     .priv_data_size = sizeof(SVQ3Context),
     .init           = svq3_decode_init,
     .close          = svq3_decode_end,
-    .decode         = svq3_decode_frame,
+    FF_CODEC_DECODE_CB(svq3_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND |
                       AV_CODEC_CAP_DR1             |
                       AV_CODEC_CAP_DELAY,

@@ -127,5 +127,5 @@ const FFCodec ff_alias_pix_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_ALIAS_PIX,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode       = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
 };

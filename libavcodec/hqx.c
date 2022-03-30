@@ -541,7 +541,7 @@ const FFCodec ff_hqx_decoder = {
     .p.id           = AV_CODEC_ID_HQX,
     .priv_data_size = sizeof(HQXContext),
     .init           = hqx_decode_init,
-    .decode         = hqx_decode_frame,
+    FF_CODEC_DECODE_CB(hqx_decode_frame),
     .close          = hqx_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS |
                       AV_CODEC_CAP_FRAME_THREADS,

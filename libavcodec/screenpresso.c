@@ -189,7 +189,7 @@ const FFCodec ff_screenpresso_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SCREENPRESSO,
     .init           = screenpresso_init,
-    .decode         = screenpresso_decode_frame,
+    FF_CODEC_DECODE_CB(screenpresso_decode_frame),
     .close          = screenpresso_close,
     .priv_data_size = sizeof(ScreenpressoContext),
     .p.capabilities = AV_CODEC_CAP_DR1,

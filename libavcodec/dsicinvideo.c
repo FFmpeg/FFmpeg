@@ -329,7 +329,7 @@ const FFCodec ff_dsicinvideo_decoder = {
     .priv_data_size = sizeof(CinVideoContext),
     .init           = cinvideo_decode_init,
     .close          = cinvideo_decode_end,
-    .decode         = cinvideo_decode_frame,
+    FF_CODEC_DECODE_CB(cinvideo_decode_frame),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .p.capabilities = AV_CODEC_CAP_DR1,
 };

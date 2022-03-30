@@ -491,7 +491,7 @@ const FFCodec ff_fic_decoder = {
     .p.id           = AV_CODEC_ID_FIC,
     .priv_data_size = sizeof(FICContext),
     .init           = fic_decode_init,
-    .decode         = fic_decode_frame,
+    FF_CODEC_DECODE_CB(fic_decode_frame),
     .close          = fic_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .p.priv_class   = &fic_decoder_class,

@@ -2006,5 +2006,5 @@ const FFCodec ff_sheervideo_decoder = {
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size   = sizeof(SheerVideoContext),
     .close            = decode_end,
-    .decode           = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
 };

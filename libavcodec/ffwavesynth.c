@@ -467,7 +467,7 @@ const FFCodec ff_ffwavesynth_decoder = {
     .priv_data_size = sizeof(struct wavesynth_context),
     .init           = wavesynth_init,
     .close          = wavesynth_close,
-    .decode         = wavesynth_decode,
+    FF_CODEC_DECODE_CB(wavesynth_decode),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

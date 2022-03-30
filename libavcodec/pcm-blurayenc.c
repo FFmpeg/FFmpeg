@@ -277,7 +277,7 @@ const FFCodec ff_pcm_bluray_encoder = {
     .p.id                  = AV_CODEC_ID_PCM_BLURAY,
     .priv_data_size        = sizeof(BlurayPCMEncContext),
     .init                  = pcm_bluray_encode_init,
-    .encode2               = pcm_bluray_encode_frame,
+    FF_CODEC_ENCODE_CB(pcm_bluray_encode_frame),
     .p.supported_samplerates = (const int[]) { 48000, 96000, 192000, 0 },
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts = (const uint64_t[]) {

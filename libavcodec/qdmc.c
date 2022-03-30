@@ -736,7 +736,7 @@ const FFCodec ff_qdmc_decoder = {
     .priv_data_size   = sizeof(QDMCContext),
     .init             = qdmc_decode_init,
     .close            = qdmc_decode_close,
-    .decode           = qdmc_decode_frame,
+    FF_CODEC_DECODE_CB(qdmc_decode_frame),
     .flush            = qdmc_flush,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,

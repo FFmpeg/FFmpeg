@@ -464,7 +464,7 @@ const FFCodec ff_photocd_decoder = {
     .p.priv_class   = &photocd_class,
     .init           = photocd_decode_init,
     .close          = photocd_decode_close,
-    .decode         = photocd_decode_frame,
+    FF_CODEC_DECODE_CB(photocd_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .p.long_name    = NULL_IF_CONFIG_SMALL("Kodak Photo CD"),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

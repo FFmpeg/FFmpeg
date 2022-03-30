@@ -139,7 +139,7 @@ const FFCodec ff_libshine_encoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size        = sizeof(SHINEContext),
     .init                  = libshine_encode_init,
-    .encode2               = libshine_encode_frame,
+    FF_CODEC_ENCODE_CB(libshine_encode_frame),
     .close                 = libshine_encode_close,
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
                                                             AV_SAMPLE_FMT_NONE },

@@ -984,7 +984,7 @@ const FFCodec ff_##x##_qsv_decoder = { \
     .p.type         = AVMEDIA_TYPE_VIDEO, \
     .p.id           = AV_CODEC_ID_##X, \
     .init           = qsv_decode_init, \
-    .decode         = qsv_decode_frame, \
+    FF_CODEC_DECODE_CB(qsv_decode_frame), \
     .flush          = qsv_decode_flush, \
     .close          = qsv_decode_close, \
     .bsfs           = bsf_name, \

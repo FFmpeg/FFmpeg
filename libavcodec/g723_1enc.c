@@ -1246,7 +1246,7 @@ const FFCodec ff_g723_1_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
-    .encode2        = g723_1_encode_frame,
+    FF_CODEC_ENCODE_CB(g723_1_encode_frame),
     .defaults       = defaults,
     .p.sample_fmts  = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE

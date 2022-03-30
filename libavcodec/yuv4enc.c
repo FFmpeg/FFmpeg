@@ -66,5 +66,5 @@ const FFCodec ff_yuv4_encoder = {
     .p.id           = AV_CODEC_ID_YUV4,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .encode2      = yuv4_encode_frame,
+    FF_CODEC_ENCODE_CB(yuv4_encode_frame),
 };

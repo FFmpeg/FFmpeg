@@ -613,7 +613,7 @@ const FFCodec ff_mts2_decoder = {
     .priv_data_size = sizeof(MSS4Context),
     .init           = mss4_decode_init,
     .close          = mss4_decode_end,
-    .decode         = mss4_decode_frame,
+    FF_CODEC_DECODE_CB(mss4_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -162,7 +162,7 @@ const FFCodec ff_bmp_encoder = {
     .p.id           = AV_CODEC_ID_BMP,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .init           = bmp_encode_init,
-    .encode2        = bmp_encode_frame,
+    FF_CODEC_ENCODE_CB(bmp_encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGB565, AV_PIX_FMT_RGB555, AV_PIX_FMT_RGB444,

@@ -70,7 +70,7 @@ const FFCodec ff_subviewer_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("SubViewer subtitle"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_SUBVIEWER,
-    .decode_sub     = subviewer_decode_frame,
+    FF_CODEC_DECODE_SUB_CB(subviewer_decode_frame),
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),

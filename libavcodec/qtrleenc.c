@@ -406,7 +406,7 @@ const FFCodec ff_qtrle_encoder = {
     .p.id           = AV_CODEC_ID_QTRLE,
     .priv_data_size = sizeof(QtrleEncContext),
     .init           = qtrle_encode_init,
-    .encode2        = qtrle_encode_frame,
+    FF_CODEC_ENCODE_CB(qtrle_encode_frame),
     .close          = qtrle_encode_end,
     .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB555BE, AV_PIX_FMT_ARGB, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE

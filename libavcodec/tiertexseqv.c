@@ -269,7 +269,7 @@ const FFCodec ff_tiertexseqvideo_decoder = {
     .priv_data_size = sizeof(SeqVideoContext),
     .init           = seqvideo_decode_init,
     .close          = seqvideo_decode_end,
-    .decode         = seqvideo_decode_frame,
+    FF_CODEC_DECODE_CB(seqvideo_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

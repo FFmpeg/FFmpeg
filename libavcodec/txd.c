@@ -170,5 +170,5 @@ const FFCodec ff_txd_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_TXD,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = txd_decode_frame,
+    FF_CODEC_DECODE_CB(txd_decode_frame),
 };

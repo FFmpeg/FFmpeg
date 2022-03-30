@@ -372,7 +372,7 @@ const FFCodec ff_sbc_decoder = {
     .p.id                  = AV_CODEC_ID_SBC,
     .priv_data_size        = sizeof(SBCDecContext),
     .init                  = sbc_decode_init,
-    .decode                = sbc_decode_frame,
+    FF_CODEC_DECODE_CB(sbc_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT

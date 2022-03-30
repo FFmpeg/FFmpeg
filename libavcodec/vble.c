@@ -209,7 +209,7 @@ const FFCodec ff_vble_decoder = {
     .priv_data_size = sizeof(VBLEContext),
     .init           = vble_decode_init,
     .close          = vble_decode_close,
-    .decode         = vble_decode_frame,
+    FF_CODEC_DECODE_CB(vble_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

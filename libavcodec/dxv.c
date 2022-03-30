@@ -1266,7 +1266,7 @@ const FFCodec ff_dxv_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DXV,
     .init           = dxv_init,
-    .decode         = dxv_decode,
+    FF_CODEC_DECODE_CB(dxv_decode),
     .close          = dxv_close,
     .priv_data_size = sizeof(DXVContext),
     .p.capabilities = AV_CODEC_CAP_DR1 |

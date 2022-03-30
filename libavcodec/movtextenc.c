@@ -707,7 +707,7 @@ const FFCodec ff_movtext_encoder = {
     .priv_data_size = sizeof(MovTextContext),
     .p.priv_class   = &mov_text_encoder_class,
     .init           = mov_text_encode_init,
-    .encode_sub     = mov_text_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(mov_text_encode_frame),
     .close          = mov_text_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

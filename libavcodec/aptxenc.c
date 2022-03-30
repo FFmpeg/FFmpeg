@@ -253,7 +253,7 @@ const FFCodec ff_aptx_encoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size        = sizeof(AptXContext),
     .init                  = ff_aptx_init,
-    .encode2               = aptx_encode_frame,
+    FF_CODEC_ENCODE_CB(aptx_encode_frame),
     .close                 = aptx_close,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT
@@ -275,7 +275,7 @@ const FFCodec ff_aptx_hd_encoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size        = sizeof(AptXContext),
     .init                  = ff_aptx_init,
-    .encode2               = aptx_encode_frame,
+    FF_CODEC_ENCODE_CB(aptx_encode_frame),
     .close                 = aptx_close,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT

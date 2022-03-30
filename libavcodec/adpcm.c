@@ -2294,7 +2294,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                  \
     .p.sample_fmts  = sample_fmts_,                         \
     .priv_data_size = sizeof(ADPCMDecodeContext),           \
     .init           = adpcm_decode_init,                    \
-    .decode         = adpcm_decode_frame,                   \
+    FF_CODEC_DECODE_CB(adpcm_decode_frame),                 \
     .flush          = adpcm_flush,                          \
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 };

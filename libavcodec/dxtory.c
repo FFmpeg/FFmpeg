@@ -875,6 +875,6 @@ const FFCodec ff_dxtory_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("Dxtory"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DXTORY,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

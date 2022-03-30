@@ -274,6 +274,6 @@ const FFCodec ff_yop_decoder = {
     .priv_data_size = sizeof(YopDecContext),
     .init           = yop_decode_init,
     .close          = yop_decode_close,
-    .decode         = yop_decode_frame,
+    FF_CODEC_DECODE_CB(yop_decode_frame),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -551,5 +551,5 @@ const FFCodec ff_psd_decoder = {
     .p.id             = AV_CODEC_ID_PSD,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size   = sizeof(PSDContext),
-    .decode           = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
 };

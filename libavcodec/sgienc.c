@@ -278,7 +278,7 @@ const FFCodec ff_sgi_encoder = {
     .priv_data_size = sizeof(SgiContext),
     .p.priv_class = &sgi_class,
     .init      = encode_init,
-    .encode2   = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB48BE,

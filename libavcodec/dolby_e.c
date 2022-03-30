@@ -1305,7 +1305,7 @@ const FFCodec ff_dolby_e_decoder = {
     .priv_data_size = sizeof(DBEDecodeContext),
     .p.priv_class   = &dolby_e_decoder_class,
     .init           = dolby_e_init,
-    .decode         = dolby_e_decode_frame,
+    FF_CODEC_DECODE_CB(dolby_e_decode_frame),
     .close          = dolby_e_close,
     .flush          = dolby_e_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,

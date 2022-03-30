@@ -200,6 +200,6 @@ const FFCodec ff_libspeex_decoder = {
     .priv_data_size = sizeof(LibSpeexContext),
     .init           = libspeex_decode_init,
     .close          = libspeex_decode_close,
-    .decode         = libspeex_decode_frame,
+    FF_CODEC_DECODE_CB(libspeex_decode_frame),
     .flush          = libspeex_decode_flush,
 };

@@ -164,5 +164,5 @@ const FFCodec ff_pgx_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PGX,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = pgx_decode_frame,
+    FF_CODEC_DECODE_CB(pgx_decode_frame),
 };

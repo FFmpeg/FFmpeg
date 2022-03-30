@@ -166,7 +166,7 @@ const FFCodec ff_bethsoftvid_decoder = {
     .priv_data_size = sizeof(BethsoftvidContext),
     .init           = bethsoftvid_decode_init,
     .close          = bethsoftvid_decode_end,
-    .decode         = bethsoftvid_decode_frame,
+    FF_CODEC_DECODE_CB(bethsoftvid_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -1364,7 +1364,7 @@ const FFCodec ff_interplay_video_decoder = {
     .priv_data_size = sizeof(IpvideoContext),
     .init           = ipvideo_decode_init,
     .close          = ipvideo_decode_end,
-    .decode         = ipvideo_decode_frame,
+    FF_CODEC_DECODE_CB(ipvideo_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -217,6 +217,6 @@ const FFCodec ff_xsub_encoder = {
     .p.type     = AVMEDIA_TYPE_SUBTITLE,
     .p.id       = AV_CODEC_ID_XSUB,
     .init       = xsub_encoder_init,
-    .encode_sub = xsub_encode,
+    FF_CODEC_ENCODE_SUB_CB(xsub_encode),
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

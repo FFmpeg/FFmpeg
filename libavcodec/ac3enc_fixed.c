@@ -128,7 +128,7 @@ const FFCodec ff_ac3_fixed_encoder = {
     .p.capabilities  = AV_CODEC_CAP_DR1,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ac3_fixed_encode_init,
-    .encode2         = ff_ac3_fixed_encode_frame,
+    FF_CODEC_ENCODE_CB(ff_ac3_fixed_encode_frame),
     .close           = ff_ac3_encode_close,
     .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },

@@ -418,7 +418,7 @@ const FFCodec ff_zmbv_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(ZmbvEncContext),
     .init           = encode_init,
-    .encode2        = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_end,
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
                                                      AV_PIX_FMT_RGB555LE,

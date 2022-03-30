@@ -30,7 +30,7 @@ const FFCodec ff_mp2fixed_encoder = {
     .p.id                  = AV_CODEC_ID_MP2,
     .priv_data_size        = sizeof(MpegAudioContext),
     .init                  = MPA_encode_init,
-    .encode2               = MPA_encode_frame,
+    FF_CODEC_ENCODE_CB(MPA_encode_frame),
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
     .p.supported_samplerates = (const int[]){

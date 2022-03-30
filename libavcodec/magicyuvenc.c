@@ -572,7 +572,7 @@ const FFCodec ff_magicyuv_encoder = {
     .p.priv_class     = &magicyuv_class,
     .init             = magy_encode_init,
     .close            = magy_encode_close,
-    .encode2          = magy_encode_frame,
+    FF_CODEC_ENCODE_CB(magy_encode_frame),
     .p.capabilities   = AV_CODEC_CAP_FRAME_THREADS,
     .p.pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_YUV422P,

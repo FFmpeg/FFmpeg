@@ -452,7 +452,7 @@ const FFCodec ff_hca_decoder = {
     .p.id           = AV_CODEC_ID_HCA,
     .priv_data_size = sizeof(HCAContext),
     .init           = decode_init,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .close          = decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,

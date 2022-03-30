@@ -137,5 +137,5 @@ const FFCodec ff_libcelt_decoder = {
     .priv_data_size = sizeof(struct libcelt_context),
     .init           = libcelt_dec_init,
     .close          = libcelt_dec_close,
-    .decode         = libcelt_dec_decode,
+    FF_CODEC_DECODE_CB(libcelt_dec_decode),
 };

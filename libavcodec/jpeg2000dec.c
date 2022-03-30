@@ -2578,7 +2578,7 @@ const FFCodec ff_jpeg2000_decoder = {
     .p.capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_DR1,
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
     .init             = jpeg2000_decode_init,
-    .decode           = jpeg2000_decode_frame,
+    FF_CODEC_DECODE_CB(jpeg2000_decode_frame),
     .p.priv_class     = &jpeg2000_class,
     .p.max_lowres     = 5,
     .p.profiles       = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),

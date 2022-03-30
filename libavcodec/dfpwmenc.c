@@ -114,7 +114,7 @@ const FFCodec ff_dfpwm_encoder = {
     .p.id            = AV_CODEC_ID_DFPWM,
     .priv_data_size  = sizeof(DFPWMState),
     .init            = dfpwm_enc_init,
-    .encode2         = dfpwm_enc_frame,
+    FF_CODEC_ENCODE_CB(dfpwm_enc_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_U8, AV_SAMPLE_FMT_NONE},
     .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE,

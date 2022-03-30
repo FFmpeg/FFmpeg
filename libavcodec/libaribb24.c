@@ -391,6 +391,6 @@ const FFCodec ff_libaribb24_decoder = {
     .priv_data_size = sizeof(Libaribb24Context),
     .init      = libaribb24_init,
     .close     = libaribb24_close,
-    .decode_sub = libaribb24_decode,
+    FF_CODEC_DECODE_SUB_CB(libaribb24_decode),
     .flush     = libaribb24_flush,
 };

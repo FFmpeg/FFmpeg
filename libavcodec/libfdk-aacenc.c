@@ -482,7 +482,7 @@ const FFCodec ff_libfdk_aac_encoder = {
     .p.id                  = AV_CODEC_ID_AAC,
     .priv_data_size        = sizeof(AACContext),
     .init                  = aac_encode_init,
-    .encode2               = aac_encode_frame,
+    FF_CODEC_ENCODE_CB(aac_encode_frame),
     .close                 = aac_encode_close,
     .p.capabilities        = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,

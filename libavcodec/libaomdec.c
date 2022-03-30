@@ -256,7 +256,7 @@ const FFCodec ff_libaom_av1_decoder = {
     .priv_data_size = sizeof(AV1DecodeContext),
     .init           = av1_init,
     .close          = aom_free,
-    .decode         = aom_decode,
+    FF_CODEC_DECODE_CB(aom_decode),
     .p.capabilities = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_av1_profiles),

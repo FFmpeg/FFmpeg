@@ -384,7 +384,7 @@ const FFCodec ff_libvorbis_encoder = {
                       AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(LibvorbisEncContext),
     .init           = libvorbis_encode_init,
-    .encode2        = libvorbis_encode_frame,
+    FF_CODEC_ENCODE_CB(libvorbis_encode_frame),
     .close          = libvorbis_encode_close,
     .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },

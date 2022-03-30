@@ -246,7 +246,7 @@ const FFCodec ff_mmvideo_decoder = {
     .priv_data_size = sizeof(MmContext),
     .init           = mm_decode_init,
     .close          = mm_decode_end,
-    .decode         = mm_decode_frame,
+    FF_CODEC_DECODE_CB(mm_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

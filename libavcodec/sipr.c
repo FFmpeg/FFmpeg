@@ -569,7 +569,7 @@ const FFCodec ff_sipr_decoder = {
     .p.id           = AV_CODEC_ID_SIPR,
     .priv_data_size = sizeof(SiprContext),
     .init           = sipr_decoder_init,
-    .decode         = sipr_decode_frame,
+    FF_CODEC_DECODE_CB(sipr_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -182,7 +182,7 @@ const FFCodec ff_avs_decoder = {
     .p.id           = AV_CODEC_ID_AVS,
     .priv_data_size = sizeof(AvsContext),
     .init           = avs_decode_init,
-    .decode         = avs_decode_frame,
+    FF_CODEC_DECODE_CB(avs_decode_frame),
     .close          = avs_decode_end,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

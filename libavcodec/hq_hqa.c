@@ -388,7 +388,7 @@ const FFCodec ff_hq_hqa_decoder = {
     .p.id           = AV_CODEC_ID_HQ_HQA,
     .priv_data_size = sizeof(HQContext),
     .init           = hq_hqa_decode_init,
-    .decode         = hq_hqa_decode_frame,
+    FF_CODEC_DECODE_CB(hq_hqa_decode_frame),
     .close          = hq_hqa_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |

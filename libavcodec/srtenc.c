@@ -300,7 +300,7 @@ const FFCodec ff_srt_encoder = {
     .p.id           = AV_CODEC_ID_SUBRIP,
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
-    .encode_sub     = srt_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(srt_encode_frame),
     .close          = srt_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
@@ -314,7 +314,7 @@ const FFCodec ff_subrip_encoder = {
     .p.id           = AV_CODEC_ID_SUBRIP,
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
-    .encode_sub     = srt_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(srt_encode_frame),
     .close          = srt_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
@@ -328,7 +328,7 @@ const FFCodec ff_text_encoder = {
     .p.id           = AV_CODEC_ID_TEXT,
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
-    .encode_sub     = text_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(text_encode_frame),
     .close          = srt_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

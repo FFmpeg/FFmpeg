@@ -1353,7 +1353,7 @@ FFCodec ff_libaom_av1_encoder = {
     .p.wrapper_name = "libaom",
     .priv_data_size = sizeof(AOMContext),
     .init           = av1_init,
-    .encode2        = aom_encode,
+    FF_CODEC_ENCODE_CB(aom_encode),
     .close          = aom_free,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .defaults       = defaults,

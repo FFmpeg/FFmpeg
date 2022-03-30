@@ -854,7 +854,7 @@ const FFCodec ff_vqa_decoder = {
     .priv_data_size = sizeof(VqaContext),
     .init           = vqa_decode_init,
     .close          = vqa_decode_end,
-    .decode         = vqa_decode_frame,
+    FF_CODEC_DECODE_CB(vqa_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .defaults       = vqa_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,

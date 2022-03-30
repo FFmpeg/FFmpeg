@@ -210,7 +210,7 @@ const FFCodec ff_tta_encoder = {
     .priv_data_size = sizeof(TTAEncContext),
     .init           = tta_encode_init,
     .close          = tta_encode_close,
-    .encode2        = tta_encode_frame,
+    FF_CODEC_ENCODE_CB(tta_encode_frame),
     .p.capabilities = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8,
                                                      AV_SAMPLE_FMT_S16,

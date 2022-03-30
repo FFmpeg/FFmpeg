@@ -559,7 +559,7 @@ const FFCodec ff_gif_encoder = {
     .p.id           = AV_CODEC_ID_GIF,
     .priv_data_size = sizeof(GIFContext),
     .init           = gif_encode_init,
-    .encode2        = gif_encode_frame,
+    FF_CODEC_ENCODE_CB(gif_encode_frame),
     .close          = gif_encode_close,
     .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_BGR4_BYTE,

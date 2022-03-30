@@ -559,7 +559,7 @@ const FFCodec ff_mjpeg_vaapi_encoder = {
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(VAAPIEncodeMJPEGContext),
     .init           = &vaapi_encode_mjpeg_init,
-    .receive_packet = &ff_vaapi_encode_receive_packet,
+    FF_CODEC_RECEIVE_PACKET_CB(&ff_vaapi_encode_receive_packet),
     .close          = &vaapi_encode_mjpeg_close,
     .p.priv_class   = &vaapi_encode_mjpeg_class,
     .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DR1,

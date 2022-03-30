@@ -78,7 +78,7 @@ const FFCodec ff_v308_decoder = {
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_V308,
     .init         = v308_decode_init,
-    .decode       = v308_decode_frame,
+    FF_CODEC_DECODE_CB(v308_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

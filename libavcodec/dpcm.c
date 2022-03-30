@@ -418,7 +418,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                  \
     .p.capabilities = AV_CODEC_CAP_DR1,                     \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
-    .decode         = dpcm_decode_frame,                    \
+    FF_CODEC_DECODE_CB(dpcm_decode_frame),                  \
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 }
 

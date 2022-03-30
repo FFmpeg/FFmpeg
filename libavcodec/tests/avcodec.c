@@ -64,7 +64,7 @@ int main(void){
     while (codec = av_codec_iterate(&iter)) {
         const FFCodec *const codec2 = ffcodec(codec);
         const AVCodecDescriptor *desc;
-        int is_decoder, is_encoder;
+        int is_decoder = 0, is_encoder = 0;
 
         if (!codec->name) {
             AV_LOG("Codec for format %s has no name\n",
@@ -102,17 +102,38 @@ int main(void){
                                      AV_CODEC_CAP_OTHER_THREADS)))
             ERR("Codec %s has private-only threading support\n");
 
-        is_decoder = av_codec_is_decoder(codec);
-        is_encoder = av_codec_is_encoder(codec);
-        if (!!is_decoder + !!is_encoder != 1) {
-            ERR("Codec %s is decoder and encoder or neither.\n");
+        switch (codec2->cb_type) {
+        case FF_CODEC_CB_TYPE_DECODE:
+        case FF_CODEC_CB_TYPE_DECODE_SUB:
+        case FF_CODEC_CB_TYPE_RECEIVE_FRAME:
+            is_decoder = 1;
+            break;
+        case FF_CODEC_CB_TYPE_ENCODE:
+        case FF_CODEC_CB_TYPE_ENCODE_SUB:
+        case FF_CODEC_CB_TYPE_RECEIVE_PACKET:
+            is_encoder = 1;
+            break;
+        default:
+            ERR("Codec %s has unknown cb_type\n");
             continue;
         }
+        if (is_decoder != av_codec_is_decoder(codec) ||
+            is_encoder != av_codec_is_encoder(codec)) {
+            ERR("Codec %s cb_type and av_codec_is_(de|en)coder inconsistent.\n");
+            continue;
+        }
+#define CHECK(TYPE, type) (codec2->cb_type == FF_CODEC_CB_TYPE_ ## TYPE && !codec2->cb.type)
+        if (CHECK(DECODE, decode) || CHECK(DECODE_SUB, decode_sub) ||
+            CHECK(RECEIVE_PACKET, receive_packet) ||
+            CHECK(ENCODE, encode) || CHECK(ENCODE_SUB, encode_sub) ||
+            CHECK(RECEIVE_FRAME, receive_frame)) {
+            ERR_EXT("Codec %s does not implement its %s callback.\n",
+                    is_decoder ? "decoding" : "encoding");
+        }
+#undef CHECK
         if (is_encoder) {
-            if (codec->type == AVMEDIA_TYPE_SUBTITLE ^ !!codec2->encode_sub)
+            if ((codec->type == AVMEDIA_TYPE_SUBTITLE) != (codec2->cb_type == FF_CODEC_CB_TYPE_ENCODE_SUB))
                 ERR("Encoder %s is both subtitle encoder and not subtitle encoder.");
-            if (!!codec2->encode_sub + !!codec2->encode2 + !!codec2->receive_packet != 1)
-                ERR("Encoder %s does not implement exactly one encode API.\n");
             if (codec2->update_thread_context || codec2->update_thread_context_for_user || codec2->bsfs)
                 ERR("Encoder %s has decoder-only thread functions or bsf.\n");
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
@@ -135,14 +156,11 @@ int main(void){
                 codec->capabilities & AV_CODEC_CAP_ENCODER_FLUSH)
                 ERR("Frame-threaded encoder %s claims to support flushing\n");
         } else {
-            if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec2->decode_sub)
+            if ((codec->type == AVMEDIA_TYPE_SUBTITLE) != (codec2->cb_type == FF_CODEC_CB_TYPE_DECODE_SUB))
                 ERR("Subtitle decoder %s does not implement decode_sub callback\n");
             if (codec->type == AVMEDIA_TYPE_SUBTITLE && codec2->bsfs)
                 ERR("Automatic bitstream filtering unsupported for subtitles; "
                     "yet decoder %s has it set\n");
-            if ((codec->type != AVMEDIA_TYPE_SUBTITLE) !=
-                (!!codec2->decode + !!codec2->receive_frame))
-                ERR("Decoder %s does not implement exactly one decode API.\n");
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME    |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE |
                                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |

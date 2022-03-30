@@ -380,7 +380,7 @@ const FFCodec ff_adpcm_g722_encoder = {
     .priv_data_size  = sizeof(G722Context),
     .init            = g722_encode_init,
     .close           = g722_encode_close,
-    .encode2         = g722_encode_frame,
+    FF_CODEC_ENCODE_CB(g722_encode_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts = (const uint64_t[]){ AV_CH_LAYOUT_MONO, 0 },

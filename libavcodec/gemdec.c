@@ -356,6 +356,6 @@ const FFCodec ff_gem_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_GEM,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = gem_decode_frame,
+    FF_CODEC_DECODE_CB(gem_decode_frame),
     .close          = gem_close,
 };

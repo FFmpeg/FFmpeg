@@ -621,7 +621,7 @@ static const AVOption options[] = {
         .priv_data_size = sizeof(ATDecodeContext), \
         .init           = ffat_init_encoder, \
         .close          = ffat_close_encoder, \
-        .encode2        = ffat_encode, \
+        FF_CODEC_ENCODE_CB(ffat_encode), \
         .flush          = ffat_encode_flush, \
         .p.priv_class   = &ffat_##NAME##_enc_class, \
         .p.capabilities = AV_CODEC_CAP_DELAY | \

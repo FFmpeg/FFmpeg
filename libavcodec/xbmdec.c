@@ -143,5 +143,5 @@ const FFCodec ff_xbm_decoder = {
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_XBM,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode       = xbm_decode_frame,
+    FF_CODEC_DECODE_CB(xbm_decode_frame),
 };

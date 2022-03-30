@@ -234,7 +234,7 @@ const FFCodec ff_s302m_decoder = {
     .p.id           = AV_CODEC_ID_S302M,
     .p.priv_class   = &s302m_class,
     .priv_data_size = sizeof(S302Context),
-    .decode         = s302m_decode_frame,
+    FF_CODEC_DECODE_CB(s302m_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
 };

@@ -592,7 +592,7 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
         .priv_data_size = sizeof(ATDecodeContext), \
         .init           = ffat_init_decoder, \
         .close          = ffat_close_decoder, \
-        .decode         = ffat_decode, \
+        FF_CODEC_DECODE_CB(ffat_decode), \
         .flush          = ffat_decode_flush, \
         .p.priv_class   = &ffat_##NAME##_dec_class, \
         .bsfs           = bsf_name, \

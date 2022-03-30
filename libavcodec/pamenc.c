@@ -133,7 +133,7 @@ const FFCodec ff_pam_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_PAM,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .encode2        = pam_encode_frame,
+    FF_CODEC_ENCODE_CB(pam_encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,

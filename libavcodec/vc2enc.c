@@ -1234,7 +1234,7 @@ const FFCodec ff_vc2_encoder = {
     .priv_data_size = sizeof(VC2EncContext),
     .init           = vc2_encode_init,
     .close          = vc2_encode_end,
-    .encode2        = vc2_encode_frame,
+    FF_CODEC_ENCODE_CB(vc2_encode_frame),
     .p.priv_class   = &vc2enc_class,
     .defaults       = vc2enc_defaults,
     .p.pix_fmts     = allowed_pix_fmts

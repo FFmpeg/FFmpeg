@@ -444,5 +444,5 @@ const FFCodec ff_xpm_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(XPMDecContext),
     .close          = xpm_decode_close,
-    .decode         = xpm_decode_frame,
+    FF_CODEC_DECODE_CB(xpm_decode_frame),
 };

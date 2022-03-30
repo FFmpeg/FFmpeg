@@ -526,7 +526,7 @@ const FFCodec ff_sga_decoder = {
     .p.id           = AV_CODEC_ID_SGA_VIDEO,
     .priv_data_size = sizeof(SGAVideoContext),
     .init           = sga_decode_init,
-    .decode         = sga_decode_frame,
+    FF_CODEC_DECODE_CB(sga_decode_frame),
     .close          = sga_decode_end,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

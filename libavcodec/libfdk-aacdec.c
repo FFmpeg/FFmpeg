@@ -483,7 +483,7 @@ const FFCodec ff_libfdk_aac_decoder = {
     .p.id           = AV_CODEC_ID_AAC,
     .priv_data_size = sizeof(FDKAACDecContext),
     .init           = fdk_aac_decode_init,
-    .decode         = fdk_aac_decode_frame,
+    FF_CODEC_DECODE_CB(fdk_aac_decode_frame),
     .close          = fdk_aac_decode_close,
     .flush          = fdk_aac_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF

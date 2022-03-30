@@ -150,7 +150,7 @@ const FFCodec ff_libvo_amrwbenc_encoder = {
     .p.wrapper_name = "libvo_amrwbenc",
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_encode_init,
-    .encode2        = amr_wb_encode_frame,
+    FF_CODEC_ENCODE_CB(amr_wb_encode_frame),
     .close          = amr_wb_encode_close,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },

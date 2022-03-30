@@ -188,7 +188,7 @@ const FFCodec ff_libcodec2_decoder = {
     .priv_data_size         = sizeof(LibCodec2Context),
     .init                   = libcodec2_init_decoder,
     .close                  = libcodec2_close,
-    .decode                 = libcodec2_decode,
+    FF_CODEC_DECODE_CB(libcodec2_decode),
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts      = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 #endif
@@ -207,7 +207,7 @@ const FFCodec ff_libcodec2_encoder = {
     .priv_data_size         = sizeof(LibCodec2Context),
     .init                   = libcodec2_init_encoder,
     .close                  = libcodec2_close,
-    .encode2                = libcodec2_encode,
+    FF_CODEC_ENCODE_CB(libcodec2_encode),
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts      = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 #endif

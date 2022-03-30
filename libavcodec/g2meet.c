@@ -1630,7 +1630,7 @@ const FFCodec ff_g2m_decoder = {
     .priv_data_size = sizeof(G2MContext),
     .init           = g2m_decode_init,
     .close          = g2m_decode_end,
-    .decode         = g2m_decode_frame,
+    FF_CODEC_DECODE_CB(g2m_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -368,7 +368,7 @@ const FFCodec ff_rscc_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RSCC,
     .init           = rscc_init,
-    .decode         = rscc_decode_frame,
+    FF_CODEC_DECODE_CB(rscc_decode_frame),
     .close          = rscc_close,
     .priv_data_size = sizeof(RsccContext),
     .p.capabilities = AV_CODEC_CAP_DR1,

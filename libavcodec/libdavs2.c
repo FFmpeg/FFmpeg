@@ -220,7 +220,7 @@ const FFCodec ff_libdavs2_decoder = {
     .priv_data_size = sizeof(DAVS2Context),
     .init           = davs2_init,
     .close          = davs2_end,
-    .decode         = davs2_decode_frame,
+    FF_CODEC_DECODE_CB(davs2_decode_frame),
     .flush          = davs2_flush,
     .p.capabilities =  AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,

@@ -98,5 +98,5 @@ const FFCodec ff_msp2_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MSP2,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = msp2_decode_frame,
+    FF_CODEC_DECODE_CB(msp2_decode_frame),
 };

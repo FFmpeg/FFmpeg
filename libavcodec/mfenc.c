@@ -1160,7 +1160,7 @@ static int mf_close(AVCodecContext *avctx)
         .priv_data_size = sizeof(MFContext),                                   \
         .init           = mf_init,                                             \
         .close          = mf_close,                                            \
-        .receive_packet = mf_receive_packet,                                   \
+        FF_CODEC_RECEIVE_PACKET_CB(mf_receive_packet),                         \
         EXTRA                                                                  \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
                           AV_CODEC_CAP_DR1,                                    \

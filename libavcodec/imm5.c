@@ -183,7 +183,7 @@ const FFCodec ff_imm5_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_IMM5,
     .init           = imm5_init,
-    .decode         = imm5_decode_frame,
+    FF_CODEC_DECODE_CB(imm5_decode_frame),
     .close          = imm5_close,
     .flush          = imm5_flush,
     .priv_data_size = sizeof(IMM5Context),

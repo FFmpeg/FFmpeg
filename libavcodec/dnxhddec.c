@@ -732,7 +732,7 @@ const FFCodec ff_dnxhd_decoder = {
     .priv_data_size = sizeof(DNXHDContext),
     .init           = dnxhd_decode_init,
     .close          = dnxhd_decode_close,
-    .decode         = dnxhd_decode_frame,
+    FF_CODEC_DECODE_CB(dnxhd_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),

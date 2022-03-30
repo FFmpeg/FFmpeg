@@ -128,7 +128,7 @@ const FFCodec ff_dsicinaudio_decoder = {
     .p.id           = AV_CODEC_ID_DSICINAUDIO,
     .priv_data_size = sizeof(CinAudioContext),
     .init           = cinaudio_decode_init,
-    .decode         = cinaudio_decode_frame,
+    FF_CODEC_DECODE_CB(cinaudio_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

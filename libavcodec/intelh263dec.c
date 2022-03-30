@@ -137,7 +137,7 @@ const FFCodec ff_h263i_decoder = {
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_h263_decode_init,
     .close          = ff_h263_decode_end,
-    .decode         = ff_h263_decode_frame,
+    FF_CODEC_DECODE_CB(ff_h263_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,

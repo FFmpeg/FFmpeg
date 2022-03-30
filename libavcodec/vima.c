@@ -213,7 +213,7 @@ const FFCodec ff_adpcm_vima_decoder = {
     .p.type       = AVMEDIA_TYPE_AUDIO,
     .p.id         = AV_CODEC_ID_ADPCM_VIMA,
     .init         = decode_init,
-    .decode       = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -87,7 +87,7 @@ const FFCodec ff_ayuv_encoder = {
     .p.id         = AV_CODEC_ID_AYUV,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v408_encode_init,
-    .encode2      = v408_encode_frame,
+    FF_CODEC_ENCODE_CB(v408_encode_frame),
     .p.pix_fmts   = pix_fmt,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
@@ -100,7 +100,7 @@ const FFCodec ff_v408_encoder = {
     .p.id         = AV_CODEC_ID_V408,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v408_encode_init,
-    .encode2      = v408_encode_frame,
+    FF_CODEC_ENCODE_CB(v408_encode_frame),
     .p.pix_fmts   = pix_fmt,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

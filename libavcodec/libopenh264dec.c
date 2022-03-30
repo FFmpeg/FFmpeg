@@ -163,7 +163,7 @@ const FFCodec ff_libopenh264_decoder = {
     .p.id           = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(SVCContext),
     .init           = svc_decode_init,
-    .decode         = svc_decode_frame,
+    FF_CODEC_DECODE_CB(svc_decode_frame),
     .close          = svc_decode_close,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_THREADSAFE |

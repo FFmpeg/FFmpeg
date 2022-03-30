@@ -302,7 +302,7 @@ const FFCodec ff_pcm_dvd_decoder = {
     .p.id           = AV_CODEC_ID_PCM_DVD,
     .priv_data_size = sizeof(PCMDVDContext),
     .init           = pcm_dvd_decode_init,
-    .decode         = pcm_dvd_decode_frame,
+    FF_CODEC_DECODE_CB(pcm_dvd_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     .p.sample_fmts  = (const enum AVSampleFormat[]) {

@@ -699,7 +699,7 @@ const FFCodec ff_pixlet_decoder = {
     .p.id             = AV_CODEC_ID_PIXLET,
     .init             = pixlet_init,
     .close            = pixlet_close,
-    .decode           = pixlet_decode_frame,
+    FF_CODEC_DECODE_CB(pixlet_decode_frame),
     .priv_data_size   = sizeof(PixletContext),
     .p.capabilities   = AV_CODEC_CAP_DR1 |
                         AV_CODEC_CAP_FRAME_THREADS,

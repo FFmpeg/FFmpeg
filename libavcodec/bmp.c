@@ -370,5 +370,5 @@ const FFCodec ff_bmp_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_BMP,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = bmp_decode_frame,
+    FF_CODEC_DECODE_CB(bmp_decode_frame),
 };

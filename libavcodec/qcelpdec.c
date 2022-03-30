@@ -796,7 +796,7 @@ const FFCodec ff_qcelp_decoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_QCELP,
     .init           = qcelp_decode_init,
-    .decode         = qcelp_decode_frame,
+    FF_CODEC_DECODE_CB(qcelp_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(QCELPContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

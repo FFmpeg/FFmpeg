@@ -417,7 +417,7 @@ const FFCodec ff_dca_decoder = {
     .p.id           = AV_CODEC_ID_DTS,
     .priv_data_size = sizeof(DCAContext),
     .init           = dcadec_init,
-    .decode         = dcadec_decode_frame,
+    FF_CODEC_DECODE_CB(dcadec_decode_frame),
     .close          = dcadec_close,
     .flush          = dcadec_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,

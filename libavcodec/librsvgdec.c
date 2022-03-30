@@ -126,6 +126,6 @@ const FFCodec ff_librsvg_decoder = {
     .p.id           = AV_CODEC_ID_SVG,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.wrapper_name = "librsvg",
-    .decode         = librsvg_decode_frame,
+    FF_CODEC_DECODE_CB(librsvg_decode_frame),
     .priv_data_size = sizeof(LibRSVGContext),
 };

@@ -218,6 +218,6 @@ const FFCodec ff_libvorbis_decoder = {
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(OggVorbisDecContext),
     .init           = oggvorbis_decode_init,
-    .decode         = oggvorbis_decode_frame,
+    FF_CODEC_DECODE_CB(oggvorbis_decode_frame),
     .close          = oggvorbis_decode_close,
 };

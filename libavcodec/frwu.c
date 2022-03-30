@@ -122,7 +122,7 @@ const FFCodec ff_frwu_decoder = {
     .p.id           = AV_CODEC_ID_FRWU,
     .priv_data_size = sizeof(FRWUContext),
     .init           = decode_init,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.priv_class   = &frwu_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

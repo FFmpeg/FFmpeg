@@ -169,7 +169,7 @@ const FFCodec ff_comfortnoise_decoder = {
     .p.id           = AV_CODEC_ID_COMFORT_NOISE,
     .priv_data_size = sizeof(CNGContext),
     .init           = cng_decode_init,
-    .decode         = cng_decode_frame,
+    FF_CODEC_DECODE_CB(cng_decode_frame),
     .flush          = cng_decode_flush,
     .close          = cng_decode_close,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,

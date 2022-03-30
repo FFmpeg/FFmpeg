@@ -811,7 +811,7 @@ const FFCodec ff_shorten_decoder = {
     .priv_data_size = sizeof(ShortenContext),
     .init           = shorten_decode_init,
     .close          = shorten_decode_close,
-    .decode         = shorten_decode_frame,
+    FF_CODEC_DECODE_CB(shorten_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_DR1 |

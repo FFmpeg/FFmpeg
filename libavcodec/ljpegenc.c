@@ -329,7 +329,7 @@ const FFCodec ff_ljpeg_encoder = {
     .priv_data_size = sizeof(LJpegEncContext),
     .p.priv_class   = &ljpeg_class,
     .init           = ljpeg_encode_init,
-    .encode2        = ljpeg_encode_frame,
+    FF_CODEC_ENCODE_CB(ljpeg_encode_frame),
     .close          = ljpeg_encode_close,
     .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
     .p.pix_fmts     = (const enum AVPixelFormat[]){

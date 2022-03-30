@@ -458,7 +458,7 @@ const FFCodec ff_aac_fixed_decoder = {
     .priv_data_size  = sizeof(AACContext),
     .init            = aac_decode_init,
     .close           = aac_decode_close,
-    .decode          = aac_decode_frame,
+    FF_CODEC_DECODE_CB(aac_decode_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE
     },

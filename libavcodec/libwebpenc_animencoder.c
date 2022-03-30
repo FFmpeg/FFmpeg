@@ -137,6 +137,6 @@ const FFCodec ff_libwebp_anim_encoder = {
     .priv_data_size = sizeof(LibWebPAnimContext),
     .defaults       = ff_libwebp_defaults,
     .init           = libwebp_anim_encode_init,
-    .encode2        = libwebp_anim_encode_frame,
+    FF_CODEC_ENCODE_CB(libwebp_anim_encode_frame),
     .close          = libwebp_anim_encode_close,
 };

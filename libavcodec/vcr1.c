@@ -128,7 +128,7 @@ const FFCodec ff_vcr1_decoder = {
     .p.id           = AV_CODEC_ID_VCR1,
     .priv_data_size = sizeof(VCR1Context),
     .init           = vcr1_decode_init,
-    .decode         = vcr1_decode_frame,
+    FF_CODEC_DECODE_CB(vcr1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -255,7 +255,7 @@ const FFCodec ff_libuavs3d_decoder = {
     .priv_data_size = sizeof(uavs3d_context),
     .init           = libuavs3d_init,
     .close          = libuavs3d_end,
-    .decode         = libuavs3d_decode_frame,
+    FF_CODEC_DECODE_CB(libuavs3d_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
     .flush          = libuavs3d_flush,

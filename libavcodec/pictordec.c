@@ -286,5 +286,5 @@ const FFCodec ff_pictor_decoder = {
     .p.id           = AV_CODEC_ID_PICTOR,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(PicContext),
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
 };

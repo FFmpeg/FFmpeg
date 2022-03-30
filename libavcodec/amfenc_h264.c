@@ -384,7 +384,7 @@ const FFCodec ff_h264_amf_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .init           = amf_encode_init_h264,
-    .receive_packet = ff_amf_receive_packet,
+    FF_CODEC_RECEIVE_PACKET_CB(ff_amf_receive_packet),
     .close          = ff_amf_encode_close,
     .priv_data_size = sizeof(AmfContext),
     .p.priv_class   = &h264_amf_class,

@@ -1112,7 +1112,7 @@ static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
         .p.priv_class   = &x##_cuvid_class, \
         .init           = cuvid_decode_init, \
         .close          = cuvid_decode_end, \
-        .receive_frame  = cuvid_output_frame, \
+        FF_CODEC_RECEIVE_FRAME_CB(cuvid_output_frame), \
         .flush          = cuvid_flush, \
         .bsfs           = bsf_name, \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \

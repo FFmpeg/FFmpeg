@@ -543,7 +543,7 @@ const FFCodec ff_exr_encoder = {
     .p.id           = AV_CODEC_ID_EXR,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .init           = encode_init,
-    .encode2        = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_close,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
                                                  AV_PIX_FMT_GBRPF32,

@@ -569,7 +569,7 @@ static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
         .priv_data_size = sizeof(RKMPPDecodeContext), \
         .init           = rkmpp_init_decoder, \
         .close          = rkmpp_close_decoder, \
-        .receive_frame  = rkmpp_receive_frame, \
+        FF_CODEC_RECEIVE_FRAME_CB(rkmpp_receive_frame), \
         .flush          = rkmpp_flush, \
         .p.priv_class   = &rkmpp_##NAME##_dec_class, \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \

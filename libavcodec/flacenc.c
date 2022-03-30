@@ -1467,7 +1467,7 @@ const FFCodec ff_flac_encoder = {
                       AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(FlacEncodeContext),
     .init           = flac_encode_init,
-    .encode2        = flac_encode_frame,
+    FF_CODEC_ENCODE_CB(flac_encode_frame),
     .close          = flac_encode_close,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_S32,

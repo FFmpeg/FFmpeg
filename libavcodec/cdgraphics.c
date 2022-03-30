@@ -395,7 +395,7 @@ const FFCodec ff_cdgraphics_decoder = {
     .priv_data_size = sizeof(CDGraphicsContext),
     .init           = cdg_decode_init,
     .close          = cdg_decode_end,
-    .decode         = cdg_decode_frame,
+    FF_CODEC_DECODE_CB(cdg_decode_frame),
     .flush          = cdg_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

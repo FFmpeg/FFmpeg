@@ -149,7 +149,7 @@ const FFCodec ff_bitpacked_decoder = {
     .p.capabilities  = AV_CODEC_CAP_FRAME_THREADS,
     .priv_data_size        = sizeof(struct BitpackedContext),
     .init = bitpacked_init_decoder,
-    .decode = bitpacked_decode,
+    FF_CODEC_DECODE_CB(bitpacked_decode),
     .codec_tags     = (const uint32_t []){
         MKTAG('U', 'Y', 'V', 'Y'),
         FF_CODEC_TAGS_END,

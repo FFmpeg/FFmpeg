@@ -248,7 +248,7 @@ static const AVOption options[] = {
         .priv_data_size = sizeof(V4L2m2mPriv), \
         .p.priv_class   = &v4l2_m2m_ ## NAME ## _dec_class, \
         .init           = v4l2_decode_init, \
-        .receive_frame  = v4l2_receive_frame, \
+        FF_CODEC_RECEIVE_FRAME_CB(v4l2_receive_frame), \
         .close          = v4l2_decode_close, \
         .bsfs           = bsf_name, \
         .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \

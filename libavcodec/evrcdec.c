@@ -935,7 +935,7 @@ const FFCodec ff_evrc_decoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_EVRC,
     .init           = evrc_decode_init,
-    .decode         = evrc_decode_frame,
+    FF_CODEC_DECODE_CB(evrc_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(EVRCContext),
     .p.priv_class   = &evrcdec_class,

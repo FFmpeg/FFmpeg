@@ -1284,7 +1284,7 @@ const FFCodec ff_ffv1_encoder = {
     .p.id           = AV_CODEC_ID_FFV1,
     .priv_data_size = sizeof(FFV1Context),
     .init           = encode_init,
-    .encode2        = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_close,
     .p.capabilities = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DELAY,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {

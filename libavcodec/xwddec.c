@@ -253,5 +253,5 @@ const FFCodec ff_xwd_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_XWD,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = xwd_decode_frame,
+    FF_CODEC_DECODE_CB(xwd_decode_frame),
 };

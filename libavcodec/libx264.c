@@ -1228,7 +1228,7 @@ FFCodec ff_libx264_encoder = {
     .p.wrapper_name   = "libx264",
     .priv_data_size   = sizeof(X264Context),
     .init             = X264_init,
-    .encode2          = X264_frame,
+    FF_CODEC_ENCODE_CB(X264_frame),
     .close            = X264_close,
     .defaults         = x264_defaults,
 #if X264_BUILD < 153
@@ -1265,7 +1265,7 @@ const FFCodec ff_libx264rgb_encoder = {
     .p.wrapper_name = "libx264",
     .priv_data_size = sizeof(X264Context),
     .init           = X264_init,
-    .encode2        = X264_frame,
+    FF_CODEC_ENCODE_CB(X264_frame),
     .close          = X264_close,
     .defaults       = x264_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS
@@ -1297,7 +1297,7 @@ const FFCodec ff_libx262_encoder = {
     .p.wrapper_name   = "libx264",
     .priv_data_size   = sizeof(X264Context),
     .init             = X264_init,
-    .encode2          = X264_frame,
+    FF_CODEC_ENCODE_CB(X264_frame),
     .close            = X264_close,
     .defaults         = x264_defaults,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS,

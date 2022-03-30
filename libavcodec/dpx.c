@@ -765,6 +765,6 @@ const FFCodec ff_dpx_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DPX,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
 };

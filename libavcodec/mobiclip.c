@@ -1347,7 +1347,7 @@ const FFCodec ff_mobiclip_decoder = {
     .p.id           = AV_CODEC_ID_MOBICLIP,
     .priv_data_size = sizeof(MobiClipContext),
     .init           = mobiclip_init,
-    .decode         = mobiclip_decode,
+    FF_CODEC_DECODE_CB(mobiclip_decode),
     .flush          = mobiclip_flush,
     .close          = mobiclip_close,
     .p.capabilities = AV_CODEC_CAP_DR1,

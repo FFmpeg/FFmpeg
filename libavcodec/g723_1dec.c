@@ -1118,7 +1118,7 @@ const FFCodec ff_g723_1_decoder = {
     .p.id           = AV_CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_decode_init,
-    .decode         = g723_1_decode_frame,
+    FF_CODEC_DECODE_CB(g723_1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .p.priv_class   = &g723_1dec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

@@ -731,7 +731,7 @@ const FFCodec ff_speedhq_decoder = {
     .p.id           = AV_CODEC_ID_SPEEDHQ,
     .priv_data_size = sizeof(SHQContext),
     .init           = speedhq_decode_init,
-    .decode         = speedhq_decode_frame,
+    FF_CODEC_DECODE_CB(speedhq_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

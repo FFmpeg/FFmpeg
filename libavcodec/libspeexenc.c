@@ -355,7 +355,7 @@ const FFCodec ff_libspeex_encoder = {
     .p.id           = AV_CODEC_ID_SPEEX,
     .priv_data_size = sizeof(LibSpeexEncContext),
     .init           = encode_init,
-    .encode2        = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_close,
     .p.capabilities = AV_CODEC_CAP_DELAY,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,

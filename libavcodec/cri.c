@@ -429,7 +429,7 @@ const FFCodec ff_cri_decoder = {
     .p.id           = AV_CODEC_ID_CRI,
     .priv_data_size = sizeof(CRIContext),
     .init           = cri_decode_init,
-    .decode         = cri_decode_frame,
+    FF_CODEC_DECODE_CB(cri_decode_frame),
     .close          = cri_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,

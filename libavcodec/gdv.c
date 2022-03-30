@@ -568,7 +568,7 @@ const FFCodec ff_gdv_decoder = {
     .priv_data_size = sizeof(GDVContext),
     .init           = gdv_decode_init,
     .close          = gdv_decode_close,
-    .decode         = gdv_decode_frame,
+    FF_CODEC_DECODE_CB(gdv_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

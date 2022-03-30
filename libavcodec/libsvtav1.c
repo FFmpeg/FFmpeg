@@ -614,7 +614,7 @@ const FFCodec ff_libsvtav1_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AV1,
     .init           = eb_enc_init,
-    .receive_packet = eb_receive_packet,
+    FF_CODEC_RECEIVE_PACKET_CB(eb_receive_packet),
     .close          = eb_enc_close,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal  = FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP,

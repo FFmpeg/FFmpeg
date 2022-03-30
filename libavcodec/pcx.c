@@ -254,6 +254,6 @@ const FFCodec ff_pcx_decoder = {
     .p.long_name  = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
     .p.type       = AVMEDIA_TYPE_VIDEO,
     .p.id         = AV_CODEC_ID_PCX,
-    .decode       = pcx_decode_frame,
+    FF_CODEC_DECODE_CB(pcx_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
 };

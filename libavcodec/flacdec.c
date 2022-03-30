@@ -665,7 +665,7 @@ const FFCodec ff_flac_decoder = {
     .priv_data_size = sizeof(FLACContext),
     .init           = flac_decode_init,
     .close          = flac_decode_close,
-    .decode         = flac_decode_frame,
+    FF_CODEC_DECODE_CB(flac_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_FRAME_THREADS,

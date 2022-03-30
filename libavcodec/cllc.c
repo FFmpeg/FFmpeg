@@ -498,7 +498,7 @@ const FFCodec ff_cllc_decoder = {
     .p.id           = AV_CODEC_ID_CLLC,
     .priv_data_size = sizeof(CLLCContext),
     .init           = cllc_decode_init,
-    .decode         = cllc_decode_frame,
+    FF_CODEC_DECODE_CB(cllc_decode_frame),
     .close          = cllc_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

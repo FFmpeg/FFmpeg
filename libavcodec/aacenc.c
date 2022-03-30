@@ -1144,7 +1144,7 @@ const FFCodec ff_aac_encoder = {
     .p.id           = AV_CODEC_ID_AAC,
     .priv_data_size = sizeof(AACEncContext),
     .init           = aac_encode_init,
-    .encode2        = aac_encode_frame,
+    FF_CODEC_ENCODE_CB(aac_encode_frame),
     .close          = aac_encode_end,
     .defaults       = aac_encode_defaults,
     .p.supported_samplerates = ff_mpeg4audio_sample_rates,

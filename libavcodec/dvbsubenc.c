@@ -512,5 +512,5 @@ const FFCodec ff_dvbsub_encoder = {
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
-    .encode_sub     = dvbsub_encode,
+    FF_CODEC_ENCODE_SUB_CB(dvbsub_encode),
 };

@@ -1484,7 +1484,7 @@ const FFCodec ff_ilbc_decoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ILBC,
     .init           = ilbc_decode_init,
-    .decode         = ilbc_decode_frame,
+    FF_CODEC_DECODE_CB(ilbc_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(ILBCContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

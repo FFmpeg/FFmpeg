@@ -761,7 +761,7 @@ const FFCodec ff_libopenjpeg_encoder = {
     .p.id           = AV_CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(LibOpenJPEGContext),
     .init           = libopenjpeg_encode_init,
-    .encode2        = libopenjpeg_encode_frame,
+    FF_CODEC_ENCODE_CB(libopenjpeg_encode_frame),
     .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48,

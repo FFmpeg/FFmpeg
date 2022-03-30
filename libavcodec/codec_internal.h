@@ -88,6 +88,27 @@ struct AVCodecContext;
 struct AVSubtitle;
 struct AVPacket;
 
+enum FFCodecType {
+    /* The codec is a decoder using the decode callback;
+     * audio and video codecs only. */
+    FF_CODEC_CB_TYPE_DECODE,
+    /* The codec is a decoder using the decode_sub callback;
+     * subtitle codecs only. */
+    FF_CODEC_CB_TYPE_DECODE_SUB,
+    /* The codec is a decoder using the receive_frame callback;
+     * audio and video codecs only. */
+    FF_CODEC_CB_TYPE_RECEIVE_FRAME,
+    /* The codec is an encoder using the encode callback;
+     * audio and video codecs only. */
+    FF_CODEC_CB_TYPE_ENCODE,
+    /* The codec is an encoder using the encode_sub callback;
+     * subtitle codecs only. */
+    FF_CODEC_CB_TYPE_ENCODE_SUB,
+    /* The codec is an encoder using the receive_packet callback;
+     * audio and video codecs only. */
+    FF_CODEC_CB_TYPE_RECEIVE_PACKET,
+};
+
 typedef struct FFCodec {
     /**
      * The public AVCodec. See codec.h for it.
@@ -97,7 +118,14 @@ typedef struct FFCodec {
     /**
      * Internal codec capabilities FF_CODEC_CAP_*.
      */
-    int caps_internal;
+    unsigned caps_internal:29;
+
+    /**
+     * This field determines the type of the codec (decoder/encoder)
+     * and also the exact callback cb implemented by the codec.
+     * cb_type uses enum FFCodecType values.
+     */
+    unsigned cb_type:3;
 
     int priv_data_size;
     /**
@@ -133,53 +161,69 @@ typedef struct FFCodec {
     void (*init_static_data)(struct FFCodec *codec);
 
     int (*init)(struct AVCodecContext *);
-    int (*encode_sub)(struct AVCodecContext *, uint8_t *buf, int buf_size,
-                      const struct AVSubtitle *sub);
-    /**
-     * Encode data to an AVPacket.
-     *
-     * @param      avctx          codec context
-     * @param      avpkt          output AVPacket
-     * @param[in]  frame          AVFrame containing the raw data to be encoded
-     * @param[out] got_packet_ptr encoder sets to 0 or 1 to indicate that a
-     *                            non-empty packet was returned in avpkt.
-     * @return 0 on success, negative error code on failure
-     */
-    int (*encode2)(struct AVCodecContext *avctx, struct AVPacket *avpkt,
-                   const struct AVFrame *frame, int *got_packet_ptr);
-    /**
-     * Decode to an AVFrame.
-     *
-     * @param      avctx          codec context
-     * @param      frame          AVFrame for output
-     * @param[out] got_frame_ptr  decoder sets to 0 or 1 to indicate that a
-     *                            non-empty frame was returned in outdata.
-     * @param[in]  avpkt          AVPacket containing the data to be decoded
-     * @return amount of bytes read from the packet on success, negative error
-     *         code on failure
-     */
-    int (*decode)(struct AVCodecContext *avctx, struct AVFrame *frame,
-                  int *got_frame_ptr, struct AVPacket *avpkt);
-    /**
-     * Decode subtitle data. Same as decode except that it uses
-     * a struct AVSubtitle structure for output.
-     */
-    int (*decode_sub)(struct AVCodecContext *avctx, struct AVSubtitle *sub,
-                      int *got_frame_ptr, struct AVPacket *avpkt);
-    int (*close)(struct AVCodecContext *);
-    /**
-     * Encode API with decoupled frame/packet dataflow. This function is called
-     * to get one output packet. It should call ff_encode_get_frame() to obtain
-     * input data.
-     */
-    int (*receive_packet)(struct AVCodecContext *avctx, struct AVPacket *avpkt);
 
-    /**
-     * Decode API with decoupled packet/frame dataflow. This function is called
-     * to get one output frame. It should call ff_decode_get_packet() to obtain
-     * input data.
-     */
-    int (*receive_frame)(struct AVCodecContext *avctx, struct AVFrame *frame);
+    union {
+        /**
+         * Decode to an AVFrame.
+         * cb is in this state if cb_type is FF_CODEC_CB_TYPE_DECODE.
+         *
+         * @param      avctx          codec context
+         * @param[out] frame          AVFrame for output
+         * @param[out] got_frame_ptr  decoder sets to 0 or 1 to indicate that
+         *                            a non-empty frame was returned in frame.
+         * @param[in]  avpkt          AVPacket containing the data to be decoded
+         * @return amount of bytes read from the packet on success,
+         *         negative error code on failure
+         */
+        int (*decode)(struct AVCodecContext *avctx, struct AVFrame *frame,
+                      int *got_frame_ptr, struct AVPacket *avpkt);
+        /**
+         * Decode subtitle data to an AVSubtitle.
+         * cb is in this state if cb_type is FF_CODEC_CB_TYPE_DECODE_SUB.
+         *
+         * Apart from that this is like the decode callback.
+         */
+        int (*decode_sub)(struct AVCodecContext *avctx, struct AVSubtitle *sub,
+                          int *got_frame_ptr, struct AVPacket *avpkt);
+        /**
+         * Decode API with decoupled packet/frame dataflow.
+         * cb is in this state if cb_type is FF_CODEC_CB_TYPE_RECEIVE_FRAME.
+         *
+         * This function is called to get one output frame. It should call
+         * ff_decode_get_packet() to obtain input data.
+         */
+        int (*receive_frame)(struct AVCodecContext *avctx, struct AVFrame *frame);
+        /**
+         * Encode data to an AVPacket.
+         * cb is in this state if cb_type is FF_CODEC_CB_TYPE_ENCODE
+         *
+         * @param      avctx          codec context
+         * @param[out] avpkt          output AVPacket
+         * @param[in]  frame          AVFrame containing the input to be encoded
+         * @param[out] got_packet_ptr encoder sets to 0 or 1 to indicate that a
+         *                            non-empty packet was returned in avpkt.
+         * @return 0 on success, negative error code on failure
+         */
+        int (*encode)(struct AVCodecContext *avctx, struct AVPacket *avpkt,
+                      const struct AVFrame *frame, int *got_packet_ptr);
+        /**
+         * Encode subtitles to a raw buffer.
+         * cb is in this state if cb_type is FF_CODEC_CB_TYPE_ENCODE_SUB.
+         */
+        int (*encode_sub)(struct AVCodecContext *avctx, uint8_t *buf,
+                          int buf_size, const struct AVSubtitle *sub);
+        /**
+         * Encode API with decoupled frame/packet dataflow.
+         * cb is in this state if cb_type is FF_CODEC_CB_TYPE_RECEIVE_PACKET.
+         *
+         * This function is called to get one output packet.
+         * It should call ff_encode_get_frame() to obtain input data.
+         */
+        int (*receive_packet)(struct AVCodecContext *avctx, struct AVPacket *avpkt);
+    } cb;
+
+    int (*close)(struct AVCodecContext *);
+
     /**
      * Flush buffers.
      * Will be called when seeking
@@ -206,6 +250,25 @@ typedef struct FFCodec {
      */
     const uint32_t *codec_tags;
 } FFCodec;
+
+#define FF_CODEC_DECODE_CB(func)                          \
+    .cb_type           = FF_CODEC_CB_TYPE_DECODE,         \
+    .cb.decode         = (func)
+#define FF_CODEC_DECODE_SUB_CB(func)                      \
+    .cb_type           = FF_CODEC_CB_TYPE_DECODE_SUB,     \
+    .cb.decode_sub     = (func)
+#define FF_CODEC_RECEIVE_FRAME_CB(func)                   \
+    .cb_type           = FF_CODEC_CB_TYPE_RECEIVE_FRAME,  \
+    .cb.receive_frame  = (func)
+#define FF_CODEC_ENCODE_CB(func)                          \
+    .cb_type           = FF_CODEC_CB_TYPE_ENCODE,         \
+    .cb.encode         = (func)
+#define FF_CODEC_ENCODE_SUB_CB(func)                      \
+    .cb_type           = FF_CODEC_CB_TYPE_ENCODE_SUB,     \
+    .cb.encode_sub     = (func)
+#define FF_CODEC_RECEIVE_PACKET_CB(func)                  \
+    .cb_type           = FF_CODEC_CB_TYPE_RECEIVE_PACKET, \
+    .cb.receive_packet = (func)
 
 static av_always_inline const FFCodec *ffcodec(const AVCodec *codec)
 {

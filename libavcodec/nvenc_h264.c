@@ -225,7 +225,7 @@ const FFCodec ff_h264_nvenc_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H264,
     .init           = ff_nvenc_encode_init,
-    .receive_packet = ff_nvenc_receive_packet,
+    FF_CODEC_RECEIVE_PACKET_CB(ff_nvenc_receive_packet),
     .close          = ff_nvenc_encode_close,
     .flush          = ff_nvenc_encode_flush,
     .priv_data_size = sizeof(NvencContext),

@@ -79,7 +79,7 @@ const FFCodec ff_paf_audio_decoder = {
     .p.type       = AVMEDIA_TYPE_AUDIO,
     .p.id         = AV_CODEC_ID_PAF_AUDIO,
     .init         = paf_audio_init,
-    .decode       = paf_audio_decode,
+    FF_CODEC_DECODE_CB(paf_audio_decode),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

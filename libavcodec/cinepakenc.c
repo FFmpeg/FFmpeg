@@ -1201,7 +1201,7 @@ const FFCodec ff_cinepak_encoder = {
     .p.id           = AV_CODEC_ID_CINEPAK,
     .priv_data_size = sizeof(CinepakEncContext),
     .init           = cinepak_encode_init,
-    .encode2        = cinepak_encode_frame,
+    FF_CODEC_ENCODE_CB(cinepak_encode_frame),
     .close          = cinepak_encode_end,
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE },
     .p.priv_class   = &cinepak_class,

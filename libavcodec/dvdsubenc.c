@@ -500,7 +500,7 @@ const FFCodec ff_dvdsub_encoder = {
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_DVD_SUBTITLE,
     .init           = dvdsub_init,
-    .encode_sub     = dvdsub_encode,
+    FF_CODEC_ENCODE_SUB_CB(dvdsub_encode),
     .p.priv_class   = &dvdsubenc_class,
     .priv_data_size = sizeof(DVDSubtitleContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

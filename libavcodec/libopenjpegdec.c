@@ -511,5 +511,5 @@ const FFCodec ff_libopenjpeg_decoder = {
     .p.wrapper_name = "libopenjpeg",
     .priv_data_size = sizeof(LibOpenJPEGContext),
     .init           = libopenjpeg_decode_init,
-    .decode         = libopenjpeg_decode_frame,
+    FF_CODEC_DECODE_CB(libopenjpeg_decode_frame),
 };

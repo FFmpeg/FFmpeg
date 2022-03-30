@@ -698,7 +698,7 @@ const FFCodec ff_pgssub_decoder = {
     .priv_data_size = sizeof(PGSSubContext),
     .init           = init_decoder,
     .close          = close_decoder,
-    .decode_sub     = decode,
+    FF_CODEC_DECODE_SUB_CB(decode),
     .p.priv_class   = &pgsdec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

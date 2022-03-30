@@ -226,7 +226,7 @@ const FFCodec ff_truemotion2rt_decoder = {
     .p.id           = AV_CODEC_ID_TRUEMOTION2RT,
     .priv_data_size = sizeof(TrueMotion2RTContext),
     .init           = truemotion2rt_decode_init,
-    .decode         = truemotion2rt_decode_frame,
+    FF_CODEC_DECODE_CB(truemotion2rt_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

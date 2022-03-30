@@ -180,7 +180,7 @@ const FFCodec ff_pcm_dvd_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .priv_data_size = sizeof(PCMDVDContext),
     .init           = pcm_dvd_encode_init,
-    .encode2        = pcm_dvd_encode_frame,
+    FF_CODEC_ENCODE_CB(pcm_dvd_encode_frame),
     .p.supported_samplerates = (const int[]) { 48000, 96000, 0},
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO,

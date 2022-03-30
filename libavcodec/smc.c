@@ -476,7 +476,7 @@ const FFCodec ff_smc_decoder = {
     .priv_data_size = sizeof(SmcContext),
     .init           = smc_decode_init,
     .close          = smc_decode_end,
-    .decode         = smc_decode_frame,
+    FF_CODEC_DECODE_CB(smc_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

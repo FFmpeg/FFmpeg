@@ -357,7 +357,7 @@ const FFCodec ff_hap_encoder = {
     .priv_data_size = sizeof(HapContext),
     .p.priv_class   = &hapenc_class,
     .init           = hap_init,
-    .encode2        = hap_encode,
+    FF_CODEC_ENCODE_CB(hap_encode),
     .close          = hap_close,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE,

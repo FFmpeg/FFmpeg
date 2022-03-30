@@ -752,7 +752,7 @@ FFCodec ff_libx265_encoder = {
     .p.wrapper_name   = "libx265",
     .init             = libx265_encode_init,
     .init_static_data = libx265_encode_init_csp,
-    .encode2          = libx265_encode_frame,
+    FF_CODEC_ENCODE_CB(libx265_encode_frame),
     .close            = libx265_encode_close,
     .priv_data_size   = sizeof(libx265Context),
     .defaults         = x265_defaults,

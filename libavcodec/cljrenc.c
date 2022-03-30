@@ -115,7 +115,7 @@ const FFCodec ff_cljr_encoder = {
     .p.id           = AV_CODEC_ID_CLJR,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(CLJRContext),
-    .encode2        = encode_frame,
+    FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                    AV_PIX_FMT_NONE },
     .p.priv_class   = &cljr_class,

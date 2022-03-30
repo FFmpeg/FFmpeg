@@ -783,7 +783,7 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .p.priv_class   = &x##_crystalhd_class, \
         .init           = init, \
         .close          = uninit, \
-        .receive_frame  = crystalhd_receive_frame, \
+        FF_CODEC_RECEIVE_FRAME_CB(crystalhd_receive_frame), \
         .flush          = flush, \
         .bsfs           = bsf_name, \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \

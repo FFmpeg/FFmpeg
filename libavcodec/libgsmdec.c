@@ -135,7 +135,7 @@ const FFCodec ff_libgsm_decoder = {
     .priv_data_size = sizeof(LibGSMDecodeContext),
     .init           = libgsm_decode_init,
     .close          = libgsm_decode_close,
-    .decode         = libgsm_decode_frame,
+    FF_CODEC_DECODE_CB(libgsm_decode_frame),
     .flush          = libgsm_flush,
 };
 #endif
@@ -150,7 +150,7 @@ const FFCodec ff_libgsm_ms_decoder = {
     .priv_data_size = sizeof(LibGSMDecodeContext),
     .init           = libgsm_decode_init,
     .close          = libgsm_decode_close,
-    .decode         = libgsm_decode_frame,
+    FF_CODEC_DECODE_CB(libgsm_decode_frame),
     .flush          = libgsm_flush,
 };
 #endif

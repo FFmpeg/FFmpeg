@@ -211,5 +211,5 @@ const FFCodec ff_sunrast_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_SUNRAST,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .decode         = sunrast_decode_frame,
+    FF_CODEC_DECODE_CB(sunrast_decode_frame),
 };

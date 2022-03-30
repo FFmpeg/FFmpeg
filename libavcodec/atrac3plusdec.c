@@ -400,7 +400,7 @@ const FFCodec ff_atrac3p_decoder = {
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,
     .close          = atrac3p_decode_close,
-    .decode         = atrac3p_decode_frame,
+    FF_CODEC_DECODE_CB(atrac3p_decode_frame),
 };
 
 const FFCodec ff_atrac3pal_decoder = {
@@ -413,5 +413,5 @@ const FFCodec ff_atrac3pal_decoder = {
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,
     .close          = atrac3p_decode_close,
-    .decode         = atrac3p_decode_frame,
+    FF_CODEC_DECODE_CB(atrac3p_decode_frame),
 };

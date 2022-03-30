@@ -2947,7 +2947,7 @@ const FFCodec ff_vp7_decoder = {
     .priv_data_size        = sizeof(VP8Context),
     .init                  = vp7_decode_init,
     .close                 = ff_vp8_decode_free,
-    .decode                = vp7_decode_frame,
+    FF_CODEC_DECODE_CB(vp7_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush                 = vp8_decode_flush,
@@ -2963,7 +2963,7 @@ const FFCodec ff_vp8_decoder = {
     .priv_data_size        = sizeof(VP8Context),
     .init                  = ff_vp8_decode_init,
     .close                 = ff_vp8_decode_free,
-    .decode                = ff_vp8_decode_frame,
+    FF_CODEC_DECODE_CB(ff_vp8_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                              AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |

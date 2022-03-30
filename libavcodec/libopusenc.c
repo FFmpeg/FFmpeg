@@ -590,7 +590,7 @@ const FFCodec ff_libopus_encoder = {
     .p.id            = AV_CODEC_ID_OPUS,
     .priv_data_size  = sizeof(LibopusEncContext),
     .init            = libopus_encode_init,
-    .encode2         = libopus_encode,
+    FF_CODEC_ENCODE_CB(libopus_encode),
     .close           = libopus_encode_close,
     .p.capabilities  = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,

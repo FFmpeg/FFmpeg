@@ -1125,7 +1125,7 @@ const FFCodec ff_roq_encoder = {
     .p.id                 = AV_CODEC_ID_ROQ,
     .priv_data_size       = sizeof(RoqEncContext),
     .init                 = roq_encode_init,
-    .encode2              = roq_encode_frame,
+    FF_CODEC_ENCODE_CB(roq_encode_frame),
     .close                = roq_encode_end,
     .p.pix_fmts           = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ444P,
                                                         AV_PIX_FMT_NONE },

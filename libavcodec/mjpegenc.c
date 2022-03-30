@@ -660,7 +660,7 @@ const FFCodec ff_mjpeg_encoder = {
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MJPEGEncContext),
     .init           = ff_mpv_encode_init,
-    .encode2        = ff_mpv_encode_picture,
+    FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close          = mjpeg_encode_close,
     .p.capabilities = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
@@ -689,7 +689,7 @@ const FFCodec ff_amv_encoder = {
     .p.id           = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MJPEGEncContext),
     .init           = ff_mpv_encode_init,
-    .encode2        = amv_encode_picture,
+    FF_CODEC_ENCODE_CB(amv_encode_picture),
     .close          = mjpeg_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {

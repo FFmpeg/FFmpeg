@@ -113,7 +113,7 @@ const FFCodec ff_wrapped_avframe_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("AVFrame to AVPacket passthrough"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WRAPPED_AVFRAME,
-    .encode2        = wrapped_avframe_encode,
+    FF_CODEC_ENCODE_CB(wrapped_avframe_encode),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 
@@ -122,6 +122,6 @@ const FFCodec ff_wrapped_avframe_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("AVPacket to AVFrame passthrough"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WRAPPED_AVFRAME,
-    .decode         = wrapped_avframe_decode,
+    FF_CODEC_DECODE_CB(wrapped_avframe_decode),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

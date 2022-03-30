@@ -322,7 +322,7 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME) {
         ret = ff_thread_decode_frame(avctx, frame, &got_frame, pkt);
     } else {
-        ret = codec->decode(avctx, frame, &got_frame, pkt);
+        ret = codec->cb.decode(avctx, frame, &got_frame, pkt);
 
         if (!(codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
             frame->pkt_dts = pkt->dts;
@@ -546,8 +546,8 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
     av_assert0(!frame->buf[0]);
 
-    if (codec->receive_frame) {
-        ret = codec->receive_frame(avctx, frame);
+    if (codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_FRAME) {
+        ret = codec->cb.receive_frame(avctx, frame);
         if (ret != AVERROR(EAGAIN))
             av_packet_unref(avci->last_pkt_props);
     } else
@@ -862,7 +862,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         if (avctx->pkt_timebase.num && avpkt->pts != AV_NOPTS_VALUE)
             sub->pts = av_rescale_q(avpkt->pts,
                                     avctx->pkt_timebase, AV_TIME_BASE_Q);
-        ret = ffcodec(avctx->codec)->decode_sub(avctx, sub, got_sub_ptr, pkt);
+        ret = ffcodec(avctx->codec)->cb.decode_sub(avctx, sub, got_sub_ptr, pkt);
         if (pkt == avci->buffer_pkt) // did we recode?
             av_packet_unref(avci->buffer_pkt);
         if (ret < 0) {

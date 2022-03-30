@@ -849,7 +849,7 @@ const FFCodec ff_siren_decoder = {
     .p.id           = AV_CODEC_ID_SIREN,
     .init           = siren_init,
     .close          = siren_close,
-    .decode         = siren_decode,
+    FF_CODEC_DECODE_CB(siren_decode),
     .flush          = siren_flush,
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
@@ -865,7 +865,7 @@ const FFCodec ff_msnsiren_decoder = {
     .p.id           = AV_CODEC_ID_MSNSIREN,
     .init           = siren_init,
     .close          = siren_close,
-    .decode         = siren_decode,
+    FF_CODEC_DECODE_CB(siren_decode),
     .flush          = siren_flush,
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,

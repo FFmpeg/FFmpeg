@@ -657,7 +657,7 @@ const FFCodec ff_alac_encoder = {
     .priv_data_size = sizeof(AlacEncodeContext),
     .p.priv_class   = &alacenc_class,
     .init           = alac_encode_init,
-    .encode2        = alac_encode_frame,
+    FF_CODEC_ENCODE_CB(alac_encode_frame),
     .close          = alac_encode_close,
     .p.capabilities = AV_CODEC_CAP_SMALL_LAST_FRAME,
 #if FF_API_OLD_CHANNEL_LAYOUT

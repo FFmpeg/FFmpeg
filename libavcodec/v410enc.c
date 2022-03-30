@@ -81,7 +81,7 @@ const FFCodec ff_v410_encoder = {
     .p.id         = AV_CODEC_ID_V410,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .init         = v410_encode_init,
-    .encode2      = v410_encode_frame,
+    FF_CODEC_ENCODE_CB(v410_encode_frame),
     .p.pix_fmts   = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE },
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

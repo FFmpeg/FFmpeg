@@ -99,6 +99,6 @@ const FFCodec ff_libwebp_encoder = {
     .priv_data_size = sizeof(LibWebPContext),
     .defaults       = ff_libwebp_defaults,
     .init           = libwebp_encode_init,
-    .encode2        = libwebp_encode_frame,
+    FF_CODEC_ENCODE_CB(libwebp_encode_frame),
     .close          = libwebp_encode_close,
 };

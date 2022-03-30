@@ -374,7 +374,7 @@ const FFCodec ff_microdvd_decoder = {
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_MICRODVD,
     .init         = microdvd_init,
-    .decode_sub   = microdvd_decode_frame,
+    FF_CODEC_DECODE_SUB_CB(microdvd_decode_frame),
     .flush        = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

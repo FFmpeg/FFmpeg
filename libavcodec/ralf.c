@@ -521,7 +521,7 @@ const FFCodec ff_ralf_decoder = {
     .priv_data_size = sizeof(RALFContext),
     .init           = decode_init,
     .close          = decode_close,
-    .decode         = decode_frame,
+    FF_CODEC_DECODE_CB(decode_frame),
     .flush          = decode_flush,
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,

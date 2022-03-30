@@ -299,7 +299,7 @@ const FFCodec ff_rv30_decoder = {
     .priv_data_size        = sizeof(RV34DecContext),
     .init                  = rv30_decode_init,
     .close                 = ff_rv34_decode_end,
-    .decode                = ff_rv34_decode_frame,
+    FF_CODEC_DECODE_CB(ff_rv34_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = ff_mpeg_flush,

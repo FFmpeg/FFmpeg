@@ -1304,7 +1304,7 @@ const FFCodec ff_cook_decoder = {
     .priv_data_size = sizeof(COOKContext),
     .init           = cook_decode_init,
     .close          = cook_decode_close,
-    .decode         = cook_decode_frame,
+    FF_CODEC_DECODE_CB(cook_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },

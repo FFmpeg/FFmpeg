@@ -220,7 +220,7 @@ const FFCodec ff_xwd_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_XWD,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .encode2      = xwd_encode_frame,
+    FF_CODEC_ENCODE_CB(xwd_encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGRA,
                                                  AV_PIX_FMT_RGBA,
                                                  AV_PIX_FMT_ARGB,

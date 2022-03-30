@@ -684,7 +684,7 @@ const FFCodec ff_svq1_encoder = {
     .priv_data_size = sizeof(SVQ1EncContext),
     .p.priv_class   = &svq1enc_class,
     .init           = svq1_encode_init,
-    .encode2        = svq1_encode_frame,
+    FF_CODEC_ENCODE_CB(svq1_encode_frame),
     .close          = svq1_encode_end,
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV410P,
                                                      AV_PIX_FMT_NONE },

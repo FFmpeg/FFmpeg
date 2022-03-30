@@ -75,7 +75,7 @@ const FFCodec ff_ssa_encoder = {
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_ASS,
     .init         = ass_encode_init,
-    .encode_sub   = ass_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(ass_encode_frame),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
@@ -87,7 +87,7 @@ const FFCodec ff_ass_encoder = {
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_ASS,
     .init         = ass_encode_init,
-    .encode_sub   = ass_encode_frame,
+    FF_CODEC_ENCODE_SUB_CB(ass_encode_frame),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

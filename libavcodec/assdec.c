@@ -68,7 +68,7 @@ const FFCodec ff_ssa_decoder = {
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_ASS,
     .init         = ass_decode_init,
-    .decode_sub   = ass_decode_frame,
+    FF_CODEC_DECODE_SUB_CB(ass_decode_frame),
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
@@ -80,7 +80,7 @@ const FFCodec ff_ass_decoder = {
     .p.type       = AVMEDIA_TYPE_SUBTITLE,
     .p.id         = AV_CODEC_ID_ASS,
     .init         = ass_decode_init,
-    .decode_sub   = ass_decode_frame,
+    FF_CODEC_DECODE_SUB_CB(ass_decode_frame),
     .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

@@ -851,7 +851,7 @@ const FFCodec ff_svq1_decoder = {
     .priv_data_size = sizeof(SVQ1Context),
     .init           = svq1_decode_init,
     .close          = svq1_decode_end,
-    .decode         = svq1_decode_frame,
+    FF_CODEC_DECODE_CB(svq1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .flush          = svq1_flush,
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV410P,

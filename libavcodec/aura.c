@@ -102,7 +102,7 @@ const FFCodec ff_aura2_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AURA2,
     .init           = aura_decode_init,
-    .decode         = aura_decode_frame,
+    FF_CODEC_DECODE_CB(aura_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -1582,7 +1582,7 @@ const FFCodec ff_speex_decoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_SPEEX,
     .init           = speex_decode_init,
-    .decode         = speex_decode_frame,
+    FF_CODEC_DECODE_CB(speex_decode_frame),
     .close          = speex_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(SpeexContext),
