@@ -586,7 +586,8 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    nb_samples = s->input_frames[0]->nb_samples;
+    if (s->input_frames[0])
+        nb_samples = s->input_frames[0]->nb_samples;
 
     for (i = 1; i < ctx->nb_inputs && nb_samples > 0; i++) {
         if (s->input_frames[i])
