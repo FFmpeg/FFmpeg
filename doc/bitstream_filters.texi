@@ -328,7 +328,7 @@ See H.264 section D.1.27 and D.2.27 for syntax and semantics.
 
 Default is pass.
 
-Insert mode works in conjunction with @code {rotate} and @code{flip} options.
+Insert mode works in conjunction with @code{rotate} and @code{flip} options.
 Any pre-existing Display orientation messages will be removed in insert or remove mode.
 Extract mode attaches the display matrix to the packet as side data.
 
