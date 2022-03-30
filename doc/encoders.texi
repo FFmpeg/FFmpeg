@@ -1996,8 +1996,11 @@ kilobits/s.
 @item keyint_min (@emph{kf-min-dist})
 
 @item qmin (@emph{min-q})
+Minimum (Best Quality) Quantizer.
 
 @item qmax (@emph{max-q})
+Maximum (Worst Quality) Quantizer.
+Can be changed per-frame.
 
 @item bufsize (@emph{buf-sz}, @emph{buf-optimal-sz})
 Set ratecontrol buffer size (in bits). Note @command{vpxenc}'s options are
