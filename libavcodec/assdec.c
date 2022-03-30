@@ -41,7 +41,7 @@ static av_cold int ass_decode_init(AVCodecContext *avctx)
 }
 
 static int ass_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr, AVPacket *avpkt)
+                            int *got_sub_ptr, const AVPacket *avpkt)
 {
     if (avpkt->size <= 0)
         return avpkt->size;

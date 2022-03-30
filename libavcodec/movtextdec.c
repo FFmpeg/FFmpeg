@@ -473,7 +473,7 @@ static int mov_text_init(AVCodecContext *avctx) {
 }
 
 static int mov_text_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                                 int *got_sub_ptr, AVPacket *avpkt)
+                                 int *got_sub_ptr, const AVPacket *avpkt)
 {
     MovTextContext *m = avctx->priv_data;
     int ret;

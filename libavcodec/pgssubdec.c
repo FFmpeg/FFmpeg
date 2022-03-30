@@ -590,7 +590,7 @@ static int display_end_segment(AVCodecContext *avctx, AVSubtitle *sub,
 }
 
 static int decode(AVCodecContext *avctx, AVSubtitle *sub,
-                  int *got_sub_ptr, AVPacket *avpkt)
+                  int *got_sub_ptr, const AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;

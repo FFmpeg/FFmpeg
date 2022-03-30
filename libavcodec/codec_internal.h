@@ -184,7 +184,7 @@ typedef struct FFCodec {
          * Apart from that this is like the decode callback.
          */
         int (*decode_sub)(struct AVCodecContext *avctx, struct AVSubtitle *sub,
-                          int *got_frame_ptr, struct AVPacket *avpkt);
+                          int *got_frame_ptr, const struct AVPacket *avpkt);
         /**
          * Decode API with decoupled packet/frame dataflow.
          * cb is in this state if cb_type is FF_CODEC_CB_TYPE_RECEIVE_FRAME.

@@ -549,7 +549,7 @@ static int append_to_cached_buf(AVCodecContext *avctx,
 }
 
 static int dvdsub_decode(AVCodecContext *avctx, AVSubtitle *sub,
-                         int *data_size, AVPacket *avpkt)
+                         int *data_size, const AVPacket *avpkt)
 {
     DVDSubContext *ctx = avctx->priv_data;
     const uint8_t *buf = avpkt->data;

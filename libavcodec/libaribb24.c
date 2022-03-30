@@ -284,7 +284,7 @@ next_region:
 }
 
 static int libaribb24_decode(AVCodecContext *avctx, AVSubtitle *sub,
-                             int *got_sub_ptr, AVPacket *pkt)
+                             int *got_sub_ptr, const AVPacket *pkt)
 {
     Libaribb24Context *b24 = avctx->priv_data;
     size_t parsed_data_size = 0;

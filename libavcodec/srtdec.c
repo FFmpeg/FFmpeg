@@ -56,7 +56,7 @@ static int srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
 }
 
 static int srt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr, AVPacket *avpkt)
+                            int *got_sub_ptr, const AVPacket *avpkt)
 {
     AVBPrint buffer;
     int x1 = -1, y1 = -1, x2 = -1, y2 = -1;

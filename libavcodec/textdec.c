@@ -46,7 +46,7 @@ static const AVOption options[] = {
 };
 
 static int text_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                             int *got_sub_ptr, AVPacket *avpkt)
+                             int *got_sub_ptr, const AVPacket *avpkt)
 {
     int ret = 0;
     AVBPrint buf;

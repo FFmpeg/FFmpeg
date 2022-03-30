@@ -133,7 +133,7 @@ end:
 }
 
 static int sami_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                             int *got_sub_ptr, AVPacket *avpkt)
+                             int *got_sub_ptr, const AVPacket *avpkt)
 {
     const char *ptr = avpkt->data;
     SAMIContext *sami = avctx->priv_data;

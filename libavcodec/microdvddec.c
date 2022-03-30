@@ -275,7 +275,7 @@ static void microdvd_close_no_persistent_tags(AVBPrint *new_line,
 }
 
 static int microdvd_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                                 int *got_sub_ptr, AVPacket *avpkt)
+                                 int *got_sub_ptr, const AVPacket *avpkt)
 {
     AVBPrint new_line;
     char *line = avpkt->data;

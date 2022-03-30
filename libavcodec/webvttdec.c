@@ -81,7 +81,7 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
 }
 
 static int webvtt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
-                               int *got_sub_ptr, AVPacket *avpkt)
+                               int *got_sub_ptr, const AVPacket *avpkt)
 {
     int ret = 0;
     const char *ptr = avpkt->data;
