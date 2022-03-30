@@ -49,6 +49,8 @@ typedef struct MuxStream {
 } MuxStream;
 
 struct Muxer {
+    AVFormatContext *fc;
+
     MuxStream *streams;
 
     AVDictionary *opts;
@@ -117,7 +119,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     MuxStream *ms = &of->mux->streams[ost->index];
-    AVFormatContext *s = of->ctx;
+    AVFormatContext *s = of->mux->fc;
     AVStream *st = ost->st;
     int ret;
 
@@ -263,8 +265,8 @@ static int print_sdp(void)
     if (!avc)
         exit_program(1);
     for (i = 0, j = 0; i < nb_output_files; i++) {
-        if (!strcmp(output_files[i]->ctx->oformat->name, "rtp")) {
-            avc[j] = output_files[i]->ctx;
+        if (!strcmp(output_files[i]->format->name, "rtp")) {
+            avc[j] = output_files[i]->mux->fc;
             j++;
         }
     }
@@ -302,15 +304,16 @@ fail:
 /* open the muxer when all the streams are initialized */
 int of_check_init(OutputFile *of)
 {
+    AVFormatContext *fc = of->mux->fc;
     int ret, i;
 
-    for (i = 0; i < of->ctx->nb_streams; i++) {
+    for (i = 0; i < fc->nb_streams; i++) {
         OutputStream *ost = output_streams[of->ost_index + i];
         if (!ost->initialized)
             return 0;
     }
 
-    ret = avformat_write_header(of->ctx, &of->mux->opts);
+    ret = avformat_write_header(fc, &of->mux->opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not write header for output file #%d "
@@ -321,7 +324,7 @@ int of_check_init(OutputFile *of)
     //assert_avoptions(of->opts);
     of->mux->header_written = 1;
 
-    av_dump_format(of->ctx, of->index, of->ctx->url, 1);
+    av_dump_format(fc, of->index, fc->url, 1);
     nb_output_dumped++;
 
     if (sdp_filename || want_sdp) {
@@ -333,7 +336,7 @@ int of_check_init(OutputFile *of)
     }
 
     /* flush the muxing queues */
-    for (i = 0; i < of->ctx->nb_streams; i++) {
+    for (i = 0; i < fc->nb_streams; i++) {
         MuxStream     *ms = &of->mux->streams[i];
         OutputStream *ost = output_streams[of->ost_index + i];
         AVPacket *pkt;
@@ -356,29 +359,30 @@ int of_check_init(OutputFile *of)
 
 int of_write_trailer(OutputFile *of)
 {
+    AVFormatContext *fc = of->mux->fc;
     int ret;
 
     if (!of->mux->header_written) {
         av_log(NULL, AV_LOG_ERROR,
                "Nothing was written into output file %d (%s), because "
                "at least one of its streams received no packets.\n",
-               of->index, of->ctx->url);
+               of->index, fc->url);
         return AVERROR(EINVAL);
     }
 
-    ret = av_write_trailer(of->ctx);
+    ret = av_write_trailer(fc);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", of->ctx->url, av_err2str(ret));
+        av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", fc->url, av_err2str(ret));
         return ret;
     }
 
     of->mux->final_filesize = of_filesize(of);
 
     if (!(of->format->flags & AVFMT_NOFILE)) {
-        ret = avio_closep(&of->ctx->pb);
+        ret = avio_closep(&fc->pb);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error closing file %s: %s\n",
-                   of->ctx->url, av_err2str(ret));
+                   fc->url, av_err2str(ret));
             return ret;
         }
     }
@@ -386,14 +390,28 @@ int of_write_trailer(OutputFile *of)
     return 0;
 }
 
-static void mux_free(Muxer **pmux, int nb_streams)
+static void fc_close(AVFormatContext **pfc)
+{
+    AVFormatContext *fc = *pfc;
+
+    if (!fc)
+        return;
+
+    if (!(fc->oformat->flags & AVFMT_NOFILE))
+        avio_closep(&fc->pb);
+    avformat_free_context(fc);
+
+    *pfc = NULL;
+}
+
+static void mux_free(Muxer **pmux)
 {
     Muxer *mux = *pmux;
 
     if (!mux)
         return;
 
-    for (int i = 0; i < nb_streams; i++) {
+    for (int i = 0; i < mux->fc->nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];
         AVPacket *pkt;
 
@@ -409,13 +427,14 @@ static void mux_free(Muxer **pmux, int nb_streams)
 
     av_packet_free(&mux->sq_pkt);
 
+    fc_close(&mux->fc);
+
     av_freep(pmux);
 }
 
 void of_close(OutputFile **pof)
 {
     OutputFile *of = *pof;
-    AVFormatContext *s;
 
     if (!of)
         return;
@@ -423,34 +442,33 @@ void of_close(OutputFile **pof)
     sq_free(&of->sq_encode);
     sq_free(&of->sq_mux);
 
-    s = of->ctx;
-
-    mux_free(&of->mux, s ? s->nb_streams : 0);
-
-    if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE))
-        avio_closep(&s->pb);
-    avformat_free_context(s);
+    mux_free(&of->mux);
 
     av_freep(pof);
 }
 
-int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize)
+int of_muxer_init(OutputFile *of, AVFormatContext *fc,
+                  AVDictionary *opts, int64_t limit_filesize)
 {
     Muxer *mux = av_mallocz(sizeof(*mux));
     int ret = 0;
 
-    if (!mux)
+    if (!mux) {
+        fc_close(&fc);
         return AVERROR(ENOMEM);
+    }
 
-    mux->streams = av_calloc(of->ctx->nb_streams, sizeof(*mux->streams));
+    mux->streams = av_calloc(fc->nb_streams, sizeof(*mux->streams));
     if (!mux->streams) {
+        fc_close(&fc);
         av_freep(&mux);
         return AVERROR(ENOMEM);
     }
 
     of->mux  = mux;
+    mux->fc  = fc;
 
-    for (int i = 0; i < of->ctx->nb_streams; i++) {
+    for (int i = 0; i < fc->nb_streams; i++) {
         MuxStream *ms = &mux->streams[i];
         ms->muxing_queue = av_fifo_alloc2(8, sizeof(AVPacket*), 0);
         if (!ms->muxing_queue) {
@@ -475,7 +493,7 @@ int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize)
     }
 
     /* write the header for files with no streams */
-    if (of->format->flags & AVFMT_NOSTREAMS && of->ctx->nb_streams == 0) {
+    if (of->format->flags & AVFMT_NOSTREAMS && fc->nb_streams == 0) {
         ret = of_check_init(of);
         if (ret < 0)
             goto fail;
@@ -483,7 +501,7 @@ int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize)
 
 fail:
     if (ret < 0)
-        mux_free(&of->mux, of->ctx->nb_streams);
+        mux_free(&of->mux);
 
     return ret;
 }
@@ -495,7 +513,7 @@ int of_finished(OutputFile *of)
 
 int64_t of_filesize(OutputFile *of)
 {
-    AVIOContext *pb = of->ctx->pb;
+    AVIOContext *pb = of->mux->fc->pb;
     int64_t ret = -1;
 
     if (of->mux->final_filesize)
@@ -512,6 +530,6 @@ int64_t of_filesize(OutputFile *of)
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters)
 {
-    *nb_chapters = of->ctx->nb_chapters;
-    return of->ctx->chapters;
+    *nb_chapters = of->mux->fc->nb_chapters;
+    return of->mux->fc->chapters;
 }

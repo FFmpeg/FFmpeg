@@ -1507,9 +1507,9 @@ static void print_final_stats(int64_t total_size)
         uint64_t total_packets = 0, total_size = 0;
 
         av_log(NULL, AV_LOG_VERBOSE, "Output file #%d (%s):\n",
-               i, of->ctx->url);
+               i, of->url);
 
-        for (j = 0; j < of->ctx->nb_streams; j++) {
+        for (j = 0; j < of->nb_streams; j++) {
             OutputStream *ost = output_streams[of->ost_index + j];
             enum AVMediaType type = ost->enc_ctx->codec_type;
 

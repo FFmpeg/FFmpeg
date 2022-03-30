@@ -2516,7 +2516,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
         exit_program(1);
     }
 
-    of->ctx = oc;
     of->format = oc->oformat;
     if (o->recording_time != INT64_MAX)
         oc->duration = o->recording_time;
@@ -3116,7 +3115,10 @@ loop_end:
         exit_program(1);
     }
 
-    err = of_muxer_init(of, format_opts, o->limit_filesize);
+    of->nb_streams = oc->nb_streams;
+    of->url        = filename;
+
+    err = of_muxer_init(of, oc, format_opts, o->limit_filesize);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error initializing internal muxing state\n");
         exit_program(1);

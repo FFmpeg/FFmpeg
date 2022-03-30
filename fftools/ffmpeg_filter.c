@@ -603,11 +603,11 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ost->apad && of->shortest) {
         int i;
 
-        for (i=0; i<of->ctx->nb_streams; i++)
-            if (of->ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+        for (i = 0; i < of->nb_streams; i++)
+            if (output_streams[of->ost_index + i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;
 
-        if (i<of->ctx->nb_streams) {
+        if (i < of->nb_streams) {
             AUTO_INSERT_FILTER("-apad", "apad", ost->apad);
         }
     }
