@@ -68,7 +68,7 @@ static const AVClass *codec_child_class_iterate(void **iter)
 static AVClassCategory get_category(void *ptr)
 {
     AVCodecContext* avctx = ptr;
-    if (avctx->codec && ffcodec(avctx->codec)->decode)
+    if (avctx->codec && av_codec_is_decoder(avctx->codec))
         return AV_CLASS_CATEGORY_DECODER;
     else
         return AV_CLASS_CATEGORY_ENCODER;
