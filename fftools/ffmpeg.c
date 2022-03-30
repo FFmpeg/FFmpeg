@@ -1372,9 +1372,6 @@ static void do_video_out(OutputFile *of,
                        av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &enc->time_base));
             }
 
-            if (pkt->pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & AV_CODEC_CAP_DELAY))
-                pkt->pts = ost->sync_opts;
-
             av_packet_rescale_ts(pkt, enc->time_base, ost->mux_timebase);
 
             if (debug_ts) {
