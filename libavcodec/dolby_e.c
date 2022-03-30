@@ -1084,7 +1084,7 @@ static int filter_frame(DBEDecodeContext *s, AVFrame *frame)
     return 0;
 }
 
-static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
+static int dolby_e_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
     DBEDecodeContext *s1 = avctx->priv_data;
@@ -1135,7 +1135,7 @@ static int dolby_e_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     if ((ret = parse_meter(s1)) < 0)
         return ret;
-    if ((ret = filter_frame(s1, data)) < 0)
+    if ((ret = filter_frame(s1, frame)) < 0)
         return ret;
 
     *got_frame_ptr = 1;

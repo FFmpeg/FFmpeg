@@ -607,13 +607,12 @@ retry:
 
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
  * 144000 bytes for PAL - or twice those for 50Mbps) */
-static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
+static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame, AVPacket *avpkt)
 {
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DVVideoContext *s = avctx->priv_data;
-    AVFrame *const frame = data;
     const uint8_t *vsc_pack;
     int apt, is16_9, ret;
     const AVDVProfile *sys;

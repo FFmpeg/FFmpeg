@@ -142,14 +142,14 @@ static void libuavs3d_flush(AVCodecContext * avctx)
 }
 
 #define UAVS3D_CHECK_INVALID_RANGE(v, l, r) ((v)<(l)||(v)>(r))
-static int libuavs3d_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
+static int libuavs3d_decode_frame(AVCodecContext *avctx, AVFrame *frm,
+                                  int *got_frame, AVPacket *avpkt)
 {
     uavs3d_context *h = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     const uint8_t *buf_end;
     const uint8_t *buf_ptr;
-    AVFrame *frm = data;
     int left_bytes;
     int ret, finish = 0;
 
@@ -162,7 +162,7 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, void *data, int *got_fr
             if (!frm->data[0] && (ret = ff_get_buffer(avctx, frm, 0)) < 0) {
                 return ret;
             }
-            h->dec_frame.priv = data;   // AVFrame
+            h->dec_frame.priv = frm;   // AVFrame
         }
         do {
             ret = uavs3d_flush(h->dec_handle, &h->dec_frame);
@@ -182,7 +182,7 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, void *data, int *got_fr
                 if (!frm->data[0] && (ret = ff_get_buffer(avctx, frm, 0)) < 0) {
                     return ret;
                 }
-                h->dec_frame.priv = data;   // AVFrame
+                h->dec_frame.priv = frm;   // AVFrame
             }
 
             if (uavs3d_find_next_start_code(buf_ptr, buf_end - buf_ptr, &left_bytes)) {

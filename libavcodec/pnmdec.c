@@ -39,13 +39,12 @@ static void samplecpy(uint8_t *dst, const uint8_t *src, int n, int maxval)
     }
 }
 
-static int pnm_decode_frame(AVCodecContext *avctx, void *data,
+static int pnm_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf   = avpkt->data;
     int buf_size         = avpkt->size;
     PNMContext * const s = avctx->priv_data;
-    AVFrame * const p    = data;
     int i, j, k, n, linesize, h, upgrade = 0, is_mono = 0;
     unsigned char *ptr;
     int components, sample_len, ret;

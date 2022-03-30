@@ -2023,12 +2023,11 @@ fail:
     return ret;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
                         int *got_frame, AVPacket *avpkt)
 {
     EXRContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    AVFrame *picture = data;
     uint8_t *ptr;
 
     int i, y, ret, ymax;

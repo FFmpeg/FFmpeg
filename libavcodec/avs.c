@@ -43,15 +43,13 @@ typedef enum {
 } AvsVideoSubType;
 
 
-static int
-avs_decode_frame(AVCodecContext * avctx,
-                 void *data, int *got_frame, AVPacket *avpkt)
+static int avs_decode_frame(AVCodecContext * avctx, AVFrame *picture,
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = avpkt->data + avpkt->size;
     int buf_size = avpkt->size;
     AvsContext *const avs = avctx->priv_data;
-    AVFrame *picture = data;
     AVFrame *const p =  avs->frame;
     const uint8_t *table, *vect;
     uint8_t *out;

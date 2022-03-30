@@ -84,11 +84,10 @@ static const int16_t * const low_inv_quants[3] = { ff_g722_low_inv_quant6,
                                                            low_inv_quant5,
                                                    ff_g722_low_inv_quant4 };
 
-static int g722_decode_frame(AVCodecContext *avctx, void *data,
+static int g722_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     G722Context *c = avctx->priv_data;
-    AVFrame *frame = data;
     int16_t *out_buf;
     int j, ret;
     const int skip = 8 - c->bits_per_codeword;

@@ -1020,10 +1020,9 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
     return 0;
 }
 
-static int imc_decode_frame(AVCodecContext *avctx, void *data,
+static int imc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int ret, i;

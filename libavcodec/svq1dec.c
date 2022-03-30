@@ -617,13 +617,12 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
-static int svq1_decode_frame(AVCodecContext *avctx, void *data,
+static int svq1_decode_frame(AVCodecContext *avctx, AVFrame *cur,
                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     SVQ1Context     *s = avctx->priv_data;
-    AVFrame       *cur = data;
     uint8_t *current;
     int result, i, x, y, width, height;
     int ret;

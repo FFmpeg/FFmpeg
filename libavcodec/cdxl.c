@@ -243,11 +243,10 @@ static void cdxl_decode_ham8(CDXLVideoContext *c, AVFrame *frame)
     }
 }
 
-static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
+static int cdxl_decode_frame(AVCodecContext *avctx, AVFrame *p,
                              int *got_frame, AVPacket *pkt)
 {
     CDXLVideoContext *c = avctx->priv_data;
-    AVFrame * const p = data;
     int ret, w, h, encoding, aligned_width, buf_size = pkt->size;
     const uint8_t *buf = pkt->data;
 

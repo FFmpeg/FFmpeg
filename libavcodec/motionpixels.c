@@ -278,9 +278,8 @@ static void mp_decode_frame_helper(MotionPixelsContext *mp, GetBitContext *gb)
             mp_decode_line(mp, gb, y);
 }
 
-static int mp_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *got_frame,
-                                 AVPacket *avpkt)
+static int mp_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                           int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -340,7 +339,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     ff_free_vlc(&mp->vlc);
 
 end:
-    if ((ret = av_frame_ref(data, mp->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, mp->frame)) < 0)
         return ret;
     *got_frame       = 1;
     return buf_size;

@@ -425,15 +425,14 @@ static int decode_slice(MpegEncContext *s)
     return AVERROR_INVALIDDATA;
 }
 
-int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                         AVPacket *avpkt)
+int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
+                         int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     MpegEncContext *s  = avctx->priv_data;
     int ret;
     int slice_ret = 0;
-    AVFrame *pict = data;
 
     /* no supplementary picture */
     if (buf_size == 0) {

@@ -1527,12 +1527,10 @@ static int unsupported(AVCodecContext *avctx)
     return AVERROR_INVALIDDATA;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     IffContext *s          = avctx->priv_data;
-    AVFrame *frame         = data;
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
     const uint8_t *buf_end = buf + buf_size;

@@ -87,13 +87,11 @@ static int rle_uncompress(GetByteContext *gb, PutByteContext *pb, GetByteContext
     return intra;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     MWSCContext *s = avctx->priv_data;
     z_stream *const zstream = &s->zstream.zstream;
-    AVFrame *frame = data;
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetByteContext gb;

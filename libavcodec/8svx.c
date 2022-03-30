@@ -86,11 +86,10 @@ static void delta_decode(uint8_t *dst, const uint8_t *src, int src_size,
 }
 
 /** decode a frame */
-static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
+static int eightsvx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
     EightSvxContext *esc = avctx->priv_data;
-    AVFrame *frame       = data;
     int channels         = avctx->ch_layout.nb_channels;
     int buf_size;
     int ch, ret;

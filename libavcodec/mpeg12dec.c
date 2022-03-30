@@ -2762,14 +2762,13 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
     }
 }
 
-static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
+static int mpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
                              int *got_output, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int ret;
     int buf_size = avpkt->size;
     Mpeg1Context *s = avctx->priv_data;
-    AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
 
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == SEQ_END_CODE)) {
@@ -2969,13 +2968,12 @@ typedef struct IPUContext {
     DECLARE_ALIGNED(32, int16_t, block)[6][64];
 } IPUContext;
 
-static int ipu_decode_frame(AVCodecContext *avctx, void *data,
+static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *avpkt)
 {
     IPUContext *s = avctx->priv_data;
     MpegEncContext *m = &s->m;
     GetBitContext *gb = &m->gb;
-    AVFrame * const frame = data;
     int ret;
 
     ret = ff_get_buffer(avctx, frame, 0);

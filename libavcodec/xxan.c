@@ -399,9 +399,8 @@ static int xan_decode_frame_type1(AVCodecContext *avctx)
     return 0;
 }
 
-static int xan_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int xan_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                            int *got_frame, AVPacket *avpkt)
 {
     XanContext *s = avctx->priv_data;
     int ftype;
@@ -426,7 +425,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     if (ret)
         return ret;
 
-    if ((ret = av_frame_ref(data, s->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, s->pic)) < 0)
         return ret;
 
     *got_frame = 1;

@@ -98,11 +98,10 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
     return frame_size;
 }
 
-static int s302m_decode_frame(AVCodecContext *avctx, void *data,
+static int s302m_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     S302Context *s = avctx->priv_data;
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int block_size, ret, channels;

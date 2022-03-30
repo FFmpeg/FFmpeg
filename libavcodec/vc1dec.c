@@ -623,14 +623,13 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
 /** Decode a VC1/WMV3 frame
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
  */
-static int vc1_decode_frame(AVCodecContext *avctx, void *data,
+static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size, n_slices = 0, i, ret;
     VC1Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
-    AVFrame *pict = data;
     uint8_t *buf2 = NULL;
     const uint8_t *buf_start = buf, *buf_start_second_field = NULL;
     int mb_height, n_slices1=-1;

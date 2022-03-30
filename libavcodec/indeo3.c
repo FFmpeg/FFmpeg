@@ -1065,13 +1065,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
 }
 
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     Indeo3DecodeContext *ctx = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    AVFrame *frame     = data;
     int res;
 
     res = decode_frame_headers(ctx, avctx, buf, buf_size);

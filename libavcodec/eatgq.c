@@ -201,14 +201,12 @@ static void tgq_calculate_qtable(TgqContext *s, int quant)
                                     ff_inv_aanscales[j * 8 + i]) >> (14 - 4);
 }
 
-static int tgq_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int tgq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     TgqContext *s      = avctx->priv_data;
-    AVFrame *frame     = data;
     int x, y, ret;
     int big_endian;
 

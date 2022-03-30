@@ -288,11 +288,9 @@ static int check_header(const char *buf, int buf_size)
 }
 
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
-    AVFrame * const p      = data;
     GetByteContext gbc;
     int colors;
     int w, h, ret;

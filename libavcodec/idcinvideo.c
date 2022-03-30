@@ -209,14 +209,12 @@ static int idcin_decode_vlcs(IdcinContext *s, AVFrame *frame)
     return 0;
 }
 
-static int idcin_decode_frame(AVCodecContext *avctx,
-                              void *data, int *got_frame,
-                              AVPacket *avpkt)
+static int idcin_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IdcinContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     int ret;
 
     s->buf = buf;

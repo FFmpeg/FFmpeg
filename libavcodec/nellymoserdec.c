@@ -139,10 +139,9 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     return 0;
 }
 
-static int decode_tag(AVCodecContext *avctx, void *data,
+static int decode_tag(AVCodecContext *avctx, AVFrame *frame,
                       int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;

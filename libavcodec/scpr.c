@@ -492,12 +492,11 @@ static int decompress_p(AVCodecContext *avctx,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     SCPRContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    AVFrame *frame = data;
     int ret, type;
 
     if (avctx->bits_per_coded_sample == 16) {
@@ -582,7 +581,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
 
     if (avctx->bits_per_coded_sample != 16) {
-        ret = av_frame_ref(data, s->current_frame);
+        ret = av_frame_ref(frame, s->current_frame);
         if (ret < 0)
             return ret;
     } else {

@@ -82,9 +82,8 @@ static av_cold int msrle_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int msrle_decode_frame(AVCodecContext *avctx,
-                              void *data, int *got_frame,
-                              AVPacket *avpkt)
+static int msrle_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -134,7 +133,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         ff_msrle_decode(avctx, s->frame, avctx->bits_per_coded_sample, &s->gb);
     }
 
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
 
     *got_frame      = 1;

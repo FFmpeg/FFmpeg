@@ -1179,15 +1179,14 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     HYuvContext *s = avctx->priv_data;
     const int width  = s->width;
     const int height = s->height;
-    AVFrame *const p = data;
     int slice, table_size = 0, ret, nb_slices;
     unsigned slices_info_offset;
     int slice_height;

@@ -114,11 +114,10 @@ static void vble_restore_plane(VBLEContext *ctx, AVFrame *pic,
     }
 }
 
-static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int vble_decode_frame(AVCodecContext *avctx, AVFrame *pic,
+                             int *got_frame, AVPacket *avpkt)
 {
     VBLEContext *ctx = avctx->priv_data;
-    AVFrame *pic     = data;
     GetBitContext gb;
     const uint8_t *src = avpkt->data;
     int version;

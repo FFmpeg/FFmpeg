@@ -140,9 +140,8 @@ static void draw_char(AVCodecContext *avctx, int c, int a)
     }
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     XbinContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
@@ -153,7 +152,7 @@ static int decode_frame(AVCodecContext *avctx,
     if ((avctx->width / FONT_WIDTH) * (avctx->height / s->font_height) / 256 > buf_size)
         return AVERROR_INVALIDDATA;
 
-    s->frame = data;
+    s->frame = frame;
     s->x = s->y = 0;
     if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)
         return ret;

@@ -460,15 +460,13 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     NotchLCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     PutByteContext *pb = &s->pb;
     unsigned uncompressed_size;
-    AVFrame *p = data;
     int ret;
 
     if (avpkt->size <= 40)

@@ -178,10 +178,9 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
+static int mpc8_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     MPCContext *c = avctx->priv_data;

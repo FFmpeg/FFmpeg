@@ -1102,11 +1102,10 @@ static void update_sub_state(AMRWBContext *ctx)
             LP_ORDER_16k * sizeof(float));
 }
 
-static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
+static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     AMRWBChannelsContext *s  = avctx->priv_data;
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int sub, i, ret;

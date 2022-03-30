@@ -225,11 +225,10 @@ static int decode_mvc2(AVCodecContext *avctx, GetByteContext *gb,
     return 0;
 }
 
-static int mvc_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int mvc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
 {
     MvcContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     GetByteContext gb;
     int ret;
 

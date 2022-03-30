@@ -31,11 +31,10 @@ static av_cold int avui_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int avui_decode_frame(AVCodecContext *avctx, void *data,
+static int avui_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_frame, AVPacket *avpkt)
 {
     int ret;
-    AVFrame *pic = data;
     const uint8_t *src = avpkt->data, *extradata = avctx->extradata;
     const uint8_t *srca;
     uint8_t *y, *u, *v, *a;

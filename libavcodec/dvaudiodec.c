@@ -85,11 +85,10 @@ static inline uint16_t dv_audio_12to16(uint16_t sample)
     return result;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *pkt)
 {
     DVAudioContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     const uint8_t *src = pkt->data;
     int16_t *dst;
     int ret, i;

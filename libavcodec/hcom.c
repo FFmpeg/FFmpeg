@@ -80,11 +80,10 @@ static av_cold int hcom_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int hcom_decode(AVCodecContext *avctx, void *data,
+static int hcom_decode(AVCodecContext *avctx, AVFrame *frame,
                        int *got_frame, AVPacket *pkt)
 {
     HCOMContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     GetBitContext gb;
     int ret, n = 0;
 

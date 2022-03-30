@@ -136,13 +136,12 @@ static int v210_decode_slice(AVCodecContext *avctx, void *arg, int jobnr, int th
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
+                        int *got_frame, AVPacket *avpkt)
 {
     V210DecContext *s = avctx->priv_data;
     ThreadData td;
     int ret, stride, aligned_input;
-    AVFrame *pic = data;
     const uint8_t *psrc = avpkt->data;
 
     if (s->custom_stride )

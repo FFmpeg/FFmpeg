@@ -324,8 +324,8 @@ static void reset_buffers(VmncContext *c)
 
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -518,7 +518,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
     *got_frame = 1;
-    if ((ret = av_frame_ref(data, c->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, c->pic)) < 0)
         return ret;
 
     /* always report that the buffer was completely consumed */

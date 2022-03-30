@@ -59,14 +59,12 @@ static av_cold int cyuv_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int cyuv_decode_frame(AVCodecContext *avctx,
-                             void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int cyuv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CyuvDecodeContext *s=avctx->priv_data;
-    AVFrame *frame = data;
 
     unsigned char *y_plane;
     unsigned char *u_plane;

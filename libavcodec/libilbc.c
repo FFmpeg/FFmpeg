@@ -87,13 +87,12 @@ static av_cold int ilbc_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
+static int ilbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     ILBCDecContext *s  = avctx->priv_data;
-    AVFrame *frame     = data;
     int ret;
 
     if (s->decoder.no_of_bytes > buf_size) {

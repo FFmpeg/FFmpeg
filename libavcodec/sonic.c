@@ -980,9 +980,8 @@ static av_cold int sonic_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int sonic_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame_ptr,
-                            AVPacket *avpkt)
+static int sonic_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -991,7 +990,6 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     uint8_t state[32];
     int i, quant, ch, j, ret;
     int16_t *samples;
-    AVFrame *frame = data;
 
     if (buf_size == 0) return 0;
 

@@ -36,10 +36,9 @@ static av_cold int y41p_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int y41p_decode_frame(AVCodecContext *avctx, void *data,
+static int y41p_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *pic = data;
     uint8_t *src = avpkt->data;
     uint8_t *y, *u, *v;
     int i, j, ret;

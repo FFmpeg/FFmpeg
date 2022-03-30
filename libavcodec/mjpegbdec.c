@@ -40,9 +40,8 @@ static uint32_t read_offs(AVCodecContext *avctx, GetBitContext *gb, uint32_t siz
     return offs;
 }
 
-static int mjpegb_decode_frame(AVCodecContext *avctx,
-                              void *data, int *got_frame,
-                              AVPacket *avpkt)
+static int mjpegb_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                               int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -145,7 +144,7 @@ read_header:
         return buf_size;
     }
 
-    if ((ret = av_frame_ref(data, s->picture_ptr)) < 0)
+    if ((ret = av_frame_ref(rframe, s->picture_ptr)) < 0)
         return ret;
     *got_frame = 1;
 

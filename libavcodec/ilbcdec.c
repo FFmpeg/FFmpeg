@@ -1356,11 +1356,10 @@ static void hp_output(int16_t *signal, const int16_t *ba, int16_t *y,
     }
 }
 
-static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
+static int ilbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    AVFrame *frame     = data;
     ILBCContext *s     = avctx->priv_data;
     int mode = s->mode, ret;
     int16_t *plc_data = &s->plc_residual[LPC_FILTERORDER];

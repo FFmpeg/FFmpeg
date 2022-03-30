@@ -682,8 +682,8 @@ static av_cold void init_coders(MSS3Context *ctx)
     }
 }
 
-static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int mss3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -743,7 +743,7 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     c->pic->key_frame = keyframe;
     c->pic->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     if (!bytestream2_get_bytes_left(&gb)) {
-        if ((ret = av_frame_ref(data, c->pic)) < 0)
+        if ((ret = av_frame_ref(rframe, c->pic)) < 0)
             return ret;
         *got_frame      = 1;
 
@@ -802,7 +802,7 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         dst[2] += c->pic->linesize[2] * 8;
     }
 
-    if ((ret = av_frame_ref(data, c->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, c->pic)) < 0)
         return ret;
 
     *got_frame      = 1;

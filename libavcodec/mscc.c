@@ -129,13 +129,11 @@ static int rle_uncompress(AVCodecContext *avctx, GetByteContext *gb, PutByteCont
     return AVERROR_INVALIDDATA;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     MSCCContext *s = avctx->priv_data;
     z_stream *const zstream = &s->zstream.zstream;
-    AVFrame *frame = data;
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetByteContext gb;

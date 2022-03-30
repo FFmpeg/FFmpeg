@@ -1184,8 +1184,8 @@ static void save_bits(WmallDecodeCtx *s, GetBitContext* gb, int len,
     skip_bits(&s->gb, s->frame_offset);
 }
 
-static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
-                         AVPacket* avpkt)
+static int decode_packet(AVCodecContext *avctx, AVFrame *rframe,
+                         int *got_frame_ptr, AVPacket* avpkt)
 {
     WmallDecodeCtx *s = avctx->priv_data;
     GetBitContext* gb  = &s->pgb;
@@ -1298,7 +1298,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     }
 
     *got_frame_ptr   = s->frame->nb_samples > 0;
-    av_frame_move_ref(data, s->frame);
+    av_frame_move_ref(rframe, s->frame);
 
     s->packet_offset = get_bits_count(gb) & 7;
 

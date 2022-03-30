@@ -116,11 +116,10 @@ static int fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
     return pixels_overwritten;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
     ARBCContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     int ret, nb_segments;
     int prev_pixels = avctx->width * avctx->height;
 

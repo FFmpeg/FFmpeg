@@ -35,11 +35,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
+                        int *got_frame, AVPacket *avpkt)
 {
     int h, w, ret;
-    AVFrame *pic = data;
     const uint32_t *src = (const uint32_t *)avpkt->data;
     int aligned_width = FFALIGN(avctx->width,
                                 avctx->codec_id == AV_CODEC_ID_R10K ? 1 : 64);

@@ -413,11 +413,10 @@ static void wavesynth_enter_intervals(struct wavesynth_context *ws, int64_t ts)
     *last = -1;
 }
 
-static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
-                            AVPacket *packet)
+static int wavesynth_decode(AVCodecContext *avc, AVFrame *frame,
+                            int *rgot_frame, AVPacket *packet)
 {
     struct wavesynth_context *ws = avc->priv_data;
-    AVFrame *frame = rframe;
     int64_t ts;
     int duration;
     int s, c, r;

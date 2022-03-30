@@ -148,17 +148,17 @@ typedef struct FFCodec {
     int (*encode2)(struct AVCodecContext *avctx, struct AVPacket *avpkt,
                    const struct AVFrame *frame, int *got_packet_ptr);
     /**
-     * Decode picture data.
+     * Decode to an AVFrame.
      *
      * @param      avctx          codec context
-     * @param      outdata        codec type dependent output struct
+     * @param      frame          AVFrame for output
      * @param[out] got_frame_ptr  decoder sets to 0 or 1 to indicate that a
      *                            non-empty frame was returned in outdata.
      * @param[in]  avpkt          AVPacket containing the data to be decoded
      * @return amount of bytes read from the packet on success, negative error
      *         code on failure
      */
-    int (*decode)(struct AVCodecContext *avctx, void *outdata,
+    int (*decode)(struct AVCodecContext *avctx, struct AVFrame *frame,
                   int *got_frame_ptr, struct AVPacket *avpkt);
     /**
      * Decode subtitle data. Same as decode except that it uses

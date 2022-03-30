@@ -278,16 +278,14 @@ static const uint8_t table_v[] = {
     0x01, 0x00,
 };
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     int TL[4] = { 128, 128, 128, 128 };
     int L[4]  = { 128, 128, 128, 128 };
     YLCContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int ret, x, y, toffset, boffset;
-    AVFrame * const p = data;
     GetBitContext gb;
     uint8_t *dst;
 

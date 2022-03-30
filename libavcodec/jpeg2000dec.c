@@ -2473,11 +2473,10 @@ static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
+static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
                                  int *got_frame, AVPacket *avpkt)
 {
     Jpeg2000DecoderContext *s = avctx->priv_data;
-    AVFrame *picture = data;
     int ret;
 
     s->avctx     = avctx;

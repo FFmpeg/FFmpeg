@@ -2625,7 +2625,7 @@ static int vp8_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata,
 }
 
 static av_always_inline
-int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
                       const AVPacket *avpkt, int is_vp7)
 {
     VP8Context *s = avctx->priv_data;
@@ -2800,7 +2800,7 @@ skip_decode:
         s->prob[0] = s->prob[1];
 
     if (!s->invisible) {
-        if ((ret = av_frame_ref(data, curframe->tf.f)) < 0)
+        if ((ret = av_frame_ref(rframe, curframe->tf.f)) < 0)
             return ret;
         *got_frame = 1;
     }
@@ -2811,17 +2811,17 @@ err:
     return ret;
 }
 
-int ff_vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+int ff_vp8_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
-    return vp78_decode_frame(avctx, data, got_frame, avpkt, IS_VP8);
+    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP8);
 }
 
 #if CONFIG_VP7_DECODER
-static int vp7_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int vp7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
 {
-    return vp78_decode_frame(avctx, data, got_frame, avpkt, IS_VP7);
+    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP7);
 }
 #endif /* CONFIG_VP7_DECODER */
 

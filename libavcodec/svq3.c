@@ -1371,7 +1371,7 @@ fail:
     return ret;
 }
 
-static int svq3_decode_frame(AVCodecContext *avctx, void *data,
+static int svq3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                              int *got_frame, AVPacket *avpkt)
 {
     SVQ3Context *s     = avctx->priv_data;
@@ -1382,7 +1382,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     /* special case for last picture */
     if (buf_size == 0) {
         if (s->next_pic->f->data[0] && !s->low_delay && !s->last_frame_output) {
-            ret = av_frame_ref(data, s->next_pic->f);
+            ret = av_frame_ref(rframe, s->next_pic->f);
             if (ret < 0)
                 return ret;
             s->last_frame_output = 1;
@@ -1553,9 +1553,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay)
-        ret = av_frame_ref(data, s->cur_pic->f);
+        ret = av_frame_ref(rframe, s->cur_pic->f);
     else if (s->last_pic->f->data[0])
-        ret = av_frame_ref(data, s->last_pic->f);
+        ret = av_frame_ref(rframe, s->last_pic->f);
     if (ret < 0)
         return ret;
 

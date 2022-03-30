@@ -1610,7 +1610,7 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
 }
 
 static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
-                         void *data, int *got_frame_ptr, AVPacket *avpkt)
+                         AVFrame *frame, int *got_frame_ptr, AVPacket *avpkt)
 {
     GetBitContext* gb  = &s->pgb;
     const uint8_t* buf = avpkt->data;
@@ -1622,7 +1622,6 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
     *got_frame_ptr = 0;
 
     if (!buf_size) {
-        AVFrame *frame = data;
         int i;
 
         /** Must output remaining samples after stream end. WMAPRO 5.1 created
@@ -1714,7 +1713,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
 
             /** decode the cross packet frame if it is valid */
             if (!s->packet_loss)
-                decode_frame(s, data, got_frame_ptr);
+                decode_frame(s, frame, got_frame_ptr);
         } else if (s->num_saved_bits - s->frame_offset) {
             ff_dlog(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);
@@ -1745,7 +1744,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
             frame_size <= remaining_bits(s, gb)) {
             save_bits(s, gb, frame_size, 0);
             if (!s->packet_loss)
-                s->packet_done = !decode_frame(s, data, got_frame_ptr);
+                s->packet_done = !decode_frame(s, frame, got_frame_ptr);
         } else if (!s->len_prefix
                    && s->num_saved_bits > get_bits_count(&s->gb)) {
             /** when the frames do not have a length prefix, we don't know
@@ -1755,7 +1754,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
                 therefore we save the incoming packet first, then we append
                 the "previous frame" data from the next packet so that
                 we get a buffer that only contains full frames */
-            s->packet_done = !decode_frame(s, data, got_frame_ptr);
+            s->packet_done = !decode_frame(s, frame, got_frame_ptr);
         } else {
             s->packet_done = 1;
         }
@@ -1778,8 +1777,6 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
         return AVERROR_INVALIDDATA;
 
     if (s->trim_start && avctx->codec_id == AV_CODEC_ID_WMAPRO) {
-        AVFrame *frame = data;
-
         if (s->trim_start < frame->nb_samples) {
             for (int ch = 0; ch < frame->ch_layout.nb_channels; ch++)
                 frame->extended_data[ch] += s->trim_start * 4;
@@ -1793,8 +1790,6 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
     }
 
     if (s->trim_end && avctx->codec_id == AV_CODEC_ID_WMAPRO) {
-        AVFrame *frame = data;
-
         if (s->trim_end < frame->nb_samples) {
             frame->nb_samples -= s->trim_end;
         } else {
@@ -1814,11 +1809,10 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
  *@param avpkt input packet
  *@return number of bytes that were read from the input buffer
  */
-static int wmapro_decode_packet(AVCodecContext *avctx, void *data,
+static int wmapro_decode_packet(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
     WMAProDecodeCtx *s = avctx->priv_data;
-    AVFrame *frame = data;
     int ret;
 
     /* get output buffer */
@@ -1828,15 +1822,14 @@ static int wmapro_decode_packet(AVCodecContext *avctx, void *data,
         return 0;
     }
 
-    return decode_packet(avctx, s, data, got_frame_ptr, avpkt);
+    return decode_packet(avctx, s, frame, got_frame_ptr, avpkt);
 }
 
-static int xma_decode_packet(AVCodecContext *avctx, void *data,
+static int xma_decode_packet(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     XMADecodeCtx *s = avctx->priv_data;
     int got_stream_frame_ptr = 0;
-    AVFrame *frame = data;
     int i, ret = 0, eof = 0;
 
     if (!s->frames[s->current_stream]->data[0]) {

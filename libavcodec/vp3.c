@@ -2586,11 +2586,9 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
 }
 #endif
 
-static int vp3_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
 {
-    AVFrame     *frame  = data;
     const uint8_t *buf  = avpkt->data;
     int buf_size        = avpkt->size;
     Vp3DecodeContext *s = avctx->priv_data;
@@ -2818,7 +2816,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     vp3_draw_horiz_band(s, s->height);
 
     /* output frame, offset as needed */
-    if ((ret = av_frame_ref(data, s->current_frame.f)) < 0)
+    if ((ret = av_frame_ref(frame, s->current_frame.f)) < 0)
         return ret;
 
     frame->crop_left   = s->offset_x;

@@ -42,10 +42,9 @@ static av_cold int paf_audio_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int paf_audio_decode(AVCodecContext *avctx, void *data,
+static int paf_audio_decode(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *pkt)
 {
-    AVFrame *frame = data;
     int16_t *output_samples;
     const uint8_t *src = pkt->data;
     int frames, ret, i, j;

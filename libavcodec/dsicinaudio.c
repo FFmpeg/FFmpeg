@@ -87,10 +87,9 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
+static int cinaudio_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame         = data;
     const uint8_t *buf     = avpkt->data;
     CinAudioContext *cin   = avctx->priv_data;
     const uint8_t *buf_end = buf + avpkt->size;

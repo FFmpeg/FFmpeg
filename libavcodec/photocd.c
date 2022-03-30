@@ -290,13 +290,12 @@ static av_noinline int decode_huff(AVCodecContext *avctx, AVFrame *frame,
     return 0;
 }
 
-static int photocd_decode_frame(AVCodecContext *avctx, void *data,
+static int photocd_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                 int *got_frame, AVPacket *avpkt)
 {
     PhotoCDContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     GetByteContext *gb = &s->gb;
-    AVFrame *p = data;
     uint8_t *ptr, *ptr1, *ptr2;
     int ret;
 

@@ -925,11 +925,10 @@ static void generate_noise(G723_1_ChannelContext *p)
            PITCH_MAX * sizeof(*p->excitation));
 }
 
-static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
+static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     G723_1_Context *s  = avctx->priv_data;
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int dec_mode       = buf[0] & 3;

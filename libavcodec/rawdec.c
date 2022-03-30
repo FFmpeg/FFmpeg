@@ -163,8 +163,8 @@ static void name(AVCodecContext *avctx, uint8_t * dst, const uint8_t *buf, int b
 MKSCALE16(scale16be, AV_RB16, AV_WB16)
 MKSCALE16(scale16le, AV_RL16, AV_WL16)
 
-static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
-                      AVPacket *avpkt)
+static int raw_decode(AVCodecContext *avctx, AVFrame *frame,
+                      int *got_frame, AVPacket *avpkt)
 {
     const AVPixFmtDescriptor *desc;
     RawVideoContext *context       = avctx->priv_data;
@@ -174,8 +174,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     int stride;
     int res, len;
     int need_copy;
-
-    AVFrame   *frame   = data;
 
     if (avctx->width <= 0) {
         av_log(avctx, AV_LOG_ERROR, "width is not set\n");

@@ -377,11 +377,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
+static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
     FDKAACDecContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     int ret;
     AAC_DECODER_ERROR err;
     UINT valid = avpkt->size;

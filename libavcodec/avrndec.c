@@ -50,11 +50,10 @@ static av_cold int init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                         int *got_frame, AVPacket *avpkt)
 {
     AVRnContext *a = avctx->priv_data;
-    AVFrame *p = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int y, ret, true_height;

@@ -167,14 +167,12 @@ static inline void idct_put(MDECContext *a, AVFrame *frame, int mb_x, int mb_y)
     }
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     MDECContext * const a = avctx->priv_data;
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
-    AVFrame *const frame  = data;
     int ret;
 
     if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)

@@ -306,12 +306,11 @@ static int decode_tiledata(AVCodecContext *avctx)
     return 0;
 }
 
-static int sga_decode_frame(AVCodecContext *avctx, void *data,
+static int sga_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *avpkt)
 {
     SGAVideoContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    AVFrame *frame = data;
     int ret, type;
 
     if (avpkt->size <= 14)

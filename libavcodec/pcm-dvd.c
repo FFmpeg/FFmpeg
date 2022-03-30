@@ -225,10 +225,9 @@ static void *pcm_dvd_decode_samples(AVCodecContext *avctx, const uint8_t *src,
     }
 }
 
-static int pcm_dvd_decode_frame(AVCodecContext *avctx, void *data,
+static int pcm_dvd_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *src = avpkt->data;
     int buf_size       = avpkt->size;
     PCMDVDContext *s   = avctx->priv_data;

@@ -499,7 +499,7 @@ static void extend_edges(AVFrame *buf, int tile_size)
     }
 }
 
-static int clv_decode_frame(AVCodecContext *avctx, void *data,
+static int clv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -638,7 +638,7 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
         c->pic->pict_type = AV_PICTURE_TYPE_P;
     }
 
-    if ((ret = av_frame_ref(data, c->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, c->pic)) < 0)
         return ret;
 
     FFSWAP(AVFrame *, c->pic, c->prev);

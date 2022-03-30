@@ -207,12 +207,11 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 }
 
 
-static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
+static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     int buf_size = avpkt->size;
     DPCMContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     int out = 0, ret;
     int predictor[2];
     int ch = 0;

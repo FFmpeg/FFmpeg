@@ -1189,14 +1189,12 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int ipvideo_decode_frame(AVCodecContext *avctx,
-                                void *data, int *got_frame,
-                                AVPacket *avpkt)
+static int ipvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                                int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IpvideoContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     int ret;
     int send_buffer;
     int frame_format;

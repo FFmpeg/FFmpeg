@@ -31,10 +31,9 @@ static av_cold int yuv4_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int yuv4_decode_frame(AVCodecContext *avctx, void *data,
+static int yuv4_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
     uint8_t *y, *u, *v;
     int i, j, ret;

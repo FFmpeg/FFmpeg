@@ -339,7 +339,7 @@ static void flip_swap_frame(AVFrame *f)
         f->linesize[i] *= -1;
 }
 
-static int mimic_decode_frame(AVCodecContext *avctx, void *data,
+static int mimic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                               int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -425,11 +425,11 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         return res;
     }
 
-    if ((res = av_frame_ref(data, ctx->frames[ctx->cur_index].f)) < 0)
+    if ((res = av_frame_ref(rframe, ctx->frames[ctx->cur_index].f)) < 0)
         return res;
     *got_frame      = 1;
 
-    flip_swap_frame(data);
+    flip_swap_frame(rframe);
 
     ctx->prev_index = ctx->next_prev_index;
     ctx->cur_index  = ctx->next_cur_index;

@@ -306,10 +306,9 @@ static void truespeech_save_prevvec(TSContext *c)
         c->prevfilt[i] = c->cvector[i];
 }
 
-static int truespeech_decode_frame(AVCodecContext *avctx, void *data,
+static int truespeech_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                    int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TSContext *c = avctx->priv_data;

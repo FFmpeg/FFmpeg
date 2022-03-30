@@ -1387,13 +1387,13 @@ static int copy_output(SANMVideoContext *ctx, SANMFrameHeader *hdr)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *pkt)
 {
     SANMVideoContext *ctx = avctx->priv_data;
     int i, ret;
 
-    ctx->frame = data;
+    ctx->frame = frame;
     bytestream2_init(&ctx->gb, pkt->data, pkt->size);
 
     if (!ctx->version) {

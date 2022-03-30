@@ -117,10 +117,9 @@ error:
 WRITE_FRAME(8, int8_t, byte)
 WRITE_FRAME(16, int16_t, be16)
 
-static int pgx_decode_frame(AVCodecContext *avctx, void *data,
+static int pgx_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *p = data;
     int ret;
     int bpp;
     int width, height, depth;

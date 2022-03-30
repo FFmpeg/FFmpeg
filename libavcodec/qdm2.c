@@ -1838,10 +1838,9 @@ static int qdm2_decode(QDM2Context *q, const uint8_t *in, int16_t *out)
     return 0;
 }
 
-static int qdm2_decode_frame(AVCodecContext *avctx, void *data,
+static int qdm2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     QDM2Context *s = avctx->priv_data;

@@ -326,13 +326,12 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
         }                                                                      \
     }
 
-static int pcm_decode_frame(AVCodecContext *avctx, void *data,
-                            int *got_frame_ptr, AVPacket *avpkt)
+static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+            int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *src = avpkt->data;
     int buf_size       = avpkt->size;
     PCMDecode *s       = avctx->priv_data;
-    AVFrame *frame     = data;
     int channels       = avctx->ch_layout.nb_channels;
     int sample_size, c, n, ret, samples_per_block;
     uint8_t *samples;

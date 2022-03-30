@@ -1461,10 +1461,9 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
     }
 }
 
-static int ape_decode_frame(AVCodecContext *avctx, void *data,
+static int ape_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     APEContext *s = avctx->priv_data;
     uint8_t *sample8;

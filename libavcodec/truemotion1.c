@@ -869,9 +869,8 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
 }
 
 
-static int truemotion1_decode_frame(AVCodecContext *avctx,
-                                    void *data, int *got_frame,
-                                    AVPacket *avpkt)
+static int truemotion1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                                    int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int ret, buf_size = avpkt->size;
@@ -892,7 +891,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
         truemotion1_decode_16bit(s);
     }
 
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
 
     *got_frame      = 1;

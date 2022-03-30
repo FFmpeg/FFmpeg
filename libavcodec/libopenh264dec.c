@@ -87,14 +87,13 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int svc_decode_frame(AVCodecContext *avctx, void *data,
+static int svc_decode_frame(AVCodecContext *avctx, AVFrame *avframe,
                             int *got_frame, AVPacket *avpkt)
 {
     SVCContext *s = avctx->priv_data;
     SBufferInfo info = { 0 };
     uint8_t *ptrs[4] = { NULL };
     int ret, linesize[4];
-    AVFrame *avframe = data;
     DECODING_STATE state;
 #if OPENH264_VER_AT_LEAST(1, 7)
     int opt;

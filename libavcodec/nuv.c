@@ -152,13 +152,12 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     NuvContext *c      = avctx->priv_data;
-    AVFrame *picture   = data;
     int orig_size      = buf_size;
     int keyframe, ret;
     int size_change = 0;

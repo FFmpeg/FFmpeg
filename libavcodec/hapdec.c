@@ -301,11 +301,10 @@ static int decompress_texture2_thread(AVCodecContext *avctx, void *arg,
     return decompress_texture_thread_internal(avctx, arg, slice, thread_nb, 1);
 }
 
-static int hap_decode(AVCodecContext *avctx, void *data,
+static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
                       int *got_frame, AVPacket *avpkt)
 {
     HapContext *ctx = avctx->priv_data;
-    AVFrame *const frame = data;
     int ret, i, t;
     int section_size;
     enum HapSectionType section_type;

@@ -436,15 +436,14 @@ static int decode_blocks(SnowContext *s){
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SnowContext *s = avctx->priv_data;
     RangeCoder * const c= &s->c;
     int bytes_read;
-    AVFrame *picture = data;
     int level, orientation, plane_index;
     int res;
 

@@ -886,9 +886,8 @@ static const int tm2_stream_order[TM2_NUM_STREAMS] = {
 
 #define TM2_HEADER_SIZE 40
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                        int *got_frame, AVPacket *avpkt)
 {
     TM2Context * const l = avctx->priv_data;
     const uint8_t *buf   = avpkt->data;
@@ -939,7 +938,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     l->cur = !l->cur;
     *got_frame      = 1;
-    ret = av_frame_ref(data, l->pic);
+    ret = av_frame_ref(rframe, l->pic);
 
     return (ret < 0) ? ret : buf_size;
 }

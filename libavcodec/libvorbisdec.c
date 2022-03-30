@@ -149,11 +149,10 @@ static inline int conv(int samples, float **pcm, char *buf, int channels) {
     return 0 ;
 }
 
-static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
-                        int *got_frame_ptr, AVPacket *avpkt)
+static int oggvorbis_decode_frame(AVCodecContext *avccontext, AVFrame *frame,
+                                  int *got_frame_ptr, AVPacket *avpkt)
 {
     OggVorbisDecContext *context = avccontext->priv_data ;
-    AVFrame *frame = data;
     float **pcm ;
     ogg_packet *op= &context->op;
     int samples, total_samples, total_bytes;

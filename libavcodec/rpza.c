@@ -256,9 +256,8 @@ static av_cold int rpza_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int rpza_decode_frame(AVCodecContext *avctx,
-                             void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int rpza_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                             int *got_frame, AVPacket *avpkt)
 {
     RpzaContext *s = avctx->priv_data;
     int ret;
@@ -269,7 +268,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
     if (ret < 0)
         return ret;
 
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
 
     *got_frame      = 1;

@@ -353,12 +353,11 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
     IMM4Context *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    AVFrame *frame = data;
     int width, height;
     unsigned type;
     int ret, scaled;

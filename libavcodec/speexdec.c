@@ -1533,11 +1533,10 @@ static void speex_decode_stereo(float *data, int frame_size, StereoState *stereo
     }
 }
 
-static int speex_decode_frame(AVCodecContext *avctx, void *data,
+static int speex_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     SpeexContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     const float scale = 1.f / 32768.f;
     int buf_size = avpkt->size;
     float *dst;

@@ -910,11 +910,10 @@ fail:
     return ret;
 }
 
-static int qsv_decode_frame(AVCodecContext *avctx, void *data,
+static int qsv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *avpkt)
 {
     QSVDecContext *s = avctx->priv_data;
-    AVFrame *frame    = data;
     int ret;
 
     /* buffer the input packet */

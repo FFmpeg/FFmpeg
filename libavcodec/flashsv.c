@@ -263,7 +263,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
     return 0;
 }
 
-static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+static int flashsv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                                 int *got_frame, AVPacket *avpkt)
 {
     int buf_size = avpkt->size;
@@ -480,7 +480,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                s->frame->linesize[0] * avctx->height);
     }
 
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
 
     *got_frame = 1;

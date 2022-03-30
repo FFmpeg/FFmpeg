@@ -606,12 +606,11 @@ static void run_postproc(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-static int dds_decode(AVCodecContext *avctx, void *data,
+static int dds_decode(AVCodecContext *avctx, AVFrame *frame,
                       int *got_frame, AVPacket *avpkt)
 {
     DDSContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
-    AVFrame *frame = data;
     int mipmap;
     int ret;
     int width, height;

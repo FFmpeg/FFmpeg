@@ -102,10 +102,9 @@ static void cng_decode_flush(AVCodecContext *avctx)
     p->inited = 0;
 }
 
-static int cng_decode_frame(AVCodecContext *avctx, void *data,
+static int cng_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame = data;
     CNGContext *p = avctx->priv_data;
     int buf_size  = avpkt->size;
     int ret, i;

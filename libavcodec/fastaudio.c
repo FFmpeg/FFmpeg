@@ -105,12 +105,11 @@ static void set_sample(int i, int j, int v, float *result, int *pads, float valu
     result[i * 64 + pads[i] + j * 3] = value * (2 * v - 7);
 }
 
-static int fastaudio_decode(AVCodecContext *avctx, void *data,
+static int fastaudio_decode(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *pkt)
 {
     FastAudioContext *s = avctx->priv_data;
     GetByteContext gb;
-    AVFrame *frame = data;
     int subframes;
     int ret;
 

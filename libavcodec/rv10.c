@@ -593,13 +593,12 @@ static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
         return AV_RL32(buf + n * 8);
 }
 
-static int rv10_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int rv10_decode_frame(AVCodecContext *avctx, AVFrame *pict,
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     MpegEncContext *s = avctx->priv_data;
-    AVFrame *pict = data;
     int i, ret;
     int slice_count;
     const uint8_t *slices_hdr = NULL;

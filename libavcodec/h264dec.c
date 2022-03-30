@@ -974,13 +974,12 @@ static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
     return buf_index;
 }
 
-static int h264_decode_frame(AVCodecContext *avctx, void *data,
+static int h264_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     H264Context *h     = avctx->priv_data;
-    AVFrame *pict      = data;
     int buf_index;
     int ret;
 

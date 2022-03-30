@@ -76,10 +76,10 @@ static int wrapped_avframe_encode(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static int wrapped_avframe_decode(AVCodecContext *avctx, void *data,
+static int wrapped_avframe_decode(AVCodecContext *avctx, AVFrame *out,
                                   int *got_frame, AVPacket *pkt)
 {
-    AVFrame *in, *out;
+    AVFrame *in;
     int err;
 
     if (!(pkt->flags & AV_PKT_FLAG_TRUSTED)) {
@@ -91,7 +91,6 @@ static int wrapped_avframe_decode(AVCodecContext *avctx, void *data,
         return AVERROR(EINVAL);
 
     in  = (AVFrame*)pkt->data;
-    out = data;
 
     err = ff_decode_frame_props(avctx, out);
     if (err < 0)

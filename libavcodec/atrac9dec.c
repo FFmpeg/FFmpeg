@@ -787,12 +787,11 @@ imdct:
     return 0;
 }
 
-static int atrac9_decode_frame(AVCodecContext *avctx, void *data,
+static int atrac9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     int ret;
     GetBitContext gb;
-    AVFrame *frame = data;
     ATRAC9Context *s = avctx->priv_data;
     const int frames = FFMIN(avpkt->size / s->avg_frame_size, s->frame_count);
 

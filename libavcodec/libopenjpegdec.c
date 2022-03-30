@@ -318,14 +318,12 @@ static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int libopenjpeg_decode_frame(AVCodecContext *avctx,
-                                    void *data, int *got_frame,
-                                    AVPacket *avpkt)
+static int libopenjpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+                                    int *got_frame, AVPacket *avpkt)
 {
     uint8_t *buf            = avpkt->data;
     int buf_size            = avpkt->size;
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    AVFrame *picture        = data;
     const AVPixFmtDescriptor *desc;
     int width, height, ret;
     int pixel_size = 0;

@@ -36,10 +36,9 @@
 
 #include "cga_data.h"
 
-static int tmv_decode_frame(AVCodecContext *avctx, void *data,
+static int tmv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *src = avpkt->data;
     uint8_t *dst;
     unsigned char_cols = avctx->width >> 3;

@@ -137,11 +137,10 @@ static int aptx_decode_samples(AptXContext *ctx,
     return ret;
 }
 
-static int aptx_decode_frame(AVCodecContext *avctx, void *data,
+static int aptx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     AptXContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     int pos, opos, channel, sample, ret;
 
     if (avpkt->size < s->block_size) {

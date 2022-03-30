@@ -674,11 +674,10 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
     return 0;
 }
 
-static int tak_decode_frame(AVCodecContext *avctx, void *data,
+static int tak_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *pkt)
 {
     TAKDecContext *s  = avctx->priv_data;
-    AVFrame *frame    = data;
     GetBitContext *gb = &s->gb;
     int chan, i, ret, hsize;
 

@@ -478,11 +478,10 @@ static void ffat_copy_samples(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-static int ffat_decode(AVCodecContext *avctx, void *data,
+static int ffat_decode(AVCodecContext *avctx, AVFrame *frame,
                        int *got_frame_ptr, AVPacket *avpkt)
 {
     ATDecodeContext *at = avctx->priv_data;
-    AVFrame *frame = data;
     int pkt_size = avpkt->size;
     OSStatus ret;
     AudioBufferList out_buffers;

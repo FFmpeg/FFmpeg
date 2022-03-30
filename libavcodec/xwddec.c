@@ -29,10 +29,9 @@
 #include "internal.h"
 #include "xwd.h"
 
-static int xwd_decode_frame(AVCodecContext *avctx, void *data,
+static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *p = data;
     const uint8_t *buf = avpkt->data;
     int i, ret, buf_size = avpkt->size;
     uint32_t version, header_size, vclass, ncolors;

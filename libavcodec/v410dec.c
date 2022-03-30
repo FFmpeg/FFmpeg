@@ -85,11 +85,10 @@ static int v410_decode_slice(AVCodecContext *avctx, void *arg, int jobnr, int th
     return 0;
 }
 
-static int v410_decode_frame(AVCodecContext *avctx, void *data,
+static int v410_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_frame, AVPacket *avpkt)
 {
     ThreadData td;
-    AVFrame *pic = data;
     uint8_t *src = avpkt->data;
     int ret;
     int thread_count = av_clip(avctx->thread_count, 1, avctx->height/4);

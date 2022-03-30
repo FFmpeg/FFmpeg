@@ -41,13 +41,11 @@ typedef struct WCMVContext {
     uint8_t     block_data[65536*8];
 } WCMVContext;
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     WCMVContext *s = avctx->priv_data;
     z_stream *const zstream = &s->zstream.zstream;
-    AVFrame *frame = data;
     int skip, blocks, zret, ret, intra = 0, flags = 0, bpp = s->bpp;
     GetByteContext gb;
     uint8_t *dst;

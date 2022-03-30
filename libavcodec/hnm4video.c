@@ -388,10 +388,9 @@ static void hnm_update_palette(AVCodecContext *avctx, uint8_t *src,
     }
 }
 
-static int hnm_decode_frame(AVCodecContext *avctx, void *data,
+static int hnm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *frame = data;
     Hnm4VideoContext *hnm = avctx->priv_data;
     int ret;
     uint16_t chunk_id;

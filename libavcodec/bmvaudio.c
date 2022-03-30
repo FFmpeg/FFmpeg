@@ -39,10 +39,9 @@ static av_cold int bmv_aud_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int bmv_aud_decode_frame(AVCodecContext *avctx, void *data,
+static int bmv_aud_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int blocks = 0, total_blocks, i;

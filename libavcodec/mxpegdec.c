@@ -180,9 +180,8 @@ static int mxpeg_check_dimensions(MXpegDecodeContext *s, MJpegDecodeContext *jpg
     return 0;
 }
 
-static int mxpeg_decode_frame(AVCodecContext *avctx,
-                          void *data, int *got_frame,
-                          AVPacket *avpkt)
+static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -324,7 +323,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
 
 the_end:
     if (jpg->got_picture) {
-        int ret = av_frame_ref(data, jpg->picture_ptr);
+        int ret = av_frame_ref(rframe, jpg->picture_ptr);
         if (ret < 0)
             return ret;
         *got_frame = 1;

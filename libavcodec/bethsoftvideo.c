@@ -67,9 +67,8 @@ static int set_palette(BethsoftvidContext *ctx)
     return 0;
 }
 
-static int bethsoftvid_decode_frame(AVCodecContext *avctx,
-                              void *data, int *got_frame,
-                              AVPacket *avpkt)
+static int bethsoftvid_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                                    int *got_frame, AVPacket *avpkt)
 {
     BethsoftvidContext * vid = avctx->priv_data;
     char block_type;
@@ -144,7 +143,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     }
     end:
 
-    if ((ret = av_frame_ref(data, vid->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, vid->frame)) < 0)
         return ret;
 
     *got_frame = 1;

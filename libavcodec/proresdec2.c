@@ -778,11 +778,10 @@ static int decode_picture(AVCodecContext *avctx)
     return ctx->slices[0].ret;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     ProresContext *ctx = avctx->priv_data;
-    AVFrame *frame = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int frame_hdr_size, pic_size, ret;

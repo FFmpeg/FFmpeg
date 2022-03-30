@@ -831,7 +831,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                        int *got_frame, AVPacket *avpkt)
 {
     uint8_t *buf        = avpkt->data;
     int buf_size        = avpkt->size;
@@ -969,7 +970,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     if (f->last_picture.f)
         ff_thread_release_ext_buffer(avctx, &f->last_picture);
-    if ((ret = av_frame_ref(data, f->picture.f)) < 0)
+    if ((ret = av_frame_ref(rframe, f->picture.f)) < 0)
         return ret;
 
     *got_frame = 1;

@@ -237,7 +237,7 @@ static void build_filter(int16_t table[DST_MAX_ELEMENTS][16][256], const Table *
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
     unsigned samples_per_frame = DST_SAMPLES_PER_FRAME(avctx->sample_rate);
@@ -249,7 +249,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     DSTContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     ArithCoder *ac = &s->ac;
-    AVFrame *frame = data;
     uint8_t *dsd;
     float *pcm;
     int ret;

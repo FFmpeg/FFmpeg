@@ -205,7 +205,7 @@ static int tscc2_decode_slice(TSCC2Context *c, int mb_y,
     return 0;
 }
 
-static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
+static int tscc2_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                               int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -313,7 +313,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *got_frame      = 1;
-    if ((ret = av_frame_ref(data, c->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, c->pic)) < 0)
         return ret;
 
     /* always report that the buffer was completely consumed */

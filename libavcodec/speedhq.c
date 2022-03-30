@@ -489,14 +489,12 @@ static void compute_quant_matrix(int *output, int qscale)
     for (i = 0; i < 64; i++) output[i] = unscaled_quant_matrix[ff_zigzag_direct[i]] * qscale;
 }
 
-static int speedhq_decode_frame(AVCodecContext *avctx,
-                                void *data, int *got_frame,
-                                AVPacket *avpkt)
+static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                                int *got_frame, AVPacket *avpkt)
 {
     SHQContext * const s = avctx->priv_data;
     const uint8_t *buf   = avpkt->data;
     int buf_size         = avpkt->size;
-    AVFrame *frame       = data;
     uint8_t quality;
     uint32_t second_field_offset;
     int ret;

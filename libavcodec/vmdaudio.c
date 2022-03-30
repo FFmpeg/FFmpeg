@@ -132,10 +132,9 @@ static void decode_audio_s16(int16_t *out, const uint8_t *buf, int buf_size,
     }
 }
 
-static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
+static int vmdaudio_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end;
     int buf_size = avpkt->size;

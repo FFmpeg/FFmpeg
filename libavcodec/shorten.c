@@ -522,10 +522,9 @@ end:
     return 0;
 }
 
-static int shorten_decode_frame(AVCodecContext *avctx, void *data,
+static int shorten_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     ShortenContext *s  = avctx->priv_data;

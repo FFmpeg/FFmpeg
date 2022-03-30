@@ -60,10 +60,9 @@ static void do_output_subblock(RA144Context *ractx, const int16_t  *lpc_coefs,
 }
 
 /** Uncompress one block (20 bytes -> 160*2 bytes). */
-static int ra144_decode_frame(AVCodecContext * avctx, void *data,
+static int ra144_decode_frame(AVCodecContext * avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     static const uint8_t sizes[LPC_ORDER] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};

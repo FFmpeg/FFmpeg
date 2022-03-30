@@ -472,14 +472,13 @@ struct Rectangle {
 #define MAX_WMV9_RECTANGLES 20
 #define ARITH2_PADDING 2
 
-static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int mss2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     MSS2Context *ctx = avctx->priv_data;
     MSS12Context *c  = &ctx->c;
-    AVFrame *frame   = data;
     GetBitContext gb;
     GetByteContext gB;
     ArithCoder acoder;

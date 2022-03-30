@@ -65,10 +65,9 @@ static int parse_str_int(const uint8_t *p, const uint8_t *end, const uint8_t *ke
     return INT_MIN;
 }
 
-static int xbm_decode_frame(AVCodecContext *avctx, void *data,
+static int xbm_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *p = data;
     int ret, linesize, i, j;
     int width  = 0;
     int height = 0;

@@ -26,11 +26,11 @@
 #include "codec_internal.h"
 #include "internal.h"
 
-static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt) {
+static int ptx_decode_frame(AVCodecContext *avctx, AVFrame *p,
+                            int *got_frame, AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = avpkt->data + avpkt->size;
-    AVFrame * const p = data;
     unsigned int offset, w, h, y, stride, bytes_per_pixel;
     int ret;
     uint8_t *ptr;

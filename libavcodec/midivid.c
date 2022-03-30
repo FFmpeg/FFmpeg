@@ -188,7 +188,7 @@ static ptrdiff_t lzss_uncompress(MidiVidContext *s, GetByteContext *gb, uint8_t 
     return dst - dst_start;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                         int *got_frame, AVPacket *avpkt)
 {
     MidiVidContext *s = avctx->priv_data;
@@ -224,7 +224,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     key = ret;
 
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
 
     frame->pict_type = key ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;

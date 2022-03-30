@@ -394,13 +394,12 @@ static int decode_type1(GetByteContext *gb, PutByteContext *pb)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
     FMVCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     PutByteContext *pb = &s->pb;
-    AVFrame *frame = data;
     int ret, y, x;
 
     if (avpkt->size < 8)

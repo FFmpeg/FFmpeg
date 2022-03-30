@@ -354,9 +354,8 @@ static int execute_code(AVCodecContext * avctx, int c)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                        int *got_frame, AVPacket *avpkt)
 {
     AnsiContext *s = avctx->priv_data;
     uint8_t *buf = avpkt->data;
@@ -463,7 +462,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *got_frame = 1;
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
     return buf_size;
 }

@@ -187,12 +187,11 @@ static int decode_skip_count(GetBitContext* gb)
     return -1;
 }
 
-static int escape130_decode_frame(AVCodecContext *avctx, void *data,
+static int escape130_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                                   int *got_frame, AVPacket *avpkt)
 {
     int buf_size        = avpkt->size;
     Escape130Context *s = avctx->priv_data;
-    AVFrame *pic        = data;
     GetBitContext gb;
     int ret;
 

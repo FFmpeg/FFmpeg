@@ -268,7 +268,7 @@ static int decode_0(PAFVideoDecContext *c, uint8_t *pkt, uint8_t code)
     return 0;
 }
 
-static int paf_video_decode(AVCodecContext *avctx, void *data,
+static int paf_video_decode(AVCodecContext *avctx, AVFrame *rframe,
                             int *got_frame, AVPacket *pkt)
 {
     PAFVideoDecContext *c = avctx->priv_data;
@@ -400,7 +400,7 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
                         c->width, c->height);
 
     c->current_frame = (c->current_frame + 1) & 3;
-    if ((ret = av_frame_ref(data, c->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, c->pic)) < 0)
         return ret;
 
     *got_frame = 1;

@@ -109,9 +109,8 @@ static av_cold int xface_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int xface_decode_frame(AVCodecContext *avctx,
-                              void *data, int *got_frame,
-                              AVPacket *avpkt)
+static int xface_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                              int *got_frame, AVPacket *avpkt)
 {
     XFaceContext *xface = avctx->priv_data;
     int ret, i, j, k;
@@ -119,7 +118,6 @@ static int xface_decode_frame(AVCodecContext *avctx,
     BigInt b = {0};
     char *buf;
     int64_t c;
-    AVFrame *frame = data;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;

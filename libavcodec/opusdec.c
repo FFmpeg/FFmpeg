@@ -412,11 +412,10 @@ finish:
     return output_samples;
 }
 
-static int opus_decode_packet(AVCodecContext *avctx, void *data,
+static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     OpusContext *c      = avctx->priv_data;
-    AVFrame *frame      = data;
     const uint8_t *buf  = avpkt->data;
     int buf_size        = avpkt->size;
     int coded_samples   = 0;

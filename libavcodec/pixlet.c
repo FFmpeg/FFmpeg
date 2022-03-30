@@ -601,12 +601,11 @@ static int decode_plane(AVCodecContext *avctx, int plane,
     return 0;
 }
 
-static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
+static int pixlet_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                int *got_frame, AVPacket *avpkt)
 {
     PixletContext *ctx = avctx->priv_data;
     int i, w, h, width, height, ret, version;
-    AVFrame *p = data;
     uint32_t pktsize, depth;
 
     bytestream2_init(&ctx->gb, avpkt->data, avpkt->size);

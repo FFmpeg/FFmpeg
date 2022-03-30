@@ -784,10 +784,9 @@ static int dxtory_decode_v2_444(AVCodecContext *avctx, AVFrame *pic,
                             AV_PIX_FMT_YUV444P, vflipped);
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
+                        int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
     uint32_t type;
     int vflipped, ret;

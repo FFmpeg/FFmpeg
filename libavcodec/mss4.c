@@ -444,8 +444,8 @@ static inline void mss4_update_dc_cache(MSS4Context *c, int mb_x)
     }
 }
 
-static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int mss4_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -504,7 +504,7 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                                    : AV_PICTURE_TYPE_P;
     if (frame_type == SKIP_FRAME) {
         *got_frame      = 1;
-        if ((ret = av_frame_ref(data, c->pic)) < 0)
+        if ((ret = av_frame_ref(rframe, c->pic)) < 0)
             return ret;
 
         return buf_size;
@@ -559,7 +559,7 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         dst[2] += c->pic->linesize[2] * 16;
     }
 
-    if ((ret = av_frame_ref(data, c->pic)) < 0)
+    if ((ret = av_frame_ref(rframe, c->pic)) < 0)
         return ret;
 
     *got_frame      = 1;

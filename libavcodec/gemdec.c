@@ -85,14 +85,12 @@ static void put_lines_bytes(AVCodecContext *avctx, int planes, int row_width, in
     state->vdup = 1;
 }
 
-static int gem_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int gem_decode_frame(AVCodecContext *avctx, AVFrame *p,
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
     const uint8_t *buf_end = buf + buf_size;
-    AVFrame *p             = data;
     int header_size, planes, pattern_size, tag = 0, count_scalar = 1, ret;
     unsigned int x, count, v;
     GetByteContext gb;

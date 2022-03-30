@@ -387,10 +387,9 @@ static void unpack(HCAContext *c, ChannelContext *ch,
         ch->base[i] = dequantizer_scaling_table[ch->scale_factors[i]] * quant_step_size[ch->scale[i]];
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame = data;
     HCAContext *c = avctx->priv_data;
     int ch, ret, packed_noise_level;
     GetBitContext *gb = &c->gb;

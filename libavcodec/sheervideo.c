@@ -1801,13 +1801,11 @@ static av_cold int build_vlc(VLC *vlc, const SheerTable *table)
                                     lens, sizeof(*lens), NULL, 0, 0, 0, 0, NULL);
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     SheerVideoContext *s = avctx->priv_data;
     const SheerTable *table;
-    AVFrame *p = data;
     GetBitContext gb;
     unsigned format;
     int ret;

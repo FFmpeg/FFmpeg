@@ -70,11 +70,10 @@ static void pcx_palette(GetByteContext *gb, uint32_t *dst, int pallen)
         memset(dst, 0, (256 - pallen) * sizeof(*dst));
 }
 
-static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int pcx_decode_frame(AVCodecContext *avctx, AVFrame *p,
+                            int *got_frame, AVPacket *avpkt)
 {
     GetByteContext gb;
-    AVFrame * const p  = data;
     int compressed, xmin, ymin, xmax, ymax;
     int ret;
     unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, stride, y, x,

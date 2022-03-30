@@ -148,12 +148,10 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc)
     return ff_init_vlc_sparse(vlc, 12, pos, lens, 2, 2, bits, 4, 4, xlat, 1, 1, 0);
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     MVHAContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     uint32_t type, size;
     int ret;
 

@@ -1038,11 +1038,10 @@ static int dxv_decompress_raw(AVCodecContext *avctx)
     return 0;
 }
 
-static int dxv_decode(AVCodecContext *avctx, void *data,
+static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
                       int *got_frame, AVPacket *avpkt)
 {
     DXVContext *ctx = avctx->priv_data;
-    AVFrame *const frame = data;
     GetByteContext *gbc = &ctx->gbc;
     int (*decompress_tex)(AVCodecContext *avctx);
     const char *msgcomp, *msgtext;

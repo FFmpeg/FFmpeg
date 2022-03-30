@@ -27,12 +27,11 @@
 #include "internal.h"
 #include "sunrast.h"
 
-static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
+static int sunrast_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                 int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf       = avpkt->data;
     const uint8_t *buf_end   = avpkt->data + avpkt->size;
-    AVFrame * const p        = data;
     unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
     uint8_t *ptr, *ptr2 = NULL;
     const uint8_t *bufstart = buf;

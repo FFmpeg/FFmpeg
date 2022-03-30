@@ -522,11 +522,10 @@ static int tdsc_parse_dtsm(AVCodecContext *avctx)
     return 0;
 }
 
-static int tdsc_decode_frame(AVCodecContext *avctx, void *data,
+static int tdsc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame, AVPacket *avpkt)
 {
     TDSCContext *ctx = avctx->priv_data;
-    AVFrame *frame = data;
     int ret, tag_header, keyframe = 0;
     uLongf dlen;
 

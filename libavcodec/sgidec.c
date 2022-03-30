@@ -199,12 +199,10 @@ static int read_uncompressed_sgi(unsigned char *out_buf, SgiState *s)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     SgiState *s = avctx->priv_data;
-    AVFrame *p = data;
     unsigned int dimension, rle;
     int ret = 0;
     uint8_t *out_buf, *out_end;

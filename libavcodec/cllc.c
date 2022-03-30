@@ -355,11 +355,10 @@ static int decode_yuv_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
     return 0;
 }
 
-static int cllc_decode_frame(AVCodecContext *avctx, void *data,
+static int cllc_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_picture_ptr, AVPacket *avpkt)
 {
     CLLCContext *ctx = avctx->priv_data;
-    AVFrame *pic = data;
     uint8_t *src = avpkt->data;
     uint32_t info_tag, info_offset;
     int data_size;

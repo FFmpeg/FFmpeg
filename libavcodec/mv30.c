@@ -601,12 +601,11 @@ fail:
     return ret;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
     MV30Context *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    AVFrame *frame = data;
     int ret;
 
     if ((ret = init_get_bits8(gb, avpkt->data, avpkt->size)) < 0)

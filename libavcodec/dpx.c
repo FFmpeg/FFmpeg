@@ -150,14 +150,11 @@ static uint16_t read12in32(const uint8_t **ptr, uint32_t *lbuf,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data,
-                        int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    AVFrame *const p = data;
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
     uint32_t header_version, version = 0;
     char creator[101] = { 0 };

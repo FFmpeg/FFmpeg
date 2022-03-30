@@ -1334,10 +1334,9 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     return ret;
 }
 
-static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                             AVPacket *avpkt)
+static int webp_decode_frame(AVCodecContext *avctx, AVFrame *p,
+                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame * const p = data;
     WebPContext *s = avctx->priv_data;
     GetByteContext gb;
     int ret;
@@ -1480,7 +1479,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 goto exif_end;
             }
 
-            av_dict_copy(&((AVFrame *) data)->metadata, exif_metadata, 0);
+            av_dict_copy(&p->metadata, exif_metadata, 0);
 
 exif_end:
             av_dict_free(&exif_metadata);

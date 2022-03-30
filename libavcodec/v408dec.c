@@ -32,10 +32,9 @@ static av_cold int v408_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int v408_decode_frame(AVCodecContext *avctx, void *data,
+static int v408_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
     uint8_t *y, *u, *v, *a;
     int i, j, ret;

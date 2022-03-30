@@ -215,11 +215,10 @@ static int decode_frame(AVCodecContext *avctx, vpx_codec_ctx_t *decoder,
     return 0;
 }
 
-static int vpx_decode(AVCodecContext *avctx,
-                      void *data, int *got_frame, AVPacket *avpkt)
+static int vpx_decode(AVCodecContext *avctx, AVFrame *picture,
+                      int *got_frame, AVPacket *avpkt)
 {
     VPxContext *ctx = avctx->priv_data;
-    AVFrame *picture = data;
     const void *iter = NULL;
     const void *iter_alpha = NULL;
     struct vpx_image *img, *img_alpha;

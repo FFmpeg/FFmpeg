@@ -52,13 +52,11 @@ static inline int wnv1_get_code(GetBitContext *gb, int shift, int base_value)
         return base_value + v * (1 << shift);
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
-    AVFrame * const p     = data;
     GetBitContext gb;
     unsigned char *Y,*U,*V;
     int i, j, ret, shift;

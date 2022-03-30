@@ -978,10 +978,9 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
 }
 
 
-static int cook_decode_frame(AVCodecContext *avctx, void *data,
+static int cook_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     COOKContext *q = avctx->priv_data;

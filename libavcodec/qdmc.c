@@ -696,11 +696,10 @@ static av_cold void qdmc_flush(AVCodecContext *avctx)
     s->buffer_offset = 0;
 }
 
-static int qdmc_decode_frame(AVCodecContext *avctx, void *data,
+static int qdmc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     QDMCContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     GetBitContext gb;
     int ret;
 

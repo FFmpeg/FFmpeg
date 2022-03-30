@@ -196,14 +196,12 @@ static void rotate_faulty_loco(uint8_t *data, int width, int height, int stride)
     }
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     LOCOContext * const l = avctx->priv_data;
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
-    AVFrame * const p     = data;
     int decoded, ret;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)

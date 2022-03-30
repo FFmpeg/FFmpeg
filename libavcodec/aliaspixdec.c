@@ -28,10 +28,9 @@
 
 #define ALIAS_HEADER_SIZE 10
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *f,
+                        int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *f = data;
     GetByteContext gb;
     int width, height, ret, bits_pixel, pixel;
     uint8_t *out_buf;

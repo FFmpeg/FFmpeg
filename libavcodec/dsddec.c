@@ -95,11 +95,10 @@ static int dsd_channel(AVCodecContext *avctx, void *tdata, int j, int threadnr)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
     ThreadData td;
-    AVFrame *frame = data;
     int ret;
 
     frame->nb_samples = avpkt->size / avctx->ch_layout.nb_channels;

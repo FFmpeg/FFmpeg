@@ -684,13 +684,12 @@ static void postfilter(QCELPContext *q, float *samples, float *lpc)
                              160, 0.9375, &q->postfilter_agc_mem);
 }
 
-static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
+static int qcelp_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     QCELPContext *q    = avctx->priv_data;
-    AVFrame *frame     = data;
     float *outbuffer;
     int   i, ret;
     float quantized_lspf[10], lpc[10];

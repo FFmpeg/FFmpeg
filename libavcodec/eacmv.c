@@ -169,15 +169,13 @@ static int cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t *
 #define EA_PREAMBLE_SIZE 8
 #define MVIh_TAG MKTAG('M', 'V', 'I', 'h')
 
-static int cmv_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int cmv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CmvContext *s = avctx->priv_data;
     const uint8_t *buf_end = buf + buf_size;
-    AVFrame *frame = data;
     int ret;
 
     if (buf_end - buf < EA_PREAMBLE_SIZE)

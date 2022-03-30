@@ -267,7 +267,7 @@ static void fic_draw_cursor(AVCodecContext *avctx, int cur_x, int cur_y)
     }
 }
 
-static int fic_decode_frame(AVCodecContext *avctx, void *data,
+static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                             int *got_frame, AVPacket *avpkt)
 {
     FICContext *ctx = avctx->priv_data;
@@ -436,7 +436,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
 
 skip:
     *got_frame = 1;
-    if ((ret = av_frame_ref(data, ctx->final_frame)) < 0)
+    if ((ret = av_frame_ref(rframe, ctx->final_frame)) < 0)
         return ret;
 
     return avpkt->size;

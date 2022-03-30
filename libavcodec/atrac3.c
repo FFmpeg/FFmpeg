@@ -790,10 +790,9 @@ static int al_decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
     return 0;
 }
 
-static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
+static int atrac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ATRAC3Context *q = avctx->priv_data;
@@ -830,10 +829,9 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
-static int atrac3al_decode_frame(AVCodecContext *avctx, void *data,
+static int atrac3al_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame = data;
     int ret;
 
     frame->nb_samples = SAMPLES_PER_FRAME;

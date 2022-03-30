@@ -794,9 +794,8 @@ static int vqa_decode_frame_hicolor(VqaContext *s, AVFrame *frame)
     return 0;
 }
 
-static int vqa_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int vqa_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                            int *got_frame, AVPacket *avpkt)
 {
     VqaContext *s = avctx->priv_data;
     int res;
@@ -821,7 +820,7 @@ static int vqa_decode_frame(AVCodecContext *avctx,
         return AVERROR_BUG;
     }
 
-    if ((res = av_frame_ref(data, s->frame)) < 0)
+    if ((res = av_frame_ref(rframe, s->frame)) < 0)
         return res;
 
     *got_frame      = 1;

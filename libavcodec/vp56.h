@@ -224,8 +224,8 @@ int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
                           int flip, int has_alpha);
 int ff_vp56_free_context(VP56Context *s);
 void ff_vp56_init_dequant(VP56Context *s, int quantizer);
-int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                         AVPacket *avpkt);
+int ff_vp56_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                         int *got_frame, AVPacket *avpkt);
 
 
 /**

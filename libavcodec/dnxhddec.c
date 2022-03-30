@@ -613,13 +613,12 @@ static int dnxhd_decode_row(AVCodecContext *avctx, void *data,
     return 0;
 }
 
-static int dnxhd_decode_frame(AVCodecContext *avctx, void *data,
+static int dnxhd_decode_frame(AVCodecContext *avctx, AVFrame *picture,
                               int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DNXHDContext *ctx = avctx->priv_data;
-    AVFrame *picture = data;
     int first_field = 1;
     int ret, i;
 

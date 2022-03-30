@@ -381,8 +381,8 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
     return 0;
 }
 
-static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int aic_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
 {
     AICContext *ctx    = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
@@ -392,7 +392,7 @@ static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int x, y, ret;
     int slice_size;
 
-    ctx->frame            = data;
+    ctx->frame            = frame;
     ctx->frame->pict_type = AV_PICTURE_TYPE_I;
     ctx->frame->key_frame = 1;
 

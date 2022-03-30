@@ -301,11 +301,10 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
     return 0;
 }
 
-static int hq_hqa_decode_frame(AVCodecContext *avctx, void *data,
+static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                                int *got_frame, AVPacket *avpkt)
 {
     HQContext *ctx = avctx->priv_data;
-    AVFrame *pic = data;
     uint32_t info_tag;
     unsigned int data_size;
     int ret;

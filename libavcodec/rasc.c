@@ -671,14 +671,12 @@ static void draw_cursor(AVCodecContext *avctx)
     }
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     RASCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     int ret, intra = 0;
-    AVFrame *frame = data;
 
     bytestream2_init(gb, avpkt->data, avpkt->size);
 

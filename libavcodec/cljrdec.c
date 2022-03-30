@@ -29,14 +29,12 @@
 #include "get_bits.h"
 #include "internal.h"
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     GetBitContext gb;
-    AVFrame * const p = data;
     int x, y, ret;
 
     if (avctx->height <= 0 || avctx->width <= 0) {

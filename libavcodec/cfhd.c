@@ -373,13 +373,12 @@ static int alloc_buffers(AVCodecContext *avctx)
     return 0;
 }
 
-static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
-                       AVPacket *avpkt)
+static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
+                       int *got_frame, AVPacket *avpkt)
 {
     CFHDContext *s = avctx->priv_data;
     CFHDDSPContext *dsp = &s->dsp;
     GetByteContext gb;
-    AVFrame *const pic = data;
     int ret = 0, i, j, plane, got_buffer = 0;
     int16_t *coeff_data;
 

@@ -156,11 +156,10 @@ static av_cold int libopus_decode_close(AVCodecContext *avc)
 
 #define MAX_FRAME_SIZE (960 * 6)
 
-static int libopus_decode(AVCodecContext *avc, void *data,
+static int libopus_decode(AVCodecContext *avc, AVFrame *frame,
                           int *got_frame_ptr, AVPacket *pkt)
 {
     struct libopus_context *opus = avc->priv_data;
-    AVFrame *frame               = data;
     int ret, nb_samples;
 
     frame->nb_samples = MAX_FRAME_SIZE;

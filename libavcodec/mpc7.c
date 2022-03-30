@@ -172,10 +172,9 @@ static int get_scale_idx(GetBitContext *gb, int ref)
     return ref + t;
 }
 
-static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
+static int mpc7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size;
     MPCContext *c = avctx->priv_data;

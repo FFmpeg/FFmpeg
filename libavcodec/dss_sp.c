@@ -740,11 +740,10 @@ static int dss_sp_decode_one_frame(DssSpContext *p,
     return 0;
 }
 
-static int dss_sp_decode_frame(AVCodecContext *avctx, void *data,
+static int dss_sp_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     DssSpContext *p    = avctx->priv_data;
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
 

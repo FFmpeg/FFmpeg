@@ -1550,7 +1550,7 @@ static int vp9_export_enc_params(VP9Context *s, VP9Frame *frame)
     return 0;
 }
 
-static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
+static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *pkt)
 {
     const uint8_t *data = pkt->data;
@@ -1570,8 +1570,8 @@ static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
         }
         if ((ret = av_frame_ref(frame, s->s.refs[ref].f)) < 0)
             return ret;
-        ((AVFrame *)frame)->pts = pkt->pts;
-        ((AVFrame *)frame)->pkt_dts = pkt->dts;
+        frame->pts     = pkt->pts;
+        frame->pkt_dts = pkt->dts;
         for (i = 0; i < 8; i++) {
             if (s->next_refs[i].f->buf[0])
                 ff_thread_release_ext_buffer(avctx, &s->next_refs[i]);

@@ -335,8 +335,8 @@ int  ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes,
  */
 int  ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_height);
 
-int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                        AVPacket *avpkt);
+int ff_ivi_decode_frame(AVCodecContext *avctx, AVFrame *data,
+                        int *got_frame, AVPacket *avpkt);
 int ff_ivi_decode_close(AVCodecContext *avctx);
 
 #endif /* AVCODEC_IVI_H */

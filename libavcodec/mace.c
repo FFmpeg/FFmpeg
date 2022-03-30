@@ -234,10 +234,9 @@ static av_cold int mace_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int mace_decode_frame(AVCodecContext *avctx, void *data,
+static int mace_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int channels = avctx->ch_layout.nb_channels;

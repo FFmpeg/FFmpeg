@@ -170,7 +170,7 @@ static void unpack_10bit(GetByteContext *gb, uint16_t *dst, int shift,
     }
 }
 
-static int cri_decode_frame(AVCodecContext *avctx, void *data,
+static int cri_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
 {
     CRIContext *s = avctx->priv_data;
@@ -178,7 +178,6 @@ static int cri_decode_frame(AVCodecContext *avctx, void *data,
     int ret, bps, hflip = 0, vflip = 0;
     AVFrameSideData *rotation;
     int compressed = 0;
-    AVFrame *p = data;
 
     s->data = NULL;
     s->data_size = 0;

@@ -1208,8 +1208,8 @@ static int predict_motion(AVCodecContext *avctx,
     return 0;
 }
 
-static int mobiclip_decode(AVCodecContext *avctx, void *data,
-                            int *got_frame, AVPacket *pkt)
+static int mobiclip_decode(AVCodecContext *avctx, AVFrame *rframe,
+                           int *got_frame, AVPacket *pkt)
 {
     MobiClipContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
@@ -1308,7 +1308,7 @@ static int mobiclip_decode(AVCodecContext *avctx, void *data,
         avctx->colorspace = AVCOL_SPC_YCGCO;
 
     s->current_pic = (s->current_pic + 1) % 6;
-    ret = av_frame_ref(data, frame);
+    ret = av_frame_ref(rframe, frame);
     if (ret < 0)
         return ret;
     *got_frame = 1;

@@ -186,9 +186,8 @@ static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
     return 0;
 }
 
-static int mm_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int mm_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                           int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -222,7 +221,7 @@ static int mm_decode_frame(AVCodecContext *avctx,
 
     memcpy(s->frame->data[1], s->palette, AVPALETTE_SIZE);
 
-    if ((res = av_frame_ref(data, s->frame)) < 0)
+    if ((res = av_frame_ref(rframe, s->frame)) < 0)
         return res;
 
     *got_frame      = 1;

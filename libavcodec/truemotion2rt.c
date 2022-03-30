@@ -102,11 +102,10 @@ static int truemotion2rt_decode_header(AVCodecContext *avctx, const AVPacket *av
     return header_size;
 }
 
-static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
+static int truemotion2rt_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                       int *got_frame, AVPacket *avpkt)
 {
     TrueMotion2RTContext *s = avctx->priv_data;
-    AVFrame * const p = data;
     GetBitContext *gb = &s->gb;
     uint8_t *dst;
     int x, y, delta_mode;

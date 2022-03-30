@@ -122,10 +122,9 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     return 0;
 }
 
-static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
+static int pcm_bluray_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                    int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *src = avpkt->data;
     int buf_size = avpkt->size;
     GetByteContext gb;

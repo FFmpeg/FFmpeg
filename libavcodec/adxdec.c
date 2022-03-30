@@ -93,10 +93,9 @@ static int adx_decode(ADXContext *c, int16_t *out, int offset,
     return 0;
 }
 
-static int adx_decode_frame(AVCodecContext *avctx, void *data,
+static int adx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame      = data;
     int buf_size        = avpkt->size;
     ADXContext *c       = avctx->priv_data;
     int16_t **samples;

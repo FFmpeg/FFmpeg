@@ -955,12 +955,11 @@ static void postfilter(AMRContext *p, float *lpc, float *buf_out)
 
 /// @}
 
-static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
+static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
 
     AMRChannelsContext *s = avctx->priv_data;        // pointer to private data
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int ret;

@@ -475,10 +475,9 @@ const enum TwinVQFrameType ff_twinvq_wtype_to_ftype_table[] = {
     TWINVQ_FT_MEDIUM
 };
 
-int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
+int ff_twinvq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                            int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     TwinVQContext *tctx = avctx->priv_data;

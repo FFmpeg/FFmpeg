@@ -151,7 +151,7 @@ static int cdtoons_render_sprite(AVCodecContext *avctx, const uint8_t *data,
     return 0;
 }
 
-static int cdtoons_decode_frame(AVCodecContext *avctx, void *data,
+static int cdtoons_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                                 int *got_frame, AVPacket *avpkt)
 {
     CDToonsContext *c = avctx->priv_data;
@@ -398,7 +398,7 @@ done:
 
     memcpy(c->frame->data[1], c->pal, AVPALETTE_SIZE);
 
-    if ((ret = av_frame_ref(data, c->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, c->frame)) < 0)
         return ret;
 
     *got_frame = 1;

@@ -47,7 +47,7 @@ static av_cold int imx_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int imx_decode_frame(AVCodecContext *avctx, void *data,
+static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                             int *got_frame, AVPacket *avpkt)
 {
     SimbiosisIMXContext *imx = avctx->priv_data;
@@ -153,7 +153,7 @@ static int imx_decode_frame(AVCodecContext *avctx, void *data,
 
     frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
-    if ((ret = av_frame_ref(data, frame)) < 0)
+    if ((ret = av_frame_ref(rframe, frame)) < 0)
         return ret;
 
     *got_frame = 1;

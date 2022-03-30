@@ -38,11 +38,9 @@ static av_cold int aura_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int aura_decode_frame(AVCodecContext *avctx,
-                             void *data, int *got_frame,
-                             AVPacket *pkt)
+static int aura_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                             int *got_frame, AVPacket *pkt)
 {
-    AVFrame *frame = data;
     uint8_t *Y, *U, *V;
     uint8_t val;
     int x, y, ret;

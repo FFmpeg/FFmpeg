@@ -65,10 +65,9 @@ static av_cold int gsm_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int gsm_decode_frame(AVCodecContext *avctx, void *data,
+static int gsm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame = data;
     int res;
     GetBitContext gb;
     const uint8_t *buf = avpkt->data;

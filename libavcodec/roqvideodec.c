@@ -191,9 +191,8 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int roq_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame,
-                            AVPacket *avpkt)
+static int roq_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -214,7 +213,7 @@ static int roq_decode_frame(AVCodecContext *avctx,
     bytestream2_init(&gb, buf, buf_size);
     roqvideo_decode_frame(s, &gb);
 
-    if ((ret = av_frame_ref(data, s->current_frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->current_frame)) < 0)
         return ret;
     *got_frame      = 1;
 

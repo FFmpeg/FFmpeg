@@ -1740,11 +1740,10 @@ end:
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
 {
     TiffContext *const s = avctx->priv_data;
-    AVFrame *const p = data;
     unsigned off, last_off;
     int le, ret, plane, planes;
     int i, j, entries, stride;
@@ -1940,7 +1939,7 @@ again:
             avpriv_report_missing_feature(avctx, "DNG JPG-compressed tiled non-bayer-encoded images");
             return AVERROR_PATCHWELCOME;
         } else {
-            if ((ret = dng_decode_tiles(avctx, (AVFrame*)data, avpkt)) > 0)
+            if ((ret = dng_decode_tiles(avctx, p, avpkt)) > 0)
                 *got_frame = 1;
             return ret;
         }

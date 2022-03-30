@@ -703,12 +703,11 @@ static int decode_vector(SirenContext *s, int number_of_regions,
     return error == 1 ? AVERROR_INVALIDDATA : (get_bits_left(gb) - s->checksum_bits);
 }
 
-static int siren_decode(AVCodecContext *avctx, void *data,
+static int siren_decode(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
     SirenContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
-    AVFrame *frame = data;
     int ret, number_of_valid_coefs = REGION_SIZE * s->number_of_regions;
     int frame_error = 0, rate_control = 0;
     int bits_per_frame;

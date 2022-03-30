@@ -44,15 +44,14 @@ static av_cold int m101_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                      AVPacket *avpkt)
+static int m101_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int stride, ret;
     int x, y;
     int min_stride = 2 * avctx->width;
     int bits = avctx->extradata[2*4];
-    AVFrame *frame = data;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;

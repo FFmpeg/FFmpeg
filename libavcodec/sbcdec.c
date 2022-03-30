@@ -337,12 +337,10 @@ static int sbc_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int sbc_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_frame_ptr,
-                            AVPacket *avpkt)
+static int sbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
     SBCDecContext *sbc = avctx->priv_data;
-    AVFrame *frame = data;
     int ret, frame_length;
 
     if (!sbc)

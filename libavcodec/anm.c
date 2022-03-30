@@ -108,9 +108,8 @@ exhausted:
     return 1;
 }
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                        int *got_frame, AVPacket *avpkt)
 {
     AnmContext *s = avctx->priv_data;
     const int buf_size = avpkt->size;
@@ -176,7 +175,7 @@ static int decode_frame(AVCodecContext *avctx,
     memcpy(s->frame->data[1], s->palette, AVPALETTE_SIZE);
 
     *got_frame = 1;
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
+    if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
 
     return buf_size;

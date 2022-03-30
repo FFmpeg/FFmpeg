@@ -839,10 +839,9 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
     return 0;
 }
 
-static int on2avc_decode_frame(AVCodecContext * avctx, void *data,
+static int on2avc_decode_frame(AVCodecContext * avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     On2AVCContext *c   = avctx->priv_data;

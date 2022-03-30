@@ -119,12 +119,10 @@ static const uint8_t cga_mode45_index[6][4] = {
     [5] = { 0, 11, 12, 15 }, // mode5, high intensity
 };
 
-static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *got_frame,
-                        AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
 {
     PicContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     uint32_t *palette;
     int bits_per_plane, bpp, etype, esize, npal, pos_after_pal;
     int i, x, y, plane, tmp, ret, val;

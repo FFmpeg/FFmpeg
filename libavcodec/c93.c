@@ -120,7 +120,7 @@ static inline void draw_n_color(uint8_t *out, int stride, int width,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data,
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                         int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -251,7 +251,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             memcpy(newpic->data[1], oldpic->data[1], 256 * 4);
     }
 
-    if ((ret = av_frame_ref(data, newpic)) < 0)
+    if ((ret = av_frame_ref(rframe, newpic)) < 0)
         return ret;
     *got_frame = 1;
 

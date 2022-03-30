@@ -147,11 +147,10 @@ void ff_dca_downmix_to_stereo_float(AVFloatDSPContext *fdsp, float **samples,
     }
 }
 
-static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
+static int dcadec_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     DCAContext *s = avctx->priv_data;
-    AVFrame *frame = data;
     uint8_t *input = avpkt->data;
     int input_size = avpkt->size;
     int i, ret, prev_packet = s->packet;

@@ -187,10 +187,9 @@ static void backward_filter(RA288Context *ractx,
     memmove(hist, hist + n, move_size*sizeof(*hist));
 }
 
-static int ra288_decode_frame(AVCodecContext * avctx, void *data,
+static int ra288_decode_frame(AVCodecContext * avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
-    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     float *out;

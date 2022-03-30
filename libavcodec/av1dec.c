@@ -999,7 +999,7 @@ static int get_current_frame(AVCodecContext *avctx)
     return ret;
 }
 
-static int av1_decode_frame(AVCodecContext *avctx, void *frame,
+static int av1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame, AVPacket *pkt)
 {
     AV1DecContext *s = avctx->priv_data;

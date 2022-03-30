@@ -1903,7 +1903,7 @@ static void copy_bits(PutBitContext *pb,
  *
  * For more information about frames, see #synth_superframe().
  */
-static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
+static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
                                   int *got_frame_ptr, AVPacket *avpkt)
 {
     WMAVoiceContext *s = ctx->priv_data;
@@ -1942,7 +1942,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
             copy_bits(&s->pb, avpkt->data, size, gb, s->spillover_nbits);
             flush_put_bits(&s->pb);
             s->sframe_cache_size += s->spillover_nbits;
-            if ((res = synth_superframe(ctx, data, got_frame_ptr)) == 0 &&
+            if ((res = synth_superframe(ctx, frame, got_frame_ptr)) == 0 &&
                 *got_frame_ptr) {
                 cnt += s->spillover_nbits;
                 s->skip_bits_next = cnt & 7;
@@ -1965,7 +1965,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
         *got_frame_ptr = 0;
         return size;
     } else if (s->nb_superframes > 0) {
-        if ((res = synth_superframe(ctx, data, got_frame_ptr)) < 0) {
+        if ((res = synth_superframe(ctx, frame, got_frame_ptr)) < 0) {
             return res;
         } else if (*got_frame_ptr) {
             int cnt = get_bits_count(gb);
