@@ -63,12 +63,11 @@ static int mpl2_event_to_ass(AVBPrint *buf, const char *p)
     return 0;
 }
 
-static int mpl2_decode_frame(AVCodecContext *avctx, void *data,
+static int mpl2_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr, AVPacket *avpkt)
 {
     int ret = 0;
     AVBPrint buf;
-    AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
     FFASSDecoderContext *s = avctx->priv_data;
 
@@ -87,7 +86,7 @@ const FFCodec ff_mpl2_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("MPL2 subtitle"),
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_MPL2,
-    .decode         = mpl2_decode_frame,
+    .decode_sub     = mpl2_decode_frame,
     .init           = ff_ass_subtitle_header_default,
     .flush          = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),

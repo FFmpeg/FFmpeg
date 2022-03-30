@@ -838,10 +838,10 @@ static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     return ret;
 }
 
-static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avpkt)
+static int decode(AVCodecContext *avctx, AVSubtitle *sub,
+                  int *got_sub, AVPacket *avpkt)
 {
     CCaptionSubContext *ctx = avctx->priv_data;
-    AVSubtitle *sub = data;
     int64_t in_time = sub->pts;
     int64_t start_time;
     int64_t end_time;
@@ -955,6 +955,6 @@ const FFCodec ff_ccaption_decoder = {
     .init           = init_decoder,
     .close          = close_decoder,
     .flush          = flush_decoder,
-    .decode         = decode,
+    .decode_sub     = decode,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

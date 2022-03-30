@@ -494,10 +494,9 @@ static int parse_presentation_segment(AVCodecContext *avctx,
  * @param buf pointer to the packet to process
  * @param buf_size size of packet to process
  */
-static int display_end_segment(AVCodecContext *avctx, void *data,
+static int display_end_segment(AVCodecContext *avctx, AVSubtitle *sub,
                                const uint8_t *buf, int buf_size)
 {
-    AVSubtitle    *sub = data;
     PGSSubContext *ctx = avctx->priv_data;
     int64_t pts;
     PGSSubPalette *palette;
@@ -590,8 +589,8 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     return 1;
 }
 
-static int decode(AVCodecContext *avctx, void *data, int *got_sub_ptr,
-                  AVPacket *avpkt)
+static int decode(AVCodecContext *avctx, AVSubtitle *sub,
+                  int *got_sub_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -639,7 +638,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub_ptr,
             ret = parse_object_segment(avctx, buf, segment_length);
             break;
         case PRESENTATION_SEGMENT:
-            ret = parse_presentation_segment(avctx, buf, segment_length, ((AVSubtitle*)(data))->pts);
+            ret = parse_presentation_segment(avctx, buf, segment_length, sub->pts);
             break;
         case WINDOW_SEGMENT:
             /*
@@ -657,7 +656,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub_ptr,
                 ret = AVERROR_INVALIDDATA;
                 break;
             }
-            ret = display_end_segment(avctx, data, buf, segment_length);
+            ret = display_end_segment(avctx, sub, buf, segment_length);
             if (ret >= 0)
                 *got_sub_ptr = ret;
             break;
@@ -699,7 +698,7 @@ const FFCodec ff_pgssub_decoder = {
     .priv_data_size = sizeof(PGSSubContext),
     .init           = init_decoder,
     .close          = close_decoder,
-    .decode         = decode,
+    .decode_sub     = decode,
     .p.priv_class   = &pgsdec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

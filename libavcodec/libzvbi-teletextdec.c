@@ -637,10 +637,10 @@ static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
     return lines;
 }
 
-static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr, AVPacket *pkt)
+static int teletext_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
+                                 int *got_sub_ptr, AVPacket *pkt)
 {
     TeletextContext *ctx = avctx->priv_data;
-    AVSubtitle      *sub = data;
     int             ret = 0;
 
     if (!ctx->vbi) {
@@ -822,6 +822,6 @@ const FFCodec ff_libzvbi_teletext_decoder = {
     .priv_data_size = sizeof(TeletextContext),
     .init      = teletext_init_decoder,
     .close     = teletext_close_decoder,
-    .decode    = teletext_decode_frame,
+    .decode_sub = teletext_decode_frame,
     .flush     = teletext_flush,
 };

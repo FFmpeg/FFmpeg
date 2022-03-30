@@ -162,11 +162,10 @@ static void jacosub_to_ass(AVCodecContext *avctx, AVBPrint *dst, const char *src
     }
 }
 
-static int jacosub_decode_frame(AVCodecContext *avctx,
-                                void *data, int *got_sub_ptr, AVPacket *avpkt)
+static int jacosub_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
+                                int *got_sub_ptr, AVPacket *avpkt)
 {
     int ret;
-    AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
     FFASSDecoderContext *s = avctx->priv_data;
 
@@ -200,7 +199,7 @@ const FFCodec ff_jacosub_decoder = {
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_JACOSUB,
     .init           = ff_ass_subtitle_header_default,
-    .decode         = jacosub_decode_frame,
+    .decode_sub     = jacosub_decode_frame,
     .flush          = ff_ass_decoder_flush,
     .priv_data_size = sizeof(FFASSDecoderContext),
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

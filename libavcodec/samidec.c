@@ -132,10 +132,9 @@ end:
     return ret;
 }
 
-static int sami_decode_frame(AVCodecContext *avctx,
-                             void *data, int *got_sub_ptr, AVPacket *avpkt)
+static int sami_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
+                             int *got_sub_ptr, AVPacket *avpkt)
 {
-    AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
     SAMIContext *sami = avctx->priv_data;
 
@@ -189,7 +188,7 @@ const FFCodec ff_sami_decoder = {
     .priv_data_size = sizeof(SAMIContext),
     .init           = sami_init,
     .close          = sami_close,
-    .decode         = sami_decode_frame,
+    .decode_sub     = sami_decode_frame,
     .flush          = sami_flush,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

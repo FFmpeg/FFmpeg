@@ -548,14 +548,12 @@ static int append_to_cached_buf(AVCodecContext *avctx,
     return 0;
 }
 
-static int dvdsub_decode(AVCodecContext *avctx,
-                         void *data, int *data_size,
-                         AVPacket *avpkt)
+static int dvdsub_decode(AVCodecContext *avctx, AVSubtitle *sub,
+                         int *data_size, AVPacket *avpkt)
 {
     DVDSubContext *ctx = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    AVSubtitle *sub = data;
     int appended = 0;
     int is_menu;
 
@@ -762,7 +760,7 @@ const FFCodec ff_dvdsub_decoder = {
     .p.id           = AV_CODEC_ID_DVD_SUBTITLE,
     .priv_data_size = sizeof(DVDSubContext),
     .init           = dvdsub_init,
-    .decode         = dvdsub_decode,
+    .decode_sub     = dvdsub_decode,
     .flush          = dvdsub_flush,
     .p.priv_class   = &dvdsub_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

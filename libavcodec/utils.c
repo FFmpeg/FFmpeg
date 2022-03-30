@@ -80,7 +80,7 @@ int av_codec_is_encoder(const AVCodec *avcodec)
 int av_codec_is_decoder(const AVCodec *avcodec)
 {
     const FFCodec *const codec = ffcodec(avcodec);
-    return codec && (codec->decode || codec->receive_frame);
+    return codec && (codec->decode || codec->decode_sub || codec->receive_frame);
 }
 
 int ff_set_dimensions(AVCodecContext *s, int width, int height)

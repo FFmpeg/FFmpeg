@@ -283,10 +283,10 @@ next_region:
     return ret;
 }
 
-static int libaribb24_decode(AVCodecContext *avctx, void *data, int *got_sub_ptr, AVPacket *pkt)
+static int libaribb24_decode(AVCodecContext *avctx, AVSubtitle *sub,
+                             int *got_sub_ptr, AVPacket *pkt)
 {
     Libaribb24Context *b24 = avctx->priv_data;
-    AVSubtitle *sub = data;
     size_t parsed_data_size = 0;
     size_t decoded_subtitle_size = 0;
     const unsigned char *parsed_data = NULL;
@@ -391,6 +391,6 @@ const FFCodec ff_libaribb24_decoder = {
     .priv_data_size = sizeof(Libaribb24Context),
     .init      = libaribb24_init,
     .close     = libaribb24_close,
-    .decode    = libaribb24_decode,
+    .decode_sub = libaribb24_decode,
     .flush     = libaribb24_flush,
 };

@@ -472,10 +472,9 @@ static int mov_text_init(AVCodecContext *avctx) {
         return ff_ass_subtitle_header_default(avctx);
 }
 
-static int mov_text_decode_frame(AVCodecContext *avctx,
-                            void *data, int *got_sub_ptr, AVPacket *avpkt)
+static int mov_text_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
+                                 int *got_sub_ptr, AVPacket *avpkt)
 {
-    AVSubtitle *sub = data;
     MovTextContext *m = avctx->priv_data;
     int ret;
     AVBPrint buf;
@@ -600,7 +599,7 @@ const FFCodec ff_movtext_decoder = {
     .priv_data_size = sizeof(MovTextContext),
     .p.priv_class = &mov_text_decoder_class,
     .init         = mov_text_init,
-    .decode       = mov_text_decode_frame,
+    .decode_sub   = mov_text_decode_frame,
     .close        = mov_text_decode_close,
     .flush        = mov_text_flush,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,

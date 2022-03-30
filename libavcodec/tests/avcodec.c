@@ -135,12 +135,13 @@ int main(void){
                 codec->capabilities & AV_CODEC_CAP_ENCODER_FLUSH)
                 ERR("Frame-threaded encoder %s claims to support flushing\n");
         } else {
-            if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec2->decode)
-                ERR("Subtitle decoder %s does not implement decode callback\n");
+            if (codec->type == AVMEDIA_TYPE_SUBTITLE && !codec2->decode_sub)
+                ERR("Subtitle decoder %s does not implement decode_sub callback\n");
             if (codec->type == AVMEDIA_TYPE_SUBTITLE && codec2->bsfs)
                 ERR("Automatic bitstream filtering unsupported for subtitles; "
                     "yet decoder %s has it set\n");
-            if (!!codec2->decode + !!codec2->receive_frame != 1)
+            if ((codec->type != AVMEDIA_TYPE_SUBTITLE) !=
+                (!!codec2->decode + !!codec2->receive_frame))
                 ERR("Decoder %s does not implement exactly one decode API.\n");
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME    |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE |

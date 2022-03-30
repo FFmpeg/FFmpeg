@@ -1607,14 +1607,12 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
     return 0;
 }
 
-static int dvbsub_decode(AVCodecContext *avctx,
-                         void *data, int *got_sub_ptr,
-                         AVPacket *avpkt)
+static int dvbsub_decode(AVCodecContext *avctx, AVSubtitle *sub,
+                         int *got_sub_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DVBSubContext *ctx = avctx->priv_data;
-    AVSubtitle *sub = data;
     const uint8_t *p, *p_end;
     int segment_type;
     int page_id;
@@ -1748,7 +1746,7 @@ const FFCodec ff_dvbsub_decoder = {
     .priv_data_size = sizeof(DVBSubContext),
     .init           = dvbsub_init_decoder,
     .close          = dvbsub_close_decoder,
-    .decode         = dvbsub_decode,
+    .decode_sub     = dvbsub_decode,
     .p.priv_class   = &dvbsubdec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
