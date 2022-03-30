@@ -840,15 +840,15 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
     int ret;
 
     if (frame) {
-    ost->frames_encoded++;
+        ost->frames_encoded++;
 
-    if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "encoder <- type:%s "
-               "frame_pts:%s frame_pts_time:%s time_base:%d/%d\n",
-               type_desc,
-               av_ts2str(frame->pts), av_ts2timestr(frame->pts, &enc->time_base),
-               enc->time_base.num, enc->time_base.den);
-    }
+        if (debug_ts) {
+            av_log(NULL, AV_LOG_INFO, "encoder <- type:%s "
+                   "frame_pts:%s frame_pts_time:%s time_base:%d/%d\n",
+                   type_desc,
+                   av_ts2str(frame->pts), av_ts2timestr(frame->pts, &enc->time_base),
+                   enc->time_base.num, enc->time_base.den);
+        }
     }
 
     update_benchmark(NULL);
