@@ -21,6 +21,7 @@
 
 #include "config.h"
 
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <signal.h>
@@ -557,7 +558,7 @@ typedef struct OutputStream {
     // combined size of all the packets written
     uint64_t data_size;
     // number of packets send to the muxer
-    uint64_t packets_written;
+    atomic_uint_least64_t packets_written;
     // number of frames/samples sent to the encoder
     uint64_t frames_encoded;
     uint64_t samples_encoded;
@@ -699,14 +700,14 @@ int hw_device_setup_for_filter(FilterGraph *fg);
 int hwaccel_decode_init(AVCodecContext *avctx);
 
 int of_muxer_init(OutputFile *of, AVFormatContext *fc,
-                  AVDictionary *opts, int64_t limit_filesize);
+                  AVDictionary *opts, int64_t limit_filesize,
+                  int thread_queue_size);
 /* open the muxer when all the streams are initialized */
 int of_check_init(OutputFile *of);
 int of_write_trailer(OutputFile *of);
 void of_close(OutputFile **pof);
 
 int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost);
-int of_finished(OutputFile *of);
 int64_t of_filesize(OutputFile *of);
 AVChapter * const *
 of_get_chapters(OutputFile *of, unsigned int *nb_chapters);

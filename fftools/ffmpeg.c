@@ -746,9 +746,6 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
             goto mux_fail;
     }
 
-    if (eof)
-        ost->finished |= MUXER_FINISHED;
-
     return;
 
 mux_fail:
@@ -1532,7 +1529,7 @@ static void print_final_stats(int64_t total_size)
             enum AVMediaType type = ost->enc_ctx->codec_type;
 
             total_size    += ost->data_size;
-            total_packets += ost->packets_written;
+            total_packets += atomic_load(&ost->packets_written);
 
             av_log(NULL, AV_LOG_VERBOSE, "  Output stream #%d:%d (%s): ",
                    i, j, av_get_media_type_string(type));
@@ -1545,7 +1542,7 @@ static void print_final_stats(int64_t total_size)
             }
 
             av_log(NULL, AV_LOG_VERBOSE, "%"PRIu64" packets muxed (%"PRIu64" bytes); ",
-                   ost->packets_written, ost->data_size);
+                   atomic_load(&ost->packets_written), ost->data_size);
 
             av_log(NULL, AV_LOG_VERBOSE, "\n");
         }
@@ -1613,7 +1610,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         }
         if (!vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             float fps;
-            uint64_t frame_number = ost->packets_written;
+            uint64_t frame_number = atomic_load(&ost->packets_written);
 
             fps = t > 1 ? frame_number / t : 0;
             av_bprintf(&buf, "frame=%5"PRId64" fps=%3.*f q=%3.1f ",
@@ -3491,9 +3488,8 @@ static int need_output(void)
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost    = output_streams[i];
-        OutputFile *of       = output_files[ost->file_index];
 
-        if (ost->finished || of_finished(of))
+        if (ost->finished)
             continue;
 
         return 1;
@@ -4412,9 +4408,11 @@ static int transcode(void)
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
+        uint64_t packets_written;
         ost = output_streams[i];
-        total_packets_written += ost->packets_written;
-        if (!ost->packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
+        packets_written = atomic_load(&ost->packets_written);
+        total_packets_written += packets_written;
+        if (!packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
             av_log(NULL, AV_LOG_FATAL, "Empty output on stream %d.\n", i);
             exit_program(1);
         }

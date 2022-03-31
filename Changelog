@@ -6,6 +6,7 @@ version <next>:
 - ddagrab (Desktop Duplication) video capture filter
 - ffmpeg -shortest_buf_duration option
 - ffmpeg now requires threading to be built
+- ffmpeg now runs every muxer in a separate thread
 
 
 version 5.1:
