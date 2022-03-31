@@ -462,7 +462,8 @@ typedef struct OutputStream {
     int source_index;        /* InputStream index */
     AVStream *st;            /* stream in the output file */
     int encoding_needed;     /* true if encoding needed for this stream */
-    int64_t frame_number;
+    /* number of frames emitted by the video-encoding sync code */
+    int64_t vsync_frame_number;
     /* input pts and corresponding output pts
        for A/V sync */
     struct InputStream *sync_ist; /* input stream to sync against */

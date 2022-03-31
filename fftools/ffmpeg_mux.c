@@ -232,17 +232,7 @@ static void submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 
 void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
-    AVStream *st = ost->st;
     int ret;
-
-    if (pkt) {
-        /*
-         * Counting encoded video frames needs to be done separately because of
-         * reordering, see do_video_out().
-         */
-        if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed))
-            ost->frame_number++;
-    }
 
     if (of->mux->header_written) {
         submit_packet(of, ost, pkt);

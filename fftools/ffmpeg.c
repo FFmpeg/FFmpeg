@@ -1184,7 +1184,7 @@ static void do_video_out(OutputFile *of,
 
         switch (ost->vsync_method) {
         case VSYNC_VSCFR:
-            if (ost->frame_number == 0 && delta0 >= 0.5) {
+            if (ost->vsync_frame_number == 0 && delta0 >= 0.5) {
                 av_log(NULL, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
                 delta = duration;
                 delta0 = 0;
@@ -1192,7 +1192,7 @@ static void do_video_out(OutputFile *of,
             }
         case VSYNC_CFR:
             // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-            if (frame_drop_threshold && delta < frame_drop_threshold && ost->frame_number) {
+            if (frame_drop_threshold && delta < frame_drop_threshold && ost->vsync_frame_number) {
                 nb_frames = 0;
             } else if (delta < -1.1)
                 nb_frames = 0;
@@ -1225,7 +1225,7 @@ static void do_video_out(OutputFile *of,
      * But there may be reordering, so we can't throw away frames on encoder
      * flush, we need to limit them here, before they go into encoder.
      */
-    nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
+    nb_frames = FFMIN(nb_frames, ost->max_frames - ost->vsync_frame_number);
     nb0_frames = FFMIN(nb0_frames, nb_frames);
 
     memmove(ost->last_nb0_frames + 1,
@@ -1237,7 +1237,7 @@ static void do_video_out(OutputFile *of,
         nb_frames_drop++;
         av_log(NULL, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" from stream %d at ts %"PRId64"\n",
-               ost->frame_number, ost->st->index, ost->last_frame->pts);
+               ost->vsync_frame_number, ost->st->index, ost->last_frame->pts);
     }
     if (nb_frames > (nb0_frames && ost->last_dropped) + (nb_frames > nb0_frames)) {
         if (nb_frames > dts_error_threshold * 30) {
@@ -1331,7 +1331,7 @@ static void do_video_out(OutputFile *of,
             exit_program(1);
 
         ost->sync_opts++;
-        ost->frame_number++;
+        ost->vsync_frame_number++;
     }
 
     av_frame_unref(ost->last_frame);
