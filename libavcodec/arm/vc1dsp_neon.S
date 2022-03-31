@@ -1161,3 +1161,646 @@ function ff_vc1_inv_trans_4x4_dc_neon, export=1
         vst1.32         {d1[1]},  [r0,:32]
         bx              lr
 endfunc
+
+@ VC-1 in-loop deblocking filter for 4 pixel pairs at boundary of vertically-neighbouring blocks
+@ On entry:
+@   r0 -> top-left pel of lower block
+@   r1 = row stride, bytes
+@   r2 = PQUANT bitstream parameter
+function ff_vc1_v_loop_filter4_neon, export=1
+        sub             r3, r0, r1, lsl #2
+        vldr            d0, .Lcoeffs
+        vld1.32         {d1[0]}, [r0], r1       @ P5
+        vld1.32         {d2[0]}, [r3], r1       @ P1
+        vld1.32         {d3[0]}, [r3], r1       @ P2
+        vld1.32         {d4[0]}, [r0], r1       @ P6
+        vld1.32         {d5[0]}, [r3], r1       @ P3
+        vld1.32         {d6[0]}, [r0], r1       @ P7
+        vld1.32         {d7[0]}, [r3]           @ P4
+        vld1.32         {d16[0]}, [r0]          @ P8
+        vshll.u8        q9, d1, #1              @ 2*P5
+        vdup.16         d17, r2                 @ pq
+        vshll.u8        q10, d2, #1             @ 2*P1
+        vmovl.u8        q11, d3                 @ P2
+        vmovl.u8        q1, d4                  @ P6
+        vmovl.u8        q12, d5                 @ P3
+        vmls.i16        d20, d22, d0[1]         @ 2*P1-5*P2
+        vmovl.u8        q11, d6                 @ P7
+        vmls.i16        d18, d2, d0[1]          @ 2*P5-5*P6
+        vshll.u8        q2, d5, #1              @ 2*P3
+        vmovl.u8        q3, d7                  @ P4
+        vmla.i16        d18, d22, d0[1]         @ 2*P5-5*P6+5*P7
+        vmovl.u8        q11, d16                @ P8
+        vmla.u16        d20, d24, d0[1]         @ 2*P1-5*P2+5*P3
+        vmovl.u8        q12, d1                 @ P5
+        vmls.u16        d4, d6, d0[1]           @ 2*P3-5*P4
+        vmls.u16        d18, d22, d0[0]         @ 2*P5-5*P6+5*P7-2*P8
+        vsub.i16        d1, d6, d24             @ P4-P5
+        vmls.i16        d20, d6, d0[0]          @ 2*P1-5*P2+5*P3-2*P4
+        vmla.i16        d4, d24, d0[1]          @ 2*P3-5*P4+5*P5
+        vmls.i16        d4, d2, d0[0]           @ 2*P3-5*P4+5*P5-2*P6
+        vabs.s16        d2, d1
+        vrshr.s16       d3, d18, #3
+        vrshr.s16       d5, d20, #3
+        vshr.s16        d2, d2, #1              @ clip
+        vrshr.s16       d4, d4, #3
+        vabs.s16        d3, d3                  @ a2
+        vshr.s16        d1, d1, #8              @ clip_sign
+        vabs.s16        d5, d5                  @ a1
+        vceq.i16        d7, d2, #0              @ test clip == 0
+        vabs.s16        d16, d4                 @ a0
+        vshr.s16        d4, d4, #8              @ a0_sign
+        vcge.s16        d18, d5, d3             @ test a1 >= a2
+        vcge.s16        d17, d16, d17           @ test a0 >= pq
+        vbsl            d18, d3, d5             @ a3
+        vsub.i16        d1, d1, d4              @ clip_sign - a0_sign
+        vorr            d3, d7, d17             @ test clip == 0 || a0 >= pq
+        vqsub.u16       d4, d16, d18            @ a0 >= a3 ? a0-a3 : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        d5, d18, d16            @ test a3 >= a0
+        vmul.i16        d0, d4, d0[1]           @ a0 >= a3 ? 5*(a0-a3) : 0
+        vorr            d4, d3, d5              @ test clip == 0 || a0 >= pq || a3 >= a0
+        vmov.32         r0, d4[1]               @ move to gp reg
+        vshr.u16        d0, d0, #3              @ a0 >= a3 ? (5*(a0-a3))>>3 : 0
+        vcge.s16        d4, d0, d2
+        tst             r0, #1
+        bne             1f                      @ none of the 4 pixel pairs should be updated if this one is not filtered
+        vbsl            d4, d2, d0              @ FFMIN(d, clip)
+        vbic            d0, d4, d3              @ set each d to zero if it should not be filtered because clip == 0 || a0 >= pq (a3 > a0 case already zeroed by saturating sub)
+        vmls.i16        d6, d0, d1              @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P4
+        vmla.i16        d24, d0, d1             @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P5
+        vqmovun.s16     d0, q3
+        vqmovun.s16     d1, q12
+        vst1.32         {d0[0]}, [r3], r1
+        vst1.32         {d1[0]}, [r3]
+1:      bx              lr
+endfunc
+
+@ VC-1 in-loop deblocking filter for 4 pixel pairs at boundary of horizontally-neighbouring blocks
+@ On entry:
+@   r0 -> top-left pel of right block
+@   r1 = row stride, bytes
+@   r2 = PQUANT bitstream parameter
+function ff_vc1_h_loop_filter4_neon, export=1
+        sub             r3, r0, #4              @ where to start reading
+        vldr            d0, .Lcoeffs
+        vld1.32         {d2}, [r3], r1
+        sub             r0, r0, #1              @ where to start writing
+        vld1.32         {d4}, [r3], r1
+        vld1.32         {d3}, [r3], r1
+        vld1.32         {d5}, [r3]
+        vdup.16         d1, r2                  @ pq
+        vtrn.8          q1, q2
+        vtrn.16         d2, d3                  @ P1, P5, P3, P7
+        vtrn.16         d4, d5                  @ P2, P6, P4, P8
+        vshll.u8        q3, d2, #1              @ 2*P1, 2*P5
+        vmovl.u8        q8, d4                  @ P2, P6
+        vmovl.u8        q9, d3                  @ P3, P7
+        vmovl.u8        q2, d5                  @ P4, P8
+        vmls.i16        q3, q8, d0[1]           @ 2*P1-5*P2, 2*P5-5*P6
+        vshll.u8        q10, d3, #1             @ 2*P3, 2*P7
+        vmovl.u8        q1, d2                  @ P1, P5
+        vmla.i16        q3, q9, d0[1]           @ 2*P1-5*P2+5*P3, 2*P5-5*P6+5*P7
+        vmls.i16        q3, q2, d0[0]           @ 2*P1-5*P2+5*P3-2*P4, 2*P5-5*P6+5*P7-2*P8
+        vmov            d2, d3                  @ needs to be in an even-numbered vector for when we come to narrow it later
+        vmls.i16        d20, d4, d0[1]          @ 2*P3-5*P4
+        vmla.i16        d20, d3, d0[1]          @ 2*P3-5*P4+5*P5
+        vsub.i16        d3, d4, d2              @ P4-P5
+        vmls.i16        d20, d17, d0[0]         @ 2*P3-5*P4+5*P5-2*P6
+        vrshr.s16       q3, q3, #3
+        vabs.s16        d5, d3
+        vshr.s16        d3, d3, #8              @ clip_sign
+        vrshr.s16       d16, d20, #3
+        vabs.s16        q3, q3                  @ a1, a2
+        vshr.s16        d5, d5, #1              @ clip
+        vabs.s16        d17, d16                @ a0
+        vceq.i16        d18, d5, #0             @ test clip == 0
+        vshr.s16        d16, d16, #8            @ a0_sign
+        vcge.s16        d19, d6, d7             @ test a1 >= a2
+        vcge.s16        d1, d17, d1             @ test a0 >= pq
+        vsub.i16        d16, d3, d16            @ clip_sign - a0_sign
+        vbsl            d19, d7, d6             @ a3
+        vorr            d1, d18, d1             @ test clip == 0 || a0 >= pq
+        vqsub.u16       d3, d17, d19            @ a0 >= a3 ? a0-a3 : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        d6, d19, d17            @ test a3 >= a0    @
+        vmul.i16        d0, d3, d0[1]           @ a0 >= a3 ? 5*(a0-a3) : 0
+        vorr            d3, d1, d6              @ test clip == 0 || a0 >= pq || a3 >= a0
+        vmov.32         r2, d3[1]               @ move to gp reg
+        vshr.u16        d0, d0, #3              @ a0 >= a3 ? (5*(a0-a3))>>3 : 0
+        vcge.s16        d3, d0, d5
+        tst             r2, #1
+        bne             1f                      @ none of the 4 pixel pairs should be updated if this one is not filtered
+        vbsl            d3, d5, d0              @ FFMIN(d, clip)
+        vbic            d0, d3, d1              @ set each d to zero if it should not be filtered because clip == 0 || a0 >= pq (a3 > a0 case already zeroed by saturating sub)
+        vmla.i16        d2, d0, d16             @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P5
+        vmls.i16        d4, d0, d16             @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P4
+        vqmovun.s16     d1, q1
+        vqmovun.s16     d0, q2
+        vst2.8          {d0[0], d1[0]}, [r0], r1
+        vst2.8          {d0[1], d1[1]}, [r0], r1
+        vst2.8          {d0[2], d1[2]}, [r0], r1
+        vst2.8          {d0[3], d1[3]}, [r0]
+1:      bx              lr
+endfunc
+
+@ VC-1 in-loop deblocking filter for 8 pixel pairs at boundary of vertically-neighbouring blocks
+@ On entry:
+@   r0 -> top-left pel of lower block
+@   r1 = row stride, bytes
+@   r2 = PQUANT bitstream parameter
+function ff_vc1_v_loop_filter8_neon, export=1
+        sub             r3, r0, r1, lsl #2
+        vldr            d0, .Lcoeffs
+        vld1.32         {d1}, [r0 :64], r1      @ P5
+        vld1.32         {d2}, [r3 :64], r1      @ P1
+        vld1.32         {d3}, [r3 :64], r1      @ P2
+        vld1.32         {d4}, [r0 :64], r1      @ P6
+        vld1.32         {d5}, [r3 :64], r1      @ P3
+        vld1.32         {d6}, [r0 :64], r1      @ P7
+        vshll.u8        q8, d1, #1              @ 2*P5
+        vshll.u8        q9, d2, #1              @ 2*P1
+        vld1.32         {d7}, [r3 :64]          @ P4
+        vmovl.u8        q1, d3                  @ P2
+        vld1.32         {d20}, [r0 :64]         @ P8
+        vmovl.u8        q11, d4                 @ P6
+        vdup.16         q12, r2                 @ pq
+        vmovl.u8        q13, d5                 @ P3
+        vmls.i16        q9, q1, d0[1]           @ 2*P1-5*P2
+        vmovl.u8        q1, d6                  @ P7
+        vshll.u8        q2, d5, #1              @ 2*P3
+        vmls.i16        q8, q11, d0[1]          @ 2*P5-5*P6
+        vmovl.u8        q3, d7                  @ P4
+        vmovl.u8        q10, d20                @ P8
+        vmla.i16        q8, q1, d0[1]           @ 2*P5-5*P6+5*P7
+        vmovl.u8        q1, d1                  @ P5
+        vmla.i16        q9, q13, d0[1]          @ 2*P1-5*P2+5*P3
+        vsub.i16        q13, q3, q1             @ P4-P5
+        vmls.i16        q2, q3, d0[1]           @ 2*P3-5*P4
+        vmls.i16        q8, q10, d0[0]          @ 2*P5-5*P6+5*P7-2*P8
+        vabs.s16        q10, q13
+        vshr.s16        q13, q13, #8            @ clip_sign
+        vmls.i16        q9, q3, d0[0]           @ 2*P1-5*P2+5*P3-2*P4
+        vshr.s16        q10, q10, #1            @ clip
+        vmla.i16        q2, q1, d0[1]           @ 2*P3-5*P4+5*P5
+        vrshr.s16       q8, q8, #3
+        vmls.i16        q2, q11, d0[0]          @ 2*P3-5*P4+5*P5-2*P6
+        vceq.i16        q11, q10, #0            @ test clip == 0
+        vrshr.s16       q9, q9, #3
+        vabs.s16        q8, q8                  @ a2
+        vabs.s16        q9, q9                  @ a1
+        vrshr.s16       q2, q2, #3
+        vcge.s16        q14, q9, q8             @ test a1 >= a2
+        vabs.s16        q15, q2                 @ a0
+        vshr.s16        q2, q2, #8              @ a0_sign
+        vbsl            q14, q8, q9             @ a3
+        vcge.s16        q8, q15, q12            @ test a0 >= pq
+        vsub.i16        q2, q13, q2             @ clip_sign - a0_sign
+        vqsub.u16       q9, q15, q14            @ a0 >= a3 ? a0-a3 : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        q12, q14, q15           @ test a3 >= a0
+        vorr            q8, q11, q8             @ test clip == 0 || a0 >= pq
+        vmul.i16        q0, q9, d0[1]           @ a0 >= a3 ? 5*(a0-a3) : 0
+        vorr            q9, q8, q12             @ test clip == 0 || a0 >= pq || a3 >= a0
+        vshl.i64        q11, q9, #16
+        vmov.32         r0, d18[1]              @ move to gp reg
+        vshr.u16        q0, q0, #3              @ a0 >= a3 ? (5*(a0-a3))>>3 : 0
+        vmov.32         r2, d19[1]
+        vshr.s64        q9, q11, #48
+        vcge.s16        q11, q0, q10
+        vorr            q8, q8, q9
+        and             r0, r0, r2
+        vbsl            q11, q10, q0            @ FFMIN(d, clip)
+        tst             r0, #1
+        bne             1f                      @ none of the 8 pixel pairs should be updated in this case
+        vbic            q0, q11, q8             @ set each d to zero if it should not be filtered
+        vmls.i16        q3, q0, q2              @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P4
+        vmla.i16        q1, q0, q2              @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P5
+        vqmovun.s16     d0, q3
+        vqmovun.s16     d1, q1
+        vst1.32         {d0}, [r3 :64], r1
+        vst1.32         {d1}, [r3 :64]
+1:      bx              lr
+endfunc
+
+.align  5
+.Lcoeffs:
+.quad   0x00050002
+
+@ VC-1 in-loop deblocking filter for 8 pixel pairs at boundary of horizontally-neighbouring blocks
+@ On entry:
+@   r0 -> top-left pel of right block
+@   r1 = row stride, bytes
+@   r2 = PQUANT bitstream parameter
+function ff_vc1_h_loop_filter8_neon, export=1
+        push            {lr}
+        sub             r3, r0, #4              @ where to start reading
+        vldr            d0, .Lcoeffs
+        vld1.32         {d2}, [r3], r1          @ P1[0], P2[0]...
+        sub             r0, r0, #1              @ where to start writing
+        vld1.32         {d4}, [r3], r1
+        add             r12, r0, r1, lsl #2
+        vld1.32         {d3}, [r3], r1
+        vld1.32         {d5}, [r3], r1
+        vld1.32         {d6}, [r3], r1
+        vld1.32         {d16}, [r3], r1
+        vld1.32         {d7}, [r3], r1
+        vld1.32         {d17}, [r3]
+        vtrn.8          q1, q2                  @ P1[0], P1[1], P3[0]... P1[2], P1[3], P3[2]... P2[0], P2[1], P4[0]... P2[2], P2[3], P4[2]...
+        vdup.16         q9, r2                  @ pq
+        vtrn.16         d2, d3                  @ P1[0], P1[1], P1[2], P1[3], P5[0]... P3[0], P3[1], P3[2], P3[3], P7[0]...
+        vtrn.16         d4, d5                  @ P2[0], P2[1], P2[2], P2[3], P6[0]... P4[0], P4[1], P4[2], P4[3], P8[0]...
+        vtrn.8          q3, q8                  @ P1[4], P1[5], P3[4]... P1[6], P1[7], P3[6]... P2[4], P2[5], P4[4]... P2[6], P2[7], P4[6]...
+        vtrn.16         d6, d7                  @ P1[4], P1[5], P1[6], P1[7], P5[4]... P3[4], P3[5], P3[5], P3[7], P7[4]...
+        vtrn.16         d16, d17                @ P2[4], P2[5], P2[6], P2[7], P6[4]... P4[4], P4[5], P4[6], P4[7], P8[4]...
+        vtrn.32         d2, d6                  @ P1, P5
+        vtrn.32         d4, d16                 @ P2, P6
+        vtrn.32         d3, d7                  @ P3, P7
+        vtrn.32         d5, d17                 @ P4, P8
+        vshll.u8        q10, d2, #1             @ 2*P1
+        vshll.u8        q11, d6, #1             @ 2*P5
+        vmovl.u8        q12, d4                 @ P2
+        vmovl.u8        q13, d16                @ P6
+        vmovl.u8        q14, d3                 @ P3
+        vmls.i16        q10, q12, d0[1]         @ 2*P1-5*P2
+        vmovl.u8        q12, d7                 @ P7
+        vshll.u8        q1, d3, #1              @ 2*P3
+        vmls.i16        q11, q13, d0[1]         @ 2*P5-5*P6
+        vmovl.u8        q2, d5                  @ P4
+        vmovl.u8        q8, d17                 @ P8
+        vmla.i16        q11, q12, d0[1]         @ 2*P5-5*P6+5*P7
+        vmovl.u8        q3, d6                  @ P5
+        vmla.i16        q10, q14, d0[1]         @ 2*P1-5*P2+5*P3
+        vsub.i16        q12, q2, q3             @ P4-P5
+        vmls.i16        q1, q2, d0[1]           @ 2*P3-5*P4
+        vmls.i16        q11, q8, d0[0]          @ 2*P5-5*P6+5*P7-2*P8
+        vabs.s16        q8, q12
+        vshr.s16        q12, q12, #8            @ clip_sign
+        vmls.i16        q10, q2, d0[0]          @ 2*P1-5*P2+5*P3-2*P4
+        vshr.s16        q8, q8, #1              @ clip
+        vmla.i16        q1, q3, d0[1]           @ 2*P3-5*P4+5*P5
+        vrshr.s16       q11, q11, #3
+        vmls.i16        q1, q13, d0[0]          @ 2*P3-5*P4+5*P5-2*P6
+        vceq.i16        q13, q8, #0             @ test clip == 0
+        vrshr.s16       q10, q10, #3
+        vabs.s16        q11, q11                @ a2
+        vabs.s16        q10, q10                @ a1
+        vrshr.s16       q1, q1, #3
+        vcge.s16        q14, q10, q11           @ test a1 >= a2
+        vabs.s16        q15, q1                 @ a0
+        vshr.s16        q1, q1, #8              @ a0_sign
+        vbsl            q14, q11, q10           @ a3
+        vcge.s16        q9, q15, q9             @ test a0 >= pq
+        vsub.i16        q1, q12, q1             @ clip_sign - a0_sign
+        vqsub.u16       q10, q15, q14           @ a0 >= a3 ? a0-a3 : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        q11, q14, q15           @ test a3 >= a0
+        vorr            q9, q13, q9             @ test clip == 0 || a0 >= pq
+        vmul.i16        q0, q10, d0[1]          @ a0 >= a3 ? 5*(a0-a3) : 0
+        vorr            q10, q9, q11            @ test clip == 0 || a0 >= pq || a3 >= a0
+        vmov.32         r2, d20[1]              @ move to gp reg
+        vshr.u16        q0, q0, #3              @ a0 >= a3 ? (5*(a0-a3))>>3 : 0
+        vmov.32         r3, d21[1]
+        vcge.s16        q10, q0, q8
+        and             r14, r2, r3
+        vbsl            q10, q8, q0             @ FFMIN(d, clip)
+        tst             r14, #1
+        bne             2f                      @ none of the 8 pixel pairs should be updated in this case
+        vbic            q0, q10, q9             @ set each d to zero if it should not be filtered because clip == 0 || a0 >= pq (a3 > a0 case already zeroed by saturating sub)
+        vmla.i16        q3, q0, q1              @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P5
+        vmls.i16        q2, q0, q1              @ invert d depending on clip_sign & a0_sign, or zero it if they match, and accumulate into P4
+        vqmovun.s16     d1, q3
+        vqmovun.s16     d0, q2
+        tst             r2, #1
+        bne             1f                      @ none of the first 4 pixel pairs should be updated if so
+        vst2.8          {d0[0], d1[0]}, [r0], r1
+        vst2.8          {d0[1], d1[1]}, [r0], r1
+        vst2.8          {d0[2], d1[2]}, [r0], r1
+        vst2.8          {d0[3], d1[3]}, [r0]
+1:      tst             r3, #1
+        bne             2f                      @ none of the second 4 pixel pairs should be updated if so
+        vst2.8          {d0[4], d1[4]}, [r12], r1
+        vst2.8          {d0[5], d1[5]}, [r12], r1
+        vst2.8          {d0[6], d1[6]}, [r12], r1
+        vst2.8          {d0[7], d1[7]}, [r12]
+2:      pop             {pc}
+endfunc
+
+@ VC-1 in-loop deblocking filter for 16 pixel pairs at boundary of vertically-neighbouring blocks
+@ On entry:
+@   r0 -> top-left pel of lower block
+@   r1 = row stride, bytes
+@   r2 = PQUANT bitstream parameter
+function ff_vc1_v_loop_filter16_neon, export=1
+        vpush           {d8-d15}
+        sub             r3, r0, r1, lsl #2
+        vldr            d0, .Lcoeffs
+        vld1.64         {q1}, [r0 :128], r1     @ P5
+        vld1.64         {q2}, [r3 :128], r1     @ P1
+        vld1.64         {q3}, [r3 :128], r1     @ P2
+        vld1.64         {q4}, [r0 :128], r1     @ P6
+        vld1.64         {q5}, [r3 :128], r1     @ P3
+        vld1.64         {q6}, [r0 :128], r1     @ P7
+        vshll.u8        q7, d2, #1              @ 2*P5[0..7]
+        vshll.u8        q8, d4, #1              @ 2*P1[0..7]
+        vld1.64         {q9}, [r3 :128]         @ P4
+        vmovl.u8        q10, d6                 @ P2[0..7]
+        vld1.64         {q11}, [r0 :128]        @ P8
+        vmovl.u8        q12, d8                 @ P6[0..7]
+        vdup.16         q13, r2                 @ pq
+        vshll.u8        q2, d5, #1              @ 2*P1[8..15]
+        vmls.i16        q8, q10, d0[1]          @ 2*P1[0..7]-5*P2[0..7]
+        vshll.u8        q10, d3, #1             @ 2*P5[8..15]
+        vmovl.u8        q3, d7                  @ P2[8..15]
+        vmls.i16        q7, q12, d0[1]          @ 2*P5[0..7]-5*P6[0..7]
+        vmovl.u8        q4, d9                  @ P6[8..15]
+        vmovl.u8        q14, d10                @ P3[0..7]
+        vmovl.u8        q15, d12                @ P7[0..7]
+        vmls.i16        q2, q3, d0[1]           @ 2*P1[8..15]-5*P2[8..15]
+        vshll.u8        q3, d10, #1             @ 2*P3[0..7]
+        vmls.i16        q10, q4, d0[1]          @ 2*P5[8..15]-5*P6[8..15]
+        vmovl.u8        q6, d13                 @ P7[8..15]
+        vmla.i16        q8, q14, d0[1]          @ 2*P1[0..7]-5*P2[0..7]+5*P3[0..7]
+        vmovl.u8        q14, d18                @ P4[0..7]
+        vmovl.u8        q9, d19                 @ P4[8..15]
+        vmla.i16        q7, q15, d0[1]          @ 2*P5[0..7]-5*P6[0..7]+5*P7[0..7]
+        vmovl.u8        q15, d11                @ P3[8..15]
+        vshll.u8        q5, d11, #1             @ 2*P3[8..15]
+        vmls.i16        q3, q14, d0[1]          @ 2*P3[0..7]-5*P4[0..7]
+        vmla.i16        q2, q15, d0[1]          @ 2*P1[8..15]-5*P2[8..15]+5*P3[8..15]
+        vmovl.u8        q15, d22                @ P8[0..7]
+        vmovl.u8        q11, d23                @ P8[8..15]
+        vmla.i16        q10, q6, d0[1]          @ 2*P5[8..15]-5*P6[8..15]+5*P7[8..15]
+        vmovl.u8        q6, d2                  @ P5[0..7]
+        vmovl.u8        q1, d3                  @ P5[8..15]
+        vmls.i16        q5, q9, d0[1]           @ 2*P3[8..15]-5*P4[8..15]
+        vmls.i16        q8, q14, d0[0]          @ 2*P1[0..7]-5*P2[0..7]+5*P3[0..7]-2*P4[0..7]
+        vmls.i16        q7, q15, d0[0]          @ 2*P5[0..7]-5*P6[0..7]+5*P7[0..7]-2*P8[0..7]
+        vsub.i16        q15, q14, q6            @ P4[0..7]-P5[0..7]
+        vmla.i16        q3, q6, d0[1]           @ 2*P3[0..7]-5*P4[0..7]+5*P5[0..7]
+        vrshr.s16       q8, q8, #3
+        vmls.i16        q2, q9, d0[0]           @ 2*P1[8..15]-5*P2[8..15]+5*P3[8..15]-2*P4[8..15]
+        vrshr.s16       q7, q7, #3
+        vmls.i16        q10, q11, d0[0]         @ 2*P5[8..15]-5*P6[8..15]+5*P7[8..15]-2*P8[8..15]
+        vabs.s16        q11, q15
+        vabs.s16        q8, q8                  @ a1[0..7]
+        vmla.i16        q5, q1, d0[1]           @ 2*P3[8..15]-5*P4[8..15]+5*P5[8..15]
+        vshr.s16        q15, q15, #8            @ clip_sign[0..7]
+        vrshr.s16       q2, q2, #3
+        vmls.i16        q3, q12, d0[0]          @ 2*P3[0..7]-5*P4[0..7]+5*P5[0..7]-2*P6[0..7]
+        vabs.s16        q7, q7                  @ a2[0..7]
+        vrshr.s16       q10, q10, #3
+        vsub.i16        q12, q9, q1             @ P4[8..15]-P5[8..15]
+        vshr.s16        q11, q11, #1            @ clip[0..7]
+        vmls.i16        q5, q4, d0[0]           @ 2*P3[8..15]-5*P4[8..15]+5*P5[8..15]-2*P6[8..15]
+        vcge.s16        q4, q8, q7              @ test a1[0..7] >= a2[0..7]
+        vabs.s16        q2, q2                  @ a1[8..15]
+        vrshr.s16       q3, q3, #3
+        vabs.s16        q10, q10                @ a2[8..15]
+        vbsl            q4, q7, q8              @ a3[0..7]
+        vabs.s16        q7, q12
+        vshr.s16        q8, q12, #8             @ clip_sign[8..15]
+        vrshr.s16       q5, q5, #3
+        vcge.s16        q12, q2, q10            @ test a1[8..15] >= a2[8.15]
+        vshr.s16        q7, q7, #1              @ clip[8..15]
+        vbsl            q12, q10, q2            @ a3[8..15]
+        vabs.s16        q2, q3                  @ a0[0..7]
+        vceq.i16        q10, q11, #0            @ test clip[0..7] == 0
+        vshr.s16        q3, q3, #8              @ a0_sign[0..7]
+        vsub.i16        q3, q15, q3             @ clip_sign[0..7] - a0_sign[0..7]
+        vcge.s16        q15, q2, q13            @ test a0[0..7] >= pq
+        vorr            q10, q10, q15           @ test clip[0..7] == 0 || a0[0..7] >= pq
+        vqsub.u16       q15, q2, q4             @ a0[0..7] >= a3[0..7] ? a0[0..7]-a3[0..7] : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        q2, q4, q2              @ test a3[0..7] >= a0[0..7]
+        vabs.s16        q4, q5                  @ a0[8..15]
+        vshr.s16        q5, q5, #8              @ a0_sign[8..15]
+        vmul.i16        q15, q15, d0[1]         @ a0[0..7] >= a3[0..7] ? 5*(a0[0..7]-a3[0..7]) : 0
+        vcge.s16        q13, q4, q13            @ test a0[8..15] >= pq
+        vorr            q2, q10, q2             @ test clip[0..7] == 0 || a0[0..7] >= pq || a3[0..7] >= a0[0..7]
+        vsub.i16        q5, q8, q5              @ clip_sign[8..15] - a0_sign[8..15]
+        vceq.i16        q8, q7, #0              @ test clip[8..15] == 0
+        vshr.u16        q15, q15, #3            @ a0[0..7] >= a3[0..7] ? (5*(a0[0..7]-a3[0..7]))>>3 : 0
+        vmov.32         r0, d4[1]               @ move to gp reg
+        vorr            q8, q8, q13             @ test clip[8..15] == 0 || a0[8..15] >= pq
+        vqsub.u16       q13, q4, q12            @ a0[8..15] >= a3[8..15] ? a0[8..15]-a3[8..15] : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vmov.32         r2, d5[1]
+        vcge.s16        q4, q12, q4             @ test a3[8..15] >= a0[8..15]
+        vshl.i64        q2, q2, #16
+        vcge.s16        q12, q15, q11
+        vmul.i16        q0, q13, d0[1]          @ a0[8..15] >= a3[8..15] ? 5*(a0[8..15]-a3[8..15]) : 0
+        vorr            q4, q8, q4              @ test clip[8..15] == 0 || a0[8..15] >= pq || a3[8..15] >= a0[8..15]
+        vshr.s64        q2, q2, #48
+        and             r0, r0, r2
+        vbsl            q12, q11, q15           @ FFMIN(d[0..7], clip[0..7])
+        vshl.i64        q11, q4, #16
+        vmov.32         r2, d8[1]
+        vshr.u16        q0, q0, #3              @ a0[8..15] >= a3[8..15] ? (5*(a0[8..15]-a3[8..15]))>>3 : 0
+        vorr            q2, q10, q2
+        vmov.32         r12, d9[1]
+        vshr.s64        q4, q11, #48
+        vcge.s16        q10, q0, q7
+        vbic            q2, q12, q2             @ set each d[0..7] to zero if it should not be filtered because clip[0..7] == 0 || a0[0..7] >= pq (a3 > a0 case already zeroed by saturating sub)
+        vorr            q4, q8, q4
+        and             r2, r2, r12
+        vbsl            q10, q7, q0             @ FFMIN(d[8..15], clip[8..15])
+        vmls.i16        q14, q2, q3             @ invert d[0..7] depending on clip_sign[0..7] & a0_sign[0..7], or zero it if they match, and accumulate into P4[0..7]
+        and             r0, r0, r2
+        vbic            q0, q10, q4             @ set each d[8..15] to zero if it should not be filtered because clip[8..15] == 0 || a0[8..15] >= pq (a3 > a0 case already zeroed by saturating sub)
+        tst             r0, #1
+        bne             1f                      @ none of the 16 pixel pairs should be updated in this case
+        vmla.i16        q6, q2, q3              @ invert d[0..7] depending on clip_sign[0..7] & a0_sign[0..7], or zero it if they match, and accumulate into P5[0..7]
+        vmls.i16        q9, q0, q5              @ invert d[8..15] depending on clip_sign[8..15] & a0_sign[8..15], or zero it if they match, and accumulate into P4[8..15]
+        vqmovun.s16     d4, q14
+        vmla.i16        q1, q0, q5              @ invert d[8..15] depending on clip_sign[8..15] & a0_sign[8..15], or zero it if they match, and accumulate into P5[8..15]
+        vqmovun.s16     d0, q6
+        vqmovun.s16     d5, q9
+        vqmovun.s16     d1, q1
+        vst1.64         {q2}, [r3 :128], r1
+        vst1.64         {q0}, [r3 :128]
+1:      vpop            {d8-d15}
+        bx              lr
+endfunc
+
+@ VC-1 in-loop deblocking filter for 16 pixel pairs at boundary of horizontally-neighbouring blocks
+@ On entry:
+@   r0 -> top-left pel of right block
+@   r1 = row stride, bytes
+@   r2 = PQUANT bitstream parameter
+function ff_vc1_h_loop_filter16_neon, export=1
+        push            {r4-r6,lr}
+        vpush           {d8-d15}
+        sub             r3, r0, #4              @ where to start reading
+        vldr            d0, .Lcoeffs
+        vld1.32         {d2}, [r3], r1          @ P1[0], P2[0]...
+        sub             r0, r0, #1              @ where to start writing
+        vld1.32         {d3}, [r3], r1
+        add             r4, r0, r1, lsl #2
+        vld1.32         {d10}, [r3], r1
+        vld1.32         {d11}, [r3], r1
+        vld1.32         {d16}, [r3], r1
+        vld1.32         {d4}, [r3], r1
+        vld1.32         {d8}, [r3], r1
+        vtrn.8          d2, d3                  @ P1[0], P1[1], P3[0]... P2[0], P2[1], P4[0]...
+        vld1.32         {d14}, [r3], r1
+        vld1.32         {d5}, [r3], r1
+        vtrn.8          d10, d11                @ P1[2], P1[3], P3[2]... P2[2], P2[3], P4[2]...
+        vld1.32         {d6}, [r3], r1
+        vld1.32         {d12}, [r3], r1
+        vtrn.8          d16, d4                 @ P1[4], P1[5], P3[4]... P2[4], P2[5], P4[4]...
+        vld1.32         {d13}, [r3], r1
+        vtrn.16         d2, d10                 @ P1[0], P1[1], P1[2], P1[3], P5[0]... P3[0], P3[1], P3[2], P3[3], P7[0]...
+        vld1.32         {d1}, [r3], r1
+        vtrn.8          d8, d14                 @ P1[6], P1[7], P3[6]... P2[6], P2[7], P4[6]...
+        vld1.32         {d7}, [r3], r1
+        vtrn.16         d3, d11                 @ P2[0], P2[1], P2[2], P2[3], P6[0]... P4[0], P4[1], P4[2], P4[3], P8[0]...
+        vld1.32         {d9}, [r3], r1
+        vtrn.8          d5, d6                  @ P1[8], P1[9], P3[8]... P2[8], P2[9], P4[8]...
+        vld1.32         {d15}, [r3]
+        vtrn.16         d16, d8                 @ P1[4], P1[5], P1[6], P1[7], P5[4]... P3[4], P3[5], P3[6], P3[7], P7[4]...
+        vtrn.16         d4, d14                 @ P2[4], P2[5], P2[6], P2[7], P6[4]... P4[4], P4[5], P4[6], P4[7], P8[4]...
+        vtrn.8          d12, d13                @ P1[10], P1[11], P3[10]... P2[10], P2[11], P4[10]...
+        vdup.16         q9, r2                  @ pq
+        vtrn.8          d1, d7                  @ P1[12], P1[13], P3[12]... P2[12], P2[13], P4[12]...
+        vtrn.32         d2, d16                 @ P1[0..7], P5[0..7]
+        vtrn.16         d5, d12                 @ P1[8], P1[7], P1[10], P1[11], P5[8]... P3[8], P3[9], P3[10], P3[11], P7[8]...
+        vtrn.16         d6, d13                 @ P2[8], P2[7], P2[10], P2[11], P6[8]... P4[8], P4[9], P4[10], P4[11], P8[8]...
+        vtrn.8          d9, d15                 @ P1[14], P1[15], P3[14]... P2[14], P2[15], P4[14]...
+        vtrn.32         d3, d4                  @ P2[0..7], P6[0..7]
+        vshll.u8        q10, d2, #1             @ 2*P1[0..7]
+        vtrn.32         d10, d8                 @ P3[0..7], P7[0..7]
+        vshll.u8        q11, d16, #1            @ 2*P5[0..7]
+        vtrn.32         d11, d14                @ P4[0..7], P8[0..7]
+        vtrn.16         d1, d9                  @ P1[12], P1[13], P1[14], P1[15], P5[12]... P3[12], P3[13], P3[14], P3[15], P7[12]...
+        vtrn.16         d7, d15                 @ P2[12], P2[13], P2[14], P2[15], P6[12]... P4[12], P4[13], P4[14], P4[15], P8[12]...
+        vmovl.u8        q1, d3                  @ P2[0..7]
+        vmovl.u8        q12, d4                 @ P6[0..7]
+        vtrn.32         d5, d1                  @ P1[8..15], P5[8..15]
+        vtrn.32         d6, d7                  @ P2[8..15], P6[8..15]
+        vtrn.32         d12, d9                 @ P3[8..15], P7[8..15]
+        vtrn.32         d13, d15                @ P4[8..15], P8[8..15]
+        vmls.i16        q10, q1, d0[1]          @ 2*P1[0..7]-5*P2[0..7]
+        vmovl.u8        q1, d10                 @ P3[0..7]
+        vshll.u8        q2, d5, #1              @ 2*P1[8..15]
+        vshll.u8        q13, d1, #1             @ 2*P5[8..15]
+        vmls.i16        q11, q12, d0[1]         @ 2*P5[0..7]-5*P6[0..7]
+        vmovl.u8        q14, d6                 @ P2[8..15]
+        vmovl.u8        q3, d7                  @ P6[8..15]
+        vmovl.u8        q15, d8                 @ P7[0..7]
+        vmla.i16        q10, q1, d0[1]          @ 2*P1[0..7]-5*P2[0..7]+5*P3[0..7]
+        vmovl.u8        q1, d12                 @ P3[8..15]
+        vmls.i16        q2, q14, d0[1]          @ 2*P1[8..15]-5*P2[8..15]
+        vmovl.u8        q4, d9                  @ P7[8..15]
+        vshll.u8        q14, d10, #1            @ 2*P3[0..7]
+        vmls.i16        q13, q3, d0[1]          @ 2*P5[8..15]-5*P6[8..15]
+        vmovl.u8        q5, d11                 @ P4[0..7]
+        vmla.i16        q11, q15, d0[1]         @ 2*P5[0..7]-5*P6[0..7]+5*P7[0..7]
+        vshll.u8        q15, d12, #1            @ 2*P3[8..15]
+        vmovl.u8        q6, d13                 @ P4[8..15]
+        vmla.i16        q2, q1, d0[1]           @ 2*P1[8..15]-5*P2[8..15]+5*P3[8..15]
+        vmovl.u8        q1, d14                 @ P8[0..7]
+        vmovl.u8        q7, d15                 @ P8[8..15]
+        vmla.i16        q13, q4, d0[1]          @ 2*P5[8..15]-5*P6[8..15]+5*P7[8..15]
+        vmovl.u8        q4, d16                 @ P5[0..7]
+        vmovl.u8        q8, d1                  @ P5[8..15]
+        vmls.i16        q14, q5, d0[1]          @ 2*P3[0..7]-5*P4[0..7]
+        vmls.i16        q15, q6, d0[1]          @ 2*P3[8..15]-5*P4[8..15]
+        vmls.i16        q10, q5, d0[0]          @ 2*P1[0..7]-5*P2[0..7]+5*P3[0..7]-2*P4[0..7]
+        vmls.i16        q11, q1, d0[0]          @ 2*P5[0..7]-5*P6[0..7]+5*P7[0..7]-2*P8[0..7]
+        vsub.i16        q1, q5, q4              @ P4[0..7]-P5[0..7]
+        vmls.i16        q2, q6, d0[0]           @ 2*P1[8..15]-5*P2[8..15]+5*P3[8..15]-2*P4[8..15]
+        vrshr.s16       q10, q10, #3
+        vmls.i16        q13, q7, d0[0]          @ 2*P5[8..15]-5*P6[8..15]+5*P7[8..15]-2*P8[8..15]
+        vsub.i16        q7, q6, q8              @ P4[8..15]-P5[8..15]
+        vrshr.s16       q11, q11, #3
+        vmla.s16        q14, q4, d0[1]          @ 2*P3[0..7]-5*P4[0..7]+5*P5[0..7]
+        vrshr.s16       q2, q2, #3
+        vmla.i16        q15, q8, d0[1]          @ 2*P3[8..15]-5*P4[8..15]+5*P5[8..15]
+        vabs.s16        q10, q10                @ a1[0..7]
+        vrshr.s16       q13, q13, #3
+        vmls.i16        q15, q3, d0[0]          @ 2*P3[8..15]-5*P4[8..15]+5*P5[8..15]-2*P6[8..15]
+        vabs.s16        q3, q11                 @ a2[0..7]
+        vabs.s16        q2, q2                  @ a1[8..15]
+        vmls.i16        q14, q12, d0[0]         @ 2*P3[0..7]-5*P4[0..7]+5*P5[0..7]-2*P6[0..7]
+        vabs.s16        q11, q1
+        vabs.s16        q12, q13                @ a2[8..15]
+        vcge.s16        q13, q10, q3            @ test a1[0..7] >= a2[0..7]
+        vshr.s16        q1, q1, #8              @ clip_sign[0..7]
+        vrshr.s16       q15, q15, #3
+        vshr.s16        q11, q11, #1            @ clip[0..7]
+        vrshr.s16       q14, q14, #3
+        vbsl            q13, q3, q10            @ a3[0..7]
+        vcge.s16        q3, q2, q12             @ test a1[8..15] >= a2[8.15]
+        vabs.s16        q10, q15                @ a0[8..15]
+        vshr.s16        q15, q15, #8            @ a0_sign[8..15]
+        vbsl            q3, q12, q2             @ a3[8..15]
+        vabs.s16        q2, q14                 @ a0[0..7]
+        vabs.s16        q12, q7
+        vshr.s16        q7, q7, #8              @ clip_sign[8..15]
+        vshr.s16        q14, q14, #8            @ a0_sign[0..7]
+        vshr.s16        q12, q12, #1            @ clip[8..15]
+        vsub.i16        q7, q7, q15             @ clip_sign[8..15] - a0_sign[8..15]
+        vqsub.u16       q15, q10, q3            @ a0[8..15] >= a3[8..15] ? a0[8..15]-a3[8..15] : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        q3, q3, q10             @ test a3[8..15] >= a0[8..15]
+        vcge.s16        q10, q10, q9            @ test a0[8..15] >= pq
+        vcge.s16        q9, q2, q9              @ test a0[0..7] >= pq
+        vsub.i16        q1, q1, q14             @ clip_sign[0..7] - a0_sign[0..7]
+        vqsub.u16       q14, q2, q13            @ a0[0..7] >= a3[0..7] ? a0[0..7]-a3[0..7] : 0  (a0 > a3 in all cases where filtering is enabled, so makes more sense to subtract this way round than the opposite and then taking the abs)
+        vcge.s16        q2, q13, q2             @ test a3[0..7] >= a0[0..7]
+        vmul.i16        q13, q15, d0[1]         @ a0[8..15] >= a3[8..15] ? 5*(a0[8..15]-a3[8..15]) : 0
+        vceq.i16        q15, q11, #0            @ test clip[0..7] == 0
+        vmul.i16        q0, q14, d0[1]          @ a0[0..7] >= a3[0..7] ? 5*(a0[0..7]-a3[0..7]) : 0
+        vorr            q9, q15, q9             @ test clip[0..7] == 0 || a0[0..7] >= pq
+        vceq.i16        q14, q12, #0            @ test clip[8..15] == 0
+        vshr.u16        q13, q13, #3            @ a0[8..15] >= a3[8..15] ? (5*(a0[8..15]-a3[8..15]))>>3 : 0
+        vorr            q2, q9, q2              @ test clip[0..7] == 0 || a0[0..7] >= pq || a3[0..7] >= a0[0..7]
+        vshr.u16        q0, q0, #3              @ a0[0..7] >= a3[0..7] ? (5*(a0[0..7]-a3[0..7]))>>3 : 0
+        vorr            q10, q14, q10           @ test clip[8..15] == 0 || a0[8..15] >= pq
+        vcge.s16        q14, q13, q12
+        vmov.32         r2, d4[1]               @ move to gp reg
+        vorr            q3, q10, q3             @ test clip[8..15] == 0 || a0[8..15] >= pq || a3[8..15] >= a0[8..15]
+        vmov.32         r3, d5[1]
+        vcge.s16        q2, q0, q11
+        vbsl            q14, q12, q13           @ FFMIN(d[8..15], clip[8..15])
+        vbsl            q2, q11, q0             @ FFMIN(d[0..7], clip[0..7])
+        vmov.32         r5, d6[1]
+        vbic            q0, q14, q10            @ set each d[8..15] to zero if it should not be filtered because clip[8..15] == 0 || a0[8..15] >= pq (a3 > a0 case already zeroed by saturating sub)
+        vmov.32         r6, d7[1]
+        and             r12, r2, r3
+        vbic            q2, q2, q9              @ set each d[0..7] to zero if it should not be filtered because clip[0..7] == 0 || a0[0..7] >= pq (a3 > a0 case already zeroed by saturating sub)
+        vmls.i16        q6, q0, q7              @ invert d[8..15] depending on clip_sign[8..15] & a0_sign[8..15], or zero it if they match, and accumulate into P4
+        vmls.i16        q5, q2, q1              @ invert d[0..7] depending on clip_sign[0..7] & a0_sign[0..7], or zero it if they match, and accumulate into P4
+        and             r14, r5, r6
+        vmla.i16        q4, q2, q1              @ invert d[0..7] depending on clip_sign[0..7] & a0_sign[0..7], or zero it if they match, and accumulate into P5
+        and             r12, r12, r14
+        vqmovun.s16     d4, q6
+        vmla.i16        q8, q0, q7              @ invert d[8..15] depending on clip_sign[8..15] & a0_sign[8..15], or zero it if they match, and accumulate into P5
+        tst             r12, #1
+        bne             4f                      @ none of the 16 pixel pairs should be updated in this case
+        vqmovun.s16     d2, q5
+        vqmovun.s16     d3, q4
+        vqmovun.s16     d5, q8
+        tst             r2, #1
+        bne             1f
+        vst2.8          {d2[0], d3[0]}, [r0], r1
+        vst2.8          {d2[1], d3[1]}, [r0], r1
+        vst2.8          {d2[2], d3[2]}, [r0], r1
+        vst2.8          {d2[3], d3[3]}, [r0]
+1:      add             r0, r4, r1, lsl #2
+        tst             r3, #1
+        bne             2f
+        vst2.8          {d2[4], d3[4]}, [r4], r1
+        vst2.8          {d2[5], d3[5]}, [r4], r1
+        vst2.8          {d2[6], d3[6]}, [r4], r1
+        vst2.8          {d2[7], d3[7]}, [r4]
+2:      add             r4, r0, r1, lsl #2
+        tst             r5, #1
+        bne             3f
+        vst2.8          {d4[0], d5[0]}, [r0], r1
+        vst2.8          {d4[1], d5[1]}, [r0], r1
+        vst2.8          {d4[2], d5[2]}, [r0], r1
+        vst2.8          {d4[3], d5[3]}, [r0]
+3:      tst             r6, #1
+        bne             4f
+        vst2.8          {d4[4], d5[4]}, [r4], r1
+        vst2.8          {d4[5], d5[5]}, [r4], r1
+        vst2.8          {d4[6], d5[6]}, [r4], r1
+        vst2.8          {d4[7], d5[7]}, [r4]
+4:      vpop            {d8-d15}
+        pop             {r4-r6,pc}
+endfunc
