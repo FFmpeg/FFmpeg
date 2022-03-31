@@ -64,6 +64,7 @@ void checkasm_check_hevc_idct(void);
 void checkasm_check_hevc_pel(void);
 void checkasm_check_hevc_sao(void);
 void checkasm_check_huffyuvdsp(void);
+void checkasm_check_idctdsp(void);
 void checkasm_check_jpeg2000dsp(void);
 void checkasm_check_llviddsp(void);
 void checkasm_check_llviddspenc(void);

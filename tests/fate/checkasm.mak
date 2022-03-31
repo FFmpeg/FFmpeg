@@ -19,6 +19,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-hevc_pel                                  \
                 fate-checkasm-hevc_sao                                  \
                 fate-checkasm-huffyuvdsp                                \
+                fate-checkasm-idctdsp                                   \
                 fate-checkasm-jpeg2000dsp                               \
                 fate-checkasm-llviddsp                                  \
                 fate-checkasm-llviddspenc                               \
