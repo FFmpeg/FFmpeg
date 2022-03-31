@@ -78,6 +78,7 @@ void checkasm_check_sw_scale(void);
 void checkasm_check_utvideodsp(void);
 void checkasm_check_v210dec(void);
 void checkasm_check_v210enc(void);
+void checkasm_check_vc1dsp(void);
 void checkasm_check_vf_eq(void);
 void checkasm_check_vf_gblur(void);
 void checkasm_check_vf_hflip(void);

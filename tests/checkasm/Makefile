@@ -11,6 +11,7 @@ AVCODECOBJS-$(CONFIG_H264PRED)          += h264pred.o
 AVCODECOBJS-$(CONFIG_H264QPEL)          += h264qpel.o
 AVCODECOBJS-$(CONFIG_LLVIDDSP)          += llviddsp.o
 AVCODECOBJS-$(CONFIG_LLVIDENCDSP)       += llviddspenc.o
+AVCODECOBJS-$(CONFIG_VC1DSP)            += vc1dsp.o
 AVCODECOBJS-$(CONFIG_VP8DSP)            += vp8dsp.o
 AVCODECOBJS-$(CONFIG_VIDEODSP)          += videodsp.o
 

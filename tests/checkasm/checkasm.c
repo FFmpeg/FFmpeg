@@ -147,6 +147,9 @@ static const struct {
     #if CONFIG_V210_ENCODER
         { "v210enc", checkasm_check_v210enc },
     #endif
+    #if CONFIG_VC1DSP
+        { "vc1dsp", checkasm_check_vc1dsp },
+    #endif
     #if CONFIG_VP8DSP
         { "vp8dsp", checkasm_check_vp8dsp },
     #endif
