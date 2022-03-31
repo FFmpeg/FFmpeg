@@ -396,7 +396,7 @@ static void vp9_raw_reorder_flush(AVBSFContext *bsf)
 
     for (int s = 0; s < FRAME_SLOTS; s++)
         vp9_raw_reorder_clear_slot(ctx, s);
-    ctx->next_frame = NULL;
+    vp9_raw_reorder_frame_free(&ctx->next_frame);
     ctx->sequence = 0;
 }
 
@@ -407,6 +407,7 @@ static void vp9_raw_reorder_close(AVBSFContext *bsf)
 
     for (s = 0; s < FRAME_SLOTS; s++)
         vp9_raw_reorder_clear_slot(ctx, s);
+    vp9_raw_reorder_frame_free(&ctx->next_frame);
 }
 
 static const enum AVCodecID vp9_raw_reorder_codec_ids[] = {
