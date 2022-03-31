@@ -25,6 +25,16 @@
 
 #include "config.h"
 
+void ff_vc1_inv_trans_8x8_neon(int16_t *block);
+void ff_vc1_inv_trans_8x4_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x8_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x4_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+
+void ff_vc1_inv_trans_8x8_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_8x4_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x8_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x4_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+
 void ff_vc1_v_loop_filter4_neon(uint8_t *src, ptrdiff_t stride, int pq);
 void ff_vc1_h_loop_filter4_neon(uint8_t *src, ptrdiff_t stride, int pq);
 void ff_vc1_v_loop_filter8_neon(uint8_t *src, ptrdiff_t stride, int pq);
@@ -46,6 +56,15 @@ av_cold void ff_vc1dsp_init_aarch64(VC1DSPContext *dsp)
     int cpu_flags = av_get_cpu_flags();
 
     if (have_neon(cpu_flags)) {
+        dsp->vc1_inv_trans_8x8 = ff_vc1_inv_trans_8x8_neon;
+        dsp->vc1_inv_trans_8x4 = ff_vc1_inv_trans_8x4_neon;
+        dsp->vc1_inv_trans_4x8 = ff_vc1_inv_trans_4x8_neon;
+        dsp->vc1_inv_trans_4x4 = ff_vc1_inv_trans_4x4_neon;
+        dsp->vc1_inv_trans_8x8_dc = ff_vc1_inv_trans_8x8_dc_neon;
+        dsp->vc1_inv_trans_8x4_dc = ff_vc1_inv_trans_8x4_dc_neon;
+        dsp->vc1_inv_trans_4x8_dc = ff_vc1_inv_trans_4x8_dc_neon;
+        dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_neon;
+
         dsp->vc1_v_loop_filter4  = ff_vc1_v_loop_filter4_neon;
         dsp->vc1_h_loop_filter4  = ff_vc1_h_loop_filter4_neon;
         dsp->vc1_v_loop_filter8  = ff_vc1_v_loop_filter8_neon;
