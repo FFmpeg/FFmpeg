@@ -390,7 +390,7 @@ fail:
     return err;
 }
 
-static void vp9_raw_reorder_flush(AVBSFContext *bsf)
+static av_cold void vp9_raw_reorder_flush_close(AVBSFContext *bsf)
 {
     VP9RawReorderContext *ctx = bsf->priv_data;
 
@@ -398,16 +398,6 @@ static void vp9_raw_reorder_flush(AVBSFContext *bsf)
         vp9_raw_reorder_clear_slot(ctx, s);
     vp9_raw_reorder_frame_free(&ctx->next_frame);
     ctx->sequence = 0;
-}
-
-static void vp9_raw_reorder_close(AVBSFContext *bsf)
-{
-    VP9RawReorderContext *ctx = bsf->priv_data;
-    int s;
-
-    for (s = 0; s < FRAME_SLOTS; s++)
-        vp9_raw_reorder_clear_slot(ctx, s);
-    vp9_raw_reorder_frame_free(&ctx->next_frame);
 }
 
 static const enum AVCodecID vp9_raw_reorder_codec_ids[] = {
@@ -418,7 +408,7 @@ const FFBitStreamFilter ff_vp9_raw_reorder_bsf = {
     .p.name         = "vp9_raw_reorder",
     .p.codec_ids    = vp9_raw_reorder_codec_ids,
     .priv_data_size = sizeof(VP9RawReorderContext),
-    .close          = &vp9_raw_reorder_close,
-    .flush          = &vp9_raw_reorder_flush,
     .filter         = &vp9_raw_reorder_filter,
+    .flush          = &vp9_raw_reorder_flush_close,
+    .close          = &vp9_raw_reorder_flush_close,
 };
