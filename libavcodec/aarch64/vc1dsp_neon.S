@@ -1368,3 +1368,179 @@ function ff_vc1_h_loop_filter16_neon, export=1
         st2             {v2.b, v3.b}[7], [x6]
 4:      ret
 endfunc
+
+// Copy at most the specified number of bytes from source to destination buffer,
+// stopping at a multiple of 32 bytes, none of which are the start of an escape sequence
+// On entry:
+//   x0 -> source buffer
+//   w1 = max number of bytes to copy
+//   x2 -> destination buffer, optimally 8-byte aligned
+// On exit:
+//   w0 = number of bytes not copied
+function ff_vc1_unescape_buffer_helper_neon, export=1
+        // Offset by 80 to screen out cases that are too short for us to handle,
+        // and also make it easy to test for loop termination, or to determine
+        // whether we need an odd number of half-iterations of the loop.
+        subs            w1, w1, #80
+        b.mi            90f
+
+        // Set up useful constants
+        movi            v20.4s, #3, lsl #24
+        movi            v21.4s, #3, lsl #16
+
+        tst             w1, #32
+        b.ne            1f
+
+          ld1             {v0.16b, v1.16b, v2.16b}, [x0], #48
+          ext             v25.16b, v0.16b, v1.16b, #1
+          ext             v26.16b, v0.16b, v1.16b, #2
+          ext             v27.16b, v0.16b, v1.16b, #3
+          ext             v29.16b, v1.16b, v2.16b, #1
+          ext             v30.16b, v1.16b, v2.16b, #2
+          ext             v31.16b, v1.16b, v2.16b, #3
+          bic             v24.16b, v0.16b, v20.16b
+          bic             v25.16b, v25.16b, v20.16b
+          bic             v26.16b, v26.16b, v20.16b
+          bic             v27.16b, v27.16b, v20.16b
+          bic             v28.16b, v1.16b, v20.16b
+          bic             v29.16b, v29.16b, v20.16b
+          bic             v30.16b, v30.16b, v20.16b
+          bic             v31.16b, v31.16b, v20.16b
+          eor             v24.16b, v24.16b, v21.16b
+          eor             v25.16b, v25.16b, v21.16b
+          eor             v26.16b, v26.16b, v21.16b
+          eor             v27.16b, v27.16b, v21.16b
+          eor             v28.16b, v28.16b, v21.16b
+          eor             v29.16b, v29.16b, v21.16b
+          eor             v30.16b, v30.16b, v21.16b
+          eor             v31.16b, v31.16b, v21.16b
+          cmeq            v24.4s, v24.4s, #0
+          cmeq            v25.4s, v25.4s, #0
+          cmeq            v26.4s, v26.4s, #0
+          cmeq            v27.4s, v27.4s, #0
+          add             w1, w1, #32
+          b               3f
+
+1:      ld1             {v3.16b, v4.16b, v5.16b}, [x0], #48
+        ext             v25.16b, v3.16b, v4.16b, #1
+        ext             v26.16b, v3.16b, v4.16b, #2
+        ext             v27.16b, v3.16b, v4.16b, #3
+        ext             v29.16b, v4.16b, v5.16b, #1
+        ext             v30.16b, v4.16b, v5.16b, #2
+        ext             v31.16b, v4.16b, v5.16b, #3
+        bic             v24.16b, v3.16b, v20.16b
+        bic             v25.16b, v25.16b, v20.16b
+        bic             v26.16b, v26.16b, v20.16b
+        bic             v27.16b, v27.16b, v20.16b
+        bic             v28.16b, v4.16b, v20.16b
+        bic             v29.16b, v29.16b, v20.16b
+        bic             v30.16b, v30.16b, v20.16b
+        bic             v31.16b, v31.16b, v20.16b
+        eor             v24.16b, v24.16b, v21.16b
+        eor             v25.16b, v25.16b, v21.16b
+        eor             v26.16b, v26.16b, v21.16b
+        eor             v27.16b, v27.16b, v21.16b
+        eor             v28.16b, v28.16b, v21.16b
+        eor             v29.16b, v29.16b, v21.16b
+        eor             v30.16b, v30.16b, v21.16b
+        eor             v31.16b, v31.16b, v21.16b
+        cmeq            v24.4s, v24.4s, #0
+        cmeq            v25.4s, v25.4s, #0
+        cmeq            v26.4s, v26.4s, #0
+        cmeq            v27.4s, v27.4s, #0
+        // Drop through...
+2:        mov             v0.16b, v5.16b
+          ld1             {v1.16b, v2.16b}, [x0], #32
+        cmeq            v28.4s, v28.4s, #0
+        cmeq            v29.4s, v29.4s, #0
+        cmeq            v30.4s, v30.4s, #0
+        cmeq            v31.4s, v31.4s, #0
+        orr             v24.16b, v24.16b, v25.16b
+        orr             v26.16b, v26.16b, v27.16b
+        orr             v28.16b, v28.16b, v29.16b
+        orr             v30.16b, v30.16b, v31.16b
+          ext             v25.16b, v0.16b, v1.16b, #1
+        orr             v22.16b, v24.16b, v26.16b
+          ext             v26.16b, v0.16b, v1.16b, #2
+          ext             v27.16b, v0.16b, v1.16b, #3
+          ext             v29.16b, v1.16b, v2.16b, #1
+        orr             v23.16b, v28.16b, v30.16b
+          ext             v30.16b, v1.16b, v2.16b, #2
+          ext             v31.16b, v1.16b, v2.16b, #3
+          bic             v24.16b, v0.16b, v20.16b
+          bic             v25.16b, v25.16b, v20.16b
+          bic             v26.16b, v26.16b, v20.16b
+        orr             v22.16b, v22.16b, v23.16b
+          bic             v27.16b, v27.16b, v20.16b
+          bic             v28.16b, v1.16b, v20.16b
+          bic             v29.16b, v29.16b, v20.16b
+          bic             v30.16b, v30.16b, v20.16b
+          bic             v31.16b, v31.16b, v20.16b
+        addv            s22, v22.4s
+          eor             v24.16b, v24.16b, v21.16b
+          eor             v25.16b, v25.16b, v21.16b
+          eor             v26.16b, v26.16b, v21.16b
+          eor             v27.16b, v27.16b, v21.16b
+          eor             v28.16b, v28.16b, v21.16b
+        mov             w3, v22.s[0]
+          eor             v29.16b, v29.16b, v21.16b
+          eor             v30.16b, v30.16b, v21.16b
+          eor             v31.16b, v31.16b, v21.16b
+          cmeq            v24.4s, v24.4s, #0
+          cmeq            v25.4s, v25.4s, #0
+          cmeq            v26.4s, v26.4s, #0
+          cmeq            v27.4s, v27.4s, #0
+        cbnz            w3, 90f
+        st1             {v3.16b, v4.16b}, [x2], #32
+3:          mov             v3.16b, v2.16b
+            ld1             {v4.16b, v5.16b}, [x0], #32
+          cmeq            v28.4s, v28.4s, #0
+          cmeq            v29.4s, v29.4s, #0
+          cmeq            v30.4s, v30.4s, #0
+          cmeq            v31.4s, v31.4s, #0
+          orr             v24.16b, v24.16b, v25.16b
+          orr             v26.16b, v26.16b, v27.16b
+          orr             v28.16b, v28.16b, v29.16b
+          orr             v30.16b, v30.16b, v31.16b
+            ext             v25.16b, v3.16b, v4.16b, #1
+          orr             v22.16b, v24.16b, v26.16b
+            ext             v26.16b, v3.16b, v4.16b, #2
+            ext             v27.16b, v3.16b, v4.16b, #3
+            ext             v29.16b, v4.16b, v5.16b, #1
+          orr             v23.16b, v28.16b, v30.16b
+            ext             v30.16b, v4.16b, v5.16b, #2
+            ext             v31.16b, v4.16b, v5.16b, #3
+            bic             v24.16b, v3.16b, v20.16b
+            bic             v25.16b, v25.16b, v20.16b
+            bic             v26.16b, v26.16b, v20.16b
+          orr             v22.16b, v22.16b, v23.16b
+            bic             v27.16b, v27.16b, v20.16b
+            bic             v28.16b, v4.16b, v20.16b
+            bic             v29.16b, v29.16b, v20.16b
+            bic             v30.16b, v30.16b, v20.16b
+            bic             v31.16b, v31.16b, v20.16b
+          addv            s22, v22.4s
+            eor             v24.16b, v24.16b, v21.16b
+            eor             v25.16b, v25.16b, v21.16b
+            eor             v26.16b, v26.16b, v21.16b
+            eor             v27.16b, v27.16b, v21.16b
+            eor             v28.16b, v28.16b, v21.16b
+          mov             w3, v22.s[0]
+            eor             v29.16b, v29.16b, v21.16b
+            eor             v30.16b, v30.16b, v21.16b
+            eor             v31.16b, v31.16b, v21.16b
+            cmeq            v24.4s, v24.4s, #0
+            cmeq            v25.4s, v25.4s, #0
+            cmeq            v26.4s, v26.4s, #0
+            cmeq            v27.4s, v27.4s, #0
+          cbnz            w3, 91f
+          st1             {v0.16b, v1.16b}, [x2], #32
+        subs            w1, w1, #64
+        b.pl            2b
+
+90:     add             w0, w1, #80
+        ret
+
+91:     sub             w1, w1, #32
+        b               90b
+endfunc
