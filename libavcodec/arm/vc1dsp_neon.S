@@ -1804,3 +1804,121 @@ function ff_vc1_h_loop_filter16_neon, export=1
 4:      vpop            {d8-d15}
         pop             {r4-r6,pc}
 endfunc
+
+@ Copy at most the specified number of bytes from source to destination buffer,
+@ stopping at a multiple of 16 bytes, none of which are the start of an escape sequence
+@ On entry:
+@   r0 -> source buffer
+@   r1 = max number of bytes to copy
+@   r2 -> destination buffer, optimally 8-byte aligned
+@ On exit:
+@   r0 = number of bytes not copied
+function ff_vc1_unescape_buffer_helper_neon, export=1
+        @ Offset by 48 to screen out cases that are too short for us to handle,
+        @ and also make it easy to test for loop termination, or to determine
+        @ whether we need an odd number of half-iterations of the loop.
+        subs    r1, r1, #48
+        bmi     90f
+
+        @ Set up useful constants
+        vmov.i32        q0, #0x3000000
+        vmov.i32        q1, #0x30000
+
+        tst             r1, #16
+        bne             1f
+
+          vld1.8          {q8, q9}, [r0]!
+          vbic            q12, q8, q0
+          vext.8          q13, q8, q9, #1
+          vext.8          q14, q8, q9, #2
+          vext.8          q15, q8, q9, #3
+          veor            q12, q12, q1
+          vbic            q13, q13, q0
+          vbic            q14, q14, q0
+          vbic            q15, q15, q0
+          vceq.i32        q12, q12, #0
+          veor            q13, q13, q1
+          veor            q14, q14, q1
+          veor            q15, q15, q1
+          vceq.i32        q13, q13, #0
+          vceq.i32        q14, q14, #0
+          vceq.i32        q15, q15, #0
+          add             r1, r1, #16
+          b               3f
+
+1:      vld1.8          {q10, q11}, [r0]!
+        vbic            q12, q10, q0
+        vext.8          q13, q10, q11, #1
+        vext.8          q14, q10, q11, #2
+        vext.8          q15, q10, q11, #3
+        veor            q12, q12, q1
+        vbic            q13, q13, q0
+        vbic            q14, q14, q0
+        vbic            q15, q15, q0
+        vceq.i32        q12, q12, #0
+        veor            q13, q13, q1
+        veor            q14, q14, q1
+        veor            q15, q15, q1
+        vceq.i32        q13, q13, #0
+        vceq.i32        q14, q14, #0
+        vceq.i32        q15, q15, #0
+        @ Drop through...
+2:        vmov            q8, q11
+          vld1.8          {q9}, [r0]!
+        vorr            q13, q12, q13
+        vorr            q15, q14, q15
+          vbic            q12, q8, q0
+        vorr            q3, q13, q15
+          vext.8          q13, q8, q9, #1
+          vext.8          q14, q8, q9, #2
+          vext.8          q15, q8, q9, #3
+          veor            q12, q12, q1
+        vorr            d6, d6, d7
+          vbic            q13, q13, q0
+          vbic            q14, q14, q0
+          vbic            q15, q15, q0
+          vceq.i32        q12, q12, #0
+        vmov            r3, r12, d6
+          veor            q13, q13, q1
+          veor            q14, q14, q1
+          veor            q15, q15, q1
+          vceq.i32        q13, q13, #0
+          vceq.i32        q14, q14, #0
+          vceq.i32        q15, q15, #0
+        orrs            r3, r3, r12
+        bne             90f
+        vst1.64         {q10}, [r2]!
+3:          vmov            q10, q9
+            vld1.8          {q11}, [r0]!
+          vorr            q13, q12, q13
+          vorr            q15, q14, q15
+            vbic            q12, q10, q0
+          vorr            q3, q13, q15
+            vext.8          q13, q10, q11, #1
+            vext.8          q14, q10, q11, #2
+            vext.8          q15, q10, q11, #3
+            veor            q12, q12, q1
+          vorr            d6, d6, d7
+            vbic            q13, q13, q0
+            vbic            q14, q14, q0
+            vbic            q15, q15, q0
+            vceq.i32        q12, q12, #0
+          vmov            r3, r12, d6
+            veor            q13, q13, q1
+            veor            q14, q14, q1
+            veor            q15, q15, q1
+            vceq.i32        q13, q13, #0
+            vceq.i32        q14, q14, #0
+            vceq.i32        q15, q15, #0
+          orrs            r3, r3, r12
+          bne             91f
+          vst1.64         {q8}, [r2]!
+        subs            r1, r1, #32
+        bpl             2b
+
+90:     add             r0, r1, #48
+        bx              lr
+
+91:     sub             r1, r1, #16
+        b               90b
+endfunc

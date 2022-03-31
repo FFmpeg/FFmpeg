@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "libavcodec/vc1dsp.h"
 #include "vc1dsp.h"
 
@@ -84,6 +85,64 @@ void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
                                 int h, int x, int y);
 
+int ff_vc1_unescape_buffer_helper_neon(const uint8_t *src, int size, uint8_t *dst);
+
+static int vc1_unescape_buffer_neon(const uint8_t *src, int size, uint8_t *dst)
+{
+    /* Dealing with starting and stopping, and removing escape bytes, are
+     * comparatively less time-sensitive, so are more clearly expressed using
+     * a C wrapper around the assembly inner loop. Note that we assume a
+     * little-endian machine that supports unaligned loads. */
+    int dsize = 0;
+    while (size >= 4)
+    {
+        int found = 0;
+        while (!found && (((uintptr_t) dst) & 7) && size >= 4)
+        {
+            found = (AV_RL32(src) &~ 0x03000000) == 0x00030000;
+            if (!found)
+            {
+                *dst++ = *src++;
+                --size;
+                ++dsize;
+            }
+        }
+        if (!found)
+        {
+            int skip = size - ff_vc1_unescape_buffer_helper_neon(src, size, dst);
+            dst += skip;
+            src += skip;
+            size -= skip;
+            dsize += skip;
+            while (!found && size >= 4)
+            {
+                found = (AV_RL32(src) &~ 0x03000000) == 0x00030000;
+                if (!found)
+                {
+                    *dst++ = *src++;
+                    --size;
+                    ++dsize;
+                }
+            }
+        }
+        if (found)
+        {
+            *dst++ = *src++;
+            *dst++ = *src++;
+            ++src;
+            size -= 3;
+            dsize += 2;
+        }
+    }
+    while (size > 0)
+    {
+        *dst++ = *src++;
+        --size;
+        ++dsize;
+    }
+    return dsize;
+}
+
 #define FN_ASSIGN(X, Y) \
     dsp->put_vc1_mspel_pixels_tab[0][X+4*Y] = ff_put_vc1_mspel_mc##X##Y##_16_neon; \
     dsp->put_vc1_mspel_pixels_tab[1][X+4*Y] = ff_put_vc1_mspel_mc##X##Y##_neon
@@ -130,4 +189,6 @@ av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_neon;
     dsp->put_no_rnd_vc1_chroma_pixels_tab[1] = ff_put_vc1_chroma_mc4_neon;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[1] = ff_avg_vc1_chroma_mc4_neon;
+
+    dsp->vc1_unescape_buffer = vc1_unescape_buffer_neon;
 }
