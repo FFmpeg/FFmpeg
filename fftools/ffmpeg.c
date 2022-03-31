@@ -894,8 +894,6 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
 
     /* apply the output bitstream filters */
     if (ost->bsf_ctx) {
-        if (pkt->flags & AV_PKT_FLAG_KEY)
-            ost->seen_kf = 1;
         ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
         if (ret < 0)
             goto finish;
@@ -2043,11 +2041,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         return;
     }
 
-    if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
-        !ost->copy_initial_nonkeyframes && !ost->seen_kf)
+    if (!ost->streamcopy_started && !(pkt->flags & AV_PKT_FLAG_KEY) &&
+        !ost->copy_initial_nonkeyframes)
         return;
 
-    if (!ost->frame_number && !ost->copy_prior_start) {
+    if (!ost->streamcopy_started && !ost->copy_prior_start) {
         int64_t comp_start = start_time;
         if (copy_ts && f->start_time != AV_NOPTS_VALUE)
             comp_start = FFMAX(start_time, f->start_time + f->ts_offset);
@@ -2101,6 +2099,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     ost->sync_opts += opkt->duration;
 
     output_packet(of, opkt, ost, 0);
+
+    ost->streamcopy_started = 1;
 }
 
 int guess_input_channel_layout(InputStream *ist)
