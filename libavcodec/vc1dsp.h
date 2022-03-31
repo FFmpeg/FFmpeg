@@ -80,6 +80,9 @@ typedef struct VC1DSPContext {
      * one or more further zero bytes and a one byte.
      */
     int (*startcode_find_candidate)(const uint8_t *buf, int size);
+
+    /* Copy a buffer, removing startcode emulation escape bytes as we go */
+    int (*vc1_unescape_buffer)(const uint8_t *src, int size, uint8_t *dst);
 } VC1DSPContext;
 
 void ff_vc1dsp_init(VC1DSPContext* c);

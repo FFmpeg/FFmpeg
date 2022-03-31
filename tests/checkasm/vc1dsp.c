@@ -374,6 +374,70 @@ static void check_loop_filter(void)
     }
 }
 
+#define TEST_UNESCAPE                                                                               \
+    do {                                                                                            \
+        for (int count = 100; count > 0; --count) {                                                 \
+            escaped_offset = rnd() & 7;                                                             \
+            unescaped_offset = rnd() & 7;                                                           \
+            escaped_len = (1u << (rnd() % 8) + 3) - (rnd() & 7);                                    \
+            RANDOMIZE_BUFFER8(unescaped, UNESCAPE_BUF_SIZE);                                        \
+            len0 = call_ref(escaped0 + escaped_offset, escaped_len, unescaped0 + unescaped_offset); \
+            len1 = call_new(escaped1 + escaped_offset, escaped_len, unescaped1 + unescaped_offset); \
+            if (len0 != len1 || memcmp(unescaped0, unescaped1, UNESCAPE_BUF_SIZE))                  \
+                fail();                                                                             \
+        }                                                                                           \
+    } while (0)
+
+static void check_unescape(void)
+{
+    /* This appears to be a typical length of buffer in use */
+#define LOG2_UNESCAPE_BUF_SIZE 17
+#define UNESCAPE_BUF_SIZE (1u<<LOG2_UNESCAPE_BUF_SIZE)
+    LOCAL_ALIGNED_8(uint8_t, escaped0, [UNESCAPE_BUF_SIZE]);
+    LOCAL_ALIGNED_8(uint8_t, escaped1, [UNESCAPE_BUF_SIZE]);
+    LOCAL_ALIGNED_8(uint8_t, unescaped0, [UNESCAPE_BUF_SIZE]);
+    LOCAL_ALIGNED_8(uint8_t, unescaped1, [UNESCAPE_BUF_SIZE]);
+
+    VC1DSPContext h;
+
+    ff_vc1dsp_init(&h);
+
+    if (check_func(h.vc1_unescape_buffer, "vc1dsp.vc1_unescape_buffer")) {
+        int len0, len1, escaped_offset, unescaped_offset, escaped_len;
+        declare_func_emms(AV_CPU_FLAG_MMX, int, const uint8_t *, int, uint8_t *);
+
+        /* Test data which consists of escapes sequences packed as tightly as possible */
+        for (int x = 0; x < UNESCAPE_BUF_SIZE; ++x)
+            escaped1[x] = escaped0[x] = 3 * (x % 3 == 0);
+        TEST_UNESCAPE;
+
+        /* Test random data */
+        RANDOMIZE_BUFFER8(escaped, UNESCAPE_BUF_SIZE);
+        TEST_UNESCAPE;
+
+        /* Test data with escape sequences at random intervals */
+        for (int x = 0; x <= UNESCAPE_BUF_SIZE - 4;) {
+            int gap, gap_msb;
+            escaped1[x+0] = escaped0[x+0] = 0;
+            escaped1[x+1] = escaped0[x+1] = 0;
+            escaped1[x+2] = escaped0[x+2] = 3;
+            escaped1[x+3] = escaped0[x+3] = rnd() & 3;
+            gap_msb = 2u << (rnd() % 8);
+            gap = (rnd() &~ -gap_msb) | gap_msb;
+            x += gap;
+        }
+        TEST_UNESCAPE;
+
+        /* Test data which is known to contain no escape sequences */
+        memset(escaped0, 0xFF, UNESCAPE_BUF_SIZE);
+        memset(escaped1, 0xFF, UNESCAPE_BUF_SIZE);
+        TEST_UNESCAPE;
+
+        /* Benchmark the no-escape-sequences case */
+        bench_new(escaped1, UNESCAPE_BUF_SIZE, unescaped1);
+    }
+}
+
 void checkasm_check_vc1dsp(void)
 {
     check_inv_trans_inplace();
@@ -382,4 +446,7 @@ void checkasm_check_vc1dsp(void)
 
     check_loop_filter();
     report("loop_filter");
+
+    check_unescape();
+    report("unescape_buffer");
 }

@@ -34,6 +34,7 @@
 #include "rnd_avg.h"
 #include "vc1dsp.h"
 #include "startcode.h"
+#include "vc1_common.h"
 
 /* Apply overlap transform to horizontal edge */
 static void vc1_v_overlap_c(uint8_t *src, ptrdiff_t stride)
@@ -1030,6 +1031,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
 #endif /* CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER */
 
     dsp->startcode_find_candidate = ff_startcode_find_candidate_c;
+    dsp->vc1_unescape_buffer      = vc1_unescape_buffer;
 
     if (ARCH_AARCH64)
         ff_vc1dsp_init_aarch64(dsp);

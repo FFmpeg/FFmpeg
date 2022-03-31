@@ -491,7 +491,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             size = next - start - 4;
             if (size <= 0)
                 continue;
-            buf2_size = vc1_unescape_buffer(start + 4, size, buf2);
+            buf2_size = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
             init_get_bits(&gb, buf2, buf2_size * 8);
             switch (AV_RB32(start)) {
             case VC1_CODE_SEQHDR:
@@ -681,7 +681,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 case VC1_CODE_FRAME:
                     if (avctx->hwaccel)
                         buf_start = start;
-                    buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
+                    buf_size2 = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
                     break;
                 case VC1_CODE_FIELD: {
                     int buf_size3;
@@ -698,8 +698,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                         ret = AVERROR(ENOMEM);
                         goto err;
                     }
-                    buf_size3 = vc1_unescape_buffer(start + 4, size,
-                                                    slices[n_slices].buf);
+                    buf_size3 = v->vc1dsp.vc1_unescape_buffer(start + 4, size,
+                                                              slices[n_slices].buf);
                     init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
                                   buf_size3 << 3);
                     slices[n_slices].mby_start = avctx->coded_height + 31 >> 5;
@@ -710,7 +710,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     break;
                 }
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
-                    buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
+                    buf_size2 = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
                     init_get_bits(&s->gb, buf2, buf_size2 * 8);
                     ff_vc1_decode_entry_point(avctx, v, &s->gb);
                     break;
@@ -727,8 +727,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                         ret = AVERROR(ENOMEM);
                         goto err;
                     }
-                    buf_size3 = vc1_unescape_buffer(start + 4, size,
-                                                    slices[n_slices].buf);
+                    buf_size3 = v->vc1dsp.vc1_unescape_buffer(start + 4, size,
+                                                              slices[n_slices].buf);
                     init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
                                   buf_size3 << 3);
                     slices[n_slices].mby_start = get_bits(&slices[n_slices].gb, 9);
@@ -762,7 +762,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     ret = AVERROR(ENOMEM);
                     goto err;
                 }
-                buf_size3 = vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, slices[n_slices].buf);
+                buf_size3 = v->vc1dsp.vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, slices[n_slices].buf);
                 init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
                               buf_size3 << 3);
                 slices[n_slices].mby_start = s->mb_height + 1 >> 1;
@@ -771,9 +771,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 n_slices1 = n_slices - 1;
                 n_slices++;
             }
-            buf_size2 = vc1_unescape_buffer(buf, divider - buf, buf2);
+            buf_size2 = v->vc1dsp.vc1_unescape_buffer(buf, divider - buf, buf2);
         } else {
-            buf_size2 = vc1_unescape_buffer(buf, buf_size, buf2);
+            buf_size2 = v->vc1dsp.vc1_unescape_buffer(buf, buf_size, buf2);
         }
         init_get_bits(&s->gb, buf2, buf_size2*8);
     } else{
