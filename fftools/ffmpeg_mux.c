@@ -270,7 +270,7 @@ static int print_sdp(void)
 
     avc = av_malloc_array(nb_output_files, sizeof(*avc));
     if (!avc)
-        exit_program(1);
+        return AVERROR(ENOMEM);
     for (i = 0, j = 0; i < nb_output_files; i++) {
         if (!strcmp(output_files[i]->format->name, "rtp")) {
             avc[j] = output_files[i]->mux->fc;
