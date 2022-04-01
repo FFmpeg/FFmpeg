@@ -1152,6 +1152,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int64_t pts, dts;
     PacketDesc *pkt_desc;
     int preload, ret;
+    size_t can_write;
     const int is_iframe = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                           (pkt->flags & AV_PKT_FLAG_KEY);
 
@@ -1192,6 +1193,14 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         size -= 3;
     }
 
+    /* Enlarge the FIFO before adding a new PacketDesc
+     * in order to avoid inconsistencies on failure. */
+    can_write = av_fifo_can_write(stream->fifo);
+    if (can_write < size) {
+        ret = av_fifo_grow2(stream->fifo, size - can_write);
+        if (ret < 0)
+            return ret;
+    }
     pkt_desc                 = av_mallocz(sizeof(PacketDesc));
     if (!pkt_desc)
         return AVERROR(ENOMEM);
@@ -1206,10 +1215,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     pkt_desc->dts            = dts;
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
-
-    ret = av_fifo_grow2(stream->fifo, size);
-    if (ret < 0)
-        return ret;
 
     if (s->is_dvd) {
         // min VOBU length 0.4 seconds (mpucoder)
