@@ -116,7 +116,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
-static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     MuxStream *ms = &of->mux->streams[ost->index];
     AVFormatContext *s = of->mux->fc;
@@ -161,10 +161,8 @@ static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
                 av_log(s, loglevel, "Non-monotonous DTS in output stream "
                        "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
                        ost->file_index, ost->st->index, ms->last_mux_dts, pkt->dts);
-                if (exit_on_error) {
-                    av_log(NULL, AV_LOG_FATAL, "aborting.\n");
-                    exit_program(1);
-                }
+                if (exit_on_error)
+                    return AVERROR(EINVAL);
                 av_log(s, loglevel, "changing to %"PRId64". This may result "
                        "in incorrect timestamps in the output file.\n",
                        max);
@@ -197,7 +195,10 @@ static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
         print_error("av_interleaved_write_frame()", ret);
         main_return_code = 1;
         close_all_output_streams(ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
+        return ret;
     }
+
+    return 0;
 }
 
 static int submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
@@ -221,14 +222,16 @@ static int submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
             else if (ret < 0)
                 return ret;
 
-            write_packet(of, output_streams[of->ost_index + ret],
-                         of->mux->sq_pkt);
+            ret = write_packet(of, output_streams[of->ost_index + ret],
+                               of->mux->sq_pkt);
+            if (ret < 0)
+                return ret;
         }
     } else {
         if (pkt)
-            write_packet(of, ost, pkt);
-        else
-            ost->finished |= MUXER_FINISHED;
+            return write_packet(of, ost, pkt);
+
+        ost->finished |= MUXER_FINISHED;
     }
 
     return 0;
