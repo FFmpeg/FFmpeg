@@ -335,7 +335,7 @@ static const AVFilterPad avfilter_vf_siti_outputs[] = {
     },
 };
 
-AVFilter ff_vf_siti = {
+const AVFilter ff_vf_siti = {
     .name          = "siti",
     .description   = NULL_IF_CONFIG_SMALL("Calculate spatial information (SI) and temporal information (TI)."),
     .priv_size     = sizeof(SiTiContext),

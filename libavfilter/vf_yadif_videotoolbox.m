@@ -440,7 +440,7 @@ static const AVFilterPad yadif_videotoolbox_outputs[] = {
     },
 };
 
-AVFilter ff_vf_yadif_videotoolbox = {
+const AVFilter ff_vf_yadif_videotoolbox = {
     .name           = "yadif_videotoolbox",
     .description    = NULL_IF_CONFIG_SMALL("YADIF for VideoToolbox frames using Metal compute"),
     .priv_size      = YADIF_VT_CTX_SIZE,

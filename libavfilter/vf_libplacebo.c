@@ -746,7 +746,7 @@ static const AVFilterPad libplacebo_outputs[] = {
     },
 };
 
-AVFilter ff_vf_libplacebo = {
+const AVFilter ff_vf_libplacebo = {
     .name           = "libplacebo",
     .description    = NULL_IF_CONFIG_SMALL("Apply various GPU filters from libplacebo"),
     .priv_size      = sizeof(LibplaceboContext),
