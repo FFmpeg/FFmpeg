@@ -707,7 +707,7 @@ int of_check_init(OutputFile *of);
 int of_write_trailer(OutputFile *of);
 void of_close(OutputFile **pof);
 
-void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost);
+int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost);
 int of_finished(OutputFile *of);
 int64_t of_filesize(OutputFile *of);
 AVChapter * const *

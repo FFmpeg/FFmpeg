@@ -232,7 +232,7 @@ static void submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     }
 }
 
-void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
     int ret;
 
@@ -243,9 +243,11 @@ void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         ret = queue_packet(of, ost, pkt);
         if (ret < 0) {
             av_packet_unref(pkt);
-            exit_program(1);
+            return ret;
         }
     }
+
+    return 0;
 }
 
 static int print_sdp(void)

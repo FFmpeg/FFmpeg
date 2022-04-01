@@ -713,6 +713,7 @@ static void close_output_stream(OutputStream *ost)
 static void output_packet(OutputFile *of, AVPacket *pkt,
                           OutputStream *ost, int eof)
 {
+    const char *err_msg;
     int ret = 0;
 
     if (!eof && pkt->dts != AV_NOPTS_VALUE)
@@ -720,28 +721,49 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
 
     /* apply the output bitstream filters */
     if (ost->bsf_ctx) {
+        int bsf_eof = 0;
+
         ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
+        if (ret < 0) {
+            err_msg = "submitting a packet for bitstream filtering";
+            goto fail;
+        }
+
+        while (!bsf_eof) {
+            ret = av_bsf_receive_packet(ost->bsf_ctx, pkt);
+            if (ret == AVERROR(EAGAIN))
+                return;
+            else if (ret == AVERROR_EOF)
+                bsf_eof = 1;
+            else if (ret < 0) {
+                err_msg = "applying bitstream filters to a packet";
+                goto fail;
+            }
+
+            ret = of_submit_packet(of, bsf_eof ? NULL : pkt, ost);
+            if (ret < 0)
+                goto mux_fail;
+        }
+    } else {
+        ret = of_submit_packet(of, eof ? NULL : pkt, ost);
         if (ret < 0)
-            goto finish;
-        while ((ret = av_bsf_receive_packet(ost->bsf_ctx, pkt)) >= 0)
-            of_submit_packet(of, pkt, ost);
-        if (ret == AVERROR_EOF)
-            of_submit_packet(of, NULL, ost);
-        if (ret == AVERROR(EAGAIN))
-            ret = 0;
-    } else
-        of_submit_packet(of, eof ? NULL : pkt, ost);
+            goto mux_fail;
+    }
 
     if (eof)
         ost->finished |= MUXER_FINISHED;
 
-finish:
-    if (ret < 0 && ret != AVERROR_EOF) {
-        av_log(NULL, AV_LOG_ERROR, "Error applying bitstream filters to an output "
-               "packet for stream #%d:%d.\n", ost->file_index, ost->index);
-        if(exit_on_error)
-            exit_program(1);
-    }
+    return;
+
+mux_fail:
+    err_msg = "submitting a packet to the muxer";
+
+fail:
+    av_log(NULL, AV_LOG_ERROR, "Error %s for output stream #%d:%d.\n",
+           err_msg, ost->file_index, ost->index);
+    if (exit_on_error)
+        exit_program(1);
+
 }
 
 static int check_recording_time(OutputStream *ost)
