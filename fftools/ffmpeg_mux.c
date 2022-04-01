@@ -200,7 +200,7 @@ static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     }
 }
 
-static void submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+static int submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     if (ost->sq_idx_mux >= 0) {
         int ret = sq_send(of->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
@@ -209,17 +209,17 @@ static void submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
                 av_packet_unref(pkt);
             if (ret == AVERROR_EOF) {
                 ost->finished |= MUXER_FINISHED;
-                return;
+                return 0;
             } else
-                exit_program(1);
+                return ret;
         }
 
         while (1) {
             ret = sq_receive(of->sq_mux, -1, SQPKT(of->mux->sq_pkt));
             if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
-                return;
+                return 0;
             else if (ret < 0)
-                exit_program(1);
+                return ret;
 
             write_packet(of, output_streams[of->ost_index + ret],
                          of->mux->sq_pkt);
@@ -230,6 +230,8 @@ static void submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
         else
             ost->finished |= MUXER_FINISHED;
     }
+
+    return 0;
 }
 
 int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
@@ -237,7 +239,7 @@ int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     int ret;
 
     if (of->mux->header_written) {
-        submit_packet(of, ost, pkt);
+        return submit_packet(of, ost, pkt);
     } else {
         /* the muxer is not initialized yet, buffer the packet */
         ret = queue_packet(of, ost, pkt);
@@ -348,11 +350,13 @@ int of_check_init(OutputFile *of)
             ost->mux_timebase = ost->st->time_base;
 
         while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
-            submit_packet(of, ost, pkt);
+            ret = submit_packet(of, ost, pkt);
             if (pkt) {
                 ms->muxing_queue_data_size -= pkt->size;
                 av_packet_free(&pkt);
             }
+            if (ret < 0)
+                return ret;
         }
     }
 
