@@ -301,8 +301,10 @@ static int binkaudio_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 again:
     if (!s->pkt->data) {
         ret = ff_decode_get_packet(avctx, s->pkt);
-        if (ret < 0)
+        if (ret < 0) {
+            s->ch_offset = 0;
             return ret;
+        }
 
         if (s->pkt->size < 4) {
             av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
