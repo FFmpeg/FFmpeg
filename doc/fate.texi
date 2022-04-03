@@ -79,6 +79,21 @@ Do not put a '~' character in the samples path to indicate a home
 directory. Because of shell nuances, this will cause FATE to fail.
 @end float
 
+To get the complete list of tests, run the command:
+@example
+make fate-list
+@end example
+
+You can specify a subset of tests to run by specifying the
+corresponding elements from the list with the @code{fate-} prefix,
+e.g. as in:
+@example
+make fate-ffprobe_compact fate-ffprobe_xml
+@end example
+
+This makes it easier to run a few tests in case of failure without
+running the complete test suite.
+
 To use a custom wrapper to run the test, pass @option{--target-exec} to
 @command{configure} or set the @var{TARGET_EXEC} Make variable.
 
