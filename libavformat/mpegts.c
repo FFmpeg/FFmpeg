@@ -2718,13 +2718,13 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
             switch (desc_tag) {
             case 0x48:
-                service_type = get8(&p, p_end);
+                service_type = get8(&p, desc_end);
                 if (service_type < 0)
                     break;
-                provider_name = getstr8(&p, p_end);
+                provider_name = getstr8(&p, desc_end);
                 if (!provider_name)
                     break;
-                name = getstr8(&p, p_end);
+                name = getstr8(&p, desc_end);
                 if (name) {
                     AVProgram *program = av_new_program(ts->stream, sid);
                     if (program) {
