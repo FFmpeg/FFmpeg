@@ -131,7 +131,6 @@ static BenchmarkTimeStamps get_benchmark_time_stamps(void);
 static int64_t getmaxrss(void);
 static int ifilter_has_all_input_formats(FilterGraph *fg);
 
-static int run_as_daemon  = 0;
 static int nb_frames_dup = 0;
 static unsigned dup_warning = 1000;
 static int nb_frames_drop = 0;
@@ -419,7 +418,7 @@ void term_init(void)
 #endif
 
 #if HAVE_TERMIOS_H
-    if (!run_as_daemon && stdin_interaction) {
+    if (stdin_interaction) {
         struct termios tty;
         if (tcgetattr (0, &tty) == 0) {
             oldtty = tty;
@@ -3531,7 +3530,7 @@ static int check_keyboard_interaction(int64_t cur_time)
     if (received_nb_signals)
         return AVERROR_EXIT;
     /* read_key() returns 0 on EOF */
-    if(cur_time - last_time >= 100000 && !run_as_daemon){
+    if (cur_time - last_time >= 100000) {
         key =  read_key();
         last_time = cur_time;
     }else
@@ -4513,10 +4512,6 @@ static int64_t getmaxrss(void)
 #endif
 }
 
-static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
-{
-}
-
 int main(int argc, char **argv)
 {
     int i, ret;
@@ -4530,13 +4525,6 @@ int main(int argc, char **argv)
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
-
-    if(argc>1 && !strcmp(argv[1], "-d")){
-        run_as_daemon=1;
-        av_log_set_callback(log_callback_null);
-        argc--;
-        argv++;
-    }
 
 #if CONFIG_AVDEVICE
     avdevice_register_all();
