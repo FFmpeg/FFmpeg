@@ -9,6 +9,7 @@ version 5.1:
 - SITI filter
 - Vizrt Binary Image encoder/decoder
 - avsynctest source filter
+- feedback video filter
 
 
 version 5.0:

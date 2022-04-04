@@ -259,6 +259,7 @@ extern const AVFilter ff_vf_estdif;
 extern const AVFilter ff_vf_exposure;
 extern const AVFilter ff_vf_extractplanes;
 extern const AVFilter ff_vf_fade;
+extern const AVFilter ff_vf_feedback;
 extern const AVFilter ff_vf_fftdnoiz;
 extern const AVFilter ff_vf_fftfilt;
 extern const AVFilter ff_vf_field;
