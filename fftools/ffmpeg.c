@@ -140,8 +140,6 @@ unsigned nb_output_dumped = 0;
 static BenchmarkTimeStamps current_time;
 AVIOContext *progress_avio = NULL;
 
-static uint8_t *subtitle_out;
-
 InputStream **input_streams = NULL;
 int        nb_input_streams = 0;
 InputFile   **input_files   = NULL;
@@ -557,8 +555,6 @@ static void ffmpeg_cleanup(int ret)
         av_freep(&filtergraphs[i]);
     }
     av_freep(&filtergraphs);
-
-    av_freep(&subtitle_out);
 
     /* close files */
     for (i = 0; i < nb_output_files; i++)
@@ -997,7 +993,7 @@ static void do_subtitle_out(OutputFile *of,
                             AVSubtitle *sub)
 {
     int subtitle_out_max_size = 1024 * 1024;
-    int subtitle_out_size, nb, i;
+    int subtitle_out_size, nb, i, ret;
     AVCodecContext *enc;
     AVPacket *pkt = ost->pkt;
     int64_t pts;
@@ -1010,14 +1006,6 @@ static void do_subtitle_out(OutputFile *of,
     }
 
     enc = ost->enc_ctx;
-
-    if (!subtitle_out) {
-        subtitle_out = av_malloc(subtitle_out_max_size);
-        if (!subtitle_out) {
-            av_log(NULL, AV_LOG_FATAL, "Failed to allocate subtitle_out\n");
-            exit_program(1);
-        }
-    }
 
     /* Note: DVB subtitle need one packet to draw them and one other
        packet to clear them */
@@ -1038,6 +1026,12 @@ static void do_subtitle_out(OutputFile *of,
         if (!check_recording_time(ost))
             return;
 
+        ret = av_new_packet(pkt, subtitle_out_max_size);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Failed to allocate subtitle encode buffer\n");
+            exit_program(1);
+        }
+
         sub->pts = pts;
         // start_display_time is required to be 0
         sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
@@ -1048,8 +1042,7 @@ static void do_subtitle_out(OutputFile *of,
 
         ost->frames_encoded++;
 
-        subtitle_out_size = avcodec_encode_subtitle(enc, subtitle_out,
-                                                    subtitle_out_max_size, sub);
+        subtitle_out_size = avcodec_encode_subtitle(enc, pkt->data, pkt->size, sub);
         if (i == 1)
             sub->num_rects = save_num_rects;
         if (subtitle_out_size < 0) {
@@ -1057,8 +1050,6 @@ static void do_subtitle_out(OutputFile *of,
             exit_program(1);
         }
 
-        av_packet_unref(pkt);
-        pkt->data = subtitle_out;
         pkt->size = subtitle_out_size;
         pkt->pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->mux_timebase);
         pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, ost->mux_timebase);
