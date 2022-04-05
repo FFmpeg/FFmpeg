@@ -27,6 +27,11 @@
 #include "internal.h"
 #include "framesync.h"
 
+typedef struct Mapping {
+    uint8_t input;
+    uint8_t plane;
+} Mapping;
+
 typedef struct InputParam {
     int depth[4];
     int nb_planes;
@@ -42,7 +47,7 @@ typedef struct MergePlanesContext {
     int nb_planes;
     int planewidth[4];
     int planeheight[4];
-    int map[4][2];
+    Mapping map[4];
     const AVPixFmtDescriptor *outdesc;
 
     FFFrameSync fs;
@@ -73,17 +78,17 @@ static av_cold int init(AVFilterContext *ctx)
     s->nb_planes = av_pix_fmt_count_planes(s->out_fmt);
 
     for (i = s->nb_planes - 1; i >= 0; i--) {
-        s->map[i][0] = m & 0xf;
+        s->map[i].plane = m & 0xf;
         m >>= 4;
-        s->map[i][1] = m & 0xf;
+        s->map[i].input = m & 0xf;
         m >>= 4;
 
-        if (s->map[i][0] > 3 || s->map[i][1] > 3) {
+        if (s->map[i].plane > 3 || s->map[i].input > 3) {
             av_log(ctx, AV_LOG_ERROR, "Mapping with out of range input and/or plane number.\n");
             return AVERROR(EINVAL);
         }
 
-        s->nb_inputs = FFMAX(s->nb_inputs, s->map[i][1] + 1);
+        s->nb_inputs = FFMAX(s->nb_inputs, s->map[i].input + 1);
     }
 
     av_assert0(s->nb_inputs && s->nb_inputs <= 4);
@@ -151,8 +156,8 @@ static int process_frame(FFFrameSync *fs)
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
     for (i = 0; i < s->nb_planes; i++) {
-        const int input = s->map[i][1];
-        const int plane = s->map[i][0];
+        const int input = s->map[i].input;
+        const int plane = s->map[i].plane;
 
         av_image_copy_plane(out->data[i], out->linesize[i],
                             in[input]->data[plane], in[input]->linesize[plane],
@@ -231,8 +236,8 @@ static int config_output(AVFilterLink *outlink)
     }
 
     for (i = 0; i < s->nb_planes; i++) {
-        const int input = s->map[i][1];
-        const int plane = s->map[i][0];
+        const int input = s->map[i].input;
+        const int plane = s->map[i].plane;
         InputParam *inputp = &inputsp[input];
 
         if (plane + 1 > inputp->nb_planes) {
