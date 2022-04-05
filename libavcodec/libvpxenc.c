@@ -1290,7 +1290,6 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         memcpy(side_data + 8, cx_frame->buf_alpha, cx_frame->sz_alpha);
     }
     if (cx_frame->frame_number != -1) {
-        VPxContext *ctx = avctx->priv_data;
         if (ctx->hdr10_plus_fifo) {
             int err = copy_hdr10_plus_to_pkt(ctx->hdr10_plus_fifo, pkt);
             if (err < 0)
