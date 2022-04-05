@@ -157,8 +157,8 @@ FATE_MOV_FFMPEG-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL \
                                WAV_DEMUXER PAN_FILTER PCM_S16LE_ENCODER \
                                MOV_MUXER FRAMECRC_MUXER ) \
                           += fate-mov-channel-description
-fate-mov-channel-description: tests/data/asynth-44100-1.wav
-fate-mov-channel-description: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mov "-filter_complex [0:a:0]pan=FL|c0=c0[outFL] -map [outFL] -filter_complex [0:a:0]pan=FR|c0=c1[outFR] -map [outFR] -filter_complex [0:a:0]pan=FC|c0=c2[outFC] -map [outFC] -filter_complex [0:a:0]pan=LFE|c0=c3[outLFE] -map [outLFE] -filter_complex [0:a:0]pan=BL|c0=c4[outBL] -map [outBL] -filter_complex [0:a:0]pan=BR|c0=c5[outBR] -map [outBR] -filter_complex [0:a:0]pan=DL|c0=c6[outDL] -map [outDL] -filter_complex [0:a:0]pan=DR|c0=c7[outDR] -map [outDR] -c:a pcm_s16le" "-map 0 -c copy -frames:a 0"
+fate-mov-channel-description: tests/data/asynth-44100-1.wav tests/data/filtergraphs/mov-channel-description
+fate-mov-channel-description: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mov "-filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/mov-channel-description -map [outFL] -map [outFR] -map [outFC] -map [outLFE] -map [outBL] -map [outBR] -map [outDL] -map [outDR] -c:a pcm_s16le" "-map 0 -c copy -frames:a 0"
 
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 

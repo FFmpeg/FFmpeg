@@ -1,0 +1,8 @@
+[0:a:0]pan=FL|c0=c0[outFL];
+[0:a:0]pan=FR|c0=c1[outFR];
+[0:a:0]pan=FC|c0=c2[outFC];
+[0:a:0]pan=LFE|c0=c3[outLFE];
+[0:a:0]pan=BL|c0=c4[outBL];
+[0:a:0]pan=BR|c0=c5[outBR];
+[0:a:0]pan=DL|c0=c6[outDL];
+[0:a:0]pan=DR|c0=c7[outDR]
