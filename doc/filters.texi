@@ -25874,7 +25874,7 @@ supposed to be generated forever.
 Set speed of gradients rotation.
 
 @item type, t
-Set type of gradients, can be @code{linear} or @code{radial}.
+Set type of gradients, can be @code{linear} or @code{radial} or @code{circular}.
 @end table
 
 

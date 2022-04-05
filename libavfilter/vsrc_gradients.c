@@ -79,10 +79,11 @@ static const AVOption gradients_options[] = {
     {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
     {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
     {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },
-    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 1, FLAGS, "type" },
-    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 1, FLAGS, "type" },
+    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 2, FLAGS, "type" },
+    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 2, FLAGS, "type" },
     {"linear",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=0},          0, 0, FLAGS, "type" },
     {"radial",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=1},          0, 0, FLAGS, "type" },
+    {"circular",  "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=2},          0, 0, FLAGS, "type" },
     {NULL},
 };
 
@@ -115,10 +116,10 @@ static uint64_t lerp_color16(uint8_t c0[4], uint8_t c1[4], float x)
            (llrintf((c0[3] * y + c1[3] * x) * 256)) << 48;
 }
 
-static uint32_t lerp_colors(uint8_t arr[3][4], int nb_colors, float step)
+static uint32_t lerp_colors(uint8_t arr[3][4], int nb_colors, int nb_wrap_colors, float step)
 {
     float scl;
-    int i;
+    int i, j;
 
     if (nb_colors == 1 || step <= 0.0) {
         return arr[0][0] | (arr[0][1] << 8) | (arr[0][2] << 16) | (arr[0][3] << 24);
@@ -127,16 +128,21 @@ static uint32_t lerp_colors(uint8_t arr[3][4], int nb_colors, float step)
         return arr[i][0] | (arr[i][1] << 8) | (arr[i][2] << 16) | (arr[i][3] << 24);
     }
 
-    scl = step * (nb_colors - 1);
+    scl = step * (nb_wrap_colors - 1);
     i = floorf(scl);
+    j = i + 1;
+    if (i >= nb_colors - 1) {
+        i = nb_colors - 1;
+        j = 0;
+    }
 
-    return lerp_color(arr[i], arr[i + 1], scl - i);
+    return lerp_color(arr[i], arr[j], scl - i);
 }
 
-static uint64_t lerp_colors16(uint8_t arr[3][4], int nb_colors, float step)
+static uint64_t lerp_colors16(uint8_t arr[3][4], int nb_colors, int nb_wrap_colors, float step)
 {
     float scl;
-    int i;
+    int i, j;
 
     if (nb_colors == 1 || step <= 0.0) {
         return ((uint64_t)arr[0][0] << 8) | ((uint64_t)arr[0][1] << 24) | ((uint64_t)arr[0][2] << 40) | ((uint64_t)arr[0][3] << 56);
@@ -145,17 +151,23 @@ static uint64_t lerp_colors16(uint8_t arr[3][4], int nb_colors, float step)
         return ((uint64_t)arr[i][0] << 8) | ((uint64_t)arr[i][1] << 24) | ((uint64_t)arr[i][2] << 40) | ((uint64_t)arr[i][3] << 56);
     }
 
-    scl = step * (nb_colors - 1);
+    scl = step * (nb_wrap_colors - 1);
     i = floorf(scl);
+    j = i + 1;
+    if (i >= nb_colors - 1) {
+        i = nb_colors - 1;
+        j = 0;
+    }
 
-    return lerp_color16(arr[i], arr[i + 1], scl - i);
+    return lerp_color16(arr[i], arr[j], scl - i);
 }
 
-static void lerp_colors32(float arr[3][4], int nb_colors, float step,
+static void lerp_colors32(float arr[3][4], int nb_colors,
+                          int nb_wrap_colors, float step,
                           float *r, float *g, float *b, float *a)
 {
     float scl, x;
-    int i;
+    int i, j;
 
     if (nb_colors == 1 || step <= 0.0) {
         *r = arr[0][0];
@@ -172,31 +184,55 @@ static void lerp_colors32(float arr[3][4], int nb_colors, float step,
         return;
     }
 
-    scl = step * (nb_colors - 1);
+    scl = step * (nb_wrap_colors - 1);
     i = floorf(scl);
     x = scl - i;
+    j = i + 1;
+    if (i >= nb_colors - 1) {
+        i = nb_colors - 1;
+        j = 0;
+    }
 
-    *r = lerpf(arr[i][0], arr[i + 1][0], x);
-    *g = lerpf(arr[i][1], arr[i + 1][1], x);
-    *b = lerpf(arr[i][2], arr[i + 1][2], x);
-    *a = lerpf(arr[i][3], arr[i + 1][3], x);
+    *r = lerpf(arr[i][0], arr[j][0], x);
+    *g = lerpf(arr[i][1], arr[j][1], x);
+    *b = lerpf(arr[i][2], arr[j][2], x);
+    *a = lerpf(arr[i][3], arr[j][3], x);
 }
 
 static float project(float origin_x, float origin_y,
                      float dest_x, float dest_y,
-                     int point_x, int point_y, int type)
+                     float point_x, float point_y, int type)
 {
-    // Rise and run of line.
-    float od_x = dest_x - origin_x;
-    float od_y = dest_y - origin_y;
-
-    // Distance-squared of line.
-    float od_s_q = type ? sqrtf(od_x * od_x + od_y * od_y) : od_x * od_x + od_y * od_y;
-
-    // Rise and run of projection.
     float op_x = point_x - origin_x;
     float op_y = point_y - origin_y;
-    float op_x_od = type ? sqrtf(op_x * op_x + op_y * op_y) : op_x * od_x + op_y * od_y;
+    float od_x = dest_x - origin_x;
+    float od_y = dest_y - origin_y;
+    float op_x_od;
+    float od_s_q;
+
+    switch (type) {
+    case 0:
+        od_s_q = od_x * od_x + od_y * od_y;
+        break;
+    case 1:
+        od_s_q = sqrtf(od_x * od_x + od_y * od_y);
+        break;
+    case 2:
+        od_s_q = M_PI * 2.f;
+        break;
+    }
+
+    switch (type) {
+    case 0:
+        op_x_od = op_x * od_x + op_y * od_y;
+        break;
+    case 1:
+        op_x_od = sqrtf(op_x * op_x + op_y * op_y);
+        break;
+    case 2:
+        op_x_od = atan2f(op_x, op_y) + M_PI;
+        break;
+    }
 
     // Normalize and clamp range.
     return av_clipf(op_x_od / od_s_q, 0.f, 1.f);
@@ -216,7 +252,7 @@ static int draw_gradients_slice(AVFilterContext *ctx, void *arg, int job, int nb
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
-            dst[x] = lerp_colors(s->color_rgba, s->nb_colors, factor);
+            dst[x] = lerp_colors(s->color_rgba, s->nb_colors, s->nb_colors + (s->type == 2), factor);
         }
 
         dst += linesize;
@@ -239,7 +275,7 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
-            dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, factor);
+            dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, s->nb_colors + s->type == 2, factor);
         }
 
         dst += linesize;
@@ -268,7 +304,7 @@ static int draw_gradients_slice32_planar(AVFilterContext *ctx, void *arg, int jo
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
-            lerp_colors32(s->color_rgbaf, s->nb_colors, factor,
+            lerp_colors32(s->color_rgbaf, s->nb_colors, s->nb_colors + s->type == 2 ,factor,
                           &dst_r[x], &dst_g[x], &dst_b[x], &dst_a[x]);
         }
 
