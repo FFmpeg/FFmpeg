@@ -56,7 +56,7 @@ typedef struct MergePlanesContext {
 #define OFFSET(x) offsetof(MergePlanesContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption mergeplanes_options[] = {
-    { "mapping", "set input to output plane mapping", OFFSET(mapping), AV_OPT_TYPE_INT, {.i64=-1}, -1, 0x33333333, FLAGS },
+    { "mapping", "set input to output plane mapping", OFFSET(mapping), AV_OPT_TYPE_INT, {.i64=-1}, -1, 0x33333333, FLAGS|AV_OPT_FLAG_DEPRECATED },
     { "format", "set output pixel format", OFFSET(out_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64=AV_PIX_FMT_YUVA444P}, 0, INT_MAX, .flags=FLAGS },
     { "map0s", "set 1st input to output stream mapping", OFFSET(map[0].input), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
     { "map0p", "set 1st input to output plane mapping",  OFFSET(map[0].plane), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
