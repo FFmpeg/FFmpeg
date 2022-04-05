@@ -16072,6 +16072,18 @@ plane, 'Cc' describes the mapping for the output stream third plane and
 
 @item format
 Set output pixel format. Default is @code{yuva444p}.
+
+@item map0s
+@item map1s
+@item map2s
+@item map3s
+Set input to output stream mapping for output Nth plane. Default is @code{0}.
+
+@item map0p
+@item map1p
+@item map2p
+@item map3p
+Set input to output plane mapping for output Nth plane. Default is @code{0}.
 @end table
 
 @subsection Examples

@@ -28,8 +28,8 @@
 #include "framesync.h"
 
 typedef struct Mapping {
-    uint8_t input;
-    uint8_t plane;
+    int input;
+    int plane;
 } Mapping;
 
 typedef struct InputParam {
@@ -56,8 +56,16 @@ typedef struct MergePlanesContext {
 #define OFFSET(x) offsetof(MergePlanesContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption mergeplanes_options[] = {
-    { "mapping", "set input to output plane mapping", OFFSET(mapping), AV_OPT_TYPE_INT, {.i64=0}, 0, 0x33333333, FLAGS },
+    { "mapping", "set input to output plane mapping", OFFSET(mapping), AV_OPT_TYPE_INT, {.i64=-1}, -1, 0x33333333, FLAGS },
     { "format", "set output pixel format", OFFSET(out_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64=AV_PIX_FMT_YUVA444P}, 0, INT_MAX, .flags=FLAGS },
+    { "map0s", "set 1st input to output stream mapping", OFFSET(map[0].input), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map0p", "set 1st input to output plane mapping",  OFFSET(map[0].plane), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map1s", "set 2nd input to output stream mapping", OFFSET(map[1].input), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map1p", "set 2nd input to output plane mapping",  OFFSET(map[1].plane), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map2s", "set 3rd input to output stream mapping", OFFSET(map[2].input), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map2p", "set 3rd input to output plane mapping",  OFFSET(map[2].plane), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map3s", "set 4th input to output stream mapping", OFFSET(map[3].input), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "map3p", "set 4th input to output plane mapping",  OFFSET(map[3].plane), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
     { NULL }
 };
 
@@ -78,10 +86,12 @@ static av_cold int init(AVFilterContext *ctx)
     s->nb_planes = av_pix_fmt_count_planes(s->out_fmt);
 
     for (i = s->nb_planes - 1; i >= 0; i--) {
-        s->map[i].plane = m & 0xf;
-        m >>= 4;
-        s->map[i].input = m & 0xf;
-        m >>= 4;
+        if (m >= 0 && m <= 0x33333333) {
+            s->map[i].plane = m & 0xf;
+            m >>= 4;
+            s->map[i].input = m & 0xf;
+            m >>= 4;
+        }
 
         if (s->map[i].plane > 3 || s->map[i].input > 3) {
             av_log(ctx, AV_LOG_ERROR, "Mapping with out of range input and/or plane number.\n");
