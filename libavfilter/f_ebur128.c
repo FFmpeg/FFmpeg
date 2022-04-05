@@ -768,7 +768,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
                     /* get lower loudness to consider */
                     n = 0;
-                    nb_pow = LRA_LOWER_PRC * 0.01 * nb_powers + 0.5;
+                    nb_pow = LRA_LOWER_PRC * nb_powers * 0.01 + 0.5;
                     for (i = gate_hist_pos; i < HIST_SIZE; i++) {
                         n += ebur128->i3000.histogram[i].count;
                         if (n >= nb_pow) {
@@ -779,7 +779,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
                     /* get higher loudness to consider */
                     n = nb_powers;
-                    nb_pow = LRA_HIGHER_PRC * 0.01 * nb_powers + 0.5;
+                    nb_pow = LRA_HIGHER_PRC * nb_powers * 0.01 + 0.5;
                     for (i = HIST_SIZE - 1; i >= 0; i--) {
                         n -= FFMIN(n, ebur128->i3000.histogram[i].count);
                         if (n < nb_pow) {
