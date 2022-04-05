@@ -79,11 +79,12 @@ static const AVOption gradients_options[] = {
     {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
     {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
     {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },
-    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 2, FLAGS, "type" },
-    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 2, FLAGS, "type" },
+    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 3, FLAGS, "type" },
+    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 3, FLAGS, "type" },
     {"linear",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=0},          0, 0, FLAGS, "type" },
     {"radial",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=1},          0, 0, FLAGS, "type" },
     {"circular",  "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=2},          0, 0, FLAGS, "type" },
+    {"spiral",    "set gradient type",            0,       AV_OPT_TYPE_CONST,      {.i64=3},          0, 0, FLAGS, "type" },
     {NULL},
 };
 
@@ -218,6 +219,7 @@ static float project(float origin_x, float origin_y,
         od_s_q = sqrtf(od_x * od_x + od_y * od_y);
         break;
     case 2:
+    case 3:
         od_s_q = M_PI * 2.f;
         break;
     }
@@ -231,6 +233,9 @@ static float project(float origin_x, float origin_y,
         break;
     case 2:
         op_x_od = atan2f(op_x, op_y) + M_PI;
+        break;
+    case 3:
+        op_x_od = fmodf(atan2f(op_x, op_y) + M_PI + point_x / fmaxf(origin_x, dest_x), 2.f * M_PI);
         break;
     }
 
@@ -252,7 +257,7 @@ static int draw_gradients_slice(AVFilterContext *ctx, void *arg, int job, int nb
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
-            dst[x] = lerp_colors(s->color_rgba, s->nb_colors, s->nb_colors + (s->type == 2), factor);
+            dst[x] = lerp_colors(s->color_rgba, s->nb_colors, s->nb_colors + (s->type >= 2), factor);
         }
 
         dst += linesize;
@@ -275,7 +280,7 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
-            dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, s->nb_colors + s->type == 2, factor);
+            dst[x] = lerp_colors16(s->color_rgba, s->nb_colors, s->nb_colors + s->type >= 2, factor);
         }
 
         dst += linesize;
@@ -304,7 +309,7 @@ static int draw_gradients_slice32_planar(AVFilterContext *ctx, void *arg, int jo
     for (int y = start; y < end; y++) {
         for (int x = 0; x < width; x++) {
             float factor = project(s->fx0, s->fy0, s->fx1, s->fy1, x, y, s->type);
-            lerp_colors32(s->color_rgbaf, s->nb_colors, s->nb_colors + s->type == 2 ,factor,
+            lerp_colors32(s->color_rgbaf, s->nb_colors, s->nb_colors + s->type >= 2 ,factor,
                           &dst_r[x], &dst_g[x], &dst_b[x], &dst_a[x]);
         }
 
