@@ -62,6 +62,8 @@ typedef struct LADSPAContext {
 
     int sample_rate;
     int nb_samples;
+    int64_t next_in_pts;
+    int64_t next_out_pts;
     int64_t pts;
     int64_t duration;
     int in_trim;
@@ -164,6 +166,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     LADSPAContext *s = ctx->priv;
     AVFrame *out;
     int i, h, p, new_out_samples;
+    int64_t out_duration;
+    int64_t in_duration;
+    int64_t in_pts;
 
     av_assert0(in->ch_layout.nb_channels == (s->nb_inputs * s->nb_handles));
 
@@ -205,6 +210,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (i = 0; i < s->nb_outputcontrols; i++)
         print_ctl_info(ctx, AV_LOG_VERBOSE, s, i, s->ocmap, s->octlv, 1);
 
+    in_duration = av_rescale_q(in->nb_samples,  inlink->time_base, av_make_q(1,  in->sample_rate));
+    in_pts = in->pts;
     if (out != in)
         av_frame_free(&in);
 
@@ -214,6 +221,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         new_out_samples -= trim;
         s->in_trim -= trim;
+        out->nb_samples = new_out_samples;
     }
 
     if (new_out_samples <= 0) {
@@ -226,6 +234,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     sizeof(float) * new_out_samples);
         out->nb_samples = new_out_samples;
     }
+
+    out_duration = av_rescale_q(out->nb_samples, inlink->time_base, av_make_q(1, out->sample_rate));
+    if (s->next_out_pts != AV_NOPTS_VALUE && out->pts != s->next_out_pts &&
+        s->next_in_pts  != AV_NOPTS_VALUE && out->pts == s->next_in_pts) {
+        out->pts = s->next_out_pts;
+    } else {
+        out->pts = in_pts;
+    }
+    s->next_in_pts  = in_pts   + in_duration;
+    s->next_out_pts = out->pts + out_duration;
 
     return ff_filter_frame(ctx->outputs[0], out);
 }
@@ -247,6 +265,7 @@ static int request_frame(AVFilterLink *outlink)
                 return AVERROR(ENOMEM);
 
             s->out_pad -= frame->nb_samples;
+            frame->pts = s->next_in_pts;
             return filter_frame(ctx->inputs[0], frame);
         }
         return ret;
@@ -653,6 +672,9 @@ static av_cold int init(AVFilterContext *ctx)
                               s->nb_inputs, s->nb_outputs);
     av_log(ctx, AV_LOG_DEBUG, "input controls: %lu output controls: %lu\n",
                               s->nb_inputcontrols, s->nb_outputcontrols);
+
+    s->next_out_pts = AV_NOPTS_VALUE;
+    s->next_in_pts  = AV_NOPTS_VALUE;
 
     return 0;
 }
