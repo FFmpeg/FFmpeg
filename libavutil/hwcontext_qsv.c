@@ -91,7 +91,8 @@ typedef struct QSVFramesContext {
 
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
     mfxExtBuffer *ext_buffers[1];
-    AVFrame realigned_tmp_frame;
+    AVFrame realigned_upload_frame;
+    AVFrame realigned_download_frame;
 } QSVFramesContext;
 
 static const struct {
@@ -303,7 +304,8 @@ static void qsv_frames_uninit(AVHWFramesContext *ctx)
     av_freep(&s->surface_ptrs);
     av_freep(&s->surfaces_internal);
     av_freep(&s->handle_pairs_internal);
-    av_frame_unref(&s->realigned_tmp_frame);
+    av_frame_unref(&s->realigned_upload_frame);
+    av_frame_unref(&s->realigned_download_frame);
     av_buffer_unref(&s->child_frames_ref);
 }
 
@@ -1058,21 +1060,46 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     mfxSyncPoint sync = NULL;
     mfxStatus err;
     int ret = 0;
+    /* download to temp frame if the output is not padded as libmfx requires */
+    AVFrame *tmp_frame = &s->realigned_download_frame;
+    AVFrame *dst_frame;
+    int realigned = 0;
 
     ret = qsv_internal_session_check_init(ctx, 0);
     if (ret < 0)
         return ret;
 
+    /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
+     * Height must be a multiple of 16 for progressive frame sequence and a
+     * multiple of 32 otherwise.", so allign all frames to 16 before downloading. */
+    if (dst->height & 15 || dst->linesize[0] & 15) {
+        realigned = 1;
+        if (tmp_frame->format != dst->format ||
+            tmp_frame->width  != FFALIGN(dst->linesize[0], 16) ||
+            tmp_frame->height != FFALIGN(dst->height, 16)) {
+            av_frame_unref(tmp_frame);
+
+            tmp_frame->format = dst->format;
+            tmp_frame->width  = FFALIGN(dst->linesize[0], 16);
+            tmp_frame->height = FFALIGN(dst->height, 16);
+            ret = av_frame_get_buffer(tmp_frame, 0);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    dst_frame = realigned ? tmp_frame : dst;
+
     if (!s->session_download) {
         if (s->child_frames_ref)
-            return qsv_transfer_data_child(ctx, dst, src);
+            return qsv_transfer_data_child(ctx, dst_frame, src);
 
         av_log(ctx, AV_LOG_ERROR, "Surface download not possible\n");
         return AVERROR(ENOSYS);
     }
 
     out.Info = in->Info;
-    map_frame_to_surface(dst, &out);
+    map_frame_to_surface(dst_frame, &out);
 
     do {
         err = MFXVideoVPP_RunFrameVPPAsync(s->session_download, in, &out, NULL, &sync);
@@ -1093,6 +1120,16 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR_UNKNOWN;
     }
 
+    if (realigned) {
+        tmp_frame->width  = dst->width;
+        tmp_frame->height = dst->height;
+        ret = av_frame_copy(dst, tmp_frame);
+        tmp_frame->width  = FFALIGN(dst->linesize[0], 16);
+        tmp_frame->height = FFALIGN(dst->height, 16);
+        if (ret < 0)
+            return ret;
+    }
+
     return 0;
 }
 
@@ -1108,7 +1145,7 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     mfxStatus err;
     int ret = 0;
     /* make a copy if the input is not padded as libmfx requires */
-    AVFrame *tmp_frame = &s->realigned_tmp_frame;
+    AVFrame *tmp_frame = &s->realigned_upload_frame;
     const AVFrame *src_frame;
     int realigned = 0;
 
