@@ -94,6 +94,7 @@ static int smacker_read_header(AVFormatContext *s)
     AVStream *st;
     AVCodecParameters *par;
     uint32_t magic, width, height, flags, treesize;
+    int64_t pos;
     int i, ret, pts_inc;
     int tbase;
 
@@ -211,8 +212,13 @@ static int smacker_read_header(AVFormatContext *s)
     smk->frm_flags = (void*)(smk->frm_size + smk->frames);
 
     /* read frame info */
+    pos = 0;
     for (i = 0; i < smk->frames; i++) {
         smk->frm_size[i] = avio_rl32(pb);
+        if ((ret = av_add_index_entry(st, pos, i, smk->frm_size[i], 0,
+                                      (i == 0 || (smk->frm_size[i] & 1)) ? AVINDEX_KEYFRAME : 0)) < 0)
+            return ret;
+        pos += smk->frm_size[i];
     }
     if ((ret = ffio_read_size(pb, smk->frm_flags, smk->frames)) < 0 ||
         /* load trees to extradata, they will be unpacked by decoder */
@@ -335,7 +341,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret = av_new_packet(pkt, smk->frame_size + 769)) < 0)
         goto next_frame;
     flags = smk->new_palette;
-    if (smk->frm_size[smk->cur_frame] & 1)
+    if ((smk->frm_size[smk->cur_frame] & 1) || smk->cur_frame == 0)
         flags |= 2;
     pkt->data[0] = flags;
     memcpy(pkt->data + 1, smk->pal, 768);
@@ -344,6 +350,9 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         goto next_frame;
     pkt->stream_index = smk->videoindex;
     pkt->pts          = smk->cur_frame;
+    pkt->duration = 1;
+    if (flags & 2)
+        pkt->flags |= AV_PKT_FLAG_KEY;
     smk->next_audio_index = 0;
     smk->new_palette = 0;
     smk->cur_frame++;
@@ -359,20 +368,28 @@ next_frame:
 static int smacker_read_seek(AVFormatContext *s, int stream_index,
                              int64_t timestamp, int flags)
 {
+    AVStream *st = s->streams[stream_index];
     SmackerContext *smk = s->priv_data;
-    int64_t ret;
+    int64_t pos;
+    int ret;
 
-    /* only rewinding to start is supported */
-    if (timestamp != 0) {
-        av_log(s, AV_LOG_ERROR,
-               "Random seeks are not supported (can only seek to start).\n");
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
+        return -1;
+
+    if (timestamp < 0 || timestamp >= smk->frames)
         return AVERROR(EINVAL);
-    }
 
-    if ((ret = avio_seek(s->pb, ffformatcontext(s)->data_offset, SEEK_SET)) < 0)
+    ret = av_index_search_timestamp(st, timestamp, flags);
+    if (ret < 0)
         return ret;
 
-    smk->cur_frame = 0;
+    pos  = ffformatcontext(s)->data_offset;
+    pos += ffstream(st)->index_entries[ret].pos;
+    pos  = avio_seek(s->pb, pos, SEEK_SET);
+    if (pos < 0)
+        return pos;
+
+    smk->cur_frame = ret;
     smk->next_audio_index = 0;
     smk->new_palette = 0;
     memset(smk->pal, 0, sizeof(smk->pal));
