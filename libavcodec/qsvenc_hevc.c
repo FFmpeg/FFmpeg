@@ -303,6 +303,8 @@ const FFCodec ff_hevc_qsv_encoder = {
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_P010,
+                                                    AV_PIX_FMT_YUYV422,
+                                                    AV_PIX_FMT_Y210,
                                                     AV_PIX_FMT_QSV,
 #if QSV_VERSION_ATLEAST(1, 17)
                                                     AV_PIX_FMT_BGRA,

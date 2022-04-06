@@ -1623,32 +1623,10 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
         else if (frame->repeat_pict == 4)
             qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;
 
-        qf->surface.Data.PitchLow  = qf->frame->linesize[0];
-        qf->surface.Data.Y         = qf->frame->data[0];
-        qf->surface.Data.UV        = qf->frame->data[1];
-
-        /* The SDK checks Data.V when using system memory for VP9 encoding */
-        switch (frame->format) {
-        case AV_PIX_FMT_NV12:
-            qf->surface.Data.V     = qf->surface.Data.UV + 1;
-            break;
-
-        case AV_PIX_FMT_P010:
-            qf->surface.Data.V     = qf->surface.Data.UV + 2;
-            break;
-
-        case AV_PIX_FMT_X2RGB10:
-        case AV_PIX_FMT_BGRA:
-            qf->surface.Data.B         = qf->frame->data[0];
-            qf->surface.Data.G         = qf->frame->data[0] + 1;
-            qf->surface.Data.R         = qf->frame->data[0] + 2;
-            qf->surface.Data.A         = qf->frame->data[0] + 3;
-            break;
-
-        default:
-            /* should not reach here */
-            av_assert0(0);
-            break;
+        ret = ff_qsv_map_frame_to_surface(qf->frame, &qf->surface);
+        if (ret < 0) {
+            av_log(q->avctx, AV_LOG_ERROR, "map frame to surface failed.\n");
+            return ret;
         }
     }
     qf->surface.Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
