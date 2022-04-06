@@ -244,6 +244,42 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
     }
 }
 
+int ff_qsv_map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
+{
+    switch (frame->format) {
+    case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_P010:
+        surface->Data.Y  = frame->data[0];
+        surface->Data.UV = frame->data[1];
+        /* The SDK checks Data.V when using system memory for VP9 encoding */
+        surface->Data.V  = surface->Data.UV + 1;
+        break;
+    case AV_PIX_FMT_X2RGB10LE:
+    case AV_PIX_FMT_BGRA:
+        surface->Data.B = frame->data[0];
+        surface->Data.G = frame->data[0] + 1;
+        surface->Data.R = frame->data[0] + 2;
+        surface->Data.A = frame->data[0] + 3;
+        break;
+    case AV_PIX_FMT_YUYV422:
+        surface->Data.Y = frame->data[0];
+        surface->Data.U = frame->data[0] + 1;
+        surface->Data.V = frame->data[0] + 3;
+        break;
+
+    case AV_PIX_FMT_Y210:
+        surface->Data.Y16 = (mfxU16 *)frame->data[0];
+        surface->Data.U16 = (mfxU16 *)frame->data[0] + 1;
+        surface->Data.V16 = (mfxU16 *)frame->data[0] + 3;
+        break;
+    default:
+        return AVERROR(ENOSYS);
+    }
+    surface->Data.PitchLow  = frame->linesize[0];
+
+    return 0;
+}
+
 int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame)
 {
     int i;
