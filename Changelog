@@ -1,6 +1,63 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.2.6
+ avcodec/diracdec: avoid signed integer overflow in global mv
+ avcodec/takdsp: Fix integer overflow in decorrelate_sf()
+ avcodec/apedec: fix a integer overflow in long_filter_high_3800()
+ avfilter/vf_subtitles: pass storage size to libass
+ avformat/aqtitledec: Skip unrepresentable durations
+ avformat/cafdec: Do not store empty keys in read_info_chunk()
+ avformat/hls: Check target_duration
+ avcodec/pixlet: Avoid signed integer overflow in scaling in filterfn()
+ avformat/matroskadec: Check pre_ns
+ avcodec/sonic: Use unsigned for predictor_k to avoid undefined behavior
+ avformat/matroskadec: Use rounded down duration in get_cue_desc() check
+ avformat/avidec: Check height
+ avformat/rmdec: Better duplicate tags check
+ avformat/mov: Disallow empty sidx
+ avformat/matroskadec: Check duration
+ avformat/mov: Corner case encryption error cleanup in mov_read_senc()
+ avcodec/jpeglsdec: Fix if( code style
+ avcodec/jpeglsdec: Check get_ur_golomb_jpegls() for error
+ avcodec/motion_est: fix indention of ff_get_best_fcode()
+ avcodec/motion_est: Fix xy indexing on range violation in ff_get_best_fcode()
+ avcodec/jpeglsdec: Increase range for N in ls_get_code_runterm() by using unsigned
+ avformat/matroskadec: Check desc_bytes
+ avformat/utils: Fix invalid NULL pointer operation in ff_parse_key_value()
+ avformat/matroskadec: Fix infinite loop with bz decompression
+ avformat/mov: Check size before subtraction
+ avcodec/apedec: Fix integer overflows in predictor_update_3930()
+ avcodec/apedec: fix integer overflow in 8bit samples
+ avformat/flvdec: timestamps cannot use the full int64 range
+ avcodec/vqavideo: reset accounting on error
+ avcodec/alacdsp: fix integer overflow in decorrelate_stereo()
+ avformat/4xm: Check for duplicate track ids
+ avformat/4xm: Consider max_streams on reallocating tracks array
+ avformat/mov: Check next offset in mov_read_dref()
+ avformat/vivo: Favor setting fps from explicit fractions
+ avformat/vivo: Do not use the general expression evaluator for parsing a floating point value
+ avformat/mxfdec: Check for duplicate mxf_read_index_entry_array()
+ avcodec/apedec: Change avg to uint32_t
+ avformat/mov: Disallow duplicate smdm
+ avformat/mov: Check for EOF in mov_read_glbl()
+ avcodec/vp3: Check version in all cases when VP4 code is not built
+ avformat/mov: Check channels for mov_parse_stsd_audio()
+ avformat/avidec: Check read_odml_index() for failure
+ avformat/aiffdec: Use av_rescale() for bitrate
+ avformat/aiffdec: sanity check block_align
+ avformat/aiffdec: Check sample_rate
+ avfilter/vf_gblur: fix heap-buffer overflow
+ avfilter/vf_lenscorrection: fix division by zero
+ avformat/latmenc: abort if no extradata is available
+ avformat/movenc: Fix segfault when remuxing rtp hint stream
+ avformat/tty: add probe function
+ avfilter/vf_neighbor: check if width is 1
+ avcodec/flac_parser: Consider AV_INPUT_BUFFER_PADDING_SIZE
+ avcodec/ttadsp: Fix integer overflows in tta_filter_process_c()
+ avutil/mathematics: Document av_rescale_rnd() behavior on non int64 results
+ configure: Add missing libshine->mpegaudioheader dependency
+
 version 4.2.5
  configure: update copyright year
  avformat/matroskadec: Reset state also on failure in matroska_reset_status()
