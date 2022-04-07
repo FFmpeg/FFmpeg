@@ -21406,9 +21406,8 @@ The filter accepts the following options:
 @table @option
 
 @item layout
-Set the grid size (i.e. the number of lines and columns). For the syntax of
-this option, check the
-@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Set the grid size in the form @code{COLUMNSxROWS}. Range is upto UINT_MAX cells.
+Default is @code{6x5}.
 
 @item nb_frames
 Set the maximum number of frames to render in the given area. It must be less
@@ -21416,12 +21415,12 @@ than or equal to @var{w}x@var{h}. The default value is @code{0}, meaning all
 the area will be used.
 
 @item margin
-Set the outer border margin in pixels.
+Set the outer border margin in pixels. Range is 0 to 1024. Default is @code{0}.
 
 @item padding
 Set the inner border thickness (i.e. the number of pixels between frames). For
 more advanced padding options (such as having different values for the edges),
-refer to the pad video filter.
+refer to the pad video filter. Range is 0 to 1024. Default is @code{0}.
 
 @item color
 Specify the color of the unused area. For the syntax of this option, check the
@@ -21430,12 +21429,12 @@ The default value of @var{color} is "black".
 
 @item overlap
 Set the number of frames to overlap when tiling several successive frames together.
-The value must be between @code{0} and @var{nb_frames - 1}.
+The value must be between @code{0} and @var{nb_frames - 1}. Default is @code{0}.
 
 @item init_padding
 Set the number of frames to initially be empty before displaying first output frame.
 This controls how soon will one get first output frame.
-The value must be between @code{0} and @var{nb_frames - 1}.
+The value must be between @code{0} and @var{nb_frames - 1}. Default is @code{0}.
 @end table
 
 @subsection Examples
