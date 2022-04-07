@@ -27,6 +27,9 @@ HTMLPAGES   = $(AVPROGS-yes:%=doc/%.html) $(AVPROGS-yes:%=doc/%-all.html) $(COMP
               doc/mailing-list-faq.html                                 \
               doc/nut.html                                              \
               doc/platform.html                                         \
+              doc/bootstrap.min.css                                     \
+              doc/style.min.css                                         \
+              doc/default.css                                           \
 
 TXTPAGES    = doc/fate.txt                                              \
 
