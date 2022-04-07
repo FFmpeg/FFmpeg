@@ -1003,7 +1003,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco3.LowDelayBRC = q->low_delay_brc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 #endif
 #if QSV_VERSION_ATLEAST(1, 19)
-            if (q->max_frame_size_p >= 0)
+            if (q->max_frame_size_i >= 0)
                 q->extco3.MaxFrameSizeI = q->max_frame_size_i;
             if (q->max_frame_size_p >= 0)
                 q->extco3.MaxFrameSizeP = q->max_frame_size_p;
