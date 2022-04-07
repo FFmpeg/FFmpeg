@@ -381,7 +381,8 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
 #if FF_DAV1D_VERSION_AT_LEAST(5,1)
     dav1d_get_event_flags(dav1d->c, &event_flags);
-    if (event_flags & DAV1D_EVENT_FLAG_NEW_SEQUENCE)
+    if (c->pix_fmt == AV_PIX_FMT_NONE ||
+        (event_flags & DAV1D_EVENT_FLAG_NEW_SEQUENCE))
 #endif
     libdav1d_init_params(c, p->seq_hdr);
     res = ff_decode_frame_props(c, frame);
