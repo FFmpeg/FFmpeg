@@ -239,6 +239,7 @@ typedef struct MOVMuxContext {
 
     int use_stream_ids_as_track_ids;
     int track_ids_ok;
+    int write_btrt;
     int write_tmcd;
     MOVPrftBox write_prft;
     int empty_hdlr_name;

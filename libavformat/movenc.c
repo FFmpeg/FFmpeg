@@ -109,6 +109,7 @@ static const AVOption options[] = {
     { "encryption_key", "The media encryption key (hex)", offsetof(MOVMuxContext, encryption_key), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "encryption_kid", "The media encryption key identifier (hex)", offsetof(MOVMuxContext, encryption_kid), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "use_stream_ids_as_track_ids", "use stream ids as track ids", offsetof(MOVMuxContext, use_stream_ids_as_track_ids), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "write_btrt", "force or disable writing btrt", offsetof(MOVMuxContext, write_btrt), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "write_tmcd", "force or disable writing tmcd", offsetof(MOVMuxContext, write_tmcd), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "write_prft", "Write producer reference time box with specified time source", offsetof(MOVMuxContext, write_prft), AV_OPT_TYPE_INT, {.i64 = MOV_PRFT_NONE}, 0, MOV_PRFT_NB-1, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
     { "wallclock", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = MOV_PRFT_SRC_WALLCLOCK}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
@@ -1308,7 +1309,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         return ret;
     }
 
-    if (track->mode == MODE_MP4 &&
+    if (mov->write_btrt &&
             ((ret = mov_write_btrt_tag(pb, track)) < 0))
         return ret;
 
@@ -1809,8 +1810,9 @@ static int mov_write_fiel_tag(AVIOContext *pb, MOVTrack *track, int field_order)
     return 10;
 }
 
-static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_subtitle_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
+    MOVMuxContext *mov = s->priv_data;
     int ret = AVERROR_BUG;
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0);    /* size */
@@ -1846,7 +1848,7 @@ static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
     } else if (track->par->extradata_size)
         avio_write(pb, track->par->extradata, track->par->extradata_size);
 
-    if (track->mode == MODE_MP4 &&
+    if (mov->write_btrt &&
             ((ret = mov_write_btrt_tag(pb, track)) < 0))
         return ret;
 
@@ -2313,7 +2315,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid);
     }
 
-    if (track->mode == MODE_MP4 &&
+    if (mov->write_btrt &&
             ((ret = mov_write_btrt_tag(pb, track)) < 0))
         return ret;
 
@@ -2438,7 +2440,7 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)
         ret = mov_write_audio_tag(s, pb, mov, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_SUBTITLE)
-        ret = mov_write_subtitle_tag(pb, track);
+        ret = mov_write_subtitle_tag(s, pb, track);
     else if (track->par->codec_tag == MKTAG('r','t','p',' '))
         ret = mov_write_rtp_tag(pb, track);
     else if (track->par->codec_tag == MKTAG('t','m','c','d'))
@@ -6675,6 +6677,10 @@ static int mov_init(AVFormatContext *s)
         for (i = 0; i < s->nb_streams; i++)
             if (rtp_hinting_needed(s->streams[i]))
                 mov->nb_streams++;
+    }
+
+    if (mov->write_btrt < 0) {
+        mov->write_btrt = mov->mode == MODE_MP4;
     }
 
     if (   mov->write_tmcd == -1 && (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
