@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -31,105 +32,120 @@ typedef struct ColorkeyContext {
     const AVClass *class;
 
     /* color offsets rgba */
-    int co[4];
+    uint8_t co[4];
 
     uint8_t colorkey_rgba[4];
     float similarity;
     float blend;
+    double scale;
+    int depth;
+    int max;
 
     int (*do_slice)(AVFilterContext *ctx, void *arg,
                     int jobnr, int nb_jobs);
 } ColorkeyContext;
 
-static uint8_t do_colorkey_pixel(ColorkeyContext *ctx, uint8_t r, uint8_t g, uint8_t b)
+static int do_colorkey_pixel(const uint8_t *colorkey_rgba, int r, int g, int b,
+                             float similarity, float blend, int max, double scale)
 {
-    int dr = (int)r - ctx->colorkey_rgba[0];
-    int dg = (int)g - ctx->colorkey_rgba[1];
-    int db = (int)b - ctx->colorkey_rgba[2];
+    double dr, dg, db, diff;
 
-    double diff = sqrt((dr * dr + dg * dg + db * db) / (255.0 * 255.0 * 3.0));
+    dr = r * scale - colorkey_rgba[0];
+    dg = g * scale - colorkey_rgba[1];
+    db = b * scale - colorkey_rgba[2];
 
-    if (ctx->blend > 0.0001) {
-        return av_clipd((diff - ctx->similarity) / ctx->blend, 0.0, 1.0) * 255.0;
+    diff = sqrt((dr * dr + dg * dg + db * db) / (255.0 * 255.0 * 3.0));
+
+    if (blend > 0.0001) {
+        return av_clipd((diff - similarity) / blend, 0.0, 1.0) * max;
     } else {
-        return (diff > ctx->similarity) ? 255 : 0;
+        return (diff > similarity) ? max : 0;
     }
 }
 
-static int do_colorkey_slice(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
-{
-    AVFrame *frame = arg;
-
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
-
-    ColorkeyContext *ctx = avctx->priv;
-
-    int o, x, y;
-
-    for (y = slice_start; y < slice_end; ++y) {
-        for (x = 0; x < frame->width; ++x) {
-            o = frame->linesize[0] * y + x * 4;
-
-            frame->data[0][o + ctx->co[3]] =
-                do_colorkey_pixel(ctx,
-                                  frame->data[0][o + ctx->co[0]],
-                                  frame->data[0][o + ctx->co[1]],
-                                  frame->data[0][o + ctx->co[2]]);
-        }
-    }
-
-    return 0;
+#define COLORKEY_SLICE(name, type)                                 \
+static int do_colorkey_slice##name(AVFilterContext *avctx,         \
+                                   void *arg,                      \
+                                   int jobnr, int nb_jobs)         \
+{                                                                  \
+    AVFrame *frame = arg;                                          \
+    const int slice_start = (frame->height * jobnr) / nb_jobs;     \
+    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs; \
+    ColorkeyContext *ctx = avctx->priv;                            \
+    const float similarity = ctx->similarity;                      \
+    const float blend = ctx->blend;                                \
+    const uint8_t *colorkey_rgba = ctx->colorkey_rgba;             \
+    const uint8_t *co = ctx->co;                                   \
+    const double scale = ctx->scale;                               \
+    const int max = ctx->max;                                      \
+                                                                   \
+    for (int y = slice_start; y < slice_end; y++) {                \
+        type *dst = (type *)(frame->data[0] + y * frame->linesize[0]);\
+                                                                   \
+        for (int x = 0; x < frame->width; x++) {                   \
+            const int o = x * 4;                                   \
+                                                                   \
+            dst[o + co[3]] = do_colorkey_pixel(colorkey_rgba,      \
+                             dst[o + co[0]],                       \
+                             dst[o + co[1]],                       \
+                             dst[o + co[2]],                       \
+                             similarity, blend, max, scale);       \
+        }                                                          \
+    }                                                              \
+                                                                   \
+    return 0;                                                      \
 }
 
-static int do_colorhold_slice(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
-{
-    AVFrame *frame = arg;
+COLORKEY_SLICE(8, uint8_t)
+COLORKEY_SLICE(16, uint16_t)
 
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
-
-    ColorkeyContext *ctx = avctx->priv;
-
-    int x, y;
-
-    for (y = slice_start; y < slice_end; ++y) {
-        for (x = 0; x < frame->width; ++x) {
-            int o, t, r, g, b;
-
-            o = frame->linesize[0] * y + x * 4;
-            r = frame->data[0][o + ctx->co[0]];
-            g = frame->data[0][o + ctx->co[1]];
-            b = frame->data[0][o + ctx->co[2]];
-
-            t = do_colorkey_pixel(ctx, r, g, b);
-
-            if (t > 0) {
-                int a = (r + g + b) / 3;
-                int rt = 255 - t;
-
-                frame->data[0][o + ctx->co[0]] = (a * t + r * rt + 127) >> 8;
-                frame->data[0][o + ctx->co[1]] = (a * t + g * rt + 127) >> 8;
-                frame->data[0][o + ctx->co[2]] = (a * t + b * rt + 127) >> 8;
-            }
-        }
-    }
-
-    return 0;
+#define COLORHOLD_SLICE(name, type, htype)                             \
+static int do_colorhold_slice##name(AVFilterContext *avctx, void *arg, \
+                              int jobnr, int nb_jobs)                  \
+{                                                                      \
+    AVFrame *frame = arg;                                              \
+    const int slice_start = (frame->height * jobnr) / nb_jobs;         \
+    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;     \
+    ColorkeyContext *ctx = avctx->priv;                                \
+    const int depth = ctx->depth;                                      \
+    const int max = ctx->max;                                          \
+    const int half = max / 2;                                          \
+    const uint8_t *co = ctx->co;                                       \
+    const uint8_t *colorkey_rgba = ctx->colorkey_rgba;                 \
+    const float similarity = ctx->similarity;                          \
+    const float blend = ctx->blend;                                    \
+    const double scale = ctx->scale;                                   \
+                                                                       \
+    for (int y = slice_start; y < slice_end; ++y) {                    \
+        type *dst = (type *)(frame->data[0] + y * frame->linesize[0]); \
+                                                                       \
+        for (int x = 0; x < frame->width; ++x) {                       \
+            int o, t, r, g, b;                                         \
+                                                                       \
+            o = x * 4;                                                 \
+            r = dst[o + co[0]];                                        \
+            g = dst[o + co[1]];                                        \
+            b = dst[o + co[2]];                                        \
+                                                                       \
+            t = do_colorkey_pixel(colorkey_rgba, r, g, b,              \
+                                  similarity, blend, max, scale);      \
+                                                                       \
+            if (t > 0) {                                               \
+                htype a = (r + g + b) / 3;                             \
+                htype rt = max - t;                                    \
+                                                                       \
+                dst[o + co[0]] = (a * t + r * rt + half) >> depth;     \
+                dst[o + co[1]] = (a * t + g * rt + half) >> depth;     \
+                dst[o + co[2]] = (a * t + b * rt + half) >> depth;     \
+            }                                                          \
+        }                                                              \
+    }                                                                  \
+                                                                       \
+    return 0;                                                          \
 }
 
-static av_cold int init_filter(AVFilterContext *avctx)
-{
-    ColorkeyContext *ctx = avctx->priv;
-
-    if (!strcmp(avctx->filter->name, "colorkey")) {
-        ctx->do_slice = do_colorkey_slice;
-    } else {
-        ctx->do_slice = do_colorhold_slice;
-    }
-
-    return 0;
-}
+COLORHOLD_SLICE(8, uint8_t, int)
+COLORHOLD_SLICE(16, uint16_t, int64_t)
 
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
@@ -148,15 +164,21 @@ static av_cold int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *avctx = outlink->src;
     ColorkeyContext *ctx = avctx->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
-    int i;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->inputs[0]->format);
 
+    ctx->depth = desc->comp[0].depth;
+    ctx->max   = (1 << ctx->depth) - 1;
+    ctx->scale = 255.0 / ctx->max;
     outlink->w = avctx->inputs[0]->w;
     outlink->h = avctx->inputs[0]->h;
     outlink->time_base = avctx->inputs[0]->time_base;
+    ff_fill_rgba_map(ctx->co, outlink->format);
 
-    for (i = 0; i < 4; ++i)
-        ctx->co[i] = desc->comp[i].offset;
+    if (!strcmp(avctx->filter->name, "colorkey")) {
+        ctx->do_slice = ctx->max == 255 ? do_colorkey_slice8  : do_colorkey_slice16;
+    } else {
+        ctx->do_slice = ctx->max == 255 ? do_colorhold_slice8 : do_colorhold_slice16;
+    }
 
     return 0;
 }
@@ -166,6 +188,8 @@ static const enum AVPixelFormat pixel_fmts[] = {
     AV_PIX_FMT_RGBA,
     AV_PIX_FMT_ABGR,
     AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_RGBA64,
+    AV_PIX_FMT_BGRA64,
     AV_PIX_FMT_NONE
 };
 
@@ -205,7 +229,6 @@ const AVFilter ff_vf_colorkey = {
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
     .priv_size     = sizeof(ColorkeyContext),
     .priv_class    = &colorkey_class,
-    .init          = init_filter,
     FILTER_INPUTS(colorkey_inputs),
     FILTER_OUTPUTS(colorkey_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
@@ -230,7 +253,6 @@ const AVFilter ff_vf_colorhold = {
     .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray. Operates on RGB colors."),
     .priv_size     = sizeof(ColorkeyContext),
     .priv_class    = &colorhold_class,
-    .init          = init_filter,
     FILTER_INPUTS(colorkey_inputs),
     FILTER_OUTPUTS(colorkey_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
