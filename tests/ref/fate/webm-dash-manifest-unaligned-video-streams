@@ -6,7 +6,7 @@
   type="static"
   mediaPresentationDuration="PT32.48S"
   minBufferTime="PT1S"
-  profiles="urn:webm:dash:profile:webm-on-demand:2012">
+  profiles="urn:mpeg:dash:profile:webm-on-demand:2012">
 <Period id="0" start="PT0S" duration="PT32.48S" >
 <AdaptationSet id="0" mimeType="video/webm" codecs="vp8" lang="eng" width="640" height="360" bitstreamSwitching="true" subsegmentAlignment="false" subsegmentStartsWithSAP="0">
 <Representation id="0" bandwidth="302355">
