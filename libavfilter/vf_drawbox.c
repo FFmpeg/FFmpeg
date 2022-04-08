@@ -35,6 +35,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/detection_bbox.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -55,6 +56,7 @@ static const char *const var_names[] = {
 };
 
 enum { Y, U, V, A };
+enum { R, G, B };
 
 enum var_name {
     VAR_DAR,
@@ -71,11 +73,17 @@ enum var_name {
     VARS_NB
 };
 
+typedef struct DrawBoxContext DrawBoxContext;
+
+typedef int (*PixelBelongsToRegion)(DrawBoxContext *s, int x, int y);
+
 typedef struct DrawBoxContext {
     const AVClass *class;
     int x, y, w, h;
     int thickness;
     char *color_str;
+    uint8_t rgba_map[4];
+    uint8_t rgba_color[4];
     unsigned char yuv_color[4];
     int invert_color; ///< invert luma color
     int vsub, hsub;   ///< chroma subsampling
@@ -85,12 +93,14 @@ typedef struct DrawBoxContext {
     char *box_source_string; ///< string for box data source
     int have_alpha;
     int replace;
+    int step;
     enum AVFrameSideDataType box_source;
+
+    void (*draw_region)(AVFrame *frame, DrawBoxContext *ctx, int left, int top, int right, int down,
+                        PixelBelongsToRegion pixel_belongs_to_region);
 } DrawBoxContext;
 
 static const int NUM_EXPR_EVALS = 5;
-
-typedef int (*PixelBelongsToRegion)(DrawBoxContext *s, int x, int y);
 
 #define ASSIGN_THREE_CHANNELS                                        \
     row[0] = frame->data[0] +  y               * frame->linesize[0]; \
@@ -146,6 +156,67 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
     }
 }
 
+#define ASSIGN_THREE_CHANNELS_PACKED                  \
+    row[0] = frame->data[0] + y * frame->linesize[0] + ctx->rgba_map[0]; \
+    row[1] = frame->data[0] + y * frame->linesize[0] + ctx->rgba_map[1]; \
+    row[2] = frame->data[0] + y * frame->linesize[0] + ctx->rgba_map[2];
+
+#define ASSIGN_FOUR_CHANNELS_PACKED                   \
+    ASSIGN_THREE_CHANNELS                             \
+    row[3] = frame->data[0] + y * frame->linesize[0] + ctx->rgba_map[3];
+
+static void draw_region_rgb_packed(AVFrame *frame, DrawBoxContext *ctx, int left, int top, int right, int down,
+                                   PixelBelongsToRegion pixel_belongs_to_region)
+{
+    const int C = ctx->step;
+    uint8_t *row[4];
+
+    if (ctx->have_alpha && ctx->replace) {
+        for (int y = top; y < down; y++) {
+            ASSIGN_FOUR_CHANNELS_PACKED
+            if (ctx->invert_color) {
+                for (int x = left; x < right; x++)
+                    if (pixel_belongs_to_region(ctx, x, y)) {
+                        row[0][x*C] = 0xff - row[0][x*C];
+                        row[1][x*C] = 0xff - row[1][x*C];
+                        row[2][x*C] = 0xff - row[2][x*C];
+                    }
+            } else {
+                for (int x = left; x < right; x++) {
+                    if (pixel_belongs_to_region(ctx, x, y)) {
+                        row[0][x*C] = ctx->rgba_color[R];
+                        row[1][x*C] = ctx->rgba_color[G];
+                        row[2][x*C] = ctx->rgba_color[B];
+                        row[3][x*C] = ctx->rgba_color[A];
+                    }
+                }
+            }
+        }
+    } else {
+        for (int y = top; y < down; y++) {
+            ASSIGN_THREE_CHANNELS_PACKED
+            if (ctx->invert_color) {
+                for (int x = left; x < right; x++)
+                    if (pixel_belongs_to_region(ctx, x, y)) {
+                        row[0][x*C] = 0xff - row[0][x*C];
+                        row[1][x*C] = 0xff - row[1][x*C];
+                        row[2][x*C] = 0xff - row[2][x*C];
+                    }
+            } else {
+                for (int x = left; x < right; x++) {
+                    float alpha = (float)ctx->rgba_color[A] / 255.f;
+
+                    if (pixel_belongs_to_region(ctx, x, y)) {
+                        row[0][x*C] = (1.f - alpha) * row[0][x*C] + alpha * ctx->rgba_color[R];
+                        row[1][x*C] = (1.f - alpha) * row[1][x*C] + alpha * ctx->rgba_color[G];
+                        row[2][x*C] = (1.f - alpha) * row[2][x*C] + alpha * ctx->rgba_color[B];
+                    }
+                }
+            }
+        }
+    }
+}
+
 static enum AVFrameSideDataType box_source_string_parse(const char *box_source_string)
 {
     av_assert0(box_source_string);
@@ -160,7 +231,6 @@ static enum AVFrameSideDataType box_source_string_parse(const char *box_source_s
 static av_cold int init(AVFilterContext *ctx)
 {
     DrawBoxContext *s = ctx->priv;
-    uint8_t rgba_color[4];
 
     if (s->box_source_string) {
         s->box_source = box_source_string_parse(s->box_source_string);
@@ -172,14 +242,14 @@ static av_cold int init(AVFilterContext *ctx)
 
     if (!strcmp(s->color_str, "invert"))
         s->invert_color = 1;
-    else if (av_parse_color(rgba_color, s->color_str, -1, ctx) < 0)
+    else if (av_parse_color(s->rgba_color, s->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     if (!s->invert_color) {
-        s->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
-        s->yuv_color[U] = RGB_TO_U_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-        s->yuv_color[V] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-        s->yuv_color[A] = rgba_color[3];
+        s->yuv_color[Y] = RGB_TO_Y_CCIR(s->rgba_color[0], s->rgba_color[1], s->rgba_color[2]);
+        s->yuv_color[U] = RGB_TO_U_CCIR(s->rgba_color[0], s->rgba_color[1], s->rgba_color[2], 0);
+        s->yuv_color[V] = RGB_TO_V_CCIR(s->rgba_color[0], s->rgba_color[1], s->rgba_color[2], 0);
+        s->yuv_color[A] = s->rgba_color[3];
     }
 
     return 0;
@@ -191,6 +261,11 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
     AV_PIX_FMT_YUV440P,  AV_PIX_FMT_YUVJ440P,
     AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
+    AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
     AV_PIX_FMT_NONE
 };
 
@@ -204,6 +279,14 @@ static int config_input(AVFilterLink *inlink)
     int ret;
     int i;
 
+    ff_fill_rgba_map(s->rgba_map, inlink->format);
+
+    if (!(desc->flags & AV_PIX_FMT_FLAG_RGB))
+        s->draw_region = draw_region;
+    else
+        s->draw_region = draw_region_rgb_packed;
+
+    s->step = av_get_padded_bits_per_pixel(desc) >> 3;
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
     s->have_alpha = desc->flags & AV_PIX_FMT_FLAG_ALPHA;
@@ -315,8 +398,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->w = bbox->w;
         }
 
-        draw_region(frame, s, FFMAX(s->x, 0), FFMAX(s->y, 0), FFMIN(s->x + s->w, frame->width),
-                    FFMIN(s->y + s->h, frame->height), pixel_belongs_to_box);
+        s->draw_region(frame, s, FFMAX(s->x, 0), FFMAX(s->y, 0), FFMIN(s->x + s->w, frame->width),
+                       FFMIN(s->y + s->h, frame->height), pixel_belongs_to_box);
     }
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
@@ -438,7 +521,7 @@ static int drawgrid_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     DrawBoxContext *drawgrid = inlink->dst->priv;
 
-    draw_region(frame, drawgrid, 0, 0, frame->width, frame->height, pixel_belongs_to_grid);
+    drawgrid->draw_region(frame, drawgrid, 0, 0, frame->width, frame->height, pixel_belongs_to_grid);
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
