@@ -3399,8 +3399,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    out->pts = in->pts;
-    out->color_range = AVCOL_RANGE_JPEG;
 
     for (k = 0; k < s->dcomp; k++) {
         if (s->bits <= 8) {
@@ -3484,6 +3482,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     s->graticulef(s, out);
 
+    av_frame_copy_props(out, in);
+    out->color_range = AVCOL_RANGE_JPEG;
     av_frame_free(&in);
     out->sample_aspect_ratio = outlink->sample_aspect_ratio;
     return ff_filter_frame(outlink, out);
