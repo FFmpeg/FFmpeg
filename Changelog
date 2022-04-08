@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.2.6
+ configure: bump year
+ avfilter/vf_lenscorrection: make width/height int
  avcodec/diracdec: avoid signed integer overflow in global mv
  avcodec/takdsp: Fix integer overflow in decorrelate_sf()
  avcodec/apedec: fix a integer overflow in long_filter_high_3800()
