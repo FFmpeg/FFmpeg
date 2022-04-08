@@ -93,7 +93,7 @@ static int write_header(AVFormatContext *s)
     }
     avio_printf(pb, "  minBufferTime=\"PT%gS\"\n", min_buffer_time);
     avio_printf(pb, "  profiles=\"%s\"%s",
-                w->is_live ? "urn:mpeg:dash:profile:isoff-live:2011" : "urn:webm:dash:profile:webm-on-demand:2012",
+                w->is_live ? "urn:mpeg:dash:profile:isoff-live:2011" : "urn:mpeg:dash:profile:webm-on-demand:2012",
                 w->is_live ? "\n" : ">\n");
     if (w->is_live) {
         time_t local_time = time(NULL);
