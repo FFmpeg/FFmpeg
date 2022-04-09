@@ -1271,6 +1271,54 @@ follows.
 
 A64 / Commodore 64 multicolor charset encoder. @code{a64_multi5} is extended with 5th color (colram).
 
+@section Cinepak
+
+Cinepak aka CVID encoder.
+Compatible with Windows 3.1 and vintage MacOS.
+
+@subsection Options
+
+@table @option
+@item keyint_min @var{integer}
+Keyframe interval.
+A keyframe is inserted every @code{-keyint_min}-th frame.
+
+@item q:v @var{integer}
+Quality factor. Lower is better. Higher gives lower bitrate.
+The following table lists bitrates when encoding akiyo_cif.y4m for various values of @code{-q:v} with @code{-keyint_min 100}:
+
+@table @option
+@item @code{-q:v 1} 1918 kb/s
+@item @code{-q:v 2} 1735 kb/s
+@item @code{-q:v 4} 1500 kb/s
+@item @code{-q:v 10} 1064 kb/s
+@item @code{-q:v 20} 826 kb/s
+@item @code{-q:v 40} 553 kb/s
+@item @code{-q:v 100} 394 kb/s
+@item @code{-q:v 200} 311 kb/s
+@item @code{-q:v 400} 266 kb/s
+@item @code{-q:v 1000} 237 kb/s
+@end table
+
+@item max_extra_cb_iterations @var{integer}
+Max extra codebook recalculation passes, more is better and slower.
+
+@item skip_empty_cb @var{boolean}
+Avoid wasting bytes, ignore vintage MacOS decoder.
+
+@item max_strips @var{integer}
+@itemx min_strips @var{integer}
+The minimum and maximum number of strips to use.
+Wider range sometimes improves quality.
+More strips is generally better quality but costs more bits.
+Vintage compatible is 1..3.
+
+@item strip_number_adaptivity @var{integer}
+How much number of strips is allowed to change between frames.
+Higher is better but slower.
+
+@end table
+
 @section GIF
 
 GIF image/animation encoder.
