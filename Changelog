@@ -11,6 +11,7 @@ version 5.1:
 - avsynctest source filter
 - feedback video filter
 - pixelize video filter
+- colormap video filter
 
 
 version 5.0:

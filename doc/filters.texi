@@ -8944,6 +8944,39 @@ colorlevels=romin=0.5:gomin=0.5:bomin=0.5
 
 This filter supports the all above options as @ref{commands}.
 
+@section colormap
+Apply custom color maps to video stream.
+
+This filter needs three input video streams.
+First stream is video stream that is going to be filtered out.
+Second and third video stream specify color patches for source
+color to target color mapping.
+
+The filter accepts the following options:
+
+@table @option
+@item patch_size
+Set the source and target video stream patch size in pixels.
+
+@item nb_patches
+Set the max number of used patches from source and target video stream.
+
+@item type
+Set the adjustments used for target colors. Can be @code{relative} or @code{absolute}.
+Defaults is @code{absolute}.
+
+@item kernel
+Set the kernel used to measure color differences between mapped colors.
+
+The accepted values are:
+@table @samp
+@item euclidean
+@item weuclidean
+@end table
+
+Default is @code{euclidean}.
+@end table
+
 @section colormatrix
 
 Convert color matrix.

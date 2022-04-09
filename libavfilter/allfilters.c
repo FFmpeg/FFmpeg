@@ -204,6 +204,7 @@ extern const AVFilter ff_vf_colorkey;
 extern const AVFilter ff_vf_colorkey_opencl;
 extern const AVFilter ff_vf_colorhold;
 extern const AVFilter ff_vf_colorlevels;
+extern const AVFilter ff_vf_colormap;
 extern const AVFilter ff_vf_colormatrix;
 extern const AVFilter ff_vf_colorspace;
 extern const AVFilter ff_vf_colortemperature;
