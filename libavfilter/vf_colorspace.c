@@ -55,14 +55,6 @@ enum Colorspace {
     CS_NB,
 };
 
-enum Whitepoint {
-    WP_D65,
-    WP_C,
-    WP_DCI,
-    WP_E,
-    WP_NB,
-};
-
 enum WhitepointAdaptation {
     WP_ADAPT_BRADFORD,
     WP_ADAPT_VON_KRIES,
@@ -108,11 +100,6 @@ static const enum AVColorSpace default_csp[CS_NB + 1] = {
     [CS_SMPTE240M]   = AVCOL_SPC_SMPTE240M,
     [CS_BT2020]      = AVCOL_SPC_BT2020_NCL,
     [CS_NB]          = AVCOL_SPC_UNSPECIFIED,
-};
-
-struct ColorPrimaries {
-    enum Whitepoint wp;
-    struct PrimaryCoefficients coeff;
 };
 
 struct TransferCharacteristics {
@@ -201,40 +188,6 @@ static const struct TransferCharacteristics *
     return coeffs;
 }
 
-static const struct WhitepointCoefficients whitepoint_coefficients[WP_NB] = {
-    [WP_D65] = { 0.3127, 0.3290 },
-    [WP_C]   = { 0.3100, 0.3160 },
-    [WP_DCI] = { 0.3140, 0.3510 },
-    [WP_E]   = { 1/3.0f, 1/3.0f },
-};
-
-static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
-    [AVCOL_PRI_BT709]     = { WP_D65, { 0.640, 0.330, 0.300, 0.600, 0.150, 0.060 } },
-    [AVCOL_PRI_BT470M]    = { WP_C,   { 0.670, 0.330, 0.210, 0.710, 0.140, 0.080 } },
-    [AVCOL_PRI_BT470BG]   = { WP_D65, { 0.640, 0.330, 0.290, 0.600, 0.150, 0.060 } },
-    [AVCOL_PRI_SMPTE170M] = { WP_D65, { 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 } },
-    [AVCOL_PRI_SMPTE240M] = { WP_D65, { 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 } },
-    [AVCOL_PRI_SMPTE428]  = { WP_E,   { 0.735, 0.265, 0.274, 0.718, 0.167, 0.009 } },
-    [AVCOL_PRI_SMPTE431]  = { WP_DCI, { 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 } },
-    [AVCOL_PRI_SMPTE432]  = { WP_D65, { 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 } },
-    [AVCOL_PRI_FILM]      = { WP_C,   { 0.681, 0.319, 0.243, 0.692, 0.145, 0.049 } },
-    [AVCOL_PRI_BT2020]    = { WP_D65, { 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 } },
-    [AVCOL_PRI_JEDEC_P22] = { WP_D65, { 0.630, 0.340, 0.295, 0.605, 0.155, 0.077 } },
-};
-
-static const struct ColorPrimaries *get_color_primaries(enum AVColorPrimaries prm)
-{
-    const struct ColorPrimaries *p;
-
-    if (prm >= AVCOL_PRI_NB)
-        return NULL;
-    p = &color_primaries[prm];
-    if (!p->coeff.xr)
-        return NULL;
-
-    return p;
-}
-
 static int fill_gamma_table(ColorSpaceContext *s)
 {
     int n;
@@ -280,7 +233,8 @@ static int fill_gamma_table(ColorSpaceContext *s)
  * This function uses the Bradford mechanism.
  */
 static void fill_whitepoint_conv_table(double out[3][3], enum WhitepointAdaptation wp_adapt,
-                                       enum Whitepoint src, enum Whitepoint dst)
+                                       const struct WhitepointCoefficients *wp_src,
+                                       const struct WhitepointCoefficients *wp_dst)
 {
     static const double ma_tbl[NB_WP_ADAPT_NON_IDENTITY][3][3] = {
         [WP_ADAPT_BRADFORD] = {
@@ -294,9 +248,7 @@ static void fill_whitepoint_conv_table(double out[3][3], enum WhitepointAdaptati
         },
     };
     const double (*ma)[3] = ma_tbl[wp_adapt];
-    const struct WhitepointCoefficients *wp_src = &whitepoint_coefficients[src];
     double zw_src = 1.0 - wp_src->xw - wp_src->yw;
-    const struct WhitepointCoefficients *wp_dst = &whitepoint_coefficients[dst];
     double zw_dst = 1.0 - wp_dst->xw - wp_dst->yw;
     double mai[3][3], fac[3][3], tmp[3][3];
     double rs, gs, bs, rd, gd, bd;
@@ -486,7 +438,7 @@ static int create_filtergraph(AVFilterContext *ctx,
             s->in_prm = default_prm[FFMIN(s->user_iall, CS_NB)];
         if (s->user_iprm != AVCOL_PRI_UNSPECIFIED)
             s->in_prm = s->user_iprm;
-        s->in_primaries = get_color_primaries(s->in_prm);
+        s->in_primaries = ff_get_color_primaries(s->in_prm);
         if (!s->in_primaries) {
             av_log(ctx, AV_LOG_ERROR,
                    "Unsupported input primaries %d (%s)\n",
@@ -494,7 +446,7 @@ static int create_filtergraph(AVFilterContext *ctx,
             return AVERROR(EINVAL);
         }
         s->out_prm = out->color_primaries;
-        s->out_primaries = get_color_primaries(s->out_prm);
+        s->out_primaries = ff_get_color_primaries(s->out_prm);
         if (!s->out_primaries) {
             if (s->out_prm == AVCOL_PRI_UNSPECIFIED) {
                 if (s->user_all == CS_UNSPECIFIED) {
@@ -516,17 +468,17 @@ static int create_filtergraph(AVFilterContext *ctx,
             double rgb2xyz[3][3], xyz2rgb[3][3], rgb2rgb[3][3];
             const struct WhitepointCoefficients *wp_out, *wp_in;
 
-            wp_out = &whitepoint_coefficients[s->out_primaries->wp];
-            wp_in = &whitepoint_coefficients[s->in_primaries->wp];
-            ff_fill_rgb2xyz_table(&s->out_primaries->coeff, wp_out, rgb2xyz);
+            wp_out = &s->out_primaries->wp;
+            wp_in = &s->in_primaries->wp;
+            ff_fill_rgb2xyz_table(&s->out_primaries->prim, wp_out, rgb2xyz);
             ff_matrix_invert_3x3(rgb2xyz, xyz2rgb);
-            ff_fill_rgb2xyz_table(&s->in_primaries->coeff, wp_in, rgb2xyz);
-            if (s->out_primaries->wp != s->in_primaries->wp &&
+            ff_fill_rgb2xyz_table(&s->in_primaries->prim, wp_in, rgb2xyz);
+            if (memcmp(wp_in, wp_out, sizeof(*wp_in)) != 0 &&
                 s->wp_adapt != WP_ADAPT_IDENTITY) {
                 double wpconv[3][3], tmp[3][3];
 
-                fill_whitepoint_conv_table(wpconv, s->wp_adapt, s->in_primaries->wp,
-                                           s->out_primaries->wp);
+                fill_whitepoint_conv_table(wpconv, s->wp_adapt, &s->in_primaries->wp,
+                                           &s->out_primaries->wp);
                 ff_matrix_mul_3x3(tmp, rgb2xyz, wpconv);
                 ff_matrix_mul_3x3(rgb2rgb, tmp, xyz2rgb);
             } else {
