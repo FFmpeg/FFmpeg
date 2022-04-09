@@ -73,9 +73,9 @@ enum var_name {
     VARS_NB
 };
 
-typedef struct DrawBoxContext DrawBoxContext;
+struct DrawBoxContext;
 
-typedef int (*PixelBelongsToRegion)(DrawBoxContext *s, int x, int y);
+typedef int (*PixelBelongsToRegion)(struct DrawBoxContext *s, int x, int y);
 
 typedef struct DrawBoxContext {
     const AVClass *class;
@@ -96,7 +96,7 @@ typedef struct DrawBoxContext {
     int step;
     enum AVFrameSideDataType box_source;
 
-    void (*draw_region)(AVFrame *frame, DrawBoxContext *ctx, int left, int top, int right, int down,
+    void (*draw_region)(AVFrame *frame, struct DrawBoxContext *ctx, int left, int top, int right, int down,
                         PixelBelongsToRegion pixel_belongs_to_region);
 } DrawBoxContext;
 
