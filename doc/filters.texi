@@ -14384,6 +14384,27 @@ By default value is 0.
 
 The @code{hysteresis} filter also supports the @ref{framesync} options.
 
+@section iccgen
+
+Generate ICC profiles and attach them to frames.
+
+This filter accepts the following options:
+
+@table @option
+@item color_primaries
+@item color_trc
+Configure the colorspace that the ICC profile will be generated for. The
+default value of @code{auto} infers the value from the input frame's metadata,
+defaulting to BT.709/sRGB as appropriate.
+
+See the @ref{setparams} filter for a list of possible values, but note that
+@code{unknown} are not valid values for this filter.
+
+@item force
+If true, an ICC profile will be generated even if it would overwrite an
+already existing ICC profile. Disabled by default.
+@end table
+
 @section identity
 
 Obtain the identity score between two input videos.
