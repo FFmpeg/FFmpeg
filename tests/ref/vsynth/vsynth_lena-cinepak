@@ -1,4 +1,4 @@
-a9ea19eb0d239a53af8630d5bc4167d0 *tests/data/fate/vsynth_lena-cinepak.avi
-407574 tests/data/fate/vsynth_lena-cinepak.avi
-e32d4103194665d2ea0f46d5cdd0cdf2 *tests/data/fate/vsynth_lena-cinepak.out.rawvideo
+a79f907fecb95c8a5b5de670ccda215b *tests/data/fate/vsynth_lena-cinepak.avi
+407952 tests/data/fate/vsynth_lena-cinepak.avi
+2664cdff5f14508e891477b498cc840e *tests/data/fate/vsynth_lena-cinepak.out.rawvideo
 stddev:   58.10 PSNR: 12.85 MAXDIFF:  185 bytes:  7603200/   921600
