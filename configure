@@ -215,6 +215,7 @@ External library support:
   --disable-iconv          disable iconv [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
+  --enable-lcms2           enable ICC profile support via LittleCMS 2 [no]
   --enable-libaom          enable AV1 video encoding/decoding via libaom [no]
   --enable-libaribb24      enable ARIB text and caption decoding via libaribb24 [no]
   --enable-libass          enable libass subtitles rendering,
@@ -1814,6 +1815,7 @@ EXTERNAL_LIBRARY_LIST="
     gnutls
     jni
     ladspa
+    lcms2
     libaom
     libass
     libbluray
@@ -6510,6 +6512,7 @@ enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_headers jni.h && enabled pthreads || die "ERROR: jni not found"; }
 enabled ladspa            && require_headers "ladspa.h dlfcn.h"
+enabled lcms2             && require_pkg_config lcms2 "lcms2 >= 2.13" lcms2.h cmsCreateContext
 enabled libaom            && require_pkg_config libaom "aom >= 1.0.0" aom/aom_codec.h aom_codec_version
 enabled libaribb24        && { check_pkg_config libaribb24 "aribb24 > 1.0.3" "aribb24/aribb24.h" arib_instance_new ||
                                { enabled gpl && require_pkg_config libaribb24 aribb24 "aribb24/aribb24.h" arib_instance_new; } ||
