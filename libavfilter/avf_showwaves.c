@@ -437,8 +437,11 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = showwaves->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
 
-    outlink->frame_rate = av_div_q((AVRational){inlink->sample_rate,showwaves->n},
-                                   (AVRational){showwaves->w,1});
+    if (showwaves->single_pic)
+        outlink->frame_rate = av_make_q(1, 1);
+    else
+        outlink->frame_rate = av_div_q((AVRational){inlink->sample_rate,showwaves->n},
+                                       (AVRational){showwaves->w,1});
 
     av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d r:%f n:%d\n",
            showwaves->w, showwaves->h, av_q2d(outlink->frame_rate), showwaves->n);

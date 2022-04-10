@@ -1241,6 +1241,8 @@ static int config_output(AVFilterLink *outlink)
         int ret = av_parse_video_rate(&s->frame_rate, s->rate_str);
         if (ret < 0)
             return ret;
+    } else if (s->single_pic) {
+        s->frame_rate = av_make_q(1, 1);
     } else {
         s->frame_rate = s->auto_frame_rate;
     }
