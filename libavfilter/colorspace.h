@@ -49,6 +49,9 @@ void ff_fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
                            const struct WhitepointCoefficients *wp,
                            double rgb2xyz[3][3]);
 
+/* Returns AVCOL_PRI_UNSPECIFIED if no clear match can be identified */
+enum AVColorPrimaries ff_detect_color_primaries(const struct ColorPrimaries *prm);
+
 const struct ColorPrimaries *ff_get_color_primaries(enum AVColorPrimaries prm);
 const struct LumaCoefficients *ff_get_luma_coefficients(enum AVColorSpace csp);
 void ff_fill_rgb2yuv_table(const struct LumaCoefficients *coeffs,

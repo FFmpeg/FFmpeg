@@ -170,6 +170,31 @@ const struct ColorPrimaries *ff_get_color_primaries(enum AVColorPrimaries prm)
     return p;
 }
 
+enum AVColorPrimaries ff_detect_color_primaries(const struct ColorPrimaries *prm)
+{
+    double delta;
+
+    for (enum AVColorPrimaries p = 0; p < AVCOL_PRI_NB; p++) {
+        const struct ColorPrimaries *ref = &color_primaries[p];
+        if (!ref->prim.xr)
+            continue;
+
+        delta = fabs(prm->prim.xr - ref->prim.xr) +
+                fabs(prm->prim.yr - ref->prim.yr) +
+                fabs(prm->prim.yg - ref->prim.yg) +
+                fabs(prm->prim.yg - ref->prim.yg) +
+                fabs(prm->prim.yb - ref->prim.yb) +
+                fabs(prm->prim.yb - ref->prim.yb) +
+                fabs(prm->wp.xw - ref->wp.xw) +
+                fabs(prm->wp.yw - ref->wp.yw);
+
+        if (delta < 0.001)
+            return p;
+    }
+
+    return AVCOL_PRI_UNSPECIFIED;
+}
+
 void ff_fill_rgb2yuv_table(const struct LumaCoefficients *coeffs,
                            double rgb2yuv[3][3])
 {
