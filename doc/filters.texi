@@ -14700,6 +14700,10 @@ required.
 The model of the lens (for example, "Canon EF-S 18-55mm f/3.5-5.6 IS STM"). This
 option is required.
 
+@item db_path
+The full path to the lens database folder. If not set, the filter will attempt to
+load the database from the install path when the library was built. Default is unset.
+
 @item mode
 The type of correction to apply. The following values are valid options:
 

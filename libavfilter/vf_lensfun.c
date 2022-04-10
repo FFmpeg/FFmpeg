@@ -73,7 +73,7 @@ typedef struct DistortionCorrectionThreadData {
 
 typedef struct LensfunContext {
     const AVClass *class;
-    const char *make, *model, *lens_model;
+    const char *make, *model, *lens_model, *db_path;
     int mode;
     float focal_length;
     float aperture;
@@ -97,6 +97,7 @@ static const AVOption lensfun_options[] = {
     { "make", "set camera maker", OFFSET(make), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "model", "set camera model", OFFSET(model), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "lens_model", "set lens model", OFFSET(lens_model), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
+    { "db_path", "set path to database", OFFSET(db_path), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=GEOMETRY_DISTORTION}, 0, VIGNETTING | GEOMETRY_DISTORTION | SUBPIXEL_DISTORTION, FLAGS, "mode" },
         { "vignetting", "fix lens vignetting", 0, AV_OPT_TYPE_CONST, {.i64=VIGNETTING}, 0, 0, FLAGS, "mode" },
         { "geometry", "correct geometry distortion", 0, AV_OPT_TYPE_CONST, {.i64=GEOMETRY_DISTORTION}, 0, 0, FLAGS, "mode" },
@@ -136,9 +137,10 @@ static av_cold int init(AVFilterContext *ctx)
     const lfLens **lenses;
 
     db = lf_db_create();
-    if (lf_db_load(db) != LF_NO_ERROR) {
+    if ((lensfun->db_path ? lf_db_load_path(db, lensfun->db_path) : lf_db_load(db)) != LF_NO_ERROR) {
         lf_db_destroy(db);
-        av_log(ctx, AV_LOG_FATAL, "Failed to load lensfun database\n");
+        av_log(ctx, AV_LOG_FATAL, "Failed to load lensfun database from %s path\n",
+               lensfun->db_path ? lensfun->db_path : "default");
         return AVERROR_INVALIDDATA;
     }
 
