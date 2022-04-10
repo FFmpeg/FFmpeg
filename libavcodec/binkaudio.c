@@ -264,7 +264,7 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
             j = ch;
             for (i = 0; i < s->overlap_len; i++, j += channels)
                 out[ch + ch_offset][i] = (s->previous[ch + ch_offset][i] * (count - j) +
-                                      out[ch + ch_offset][i] *          j) / count;
+                                                  out[ch + ch_offset][i] *          j) / count;
         }
         memcpy(s->previous[ch + ch_offset], &out[ch + ch_offset][s->frame_len - s->overlap_len],
                s->overlap_len * sizeof(*s->previous[ch + ch_offset]));
