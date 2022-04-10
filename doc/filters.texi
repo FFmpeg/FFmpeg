@@ -26287,6 +26287,7 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{allrgb}
 @anchor{allyuv}
 @anchor{color}
+@anchor{colorchart}
 @anchor{colorspectrum}
 @anchor{haldclutsrc}
 @anchor{nullsrc}
@@ -26305,6 +26306,8 @@ The @code{allrgb} source returns frames of size 4096x4096 of all rgb colors.
 The @code{allyuv} source returns frames of size 4096x4096 of all yuv colors.
 
 The @code{color} source provides an uniformly colored input.
+
+The @code{colorchart} source provides a colors checker chart.
 
 The @code{colorspectrum} source provides a color spectrum input.
 
@@ -26409,6 +26412,22 @@ Set the type of the color spectrum, only available in the
 @item white
 @item all
 @end table
+
+@item patch_size
+Set patch size of single color patch, only available in the
+@code{colorchart} source. Default is @code{64x64}.
+
+@item preset
+Set colorchecker colors preset, only available in the
+@code{colorchart} source.
+
+Available values are:
+@table @samp
+@item reference
+@item skintones
+@end table
+
+Default value is @code{reference}.
 @end table
 
 @subsection Examples

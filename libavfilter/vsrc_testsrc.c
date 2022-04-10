@@ -55,6 +55,7 @@
 typedef struct TestSourceContext {
     const AVClass *class;
     int w, h;
+    int pw, ph;
     unsigned int nb_frame;
     AVRational time_base, frame_rate;
     int64_t pts;
@@ -1885,3 +1886,155 @@ const AVFilter ff_vsrc_colorspectrum = {
 };
 
 #endif /* CONFIG_COLORSPECTRUM_FILTER */
+
+#if CONFIG_COLORCHART_FILTER
+
+static const AVOption colorchart_options[] = {
+    COMMON_OPTIONS_NOSIZE
+    { "patch_size", "set the single patch size", OFFSET(pw), AV_OPT_TYPE_IMAGE_SIZE, {.str="64x64"}, 0, 0, FLAGS },
+    { "preset", "set the color checker chart preset", OFFSET(type), AV_OPT_TYPE_INT,  {.i64=0}, 0, 1, FLAGS, "preset" },
+    { "reference",  "reference", 0, AV_OPT_TYPE_CONST,{.i64=0}, 0, 0, FLAGS, "preset" },
+    { "skintones",  "skintones", 0, AV_OPT_TYPE_CONST,{.i64=1}, 0, 0, FLAGS, "preset" },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(colorchart);
+
+static const uint8_t reference_colors[][3] = {
+    { 115,  82,  68 }, // dark skin
+    { 194, 150, 130 }, // light skin
+    {  98, 122, 157 }, // blue sky
+    {  87, 108,  67 }, // foliage
+    { 133, 128, 177 }, // blue flower
+    { 103, 189, 170 }, // bluish green
+
+    { 214, 126,  44 }, // orange
+    {  80,  91, 166 }, // purple red
+    { 193,  90,  99 }, // moderate red
+    {  94,  60, 108 }, // purple
+    { 157, 188,  64 }, // yellow green
+    { 224, 163,  46 }, // orange yellow
+
+    {  56,  61, 150 }, // blue
+    {  70, 148,  73 }, // green
+    { 175,  54,  60 }, // red
+    { 233, 199,  31 }, // yellow
+    { 187,  86, 149 }, // magenta
+    {   8, 133, 161 }, // cyan
+
+    { 243, 243, 242 }, // white
+    { 200, 200, 200 }, // neutral 8
+    { 160, 160, 160 }, // neutral 65
+    { 122, 122, 121 }, // neutral 5
+    {  85,  85,  85 }, // neutral 35
+    {  52,  52,  52 }, // black
+};
+
+static const uint8_t skintones_colors[][3] = {
+    {  54,  38,  43 },
+    { 105,  43,  42 },
+    { 147,  43,  43 },
+    {  77,  41,  42 },
+    { 134,  43,  41 },
+    { 201, 134, 118 },
+
+    {  59,  41,  41 },
+    { 192, 103,  76 },
+    { 208, 156, 141 },
+    { 152,  82,  61 },
+    { 162, 132, 118 },
+    { 212, 171, 150 },
+
+    { 205,  91,  31 },
+    { 164, 100,  55 },
+    { 204, 136,  95 },
+    { 178, 142, 116 },
+    { 210, 152, 108 },
+    { 217, 167, 131 },
+
+    { 206, 166, 126 },
+    { 208, 163,  97 },
+    { 245, 180,   0 },
+    { 212, 184, 125 },
+    { 179, 165, 150 },
+    { 196, 184, 105 },
+};
+
+typedef struct ColorChartPreset {
+    int w, h;
+    const uint8_t (*colors)[3];
+} ColorChartPreset;
+
+static const ColorChartPreset colorchart_presets[] = {
+    { 6, 4, reference_colors, },
+    { 6, 4, skintones_colors, },
+};
+
+static int colorchart_config_props(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->src;
+    TestSourceContext *s = ctx->priv;
+
+    av_assert0(ff_draw_init(&s->draw, inlink->format, 0) >= 0);
+    if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
+        return AVERROR(EINVAL);
+    return config_props(inlink);
+}
+
+static void colorchart_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    TestSourceContext *test = ctx->priv;
+    const int preset = test->type;
+    const int w = colorchart_presets[preset].w;
+    const int h = colorchart_presets[preset].h;
+    const int pw = test->pw;
+    const int ph = test->pw;
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            uint32_t pc = AV_RB24(colorchart_presets[preset].colors[y * w + x]);
+            FFDrawColor color;
+
+            set_color(test, &color, pc);
+            ff_fill_rectangle(&test->draw, &color, frame->data, frame->linesize,
+                              x * pw, y * ph, pw, ph);
+        }
+    }
+}
+
+static av_cold int colorchart_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+    const int preset = test->type;
+    const int w = colorchart_presets[preset].w;
+    const int h = colorchart_presets[preset].h;
+
+    test->w = w * test->pw;
+    test->h = h * test->ph;
+    test->draw_once = 1;
+    test->fill_picture_fn = colorchart_fill_picture;
+    return init(ctx);
+}
+
+static const AVFilterPad avfilter_vsrc_colorchart_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = colorchart_config_props,
+    },
+};
+
+const AVFilter ff_vsrc_colorchart = {
+    .name          = "colorchart",
+    .description   = NULL_IF_CONFIG_SMALL("Generate color checker chart."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &colorchart_class,
+    .init          = colorchart_init,
+    .uninit        = uninit,
+    .activate      = activate,
+    .inputs        = NULL,
+    FILTER_OUTPUTS(avfilter_vsrc_colorchart_outputs),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRP),
+};
+
+#endif /* CONFIG_COLORCHART_FILTER */
