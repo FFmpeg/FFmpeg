@@ -72,11 +72,11 @@ static int scc_write_packet(AVFormatContext *avf, AVPacket *pkt)
     s = (int)(pts /  1000) % 60;
     f = (int)(pts %  1000) / 33;
 
-    for (i = 0; i < pkt->size; i+=3) {
+    for (i = 0; i < pkt->size - 2; i+=3) {
         if (pkt->data[i] == 0xfc && ((pkt->data[i + 1] != 0x80 || pkt->data[i + 2] != 0x80)))
             break;
     }
-    if (i >= pkt->size)
+    if (i >= pkt->size - 2)
         return 0;
 
     if (!scc->inside && (scc->prev_h != h || scc->prev_m != m || scc->prev_s != s || scc->prev_f != f)) {
