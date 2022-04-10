@@ -214,6 +214,7 @@ typedef struct MOVStreamContext {
     int has_palette;
     int64_t data_size;
     uint32_t tmcd_flags;  ///< tmcd track flags
+    uint8_t tmcd_nb_frames;  ///< tmcd number of frames per tick / second
     int64_t track_end;    ///< used for dts generation in fragmented movie files
     int start_pad;        ///< amount of samples to skip due to enc-dec delay
     unsigned int rap_group_count;

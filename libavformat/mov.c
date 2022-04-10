@@ -2364,6 +2364,7 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
             tmcd_ctx->tmcd_flags = val;
             st->avg_frame_rate.num = AV_RB32(st->codecpar->extradata + 8); /* timescale */
             st->avg_frame_rate.den = AV_RB32(st->codecpar->extradata + 12); /* frameDuration */
+            tmcd_ctx->tmcd_nb_frames = st->codecpar->extradata[16]; /* number of frames */
             if (size > 30) {
                 uint32_t len = AV_RB32(st->codecpar->extradata + 18); /* name atom length */
                 uint32_t format = AV_RB32(st->codecpar->extradata + 22);
@@ -7848,7 +7849,7 @@ finish:
 }
 
 static int parse_timecode_in_framenum_format(AVFormatContext *s, AVStream *st,
-                                             uint32_t value, int flags)
+                                             int64_t value, int flags)
 {
     AVTimecode tc;
     char buf[AV_TIMECODE_STR_SIZE];
@@ -7893,9 +7894,14 @@ static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
     FFStream *const sti = ffstream(st);
     int flags = 0;
     int64_t cur_pos = avio_tell(sc->pb);
-    uint32_t value;
+    int64_t value;
+    AVRational tc_rate = st->avg_frame_rate;
+    int rounded_tc_rate;
 
     if (!sti->nb_index_entries)
+        return -1;
+
+    if (!tc_rate.num || !tc_rate.den || !sc->tmcd_nb_frames)
         return -1;
 
     avio_seek(sc->pb, sti->index_entries->pos, SEEK_SET);
@@ -7910,6 +7916,12 @@ static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
      * No sample with tmcd track can be found with a QT timecode at the moment,
      * despite what the tmcd track "suggests" (Counter flag set to 0 means QT
      * format). */
+
+    /* 60 fps content have tmcd_nb_frames set to 30 but tc_rate set to 60, so
+     * we multiply the frame number with the quotient. */
+    rounded_tc_rate = (tc_rate.num + tc_rate.den / 2) / tc_rate.den;
+    value = av_rescale(value, rounded_tc_rate, sc->tmcd_nb_frames);
+
     parse_timecode_in_framenum_format(s, st, value, flags);
 
     avio_seek(sc->pb, cur_pos, SEEK_SET);
