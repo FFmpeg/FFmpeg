@@ -1887,7 +1887,7 @@ This option sets the maximum number of queued packets when reading from the
 file or device. With low latency / high rate live streams, packets may be
 discarded if they are not read in a timely manner; setting this value can
 force ffmpeg to use a separate input thread and read packets as soon as they
-arrive. By default ffmpeg only do this if multiple inputs are specified.
+arrive. By default ffmpeg only does this if multiple inputs are specified.
 
 @item -sdp_file @var{file} (@emph{global})
 Print sdp information for an output stream to @var{file}.
