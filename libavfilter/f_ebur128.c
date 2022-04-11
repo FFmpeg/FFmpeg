@@ -487,11 +487,11 @@ static int config_audio_output(AVFilterLink *outlink)
             !ebur128->true_peaks_per_frame || !ebur128->swr_ctx)
             return AVERROR(ENOMEM);
 
-        av_opt_set_chlayout(ebur128->swr_ctx, "in_ch_layout",   &outlink->ch_layout, 0);
+        av_opt_set_chlayout(ebur128->swr_ctx, "in_chlayout",    &outlink->ch_layout, 0);
         av_opt_set_int(ebur128->swr_ctx, "in_sample_rate",       outlink->sample_rate, 0);
         av_opt_set_sample_fmt(ebur128->swr_ctx, "in_sample_fmt", outlink->format, 0);
 
-        av_opt_set_chlayout(ebur128->swr_ctx, "out_ch_layout",   &outlink->ch_layout, 0);
+        av_opt_set_chlayout(ebur128->swr_ctx, "out_chlayout",    &outlink->ch_layout, 0);
         av_opt_set_int(ebur128->swr_ctx, "out_sample_rate",       192000, 0);
         av_opt_set_sample_fmt(ebur128->swr_ctx, "out_sample_fmt", outlink->format, 0);
 
