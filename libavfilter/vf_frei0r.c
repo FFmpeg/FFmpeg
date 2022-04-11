@@ -353,14 +353,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     Frei0rContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFrame *out;
+    AVFrame *out = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
+    if (!out)
+        goto fail;
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
     av_frame_copy_props(out, in);
+
+    if (in->linesize[0] != out->linesize[0]) {
+        AVFrame *in2 = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
+        if (!in2)
+            goto fail;
+        av_frame_copy(in2, in);
+        av_frame_free(&in);
+        in = in2;
+    }
 
     s->update(s->instance, in->pts * av_q2d(inlink->time_base) * 1000,
                    (const uint32_t *)in->data[0],
@@ -369,6 +375,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
+fail:
+    av_frame_free(&in);
+    av_frame_free(&out);
+    return AVERROR(ENOMEM);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
@@ -467,7 +477,7 @@ static int source_config_props(AVFilterLink *outlink)
 static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *s = outlink->src->priv;
-    AVFrame *frame = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    AVFrame *frame = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
 
     if (!frame)
         return AVERROR(ENOMEM);
