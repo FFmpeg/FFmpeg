@@ -47,10 +47,6 @@
 #   define STRIDE_ALIGN 8
 #endif
 
-typedef struct EncodeSimpleContext {
-    AVFrame *in_frame;
-} EncodeSimpleContext;
-
 typedef struct AVCodecInternal {
     /**
      * When using frame-threaded decoding, this field is set for the first
@@ -101,7 +97,13 @@ typedef struct AVCodecInternal {
 
     void *frame_thread_encoder;
 
-    EncodeSimpleContext es;
+    /**
+     * The input frame is stored here for encoders implementing the simple
+     * encode API.
+     *
+     * Not allocated in other cases.
+     */
+    AVFrame *in_frame;
 
     /**
      * If this is set, then FFCodec->close (if existing) needs to be called

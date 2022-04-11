@@ -175,8 +175,7 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame)
 static int encode_simple_internal(AVCodecContext *avctx, AVPacket *avpkt)
 {
     AVCodecInternal   *avci = avctx->internal;
-    EncodeSimpleContext *es = &avci->es;
-    AVFrame          *frame = es->in_frame;
+    AVFrame          *frame = avci->in_frame;
     const FFCodec *const codec = ffcodec(avctx->codec);
     int got_packet;
     int ret;
@@ -565,8 +564,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->internal->intra_only_flag = AV_PKT_FLAG_KEY;
 
     if (ffcodec(avctx->codec)->cb.encode) {
-        avci->es.in_frame = av_frame_alloc();
-        if (!avci->es.in_frame)
+        avci->in_frame = av_frame_alloc();
+        if (!avci->in_frame)
             return AVERROR(ENOMEM);
     }
 

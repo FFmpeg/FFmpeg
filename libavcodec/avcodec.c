@@ -432,7 +432,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
         av_packet_unref(avci->last_pkt_props);
 
-    av_frame_unref(avci->es.in_frame);
+    av_frame_unref(avci->in_frame);
     av_packet_unref(avci->in_pkt);
 
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
@@ -498,7 +498,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_packet_free(&avci->last_pkt_props);
 
         av_packet_free(&avci->in_pkt);
-        av_frame_free(&avci->es.in_frame);
+        av_frame_free(&avci->in_frame);
 
         av_buffer_unref(&avci->pool);
 
