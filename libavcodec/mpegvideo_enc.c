@@ -1684,9 +1684,8 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     /* output? */
     if (s->new_picture->data[0]) {
         int growing_buffer = context_count == 1 && !pkt->data && !s->data_partitioning;
-        size_t pkt_size = growing_buffer ? FFMAX(s->mb_width*s->mb_height*64+10000, avctx->internal->byte_buffer_size) - AV_INPUT_BUFFER_PADDING_SIZE
-                                              :
-                                              s->mb_width*s->mb_height*(MAX_MB_BYTES+100)+10000;
+        size_t pkt_size = 10000 + s->mb_width * s->mb_height *
+                                  (growing_buffer ? 64 : (MAX_MB_BYTES + 100));
         if (CONFIG_MJPEG_ENCODER && avctx->codec_id == AV_CODEC_ID_MJPEG) {
             ret = ff_mjpeg_add_icc_profile_size(avctx, s->new_picture, &pkt_size);
             if (ret < 0)
@@ -1694,6 +1693,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         }
         if ((ret = ff_alloc_packet(avctx, pkt, pkt_size)) < 0)
             return ret;
+        pkt->size = avctx->internal->byte_buffer_size - AV_INPUT_BUFFER_PADDING_SIZE;
         if (s->mb_info) {
             s->mb_info_ptr = av_packet_new_side_data(pkt,
                                  AV_PKT_DATA_H263_MB_INFO,
