@@ -14679,6 +14679,13 @@ filter choosing the best match with the given options, and the filter will
 output the chosen camera and lens models (logged with level "info"). You must
 provide the make, camera model, and lens model as they are required.
 
+To obtain a list of available makes and models, leave out one or both of @code{make} and
+@code{model} options. The filter will send the full list to the log with level @code{INFO}.
+The first column is the make and the second column is the model.
+To obtain a list of available lenses, set any values for make and model and leave out the
+@code{lens_model} option. The filter will send the full list of lenses in the log with level
+@code{INFO}. The ffmpeg tool will exit after the list is printed.
+
 The filter accepts the following options:
 
 @table @option
