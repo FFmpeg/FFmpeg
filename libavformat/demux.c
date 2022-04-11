@@ -1586,7 +1586,7 @@ static void update_stream_timings(AVFormatContext *ic)
     else if (end_time < end_time_text)
         av_log(ic, AV_LOG_VERBOSE, "Ignoring outlier non primary stream endtime %f\n", end_time_text / (float)AV_TIME_BASE);
 
-     if (duration == INT64_MIN || (duration < duration_text && duration_text - duration < AV_TIME_BASE))
+     if (duration == INT64_MIN || (duration < duration_text && (uint64_t)duration_text - duration < AV_TIME_BASE))
          duration = duration_text;
      else if (duration < duration_text)
          av_log(ic, AV_LOG_VERBOSE, "Ignoring outlier non primary stream duration %f\n", duration_text / (float)AV_TIME_BASE);
