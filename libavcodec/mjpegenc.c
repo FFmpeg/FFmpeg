@@ -131,7 +131,6 @@ static void mjpeg_encode_picture_frame(MpegEncContext *s)
     }
 
     bytes_needed = (total_bits + 7) / 8;
-    ff_mjpeg_add_icc_profile_size(s->avctx, s->picture->f, &bytes_needed);
     ff_mpv_reallocate_putbitbuffer(s, bytes_needed, bytes_needed);
 
     for (int i = 0; i < m->huff_ncode; i++) {
