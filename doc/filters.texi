@@ -14384,6 +14384,20 @@ By default value is 0.
 
 The @code{hysteresis} filter also supports the @ref{framesync} options.
 
+@section iccdetect
+
+Detect the colorspace  from an embedded ICC profile (if present), and update
+the frame's tags accordingly.
+
+This filter accepts the following options:
+
+@table @option
+@item force
+If true, the frame's existing colorspace tags will always be overridden by
+values detected from an ICC profile. Otherwise, they will only be assigned if
+they contain @code{unknown}. Enabled by default.
+@end table
+
 @section iccgen
 
 Generate ICC profiles and attach them to frames.
