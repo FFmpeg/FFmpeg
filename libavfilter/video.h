@@ -24,6 +24,7 @@
 #include "avfilter.h"
 
 AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h);
+AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int align);
 AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h);
 
 /**
