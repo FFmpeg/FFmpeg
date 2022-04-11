@@ -41,7 +41,7 @@ AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h)
     return ff_get_video_buffer(link->dst->outputs[0], w, h);
 }
 
-AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
+AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int align)
 {
     AVFrame *frame = NULL;
     int pool_width = 0;
@@ -94,6 +94,11 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
     frame->sample_aspect_ratio = link->sample_aspect_ratio;
 
     return frame;
+}
+
+AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
+{
+    return ff_default_get_video_buffer2(link, w, h, av_cpu_max_align());
 }
 
 AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h)
