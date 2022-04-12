@@ -37,7 +37,6 @@
 typedef struct VBNContext {
     AVClass *class;
     TextureDSPContext dxtc;
-    PutByteContext pb;
     int format;
     TextureDSPThreadContext enc;
 } VBNContext;
@@ -46,7 +45,7 @@ static int vbn_encode(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
     VBNContext *ctx = avctx->priv_data;
-    PutByteContext *pb = &ctx->pb;
+    PutByteContext pb0, *const pb = &pb0;
     int ret;
     ptrdiff_t linesize;
     int64_t pkt_size;

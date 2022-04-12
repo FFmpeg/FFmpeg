@@ -34,7 +34,6 @@
 typedef struct VBNContext {
     TextureDSPContext texdsp;
     TextureDSPThreadContext dec;
-    GetByteContext gb;
 } VBNContext;
 
 static av_cold int vbn_init(AVCodecContext *avctx)
@@ -44,11 +43,9 @@ static av_cold int vbn_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decompress(AVCodecContext *avctx, int compression, uint8_t **outbuf)
+static int decompress(AVCodecContext *avctx, GetByteContext *gb,
+                      int compression, uint8_t **outbuf)
 {
-    VBNContext *ctx = avctx->priv_data;
-    GetByteContext *gb = &ctx->gb;
-
     if (compression == VBN_COMPRESSION_NONE) // outbuf is left NULL because gb->buf can be used directly
         return bytestream2_get_bytes_left(gb);
 
@@ -61,7 +58,7 @@ static int vbn_decode_frame(AVCodecContext *avctx,
                             AVPacket *avpkt)
 {
     VBNContext *ctx    = avctx->priv_data;
-    GetByteContext *gb = &ctx->gb;
+    GetByteContext gb0, *const gb = &gb0;
     uint8_t *image_buf = NULL;
     int      image_len;
     int width, height, components, format, compression, pix_fmt, linesize, data_size;
@@ -139,7 +136,7 @@ static int vbn_decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
-    image_len = decompress(avctx, compression, &image_buf);
+    image_len = decompress(avctx, gb, compression, &image_buf);
     if (image_len < 0)
         return image_len;
 
