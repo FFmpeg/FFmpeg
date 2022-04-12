@@ -74,26 +74,19 @@ fate-matroska-zero-length-block: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/
 # It also tests writing PCM audio in both endiannesses and putting
 # Cues with the same timestamp in the same CuePoint as well as
 # omitting CRC-32 elements when writing Matroska.
-FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL WAV_DEMUXER PCM_S24LE_DECODER    \
-                             PCM_S24BE_ENCODER MATROSKA_MUXER               \
-                             MATROSKA_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
+FATE_MATROSKA-$(call TRANSCODE, PCM_S24BE PCM_S24LE, MATROSKA, WAV_DEMUXER) \
                 += fate-matroska-move-cues-to-front
 fate-matroska-move-cues-to-front: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav matroska "-map 0 -map 0 -c:a:0 pcm_s24be -c:a:1 copy -cluster_time_limit 5 -cues_to_front yes -metadata_header_padding 7840 -write_crc32 0" "-map 0 -c copy -t 0.1"
 
 # This tests DOVI (reading from MP4 and Matroska and writing to Matroska)
 # as well as writing the Cues at the front (by shifting data) if
 # the initially reserved amount of space turns out to be insufficient.
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER       \
-                                            HEVC_DECODER MATROSKA_MUXER     \
-                                            MATROSKA_DEMUXER FRAMECRC_MUXER \
-                                            PIPE_PROTOCOL)                  \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER HEVC_DECODER) \
                                += fate-matroska-dovi-write-config7
 fate-matroska-dovi-write-config7: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7.mp4 matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 40  -metadata_header_padding 64339" "-map 0 -c copy" "" "-show_entries stream_side_data_list"
 
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL \
-                                            MOV_DEMUXER MATROSKA_DEMUXER \
-                                            HEVC_DECODER AAC_DECODER      \
-                                            MATROSKA_MUXER FRAMECRC_MUXER) \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER     \
+                                           HEVC_DECODER AAC_DECODER) \
                                += fate-matroska-dovi-write-config8
 fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov matroska "-c copy" "-map 0 -c copy -t 0.4" "" "-show_entries stream_side_data_list -select_streams v"
 
@@ -105,10 +98,9 @@ fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv8
 # yet there is an audio packet with the overall lowest pts. output_ts_offset
 # makes the pts of the audio packet, but not the leading video packet negative
 # so that we run into the above issue.)
-FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL MPEGTS_DEMUXER MPEGVIDEO_PARSER  \
-                             MPEG2VIDEO_DECODER EXTRACT_EXTRADATA_BSF       \
-                             MP3FLOAT_DECODER MATROSKA_MUXER                \
-                             MATROSKA_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
+FATE_MATROSKA-$(call REMUX, MATROSKA, MPEGTS_DEMUXER MPEGVIDEO_PARSER \
+                            MPEG2VIDEO_DECODER EXTRACT_EXTRADATA_BSF  \
+                            MP3FLOAT_DECODER) \
                 += fate-matroska-avoid-negative-ts
 fate-matroska-avoid-negative-ts: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/t.mpg matroska "-c copy -ss 1.09 -output_ts_offset -60ms" "-c copy -t 0.4"
 
@@ -116,22 +108,17 @@ fate-matroska-avoid-negative-ts: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/
 # It furthermore tests writing the Cues at the front if the cues_to_front
 # option is set and more than enough space has been reserved in advance.
 # (Btw: The keyframe flags of the input video stream seem wrong.)
-FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL AVI_DEMUXER MATROSKA_MUXER \
-                             MATROSKA_DEMUXER FRAMECRC_MUXER          \
-                             PIPE_PROTOCOL) += fate-matroska-ms-mode
+FATE_MATROSKA-$(call REMUX, MATROSKA, AVI_DEMUXER) += fate-matroska-ms-mode
 fate-matroska-ms-mode: CMD = transcode avi $(TARGET_SAMPLES)/vp5/potter512-400-partial.avi matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 5000" "-map 0 -c copy -t 1"
 
 # This tests Matroska's QT-compatibility mode.
-FATE_MATROSKA-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER MATROSKA_MUXER       \
-                             MATROSKA_DEMUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
-                += fate-matroska-qt-mode
+FATE_MATROSKA-$(call REMUX, MATROSKA, MOV_DEMUXER) += fate-matroska-qt-mode
 fate-matroska-qt-mode: CMD = transcode mov $(TARGET_SAMPLES)/svq1/marymary-shackles.mov matroska "-c copy" "-c copy -t 3"
 
 # This test the following features of the Matroska muxer: Writing projection
 # stream side-data; not setting any track to default if the user requested it;
 # and modifying and writing colorspace properties.
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER MATROSKA_MUXER \
-                                            H264_DECODER H264_PARSER) \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, H264_DECODER H264_PARSER) \
                                += fate-matroska-spherical-mono-remux
 fate-matroska-spherical-mono-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/spherical.mkv matroska "-map 0 -map 0 -c copy -disposition:0 -default+forced -disposition:1 -default -default_mode passthrough -color_primaries:1 bt709 -color_trc:1 smpte170m -colorspace:1 bt2020c -color_range:1 pc"  "-map 0 -c copy -t 0" "" "-show_entries stream_side_data_list:stream_disposition=default,forced:stream=color_range,color_space,color_primaries,color_transfer"
 
@@ -141,12 +128,9 @@ fate-matroska-spherical-mono-remux: CMD = transcode matroska $(TARGET_SAMPLES)/m
 # when reencoding (here to ffv1).
 # Both input audio tracks are completely zero, so the noise bsf is used
 # to make this test interesting.
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MXF_DEMUXER        \
-                                            PRORES_DECODER PCM_S24LE_DECODER \
-                                            FFV1_ENCODER ARESAMPLE_FILTER    \
-                                            PCM_S16BE_ENCODER NOISE_BSF      \
-                                            MATROSKA_MUXER MATROSKA_DEMUXER  \
-                                            FRAMECRC_MUXER PIPE_PROTOCOL)    \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, FFV1 PRORES, MATROSKA, MXF_DEMUXER \
+                                               PCM_S24LE_DECODER ARESAMPLE_FILTER \
+                                               PCM_S16BE_ENCODER NOISE_BSF)       \
                                += fate-matroska-mastering-display-metadata
 fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=amount=-1:drop=-4" "-map 0 -c copy" "" "-show_entries stream_side_data_list:stream=index,codec_name"
 
@@ -156,14 +140,13 @@ fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/
 # the h264_metadata filter is used to remove it as well as the H.264 AUD.
 # The video is decoded twice to show that this did not change the decoded
 # output. Furthermore, this also tests writing PCM with bitdepth 32.
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MPEGTS_DEMUXER       \
-                                            H264_PARSER MPEGAUDIO_PARSER       \
-                                            EXTRACT_EXTRADATA_BSF MP2_DECODER  \
-                                            H264_METADATA_BSF ARESAMPLE_FILTER \
-                                            RAWVIDEO_ENCODER PCM_S32LE_ENCODER \
-                                            PCM_S32BE_ENCODER MATROSKA_MUXER   \
-                                            MATROSKA_DEMUXER H264_DECODER      \
-                                            FRAMECRC_MUXER PIPE_PROTOCOL)      \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, PCM_S32LE MP2, MATROSKA,      \
+                                               MPEGTS_DEMUXER H264_PARSER    \
+                                               H264_DECODER MPEGAUDIO_PARSER \
+                                               EXTRACT_EXTRADATA_BSF         \
+                                               H264_METADATA_BSF             \
+                                               ARESAMPLE_FILTER              \
+                                               PCM_S32BE_ENCODER)            \
                                += fate-matroska-h264-remux
 fate-matroska-h264-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts matroska "-map 0:0 -map 0 -c:v copy -sar:0 3:4 -bsf:v:1 h264_metadata=aud=remove:delete_filler=1 -disposition:v +hearing_impaired -af aresample -c:a:0 pcm_s32le -c:a:1 pcm_s32be -disposition:a:0 original -metadata:s:a:0 title=swedish_silence -metadata:s:a:1 title=norwegian_silence -disposition:a:1 dub" "-map 0:v" "" "-show_entries stream=index,codec_name:stream_tags=title,language"
 
@@ -171,17 +154,12 @@ fate-matroska-h264-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/h264/h264_int
 # it also tests setting a track as suitable for hearing impaired.
 # It also tests the capability of the VP8 parser to set the keyframe flag
 # (the input file lacks ReferenceBlock elements making everything a keyframe).
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MATROSKA_DEMUXER \
-                                            VP8_PARSER MATROSKA_MUXER      \
-                                            FRAMECRC_MUXER PIPE_PROTOCOL)  \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, VP8_PARSER)  \
                                += fate-matroska-vp8-alpha-remux
 fate-matroska-vp8-alpha-remux: CMD = transcode matroska $(TARGET_SAMPLES)/vp8_alpha/vp8_video_with_alpha.webm matroska "-c copy -disposition +hearing_impaired -cluster_size_limit 100000" "-c copy -t 0.2" "" "-show_entries stream_disposition:stream_side_data_list"
 
 # The audio stream to be remuxed here has AV_DISPOSITION_VISUAL_IMPAIRED.
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MPEGTS_DEMUXER    \
-                                            AC3_DECODER MATROSKA_MUXER      \
-                                            MATROSKA_DEMUXER FRAMECRC_MUXER \
-                                            PIPE_PROTOCOL)                  \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MPEGTS_DEMUXER AC3_DECODER) \
                                += fate-matroska-mpegts-remux
 fate-matroska-mpegts-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/mpegts/pmtchange.ts matroska "-map 0:2 -map 0:2 -c copy -disposition:a:1 -visual_impaired+hearing_impaired -default_mode infer" "-map 0 -c copy" "" "-show_entries stream_disposition:stream=index"
 
@@ -192,9 +170,7 @@ fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entrie
 # It also tests that dispositions not supported by WebM are not written
 # (and therefore lost). It moreover tests that the muxer writes CuePoints
 # with multiple CueTrackPositions if the timestamps coincide.
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL WEBVTT_DEMUXER  \
-                                            WEBM_MUXER MATROSKA_DEMUXER   \
-                                            FRAMECRC_MUXER PIPE_PROTOCOL) \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, WEBM MATROSKA, WEBVTT_DEMUXER) \
                                += fate-webm-webvtt-remux
 fate-webm-webvtt-remux: CMD = transcode webvtt $(TARGET_SAMPLES)/sub/WebVTT_capability_tester.vtt webm "-map 0 -map 0 -map 0 -map 0 -c:s copy -disposition:0 original+descriptions+hearing_impaired -disposition:1 lyrics+default+metadata -disposition:2 comment+forced -disposition:3 karaoke+captions+dub" "-map 0:0 -map 0:1 -c copy" "" "-show_entries stream_disposition:stream=index,codec_name:packet=stream_index,pts:packet_side_data_list -show_data_hash CRC32"
 
