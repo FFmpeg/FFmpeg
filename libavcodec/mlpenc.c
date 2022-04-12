@@ -1204,10 +1204,7 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
 /** Wrapper function for inputting data in two different bit-depths. */
 static void input_data(MLPEncodeContext *ctx, void *samples, int nb_samples)
 {
-    if (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-        input_data_internal(ctx, samples, nb_samples, 1);
-    else
-        input_data_internal(ctx, samples, nb_samples, 0);
+    input_data_internal(ctx, samples, nb_samples, ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 }
 
 static void input_to_sample_buffer(MLPEncodeContext *ctx)
