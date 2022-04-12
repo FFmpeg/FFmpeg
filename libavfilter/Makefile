@@ -391,6 +391,7 @@ OBJS-$(CONFIG_PERSPECTIVE_FILTER)            += vf_perspective.o
 OBJS-$(CONFIG_PHASE_FILTER)                  += vf_phase.o
 OBJS-$(CONFIG_PHOTOSENSITIVITY_FILTER)       += vf_photosensitivity.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
+OBJS-$(CONFIG_PIXELIZE_FILTER)               += vf_pixelize.o
 OBJS-$(CONFIG_PIXSCOPE_FILTER)               += vf_datascope.o
 OBJS-$(CONFIG_PP_FILTER)                     += vf_pp.o qp_table.o
 OBJS-$(CONFIG_PP7_FILTER)                    += vf_pp7.o qp_table.o

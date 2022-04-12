@@ -17863,6 +17863,35 @@ format=monow, pixdesctest
 
 can be used to test the monowhite pixel format descriptor definition.
 
+@section pixelize
+Apply pixelization to video stream.
+
+The filter accepts the following options:
+@table @option
+@item width, w
+@item height, h
+Set block dimensions that will be used for pixelization.
+Default value is @code{16}.
+
+@item mode, m
+Set the mode of pixelization used.
+
+Possible values are:
+@table @samp
+@item avg
+@item min
+@item max
+@end table
+Default value is @code{avg}.
+
+@item planes, p
+Set what planes to filter. Default is to filter all planes.
+@end table
+
+@subsection Commands
+
+This filter supports all options as @ref{commands}.
+
 @section pixscope
 
 Display sample values of color channels. Mainly useful for checking color

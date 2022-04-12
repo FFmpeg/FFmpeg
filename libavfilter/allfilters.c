@@ -373,6 +373,7 @@ extern const AVFilter ff_vf_perspective;
 extern const AVFilter ff_vf_phase;
 extern const AVFilter ff_vf_photosensitivity;
 extern const AVFilter ff_vf_pixdesctest;
+extern const AVFilter ff_vf_pixelize;
 extern const AVFilter ff_vf_pixscope;
 extern const AVFilter ff_vf_pp;
 extern const AVFilter ff_vf_pp7;
