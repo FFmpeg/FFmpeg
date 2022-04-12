@@ -68,7 +68,7 @@ typedef struct PixContext {
 struct MSS12Context;
 
 typedef struct SliceContext {
-    struct MSS12Context *c;
+    const struct MSS12Context *c;
     Model      intra_region, inter_region;
     Model      pivot, edge_mode, split_mode;
     PixContext intra_pix_ctx, inter_pix_ctx;
