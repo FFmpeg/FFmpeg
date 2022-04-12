@@ -132,11 +132,6 @@ static av_cold int vbn_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int vbn_close(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 #define OFFSET(x) offsetof(VBNContext, x)
 #define FLAGS     AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -163,7 +158,6 @@ const FFCodec ff_vbn_encoder = {
     .p.priv_class   = &vbnenc_class,
     .init           = vbn_init,
     FF_CODEC_ENCODE_CB(vbn_encode),
-    .close          = vbn_close,
     .priv_data_size = sizeof(VBNContext),
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE,

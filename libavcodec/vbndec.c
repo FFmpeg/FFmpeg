@@ -176,11 +176,6 @@ out:
     return ret;
 }
 
-static av_cold int vbn_close(AVCodecContext *avctx)
-{
-    return 0;
-}
-
 const FFCodec ff_vbn_decoder = {
     .p.name         = "vbn",
     .p.long_name    = NULL_IF_CONFIG_SMALL("Vizrt Binary Image"),
@@ -188,7 +183,6 @@ const FFCodec ff_vbn_decoder = {
     .p.id           = AV_CODEC_ID_VBN,
     .init           = vbn_init,
     FF_CODEC_DECODE_CB(vbn_decode_frame),
-    .close          = vbn_close,
     .priv_data_size = sizeof(VBNContext),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE
