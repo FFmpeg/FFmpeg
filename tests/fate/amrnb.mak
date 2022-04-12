@@ -30,9 +30,7 @@ FATE_AMRNB += fate-amrnb-12k2
 fate-amrnb-12k2: CMD = pcm -i $(TARGET_SAMPLES)/amrnb/12.2k.amr
 fate-amrnb-12k2: REF = $(SAMPLES)/amrnb/12.2k.pcm
 
-FATE_AMRNB_REMUX-$(call ALLYES, FILE_PROTOCOL AMR_DEMUXER AMR_PARSER    \
-                                AMR_MUXER FRAMECRC_MUXER PIPE_PROTOCOL) \
-                                += fate-amrnb-remux
+FATE_AMRNB_REMUX-$(call REMUX, AMR, AMR_PARSER) += fate-amrnb-remux
 fate-amrnb-remux: CMD = transcode amr $(TARGET_SAMPLES)/amrnb/10.2k.amr amr "-c copy" "-c copy -t 1"
 
 $(FATE_AMRNB): CMP = stddev
