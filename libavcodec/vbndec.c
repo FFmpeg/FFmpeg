@@ -71,20 +71,20 @@ static int vbn_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (bytestream2_get_le32(gb) != VBN_MAGIC ||
-        bytestream2_get_le32(gb) != VBN_MAJOR ||
-        bytestream2_get_le32(gb) != VBN_MINOR) {
+    if (bytestream2_get_le32u(gb) != VBN_MAGIC ||
+        bytestream2_get_le32u(gb) != VBN_MAJOR ||
+        bytestream2_get_le32u(gb) != VBN_MINOR) {
         av_log(avctx, AV_LOG_ERROR, "Invalid VBN header\n");
         return AVERROR_INVALIDDATA;
     }
 
-    width       = bytestream2_get_le32(gb);
-    height      = bytestream2_get_le32(gb);
-    components  = bytestream2_get_le32(gb);
-    format      = bytestream2_get_le32(gb);
-    pix_fmt     = bytestream2_get_le32(gb);
-    bytestream2_get_le32(gb); // mipmaps
-    data_size   = bytestream2_get_le32(gb);
+    width       = bytestream2_get_le32u(gb);
+    height      = bytestream2_get_le32u(gb);
+    components  = bytestream2_get_le32u(gb);
+    format      = bytestream2_get_le32u(gb);
+    pix_fmt     = bytestream2_get_le32u(gb);
+    bytestream2_get_le32u(gb); // mipmaps
+    data_size   = bytestream2_get_le32u(gb);
     bytestream2_seek(gb, VBN_HEADER_SIZE, SEEK_SET);
 
     compression = format & 0xffffff00;

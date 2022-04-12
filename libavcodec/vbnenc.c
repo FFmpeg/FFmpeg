@@ -97,18 +97,18 @@ static int vbn_encode(AVCodecContext *avctx, AVPacket *pkt,
 
     memset(pkt->data, 0, VBN_HEADER_SIZE);
     bytestream2_init_writer(pb, pkt->data, pkt_size);
-    bytestream2_put_le32(pb, VBN_MAGIC);
-    bytestream2_put_le32(pb, VBN_MAJOR);
-    bytestream2_put_le32(pb, VBN_MINOR);
-    bytestream2_put_le32(pb, frame->width);
-    bytestream2_put_le32(pb, frame->height);
-    bytestream2_put_le32(pb, frame->format == AV_PIX_FMT_RGBA ? 4 : 3);
-    bytestream2_put_le32(pb, ctx->format);
-    bytestream2_put_le32(pb, frame->format == AV_PIX_FMT_RGBA ? VBN_PIX_RGBA : VBN_PIX_RGB);
-    bytestream2_put_le32(pb, 0); // mipmaps
-    bytestream2_put_le32(pb, pkt_size - VBN_HEADER_SIZE);
+    bytestream2_put_le32u(pb, VBN_MAGIC);
+    bytestream2_put_le32u(pb, VBN_MAJOR);
+    bytestream2_put_le32u(pb, VBN_MINOR);
+    bytestream2_put_le32u(pb, frame->width);
+    bytestream2_put_le32u(pb, frame->height);
+    bytestream2_put_le32u(pb, frame->format == AV_PIX_FMT_RGBA ? 4 : 3);
+    bytestream2_put_le32u(pb, ctx->format);
+    bytestream2_put_le32u(pb, frame->format == AV_PIX_FMT_RGBA ? VBN_PIX_RGBA : VBN_PIX_RGB);
+    bytestream2_put_le32u(pb, 0); // mipmaps
+    bytestream2_put_le32u(pb, pkt_size - VBN_HEADER_SIZE);
     bytestream2_seek_p(pb, 64, SEEK_SET);
-    bytestream2_put_le32(pb, pkt_size - VBN_HEADER_SIZE);
+    bytestream2_put_le32u(pb, pkt_size - VBN_HEADER_SIZE);
 
     if (ctx->format == VBN_FORMAT_DXT1 || ctx->format == VBN_FORMAT_DXT5) {
         ctx->enc.frame_data.in = (frame->height - 1) * frame->linesize[0] + frame->data[0];
