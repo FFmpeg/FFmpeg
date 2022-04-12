@@ -8,14 +8,8 @@ fate-oma-atrac3p-remux: CMD = transcode oma $(TARGET_SAMPLES)/atrac3p/at3p_sampl
 FATE_OMA_REMUX-$(CONFIG_WAV_DEMUXER) += fate-oma-atrac3-remux
 fate-oma-atrac3-remux: CMD = transcode wav $(TARGET_SAMPLES)/atrac3/mc_sich_at3_132_small.wav oma "-c copy" "-c copy -t 0.1"
 
-FATE_OMA_FFMPEG-$(call ALLYES, FILE_PROTOCOL OMA_MUXER    \
-                               OMA_DEMUXER FRAMECRC_MUXER \
-                               PIPE_PROTOCOL)             \
-                               += $(FATE_OMA_REMUX-yes)
-FATE_OMA_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL OMA_MUXER    \
-                                       OMA_DEMUXER FRAMECRC_MUXER \
-                                       PIPE_PROTOCOL)             \
-                                       += $(FATE_OMA_REMUX_FFPROBE-yes)
+FATE_OMA_FFMPEG-$(call REMUX, OMA) += $(FATE_OMA_REMUX-yes)
+FATE_OMA_FFMPEG_FFPROBE-$(call REMUX, OMA) += $(FATE_OMA_REMUX_FFPROBE-yes)
 FATE_SAMPLES_FFMPEG         += $(FATE_OMA_FFMPEG-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_OMA_FFMPEG_FFPROBE-yes)
 fate-oma: $(FATE_OMA_FFMPEG-yes) $(FATE_OMA_FFMPEG_FFPROBE-yes)
