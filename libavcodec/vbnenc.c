@@ -153,7 +153,7 @@ const FFCodec ff_vbn_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("Vizrt Binary Image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VBN,
-    .p.capabilities = AV_CODEC_CAP_SLICE_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .p.priv_class   = &vbnenc_class,
     .init           = vbn_init,
     FF_CODEC_ENCODE_CB(vbn_encode),
