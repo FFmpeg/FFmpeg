@@ -1187,8 +1187,7 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
 
             /* TODO Find out if number_sbits can be used for negative values. */
             abs_sample = FFABS(sample);
-            if (greatest < abs_sample)
-                greatest = abs_sample;
+            greatest = FFMAX(greatest, abs_sample);
 
             temp_lossless_check_data ^= (sample & 0x00ffffff) << channel;
             *sample_buffer++ = sample;
