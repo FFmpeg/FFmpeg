@@ -1165,6 +1165,7 @@ static int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
  *  lossless_check_data that will be written to the restart header.
  */
 static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
+                                int nb_samples,
                                 int is24)
 {
     int32_t *lossless_check_data = ctx->lossless_check_data;
@@ -1177,7 +1178,7 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
 
     lossless_check_data += ctx->frame_index;
 
-    for (int i = 0; i < ctx->avctx->frame_size; i++) {
+    for (int i = 0; i < nb_samples; i++) {
         for (unsigned int channel = 0; channel <= rh->max_channel; channel++) {
             uint32_t abs_sample;
             int32_t sample;
@@ -1202,12 +1203,12 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
 }
 
 /** Wrapper function for inputting data in two different bit-depths. */
-static void input_data(MLPEncodeContext *ctx, void *samples)
+static void input_data(MLPEncodeContext *ctx, void *samples, int nb_samples)
 {
     if (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-        input_data_internal(ctx, samples, 1);
+        input_data_internal(ctx, samples, nb_samples, 1);
     else
-        input_data_internal(ctx, samples, 0);
+        input_data_internal(ctx, samples, nb_samples, 0);
 }
 
 static void input_to_sample_buffer(MLPEncodeContext *ctx)
@@ -2074,6 +2075,9 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int restart_frame, ret;
     uint8_t *data;
 
+    if (!frame && !ctx->last_frames)
+        ctx->last_frames = (ctx->afq.remaining_samples + avctx->frame_size - 1) / avctx->frame_size;
+
     if (!frame && !ctx->last_frames--)
         return 0;
 
@@ -2084,7 +2088,6 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         /* add current frame to queue */
         if ((ret = ff_af_queue_add(&ctx->afq, frame)) < 0)
             return ret;
-        ctx->last_frames = ctx->max_restart_interval;
     }
 
     data = frame ? frame->data[0] : NULL;
@@ -2128,7 +2131,7 @@ input_and_return:
     ctx->next_major_frame_size += avctx->frame_size;
     ctx->next_major_number_of_frames++;
     if (data)
-        input_data(ctx, data);
+        input_data(ctx, data, frame->nb_samples);
 
     restart_frame = (ctx->frame_index + 1) % ctx->min_restart_interval;
 
@@ -2171,7 +2174,9 @@ input_and_return:
         avctx->frame_number++;
 
     if (bytes_written > 0) {
-        ff_af_queue_remove(&ctx->afq, avctx->frame_size, &avpkt->pts,
+        ff_af_queue_remove(&ctx->afq,
+                           FFMIN(avctx->frame_size, ctx->afq.remaining_samples),
+                           &avpkt->pts,
                            &avpkt->duration);
 
         av_shrink_packet(avpkt, bytes_written);
