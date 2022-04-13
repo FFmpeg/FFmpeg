@@ -422,6 +422,17 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         }
         if (avci->in_frame)
             av_frame_unref(avci->in_frame);
+    } else {
+        av_packet_unref(avci->last_pkt_props);
+        while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
+            av_packet_unref(avci->last_pkt_props);
+
+        av_packet_unref(avci->in_pkt);
+
+        avctx->pts_correction_last_pts =
+        avctx->pts_correction_last_dts = INT64_MIN;
+
+        av_bsf_flush(avci->bsf);
     }
 
     avci->draining      = 0;
@@ -430,22 +441,10 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     av_frame_unref(avci->buffer_frame);
     av_packet_unref(avci->buffer_pkt);
 
-    av_packet_unref(avci->last_pkt_props);
-    while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
-        av_packet_unref(avci->last_pkt_props);
-
-    av_packet_unref(avci->in_pkt);
-
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
         ff_thread_flush(avctx);
     else if (ffcodec(avctx->codec)->flush)
         ffcodec(avctx->codec)->flush(avctx);
-
-    avctx->pts_correction_last_pts =
-    avctx->pts_correction_last_dts = INT64_MIN;
-
-    if (avci->bsf)
-        av_bsf_flush(avci->bsf);
 }
 
 void avsubtitle_free(AVSubtitle *sub)
