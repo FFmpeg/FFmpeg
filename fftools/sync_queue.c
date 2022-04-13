@@ -28,6 +28,41 @@
 #include "objpool.h"
 #include "sync_queue.h"
 
+/*
+ * How this works:
+ * --------------
+ * time:   0    1    2    3    4    5    6    7    8    9    10   11   12   13
+ *         -------------------------------------------------------------------
+ *         |    |    |    |    |    |    |    |    |    |    |    |    |    |
+ *         |    ┌───┐┌────────┐┌───┐┌─────────────┐
+ * stream 0|    │d=1││  d=2   ││d=1││    d=3      │
+ *         |    └───┘└────────┘└───┘└─────────────┘
+ *         ┌───┐               ┌───────────────────────┐
+ * stream 1│d=1│               │         d=5           │
+ *         └───┘               └───────────────────────┘
+ *         |    ┌───┐┌───┐┌───┐┌───┐
+ * stream 2|    │d=1││d=1││d=1││d=1│ <- stream 2 is the head stream of the queue
+ *         |    └───┘└───┘└───┘└───┘
+ *                  ^              ^
+ *          [stream 2 tail] [stream 2 head]
+ *
+ * We have N streams (N=3 in the diagram), each stream is a FIFO. The *tail* of
+ * each FIFO is the frame with smallest end time, the *head* is the frame with
+ * the largest end time. Frames submitted to the queue with sq_send() are placed
+ * after the head, frames returned to the caller with sq_receive() are taken
+ * from the tail.
+ *
+ * The head stream of the whole queue (SyncQueue.head_stream) is the limiting
+ * stream with the *smallest* head timestamp, i.e. the stream whose source lags
+ * furthest behind all other streams. It determines which frames can be output
+ * from the queue.
+ *
+ * In the diagram, the head stream is 2, because it head time is t=5, while
+ * streams 0 and 1 end at t=8 and t=9 respectively. All frames that _end_ at
+ * or before t=5 can be output, i.e. the first 3 frames from stream 0, first
+ * frame from stream 1, and all 4 frames from stream 2.
+ */
+
 typedef struct SyncQueueStream {
     AVFifo          *fifo;
     AVRational       tb;

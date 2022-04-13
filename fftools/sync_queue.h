@@ -38,6 +38,11 @@ typedef union SyncQueueFrame {
 #define SQFRAME(frame) ((SyncQueueFrame){ .f = (frame) })
 #define SQPKT(pkt)     ((SyncQueueFrame){ .p = (pkt) })
 
+/**
+ * A sync queue provides timestamp synchronization between multiple streams.
+ * Some of these streams are marked as "limiting", then the queue ensures no
+ * stream gets ahead of any of the limiting streams.
+ */
 typedef struct SyncQueue SyncQueue;
 
 /**
