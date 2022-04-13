@@ -25,6 +25,12 @@
 #include "os_support.h"
 #include "url.h"
 
+// Define the posix PATH_MAX if not there already.
+// This fixes a compile issue for MSVC.
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 typedef struct IPFSGatewayContext {
     AVClass *class;
     URLContext *inner;
