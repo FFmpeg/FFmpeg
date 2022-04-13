@@ -188,6 +188,14 @@ static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int
 MEDIAN_SLICE(8, uint8_t, compare8)
 MEDIAN_SLICE(16, uint16_t, compare16)
 
+static void update_index(XMedianContext *s)
+{
+    if (s->nb_inputs & 1)
+        s->index = s->radius * 2.f * s->percentile;
+    else
+        s->index = av_clip(s->radius * 2.f * s->percentile, 1, s->nb_inputs - 1);
+}
+
 static int process_frame(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
@@ -197,6 +205,8 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out;
     ThreadData td;
     int i, ret;
+
+    update_index(s);
 
     for (i = 0; i < s->nb_inputs; i++) {
         if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
@@ -319,24 +329,6 @@ static int activate(AVFilterContext *ctx)
     return ff_framesync_activate(&s->fs);
 }
 
-static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
-                           char *res, int res_len, int flags)
-{
-    XMedianContext *s = ctx->priv;
-    int ret;
-
-    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
-    if (ret < 0)
-        return ret;
-
-    if (s->nb_inputs & 1)
-        s->index = s->radius * 2.f * s->percentile;
-    else
-        s->index = av_clip(s->radius * 2.f * s->percentile, 1, s->nb_inputs - 1);
-
-    return 0;
-}
-
 #if CONFIG_XMEDIAN_FILTER
 static av_cold int xmedian_init(AVFilterContext *ctx)
 {
@@ -396,7 +388,7 @@ const AVFilter ff_vf_xmedian = {
     .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
 };
 
 #endif /* CONFIG_XMEDIAN_FILTER */
@@ -409,6 +401,8 @@ static int tmedian_filter_frame(AVFilterLink *inlink, AVFrame *in)
     XMedianContext *s = ctx->priv;
     ThreadData td;
     AVFrame *out;
+
+    update_index(s);
 
     if (s->nb_frames < s->nb_inputs) {
         s->frames[s->nb_frames] = in;
@@ -477,7 +471,7 @@ const AVFilter ff_vf_tmedian = {
     .init          = init,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
 };
 
 #endif /* CONFIG_TMEDIAN_FILTER */
