@@ -2122,10 +2122,11 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 input_and_return:
 
-    if (frame)
+    if (frame) {
         ctx->shorten_by = avctx->frame_size - frame->nb_samples;
-    ctx->next_major_frame_size += avctx->frame_size;
-    ctx->next_major_number_of_frames++;
+        ctx->next_major_frame_size += avctx->frame_size;
+        ctx->next_major_number_of_frames++;
+    }
     if (data)
         input_data(ctx, data, frame->nb_samples);
 
@@ -2166,7 +2167,7 @@ input_and_return:
         }
     }
 
-    if (!frame)
+    if (!frame && ctx->last_frames < ctx->max_restart_interval - 1)
         avctx->frame_number++;
 
     if (bytes_written > 0) {
