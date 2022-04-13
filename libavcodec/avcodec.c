@@ -420,6 +420,8 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
                    "that doesn't support it\n");
             return;
         }
+        if (avci->in_frame)
+            av_frame_unref(avci->in_frame);
     }
 
     avci->draining      = 0;
@@ -432,7 +434,6 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
         av_packet_unref(avci->last_pkt_props);
 
-    av_frame_unref(avci->in_frame);
     av_packet_unref(avci->in_pkt);
 
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
