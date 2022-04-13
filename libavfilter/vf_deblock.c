@@ -337,7 +337,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->deblockv(dst + x * s->bpc, out->linesize[plane],
                         FFMIN(block, height), s->ath, s->bth, s->gth, s->dth, s->max);
 
-        for (y = block; y < height; y += block) {
+        for (y = block; y < height - block; y += block) {
             dst += out->linesize[plane] * block;
 
             s->deblockh(dst, out->linesize[plane],
@@ -353,6 +353,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                             s->ath, s->bth, s->gth, s->dth, s->max);
             }
         }
+
+        dst += out->linesize[plane] * block;
+        for (x = block; x < width; x += block)
+            s->deblockv(dst + x * s->bpc, out->linesize[plane],
+                        FFMIN(block, height - y), s->ath, s->bth, s->gth, s->dth, s->max);
+
     }
 
     if (in != out)
