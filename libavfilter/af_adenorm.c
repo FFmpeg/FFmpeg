@@ -39,8 +39,8 @@ typedef struct ADenormContext {
     int type;
     int64_t in_samples;
 
-    void (*filter)(AVFilterContext *ctx, void *dst,
-                   const void *src, int nb_samples);
+    void (*filter[NB_TYPES])(AVFilterContext *ctx, void *dst,
+                             const void *src, int nb_samples);
 } ADenormContext;
 
 static void dc_denorm_fltp(AVFilterContext *ctx, void *dstp,
@@ -158,30 +158,18 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     ADenormContext *s = ctx->priv;
 
-    switch (s->type) {
-    case DC_TYPE:
-        switch (outlink->format) {
-        case AV_SAMPLE_FMT_FLTP: s->filter = dc_denorm_fltp; break;
-        case AV_SAMPLE_FMT_DBLP: s->filter = dc_denorm_dblp; break;
-        }
+    switch (outlink->format) {
+    case AV_SAMPLE_FMT_FLTP:
+        s->filter[DC_TYPE] = dc_denorm_fltp;
+        s->filter[AC_TYPE] = ac_denorm_fltp;
+        s->filter[SQ_TYPE] = sq_denorm_fltp;
+        s->filter[PS_TYPE] = ps_denorm_fltp;
         break;
-    case AC_TYPE:
-        switch (outlink->format) {
-        case AV_SAMPLE_FMT_FLTP: s->filter = ac_denorm_fltp; break;
-        case AV_SAMPLE_FMT_DBLP: s->filter = ac_denorm_dblp; break;
-        }
-        break;
-    case SQ_TYPE:
-        switch (outlink->format) {
-        case AV_SAMPLE_FMT_FLTP: s->filter = sq_denorm_fltp; break;
-        case AV_SAMPLE_FMT_DBLP: s->filter = sq_denorm_dblp; break;
-        }
-        break;
-    case PS_TYPE:
-        switch (outlink->format) {
-        case AV_SAMPLE_FMT_FLTP: s->filter = ps_denorm_fltp; break;
-        case AV_SAMPLE_FMT_DBLP: s->filter = ps_denorm_dblp; break;
-        }
+    case AV_SAMPLE_FMT_DBLP:
+        s->filter[DC_TYPE] = dc_denorm_dblp;
+        s->filter[AC_TYPE] = ac_denorm_dblp;
+        s->filter[SQ_TYPE] = sq_denorm_dblp;
+        s->filter[PS_TYPE] = ps_denorm_dblp;
         break;
     default:
         av_assert0(0);
@@ -204,9 +192,9 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
 
     for (int ch = start; ch < end; ch++) {
-        s->filter(ctx, out->extended_data[ch],
-                  in->extended_data[ch],
-                  in->nb_samples);
+        s->filter[s->type](ctx, out->extended_data[ch],
+                           in->extended_data[ch],
+                           in->nb_samples);
     }
 
     return 0;
@@ -241,19 +229,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (out != in)
         av_frame_free(&in);
     return ff_filter_frame(outlink, out);
-}
-
-static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
-                           char *res, int res_len, int flags)
-{
-    AVFilterLink *outlink = ctx->outputs[0];
-    int ret;
-
-    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
-    if (ret < 0)
-        return ret;
-
-    return config_output(outlink);
 }
 
 static const AVFilterPad adenorm_inputs[] = {
@@ -295,7 +270,7 @@ const AVFilter ff_af_adenorm = {
     FILTER_OUTPUTS(adenorm_outputs),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .priv_class      = &adenorm_class,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                        AVFILTER_FLAG_SLICE_THREADS,
 };
