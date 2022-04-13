@@ -49,7 +49,7 @@ typedef struct ChromaShiftContext {
     AVFrame *in;
 
     int is_rgbashift;
-    int (*filter_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
+    int (*filter_slice[2])(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ChromaShiftContext;
 
 #define DEFINE_SMEAR(depth, type, div)                                                    \
@@ -326,7 +326,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                             in->data[0], in->linesize[0],
                             s->linesize[0], s->height[0]);
     }
-    ff_filter_execute(ctx, s->filter_slice, out, NULL,
+    ff_filter_execute(ctx, s->filter_slice[s->edge], out, NULL,
                       FFMIN3(s->height[1],
                              s->height[2],
                              ff_filter_get_nb_threads(ctx)));
@@ -345,15 +345,11 @@ static int config_input(AVFilterLink *inlink)
     s->depth = desc->comp[0].depth;
     s->nb_planes = desc->nb_components;
     if (s->is_rgbashift) {
-        if (s->edge)
-            s->filter_slice = s->depth > 8 ? rgbawrap_slice16 : rgbawrap_slice8;
-        else
-            s->filter_slice = s->depth > 8 ? rgbasmear_slice16 : rgbasmear_slice8;
+        s->filter_slice[1] = s->depth > 8 ? rgbawrap_slice16 : rgbawrap_slice8;
+        s->filter_slice[0] = s->depth > 8 ? rgbasmear_slice16 : rgbasmear_slice8;
     } else {
-        if (s->edge)
-            s->filter_slice = s->depth > 8 ? wrap_slice16 : wrap_slice8;
-        else
-            s->filter_slice = s->depth > 8 ? smear_slice16 : smear_slice8;
+        s->filter_slice[1] = s->depth > 8 ? wrap_slice16 : wrap_slice8;
+        s->filter_slice[0] = s->depth > 8 ? smear_slice16 : smear_slice8;
     }
     s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->height[0] = s->height[3] = inlink->h;
@@ -361,18 +357,6 @@ static int config_input(AVFilterLink *inlink)
     s->width[0] = s->width[3] = inlink->w;
 
     return av_image_fill_linesizes(s->linesize, inlink->format, inlink->w);
-}
-
-static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
-                           char *res, int res_len, int flags)
-{
-    int ret;
-
-    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
-    if (ret < 0)
-        return ret;
-
-    return config_input(ctx->inputs[0]);
 }
 
 #define OFFSET(x) offsetof(ChromaShiftContext, x)
@@ -431,7 +415,7 @@ const AVFilter ff_vf_chromashift = {
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(yuv_pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
 };
 
 static const enum AVPixelFormat rgb_pix_fmts[] = {
@@ -468,5 +452,5 @@ const AVFilter ff_vf_rgbashift = {
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(rgb_pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
 };
