@@ -190,6 +190,9 @@ static int config_input(AVFilterLink *inlink)
         s->persistent_max_frames = (int) FFMAX(av_q2d(s->frame_rate) * s->draw_persistent_duration, 1.);
         s->max_persistent = av_calloc(inlink->ch_layout.nb_channels * s->persistent_max_frames, sizeof(*s->max_persistent));
         s->nb_frames_max_display = av_calloc(inlink->ch_layout.nb_channels * s->persistent_max_frames, sizeof(*s->nb_frames_max_display));
+        if (!s->max_persistent ||
+            !s->nb_frames_max_display)
+            return AVERROR(ENOMEM);
     }
     return 0;
 }
@@ -479,6 +482,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->values);
     av_freep(&s->color_lut);
     av_freep(&s->max);
+    av_freep(&s->max_persistent);
+    av_freep(&s->nb_frames_max_display);
 }
 
 static const AVFilterPad showvolume_inputs[] = {
