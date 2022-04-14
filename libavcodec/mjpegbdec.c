@@ -142,8 +142,8 @@ read_header:
         return buf_size;
     }
 
-    if ((ret = av_frame_ref(rframe, s->picture_ptr)) < 0)
-        return ret;
+    av_frame_move_ref(rframe, s->picture_ptr);
+    s->got_picture = 0;
     *got_frame = 1;
 
     if (!s->lossless && avctx->debug & FF_DEBUG_QP) {
