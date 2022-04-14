@@ -1064,6 +1064,7 @@ static int config_output(AVFilterLink *outlink)
     int i, fft_size, h, w, ret;
     float overlap;
 
+    s->old_pts = AV_NOPTS_VALUE;
     s->dmax = expf(s->limit * M_LN10 / 20.f);
     s->dmin = expf((s->limit - s->drange) * M_LN10 / 20.f);
 
@@ -1610,7 +1611,7 @@ static int activate(AVFilterContext *ctx)
             if (s->data == D_UPHASE)
                 ff_filter_execute(ctx, calc_channel_uphases, NULL, NULL, s->nb_display_channels);
 
-            if (s->xpos == 0 || s->sliding != FULLFRAME)
+            if (s->sliding != FULLFRAME || s->xpos == 0)
                 s->in_pts = fin->pts;
             ret = plot_spectrum_column(inlink, fin);
             av_frame_free(&fin);
