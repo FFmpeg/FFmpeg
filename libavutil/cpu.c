@@ -16,16 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdatomic.h>
-
-#include "attributes.h"
-#include "cpu.h"
-#include "cpu_internal.h"
 #include "config.h"
-#include "opt.h"
-#include "common.h"
 
 #if HAVE_SCHED_GETAFFINITY
 #ifndef _GNU_SOURCE
@@ -33,6 +24,17 @@
 #endif
 #include <sched.h>
 #endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdatomic.h>
+
+#include "attributes.h"
+#include "cpu.h"
+#include "cpu_internal.h"
+#include "opt.h"
+#include "common.h"
+
 #if HAVE_GETPROCESSAFFINITYMASK || HAVE_WINRT
 #include <windows.h>
 #endif
