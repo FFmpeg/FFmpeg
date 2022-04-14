@@ -2562,7 +2562,7 @@ Output only difference samples, useful to hear introduced distortions.
 By default is disabled.
 
 @item adaptive
-Set strenght of adaptive distortion applied. Default value is 0.5.
+Set strength of adaptive distortion applied. Default value is 0.5.
 Allowed range is from 0 to 1.
 
 @item iterations
@@ -28611,6 +28611,9 @@ Allowed range is from 10 to 200.
 @item limit
 Set upper limit of input audio samples volume in dBFS. Default is 0 dBFS.
 Allowed range is from -100 to 100.
+
+@item opacity
+Set opacity strength when using pixel format output with alpha component.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
@@ -28792,6 +28795,9 @@ Allowed range is from 10 to 200.
 @item limit
 Set upper limit of input audio samples volume in dBFS. Default is 0 dBFS.
 Allowed range is from -100 to 100.
+
+@item opacity
+Set opacity strength when using pixel format output with alpha component.
 @end table
 
 @subsection Examples
