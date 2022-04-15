@@ -32,9 +32,9 @@ static int pgx_get_number(AVCodecContext *avctx, GetByteContext *g, int *number)
     *number = 0;
     while (1) {
         uint64_t temp;
-        if (!bytestream2_get_bytes_left(g))
+        if (bytestream2_get_bytes_left(g) <= 0)
             return AVERROR_INVALIDDATA;
-        digit = bytestream2_get_byte(g);
+        digit = bytestream2_get_byteu(g);
         if (digit == ' ' || digit == 0xA || digit == 0xD)
             break;
         else if (digit < '0' || digit > '9')
@@ -59,22 +59,22 @@ static int pgx_decode_header(AVCodecContext *avctx, GetByteContext *g,
     if (bytestream2_get_bytes_left(g) < 12)
         return AVERROR_INVALIDDATA;
 
-    bytestream2_skip(g, 6);
+    bytestream2_skipu(g, 6);
 
     // Is the component signed?
-    byte = bytestream2_peek_byte(g);
+    byte = bytestream2_peek_byteu(g);
     if (byte == '+') {
         *sign = 0;
-        bytestream2_skip(g, 1);
+        bytestream2_skipu(g, 1);
     } else if (byte == '-') {
         *sign = 1;
-        bytestream2_skip(g, 1);
+        bytestream2_skipu(g, 1);
     } else if (byte == 0)
         goto error;
 
-    byte = bytestream2_peek_byte(g);
+    byte = bytestream2_peek_byteu(g);
     if (byte == ' ')
-        bytestream2_skip(g, 1);
+        bytestream2_skipu(g, 1);
     else if (byte == 0)
         goto error;
 
@@ -104,9 +104,9 @@ error:
             for (j = 0; j < width; j++) {                                                   \
                 unsigned val;                                                               \
                 if (sign)                                                                   \
-                    val = (PIXEL)bytestream2_get_ ##suffix(g) + (1 << (depth - 1));         \
+                    val = (PIXEL)bytestream2_get_ ##suffix##u(g) + (1 << (depth - 1));      \
                 else                                                                        \
-                    val = bytestream2_get_ ##suffix(g);                                     \
+                    val = bytestream2_get_ ##suffix##u(g);                                  \
                 val <<= (D - depth);                                                        \
                 *(line + j) = val;                                                          \
             }                                                                               \
