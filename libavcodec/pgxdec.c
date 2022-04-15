@@ -56,9 +56,8 @@ static int pgx_decode_header(AVCodecContext *avctx, GetByteContext *g,
 {
     int byte;
 
-    if (bytestream2_get_bytes_left(g) < 6) {
+    if (bytestream2_get_bytes_left(g) < 12)
         return AVERROR_INVALIDDATA;
-    }
 
     bytestream2_skip(g, 6);
 
