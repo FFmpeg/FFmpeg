@@ -69,14 +69,11 @@ static int pgx_decode_header(AVCodecContext *avctx, GetByteContext *g,
     } else if (byte == '-') {
         *sign = 1;
         bytestream2_skipu(g, 1);
-    } else if (byte == 0)
-        goto error;
+    }
 
     byte = bytestream2_peek_byteu(g);
     if (byte == ' ')
         bytestream2_skipu(g, 1);
-    else if (byte == 0)
-        goto error;
 
     if (pgx_get_number(avctx, g, depth))
         goto error;
