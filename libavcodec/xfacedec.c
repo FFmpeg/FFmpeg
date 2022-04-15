@@ -180,6 +180,7 @@ const FFCodec ff_xface_decoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("X-face image"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_XFACE,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(XFaceContext),
     .init           = xface_decode_init,
     FF_CODEC_DECODE_CB(xface_decode_frame),
