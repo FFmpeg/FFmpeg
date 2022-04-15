@@ -107,8 +107,8 @@ error:
         }                                                                                   \
     }                                                                                       \
 
-WRITE_FRAME(8, int8_t, byte)
-WRITE_FRAME(16, int16_t, be16)
+WRITE_FRAME(8, uint8_t, byte)
+WRITE_FRAME(16, uint16_t, be16)
 
 static int pgx_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
