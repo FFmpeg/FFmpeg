@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.3.4:
+ fate: update reference files after the recent dash manifest muxer changes
+ avformat/webmdashenc: fix on-demand profile string
+ Update for FFmpeg 4.3.4
  avcodec/diracdec: avoid signed integer overflow in global mv
  avcodec/takdsp: Fix integer overflow in decorrelate_sf()
  avcodec/apedec: fix a integer overflow in long_filter_high_3800()
