@@ -95,16 +95,13 @@ error:
     static inline void write_frame_ ##D(AVFrame *frame, GetByteContext *g, \
                                         int width, int height, int sign, int depth)         \
     {                                                                                       \
+        const unsigned offset = sign ? (1 << (D - 1)) : 0;                                  \
         int i, j;                                                                           \
         for (i = 0; i < height; i++) {                                                      \
             PIXEL *line = (PIXEL*)(frame->data[0] + i * frame->linesize[0]);                \
             for (j = 0; j < width; j++) {                                                   \
-                unsigned val;                                                               \
-                if (sign)                                                                   \
-                    val = (PIXEL)bytestream2_get_ ##suffix##u(g) + (1 << (depth - 1));      \
-                else                                                                        \
-                    val = bytestream2_get_ ##suffix##u(g);                                  \
-                val <<= (D - depth);                                                        \
+                unsigned val = bytestream2_get_ ##suffix##u(g) << (D - depth);              \
+                val ^= offset;                                                              \
                 *(line + j) = val;                                                          \
             }                                                                               \
         }                                                                                   \
