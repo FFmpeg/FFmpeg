@@ -329,4 +329,5 @@ const AVFilter ff_vf_feedback = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC(query_formats),
+    .process_command = ff_filter_process_command,
 };
