@@ -97,7 +97,7 @@ error:
     {                                                                                       \
         int i, j;                                                                           \
         for (i = 0; i < height; i++) {                                                      \
-            PIXEL *line = (PIXEL*)frame->data[0] + i*frame->linesize[0]/sizeof(PIXEL);      \
+            PIXEL *line = (PIXEL*)(frame->data[0] + i * frame->linesize[0]);                \
             for (j = 0; j < width; j++) {                                                   \
                 unsigned val;                                                               \
                 if (sign)                                                                   \
