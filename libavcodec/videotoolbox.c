@@ -166,14 +166,13 @@ static int escape_ps(uint8_t* dst, const uint8_t* src, int src_size)
             src[i + 2] <= 0x03) {
             if (dst) {
                 *p++ = src[i++];
-                *p++ = src[i++];
+                *p++ = src[i];
                 *p++ = 0x03;
             } else {
-                i += 2;
+                i++;
             }
             size++;
-        }
-        if (dst)
+        } else if (dst)
             *p++ = src[i];
     }
 
