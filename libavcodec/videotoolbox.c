@@ -328,13 +328,13 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
      * bit(5) reserved = ‘11111’b;
      * unsigned int(3) bitDepthLumaMinus8;
      */
-    AV_W8(p + 17, (sps->bit_depth - 8) | 0xfc);
+    AV_W8(p + 17, (sps->bit_depth - 8) | 0xf8);
 
     /*
      * bit(5) reserved = ‘11111’b;
      * unsigned int(3) bitDepthChromaMinus8;
      */
-    AV_W8(p + 18, (sps->bit_depth_chroma - 8) | 0xfc);
+    AV_W8(p + 18, (sps->bit_depth_chroma - 8) | 0xf8);
 
     /* bit(16) avgFrameRate; */
     AV_WB16(p + 19, 0);
