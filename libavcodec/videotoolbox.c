@@ -246,7 +246,7 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
     for (i = 0; i < HEVC_MAX_##T##PS_COUNT; i++) { \
         if (h->ps.t##ps_list[i]) { \
             const HEVC##T##PS *lps = (const HEVC##T##PS *)h->ps.t##ps_list[i]->data; \
-            vt_extradata_size += 2 + lps->data_size; \
+            vt_extradata_size += 2 + escape_ps(NULL, lps->data, lps->data_size); \
             num_##t##ps++; \
         } \
     }
@@ -369,11 +369,11 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
     for (i = 0; i < HEVC_MAX_##T##PS_COUNT; i++) { \
         if (h->ps.t##ps_list[i]) { \
             const HEVC##T##PS *lps = (const HEVC##T##PS *)h->ps.t##ps_list[i]->data; \
+            int size = escape_ps(p + 2, lps->data, lps->data_size); \
             /* unsigned int(16) nalUnitLength; */ \
-            AV_WB16(p, lps->data_size); \
+            AV_WB16(p, size); \
             /* bit(8*nalUnitLength) nalUnit; */ \
-            memcpy(p + 2, lps->data, lps->data_size); \
-            p += 2 + lps->data_size; \
+            p += 2 + size; \
         } \
     }
 
