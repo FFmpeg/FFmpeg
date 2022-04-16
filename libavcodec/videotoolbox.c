@@ -273,7 +273,16 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
                  ptlc.profile_idc);
 
     /* unsigned int(32) general_profile_compatibility_flags; */
-    memcpy(p + 2, ptlc.profile_compatibility_flag, 4);
+    for (i = 0; i < 4; i++) {
+        AV_W8(p + 2 + i, ptlc.profile_compatibility_flag[i * 8] << 7 |
+                         ptlc.profile_compatibility_flag[i * 8 + 1] << 6 |
+                         ptlc.profile_compatibility_flag[i * 8 + 2] << 5 |
+                         ptlc.profile_compatibility_flag[i * 8 + 3] << 4 |
+                         ptlc.profile_compatibility_flag[i * 8 + 4] << 3 |
+                         ptlc.profile_compatibility_flag[i * 8 + 5] << 2 |
+                         ptlc.profile_compatibility_flag[i * 8 + 6] << 1 |
+                         ptlc.profile_compatibility_flag[i * 8 + 7]);
+    }
 
     /* unsigned int(48) general_constraint_indicator_flags; */
     AV_W8(p + 6, ptlc.progressive_source_flag    << 7 |
