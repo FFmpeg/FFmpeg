@@ -1,36 +1,40 @@
-FATE_LAVF_IMAGES-$(call ENCDEC,  BMP,            IMAGE2)             += bmp
-FATE_LAVF_IMAGES-$(call ENCDEC,  DPX,            IMAGE2)             += dpx
-FATE_LAVF_IMAGES-$(call ENCDEC,  DPX,            IMAGE2)             += gbrp10le.dpx
-FATE_LAVF_IMAGES-$(call ENCDEC,  DPX,            IMAGE2)             += gbrp12le.dpx
-FATE_LAVF_IMAGES-$(call ENCDEC,  DPX,            IMAGE2)             += rgb48le.dpx
-FATE_LAVF_IMAGES-$(call ENCDEC,  DPX,            IMAGE2)             += rgb48le_10.dpx
-FATE_LAVF_IMAGES-$(call ENCDEC,  DPX,            IMAGE2)             += rgba64le.dpx
-FATE_LAVF_IMAGES-$(call ENCDEC,  MJPEG,          IMAGE2)             += jpg
-FATE_LAVF_IMAGES-$(call ENCDEC,  PAM,            IMAGE2)             += pam
-FATE_LAVF_IMAGES-$(call ENCDEC,  PAM,            IMAGE2)             += rgba.pam
-FATE_LAVF_IMAGES-$(call ENCDEC,  PAM,            IMAGE2)             += gray.pam
-FATE_LAVF_IMAGES-$(call ENCDEC,  PAM,            IMAGE2)             += gray16be.pam
-FATE_LAVF_IMAGES-$(call ENCDEC,  PAM,            IMAGE2)             += rgb48be.pam
-FATE_LAVF_IMAGES-$(call ENCDEC,  PAM,            IMAGE2)             += monob.pam
-FATE_LAVF_IMAGES-$(call ENCDEC,  PCX,            IMAGE2)             += pcx
-FATE_LAVF_IMAGES-$(call ENCDEC,  PGM,            IMAGE2)             += pgm
-FATE_LAVF_IMAGES-$(call ENCDEC,  PNG,            IMAGE2)             += png
-FATE_LAVF_IMAGES-$(call ENCDEC,  PNG,            IMAGE2)             += gray16be.png
-FATE_LAVF_IMAGES-$(call ENCDEC,  PNG,            IMAGE2)             += rgb48be.png
-FATE_LAVF_IMAGES-$(call ENCDEC,  PPM,            IMAGE2)             += ppm
-FATE_LAVF_IMAGES-$(call ENCDEC,  SGI,            IMAGE2)             += sgi
-FATE_LAVF_IMAGES-$(call ENCDEC,  SUNRAST,        IMAGE2)             += sun
-FATE_LAVF_IMAGES-$(call ENCDEC,  TARGA,          IMAGE2)             += tga
-FATE_LAVF_IMAGES-$(call ENCDEC,  TIFF,           IMAGE2)             += tiff
-FATE_LAVF_IMAGES-$(call ENCDEC,  XBM,            IMAGE2)             += xbm
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += rgba.xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += rgb565be.xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += rgb555be.xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += rgb8.xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += rgb4_byte.xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += gray.xwd
-FATE_LAVF_IMAGES-$(call ENCDEC,  XWD,            IMAGE2)             += monow.xwd
+LAVF_IMAGES = $(call ALLYES, FILE_PROTOCOL IMAGE2_DEMUXER PGMYUV_DECODER \
+                             SCALE_FILTER $(1)_ENCODER IMAGE2_MUXER      \
+                             $(1)_DECODER RAWVIDEO_ENCODER CRC_MUXER)
+
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         BMP) += bmp
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += dpx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += gbrp10le.dpx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += gbrp12le.dpx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += rgb48le.dpx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += rgb48le_10.dpx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         DPX) += rgba64le.dpx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,       MJPEG) += jpg
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PAM) += pam
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PAM) += rgba.pam
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PAM) += gray.pam
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PAM) += gray16be.pam
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PAM) += rgb48be.pam
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PAM) += monob.pam
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PCX) += pcx
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PGM) += pgm
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PNG) += png
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PNG) += gray16be.png
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PNG) += rgb48be.png
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         PPM) += ppm
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         SGI) += sgi
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,     SUNRAST) += sun
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,       TARGA) += tga
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,        TIFF) += tiff
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XBM) += xbm
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += rgba.xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += rgb565be.xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += rgb555be.xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += rgb8.xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += rgb4_byte.xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += gray.xwd
+FATE_LAVF_IMAGES-$(call LAVF_IMAGES,         XWD) += monow.xwd
 
 FATE_LAVF_IMAGES = $(FATE_LAVF_IMAGES-yes:%=fate-lavf-%)
 
