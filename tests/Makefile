@@ -68,11 +68,13 @@ XYES    = $(if $(strip $(1)),                                           \
                yes)
 
 ENCDEC  = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
-                         $(firstword $(2))_MUXER   $(lastword $(2))_DEMUXER)
+                         $(firstword $(2))_MUXER   $(lastword $(2))_DEMUXER  \
+                         $(3) FILE_PROTOCOL)
 
 ENCDEC2 = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
                          $(firstword $(2))_ENCODER $(lastword $(2))_DECODER  \
-                         $(firstword $(3))_MUXER   $(lastword $(3))_DEMUXER)
+                         $(firstword $(3))_MUXER   $(lastword $(3))_DEMUXER  \
+                         $(4) FILE_PROTOCOL)
 
 # RAWVIDEO_ENCODER and PCM_S16LE_ENCODER corresponds to the default codecs
 # for framecrc. These requirements are not always necessary.
@@ -84,16 +86,16 @@ TRANSCODE = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER \
 REMUX = $(call ALLYES, $(firstword $(1))_MUXER $(lastword $(1))_DEMUXER \
                        $(2) FILE_PROTOCOL PIPE_PROTOCOL FRAMECRC_MUXER)
 
-DEMDEC  = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER))
-ENCMUX  = $(call ALLYES, $(1:%=%_ENCODER) $(2)_MUXER)
+DEMDEC  = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER) $(3) FILE_PROTOCOL)
+ENCMUX  = $(call ALLYES, $(1:%=%_ENCODER) $(2)_MUXER   $(3))
 
-DEMMUX  = $(call ALLYES, $(1)_DEMUXER $(2)_MUXER)
+DEMMUX  = $(call ALLYES, $(1)_DEMUXER $(2)_MUXER $(3) FILE_PROTOCOL)
 
-FILTERDEMDEC       = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER)
-FILTERDEMDECMUX    = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4)_MUXER)
-FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4)_ENCODER $(5)_MUXER)
+FILTERDEMDEC       = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4) FILE_PROTOCOL)
+FILTERDEMDECMUX    = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4)_MUXER   $(5) FILE_PROTOCOL)
+FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4)_ENCODER $(5)_MUXER $(6) FILE_PROTOCOL)
 
-PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER)
+PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER $(4) FILE_PROTOCOL)
 
 # Allow overriding CONFIG_LARGE_TESTS via LARGE_TESTS, if set on the
 # make command line.
