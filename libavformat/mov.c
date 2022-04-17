@@ -7839,6 +7839,7 @@ static int mov_probe(const AVProbeData *p)
             if (tag == MKTAG('f','t','y','p') &&
                        (   AV_RL32(p->buf + offset + 8) == MKTAG('j','p','2',' ')
                         || AV_RL32(p->buf + offset + 8) == MKTAG('j','p','x',' ')
+                        || AV_RL32(p->buf + offset + 8) == MKTAG('j','x','l',' ')
                     )) {
                 score = FFMAX(score, 5);
             } else {

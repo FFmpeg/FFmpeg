@@ -36,6 +36,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "img2.h"
+#include "jpegxl_probe.h"
 #include "libavcodec/mjpeg.h"
 #include "libavcodec/vbn.h"
 #include "libavcodec/xwd.h"
@@ -837,6 +838,24 @@ static int jpegls_probe(const AVProbeData *p)
     return 0;
 }
 
+static int jpegxl_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    /* ISOBMFF-based container */
+    /* 0x4a584c20 == "JXL " */
+    if (AV_RL64(b) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)
+        return AVPROBE_SCORE_EXTENSION + 1;
+    /* Raw codestreams all start with 0xff0a */
+    if (AV_RL16(b) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
+        return 0;
+#if CONFIG_IMAGE_JPEGXL_PIPE_DEMUXER
+    if (ff_jpegxl_verify_codestream_header(p->buf, p->buf_size) >= 0)
+        return AVPROBE_SCORE_MAX - 2;
+#endif
+    return 0;
+}
+
 static int pcx_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -1176,6 +1195,7 @@ IMAGEAUTO_DEMUXER(gif,       GIF)
 IMAGEAUTO_DEMUXER_EXT(j2k,   JPEG2000, J2K)
 IMAGEAUTO_DEMUXER_EXT(jpeg,  MJPEG, JPEG)
 IMAGEAUTO_DEMUXER(jpegls,    JPEGLS)
+IMAGEAUTO_DEMUXER(jpegxl,    JPEGXL)
 IMAGEAUTO_DEMUXER(pam,       PAM)
 IMAGEAUTO_DEMUXER(pbm,       PBM)
 IMAGEAUTO_DEMUXER(pcx,       PCX)

@@ -439,6 +439,7 @@ Muxers/Demuxers:
   ipmovie.c                             Mike Melanson
   ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
+  jpegxl_probe.*                        Leo Izen
   jvdec.c                               Peter Ross
   kvag.c                                Zane van Iperen
   libmodplug.c                          Clément Bœsch
