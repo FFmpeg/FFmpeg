@@ -1062,6 +1062,7 @@ OBJS-$(CONFIG_LIBGSM_MS_DECODER)          += libgsmdec.o
 OBJS-$(CONFIG_LIBGSM_MS_ENCODER)          += libgsmenc.o
 OBJS-$(CONFIG_LIBILBC_DECODER)            += libilbc.o
 OBJS-$(CONFIG_LIBILBC_ENCODER)            += libilbc.o
+OBJS-$(CONFIG_LIBJXL_DECODER)             += libjxldec.o libjxl.o
 OBJS-$(CONFIG_LIBKVAZAAR_ENCODER)         += libkvazaar.o
 OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o

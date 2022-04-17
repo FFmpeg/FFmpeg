@@ -194,6 +194,7 @@ Codecs:
   libcodec2.c                           Tomas Härdin
   libdirac*                             David Conrad
   libdavs2.c                            Huiwen Ren
+  libjxl*.c, libjxl.h                   Leo Izen
   libgsm.c                              Michel Bardiaux
   libkvazaar.c                          Arttu Ylä-Outinen
   libopenh264enc.c                      Martin Storsjo, Linjie Fu

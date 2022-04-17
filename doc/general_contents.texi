@@ -171,6 +171,13 @@ Go to @url{https://github.com/TimothyGu/libilbc} and follow the instructions for
 installing the library. Then pass @code{--enable-libilbc} to configure to
 enable it.
 
+@section libjxl
+
+JPEG XL is an image format intended to fully replace legacy JPEG for an extended
+period of life. See @url{https://jpegxl.info/} for more information, and see
+@url{https://github.com/libjxl/libjxl} for the library source. You can pass
+@code{--enable-libjxl} to configure in order enable the libjxl wrapper.
+
 @section libvpx
 
 FFmpeg can make use of the libvpx library for VP8/VP9 decoding and encoding.
