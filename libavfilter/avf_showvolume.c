@@ -213,6 +213,7 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     for (ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
         int i;
@@ -338,7 +339,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         }
         clear_picture(s, outlink);
     }
-    s->out->pts = insamples->pts;
+    s->out->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
 
     if ((s->f < 1.) && (s->f > 0.)) {
         for (j = 0; j < outlink->h; j++) {
