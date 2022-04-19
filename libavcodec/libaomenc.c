@@ -199,6 +199,12 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_SMOOTH_INTERINTRA] = "AV1E_SET_ENABLE_SMOOTH_INTERINTRA",
     [AV1E_SET_ENABLE_REF_FRAME_MVS]     = "AV1E_SET_ENABLE_REF_FRAME_MVS",
 #endif
+#ifdef AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX
+    [AV1E_GET_SEQ_LEVEL_IDX]            = "AV1E_GET_SEQ_LEVEL_IDX",
+#endif
+#ifdef AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX
+    [AV1E_GET_TARGET_SEQ_LEVEL_IDX]     = "AV1E_GET_TARGET_SEQ_LEVEL_IDX",
+#endif
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -324,9 +330,67 @@ static av_cold int codecctl_int(AVCodecContext *avctx,
     return 0;
 }
 
+#if defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
+    defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
+static av_cold int codecctl_intp(AVCodecContext *avctx,
+#ifdef UENUM1BYTE
+                                 aome_enc_control_id id,
+#else
+                                 enum aome_enc_control_id id,
+#endif
+                                 int* ptr)
+{
+    AOMContext *ctx = avctx->priv_data;
+    char buf[80];
+    int width = -30;
+    int res;
+
+    snprintf(buf, sizeof(buf), "%s:", ctlidstr[id]);
+    av_log(avctx, AV_LOG_DEBUG, "  %*s%d\n", width, buf, *ptr);
+
+    res = aom_codec_control(&ctx->encoder, id, ptr);
+    if (res != AOM_CODEC_OK) {
+        snprintf(buf, sizeof(buf), "Failed to set %s codec control",
+                 ctlidstr[id]);
+        log_encoder_error(avctx, buf);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+#endif
+
 static av_cold int aom_free(AVCodecContext *avctx)
 {
     AOMContext *ctx = avctx->priv_data;
+
+#if defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
+    defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
+    if (!(avctx->flags & AV_CODEC_FLAG_PASS1)) {
+        int levels[32] = { 0 };
+        int target_levels[32] = { 0 };
+
+        if (!codecctl_intp(avctx, AV1E_GET_SEQ_LEVEL_IDX, levels) &&
+            !codecctl_intp(avctx, AV1E_GET_TARGET_SEQ_LEVEL_IDX,
+                           target_levels)) {
+            for (int i = 0; i < 32; i++) {
+                if (levels[i] > target_levels[i]) {
+                    // Warn when the target level was not met
+                    av_log(avctx, AV_LOG_WARNING,
+                           "Could not encode to target level %d.%d for "
+                           "operating point %d. The output level is %d.%d.\n",
+                           2 + (target_levels[i] >> 2), target_levels[i] & 3,
+                           i, 2 + (levels[i] >> 2), levels[i] & 3);
+                } else if (target_levels[i] < 31) {
+                    // Log the encoded level if a target level was given
+                    av_log(avctx, AV_LOG_INFO,
+                           "Output level for operating point %d is %d.%d.\n",
+                           i, 2 + (levels[i] >> 2), levels[i] & 3);
+                }
+            }
+        }
+    }
+#endif
 
     aom_codec_destroy(&ctx->encoder);
     av_freep(&ctx->twopass_stats.buf);
