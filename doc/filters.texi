@@ -8459,6 +8459,9 @@ Show white point on CIE diagram, by default disabled.
 
 @item gamma
 Set input gamma. Used only with XYZ input color space.
+
+@item fill
+Fill with CIE colors. By default is enabled.
 @end table
 
 @section codecview

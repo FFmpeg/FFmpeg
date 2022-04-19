@@ -61,6 +61,7 @@ typedef struct CiescopeContext {
     float intensity;
     float contrast;
     int background;
+    int fill;
 
     float log2lin[65536];
     float igamma;
@@ -118,6 +119,7 @@ static const AVOption ciescope_options[] = {
     { "corrgamma",  NULL, OFFSET(correct_gamma), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "showwhite",  NULL, OFFSET(show_white), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "gamma",      NULL, OFFSET(igamma), AV_OPT_TYPE_DOUBLE, {.dbl=2.6}, 0.1, 6, FLAGS },
+    { "fill",       "fill with CIE colors", OFFSET(fill), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -1239,8 +1241,9 @@ static int draw_background(AVFilterContext *ctx)
 
     tongue_outline(pixels, s->f->linesize[0] / 2, w, h, 65535, s->cie);
 
-    fill_in_tongue(pixels, s->f->linesize[0] / 2, w, h, 65535, cs, (const float (*)[3])s->i, s->cie,
-                   s->correct_gamma, s->contrast);
+    if (s->fill)
+        fill_in_tongue(pixels, s->f->linesize[0] / 2, w, h, 65535, cs, (const float (*)[3])s->i, s->cie,
+                       s->correct_gamma, s->contrast);
 
     return 0;
 }
