@@ -1003,9 +1003,9 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 continue;
             }
             if (
-                (ctx->sample_rate && ctx->sample_rate != fx->nSamplesPerSec) ||
-                (ctx->sample_size && ctx->sample_size != fx->wBitsPerSample) ||
-                (ctx->channels    && ctx->channels    != fx->nChannels     )
+                (requested_sample_rate && requested_sample_rate != fx->nSamplesPerSec) ||
+                (requested_sample_size && requested_sample_size != fx->wBitsPerSample) ||
+                (requested_channels    && requested_channels    != fx->nChannels     )
             ) {
                 goto next;
             }
