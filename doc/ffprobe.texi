@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffprobe [@var{options}] [@file{input_url}]
+ffprobe [@var{options}] @file{input_url}
 
 @chapter Description
 @c man begin DESCRIPTION
