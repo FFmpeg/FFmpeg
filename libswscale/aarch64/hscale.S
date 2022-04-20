@@ -61,17 +61,9 @@ function ff_hscale_8_to_15_neon, export=1
         smlal               v3.4S, v18.4H, v19.4H       // v3 accumulates srcp[filterPos[3] + {0..3}] * filter[{0..3}]
         smlal2              v3.4S, v18.8H, v19.8H       // v3 accumulates srcp[filterPos[3] + {4..7}] * filter[{4..7}]
         b.gt                2b                          // inner loop if filterSize not consumed completely
-        addp                v0.4S, v0.4S, v0.4S         // part0 horizontal pair adding
-        addp                v1.4S, v1.4S, v1.4S         // part1 horizontal pair adding
-        addp                v2.4S, v2.4S, v2.4S         // part2 horizontal pair adding
-        addp                v3.4S, v3.4S, v3.4S         // part3 horizontal pair adding
-        addp                v0.4S, v0.4S, v0.4S         // part0 horizontal pair adding
-        addp                v1.4S, v1.4S, v1.4S         // part1 horizontal pair adding
-        addp                v2.4S, v2.4S, v2.4S         // part2 horizontal pair adding
-        addp                v3.4S, v3.4S, v3.4S         // part3 horizontal pair adding
-        zip1                v0.4S, v0.4S, v1.4S         // part01 = zip values from part0 and part1
-        zip1                v2.4S, v2.4S, v3.4S         // part23 = zip values from part2 and part3
-        mov                 v0.d[1], v2.d[0]            // part0123 = zip values from part01 and part23
+        addp                v0.4S, v0.4S, v1.4S         // part01 horizontal pair adding
+        addp                v2.4S, v2.4S, v3.4S         // part23 horizontal pair adding
+        addp                v0.4S, v0.4S, v2.4S         // part0123 horizontal pair adding
         subs                w2, w2, #4                  // dstW -= 4
         sqshrn              v0.4H, v0.4S, #7            // shift and clip the 2x16-bit final values
         st1                 {v0.4H}, [x1], #8           // write to destination part0123
