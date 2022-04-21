@@ -1566,6 +1566,7 @@ static void json_print_section_header(WriterContext *wctx)
                 if (!json->compact)
                     JSON_INDENT();
                 printf("\"type\": \"%s\"", section->name);
+                wctx->nb_item[wctx->level]++;
             }
         }
         av_bprint_finalize(&buf, NULL);
