@@ -28432,6 +28432,9 @@ It accepts the following values:
 @item delay
 @end table
 Default is @code{magnitude}.
+
+@item channels
+Set channels to use when processing audio. By default all are processed.
 @end table
 
 @section showspatial
