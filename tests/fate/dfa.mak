@@ -31,7 +31,7 @@ fate-dfa10: CMD = framecrc -i $(TARGET_SAMPLES)/chronomaster-dfa/0009.dfa -pix_f
 FATE_DFA += fate-dfa11
 fate-dfa11: CMD = framecrc -i $(TARGET_SAMPLES)/chronomaster-dfa/0010.dfa -pix_fmt rgb24 -vf scale
 
-FATE_DFA-$(call DEMDEC, DFA, DFA) += $(FATE_DFA)
+FATE_DFA-$(call FRAMECRC, DFA, DFA, SCALE_FILTER) += $(FATE_DFA)
 
 FATE_SAMPLES_AVCONV += $(FATE_DFA-yes)
 fate-dfa: $(FATE_DFA-yes)
