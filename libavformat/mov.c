@@ -1136,6 +1136,7 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     av_dict_set(&c->fc->metadata, "major_brand", type, 0);
+    c->is_still_picture_avif = !strncmp(type, "avif", 4);
     minor_ver = avio_rb32(pb); /* minor version */
     av_dict_set_int(&c->fc->metadata, "minor_version", minor_ver, 0);
 
@@ -7431,6 +7432,145 @@ static int mov_read_SAND(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int rb_size(AVIOContext *pb, uint64_t* value, int size)
+{
+    if (size == 0)
+        *value = 0;
+    else if (size == 1)
+        *value = avio_r8(pb);
+    else if (size == 2)
+        *value = avio_rb16(pb);
+    else if (size == 4)
+        *value = avio_rb32(pb);
+    else if (size == 8)
+        *value = avio_rb64(pb);
+    else
+        return -1;
+    return size;
+}
+
+static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int version, offset_size, length_size, base_offset_size, index_size;
+    int item_count, extent_count;
+    uint64_t base_offset, extent_offset, extent_length;
+    uint8_t value;
+    AVStream *st;
+    MOVStreamContext *sc;
+
+    if (!c->is_still_picture_avif) {
+        // * For non-avif, we simply ignore the iloc box.
+        // * For animated avif, we don't care about the iloc box as all the
+        //   necessary information can be found in the moov box.
+        return 0;
+    }
+
+    if (c->fc->nb_streams) {
+        av_log(c->fc, AV_LOG_INFO, "Duplicate iloc box found\n");
+        return 0;
+    }
+
+    st = avformat_new_stream(c->fc, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->id = c->fc->nb_streams;
+    sc = av_mallocz(sizeof(MOVStreamContext));
+    if (!sc)
+        return AVERROR(ENOMEM);
+
+    st->priv_data = sc;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_AV1;
+    sc->ffindex = st->index;
+    c->trak_index = st->index;
+    st->avg_frame_rate.num = st->avg_frame_rate.den = 1;
+    st->time_base.num = st->time_base.den = 1;
+    st->nb_frames = 1;
+    sc->time_scale = 1;
+    sc = st->priv_data;
+    sc->pb = c->fc->pb;
+    sc->pb_is_copied = 1;
+
+    version = avio_r8(pb);
+    avio_rb24(pb);  // flags.
+
+    value = avio_r8(pb);
+    offset_size = (value >> 4) & 0xF;
+    length_size = value & 0xF;
+    value = avio_r8(pb);
+    base_offset_size = (value >> 4) & 0xF;
+    index_size = !version ? 0 : (value & 0xF);
+    if (index_size) {
+        av_log(c->fc, AV_LOG_ERROR, "iloc: index_size != 0 not supported.\n");
+        return AVERROR_PATCHWELCOME;
+    }
+    item_count = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
+    if (item_count > 1) {
+        // For still AVIF images, we only support one item. Second item will
+        // generally be found for AVIF images with alpha channel. We don't
+        // support them as of now.
+        av_log(c->fc, AV_LOG_ERROR, "iloc: item_count > 1 not supported.\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    // Populate the necessary fields used by mov_build_index.
+    sc->stsc_count = item_count;
+    sc->stsc_data = av_malloc_array(item_count, sizeof(*sc->stsc_data));
+    if (!sc->stsc_data)
+        return AVERROR(ENOMEM);
+    sc->stsc_data[0].first = 1;
+    sc->stsc_data[0].count = 1;
+    sc->stsc_data[0].id = 1;
+    sc->chunk_count = item_count;
+    sc->chunk_offsets =
+        av_malloc_array(item_count, sizeof(*sc->chunk_offsets));
+    if (!sc->chunk_offsets)
+        return AVERROR(ENOMEM);
+    sc->sample_count = item_count;
+    sc->sample_sizes =
+        av_malloc_array(item_count, sizeof(*sc->sample_sizes));
+    if (!sc->sample_sizes)
+        return AVERROR(ENOMEM);
+    sc->stts_count = item_count;
+    sc->stts_data = av_malloc_array(item_count, sizeof(*sc->stts_data));
+    if (!sc->stts_data)
+        return AVERROR(ENOMEM);
+    sc->stts_data[0].count = 1;
+    // Not used for still images. But needed by mov_build_index.
+    sc->stts_data[0].duration = 0;
+
+    for (int i = 0; i < item_count; i++) {
+        (version < 2) ? avio_rb16(pb) : avio_rb32(pb);  // item_id;
+        if (version > 0)
+            avio_rb16(pb);  // construction_method.
+        avio_rb16(pb);  // data_reference_index.
+        if (rb_size(pb, &base_offset, base_offset_size) < 0)
+            return AVERROR_INVALIDDATA;
+        extent_count = avio_rb16(pb);
+        if (extent_count > 1) {
+            // For still AVIF images, we only support one extent item.
+            av_log(c->fc, AV_LOG_ERROR, "iloc: extent_count > 1 not supported.\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        for (int j = 0; j < extent_count; j++) {
+            if (rb_size(pb, &extent_offset, offset_size) < 0 ||
+                rb_size(pb, &extent_length, length_size) < 0)
+                return AVERROR_INVALIDDATA;
+            sc->sample_sizes[0] = extent_length;
+            sc->chunk_offsets[0] = base_offset + extent_offset;
+        }
+    }
+
+    mov_build_index(c, st);
+
+    // For still AVIF images, the iloc box contains all the necessary
+    // information that would generally be provided by the moov box. So simply
+    // mark that we have found the moov box so that parsing can continue.
+    c->found_moov = 1;
+
+    return atom.size;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -7533,6 +7673,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('k','i','n','d'), mov_read_kind },
 { MKTAG('S','A','3','D'), mov_read_SA3D }, /* ambisonic audio box */
 { MKTAG('S','A','N','D'), mov_read_SAND }, /* non diegetic audio box */
+{ MKTAG('i','l','o','c'), mov_read_iloc },
 { 0, NULL }
 };
 
