@@ -41,7 +41,7 @@ typedef struct LagfunContext {
 
     float *old[4];
 
-    int (*lagfun)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
+    int (*lagfun[2])(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } LagfunContext;
 
 static const enum AVPixelFormat pixel_fmts[] = {
@@ -71,7 +71,7 @@ typedef struct ThreadData {
     AVFrame *in, *out;
 } ThreadData;
 
-#define LAGFUN(name, type, round)                                         \
+#define LAGFUN(name, type, round, disabled)                               \
 static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
                               int jobnr, int nb_jobs)                     \
 {                                                                         \
@@ -84,6 +84,7 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
     for (int p = 0; p < s->nb_planes; p++) {                              \
         const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;    \
         const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;  \
+        const int width = s->planewidth[p];                               \
         const type *src = (const type *)in->data[p] +                     \
                           slice_start * in->linesize[p] / sizeof(type);   \
         float *osrc = s->old[p] + slice_start * s->planewidth[p];         \
@@ -98,11 +99,11 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
         }                                                                 \
                                                                           \
         for (int y = slice_start; y < slice_end; y++) {                   \
-            for (int x = 0; x < s->planewidth[p]; x++) {                  \
-                float v = FFMAX(src[x], osrc[x] * decay);                 \
+            for (int x = 0; x < width; x++) {                             \
+                const float v = fmaxf(src[x], osrc[x] * decay);           \
                                                                           \
                 osrc[x] = v;                                              \
-                if (ctx->is_disabled) {                                   \
+                if (disabled) {                                           \
                     dst[x] = src[x];                                      \
                 } else {                                                  \
                     dst[x] = round(v);                                    \
@@ -110,7 +111,7 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
             }                                                             \
                                                                           \
             src += in->linesize[p] / sizeof(type);                        \
-            osrc += s->planewidth[p];                                     \
+            osrc += width;                                                \
             dst += out->linesize[p] / sizeof(type);                       \
         }                                                                 \
     }                                                                     \
@@ -118,9 +119,13 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
     return 0;                                                             \
 }
 
-LAGFUN(8,  uint8_t,  lrintf)
-LAGFUN(16, uint16_t, lrintf)
-LAGFUN(32, float,          )
+LAGFUN(8,  uint8_t,  lrintf, 0)
+LAGFUN(16, uint16_t, lrintf, 0)
+LAGFUN(32, float,          , 0)
+
+LAGFUN(d8,  uint8_t,  lrintf, 1)
+LAGFUN(d16, uint16_t, lrintf, 1)
+LAGFUN(d32, float,          , 1)
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -135,7 +140,8 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_BUG;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->depth = desc->comp[0].depth;
-    s->lagfun = s->depth <= 8 ? lagfun_frame8 : s->depth <= 16 ? lagfun_frame16 : lagfun_frame32;
+    s->lagfun[0] = s->depth <= 8 ? lagfun_frame8 : s->depth <= 16 ? lagfun_frame16 : lagfun_frame32;
+    s->lagfun[1] = s->depth <= 8 ? lagfun_framed8 : s->depth <= 16 ? lagfun_framed16 : lagfun_framed32;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
@@ -171,7 +177,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.out = out;
     td.in = in;
-    ff_filter_execute(ctx, s->lagfun, &td, NULL,
+    ff_filter_execute(ctx, s->lagfun[!!ctx->is_disabled], &td, NULL,
                       FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
