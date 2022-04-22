@@ -6,17 +6,10 @@ tests/data/fits-multi.fits: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 #mapping of fits file formats to png filenames
 # TODO: Use an actual 64bit input file and fix the gbrp16 test on big-endian
-map.tests/data/lena-gray.fits    := gray8
-map.tests/data/lena-gbrp.fits    := rgb24
-map.tests/data/lena-gbrp16.fits  := rgb48
-map.tests/data/lena-gbrap16le.fits := rgba64
-
-tests/data/lena%.fits: TAG = GEN
-tests/data/lena%.fits: NAME = $(map.$(@))
-tests/data/lena%.fits: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-        -i $(TARGET_SAMPLES)/png1/lena-$(map.$(@)).png \
-        -y $(TARGET_PATH)/$(@) 2>/dev/null
+fits-png-map-gray      := gray8
+fits-png-map-gbrp      := rgb24
+fits-png-map-gbrp16    := rgb48
+fits-png-map-gbrap16le := rgba64
 
 FATE_FITS_DEC-$(call FRAMECRC, FITS, FITS, SCALE_FILTER) += fate-fitsdec-ext_data_min_max
 fate-fitsdec-ext_data_min_max: CMD = framecrc -i $(TARGET_SAMPLES)/fits/x0cj010ct_d0h.fit -pix_fmt gray16le -vf scale
@@ -35,11 +28,9 @@ fate-fitsdec-multi: tests/data/fits-multi.fits
 fate-fitsdec-multi: CMD = framecrc -i $(TARGET_PATH)/tests/data/fits-multi.fits -pix_fmt gbrap
 
 fate-fitsdec%: PIXFMT = $(word 3, $(subst -, ,$(@)))
-fate-fitsdec%: SRC = $(TARGET_PATH)/tests/data/lena-$(PIXFMT).fits
-fate-fitsdec%: CMD = framecrc -i $(SRC) -pix_fmt $(PIXFMT)
+fate-fitsdec%: CMD = transcode image2 $(TARGET_SAMPLES)/png1/lena-$(fits-png-map-$(PIXFMT)).png fits "-vf scale -pix_fmt $(PIXFMT)"
 
 FATE_FITS_DEC_PIXFMT = gray gbrp gbrp16 gbrap16le
-$(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%): fate-fitsdec-%: tests/data/lena-%.fits
 FATE_FITS_DEC-$(call TRANSCODE, FITS, FITS, IMAGE2_DEMUXER PNG_DECODER SCALE_FILTER) += $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%)
 
 FATE_FITS += $(FATE_FITS_DEC-yes)
