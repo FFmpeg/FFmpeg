@@ -24,6 +24,7 @@
  * FITS muxer.
  */
 
+#include "avio_internal.h"
 #include "internal.h"
 
 typedef struct FITSContext {
@@ -177,11 +178,7 @@ static int write_image_header(AVFormatContext *s)
     lines_written++;
 
     lines_left = ((lines_written + 35) / 36) * 36 - lines_written;
-    memset(buffer, ' ', 80);
-    while (lines_left > 0) {
-        avio_write(s->pb, buffer, sizeof(buffer));
-        lines_left--;
-    }
+    ffio_fill(s->pb, ' ', sizeof(buffer) * lines_left);
     return 0;
 }
 
