@@ -64,8 +64,9 @@ fate-utvideo_yuv444_709_gradient: CMD = framecrc -i $(TARGET_SAMPLES)/utvideo/ut
 FATE_UTVIDEO += fate-utvideo_yuv444_709_int_gradient
 fate-utvideo_yuv444_709_int_gradient: CMD = framecrc -i $(TARGET_SAMPLES)/utvideo/utvideo_yuv444_709_64x48_int_gradient.avi
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, UTVIDEO) += $(FATE_UTVIDEO)
-fate-utvideo: $(FATE_UTVIDEO)
+FATE_UTVIDEO-$(call FRAMECRC, AVI, UTVIDEO) += $(FATE_UTVIDEO)
+FATE_SAMPLES_FFMPEG += $(FATE_UTVIDEO-yes)
+fate-utvideo: $(FATE_UTVIDEO-yes)
 
 fate-utvideoenc%: CMD = framemd5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -c:v utvideo -slices 1 -sws_flags +accurate_rnd+bitexact ${OPTS} -vf scale
 
@@ -116,5 +117,6 @@ fate-utvideoenc_yuv444_none: OPTS = -pix_fmt yuv444p -pred none
 
 $(FATE_UTVIDEOENC): $(VREF)
 
-FATE_AVCONV-$(call ENCMUX, UTVIDEO, AVI) += $(FATE_UTVIDEOENC)
-fate-utvideoenc: $(FATE_UTVIDEOENC)
+FATE_UTVIDEOENC-$(call FILTERDEMDECENCMUX, SCALE, IMAGE2, PGMYUV, UTVIDEO, FRAMEMD5, PIPE_PROTOCOL) += $(FATE_UTVIDEOENC)
+FATE_FFMPEG += $(FATE_UTVIDEOENC-yes)
+fate-utvideoenc: $(FATE_UTVIDEOENC-yes)
