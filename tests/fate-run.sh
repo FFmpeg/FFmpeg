@@ -340,6 +340,7 @@ lavf_container_fate()
     t="${test#lavf-fate-}"
     outdir="tests/data/lavf-fate"
     file=${outdir}/lavf.$t
+    cleanfiles="$cleanfiles $file"
     input="${target_samples}/$1"
     do_avconv $file -auto_conversion_filters $DEC_OPTS $2 -i "$input" "$ENC_OPTS -metadata title=lavftest" -vcodec copy -acodec copy
     do_avconv_crc $file -auto_conversion_filters $DEC_OPTS -i $target_path/$file $3
