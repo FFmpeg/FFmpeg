@@ -13,12 +13,22 @@ FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF)        +
 FATE_LAVF_CONTAINER-$(call ENCDEC2, DNXHD,      PCM_S16LE, MXF_OPATOM MXF)     += mxf_opatom mxf_opatom_audio
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG4,      MP2,       NUT)                += nut
 FATE_LAVF_CONTAINER-$(call ENCMUX,  RV10 AC3_FIXED,        RM)                 += rm
-FATE_LAVF_CONTAINER-$(call ENCMUX,  MJPEG PCM_S16LE,       SMJPEG)             += smjpeg
+FATE_LAVF_CONTAINER-$(call ENCDEC2, MJPEG,      PCM_S16LE, SMJPEG)             += smjpeg
 FATE_LAVF_CONTAINER-$(call ENCDEC,  FLV,                   SWF)                += swf
 FATE_LAVF_CONTAINER-$(call ENCDEC2, MPEG2VIDEO, MP2,       MPEGTS)             += ts
 FATE_LAVF_CONTAINER-$(call ENCDEC,  MP2,                   WTV)                += wtv
 
+FATE_LAVF_CONTAINER_RESAMPLE := asf avi dv_pal dv_ntsc gxf_pal gxf_ntsc  \
+                                mkv mkv_attachment mpg mxf nut rm ts wtv
+FATE_LAVF_CONTAINER-$(!CONFIG_ARESAMPLE_FILTER) := $(filter-out $(FATE_LAVF_CONTAINER_RESAMPLE),$(FATE_LAVF_CONTAINER-yes))
+
+FATE_LAVF_CONTAINER_SCALE := dv dv_pal dv_ntsc flm gxf gxf_pal gxf_ntsc \
+                             mxf_dv25 mxf_dvcpro50 mxf_d10 mxf_opatom   \
+                             smjpeg
+FATE_LAVF_CONTAINER-$(!CONFIG_SCALE_FILTER) := $(filter-out $(FATE_LAVF_CONTAINER_SCALE),$(FATE_LAVF_CONTAINER-yes))
+
 FATE_LAVF_CONTAINER = $(FATE_LAVF_CONTAINER-yes:%=fate-lavf-%)
+FATE_LAVF_CONTAINER := $(if $(call ENCDEC2, RAWVIDEO PGMYUV, PCM_S16LE, CRC IMAGE2, PCM_S16LE_DEMUXER), $(FATE_LAVF_CONTAINER))
 
 $(FATE_LAVF_CONTAINER): CMD = lavf_container
 $(FATE_LAVF_CONTAINER): REF = $(SRC_PATH)/tests/ref/lavf/$(@:fate-lavf-%=%)
