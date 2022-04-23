@@ -1390,6 +1390,12 @@ Stop sample noise capture and measure new noise band profile.
 
 Default value is @code{none}.
 @end table
+
+@item gain_smooth, gs
+Set gain smooth factor, used to lowpass gains applied to each frequency bin.
+Useful to reduce random music noise artefacts.
+Higher values reduce smoothing of gains.
+Default value is @code{1.0}.
 @end table
 
 @subsection Commands

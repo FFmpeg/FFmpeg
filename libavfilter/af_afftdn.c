@@ -114,6 +114,7 @@ typedef struct AudioFFTDeNoiseContext {
     int     output_mode;
     int     noise_floor_link;
     float   ratio;
+    float   gain_smooth;
     float   band_multiplier;
     float   floor_offset;
 
@@ -207,6 +208,8 @@ static const AVOption afftdn_options[] = {
     {  "begin",   "start",                0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_START},  0,  0, AFR, "sample" },
     {  "stop",    "stop",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_STOP},   0,  0, AFR, "sample" },
     {  "end",     "stop",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_STOP},   0,  0, AFR, "sample" },
+    { "gain_smooth", "set gain smooth factor",OFFSET(gain_smooth), AV_OPT_TYPE_FLOAT,  {.dbl = 1.00},     0.0001,  1, AFR },
+    { "gs",          "set gain smooth factor",OFFSET(gain_smooth), AV_OPT_TYPE_FLOAT,  {.dbl = 1.00},     0.0001,  1, AFR },
     { NULL }
 };
 
@@ -419,6 +422,14 @@ static void process_frame(AVFilterContext *ctx,
         } else {
             gain[i] = limit_gain(gain[i], dnch->max_gain);
         }
+    }
+
+    {
+        const double f = s->gain_smooth;
+        const double F = 1. - f;
+
+        for (int i = 1; i < s->bin_count; i++)
+            gain[i] = gain[i-1] * F + f * gain[i];
     }
 
     for (int i = 0; i < s->bin_count; i++) {
