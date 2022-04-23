@@ -99,7 +99,7 @@ enum AVCodecID av_guess_codec(const AVOutputFormat *fmt, const char *short_name,
     if (type == AVMEDIA_TYPE_VIDEO) {
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
 
-#if CONFIG_IMAGE2_MUXER
+#if CONFIG_IMAGE2_MUXER || CONFIG_IMAGE2PIPE_MUXER
         if (!strcmp(fmt->name, "image2") || !strcmp(fmt->name, "image2pipe")) {
             codec_id = ff_guess_image2_codec(filename);
         }
