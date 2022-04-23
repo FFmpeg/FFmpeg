@@ -84,7 +84,7 @@ fate-acodec-adpcm-swf-wav: CODEC = adpcm_swf
 fate-acodec-adpcm-ima_alp: FMT     = alp
 fate-acodec-adpcm-ima_alp: ENCOPTS = -type pcm
 
-FATE_ACODEC_ADPCM_TRELLIS := adx ima_qt ima_wav ms swf yamaha
+FATE_ACODEC_ADPCM_TRELLIS := ima_qt ima_wav ms swf yamaha
 
 FATE_ACODEC_ADPCM_TRELLIS := $(FATE_ACODEC_ADPCM_TRELLIS:%=fate-acodec-adpcm-%-trellis)
 FATE_ACODEC_ADPCM_TRELLIS := $(filter $(addsuffix -trellis,$(FATE_ACODEC_ADPCM)), $(FATE_ACODEC_ADPCM_TRELLIS))
@@ -94,7 +94,6 @@ fate-acodec-adpcm-trellis: $(FATE_ACODEC_ADPCM_TRELLIS)
 fate-acodec-adpcm-%-trellis: CODEC = adpcm_$(@:fate-acodec-adpcm-%-trellis=%)
 fate-acodec-adpcm-%-trellis: ENCOPTS = -trellis 5
 
-fate-acodec-adpcm-adx-trellis:     FMT = adx
 fate-acodec-adpcm-ima_qt-trellis:  FMT = aiff
 fate-acodec-adpcm-ima_wav-trellis: FMT = wav
 fate-acodec-adpcm-ms-trellis:      FMT = wav
