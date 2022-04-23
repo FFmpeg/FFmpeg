@@ -120,6 +120,7 @@ include $(SRC_PATH)/tests/fate/lavf-container.mak
 include $(SRC_PATH)/tests/fate/lavf-image.mak
 include $(SRC_PATH)/tests/fate/lavf-image2pipe.mak
 include $(SRC_PATH)/tests/fate/lavf-video.mak
+# Must be included after acodec.mak, vcodec.mak and lavf-*.mak
 include $(SRC_PATH)/tests/fate/seek.mak
 
 include $(SRC_PATH)/tests/fate/aac.mak
