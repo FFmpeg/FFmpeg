@@ -728,6 +728,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
                 st->codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
             }
         }
+        avs_library.avs_release_video_frame(frame);
     } else {
         st->codecpar->field_order = AV_FIELD_UNKNOWN;
         /* AviSynth works with frame-based video, detecting field order can
