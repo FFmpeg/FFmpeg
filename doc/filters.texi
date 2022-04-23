@@ -1392,10 +1392,11 @@ Default value is @code{none}.
 @end table
 
 @item gain_smooth, gs
-Set gain smooth factor, used to lowpass gains applied to each frequency bin.
+Set gain smooth spatial radius, used to smooth gains applied to each frequency bin.
 Useful to reduce random music noise artefacts.
-Higher values reduce smoothing of gains.
-Default value is @code{1.0}.
+Higher values increases smoothing of gains.
+Allowed range is from @code{0} to @code{50}.
+Default value is @code{0}.
 @end table
 
 @subsection Commands

@@ -71,6 +71,7 @@ typedef struct DeNoiseChannel {
     double     *band_amt;
     double     *band_excit;
     double     *gain;
+    double     *smoothed_gain;
     double     *prior;
     double     *prior_band_excit;
     double     *clean_data;
@@ -114,7 +115,7 @@ typedef struct AudioFFTDeNoiseContext {
     int     output_mode;
     int     noise_floor_link;
     float   ratio;
-    float   gain_smooth;
+    int     gain_smooth;
     float   band_multiplier;
     float   floor_offset;
 
@@ -208,8 +209,8 @@ static const AVOption afftdn_options[] = {
     {  "begin",   "start",                0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_START},  0,  0, AFR, "sample" },
     {  "stop",    "stop",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_STOP},   0,  0, AFR, "sample" },
     {  "end",     "stop",                 0,                       AV_OPT_TYPE_CONST,  {.i64 = SAMPLE_STOP},   0,  0, AFR, "sample" },
-    { "gain_smooth", "set gain smooth factor",OFFSET(gain_smooth), AV_OPT_TYPE_FLOAT,  {.dbl = 1.00},     0.0001,  1, AFR },
-    { "gs",          "set gain smooth factor",OFFSET(gain_smooth), AV_OPT_TYPE_FLOAT,  {.dbl = 1.00},     0.0001,  1, AFR },
+    { "gain_smooth", "set gain smooth radius",OFFSET(gain_smooth), AV_OPT_TYPE_INT,    {.i64 = 0},             0, 50, AFR },
+    { "gs",          "set gain smooth radius",OFFSET(gain_smooth), AV_OPT_TYPE_INT,    {.i64 = 0},             0, 50, AFR },
     { NULL }
 };
 
@@ -357,6 +358,7 @@ static void process_frame(AVFilterContext *ctx,
     double *noisy_data = dnch->noisy_data;
     double *band_excit = dnch->band_excit;
     double *band_amt = dnch->band_amt;
+    double *smoothed_gain = dnch->smoothed_gain;
     double *gain = dnch->gain;
 
     for (int i = 0; i < s->bin_count; i++) {
@@ -424,16 +426,28 @@ static void process_frame(AVFilterContext *ctx,
         }
     }
 
-    {
-        const double f = s->gain_smooth;
-        const double F = 1. - f;
+    memcpy(smoothed_gain, gain, s->bin_count * sizeof(*smoothed_gain));
+    if (s->gain_smooth > 0) {
+        const int r = s->gain_smooth;
 
-        for (int i = 1; i < s->bin_count; i++)
-            gain[i] = gain[i-1] * F + f * gain[i];
+        for (int i = r; i < s->bin_count - r; i++) {
+            const double gc = gain[i];
+            double num = 0., den = 0.;
+
+            for (int j = -r; j <= r; j++) {
+                const double g = gain[i + j];
+                const double d = 1. - fabs(g - gc);
+
+                num += g * d;
+                den += d;
+            }
+
+            smoothed_gain[i] = num / den;
+        }
     }
 
     for (int i = 0; i < s->bin_count; i++) {
-        const double new_gain = gain[i];
+        const double new_gain = smoothed_gain[i];
 
         fft_data[i].re *= new_gain;
         fft_data[i].im *= new_gain;
@@ -685,6 +699,7 @@ static int config_input(AVFilterLink *inlink)
         dnch->band_amt = av_calloc(s->number_of_bands, sizeof(*dnch->band_amt));
         dnch->band_excit = av_calloc(s->number_of_bands, sizeof(*dnch->band_excit));
         dnch->gain = av_calloc(s->bin_count, sizeof(*dnch->gain));
+        dnch->smoothed_gain = av_calloc(s->bin_count, sizeof(*dnch->smoothed_gain));
         dnch->prior = av_calloc(s->bin_count, sizeof(*dnch->prior));
         dnch->prior_band_excit = av_calloc(s->number_of_bands, sizeof(*dnch->prior_band_excit));
         dnch->clean_data = av_calloc(s->bin_count, sizeof(*dnch->clean_data));
@@ -708,6 +723,7 @@ static int config_input(AVFilterLink *inlink)
             !dnch->band_amt ||
             !dnch->band_excit ||
             !dnch->gain ||
+            !dnch->smoothed_gain ||
             !dnch->prior ||
             !dnch->prior_band_excit ||
             !dnch->clean_data ||
@@ -1161,6 +1177,7 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_freep(&dnch->band_amt);
             av_freep(&dnch->band_excit);
             av_freep(&dnch->gain);
+            av_freep(&dnch->smoothed_gain);
             av_freep(&dnch->prior);
             av_freep(&dnch->prior_band_excit);
             av_freep(&dnch->clean_data);
