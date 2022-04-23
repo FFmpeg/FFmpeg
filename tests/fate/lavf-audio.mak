@@ -1,14 +1,10 @@
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16BE,    AIFF)             += aiff
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_ALAW,     PCM_ALAW)         += al
-FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16BE_PLANAR, AST)          += ast
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16BE,    AU)               += au
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16BE,    CAF)              += caf
 FATE_LAVF_AUDIO-$(call ENCDEC,  ADPCM_YAMAHA, MMF)              += mmf
 FATE_LAVF_AUDIO-$(call ENCDEC,  FLAC,         OGG)              += ogg
-FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_U8,       RSO)              += rso
-FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    SOX)              += sox
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_MULAW,    PCM_MULAW)        += ul
-FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_U8,       VOC)              += voc
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    IRCAM)            += ircam
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    VOC)              += s16.voc
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    WAV)              += wav
@@ -17,9 +13,15 @@ FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    WAV)              += peak_only.wav
 FATE_LAVF_AUDIO-$(call ENCDEC,  PCM_S16LE,    W64)              += w64
 FATE_LAVF_AUDIO-$(call ENCDEC,  TTA,          TTA)              += tta
 FATE_LAVF_AUDIO-$(call ENCMUX,  TTA,          MATROSKA_AUDIO)   += mka
-FATE_LAVF_AUDIO-$(call ENCDEC,  WAVPACK,      WV)               += wv
+FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_S16BE_PLANAR, AST) += ast
+FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_U8,           RSO) += rso
+FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_S16LE,        SOX) += sox
+FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  PCM_U8,           VOC) += voc
+FATE_LAVF_AUDIO_RESAMPLE-$(call ENCDEC,  WAVPACK,          WV)  += wv
 
+FATE_LAVF_AUDIO-$(CONFIG_ARESAMPLE_FILTER) += $(FATE_LAVF_AUDIO_RESAMPLE-yes)
 FATE_LAVF_AUDIO = $(FATE_LAVF_AUDIO-yes:%=fate-lavf-%)
+FATE_LAVF_AUDIO := $(if $(call ENCDEC, PCM_S16LE, CRC PCM_S16LE), $(FATE_LAVF_AUDIO))
 
 $(FATE_LAVF_AUDIO): CMD = lavf_audio
 $(FATE_LAVF_AUDIO): REF = $(SRC_PATH)/tests/ref/lavf/$(@:fate-lavf-%=%)
