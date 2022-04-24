@@ -13,6 +13,7 @@ version 5.1:
 - pixelize video filter
 - colormap video filter
 - colorchart video source filter
+- blurdetect filter
 
 
 version 5.0:

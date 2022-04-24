@@ -867,6 +867,9 @@ fate-filter-meta-4560-rotate0: CMD = framecrc -auto_conversion_filters -flags +b
 
 REFCMP_DEPS = FFMPEG LAVFI_INDEV TESTSRC2_FILTER AVGBLUR_FILTER METADATA_FILTER
 
+FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) BLURDETECT_FILTER) += fate-filter-refcmp-blurdetect-yuv
+fate-filter-refcmp-blurdetect-yuv: CMD = cmp_metadata blurdetect yuv420p 0.015
+
 FATE_FILTER-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-rgb
 fate-filter-refcmp-psnr-rgb: CMD = refcmp_metadata psnr rgb24 0.002
 

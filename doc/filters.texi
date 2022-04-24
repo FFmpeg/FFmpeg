@@ -7997,6 +7997,58 @@ tblend=all_mode=grainextract
 @subsection Commands
 This filter supports same @ref{commands} as options.
 
+@anchor{blurdetect}
+@section blurdetect
+
+Determines blurriness of frames without altering the input frames.
+
+Based on Marziliano, Pina, et al. "A no-reference perceptual blur metric."
+Allows for a block-based abbreviation.
+
+The filter accepts the following options:
+
+@table @option
+@item low
+@item high
+Set low and high threshold values used by the Canny thresholding
+algorithm.
+
+The high threshold selects the "strong" edge pixels, which are then
+connected through 8-connectivity with the "weak" edge pixels selected
+by the low threshold.
+
+@var{low} and @var{high} threshold values must be chosen in the range
+[0,1], and @var{low} should be lesser or equal to @var{high}.
+
+Default value for @var{low} is @code{20/255}, and default value for @var{high}
+is @code{50/255}.
+
+@item radius
+Define the radius to search around an edge pixel for local maxima.
+
+@item block_pct
+Determine blurriness only for the most significant blocks, given in percentage.
+
+@item block_width
+Determine blurriness for blocks of width @var{block_width}. If set to any value smaller 1, no blocks are used and the whole image is processed as one no matter of @var{block_height}.
+
+@item block_height
+Determine blurriness for blocks of height @var{block_height}. If set to any value smaller 1, no blocks are used and the whole image is processed as one no matter of @var{block_width}.
+
+@item planes
+Set planes to filter. Default is first only.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Determine blur for 80% of most significant 32x32 blocks:
+@example
+blurdetect=block_width=32:block_height=32:block_pct=80
+@end example
+@end itemize
+
 @section bm3d
 
 Denoise frames using Block-Matching 3D algorithm.

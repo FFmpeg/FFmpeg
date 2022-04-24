@@ -1,0 +1,10 @@
+frame:0    pts:0       pts_time:0
+lavfi.blur=4.499666
+frame:1    pts:1       pts_time:1
+lavfi.blur=4.677492
+frame:2    pts:2       pts_time:2
+lavfi.blur=4.735711
+frame:3    pts:3       pts_time:3
+lavfi.blur=4.532343
+frame:4    pts:4       pts_time:4
+lavfi.blur=4.532660
