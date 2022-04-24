@@ -141,6 +141,7 @@ include $(SRC_PATH)/tests/fate/canopus.mak
 include $(SRC_PATH)/tests/fate/cbs.mak
 include $(SRC_PATH)/tests/fate/cdxl.mak
 include $(SRC_PATH)/tests/fate/checkasm.mak
+# Must be included after lavf-container.mak
 include $(SRC_PATH)/tests/fate/concatdec.mak
 include $(SRC_PATH)/tests/fate/cover-art.mak
 include $(SRC_PATH)/tests/fate/dca.mak
