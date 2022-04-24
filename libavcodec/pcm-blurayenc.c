@@ -33,34 +33,40 @@ static av_cold int pcm_bluray_encode_init(AVCodecContext *avctx)
 {
     BlurayPCMEncContext *s = avctx->priv_data;
     uint8_t ch_layout;
-    int quant, freq;
-
-    switch (avctx->sample_rate) {
-    case 48000:
-        freq = 1;
-        break;
-    case 96000:
-        freq = 4;
-        break;
-    case 192000:
-        freq = 5;
-        break;
-    default:
-        return AVERROR_BUG;
-    }
+    int quant, freq, frame_size;
 
     switch (avctx->sample_fmt) {
     case AV_SAMPLE_FMT_S16:
         avctx->bits_per_coded_sample = 16;
+        frame_size = 120;
         quant = 1;
         break;
     case AV_SAMPLE_FMT_S32:
+        frame_size = 180;
         avctx->bits_per_coded_sample = 24;
         quant = 3;
         break;
     default:
         return AVERROR_BUG;
     }
+
+    switch (avctx->sample_rate) {
+    case 48000:
+        freq = 1;
+        break;
+    case 96000:
+        frame_size *= 2;
+        freq = 4;
+        break;
+    case 192000:
+        frame_size *= 4;
+        freq = 5;
+        break;
+    default:
+        return AVERROR_BUG;
+    }
+
+    frame_size *= avctx->ch_layout.nb_channels;
 
     switch (avctx->ch_layout.u.mask) {
     case AV_CH_LAYOUT_MONO:
@@ -98,6 +104,7 @@ static av_cold int pcm_bluray_encode_init(AVCodecContext *avctx)
     }
 
     s->header = (((ch_layout << 4) | freq) << 8) | (quant << 6);
+    avctx->frame_size = frame_size;
 
     return 0;
 }
@@ -308,5 +315,5 @@ const FFCodec ff_pcm_bluray_encoder = {
     .p.sample_fmts         = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE },
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
-    .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
+    .p.capabilities        = AV_CODEC_CAP_DR1,
 };
