@@ -1177,6 +1177,11 @@ static int decode_seq_header(AVSContext *h)
     int ret;
 
     h->profile = get_bits(&h->gb, 8);
+    if (h->profile != 0x20) {
+        avpriv_report_missing_feature(h->avctx,
+                                      "only supprt JiZhun profile");
+        return AVERROR_PATCHWELCOME;
+    }
     h->level   = get_bits(&h->gb, 8);
     skip_bits1(&h->gb); //progressive sequence
 
