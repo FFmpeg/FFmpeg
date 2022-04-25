@@ -196,6 +196,8 @@ OBJS-$(CONFIG_VIDEOTOOLBOX)             += hwcontext_videotoolbox.o
 OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
 OBJS-$(CONFIG_VULKAN)                   += hwcontext_vulkan.o
 
+OBJS-$(!CONFIG_VULKAN)                  += hwcontext_stub.o
+
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
 # Windows resource file
