@@ -404,6 +404,16 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     headerPtr->p_app_private = NULL;
     headerPtr->pts           = frame->pts;
 
+    switch (frame->pict_type) {
+    case AV_PICTURE_TYPE_I:
+        headerPtr->pic_type = EB_AV1_KEY_PICTURE;
+        break;
+    default:
+        // Actually means auto, or default.
+        headerPtr->pic_type = EB_AV1_INVALID_PICTURE;
+        break;
+    }
+
     svt_av1_enc_send_picture(svt_enc->svt_handle, headerPtr);
 
     return 0;
