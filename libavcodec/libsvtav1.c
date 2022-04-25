@@ -205,6 +205,33 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     else
         param->color_range = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
 
+#if SVT_AV1_CHECK_VERSION(1, 0, 0)
+    if (avctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED) {
+        const char *name =
+            av_chroma_location_name(avctx->chroma_sample_location);
+
+        switch (avctx->chroma_sample_location) {
+        case AVCHROMA_LOC_LEFT:
+            param->chroma_sample_position = EB_CSP_VERTICAL;
+            break;
+        case AVCHROMA_LOC_TOPLEFT:
+            param->chroma_sample_position = EB_CSP_COLOCATED;
+            break;
+        default:
+            if (!name)
+                break;
+
+            av_log(avctx, AV_LOG_WARNING,
+                   "Specified chroma sample location %s is unsupported "
+                   "on the AV1 bit stream level. Usage of a container that "
+                   "allows passing this information - such as Matroska - "
+                   "is recommended.\n",
+                   name);
+            break;
+        }
+    }
+#endif
+
     if (avctx->profile != FF_PROFILE_UNKNOWN)
         param->profile = avctx->profile;
 
