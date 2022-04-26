@@ -62,6 +62,10 @@ typedef struct ColorMapContext {
     float (*kernel)(const float *x, const float *y);
 
     FFFrameSync fs;
+
+    double A[(MAX_SIZE + 4) * (MAX_SIZE + 4)];
+    double b[MAX_SIZE + 4];
+    int pivot[MAX_SIZE + 4];
 } ColorMapContext;
 
 #define OFFSET(x) offsetof(ColorMapContext, x)
@@ -262,12 +266,9 @@ static void build_map(AVFilterContext *ctx)
             {
                 const int N = s->nb_maps;
                 const int N4 = N + 4;
-                double *A = av_calloc(sizeof(*A), N4 * N4);
-                double *b = av_calloc(sizeof(*b), N4);
-                int *pivot = NULL;
-
-                if (!A || !b)
-                    goto error;
+                double *A = s->A;
+                double *b = s->b;
+                int *pivot = s->pivot;
 
                 for (int j = 0; j < N; j++)
                     for (int i = j; i < N; i++)
@@ -286,10 +287,6 @@ static void build_map(AVFilterContext *ctx)
                     for (int i = N;i < N4; i++)
                         A[j * N4 + i] = 0.;
 
-                pivot = av_calloc(N4, sizeof(*pivot));
-                if (!pivot)
-                    goto error;
-
                 if (gauss_make_triangular(A, pivot, N4)) {
                     for (int i = 0; i < N; i++)
                         b[i] = s->target[i][c];
@@ -304,10 +301,6 @@ static void build_map(AVFilterContext *ctx)
                     for (int i = 0; i < 4; i++)
                         s->icoeff[i][c] = b[N + i];
                 }
-error:
-                av_free(pivot);
-                av_free(b);
-                av_free(A);
             }
         }
     }
