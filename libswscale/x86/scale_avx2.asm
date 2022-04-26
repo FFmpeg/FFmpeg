@@ -53,6 +53,9 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     mova m14, [four]
     shr fltsized, 2
 %endif
+    cmp wq, 0x10
+    jl .tail_loop
+    sub wq, 0x10
 .loop:
     movu m1, [fltposq]
     movu m2, [fltposq+32]
@@ -101,7 +104,46 @@ cglobal hscale8to15_%1, 7, 9, 16, pos0, dst, w, srcmem, filter, fltpos, fltsize,
     add fltposq, 0x40
     add countq, 0x10
     cmp countq, wq
-    jl .loop
+    jle .loop
+
+    add wq, 0x10
+    cmp countq, wq
+    jge .end
+
+.tail_loop:
+    movu xm1, [fltposq]
+%ifidn %1, X4
+    pxor xm9, xm9
+    pxor xm10, xm10
+    xor innerq, innerq
+.tail_innerloop:
+%endif
+    vpcmpeqd  xm13, xm13
+    vpgatherdd xm3,[srcmemq + xm1], xm13
+    vpunpcklbw xm5, xm3, xm0
+    vpunpckhbw xm6, xm3, xm0
+    vpmaddwd xm5, xm5, [filterq]
+    vpmaddwd xm6, xm6, [filterq + 0x10]
+    add filterq, 0x20
+%ifidn %1, X4
+    paddd xm9, xm5
+    paddd xm10, xm6
+    paddd xm1, xm14
+    add innerq, 1
+    cmp innerq, fltsizeq
+    jl .tail_innerloop
+    vphaddd xm5, xm9, xm10
+%else
+    vphaddd xm5, xm5, xm6
+%endif
+    vpsrad  xm5, 7
+    vpackssdw xm5, xm5, xm5
+    vmovq [dstq + countq * 2], xm5
+    add fltposq, 0x10
+    add countq, 0x4
+    cmp countq, wq
+    jl .tail_loop
+.end:
 REP_RET
 %endmacro
 
