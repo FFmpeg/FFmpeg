@@ -7691,9 +7691,6 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         atom.size = INT64_MAX;
     while (total_size <= atom.size - 8 && !avio_feof(pb)) {
         int (*parse)(MOVContext*, AVIOContext*, MOVAtom) = NULL;
-        a.size = atom.size;
-        a.type=0;
-        if (atom.size >= 8) {
             a.size = avio_rb32(pb);
             a.type = avio_rl32(pb);
             if (((a.type == MKTAG('f','r','e','e') && c->moov_retry) ||
@@ -7727,7 +7724,6 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 a.size = avio_rb64(pb) - 8;
                 total_size += 8;
             }
-        }
         av_log(c->fc, AV_LOG_TRACE, "type:'%s' parent:'%s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
                av_fourcc2str(a.type), av_fourcc2str(atom.type), a.size, total_size, atom.size);
         if (a.size == 0) {
