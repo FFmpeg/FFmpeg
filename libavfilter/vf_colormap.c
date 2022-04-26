@@ -69,7 +69,7 @@ typedef struct ColorMapContext {
 
 static const AVOption colormap_options[] = {
     { "patch_size", "set patch size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "64x64"}, 0, 0, FLAGS },
-    { "nb_patches", "set number of patches", OFFSET(size), AV_OPT_TYPE_INT, {.i64 = 8}, 1, MAX_SIZE, FLAGS },
+    { "nb_patches", "set number of patches", OFFSET(size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, MAX_SIZE, FLAGS },
     { "type", "set the target type used",  OFFSET(target_type), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "type" },
     {   "relative", "the target colors are relative", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 1, FLAGS, "type" },
     {   "absolute", "the target colors are absolute", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 1, FLAGS, "type" },
@@ -428,6 +428,8 @@ static int import_map(AVFilterLink *inlink, AVFrame *in)
 
     if (changed)
         s->changed[is_target] = 1;
+    if (!s->size)
+        s->size = FFMIN(idx, MAX_SIZE);
     if (!is_target)
         s->nb_maps = FFMIN(idx, s->size);
 

@@ -9019,6 +9019,8 @@ Set the source and target video stream patch size in pixels.
 
 @item nb_patches
 Set the max number of used patches from source and target video stream.
+Default value is number of patches available in additional video streams.
+Max allowed number of patches is @code{64}.
 
 @item type
 Set the adjustments used for target colors. Can be @code{relative} or @code{absolute}.
