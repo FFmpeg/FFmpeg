@@ -1918,7 +1918,7 @@ static const uint8_t reference_colors[][3] = {
     {  56,  61, 150 }, // blue
     {  70, 148,  73 }, // green
     { 175,  54,  60 }, // red
-    { 233, 199,  31 }, // yellow
+    { 231, 199,  31 }, // yellow
     { 187,  86, 149 }, // magenta
     {   8, 133, 161 }, // cyan
 
