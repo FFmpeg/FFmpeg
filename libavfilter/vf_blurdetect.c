@@ -30,16 +30,10 @@
  * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixelutils.h"
-#include "libavutil/motion_vector.h"
 #include "libavutil/qsort.h"
-#include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
-#include "video.h"
 #include "edge_common.h"
 
 static int comp(const float *a,const float *b)
@@ -68,7 +62,7 @@ typedef struct BLRContext {
     uint8_t  *filterbuf;
     uint8_t  *tmpbuf;
     uint16_t *gradients;
-    char     *directions;
+    int8_t   *directions;
 } BLRContext;
 
 #define OFFSET(x) offsetof(BLRContext, x)
@@ -139,8 +133,6 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
     int k, x, y;
     int edge1;
     int edge2;
-    float luma1 = 0.0; // average luma difference per edge pixel
-    float luma2 = 0.0;
     int radius = blr->radius;
 
     switch(dir) {
@@ -168,10 +160,7 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
 
         if (tmp <= 0) // local maximum found
             break;
-
-        luma1 += tmp;
     }
-    if (k > 0) luma1 /= k;
     edge1 = k;
     width += k;
 
@@ -190,10 +179,7 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
 
         if (tmp >= 0) // local maximum found
             break;
-
-        luma2 -= tmp;
     }
-    if (k > 0) luma2 /= k;
     edge2 = k;
     width += k;
 
@@ -205,7 +191,7 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
 }
 
 static float calculate_blur(BLRContext *s, int w, int h, int hsub, int vsub,
-                            uint8_t* dir, int dir_linesize,
+                            int8_t* dir, int dir_linesize,
                             uint8_t* dst, int dst_linesize,
                             uint8_t* src, int src_linesize)
 {
