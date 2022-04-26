@@ -41,7 +41,11 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         and             w10, w10, #0x1F
         strh            w9, [sp, x10, lsl #1]
         bne             0b
+        add             w6,  w6,  #7
+        bic             w6,  w6,  #7
         ld1             {v16.16b-v19.16b}, [sp], #64
+        sub             x2,  x2,  x6
+        sub             x3,  x3,  x6
         movi            v20.8h,   #1
 1:      mov             w8,  w6                    // beginning of line
 2:      // Simple layout for accessing 16bit values
@@ -52,7 +56,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         // |xDE#xAD|xCA#xFE|xBE#xEF|xFE#xED|....
         // +----------------------------------->
         //    i-0     i-1     i-2     i-3
-        ld1             {v2.8b}, [x1]              // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
+        ld1             {v2.8b}, [x1], #8          // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
         uxtl            v0.8h,  v2.8b              // load src[x]
         ushr            v2.8h,  v0.8h, #3          // >> BIT_DEPTH - 3
         shl             v1.8h,  v2.8h, #1          // low (x2, accessing short)
@@ -61,7 +65,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         tbx             v2.16b, {v16.16b-v19.16b}, v1.16b // table
         add             v1.8h,  v0.8h, v2.8h       // src[x] + table
         sqxtun          v4.8b,  v1.8h              // clip + narrow
-        st1             {v4.8b}, [x0]              // store
+        st1             {v4.8b}, [x0], #8          // store
         subs            w8, w8,  #8                // done 8 pixels
         bne             2b
         subs            w7, w7,  #1                // finished line, prep. new
