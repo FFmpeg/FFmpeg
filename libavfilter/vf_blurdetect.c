@@ -131,8 +131,6 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
     int p1;
     int p2;
     int k, x, y;
-    int edge1;
-    int edge2;
     int radius = blr->radius;
 
     switch(dir) {
@@ -161,7 +159,6 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
         if (tmp <= 0) // local maximum found
             break;
     }
-    edge1 = k;
     width += k;
 
     // search in +(dX/dY) direction
@@ -180,7 +177,6 @@ static float edge_width(BLRContext *blr, int i, int j, int8_t dir, int w, int h,
         if (tmp >= 0) // local maximum found
             break;
     }
-    edge2 = k;
     width += k;
 
     // for 45 degree directions approximate edge width in pixel units: 0.7 ~= sqrt(2)/2
