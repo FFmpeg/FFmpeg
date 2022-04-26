@@ -7689,10 +7689,12 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (atom.size < 0)
         atom.size = INT64_MAX;
-    while (total_size <= atom.size - 8 && !avio_feof(pb)) {
+    while (total_size <= atom.size - 8) {
         int (*parse)(MOVContext*, AVIOContext*, MOVAtom) = NULL;
         a.size = avio_rb32(pb);
         a.type = avio_rl32(pb);
+        if (avio_feof(pb))
+            break;
         if (((a.type == MKTAG('f','r','e','e') && c->moov_retry) ||
               a.type == MKTAG('h','o','o','v')) &&
             a.size >= 8 &&
