@@ -13793,6 +13793,10 @@ The Hald CLUT input can be a simple picture or a complete video stream.
 The filter accepts the following options:
 
 @table @option
+@item clut
+Set which CLUT video frames will be processed from second input stream,
+can be @var{first} or @var{all}. Default is @var{all}.
+
 @item shortest
 Force termination when the shortest input terminates. Default is @code{0}.
 @item repeatlast
