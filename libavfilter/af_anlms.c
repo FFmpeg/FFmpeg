@@ -168,8 +168,11 @@ static int process_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
         int *offset = (int *)s->offset->extended_data[c];
         float *output = (float *)out->extended_data[c];
 
-        for (int n = 0; n < out->nb_samples; n++)
+        for (int n = 0; n < out->nb_samples; n++) {
             output[n] = process_sample(s, input[n], desired[n], delay, coeffs, tmp, offset);
+            if (ctx->is_disabled)
+                output[n] = input[n];
+        }
     }
 
     return 0;
@@ -314,7 +317,8 @@ const AVFilter ff_af_anlms = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC(query_formats),
-    .flags          = AVFILTER_FLAG_SLICE_THREADS,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 
@@ -329,6 +333,7 @@ const AVFilter ff_af_anlmf = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC(query_formats),
-    .flags          = AVFILTER_FLAG_SLICE_THREADS,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
