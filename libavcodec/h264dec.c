@@ -842,6 +842,10 @@ again:
             avpriv_request_sample(avctx, "data partitioning");
             break;
         case H264_NAL_SEI:
+            if (h->setup_finished) {
+                avpriv_request_sample(avctx, "Late SEI");
+                break;
+            }
             ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
             h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
             if (avctx->debug & FF_DEBUG_GREEN_MD)
