@@ -118,9 +118,9 @@ static const char mov_mdhd_language_map[][4] = {
     "hun",    /*  26 Hungarian */
     "est",    /*  27 Estonian */
     "lav",    /*  28 Latvian */
-       "",    /*  29 Sami */
+    "smi",    /*  29 Sami */
     "fo ",    /*  30 Faroese */
-       "",    /*  31 Farsi */
+    "per",    /*  31 Farsi */
     "rus",    /*  32 Russian */
     "chi",    /*  33 Simplified Chinese */
        "",    /*  34 Flemish */
@@ -165,7 +165,7 @@ static const char mov_mdhd_language_map[][4] = {
     "kan",    /*  73 Kannada */
     "tam",    /*  74 Tamil */
     "tel",    /*  75 Telugu */
-       "",    /*  76 Sinhala */
+    "sin",    /*  76 Sinhala */
     "bur",    /*  77 Burmese */
     "khm",    /*  78 Khmer */
     "lao",    /*  79 Lao */
@@ -179,9 +179,9 @@ static const char mov_mdhd_language_map[][4] = {
     "orm",    /*  87 Oromo */
     "som",    /*  88 Somali */
     "swa",    /*  89 Swahili */
-       "",    /*  90 Kinyarwanda */
+    "kin",    /*  90 Kinyarwanda */
     "run",    /*  91 Rundi */
-       "",    /*  92 Nyanja */
+    "nya",    /*  92 Nyanja */
     "mlg",    /*  93 Malagasy */
     "epo",    /*  94 Esperanto */
        "",    /*  95  */
