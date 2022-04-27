@@ -596,6 +596,7 @@ SHLIBOBJS                                    += log2_tab.o
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)                 += avfilterres.o
 
+SKIPHEADERS-$(CONFIG_LCMS2)                  += fflcms2.h
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
 
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h
