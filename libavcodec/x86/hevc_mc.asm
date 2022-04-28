@@ -1792,8 +1792,8 @@ cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 7, 27, dst, src, srcstride, height, mx, m
     sub            srcq, tmpq
     sub             myq, 1
     shl             myq, 5
-%ifdef PIC
 %define %%table hevc_qpel_filters_avx512icl_v_%1
+%ifdef PIC
     lea tmpq, [%%table]
     %define FILTER tmpq
 %else
