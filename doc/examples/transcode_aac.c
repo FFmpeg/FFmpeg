@@ -211,9 +211,6 @@ static int open_output_file(const char *filename,
     avctx->sample_fmt     = output_codec->sample_fmts[0];
     avctx->bit_rate       = OUTPUT_BIT_RATE;
 
-    /* Allow the use of the experimental AAC encoder. */
-    avctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
-
     /* Set the sample rate for the container. */
     stream->time_base.den = input_codec_context->sample_rate;
     stream->time_base.num = 1;
