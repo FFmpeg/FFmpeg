@@ -15,7 +15,6 @@ fate-gif-deal: CMD = framecrc -i $(TARGET_SAMPLES)/gif/deal.gif -vsync cfr -pix_
 
 FATE_GIF-$(call FRAMECRC, GIF, GIF, SCALE_FILTER) += $(FATE_GIF)
 
-fate-gifenc%: fate-gif-color
 fate-gifenc%: PIXFMT = $(word 3, $(subst -, ,$(@)))
 fate-gifenc%: SRC = $(TARGET_SAMPLES)/gif/tc217.gif
 fate-gifenc%: CMD = framecrc -i $(SRC) -c:v gif -pix_fmt $(PIXFMT) -sws_flags +accurate_rnd+bitexact -vf scale
