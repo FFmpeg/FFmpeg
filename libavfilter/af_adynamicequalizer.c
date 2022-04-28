@@ -113,7 +113,7 @@ static double get_gain(double in, double srate, double makeup,
             if (Lyg >= state[2])
                 attslew = 1;
         }
-    } else if (2. * (Lxg-thresdb) > width) {
+    } else if (2. * (Lxg - thresdb) > width) {
         Lyg = thresdb + (Lxg - thresdb) * iratio;
     }
 
@@ -121,7 +121,7 @@ static double get_gain(double in, double srate, double makeup,
 
     Lxl = Lxg - Lyg;
 
-    Ly1 = fmaxf(Lxl, release_coeff * state[1] +(1. - release_coeff) * Lxl);
+    Ly1 = fmax(Lxl, release_coeff * state[1] +(1. - release_coeff) * Lxl);
     Lyl = attack_coeff * state[0] + (1. - attack_coeff) * Ly1;
 
     cdb = -Lyl;
@@ -150,7 +150,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double range = s->range;
     const double dfrequency = fmin(s->dfrequency, sample_rate * 0.5);
     const double tfrequency = fmin(s->tfrequency, sample_rate * 0.5);
-    const double threshold = log(s->threshold + DBL_EPSILON);
+    const double threshold = to_dB(s->threshold + DBL_EPSILON);
     const double release = s->release_coef;
     const double attack = s->attack_coef;
     const double dqfactor = s->dqfactor;
