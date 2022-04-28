@@ -913,6 +913,16 @@ Cut frequencies above detection threshold.
 Boost frequencies bellow detection threshold.
 @end table
 Default mode is @samp{cut}.
+
+@item tftype
+Set the type of target filter, can be one of the following:
+
+@table @samp
+@item bell
+@item lowshelf
+@item highshelf
+@end table
+Default type is @samp{bell}.
 @end table
 
 @subsection Commands
