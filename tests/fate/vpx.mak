@@ -4,10 +4,10 @@ fate-truemotion1-15: CMD = framecrc -i $(TARGET_SAMPLES)/duck/phant2-940.duk -pi
 FATE_TRUEMOTION1 += fate-truemotion1-24
 fate-truemotion1-24: CMD = framecrc -i $(TARGET_SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an -vf scale
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION1) += $(FATE_TRUEMOTION1)
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, AVI, TRUEMOTION1, SCALE_FILTER) += $(FATE_TRUEMOTION1)
 fate-truemotion1: $(FATE_TRUEMOTION1)
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, AVI, TRUEMOTION2) += fate-truemotion2
 fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
 
 FATE_TRUEMOTION2RT += fate-truemotion2rt-low
@@ -19,73 +19,75 @@ fate-truemotion2rt-mid: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_mid.avi -a
 FATE_TRUEMOTION2RT += fate-truemotion2rt-high
 fate-truemotion2rt-high: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_high.avi -an
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2RT) += $(FATE_TRUEMOTION2RT)
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, AVI, TRUEMOTION2RT) += $(FATE_TRUEMOTION2RT)
 fate-truemotion2rt: $(FATE_TRUEMOTION2RT)
 
-FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
+FATE_VP3-$(call FRAMECRC, MATROSKA, THEORA) += fate-theora-coeff-level64
 fate-theora-coeff-level64: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/coeff_level64.mkv
 
-FATE_VP3-$(call DEMDEC, OGG, THEORA) += fate-theora-offset
+FATE_VP3-$(call FRAMECRC, OGG, THEORA) += fate-theora-offset
 fate-theora-offset: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/offset_test.ogv
 
-FATE_VP3-$(call DEMDEC, AVI, VP3) += fate-vp31
+FATE_VP3-$(call FRAMECRC, AVI, VP3) += fate-vp31
 fate-vp31: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/vp31.avi
 
 FATE_SAMPLES_AVCONV += $(FATE_VP3-yes)
 fate-vp3: $(FATE_VP3-yes)
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP4) += fate-vp4
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, AVI, VP4) += fate-vp4
 fate-vp4: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp4/KTkvw8dg1J8.avi
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP5) += fate-vp5
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, AVI, VP5) += fate-vp5
 fate-vp5: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp5/potter512-400-partial.avi -an
 
-FATE_VP6-$(call DEMDEC, EA, VP6) += fate-vp60
+FATE_VP6-$(call FRAMECRC, EA, VP6) += fate-vp60
 fate-vp60: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/ea-vp6/g36.vp6
 
-FATE_VP6-$(call DEMDEC, EA, VP6) += fate-vp61
+FATE_VP6-$(call FRAMECRC, EA, VP6) += fate-vp61
 fate-vp61: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
 
-FATE_VP6-$(call DEMDEC, MOV, VP6A) += fate-vp6a
+FATE_VP6-$(call FRAMECRC, MOV, VP6A) += fate-vp6a
 fate-vp6a: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.mov
 
-FATE_VP6-$(call DEMDEC, MOV, VP6A) += fate-vp6a-skip_alpha
+FATE_VP6-$(call FRAMECRC, MOV, VP6A) += fate-vp6a-skip_alpha
 fate-vp6a-skip_alpha: CMD = framecrc -flags +bitexact -skip_alpha 1 -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.mov
 
-FATE_VP6-$(call DEMDEC, FLV, VP6F) += fate-vp6f
+FATE_VP6-$(call FRAMECRC, FLV, VP6F) += fate-vp6f
 fate-vp6f: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/flash-vp6/clip1024.flv
 
-FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest
+FATE_WEBM_DASH_MANIFEST += fate-webm-dash-manifest
 fate-webm-dash-manifest: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video2.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio2.webm -c copy -map 0 -map 1 -map 2 -map 3 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1 id=1,streams=2,3" -
 
-FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-unaligned-video-streams
+FATE_WEBM_DASH_MANIFEST += fate-webm-dash-manifest-unaligned-video-streams
 fate-webm-dash-manifest-unaligned-video-streams: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
-FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-unaligned-audio-streams
+FATE_WEBM_DASH_MANIFEST += fate-webm-dash-manifest-unaligned-audio-streams
 fate-webm-dash-manifest-unaligned-audio-streams: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
-FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-representations
+FATE_WEBM_DASH_MANIFEST += fate-webm-dash-manifest-representations
 fate-webm-dash-manifest-representations: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video4.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
-FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live
+FATE_WEBM_DASH_MANIFEST += fate-webm-dash-manifest-live
 fate-webm-dash-manifest-live: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -fflags +bitexact -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -
 
-FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live-bandwidth
+FATE_WEBM_DASH_MANIFEST += fate-webm-dash-manifest-live-bandwidth
 fate-webm-dash-manifest-live-bandwidth: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -bandwidth 100 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -bandwidth 200 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -fflags +bitexact -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -
 
-FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-2451
+FATE_VP8-$(call DEMMUX, WEBM_DASH_MANIFEST, WEBM_DASH_MANIFEST, PIPE_PROTOCOL) += $(FATE_WEBM_DASH_MANIFEST)
+
+FATE_VP8-$(call FRAMECRC, MATROSKA, VP8) += fate-vp8-2451
 fate-vp8-2451: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -vsync cfr -an
 
 FATE_SAMPLES_AVCONV += $(FATE_VP6-yes)
 fate-vp6: $(FATE_VP6-yes)
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP7) += fate-vp7
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, AVI, VP7) += fate-vp7
 fate-vp7: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp7/potter-40.vp7 -frames 30 -an
 
 VP8_SUITE = 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017
 
 define FATE_VP8_SUITE
-FATE_VP8-$(call DEMDEC, IVF, VP8) += fate-vp8-test-vector-$(1)
+FATE_VP8-$(call FRAMEMD5, IVF, VP8) += fate-vp8-test-vector-$(1)
 fate-vp8-test-vector-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/vp8-test-vectors-r1/vp80-00-comprehensive-$(1).ivf
 fate-vp8-test-vector-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-test-vector-$(1)
 endef
@@ -94,11 +96,11 @@ $(foreach N,$(VP8_SUITE),$(eval $(call FATE_VP8_SUITE,$(N))))
 
 # FIXME this file contains two frames with identical timestamps,
 # so ffmpeg drops one of them
-FATE_VP8-$(call DEMDEC, IVF, VP8) += fate-vp8-sign-bias
+FATE_VP8-$(call FRAMEMD5, IVF, VP8) += fate-vp8-sign-bias
 fate-vp8-sign-bias: CMD = framemd5 -i $(TARGET_SAMPLES)/vp8/sintel-signbias.ivf
 fate-vp8-sign-bias: REF = $(SRC_PATH)/tests/ref/fate/vp8-sign-bias
 
-FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-size-change
+FATE_VP8-$(call FRAMEMD5, MATROSKA, VP8, SCALE_FILTER) += fate-vp8-size-change
 fate-vp8-size-change: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/vp8/frame_size_change.webm -frames:v 30 -sws_flags bitexact+bilinear
 fate-vp8-size-change: REF = $(SRC_PATH)/tests/ref/fate/vp8-size-change
 
@@ -106,13 +108,13 @@ FATE_SAMPLES_AVCONV += $(FATE_VP8-yes)
 fate-vp8: $(FATE_VP8-yes)
 
 define FATE_VP9_SUITE
-FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9$(2)-$(1)
+FATE_VP9-$(call FRAMEMD5, MATROSKA, VP9) += fate-vp9$(2)-$(1)
 fate-vp9$(2)-$(1): CMD = framemd5 $(3) -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-$(1).webm
 fate-vp9$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp9-$(1)
 endef
 
 define FATE_VP9_PROFILE_SUITE
-FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9p$(2)-$(1)
+FATE_VP9-$(call FRAMEMD5, MATROSKA, VP9, $(4)) += fate-vp9p$(2)-$(1)
 fate-vp9p$(2)-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp9$(2)-2-$(1).webm $(3)
 fate-vp9p$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp9p$(2)-$(1)
 endef
@@ -132,9 +134,9 @@ $(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP))
 $(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H))))))
 $(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H))))))
 $(eval $(call FATE_VP9_SUITE,03-deltaq))
-$(foreach SS,$(VP9_CHROMA_SUBSAMPLE),$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv$(SS),1,)))
-$(foreach BD,$(VP9_HIGH_BITDEPTH),$(eval $(call FATE_VP9_PROFILE_SUITE,20-$(BD)bit-yuv420,2,-pix_fmt yuv420p$(BD)le -vf scale)))
-$(foreach BD,$(VP9_HIGH_BITDEPTH),$(eval $(foreach SS,$(VP9_CHROMA_SUBSAMPLE),$(eval $(call FATE_VP9_PROFILE_SUITE,20-$(BD)bit-yuv$(SS),3,-pix_fmt yuv$(SS)p$(BD)le -vf scale)))))
+$(foreach SS,$(VP9_CHROMA_SUBSAMPLE),$(eval $(call FATE_VP9_PROFILE_SUITE,04-yuv$(SS),1,,)))
+$(foreach BD,$(VP9_HIGH_BITDEPTH),$(eval $(call FATE_VP9_PROFILE_SUITE,20-$(BD)bit-yuv420,2,-pix_fmt yuv420p$(BD)le -vf scale, SCALE_FILTER)))
+$(foreach BD,$(VP9_HIGH_BITDEPTH),$(eval $(foreach SS,$(VP9_CHROMA_SUBSAMPLE),$(eval $(call FATE_VP9_PROFILE_SUITE,20-$(BD)bit-yuv$(SS),3,-pix_fmt yuv$(SS)p$(BD)le -vf scale, SCALE_FILTER)))))
 $(eval $(call FATE_VP9_SUITE,06-bilinear))
 $(eval $(call FATE_VP9_SUITE,09-lf_deltas))
 $(eval $(call FATE_VP9_SUITE,10-show-existing-frame))
@@ -149,14 +151,14 @@ $(eval $(call FATE_VP9_SUITE,tiling-pedestrian))
 $(eval $(call FATE_VP9_SUITE,trac3849))
 $(eval $(call FATE_VP9_SUITE,trac4359))
 
-FATE_VP9-$(CONFIG_IVF_DEMUXER) += fate-vp9-05-resize
+FATE_VP9-$(call FRAMEMD5, IVF, VP9, SCALE_FILTER) += fate-vp9-05-resize
 fate-vp9-05-resize: CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf -s 352x288 -sws_flags bitexact+bilinear
 fate-vp9-05-resize: REF = $(SRC_PATH)/tests/ref/fate/vp9-05-resize
 
 fate-vp9-encparams: CMD = venc_data $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-segmentation-aq-akiyo.webm 0 5
-FATE_SAMPLES_DUMP_DATA += fate-vp9-encparams
+FATE_SAMPLES_DUMP_DATA-$(call DEMDEC, MATROSKA, VP9) += fate-vp9-encparams
 
-FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9-encparams
+FATE_VP9-$(call DEMDEC, MATROSKA, VP9) += fate-vp9-encparams
 
-FATE_SAMPLES_AVCONV-$(CONFIG_VP9_DECODER) += $(FATE_VP9-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_VP9-yes)
 fate-vp9: $(FATE_VP9-yes)
