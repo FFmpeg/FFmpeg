@@ -96,10 +96,10 @@ static uint64_t jpegxl_u64(GetBitContext *gb)
         ret = jxl_bits(12);
         while (jxl_bits(1)) {
             if (shift < 60) {
-                ret |= jxl_bits(8) << shift;
+                ret |= (uint64_t)jxl_bits(8) << shift;
                 shift += 8;
             } else {
-                ret |= jxl_bits(4) << shift;
+                ret |= (uint64_t)jxl_bits(4) << shift;
                 break;
             }
         }
