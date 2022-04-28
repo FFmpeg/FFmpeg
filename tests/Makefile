@@ -219,6 +219,7 @@ include $(SRC_PATH)/tests/fate/vorbis.mak
 include $(SRC_PATH)/tests/fate/vpx.mak
 include $(SRC_PATH)/tests/fate/vqf.mak
 include $(SRC_PATH)/tests/fate/wavpack.mak
+include $(SRC_PATH)/tests/fate/webm-dash-manifest.mak
 include $(SRC_PATH)/tests/fate/wma.mak
 include $(SRC_PATH)/tests/fate/xvid.mak
 
