@@ -140,3 +140,54 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         // no lines to filter
         ret
 endfunc
+
+// ff_hevc_sao_edge_filter_8x8_8_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                    int16 *sao_offset_val, int eo, int width, int height)
+function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
+        adr             x7, .Lsao_edge_pos
+        ldr             w4, [x7, w4, uxtw #2]
+        ld1             {v3.8h}, [x3]
+        mov             v3.h[7], v3.h[0]
+        mov             v3.h[0], v3.h[1]
+        mov             v3.h[1], v3.h[2]
+        mov             v3.h[2], v3.h[7]
+        uzp2            v1.16b, v3.16b, v3.16b
+        uzp1            v0.16b, v3.16b, v3.16b
+        movi            v2.16b, #2
+        add             x16, x0, x2
+        lsl             x2,  x2, #1
+        mov             x15, #192
+        mov             x8,  x1
+        sub             x9,  x1, x4
+        add             x10, x1, x4
+        lsr             w17, w6, #1
+1:      ld1             {v3.d}[0], [ x8], x15
+        ld1             {v4.d}[0], [ x9], x15
+        ld1             {v5.d}[0], [x10], x15
+        ld1             {v3.d}[1], [ x8], x15
+        ld1             {v4.d}[1], [ x9], x15
+        ld1             {v5.d}[1], [x10], x15
+        cmhi            v16.16b, v4.16b, v3.16b
+        cmhi            v17.16b, v3.16b, v4.16b
+        cmhi            v18.16b, v5.16b, v3.16b
+        cmhi            v19.16b, v3.16b, v5.16b
+        sub             v20.16b, v16.16b, v17.16b
+        sub             v21.16b, v18.16b, v19.16b
+        add             v20.16b, v20.16b, v21.16b
+        add             v20.16b, v20.16b, v2.16b
+        tbl             v16.16b, {v0.16b}, v20.16b
+        tbl             v17.16b, {v1.16b}, v20.16b
+        uxtl            v20.8h, v3.8b
+        uxtl2           v21.8h, v3.16b
+        zip1            v18.16b, v16.16b, v17.16b
+        zip2            v19.16b, v16.16b, v17.16b
+        sqadd           v20.8h, v18.8h, v20.8h
+        sqadd           v21.8h, v19.8h, v21.8h
+        sqxtun          v6.8b, v20.8h
+        sqxtun          v7.8b, v21.8h
+        st1             {v6.8b}, [ x0], x2
+        st1             {v7.8b}, [x16], x2
+        subs            x17, x17, #1
+        b.ne            1b
+        ret
+endfunc

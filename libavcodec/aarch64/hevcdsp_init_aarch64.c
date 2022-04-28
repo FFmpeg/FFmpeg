@@ -59,6 +59,8 @@ void ff_hevc_sao_band_filter_8x8_8_neon(uint8_t *_dst, uint8_t *_src,
                                   int width, int height);
 void ff_hevc_sao_edge_filter_16x16_8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride_dst,
                                           int16_t *sao_offset_val, int eo, int width, int height);
+void ff_hevc_sao_edge_filter_8x8_8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride_dst,
+                                          int16_t *sao_offset_val, int eo, int width, int height);
 
 av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
 {
@@ -80,6 +82,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->sao_band_filter[2]          =
         c->sao_band_filter[3]          =
         c->sao_band_filter[4]          = ff_hevc_sao_band_filter_8x8_8_neon;
+        c->sao_edge_filter[0]          = ff_hevc_sao_edge_filter_8x8_8_neon;
         c->sao_edge_filter[1]          =
         c->sao_edge_filter[2]          =
         c->sao_edge_filter[3]          =
