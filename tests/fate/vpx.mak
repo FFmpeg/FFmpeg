@@ -85,26 +85,22 @@ fate-vp7: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp7/potter-40.vp7
 VP8_SUITE = 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017
 
 define FATE_VP8_SUITE
-FATE_VP8-$(call DEMDEC, IVF, VP8) += fate-vp8-test-vector$(2)-$(1)
-fate-vp8-test-vector$(2)-$(1): CMD = framemd5 $(3) -i $(TARGET_SAMPLES)/vp8-test-vectors-r1/vp80-00-comprehensive-$(1).ivf
-fate-vp8-test-vector$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-test-vector-$(1)
+FATE_VP8-$(call DEMDEC, IVF, VP8) += fate-vp8-test-vector-$(1)
+fate-vp8-test-vector-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/vp8-test-vectors-r1/vp80-00-comprehensive-$(1).ivf
+fate-vp8-test-vector-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-test-vector-$(1)
 endef
 
-define FATE_VP8_FULL
-$(foreach N,$(VP8_SUITE),$(eval $(call FATE_VP8_SUITE,$(N),$(1),$(2))))
+$(foreach N,$(VP8_SUITE),$(eval $(call FATE_VP8_SUITE,$(N))))
 
 # FIXME this file contains two frames with identical timestamps,
 # so ffmpeg drops one of them
-FATE_VP8-$(call DEMDEC, IVF, VP8) += fate-vp8-sign-bias$(1)
-fate-vp8-sign-bias$(1): CMD = framemd5 $(2) -i $(TARGET_SAMPLES)/vp8/sintel-signbias.ivf
-fate-vp8-sign-bias$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-sign-bias
+FATE_VP8-$(call DEMDEC, IVF, VP8) += fate-vp8-sign-bias
+fate-vp8-sign-bias: CMD = framemd5 -i $(TARGET_SAMPLES)/vp8/sintel-signbias.ivf
+fate-vp8-sign-bias: REF = $(SRC_PATH)/tests/ref/fate/vp8-sign-bias
 
-FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-size-change$(1)
-fate-vp8-size-change$(1): CMD = framemd5 $(2) -flags +bitexact -i $(TARGET_SAMPLES)/vp8/frame_size_change.webm -frames:v 30 -sws_flags bitexact+bilinear
-fate-vp8-size-change$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-size-change
-endef
-
-$(eval $(call FATE_VP8_FULL))
+FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-size-change
+fate-vp8-size-change: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/vp8/frame_size_change.webm -frames:v 30 -sws_flags bitexact+bilinear
+fate-vp8-size-change: REF = $(SRC_PATH)/tests/ref/fate/vp8-size-change
 
 FATE_SAMPLES_AVCONV += $(FATE_VP8-yes)
 fate-vp8: $(FATE_VP8-yes)
@@ -131,7 +127,6 @@ VP9_SIZE_B = 196 198 200 202 208 210 224 226
 VP9_CHROMA_SUBSAMPLE = 422 440 444
 VP9_HIGH_BITDEPTH = 10 12
 
-define FATE_VP9_FULL
 $(foreach Q,$(VP9_Q),$(eval $(call FATE_VP9_SUITE,00-quantizer-$(Q))))
 $(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP))))
 $(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H))))))
@@ -153,9 +148,7 @@ $(eval $(call FATE_VP9_SUITE,segmentation-sf-akiyo))
 $(eval $(call FATE_VP9_SUITE,tiling-pedestrian))
 $(eval $(call FATE_VP9_SUITE,trac3849))
 $(eval $(call FATE_VP9_SUITE,trac4359))
-endef
 
-$(eval $(call FATE_VP9_FULL))
 FATE_VP9-$(CONFIG_IVF_DEMUXER) += fate-vp9-05-resize
 fate-vp9-05-resize: CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf -s 352x288 -sws_flags bitexact+bilinear
 fate-vp9-05-resize: REF = $(SRC_PATH)/tests/ref/fate/vp9-05-resize
