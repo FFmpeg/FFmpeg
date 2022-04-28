@@ -393,14 +393,28 @@ cmp_metadata(){
 }
 
 refcmp_metadata_files(){
-    refcmp=$1
-    pixfmt=$2
-    file1=$3
-    file2=$4
+    file1=$1
+    file2=$2
+    refcmp=$3
+    pixfmt=$4
     fuzz=${5:-0.001}
     ffmpeg -auto_conversion_filters $FLAGS -i $file1 $FLAGS -i $file2 $ENC_OPTS \
         -lavfi "[0:v]format=${pixfmt}[v0];[1:v]format=${pixfmt}[v1];[v0][v1]${refcmp},metadata=print:file=-" \
         -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
+}
+
+refcmp_metadata_transcode(){
+    srcfile=$1
+    enc_opt=$2
+    enc_fmt=$3
+    enc_ext=$4
+    shift 4
+    encfile="${outdir}/${test}.${enc_ext}"
+    cleanfiles="$cleanfiles $encfile"
+    tsrcfile=$(target_path $srcfile)
+    tencfile=$(target_path $encfile)
+    ffmpeg $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS -y -f $enc_fmt $tencfile || return
+    refcmp_metadata_files $tencfile $tsrcfile "$@"
 }
 
 pixfmt_conversion(){
