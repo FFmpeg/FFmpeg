@@ -30,7 +30,9 @@ tests/data/raw-rgb24.vbn: TAG = GEN
 tests/data/raw-rgb24.vbn: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -i $(TARGET_SAMPLES)/png1/lena-rgb24.png -nostdin -c:v vbn -format raw $(TARGET_PATH)/$@ -y 2>/dev/null
 
-VBN_REFCMP_DEPS = PSNR_FILTER METADATA_FILTER VBN_ENCODER VBN_DECODER IMAGE2_MUXER IMAGE2_DEMUXER PNG_DECODER
+FATE_VBN-$(call ENCDEC2, VBN, WRAPPED_AVFRAME PNG, IMAGE2,        \
+                         PSNR_FILTER METADATA_FILTER SCALE_FILTER \
+                         NULL_MUXER PIPE_PROTOCOL) += $(FATE_VBN)
 
-FATE_SAMPLES_FFMPEG-$(call ALLYES, $(VBN_REFCMP_DEPS)) += $(FATE_VBN)
-fate-vbn: $(FATE_VBN)
+FATE_SAMPLES_FFMPEG += $(FATE_VBN-yes)
+fate-vbn: $(FATE_VBN-yes)
