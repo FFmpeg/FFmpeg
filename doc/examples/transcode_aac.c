@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 Andreas Unterweger
+ * Copyright (c) 2013-2022 Andreas Unterweger
  *
  * This file is part of FFmpeg.
  *
