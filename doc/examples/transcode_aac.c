@@ -62,6 +62,7 @@ static int open_input_file(const char *filename,
 {
     AVCodecContext *avctx;
     const AVCodec *input_codec;
+    const AVStream *stream;
     int error;
 
     /* Open the input file to read from it. */
@@ -89,8 +90,10 @@ static int open_input_file(const char *filename,
         return AVERROR_EXIT;
     }
 
+    stream = (*input_format_context)->streams[0];
+
     /* Find a decoder for the audio stream. */
-    if (!(input_codec = avcodec_find_decoder((*input_format_context)->streams[0]->codecpar->codec_id))) {
+    if (!(input_codec = avcodec_find_decoder(stream->codecpar->codec_id))) {
         fprintf(stderr, "Could not find input codec\n");
         avformat_close_input(input_format_context);
         return AVERROR_EXIT;
@@ -105,7 +108,7 @@ static int open_input_file(const char *filename,
     }
 
     /* Initialize the stream parameters with demuxer information. */
-    error = avcodec_parameters_to_context(avctx, (*input_format_context)->streams[0]->codecpar);
+    error = avcodec_parameters_to_context(avctx, stream->codecpar);
     if (error < 0) {
         avformat_close_input(input_format_context);
         avcodec_free_context(&avctx);
@@ -120,6 +123,9 @@ static int open_input_file(const char *filename,
         avformat_close_input(input_format_context);
         return error;
     }
+
+    /* Set the packet timebase for the decoder. */
+    avctx->pkt_timebase = stream->time_base;
 
     /* Save the decoder context for easier access later. */
     *input_codec_context = avctx;
