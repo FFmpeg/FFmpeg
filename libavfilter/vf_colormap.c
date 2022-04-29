@@ -129,8 +129,7 @@ static void gauss_solve_triangular(const double *A, const int *p, double *b, int
     }
 
     for(int k = n - 1; k > 0; k--) {
-        b[k] /= A[k + n * k];
-        double t = b[k];
+        double t = b[k] /= A[k + n * k];
         for (int i = 0; i < k; i++)
             b[i] -= A[k + n * i] * t;
     }
