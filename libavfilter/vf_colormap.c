@@ -23,15 +23,10 @@
  * Compute a look-up table from map of colors.
  */
 
-#include "config_components.h"
-
 #include "libavutil/attributes.h"
-#include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "formats.h"
 #include "internal.h"
 #include "framesync.h"
 #include "video.h"
