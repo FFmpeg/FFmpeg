@@ -415,8 +415,12 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->nb_frames < s->nb_inputs) {
         s->frames[s->nb_frames] = in;
         s->nb_frames++;
-        if (s->nb_frames < s->nb_inputs)
-            return 0;
+        while (s->nb_frames < s->nb_inputs) {
+            s->frames[s->nb_frames] = av_frame_clone(s->frames[s->nb_frames - 1]);
+            if (!s->frames[s->nb_frames])
+                return AVERROR(ENOMEM);
+            s->nb_frames++;
+        }
     } else {
         av_frame_free(&s->frames[0]);
         memmove(&s->frames[0], &s->frames[1], sizeof(*s->frames) * (s->nb_inputs - 1));
@@ -433,7 +437,7 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
         return AVERROR(ENOMEM);
-    out->pts = s->frames[0]->pts;
+    out->pts = s->frames[s->nb_frames - 1]->pts;
 
     td.out = out;
     td.in = s->frames;
