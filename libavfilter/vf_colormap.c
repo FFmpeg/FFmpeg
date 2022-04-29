@@ -537,6 +537,13 @@ static int activate(AVFilterContext *ctx)
     return ff_framesync_activate(&s->fs);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    ColorMapContext *const s = ctx->priv;
+
+    ff_framesync_uninit(&s->fs);
+}
+
 static const AVFilterPad inputs[] = {
     {
         .name = "default",
@@ -574,4 +581,5 @@ const AVFilter ff_vf_colormap = {
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
+    .uninit        = uninit,
 };
