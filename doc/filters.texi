@@ -12342,9 +12342,7 @@ Set amount of denoising. By default all detected noise is reduced.
 Default value is 1. Allowed range is from 0 to 1.
 
 @item block
-Set size of block, Default is 4, can be 3, 4, 5 or 6.
-Actual size of block in pixels is 2 to power of @var{block}, so by default
-block size in pixels is 2^4 which is 16.
+Set size of block in pixels, Default is 32, can be 8 to 256.
 
 @item overlap
 Set block overlap. Default is 0.5. Allowed range is from 0.2 to 0.8.
