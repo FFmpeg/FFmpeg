@@ -243,7 +243,7 @@ static int process_frame(FFFrameSync *fs)
     td.in = in;
     td.out = out;
     ff_filter_execute(ctx, mix_frames, &td, NULL,
-                      FFMIN(s->height[0], s->nb_threads));
+                      FFMIN(s->height[1], s->nb_threads));
 
     return ff_filter_frame(outlink, out);
 }
@@ -438,7 +438,7 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.out = out;
     td.in = s->frames;
     ff_filter_execute(ctx, mix_frames, &td, NULL,
-                      FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
+                      FFMIN(s->height[1], s->nb_threads));
 
     return ff_filter_frame(outlink, out);
 }
