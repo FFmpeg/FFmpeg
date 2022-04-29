@@ -1,4 +1,0 @@
-09bae55394f86ddb9e5c3254b174f865 *tests/data/fate/vsynth1-zmbv.avi
-2285442 tests/data/fate/vsynth1-zmbv.avi
-4ad1ca9de7c65eab68a619c54fffaec8 *tests/data/fate/vsynth1-zmbv.out.rawvideo
-stddev:    8.61 PSNR: 29.43 MAXDIFF:   64 bytes:  7603200/  7603200
