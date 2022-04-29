@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
@@ -134,19 +135,14 @@ static void gauss_solve_triangular(const double *A, const int *p, double *b, int
 
 static int gauss_solve(double *A, double *b, int n)
 {
-    int *p = av_calloc(n, sizeof(*p));
+    int p[3] = { 0 };
 
-    if (!p)
-        return 1;
+    av_assert2(n <= FF_ARRAY_ELEMS(p));
 
-    if (!gauss_make_triangular(A, p, n)) {
-        av_freep(&p);
+    if (!gauss_make_triangular(A, p, n))
         return 1;
-    }
 
     gauss_solve_triangular(A, p, b, n);
-
-    av_freep(&p);
 
     return 0;
 }
