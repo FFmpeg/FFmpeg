@@ -22,7 +22,6 @@
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
-#include "hermite.h"
 
 typedef struct AudioDynamicEqualizerContext {
     const AVClass *class;
