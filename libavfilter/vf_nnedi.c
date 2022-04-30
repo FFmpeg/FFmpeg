@@ -166,13 +166,15 @@ AVFILTER_DEFINE_CLASS(nnedi);
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    const NNEDIContext *const s = ctx->priv;
 
     outlink->time_base     = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
     outlink->w             = ctx->inputs[0]->w;
     outlink->h             = ctx->inputs[0]->h;
 
-    outlink->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
-                                   (AVRational){2, 1});
+    if (s->field == -2 || s->field > 1)
+        outlink->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
+                                       (AVRational){2, 1});
 
     return 0;
 }
