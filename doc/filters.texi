@@ -28476,6 +28476,9 @@ Specify size of video. For the syntax of this option, check the
 @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 Default is @code{1024x512}.
 
+@item rate, r
+Set video rate. Default is @code{25}.
+
 @item mode
 Set display mode.
 This set how each frequency bin will be represented.

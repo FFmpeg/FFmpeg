@@ -70,6 +70,9 @@ typedef struct ShowFreqsContext {
     int win_size;
     float scale;
     char *colors;
+    int64_t pts;
+    int64_t old_pts;
+    AVRational frame_rate;
 } ShowFreqsContext;
 
 #define OFFSET(x) offsetof(ShowFreqsContext, x)
@@ -78,6 +81,8 @@ typedef struct ShowFreqsContext {
 static const AVOption showfreqs_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1024x512"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1024x512"}, 0, 0, FLAGS },
+    { "rate", "set video rate",  OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },
+    { "r",    "set video rate",  OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },
     { "mode", "set display mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=BAR}, 0, NB_MODES-1, FLAGS, "mode" },
         { "line", "show lines",  0, AV_OPT_TYPE_CONST, {.i64=LINE},   0, 0, FLAGS, "mode" },
         { "bar",  "show bars",   0, AV_OPT_TYPE_CONST, {.i64=BAR},    0, 0, FLAGS, "mode" },
@@ -149,6 +154,7 @@ static int config_output(AVFilterLink *outlink)
     float overlap, scale;
     int i, ret;
 
+    s->old_pts = AV_NOPTS_VALUE;
     s->nb_freq = s->fft_size / 2;
     s->win_size = s->fft_size;
     av_tx_uninit(&s->fft);
@@ -215,7 +221,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->window)
         return AVERROR(ENOMEM);
 
-    outlink->frame_rate = av_make_q(inlink->sample_rate, s->hop_size);
+    outlink->frame_rate = s->frame_rate;
     outlink->time_base = av_inv_q(outlink->frame_rate);
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;
@@ -328,13 +334,13 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
 
     switch (s->avg) {
     case 0:
-        y = s->avg_data[ch][f] = !outlink->frame_count_in ? y : FFMIN(avg, y);
+        y = s->avg_data[ch][f] = !outlink->frame_count_in ? y : FFMIN(0, y);
         break;
     case 1:
         break;
     default:
-        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count_in + 1, s->avg) * y);
-        y = s->avg_data[ch][f];
+        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count_in + 1, s->avg) * (float)y);
+        y = av_clip(s->avg_data[ch][f], 0, outlink->h - 1);
         break;
     }
 
@@ -379,13 +385,6 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
     AVFrame *out;
     int ch, n;
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out)
-        return AVERROR(ENOMEM);
-
-    for (n = 0; n < outlink->h; n++)
-        memset(out->data[0] + out->linesize[0] * n, 0, outlink->w * 4);
-
     /* fill FFT input with the number of samples available */
     for (ch = 0; ch < s->nb_channels; ch++) {
         const float *p = (float *)in->extended_data[ch];
@@ -407,16 +406,26 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
         s->tx_fn(s->fft, s->fft_data[ch], s->fft_input[ch], sizeof(float));
     }
 
+    s->pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);
+    if (s->old_pts >= s->pts)
+        return 0;
+    s->old_pts = s->pts;
+
 #define RE(x, ch) s->fft_data[ch][x].re
 #define IM(x, ch) s->fft_data[ch][x].im
 #define M(a, b) (sqrt((a) * (a) + (b) * (b)))
 #define P(a, b) (atan2((b), (a)))
 
     colors = av_strdup(s->colors);
-    if (!colors) {
-        av_frame_free(&out);
+    if (!colors)
         return AVERROR(ENOMEM);
-    }
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out)
+        return AVERROR(ENOMEM);
+
+    for (n = 0; n < outlink->h; n++)
+        memset(out->data[0] + out->linesize[0] * n, 0, outlink->w * 4);
 
     for (ch = 0; ch < s->nb_channels; ch++) {
         uint8_t fg[4] = { 0xff, 0xff, 0xff, 0xff };
@@ -432,29 +441,21 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
 
         switch (s->data_mode) {
         case MAGNITUDE:
-            a = av_clipd(M(RE(0, ch), 0) / s->scale, 0, 1);
-            plot_freq(s, ch, a, 0, fg, &prev_y, out, outlink);
-
-            for (f = 1; f < s->nb_freq; f++) {
+            for (f = 0; f < s->nb_freq; f++) {
                 a = av_clipd(M(RE(f, ch), IM(f, ch)) / s->scale, 0, 1);
 
                 plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
             }
             break;
         case PHASE:
-            a = av_clipd((M_PI + P(RE(0, ch), 0)) / (2. * M_PI), 0, 1);
-            plot_freq(s, ch, a, 0, fg, &prev_y, out, outlink);
-
-            for (f = 1; f < s->nb_freq; f++) {
+            for (f = 0; f < s->nb_freq; f++) {
                 a = av_clipd((M_PI + P(RE(f, ch), IM(f, ch))) / (2. * M_PI), 0, 1);
 
                 plot_freq(s, ch, a, f, fg, &prev_y, out, outlink);
             }
             break;
         case DELAY:
-            plot_freq(s, ch, 0, 0, fg, &prev_y, out, outlink);
-
-            for (f = 1; f < s->nb_freq; f++) {
+            for (f = 0; f < s->nb_freq; f++) {
                 a = av_clipd((M_PI - P(IM(f, ch) * RE(f-1, ch) - IM(f-1, ch) * RE(f, ch),
                                        RE(f, ch) * RE(f-1, ch) + IM(f, ch) * IM(f-1, ch))) / (2. * M_PI), 0, 1);
 
@@ -465,7 +466,7 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
     }
 
     av_free(colors);
-    out->pts = av_rescale_q(pts, inlink->time_base, outlink->time_base);
+    out->pts = s->pts;
     out->sample_aspect_ratio = (AVRational){1,1};
     return ff_filter_frame(outlink, out);
 }
@@ -508,6 +509,11 @@ static int activate(AVFilterContext *ctx)
         ret = filter_frame(inlink, in);
     if (ret < 0)
         return ret;
+
+    if (ff_inlink_queued_samples(inlink) >= s->hop_size) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
 
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
