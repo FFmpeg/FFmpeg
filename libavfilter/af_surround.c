@@ -1633,6 +1633,11 @@ static int activate(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
+    if (ff_inlink_queued_samples(inlink) >= s->hop_size) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
+
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         ff_outlink_set_status(outlink, status, pts);
         return 0;
