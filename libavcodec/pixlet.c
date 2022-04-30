@@ -611,7 +611,7 @@ static int pixlet_decode_frame(AVCodecContext *avctx, AVFrame *p,
     bytestream2_init(&ctx->gb, avpkt->data, avpkt->size);
 
     pktsize = bytestream2_get_be32(&ctx->gb);
-    if (pktsize <= 44 || pktsize - 4 > bytestream2_get_bytes_left(&ctx->gb)) {
+    if (pktsize <= 44 + (NB_LEVELS * 8 + 6) * 3 || pktsize - 4 > bytestream2_get_bytes_left(&ctx->gb)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid packet size %"PRIu32"\n", pktsize);
         return AVERROR_INVALIDDATA;
     }
