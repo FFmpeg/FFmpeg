@@ -86,15 +86,15 @@ runecho(){
 }
 
 probefmt(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_entries format=format_name -print_format default=nw=1:nk=1 "$@"
 }
 
 probeaudiostream(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout:side_data "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout:side_data "$@"
 }
 
 probetags(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_entries format_tags "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_entries format_tags "$@"
 }
 
 runlocal(){
@@ -103,11 +103,11 @@ runlocal(){
 }
 
 probeframes(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_frames "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_frames "$@"
 }
 
 probechapters(){
-    run ffprobe${PROGSUF}${EXECSUF} -show_chapters "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_chapters "$@"
 }
 
 probegaplessinfo(){
@@ -222,7 +222,7 @@ enc_dec(){
     do_md5sum $decfile
     tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
     test -z $ffprobe_opts || \
-        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts $tencfile || return
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact $ffprobe_opts $tencfile || return
 }
 
 transcode(){
@@ -245,7 +245,7 @@ transcode(){
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
     test -z $ffprobe_opts || \
-        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts $tencfile || return
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact $ffprobe_opts $tencfile || return
 }
 
 stream_remux(){
@@ -264,7 +264,7 @@ stream_remux(){
     ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
     test -z $ffprobe_opts || \
-        run ffprobe${PROGSUF}${EXECSUF} $ffprobe_opts $tencfile || return
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact $ffprobe_opts $tencfile || return
 }
 
 # FIXME: There is a certain duplication between the avconv-related helper
