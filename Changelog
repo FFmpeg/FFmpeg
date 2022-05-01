@@ -14,6 +14,7 @@ version 5.1:
 - colormap video filter
 - colorchart video source filter
 - blurdetect filter
+- multiply video filter
 
 
 version 5.0:

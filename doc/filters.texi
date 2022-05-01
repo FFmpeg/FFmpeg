@@ -16638,6 +16638,29 @@ with the reference file @file{ref.mpg}.
 ffmpeg -i main.mpg -i ref.mpg -lavfi msad -f null -
 @end example
 
+@section multiply
+Multiply first video stream pixels values with second video stream pixels values.
+
+The filter accepts the following options:
+
+@table @option
+@item scale
+Set the scale applied to second video stream. By default is @code{1}.
+Allowed range is from @code{0} to @code{9}.
+
+@item offset
+Set the offset applied to second video stream. By default is @code{0.5}.
+Allowed range is from @code{-1} to @code{1}.
+
+@item planes
+Specify planes from input video stream that will be processed.
+By default all planes are processed.
+@end table
+
+@subsection Commands
+
+This filter supports same @ref{commands} as options.
+
 @section negate
 
 Negate (invert) the input video.
