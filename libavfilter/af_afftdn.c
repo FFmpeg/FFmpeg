@@ -1154,6 +1154,11 @@ static int activate(AVFilterContext *ctx)
     if (ret > 0)
         return output_frame(inlink, in);
 
+    if (ff_inlink_queued_samples(inlink) >= s->sample_advance) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
+
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
