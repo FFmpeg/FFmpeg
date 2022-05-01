@@ -100,6 +100,7 @@ static struct{
 
     CFStringRef kVTCompressionPropertyKey_RealTime;
     CFStringRef kVTCompressionPropertyKey_TargetQualityForAlpha;
+    CFStringRef kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality;
 
     CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
     CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
@@ -161,6 +162,8 @@ static void loadVTEncSymbols(){
     GET_SYM(kVTCompressionPropertyKey_RealTime, "RealTime");
     GET_SYM(kVTCompressionPropertyKey_TargetQualityForAlpha,
             "TargetQualityForAlpha");
+    GET_SYM(kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality,
+            "PrioritizeEncodingSpeedOverQuality");
 
     GET_SYM(kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
             "EnableHardwareAcceleratedVideoEncoder");
@@ -237,6 +240,7 @@ typedef struct VTEncContext {
     int allow_sw;
     int require_sw;
     double alpha_quality;
+    int prio_speed;
 
     bool flushing;
     int has_b_frames;
@@ -1144,6 +1148,15 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error setting bitrate property: %d\n", status);
         return AVERROR_EXTERNAL;
+    }
+
+    if (vtctx->prio_speed >= 0) {
+        status = VTSessionSetProperty(vtctx->session,
+                                      compat_keys.kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality,
+                                      vtctx->prio_speed ? kCFBooleanTrue : kCFBooleanFalse);
+        if (status) {
+            av_log(avctx, AV_LOG_WARNING, "PrioritizeEncodingSpeedOverQuality property is not supported on this device. Ignoring.\n");
+        }
     }
 
     if ((vtctx->codec_id == AV_CODEC_ID_H264 || vtctx->codec_id == AV_CODEC_ID_HEVC)
@@ -2682,7 +2695,9 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
     { "frames_before", "Other frames will come before the frames in this session. This helps smooth concatenation issues.", \
         OFFSET(frames_before), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
     { "frames_after", "Other frames will come after the frames in this session. This helps smooth concatenation issues.", \
-        OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+        OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
+    { "prio_speed", "prioritize encoding speed", OFFSET(prio_speed), AV_OPT_TYPE_BOOL, \
+        { .i64 = -1 }, -1, 1, VE }, \
 
 #define OFFSET(x) offsetof(VTEncContext, x)
 static const AVOption h264_options[] = {
