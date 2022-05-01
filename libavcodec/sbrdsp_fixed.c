@@ -114,8 +114,8 @@ static void sbr_qmf_deint_neg_c(int *v, const int *src)
 {
     int i;
     for (i = 0; i < 32; i++) {
-        v[     i] = ( src[63 - 2*i    ] + 0x10) >> 5;
-        v[63 - i] = (-src[63 - 2*i - 1] + 0x10) >> 5;
+        v[     i] = (int)(0x10U + src[63 - 2*i    ]) >> 5;
+        v[63 - i] = (int)(0x10U - src[63 - 2*i - 1]) >> 5;
     }
 }
 
