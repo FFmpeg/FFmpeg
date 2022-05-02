@@ -100,6 +100,7 @@ typedef struct AOMEncoderContext {
     int enable_restoration;
     int usage;
     int tune;
+    int still_picture;
     int enable_rect_partitions;
     int enable_1to4_partitions;
     int enable_ab_partitions;
@@ -747,6 +748,18 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (res < 0)
         return res;
 
+    if (ctx->still_picture) {
+        // Set the maximum number of frames to 1. This will let libaom set
+        // still_picture and reduced_still_picture_header to 1 in the Sequence
+        // Header as required by AVIF still images.
+        enccfg.g_limit = 1;
+        // Reduce memory usage for still images.
+        enccfg.g_lag_in_frames = 0;
+        // All frames will be key frames.
+        enccfg.kf_max_dist = 0;
+        enccfg.kf_mode = AOM_KF_DISABLED;
+    }
+
     /* Construct Encoder Context */
     res = aom_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
     if (res != AOM_CODEC_OK) {
@@ -1291,6 +1304,7 @@ static const AVOption options[] = {
     { "psnr",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_PSNR}, 0, 0, VE, "tune"},
     { "ssim",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_SSIM}, 0, 0, VE, "tune"},
     FF_AV1_PROFILE_OPTS
+    { "still-picture", "Encode in single frame mode (typically used for still AVIF images).", OFFSET(still_picture), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, VE },
     { "enable-rect-partitions", "Enable rectangular partitions", OFFSET(enable_rect_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-1to4-partitions", "Enable 1:4/4:1 partitions",     OFFSET(enable_1to4_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-ab-partitions",   "Enable ab shape partitions",    OFFSET(enable_ab_partitions),   AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
