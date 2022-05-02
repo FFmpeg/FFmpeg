@@ -1,5 +1,5 @@
 /*
- * RAW AVS3-P2/IEEE1857.10 video demuxer
+ * AVS3-P2/IEEE1857.10 video decoder (using the uavs3d library)
  * Copyright (c) 2020 Zhenyu Wang <wangzhenyu@pkusz.edu.cn>
  *                    Bingjie Han <hanbj@pkusz.edu.cn>
  *                    Huiwen Ren  <hwrenx@gmail.com>
