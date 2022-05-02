@@ -38,11 +38,11 @@ static av_cold int pcm_bluray_encode_init(AVCodecContext *avctx)
     switch (avctx->sample_fmt) {
     case AV_SAMPLE_FMT_S16:
         avctx->bits_per_coded_sample = 16;
-        frame_size = 120;
+        frame_size = 240;
         quant = 1;
         break;
     case AV_SAMPLE_FMT_S32:
-        frame_size = 180;
+        frame_size = 360;
         avctx->bits_per_coded_sample = 24;
         quant = 3;
         break;
@@ -55,18 +55,14 @@ static av_cold int pcm_bluray_encode_init(AVCodecContext *avctx)
         freq = 1;
         break;
     case 96000:
-        frame_size *= 2;
         freq = 4;
         break;
     case 192000:
-        frame_size *= 4;
         freq = 5;
         break;
     default:
         return AVERROR_BUG;
     }
-
-    frame_size *= avctx->ch_layout.nb_channels;
 
     switch (avctx->ch_layout.u.mask) {
     case AV_CH_LAYOUT_MONO:
