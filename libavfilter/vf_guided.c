@@ -342,9 +342,8 @@ static int process_frame(FFFrameSync *fs)
         return ff_filter_frame(outlink, main_frame);
 
     ret = filter_frame(ctx, &out_frame, main_frame, ref_frame);
-    if (ret < 0) {
+    if (ret < 0)
         return ret;
-    }
     av_frame_free(&main_frame);
 
     return ff_filter_frame(outlink, out_frame);
