@@ -338,6 +338,9 @@ static int process_frame(FFFrameSync *fs)
     if (ret < 0)
         return ret;
 
+    if (ctx->is_disabled)
+        return ff_filter_frame(outlink, main_frame);
+
     ret = filter_frame(ctx, &out_frame, main_frame, ref_frame);
     if (ret < 0) {
         return ret;
@@ -406,6 +409,9 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK(ctx->outputs[0], ctx->inputs[0]);
 
     if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &frame)) > 0) {
+        if (ctx->is_disabled)
+            return ff_filter_frame(ctx->outputs[0], frame);
+
         ret = filter_frame(ctx, &out, frame, frame);
         av_frame_free(&frame);
         if (ret < 0)
@@ -476,6 +482,6 @@ const AVFilter ff_vf_guided = {
     FILTER_OUTPUTS(guided_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
-                       AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+                       AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
