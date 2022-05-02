@@ -1089,7 +1089,7 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
     case AV_CODEC_ID_AV1:
         if (par->extradata_size)
             return ff_isom_write_av1c(dyn_cp, par->extradata,
-                                      par->extradata_size);
+                                      par->extradata_size, 1);
         else
             put_ebml_void(pb, 4 + 3);
         break;
@@ -2665,7 +2665,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
             ret = avio_open_dyn_buf(&dyn_cp);
             if (ret < 0)
                 return ret;
-            ff_isom_write_av1c(dyn_cp, side_data, side_data_size);
+            ff_isom_write_av1c(dyn_cp, side_data, side_data_size, 1);
             codecpriv_size = avio_get_dyn_buf(dyn_cp, &codecpriv);
             if ((ret = dyn_cp->error) < 0 ||
                 !codecpriv_size && (ret = AVERROR_INVALIDDATA)) {

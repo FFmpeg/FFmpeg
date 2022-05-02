@@ -1337,7 +1337,7 @@ static int mov_write_av1c_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "av1C");
-    ff_isom_write_av1c(pb, track->vos_data, track->vos_len);
+    ff_isom_write_av1c(pb, track->vos_data, track->vos_len, 1);
     return update_size(pb, pos);
 }
 

@@ -96,9 +96,11 @@ int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int 
  * @param pb pointer to the AVIOContext where the av1C box shall be written
  * @param buf input data buffer
  * @param size size in bytes of the input data buffer
+ * @param write_seq_header If 1, Sequence Header OBU will be written inside the
+ *           av1C box. Otherwise, Sequence Header OBU will be omitted.
  *
  * @return >= 0 in case of success, a negative AVERROR code in case of failure
  */
-int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size);
+int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size, int write_seq_header);
 
 #endif /* AVFORMAT_AV1_H */
