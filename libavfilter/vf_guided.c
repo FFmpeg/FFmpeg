@@ -398,6 +398,8 @@ static int config_output(AVFilterLink *outlink)
 static int activate(AVFilterContext *ctx)
 {
     GuidedContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterLink *inlink = ctx->inputs[0];
     AVFrame *frame = NULL;
     AVFrame *out = NULL;
     int ret, status;
@@ -405,26 +407,26 @@ static int activate(AVFilterContext *ctx)
     if (s->guidance)
         return ff_framesync_activate(&s->fs);
 
-    FF_FILTER_FORWARD_STATUS_BACK(ctx->outputs[0], ctx->inputs[0]);
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &frame)) > 0) {
+    if ((ret = ff_inlink_consume_frame(inlink, &frame)) > 0) {
         if (ctx->is_disabled)
-            return ff_filter_frame(ctx->outputs[0], frame);
+            return ff_filter_frame(outlink, frame);
 
         ret = filter_frame(ctx, &out, frame, frame);
         av_frame_free(&frame);
         if (ret < 0)
             return ret;
-        ret = ff_filter_frame(ctx->outputs[0], out);
+        ret = ff_filter_frame(outlink, out);
     }
     if (ret < 0)
         return ret;
-    if (ff_inlink_acknowledge_status(ctx->inputs[0], &status, &pts)) {
-        ff_outlink_set_status(ctx->outputs[0], status, pts);
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        ff_outlink_set_status(outlink, status, pts);
         return 0;
     }
-    if (ff_outlink_frame_wanted(ctx->outputs[0]))
-        ff_inlink_request_frame(ctx->inputs[0]);
+    if (ff_outlink_frame_wanted(outlink))
+        ff_inlink_request_frame(inlink);
     return 0;
 }
 
