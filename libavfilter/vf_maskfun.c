@@ -35,7 +35,7 @@ typedef struct MaskFunContext {
     int sum;
 
     int linesize[4];
-    int width[4], height[4];
+    int planewidth[4], planeheight[4];
     int nb_planes;
     int depth;
     int max;
@@ -101,7 +101,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     ff_filter_execute(ctx, s->maskfun, frame, NULL,
-                      FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+                      FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, frame);
 }
@@ -115,8 +115,8 @@ static int getsum##name(AVFilterContext *ctx, AVFrame *out)  \
                                                              \
     for (p = 0; p < s->nb_planes; p++) {                     \
         const int linesize = out->linesize[p] / div;         \
-        const int w = s->width[p];                           \
-        const int h = s->height[p];                          \
+        const int w = s->planewidth[p];                      \
+        const int h = s->planeheight[p];                     \
         type *dst = (type *)out->data[p];                    \
                                                              \
         if (!((1 << p) & s->planes))                         \
@@ -150,8 +150,8 @@ static int maskfun##name(AVFilterContext *ctx, void *arg,    \
                                                              \
     for (p = 0; p < s->nb_planes; p++) {                     \
         const int linesize = out->linesize[p] / div;         \
-        const int w = s->width[p];                           \
-        const int h = s->height[p];                          \
+        const int w = s->planewidth[p];                      \
+        const int h = s->planeheight[p];                     \
         const int slice_start = (h * jobnr) / nb_jobs;       \
         const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
         type *dst = (type *)out->data[p] + slice_start * linesize; \
@@ -186,8 +186,8 @@ static void fill_frame(AVFilterContext *ctx)
         for (int p = 0; p < s->nb_planes; p++) {
             uint8_t *dst = s->empty->data[p];
 
-            for (int y = 0; y < s->height[p]; y++) {
-                memset(dst, s->fill, s->width[p]);
+            for (int y = 0; y < s->planeheight[p]; y++) {
+                memset(dst, s->fill, s->planewidth[p]);
                 dst += s->empty->linesize[p];
             }
         }
@@ -195,8 +195,8 @@ static void fill_frame(AVFilterContext *ctx)
         for (int p = 0; p < s->nb_planes; p++) {
             uint16_t *dst = (uint16_t *)s->empty->data[p];
 
-            for (int y = 0; y < s->height[p]; y++) {
-                for (int x = 0; x < s->width[p]; x++)
+            for (int y = 0; y < s->planeheight[p]; y++) {
+                for (int x = 0; x < s->planewidth[p]; x++)
                     dst[x] = s->fill;
                 dst += s->empty->linesize[p] / 2;
             }
@@ -212,7 +212,7 @@ static void set_max_sum(AVFilterContext *ctx)
     for (int p = 0; p < s->nb_planes; p++) {
         if (!((1 << p) & s->planes))
             continue;
-        s->max_sum += (uint64_t)s->sum * s->width[p] * s->height[p];
+        s->max_sum += (uint64_t)s->sum * s->planewidth[p] * s->planeheight[p];
     }
 }
 
@@ -230,10 +230,10 @@ static int config_input(AVFilterLink *inlink)
 
     hsub = desc->log2_chroma_w;
     vsub = desc->log2_chroma_h;
-    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
-    s->height[0] = s->height[3] = inlink->h;
-    s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
-    s->width[0]  = s->width[3]  = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
+    s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
     s->depth = desc->comp[0].depth;
     s->max = (1 << s->depth) - 1;
