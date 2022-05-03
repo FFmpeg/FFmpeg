@@ -27,6 +27,7 @@
 #include "encode.h"
 #include "internal.h"
 #include "v210enc.h"
+#include "v210enc_init.h"
 
 #define TYPE uint8_t
 #define DEPTH 8
@@ -47,52 +48,6 @@
 #undef DEPTH
 #undef BYTES_PER_PIXEL
 #undef TYPE
-
-static void v210_planar_pack_8_c(const uint8_t *y, const uint8_t *u,
-                                 const uint8_t *v, uint8_t *dst,
-                                 ptrdiff_t width)
-{
-    uint32_t val;
-    int i;
-
-    /* unroll this to match the assembly */
-    for (i = 0; i < width - 11; i += 12) {
-        WRITE_PIXELS(u, y, v, 8);
-        WRITE_PIXELS(y, u, y, 8);
-        WRITE_PIXELS(v, y, u, 8);
-        WRITE_PIXELS(y, v, y, 8);
-        WRITE_PIXELS(u, y, v, 8);
-        WRITE_PIXELS(y, u, y, 8);
-        WRITE_PIXELS(v, y, u, 8);
-        WRITE_PIXELS(y, v, y, 8);
-    }
-}
-
-static void v210_planar_pack_10_c(const uint16_t *y, const uint16_t *u,
-                                  const uint16_t *v, uint8_t *dst,
-                                  ptrdiff_t width)
-{
-    uint32_t val;
-    int i;
-
-    for (i = 0; i < width - 5; i += 6) {
-        WRITE_PIXELS(u, y, v, 10);
-        WRITE_PIXELS(y, u, y, 10);
-        WRITE_PIXELS(v, y, u, 10);
-        WRITE_PIXELS(y, v, y, 10);
-    }
-}
-
-av_cold void ff_v210enc_init(V210EncContext *s)
-{
-    s->pack_line_8  = v210_planar_pack_8_c;
-    s->pack_line_10 = v210_planar_pack_10_c;
-    s->sample_factor_8  = 2;
-    s->sample_factor_10 = 1;
-
-    if (ARCH_X86)
-        ff_v210enc_init_x86(s);
-}
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {

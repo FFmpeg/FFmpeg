@@ -22,16 +22,6 @@
 #include "bytestream.h"
 #include "internal.h"
 
-#define CLIP(v, depth) av_clip(v, 1<<(depth-8), ((1<<depth)-(1<<(depth-8))-1))
-#define WRITE_PIXELS(a, b, c, depth)                      \
-    do {                                                  \
-        val  =  CLIP(*a++, depth)  << (10-depth);         \
-        val |=  (CLIP(*b++, depth) << (20-depth)) |       \
-                (CLIP(*c++, depth) << (30-depth));        \
-        AV_WL32(dst, val);                                \
-        dst += 4;                                         \
-    } while (0)
-
 static void RENAME(v210_enc)(AVCodecContext *avctx,
         uint8_t *dst, const AVFrame *pic)
 {
