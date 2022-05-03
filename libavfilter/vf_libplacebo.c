@@ -652,7 +652,7 @@ static const AVOption libplacebo_options[] = {
 
     /* Performance/quality tradeoff options */
     { "skip_aa", "Skip anti-aliasing", OFFSET(skip_aa), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 0, DYNAMIC },
-    { "polar_cutoff", "Polar LUT cutoff", OFFSET(polar_cutoff), AV_OPT_TYPE_FLOAT, {.i64 = 0}, 0.0, 1.0, DYNAMIC },
+    { "polar_cutoff", "Polar LUT cutoff", OFFSET(polar_cutoff), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0.0, 1.0, DYNAMIC },
     { "disable_linear", "Disable linear scaling", OFFSET(disable_linear), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "disable_builtin", "Disable built-in scalers", OFFSET(disable_builtin), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "force_icc_lut", "Force the use of a full ICC 3DLUT for color mapping", OFFSET(force_icc_lut), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
