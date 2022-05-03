@@ -23,12 +23,39 @@
 
 #include <stddef.h>
 
+#include "config.h"
+#include "libavutil/attributes.h"
+
 typedef struct AudioFIRDSPContext {
     void (*fcmul_add)(float *sum, const float *t, const float *c,
                       ptrdiff_t len);
 } AudioFIRDSPContext;
 
-void ff_afir_init(AudioFIRDSPContext *s);
 void ff_afir_init_x86(AudioFIRDSPContext *s);
+
+static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t len)
+{
+    int n;
+
+    for (n = 0; n < len; n++) {
+        const float cre = c[2 * n    ];
+        const float cim = c[2 * n + 1];
+        const float tre = t[2 * n    ];
+        const float tim = t[2 * n + 1];
+
+        sum[2 * n    ] += tre * cre - tim * cim;
+        sum[2 * n + 1] += tre * cim + tim * cre;
+    }
+
+    sum[2 * n] += t[2 * n] * c[2 * n];
+}
+
+static av_unused void ff_afir_init(AudioFIRDSPContext *dsp)
+{
+    dsp->fcmul_add = fcmul_add_c;
+
+    if (ARCH_X86)
+        ff_afir_init_x86(dsp);
+}
 
 #endif /* AVFILTER_AFIRDSP_H */
