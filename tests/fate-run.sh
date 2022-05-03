@@ -230,9 +230,10 @@ transcode(){
     srcfile=$2
     enc_fmt=$3
     enc_opt=$4
-    final_decode=$5
+    final_encode=$5
     ffprobe_opts=$7
     additional_input=$8
+    final_decode=$9
     test -z "$additional_input" || additional_input="$DEC_OPTS $additional_input"
     encfile="${outdir}/${test}.${enc_fmt}"
     test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
@@ -242,7 +243,7 @@ transcode(){
            $ENC_OPTS $enc_opt $FLAGS -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
+    ffmpeg $DEC_OPTS $final_decode -i $tencfile $ENC_OPTS $FLAGS $final_encode \
         -f framecrc - || return
     test -z $ffprobe_opts || \
         run ffprobe${PROGSUF}${EXECSUF} -bitexact $ffprobe_opts $tencfile || return
