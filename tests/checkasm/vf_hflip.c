@@ -19,6 +19,7 @@
 #include <string.h>
 #include "checkasm.h"
 #include "libavfilter/hflip.h"
+#include "libavfilter/vf_hflip_init.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 

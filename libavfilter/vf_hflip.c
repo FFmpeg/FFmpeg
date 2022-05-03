@@ -31,6 +31,7 @@
 #include "formats.h"
 #include "hflip.h"
 #include "internal.h"
+#include "vf_hflip_init.h"
 #include "video.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/internal.h"
@@ -61,70 +62,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, pix_fmts);
 }
 
-static void hflip_byte_c(const uint8_t *src, uint8_t *dst, int w)
-{
-    int j;
-
-    for (j = 0; j < w; j++)
-        dst[j] = src[-j];
-}
-
-static void hflip_short_c(const uint8_t *ssrc, uint8_t *ddst, int w)
-{
-    const uint16_t *src = (const uint16_t *)ssrc;
-    uint16_t *dst = (uint16_t *)ddst;
-    int j;
-
-    for (j = 0; j < w; j++)
-        dst[j] = src[-j];
-}
-
-static void hflip_dword_c(const uint8_t *ssrc, uint8_t *ddst, int w)
-{
-    const uint32_t *src = (const uint32_t *)ssrc;
-    uint32_t *dst = (uint32_t *)ddst;
-    int j;
-
-    for (j = 0; j < w; j++)
-        dst[j] = src[-j];
-}
-
-static void hflip_b24_c(const uint8_t *src, uint8_t *dst, int w)
-{
-    const uint8_t *in  = src;
-    uint8_t *out = dst;
-    int j;
-
-    for (j = 0; j < w; j++, out += 3, in -= 3) {
-        int32_t v = AV_RB24(in);
-
-        AV_WB24(out, v);
-    }
-}
-
-static void hflip_b48_c(const uint8_t *src, uint8_t *dst, int w)
-{
-    const uint8_t *in  = src;
-    uint8_t *out = dst;
-    int j;
-
-    for (j = 0; j < w; j++, out += 6, in -= 6) {
-        int64_t v = AV_RB48(in);
-
-        AV_WB48(out, v);
-    }
-}
-
-static void hflip_qword_c(const uint8_t *ssrc, uint8_t *ddst, int w)
-{
-    const uint64_t *src = (const uint64_t *)ssrc;
-    uint64_t *dst = (uint64_t *)ddst;
-    int j;
-
-    for (j = 0; j < w; j++)
-        dst[j] = src[-j];
-}
-
 static int config_props(AVFilterLink *inlink)
 {
     FlipContext *s = inlink->dst->priv;
@@ -143,29 +80,6 @@ static int config_props(AVFilterLink *inlink)
     nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     return ff_hflip_init(s, s->max_step, nb_planes);
-}
-
-int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
-{
-    int i;
-
-    for (i = 0; i < nb_planes; i++) {
-        step[i] *= s->bayer_plus1;
-        switch (step[i]) {
-        case 1: s->flip_line[i] = hflip_byte_c;  break;
-        case 2: s->flip_line[i] = hflip_short_c; break;
-        case 3: s->flip_line[i] = hflip_b24_c;   break;
-        case 4: s->flip_line[i] = hflip_dword_c; break;
-        case 6: s->flip_line[i] = hflip_b48_c;   break;
-        case 8: s->flip_line[i] = hflip_qword_c; break;
-        default:
-            return AVERROR_BUG;
-        }
-    }
-    if (ARCH_X86)
-        ff_hflip_init_x86(s, step, nb_planes);
-
-    return 0;
 }
 
 typedef struct ThreadData {
