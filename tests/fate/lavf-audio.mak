@@ -34,7 +34,7 @@ fate-lavf-ast: CMD = lavf_audio "-ac 2" "-loopstart 1 -loopend 10"
 fate-lavf-mka: CMD = lavf_audio "" "-c:a tta"
 fate-lavf-voc: CMD = lavf_audio "" "-c:a pcm_u8"
 fate-lavf-peak.wav: CMD = lavf_audio "" "-write_peak on"
-fate-lavf-peak_only.wav: CMD = lavf_audio "" "-write_peak only"
+fate-lavf-peak_only.wav: CMD = lavf_audio "" "-write_peak only" "" disable_crc
 
 FATE_AVCONV += $(FATE_LAVF_AUDIO)
 fate-lavf-audio fate-lavf: $(FATE_LAVF_AUDIO)
