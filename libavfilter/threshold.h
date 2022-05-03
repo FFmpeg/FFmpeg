@@ -46,7 +46,6 @@ typedef struct ThresholdContext {
     FFFrameSync fs;
 } ThresholdContext;
 
-void ff_threshold_init(ThresholdContext *s);
 void ff_threshold_init_x86(ThresholdContext *s);
 
 #endif /* AVFILTER_THRESHOLD_H */

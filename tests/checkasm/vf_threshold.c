@@ -18,7 +18,7 @@
 
 #include <string.h>
 #include "checkasm.h"
-#include "libavfilter/threshold.h"
+#include "libavfilter/vf_threshold_init.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
