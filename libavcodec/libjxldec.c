@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
+#include "libavutil/csp.h"
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -92,7 +93,7 @@ static av_cold int libjxl_decode_init(AVCodecContext *avctx)
     return libjxl_init_jxl_decoder(avctx);
 }
 
-static enum AVPixelFormat libjxl_get_pix_fmt(AVCodecContext *avctx, JxlBasicInfo *basic_info, JxlPixelFormat *format)
+static enum AVPixelFormat libjxl_get_pix_fmt(void *avctx, const JxlBasicInfo *basic_info, JxlPixelFormat *format)
 {
     format->endianness = JXL_NATIVE_ENDIAN;
     format->num_channels = basic_info->num_color_channels + (basic_info->alpha_bits > 0);
@@ -129,11 +130,199 @@ static enum AVPixelFormat libjxl_get_pix_fmt(AVCodecContext *avctx, JxlBasicInfo
     return AV_PIX_FMT_NONE;
 }
 
+static enum AVColorPrimaries libjxl_get_primaries(void *avctx, const JxlColorEncoding *jxl_color)
+{
+    AVColorPrimariesDesc desc;
+    enum AVColorPrimaries prim;
+
+    /* libjxl populates these double values even if it uses an enum space */
+    desc.prim.r.x = av_d2q(jxl_color->primaries_red_xy[0], 300000);
+    desc.prim.r.y = av_d2q(jxl_color->primaries_red_xy[1], 300000);
+    desc.prim.g.x = av_d2q(jxl_color->primaries_green_xy[0], 300000);
+    desc.prim.g.y = av_d2q(jxl_color->primaries_green_xy[1], 300000);
+    desc.prim.b.x = av_d2q(jxl_color->primaries_blue_xy[0], 300000);
+    desc.prim.b.y = av_d2q(jxl_color->primaries_blue_xy[1], 300000);
+    desc.wp.x = av_d2q(jxl_color->white_point_xy[0], 300000);
+    desc.wp.y = av_d2q(jxl_color->white_point_xy[1], 300000);
+
+    prim = av_csp_primaries_id_from_desc(&desc);
+    if (prim == AVCOL_PRI_UNSPECIFIED) {
+        /* try D65 with the same primaries */
+        /* BT.709 uses D65 white point */
+        desc.wp = av_csp_primaries_desc_from_id(AVCOL_PRI_BT709)->wp;
+        av_log(avctx, AV_LOG_WARNING, "Changing unknown white point to D65\n");
+        prim = av_csp_primaries_id_from_desc(&desc);
+    }
+
+    return prim;
+}
+
+static enum AVColorTransferCharacteristic libjxl_get_trc(void *avctx, const JxlColorEncoding *jxl_color)
+{
+    switch (jxl_color->transfer_function) {
+    case JXL_TRANSFER_FUNCTION_709: return AVCOL_TRC_BT709;
+    case JXL_TRANSFER_FUNCTION_LINEAR: return AVCOL_TRC_LINEAR;
+    case JXL_TRANSFER_FUNCTION_SRGB: return AVCOL_TRC_IEC61966_2_1;
+    case JXL_TRANSFER_FUNCTION_PQ: return AVCOL_TRC_SMPTE2084;
+    case JXL_TRANSFER_FUNCTION_DCI: return AVCOL_TRC_SMPTE428;
+    case JXL_TRANSFER_FUNCTION_HLG: return AVCOL_TRC_ARIB_STD_B67;
+    case JXL_TRANSFER_FUNCTION_GAMMA:
+        if (jxl_color->gamma > 2.199 && jxl_color->gamma < 2.201)
+            return AVCOL_TRC_GAMMA22;
+        else if (jxl_color->gamma > 2.799 && jxl_color->gamma < 2.801)
+            return AVCOL_TRC_GAMMA28;
+        else
+            av_log(avctx, AV_LOG_WARNING, "Unsupported gamma transfer: %f\n", jxl_color->gamma);
+        break;
+    default:
+        av_log(avctx, AV_LOG_WARNING, "Unknown transfer function: %d\n", jxl_color->transfer_function);
+    }
+
+    return AVCOL_TRC_UNSPECIFIED;
+}
+
+static int libjxl_get_icc(AVCodecContext *avctx)
+{
+    LibJxlDecodeContext *ctx = avctx->priv_data;
+    size_t icc_len;
+    JxlDecoderStatus jret;
+    /* an ICC profile is present, and we can meaningfully get it,
+     * because the pixel data is not XYB-encoded */
+    jret = JxlDecoderGetICCProfileSize(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_DATA, &icc_len);
+    if (jret == JXL_DEC_SUCCESS && icc_len > 0) {
+        av_buffer_unref(&ctx->iccp);
+        ctx->iccp = av_buffer_alloc(icc_len);
+        if (!ctx->iccp)
+            return AVERROR(ENOMEM);
+        jret = JxlDecoderGetColorAsICCProfile(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_DATA,
+                                                ctx->iccp->data, icc_len);
+        if (jret != JXL_DEC_SUCCESS) {
+            av_log(avctx, AV_LOG_WARNING, "Unable to obtain ICC Profile\n");
+            av_buffer_unref(&ctx->iccp);
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * There's generally four cases when it comes to decoding a libjxl image
+ * with regard to color encoding:
+ * (a) There is an embedded ICC profile in the image, and the image is XYB-encoded.
+ * (b) There is an embedded ICC profile in the image, and the image is not XYB-encoded.
+ * (c) There is no embedded ICC profile, and FFmpeg supports the tagged colorspace.
+ * (d) There is no embedded ICC profile, and FFmpeg does not support the tagged colorspace.
+ *
+ * In case (b), we forward the pixel data as is and forward the ICC Profile as-is.
+ * In case (c), we request the pixel data in the space it's tagged as,
+ *     and tag the space accordingly.
+ * In case (a), libjxl does not support getting the pixel data in the space described by the ICC
+ *     profile, so instead we request the pixel data in BT.2020/PQ as it is the widest
+ *     space that FFmpeg supports.
+ * In case (d), we also request wide-gamut pixel data as a fallback since FFmpeg doesn't support
+ *     the custom primaries tagged in the space.
+ */
+static int libjxl_color_encoding_event(AVCodecContext *avctx, AVFrame *frame)
+{
+    LibJxlDecodeContext *ctx = avctx->priv_data;
+    JxlDecoderStatus jret;
+    int ret;
+    JxlColorEncoding jxl_color;
+    /* set this flag if we need to fall back on wide gamut */
+    int fallback = 0;
+
+    jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, NULL, JXL_COLOR_PROFILE_TARGET_ORIGINAL, &jxl_color);
+    if (jret == JXL_DEC_SUCCESS) {
+        /* enum values describe the colors of this image */
+        jret = JxlDecoderSetPreferredColorProfile(ctx->decoder, &jxl_color);
+        if (jret == JXL_DEC_SUCCESS)
+            jret = JxlDecoderGetColorAsEncodedProfile(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_DATA, &jxl_color);
+        /* if we couldn't successfully request the pixel data space, we fall back on wide gamut */
+        /* this code path is very unlikely to happen in practice */
+        if (jret != JXL_DEC_SUCCESS)
+            fallback = 1;
+    } else {
+        /* an ICC Profile is present in the stream */
+        if (ctx->basic_info.uses_original_profile) {
+            /* uses_original_profile is the same as !xyb_encoded */
+            av_log(avctx, AV_LOG_VERBOSE, "Using embedded ICC Profile\n");
+            if ((ret = libjxl_get_icc(avctx)) < 0)
+                return ret;
+        } else {
+            /*
+             * an XYB-encoded image with an embedded ICC profile can't always have the
+             * pixel data requested in the original space, so libjxl has no feature
+             * to allow this to happen, so we fall back on wide gamut
+             */
+            fallback = 1;
+        }
+    }
+
+    avctx->color_range = frame->color_range = AVCOL_RANGE_JPEG;
+    if (ctx->jxl_pixfmt.num_channels >= 3)
+        avctx->colorspace = AVCOL_SPC_RGB;
+    avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
+    avctx->color_trc = AVCOL_TRC_UNSPECIFIED;
+
+    if (!ctx->iccp) {
+        /* checking enum values */
+        if (!fallback) {
+            if (avctx->colorspace == AVCOL_SPC_RGB)
+                avctx->color_primaries = libjxl_get_primaries(avctx, &jxl_color);
+            avctx->color_trc = libjxl_get_trc(avctx, &jxl_color);
+        }
+        /* fall back on wide gamut if enum values fail */
+        if (avctx->color_primaries == AVCOL_PRI_UNSPECIFIED) {
+            if (avctx->colorspace == AVCOL_SPC_RGB) {
+                av_log(avctx, AV_LOG_WARNING, "Falling back on wide gamut output\n");
+                jxl_color.primaries = JXL_PRIMARIES_2100;
+                avctx->color_primaries = AVCOL_PRI_BT2020;
+            }
+            /* libjxl requires this set even for grayscale */
+            jxl_color.white_point = JXL_WHITE_POINT_D65;
+        }
+        if (avctx->color_trc == AVCOL_TRC_UNSPECIFIED) {
+            if (ctx->jxl_pixfmt.data_type == JXL_TYPE_FLOAT
+                || ctx->jxl_pixfmt.data_type == JXL_TYPE_FLOAT16) {
+                av_log(avctx, AV_LOG_WARNING, "Falling back on Linear Light transfer\n");
+                jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+                avctx->color_trc = AVCOL_TRC_LINEAR;
+            } else {
+                av_log(avctx, AV_LOG_WARNING, "Falling back on iec61966-2-1/sRGB transfer\n");
+                jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
+                avctx->color_trc = AVCOL_TRC_IEC61966_2_1;
+            }
+        }
+        /* all colors will be in-gamut so we want accurate colors */
+        jxl_color.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
+        jxl_color.color_space = avctx->colorspace == AVCOL_SPC_RGB ? JXL_COLOR_SPACE_RGB : JXL_COLOR_SPACE_GRAY;
+        jret = JxlDecoderSetPreferredColorProfile(ctx->decoder, &jxl_color);
+        if (jret != JXL_DEC_SUCCESS) {
+            av_log(avctx, AV_LOG_WARNING, "Unable to set fallback color encoding\n");
+            /*
+             * This should only happen if there's a non-XYB encoded image with custom primaries
+             * embedded as enums and no embedded ICC Profile.
+             * In this case, libjxl will synthesize an ICC Profile for us.
+             */
+            avctx->color_trc = AVCOL_TRC_UNSPECIFIED;
+            avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
+            if ((ret = libjxl_get_icc(avctx)) < 0)
+                return ret;
+        }
+    }
+
+    frame->color_trc = avctx->color_trc;
+    frame->color_primaries = avctx->color_primaries;
+    frame->colorspace = avctx->colorspace;
+
+    return 0;
+}
+
 static int libjxl_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *avpkt)
 {
     LibJxlDecodeContext *ctx = avctx->priv_data;
     uint8_t *buf = avpkt->data;
-    size_t remaining = avpkt->size, iccp_len;
+    size_t remaining = avpkt->size;
     JxlDecoderStatus jret;
     int ret;
     *got_frame = 0;
@@ -183,30 +372,21 @@ static int libjxl_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_f
                 av_log(avctx, AV_LOG_ERROR, "Bad libjxl pixel format\n");
                 return AVERROR_EXTERNAL;
             }
-            ret = ff_set_dimensions(avctx, ctx->basic_info.xsize, ctx->basic_info.ysize);
-            if (ret < 0)
+            if ((ret = ff_set_dimensions(avctx, ctx->basic_info.xsize, ctx->basic_info.ysize)) < 0)
                 return ret;
             continue;
         case JXL_DEC_COLOR_ENCODING:
             av_log(avctx, AV_LOG_DEBUG, "COLOR_ENCODING event emitted\n");
-            jret = JxlDecoderGetICCProfileSize(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_ORIGINAL, &iccp_len);
-            if (jret == JXL_DEC_SUCCESS && iccp_len > 0) {
-                av_buffer_unref(&ctx->iccp);
-                ctx->iccp = av_buffer_alloc(iccp_len);
-                if (!ctx->iccp)
-                    return AVERROR(ENOMEM);
-                jret = JxlDecoderGetColorAsICCProfile(ctx->decoder, &ctx->jxl_pixfmt, JXL_COLOR_PROFILE_TARGET_ORIGINAL, ctx->iccp->data, iccp_len);
-                if (jret != JXL_DEC_SUCCESS)
-                    av_buffer_unref(&ctx->iccp);
-            }
+            if ((ret = libjxl_color_encoding_event(avctx, frame)) < 0)
+                return ret;
             continue;
         case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
             av_log(avctx, AV_LOG_DEBUG, "NEED_IMAGE_OUT_BUFFER event emitted\n");
-            ret = ff_get_buffer(avctx, frame, 0);
-            if (ret < 0)
+            if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
                 return ret;
             ctx->jxl_pixfmt.align = frame->linesize[0];
-            if (JxlDecoderSetImageOutBuffer(ctx->decoder, &ctx->jxl_pixfmt, frame->data[0], frame->buf[0]->size) != JXL_DEC_SUCCESS) {
+            if (JxlDecoderSetImageOutBuffer(ctx->decoder, &ctx->jxl_pixfmt, frame->data[0], frame->buf[0]->size)
+                != JXL_DEC_SUCCESS) {
                 av_log(avctx, AV_LOG_ERROR, "Bad libjxl dec need image out buffer event\n");
                 return AVERROR_EXTERNAL;
             }
