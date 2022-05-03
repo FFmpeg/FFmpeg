@@ -205,7 +205,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ret = cae->api->encoder_encode(cae->encoder, &pic, &cae->packet);
 
         if (ret) {
-            av_log(avctx, AV_LOG_ERROR, "Encoding error occured.\n");
+            av_log(avctx, AV_LOG_ERROR, "Encoding error occurred.\n");
             return AVERROR_EXTERNAL;
         }
 
