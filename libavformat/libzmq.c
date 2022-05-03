@@ -51,7 +51,7 @@ static int zmq_proto_wait(URLContext *h, void *socket, int write)
     zmq_pollitem_t items = { .socket = socket, .fd = 0, .events = ev, .revents = 0 };
     ret = zmq_poll(&items, 1, POLLING_TIME);
     if (ret == -1) {
-        av_log(h, AV_LOG_ERROR, "Error occured during zmq_poll(): %s\n", ZMQ_STRERROR);
+        av_log(h, AV_LOG_ERROR, "Error occurred during zmq_poll(): %s\n", ZMQ_STRERROR);
         return AVERROR_EXTERNAL;
     }
     return items.revents & ev ? 0 : AVERROR(EAGAIN);
@@ -90,7 +90,7 @@ static int zmq_proto_open(URLContext *h, const char *uri, int flags)
     s->context = zmq_ctx_new();
     if (!s->context) {
         /*errno not set on failure during zmq_ctx_new()*/
-        av_log(h, AV_LOG_ERROR, "Error occured during zmq_ctx_new()\n");
+        av_log(h, AV_LOG_ERROR, "Error occurred during zmq_ctx_new()\n");
         return AVERROR_EXTERNAL;
     }
 
@@ -100,13 +100,13 @@ static int zmq_proto_open(URLContext *h, const char *uri, int flags)
     if (h->flags & AVIO_FLAG_WRITE) {
         s->socket = zmq_socket(s->context, ZMQ_PUB);
         if (!s->socket) {
-            av_log(h, AV_LOG_ERROR, "Error occured during zmq_socket(): %s\n", ZMQ_STRERROR);
+            av_log(h, AV_LOG_ERROR, "Error occurred during zmq_socket(): %s\n", ZMQ_STRERROR);
             goto fail_term;
         }
 
         ret = zmq_bind(s->socket, uri);
         if (ret == -1) {
-            av_log(h, AV_LOG_ERROR, "Error occured during zmq_bind(): %s\n", ZMQ_STRERROR);
+            av_log(h, AV_LOG_ERROR, "Error occurred during zmq_bind(): %s\n", ZMQ_STRERROR);
             goto fail_close;
         }
     }
@@ -115,19 +115,19 @@ static int zmq_proto_open(URLContext *h, const char *uri, int flags)
     if (h->flags & AVIO_FLAG_READ) {
         s->socket = zmq_socket(s->context, ZMQ_SUB);
         if (!s->socket) {
-            av_log(h, AV_LOG_ERROR, "Error occured during zmq_socket(): %s\n", ZMQ_STRERROR);
+            av_log(h, AV_LOG_ERROR, "Error occurred during zmq_socket(): %s\n", ZMQ_STRERROR);
             goto fail_term;
         }
 
         ret = zmq_setsockopt(s->socket, ZMQ_SUBSCRIBE, "", 0);
         if (ret == -1) {
-            av_log(h, AV_LOG_ERROR, "Error occured during zmq_setsockopt(): %s\n", ZMQ_STRERROR);
+            av_log(h, AV_LOG_ERROR, "Error occurred during zmq_setsockopt(): %s\n", ZMQ_STRERROR);
             goto fail_close;
         }
 
         ret = zmq_connect(s->socket, uri);
         if (ret == -1) {
-            av_log(h, AV_LOG_ERROR, "Error occured during zmq_connect(): %s\n", ZMQ_STRERROR);
+            av_log(h, AV_LOG_ERROR, "Error occurred during zmq_connect(): %s\n", ZMQ_STRERROR);
             goto fail_close;
         }
     }
@@ -150,7 +150,7 @@ static int zmq_proto_write(URLContext *h, const unsigned char *buf, int size)
         return ret;
     ret = zmq_send(s->socket, buf, size, 0);
     if (ret == -1) {
-        av_log(h, AV_LOG_ERROR, "Error occured during zmq_send(): %s\n", ZMQ_STRERROR);
+        av_log(h, AV_LOG_ERROR, "Error occurred during zmq_send(): %s\n", ZMQ_STRERROR);
         return AVERROR_EXTERNAL;
     }
     return ret; /*number of bytes sent*/
@@ -166,7 +166,7 @@ static int zmq_proto_read(URLContext *h, unsigned char *buf, int size)
         return ret;
     ret = zmq_recv(s->socket, buf, size, 0);
     if (ret == -1) {
-        av_log(h, AV_LOG_ERROR, "Error occured during zmq_recv(): %s\n", ZMQ_STRERROR);
+        av_log(h, AV_LOG_ERROR, "Error occurred during zmq_recv(): %s\n", ZMQ_STRERROR);
         return AVERROR_EXTERNAL;
     }
     if (ret > size) {
