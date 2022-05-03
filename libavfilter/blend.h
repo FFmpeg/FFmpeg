@@ -81,7 +81,6 @@ typedef struct FilterParams {
                   struct FilterParams *param, double *values, int starty);
 } FilterParams;
 
-void ff_blend_init(FilterParams *param, int depth);
 void ff_blend_init_x86(FilterParams *param, int depth);
 
 #endif /* AVFILTER_BLEND_H */
