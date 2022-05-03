@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "libavutil/avutil.h"
+#include "libavutil/csp.h"
 #include "libavutil/error.h"
 #include "libavutil/frame.h"
 #include "libavutil/libm.h"
@@ -117,7 +118,7 @@ static int libjxl_init_jxl_encoder(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    /* check for negative zero, our default */
+    /* check for negative, our default */
     if (ctx->distance < 0.0) {
         /* use ffmpeg.c -q option if passed */
         if (avctx->flags & AV_CODEC_FLAG_QSCALE)
@@ -133,7 +134,7 @@ static int libjxl_init_jxl_encoder(AVCodecContext *avctx)
      */
     if (ctx->distance > 0.0 && ctx->distance < 0.01)
         ctx->distance = 0.01;
-    if (JxlEncoderOptionsSetDistance(ctx->options, ctx->distance) != JXL_ENC_SUCCESS) {
+    if (JxlEncoderSetFrameDistance(ctx->options, ctx->distance) != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to set distance: %f\n", ctx->distance);
         return AVERROR_EXTERNAL;
     }
@@ -186,6 +187,52 @@ static av_cold int libjxl_encode_init(AVCodecContext *avctx)
 }
 
 /**
+ * Populate a JxlColorEncoding with the given enum AVColorPrimaries.
+ * @return < 0 upon failure, >= 0 upon success
+ */
+static int libjxl_populate_primaries(JxlColorEncoding *jxl_color, enum AVColorPrimaries prm)
+{
+    const AVColorPrimariesDesc *desc;
+
+    switch (prm) {
+    case AVCOL_PRI_BT709:
+        jxl_color->primaries = JXL_PRIMARIES_SRGB;
+        jxl_color->white_point = JXL_WHITE_POINT_D65;
+        return 0;
+    case AVCOL_PRI_BT2020:
+        jxl_color->primaries = JXL_PRIMARIES_2100;
+        jxl_color->white_point = JXL_WHITE_POINT_D65;
+        return 0;
+    case AVCOL_PRI_SMPTE431:
+        jxl_color->primaries = JXL_PRIMARIES_P3;
+        jxl_color->white_point = JXL_WHITE_POINT_DCI;
+        return 0;
+    case AVCOL_PRI_SMPTE432:
+        jxl_color->primaries = JXL_PRIMARIES_P3;
+        jxl_color->white_point = JXL_WHITE_POINT_D65;
+        return 0;
+    }
+
+    desc = av_csp_primaries_desc_from_id(prm);
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    jxl_color->primaries = JXL_PRIMARIES_CUSTOM;
+    jxl_color->white_point = JXL_WHITE_POINT_CUSTOM;
+
+    jxl_color->primaries_red_xy[0] = av_q2d(desc->prim.r.x);
+    jxl_color->primaries_red_xy[1] = av_q2d(desc->prim.r.y);
+    jxl_color->primaries_green_xy[0] = av_q2d(desc->prim.g.x);
+    jxl_color->primaries_green_xy[1] = av_q2d(desc->prim.g.y);
+    jxl_color->primaries_blue_xy[0] = av_q2d(desc->prim.b.x);
+    jxl_color->primaries_blue_xy[1] = av_q2d(desc->prim.b.y);
+    jxl_color->white_point_xy[0] = av_q2d(desc->wp.x);
+    jxl_color->white_point_xy[1] = av_q2d(desc->wp.y);
+
+    return 0;
+}
+
+/**
  * Encode an entire frame. Currently animation, is not supported by
  * this encoder, so this will always reinitialize a new still image
  * and encode a one-frame image (for image2 and image2pipe).
@@ -223,47 +270,93 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
         info.exponent_bits_per_sample = info.bits_per_sample > 16 ? 8 : 5;
         info.alpha_exponent_bits = info.alpha_bits ? info.exponent_bits_per_sample : 0;
         jxl_fmt.data_type = info.bits_per_sample > 16 ? JXL_TYPE_FLOAT : JXL_TYPE_FLOAT16;
-        JxlColorEncodingSetToLinearSRGB(&jxl_color, info.num_color_channels == 1);
     } else {
         info.exponent_bits_per_sample = 0;
         info.alpha_exponent_bits = 0;
         jxl_fmt.data_type = info.bits_per_sample <= 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16;
-        JxlColorEncodingSetToSRGB(&jxl_color, info.num_color_channels == 1);
     }
 
-    if (info.bits_per_sample > 16
-        || info.xsize > (1 << 18) || info.ysize > (1 << 18)
-        || (info.xsize << 4) * (info.ysize << 4) > (1 << 20)) {
-        /*
-         * must upgrade codestream to level 10, from level 5
-         * the encoder will not do this automatically
-         */
-        if (JxlEncoderSetCodestreamLevel(ctx->encoder, 10) != JXL_ENC_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Could not upgrade JXL Codestream level.\n");
-            return AVERROR_EXTERNAL;
-        }
-    }
+    /* JPEG XL format itself does not support limited range */
+    if (avctx->color_range == AVCOL_RANGE_MPEG ||
+        avctx->color_range == AVCOL_RANGE_UNSPECIFIED && frame->color_range == AVCOL_RANGE_MPEG)
+        av_log(avctx, AV_LOG_WARNING, "This encoder does not support limited (tv) range, colors will be wrong!\n");
+    else if (avctx->color_range != AVCOL_RANGE_JPEG && frame->color_range != AVCOL_RANGE_JPEG)
+        av_log(avctx, AV_LOG_WARNING, "Unknown color range, assuming full (pc)\n");
 
     /* bitexact lossless requires there to be no XYB transform */
     info.uses_original_profile = ctx->distance == 0.0;
 
-    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
-    if (sd && sd->size && JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size) != JXL_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
-    } else if (info.uses_original_profile) {
-        /*
-        * the color encoding is not used if uses_original_profile is false
-        * this just works around a bug in libjxl 0.7.0 and lower
-        */
-        if (JxlEncoderSetColorEncoding(ctx->encoder, &jxl_color) != JXL_ENC_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set JxlColorEncoding\n");
-            return AVERROR_EXTERNAL;
-        }
-    }
-
     if (JxlEncoderSetBasicInfo(ctx->encoder, &info) != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to set JxlBasicInfo\n");
         return AVERROR_EXTERNAL;
+    }
+
+    /* rendering intent doesn't matter here
+     * but libjxl will whine if we don't set it */
+    jxl_color.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
+
+    switch (frame->color_trc && frame->color_trc != AVCOL_TRC_UNSPECIFIED
+            ? frame->color_trc : avctx->color_trc) {
+    case AVCOL_TRC_BT709:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_709;
+        break;
+    case AVCOL_TRC_LINEAR:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+        break;
+    case AVCOL_TRC_IEC61966_2_1:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
+        break;
+    case AVCOL_TRC_SMPTE428:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_DCI;
+        break;
+    case AVCOL_TRC_SMPTE2084:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_PQ;
+        break;
+    case AVCOL_TRC_ARIB_STD_B67:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_HLG;
+        break;
+    case AVCOL_TRC_GAMMA22:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+        jxl_color.gamma = 2.2;
+        break;
+    case AVCOL_TRC_GAMMA28:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+        jxl_color.gamma = 2.8;
+        break;
+    default:
+        if (pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
+            av_log(avctx, AV_LOG_WARNING, "Unknown transfer function, assuming Linear Light. Colors may be wrong.\n");
+            jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Unknown transfer function, assuming IEC61966-2-1/sRGB. Colors may be wrong.\n");
+            jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
+        }
+    }
+
+    /* This should be implied to be honest
+     * but a libjxl bug makes it fail otherwise */
+    if (info.num_color_channels == 1)
+        jxl_color.color_space = JXL_COLOR_SPACE_GRAY;
+    else
+        jxl_color.color_space = JXL_COLOR_SPACE_RGB;
+
+    ret = libjxl_populate_primaries(&jxl_color,
+            frame->color_primaries && frame->color_primaries != AVCOL_PRI_UNSPECIFIED
+            ? frame->color_primaries : avctx->color_primaries);
+    if (ret < 0)
+        return ret;
+
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
+    if (sd && sd->size && JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size) != JXL_ENC_SUCCESS)
+        av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
+    if (JxlEncoderSetColorEncoding(ctx->encoder, &jxl_color) != JXL_ENC_SUCCESS)
+        av_log(avctx, AV_LOG_WARNING, "Failed to set JxlColorEncoding\n");
+
+    /* depending on basic info, level 10 might
+     * be required instead of level 5 */
+    if (JxlEncoderGetRequiredCodestreamLevel(ctx->encoder) > 5) {
+        if (JxlEncoderSetCodestreamLevel(ctx->encoder, 10) != JXL_ENC_SUCCESS)
+            av_log(avctx, AV_LOG_WARNING, "Could not increase codestream level\n");
     }
 
     jxl_fmt.endianness = JXL_NATIVE_ENDIAN;
