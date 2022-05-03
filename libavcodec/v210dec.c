@@ -24,44 +24,17 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "v210dec.h"
+#include "v210dec_init.h"
 #include "libavutil/bswap.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "thread.h"
-
-#define READ_PIXELS(a, b, c)         \
-    do {                             \
-        val  = av_le2ne32(*src++);   \
-        *a++ =  val & 0x3FF;         \
-        *b++ = (val >> 10) & 0x3FF;  \
-        *c++ = (val >> 20) & 0x3FF;  \
-    } while (0)
 
 typedef struct ThreadData {
     AVFrame *frame;
     uint8_t *buf;
     int stride;
 } ThreadData;
-
-static void v210_planar_unpack_c(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *v, int width)
-{
-    uint32_t val;
-    int i;
-
-    for( i = 0; i < width-5; i += 6 ){
-        READ_PIXELS(u, y, v);
-        READ_PIXELS(y, u, y);
-        READ_PIXELS(v, y, u);
-        READ_PIXELS(y, v, y);
-    }
-}
-
-av_cold void ff_v210dec_init(V210DecContext *s)
-{
-    s->unpack_frame = v210_planar_unpack_c;
-    if (ARCH_X86)
-        ff_v210_x86_init(s);
-}
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
