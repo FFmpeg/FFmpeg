@@ -41,7 +41,9 @@ typedef struct MaskFunContext {
     int max;
     uint64_t max_sum;
 
+    AVFrame *in;
     AVFrame *empty;
+
     int (*getsum)(AVFilterContext *ctx, AVFrame *out);
     int (*maskfun)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } MaskFunContext;
@@ -81,29 +83,42 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     MaskFunContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out;
 
-    if (s->getsum(ctx, frame)) {
+    if (s->getsum(ctx, in)) {
         AVFrame *out = av_frame_clone(s->empty);
 
         if (!out) {
-            av_frame_free(&frame);
+            av_frame_free(&in);
             return AVERROR(ENOMEM);
         }
-        out->pts = frame->pts;
-        av_frame_free(&frame);
+        out->pts = in->pts;
+        av_frame_free(&in);
 
         return ff_filter_frame(outlink, out);
     }
 
-    ff_filter_execute(ctx, s->maskfun, frame, NULL,
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
+        av_frame_copy_props(out, in);
+    }
+
+    s->in = in;
+    ff_filter_execute(ctx, s->maskfun, out, NULL,
                       FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
-    return ff_filter_frame(outlink, frame);
+    if (out != in)
+        av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 #define GETSUM(name, type, div)                              \
@@ -142,6 +157,7 @@ static int maskfun##name(AVFilterContext *ctx, void *arg,    \
                          int jobnr, int nb_jobs)             \
 {                                                            \
     MaskFunContext *s = ctx->priv;                           \
+    AVFrame *in = s->in;                                     \
     AVFrame *out = arg;                                      \
     const int low = s->low;                                  \
     const int high = s->high;                                \
@@ -149,24 +165,30 @@ static int maskfun##name(AVFilterContext *ctx, void *arg,    \
     int p;                                                   \
                                                              \
     for (p = 0; p < s->nb_planes; p++) {                     \
+        const int src_linesize = in->linesize[p] / div;      \
         const int linesize = out->linesize[p] / div;         \
         const int w = s->planewidth[p];                      \
         const int h = s->planeheight[p];                     \
         const int slice_start = (h * jobnr) / nb_jobs;       \
         const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
-        type *dst = (type *)out->data[p] + slice_start * linesize; \
+        const type *src = (type *)in->data[p] +              \
+                           slice_start * src_linesize;       \
+        type *dst = (type *)out->data[p] +                   \
+                    slice_start * linesize;                  \
                                                              \
         if (!((1 << p) & s->planes))                         \
             continue;                                        \
                                                              \
         for (int y = slice_start; y < slice_end; y++) {      \
             for (int x = 0; x < w; x++) {                    \
+                dst[x] = src[x];                             \
                 if (dst[x] <= low)                           \
                     dst[x] = 0;                              \
                 else if (dst[x] > high)                      \
                     dst[x] = max;                            \
             }                                                \
                                                              \
+            src += src_linesize;                             \
             dst += linesize;                                 \
         }                                                    \
     }                                                        \
