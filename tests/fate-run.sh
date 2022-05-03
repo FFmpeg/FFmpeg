@@ -272,8 +272,6 @@ stream_remux(){
 ffmpeg2="$target_exec ${target_path}/ffmpeg${PROGSUF}${EXECSUF}"
 raw_src="${target_path}/tests/vsynth1/%02d.pgm"
 pcm_src="${target_path}/tests/data/asynth1.sw"
-crcfile="tests/data/$test.lavf.crc"
-target_crcfile="${target_path}/$crcfile"
 
 [ "${V-0}" -gt 0 ] && echov=echov || echov=:
 
@@ -303,8 +301,8 @@ do_avconv(){
 do_avconv_crc(){
     f="$1"
     shift
-    run_avconv $* -f crc "$target_crcfile"
-    echo "$f $(cat $crcfile)"
+    printf "%s " "$f"
+    run_avconv $* -f crc -
 }
 
 lavf_audio(){
