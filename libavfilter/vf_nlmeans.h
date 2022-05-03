@@ -39,7 +39,6 @@ typedef struct NLMeansDSPContext {
                                  int startx, int endx);
 } NLMeansDSPContext;
 
-void ff_nlmeans_init(NLMeansDSPContext *dsp);
 void ff_nlmeans_init_aarch64(NLMeansDSPContext *dsp);
 void ff_nlmeans_init_x86(NLMeansDSPContext *dsp);
 

@@ -19,7 +19,7 @@
  */
 
 #include "checkasm.h"
-#include "libavfilter/vf_nlmeans.h"
+#include "libavfilter/vf_nlmeans_init.h"
 #include "libavutil/avassert.h"
 
 #define randomize_buffer(buf, size) do {    \
