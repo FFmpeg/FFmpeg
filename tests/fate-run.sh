@@ -432,6 +432,7 @@ pixfmt_conversion(){
     outdir="tests/data/pixfmt"
     raw_dst="$outdir/$conversion.out.yuv"
     file=${outdir}/${conversion}.yuv
+    cleanfiles="$cleanfiles $raw_dst $file"
     run_avconv $DEC_OPTS -r 1 -f image2 -c:v pgmyuv -i $raw_src \
                $ENC_OPTS -f rawvideo -t 1 -s 352x288 -pix_fmt $conversion $target_path/$raw_dst
     do_avconv $file $DEC_OPTS -f rawvideo -s 352x288 -pix_fmt $conversion -i $target_path/$raw_dst \
