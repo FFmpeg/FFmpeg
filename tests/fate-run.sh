@@ -205,11 +205,11 @@ enc_dec(){
     enc_opt=$4
     dec_fmt=$5
     dec_opt=$6
-    ffprobe_opts=$9
+    ffprobe_opts=$8
     encfile="${outdir}/${test}.${enc_fmt}"
     decfile="${outdir}/${test}.out.${dec_fmt}"
     cleanfiles="$cleanfiles $decfile"
-    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    test "$keep" -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     tdecfile=$(target_path $decfile)
@@ -217,7 +217,7 @@ enc_dec(){
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg -auto_conversion_filters $8 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
+    ffmpeg -auto_conversion_filters $7 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
     tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
@@ -231,12 +231,12 @@ transcode(){
     enc_fmt=$3
     enc_opt=$4
     final_encode=$5
-    ffprobe_opts=$7
-    additional_input=$8
-    final_decode=$9
+    ffprobe_opts=$6
+    additional_input=$7
+    final_decode=$8
     test -z "$additional_input" || additional_input="$DEC_OPTS $additional_input"
     encfile="${outdir}/${test}.${enc_fmt}"
-    test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
+    test $keep -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $additional_input \
@@ -255,9 +255,9 @@ stream_remux(){
     enc_fmt=$3
     stream_maps=$4
     final_decode=$5
-    ffprobe_opts=$7
+    ffprobe_opts=$6
     encfile="${outdir}/${test}.${enc_fmt}"
-    test "$6" = -keep || cleanfiles="$cleanfiles $encfile"
+    test $keep -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
@@ -598,7 +598,7 @@ if test $err != 0 && test $gen != "no" ; then
 fi
 
 if test $err = 0; then
-    if test $keep = 0; then
+    if test $keep -lt 2; then
         rm -f $outfile $errfile $cmpfile $cleanfiles
     fi
 elif test $gen = "no"; then

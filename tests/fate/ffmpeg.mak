@@ -46,13 +46,13 @@ fate-force_key_frames: tests/data/vsynth_lena.yuv
 fate-force_key_frames: CMD = enc_dec \
   "rawvideo -s 352x288 -pix_fmt yuv420p" tests/data/vsynth_lena.yuv \
   avi "-c mpeg4 -g 240 -qscale 10 -force_key_frames 0.5,0:00:01.5" \
-  framecrc "" "" "-skip_frame nokey"
+  framecrc "" "-skip_frame nokey"
 
 # Tests that the video is properly autorotated using the contained
 # display matrix and that the generated file does not contain
 # a display matrix any more.
 FATE_SAMPLES_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER H264_DECODER AAC_FIXED_DECODER MPEG2VIDEO_ENCODER AC3_FIXED_ENCODER MOV_MUXER MPEG2VIDEO_DECODER EXTRACT_EXTRADATA_BSF PIPE_PROTOCOL FRAMECRC_MUXER) += fate-autorotate
-fate-autorotate: CMD = transcode "mov -c:a aac_fixed" $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c:v mpeg2video -c:a ac3_fixed" "-c copy -t 0.5" "" "-show_entries stream_side_data_list"
+fate-autorotate: CMD = transcode "mov -c:a aac_fixed" $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c:v mpeg2video -c:a ac3_fixed" "-c copy -t 0.5" "-show_entries stream_side_data_list"
 
 FATE_SAMPLES_FFMPEG-$(call ALLYES, VOBSUB_DEMUXER DVDSUB_DECODER AVFILTER OVERLAY_FILTER DVDSUB_ENCODER) += fate-sub2video
 fate-sub2video: tests/data/vsynth_lena.yuv

@@ -46,7 +46,7 @@ fate-mxf-user-comments: $(SAMPLES)/mxf/Sony-00001.mxf
 fate-mxf-user-comments: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf -c copy -metadata "comment_test=value" -fflags +bitexact -f mxf
 
 FATE_MXF_D10_USER_COMMENTS-$(call ALLYES, FILE_PROTOCOL MXF_DEMUXER DVVIDEO_DECODER SCALE_FILTER MPEG2VIDEO_ENCODER MXF_D10_MUXER EXTRACT_EXTRADATA_BSF MPEGVIDEO_PARSER PIPE_PROTOCOL FRAMECRC_MUXER) += fate-mxf-d10-user-comments
-fate-mxf-d10-user-comments: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Avid-00005.mxf mxf_d10 "-c:v mpeg2video -b:v 30000k -minrate:v 30000k -maxrate:v 30000k -bufsize:v 30000k -rc_init_occupancy 30000k -vf scale=w=1280:h=720 -an -metadata comment_test=value -metadata company_name=FATE-company -metadata product_name=FATE-test -metadata product_version=3.14159 -store_user_comments 1" "-c copy -frames:v 5" "" "-show_entries format_tags"
+fate-mxf-d10-user-comments: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Avid-00005.mxf mxf_d10 "-c:v mpeg2video -b:v 30000k -minrate:v 30000k -maxrate:v 30000k -bufsize:v 30000k -rc_init_occupancy 30000k -vf scale=w=1280:h=720 -an -metadata comment_test=value -metadata company_name=FATE-company -metadata product_name=FATE-test -metadata product_version=3.14159 -store_user_comments 1" "-c copy -frames:v 5" "-show_entries format_tags"
 
 FATE_MXF_OPATOM_USER_COMMENTS-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-opatom-user-comments
 fate-mxf-opatom-user-comments: $(SAMPLES)/mxf/Sony-00001.mxf

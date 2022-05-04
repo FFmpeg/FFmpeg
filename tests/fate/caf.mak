@@ -2,7 +2,7 @@ FATE_CAF_FFMPEG-$(call ALLYES, CAF_DEMUXER CRC_MUXER) += fate-caf-demux
 fate-caf-demux: CMD = crc -i $(TARGET_SAMPLES)/caf/caf-pcm16.caf -c copy
 
 FATE_CAF_FFMPEG_FFPROBE-$(call REMUX, CAF, MOV_DEMUXER) += fate-caf-alac-remux
-fate-caf-alac-remux: CMD = transcode m4a $(TARGET_SAMPLES)/lossless-audio/inside.m4a caf "-map 0:a -c copy -metadata major_brand= " "-c copy -t 0.2" "" "-show_entries format_tags"
+fate-caf-alac-remux: CMD = transcode m4a $(TARGET_SAMPLES)/lossless-audio/inside.m4a caf "-map 0:a -c copy -metadata major_brand= " "-c copy -t 0.2" "-show_entries format_tags"
 
 FATE_CAF_FFMPEG-$(call REMUX, CAF, AMR_DEMUXER) += fate-caf-amr_nb-remux
 fate-caf-amr_nb-remux: CMD = transcode amr $(TARGET_SAMPLES)/amrnb/4.75k.amr caf "-c copy" "-c copy -t 0.2"

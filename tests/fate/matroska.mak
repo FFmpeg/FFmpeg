@@ -55,7 +55,7 @@ fate-matroska-flac-extradata-update: CMD = transcode matroska $(TARGET_SAMPLES)/
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER OGG_DEMUXER  \
                                  VORBIS_DECODER VORBIS_PARSER WEBM_MUXER) \
                                += fate-webm-dash-chapters
-fate-webm-dash-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg webm "-c copy -cluster_time_limit 1500 -dash 1 -dash_track_number 124 -reserve_index_space 400" "-c copy -t 0.5" "" -show_chapters
+fate-webm-dash-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg webm "-c copy -cluster_time_limit 1500 -dash 1 -dash_track_number 124 -reserve_index_space 400" "-c copy -t 0.5" -show_chapters
 
 # The input file has a Block whose payload has a size of zero before reversing
 # header removal compression; it furthermore uses chained SeekHeads and has
@@ -65,7 +65,7 @@ fate-webm-dash-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_cha
 # It furthermore tests correct propagation of the description tag.
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call DEMMUX, MATROSKA, MATROSKA) \
                                += fate-matroska-zero-length-block
-fate-matroska-zero-length-block: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/zero_length_block.mks matroska "-c:s copy -dash 1 -dash_track_number 2000000000 -reserve_index_space 62 -metadata_header_padding 1 -default_mode infer_no_subs" "-c:s copy" "" "-show_entries stream_tags=description"
+fate-matroska-zero-length-block: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/zero_length_block.mks matroska "-c:s copy -dash 1 -dash_track_number 2000000000 -reserve_index_space 62 -metadata_header_padding 1 -default_mode infer_no_subs" "-c:s copy" "-show_entries stream_tags=description"
 
 # This mainly tests the Matroska muxer's ability to shift the data
 # to create enough free space to write the Cues at the front.
@@ -83,12 +83,12 @@ fate-matroska-move-cues-to-front: CMD = transcode wav $(TARGET_SAMPLES)/audio-re
 # the initially reserved amount of space turns out to be insufficient.
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER HEVC_DECODER) \
                                += fate-matroska-dovi-write-config7
-fate-matroska-dovi-write-config7: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7.mp4 matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 40  -metadata_header_padding 64339" "-map 0 -c copy" "" "-show_entries stream_side_data_list"
+fate-matroska-dovi-write-config7: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7.mp4 matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 40  -metadata_header_padding 64339" "-map 0 -c copy" "-show_entries stream_side_data_list"
 
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER     \
                                            HEVC_DECODER AAC_DECODER) \
                                += fate-matroska-dovi-write-config8
-fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov matroska "-c copy" "-map 0 -c copy -t 0.4" "" "-show_entries stream_side_data_list -select_streams v"
+fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov matroska "-c copy" "-map 0 -c copy -t 0.4" "-show_entries stream_side_data_list -select_streams v"
 
 # This tests the scenario like tickets #4536, #5784 where
 # the first packet (with the overall lowest dts) is a video packet,
@@ -120,7 +120,7 @@ fate-matroska-qt-mode: CMD = transcode mov $(TARGET_SAMPLES)/svq1/marymary-shack
 # and modifying and writing colorspace properties.
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, H264_DECODER H264_PARSER) \
                                += fate-matroska-spherical-mono-remux
-fate-matroska-spherical-mono-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/spherical.mkv matroska "-map 0 -map 0 -c copy -disposition:0 -default+forced -disposition:1 -default -default_mode passthrough -color_primaries:1 bt709 -color_trc:1 smpte170m -colorspace:1 bt2020c -color_range:1 pc"  "-map 0 -c copy -t 0" "" "-show_entries stream_side_data_list:stream_disposition=default,forced:stream=color_range,color_space,color_primaries,color_transfer"
+fate-matroska-spherical-mono-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/spherical.mkv matroska "-map 0 -map 0 -c copy -disposition:0 -default+forced -disposition:1 -default -default_mode passthrough -color_primaries:1 bt709 -color_trc:1 smpte170m -colorspace:1 bt2020c -color_range:1 pc"  "-map 0 -c copy -t 0" "-show_entries stream_side_data_list:stream_disposition=default,forced:stream=color_range,color_space,color_primaries,color_transfer"
 
 # The input file of the following test contains Content Light Level as well as
 # Mastering Display Metadata and so this test tests correct muxing and demuxing
@@ -132,7 +132,7 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, FFV1 PRORES, MATROSKA, MXF_DEMUXE
                                                PCM_S24LE_DECODER ARESAMPLE_FILTER \
                                                PCM_S16BE_ENCODER NOISE_BSF)       \
                                += fate-matroska-mastering-display-metadata
-fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=amount=-1:drop=-4" "-map 0 -c copy" "" "-show_entries stream_side_data_list:stream=index,codec_name"
+fate-matroska-mastering-display-metadata: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf matroska "-map 0 -map 0:0 -c:v:0 copy -c:v:1 ffv1 -c:a:0 copy -bsf:a:0 noise=amount=3 -filter:a:1 aresample -c:a:1 pcm_s16be -bsf:a:1 noise=amount=-1:drop=-4" "-map 0 -c copy" "-show_entries stream_side_data_list:stream=index,codec_name"
 
 # This test tests remuxing annex B H.264 into Matroska. It also tests writing
 # the correct interlaced flags and overriding the sample aspect ratio, leading
@@ -148,7 +148,7 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, PCM_S32LE MP2, MATROSKA,      \
                                                ARESAMPLE_FILTER              \
                                                PCM_S32BE_ENCODER)            \
                                += fate-matroska-h264-remux
-fate-matroska-h264-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts matroska "-map 0:0 -map 0 -c:v copy -sar:0 3:4 -bsf:v:1 h264_metadata=aud=remove:delete_filler=1 -disposition:v +hearing_impaired -af aresample -c:a:0 pcm_s32le -c:a:1 pcm_s32be -disposition:a:0 original -metadata:s:a:0 title=swedish_silence -metadata:s:a:1 title=norwegian_silence -disposition:a:1 dub" "-map 0:v" "" "-show_entries stream=index,codec_name:stream_tags=title,language"
+fate-matroska-h264-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts matroska "-map 0:0 -map 0 -c:v copy -sar:0 3:4 -bsf:v:1 h264_metadata=aud=remove:delete_filler=1 -disposition:v +hearing_impaired -af aresample -c:a:0 pcm_s32le -c:a:1 pcm_s32be -disposition:a:0 original -metadata:s:a:0 title=swedish_silence -metadata:s:a:1 title=norwegian_silence -disposition:a:1 dub" "-map 0:v" "-show_entries stream=index,codec_name:stream_tags=title,language"
 
 # Tests writing BlockAdditional and BlockGroups with ReferenceBlock elements;
 # it also tests setting a track as suitable for hearing impaired.
@@ -156,12 +156,12 @@ fate-matroska-h264-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/h264/h264_int
 # (the input file lacks ReferenceBlock elements making everything a keyframe).
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, VP8_PARSER)  \
                                += fate-matroska-vp8-alpha-remux
-fate-matroska-vp8-alpha-remux: CMD = transcode matroska $(TARGET_SAMPLES)/vp8_alpha/vp8_video_with_alpha.webm matroska "-c copy -disposition +hearing_impaired -cluster_size_limit 100000" "-c copy -t 0.2" "" "-show_entries stream_disposition:stream_side_data_list"
+fate-matroska-vp8-alpha-remux: CMD = transcode matroska $(TARGET_SAMPLES)/vp8_alpha/vp8_video_with_alpha.webm matroska "-c copy -disposition +hearing_impaired -cluster_size_limit 100000" "-c copy -t 0.2" "-show_entries stream_disposition:stream_side_data_list"
 
 # The audio stream to be remuxed here has AV_DISPOSITION_VISUAL_IMPAIRED.
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MPEGTS_DEMUXER AC3_DECODER) \
                                += fate-matroska-mpegts-remux
-fate-matroska-mpegts-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/mpegts/pmtchange.ts matroska "-map 0:2 -map 0:2 -c copy -disposition:a:1 -visual_impaired+hearing_impaired -default_mode infer" "-map 0 -c copy" "" "-show_entries stream_disposition:stream=index"
+fate-matroska-mpegts-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/mpegts/pmtchange.ts matroska "-map 0:2 -map 0:2 -c copy -disposition:a:1 -visual_impaired+hearing_impaired -default_mode infer" "-map 0 -c copy" "-show_entries stream_disposition:stream=index"
 
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
@@ -172,7 +172,7 @@ fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entrie
 # with multiple CueTrackPositions if the timestamps coincide.
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, WEBM MATROSKA, WEBVTT_DEMUXER) \
                                += fate-webm-webvtt-remux
-fate-webm-webvtt-remux: CMD = transcode webvtt $(TARGET_SAMPLES)/sub/WebVTT_capability_tester.vtt webm "-map 0 -map 0 -map 0 -map 0 -c:s copy -disposition:0 original+descriptions+hearing_impaired -disposition:1 lyrics+default+metadata -disposition:2 comment+forced -disposition:3 karaoke+captions+dub" "-map 0:0 -map 0:1 -c copy" "" "-show_entries stream_disposition:stream=index,codec_name:packet=stream_index,pts:packet_side_data_list -show_data_hash CRC32"
+fate-webm-webvtt-remux: CMD = transcode webvtt $(TARGET_SAMPLES)/sub/WebVTT_capability_tester.vtt webm "-map 0 -map 0 -map 0 -map 0 -c:s copy -disposition:0 original+descriptions+hearing_impaired -disposition:1 lyrics+default+metadata -disposition:2 comment+forced -disposition:3 karaoke+captions+dub" "-map 0:0 -map 0:1 -c copy" "-show_entries stream_disposition:stream=index,codec_name:packet=stream_index,pts:packet_side_data_list -show_data_hash CRC32"
 
 FATE_SAMPLES_AVCONV += $(FATE_MATROSKA-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_MATROSKA_FFPROBE-yes)

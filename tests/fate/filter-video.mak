@@ -584,7 +584,7 @@ fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 FATE_FILTER_PP = fate-filter-pp fate-filter-pp1 fate-filter-pp2 fate-filter-pp3 fate-filter-pp4 fate-filter-pp5 fate-filter-pp6
 FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += $(FATE_FILTER_PP)
 $(FATE_FILTER_PP): fate-vsynth1-mpeg4-qprd
-fate-vsynth1-mpeg4-qprd: KEEP_OVERRIDE= -keep
+fate-vsynth1-mpeg4-qprd: KEEP_FILES ?= 1
 
 fate-filter-pp:  CMD = framecrc -flags bitexact -export_side_data venc_params -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "pp=be/hb/vb/tn/l5/al"
 fate-filter-pp1: CMD = video_filter "pp=fq|4/be/hb/vb/tn/l5/al"
@@ -857,7 +857,7 @@ fate-filter-metadata-avf-aphase-meter-out-of-phase: SRC = $(TARGET_SAMPLES)/filt
 fate-filter-metadata-avf-aphase-meter-out-of-phase: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',aphasemeter=video=0"
 
 FATE_FILTER_SAMPLES-$(call TRANSCODE, RAWVIDEO H264, MOV, ARESAMPLE_FILTER  AAC_FIXED_DECODER) += fate-filter-meta-4560-rotate0
-fate-filter-meta-4560-rotate0: CMD = transcode mov $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c copy -metadata:s:v:0 rotate=0" "-af aresample" "" "" "" "-flags +bitexact -c:a aac_fixed"
+fate-filter-meta-4560-rotate0: CMD = transcode mov $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c copy -metadata:s:v:0 rotate=0" "-af aresample" "" "" "-flags +bitexact -c:a aac_fixed"
 
 REFCMP_DEPS = FFMPEG LAVFI_INDEV TESTSRC2_FILTER AVGBLUR_FILTER METADATA_FILTER
 

@@ -6,7 +6,7 @@ fate-vsynth%: CODEC = $(word 3, $(subst -, ,$(@)))
 fate-vsynth%: FMT = avi
 fate-vsynth%: DEFAULT_SIZE = -s 352x288
 fate-vsynth3-%: DEFAULT_SIZE = -s $(FATEW)x$(FATEH)
-fate-vsynth%: CMD = enc_dec "rawvideo $(DEFAULT_SIZE) -pix_fmt yuv420p $(RAWDECOPTS)" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-pix_fmt yuv420p -vsync passthrough $(DECOPTS)" "$(KEEP_OVERRIDE)" "$(DECINOPTS)"
+fate-vsynth%: CMD = enc_dec "rawvideo $(DEFAULT_SIZE) -pix_fmt yuv420p $(RAWDECOPTS)" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-pix_fmt yuv420p -vsync passthrough $(DECOPTS)" "$(DECINOPTS)"
 fate-vsynth%: CMP_UNIT = 1
 fate-vsynth%: REF = $(SRC_PATH)/tests/ref/vsynth/$(@:fate-%=%)
 

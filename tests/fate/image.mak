@@ -338,7 +338,7 @@ FATE_JPG += fate-jpg-jfif
 fate-jpg-jfif: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/20242.jpg
 
 FATE_JPG_TRANSCODE-$(call TRANSCODE, MJPEG, MJPEG IMAGE_JPEG_PIPE, IMAGE_PNG_PIPE_DEMUXER PNG_DECODER SCALE_FILTER) += fate-jpg-icc
-fate-jpg-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png mjpeg "-vf scale" "" "" "-show_frames"
+fate-jpg-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png mjpeg "-vf scale" "" "-show_frames"
 
 FATE_JPG-$(call DEMDEC, IMAGE2, MJPEG) += $(FATE_JPG)
 FATE_IMAGE_FRAMECRC += $(FATE_JPG-yes)
@@ -390,7 +390,7 @@ fate-png-side-data: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames \
     -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png
 
 FATE_PNG_TRANSCODE-$(call TRANSCODE, PNG, IMAGE2 IMAGE_PNG_PIPE) += fate-png-icc
-fate-png-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png image2 "-c png" "" "" "-show_frames"
+fate-png-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png image2 "-c png" "" "-show_frames"
 
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_PNG_PROBE-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG_PROBE)
