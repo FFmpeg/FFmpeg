@@ -310,6 +310,7 @@ lavf_audio(){
     t="${test#lavf-}"
     outdir="tests/data/lavf"
     file=${outdir}/lavf.$t
+    test "$keep" -ge 1 || cleanfiles="$cleanfiles $file"
     do_avconv $file -auto_conversion_filters $DEC_OPTS $1 -ar 44100 -f s16le -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -t 1 -qscale 10 $2
     test "$4" = "disable_crc" ||
         do_avconv_crc $file -auto_conversion_filters $DEC_OPTS $3 -i $target_path/$file
@@ -319,6 +320,7 @@ lavf_container(){
     t="${test#lavf-}"
     outdir="tests/data/lavf"
     file=${outdir}/lavf.$t
+    test "$keep" -ge 1 || cleanfiles="$cleanfiles $file"
     do_avconv $file -auto_conversion_filters $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le $1 -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -b:a 64k -t 1 -qscale:v 10 $2
     test "$3" = "disable_crc" ||
         do_avconv_crc $file -auto_conversion_filters $DEC_OPTS -i $target_path/$file $3
@@ -347,11 +349,18 @@ lavf_container_fate()
 }
 
 lavf_image(){
+    nb_frames=13
     t="${test#lavf-}"
     outdir="tests/data/images/$t"
     mkdir -p "$outdir"
     file=${outdir}/%02d.$t
-    run_avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $1 "$ENC_OPTS -metadata title=lavftest" -vf scale -frames 13 -y -qscale 10 $target_path/$file
+    if [ "$keep" -lt 1 ]; then
+        for i in `seq $nb_frames`; do
+            filename=`printf "$file" $i`
+            cleanfiles="$cleanfiles $filename"
+        done
+    fi
+    run_avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $1 "$ENC_OPTS -metadata title=lavftest" -vf scale -frames $nb_frames -y -qscale 10 $target_path/$file
     do_md5sum ${outdir}/02.$t
     do_avconv_crc $file -auto_conversion_filters $DEC_OPTS $2 -i $target_path/$file $2
     echo $(wc -c ${outdir}/02.$t)
@@ -370,6 +379,7 @@ lavf_video(){
     t="${test#lavf-}"
     outdir="tests/data/lavf"
     file=${outdir}/lavf.$t
+    test "$keep" -ge 1 || cleanfiles="$cleanfiles $file"
     do_avconv $file -auto_conversion_filters $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src "$ENC_OPTS -metadata title=lavftest" -t 1 -qscale 10 $1 $2
     do_avconv_crc $file -auto_conversion_filters $DEC_OPTS -i $target_path/$file $1
 }
