@@ -408,7 +408,6 @@ struct eac3_info {
     } substream[1]; /* TODO: support 8 independent substreams */
 };
 
-#if CONFIG_AC3_PARSER
 static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 {
     AC3HeaderInfo *hdr = NULL;
@@ -549,7 +548,6 @@ end:
 
     return ret;
 }
-#endif
 
 static int mov_write_eac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
@@ -6093,7 +6091,6 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-#if CONFIG_AC3_PARSER
     } else if (par->codec_id == AV_CODEC_ID_EAC3) {
         size = handle_eac3(mov, pkt, trk);
         if (size < 0)
@@ -6101,7 +6098,6 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         else if (!size)
             goto end;
         avio_write(pb, pkt->data, size);
-#endif
     } else if (par->codec_id == AV_CODEC_ID_EIA_608) {
         size = 8;
 
