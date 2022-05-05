@@ -3714,6 +3714,11 @@ performance. This option doesn't work if driver doesn't implement vaSyncBuffer
 function. Please make sure there are enough hw_frames allocated if a large
 number of async_depth is used.
 
+@item max_frame_size
+Set the allowed max size in bytes for each frame. If the frame size exceeds
+the limitation, encoder will adjust the QP value to control the frame size.
+Invalid in CQP rate control mode.
+
 @item rc_mode
 Set the rate control mode to use.  A given driver may only support a subset of
 modes.
