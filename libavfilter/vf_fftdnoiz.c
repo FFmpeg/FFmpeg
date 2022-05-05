@@ -55,6 +55,7 @@ typedef struct FFTdnoizContext {
     float amount;
     int   block_size;
     float overlap;
+    int   method;
     int   nb_prev;
     int   nb_next;
     int   planesf;
@@ -85,6 +86,12 @@ static const AVOption fftdnoiz_options[] = {
         OFFSET(block_size), AV_OPT_TYPE_INT,   {.i64=32},       8, 256, .flags = FLAGS },
     { "overlap", "set block overlap",
         OFFSET(overlap),    AV_OPT_TYPE_FLOAT, {.dbl=0.5},    0.2, 0.8, .flags = FLAGS },
+    { "method",  "set method of denoising",
+        OFFSET(method),     AV_OPT_TYPE_INT,   {.i64=0},        0,   1, .flags = TFLAGS, "method" },
+    { "wiener", "wiener method",
+        0,                  AV_OPT_TYPE_CONST, {.i64=0},        0,   0, .flags = TFLAGS, "method" },
+    { "hard",   "hard thresholding",
+        0,                  AV_OPT_TYPE_CONST, {.i64=1},        0,   0, .flags = TFLAGS, "method" },
     { "prev",    "set number of previous frames for temporal denoising",
         OFFSET(nb_prev),    AV_OPT_TYPE_INT,   {.i64=0},        0,   1, .flags = FLAGS },
     { "next",    "set number of next frames for temporal denoising",
@@ -495,6 +502,7 @@ static void filter_plane2d(FFTdnoizContext *s, int plane,
     const int block = p->b;
     const int nox = p->nox;
     const int noy = p->noy;
+    const int method = s->method;
     const int buffer_linesize = p->buffer_linesize / sizeof(float);
     const float depthx = (1 << (s->depth - 8)) * (1 << (s->depth - 8));
     const float sigma = s->sigma * depthx / (s->block_size * s->block_size);
@@ -514,7 +522,15 @@ static void filter_plane2d(FFTdnoizContext *s, int plane,
                     re = buff[j * 2    ];
                     im = buff[j * 2 + 1];
                     power = re * re + im * im;
-                    factor = fmaxf(limit, (power - sigma) / (power + 1e-15f));
+                    switch (method) {
+                    case 0:
+                        factor = fmaxf(limit, (power - sigma) / (power + 1e-15f));
+                        break;
+                    case 1:
+                        factor = power < sigma ? limit : 1.f;
+                        break;
+                    }
+
                     buff[j * 2    ] *= factor;
                     buff[j * 2 + 1] *= factor;
                 }

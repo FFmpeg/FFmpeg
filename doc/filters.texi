@@ -12347,6 +12347,9 @@ Set size of block in pixels, Default is 32, can be 8 to 256.
 @item overlap
 Set block overlap. Default is 0.5. Allowed range is from 0.2 to 0.8.
 
+@item method
+Set denoising method. Default is @code{wiener}, can also be @code{hard}.
+
 @item prev
 Set number of previous frames to use for denoising. By default is set to 0.
 
