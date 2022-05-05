@@ -26,12 +26,18 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+
+typedef struct MetaItem {
+    int64_t pts;
+    int nb_samples;
+} MetaItem;
 
 typedef struct AudioLimiterContext {
     const AVClass *class;
@@ -55,6 +61,14 @@ typedef struct AudioLimiterContext {
     int *nextpos;
     double *nextdelta;
 
+    int in_trim;
+    int out_pad;
+    int64_t next_in_pts;
+    int64_t next_out_pts;
+    int latency;
+
+    AVFifo *fifo;
+
     double delta;
     int nextiter;
     int nextlen;
@@ -73,6 +87,7 @@ static const AVOption alimiter_options[] = {
     { "asc",       "enable asc",       OFFSET(auto_release), AV_OPT_TYPE_BOOL,   {.i64=0},      0,    1, AF },
     { "asc_level", "set asc level",    OFFSET(asc_coeff),    AV_OPT_TYPE_DOUBLE, {.dbl=0.5},    0,    1, AF },
     { "level",     "auto level",       OFFSET(auto_level),   AV_OPT_TYPE_BOOL,   {.i64=1},      0,    1, AF },
+    { "latency",   "compensate delay", OFFSET(latency),      AV_OPT_TYPE_BOOL,   {.i64=0},      0,    1, AF },
     { NULL }
 };
 
@@ -129,6 +144,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     double *buf;
     int n, c, i;
+    int new_out_samples;
+    int64_t out_duration;
+    int64_t in_duration;
+    int64_t in_pts;
+    MetaItem meta;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -269,10 +289,67 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         dst += channels;
     }
 
+    in_duration = av_rescale_q(in->nb_samples,  inlink->time_base, av_make_q(1,  in->sample_rate));
+    in_pts = in->pts;
+    meta = (MetaItem){ in->pts, in->nb_samples };
+    av_fifo_write(s->fifo, &meta, 1);
     if (in != out)
         av_frame_free(&in);
 
+    new_out_samples = out->nb_samples;
+    if (s->in_trim > 0) {
+        int trim = FFMIN(new_out_samples, s->in_trim);
+        new_out_samples -= trim;
+        s->in_trim -= trim;
+    }
+
+    if (new_out_samples <= 0) {
+        av_frame_free(&out);
+        return 0;
+    } else if (new_out_samples < out->nb_samples) {
+        int offset = out->nb_samples - new_out_samples;
+        memmove(out->extended_data[0], out->extended_data[0] + sizeof(double) * offset * out->ch_layout.nb_channels,
+                sizeof(double) * new_out_samples * out->ch_layout.nb_channels);
+        out->nb_samples = new_out_samples;
+        s->in_trim = 0;
+    }
+
+    av_fifo_read(s->fifo, &meta, 1);
+
+    out_duration = av_rescale_q(out->nb_samples, inlink->time_base, av_make_q(1, out->sample_rate));
+    in_duration  = av_rescale_q(meta.nb_samples, inlink->time_base, av_make_q(1, out->sample_rate));
+    in_pts       = meta.pts;
+
+    if (s->next_out_pts != AV_NOPTS_VALUE && out->pts != s->next_out_pts &&
+        s->next_in_pts  != AV_NOPTS_VALUE && in_pts   == s->next_in_pts) {
+        out->pts = s->next_out_pts;
+    } else {
+        out->pts = in_pts;
+    }
+    s->next_in_pts  = in_pts   + in_duration;
+    s->next_out_pts = out->pts + out_duration;
+
     return ff_filter_frame(outlink, out);
+}
+
+static int request_frame(AVFilterLink* outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    AudioLimiterContext *s = (AudioLimiterContext*)ctx->priv;
+    int ret;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+
+    if (ret == AVERROR_EOF && s->out_pad > 0) {
+        AVFrame *frame = ff_get_audio_buffer(outlink, FFMIN(1024, s->out_pad));
+        if (!frame)
+            return AVERROR(ENOMEM);
+
+        s->out_pad -= frame->nb_samples;
+        frame->pts = s->next_in_pts;
+        return filter_frame(ctx->inputs[0], frame);
+    }
+    return ret;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -294,6 +371,15 @@ static int config_input(AVFilterLink *inlink)
     memset(s->nextpos, -1, obuffer_size * sizeof(*s->nextpos));
     s->buffer_size = inlink->sample_rate * s->attack * inlink->ch_layout.nb_channels;
     s->buffer_size -= s->buffer_size % inlink->ch_layout.nb_channels;
+    if (s->latency)
+        s->in_trim = s->out_pad = s->buffer_size / inlink->ch_layout.nb_channels - 1;
+    s->next_out_pts = AV_NOPTS_VALUE;
+    s->next_in_pts  = AV_NOPTS_VALUE;
+
+    s->fifo = av_fifo_alloc2(8, sizeof(MetaItem), AV_FIFO_FLAG_AUTO_GROW);
+    if (!s->fifo) {
+        return AVERROR(ENOMEM);
+    }
 
     if (s->buffer_size <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Attack is too small.\n");
@@ -310,6 +396,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->buffer);
     av_freep(&s->nextdelta);
     av_freep(&s->nextpos);
+
+    av_fifo_freep2(&s->fifo);
 }
 
 static const AVFilterPad alimiter_inputs[] = {
@@ -325,6 +413,7 @@ static const AVFilterPad alimiter_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
     },
 };
 

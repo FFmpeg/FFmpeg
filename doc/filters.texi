@@ -1995,6 +1995,11 @@ in release time while 1 produces higher release times.
 @item level
 Auto level output signal. Default is enabled.
 This normalizes audio back to 0dB if enabled.
+
+@item latency
+Compensate the delay introduced by using the lookahead buffer set with attack
+parameter. Also flush the valid audio data in the lookahead buffer when the
+stream hits EOF.
 @end table
 
 Depending on picked setting it is recommended to upsample input 2x or 4x times
