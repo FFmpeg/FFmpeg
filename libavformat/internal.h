@@ -245,38 +245,10 @@ typedef struct FFStream {
 
     FFFrac *priv_pts;
 
-#define MAX_STD_TIMEBASES (30*12+30+3+6)
     /**
      * Stream information used internally by avformat_find_stream_info()
      */
-    struct {
-        int64_t last_dts;
-        int64_t duration_gcd;
-        int duration_count;
-        int64_t rfps_duration_sum;
-        double (*duration_error)[2][MAX_STD_TIMEBASES];
-        int64_t codec_info_duration;
-        int64_t codec_info_duration_fields;
-        int frame_delay_evidence;
-
-        /**
-         * 0  -> decoder has not been searched for yet.
-         * >0 -> decoder found
-         * <0 -> decoder with codec_id == -found_decoder has not been found
-         */
-        int found_decoder;
-
-        int64_t last_duration;
-
-        /**
-         * Those are used for average framerate estimation.
-         */
-        int64_t fps_first_dts;
-        int     fps_first_dts_idx;
-        int64_t fps_last_dts;
-        int     fps_last_dts_idx;
-
-    } *info;
+    struct FFStreamInfo *info;
 
     AVIndexEntry *index_entries; /**< Only used if the format does not
                                     support seeking natively. */

@@ -40,6 +40,7 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #if CONFIG_NETWORK
 #include "network.h"
