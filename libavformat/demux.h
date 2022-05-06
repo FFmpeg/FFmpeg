@@ -203,4 +203,12 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_ba
 int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
                         AVBufferRef **buf, int size);
 
+/**
+ * Add side data to a packet for changing parameters to the given values.
+ * Parameters set to 0 aren't included in the change.
+ */
+int ff_add_param_change(AVPacket *pkt, int32_t channels,
+                        uint64_t channel_layout, int32_t sample_rate,
+                        int32_t width, int32_t height);
+
 #endif /* AVFORMAT_DEMUX_H */

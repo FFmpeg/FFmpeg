@@ -585,14 +585,6 @@ void avpriv_set_pts_info(AVStream *st, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den);
 
 /**
- * Add side data to a packet for changing parameters to the given values.
- * Parameters set to 0 aren't included in the change.
- */
-int ff_add_param_change(AVPacket *pkt, int32_t channels,
-                        uint64_t channel_layout, int32_t sample_rate,
-                        int32_t width, int32_t height);
-
-/**
  * Set the timebase for each stream from the corresponding codec timebase and
  * print it.
  */
