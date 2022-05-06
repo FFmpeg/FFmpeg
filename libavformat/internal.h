@@ -767,15 +767,6 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 
 /**
  * Chooses a timebase for muxing the specified stream.
- *
- * The chosen timebase allows sample accurate timestamps based
- * on the framerate or sample rate for audio streams. It also is
- * at least as precise as 1/min_precision would be.
- */
-AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precision);
-
-/**
- * Chooses a timebase for muxing the specified stream.
  */
 enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st);
 

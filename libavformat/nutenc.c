@@ -36,6 +36,26 @@
 #include "riff.h"
 #include "version.h"
 
+/**
+ * Chooses a timebase for muxing the specified stream.
+ *
+ * The chosen timebase allows sample accurate timestamps based
+ * on the framerate or sample rate for audio streams. It also is
+ * at least as precise as 1/min_precision would be.
+ */
+static AVRational choose_timebase(AVFormatContext *s, AVStream *st, int min_precision)
+{
+    AVRational q = st->time_base;
+
+    for (int j = 2; j < 14; j += 1 + (j > 2))
+        while (q.den / q.num < min_precision && q.num % j == 0)
+            q.num /= j;
+    while (q.den / q.num < min_precision && q.den < (1<<24))
+        q.den <<= 1;
+
+    return q;
+}
+
 static int find_expected_header(AVCodecParameters *p, int size, int key_frame,
                                 uint8_t out[64])
 {
@@ -728,7 +748,7 @@ static int nut_write_header(AVFormatContext *s)
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && st->codecpar->sample_rate) {
             time_base = (AVRational) {1, st->codecpar->sample_rate};
         } else {
-            time_base = ff_choose_timebase(s, st, 48000);
+            time_base = choose_timebase(s, st, 48000);
         }
 
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);

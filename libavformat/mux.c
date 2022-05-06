@@ -89,21 +89,6 @@ static void frac_add(FFFrac *f, int64_t incr)
     f->num = num;
 }
 
-AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precision)
-{
-    AVRational q;
-
-    q = st->time_base;
-
-    for (int j = 2; j < 14; j += 1 + (j > 2))
-        while (q.den / q.num < min_precision && q.num % j == 0)
-            q.num /= j;
-    while (q.den / q.num < min_precision && q.den < (1<<24))
-        q.den <<= 1;
-
-    return q;
-}
-
 enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st)
 {
     AVCodecParameters *par = st->codecpar;
