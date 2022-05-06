@@ -195,7 +195,7 @@ enc_dec_pcm(){
 }
 
 FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
-DEC_OPTS="-threads $threads -idct simple $FLAGS"
+DEC_OPTS="-threads $threads -thread_type $thread_type -idct simple $FLAGS"
 ENC_OPTS="-threads 1        -idct simple -dct fastint"
 
 enc_dec(){
