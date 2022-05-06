@@ -23,6 +23,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavformat/mux.h"
 #include "avformat.h"
 #include "internal.h"
 

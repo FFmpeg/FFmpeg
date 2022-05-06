@@ -21,13 +21,12 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/intfloat.h"
-#include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/timecode.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
 #include "gxf.h"
+#include "mux.h"
 
 #define GXF_SAMPLES_PER_FRAME 32768
 #define GXF_AUDIO_PACKET_SIZE 65536

@@ -44,6 +44,7 @@
 
 
 #include "libavformat/internal.h"
+#include "libavformat/mux.h"
 #include "avdevice.h"
 #include "alsa.h"
 

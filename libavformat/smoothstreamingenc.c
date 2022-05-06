@@ -20,24 +20,20 @@
  */
 
 #include "config.h"
-#include <float.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #include "avformat.h"
-#include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 #include "os_support.h"
 #include "avc.h"
 #include "url.h"
-#include "isom.h"
 
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
-#include "libavutil/file.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/intreadwrite.h"
 
 typedef struct Fragment {
     int64_t start_time, duration;

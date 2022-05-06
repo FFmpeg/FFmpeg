@@ -38,7 +38,6 @@
  */
 
 #include <inttypes.h>
-#include <math.h>
 #include <time.h>
 
 #include "libavutil/opt.h"
@@ -56,6 +55,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "avc.h"
+#include "mux.h"
 #include "mxf.h"
 #include "config.h"
 #include "version.h"

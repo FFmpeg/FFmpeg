@@ -48,6 +48,7 @@
 #endif
 #include "internal.h"
 #include "isom.h"
+#include "mux.h"
 #include "os_support.h"
 #include "url.h"
 #include "vpcc.h"

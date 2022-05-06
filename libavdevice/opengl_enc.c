@@ -54,9 +54,9 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavformat/mux.h"
 #include "libavdevice/avdevice.h"
 #include "opengl_enc_shaders.h"
 

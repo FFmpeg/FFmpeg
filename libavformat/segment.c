@@ -26,12 +26,11 @@
 
 #include "config_components.h"
 
-#include <float.h>
 #include <time.h>
 
 #include "avformat.h"
-#include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"

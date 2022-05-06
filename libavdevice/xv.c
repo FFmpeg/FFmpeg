@@ -35,7 +35,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
-#include "libavformat/internal.h"
+#include "libavformat/mux.h"
 #include "avdevice.h"
 
 typedef struct {

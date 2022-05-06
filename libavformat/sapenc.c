@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/time.h"
 #include "internal.h"
+#include "mux.h"
 #include "network.h"
 #include "os_support.h"
 #include "rtpenc_chain.h"

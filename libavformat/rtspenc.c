@@ -24,6 +24,7 @@
 #if HAVE_POLL_H
 #include <poll.h>
 #endif
+#include "mux.h"
 #include "network.h"
 #include "os_support.h"
 #include "rtsp.h"

@@ -509,14 +509,6 @@ char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
  */
 int ff_hex_to_data(uint8_t *data, const char *p);
 
-/**
- * Add packet to an AVFormatContext's packet_buffer list, determining its
- * interleaved position using compare() function argument.
- * @return 0 on success, < 0 on error. pkt will always be blank on return.
- */
-int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                             int (*compare)(AVFormatContext *, const AVPacket *, const AVPacket *));
-
 void ff_read_frame_flush(AVFormatContext *s);
 
 #define NTP_OFFSET 2208988800ULL
@@ -563,22 +555,6 @@ uint64_t ff_parse_ntp_time(uint64_t ntp_ts);
 int ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
                        const char *dest_addr, const char *dest_type,
                        int port, int ttl, AVFormatContext *fmt);
-
-/**
- * Write a packet to another muxer than the one the user originally
- * intended. Useful when chaining muxers, where one muxer internally
- * writes a received packet to another muxer.
- *
- * @param dst the muxer to write the packet to
- * @param dst_stream the stream index within dst to write the packet to
- * @param pkt the packet to be written. It will be returned blank when
- *            av_interleaved_write_frame() is used, unchanged otherwise.
- * @param src the muxer the packet originally was intended for
- * @param interleave 0->use av_write_frame, 1->av_interleaved_write_frame
- * @return the value av_write_frame returned
- */
-int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src, int interleave);
 
 /**
  * Read a whole line of text from AVIOContext. Stop reading after reaching
@@ -766,20 +742,6 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt);
 int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
                         AVBufferRef **buf, int size);
 
-/**
- * Interleave an AVPacket per dts so it can be muxed.
- * See the documentation of AVOutputFormat.interleave_packet for details.
- */
-int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
-                                 int flush, int has_packet);
-
-/**
- * Interleave packets directly in the order in which they arrive
- * without any sort of buffering.
- */
-int ff_interleave_packet_passthrough(AVFormatContext *s, AVPacket *pkt,
-                                     int flush, int has_packet);
-
 void ff_free_stream(AVFormatContext *s, AVStream *st);
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
@@ -892,19 +854,6 @@ int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t dts);
 void ff_rfps_calculate(AVFormatContext *ic);
 
 /**
- * Flags for AVFormatContext.write_uncoded_frame()
- */
-enum AVWriteUncodedFrameFlags {
-
-    /**
-     * Query whether the feature is possible on this stream.
-     * The frame argument is ignored.
-     */
-    AV_WRITE_UNCODED_FRAME_QUERY           = 0x0001,
-
-};
-
-/**
  * Copies the whilelists from one context to the other
  */
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
@@ -999,15 +948,6 @@ struct AVBPrint;
  * Finalize buf into extradata and set its size appropriately.
  */
 int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf);
-
-/**
- * Find the next packet in the interleaving queue for the given stream.
- *
- * @return a pointer to a packet if one was found, NULL otherwise.
- */
-const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream);
-
-int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset);
 
 int ff_lock_avformat(void);
 int ff_unlock_avformat(void);

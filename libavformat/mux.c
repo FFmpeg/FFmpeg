@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "version.h"
 #include "libavcodec/bsf.h"
 #include "libavcodec/internal.h"
@@ -30,7 +31,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 
