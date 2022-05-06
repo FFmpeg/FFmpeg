@@ -624,12 +624,6 @@ int ff_is_intra_only(enum AVCodecID id);
 enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 
 /**
- * Generate standard extradata for AVC-Intra based on width/height and field
- * order.
- */
-int ff_generate_avci_extradata(AVStream *st);
-
-/**
  * Copy side data from source to destination stream
  *
  * @param dst pointer to destination AVStream

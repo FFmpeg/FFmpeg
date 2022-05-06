@@ -211,4 +211,10 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
                         uint64_t channel_layout, int32_t sample_rate,
                         int32_t width, int32_t height);
 
+/**
+ * Generate standard extradata for AVC-Intra based on width/height and field
+ * order.
+ */
+int ff_generate_avci_extradata(AVStream *st);
+
 #endif /* AVFORMAT_DEMUX_H */
