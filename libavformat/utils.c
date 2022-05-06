@@ -1655,16 +1655,6 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
     return data;
 }
 
-int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options)
-{
-    if (!s->oformat)
-        return AVERROR(EINVAL);
-
-    if (!(s->oformat->flags & AVFMT_NOFILE))
-        return s->io_open(s, &s->pb, url, AVIO_FLAG_WRITE, options);
-    return 0;
-}
-
 void ff_format_io_close_default(AVFormatContext *s, AVIOContext *pb)
 {
     avio_close(pb);

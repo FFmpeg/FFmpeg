@@ -104,6 +104,16 @@ enum AVWriteUncodedFrameFlags {
 int ff_format_shift_data(AVFormatContext *s, int64_t read_start, int shift_size);
 
 /**
+ * Utility function to open IO stream of output format.
+ *
+ * @param s AVFormatContext
+ * @param url URL or file name to open for writing
+ * @options optional options which will be passed to io_open callback
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options);
+
+/**
  * Parse creation_time in AVFormatContext metadata if exists and warn if the
  * parsing fails.
  *

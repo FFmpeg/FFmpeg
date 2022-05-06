@@ -849,16 +849,6 @@ int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
  */
 #define FFERROR_REDO FFERRTAG('R','E','D','O')
 
-/**
- * Utility function to open IO stream of output format.
- *
- * @param s AVFormatContext
- * @param url URL or file name to open for writing
- * @options optional options which will be passed to io_open callback
- * @return >=0 on success, negative AVERROR in case of failure
- */
-int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options);
-
 /*
  * A wrapper around AVFormatContext.io_close that should be used
  * instead of calling the pointer directly.
