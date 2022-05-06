@@ -19,6 +19,7 @@
  */
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "libavutil/intreadwrite.h"
 
 typedef struct IVFEncContext {

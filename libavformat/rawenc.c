@@ -26,7 +26,7 @@
 
 #include "avformat.h"
 #include "rawenc.h"
-#include "internal.h"
+#include "mux.h"
 
 int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt)
 {

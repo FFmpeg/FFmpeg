@@ -34,6 +34,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "mpegts.h"
+#include "mux.h"
 
 #define PCR_TIME_BASE 27000000
 

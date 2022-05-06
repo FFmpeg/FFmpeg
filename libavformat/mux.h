@@ -57,6 +57,17 @@ const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream);
 int ff_get_muxer_ts_offset(AVFormatContext *s, int stream_index, int64_t *offset);
 
 /**
+ * Add a bitstream filter to a stream.
+ *
+ * @param st output stream to add a filter to
+ * @param name the name of the filter to add
+ * @param args filter-specific argument string
+ * @return  >0 on success;
+ *          AVERROR code on failure
+ */
+int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *args);
+
+/**
  * Write a packet to another muxer than the one the user originally
  * intended. Useful when chaining muxers, where one muxer internally
  * writes a received packet to another muxer.

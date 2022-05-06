@@ -1776,49 +1776,6 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
     return data;
 }
 
-int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *args)
-{
-    int ret;
-    const AVBitStreamFilter *bsf;
-    FFStream *const sti = ffstream(st);
-    AVBSFContext *bsfc;
-
-    av_assert0(!sti->bsfc);
-
-    if (!(bsf = av_bsf_get_by_name(name))) {
-        av_log(NULL, AV_LOG_ERROR, "Unknown bitstream filter '%s'\n", name);
-        return AVERROR_BSF_NOT_FOUND;
-    }
-
-    if ((ret = av_bsf_alloc(bsf, &bsfc)) < 0)
-        return ret;
-
-    bsfc->time_base_in = st->time_base;
-    if ((ret = avcodec_parameters_copy(bsfc->par_in, st->codecpar)) < 0) {
-        av_bsf_free(&bsfc);
-        return ret;
-    }
-
-    if (args && bsfc->filter->priv_class) {
-        if ((ret = av_set_options_string(bsfc->priv_data, args, "=", ":")) < 0) {
-            av_bsf_free(&bsfc);
-            return ret;
-        }
-    }
-
-    if ((ret = av_bsf_init(bsfc)) < 0) {
-        av_bsf_free(&bsfc);
-        return ret;
-    }
-
-    sti->bsfc = bsfc;
-
-    av_log(NULL, AV_LOG_VERBOSE,
-           "Automatically inserted bitstream filter '%s'; args='%s'\n",
-           name, args ? args : "");
-    return 1;
-}
-
 int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options)
 {
     if (!s->oformat)

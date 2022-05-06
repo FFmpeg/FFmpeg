@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
+#include "mux.h"
 #include "rawenc.h"
 
 #define MAX_EXTRADATA_SIZE 1024
