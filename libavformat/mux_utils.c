@@ -121,6 +121,34 @@ int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **op
     return 0;
 }
 
+int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src)
+{
+    int ret;
+
+    dst->id                  = src->id;
+    dst->time_base           = src->time_base;
+    dst->nb_frames           = src->nb_frames;
+    dst->disposition         = src->disposition;
+    dst->sample_aspect_ratio = src->sample_aspect_ratio;
+    dst->avg_frame_rate      = src->avg_frame_rate;
+    dst->r_frame_rate        = src->r_frame_rate;
+
+    av_dict_free(&dst->metadata);
+    ret = av_dict_copy(&dst->metadata, src->metadata, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_parameters_copy(dst->codecpar, src->codecpar);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_stream_side_data_copy(dst, src);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds)
 {
     AVDictionaryEntry *entry;

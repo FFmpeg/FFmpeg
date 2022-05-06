@@ -782,15 +782,6 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 int ff_generate_avci_extradata(AVStream *st);
 
 /**
- * Copy encoding parameters from source to destination stream
- *
- * @param dst pointer to destination AVStream
- * @param src pointer to source AVStream
- * @return >=0 on success, AVERROR code on error
- */
-int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src);
-
-/**
  * Copy side data from source to destination stream
  *
  * @param dst pointer to destination AVStream
