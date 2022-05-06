@@ -659,7 +659,7 @@ int ff_alloc_extradata(AVCodecParameters *par, int size);
  * @param size size of extradata
  * @return >= 0 if OK, AVERROR_xxx on error
  */
-int ff_get_extradata(AVFormatContext *s, AVCodecParameters *par, AVIOContext *pb, int size);
+int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int size);
 
 /**
  * Copies the whilelists from one context to the other
