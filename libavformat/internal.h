@@ -901,33 +901,6 @@ int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int 
  */
 int ff_standardize_creation_time(AVFormatContext *s);
 
-#define CONTAINS_PAL 2
-/**
- * Reshuffles the lines to use the user specified stride.
- *
- * @param ppkt input and output packet
- * @return negative error code or
- *         0 if no new packet was allocated
- *         non-zero if a new packet was allocated and ppkt has to be freed
- *         CONTAINS_PAL if in addition to a new packet the old contained a palette
- */
-int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecParameters *par, int expected_stride);
-
-/**
- * Retrieves the palette from a packet, either from side data, or
- * appended to the video data in the packet itself (raw video only).
- * It is commonly used after a call to ff_reshuffle_raw_rgb().
- *
- * Use 0 for the ret parameter to check for side data only.
- *
- * @param pkt pointer to packet before calling ff_reshuffle_raw_rgb()
- * @param ret return value from ff_reshuffle_raw_rgb(), or 0
- * @param palette pointer to palette buffer
- * @return negative error code or
- *         1 if the packet has a palette, else 0
- */
-int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette);
-
 struct AVBPrint;
 /**
  * Finalize buf into extradata and set its size appropriately.

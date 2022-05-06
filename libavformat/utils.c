@@ -1715,30 +1715,6 @@ int ff_standardize_creation_time(AVFormatContext *s)
     return ret;
 }
 
-int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette)
-{
-    uint8_t *side_data;
-    size_t size;
-
-    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
-    if (side_data) {
-        if (size != AVPALETTE_SIZE) {
-            av_log(s, AV_LOG_ERROR, "Invalid palette side data\n");
-            return AVERROR_INVALIDDATA;
-        }
-        memcpy(palette, side_data, AVPALETTE_SIZE);
-        return 1;
-    }
-
-    if (ret == CONTAINS_PAL) {
-        for (int i = 0; i < AVPALETTE_COUNT; i++)
-            palette[i] = AV_RL32(pkt->data + pkt->size - AVPALETTE_SIZE + i*4);
-        return 1;
-    }
-
-    return 0;
-}
-
 int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf)
 {
     int ret;

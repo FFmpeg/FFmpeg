@@ -28,6 +28,7 @@
 #include "config_components.h"
 #include "riff.h"
 #include "mpegts.h"
+#include "rawutils.h"
 #include "libavformat/avlanguage.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avutil.h"
