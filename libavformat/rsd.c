@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
+#include "demux.h"
 #include "internal.h"
 
 static const AVCodecTag rsd_tags[] = {

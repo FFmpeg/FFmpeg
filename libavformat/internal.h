@@ -653,15 +653,6 @@ int ff_rename(const char *url_src, const char *url_dst, void *logctx);
 int ff_alloc_extradata(AVCodecParameters *par, int size);
 
 /**
- * Allocate extradata with additional AV_INPUT_BUFFER_PADDING_SIZE at end
- * which is always set to 0 and fill it from pb.
- *
- * @param size size of extradata
- * @return >= 0 if OK, AVERROR_xxx on error
- */
-int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int size);
-
-/**
  * Copies the whilelists from one context to the other
  */
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);

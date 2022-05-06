@@ -26,6 +26,7 @@
 #include "libavutil/log.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "riff.h"
 
 int ff_get_guid(AVIOContext *s, ff_asf_guid *g)

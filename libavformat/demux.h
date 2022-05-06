@@ -217,4 +217,13 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
  */
 int ff_generate_avci_extradata(AVStream *st);
 
+/**
+ * Allocate extradata with additional AV_INPUT_BUFFER_PADDING_SIZE at end
+ * which is always set to 0 and fill it from pb.
+ *
+ * @param size size of extradata
+ * @return >= 0 if OK, AVERROR_xxx on error
+ */
+int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int size);
+
 #endif /* AVFORMAT_DEMUX_H */

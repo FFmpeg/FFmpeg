@@ -28,6 +28,7 @@
 #include <inttypes.h>
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "isom.h"
 #include "mov_chan.h"

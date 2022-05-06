@@ -359,22 +359,6 @@ int ff_alloc_extradata(AVCodecParameters *par, int size)
     return 0;
 }
 
-int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int size)
-{
-    int ret = ff_alloc_extradata(par, size);
-    if (ret < 0)
-        return ret;
-    ret = ffio_read_size(pb, par->extradata, size);
-    if (ret < 0) {
-        av_freep(&par->extradata);
-        par->extradata_size = 0;
-        av_log(logctx, AV_LOG_ERROR, "Failed to read extradata of size %d\n", size);
-        return ret;
-    }
-
-    return ret;
-}
-
 AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int s)
 {
     for (unsigned i = 0; i < ic->nb_programs; i++) {

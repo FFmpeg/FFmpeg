@@ -25,6 +25,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/packet_internal.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -349,4 +350,20 @@ int ff_generate_avci_extradata(AVStream *st)
     memcpy(st->codecpar->extradata, data, size);
 
     return 0;
+}
+
+int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int size)
+{
+    int ret = ff_alloc_extradata(par, size);
+    if (ret < 0)
+        return ret;
+    ret = ffio_read_size(pb, par->extradata, size);
+    if (ret < 0) {
+        av_freep(&par->extradata);
+        par->extradata_size = 0;
+        av_log(logctx, AV_LOG_ERROR, "Failed to read extradata of size %d\n", size);
+        return ret;
+    }
+
+    return ret;
 }
