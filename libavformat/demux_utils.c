@@ -73,3 +73,13 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_ba
 
     return chapter;
 }
+
+void av_format_inject_global_side_data(AVFormatContext *s)
+{
+    FFFormatContext *const si = ffformatcontext(s);
+    si->inject_global_side_data = 1;
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        ffstream(st)->inject_global_side_data = 1;
+    }
+}

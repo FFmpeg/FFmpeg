@@ -63,16 +63,6 @@ int ff_unlock_avformat(void)
     return ff_mutex_unlock(&avformat_mutex) ? -1 : 0;
 }
 
-void av_format_inject_global_side_data(AVFormatContext *s)
-{
-    FFFormatContext *const si = ffformatcontext(s);
-    si->inject_global_side_data = 1;
-    for (unsigned i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        ffstream(st)->inject_global_side_data = 1;
-    }
-}
-
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src)
 {
     av_assert0(!dst->codec_whitelist &&
