@@ -24,7 +24,9 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/tx.h"
 #include "internal.h"
+#include "window_func.h"
 
+#define MAX_BLOCK 256
 #define MAX_THREADS 32
 
 enum BufferTypes {
@@ -56,6 +58,7 @@ typedef struct FFTdnoizContext {
     int   block_size;
     float overlap;
     int   method;
+    int   window;
     int   nb_prev;
     int   nb_next;
     int   planesf;
@@ -66,6 +69,7 @@ typedef struct FFTdnoizContext {
     int nb_planes;
     int nb_threads;
     PlaneContext planes[4];
+    float win[MAX_BLOCK][MAX_BLOCK];
 
     AVTXContext *fft[MAX_THREADS], *ifft[MAX_THREADS];
     AVTXContext *fft_r[MAX_THREADS], *ifft_r[MAX_THREADS];
@@ -73,8 +77,8 @@ typedef struct FFTdnoizContext {
     av_tx_fn tx_fn, itx_fn;
     av_tx_fn tx_r_fn, itx_r_fn;
 
-    void (*import_row)(AVComplexFloat *dst, uint8_t *src, int rw, float scale);
-    void (*export_row)(AVComplexFloat *src, uint8_t *dst, int rw, int depth);
+    void (*import_row)(AVComplexFloat *dst, uint8_t *src, int rw, float scale, float *win, int off);
+    void (*export_row)(AVComplexFloat *src, uint8_t *dst, int rw, int depth, float *win);
 } FFTdnoizContext;
 
 #define OFFSET(x) offsetof(FFTdnoizContext, x)
@@ -82,11 +86,11 @@ typedef struct FFTdnoizContext {
 #define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption fftdnoiz_options[] = {
     { "sigma",   "set denoise strength",
-        OFFSET(sigma),      AV_OPT_TYPE_FLOAT, {.dbl=1},        0,  30, .flags = TFLAGS },
+        OFFSET(sigma),      AV_OPT_TYPE_FLOAT, {.dbl=1},        0, 100, .flags = TFLAGS },
     { "amount",  "set amount of denoising",
         OFFSET(amount),     AV_OPT_TYPE_FLOAT, {.dbl=1},     0.01,   1, .flags = TFLAGS },
     { "block",   "set block size",
-        OFFSET(block_size), AV_OPT_TYPE_INT,   {.i64=32},       8, 256, .flags = FLAGS },
+        OFFSET(block_size), AV_OPT_TYPE_INT,   {.i64=32}, 8, MAX_BLOCK, .flags = FLAGS },
     { "overlap", "set block overlap",
         OFFSET(overlap),    AV_OPT_TYPE_FLOAT, {.dbl=0.5},    0.2, 0.8, .flags = FLAGS },
     { "method",  "set method of denoising",
@@ -101,6 +105,7 @@ static const AVOption fftdnoiz_options[] = {
         OFFSET(nb_next),    AV_OPT_TYPE_INT,   {.i64=0},        0,   1, .flags = FLAGS },
     { "planes",  "set planes to filter",
         OFFSET(planesf),    AV_OPT_TYPE_INT,   {.i64=7},        0,  15, .flags = TFLAGS },
+    WIN_FUNC_OPTION("window", OFFSET(window), FLAGS, WFUNC_HANNING),
     { NULL }
 };
 
@@ -137,42 +142,40 @@ typedef struct ThreadData {
     float *src, *dst;
 } ThreadData;
 
-static void import_row8(AVComplexFloat *dst, uint8_t *src, int rw, float scale)
+static void import_row8(AVComplexFloat *dst, uint8_t *src, int rw,
+                        float scale, float *win, int off)
 {
-    int j;
-
-    for (j = 0; j < rw; j++) {
-        dst[j].re = src[j] * scale;
+    for (int j = 0; j < rw; j++) {
+        const int i = abs(j + off);
+        dst[j].re = src[i] * scale * win[j];
         dst[j].im = 0.f;
     }
 }
 
-static void export_row8(AVComplexFloat *src, uint8_t *dst, int rw, int depth)
+static void export_row8(AVComplexFloat *src, uint8_t *dst, int rw, int depth, float *win)
 {
-    int j;
-
-    for (j = 0; j < rw; j++)
-        dst[j] = av_clip_uint8(lrintf(src[j].re));
+    for (int j = 0; j < rw; j++)
+        dst[j] = av_clip_uint8(lrintf(src[j].re / win[j]));
 }
 
-static void import_row16(AVComplexFloat *dst, uint8_t *srcp, int rw, float scale)
+static void import_row16(AVComplexFloat *dst, uint8_t *srcp, int rw,
+                         float scale, float *win, int off)
 {
     uint16_t *src = (uint16_t *)srcp;
-    int j;
 
-    for (j = 0; j < rw; j++) {
-        dst[j].re = src[j] * scale;
+    for (int j = 0; j < rw; j++) {
+        const int i = abs(j + off);
+        dst[j].re = src[i] * scale * win[j];
         dst[j].im = 0;
     }
 }
 
-static void export_row16(AVComplexFloat *src, uint8_t *dstp, int rw, int depth)
+static void export_row16(AVComplexFloat *src, uint8_t *dstp, int rw, int depth, float *win)
 {
     uint16_t *dst = (uint16_t *)dstp;
-    int j;
 
-    for (j = 0; j < rw; j++)
-        dst[j] = av_clip_uintp2_c(src[j].re + 0.5f, depth);
+    for (int j = 0; j < rw; j++)
+        dst[j] = av_clip_uintp2_c(lrintf(src[j].re / win[j]), depth);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -180,6 +183,8 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     const AVPixFmtDescriptor *desc;
     FFTdnoizContext *s = ctx->priv;
+    float lut[MAX_BLOCK + 1];
+    float overlap;
     int i;
 
     desc = av_pix_fmt_desc_get(inlink->format);
@@ -218,7 +223,7 @@ static int config_input(AVFilterLink *inlink)
 
         p->b = s->block_size;
         p->n = 1.f / (p->b * p->b);
-        p->o = p->b * s->overlap;
+        p->o = lrintf(p->b * s->overlap);
         size = p->b - p->o;
         p->nox = (p->planewidth  + (size - 1)) / size;
         p->noy = (p->planeheight + (size - 1)) / size;
@@ -251,6 +256,13 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
+    generate_window_func(lut, s->block_size + 1, s->window, &overlap);
+
+    for (int y = 0; y < s->block_size; y++) {
+        for (int x = 0; x < s->block_size; x++)
+            s->win[y][x] = lut[y] * lut[x];
+    }
+
     return 0;
 }
 
@@ -264,6 +276,7 @@ static void import_block(FFTdnoizContext *s,
     const int height = p->planeheight;
     const int block = p->b;
     const int overlap = p->o;
+    const int hoverlap = overlap / 2;
     const int size = block - overlap;
     const int bpp = (s->depth + 7) / 8;
     const int data_linesize = p->data_linesize / sizeof(AVComplexFloat);
@@ -271,17 +284,19 @@ static void import_block(FFTdnoizContext *s,
     AVComplexFloat *hdata = p->hdata[jobnr];
     AVComplexFloat *hdata_out = p->hdata_out[jobnr];
     AVComplexFloat *vdata_out = p->vdata_out[jobnr];
-
-    const int rh = FFMIN(block, height - y * size);
-    const int rw = FFMIN(block, width  - x * size);
-    uint8_t *src = srcp + src_linesize * y * size + x * size * bpp;
+    const int woff = -hoverlap;
+    const int hoff = -hoverlap;
+    const int rh = FFMIN(block, height - y * size + hoverlap);
+    const int rw = FFMIN(block, width  - x * size + hoverlap);
     AVComplexFloat *ssrc, *ddst, *dst = hdata, *dst_out = hdata_out;
     float *bdst = buffer;
 
     buffer_linesize /= sizeof(float);
 
     for (int i = 0; i < rh; i++) {
-        s->import_row(dst, src, rw, scale);
+        uint8_t *src = srcp + src_linesize * abs(y * size + i + hoff) + x * size * bpp;
+
+        s->import_row(dst, src, rw, scale, s->win[i], woff);
         for (int j = rw; j < block; j++) {
             dst[j].re = dst[rw - 1].re;
             dst[j].im = 0.f;
@@ -289,7 +304,6 @@ static void import_block(FFTdnoizContext *s,
         s->tx_fn(s->fft[jobnr], dst_out, dst, sizeof(float));
 
         ddst = dst_out;
-        src += src_linesize;
         dst += data_linesize;
         dst_out += data_linesize;
     }
@@ -333,11 +347,8 @@ static void export_block(FFTdnoizContext *s,
     AVComplexFloat *hdata = p->hdata[jobnr];
     AVComplexFloat *hdata_out = p->hdata_out[jobnr];
     AVComplexFloat *vdata_out = p->vdata_out[jobnr];
-    const int woff = x == 0 ? 0 : hoverlap;
-    const int hoff = y == 0 ? 0 : hoverlap;
-    const int rw = x == 0 ? FFMIN(block, width)  : FFMIN(size, width  - x * size - woff);
-    const int rh = y == 0 ? FFMIN(block, height) : FFMIN(size, height - y * size - hoff);
-    uint8_t *dst = dstp + dst_linesize * (y * size + hoff) + (x * size + woff) * bpp;
+    const int rw = FFMIN(size, width  - x * size + hoverlap);
+    const int rh = FFMIN(size, height - y * size + hoverlap);
     AVComplexFloat *hdst, *vdst = vdata_out, *hdst_out = hdata_out;
     float *bsrc = buffer;
 
@@ -353,14 +364,15 @@ static void export_block(FFTdnoizContext *s,
         bsrc += buffer_linesize;
     }
 
-    hdst = hdata + hoff * data_linesize;
-    for (int i = 0; i < rh; i++) {
+    hdst = hdata + hoverlap * data_linesize;
+    for (int i = 0; i < rh && (y * size + i) < height; i++) {
+        uint8_t *dst = dstp + dst_linesize * (y * size + i) + x * size * bpp;
+
         s->itx_fn(s->ifft[jobnr], hdst_out, hdst, sizeof(float));
-        s->export_row(hdst_out + woff, dst, rw, depth);
+        s->export_row(hdst_out + hoverlap, dst, rw, depth, s->win[i + hoverlap] + hoverlap);
 
         hdst += data_linesize;
         hdst_out += data_linesize;
-        dst += dst_linesize;
     }
 }
 
@@ -503,12 +515,12 @@ static void filter_block2d(FFTdnoizContext *s, int plane,
             im = buff[j * 2 + 1];
             power = re * re + im * im;
             switch (method) {
-                case 0:
-                    factor = fmaxf(limit, (power - sigma) / (power + 1e-15f));
-                    break;
-                case 1:
-                    factor = power < sigma ? limit : 1.f;
-                    break;
+            case 0:
+                factor = fmaxf(limit, (power - sigma) / (power + 1e-15f));
+                break;
+            case 1:
+                factor = power < sigma ? limit : 1.f;
+                break;
             }
 
             buff[j * 2    ] *= factor;
@@ -635,7 +647,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             if (!direct)
                 av_image_copy_plane(out->data[plane], out->linesize[plane],
                                     s->cur->data[plane], s->cur->linesize[plane],
-                                    p->planewidth, p->planeheight);
+                                    p->planewidth * (1 + (s->depth > 8)), p->planeheight);
             continue;
         }
     }
