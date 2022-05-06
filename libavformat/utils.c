@@ -1140,24 +1140,6 @@ int ff_find_stream_index(const AVFormatContext *s, int id)
     return -1;
 }
 
-int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
-                         int std_compliance)
-{
-    if (ofmt) {
-        unsigned int codec_tag;
-        if (ofmt->query_codec)
-            return ofmt->query_codec(codec_id, std_compliance);
-        else if (ofmt->codec_tag)
-            return !!av_codec_get_tag2(ofmt->codec_tag, codec_id, &codec_tag);
-        else if (codec_id == ofmt->video_codec ||
-                 codec_id == ofmt->audio_codec ||
-                 codec_id == ofmt->subtitle_codec ||
-                 codec_id == ofmt->data_codec)
-            return 1;
-    }
-    return AVERROR_PATCHWELCOME;
-}
-
 int avformat_network_init(void)
 {
 #if CONFIG_NETWORK
