@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/packet_internal.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
@@ -82,4 +83,27 @@ void av_format_inject_global_side_data(AVFormatContext *s)
         AVStream *st = s->streams[i];
         ffstream(st)->inject_global_side_data = 1;
     }
+}
+
+int avformat_queue_attached_pictures(AVFormatContext *s)
+{
+    FFFormatContext *const si = ffformatcontext(s);
+    int ret;
+    for (unsigned i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
+            s->streams[i]->discard < AVDISCARD_ALL) {
+            if (s->streams[i]->attached_pic.size <= 0) {
+                av_log(s, AV_LOG_WARNING,
+                       "Attached picture on stream %d has invalid size, "
+                       "ignoring\n", i);
+                continue;
+            }
+
+            ret = avpriv_packet_list_put(&si->raw_packet_buffer,
+                                         &s->streams[i]->attached_pic,
+                                         av_packet_ref, 0);
+            if (ret < 0)
+                return ret;
+        }
+    return 0;
 }

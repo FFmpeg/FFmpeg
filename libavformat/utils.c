@@ -175,29 +175,6 @@ int av_filename_number_test(const char *filename)
            (av_get_frame_filename(buf, sizeof(buf), filename, 1) >= 0);
 }
 
-int avformat_queue_attached_pictures(AVFormatContext *s)
-{
-    FFFormatContext *const si = ffformatcontext(s);
-    int ret;
-    for (unsigned i = 0; i < s->nb_streams; i++)
-        if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
-            s->streams[i]->discard < AVDISCARD_ALL) {
-            if (s->streams[i]->attached_pic.size <= 0) {
-                av_log(s, AV_LOG_WARNING,
-                    "Attached picture on stream %d has invalid size, "
-                    "ignoring\n", i);
-                continue;
-            }
-
-            ret = avpriv_packet_list_put(&si->raw_packet_buffer,
-                                     &s->streams[i]->attached_pic,
-                                     av_packet_ref, 0);
-            if (ret < 0)
-                return ret;
-        }
-    return 0;
-}
-
 int ff_add_attached_pic(AVFormatContext *s, AVStream *st0, AVIOContext *pb,
                         AVBufferRef **buf, int size)
 {
