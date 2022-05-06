@@ -742,7 +742,17 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt);
 int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
                         AVBufferRef **buf, int size);
 
-void ff_free_stream(AVFormatContext *s, AVStream *st);
+/**
+ * Frees a stream without modifying the corresponding AVFormatContext.
+ * Must only be called if the latter doesn't matter or if the stream
+ * is not yet attached to an AVFormatContext.
+ */
+void ff_free_stream(AVStream **st);
+/**
+ * Remove a stream from its AVFormatContext and free it.
+ * The stream must be the last stream of the AVFormatContext.
+ */
+void ff_remove_stream(AVFormatContext *s, AVStream *st);
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
 
