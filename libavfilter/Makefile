@@ -20,6 +20,7 @@ OBJS = allfilters.o                                                     \
        framequeue.o                                                     \
        graphdump.o                                                      \
        graphparser.o                                                    \
+       version.o                                                        \
        video.o                                                          \
 
 OBJS-$(HAVE_THREADS)                         += pthread.o

@@ -24,31 +24,10 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
-#include "version.h"
 
 #include <float.h>
 
 #define ALIGN 32
-
-#include "libavutil/ffversion.h"
-const char swr_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
-
-unsigned swresample_version(void)
-{
-    av_assert0(LIBSWRESAMPLE_VERSION_MICRO >= 100);
-    return LIBSWRESAMPLE_VERSION_INT;
-}
-
-const char *swresample_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *swresample_license(void)
-{
-#define LICENSE_PREFIX "libswresample license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     if(!s || s->in_convert) // s needs to be allocated but not initialized

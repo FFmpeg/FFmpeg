@@ -174,6 +174,7 @@ OBJS = adler32.o                                                        \
        tx_float.o                                                       \
        tx_double.o                                                      \
        tx_int32.o                                                       \
+       version.o                                                        \
        video_enc_params.o                                               \
        film_grain_params.o                                              \
 

@@ -8,6 +8,7 @@ HEADERS = avdevice.h                                                    \
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
           utils.o                                                       \
+          version.o                                                     \
 
 OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 

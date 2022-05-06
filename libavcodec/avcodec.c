@@ -40,31 +40,6 @@
 #include "frame_thread_encoder.h"
 #include "internal.h"
 #include "thread.h"
-#include "version.h"
-
-#include "libavutil/ffversion.h"
-const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
-
-unsigned avcodec_version(void)
-{
-    av_assert0(AV_CODEC_ID_PCM_S8_PLANAR==65563);
-    av_assert0(AV_CODEC_ID_ADPCM_G722==69660);
-    av_assert0(AV_CODEC_ID_SRT==94216);
-    av_assert0(LIBAVCODEC_VERSION_MICRO >= 100);
-
-    return LIBAVCODEC_VERSION_INT;
-}
-
-const char *avcodec_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *avcodec_license(void)
-{
-#define LICENSE_PREFIX "libavcodec license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2), void *arg, int *ret, int count, int size)
 {

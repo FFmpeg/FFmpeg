@@ -14,6 +14,7 @@ OBJS = audioconvert.o                        \
        resample_dsp.o                        \
        swresample.o                          \
        swresample_frame.o                    \
+       version.o                             \
 
 OBJS-$(CONFIG_LIBSOXR) += soxr_resample.o
 

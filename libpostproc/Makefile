@@ -6,7 +6,8 @@ HEADERS = postprocess.h        \
           version.h            \
           version_major.h      \
 
-OBJS = postprocess.o
+OBJS = postprocess.o           \
+       version.o               \
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES) += postprocres.o

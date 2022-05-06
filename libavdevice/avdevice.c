@@ -17,38 +17,14 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/samplefmt.h"
-#include "libavutil/pixfmt.h"
 #include "avdevice.h"
 #include "internal.h"
-#include "config.h"
-#include "version.h"
-
-#include "libavutil/ffversion.h"
-const char av_device_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 #if FF_API_DEVICE_CAPABILITIES
 const AVOption av_device_capabilities[] = {
     { NULL }
 };
 #endif
-
-unsigned avdevice_version(void)
-{
-    av_assert0(LIBAVDEVICE_VERSION_MICRO >= 100);
-    return LIBAVDEVICE_VERSION_INT;
-}
-
-const char * avdevice_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char * avdevice_license(void)
-{
-#define LICENSE_PREFIX "libavdevice license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 int avdevice_app_to_dev_control_message(struct AVFormatContext *s, enum AVAppToDevMessageType type,
                                         void *data, size_t data_size)

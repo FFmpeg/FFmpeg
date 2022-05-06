@@ -46,10 +46,6 @@
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
-#include "version.h"
-
-#include "libavutil/ffversion.h"
-const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 static AVMutex avformat_mutex = AV_MUTEX_INITIALIZER;
 
@@ -57,23 +53,6 @@ static AVMutex avformat_mutex = AV_MUTEX_INITIALIZER;
  * @file
  * various utility functions for use within FFmpeg
  */
-
-unsigned avformat_version(void)
-{
-    av_assert0(LIBAVFORMAT_VERSION_MICRO >= 100);
-    return LIBAVFORMAT_VERSION_INT;
-}
-
-const char *avformat_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *avformat_license(void)
-{
-#define LICENSE_PREFIX "libavformat license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 int ff_lock_avformat(void)
 {

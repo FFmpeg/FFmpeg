@@ -89,29 +89,8 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //#define DEBUG_BRIGHTNESS
 #include "postprocess.h"
 #include "postprocess_internal.h"
-#include "version.h"
 #include "libavutil/avstring.h"
 #include "libavutil/ppc/util_altivec.h"
-
-#include "libavutil/ffversion.h"
-const char postproc_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
-
-unsigned postproc_version(void)
-{
-    av_assert0(LIBPOSTPROC_VERSION_MICRO >= 100);
-    return LIBPOSTPROC_VERSION_INT;
-}
-
-const char *postproc_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *postproc_license(void)
-{
-#define LICENSE_PREFIX "libpostproc license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 #define GET_MODE_BUFFER_SIZE 500
 #define OPTIONS_ARRAY_SIZE 10

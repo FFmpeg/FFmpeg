@@ -17,6 +17,7 @@ OBJS = alphablend.o                                     \
        swscale.o                                        \
        swscale_unscaled.o                               \
        utils.o                                          \
+       version.o                                        \
        yuv2rgb.o                                        \
        vscale.o                                         \
 

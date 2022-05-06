@@ -29,10 +29,8 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/samplefmt.h"
-#include "libavutil/thread.h"
 
 #define FF_INTERNAL_FIELDS 1
 #include "framequeue.h"
@@ -43,10 +41,6 @@
 #include "formats.h"
 #include "framepool.h"
 #include "internal.h"
-#include "version.h"
-
-#include "libavutil/ffversion.h"
-const char av_filter_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 static void tlog_ref(void *ctx, AVFrame *ref, int end)
 {
@@ -73,23 +67,6 @@ static void tlog_ref(void *ctx, AVFrame *ref, int end)
     }
 
     ff_tlog(ctx, "]%s", end ? "\n" : "");
-}
-
-unsigned avfilter_version(void)
-{
-    av_assert0(LIBAVFILTER_VERSION_MICRO >= 100);
-    return LIBAVFILTER_VERSION_INT;
-}
-
-const char *avfilter_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *avfilter_license(void)
-{
-#define LICENSE_PREFIX "libavfilter license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
 
 void ff_command_queue_pop(AVFilterContext *filter)

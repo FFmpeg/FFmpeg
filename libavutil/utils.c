@@ -19,54 +19,11 @@
 #include "config.h"
 #include "avutil.h"
 #include "avassert.h"
-#include "samplefmt.h"
-#include "internal.h"
 
 /**
  * @file
  * various utility functions
  */
-
-#include "libavutil/ffversion.h"
-const char av_util_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
-
-const char *av_version_info(void)
-{
-    return FFMPEG_VERSION;
-}
-
-unsigned avutil_version(void)
-{
-    av_assert0(AV_SAMPLE_FMT_DBLP == 9);
-    av_assert0(AVMEDIA_TYPE_ATTACHMENT == 4);
-    av_assert0(AV_PICTURE_TYPE_BI == 7);
-    av_assert0(LIBAVUTIL_VERSION_MICRO >= 100);
-    av_assert0(HAVE_MMX2 == HAVE_MMXEXT);
-
-    av_assert0(((size_t)-1) > 0); // C guarantees this but if false on a platform we care about revert at least b284e1ffe343d6697fb950d1ee517bafda8a9844
-
-    if (av_sat_dadd32(1, 2) != 5) {
-        av_log(NULL, AV_LOG_FATAL, "Libavutil has been built with a broken binutils, please upgrade binutils and rebuild\n");
-        abort();
-    }
-
-    if (llrint(1LL<<60) != 1LL<<60) {
-        av_log(NULL, AV_LOG_ERROR, "Libavutil has been linked to a broken llrint()\n");
-    }
-
-    return LIBAVUTIL_VERSION_INT;
-}
-
-const char *avutil_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *avutil_license(void)
-{
-#define LICENSE_PREFIX "libavutil license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 const char *av_get_media_type_string(enum AVMediaType media_type)
 {

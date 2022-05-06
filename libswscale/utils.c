@@ -40,8 +40,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/avutil.h"
-#include "libavutil/bswap.h"
 #include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -59,7 +57,6 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "version.h"
 
 static SwsVector *sws_getIdentityVec(void);
 static void sws_addVec(SwsVector *a, SwsVector *b);
@@ -67,23 +64,6 @@ static void sws_shiftVec(SwsVector *a, int shift);
 static void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
 
 static void handle_formats(SwsContext *c);
-
-unsigned swscale_version(void)
-{
-    av_assert0(LIBSWSCALE_VERSION_MICRO >= 100);
-    return LIBSWSCALE_VERSION_INT;
-}
-
-const char *swscale_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *swscale_license(void)
-{
-#define LICENSE_PREFIX "libswscale license: "
-    return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
-}
 
 typedef struct FormatEntry {
     uint8_t is_supported_in         :1;
