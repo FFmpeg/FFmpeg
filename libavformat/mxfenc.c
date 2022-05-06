@@ -2496,6 +2496,35 @@ static int mxf_init_timecode(AVFormatContext *s, AVStream *st, AVRational tbc)
         return av_timecode_init(&mxf->tc, av_inv_q(tbc), 0, 0, s);
 }
 
+static enum AVChromaLocation choose_chroma_location(AVFormatContext *s, AVStream *st)
+{
+    AVCodecParameters *par = st->codecpar;
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(par->format);
+
+    if (par->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        return par->chroma_location;
+
+    if (pix_desc) {
+        if (pix_desc->log2_chroma_h == 0) {
+            return AVCHROMA_LOC_TOPLEFT;
+        } else if (pix_desc->log2_chroma_w == 1 && pix_desc->log2_chroma_h == 1) {
+            if (par->field_order == AV_FIELD_UNKNOWN || par->field_order == AV_FIELD_PROGRESSIVE) {
+                switch (par->codec_id) {
+                case AV_CODEC_ID_MJPEG:
+                case AV_CODEC_ID_MPEG1VIDEO: return AVCHROMA_LOC_CENTER;
+                }
+            }
+            if (par->field_order == AV_FIELD_UNKNOWN || par->field_order != AV_FIELD_PROGRESSIVE) {
+                switch (par->codec_id) {
+                case AV_CODEC_ID_MPEG2VIDEO: return AVCHROMA_LOC_LEFT;
+                }
+            }
+        }
+    }
+
+    return AVCHROMA_LOC_UNSPECIFIED;
+}
+
 static int mxf_init(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -2544,7 +2573,7 @@ static int mxf_init(AVFormatContext *s)
                 sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
                 sc->v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
             }
-            switch (ff_choose_chroma_location(s, st)) {
+            switch (choose_chroma_location(s, st)) {
             case AVCHROMA_LOC_TOPLEFT: sc->color_siting = 0; break;
             case AVCHROMA_LOC_LEFT:    sc->color_siting = 6; break;
             case AVCHROMA_LOC_TOP:     sc->color_siting = 1; break;

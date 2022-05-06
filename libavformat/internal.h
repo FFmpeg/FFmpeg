@@ -766,11 +766,6 @@ int ff_is_intra_only(enum AVCodecID id);
 enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 
 /**
- * Chooses a timebase for muxing the specified stream.
- */
-enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st);
-
-/**
  * Generate standard extradata for AVC-Intra based on width/height and field
  * order.
  */

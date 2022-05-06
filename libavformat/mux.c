@@ -28,7 +28,6 @@
 #include "libavcodec/packet_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
@@ -87,36 +86,6 @@ static void frac_add(FFFrac *f, int64_t incr)
         num     = num % den;
     }
     f->num = num;
-}
-
-enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st)
-{
-    AVCodecParameters *par = st->codecpar;
-    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(par->format);
-
-    if (par->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
-        return par->chroma_location;
-
-    if (pix_desc) {
-        if (pix_desc->log2_chroma_h == 0) {
-            return AVCHROMA_LOC_TOPLEFT;
-        } else if (pix_desc->log2_chroma_w == 1 && pix_desc->log2_chroma_h == 1) {
-            if (par->field_order == AV_FIELD_UNKNOWN || par->field_order == AV_FIELD_PROGRESSIVE) {
-                switch (par->codec_id) {
-                case AV_CODEC_ID_MJPEG:
-                case AV_CODEC_ID_MPEG1VIDEO: return AVCHROMA_LOC_CENTER;
-                }
-            }
-            if (par->field_order == AV_FIELD_UNKNOWN || par->field_order != AV_FIELD_PROGRESSIVE) {
-                switch (par->codec_id) {
-                case AV_CODEC_ID_MPEG2VIDEO: return AVCHROMA_LOC_LEFT;
-                }
-            }
-        }
-    }
-
-    return AVCHROMA_LOC_UNSPECIFIED;
-
 }
 
 int avformat_alloc_output_context2(AVFormatContext **avctx, const AVOutputFormat *oformat,
