@@ -103,4 +103,24 @@ enum AVWriteUncodedFrameFlags {
  */
 int ff_format_shift_data(AVFormatContext *s, int64_t read_start, int shift_size);
 
+/**
+ * Parse creation_time in AVFormatContext metadata if exists and warn if the
+ * parsing fails.
+ *
+ * @param s AVFormatContext
+ * @param timestamp parsed timestamp in microseconds, only set on successful parsing
+ * @param return_seconds set this to get the number of seconds in timestamp instead of microseconds
+ * @return 1 if OK, 0 if the metadata was not present, AVERROR(EINVAL) on parse error
+ */
+int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds);
+
+/**
+ * Standardize creation_time metadata in AVFormatContext to an ISO-8601
+ * timestamp string.
+ *
+ * @param s AVFormatContext
+ * @return <0 on error
+ */
+int ff_standardize_creation_time(AVFormatContext *s);
+
 #endif /* AVFORMAT_MUX_H */

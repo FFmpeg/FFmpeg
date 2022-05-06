@@ -29,6 +29,7 @@
 #include "avlanguage.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "mux.h"
 #include "riff.h"
 #include "asf.h"
 

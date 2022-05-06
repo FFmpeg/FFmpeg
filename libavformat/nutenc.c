@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpegaudiodata.h"
+#include "mux.h"
 #include "nut.h"
 #include "internal.h"
 #include "avio_internal.h"

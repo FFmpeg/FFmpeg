@@ -29,7 +29,6 @@
 #include "libavutil/dict.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/thread.h"
 #include "libavutil/time.h"
@@ -1687,32 +1686,6 @@ int ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
 int ff_is_http_proto(const char *filename) {
     const char *proto = avio_find_protocol_name(filename);
     return proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
-}
-
-int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds)
-{
-    AVDictionaryEntry *entry;
-    int64_t parsed_timestamp;
-    int ret;
-    if ((entry = av_dict_get(s->metadata, "creation_time", NULL, 0))) {
-        if ((ret = av_parse_time(&parsed_timestamp, entry->value, 0)) >= 0) {
-            *timestamp = return_seconds ? parsed_timestamp / 1000000 : parsed_timestamp;
-            return 1;
-        } else {
-            av_log(s, AV_LOG_WARNING, "Failed to parse creation_time %s\n", entry->value);
-            return ret;
-        }
-    }
-    return 0;
-}
-
-int ff_standardize_creation_time(AVFormatContext *s)
-{
-    int64_t timestamp;
-    int ret = ff_parse_creation_time_metadata(s, &timestamp, 0);
-    if (ret == 1)
-        return avpriv_dict_set_timestamp(&s->metadata, "creation_time", timestamp);
-    return ret;
 }
 
 int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf)

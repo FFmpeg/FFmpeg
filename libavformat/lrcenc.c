@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "lrc.h"
 #include "metadata.h"
+#include "mux.h"
 #include "version.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"

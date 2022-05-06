@@ -23,6 +23,7 @@
 #include "caf.h"
 #include "isom.h"
 #include "avio_internal.h"
+#include "mux.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
 
