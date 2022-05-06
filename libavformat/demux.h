@@ -171,4 +171,6 @@ void ff_rfps_calculate(AVFormatContext *ic);
 void ff_rescale_interval(AVRational tb_in, AVRational tb_out,
                          int64_t *min_ts, int64_t *ts, int64_t *max_ts);
 
+void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);
+
 #endif /* AVFORMAT_DEMUX_H */

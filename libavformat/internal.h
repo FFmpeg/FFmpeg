@@ -415,8 +415,6 @@ static av_always_inline const FFStream *cffstream(const AVStream *st)
     return (FFStream*)st;
 }
 
-void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);
-
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\

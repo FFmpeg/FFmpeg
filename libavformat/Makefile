@@ -10,6 +10,7 @@ OBJS = allformats.o         \
        avio.o               \
        aviobuf.o            \
        demux.o              \
+       demux_utils.o        \
        dump.o               \
        format.o             \
        id3v1.o              \

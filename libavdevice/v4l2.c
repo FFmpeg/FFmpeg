@@ -34,6 +34,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavformat/demux.h"
 #include "v4l2-common.h"
 #include <dirent.h>
 

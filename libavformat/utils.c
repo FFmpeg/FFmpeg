@@ -63,16 +63,6 @@ int ff_unlock_avformat(void)
     return ff_mutex_unlock(&avformat_mutex) ? -1 : 0;
 }
 
-struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
-{
-    return cffstream(st)->parser;
-}
-
-void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type)
-{
-    ffstream(st)->need_parsing = type;
-}
-
 void av_format_inject_global_side_data(AVFormatContext *s)
 {
     FFFormatContext *const si = ffformatcontext(s);
