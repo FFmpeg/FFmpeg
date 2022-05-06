@@ -599,22 +599,6 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
 int ff_framehash_write_header(AVFormatContext *s);
 
 /**
- * Add an attached pic to an AVStream.
- *
- * @param st   if set, the stream to add the attached pic to;
- *             if unset, a new stream will be added to s.
- * @param pb   AVIOContext to read data from if buf is unset.
- * @param buf  if set, it contains the data and size information to be used
- *             for the attached pic; if unset, data is read from pb.
- * @param size the size of the data to read if buf is unset.
- *
- * @return 0 on success, < 0 on error. On error, this function removes
- *         the stream it has added (if any).
- */
-int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
-                        AVBufferRef **buf, int size);
-
-/**
  * Frees a stream without modifying the corresponding AVFormatContext.
  * Must only be called if the latter doesn't matter or if the stream
  * is not yet attached to an AVFormatContext.

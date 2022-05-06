@@ -187,4 +187,20 @@ void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);
 AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_base,
                               int64_t start, int64_t end, const char *title);
 
+/**
+ * Add an attached pic to an AVStream.
+ *
+ * @param st   if set, the stream to add the attached pic to;
+ *             if unset, a new stream will be added to s.
+ * @param pb   AVIOContext to read data from if buf is unset.
+ * @param buf  if set, it contains the data and size information to be used
+ *             for the attached pic; if unset, data is read from pb.
+ * @param size the size of the data to read if buf is unset.
+ *
+ * @return 0 on success, < 0 on error. On error, this function removes
+ *         the stream it has added (if any).
+ */
+int ff_add_attached_pic(AVFormatContext *s, AVStream *st, AVIOContext *pb,
+                        AVBufferRef **buf, int size);
+
 #endif /* AVFORMAT_DEMUX_H */

@@ -23,6 +23,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/png.h"
 #include "avformat.h"
+#include "demux.h"
 #include "flac_picture.h"
 #include "id3v2.h"
 #include "internal.h"

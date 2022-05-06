@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "apetag.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 

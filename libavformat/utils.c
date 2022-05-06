@@ -175,41 +175,6 @@ int av_filename_number_test(const char *filename)
            (av_get_frame_filename(buf, sizeof(buf), filename, 1) >= 0);
 }
 
-int ff_add_attached_pic(AVFormatContext *s, AVStream *st0, AVIOContext *pb,
-                        AVBufferRef **buf, int size)
-{
-    AVStream *st = st0;
-    AVPacket *pkt;
-    int ret;
-
-    if (!st && !(st = avformat_new_stream(s, NULL)))
-        return AVERROR(ENOMEM);
-    pkt = &st->attached_pic;
-    if (buf) {
-        av_assert1(*buf);
-        av_packet_unref(pkt);
-        pkt->buf  = *buf;
-        pkt->data = (*buf)->data;
-        pkt->size = (*buf)->size - AV_INPUT_BUFFER_PADDING_SIZE;
-        *buf = NULL;
-    } else {
-        ret = av_get_packet(pb, pkt, size);
-        if (ret < 0)
-            goto fail;
-    }
-    st->disposition         |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-
-    pkt->stream_index = st->index;
-    pkt->flags       |= AV_PKT_FLAG_KEY;
-
-    return 0;
-fail:
-    if (!st0)
-        ff_remove_stream(s, st);
-    return ret;
-}
-
 /**********************************************************/
 
 int ff_is_intra_only(enum AVCodecID id)

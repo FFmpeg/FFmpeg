@@ -19,6 +19,7 @@
  */
 
 #include "asf.h"
+#include "demux.h"
 #include "id3v2.h"
 #include "internal.h"
 
