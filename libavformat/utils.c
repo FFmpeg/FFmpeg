@@ -62,14 +62,6 @@ int ff_unlock_avformat(void)
     return ff_mutex_unlock(&avformat_mutex) ? -1 : 0;
 }
 
-int64_t av_stream_get_end_pts(const AVStream *st)
-{
-    if (cffstream(st)->priv_pts) {
-        return cffstream(st)->priv_pts->val;
-    } else
-        return AV_NOPTS_VALUE;
-}
-
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *st)
 {
     return cffstream(st)->parser;
