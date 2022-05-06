@@ -96,4 +96,11 @@ enum AVWriteUncodedFrameFlags {
 
 };
 
+/**
+ * Make shift_size amount of space at read_start by shifting data in the output
+ * at read_start until the current IO position. The underlying IO context must
+ * be seekable.
+ */
+int ff_format_shift_data(AVFormatContext *s, int64_t read_start, int shift_size);
+
 #endif /* AVFORMAT_MUX_H */

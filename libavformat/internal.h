@@ -947,13 +947,6 @@ void ff_format_set_url(AVFormatContext *s, char *url);
 void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[]);
 
 /**
- * Make shift_size amount of space at read_start by shifting data in the output
- * at read_start until the current IO position. The underlying IO context must
- * be seekable.
- */
-int ff_format_shift_data(AVFormatContext *s, int64_t read_start, int shift_size);
-
-/**
  * Rescales a timestamp and the endpoints of an interval to which the temstamp
  * belongs, from a timebase `tb_in` to a timebase `tb_out`.
  *

@@ -33,8 +33,8 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
-#include "internal.h"
 #include "avio_internal.h"
+#include "mux.h"
 
 typedef struct FILMOutputContext {
     AVIOContext *header;

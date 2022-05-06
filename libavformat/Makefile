@@ -17,6 +17,7 @@ OBJS = allformats.o         \
        isom_tags.o          \
        metadata.o           \
        mux.o                \
+       mux_utils.o          \
        options.o            \
        os_support.o         \
        protocols.o          \
