@@ -32,6 +32,7 @@
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "avi.h"
+#include "demux.h"
 #include "dv.h"
 #include "internal.h"
 #include "isom.h"

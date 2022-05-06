@@ -32,6 +32,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/time_internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "wtv.h"
 #include "mpegts.h"

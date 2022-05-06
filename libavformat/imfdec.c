@@ -63,6 +63,7 @@
  */
 
 #include "avio_internal.h"
+#include "demux.h"
 #include "imf.h"
 #include "internal.h"
 #include "libavcodec/packet.h"
@@ -71,7 +72,6 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "mxf.h"
-#include "url.h"
 #include <inttypes.h>
 #include <libxml/parser.h>
 

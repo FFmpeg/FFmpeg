@@ -23,6 +23,7 @@
 #include "libavcodec/unary.h"
 #include "apetag.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 

@@ -460,21 +460,6 @@ do {\
 } while(0)
 #endif
 
-#define RELATIVE_TS_BASE (INT64_MAX - (1LL << 48))
-
-static av_always_inline int is_relative(int64_t ts)
-{
-    return ts > (RELATIVE_TS_BASE - (1LL << 48));
-}
-
-/**
- * Wrap a given time stamp, if there is an indication for an overflow
- *
- * @param st stream
- * @param timestamp the time stamp to wrap
- * @return resulting time stamp
- */
-int64_t ff_wrap_timestamp(const AVStream *st, int64_t timestamp);
 
 void ff_flush_packet_queue(AVFormatContext *s);
 
@@ -508,8 +493,6 @@ char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
  * @return the number of bytes written (or to be written, if data is null)
  */
 int ff_hex_to_data(uint8_t *data, const char *p);
-
-void ff_read_frame_flush(AVFormatContext *s);
 
 #define NTP_OFFSET 2208988800ULL
 #define NTP_OFFSET_US (NTP_OFFSET * 1000000ULL)
@@ -612,22 +595,6 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
 int ff_find_stream_index(const AVFormatContext *s, int id);
 
 /**
- * Internal version of av_index_search_timestamp
- */
-int ff_index_search_timestamp(const AVIndexEntry *entries, int nb_entries,
-                              int64_t wanted_timestamp, int flags);
-
-/**
- * Internal version of av_add_index_entry
- */
-int ff_add_index_entry(AVIndexEntry **index_entries,
-                       int *nb_index_entries,
-                       unsigned int *index_entries_allocated_size,
-                       int64_t pos, int64_t timestamp, int size, int distance, int flags);
-
-void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance);
-
-/**
  * Add a new chapter.
  *
  * @param s media file handle
@@ -641,52 +608,10 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance);
 AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_base,
                               int64_t start, int64_t end, const char *title);
 
-/**
- * Ensure the index uses less memory than the maximum specified in
- * AVFormatContext.max_index_size by discarding entries if it grows
- * too large.
- */
-void ff_reduce_index(AVFormatContext *s, int stream_index);
-
 enum AVCodecID ff_guess_image2_codec(const char *filename);
 
 const AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
                                enum AVCodecID codec_id);
-/**
- * Perform a binary search using av_index_search_timestamp() and
- * AVInputFormat.read_timestamp().
- *
- * @param target_ts target timestamp in the time base of the given stream
- * @param stream_index stream number
- */
-int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
-                         int64_t target_ts, int flags);
-
-/**
- * Update cur_dts of all streams based on the given timestamp and AVStream.
- *
- * Stream ref_st unchanged, others set cur_dts in their native time base.
- * Only needed for timestamp wrapping or if (dts not set and pts!=dts).
- * @param timestamp new dts expressed in time_base of param ref_st
- * @param ref_st reference stream giving time_base of param timestamp
- */
-void avpriv_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
-
-int ff_find_last_ts(AVFormatContext *s, int stream_index, int64_t *ts, int64_t *pos,
-                    int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
-
-/**
- * Perform a binary search using read_timestamp().
- *
- * @param target_ts target timestamp in the time base of the given stream
- * @param stream_index stream number
- */
-int64_t ff_gen_search(AVFormatContext *s, int stream_index,
-                      int64_t target_ts, int64_t pos_min,
-                      int64_t pos_max, int64_t pos_limit,
-                      int64_t ts_min, int64_t ts_max,
-                      int flags, int64_t *ts_ret,
-                      int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 
 /**
  * Set the time base and wrapping info for a given stream. This will be used
@@ -716,15 +641,6 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
  * print it.
  */
 int ff_framehash_write_header(AVFormatContext *s);
-
-/**
- * Read a transport packet from a media file.
- *
- * @param s media file handle
- * @param pkt is filled
- * @return 0 if OK, AVERROR_xxx on error
- */
-int ff_read_packet(AVFormatContext *s, AVPacket *pkt);
 
 /**
  * Add an attached pic to an AVStream.
@@ -820,16 +736,6 @@ int ff_alloc_extradata(AVCodecParameters *par, int size);
 int ff_get_extradata(AVFormatContext *s, AVCodecParameters *par, AVIOContext *pb, int size);
 
 /**
- * add frame for rfps calculation.
- *
- * @param dts timestamp of the i-th frame
- * @return 0 if OK, AVERROR_xxx on error
- */
-int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t dts);
-
-void ff_rfps_calculate(AVFormatContext *ic);
-
-/**
  * Copies the whilelists from one context to the other
  */
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
@@ -879,25 +785,5 @@ int ff_unlock_avformat(void);
 void ff_format_set_url(AVFormatContext *s, char *url);
 
 void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[]);
-
-/**
- * Rescales a timestamp and the endpoints of an interval to which the temstamp
- * belongs, from a timebase `tb_in` to a timebase `tb_out`.
- *
- * The upper (lower) bound of the output interval is rounded up (down) such that
- * the output interval always falls within the intput interval. The timestamp is
- * rounded to the nearest integer and halfway cases away from zero, and can
- * therefore fall outside of the output interval.
- *
- * Useful to simplify the rescaling of the arguments of AVInputFormat::read_seek2()
- *
- * @param[in] tb_in      Timebase of the input `min_ts`, `ts` and `max_ts`
- * @param[in] tb_out     Timebase of the ouput `min_ts`, `ts` and `max_ts`
- * @param[in,out] min_ts Lower bound of the interval
- * @param[in,out] ts     Timestamp
- * @param[in,out] max_ts Upper bound of the interval
- */
-void ff_rescale_interval(AVRational tb_in, AVRational tb_out,
-                         int64_t *min_ts, int64_t *ts, int64_t *max_ts);
 
 #endif /* AVFORMAT_INTERNAL_H */

@@ -24,12 +24,11 @@
  * Magic Lantern Video (MLV) demuxer
  */
 
-#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/rational.h"
 #include "avformat.h"
-#include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "riff.h"
 

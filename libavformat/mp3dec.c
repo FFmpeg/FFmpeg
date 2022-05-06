@@ -20,14 +20,13 @@
  */
 
 #include "libavutil/opt.h"
-#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/crc.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "id3v2.h"
 #include "id3v1.h"
 #include "replaygain.h"

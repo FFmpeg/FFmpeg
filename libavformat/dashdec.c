@@ -21,13 +21,13 @@
  */
 #include <libxml/parser.h>
 #include "libavutil/bprint.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/parseutils.h"
 #include "internal.h"
 #include "avio_internal.h"
 #include "dash.h"
+#include "demux.h"
 
 #define INITIAL_BUFFER_SIZE 32768
 

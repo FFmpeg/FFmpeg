@@ -59,6 +59,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "avlanguage.h"
+#include "demux.h"
 #include "internal.h"
 #include "mxf.h"
 

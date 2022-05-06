@@ -29,6 +29,7 @@
 #include "libavutil/tree.h"
 #include "libavcodec/bytestream.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "isom.h"
 #include "nut.h"
 #include "riff.h"

@@ -37,6 +37,7 @@
 #include "libavutil/opt.h"
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 
 typedef struct CDIOContext {

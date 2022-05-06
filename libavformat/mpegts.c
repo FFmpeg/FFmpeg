@@ -39,6 +39,7 @@
 #include "mpegts.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "mpeg.h"
 #include "isom.h"
 #if CONFIG_ICONV

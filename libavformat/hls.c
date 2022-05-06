@@ -39,6 +39,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/time.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 #include "id3v2.h"
