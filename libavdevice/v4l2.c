@@ -34,7 +34,15 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/time.h"
+#include "libavcodec/codec_desc.h"
 #include "libavformat/demux.h"
+#include "libavformat/internal.h"
+#include "avdevice.h"
+#include "timefilter.h"
 #include "v4l2-common.h"
 #include <dirent.h>
 
