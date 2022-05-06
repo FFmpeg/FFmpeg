@@ -110,6 +110,8 @@ enum Jpeg2000Quantsty { // quantization style
 #define JPEG2000_CSTY_PREC      0x01 // Precincts defined in coding style
 #define JPEG2000_CSTY_SOP       0x02 // SOP marker present
 #define JPEG2000_CSTY_EPH       0x04 // EPH marker present
+#define JPEG2000_CTSY_HTJ2K_F   0x40 // Only HT code-blocks (Rec. ITU-T T.814 | ISO/IEC 15444-15) are present
+#define JPEG2000_CTSY_HTJ2K_M   0xC0 // HT code blocks (Rec. ITU-T T.814 | ISO/IEC 15444-15) can be present
 
 // Progression orders
 #define JPEG2000_PGOD_LRCP      0x00  // Layer-resolution level-component-position progression
