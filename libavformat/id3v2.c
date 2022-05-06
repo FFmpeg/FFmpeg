@@ -38,7 +38,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/png.h"
 #include "avio_internal.h"
-#include "internal.h"
+#include "demux.h"
 #include "id3v1.h"
 #include "id3v2.h"
 

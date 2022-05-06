@@ -173,4 +173,18 @@ void ff_rescale_interval(AVRational tb_in, AVRational tb_out,
 
 void avpriv_stream_set_need_parsing(AVStream *st, enum AVStreamParseType type);
 
+/**
+ * Add a new chapter.
+ *
+ * @param s media file handle
+ * @param id unique ID for this chapter
+ * @param start chapter start time in time_base units
+ * @param end chapter end time in time_base units
+ * @param title chapter title
+ *
+ * @return AVChapter or NULL on error
+ */
+AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_base,
+                              int64_t start, int64_t end, const char *title);
+
 #endif /* AVFORMAT_DEMUX_H */

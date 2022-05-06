@@ -564,20 +564,6 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
  */
 int ff_find_stream_index(const AVFormatContext *s, int id);
 
-/**
- * Add a new chapter.
- *
- * @param s media file handle
- * @param id unique ID for this chapter
- * @param start chapter start time in time_base units
- * @param end chapter end time in time_base units
- * @param title chapter title
- *
- * @return AVChapter or NULL on error
- */
-AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_base,
-                              int64_t start, int64_t end, const char *title);
-
 enum AVCodecID ff_guess_image2_codec(const char *filename);
 
 const AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
