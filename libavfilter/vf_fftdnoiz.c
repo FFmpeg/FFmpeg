@@ -398,7 +398,7 @@ static void filter_block3d2(FFTdnoizContext *s, int plane, float *pbuffer, float
             for (int z = 0; z < 3; z++) {
                 const float re = outbuffer[z].re;
                 const float im = outbuffer[z].im;
-                const float power = re * re + im * im;;
+                const float power = re * re + im * im;
                 float factor;
 
                 switch (method) {
@@ -456,7 +456,7 @@ static void filter_block3d1(FFTdnoizContext *s, int plane, float *pbuffer,
             for (int z = 0; z < 2; z++) {
                 const float re = outbuffer[z].re;
                 const float im = outbuffer[z].im;
-                const float power = re * re + im * im;;
+                const float power = re * re + im * im;
                 float factor;
 
                 switch (method) {
