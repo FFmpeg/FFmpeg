@@ -697,10 +697,3 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
     par->extradata_size = buf->len;
     return 0;
 }
-
-void ff_format_set_url(AVFormatContext *s, char *url)
-{
-    av_assert0(url);
-    av_freep(&s->url);
-    s->url = url;
-}

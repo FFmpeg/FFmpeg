@@ -691,3 +691,10 @@ int ff_is_intra_only(enum AVCodecID id)
         return 0;
     return 1;
 }
+
+void ff_format_set_url(AVFormatContext *s, char *url)
+{
+    av_assert0(url);
+    av_freep(&s->url);
+    s->url = url;
+}
