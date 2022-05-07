@@ -808,12 +808,22 @@ static int qsv_frames_derive_from(AVHWFramesContext *dst_ctx,
 #if CONFIG_D3D11VA
     case AV_HWDEVICE_TYPE_D3D11VA:
         {
+            D3D11_TEXTURE2D_DESC texDesc;
+            dst_ctx->initial_pool_size = src_ctx->initial_pool_size;
             AVD3D11VAFramesContext *dst_hwctx = dst_ctx->hwctx;
-            mfxHDLPair *pair = (mfxHDLPair*)src_hwctx->surfaces[i].Data.MemId;
-            dst_hwctx->texture = (ID3D11Texture2D*)pair->first;
+            dst_hwctx->texture_infos = av_calloc(src_hwctx->nb_surfaces,
+                                                 sizeof(*dst_hwctx->texture_infos));
+            if (!dst_hwctx->texture_infos)
+                return AVERROR(ENOMEM);
             if (src_hwctx->frame_type & MFX_MEMTYPE_SHARED_RESOURCE)
                 dst_hwctx->MiscFlags = D3D11_RESOURCE_MISC_SHARED;
-            dst_hwctx->BindFlags = qsv_get_d3d11va_bind_flags(src_hwctx->frame_type);
+            for (i = 0; i < src_hwctx->nb_surfaces; i++) {
+                mfxHDLPair *pair = (mfxHDLPair*)src_hwctx->surfaces[i].Data.MemId;
+                dst_hwctx->texture_infos[i].texture = (ID3D11Texture2D*)pair->first;
+                dst_hwctx->texture_infos[i].index = pair->second == (mfxMemId)MFX_INFINITE ? (intptr_t)0 : (intptr_t)pair->second;
+            }
+            ID3D11Texture2D_GetDesc(dst_hwctx->texture_infos[0].texture, &texDesc);
+            dst_hwctx->BindFlags = texDesc.BindFlags;
         }
         break;
 #endif
