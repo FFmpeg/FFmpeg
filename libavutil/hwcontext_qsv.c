@@ -914,7 +914,7 @@ static int qsv_map_from(AVHWFramesContext *ctx,
        if (child_frames_ctx->device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
             mfxHDLPair *pair = (mfxHDLPair*)surf->Data.MemId;
             dst->data[0] = pair->first;
-            dst->data[1] = pair->second;
+            dst->data[1] = pair->second == (mfxMemId)MFX_INFINITE ? (uint8_t *)0 : pair->second;
         } else {
             dst->data[3] = child_data;
         }
@@ -944,7 +944,7 @@ static int qsv_map_from(AVHWFramesContext *ctx,
     if (child_frames_ctx->device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
         mfxHDLPair *pair = (mfxHDLPair*)surf->Data.MemId;
         dummy->data[0] = pair->first;
-        dummy->data[1] = pair->second;
+        dummy->data[1] = pair->second == (mfxMemId)MFX_INFINITE ? (uint8_t *)0 : pair->second;
     } else {
         dummy->data[3] = child_data;
     }
@@ -1362,7 +1362,8 @@ static int qsv_map_to(AVHWFramesContext *dst_ctx,
         {
             mfxHDLPair *pair = (mfxHDLPair*)hwctx->surfaces[i].Data.MemId;
             if (pair->first == src->data[0]
-                && pair->second == src->data[1]) {
+                && (pair->second == src->data[1]
+                    || (pair->second == (mfxMemId)MFX_INFINITE && src->data[1] == (uint8_t *)0))) {
                 index = i;
                 break;
             }
