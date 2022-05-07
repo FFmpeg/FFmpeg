@@ -152,19 +152,6 @@ int av_filename_number_test(const char *filename)
 
 /**********************************************************/
 
-int ff_is_intra_only(enum AVCodecID id)
-{
-    const AVCodecDescriptor *d = avcodec_descriptor_get(id);
-    if (!d)
-        return 0;
-    if ((d->type == AVMEDIA_TYPE_VIDEO || d->type == AVMEDIA_TYPE_AUDIO) &&
-        !(d->props & AV_CODEC_PROP_INTRA_ONLY))
-        return 0;
-    return 1;
-}
-
-/*******************************************************/
-
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id)
 {
     while (tags->id != AV_CODEC_ID_NONE) {

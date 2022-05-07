@@ -30,6 +30,7 @@
 #include "libavutil/samplefmt.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bsf.h"
+#include "libavcodec/codec_desc.h"
 #include "libavcodec/packet_internal.h"
 #include "avformat.h"
 #include "demux.h"
@@ -678,4 +679,15 @@ const AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
     }
 
     return avcodec_find_decoder(codec_id);
+}
+
+int ff_is_intra_only(enum AVCodecID id)
+{
+    const AVCodecDescriptor *d = avcodec_descriptor_get(id);
+    if (!d)
+        return 0;
+    if ((d->type == AVMEDIA_TYPE_VIDEO || d->type == AVMEDIA_TYPE_AUDIO) &&
+        !(d->props & AV_CODEC_PROP_INTRA_ONLY))
+        return 0;
+    return 1;
 }
