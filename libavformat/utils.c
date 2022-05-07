@@ -575,24 +575,6 @@ int avformat_network_deinit(void)
     return 0;
 }
 
-void ff_format_io_close_default(AVFormatContext *s, AVIOContext *pb)
-{
-    avio_close(pb);
-}
-
-int ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
-{
-    int ret = 0;
-    if (*pb) {
-        if (s->io_close == ff_format_io_close_default || s->io_close == NULL)
-            ret = s->io_close2(s, *pb);
-        else
-            s->io_close(s, *pb);
-    }
-    *pb = NULL;
-    return ret;
-}
-
 int ff_is_http_proto(const char *filename) {
     const char *proto = avio_find_protocol_name(filename);
     return proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;

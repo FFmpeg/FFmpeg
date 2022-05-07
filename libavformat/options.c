@@ -151,6 +151,11 @@ static int io_open_default(AVFormatContext *s, AVIOContext **pb,
     return ffio_open_whitelist(pb, url, flags, &s->interrupt_callback, options, s->protocol_whitelist, s->protocol_blacklist);
 }
 
+void ff_format_io_close_default(AVFormatContext *s, AVIOContext *pb)
+{
+    avio_close(pb);
+}
+
 static int io_close2_default(AVFormatContext *s, AVIOContext *pb)
 {
     return avio_close(pb);

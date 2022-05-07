@@ -33,6 +33,7 @@
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/packet_internal.h"
 #include "avformat.h"
+#include "avio.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -773,4 +774,17 @@ void ff_format_set_url(AVFormatContext *s, char *url)
     av_assert0(url);
     av_freep(&s->url);
     s->url = url;
+}
+
+int ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
+{
+    int ret = 0;
+    if (*pb) {
+        if (s->io_close == ff_format_io_close_default || s->io_close == NULL)
+            ret = s->io_close2(s, *pb);
+        else
+            s->io_close(s, *pb);
+    }
+    *pb = NULL;
+    return ret;
 }
