@@ -681,6 +681,26 @@ const AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
     return avcodec_find_decoder(codec_id);
 }
 
+int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src)
+{
+    av_assert0(!dst->codec_whitelist &&
+               !dst->format_whitelist &&
+               !dst->protocol_whitelist &&
+               !dst->protocol_blacklist);
+    dst-> codec_whitelist = av_strdup(src->codec_whitelist);
+    dst->format_whitelist = av_strdup(src->format_whitelist);
+    dst->protocol_whitelist = av_strdup(src->protocol_whitelist);
+    dst->protocol_blacklist = av_strdup(src->protocol_blacklist);
+    if (   (src-> codec_whitelist && !dst-> codec_whitelist)
+        || (src->  format_whitelist && !dst->  format_whitelist)
+        || (src->protocol_whitelist && !dst->protocol_whitelist)
+        || (src->protocol_blacklist && !dst->protocol_blacklist)) {
+        av_log(dst, AV_LOG_ERROR, "Failed to duplicate black/whitelist\n");
+        return AVERROR(ENOMEM);
+    }
+    return 0;
+}
+
 int ff_is_intra_only(enum AVCodecID id)
 {
     const AVCodecDescriptor *d = avcodec_descriptor_get(id);

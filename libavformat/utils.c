@@ -23,7 +23,6 @@
 
 #include "config.h"
 
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/internal.h"
@@ -54,26 +53,6 @@ int ff_lock_avformat(void)
 int ff_unlock_avformat(void)
 {
     return ff_mutex_unlock(&avformat_mutex) ? -1 : 0;
-}
-
-int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src)
-{
-    av_assert0(!dst->codec_whitelist &&
-               !dst->format_whitelist &&
-               !dst->protocol_whitelist &&
-               !dst->protocol_blacklist);
-    dst-> codec_whitelist = av_strdup(src->codec_whitelist);
-    dst->format_whitelist = av_strdup(src->format_whitelist);
-    dst->protocol_whitelist = av_strdup(src->protocol_whitelist);
-    dst->protocol_blacklist = av_strdup(src->protocol_blacklist);
-    if (   (src-> codec_whitelist && !dst-> codec_whitelist)
-        || (src->  format_whitelist && !dst->  format_whitelist)
-        || (src->protocol_whitelist && !dst->protocol_whitelist)
-        || (src->protocol_blacklist && !dst->protocol_blacklist)) {
-        av_log(dst, AV_LOG_ERROR, "Failed to duplicate black/whitelist\n");
-        return AVERROR(ENOMEM);
-    }
-    return 0;
 }
 
 /* an arbitrarily chosen "sane" max packet size -- 50M */
