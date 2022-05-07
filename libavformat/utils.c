@@ -181,42 +181,6 @@ int ff_is_intra_only(enum AVCodecID id)
     return 1;
 }
 
-int av_find_default_stream_index(AVFormatContext *s)
-{
-    int best_stream = 0;
-    int best_score = INT_MIN;
-
-    if (s->nb_streams <= 0)
-        return -1;
-    for (unsigned i = 0; i < s->nb_streams; i++) {
-        const AVStream *const st = s->streams[i];
-        const FFStream *const sti = cffstream(st);
-        int score = 0;
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if (st->disposition & AV_DISPOSITION_ATTACHED_PIC)
-                score -= 400;
-            if (st->codecpar->width && st->codecpar->height)
-                score += 50;
-            score+= 25;
-        }
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (st->codecpar->sample_rate)
-                score += 50;
-        }
-        if (sti->codec_info_nb_frames)
-            score += 12;
-
-        if (st->discard != AVDISCARD_ALL)
-            score += 200;
-
-        if (score > best_score) {
-            best_score = score;
-            best_stream = i;
-        }
-    }
-    return best_stream;
-}
-
 /*******************************************************/
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id)
