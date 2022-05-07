@@ -196,3 +196,61 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
 
     return data;
 }
+
+AVProgram *av_new_program(AVFormatContext *ac, int id)
+{
+    AVProgram *program = NULL;
+    int ret;
+
+    av_log(ac, AV_LOG_TRACE, "new_program: id=0x%04x\n", id);
+
+    for (unsigned i = 0; i < ac->nb_programs; i++)
+        if (ac->programs[i]->id == id)
+            program = ac->programs[i];
+
+    if (!program) {
+        program = av_mallocz(sizeof(*program));
+        if (!program)
+            return NULL;
+        ret = av_dynarray_add_nofree(&ac->programs, &ac->nb_programs, program);
+        if (ret < 0) {
+            av_free(program);
+            return NULL;
+        }
+        program->discard = AVDISCARD_NONE;
+        program->pmt_version = -1;
+        program->id = id;
+        program->pts_wrap_reference = AV_NOPTS_VALUE;
+        program->pts_wrap_behavior = AV_PTS_WRAP_IGNORE;
+        program->start_time =
+        program->end_time   = AV_NOPTS_VALUE;
+    }
+    return program;
+}
+
+void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned idx)
+{
+    AVProgram *program = NULL;
+    void *tmp;
+
+    if (idx >= ac->nb_streams) {
+        av_log(ac, AV_LOG_ERROR, "stream index %d is not valid\n", idx);
+        return;
+    }
+
+    for (unsigned i = 0; i < ac->nb_programs; i++) {
+        if (ac->programs[i]->id != progid)
+            continue;
+        program = ac->programs[i];
+        for (unsigned j = 0; j < program->nb_stream_indexes; j++)
+            if (program->stream_index[j] == idx)
+                return;
+
+        tmp = av_realloc_array(program->stream_index, program->nb_stream_indexes+1, sizeof(unsigned int));
+        if (!tmp)
+            return;
+        program->stream_index = tmp;
+        program->stream_index[program->nb_stream_indexes++] = idx;
+        return;
+    }
+}
