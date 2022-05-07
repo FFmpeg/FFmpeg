@@ -117,9 +117,9 @@ OBJS-$(CONFIG_ARGO_BRP_DEMUXER)          += argo_brp.o argo_asf.o
 OBJS-$(CONFIG_ARGO_CVG_DEMUXER)          += argo_cvg.o
 OBJS-$(CONFIG_ARGO_CVG_MUXER)            += argo_cvg.o
 OBJS-$(CONFIG_ASF_DEMUXER)               += asfdec_f.o asf.o asfcrypt.o \
-                                            avlanguage.o
+                                            asf_tags.o avlanguage.o
 OBJS-$(CONFIG_ASF_O_DEMUXER)             += asfdec_o.o asf.o asfcrypt.o \
-                                            avlanguage.o
+                                            asf_tags.o avlanguage.o
 OBJS-$(CONFIG_ASF_MUXER)                 += asfenc.o asf.o avlanguage.o
 OBJS-$(CONFIG_ASS_DEMUXER)               += assdec.o subtitles.o
 OBJS-$(CONFIG_ASS_MUXER)                 += assenc.o
@@ -649,8 +649,8 @@ OBJS-$(CONFIG_HTTPPROXY_PROTOCOL)        += http.o httpauth.o urldecode.o
 OBJS-$(CONFIG_HTTPS_PROTOCOL)            += http.o httpauth.o urldecode.o
 OBJS-$(CONFIG_ICECAST_PROTOCOL)          += icecast.o
 OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
-OBJS-$(CONFIG_MMSH_PROTOCOL)             += mmsh.o mms.o asf.o
-OBJS-$(CONFIG_MMST_PROTOCOL)             += mmst.o mms.o asf.o
+OBJS-$(CONFIG_MMSH_PROTOCOL)             += mmsh.o mms.o asf_tags.o
+OBJS-$(CONFIG_MMST_PROTOCOL)             += mmst.o mms.o asf_tags.o
 OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_PROMPEG_PROTOCOL)          += prompeg.o
 OBJS-$(CONFIG_RTMP_PROTOCOL)             += rtmpproto.o rtmpdigest.o rtmppkt.o
