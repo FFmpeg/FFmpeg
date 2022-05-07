@@ -367,3 +367,11 @@ int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int 
 
     return ret;
 }
+
+int ff_find_stream_index(const AVFormatContext *s, int id)
+{
+    for (unsigned i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->id == id)
+            return i;
+    return -1;
+}

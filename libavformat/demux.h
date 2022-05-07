@@ -226,4 +226,10 @@ int ff_generate_avci_extradata(AVStream *st);
  */
 int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int size);
 
+/**
+ * Find stream index based on format-specific stream ID
+ * @return stream index, or < 0 on error
+ */
+int ff_find_stream_index(const AVFormatContext *s, int id);
+
 #endif /* AVFORMAT_DEMUX_H */

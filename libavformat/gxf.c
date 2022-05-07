@@ -24,6 +24,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "gxf.h"
 

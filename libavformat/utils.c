@@ -644,14 +644,6 @@ void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
     }
 }
 
-int ff_find_stream_index(const AVFormatContext *s, int id)
-{
-    for (unsigned i = 0; i < s->nb_streams; i++)
-        if (s->streams[i]->id == id)
-            return i;
-    return -1;
-}
-
 int avformat_network_init(void)
 {
 #if CONFIG_NETWORK
