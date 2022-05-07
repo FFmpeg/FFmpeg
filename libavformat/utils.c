@@ -29,18 +29,14 @@
 #include "libavutil/dict.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/thread.h"
 #include "libavutil/time.h"
 
-#include "libavcodec/bsf.h"
 #include "libavcodec/internal.h"
-#include "libavcodec/packet_internal.h"
 
 #include "avformat.h"
 #include "avio_internal.h"
-#include "demux.h"
 #include "internal.h"
 #if CONFIG_NETWORK
 #include "network.h"
@@ -186,17 +182,6 @@ int ff_is_intra_only(enum AVCodecID id)
         !(d->props & AV_CODEC_PROP_INTRA_ONLY))
         return 0;
     return 1;
-}
-
-/* XXX: suppress the packet queue */
-void ff_flush_packet_queue(AVFormatContext *s)
-{
-    FFFormatContext *const si = ffformatcontext(s);
-    avpriv_packet_list_free(&si->parse_queue);
-    avpriv_packet_list_free(&si->packet_buffer);
-    avpriv_packet_list_free(&si->raw_packet_buffer);
-
-    si->raw_packet_buffer_size = 0;
 }
 
 int av_find_default_stream_index(AVFormatContext *s)
@@ -470,95 +455,6 @@ int ff_stream_side_data_copy(AVStream *dst, const AVStream *src)
     }
 
     return 0;
-}
-
-void ff_free_stream(AVStream **pst)
-{
-    AVStream *st = *pst;
-    FFStream *const sti = ffstream(st);
-
-    if (!st)
-        return;
-
-    for (int i = 0; i < st->nb_side_data; i++)
-        av_freep(&st->side_data[i].data);
-    av_freep(&st->side_data);
-
-    if (st->attached_pic.data)
-        av_packet_unref(&st->attached_pic);
-
-    av_parser_close(sti->parser);
-    avcodec_free_context(&sti->avctx);
-    av_bsf_free(&sti->bsfc);
-    av_freep(&sti->priv_pts);
-    av_freep(&sti->index_entries);
-    av_freep(&sti->probe_data.buf);
-
-    av_bsf_free(&sti->extract_extradata.bsf);
-
-    if (sti->info) {
-        av_freep(&sti->info->duration_error);
-        av_freep(&sti->info);
-    }
-
-    av_dict_free(&st->metadata);
-    avcodec_parameters_free(&st->codecpar);
-    av_freep(&st->priv_data);
-
-    av_freep(pst);
-}
-
-void ff_remove_stream(AVFormatContext *s, AVStream *st)
-{
-    av_assert0(s->nb_streams>0);
-    av_assert0(s->streams[ s->nb_streams - 1 ] == st);
-
-    ff_free_stream(&s->streams[ --s->nb_streams ]);
-}
-
-void avformat_free_context(AVFormatContext *s)
-{
-    FFFormatContext *si;
-
-    if (!s)
-        return;
-    si = ffformatcontext(s);
-
-    if (s->oformat && s->oformat->deinit && si->initialized)
-        s->oformat->deinit(s);
-
-    av_opt_free(s);
-    if (s->iformat && s->iformat->priv_class && s->priv_data)
-        av_opt_free(s->priv_data);
-    if (s->oformat && s->oformat->priv_class && s->priv_data)
-        av_opt_free(s->priv_data);
-
-    for (unsigned i = 0; i < s->nb_streams; i++)
-        ff_free_stream(&s->streams[i]);
-    s->nb_streams = 0;
-
-    for (unsigned i = 0; i < s->nb_programs; i++) {
-        av_dict_free(&s->programs[i]->metadata);
-        av_freep(&s->programs[i]->stream_index);
-        av_freep(&s->programs[i]);
-    }
-    s->nb_programs = 0;
-
-    av_freep(&s->programs);
-    av_freep(&s->priv_data);
-    while (s->nb_chapters--) {
-        av_dict_free(&s->chapters[s->nb_chapters]->metadata);
-        av_freep(&s->chapters[s->nb_chapters]);
-    }
-    av_freep(&s->chapters);
-    av_dict_free(&s->metadata);
-    av_dict_free(&si->id3v2_meta);
-    av_packet_free(&si->pkt);
-    av_packet_free(&si->parse_pkt);
-    av_freep(&s->streams);
-    ff_flush_packet_queue(s);
-    av_freep(&s->url);
-    av_free(s);
 }
 
 AVProgram *av_new_program(AVFormatContext *ac, int id)
