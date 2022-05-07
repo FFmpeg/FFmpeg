@@ -341,21 +341,6 @@ int ff_alloc_extradata(AVCodecParameters *par, int size)
     return 0;
 }
 
-AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int s)
-{
-    for (unsigned i = 0; i < ic->nb_programs; i++) {
-        if (ic->programs[i] == last) {
-            last = NULL;
-        } else {
-            if (!last)
-                for (unsigned j = 0; j < ic->programs[i]->nb_stream_indexes; j++)
-                    if (ic->programs[i]->stream_index[j] == s)
-                        return ic->programs[i];
-        }
-    }
-    return NULL;
-}
-
 int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
                         int wanted_stream_nb, int related_stream,
                         const AVCodec **decoder_ret, int flags)
