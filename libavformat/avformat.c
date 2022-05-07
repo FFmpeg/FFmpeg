@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
@@ -434,6 +435,50 @@ error:
     if (ret == AVERROR(EINVAL))
         av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
     return ret;
+}
+
+AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *stream, AVFrame *frame)
+{
+    AVRational undef = {0, 1};
+    AVRational stream_sample_aspect_ratio = stream ? stream->sample_aspect_ratio : undef;
+    AVRational codec_sample_aspect_ratio  = stream && stream->codecpar ? stream->codecpar->sample_aspect_ratio : undef;
+    AVRational frame_sample_aspect_ratio  = frame  ? frame->sample_aspect_ratio  : codec_sample_aspect_ratio;
+
+    av_reduce(&stream_sample_aspect_ratio.num, &stream_sample_aspect_ratio.den,
+               stream_sample_aspect_ratio.num,  stream_sample_aspect_ratio.den, INT_MAX);
+    if (stream_sample_aspect_ratio.num <= 0 || stream_sample_aspect_ratio.den <= 0)
+        stream_sample_aspect_ratio = undef;
+
+    av_reduce(&frame_sample_aspect_ratio.num, &frame_sample_aspect_ratio.den,
+               frame_sample_aspect_ratio.num,  frame_sample_aspect_ratio.den, INT_MAX);
+    if (frame_sample_aspect_ratio.num <= 0 || frame_sample_aspect_ratio.den <= 0)
+        frame_sample_aspect_ratio = undef;
+
+    if (stream_sample_aspect_ratio.num)
+        return stream_sample_aspect_ratio;
+    else
+        return frame_sample_aspect_ratio;
+}
+
+AVRational av_guess_frame_rate(AVFormatContext *format, AVStream *st, AVFrame *frame)
+{
+    AVRational fr = st->r_frame_rate;
+    AVCodecContext *const avctx = ffstream(st)->avctx;
+    AVRational codec_fr = avctx->framerate;
+    AVRational   avg_fr = st->avg_frame_rate;
+
+    if (avg_fr.num > 0 && avg_fr.den > 0 && fr.num > 0 && fr.den > 0 &&
+        av_q2d(avg_fr) < 70 && av_q2d(fr) > 210) {
+        fr = avg_fr;
+    }
+
+    if (avctx->ticks_per_frame > 1) {
+        if (   codec_fr.num > 0 && codec_fr.den > 0 &&
+            (fr.num == 0 || av_q2d(codec_fr) < av_q2d(fr)*0.7 && fabs(1.0 - av_q2d(av_div_q(avg_fr, fr))) > 0.1))
+            fr = codec_fr;
+    }
+
+    return fr;
 }
 
 int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
