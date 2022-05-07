@@ -78,10 +78,11 @@ static const uint32_t sample_rates[] = {
 static int parse_ext(AVFormatContext *s, int length)
 {
     DHAVContext *dhav = s->priv_data;
-    int index, ret = 0;
+    int64_t ret = 0;
 
     while (length > 0) {
         int type = avio_r8(s->pb);
+        int index;
 
         switch (type) {
         case 0x80:
@@ -168,8 +169,7 @@ static int read_chunk(AVFormatContext *s)
 {
     DHAVContext *dhav = s->priv_data;
     int frame_length, ext_length;
-    int64_t start, end;
-    int ret;
+    int64_t start, end, ret;
 
     if (avio_feof(s->pb))
         return AVERROR_EOF;
