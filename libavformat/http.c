@@ -441,21 +441,6 @@ fail:
         return ret;
     return ff_http_averror(s->http_code, AVERROR(EIO));
 }
-int ff_http_get_shutdown_status(URLContext *h)
-{
-    int ret = 0;
-    HTTPContext *s = h->priv_data;
-
-    /* flush the receive buffer when it is write only mode */
-    char buf[1024];
-    int read_ret;
-    read_ret = ffurl_read(s->hd, buf, sizeof(buf));
-    if (read_ret < 0) {
-        ret = read_ret;
-    }
-
-    return ret;
-}
 
 int ff_http_do_new_request(URLContext *h, const char *uri) {
     return ff_http_do_new_request2(h, uri, NULL);

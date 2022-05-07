@@ -38,15 +38,6 @@
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src);
 
 /**
- * Get the HTTP shutdown response status, be used after http_shutdown.
- *
- * @param h pointer to the resource
- * @return a negative value if an error condition occurred, 0
- * otherwise
- */
-int ff_http_get_shutdown_status(URLContext *h);
-
-/**
  * Send a new HTTP request, reusing the old connection.
  *
  * @param h pointer to the resource
