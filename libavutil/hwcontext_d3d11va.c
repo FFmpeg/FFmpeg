@@ -339,7 +339,7 @@ static int d3d11va_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
-static int d3d11va_create_staging_texture(AVHWFramesContext *ctx)
+static int d3d11va_create_staging_texture(AVHWFramesContext *ctx, DXGI_FORMAT format)
 {
     AVD3D11VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
     D3D11VAFramesContext              *s = ctx->internal->priv;
@@ -348,7 +348,7 @@ static int d3d11va_create_staging_texture(AVHWFramesContext *ctx)
         .Width          = ctx->width,
         .Height         = ctx->height,
         .MipLevels      = 1,
-        .Format         = s->format,
+        .Format         = format,
         .SampleDesc     = { .Count = 1 },
         .ArraySize      = 1,
         .Usage          = D3D11_USAGE_STAGING,
@@ -404,7 +404,8 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     device_hwctx->lock(device_hwctx->lock_ctx);
 
     if (!s->staging_texture) {
-        int res = d3d11va_create_staging_texture(ctx);
+        ID3D11Texture2D_GetDesc((ID3D11Texture2D *)texture, &desc);
+        int res = d3d11va_create_staging_texture(ctx, desc.Format);
         if (res < 0)
             return res;
     }
