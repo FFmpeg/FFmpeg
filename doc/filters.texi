@@ -2050,6 +2050,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -3479,6 +3480,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -3567,6 +3569,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -3665,6 +3668,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -3748,6 +3752,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -4541,6 +4546,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -5043,6 +5049,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -5394,6 +5401,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
@@ -6631,6 +6639,7 @@ Set transform type of IIR filter.
 @table @option
 @item di
 @item dii
+@item tdi
 @item tdii
 @item latt
 @item svf
