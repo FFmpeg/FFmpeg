@@ -3500,6 +3500,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Commands
@@ -3589,6 +3596,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Commands
@@ -3688,6 +3702,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Commands
@@ -3772,6 +3793,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @section bs2b
@@ -4566,6 +4594,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Examples
@@ -5069,6 +5104,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Commands
@@ -5421,6 +5463,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Examples
@@ -6659,6 +6708,13 @@ Always use float 32-bit.
 @item f64
 Always use float 64-bit.
 @end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
 @end table
 
 @subsection Commands
