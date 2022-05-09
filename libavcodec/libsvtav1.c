@@ -297,8 +297,20 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->profile = FF_PROFILE_AV1_HIGH;
     }
 
-    avctx->bit_rate = param->rate_control_mode > 0 ?
-                      param->target_bit_rate : 0;
+    avctx->bit_rate       = param->rate_control_mode > 0 ?
+                            param->target_bit_rate : 0;
+    avctx->rc_max_rate    = param->max_bit_rate;
+    avctx->rc_buffer_size = param->vbv_bufsize;
+
+    if (avctx->bit_rate || avctx->rc_max_rate || avctx->rc_buffer_size) {
+        AVCPBProperties *cpb_props = ff_add_cpb_side_data(avctx);
+        if (!cpb_props)
+            return AVERROR(ENOMEM);
+
+        cpb_props->buffer_size = avctx->rc_buffer_size;
+        cpb_props->max_bitrate = avctx->rc_max_rate;
+        cpb_props->avg_bitrate = avctx->bit_rate;
+    }
 
     return 0;
 }
