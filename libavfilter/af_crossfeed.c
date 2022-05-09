@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
 
 typedef struct CrossfeedContext {
@@ -31,11 +32,16 @@ typedef struct CrossfeedContext {
     double slope;
     double level_in;
     double level_out;
+    int block_samples;
+    int block_size;
 
     double a0, a1, a2;
     double b0, b1, b2;
 
     double w1, w2;
+
+    double *mid;
+    double *side[3];
 } CrossfeedContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -77,7 +83,47 @@ static int config_input(AVFilterLink *inlink)
     s->b1 /= s->a0;
     s->b2 /= s->a0;
 
+    if (s->block_samples == 0 && s->block_size > 0) {
+        s->block_samples = s->block_size;
+        s->mid = av_calloc(s->block_samples * 2, sizeof(*s->mid));
+        for (int i = 0; i < 3; i++) {
+            s->side[i] = av_calloc(s->block_samples * 2, sizeof(*s->side[0]));
+            if (!s->side[i])
+                return AVERROR(ENOMEM);
+        }
+    }
+
     return 0;
+}
+
+static void reverse_samples(double *dst, const double *src,
+                            int nb_samples)
+{
+    for (int i = 0, j = nb_samples - 1; i < nb_samples; i++, j--)
+        dst[i] = src[j];
+}
+
+static void filter_samples(double *dst, const double *src,
+                           int nb_samples,
+                           double b0, double b1, double b2,
+                           double a1, double a2,
+                           double *sw1, double *sw2)
+{
+    double w1 = *sw1;
+    double w2 = *sw2;
+
+    for (int n = 0; n < nb_samples; n++) {
+        double side = src[n];
+        double oside = side * b0 + w1;
+
+        w1 = b1 * side + w2 + a1 * oside;
+        w2 = b2 * side + a2 * oside;
+
+        dst[n] = oside;
+    }
+
+    *sw1 = w1;
+    *sw2 = w2;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -95,7 +141,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const double a2 = -s->a2;
     AVFrame *out;
     double *dst;
-    int n;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -109,26 +154,115 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     dst = (double *)out->data[0];
 
-    for (n = 0; n < out->nb_samples; n++, src += 2, dst += 2) {
-        double mid = (src[0] + src[1]) * level_in * .5;
-        double side = (src[0] - src[1]) * level_in * .5;
-        double oside = side * b0 + s->w1;
+    if (s->block_samples == 0) {
+        double w1 = s->w1;
+        double w2 = s->w2;
 
-        s->w1 = b1 * side + s->w2 + a1 * oside;
-        s->w2 = b2 * side + a2 * oside;
+        for (int n = 0; n < out->nb_samples; n++, src += 2, dst += 2) {
+            double mid = (src[0] + src[1]) * level_in * .5;
+            double side = (src[0] - src[1]) * level_in * .5;
+            double oside = side * b0 + w1;
 
-        if (ctx->is_disabled) {
-            dst[0] = src[0];
-            dst[1] = src[1];
-        } else {
-            dst[0] = (mid + oside) * level_out;
-            dst[1] = (mid - oside) * level_out;
+            w1 = b1 * side + w2 + a1 * oside;
+            w2 = b2 * side + a2 * oside;
+
+            if (ctx->is_disabled) {
+                dst[0] = src[0];
+                dst[1] = src[1];
+            } else {
+                dst[0] = (mid + oside) * level_out;
+                dst[1] = (mid - oside) * level_out;
+            }
         }
+
+        s->w1 = w1;
+        s->w2 = w2;
+    } else {
+        double *mdst = s->mid + s->block_samples;
+        double *sdst = s->side[0] + s->block_samples;
+        double *ssrc = s->side[0];
+        double *msrc = s->mid;
+        double w1 = s->w1;
+        double w2 = s->w2;
+
+        for (int n = 0; n < out->nb_samples; n++, src += 2) {
+            mdst[n] = (src[0] + src[1]) * level_in * .5;
+            sdst[n] = (src[0] - src[1]) * level_in * .5;
+        }
+
+        sdst = s->side[1];
+        filter_samples(sdst, ssrc, s->block_samples,
+                       b0, b1, b2, a1, a2,
+                       &w1, &w2);
+        s->w1 = w1;
+        s->w2 = w2;
+
+        ssrc = s->side[0] + s->block_samples;
+        sdst = s->side[1] + s->block_samples;
+        filter_samples(sdst, ssrc, s->block_samples,
+                       b0, b1, b2, a1, a2,
+                       &w1, &w2);
+
+        reverse_samples(s->side[2], s->side[1], s->block_samples * 2);
+        w1 = w2 = 0.;
+        filter_samples(s->side[2], s->side[2], s->block_samples * 2,
+                       b0, b1, b2, a1, a2,
+                       &w1, &w2);
+
+        reverse_samples(s->side[1], s->side[2] + s->block_samples, s->block_samples);
+
+        src = (const double *)in->data[0];
+        ssrc = s->side[1];
+        for (int n = 0; n < out->nb_samples; n++, src += 2, dst += 2) {
+            if (ctx->is_disabled) {
+                dst[0] = src[0];
+                dst[1] = src[1];
+            } else {
+                dst[0] = (msrc[n] + ssrc[n]) * level_out;
+                dst[1] = (msrc[n] - ssrc[n]) * level_out;
+            }
+        }
+
+        memmove(s->mid, s->mid + s->block_samples,
+                s->block_samples * sizeof(*s->mid));
+        memmove(s->side[0], s->side[0] + s->block_samples,
+                s->block_samples * sizeof(*s->side[0]));
     }
 
     if (out != in)
         av_frame_free(&in);
     return ff_filter_frame(outlink, out);
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    CrossfeedContext *s = ctx->priv;
+    AVFrame *in = NULL;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (s->block_samples > 0) {
+        ret = ff_inlink_consume_samples(inlink, s->block_samples, s->block_samples, &in);
+    } else {
+        ret = ff_inlink_consume_frame(inlink, &in);
+    }
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return filter_frame(inlink, in);
+
+    if (s->block_samples > 0 && ff_inlink_queued_samples(inlink) >= s->block_samples) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
+
+    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
@@ -143,8 +277,18 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return config_input(ctx->inputs[0]);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    CrossfeedContext *s = ctx->priv;
+
+    av_freep(&s->mid);
+    for (int i = 0; i < 3; i++)
+        av_freep(&s->side[i]);
+}
+
 #define OFFSET(x) offsetof(CrossfeedContext, x)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+#define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption crossfeed_options[] = {
     { "strength",  "set crossfeed strength",  OFFSET(strength),  AV_OPT_TYPE_DOUBLE, {.dbl=.2}, 0, 1, FLAGS },
@@ -152,6 +296,7 @@ static const AVOption crossfeed_options[] = {
     { "slope",     "set curve slope",         OFFSET(slope),     AV_OPT_TYPE_DOUBLE, {.dbl=.5}, .01, 1, FLAGS },
     { "level_in",  "set level in",            OFFSET(level_in),  AV_OPT_TYPE_DOUBLE, {.dbl=.9}, 0, 1, FLAGS },
     { "level_out", "set level out",           OFFSET(level_out), AV_OPT_TYPE_DOUBLE, {.dbl=1.}, 0, 1, FLAGS },
+    { "block_size", "set the block size",     OFFSET(block_size),AV_OPT_TYPE_INT,    {.i64=0}, 0, 32768, AF },
     { NULL }
 };
 
@@ -161,7 +306,6 @@ static const AVFilterPad inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
 };
@@ -178,6 +322,8 @@ const AVFilter ff_af_crossfeed = {
     .description    = NULL_IF_CONFIG_SMALL("Apply headphone crossfeed filter."),
     .priv_size      = sizeof(CrossfeedContext),
     .priv_class     = &crossfeed_class,
+    .activate       = activate,
+    .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC(query_formats),
