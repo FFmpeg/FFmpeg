@@ -42,6 +42,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/fifo.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"

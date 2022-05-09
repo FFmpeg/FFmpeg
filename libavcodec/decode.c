@@ -32,6 +32,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"

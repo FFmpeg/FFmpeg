@@ -34,6 +34,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "bsf.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
