@@ -618,6 +618,13 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 s1->seen_fmtp = 1;
                 av_strlcpy(s1->delayed_fmtp, buf, sizeof(s1->delayed_fmtp));
             }
+        } else if (av_strstart(p, "framerate:", &p) && s->nb_streams > 0) {
+            // RFC 8866
+            double framerate;
+            if (av_sscanf(p, "%lf%c", &framerate, &(char){0}) == 1) {
+                st = s->streams[s->nb_streams - 1];
+                st->avg_frame_rate = av_d2q(framerate, INT_MAX);
+            }
         } else if (av_strstart(p, "ssrc:", &p) && s->nb_streams > 0) {
             rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
             get_word(buf1, sizeof(buf1), &p);
