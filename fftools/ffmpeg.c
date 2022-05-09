@@ -588,6 +588,8 @@ static void ffmpeg_cleanup(int ret)
         av_dict_free(&ost->sws_dict);
         av_dict_free(&ost->swr_opts);
 
+        if (ost->enc_ctx)
+            av_freep(&ost->enc_ctx->stats_in);
         avcodec_free_context(&ost->enc_ctx);
         avcodec_parameters_free(&ost->ref_par);
 
@@ -4359,9 +4361,6 @@ static int transcode(void)
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
         ost = output_streams[i];
-        if (ost->encoding_needed) {
-            av_freep(&ost->enc_ctx->stats_in);
-        }
         total_packets_written += ost->packets_written;
         if (!ost->packets_written && (abort_on_flags & ABORT_ON_FLAG_EMPTY_OUTPUT_STREAM)) {
             av_log(NULL, AV_LOG_FATAL, "Empty output on stream %d.\n", i);
