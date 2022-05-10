@@ -793,6 +793,9 @@ static int config_filter(AVFilterLink *outlink, int reset)
             s->block[i] = ff_get_audio_buffer(outlink, s->block_samples * 2);
             if (!s->block[i])
                 return AVERROR(ENOMEM);
+            av_samples_set_silence(s->block[i]->extended_data, 0, s->block_samples * 2,
+                                   s->block[i]->ch_layout.nb_channels, s->block[i]->format);
+
         }
     }
 
@@ -927,14 +930,14 @@ static void reverse_samples(AVFrame *out, AVFrame *in, int p,
 {
     switch (out->format) {
     case AV_SAMPLE_FMT_S16P: {
-        const int16_t *src = ((const int16_t *)out->extended_data[p]) + io;
+        const int16_t *src = ((const int16_t *)in->extended_data[p]) + io;
         int16_t *dst = ((int16_t *)out->extended_data[p]) + oo;
         for (int i = 0, j = nb_samples - 1; i < nb_samples; i++, j--)
             dst[i] = src[j];
     }
         break;
     case AV_SAMPLE_FMT_S32P: {
-        const int32_t *src = ((const int32_t *)out->extended_data[p]) + io;
+        const int32_t *src = ((const int32_t *)in->extended_data[p]) + io;
         int32_t *dst = ((int32_t *)out->extended_data[p]) + oo;
         for (int i = 0, j = nb_samples - 1; i < nb_samples; i++, j--)
             dst[i] = src[j];
