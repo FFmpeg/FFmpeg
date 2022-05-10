@@ -181,9 +181,9 @@ static unsigned int match_colors(const uint8_t *block, ptrdiff_t stride,
     int x, y, k = 0;
     int c0_point, half_point, c3_point;
     uint8_t color[16];
-    static const int indexMap[8] = {
-        0 << 30, 2 << 30, 0 << 30, 2 << 30,
-        3 << 30, 3 << 30, 1 << 30, 1 << 30,
+    static const uint32_t indexMap[8] = {
+        0U << 30, 2U << 30, 0U << 30, 2U << 30,
+        3U << 30, 3U << 30, 1U << 30, 1U << 30,
     };
 
     /* Fill color and compute direction for each component */
