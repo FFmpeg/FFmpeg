@@ -55,6 +55,12 @@ typedef struct FFStreamInfo {
     int     fps_last_dts_idx;
 } FFStreamInfo;
 
+/**
+ * Returned by demuxers to indicate that data was consumed but discarded
+ * (ignored streams or junk data). The framework will re-call the demuxer.
+ */
+#define FFERROR_REDO FFERRTAG('R','E','D','O')
+
 #define RELATIVE_TS_BASE (INT64_MAX - (1LL << 48))
 
 static av_always_inline int is_relative(int64_t ts)

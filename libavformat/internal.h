@@ -651,12 +651,6 @@ int ff_alloc_extradata(AVCodecParameters *par, int size);
  */
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
 
-/**
- * Returned by demuxers to indicate that data was consumed but discarded
- * (ignored streams or junk data). The framework will re-call the demuxer.
- */
-#define FFERROR_REDO FFERRTAG('R','E','D','O')
-
 /*
  * A wrapper around AVFormatContext.io_close that should be used
  * instead of calling the pointer directly.
