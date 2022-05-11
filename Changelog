@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.20:
+ avcodec/ac3enc: Fix memleak
+ avformat/nutenc: don't allocate a dynamic AVIOContext if no index is going to be written
+ avfilter/vf_random: fix memory leaks
+ fftools/ffmpeg_opt: Fix leak of options when parsing options fails
+ avfilter/vf_edgedetect: fix heap-buffer overflow
+ avfilter/vf_w3fdif: deny processing small videos
+ avfilter/vf_edgedetect: check if height is big enough
+ avfilter/vf_fieldorder: fix heap-buffer overflow
+ avfilter/vf_fieldmatch: fix heap-buffer overflow
+ aformat/movenc: add missing padding to output track extradata
+ avcodec/pngenc: remove monowhite from apng formats
+
 version 2.8.19:
  configure: bump year
  avcodec/diracdec: avoid signed integer overflow in global mv
