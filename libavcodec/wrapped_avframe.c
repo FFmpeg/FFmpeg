@@ -98,12 +98,6 @@ static int wrapped_avframe_decode(AVCodecContext *avctx, AVFrame *out,
 
     av_frame_move_ref(out, in);
 
-    err = ff_attach_decode_data(out);
-    if (err < 0) {
-        av_frame_unref(out);
-        return err;
-    }
-
     *got_frame = 1;
     return 0;
 }
