@@ -104,6 +104,7 @@ enum TransformType {
     TDII,
     LATT,
     SVF,
+    ZDF,
     NB_TTYPE,
 };
 
@@ -150,7 +151,7 @@ typedef struct BiquadsContext {
 
     void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
-                   double b0, double b1, double b2, double a1, double a2, int *clippings,
+                   double b0, double b1, double b2, double a0, double a1, double a2, int *clippings,
                    int disabled);
 } BiquadsContext;
 
@@ -203,7 +204,7 @@ static void biquad_## name (BiquadsContext *s,                                \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
                             double b0, double b1, double b2,                  \
-                            double a1, double a2, int *clippings,             \
+                            double a0, double a1, double a2, int *clippings,  \
                             int disabled)                                     \
 {                                                                             \
     const type *ibuf = input;                                                 \
@@ -286,7 +287,7 @@ static void biquad_dii_## name (BiquadsContext *s,                            \
                             double *z1, double *z2,                           \
                             double *unused1, double *unused2,                 \
                             double b0, double b1, double b2,                  \
-                            double a1, double a2, int *clippings,             \
+                            double a0, double a1, double a2, int *clippings,  \
                             int disabled)                                     \
 {                                                                             \
     const type *ibuf = input;                                                 \
@@ -334,7 +335,7 @@ static void biquad_tdi_## name (BiquadsContext *s,                            \
                             double *z1, double *z2,                           \
                             double *z3, double *z4,                           \
                             double b0, double b1, double b2,                  \
-                            double a1, double a2, int *clippings,             \
+                            double a0, double a1, double a2, int *clippings,  \
                             int disabled)                                     \
 {                                                                             \
     const type *ibuf = input;                                                 \
@@ -390,7 +391,7 @@ static void biquad_tdii_## name (BiquadsContext *s,                           \
                             double *z1, double *z2,                           \
                             double *unused1, double *unused2,                 \
                             double b0, double b1, double b2,                  \
-                            double a1, double a2, int *clippings,             \
+                            double a0, double a1, double a2, int *clippings,  \
                             int disabled)                                     \
 {                                                                             \
     const type *ibuf = input;                                                 \
@@ -437,7 +438,8 @@ static void biquad_latt_## name (BiquadsContext *s,                           \
                            double *z1, double *z2,                            \
                            double *unused1, double *unused2,                  \
                            double v0, double v1, double v2,                   \
-                           double k0, double k1, int *clippings,              \
+                           double unused, double k0, double k1,               \
+                           int *clippings,                                    \
                            int disabled)                                      \
 {                                                                             \
     const type *ibuf = input;                                                 \
@@ -492,7 +494,7 @@ static void biquad_svf_## name (BiquadsContext *s,                            \
                            double *y0, double *y1,                            \
                            double *unused1, double *unused2,                  \
                            double b0, double b1, double b2,                   \
-                           double a1, double a2, int *clippings,              \
+                           double a0, double a1, double a2, int *clippings,   \
                            int disabled)                                      \
 {                                                                             \
     const type *ibuf = input;                                                 \
@@ -534,6 +536,56 @@ BIQUAD_SVF_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
 BIQUAD_SVF_FILTER(flt, float,   -1., 1., 0)
 BIQUAD_SVF_FILTER(dbl, double,  -1., 1., 0)
 
+#define BIQUAD_ZDF_FILTER(name, type, min, max, need_clipping)                \
+static void biquad_zdf_## name (BiquadsContext *s,                            \
+                           const void *input, void *output, int len,          \
+                           double *y0, double *y1,                            \
+                           double *unused1, double *unused2,                  \
+                           double m0, double m1, double m2,                   \
+                           double a0, double a1, double a2, int *clippings,   \
+                           int disabled)                                      \
+{                                                                             \
+    const type *ibuf = input;                                                 \
+    type *obuf = output;                                                      \
+    double b0 = *y0;                                                          \
+    double b1 = *y1;                                                          \
+    double wet = s->mix;                                                      \
+    double dry = 1. - wet;                                                    \
+    double out;                                                               \
+                                                                              \
+    for (int i = 0; i < len; i++) {                                           \
+        const double in = ibuf[i];                                            \
+        const double v0 = in;                                                 \
+        const double v3 = v0 - b1;                                            \
+        const double v1 = a0 * b0 + a1 * v3;                                  \
+        const double v2 = b1 + a1 * b0 + a2 * v3;                             \
+                                                                              \
+        b0 = 2. * v1 - b0;                                                    \
+        b1 = 2. * v2 - b1;                                                    \
+                                                                              \
+        out = m0 * v0 + m1 * v1 + m2 * v2;                                    \
+        out = out * wet + in * dry;                                           \
+        if (disabled) {                                                       \
+            obuf[i] = in;                                                     \
+        } else if (need_clipping && out < min) {                              \
+            (*clippings)++;                                                   \
+            obuf[i] = min;                                                    \
+        } else if (need_clipping && out > max) {                              \
+            (*clippings)++;                                                   \
+            obuf[i] = max;                                                    \
+        } else {                                                              \
+            obuf[i] = out;                                                    \
+        }                                                                     \
+    }                                                                         \
+    *y0 = b0;                                                                 \
+    *y1 = b1;                                                                 \
+}
+
+BIQUAD_ZDF_FILTER(s16, int16_t, INT16_MIN, INT16_MAX, 1)
+BIQUAD_ZDF_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
+BIQUAD_ZDF_FILTER(flt, float,   -1., 1., 0)
+BIQUAD_ZDF_FILTER(dbl, double,  -1., 1., 0)
+
 static void convert_dir2latt(BiquadsContext *s)
 {
     double k0, k1, v0, v1, v2;
@@ -567,6 +619,154 @@ static void convert_dir2svf(BiquadsContext *s)
     s->b0 = b[0];
     s->b1 = b[1];
     s->b2 = b[2];
+}
+
+static double convert_width2qfactor(double width,
+                                    double frequency,
+                                    double gain,
+                                    double sample_rate,
+                                    int width_type)
+{
+    double w0 = 2. * M_PI * frequency / sample_rate;
+    double A = ff_exp10(gain / 40.);
+    double ret;
+
+    switch (width_type) {
+    case NONE:
+    case QFACTOR:
+        ret = width;
+        break;
+    case HERTZ:
+        ret = frequency / width;
+        break;
+    case KHERTZ:
+        ret = frequency / (width * 1000.);
+        break;
+    case OCTAVE:
+        ret = 1. / (2. * sinh(log(2.) / 2. * width * w0 / sin(w0)));
+        break;
+    case SLOPE:
+        ret = 1. / sqrt((A + 1. / A) * (1. / width - 1.) + 2.);
+        break;
+    default:
+        av_assert0(0);
+        break;
+    }
+
+    return ret;
+}
+
+static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
+{
+    double Q = convert_width2qfactor(s->width, s->frequency, s->gain, sample_rate, s->width_type);
+    double g, k, A;
+    double a[3];
+    double m[3];
+
+    switch (s->filter_type) {
+    case biquad:
+        a[0] = s->oa0;
+        a[1] = s->oa1;
+        a[2] = s->oa2;
+        m[0] = s->ob0;
+        m[1] = s->ob1;
+        m[2] = s->ob2;
+        break;
+    case equalizer:
+        A = ff_exp10(s->gain / 40.);
+        g = tan(M_PI * s->frequency / sample_rate);
+        k = 1. / (Q * A);
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] = 1.;
+        m[1] = k * (A * A - 1.);
+        m[2] = 0.;
+        break;
+    case bass:
+    case lowshelf:
+        A = ff_exp10(s->gain / 40.);
+        g = tan(M_PI * s->frequency / sample_rate) / sqrt(A);
+        k = 1. / (Q * A);
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] = 1.;
+        m[1] = k * (A - 1.);
+        m[2] = A * A - 1.;
+        break;
+    case treble:
+    case highshelf:
+        A = ff_exp10(s->gain / 40.);
+        g = tan(M_PI * s->frequency / sample_rate) / sqrt(A);
+        k = 1. / (Q * A);
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] = A * A;
+        m[1] = k * (1. - A) * A;
+        m[2] = 1. - A * A;
+        break;
+    case bandpass:
+        g = tan(M_PI * s->frequency / sample_rate);
+        k = 1. / Q;
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] = 0.;
+        m[1] = s->csg ? 1. : 2.;
+        m[2] = 0.;
+        break;
+    case bandreject:
+        g = tan(M_PI * s->frequency / sample_rate);
+        k = 1. / Q;
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] =  1.;
+        m[1] = -k;
+        m[2] =  0.;
+        break;
+    case lowpass:
+        g = tan(M_PI * s->frequency / sample_rate);
+        k = 1. / Q;
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] = 0.;
+        m[1] = 0.;
+        m[2] = 1.;
+        break;
+    case highpass:
+        g = tan(M_PI * s->frequency / sample_rate);
+        k = 1. / Q;
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] =  1.;
+        m[1] = -k;
+        m[2] = -1.;
+        break;
+    case allpass:
+        g = tan(M_PI * s->frequency / sample_rate);
+        k = 1. / Q;
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] =  1.;
+        m[1] = -2. * k;
+        m[2] =  0.;
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    s->a0 = a[0];
+    s->a1 = a[1];
+    s->a2 = a[2];
+    s->b0 = m[0];
+    s->b1 = m[1];
+    s->b2 = m[2];
 }
 
 static int config_filter(AVFilterLink *outlink, int reset)
@@ -902,6 +1102,23 @@ static int config_filter(AVFilterLink *outlink, int reset)
         default: av_assert0(0);
         }
         break;
+    case ZDF:
+        switch (inlink->format) {
+        case AV_SAMPLE_FMT_S16P:
+            s->filter = biquad_zdf_s16;
+            break;
+        case AV_SAMPLE_FMT_S32P:
+            s->filter = biquad_zdf_s32;
+            break;
+        case AV_SAMPLE_FMT_FLTP:
+            s->filter = biquad_zdf_flt;
+            break;
+        case AV_SAMPLE_FMT_DBLP:
+            s->filter = biquad_zdf_dbl;
+            break;
+        default: av_assert0(0);
+        }
+        break;
     default:
         av_assert0(0);
      }
@@ -912,6 +1129,8 @@ static int config_filter(AVFilterLink *outlink, int reset)
          convert_dir2latt(s);
      else if (s->transform_type == SVF)
          convert_dir2svf(s);
+     else if (s->transform_type == ZDF)
+         convert_dir2zdf(s, inlink->sample_rate);
 
     return 0;
 }
@@ -985,13 +1204,13 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         if (!s->block_samples) {
             s->filter(s, buf->extended_data[ch], out_buf->extended_data[ch], buf->nb_samples,
                       &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
-                      s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
         } else {
             memcpy(s->block[0]->extended_data[ch] + s->block_align * s->block_samples, buf->extended_data[ch],
                    buf->nb_samples * s->block_align);
             s->filter(s, s->block[0]->extended_data[ch], s->block[1]->extended_data[ch], s->block_samples,
                       &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
-                      s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
             s->cache[ch].ri1 = s->cache[ch].i1;
             s->cache[ch].ri2 = s->cache[ch].i2;
             s->cache[ch].ro1 = s->cache[ch].o1;
@@ -1000,7 +1219,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                       s->block[1]->extended_data[ch] + s->block_samples * s->block_align,
                       s->block_samples,
                       &s->cache[ch].ri1, &s->cache[ch].ri2, &s->cache[ch].ro1, &s->cache[ch].ro2,
-                      s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
             reverse_samples(s->block[2], s->block[1], ch, 0, 0, s->block_samples * 2);
             s->cache[ch].ri1 = 0.;
             s->cache[ch].ri2 = 0.;
@@ -1008,7 +1227,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             s->cache[ch].ro2 = 0.;
             s->filter(s, s->block[2]->extended_data[ch], s->block[2]->extended_data[ch], s->block[2]->nb_samples,
                       &s->cache[ch].ri1, &s->cache[ch].ri2, &s->cache[ch].ro1, &s->cache[ch].ro2,
-                      s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+                      s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
             reverse_samples(out_buf, s->block[2], ch, 0, s->block_samples, out_buf->nb_samples);
             memmove(s->block[0]->extended_data[ch], s->block[0]->extended_data[ch] + s->block_align * s->block_samples,
                     s->block_samples * s->block_align);
@@ -1197,6 +1416,7 @@ static const AVOption equalizer_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1242,6 +1462,7 @@ static const AVOption bass_lowshelf_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1294,6 +1515,7 @@ static const AVOption treble_highshelf_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1345,6 +1567,7 @@ static const AVOption bandpass_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1386,6 +1609,7 @@ static const AVOption bandreject_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1429,6 +1653,7 @@ static const AVOption lowpass_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1472,6 +1697,7 @@ static const AVOption highpass_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1515,6 +1741,7 @@ static const AVOption allpass_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
@@ -1549,6 +1776,7 @@ static const AVOption biquad_options[] = {
     {"tdii", "transposed direct form II", 0, AV_OPT_TYPE_CONST, {.i64=TDII}, 0, 0, AF, "transform_type"},
     {"latt", "lattice-ladder form", 0, AV_OPT_TYPE_CONST, {.i64=LATT}, 0, 0, AF, "transform_type"},
     {"svf",  "state variable filter form", 0, AV_OPT_TYPE_CONST, {.i64=SVF}, 0, 0, AF, "transform_type"},
+    {"zdf",  "zero-delay filter form", 0, AV_OPT_TYPE_CONST, {.i64=ZDF}, 0, 0, AF, "transform_type"},
     {"precision", "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"r",         "set filtering precision", OFFSET(precision), AV_OPT_TYPE_INT, {.i64=-1}, -1, 3, AF, "precision"},
     {"auto", "automatic",            0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, AF, "precision"},
