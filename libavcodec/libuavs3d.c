@@ -149,7 +149,7 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, AVFrame *frm,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     const uint8_t *buf_end;
-    const uint8_t *buf_ptr;
+    const uint8_t *buf_ptr = buf;
     int left_bytes;
     int ret, finish = 0;
 
@@ -170,7 +170,6 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, AVFrame *frm,
     } else {
         uavs3d_io_frm_t *frm_dec = &h->dec_frame;
 
-        buf_ptr = buf;
         buf_end = buf + buf_size;
         frm_dec->pkt_pos  = avpkt->pos;
         frm_dec->pkt_size = avpkt->size;
