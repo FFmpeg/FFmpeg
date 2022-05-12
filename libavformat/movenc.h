@@ -43,6 +43,7 @@
 #define MODE_IPOD 0x20
 #define MODE_ISM  0x40
 #define MODE_F4V  0x80
+#define MODE_AVIF 0x100
 
 typedef struct MOVIentry {
     uint64_t     pos;
@@ -244,6 +245,10 @@ typedef struct MOVMuxContext {
     MOVPrftBox write_prft;
     int empty_hdlr_name;
     int movie_timescale;
+
+    int64_t avif_extent_pos;
+    int avif_extent_length;
+    int is_animated_avif;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
