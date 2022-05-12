@@ -34,8 +34,6 @@ extern const int      ff_ac3_sample_rate_tab[];
 extern const uint16_t ff_ac3_bitrate_tab[19];
 extern const uint8_t  ff_ac3_rematrix_band_tab[5];
 extern const uint8_t  ff_eac3_default_cpl_band_struct[18];
-extern const uint8_t  ff_ac3_log_add_tab[260];
-extern const uint16_t ff_ac3_hearing_threshold_tab[AC3_CRITICAL_BANDS][3];
 extern const uint8_t  ff_ac3_bap_tab[64];
 extern const uint8_t  ff_ac3_slow_decay_tab[4];
 extern const uint8_t  ff_ac3_fast_decay_tab[4];
