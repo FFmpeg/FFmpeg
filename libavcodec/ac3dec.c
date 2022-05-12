@@ -43,6 +43,7 @@
 #include "ac3_parser_internal.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
+#include "ac3defs.h"
 #include "kbdwin.h"
 
 /**

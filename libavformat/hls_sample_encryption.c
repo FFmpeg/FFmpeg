@@ -33,6 +33,7 @@
 
 #include "libavcodec/adts_header.h"
 #include "libavcodec/adts_parser.h"
+#include "libavcodec/ac3tab.h"
 #include "libavcodec/ac3_parser_internal.h"
 
 

@@ -29,8 +29,9 @@
 #include "libavutil/intmath.h"
 #include "libavutil/mem_internal.h"
 
-#include "ac3.h"
+#include "ac3defs.h"
 #include "ac3dsp.h"
+#include "ac3tab.h"
 #include "mathops.h"
 
 static void ac3_exponent_min_c(uint8_t *exp, int num_reuse_blocks, int nb_coefs)

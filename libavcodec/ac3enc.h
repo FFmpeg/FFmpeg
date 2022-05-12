@@ -32,6 +32,7 @@
 
 #include "libavutil/opt.h"
 #include "ac3.h"
+#include "ac3defs.h"
 #include "ac3dsp.h"
 #include "avcodec.h"
 #include "codec_internal.h"

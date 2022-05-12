@@ -27,7 +27,7 @@
 #include <stddef.h>
 
 #include "eac3_data.h"
-#include "ac3.h"
+#include "ac3defs.h"
 
 const uint8_t ff_eac3_bits_vs_hebap[20] = {
     0,  2,  3,  4,  5,  7,  8,  9,  3,  4,

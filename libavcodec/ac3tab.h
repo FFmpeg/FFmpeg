@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-#include "ac3.h"
+#include "ac3defs.h"
 
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];

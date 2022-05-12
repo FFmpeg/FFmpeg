@@ -28,6 +28,7 @@
 #include "libavutil/macros.h"
 
 #include "ac3.h"
+#include "ac3defs.h"
 
 /**
  * Starting frequency coefficient bin for each critical band.

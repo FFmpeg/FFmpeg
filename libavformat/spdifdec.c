@@ -27,7 +27,7 @@
 
 #include "libavutil/bswap.h"
 
-#include "libavcodec/ac3.h"
+#include "libavcodec/ac3defs.h"
 #include "libavcodec/adts_parser.h"
 
 #include "avformat.h"

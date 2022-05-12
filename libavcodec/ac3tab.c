@@ -26,7 +26,6 @@
 
 #include "libavutil/channel_layout.h"
 
-#include "ac3.h"
 #include "ac3tab.h"
 
 /**

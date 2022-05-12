@@ -49,7 +49,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "spdif.h"
-#include "libavcodec/ac3.h"
+#include "libavcodec/ac3defs.h"
 #include "libavcodec/adts_parser.h"
 #include "libavcodec/dca.h"
 #include "libavcodec/dca_syncwords.h"

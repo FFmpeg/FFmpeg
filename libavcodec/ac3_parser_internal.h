@@ -21,8 +21,47 @@
 #ifndef AVCODEC_AC3_PARSER_INTERNAL_H
 #define AVCODEC_AC3_PARSER_INTERNAL_H
 
-#include "ac3.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#include "ac3defs.h"
 #include "get_bits.h"
+
+/**
+ * @struct AC3HeaderInfo
+ * Coded AC-3 header values up to the lfeon element, plus derived values.
+ */
+typedef struct AC3HeaderInfo {
+    /** @name Coded elements
+     * @{
+     */
+    uint16_t sync_word;
+    uint16_t crc1;
+    uint8_t sr_code;
+    uint8_t bitstream_id;
+    uint8_t bitstream_mode;
+    uint8_t channel_mode;
+    uint8_t lfe_on;
+    uint8_t frame_type;
+    int substreamid;                        ///< substream identification
+    int center_mix_level;                   ///< Center mix level index
+    int surround_mix_level;                 ///< Surround mix level index
+    uint16_t channel_map;
+    int num_blocks;                         ///< number of audio blocks
+    int dolby_surround_mode;
+    /** @} */
+
+    /** @name Derived values
+     * @{
+     */
+    uint8_t sr_shift;
+    uint16_t sample_rate;
+    uint32_t bit_rate;
+    uint8_t channels;
+    uint16_t frame_size;
+    uint64_t channel_layout;
+    /** @} */
+} AC3HeaderInfo;
 
 /**
  * Parse AC-3 frame header.
