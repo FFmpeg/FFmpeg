@@ -149,6 +149,9 @@ typedef struct BiquadsContext {
     ChanCache *cache;
     int block_align;
 
+    int64_t pts;
+    int nb_samples;
+
     void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
                    double b0, double b1, double b2, double a0, double a1, double a2, int *clippings,
@@ -995,7 +998,6 @@ static int config_filter(AVFilterLink *outlink, int reset)
                 return AVERROR(ENOMEM);
             av_samples_set_silence(s->block[i]->extended_data, 0, s->block_samples * 2,
                                    s->block[i]->ch_layout.nb_channels, s->block[i]->format);
-
         }
     }
 
@@ -1142,6 +1144,7 @@ static int config_output(AVFilterLink *outlink)
 
 typedef struct ThreadData {
     AVFrame *in, *out;
+    int eof;
 } ThreadData;
 
 static void reverse_samples(AVFrame *out, AVFrame *in, int p,
@@ -1194,7 +1197,6 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         enum AVChannel channel = av_channel_layout_channel_from_index(&inlink->ch_layout, ch);
 
         if (av_channel_layout_index_from_channel(&s->ch_layout, channel) < 0) {
-
             if (buf != out_buf)
                 memcpy(out_buf->extended_data[ch], buf->extended_data[ch],
                        buf->nb_samples * s->block_align);
@@ -1205,9 +1207,14 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
             s->filter(s, buf->extended_data[ch], out_buf->extended_data[ch], buf->nb_samples,
                       &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
                       s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
+        } else if (td->eof) {
+            memcpy(out_buf->extended_data[ch], s->block[1]->extended_data[ch] + s->block_align * s->block_samples,
+                   s->nb_samples * s->block_align);
         } else {
             memcpy(s->block[0]->extended_data[ch] + s->block_align * s->block_samples, buf->extended_data[ch],
                    buf->nb_samples * s->block_align);
+            memset(s->block[0]->extended_data[ch] + s->block_align * (s->block_samples + buf->nb_samples),
+                   0, (s->block_samples - buf->nb_samples) * s->block_align);
             s->filter(s, s->block[0]->extended_data[ch], s->block[1]->extended_data[ch], s->block_samples,
                       &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
                       s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
@@ -1220,15 +1227,17 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                       s->block_samples,
                       &s->cache[ch].ri1, &s->cache[ch].ri2, &s->cache[ch].ro1, &s->cache[ch].ro2,
                       s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
-            reverse_samples(s->block[2], s->block[1], ch, 0, 0, s->block_samples * 2);
+            reverse_samples(s->block[2], s->block[1], ch, 0, 0, 2 * s->block_samples);
             s->cache[ch].ri1 = 0.;
             s->cache[ch].ri2 = 0.;
             s->cache[ch].ro1 = 0.;
             s->cache[ch].ro2 = 0.;
-            s->filter(s, s->block[2]->extended_data[ch], s->block[2]->extended_data[ch], s->block[2]->nb_samples,
+            s->filter(s, s->block[2]->extended_data[ch], s->block[2]->extended_data[ch], 2 * s->block_samples,
                       &s->cache[ch].ri1, &s->cache[ch].ri2, &s->cache[ch].ro1, &s->cache[ch].ro2,
                       s->b0, s->b1, s->b2, s->a0, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
-            reverse_samples(out_buf, s->block[2], ch, 0, s->block_samples, out_buf->nb_samples);
+            reverse_samples(s->block[1], s->block[2], ch, 0, 0, 2 * s->block_samples);
+            memcpy(out_buf->extended_data[ch], s->block[1]->extended_data[ch],
+                   s->block_samples * s->block_align);
             memmove(s->block[0]->extended_data[ch], s->block[0]->extended_data[ch] + s->block_align * s->block_samples,
                     s->block_samples * s->block_align);
         }
@@ -1237,14 +1246,14 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf, int eof)
 {
     AVFilterContext  *ctx = inlink->dst;
     BiquadsContext *s     = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out_buf;
     ThreadData td;
-    int ch, ret;
+    int ch, ret, drop = 0;
 
     if (s->bypass)
         return ff_filter_frame(outlink, buf);
@@ -1258,10 +1267,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_channel_layout_from_string(&s->ch_layout,
                                       s->ch_layout_str);
 
-    if (av_frame_is_writable(buf)) {
+    if (av_frame_is_writable(buf) && s->block_samples == 0) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(outlink, buf->nb_samples);
+        out_buf = ff_get_audio_buffer(outlink, s->block_samples > 0 ? s->block_samples : buf->nb_samples);
         if (!out_buf) {
             av_frame_free(&buf);
             return AVERROR(ENOMEM);
@@ -1269,8 +1278,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_copy_props(out_buf, buf);
     }
 
+    if (s->block_samples > 0 && s->pts == AV_NOPTS_VALUE)
+        drop = 1;
     td.in = buf;
     td.out = out_buf;
+    td.eof = eof;
     ff_filter_execute(ctx, filter_channel, &td, NULL,
                       FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
@@ -1281,10 +1293,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         s->cache[ch].clippings = 0;
     }
 
+    if (s->block_samples > 0) {
+        int nb_samples = buf->nb_samples;
+        int64_t pts = buf->pts;
+
+        out_buf->pts = s->pts;
+        out_buf->nb_samples = s->nb_samples;
+        s->pts = pts;
+        s->nb_samples = nb_samples;
+    }
+
     if (buf != out_buf)
         av_frame_free(&buf);
 
-    return ff_filter_frame(outlink, out_buf);
+    if (!drop)
+        return ff_filter_frame(outlink, out_buf);
+    else {
+        av_frame_free(&out_buf);
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
 }
 
 static int activate(AVFilterContext *ctx)
@@ -1293,6 +1321,8 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     BiquadsContext *s = ctx->priv;
     AVFrame *in = NULL;
+    int64_t pts;
+    int status;
     int ret;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
@@ -1305,14 +1335,27 @@ static int activate(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
     if (ret > 0)
-        return filter_frame(inlink, in);
+        return filter_frame(inlink, in, 0);
 
     if (s->block_samples > 0 && ff_inlink_queued_samples(inlink) >= s->block_samples) {
         ff_filter_set_ready(ctx, 10);
         return 0;
     }
 
-    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (s->block_samples > 0) {
+            AVFrame *in = ff_get_audio_buffer(outlink, s->block_samples);
+            if (!in)
+                return AVERROR(ENOMEM);
+
+            ret = filter_frame(inlink, in, 1);
+        }
+
+        ff_outlink_set_status(outlink, status, pts);
+
+        return ret;
+    }
+
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
@@ -1365,6 +1408,7 @@ static av_cold int name_##_init(AVFilterContext *ctx)                   \
 {                                                                       \
     BiquadsContext *s = ctx->priv;                                      \
     s->filter_type = name_;                                             \
+    s->pts = AV_NOPTS_VALUE;                                            \
     return 0;                                                           \
 }                                                                       \
                                                          \
