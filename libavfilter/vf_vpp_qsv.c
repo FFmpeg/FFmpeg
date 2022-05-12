@@ -547,15 +547,17 @@ static int activate(AVFilterContext *ctx)
             qsv->eof = s->eof;
             ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
             av_frame_free(&in);
+            if (ret == AVERROR(EAGAIN))
+                goto not_ready;
+            else if (ret < 0)
+                return ret;
 
-            if (s->eof) {
-                ff_outlink_set_status(outlink, status, pts);
-                return 0;
-            }
+            if (s->eof)
+                goto eof;
 
             if (qsv->got_frame) {
                 qsv->got_frame = 0;
-                return ret;
+                return 0;
             }
         }
     } else {
@@ -564,18 +566,27 @@ static int activate(AVFilterContext *ctx)
                 in->pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
 
             ret = ff_filter_frame(outlink, in);
-            return ret;
+            if (ret < 0)
+                return ret;
+
+            if (s->eof)
+                goto eof;
+
+            return 0;
         }
     }
 
-    if (s->eof) {
-        ff_outlink_set_status(outlink, status, pts);
-        return 0;
-    } else {
-        FF_FILTER_FORWARD_WANTED(outlink, inlink);
-    }
+not_ready:
+    if (s->eof)
+        goto eof;
+
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
+
+eof:
+    ff_outlink_set_status(outlink, status, pts);
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
