@@ -29,6 +29,7 @@ typedef struct ASubBoostContext {
     double dry_gain;
     double wet_gain;
     double feedback;
+    double max_boost;
     double decay;
     double delay;
     double cutoff;
@@ -75,7 +76,7 @@ static int config_input(AVFilterLink *inlink)
     ASubBoostContext *s = ctx->priv;
 
     s->buffer = ff_get_audio_buffer(inlink, inlink->sample_rate / 10);
-    s->w = ff_get_audio_buffer(inlink, 2);
+    s->w = ff_get_audio_buffer(inlink, 3);
     s->write_pos = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->write_pos));
     if (!s->buffer || !s->w || !s->write_pos)
         return AVERROR(ENOMEM);
@@ -97,6 +98,7 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double wet = ctx->is_disabled ? 1. : s->wet_gain;
     const double dry = ctx->is_disabled ? 1. : s->dry_gain;
     const double feedback = s->feedback, decay = s->decay;
+    const double max_boost = s->max_boost;
     const double b0 = s->b0;
     const double b1 = s->b1;
     const double b2 = s->b2;
@@ -112,16 +114,21 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         double *buffer = (double *)s->buffer->extended_data[ch];
         double *w = (double *)s->w->extended_data[ch];
         int write_pos = s->write_pos[ch];
+        const double a = 0.00001;
+        const double b = 1. - a;
 
         for (int n = 0; n < in->nb_samples; n++) {
-            double out_sample;
+            double out_sample, boost;
 
             out_sample = src[n] * b0 + w[0];
             w[0] = b1 * src[n] + w[1] + a1 * out_sample;
             w[1] = b2 * src[n] + a2 * out_sample;
 
             buffer[write_pos] = buffer[write_pos] * decay + out_sample * feedback;
-            dst[n] = (src[n] * dry + buffer[write_pos] * mix) * wet;
+            boost = av_clipd((1. -  (fabs(src[n] * dry))) / fabs(buffer[write_pos]), 0., max_boost);
+            w[2] = boost > w[2] ? w[2] * b + a * boost : w[2] * a + b * boost;
+            w[2] = av_clipd(w[2], 0., max_boost);
+            dst[n] = (src[n] * dry + w[2] * buffer[write_pos] * mix) * wet;
 
             if (++write_pos >= buffer_samples)
                 write_pos = 0;
@@ -185,9 +192,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption asubboost_options[] = {
-    { "dry",      "set dry gain", OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0.7},      0,   1, FLAGS },
-    { "wet",      "set wet gain", OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0.7},      0,   1, FLAGS },
-    { "decay",    "set decay",    OFFSET(decay),    AV_OPT_TYPE_DOUBLE, {.dbl=0.7},      0,   1, FLAGS },
+    { "dry",      "set dry gain", OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1.0},      0,   1, FLAGS },
+    { "wet",      "set wet gain", OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1.0},      0,   1, FLAGS },
+    { "boost",    "set max boost",OFFSET(max_boost),AV_OPT_TYPE_DOUBLE, {.dbl=2.0},      1,  12, FLAGS },
+    { "decay",    "set decay",    OFFSET(decay),    AV_OPT_TYPE_DOUBLE, {.dbl=0.0},      0,   1, FLAGS },
     { "feedback", "set feedback", OFFSET(feedback), AV_OPT_TYPE_DOUBLE, {.dbl=0.9},      0,   1, FLAGS },
     { "cutoff",   "set cutoff",   OFFSET(cutoff),   AV_OPT_TYPE_DOUBLE, {.dbl=100},     50, 900, FLAGS },
     { "slope",    "set slope",    OFFSET(slope),    AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0.0001,   1, FLAGS },

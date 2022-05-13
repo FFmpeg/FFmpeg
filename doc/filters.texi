@@ -3131,15 +3131,18 @@ The filter accepts the following options:
 @table @option
 @item dry
 Set dry gain, how much of original signal is kept. Allowed range is from 0 to 1.
-Default value is 0.7.
+Default value is 1.0.
 
 @item wet
 Set wet gain, how much of filtered signal is kept. Allowed range is from 0 to 1.
-Default value is 0.7.
+Default value is 1.0.
+
+@item boost
+Set max boost factor. Allowed range is from 1 to 12. Default value is 2.
 
 @item decay
 Set delay line decay gain value. Allowed range is from 0 to 1.
-Default value is 0.7.
+Default value is 0.0.
 
 @item feedback
 Set delay line feedback gain value. Allowed range is from 0 to 1.
