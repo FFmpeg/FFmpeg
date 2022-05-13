@@ -78,6 +78,12 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic, int *g
         avctx->height    = headerset->height;
         avctx->pix_fmt   = headerset->output_bit_depth == 10 ?
                            AV_PIX_FMT_YUV420P10 : AV_PIX_FMT_YUV420P;
+        /* It should be picture_reorder_delay, but libdavs2 doesn't export that
+         * info.
+         * Use FFMAX since has_b_frames could be set by AVS2 parser in theory,
+         * which doesn't do it yet.
+         */
+        avctx->has_b_frames = FFMAX(avctx->has_b_frames, !headerset->low_delay);
 
         avctx->framerate = av_d2q(headerset->frame_rate,4096);
         *got_frame = 0;
