@@ -421,8 +421,10 @@ static int plot_freqs(AVFilterLink *inlink, int64_t pts)
         return AVERROR(ENOMEM);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out)
+    if (!out) {
+        av_free(colors);
         return AVERROR(ENOMEM);
+    }
 
     for (n = 0; n < outlink->h; n++)
         memset(out->data[0] + out->linesize[0] * n, 0, outlink->w * 4);
