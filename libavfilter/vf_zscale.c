@@ -119,8 +119,8 @@ typedef struct ZScaleContext {
     void *tmp[MAX_THREADS]; //separate for each thread;
     int nb_threads;
     int jobs_ret[MAX_THREADS];
-    int in_slice_start[MAX_THREADS];
-    int in_slice_end[MAX_THREADS];
+    double in_slice_start[MAX_THREADS];
+    double in_slice_end[MAX_THREADS];
     int out_slice_start[MAX_THREADS];
     int out_slice_end[MAX_THREADS];
 
@@ -250,8 +250,8 @@ static void slice_params(ZScaleContext *s, int out_h, int in_h)
     }
 
     for (int i = 0; i < s->nb_threads; i++) {
-        s->in_slice_start[i] = av_rescale_rnd(s->out_slice_start[i], in_h * 2, out_h * 2, AV_ROUND_NEAR_INF);
-        s->in_slice_end[i] = av_rescale_rnd(s->out_slice_end[i], in_h * 2, out_h * 2, AV_ROUND_NEAR_INF);
+        s->in_slice_start[i] = s->out_slice_start[i] * in_h / (double)out_h;
+        s->in_slice_end[i]   = s->out_slice_end[i]   * in_h / (double)out_h;
     }
 }
 
@@ -599,8 +599,8 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
     zimg_image_format dst_format;
     zimg_image_format alpha_src_format;
     zimg_image_format alpha_dst_format;
-    const int in_slice_start  = s->in_slice_start[job_nr];
-    const int in_slice_end    = s->in_slice_end[job_nr];
+    const double in_slice_start  = s->in_slice_start[job_nr];
+    const double in_slice_end    = s->in_slice_end[job_nr];
     const int out_slice_start = s->out_slice_start[job_nr];
     const int out_slice_end   = s->out_slice_end[job_nr];
 
