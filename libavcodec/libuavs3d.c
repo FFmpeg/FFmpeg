@@ -206,7 +206,7 @@ static int libuavs3d_decode_frame(AVCodecContext *avctx, AVFrame *frm,
                     avctx->framerate.num = ff_avs3_frame_rate_tab[seqh->frame_rate_code].num;
                     avctx->framerate.den = ff_avs3_frame_rate_tab[seqh->frame_rate_code].den;
                 }
-                avctx->has_b_frames  = !seqh->low_delay;
+                avctx->has_b_frames = seqh->output_reorder_delay;
                 avctx->pix_fmt = seqh->bit_depth_internal == 8 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV420P10LE;
                 ret = ff_set_dimensions(avctx, seqh->horizontal_size, seqh->vertical_size);
                 if (ret < 0)
