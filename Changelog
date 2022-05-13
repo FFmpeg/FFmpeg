@@ -1,6 +1,14 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.1.10:
+ avfilter/vf_colorspace: fix memmory leaks
+ avcodec/ac3enc: Fix memleak
+ avformat/nutenc: don't allocate a dynamic AVIOContext if no index is going to be written
+ avfilter/vf_random: fix memory leaks
+ fftools/ffmpeg_opt: Fix leak of options when parsing options fails
+ lavf/tls_mbedtls: add support for mbedtls version 3
+
 version 4.1.9:
  avfilter/vf_lenscorrection: make width/height int
  avcodec/diracdec: avoid signed integer overflow in global mv
