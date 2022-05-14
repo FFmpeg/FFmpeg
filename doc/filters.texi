@@ -1655,6 +1655,22 @@ Allowed range is from @var{1} to @var{32}. Default is @var{1}.
 Set IR stream which will be used for convolution, starting from @var{0}, should always be
 lower than supplied value by @code{nbirs} option. Default is @var{0}.
 This option can be changed at runtime via @ref{commands}.
+
+@item precision
+Set which precision to use when processing samples.
+
+@table @option
+@item auto
+Auto pick internal sample format depending on other filters.
+
+@item float
+Always use single-floating point precision sample format.
+
+@item double
+Always use double-floating point precision sample format.
+@end table
+
+Default value is auto.
 @end table
 
 @subsection Examples
