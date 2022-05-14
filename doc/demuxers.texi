@@ -274,6 +274,17 @@ which streams to actually receive.
 Each stream mirrors the @code{id} and @code{bandwidth} properties from the
 @code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
 
+@subsection Options
+
+This demuxer accepts the following option:
+
+@table @option
+
+@item cenc_decryption_key
+16-byte key, in hex, to decrypt files encrypted using ISO Common Encryption (CENC/AES-128 CTR; ISO/IEC 23001-7).
+
+@end table
+
 @section imf
 
 Interoperable Master Format demuxer.
