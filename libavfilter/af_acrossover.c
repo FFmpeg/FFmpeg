@@ -58,6 +58,7 @@ typedef struct AudioCrossoverContext {
     char *gains_str;
     int order_opt;
     float level_in;
+    int precision;
 
     int order;
     int filter_count;
@@ -99,10 +100,51 @@ static const AVOption acrossover_options[] = {
     { "20th",  "20th order (120 dB/8ve)",0,                 AV_OPT_TYPE_CONST,  {.i64=9},     0, 0, AF, "m" },
     { "level", "set input gain",        OFFSET(level_in),   AV_OPT_TYPE_FLOAT,  {.dbl=1},     0, 1, AF },
     { "gain",  "set output bands gain", OFFSET(gains_str),  AV_OPT_TYPE_STRING, {.str="1.f"}, 0, 0, AF },
+    { "precision",  "set processing precision", OFFSET(precision),   AV_OPT_TYPE_INT,   {.i64=0}, 0, 2, AF, "precision" },
+    {  "auto",  "set auto processing precision",                  0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AF, "precision" },
+    {  "float", "set single-floating point processing precision", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AF, "precision" },
+    {  "double","set double-floating point processing precision", 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, AF, "precision" },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(acrossover);
+
+static int query_formats(AVFilterContext *ctx)
+{
+    AudioCrossoverContext *s = ctx->priv;
+    static const enum AVSampleFormat auto_sample_fmts[] = {
+        AV_SAMPLE_FMT_FLTP,
+        AV_SAMPLE_FMT_DBLP,
+        AV_SAMPLE_FMT_NONE
+    };
+    enum AVSampleFormat sample_fmts[] = {
+        AV_SAMPLE_FMT_FLTP,
+        AV_SAMPLE_FMT_NONE
+    };
+    const enum AVSampleFormat *sample_fmts_list = sample_fmts;
+    int ret = ff_set_common_all_channel_counts(ctx);
+    if (ret < 0)
+        return ret;
+
+    switch (s->precision) {
+    case 0:
+        sample_fmts_list = auto_sample_fmts;
+        break;
+    case 1:
+        sample_fmts[0] = AV_SAMPLE_FMT_FLTP;
+        break;
+    case 2:
+        sample_fmts[0] = AV_SAMPLE_FMT_DBLP;
+        break;
+    default:
+        break;
+    }
+    ret = ff_set_common_formats_from_list(ctx, sample_fmts_list);
+    if (ret < 0)
+        return ret;
+
+    return ff_set_common_all_samplerates(ctx);
+}
 
 static int parse_gains(AVFilterContext *ctx)
 {
@@ -586,7 +628,7 @@ const AVFilter ff_af_acrossover = {
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     .outputs        = NULL,
-    FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
+    FILTER_QUERY_FUNC(query_formats),
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                       AVFILTER_FLAG_SLICE_THREADS,
 };

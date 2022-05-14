@@ -557,6 +557,22 @@ Set input gain level. Allowed range is from 0 to 1. Default value is 1.
 
 @item gains
 Set output gain for each band. Default value is 1 for all bands.
+
+@item precision
+Set which precision to use when processing samples.
+
+@table @option
+@item auto
+Auto pick internal sample format depending on other filters.
+
+@item float
+Always use single-floating point precision sample format.
+
+@item double
+Always use double-floating point precision sample format.
+@end table
+
+Default value is @code{auto}.
 @end table
 
 @subsection Examples
