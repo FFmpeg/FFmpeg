@@ -1895,7 +1895,7 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     pls->ctx->io_open  = nested_io_open;
 
     if (c->cenc_decryption_key)
-        av_dict_set(&in_fmt_opts, "decryption_key", c->cenc_decryption_key, AV_OPT_FLAG_DECODING_PARAM);
+        av_dict_set(&in_fmt_opts, "decryption_key", c->cenc_decryption_key, 0);
 
     // provide additional information from mpd if available
     ret = avformat_open_input(&pls->ctx, "", in_fmt, &in_fmt_opts); //pls->init_section->url

@@ -2065,7 +2065,7 @@ static int hls_read_header(AVFormatContext *s)
             if (strstr(in_fmt->name, "mov")) {
                 char key[33];
                 ff_data_to_hex(key, pls->key, sizeof(pls->key), 0);
-                av_dict_set(&options, "decryption_key", key, AV_OPT_FLAG_DECODING_PARAM);
+                av_dict_set(&options, "decryption_key", key, 0);
             } else if (!c->crypto_ctx.aes_ctx) {
                 c->crypto_ctx.aes_ctx = av_aes_alloc();
                 if (!c->crypto_ctx.aes_ctx) {
