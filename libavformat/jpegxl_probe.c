@@ -250,8 +250,11 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen)
     int xyb_encoded = 1, have_icc_profile = 0;
     uint32_t num_extra_channels;
     uint64_t extensions;
+    int ret;
 
-    init_get_bits8(gb, buf, buflen);
+    ret = init_get_bits8(gb, buf, buflen);
+    if (ret < 0)
+        return ret;
 
     if (jxl_bits(16) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
         return -1;
