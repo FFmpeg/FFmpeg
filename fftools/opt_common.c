@@ -51,6 +51,9 @@
 #include "libavdevice/avdevice.h"
 #include "libavdevice/version.h"
 
+#include "libavfilter/avfilter.h"
+#include "libavfilter/version.h"
+
 #include "libswscale/swscale.h"
 #include "libswscale/version.h"
 
