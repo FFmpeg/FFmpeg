@@ -180,7 +180,8 @@ av_warn_unused_result
 int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts);
 
 av_warn_unused_result
-int ff_add_channel_layout(AVFilterChannelLayouts **l, AVChannelLayout *channel_layout);
+int ff_add_channel_layout(AVFilterChannelLayouts **l,
+                          const AVChannelLayout *channel_layout);
 
 /**
  * Add *ref as a new reference to f.

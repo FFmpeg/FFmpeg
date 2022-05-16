@@ -464,7 +464,8 @@ do {                                                              \
     (*f)->nb++;                                                   \
 } while (0)
 
-int ff_add_channel_layout(AVFilterChannelLayouts **l, AVChannelLayout *channel_layout)
+int ff_add_channel_layout(AVFilterChannelLayouts **l,
+                          const AVChannelLayout *channel_layout)
 {
     av_assert1(!(*l && (*l)->all_layouts));
     ADD_FORMAT(l, channel_layout, ff_channel_layouts_unref, AVChannelLayout, channel_layouts, nb_channel_layouts);
