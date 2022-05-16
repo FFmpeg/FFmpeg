@@ -57,6 +57,9 @@ union VDPAUPictureInfo {
 #ifdef VDP_DECODER_PROFILE_VP9_PROFILE_0
     VdpPictureInfoVP9        vp9;
 #endif
+#ifdef VDP_DECODER_PROFILE_AV1_MAIN
+    VdpPictureInfoAV1        av1;
+#endif
 };
 
 typedef struct VDPAUHWContext {
