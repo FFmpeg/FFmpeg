@@ -617,74 +617,19 @@ fate-filter-setdar: CMD = video_filter "setdar=dar=16/9"
 FATE_FILTER_VSYNTH-$(CONFIG_SETSAR_FILTER) += fate-filter-setsar
 fate-filter-setsar: CMD = video_filter "setsar=sar=16/11"
 
-FATE_STEREO3D += fate-filter-stereo3d-al-sbsl
-fate-filter-stereo3d-al-sbsl: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=al:sbsl
+FATE_STEREO3D := al-sbsl ar-abl abr-mr abr-ml sbsl-abl sbsl-abr sbsl-al sbsl-sbsr
+FATE_STEREO3D := $(addprefix fate-filter-stereo3d-, $(FATE_STEREO3D))
+$(FATE_STEREO3D): CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -vf stereo3d=$(word 4, $(subst -, ,$(@))):$(word 5, $(subst -, ,$(@)))
+FATE_STEREO3D-$(call FILTERDEMDEC, STEREO3D, IMAGE2, PGMYUV) += $(FATE_STEREO3D)
 
-FATE_STEREO3D += fate-filter-stereo3d-ar-abl
-fate-filter-stereo3d-ar-abl: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=ar:abl
+FATE_STEREO3D_ANAGLYPH := agmc agmd agmg agmh arbg arcc arcd arcg arch argg \
+                          aybc aybd aybg aybh
+FATE_STEREO3D_ANAGLYPH := $(addprefix fate-filter-stereo3d-sbsl-, $(FATE_STEREO3D_ANAGLYPH))
+$(FATE_STEREO3D_ANAGLYPH): CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=$(word 4, $(subst -, ,$(@))):$(word 5, $(subst -, ,$(@)))
+FATE_STEREO3D-$(call FILTERDEMDEC, SCALE STEREO3D, IMAGE2, PGMYUV) += $(FATE_STEREO3D_ANAGLYPH)
 
-FATE_STEREO3D += fate-filter-stereo3d-abr-mr
-fate-filter-stereo3d-abr-mr: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=abr:mr
-
-FATE_STEREO3D += fate-filter-stereo3d-abr-ml
-fate-filter-stereo3d-abr-ml: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=abr:ml
-
-FATE_STEREO3D  += fate-filter-stereo3d-sbsl-abl
-fate-filter-stereo3d-sbsl-abl: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:abl
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-abr
-fate-filter-stereo3d-sbsl-abr: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:abr
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-al
-fate-filter-stereo3d-sbsl-al: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:al
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-sbsr
-fate-filter-stereo3d-sbsl-sbsr: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:sbsr
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-agmc
-fate-filter-stereo3d-sbsl-agmc: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:agmc
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-agmd
-fate-filter-stereo3d-sbsl-agmd: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:agmd
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-agmg
-fate-filter-stereo3d-sbsl-agmg: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:agmg
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-agmh
-fate-filter-stereo3d-sbsl-agmh: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:agmh
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-arbg
-fate-filter-stereo3d-sbsl-arbg: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:arbg
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-arcc
-fate-filter-stereo3d-sbsl-arcc: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:arcc
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-arcd
-fate-filter-stereo3d-sbsl-arcd: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:arcd
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-arcg
-fate-filter-stereo3d-sbsl-arcg: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:arcg
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-arch
-fate-filter-stereo3d-sbsl-arch: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:arch
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-argg
-fate-filter-stereo3d-sbsl-argg: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:argg
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-aybc
-fate-filter-stereo3d-sbsl-aybc: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:aybc
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-aybd
-fate-filter-stereo3d-sbsl-aybd: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:aybd
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-aybg
-fate-filter-stereo3d-sbsl-aybg: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:aybg
-
-FATE_STEREO3D += fate-filter-stereo3d-sbsl-aybh
-fate-filter-stereo3d-sbsl-aybh: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf scale,stereo3d=sbsl:aybh
-
-fate-filter-stereo3d: $(FATE_STEREO3D)
-FATE_FILTER_VSYNTH-$(CONFIG_STEREO3D_FILTER) += $(FATE_STEREO3D)
+fate-filter-stereo3d: $(FATE_STEREO3D-yes)
+FATE_FILTER_VSYNTH-yes += $(FATE_STEREO3D-yes)
 
 FATE_FILTER_VSYNTH-$(CONFIG_THUMBNAIL_FILTER) += fate-filter-thumbnail
 fate-filter-thumbnail: CMD = video_filter "scale,thumbnail=10"
