@@ -28,8 +28,6 @@
 #ifndef AVCODEC_MPEGVIDEO_H
 #define AVCODEC_MPEGVIDEO_H
 
-#include <float.h>
-
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "error_resilience.h"

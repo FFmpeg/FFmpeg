@@ -28,6 +28,8 @@
 #ifndef AVCODEC_MPEGVIDEOENC_H
 #define AVCODEC_MPEGVIDEOENC_H
 
+#include <float.h>
+
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
 
