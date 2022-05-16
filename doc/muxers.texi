@@ -1731,6 +1731,14 @@ B-frames. Additionally, eases conformance with the DASH-IF interoperability
 guidelines.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+
+@item -write_btrt @var{bool}
+Force or disable writing bitrate box inside stsd box of a track.
+The box contains decoding buffer size (in bytes), maximum bitrate and
+average bitrate for the track. The box will be skipped if none of these values
+can be computed.
+Default is @code{-1} or @code{auto}, which will write the box only in MP4 mode.
+
 @item -write_prft
 Write producer time reference box (PRFT) with a specified time source for the
 NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
