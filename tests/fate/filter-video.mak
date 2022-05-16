@@ -274,83 +274,14 @@ FATE_FILTER_SAMPLES-$(call ALLYES, PNG_DECODER APNG_DEMUXER FORMAT_FILTER COLOR_
 FATE_FILTER_VSYNTH-$(CONFIG_PHASE_FILTER) += fate-filter-phase
 fate-filter-phase: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf phase
 
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-00
-fate-filter-removegrain-mode-00: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=0:0:0
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-01
-fate-filter-removegrain-mode-01: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=1:1:1
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-02
-fate-filter-removegrain-mode-02: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=2:2:2
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-03
-fate-filter-removegrain-mode-03: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=3:3:3
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-04
-fate-filter-removegrain-mode-04: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=4:4:4
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-05
-fate-filter-removegrain-mode-05: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=5:5:5
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-06
-fate-filter-removegrain-mode-06: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=6:6:6
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-07
-fate-filter-removegrain-mode-07: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=7:7:7
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-08
-fate-filter-removegrain-mode-08: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=8:8:8
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-09
-fate-filter-removegrain-mode-09: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=9:9:9
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-10
-fate-filter-removegrain-mode-10: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=10:10:10
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-11
-fate-filter-removegrain-mode-11: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=11:11:11
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-12
-fate-filter-removegrain-mode-12: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=12:12:12
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-13
-fate-filter-removegrain-mode-13: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=13:13:13
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-14
-fate-filter-removegrain-mode-14: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=14:14:14
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-15
-fate-filter-removegrain-mode-15: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=15:15:15
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-16
-fate-filter-removegrain-mode-16: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=16:16:16
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-17
-fate-filter-removegrain-mode-17: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=17:17:17
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-18
-fate-filter-removegrain-mode-18: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=18:18:18
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-19
-fate-filter-removegrain-mode-19: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=19:19:19
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-20
-fate-filter-removegrain-mode-20: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=20:20:20
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-21
-fate-filter-removegrain-mode-21: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=21:21:21
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-22
-fate-filter-removegrain-mode-22: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=22:22:22
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-23
-fate-filter-removegrain-mode-23: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=23:23:23
-
-FATE_REMOVEGRAIN += fate-filter-removegrain-mode-24
-fate-filter-removegrain-mode-24: CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=24:24:24
-
-fate-filter-removegrain: $(FATE_REMOVEGRAIN)
-FATE_FILTER_VSYNTH-$(CONFIG_REMOVEGRAIN_FILTER) += $(FATE_REMOVEGRAIN)
+FATE_REMOVEGRAIN := 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 \
+                    16 17 18 19 20 21 22 23 24
+FATE_REMOVEGRAIN := $(addprefix fate-filter-removegrain-mode-, $(FATE_REMOVEGRAIN))
+$(FATE_REMOVEGRAIN): MODE = $(word 5, $(subst -, ,$(@)))
+$(FATE_REMOVEGRAIN): CMD = framecrc -c:v pgmyuv -i $(SRC) -frames:v 1 -vf removegrain=$(MODE):$(MODE):$(MODE)
+FATE_REMOVEGRAIN-$(call FILTERDEMDEC, REMOVEGRAIN, IMAGE2, PGMYUV) += $(FATE_REMOVEGRAIN)
+fate-filter-removegrain: $(FATE_REMOVEGRAIN-yes)
+FATE_FILTER_VSYNTH-yes += $(FATE_REMOVEGRAIN-yes)
 
 FATE_FILTER_VSYNTH-$(CONFIG_SEPARATEFIELDS_FILTER) += fate-filter-separatefields
 fate-filter-separatefields: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf separatefields
