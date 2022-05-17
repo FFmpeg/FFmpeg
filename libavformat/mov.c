@@ -1271,15 +1271,18 @@ static int64_t get_stream_info_time(MOVFragmentStreamInfo * frag_stream_info)
     return frag_stream_info->tfdt_dts;
 }
 
-static int64_t get_frag_time(MOVFragmentIndex *frag_index,
-                             int index, int track_id)
+static int64_t get_frag_time(AVFormatContext *s, AVStream *dst_st,
+                             MOVFragmentIndex *frag_index, int index)
 {
     MOVFragmentStreamInfo * frag_stream_info;
+    MOVStreamContext *sc = dst_st->priv_data;
     int64_t timestamp;
-    int i;
+    int i, j;
 
-    if (track_id >= 0) {
-        frag_stream_info = get_frag_stream_info(frag_index, index, track_id);
+    // If the stream is referenced by any sidx, limit the search
+    // to fragments that referenced this stream in the sidx
+    if (sc->has_sidx) {
+        frag_stream_info = get_frag_stream_info(frag_index, index, dst_st->id);
         if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE)
             return frag_stream_info->sidx_pts;
         if (frag_stream_info->first_tfra_pts != AV_NOPTS_VALUE)
@@ -1288,28 +1291,27 @@ static int64_t get_frag_time(MOVFragmentIndex *frag_index,
     }
 
     for (i = 0; i < frag_index->item[index].nb_stream_info; i++) {
+        AVStream *frag_stream = NULL;
         frag_stream_info = &frag_index->item[index].stream_info[i];
+        for (j = 0; j < s->nb_streams; j++)
+            if (s->streams[j]->id == frag_stream_info->id)
+                frag_stream = s->streams[j];
+        if (!frag_stream) {
+            av_log(s, AV_LOG_WARNING, "No stream matching sidx ID found.\n");
+            continue;
+        }
         timestamp = get_stream_info_time(frag_stream_info);
         if (timestamp != AV_NOPTS_VALUE)
-            return timestamp;
+            return av_rescale_q(timestamp, frag_stream->time_base, dst_st->time_base);
     }
     return AV_NOPTS_VALUE;
 }
 
-static int search_frag_timestamp(MOVFragmentIndex *frag_index,
+static int search_frag_timestamp(AVFormatContext *s, MOVFragmentIndex *frag_index,
                                  AVStream *st, int64_t timestamp)
 {
     int a, b, m, m0;
     int64_t frag_time;
-    int id = -1;
-
-    if (st) {
-        // If the stream is referenced by any sidx, limit the search
-        // to fragments that referenced this stream in the sidx
-        MOVStreamContext *sc = st->priv_data;
-        if (sc->has_sidx)
-            id = st->id;
-    }
 
     a = -1;
     b = frag_index->nb_items;
@@ -1318,7 +1320,7 @@ static int search_frag_timestamp(MOVFragmentIndex *frag_index,
         m0 = m = (a + b) >> 1;
 
         while (m < b &&
-               (frag_time = get_frag_time(frag_index, m, id)) == AV_NOPTS_VALUE)
+               (frag_time = get_frag_time(s, st, frag_index, m)) == AV_NOPTS_VALUE)
             m++;
 
         if (m < b && frag_time <= timestamp)
@@ -8862,7 +8864,7 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
     if (!mov->frag_index.complete)
         return 0;
 
-    index = search_frag_timestamp(&mov->frag_index, st, timestamp);
+    index = search_frag_timestamp(s, &mov->frag_index, st, timestamp);
     if (index < 0)
         index = 0;
     if (!mov->frag_index.item[index].headers_read)
