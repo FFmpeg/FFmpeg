@@ -214,62 +214,44 @@ FATE_FILTER_VSYNTH-$(CONFIG_VSTACK_FILTER) += fate-filter-vstack
 fate-filter-vstack: tests/data/filtergraphs/vstack
 fate-filter-vstack: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/vstack
 
-FATE_FILTER_VSYNTH-$(CONFIG_OVERLAY_FILTER) += fate-filter-overlay
-fate-filter-overlay: tests/data/filtergraphs/overlay
-fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay
+FATE_FILTER_OVERLAY-$(call FILTERDEMDEC, SCALE OVERLAY, IMAGE2, PGMYUV) += fate-filter-overlay
+fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(FILTERGRAPH)
 
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_rgb
-fate-filter-overlay_rgb: tests/data/filtergraphs/overlay_rgb
-fate-filter-overlay_rgb: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_rgb
+FATE_FILTER_OVERLAY-$(call FILTERDEMDEC, SPLIT SCALE PAD OVERLAY, IMAGE2, PGMYUV) += $(addprefix fate-filter-overlay_, rgb yuv420 yuv420p10 nv12 nv21 yuv422 yuv422p10 yuv444)
+fate-filter-overlay_%: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(FILTERGRAPH)
+fate-filter-overlay_yuv420: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(FILTERGRAPH)
+fate-filter-overlay_%p10: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(FILTERGRAPH) -pix_fmt $(@:fate-filter-overlay_%=%)le -frames:v 3
 
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv420
-fate-filter-overlay_yuv420: tests/data/filtergraphs/overlay_yuv420
-fate-filter-overlay_yuv420: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv420
+$(addprefix fate-filter-overlay_, nv12 nv21): REF = $(SRC_PATH)/tests/ref/fate/filter-overlay_yuv420
 
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv420p10
-fate-filter-overlay_yuv420p10: tests/data/filtergraphs/overlay_yuv420p10
-fate-filter-overlay_yuv420p10: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv420p10 -pix_fmt yuv420p10le -frames:v 3
+FATE_FILTER_OVERLAY_SAMPLES-$(call FILTERDEMDEC, SCALE OVERLAY, MATROSKA, H264 DVDSUB) += fate-filter-overlay-dvdsub-2397
+fate-filter-overlay-dvdsub-2397: CMD = framecrc -auto_conversion_filters -flags bitexact -i $(TARGET_SAMPLES)/filter/242_4.mkv -filter_complex_script $(FILTERGRAPH) -c:a copy
 
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_nv12
-fate-filter-overlay_nv12: tests/data/filtergraphs/overlay_nv12
-fate-filter-overlay_nv12: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_nv12
-fate-filter-overlay_nv12: REF = $(SRC_PATH)/tests/ref/fate/filter-overlay_yuv420
+FATE_FILTER_OVERLAY := $(FATE_FILTER_OVERLAY-yes) $(FATE_FILTER_OVERLAY_SAMPLES-yes)
+$(FATE_FILTER_OVERLAY): FILTERGRAPH = $(TARGET_PATH)/tests/data/filtergraphs/$(@:fate-filter-%=%)
+$(FATE_FILTER_OVERLAY): fate-filter-%: tests/data/filtergraphs/%
+FATE_FILTER_VSYNTH-yes += $(FATE_FILTER_OVERLAY-yes)
 
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_nv21
-fate-filter-overlay_nv21: tests/data/filtergraphs/overlay_nv21
-fate-filter-overlay_nv21: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_nv21
-fate-filter-overlay_nv21: REF = $(SRC_PATH)/tests/ref/fate/filter-overlay_yuv420
-
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv422
-fate-filter-overlay_yuv422: tests/data/filtergraphs/overlay_yuv422
-fate-filter-overlay_yuv422: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv422
-
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv422p10
-fate-filter-overlay_yuv422p10: tests/data/filtergraphs/overlay_yuv422p10
-fate-filter-overlay_yuv422p10: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv422p10 -pix_fmt yuv422p10le -frames:v 3
-
-FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv444
-fate-filter-overlay_yuv444: tests/data/filtergraphs/overlay_yuv444
-fate-filter-overlay_yuv444: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay_yuv444
-
-FATE_FILTER_OVERLAY_ALPHA += fate-filter-overlay_yuv420_yuva420  fate-filter-overlay_yuv422_yuva422  fate-filter-overlay_yuv444_yuva444  fate-filter-overlay_rgb_rgba  fate-filter-overlay_gbrp_gbrap
-FATE_FILTER_OVERLAY_ALPHA += fate-filter-overlay_yuva420_yuva420 fate-filter-overlay_yuva422_yuva422 fate-filter-overlay_yuva444_yuva444 fate-filter-overlay_rgba_rgba fate-filter-overlay_gbrap_gbrap
+FATE_FILTER_OVERLAY_ALPHA-$(call FILTERDEMDEC, COLOR FORMAT OVERLAY SCALE, IMAGE_PNG_PIPE, PNG) := yuv420_yuva420 yuv422_yuva422 yuv444_yuva444 gbrp_gbrap yuva420_yuva420 yuva422_yuva422 yuva444_yuva444 gbrap_gbrap
+FATE_FILTER_OVERLAY_ALPHA-$(call FILTERDEMDEC, COLOR FORMAT OVERLAY, IMAGE_PNG_PIPE, PNG) += rgb_rgba rgba_rgba
+FATE_FILTER_OVERLAY_ALPHA := $(addprefix fate-filter-overlay_, $(FATE_FILTER_OVERLAY_ALPHA-yes))
 $(FATE_FILTER_OVERLAY_ALPHA): SRC = $(TARGET_SAMPLES)/png1/lena-rgba.png
 $(FATE_FILTER_OVERLAY_ALPHA): CMD = framecrc -i $(SRC) -sws_flags +accurate_rnd+bitexact -vf $(FILTER) -frames:v 1
 
 fate-filter-overlay_yuv420_yuva420:  FILTER = "scale,format=yuva420p[over];color=black:128x128,format=yuv420p[main];[main][over]overlay=format=yuv420"
 fate-filter-overlay_yuv422_yuva422:  FILTER = "scale,format=yuva422p[over];color=black:128x128,format=yuv422p[main];[main][over]overlay=format=yuv422"
 fate-filter-overlay_yuv444_yuva444:  FILTER = "scale,format=yuva444p[over];color=black:128x128,format=yuv444p[main];[main][over]overlay=format=yuv444"
-fate-filter-overlay_rgb_rgba:        FILTER = "scale,format=rgba[over];color=black:128x128,format=rgb24[main];[main][over]overlay=format=rgb"
+fate-filter-overlay_rgb_rgba:        FILTER = "format=rgba[over];color=black:128x128,format=rgb24[main];[main][over]overlay=format=rgb"
 fate-filter-overlay_gbrp_gbrap:      FILTER = "scale,format=gbrap[over];color=black:128x128,format=gbrp[main];[main][over]overlay=format=gbrp"
 
 fate-filter-overlay_yuva420_yuva420: FILTER = "scale,format=yuva420p[over];color=black:128x128,format=yuva420p[main];[main][over]overlay=format=yuv420"
 fate-filter-overlay_yuva422_yuva422: FILTER = "scale,format=yuva422p[over];color=black:128x128,format=yuva422p[main];[main][over]overlay=format=yuv422"
 fate-filter-overlay_yuva444_yuva444: FILTER = "scale,format=yuva444p[over];color=black:128x128,format=yuva444p[main];[main][over]overlay=format=yuv444"
-fate-filter-overlay_rgba_rgba:       FILTER = "scale,format=rgba[over];color=black:128x128,format=rgba[main];[main][over]overlay=format=rgb"
+fate-filter-overlay_rgba_rgba:       FILTER = "format=rgba[over];color=black:128x128,format=rgba[main];[main][over]overlay=format=rgb"
 fate-filter-overlay_gbrap_gbrap:     FILTER = "scale,format=gbrap[over];color=black:128x128,format=gbrap[main];[main][over]overlay=format=gbrp"
 
-FATE_FILTER_SAMPLES-$(call ALLYES, PNG_DECODER APNG_DEMUXER FORMAT_FILTER COLOR_FILTER OVERLAY_FILTER) += $(FATE_FILTER_OVERLAY_ALPHA)
+FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_OVERLAY_SAMPLES-yes) $(FATE_FILTER_OVERLAY_ALPHA)
+fate-filter-overlays: $(FATE_FILTER_OVERLAY) $(FATE_FILTER_OVERLAY_ALPHA)
 
 FATE_FILTER_VSYNTH-$(CONFIG_PHASE_FILTER) += fate-filter-phase
 fate-filter-phase: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf phase
@@ -354,10 +336,6 @@ fate-filter-unsharp-yuv420p10: CMD = framecrc -lavfi testsrc2=r=2:d=10,scale,for
 FATE_FILTER_SAMPLES-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILTER) += fate-filter-hqdn3d-sample
 fate-filter-hqdn3d-sample: tests/data/filtergraphs/hqdn3d
 fate-filter-hqdn3d-sample: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/hqdn3d -an
-
-FATE_FILTER_SAMPLES-$(call ALLYES, MATROSKA_DEMUXER OVERLAY_FILTER H264_DECODER DVDSUB_DECODER) += fate-filter-overlay-dvdsub-2397
-fate-filter-overlay-dvdsub-2397: tests/data/filtergraphs/overlay-dvdsub-2397
-fate-filter-overlay-dvdsub-2397: CMD = framecrc -auto_conversion_filters -flags bitexact -i $(TARGET_SAMPLES)/filter/242_4.mkv -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay-dvdsub-2397 -c:a copy
 
 FATE_FILTER_EPX-$(call ALLYES, IMAGE2_DEMUXER PNG_DECODER EPX_FILTER) = fate-filter-ep2x fate-filter-ep3x
 FATE_FILTER_SAMPLES-yes += $(FATE_FILTER_EPX-yes)
