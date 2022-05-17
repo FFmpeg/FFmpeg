@@ -4239,7 +4239,7 @@ static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDes
 }
 
 // Calculate remap data
-static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     V360Context *s = ctx->priv;
     SliceXYRemap *r = &s->slice_remap[jobnr];
