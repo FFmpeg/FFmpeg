@@ -78,20 +78,26 @@ static void check_sao_band(HEVCDSPContext h, int bit_depth)
 
     for (i = 0; i <= 4; i++) {
         int block_size = sao_size[i];
+        int prev_size = i > 0 ? sao_size[i - 1] : 0;
         ptrdiff_t stride = PIXEL_STRIDE*SIZEOF_PIXEL;
         declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t dst_stride, ptrdiff_t src_stride,
                           int16_t *sao_offset_val, int sao_left_class, int width, int height);
 
-        randomize_buffers(src0, src1, BUF_SIZE);
-        randomize_buffers2(offset_val, OFFSET_LENGTH);
-        memset(dst0, 0, BUF_SIZE);
-        memset(dst1, 0, BUF_SIZE);
+        if (check_func(h.sao_band_filter[i], "hevc_sao_band_%d_%d", block_size, bit_depth)) {
 
-        if (check_func(h.sao_band_filter[i], "hevc_sao_band_%dx%d_%d", block_size, block_size, bit_depth)) {
-            call_ref(dst0, src0, stride, stride, offset_val, left_class, block_size, block_size);
-            call_new(dst1, src1, stride, stride, offset_val, left_class, block_size, block_size);
-            if (memcmp(dst0, dst1, BUF_SIZE))
-                fail();
+            for (int w = prev_size + 4; w <= block_size; w += 4) {
+                randomize_buffers(src0, src1, BUF_SIZE);
+                randomize_buffers2(offset_val, OFFSET_LENGTH);
+                memset(dst0, 0, BUF_SIZE);
+                memset(dst1, 0, BUF_SIZE);
+
+                call_ref(dst0, src0, stride, stride, offset_val, left_class, w, block_size);
+                call_new(dst1, src1, stride, stride, offset_val, left_class, w, block_size);
+                for (int j = 0; j < block_size; j++) {
+                    if (memcmp(dst0 + j*stride, dst1 + j*stride, w*SIZEOF_PIXEL))
+                        fail();
+                }
+            }
             bench_new(dst1, src1, stride, stride, offset_val, left_class, block_size, block_size);
         }
     }
@@ -109,21 +115,26 @@ static void check_sao_edge(HEVCDSPContext h, int bit_depth)
 
     for (i = 0; i <= 4; i++) {
         int block_size = sao_size[i];
+        int prev_size = i > 0 ? sao_size[i - 1] : 0;
         ptrdiff_t stride = PIXEL_STRIDE*SIZEOF_PIXEL;
         int offset = (AV_INPUT_BUFFER_PADDING_SIZE + PIXEL_STRIDE)*SIZEOF_PIXEL;
         declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t stride_dst,
                           int16_t *sao_offset_val, int eo, int width, int height);
 
-        randomize_buffers(src0, src1, BUF_SIZE);
-        randomize_buffers2(offset_val, OFFSET_LENGTH);
-        memset(dst0, 0, BUF_SIZE);
-        memset(dst1, 0, BUF_SIZE);
+        for (int w = prev_size + 4; w <= block_size; w += 4) {
+            randomize_buffers(src0, src1, BUF_SIZE);
+            randomize_buffers2(offset_val, OFFSET_LENGTH);
+            memset(dst0, 0, BUF_SIZE);
+            memset(dst1, 0, BUF_SIZE);
 
-        if (check_func(h.sao_edge_filter[i], "hevc_sao_edge_%dx%d_%d", block_size, block_size, bit_depth)) {
-            call_ref(dst0, src0 + offset, stride, offset_val, eo, block_size, block_size);
-            call_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
-            if (memcmp(dst0, dst1, BUF_SIZE))
-                fail();
+            if (check_func(h.sao_edge_filter[i], "hevc_sao_edge_%d_%d", block_size, bit_depth)) {
+                call_ref(dst0, src0 + offset, stride, offset_val, eo, w, block_size);
+                call_new(dst1, src1 + offset, stride, offset_val, eo, w, block_size);
+                for (int j = 0; j < block_size; j++) {
+                    if (memcmp(dst0 + j*stride, dst1 + j*stride, w*SIZEOF_PIXEL))
+                        fail();
+                }
+            }
             bench_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
         }
     }
