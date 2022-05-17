@@ -110,7 +110,13 @@ FRAMECRC = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER) $(3)                  \
 
 DEMMUX  = $(call ALLYES, $(1)_DEMUXER $(2)_MUXER $(3) FILE_PROTOCOL)
 
-FILTERDEMDEC       = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4) FILE_PROTOCOL)
+# Variant of FRAMECRC for the cases with -lavfi where no demuxer is involved.
+FILTERFRAMECRC     = $(call ALLYES, $(1:%=%_FILTER) $(2) PCM_S16LE_ENCODER    \
+                                    RAWVIDEO_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL)
+# Specialization of FRAMECRC to be used when filtering is involved.
+FILTERDEMDEC       = $(call ALLYES, $(1:%=%_FILTER) $(2:%=%_DEMUXER) $(3:%=%_DECODER) \
+                                    $(4) PCM_S16LE_ENCODER RAWVIDEO_ENCODER   \
+                                    FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL)
 FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4)_ENCODER $(5)_MUXER $(6) FILE_PROTOCOL)
 
 PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER $(4) FILE_PROTOCOL)
