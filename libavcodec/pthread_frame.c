@@ -714,13 +714,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         }
     }
 
-    if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
-        if (update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Final thread update failed\n");
-            fctx->prev_thread->avctx->internal->is_copy = fctx->threads->avctx->internal->is_copy;
-            fctx->threads->avctx->internal->is_copy = 1;
-        }
-
     for (i = 0; i < thread_count; i++) {
         PerThreadContext *p = &fctx->threads[i];
         AVCodecContext *ctx = p->avctx;
