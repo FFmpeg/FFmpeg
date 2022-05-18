@@ -1364,6 +1364,7 @@ static const AVOption options[] = {
     { "usage",           "Quality and compression efficiency vs speed trade-off", OFFSET(usage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE, "usage"},
     { "good",            "Good quality",      0, AV_OPT_TYPE_CONST, {.i64 = 0 /* AOM_USAGE_GOOD_QUALITY */}, 0, 0, VE, "usage"},
     { "realtime",        "Realtime encoding", 0, AV_OPT_TYPE_CONST, {.i64 = 1 /* AOM_USAGE_REALTIME */},     0, 0, VE, "usage"},
+    { "allintra",        "All Intra encoding", 0, AV_OPT_TYPE_CONST, {.i64 = 2 /* AOM_USAGE_ALL_INTRA */},    0, 0, VE, "usage"},
     { "tune",            "The metric that the encoder tunes for. Automatically chosen by the encoder by default", OFFSET(tune), AV_OPT_TYPE_INT, {.i64 = -1}, -1, AOM_TUNE_SSIM, VE, "tune"},
     { "psnr",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_PSNR}, 0, 0, VE, "tune"},
     { "ssim",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_SSIM}, 0, 0, VE, "tune"},
