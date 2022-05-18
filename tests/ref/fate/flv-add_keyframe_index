@@ -1,12 +1,21 @@
-;FFMETADATA1
-hasVideo=true
-hasKeyframes=true
-hasAudio=false
-hasMetadata=true
-canSeekToEnd=true
-datasize=629776
-videosize=629381
-audiosize=0
-lasttimestamp=20
-lastkeyframetimestamp=19
-lastkeyframelocation=597963
+5f38d76da3ed4a5be06ca604c53666f2 *tests/data/fate/flv-add_keyframe_index.flv
+630192 tests/data/fate/flv-add_keyframe_index.flv
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: flv1
+#dimensions 0: 320x240
+#sar 0: 0/1
+0,          0,          0,      143,     9597, 0xd91d5859
+[FORMAT]
+TAG:hasVideo=true
+TAG:hasKeyframes=true
+TAG:hasAudio=false
+TAG:hasMetadata=true
+TAG:canSeekToEnd=true
+TAG:datasize=629776
+TAG:videosize=629381
+TAG:audiosize=0
+TAG:lasttimestamp=20
+TAG:lastkeyframetimestamp=19
+TAG:lastkeyframelocation=597963
+[/FORMAT]
