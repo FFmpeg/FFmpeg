@@ -3744,6 +3744,7 @@ static int barrelsplit_to_xyz(const V360Context *s,
     const float x = (i + 0.5f) / width;
     const float y = (j + 0.5f) / height;
     float l_x, l_y, l_z;
+    int ret;
 
     if (x < 2.f / 3.f) {
         const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (width * 2.f / 3.f) : 1.f - s->out_pad;
@@ -3762,6 +3763,8 @@ static int barrelsplit_to_xyz(const V360Context *s,
         l_x = cos_theta * sin_phi;
         l_y = sin_theta;
         l_z = cos_theta * cos_phi;
+
+        ret = 1;
     } else {
         const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (width  / 3.f) : 1.f - s->out_pad;
         const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (height / 4.f) : 1.f - s->out_pad;
@@ -3787,13 +3790,14 @@ static int barrelsplit_to_xyz(const V360Context *s,
         l_x = (0.5f - uf) / scalew;
         l_y =  0.5f * dir_vert;
         l_z = (vf - 0.5f) * dir_vert / scaleh;
+        ret = (l_x * l_x * scalew * scalew + l_z * l_z * scaleh * scaleh) < 0.5f * 0.5f;
     }
 
     vec[0] = l_x;
     vec[1] = l_y;
     vec[2] = l_z;
 
-    return 1;
+    return ret;
 }
 
 /**
