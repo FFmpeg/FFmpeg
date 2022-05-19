@@ -3676,37 +3676,39 @@ static int xyz_to_barrelsplit(const V360Context *s,
     } else {
         const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (width  / 3.f) : 1.f - s->in_pad;
         const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (height / 4.f) : 1.f - s->in_pad;
-        int v_offset = 0;
 
         ew = width  / 3;
         eh = height / 4;
 
         u_shift = 2 * ew;
 
+        uf = vec[0] / vec[1] * scalew;
+        vf = vec[2] / vec[1] * scaleh;
+
         if (theta <= 0.f && theta >= -M_PI_2 &&
             phi <= M_PI_2 && phi >= -M_PI_2) {
-            uf = -vec[0] / vec[1];
-            vf = -vec[2] / vec[1];
+            // front top
+            uf *= -1.0f;
+            vf  = -(vf + 1.f) * scaleh + 1.f;
             v_shift = 0;
-            v_offset = -eh;
         } else if (theta >= 0.f && theta <= M_PI_2 &&
                    phi <= M_PI_2 && phi >= -M_PI_2) {
-            uf =  vec[0] / vec[1];
-            vf = -vec[2] / vec[1];
+            // front bottom
+            vf = -(vf - 1.f) * scaleh;
             v_shift = height * 0.25f;
         } else if (theta <= 0.f && theta >= -M_PI_2) {
-            uf =  vec[0] / vec[1];
-            vf =  vec[2] / vec[1];
+            // back top
+            vf = (vf - 1.f) * scaleh + 1.f;
             v_shift = height * 0.5f;
-            v_offset = -eh;
         } else {
-            uf = -vec[0] / vec[1];
-            vf =  vec[2] / vec[1];
+            // back bottom
+            uf *= -1.0f;
+            vf = (vf + 1.f) * scaleh;
             v_shift = height * 0.75f;
         }
 
-        uf = 0.5f * width / 3.f * (uf * scalew + 1.f);
-        vf = height * 0.25f * (vf * scaleh + 1.f) + v_offset;
+        uf = 0.5f * width / 3.f * (uf + 1.f);
+        vf *= height * 0.25f;
     }
 
     ui = floorf(uf);
@@ -3764,29 +3766,22 @@ static int barrelsplit_to_xyz(const V360Context *s,
         const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (width  / 3.f) : 1.f - s->out_pad;
         const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (height / 4.f) : 1.f - s->out_pad;
 
-        const int face = floorf(y * 4.f);
+        const float facef = floorf(y * 4.f);
+        const int    face = facef;
         const float dir_vert = (face == 1 || face == 3) ? 1.0f : -1.0f;
         float uf, vf;
 
         uf = x * 3.f - 2.f;
 
         switch (face) {
-        case 0:
-            vf = y * 2.f;
+        case 0: // front top
+        case 1: // front bottom
             uf = 1.f - uf;
-            vf = 0.5f - vf;
+            vf = (0.5f - 2.f * y) / scaleh + facef;
             break;
-        case 1:
-            vf = y * 2.f;
-            uf = 1.f - uf;
-            vf = 1.f - (vf - 0.5f);
-            break;
-        case 2:
-            vf = y * 2.f - 0.5f;
-            vf = 1.f - (1.f - vf);
-            break;
-        case 3:
-            vf = y * 2.f - 1.5f;
+        case 2: // back top
+        case 3: // back bottom
+            vf = (y * 2.f - 1.5f) / scaleh + 3.f - facef;
             break;
         }
         l_x = (0.5f - uf) / scalew;
