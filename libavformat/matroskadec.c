@@ -3701,6 +3701,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     uint64_t num;
     int trust_default_duration;
 
+    av_assert1(buf);
+
     ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
 
     if ((n = ebml_read_num(matroska, &pb.pub, 8, &num, 1)) < 0)
