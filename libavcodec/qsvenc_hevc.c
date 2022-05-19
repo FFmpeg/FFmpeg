@@ -224,6 +224,15 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     QSV_COMMON_OPTS
+    QSV_OPTION_RDO
+    QSV_OPTION_MAX_FRAME_SIZE
+    QSV_OPTION_MAX_SLICE_SIZE
+    QSV_OPTION_MBBRC
+    QSV_OPTION_EXTBRC
+    QSV_OPTION_P_STRATEGY
+    QSV_OPTION_B_STRATEGY
+    QSV_OPTION_DBLK_IDC
+    QSV_OPTION_LOW_DELAY_BRC
 
     { "idr_interval", "Distance (in I-frames) between IDR frames", OFFSET(qsv.idr_interval), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT_MAX, VE, "idr_interval" },
     { "begin_only", "Output an IDR-frame only at the beginning of the stream", 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, 0, 0, VE, "idr_interval" },

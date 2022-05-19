@@ -102,6 +102,18 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     QSV_COMMON_OPTS
+    QSV_OPTION_RDO
+    QSV_OPTION_MAX_FRAME_SIZE
+    QSV_OPTION_MAX_SLICE_SIZE
+    QSV_OPTION_BITRATE_LIMIT
+    QSV_OPTION_MBBRC
+    QSV_OPTION_EXTBRC
+    QSV_OPTION_ADAPTIVE_I
+    QSV_OPTION_ADAPTIVE_B
+    QSV_OPTION_P_STRATEGY
+    QSV_OPTION_B_STRATEGY
+    QSV_OPTION_DBLK_IDC
+    QSV_OPTION_LOW_DELAY_BRC
 
     { "cavlc",          "Enable CAVLC",                           OFFSET(qsv.cavlc),          AV_OPT_TYPE_BOOL, { .i64 = 0 },   0,          1, VE },
 #if QSV_HAVE_VCM
