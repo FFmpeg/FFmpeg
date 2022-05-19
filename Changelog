@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 5.1:
+- add ipfs/ipns protocol support
 - dialogue enhance audio filter
 - dropped obsolete XvMC hwaccel
 - pcm-bluray encoder
