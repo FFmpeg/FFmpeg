@@ -51,7 +51,7 @@ static inline void reset_context(JPEG2000ParserContext *m)
     ParseContext *pc = &m->pc;
 
     pc->frame_start_found= 0;
-    pc->state = 0;
+    pc->state64 = 0;
     m->bytes_read = 0;
     m->ft = 0;
     m->skipped_codestream = 0;
@@ -82,16 +82,14 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
 {
     ParseContext *pc= &m->pc;
     int i;
-    uint32_t state, next_state;
-    uint64_t state64;
-    state= pc->state;
-    state64 = pc->state64;
+    uint32_t next_state;
+    uint64_t state64 = pc->state64;
+
     if (buf_size == 0) {
         return 0;
     }
 
     for (i = 0; i < buf_size; i++) {
-        state = state << 8 | buf[i];
         state64 = state64 << 8 | buf[i];
         m->bytes_read++;
         if (m->skip_bytes) {
@@ -132,9 +130,9 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             }
             m->fheader_read--;
         }
-        if (state == 0x0000000C && m->bytes_read >= 3) { // Indicates start of JP2 file. Check signature next.
+        if ((state64 & 0xFFFFFFFF) == 0x0000000C && m->bytes_read >= 3) { // Indicates start of JP2 file. Check signature next.
             m->fheader_read = 8;
-        } else if ((state & 0xFFFF) == 0xFF4F) {
+        } else if ((state64 & 0xFFFF) == 0xFF4F) {
             m->in_codestream = 1;
             if (!pc->frame_start_found) {
                 pc->frame_start_found = 1;
@@ -143,7 +141,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
                 reset_context(m);
                 return i - 1;
             }
-        } else if ((state & 0xFFFF) == 0xFFD9) {
+        } else if ((state64 & 0xFFFF) == 0xFFD9) {
             if (pc->frame_start_found && m->ft == jp2_file) {
                 m->skipped_codestream = 1;
             } else if (pc->frame_start_found && m->ft == j2k_cstream) {
@@ -151,11 +149,11 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
                 return i + 1; // End of frame detected, return frame size.
             }
             m->in_codestream = 0;
-        } else if (m->in_codestream && (state & 0xFFFF) == 0xFF90) { // Are we in tile part header?
+        } else if (m->in_codestream && (state64 & 0xFFFF) == 0xFF90) { // Are we in tile part header?
             m->read_tp = 8;
-        } else if (pc->frame_start_found && info_marker((state & 0xFFFF0000)>>16) && m->in_codestream && (state & 0xFFFF)) {
+        } else if (pc->frame_start_found && info_marker((state64 & 0xFFFF0000)>>16) && m->in_codestream && (state64 & 0xFFFF)) {
             // Calculate number of bytes to skip to get to end of the next marker.
-            m->skip_bytes = (state & 0xFFFF)-1;
+            m->skip_bytes = (state64 & 0xFFFF)-1;
 
             // If the next marker is an info marker, skip to the end of of the marker length.
             if (i + m->skip_bytes + 1 < buf_size) {
@@ -168,7 +166,6 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
         }
     }
 
-    pc->state = state;
     pc->state64 = state64;
     return END_NOT_FOUND;
 }
