@@ -97,13 +97,7 @@ SECTION .text
 ; %4 - LUT offset
 ; %5 - temporary GPR (only used if vgather is not used)
 ; %6 - temporary register (for avx only)
-; %7 - temporary register (for avx only, enables vgatherdpd (AVX2) if FMA3 is set)
-%macro LOAD64_LUT 5-7
-%if %0 > 6 && cpuflag(avx2)
-    pcmpeqd %6, %6 ; pcmpeqq has a 0.5 throughput on Zen 3, this has 0.25
-    movapd xmm%7, [%3 + %4] ; float mov since vgatherdpd is a float instruction
-    vgatherdpd %1, [%2 + xmm%7*8], %6 ; must use separate registers for args
-%else
+%macro LOAD64_LUT 5-6
     mov      %5d, [%3 + %4 + 0]
     movsd  xmm%1, [%2 + %5q*8]
 %if mmsize == 32
@@ -116,7 +110,6 @@ SECTION .text
     mov      %5d, [%3 + %4 + 12]
     movhps xmm%6, [%2 + %5q*8]
     vinsertf128 %1, %1, xmm%6, 1
-%endif
 %endif
 %endmacro
 
@@ -820,10 +813,10 @@ cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
     movaps m7, [inq + 7*mmsize]
 %else
     mov ctxq, [ctxq + AVTXContext.map]
-    LOAD64_LUT m4, inq, ctxq, (mmsize/2)*4, tmpq,  m8,  m9
-    LOAD64_LUT m5, inq, ctxq, (mmsize/2)*5, tmpq, m10, m11
-    LOAD64_LUT m6, inq, ctxq, (mmsize/2)*6, tmpq, m12, m13
-    LOAD64_LUT m7, inq, ctxq, (mmsize/2)*7, tmpq, m14, m15
+    LOAD64_LUT m4, inq, ctxq, (mmsize/2)*4, tmpq,  m8
+    LOAD64_LUT m5, inq, ctxq, (mmsize/2)*5, tmpq,  m9
+    LOAD64_LUT m6, inq, ctxq, (mmsize/2)*6, tmpq, m10
+    LOAD64_LUT m7, inq, ctxq, (mmsize/2)*7, tmpq, m11
 %endif
 
     FFT8 m4, m5, m6, m7, m8, m9
@@ -834,10 +827,10 @@ cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
     movaps m2, [inq + 2*mmsize]
     movaps m3, [inq + 3*mmsize]
 %else
-    LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq,  m8,  m9
-    LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq, m10, m11
-    LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq, m12, m13
-    LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq, m14, m15
+    LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq,  m8
+    LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq,  m9
+    LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq, m10
+    LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq, m11
 %endif
 
     movaps m8,         [tab_32_float]
@@ -939,10 +932,10 @@ ALIGN 16
     movaps m6, [inq + 6*mmsize]
     movaps m7, [inq + 7*mmsize]
 %else
-    LOAD64_LUT m4, inq, lutq, (mmsize/2)*4, tmpq,  m8,  m9
-    LOAD64_LUT m5, inq, lutq, (mmsize/2)*5, tmpq, m10, m11
-    LOAD64_LUT m6, inq, lutq, (mmsize/2)*6, tmpq, m12, m13
-    LOAD64_LUT m7, inq, lutq, (mmsize/2)*7, tmpq, m14, m15
+    LOAD64_LUT m4, inq, lutq, (mmsize/2)*4, tmpq,  m8
+    LOAD64_LUT m5, inq, lutq, (mmsize/2)*5, tmpq,  m9
+    LOAD64_LUT m6, inq, lutq, (mmsize/2)*6, tmpq, m10
+    LOAD64_LUT m7, inq, lutq, (mmsize/2)*7, tmpq, m11
 %endif
 
     FFT8 m4, m5, m6, m7, m8, m9
@@ -953,10 +946,10 @@ ALIGN 16
     movaps m2, [inq + 2*mmsize]
     movaps m3, [inq + 3*mmsize]
 %else
-    LOAD64_LUT m0, inq, lutq, (mmsize/2)*0, tmpq,  m8,  m9
-    LOAD64_LUT m1, inq, lutq, (mmsize/2)*1, tmpq, m10, m11
-    LOAD64_LUT m2, inq, lutq, (mmsize/2)*2, tmpq, m12, m13
-    LOAD64_LUT m3, inq, lutq, (mmsize/2)*3, tmpq, m14, m15
+    LOAD64_LUT m0, inq, lutq, (mmsize/2)*0, tmpq,  m8
+    LOAD64_LUT m1, inq, lutq, (mmsize/2)*1, tmpq,  m9
+    LOAD64_LUT m2, inq, lutq, (mmsize/2)*2, tmpq, m10
+    LOAD64_LUT m3, inq, lutq, (mmsize/2)*3, tmpq, m11
 %endif
 
     movaps m8,         [tab_32_float]
@@ -1013,10 +1006,10 @@ ALIGN 16
     movaps tx1_o0, [inq + 2*mmsize]
     movaps tx1_o1, [inq + 3*mmsize]
 %else
-    LOAD64_LUT tx1_e0, inq, lutq, (mmsize/2)*0, tmpq, tw_e, tw_o
-    LOAD64_LUT tx1_e1, inq, lutq, (mmsize/2)*1, tmpq, tmp1, tmp2
-    LOAD64_LUT tx1_o0, inq, lutq, (mmsize/2)*2, tmpq, tw_e, tw_o
-    LOAD64_LUT tx1_o1, inq, lutq, (mmsize/2)*3, tmpq, tmp1, tmp2
+    LOAD64_LUT tx1_e0, inq, lutq, (mmsize/2)*0, tmpq, tw_e
+    LOAD64_LUT tx1_e1, inq, lutq, (mmsize/2)*1, tmpq, tw_o
+    LOAD64_LUT tx1_o0, inq, lutq, (mmsize/2)*2, tmpq, tmp1
+    LOAD64_LUT tx1_o1, inq, lutq, (mmsize/2)*3, tmpq, tmp2
 %endif
 
     FFT16 tx1_e0, tx1_e1, tx1_o0, tx1_o1, tw_e, tw_o, tx2_o0, tx2_o1
@@ -1027,10 +1020,10 @@ ALIGN 16
     movaps tx2_o0, [inq + 6*mmsize]
     movaps tx2_o1, [inq + 7*mmsize]
 %else
-    LOAD64_LUT tx2_e0, inq, lutq, (mmsize/2)*4, tmpq, tmp1, tmp2
-    LOAD64_LUT tx2_e1, inq, lutq, (mmsize/2)*5, tmpq, tw_e, tw_o
-    LOAD64_LUT tx2_o0, inq, lutq, (mmsize/2)*6, tmpq, tmp1, tmp2
-    LOAD64_LUT tx2_o1, inq, lutq, (mmsize/2)*7, tmpq, tw_e, tw_o
+    LOAD64_LUT tx2_e0, inq, lutq, (mmsize/2)*4, tmpq, tmp1
+    LOAD64_LUT tx2_e1, inq, lutq, (mmsize/2)*5, tmpq, tmp2
+    LOAD64_LUT tx2_o0, inq, lutq, (mmsize/2)*6, tmpq, tw_o
+    LOAD64_LUT tx2_o1, inq, lutq, (mmsize/2)*7, tmpq, tw_e
 %endif
 
     FFT16 tx2_e0, tx2_e1, tx2_o0, tx2_o1, tmp1, tmp2, tw_e, tw_o
@@ -1287,8 +1280,6 @@ FFT_SPLIT_RADIX_DEF 131072
 %if ARCH_X86_64
 FFT_SPLIT_RADIX_FN avx,  float,    0
 FFT_SPLIT_RADIX_FN avx,  ns_float, 1
-%if HAVE_AVX2_EXTERNAL
-FFT_SPLIT_RADIX_FN avx2, float,    0
-FFT_SPLIT_RADIX_FN avx2, ns_float, 1
-%endif
+FFT_SPLIT_RADIX_FN fma3, float,    0
+FFT_SPLIT_RADIX_FN fma3, ns_float, 1
 %endif

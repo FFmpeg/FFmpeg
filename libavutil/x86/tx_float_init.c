@@ -40,8 +40,8 @@ TX_DECL_FN(fft32,     fma3)
 TX_DECL_FN(fft32_ns,  fma3)
 TX_DECL_FN(fft_sr,    avx)
 TX_DECL_FN(fft_sr_ns, avx)
-TX_DECL_FN(fft_sr,    avx2)
-TX_DECL_FN(fft_sr_ns, avx2)
+TX_DECL_FN(fft_sr,    fma3)
+TX_DECL_FN(fft_sr_ns, fma3)
 
 #define DECL_INIT_FN(basis, interleave)                                        \
 static av_cold int b ##basis## _i ##interleave(AVTXContext *s,                 \
@@ -83,13 +83,10 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
     TX_DEF(fft32_ns, FFT, 32, 32, 2, 0, 320, b8_i2, avx,  AVX,  AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
     TX_DEF(fft32,    FFT, 32, 32, 2, 0, 288, b8_i2, fma3, FMA3, AV_TX_INPLACE, 0),
     TX_DEF(fft32_ns, FFT, 32, 32, 2, 0, 352, b8_i2, fma3, FMA3, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
-#if HAVE_AVX2_EXTERNAL
     TX_DEF(fft_sr,    FFT, 64, 131072, 2, 0, 256, b8_i2, avx,  AVX,  0, 0),
     TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 320, b8_i2, avx,  AVX,  AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
-    TX_DEF(fft_sr,    FFT, 64, 131072, 2, 0, 288, b8_i2, avx2, AVX2, 0, AV_CPU_FLAG_AVXSLOW),
-    TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 352, b8_i2, avx2, AVX2, AV_TX_INPLACE | FF_TX_PRESHUFFLE,
-           AV_CPU_FLAG_AVXSLOW),
-#endif
+    TX_DEF(fft_sr,    FFT, 64, 131072, 2, 0, 288, b8_i2, fma3, FMA3, 0, 0),
+    TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 352, b8_i2, fma3, FMA3, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
 #endif
 
     NULL,
