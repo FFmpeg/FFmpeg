@@ -820,10 +820,10 @@ cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
     movaps m7, [inq + 7*mmsize]
 %else
     mov ctxq, [ctxq + AVTXContext.map]
-    LOAD64_LUT m4, inq, ctxq, (mmsize/2)*4, tmpq,  m8,  m9
-    LOAD64_LUT m5, inq, ctxq, (mmsize/2)*5, tmpq, m10, m11
-    LOAD64_LUT m6, inq, ctxq, (mmsize/2)*6, tmpq, m12, m13
-    LOAD64_LUT m7, inq, ctxq, (mmsize/2)*7, tmpq, m14, m15
+    LOAD64_LUT m4, inq, ctxq, (mmsize/2)*4, tmpq,  m8, m12
+    LOAD64_LUT m5, inq, ctxq, (mmsize/2)*5, tmpq,  m9, m13
+    LOAD64_LUT m6, inq, ctxq, (mmsize/2)*6, tmpq, m10, m14
+    LOAD64_LUT m7, inq, ctxq, (mmsize/2)*7, tmpq, m11, m15
 %endif
 
     FFT8 m4, m5, m6, m7, m8, m9
@@ -834,10 +834,10 @@ cglobal fft32_ %+ %2, 4, 4, 16, ctx, out, in, tmp
     movaps m2, [inq + 2*mmsize]
     movaps m3, [inq + 3*mmsize]
 %else
-    LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq,  m8,  m9
-    LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq, m10, m11
-    LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq, m12, m13
-    LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq, m14, m15
+    LOAD64_LUT m0, inq, ctxq, (mmsize/2)*0, tmpq,  m8, m12
+    LOAD64_LUT m1, inq, ctxq, (mmsize/2)*1, tmpq,  m9, m13
+    LOAD64_LUT m2, inq, ctxq, (mmsize/2)*2, tmpq, m10, m14
+    LOAD64_LUT m3, inq, ctxq, (mmsize/2)*3, tmpq, m11, m15
 %endif
 
     movaps m8,         [tab_32_float]
@@ -939,10 +939,10 @@ ALIGN 16
     movaps m6, [inq + 6*mmsize]
     movaps m7, [inq + 7*mmsize]
 %else
-    LOAD64_LUT m4, inq, lutq, (mmsize/2)*4, tmpq,  m8,  m9
-    LOAD64_LUT m5, inq, lutq, (mmsize/2)*5, tmpq, m10, m11
-    LOAD64_LUT m6, inq, lutq, (mmsize/2)*6, tmpq, m12, m13
-    LOAD64_LUT m7, inq, lutq, (mmsize/2)*7, tmpq, m14, m15
+    LOAD64_LUT m4, inq, lutq, (mmsize/2)*4, tmpq,  m8, m12
+    LOAD64_LUT m5, inq, lutq, (mmsize/2)*5, tmpq,  m9, m13
+    LOAD64_LUT m6, inq, lutq, (mmsize/2)*6, tmpq, m10, m14
+    LOAD64_LUT m7, inq, lutq, (mmsize/2)*7, tmpq, m11, m15
 %endif
 
     FFT8 m4, m5, m6, m7, m8, m9
@@ -953,10 +953,10 @@ ALIGN 16
     movaps m2, [inq + 2*mmsize]
     movaps m3, [inq + 3*mmsize]
 %else
-    LOAD64_LUT m0, inq, lutq, (mmsize/2)*0, tmpq,  m8,  m9
-    LOAD64_LUT m1, inq, lutq, (mmsize/2)*1, tmpq, m10, m11
-    LOAD64_LUT m2, inq, lutq, (mmsize/2)*2, tmpq, m12, m13
-    LOAD64_LUT m3, inq, lutq, (mmsize/2)*3, tmpq, m14, m15
+    LOAD64_LUT m0, inq, lutq, (mmsize/2)*0, tmpq,  m8, m12
+    LOAD64_LUT m1, inq, lutq, (mmsize/2)*1, tmpq,  m9, m13
+    LOAD64_LUT m2, inq, lutq, (mmsize/2)*2, tmpq, m10, m14
+    LOAD64_LUT m3, inq, lutq, (mmsize/2)*3, tmpq, m11, m15
 %endif
 
     movaps m8,         [tab_32_float]
@@ -1013,10 +1013,10 @@ ALIGN 16
     movaps tx1_o0, [inq + 2*mmsize]
     movaps tx1_o1, [inq + 3*mmsize]
 %else
-    LOAD64_LUT tx1_e0, inq, lutq, (mmsize/2)*0, tmpq, tw_e, tw_o
-    LOAD64_LUT tx1_e1, inq, lutq, (mmsize/2)*1, tmpq, tmp1, tmp2
-    LOAD64_LUT tx1_o0, inq, lutq, (mmsize/2)*2, tmpq, tw_e, tw_o
-    LOAD64_LUT tx1_o1, inq, lutq, (mmsize/2)*3, tmpq, tmp1, tmp2
+    LOAD64_LUT tx1_e0, inq, lutq, (mmsize/2)*0, tmpq, tw_e, tmp1
+    LOAD64_LUT tx1_e1, inq, lutq, (mmsize/2)*1, tmpq, tw_o, tmp2
+    LOAD64_LUT tx1_o0, inq, lutq, (mmsize/2)*2, tmpq, tw_e, tmp1
+    LOAD64_LUT tx1_o1, inq, lutq, (mmsize/2)*3, tmpq, tw_o, tmp2
 %endif
 
     FFT16 tx1_e0, tx1_e1, tx1_o0, tx1_o1, tw_e, tw_o, tx2_o0, tx2_o1
@@ -1027,10 +1027,10 @@ ALIGN 16
     movaps tx2_o0, [inq + 6*mmsize]
     movaps tx2_o1, [inq + 7*mmsize]
 %else
-    LOAD64_LUT tx2_e0, inq, lutq, (mmsize/2)*4, tmpq, tmp1, tmp2
-    LOAD64_LUT tx2_e1, inq, lutq, (mmsize/2)*5, tmpq, tw_e, tw_o
-    LOAD64_LUT tx2_o0, inq, lutq, (mmsize/2)*6, tmpq, tmp1, tmp2
-    LOAD64_LUT tx2_o1, inq, lutq, (mmsize/2)*7, tmpq, tw_e, tw_o
+    LOAD64_LUT tx2_e0, inq, lutq, (mmsize/2)*4, tmpq, tw_e, tmp1
+    LOAD64_LUT tx2_e1, inq, lutq, (mmsize/2)*5, tmpq, tw_o, tmp2
+    LOAD64_LUT tx2_o0, inq, lutq, (mmsize/2)*6, tmpq, tw_e, tmp1
+    LOAD64_LUT tx2_o1, inq, lutq, (mmsize/2)*7, tmpq, tw_o, tmp2
 %endif
 
     FFT16 tx2_e0, tx2_e1, tx2_o0, tx2_o1, tmp1, tmp2, tw_e, tw_o
