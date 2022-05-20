@@ -160,9 +160,10 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
                 return i + 1; // End of frame detected, return frame size.
             }
             m->in_codestream = 0;
-        } else if (m->in_codestream && (state64 & 0xFFFF) == 0xFF90) { // Are we in tile part header?
+        } else if (m->in_codestream) {
+          if ((state64 & 0xFFFF) == 0xFF90) { // Are we in tile part header?
             m->read_tp = 8;
-        } else if (pc->frame_start_found && info_marker((state64 & 0xFFFF0000)>>16) && m->in_codestream && (state64 & 0xFFFF)) {
+          } else if (info_marker((state64 & 0xFFFF0000)>>16) && pc->frame_start_found && (state64 & 0xFFFF)) {
             // Calculate number of bytes to skip to get to end of the next marker.
             m->skip_bytes = (state64 & 0xFFFF)-1;
 
@@ -174,6 +175,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
                     m->skip_bytes += 2;
                 }
             }
+          }
         }
     }
 
