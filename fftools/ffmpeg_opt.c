@@ -28,6 +28,7 @@
 #endif
 
 #include "ffmpeg.h"
+#include "fopen_utf8.h"
 #include "cmdutils.h"
 #include "opt_common.h"
 
@@ -1882,7 +1883,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                     video_enc->stats_in = logbuffer;
                 }
                 if (video_enc->flags & AV_CODEC_FLAG_PASS1) {
-                    f = av_fopen_utf8(logfilename, "wb");
+                    f = fopen_utf8(logfilename, "wb");
                     if (!f) {
                         av_log(NULL, AV_LOG_FATAL,
                                "Cannot write log file '%s' for pass-1 encoding: %s\n",
