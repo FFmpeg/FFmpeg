@@ -1285,8 +1285,8 @@ FFT_SPLIT_RADIX_DEF 131072
 %endmacro
 
 %if ARCH_X86_64
-FFT_SPLIT_RADIX_FN avx,  float,    0
-FFT_SPLIT_RADIX_FN avx,  ns_float, 1
+FFT_SPLIT_RADIX_FN fma3, float,    0
+FFT_SPLIT_RADIX_FN fma3, ns_float, 1
 %if HAVE_AVX2_EXTERNAL
 FFT_SPLIT_RADIX_FN avx2, float,    0
 FFT_SPLIT_RADIX_FN avx2, ns_float, 1
