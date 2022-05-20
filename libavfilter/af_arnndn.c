@@ -1478,7 +1478,7 @@ static int open_model(AVFilterContext *ctx, RNNModel **model)
 
     if (!s->model_name)
         return AVERROR(EINVAL);
-    f = av_fopen_utf8(s->model_name, "r");
+    f = avpriv_fopen_utf8(s->model_name, "r");
     if (!f) {
         av_log(ctx, AV_LOG_ERROR, "Failed to open model file: %s\n", s->model_name);
         return AVERROR(EINVAL);

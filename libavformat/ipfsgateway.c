@@ -139,7 +139,7 @@ static int populate_ipfs_gateway(URLContext *h)
     }
 
     // Get the contents of the gateway file.
-    gateway_file = av_fopen_utf8(ipfs_gateway_file, "r");
+    gateway_file = avpriv_fopen_utf8(ipfs_gateway_file, "r");
     if (!gateway_file) {
         av_log(h, AV_LOG_WARNING,
                "The IPFS gateway file (full uri: %s) doesn't exist. "

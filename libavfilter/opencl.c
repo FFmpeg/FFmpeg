@@ -210,7 +210,7 @@ int ff_opencl_filter_load_program_from_file(AVFilterContext *avctx,
     const char *src_const;
     int err;
 
-    file = av_fopen_utf8(filename, "r");
+    file = avpriv_fopen_utf8(filename, "r");
     if (!file) {
         av_log(avctx, AV_LOG_ERROR, "Unable to open program "
                "source file \"%s\".\n", filename);

@@ -538,7 +538,7 @@ static void disp_node(AVBPrint *buf,
 static int disp_tree(const struct color_node *node, const char *fname)
 {
     AVBPrint buf;
-    FILE *f = av_fopen_utf8(fname, "w");
+    FILE *f = avpriv_fopen_utf8(fname, "w");
 
     if (!f) {
         int ret = AVERROR(errno);

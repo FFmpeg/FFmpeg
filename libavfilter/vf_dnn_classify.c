@@ -131,7 +131,7 @@ static int read_classify_label_file(AVFilterContext *context)
     FILE *file;
     DnnClassifyContext *ctx = context->priv;
 
-    file = av_fopen_utf8(ctx->labels_filename, "r");
+    file = avpriv_fopen_utf8(ctx->labels_filename, "r");
     if (!file){
         av_log(context, AV_LOG_ERROR, "failed to open file %s\n", ctx->labels_filename);
         return AVERROR(EINVAL);
