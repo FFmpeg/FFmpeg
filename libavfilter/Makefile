@@ -23,6 +23,7 @@ OBJS = allfilters.o                                                     \
        version.o                                                        \
        video.o                                                          \
 
+OBJS-$(HAVE_LIBC_MSVCRT)                     += file_open.o
 OBJS-$(HAVE_THREADS)                         += pthread.o
 
 # subsystems

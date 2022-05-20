@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
+#include <stdio.h>
 #include "config.h"
 #include "attributes.h"
 #include "timer.h"
@@ -183,8 +184,10 @@ void avpriv_request_sample(void *avc,
 #pragma comment(linker, "/include:" EXTERN_PREFIX "avpriv_snprintf")
 #endif
 
+#define avpriv_fopen_utf8 ff_fopen_utf8
 #define avpriv_open ff_open
 #define avpriv_tempfile ff_tempfile
+
 #define PTRDIFF_SPECIFIER "Id"
 #define SIZE_SPECIFIER "Iu"
 #else
@@ -255,6 +258,11 @@ static av_always_inline av_const int64_t ff_rint64_clip(double a, int64_t amin, 
  */
 av_warn_unused_result
 int avpriv_open(const char *filename, int flags, ...);
+
+/**
+ * Open a file using a UTF-8 filename.
+ */
+FILE *avpriv_fopen_utf8(const char *path, const char *mode);
 
 /**
  * Wrapper to work around the lack of mkstemp() on mingw.

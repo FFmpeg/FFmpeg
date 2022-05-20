@@ -331,12 +331,18 @@ unsigned av_int_list_length_for_size(unsigned elsize,
 #define av_int_list_length(list, term) \
     av_int_list_length_for_size(sizeof(*(list)), list, term)
 
+#if FF_API_AV_FOPEN_UTF8
 /**
  * Open a file using a UTF-8 filename.
  * The API of this function matches POSIX fopen(), errors are returned through
  * errno.
+ * @deprecated Avoid using it, as on Windows, the FILE* allocated by this
+ *             function may be allocated with a different CRT than the caller
+ *             who uses the FILE*. No replacement provided in public API.
  */
+attribute_deprecated
 FILE *av_fopen_utf8(const char *path, const char *mode);
+#endif
 
 /**
  * Return the fractional representation of the internal time base.
