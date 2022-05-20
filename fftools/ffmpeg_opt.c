@@ -1868,7 +1868,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                      ost->logfile_prefix ? ost->logfile_prefix :
                                            DEFAULT_PASS_LOGFILENAME_PREFIX,
-                     i);
+                     nb_output_streams - 1);
             if (!strcmp(ost->enc->name, "libx264")) {
                 av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
             } else {
