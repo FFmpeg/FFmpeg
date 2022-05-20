@@ -469,6 +469,15 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
                           AV_CPU_FLAG_ATOM     | AV_CPU_FLAG_SSSE3SLOW |
                           AV_CPU_FLAG_AVXSLOW  | AV_CPU_FLAG_SLOW_GATHER;
 
+    static const int slow_penalties[][2] = {
+        { AV_CPU_FLAG_SSE2SLOW,    1 + 64  },
+        { AV_CPU_FLAG_SSE3SLOW,    1 + 64  },
+        { AV_CPU_FLAG_SSSE3SLOW,   1 + 64  },
+        { AV_CPU_FLAG_ATOM,        1 + 128 },
+        { AV_CPU_FLAG_AVXSLOW,     1 + 128 },
+        { AV_CPU_FLAG_SLOW_GATHER, 1 + 32  },
+    };
+
     /* Flags the transform wants */
     uint64_t req_flags = flags;
 
@@ -535,8 +544,10 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
 
             /* If the CPU has a SLOW flag, and the instruction is also flagged
              * as being slow for such, reduce its priority */
-            if ((cpu_flags & cd->cpu_flags) & slow_mask)
-                cd_matches[nb_cd_matches].prio -= 64;
+            for (int i = 0; i < FF_ARRAY_ELEMS(slow_penalties); i++) {
+                if ((cpu_flags & cd->cpu_flags) & slow_penalties[i][0])
+                    cd_matches[nb_cd_matches].prio -= slow_penalties[i][1];
+            }
 
             /* Prioritize aligned-only codelets */
             if ((cd->flags & FF_TX_ALIGNED) && !(cd->flags & AV_TX_UNALIGNED))
