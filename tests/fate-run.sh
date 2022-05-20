@@ -199,26 +199,27 @@ DEC_OPTS="-threads $threads -thread_type $thread_type -idct simple $FLAGS"
 ENC_OPTS="-threads 1        -idct simple -dct fastint"
 
 enc_dec(){
-    src_fmt=$1
+    enc_fmt_in=$1
     srcfile=$2
-    enc_fmt=$3
-    enc_opt=$4
-    dec_fmt=$5
-    dec_opt=$6
+    enc_fmt_out=$3
+    enc_opt_out=$4
+    dec_fmt_out=$5
+    dec_opt_out=$6
+    dec_opt_in=$7
     ffprobe_opts=$8
-    encfile="${outdir}/${test}.${enc_fmt}"
-    decfile="${outdir}/${test}.out.${dec_fmt}"
+    encfile="${outdir}/${test}.${enc_fmt_out}"
+    decfile="${outdir}/${test}.out.${dec_fmt_out}"
     cleanfiles="$cleanfiles $decfile"
     test "$keep" -ge 1 || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     tdecfile=$(target_path $decfile)
-    ffmpeg -auto_conversion_filters -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
-        -f $enc_fmt -y $tencfile || return
+    ffmpeg -auto_conversion_filters -f $enc_fmt_in $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt_out $FLAGS \
+        -f $enc_fmt_out -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg -auto_conversion_filters $7 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
-        -f $dec_fmt -y $tdecfile || return
+    ffmpeg -auto_conversion_filters $dec_opt_in $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt_out $FLAGS \
+        -f $dec_fmt_out -y $tdecfile || return
     do_md5sum $decfile
     tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
     test -z $ffprobe_opts || \
