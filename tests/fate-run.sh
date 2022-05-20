@@ -207,6 +207,7 @@ enc_dec(){
     dec_opt_out=$6
     dec_opt_in=$7
     ffprobe_opts=$8
+    twopass=$9
     encfile="${outdir}/${test}.${enc_fmt_out}"
     decfile="${outdir}/${test}.out.${dec_fmt_out}"
     cleanfiles="$cleanfiles $decfile"
@@ -214,6 +215,17 @@ enc_dec(){
     tsrcfile=$(target_path $srcfile)
     tencfile=$(target_path $encfile)
     tdecfile=$(target_path $decfile)
+
+    if [ -n "$twopass" ]; then
+        logfile_prefix="${outdir}/${test}.pass1"
+        cleanfiles="$cleanfiles ${logfile_prefix}-0.log"
+        tlogfile_prefix=$(target_path $logfile_prefix)
+        ffmpeg -auto_conversion_filters -f $enc_fmt_in $DEC_OPTS -i $tsrcfile  \
+            $ENC_OPTS $enc_opt_out $FLAGS -pass 1 -passlogfile $tlogfile_prefix \
+            -f $enc_fmt_out -y $tencfile || return
+        enc_opt_out="$enc_opt_out -pass 2 -passlogfile $tlogfile_prefix"
+    fi
+
     ffmpeg -auto_conversion_filters -f $enc_fmt_in $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt_out $FLAGS \
         -f $enc_fmt_out -y $tencfile || return
     do_md5sum $encfile

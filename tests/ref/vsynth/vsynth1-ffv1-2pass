@@ -1,0 +1,4 @@
+7332cfda96233acc7178b09868c07ad7 *tests/data/fate/vsynth1-ffv1-2pass.avi
+2382244 tests/data/fate/vsynth1-ffv1-2pass.avi
+c5ccac874dbf808e9088bc3107860042 *tests/data/fate/vsynth1-ffv1-2pass.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200
