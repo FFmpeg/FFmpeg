@@ -95,6 +95,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
     ParseContext *pc= &m->pc;
     int i;
     uint64_t state64 = pc->state64;
+    uint64_t bytes_read = m->bytes_read;
 
     if (buf_size == 0) {
         return 0;
@@ -102,7 +103,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
 
     for (i = 0; i < buf_size; i++) {
         state64 = state64 << 8 | buf[i];
-        m->bytes_read++;
+        bytes_read++;
         if (m->skip_bytes) {
             // handle long skips
             if (m->skip_bytes > 8) {
@@ -112,7 +113,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
                 if (skip > 0) {
                     m->skip_bytes -= skip;
                     i += skip;
-                    m->bytes_read += skip;
+                    bytes_read += skip;
                 }
             }
             m->skip_bytes--;
@@ -141,7 +142,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             }
             m->fheader_read--;
         }
-        if ((state64 & 0xFFFFFFFF) == 0x0000000C && m->bytes_read >= 3) { // Indicates start of JP2 file. Check signature next.
+        if ((state64 & 0xFFFFFFFF) == 0x0000000C && bytes_read >= 3) { // Indicates start of JP2 file. Check signature next.
             m->fheader_read = 8;
         } else if ((state64 & 0xFFFF) == 0xFF4F) {
             m->in_codestream = 1;
@@ -180,6 +181,7 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
     }
 
     pc->state64 = state64;
+    m->bytes_read = bytes_read;
     return END_NOT_FOUND;
 }
 
