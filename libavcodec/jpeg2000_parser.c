@@ -95,6 +95,17 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
         state64 = state64 << 8 | buf[i];
         m->bytes_read++;
         if (m->skip_bytes) {
+            // handle long skips
+            if (m->skip_bytes > 8) {
+                // need -9 else buf_size - i == 8 ==> i == buf_size after this,
+                // and thus i == buf_size + 1 after the loop
+                int skip = FFMIN(FFMIN((int64_t)m->skip_bytes - 8, buf_size - i - 9), INT_MAX);
+                if (skip > 0) {
+                    m->skip_bytes -= skip;
+                    i += skip;
+                    m->bytes_read += skip;
+                }
+            }
             m->skip_bytes--;
             continue;
         }
