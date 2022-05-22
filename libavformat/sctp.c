@@ -282,6 +282,8 @@ fail:
         goto restart;
     }
 fail1:
+    if (fd >= 0)
+        closesocket(fd);
     ret = AVERROR(EIO);
     freeaddrinfo(ai);
     return ret;
