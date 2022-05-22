@@ -69,7 +69,6 @@ enum var_name {
     VARS_NB
 };
 
-#define QSV_HAVE_SCALING_CONFIG  QSV_VERSION_ATLEAST(1, 19)
 #define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
 
 typedef struct QSVScaleContext {
@@ -92,12 +91,10 @@ typedef struct QSVScaleContext {
 
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
 
-#if QSV_HAVE_SCALING_CONFIG
     mfxExtVPPScaling         scale_conf;
-#endif
     int                      mode;
 
-    mfxExtBuffer             *ext_buffers[1 + QSV_HAVE_SCALING_CONFIG];
+    mfxExtBuffer             *ext_buffers[2];
     int                      num_ext_buf;
 
     int shift_width, shift_height;
@@ -397,14 +394,12 @@ static int init_out_session(AVFilterContext *ctx)
         par.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY | MFX_IOPATTERN_OUT_VIDEO_MEMORY;
     }
 
-#if QSV_HAVE_SCALING_CONFIG
     memset(&s->scale_conf, 0, sizeof(mfxExtVPPScaling));
     s->scale_conf.Header.BufferId     = MFX_EXTBUFF_VPP_SCALING;
     s->scale_conf.Header.BufferSz     = sizeof(mfxExtVPPScaling);
     s->scale_conf.ScalingMode         = s->mode;
     s->ext_buffers[s->num_ext_buf++]  = (mfxExtBuffer*)&s->scale_conf;
     av_log(ctx, AV_LOG_VERBOSE, "Scaling mode: %d\n", s->mode);
-#endif
 
     par.ExtParam    = s->ext_buffers;
     par.NumExtParam = s->num_ext_buf;
@@ -620,15 +615,9 @@ static const AVOption options[] = {
     { "h",      "Output video height", OFFSET(h_expr),     AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
     { "format", "Output pixel format", OFFSET(format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
 
-#if QSV_HAVE_SCALING_CONFIG
     { "mode",      "set scaling mode",    OFFSET(mode),    AV_OPT_TYPE_INT,    { .i64 = MFX_SCALING_MODE_DEFAULT}, MFX_SCALING_MODE_DEFAULT, MFX_SCALING_MODE_QUALITY, FLAGS, "mode"},
     { "low_power", "low power mode",        0,             AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_LOWPOWER}, INT_MIN, INT_MAX, FLAGS, "mode"},
     { "hq",        "high quality mode",     0,             AV_OPT_TYPE_CONST,  { .i64 = MFX_SCALING_MODE_QUALITY},  INT_MIN, INT_MAX, FLAGS, "mode"},
-#else
-    { "mode",      "(not supported)",     OFFSET(mode),    AV_OPT_TYPE_INT,    { .i64 = 0}, 0, INT_MAX, FLAGS, "mode"},
-    { "low_power", "",                      0,             AV_OPT_TYPE_CONST,  { .i64 = 1}, 0,   0,     FLAGS, "mode"},
-    { "hq",        "",                      0,             AV_OPT_TYPE_CONST,  { .i64 = 2}, 0,   0,     FLAGS, "mode"},
-#endif
 
     { NULL },
 };

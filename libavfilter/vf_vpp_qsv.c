@@ -43,9 +43,6 @@
 
 /* number of video enhancement filters */
 #define ENH_FILTERS_COUNT (8)
-#define QSV_HAVE_ROTATION       QSV_VERSION_ATLEAST(1, 17)
-#define QSV_HAVE_MIRRORING      QSV_VERSION_ATLEAST(1, 19)
-#define QSV_HAVE_SCALING_CONFIG QSV_VERSION_ATLEAST(1, 19)
 
 typedef struct VPPContext{
     const AVClass *class;
@@ -60,9 +57,7 @@ typedef struct VPPContext{
     mfxExtVPPProcAmp procamp_conf;
     mfxExtVPPRotation rotation_conf;
     mfxExtVPPMirroring mirroring_conf;
-#ifdef QSV_HAVE_SCALING_CONFIG
     mfxExtVPPScaling scale_conf;
-#endif
 
     int out_width;
     int out_height;
@@ -138,9 +133,7 @@ static const AVOption options[] = {
     { "height", "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
-#ifdef QSV_HAVE_SCALING_CONFIG
     { "scale_mode", "scale mode: 0=auto, 1=low power, 2=high quality", OFFSET(scale_mode), AV_OPT_TYPE_INT, { .i64 = MFX_SCALING_MODE_DEFAULT }, MFX_SCALING_MODE_DEFAULT, MFX_SCALING_MODE_QUALITY, .flags = FLAGS, "scale mode" },
-#endif
     { NULL }
 };
 
@@ -422,84 +415,83 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (vpp->transpose >= 0) {
-#ifdef QSV_HAVE_ROTATION
-        switch (vpp->transpose) {
-        case TRANSPOSE_CCLOCK_FLIP:
-            vpp->rotate = MFX_ANGLE_270;
-            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
-            break;
-        case TRANSPOSE_CLOCK:
-            vpp->rotate = MFX_ANGLE_90;
-            vpp->hflip  = MFX_MIRRORING_DISABLED;
-            break;
-        case TRANSPOSE_CCLOCK:
-            vpp->rotate = MFX_ANGLE_270;
-            vpp->hflip  = MFX_MIRRORING_DISABLED;
-            break;
-        case TRANSPOSE_CLOCK_FLIP:
-            vpp->rotate = MFX_ANGLE_90;
-            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
-            break;
-        case TRANSPOSE_REVERSAL:
-            vpp->rotate = MFX_ANGLE_180;
-            vpp->hflip  = MFX_MIRRORING_DISABLED;
-            break;
-        case TRANSPOSE_HFLIP:
-            vpp->rotate = MFX_ANGLE_0;
-            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
-            break;
-        case TRANSPOSE_VFLIP:
-            vpp->rotate = MFX_ANGLE_180;
-            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
-            break;
-        default:
-            av_log(ctx, AV_LOG_ERROR, "Failed to set transpose mode to %d.\n", vpp->transpose);
-            return AVERROR(EINVAL);
+        if (QSV_RUNTIME_VERSION_ATLEAST(mfx_version, 1, 17)) {
+            switch (vpp->transpose) {
+            case TRANSPOSE_CCLOCK_FLIP:
+                vpp->rotate = MFX_ANGLE_270;
+                vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+                break;
+            case TRANSPOSE_CLOCK:
+                vpp->rotate = MFX_ANGLE_90;
+                vpp->hflip  = MFX_MIRRORING_DISABLED;
+                break;
+            case TRANSPOSE_CCLOCK:
+                vpp->rotate = MFX_ANGLE_270;
+                vpp->hflip  = MFX_MIRRORING_DISABLED;
+                break;
+            case TRANSPOSE_CLOCK_FLIP:
+                vpp->rotate = MFX_ANGLE_90;
+                vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+                break;
+            case TRANSPOSE_REVERSAL:
+                vpp->rotate = MFX_ANGLE_180;
+                vpp->hflip  = MFX_MIRRORING_DISABLED;
+                break;
+            case TRANSPOSE_HFLIP:
+                vpp->rotate = MFX_ANGLE_0;
+                vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+                break;
+            case TRANSPOSE_VFLIP:
+                vpp->rotate = MFX_ANGLE_180;
+                vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+                break;
+            default:
+                av_log(ctx, AV_LOG_ERROR, "Failed to set transpose mode to %d.\n", vpp->transpose);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            av_log(ctx, AV_LOG_WARNING, "The QSV VPP transpose option is "
+                   "not supported with this MSDK version.\n");
+            vpp->transpose = 0;
         }
-#else
-        av_log(ctx, AV_LOG_WARNING, "The QSV VPP transpose option is "
-            "not supported with this MSDK version.\n");
-        vpp->transpose = 0;
-#endif
     }
 
     if (vpp->rotate) {
-#ifdef QSV_HAVE_ROTATION
-        memset(&vpp->rotation_conf, 0, sizeof(mfxExtVPPRotation));
-        vpp->rotation_conf.Header.BufferId  = MFX_EXTBUFF_VPP_ROTATION;
-        vpp->rotation_conf.Header.BufferSz  = sizeof(mfxExtVPPRotation);
-        vpp->rotation_conf.Angle = vpp->rotate;
+        if (QSV_RUNTIME_VERSION_ATLEAST(mfx_version, 1, 17)) {
+            memset(&vpp->rotation_conf, 0, sizeof(mfxExtVPPRotation));
+            vpp->rotation_conf.Header.BufferId  = MFX_EXTBUFF_VPP_ROTATION;
+            vpp->rotation_conf.Header.BufferSz  = sizeof(mfxExtVPPRotation);
+            vpp->rotation_conf.Angle = vpp->rotate;
 
-        if (MFX_ANGLE_90 == vpp->rotate || MFX_ANGLE_270 == vpp->rotate) {
-            FFSWAP(int, vpp->out_width, vpp->out_height);
-            FFSWAP(int, outlink->w, outlink->h);
-            av_log(ctx, AV_LOG_DEBUG, "Swap width and height for clock/cclock rotation.\n");
+            if (MFX_ANGLE_90 == vpp->rotate || MFX_ANGLE_270 == vpp->rotate) {
+                FFSWAP(int, vpp->out_width, vpp->out_height);
+                FFSWAP(int, outlink->w, outlink->h);
+                av_log(ctx, AV_LOG_DEBUG, "Swap width and height for clock/cclock rotation.\n");
+            }
+
+            param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->rotation_conf;
+        } else {
+            av_log(ctx, AV_LOG_WARNING, "The QSV VPP rotate option is "
+                   "not supported with this MSDK version.\n");
+            vpp->rotate = 0;
         }
-
-        param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->rotation_conf;
-#else
-        av_log(ctx, AV_LOG_WARNING, "The QSV VPP rotate option is "
-            "not supported with this MSDK version.\n");
-        vpp->rotate = 0;
-#endif
     }
 
     if (vpp->hflip) {
-#ifdef QSV_HAVE_MIRRORING
-        memset(&vpp->mirroring_conf, 0, sizeof(mfxExtVPPMirroring));
-        vpp->mirroring_conf.Header.BufferId = MFX_EXTBUFF_VPP_MIRRORING;
-        vpp->mirroring_conf.Header.BufferSz = sizeof(mfxExtVPPMirroring);
-        vpp->mirroring_conf.Type = vpp->hflip;
+        if (QSV_RUNTIME_VERSION_ATLEAST(mfx_version, 1, 19)) {
+            memset(&vpp->mirroring_conf, 0, sizeof(mfxExtVPPMirroring));
+            vpp->mirroring_conf.Header.BufferId = MFX_EXTBUFF_VPP_MIRRORING;
+            vpp->mirroring_conf.Header.BufferSz = sizeof(mfxExtVPPMirroring);
+            vpp->mirroring_conf.Type = vpp->hflip;
 
-        param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->mirroring_conf;
-#else
-        av_log(ctx, AV_LOG_WARNING, "The QSV VPP hflip option is "
-            "not supported with this MSDK version.\n");
-        vpp->hflip = 0;
-#endif
+            param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->mirroring_conf;
+        } else {
+            av_log(ctx, AV_LOG_WARNING, "The QSV VPP hflip option is "
+                   "not supported with this MSDK version.\n");
+            vpp->hflip = 0;
+        }
     }
 
-#ifdef QSV_HAVE_SCALING_CONFIG
     if (inlink->w != outlink->w || inlink->h != outlink->h) {
         if (QSV_RUNTIME_VERSION_ATLEAST(mfx_version, 1, 19)) {
             memset(&vpp->scale_conf, 0, sizeof(mfxExtVPPScaling));
@@ -512,7 +504,6 @@ static int config_output(AVFilterLink *outlink)
             av_log(ctx, AV_LOG_WARNING, "The QSV VPP Scale option is "
                 "not supported with this MSDK version.\n");
     }
-#endif
 
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
         vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||

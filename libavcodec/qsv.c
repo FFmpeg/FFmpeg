@@ -38,34 +38,26 @@
 
 #define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
 
-#if QSV_VERSION_ATLEAST(1, 12)
 #include "mfx/mfxvp8.h"
-#endif
 
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
 {
     switch (codec_id) {
     case AV_CODEC_ID_H264:
         return MFX_CODEC_AVC;
-#if QSV_VERSION_ATLEAST(1, 8)
     case AV_CODEC_ID_HEVC:
         return MFX_CODEC_HEVC;
-#endif
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_MPEG2VIDEO:
         return MFX_CODEC_MPEG2;
     case AV_CODEC_ID_VC1:
         return MFX_CODEC_VC1;
-#if QSV_VERSION_ATLEAST(1, 12)
     case AV_CODEC_ID_VP8:
         return MFX_CODEC_VP8;
-#endif
     case AV_CODEC_ID_MJPEG:
         return MFX_CODEC_JPEG;
-#if QSV_VERSION_ATLEAST(1, 19)
     case AV_CODEC_ID_VP9:
         return MFX_CODEC_VP9;
-#endif
 #if QSV_VERSION_ATLEAST(1, 34)
     case AV_CODEC_ID_AV1:
         return MFX_CODEC_AV1;
@@ -189,17 +181,11 @@ enum AVPixelFormat ff_qsv_map_fourcc(uint32_t fourcc)
     case MFX_FOURCC_NV12: return AV_PIX_FMT_NV12;
     case MFX_FOURCC_P010: return AV_PIX_FMT_P010;
     case MFX_FOURCC_P8:   return AV_PIX_FMT_PAL8;
-#if QSV_VERSION_ATLEAST(1, 9)
     case MFX_FOURCC_A2RGB10: return AV_PIX_FMT_X2RGB10;
-#endif
-#if QSV_VERSION_ATLEAST(1, 17)
     case MFX_FOURCC_RGB4: return AV_PIX_FMT_BGRA;
-#endif
 #if CONFIG_VAAPI
     case MFX_FOURCC_YUY2: return AV_PIX_FMT_YUYV422;
-#if QSV_VERSION_ATLEAST(1, 27)
     case MFX_FOURCC_Y210: return AV_PIX_FMT_Y210;
-#endif
 #endif
     }
     return AV_PIX_FMT_NONE;
@@ -217,27 +203,21 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
     case AV_PIX_FMT_P010:
         *fourcc = MFX_FOURCC_P010;
         return AV_PIX_FMT_P010;
-#if QSV_VERSION_ATLEAST(1, 9)
     case AV_PIX_FMT_X2RGB10:
         *fourcc = MFX_FOURCC_A2RGB10;
         return AV_PIX_FMT_X2RGB10;
-#endif
-#if QSV_VERSION_ATLEAST(1, 17)
     case AV_PIX_FMT_BGRA:
         *fourcc = MFX_FOURCC_RGB4;
         return AV_PIX_FMT_BGRA;
-#endif
 #if CONFIG_VAAPI
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUYV422:
         *fourcc = MFX_FOURCC_YUY2;
         return AV_PIX_FMT_YUYV422;
-#if QSV_VERSION_ATLEAST(1, 27)
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_Y210:
         *fourcc = MFX_FOURCC_Y210;
         return AV_PIX_FMT_Y210;
-#endif
 #endif
     default:
         return AVERROR(ENOSYS);
@@ -438,9 +418,7 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
     const char *desc;
     int ret;
 
-#if QSV_VERSION_ATLEAST(1, 16)
     init_par.GPUCopy        = gpu_copy;
-#endif
     init_par.Implementation = impl;
     init_par.Version        = ver;
     ret = MFXInitEx(init_par, &qs->session);
@@ -791,9 +769,7 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
                "from the session\n");
     }
 
-#if QSV_VERSION_ATLEAST(1, 16)
     init_par.GPUCopy        = gpu_copy;
-#endif
     init_par.Implementation = impl;
     init_par.Version        = ver;
     err = MFXInitEx(init_par, &session);
