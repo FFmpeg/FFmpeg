@@ -149,7 +149,9 @@ static int flashsv2_prime(FlashSVContext *s, const uint8_t *src, int size)
     zstream->avail_in  = size;
     zstream->next_out  = data;
     zstream->avail_out = s->block_size * 3;
-    inflate(zstream, Z_SYNC_FLUSH);
+    zret = inflate(zstream, Z_SYNC_FLUSH);
+    if (zret != Z_OK && zret != Z_STREAM_END)
+        return AVERROR_UNKNOWN;
     remaining = s->block_size * 3 - zstream->avail_out;
 
     if ((zret = inflateReset(zstream)) != Z_OK) {
@@ -165,7 +167,9 @@ static int flashsv2_prime(FlashSVContext *s, const uint8_t *src, int size)
      * out of the output from above. See section 3.2.4 of RFC 1951. */
     zstream->next_in  = zlib_header;
     zstream->avail_in = sizeof(zlib_header);
-    inflate(zstream, Z_SYNC_FLUSH);
+    zret = inflate(zstream, Z_SYNC_FLUSH);
+    if (zret != Z_OK)
+        return AVERROR_UNKNOWN;
     while (remaining > 0) {
         unsigned block_size = FFMIN(UINT16_MAX, remaining);
         uint8_t header[5];
