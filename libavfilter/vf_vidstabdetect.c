@@ -126,7 +126,7 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "          show = %d\n", s->conf.show);
     av_log(ctx, AV_LOG_INFO, "        result = %s\n", s->result);
 
-    s->f = fopen(s->result, "w");
+    s->f = avpriv_fopen_utf8(s->result, "w");
     if (s->f == NULL) {
         av_log(ctx, AV_LOG_ERROR, "cannot open transform file %s\n", s->result);
         return AVERROR(EINVAL);

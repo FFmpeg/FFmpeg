@@ -604,7 +604,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     if (ret < 0)
         return ret;
 
-    if (s->dumpfile && (!s->dump_buf || !s->analysis_rdft || !(dump_fp = fopen(s->dumpfile, "w"))))
+    if (s->dumpfile && (!s->dump_buf || !s->analysis_rdft || !(dump_fp = avpriv_fopen_utf8(s->dumpfile, "w"))))
         av_log(ctx, AV_LOG_WARNING, "dumping failed.\n");
 
     vars[VAR_CHS] = inlink->ch_layout.nb_channels;

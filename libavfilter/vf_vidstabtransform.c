@@ -191,7 +191,7 @@ static int config_input(AVFilterLink *inlink)
         av_log(ctx, AV_LOG_INFO, "    zoomspeed = %g\n", tc->conf.zoomSpeed);
     av_log(ctx, AV_LOG_INFO, "    interpol  = %s\n", getInterpolationTypeName(tc->conf.interpolType));
 
-    f = fopen(tc->input, "r");
+    f = avpriv_fopen_utf8(tc->input, "r");
     if (!f) {
         int ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "cannot open input file %s\n", tc->input);

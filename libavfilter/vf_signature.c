@@ -386,7 +386,7 @@ static int xml_export(AVFilterContext *ctx, StreamContext *sc, const char* filen
     FILE* f;
     unsigned int pot3[5] = { 3*3*3*3, 3*3*3, 3*3, 3, 1 };
 
-    f = fopen(filename, "w");
+    f = avpriv_fopen_utf8(filename, "w");
     if (!f) {
         int err = AVERROR(EINVAL);
         char buf[128];
@@ -500,7 +500,7 @@ static int binary_export(AVFilterContext *ctx, StreamContext *sc, const char* fi
     if (!buffer)
         return AVERROR(ENOMEM);
 
-    f = fopen(filename, "wb");
+    f = avpriv_fopen_utf8(filename, "wb");
     if (!f) {
         int err = AVERROR(EINVAL);
         char buf[128];

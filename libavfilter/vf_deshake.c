@@ -353,7 +353,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     if (deshake->filename)
-        deshake->fp = fopen(deshake->filename, "w");
+        deshake->fp = avpriv_fopen_utf8(deshake->filename, "w");
     if (deshake->fp)
         fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", 1, 104, deshake->fp);
 
