@@ -158,6 +158,8 @@ static int ff_tls_read(URLContext *h, uint8_t *buf, int size)
         return ret;
     else if (ret == 0)
         return AVERROR_EOF;
+    else if (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT)
+        return AVERROR(EAGAIN);
     av_log(h, AV_LOG_ERROR, "%s\n", tls_error(p->ctx));
     return AVERROR(EIO);
 }
@@ -171,6 +173,8 @@ static int ff_tls_write(URLContext *h, const uint8_t *buf, int size)
         return ret;
     else if (ret == 0)
         return AVERROR_EOF;
+    else if (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT)
+        return AVERROR(EAGAIN);
     av_log(h, AV_LOG_ERROR, "%s\n", tls_error(p->ctx));
     return AVERROR(EIO);
 }
