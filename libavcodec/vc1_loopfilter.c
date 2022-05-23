@@ -1125,10 +1125,7 @@ static av_always_inline void vc1_b_h_intfi_loop_filter(VC1Context *v, uint8_t *d
         dst = dest + (block_num & 2) * 4 * s->linesize + (block_num & 1) * 8;
 
     if (!(flags & RIGHT_EDGE) || !(block_num & 5)) {
-        if (block_num > 3)
-            v->vc1dsp.vc1_h_loop_filter8(dst + 8, linesize, pq);
-        else
-            v->vc1dsp.vc1_h_loop_filter8(dst + 8, linesize, pq);
+        v->vc1dsp.vc1_h_loop_filter8(dst + 8, linesize, pq);
     }
 
     tt = ttblk[0] >> (block_num * 4) & 0xf;
