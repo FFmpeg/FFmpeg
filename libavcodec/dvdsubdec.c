@@ -617,7 +617,7 @@ static int parse_ifo_palette(DVDSubContext *ctx, char *p)
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
     ctx->has_palette = 0;
-    if ((ifo = fopen(p, "r")) == NULL) {
+    if ((ifo = avpriv_fopen_utf8(p, "r")) == NULL) {
         av_log(ctx, AV_LOG_WARNING, "Unable to open IFO file \"%s\": %s\n", p, av_err2str(AVERROR(errno)));
         return AVERROR_EOF;
     }
