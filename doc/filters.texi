@@ -8131,6 +8131,35 @@ tblend=all_mode=grainextract
 @subsection Commands
 This filter supports same @ref{commands} as options.
 
+@anchor{blockdetect}
+@section blockdetect
+
+Determines blockiness of frames without altering the input frames.
+
+Based on Remco Muijs and Ihor Kirenko: "A no-reference blocking artifact measure for adaptive video processing." 2005 13th European signal processing conference.
+
+The filter accepts the following options:
+
+@table @option
+@item period_min
+@item period_max
+Set minimum and maximum values for determining pixel grids (periods).
+Default values are [3,24].
+
+@item planes
+Set planes to filter. Default is first only.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Determine blockiness for the first plane and search for periods within [8,32]:
+@example
+blockdetect=period_min=8:period_max=32:planes=1
+@end example
+@end itemize
+
 @anchor{blurdetect}
 @section blurdetect
 

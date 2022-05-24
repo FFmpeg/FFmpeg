@@ -1,0 +1,10 @@
+frame:0    pts:0       pts_time:0
+lavfi.block=46.592525
+frame:1    pts:1       pts_time:1
+lavfi.block=40.478703
+frame:2    pts:2       pts_time:2
+lavfi.block=40.858681
+frame:3    pts:3       pts_time:3
+lavfi.block=39.519077
+frame:4    pts:4       pts_time:4
+lavfi.block=38.713215
