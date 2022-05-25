@@ -85,6 +85,7 @@ enum FilterType {
     lowpass,
     lowshelf,
     highshelf,
+    tiltshelf,
 };
 
 enum WidthType {
@@ -698,6 +699,17 @@ static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
         m[1] = k * (A - 1.);
         m[2] = A * A - 1.;
         break;
+    case tiltshelf:
+        A = ff_exp10(s->gain / 20.);
+        g = tan(M_PI * s->frequency / sample_rate) / sqrt(A);
+        k = 1. / Q;
+        a[0] = 1. / (1. + g * (g + k));
+        a[1] = g * a[0];
+        a[2] = g * a[1];
+        m[0] = 1./ A;
+        m[1] = k * (A - 1.) / A;
+        m[2] = (A * A - 1.) / A;
+        break;
     case treble:
     case highshelf:
         A = ff_exp10(s->gain / 40.);
@@ -777,7 +789,8 @@ static int config_filter(AVFilterLink *outlink, int reset)
     AVFilterContext *ctx    = outlink->src;
     BiquadsContext *s       = ctx->priv;
     AVFilterLink *inlink    = ctx->inputs[0];
-    double A = ff_exp10(s->gain / 40);
+    double gain = s->gain * ((s->filter_type == tiltshelf) + 1.);
+    double A = ff_exp10(gain / 40);
     double w0 = 2 * M_PI * s->frequency / inlink->sample_rate;
     double K = tan(w0 / 2.);
     double alpha, beta;
@@ -835,9 +848,10 @@ static int config_filter(AVFilterLink *outlink, int reset)
         break;
     case bass:
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
+    case tiltshelf:
     case lowshelf:
         if (s->poles == 1) {
-            double A = ff_exp10(s->gain / 20);
+            double A = ff_exp10(gain / 20);
             double ro = -sin(w0 / 2. - M_PI_4) / sin(w0 / 2. + M_PI_4);
             double n = (A + 1) / (A - 1);
             double alpha1 = A == 1. ? 0. : n - FFSIGN(n) * sqrt(n * n - 1);
@@ -863,7 +877,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
     case highshelf:
         if (s->poles == 1) {
-            double A = ff_exp10(s->gain / 20);
+            double A = ff_exp10(gain / 20);
             double ro = sin(w0 / 2. - M_PI_4) / sin(w0 / 2. + M_PI_4);
             double n = (A + 1) / (A - 1);
             double alpha1 = A == 1. ? 0. : n - FFSIGN(n) * sqrt(n * n - 1);
@@ -983,6 +997,14 @@ static int config_filter(AVFilterLink *outlink, int reset)
         s->b0 *= factor;
         s->b1 *= factor;
         s->b2 *= factor;
+    }
+
+    switch (s->filter_type) {
+    case tiltshelf:
+        s->b0 /= A;
+        s->b1 /= A;
+        s->b2 /= A;
+        break;
     }
 
     s->cache = av_realloc_f(s->cache, sizeof(ChanCache), inlink->ch_layout.nb_channels);
@@ -1528,7 +1550,7 @@ DEFINE_BIQUAD_FILTER_2(bass, "Boost or cut lower frequencies.", bass_lowshelf);
 DEFINE_BIQUAD_FILTER_2(lowshelf, "Apply a low shelf filter.", bass_lowshelf);
 #endif  /* CONFIG_LOWSHELF_FILTER */
 #endif  /* CONFIG_BASS_FILTER || CONFIG LOWSHELF_FILTER */
-#if CONFIG_TREBLE_FILTER || CONFIG_HIGHSHELF_FILTER
+#if CONFIG_TREBLE_FILTER || CONFIG_HIGHSHELF_FILTER || CONFIG_TILTSHELF_FILTER
 static const AVOption treble_highshelf_options[] = {
     {"frequency", "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=3000}, 0, 999999, FLAGS},
     {"f",         "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=3000}, 0, 999999, FLAGS},
@@ -1572,7 +1594,7 @@ static const AVOption treble_highshelf_options[] = {
     {NULL}
 };
 
-AVFILTER_DEFINE_CLASS_EXT(treble_highshelf, "treble/highshelf",
+AVFILTER_DEFINE_CLASS_EXT(treble_highshelf, "treble/high/tiltshelf",
                           treble_highshelf_options);
 
 #if CONFIG_TREBLE_FILTER
@@ -1582,7 +1604,12 @@ DEFINE_BIQUAD_FILTER_2(treble, "Boost or cut upper frequencies.", treble_highshe
 #if CONFIG_HIGHSHELF_FILTER
 DEFINE_BIQUAD_FILTER_2(highshelf, "Apply a high shelf filter.", treble_highshelf);
 #endif  /* CONFIG_HIGHSHELF_FILTER */
-#endif  /* CONFIG_TREBLE_FILTER || CONFIG_HIGHSHELF_FILTER */
+
+#if CONFIG_TILTSHELF_FILTER
+DEFINE_BIQUAD_FILTER_2(tiltshelf, "Apply a tilt shelf filter.", treble_highshelf);
+#endif
+#endif  /* CONFIG_TREBLE_FILTER || CONFIG_HIGHSHELF_FILTER || CONFIG_TILTSHELF_FILTER */
+
 #if CONFIG_BANDPASS_FILTER
 static const AVOption bandpass_options[] = {
     {"frequency", "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=3000}, 0, 999999, FLAGS},

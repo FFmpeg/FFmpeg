@@ -6690,6 +6690,97 @@ Set window overlap. If set to 1, the recommended overlap for selected
 window function will be picked. Default is @code{0.5}.
 @end table
 
+@section tiltshelf
+
+Boost or cut the lower frequencies and cut or boost higher frequencies
+of the audio using a two-pole shelving filter with a response similar to
+that of a standard hi-fi's tone-controls.
+This is also known as shelving equalisation (EQ).
+
+The filter accepts the following options:
+
+@table @option
+@item gain, g
+Give the gain at 0 Hz. Its useful range is about -20
+(for a large cut) to +20 (for a large boost).
+Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{3000} Hz.
+
+@item width_type, t
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@item k
+kHz
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
+
+@item transform, a
+Set transform type of IIR filter.
+@table @option
+@item di
+@item dii
+@item tdi
+@item tdii
+@item latt
+@item svf
+@item zdf
+@end table
+
+@item precision, r
+Set precison of filtering.
+@table @option
+@item auto
+Pick automatic sample format depending on surround filters.
+@item s16
+Always use signed 16-bit.
+@item s32
+Always use signed 32-bit.
+@item f32
+Always use float 32-bit.
+@item f64
+Always use float 64-bit.
+@end table
+
+@item block_size, b
+Set block size used for reverse IIR processing. If this value is set to high enough
+value (higher than impulse response length truncated when reaches near zero values) filtering
+will become linear phase otherwise if not big enough it will just produce nasty artifacts.
+
+Note that filter delay will be exactly this many samples when set to non-zero value.
+@end table
+
+@subsection Commands
+
+This filter supports some options as @ref{commands}.
+
 @section treble, highshelf
 
 Boost or cut treble (upper) frequencies of the audio using a two-pole
