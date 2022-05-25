@@ -29,6 +29,7 @@
 #include "libavutil/time.h"
 #include "codec_internal.h"
 #include "internal.h"
+#include "compat/w32dlfcn.h"
 
 typedef struct MFContext {
     AVClass *av_class;
@@ -1131,7 +1132,7 @@ static int mf_init_encoder(AVCodecContext *avctx)
 
 #if !HAVE_UWP
 #define LOAD_MF_FUNCTION(context, func_name) \
-    context->functions.func_name = (void *)GetProcAddress(context->library, #func_name); \
+    context->functions.func_name = (void *)dlsym(context->library, #func_name); \
     if (!context->functions.func_name) { \
         av_log(context, AV_LOG_ERROR, "DLL mfplat.dll failed to find function "\
            #func_name "\n"); \
@@ -1158,7 +1159,7 @@ static int mf_load_library(AVCodecContext *avctx)
     MFContext *c = avctx->priv_data;
 
 #if !HAVE_UWP
-    c->library = LoadLibraryA("mfplat.dll");
+    c->library = dlopen("mfplat.dll", 0);
 
     if (!c->library) {
         av_log(c, AV_LOG_ERROR, "DLL mfplat.dll failed to open\n");
@@ -1191,7 +1192,7 @@ static int mf_close(AVCodecContext *avctx)
     if (c->library)
         ff_free_mf(&c->functions, &c->mft);
 
-    FreeLibrary(c->library);
+    dlclose(c->library);
     c->library = NULL;
 #else
     ff_free_mf(&c->functions, &c->mft);
