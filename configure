@@ -3130,7 +3130,6 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # hardware-accelerated codecs
 mediafoundation_deps="mftransform_h MFCreateAlignedMemoryBuffer"
-mediafoundation_extralibs="-lmfplat -lmfuuid -lole32 -lstrmiids"
 omx_deps="libdl pthreads"
 omx_rpi_select="omx"
 qsv_deps="libmfx"
@@ -6878,6 +6877,9 @@ test_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
 #error no family set
 #endif
 EOF
+
+# mediafoundation requires linking directly to mfplat if building for uwp target
+enabled uwp && mediafoundation_extralibs="-lmfplat -lmfuuid -lole32 -lstrmiids" || mediafoundation_extralibs="-lmfuuid -lole32 -lstrmiids"
 
 enabled libdrm &&
     check_pkg_config libdrm_getfb2 libdrm "xf86drmMode.h" drmModeGetFB2
