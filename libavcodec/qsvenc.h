@@ -100,6 +100,14 @@
 #define QSV_OPTION_LOW_DELAY_BRC \
 { "low_delay_brc",   "Allow to strictly obey avg frame size", OFFSET(qsv.low_delay_brc),  AV_OPT_TYPE_BOOL,{ .i64 = -1 }, -1,          1, VE },
 
+#define QSV_OPTION_MAX_MIN_QP \
+{ "max_qp_i", "Maximum video quantizer scale for I frame",       OFFSET(qsv.max_qp_i),       AV_OPT_TYPE_INT, { .i64 = -1 },  -1,          51, VE},                         \
+{ "min_qp_i", "Minimum video quantizer scale for I frame",       OFFSET(qsv.min_qp_i),       AV_OPT_TYPE_INT, { .i64 = -1 },  -1,          51, VE},                         \
+{ "max_qp_p", "Maximum video quantizer scale for P frame",       OFFSET(qsv.max_qp_p),       AV_OPT_TYPE_INT, { .i64 = -1 },  -1,          51, VE},                         \
+{ "min_qp_p", "Minimum video quantizer scale for P frame",       OFFSET(qsv.min_qp_p),       AV_OPT_TYPE_INT, { .i64 = -1 },  -1,          51, VE},                         \
+{ "max_qp_b", "Maximum video quantizer scale for B frame",       OFFSET(qsv.max_qp_b),       AV_OPT_TYPE_INT, { .i64 = -1 },  -1,          51, VE},                         \
+{ "min_qp_b", "Minimum video quantizer scale for B frame",       OFFSET(qsv.min_qp_b),       AV_OPT_TYPE_INT, { .i64 = -1 },  -1,          51, VE},
+
 extern const AVCodecHWConfigInternal *const ff_qsv_enc_hw_configs[];
 
 typedef int SetEncodeCtrlCB (AVCodecContext *avctx,
@@ -209,6 +217,13 @@ typedef struct QSVEncContext {
     int co3_idx;
     int exthevctiles_idx;
     int vp9_idx;
+
+    int max_qp_i;
+    int min_qp_i;
+    int max_qp_p;
+    int min_qp_p;
+    int max_qp_b;
+    int min_qp_b;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

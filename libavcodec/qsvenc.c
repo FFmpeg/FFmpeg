@@ -828,8 +828,13 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
             if (q->b_strategy >= 0)
                 q->extco2.BRefType = q->b_strategy ? MFX_B_REF_PYRAMID : MFX_B_REF_OFF;
-            if (avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) {
-                av_log(avctx, AV_LOG_ERROR, "qmin and or qmax are set but invalid, please make sure min <= max\n");
+            if ((avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) ||
+                (q->max_qp_i >= 0 && q->min_qp_i >= 0 && q->min_qp_i > q->max_qp_i) ||
+                (q->max_qp_p >= 0 && q->min_qp_p >= 0 && q->min_qp_p > q->max_qp_p) ||
+                (q->max_qp_b >= 0 && q->min_qp_b >= 0 && q->min_qp_b > q->max_qp_b)) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "qmin and or qmax are set but invalid,"
+                       " please make sure min <= max\n");
                 return AVERROR(EINVAL);
             }
             if (avctx->qmin >= 0) {
@@ -840,6 +845,18 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                 q->extco2.MaxQPI = avctx->qmax > 51 ? 51 : avctx->qmax;
                 q->extco2.MaxQPP = q->extco2.MaxQPB = q->extco2.MaxQPI;
             }
+            if (q->min_qp_i >= 0)
+                q->extco2.MinQPI = q->min_qp_i > 51 ? 51 : q->min_qp_i;
+            if (q->max_qp_i >= 0)
+                q->extco2.MaxQPI = q->max_qp_i > 51 ? 51 : q->max_qp_i;
+            if (q->min_qp_p >= 0)
+                q->extco2.MinQPP = q->min_qp_p > 51 ? 51 : q->min_qp_p;
+            if (q->max_qp_p >= 0)
+                q->extco2.MaxQPP = q->max_qp_p > 51 ? 51 : q->max_qp_p;
+            if (q->min_qp_b >= 0)
+                q->extco2.MinQPB = q->min_qp_b > 51 ? 51 : q->min_qp_b;
+            if (q->max_qp_b >= 0)
+                q->extco2.MaxQPB = q->max_qp_b > 51 ? 51 : q->max_qp_b;
             if (q->mbbrc >= 0)
                 q->extco2.MBBRC = q->mbbrc ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 

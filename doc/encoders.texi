@@ -3472,6 +3472,24 @@ Multi-Frame Mode.
 
 @item @var{repeat_pps}
 Repeat pps for every frame.
+
+@item @var{max_qp_i}
+Maximum video quantizer scale for I frame.
+
+@item @var{min_qp_i}
+Minimum video quantizer scale for I frame.
+
+@item @var{max_qp_p}
+Maximum video quantizer scale for P frame.
+
+@item @var{min_qp_p}
+Minimum video quantizer scale for P frame.
+
+@item @var{max_qp_b}
+Maximum video quantizer scale for B frame.
+
+@item @var{min_qp_b}
+Minimum video quantizer scale for B frame.
 @end table
 
 @subsection HEVC Options
@@ -3595,6 +3613,24 @@ range is [-63, 63] for 10 bit-depth or [-75, 75] for 12 bit-depth respectively.
 
 @item @var{int_ref_cycle_dist}
 Distance between the beginnings of the intra-refresh cycles in frames.
+
+@item @var{max_qp_i}
+Maximum video quantizer scale for I frame.
+
+@item @var{min_qp_i}
+Minimum video quantizer scale for I frame.
+
+@item @var{max_qp_p}
+Maximum video quantizer scale for P frame.
+
+@item @var{min_qp_p}
+Minimum video quantizer scale for P frame.
+
+@item @var{max_qp_b}
+Maximum video quantizer scale for B frame.
+
+@item @var{min_qp_b}
+Minimum video quantizer scale for B frame.
 @end table
 
 @subsection MPEG2 Options

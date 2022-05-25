@@ -114,6 +114,7 @@ static const AVOption options[] = {
     QSV_OPTION_B_STRATEGY
     QSV_OPTION_DBLK_IDC
     QSV_OPTION_LOW_DELAY_BRC
+    QSV_OPTION_MAX_MIN_QP
 
     { "cavlc",          "Enable CAVLC",                           OFFSET(qsv.cavlc),          AV_OPT_TYPE_BOOL, { .i64 = 0 },   0,          1, VE },
 #if QSV_HAVE_VCM
