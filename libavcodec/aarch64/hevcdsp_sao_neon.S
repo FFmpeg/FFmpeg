@@ -3,7 +3,7 @@
  *
  * AArch64 NEON optimised SAO functions for HEVC decoding
  *
- * Copyright (c) 2020 Josh Dekker <josh@itanimul.li>
+ * Copyright (c) 2022 J. Dekker <jdek@itanimul.li>
  *
  * This file is part of FFmpeg.
  *
@@ -23,6 +23,10 @@
  */
 
 #include "libavutil/aarch64/asm.S"
+
+#define MAX_PB_SIZE 64
+#define AV_INPUT_BUFFER_PADDING_SIZE 64
+#define SAO_STRIDE (2*MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE)
 
 // void sao_band_filter(uint8_t *_dst, uint8_t *_src,
 //                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
@@ -57,6 +61,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         // +----------------------------------->
         //    i-0     i-1     i-2     i-3
         ld1             {v2.8b}, [x1], #8          // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
+        subs            w8, w8,  #8
         uxtl            v0.8h,  v2.8b              // load src[x]
         ushr            v2.8h,  v0.8h, #3          // >> BIT_DEPTH - 3
         shl             v1.8h,  v2.8h, #1          // low (x2, accessing short)
@@ -66,7 +71,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         add             v1.8h,  v0.8h, v2.8h       // src[x] + table
         sqxtun          v4.8b,  v1.8h              // clip + narrow
         st1             {v4.8b}, [x0], #8          // store
-        subs            w8, w8,  #8                // done 8 pixels
+        // done 8 pixels
         bne             2b
         subs            w7, w7,  #1                // finished line, prep. new
         add             x0, x0,  x2                // dst += stride_dst
@@ -75,12 +80,11 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         ret
 endfunc
 
-// ASSUMES STRIDE_SRC = 192
 .Lsao_edge_pos:
 .word 1 // horizontal
-.word 192 // vertical
-.word 192 + 1 // 45 degree
-.word 192 - 1 // 135 degree
+.word SAO_STRIDE // vertical
+.word SAO_STRIDE + 1 // 45 degree
+.word SAO_STRIDE - 1 // 135 degree
 
 // ff_hevc_sao_edge_filter_16x16_8_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                      int16 *sao_offset_val, int eo, int width, int height)
@@ -98,7 +102,7 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         uzp2            v1.16b, v3.16b, v3.16b     // sao_offset_val -> upper
         uzp1            v0.16b, v3.16b, v3.16b     // sao_offset_val -> lower
         movi            v2.16b, #2
-        mov             x15, #192
+        mov             x15, #SAO_STRIDE
         // strides between end of line and next src/dst
         sub             x15, x15, x5               // stride_src - width
         sub             x16, x2, x5                // stride_dst - width
@@ -111,6 +115,7 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         ld1             {v3.16b}, [x11], #16       // load src
         ld1             {v4.16b}, [x12], #16       // load src_a (prev)
         ld1             {v5.16b}, [x13], #16       // load src_b (next)
+        subs            x14, x14, #16
         cmhi            v16.16b, v4.16b, v3.16b    // (prev > cur)
         cmhi            v17.16b, v3.16b, v4.16b    // (cur > prev)
         cmhi            v18.16b, v5.16b, v3.16b    // (next > cur)
@@ -130,12 +135,12 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         sqxtun          v3.8b, v20.8h
         sqxtun2         v3.16b, v21.8h
         st1             {v3.16b}, [x0], #16
-        subs            x14, x14, #16              // filtered 16 bytes
+        // filtered 16 bytes
         b.ne            2b                         // do we have width to filter?
         // no width to filter, setup next line
+        subs            w6, w6, #1                 // filtered line
         add             x11, x11, x15              // stride src to next line
         add             x0, x0, x16                // stride dst to next line
-        subs            w6, w6, #1                 // filtered line
         b.ne            1b                         // do we have lines to process?
         // no lines to filter
         ret
@@ -156,17 +161,17 @@ function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
         movi            v2.16b, #2
         add             x16, x0, x2
         lsl             x2,  x2, #1
-        mov             x15, #192
+        mov             x15, #SAO_STRIDE
         mov             x8,  x1
         sub             x9,  x1, x4
         add             x10, x1, x4
-        lsr             w17, w6, #1
 1:      ld1             {v3.d}[0], [ x8], x15
         ld1             {v4.d}[0], [ x9], x15
         ld1             {v5.d}[0], [x10], x15
         ld1             {v3.d}[1], [ x8], x15
         ld1             {v4.d}[1], [ x9], x15
         ld1             {v5.d}[1], [x10], x15
+        subs            w6, w6, #2
         cmhi            v16.16b, v4.16b, v3.16b
         cmhi            v17.16b, v3.16b, v4.16b
         cmhi            v18.16b, v5.16b, v3.16b
@@ -187,7 +192,6 @@ function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
         sqxtun          v7.8b, v21.8h
         st1             {v6.8b}, [ x0], x2
         st1             {v7.8b}, [x16], x2
-        subs            x17, x17, #1
         b.ne            1b
         ret
 endfunc
