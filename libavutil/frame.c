@@ -727,19 +727,28 @@ static int frame_copy_audio(AVFrame *dst, const AVFrame *src)
 
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
-    if (!channels) {
+    if (!channels || !src->ch_layout.nb_channels) {
         if (dst->channels       != src->channels ||
             dst->channel_layout != src->channel_layout)
             return AVERROR(EINVAL);
+        CHECK_CHANNELS_CONSISTENCY(src);
+    }
+    if (!channels) {
         channels = dst->channels;
         planes = planar ? channels : 1;
-        CHECK_CHANNELS_CONSISTENCY(src);
     }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     if (dst->nb_samples != src->nb_samples ||
+#if FF_API_OLD_CHANNEL_LAYOUT
+        (av_channel_layout_check(&dst->ch_layout) &&
+         av_channel_layout_check(&src->ch_layout) &&
+#endif
         av_channel_layout_compare(&dst->ch_layout, &src->ch_layout))
+#if FF_API_OLD_CHANNEL_LAYOUT
+        )
+#endif
         return AVERROR(EINVAL);
 
     for (i = 0; i < planes; i++)
@@ -763,7 +772,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
     else if (dst->nb_samples > 0 &&
              (av_channel_layout_check(&dst->ch_layout)
 #if FF_API_OLD_CHANNEL_LAYOUT
-              || dst->channel_layout || dst->channels
+              || dst->channels > 0
 #endif
             ))
         return frame_copy_audio(dst, src);
