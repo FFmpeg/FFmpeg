@@ -1820,7 +1820,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         {
             const int filterAlign = X86_MMX(cpu_flags)     ? 4 :
                                     PPC_ALTIVEC(cpu_flags) ? 8 :
-                                    have_neon(cpu_flags)   ? 8 : 1;
+                                    have_neon(cpu_flags)   ? 4 : 1;
 
             if ((ret = initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,
