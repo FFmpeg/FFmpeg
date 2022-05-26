@@ -614,6 +614,37 @@ Establish a TLS (HTTPS) connection to Icecast.
 icecast://[@var{username}[:@var{password}]@@]@var{server}:@var{port}/@var{mountpoint}
 @end example
 
+@section ipfs
+
+InterPlanetary File System (IPFS) protocol support. One can access files stored
+on the IPFS network through so called gateways. Those are http(s) endpoints.
+This protocol wraps the IPFS native protocols (ipfs:// and ipns://) to be send
+to such a gateway. Users can (and should) host their own node which means this
+protocol will use your local gateway to access files on the IPFS network.
+
+If a user doesn't have a node of their own then the public gateway dweb.link is
+used by default.
+
+You can use this protocol in 2 ways. Using IPFS:
+@example
+ffplay ipfs://QmbGtJg23skhvFmu9mJiePVByhfzu5rwo74MEkVDYAmF5T
+@end example
+
+Or the IPNS protocol (IPNS is mutable IPFS):
+@example
+ffplay ipns://QmbGtJg23skhvFmu9mJiePVByhfzu5rwo74MEkVDYAmF5T
+@end example
+
+You can also change the gateway to be used:
+
+@table @option
+
+@item gateway
+Defines the gateway to use. When nothing is provided the protocol will first try
+your local gateway. If that fails dweb.link will be used.
+
+@end table
+
 @section mmst
 
 MMS (Microsoft Media Server) protocol over TCP.
@@ -2022,37 +2053,6 @@ via ZeroMQ. On the clients, it sets an internal buffer size for receiving
 packets. Note that pkt_size on the clients should be equal to or greater than
 pkt_size on the server. Otherwise the received message may be truncated causing
 decoding errors.
-
-@end table
-
-@section ipfs
-
-InterPlanetary File System (IPFS) protocol support. One can access files stored
-on the IPFS network through so called gateways. Those are http(s) endpoints.
-This protocol wraps the IPFS native protocols (ipfs:// and ipns://) to be send
-to such a gateway. Users can (and should) host their own node which means this
-protocol will use your local gateway to access files on the IPFS network.
-
-If a user doesn't have a node of their own then the public gateway dweb.link is
-used by default.
-
-You can use this protocol in 2 ways. Using IPFS:
-@example
-ffplay ipfs://QmbGtJg23skhvFmu9mJiePVByhfzu5rwo74MEkVDYAmF5T
-@end example
-
-Or the IPNS protocol (IPNS is mutable IPFS):
-@example
-ffplay ipns://QmbGtJg23skhvFmu9mJiePVByhfzu5rwo74MEkVDYAmF5T
-@end example
-
-You can also change the gateway to be used:
-
-@table @option
-
-@item gateway
-Defines the gateway to use. When nothing is provided the protocol will first try
-your local gateway. If that fails dweb.link will be used.
 
 @end table
 
