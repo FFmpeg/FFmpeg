@@ -148,7 +148,11 @@ static void check_hscale(void)
         { 8, 18 },
     };
 
-    int i, j, fsi, hpi, width;
+#define LARGEST_INPUT_SIZE 512
+#define INPUT_SIZES 6
+    static const int input_sizes[INPUT_SIZES] = {8, 24, 128, 144, 256, 512};
+
+    int i, j, fsi, hpi, width, dstWi;
     struct SwsContext *ctx;
 
     // padded
@@ -178,57 +182,59 @@ static void check_hscale(void)
 
     for (hpi = 0; hpi < HSCALE_PAIRS; hpi++) {
         for (fsi = 0; fsi < FILTER_SIZES; fsi++) {
-            width = filter_sizes[fsi];
+            for (dstWi = 0; dstWi < INPUT_SIZES; dstWi++) {
+                width = filter_sizes[fsi];
 
-            ctx->srcBpc = hscale_pairs[hpi][0];
-            ctx->dstBpc = hscale_pairs[hpi][1];
-            ctx->hLumFilterSize = ctx->hChrFilterSize = width;
-            ctx->dstW = ctx->chrDstW = SRC_PIXELS;
+                ctx->srcBpc = hscale_pairs[hpi][0];
+                ctx->dstBpc = hscale_pairs[hpi][1];
+                ctx->hLumFilterSize = ctx->hChrFilterSize = width;
 
-            for (i = 0; i < SRC_PIXELS; i++) {
-                filterPos[i] = i;
-                filterPosAvx[i] = i;
+                for (i = 0; i < SRC_PIXELS; i++) {
+                    filterPos[i] = i;
+                    filterPosAvx[i] = i;
 
-                // These filter cofficients are chosen to try break two corner
-                // cases, namely:
-                //
-                // - Negative filter coefficients. The filters output signed
-                //   values, and it should be possible to end up with negative
-                //   output values.
-                //
-                // - Positive clipping. The hscale filter function has clipping
-                //   at (1<<15) - 1
-                //
-                // The coefficients sum to the 1.0 point for the hscale
-                // functions (1 << 14).
+                    // These filter cofficients are chosen to try break two corner
+                    // cases, namely:
+                    //
+                    // - Negative filter coefficients. The filters output signed
+                    //   values, and it should be possible to end up with negative
+                    //   output values.
+                    //
+                    // - Positive clipping. The hscale filter function has clipping
+                    //   at (1<<15) - 1
+                    //
+                    // The coefficients sum to the 1.0 point for the hscale
+                    // functions (1 << 14).
 
-                for (j = 0; j < width; j++) {
-                    filter[i * width + j] = -((1 << 14) / (width - 1));
+                    for (j = 0; j < width; j++) {
+                        filter[i * width + j] = -((1 << 14) / (width - 1));
+                    }
+                    filter[i * width + (rnd() % width)] = ((1 << 15) - 1);
                 }
-                filter[i * width + (rnd() % width)] = ((1 << 15) - 1);
-            }
 
-            for (i = 0; i < MAX_FILTER_WIDTH; i++) {
-                // These values should be unused in SIMD implementations but
-                // may still be read, random coefficients here should help show
-                // issues where they are used in error.
+                for (i = 0; i < MAX_FILTER_WIDTH; i++) {
+                    // These values should be unused in SIMD implementations but
+                    // may still be read, random coefficients here should help show
+                    // issues where they are used in error.
 
-                filter[SRC_PIXELS * width + i] = rnd();
-            }
-            ff_sws_init_scale(ctx);
-            memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
-            if ((cpu_flags & AV_CPU_FLAG_AVX2) && !(cpu_flags & AV_CPU_FLAG_SLOW_GATHER))
-                ff_shuffle_filter_coefficients(ctx, filterPosAvx, width, filterAvx2, SRC_PIXELS);
+                    filter[SRC_PIXELS * width + i] = rnd();
+                }
+                ctx->dstW = ctx->chrDstW = input_sizes[dstWi];
+                ff_sws_init_scale(ctx);
+                memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
+                if ((cpu_flags & AV_CPU_FLAG_AVX2) && !(cpu_flags & AV_CPU_FLAG_SLOW_GATHER))
+                    ff_shuffle_filter_coefficients(ctx, filterPosAvx, width, filterAvx2, SRC_PIXELS);
 
-            if (check_func(ctx->hcScale, "hscale_%d_to_%d_width%d", ctx->srcBpc, ctx->dstBpc + 1, width)) {
-                memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
-                memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
+                if (check_func(ctx->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", ctx->srcBpc, ctx->dstBpc + 1, width, ctx->dstW)) {
+                    memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
+                    memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
 
-                call_ref(NULL, dst0, SRC_PIXELS, src, filter, filterPos, width);
-                call_new(NULL, dst1, SRC_PIXELS, src, filterAvx2, filterPosAvx, width);
-                if (memcmp(dst0, dst1, SRC_PIXELS * sizeof(dst0[0])))
-                    fail();
-                bench_new(NULL, dst0, SRC_PIXELS, src, filter, filterPosAvx, width);
+                    call_ref(NULL, dst0, ctx->dstW, src, filter, filterPos, width);
+                    call_new(NULL, dst1, ctx->dstW, src, filterAvx2, filterPosAvx, width);
+                    if (memcmp(dst0, dst1, ctx->dstW * sizeof(dst0[0])))
+                        fail();
+                    bench_new(NULL, dst0, ctx->dstW, src, filter, filterPosAvx, width);
+                }
             }
         }
     }
