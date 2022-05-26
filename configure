@@ -6565,7 +6565,7 @@ enabled liblensfun        && require_pkg_config liblensfun lensfun lensfun.h lf_
 # Media SDK or Intel Media Server Studio, these don't come with
 # pkg-config support.  Instead, users should make sure that the build
 # can find the libraries and headers through other means.
-enabled libmfx            && { check_pkg_config libmfx "mfx >= 1.28" "mfx/mfxvideo.h" MFXInit ||
+enabled libmfx            && { check_pkg_config libmfx "libmfx >= 1.28" "mfx/mfxvideo.h" MFXInit ||
                                { require libmfx "mfx/mfxvideo.h mfx/mfxdefs.h" MFXInit "-llibmfx $advapi32_extralibs" &&
                                  { test_cpp_condition mfx/mfxdefs.h "MFX_VERSION >= 1028" || die "ERROR: libmfx version must be >= 1.28"; }  &&
                                  warn "using libmfx without pkg-config"; } }
