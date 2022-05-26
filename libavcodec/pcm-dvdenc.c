@@ -47,6 +47,8 @@ static av_cold int pcm_dvd_encode_init(AVCodecContext *avctx)
     case 96000:
         freq = 1;
         break;
+    default:
+        av_assert1(0);
     }
 
     switch (avctx->sample_fmt) {
@@ -58,6 +60,8 @@ static av_cold int pcm_dvd_encode_init(AVCodecContext *avctx)
         avctx->bits_per_coded_sample = 24;
         quant = 2;
         break;
+    default:
+        av_assert1(0);
     }
 
     avctx->bits_per_coded_sample = 16 + quant * 4;
