@@ -617,15 +617,26 @@ icecast://[@var{username}[:@var{password}]@@]@var{server}:@var{port}/@var{mountp
 @section ipfs
 
 InterPlanetary File System (IPFS) protocol support. One can access files stored
-on the IPFS network through so called gateways. Those are http(s) endpoints.
-This protocol wraps the IPFS native protocols (ipfs:// and ipns://) to be send
+on the IPFS network through so-called gateways. These are http(s) endpoints.
+This protocol wraps the IPFS native protocols (ipfs:// and ipns://) to be sent
 to such a gateway. Users can (and should) host their own node which means this
-protocol will use your local gateway to access files on the IPFS network.
+protocol will use one's local gateway to access files on the IPFS network.
 
-If a user doesn't have a node of their own then the public gateway dweb.link is
-used by default.
+If a user doesn't have a node of their own then the public gateway @code{https://dweb.link}
+is used by default.
 
-You can use this protocol in 2 ways. Using IPFS:
+This protocol accepts the following options:
+
+@table @option
+
+@item gateway
+Defines the gateway to use. When not set, the protocol will first try
+locating the local gateway by looking at @code{$IPFS_GATEWAY}, @code{$IPFS_PATH}
+and @code{$HOME/.ipfs/}, in that order. If that fails @code{https://dweb.link} will be used.
+
+@end table
+
+One can use this protocol in 2 ways. Using IPFS:
 @example
 ffplay ipfs://QmbGtJg23skhvFmu9mJiePVByhfzu5rwo74MEkVDYAmF5T
 @end example
@@ -634,16 +645,6 @@ Or the IPNS protocol (IPNS is mutable IPFS):
 @example
 ffplay ipns://QmbGtJg23skhvFmu9mJiePVByhfzu5rwo74MEkVDYAmF5T
 @end example
-
-You can also change the gateway to be used:
-
-@table @option
-
-@item gateway
-Defines the gateway to use. When nothing is provided the protocol will first try
-your local gateway. If that fails dweb.link will be used.
-
-@end table
 
 @section mmst
 
