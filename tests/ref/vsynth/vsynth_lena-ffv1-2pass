@@ -1,4 +1,4 @@
-2e1833cf75da113a6fabbaae07ddd455 *tests/data/fate/vsynth_lena-ffv1-2pass.avi
-3490450 tests/data/fate/vsynth_lena-ffv1-2pass.avi
+c46df7f2b5770564475710f1086cdff6 *tests/data/fate/vsynth_lena-ffv1-2pass.avi
+3490446 tests/data/fate/vsynth_lena-ffv1-2pass.avi
 dde5895817ad9d219f79a52d0bdfb001 *tests/data/fate/vsynth_lena-ffv1-2pass.out.rawvideo
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200
