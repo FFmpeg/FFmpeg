@@ -690,7 +690,7 @@ static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
     case lowshelf:
         A = ff_exp10(s->gain / 40.);
         g = tan(M_PI * s->frequency / sample_rate) / sqrt(A);
-        k = 1. / (Q * A);
+        k = 1. / Q;
         a[0] = 1. / (1. + g * (g + k));
         a[1] = g * a[0];
         a[2] = g * a[1];
@@ -702,7 +702,7 @@ static void convert_dir2zdf(BiquadsContext *s, int sample_rate)
     case highshelf:
         A = ff_exp10(s->gain / 40.);
         g = tan(M_PI * s->frequency / sample_rate) / sqrt(A);
-        k = 1. / (Q * A);
+        k = 1. / Q;
         a[0] = 1. / (1. + g * (g + k));
         a[1] = g * a[0];
         a[2] = g * a[1];
