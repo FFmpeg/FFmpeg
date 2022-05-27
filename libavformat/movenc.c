@@ -328,6 +328,39 @@ static int mov_write_amr_tag(AVIOContext *pb, MOVTrack *track)
     return 0x11;
 }
 
+struct eac3_info {
+    AVPacket *pkt;
+    uint8_t ec3_done;
+    uint8_t num_blocks;
+
+    /* Layout of the EC3SpecificBox */
+    /* maximum bitrate */
+    uint16_t data_rate;
+    int8_t   ac3_bit_rate_code;
+    /* number of independent substreams */
+    uint8_t  num_ind_sub;
+    struct {
+        /* sample rate code (see ff_ac3_sample_rate_tab) 2 bits */
+        uint8_t fscod;
+        /* bit stream identification 5 bits */
+        uint8_t bsid;
+        /* one bit reserved */
+        /* audio service mixing (not supported yet) 1 bit */
+        /* bit stream mode 3 bits */
+        uint8_t bsmod;
+        /* audio coding mode 3 bits */
+        uint8_t acmod;
+        /* sub woofer on 1 bit */
+        uint8_t lfeon;
+        /* 3 bits reserved */
+        /* number of dependent substreams associated with this substream 4 bits */
+        uint8_t num_dep_sub;
+        /* channel locations of the dependent substream(s), if any, 9 bits */
+        uint16_t chan_loc;
+        /* if there is no dependent substream, then one bit reserved instead */
+    } substream[1]; /* TODO: support 8 independent substreams */
+};
+
 static int mov_write_ac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     GetBitContext gbc;
@@ -375,39 +408,6 @@ static int mov_write_ac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *trac
 
     return 11;
 }
-
-struct eac3_info {
-    AVPacket *pkt;
-    uint8_t ec3_done;
-    uint8_t num_blocks;
-
-    /* Layout of the EC3SpecificBox */
-    /* maximum bitrate */
-    uint16_t data_rate;
-    int8_t   ac3_bit_rate_code;
-    /* number of independent substreams */
-    uint8_t  num_ind_sub;
-    struct {
-        /* sample rate code (see ff_ac3_sample_rate_tab) 2 bits */
-        uint8_t fscod;
-        /* bit stream identification 5 bits */
-        uint8_t bsid;
-        /* one bit reserved */
-        /* audio service mixing (not supported yet) 1 bit */
-        /* bit stream mode 3 bits */
-        uint8_t bsmod;
-        /* audio coding mode 3 bits */
-        uint8_t acmod;
-        /* sub woofer on 1 bit */
-        uint8_t lfeon;
-        /* 3 bits reserved */
-        /* number of dependent substreams associated with this substream 4 bits */
-        uint8_t num_dep_sub;
-        /* channel locations of the dependent substream(s), if any, 9 bits */
-        uint16_t chan_loc;
-        /* if there is no dependent substream, then one bit reserved instead */
-    } substream[1]; /* TODO: support 8 independent substreams */
-};
 
 static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 {
