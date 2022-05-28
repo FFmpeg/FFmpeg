@@ -18,6 +18,7 @@
  */
 
 #include "libavutil/color_utils.h"
+#include "libavutil/csp.h"
 
 #include "fflcms2.h"
 
@@ -148,20 +149,20 @@ int ff_icc_profile_generate(FFIccContext *s,
                             cmsHPROFILE *out_profile)
 {
     cmsToneCurve *tonecurve;
-    const struct ColorPrimaries *prim;
+    const AVColorPrimariesDesc *prim;
     int ret;
 
-    if (!(prim = ff_get_color_primaries(color_prim)))
+    if (!(prim = av_csp_primaries_desc_from_id(color_prim)))
         return AVERROR_INVALIDDATA;
     if ((ret = get_curve(s, color_trc, &tonecurve)) < 0)
         return ret;
 
     *out_profile = cmsCreateRGBProfileTHR(s->ctx,
-        &(cmsCIExyY) { prim->wp.xw, prim->wp.yw, 1.0 },
+        &(cmsCIExyY) { av_q2d(prim->wp.x), av_q2d(prim->wp.y), 1.0 },
         &(cmsCIExyYTRIPLE) {
-            .Red    = { prim->prim.xr, prim->prim.yr, 1.0 },
-            .Green  = { prim->prim.xg, prim->prim.yg, 1.0 },
-            .Blue   = { prim->prim.xb, prim->prim.yb, 1.0 },
+            .Red    = { av_q2d(prim->prim.r.x), av_q2d(prim->prim.r.y), 1.0 },
+            .Green  = { av_q2d(prim->prim.g.x), av_q2d(prim->prim.g.y), 1.0 },
+            .Blue   = { av_q2d(prim->prim.b.x), av_q2d(prim->prim.b.y), 1.0 },
         },
         (cmsToneCurve *[3]) { tonecurve, tonecurve, tonecurve }
     );
@@ -194,15 +195,15 @@ int ff_icc_profile_attach(FFIccContext *s, cmsHPROFILE profile, AVFrame *frame)
     return 0;
 }
 
-static av_always_inline void XYZ_xy(cmsCIEXYZ XYZ, double *x, double *y)
+static av_always_inline void XYZ_xy(cmsCIEXYZ XYZ, AVCIExy *xy)
 {
     double k = 1.0 / (XYZ.X + XYZ.Y + XYZ.Z);
-    *x = k * XYZ.X;
-    *y = k * XYZ.Y;
+    xy->x = av_d2q(k * XYZ.X, 100000);
+    xy->y = av_d2q(k * XYZ.Y, 100000);
 }
 
 int ff_icc_profile_read_primaries(FFIccContext *s, cmsHPROFILE profile,
-                                  struct ColorPrimaries *out_primaries)
+                                  AVColorPrimariesDesc *out_primaries)
 {
     static const uint8_t testprimaries[4][3] = {
         { 0xFF,    0,    0 }, /* red */
@@ -211,8 +212,8 @@ int ff_icc_profile_read_primaries(FFIccContext *s, cmsHPROFILE profile,
         { 0xFF, 0xFF, 0xFF }, /* white */
     };
 
-    struct WhitepointCoefficients *wp = &out_primaries->wp;
-    struct PrimaryCoefficients *prim = &out_primaries->prim;
+    AVWhitepointCoefficients *wp = &out_primaries->wp;
+    AVPrimaryCoefficients *prim = &out_primaries->prim;
     cmsFloat64Number prev_adapt;
     cmsHPROFILE xyz;
     cmsHTRANSFORM tf;
@@ -241,10 +242,10 @@ int ff_icc_profile_read_primaries(FFIccContext *s, cmsHPROFILE profile,
 
     cmsDoTransform(tf, testprimaries, dst, 4);
     cmsDeleteTransform(tf);
-    XYZ_xy(dst[0], &prim->xr, &prim->yr);
-    XYZ_xy(dst[1], &prim->xg, &prim->yg);
-    XYZ_xy(dst[2], &prim->xb, &prim->yb);
-    XYZ_xy(dst[3], &wp->xw, &wp->yw);
+    XYZ_xy(dst[0], &prim->r);
+    XYZ_xy(dst[1], &prim->g);
+    XYZ_xy(dst[2], &prim->b);
+    XYZ_xy(dst[3], wp);
     return 0;
 }
 

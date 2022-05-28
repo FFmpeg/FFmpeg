@@ -24,6 +24,7 @@
 
 #include <lcms2.h>
 
+#include "libavutil/csp.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
@@ -69,7 +70,7 @@ static int iccdetect_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterContext *avctx = inlink->dst;
     IccDetectContext *s = avctx->priv;
     const AVFrameSideData *sd;
-    struct ColorPrimaries coeffs;
+    AVColorPrimariesDesc coeffs;
     cmsHPROFILE profile;
     int ret;
 
@@ -98,7 +99,7 @@ static int iccdetect_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (ret < 0)
         return ret;
 
-    s->profile_prim = ff_detect_color_primaries(&coeffs);
+    s->profile_prim = av_csp_primaries_id_from_desc(&coeffs);
 
 done:
     if (s->profile_prim != AVCOL_PRI_UNSPECIFIED) {

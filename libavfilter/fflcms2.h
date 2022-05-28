@@ -25,9 +25,9 @@
 #ifndef AVFILTER_FFLCMS2_H
 #define AVFILTER_FFLCMS2_H
 
+#include "libavutil/csp.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
-#include "colorspace.h"
 
 #include <lcms2.h>
 
@@ -72,7 +72,7 @@ int ff_icc_profile_attach(FFIccContext *s, cmsHPROFILE profile, AVFrame *frame);
  * Returns 0 on success, or a negative error code.
  */
 int ff_icc_profile_read_primaries(FFIccContext *s, cmsHPROFILE profile,
-                                  struct ColorPrimaries *out_primaries);
+                                  AVColorPrimariesDesc *out_primaries);
 
 /**
  * Attempt detecting the transfer characteristic that best approximates the

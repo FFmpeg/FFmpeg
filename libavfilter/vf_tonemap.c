@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libavutil/csp.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -50,16 +51,6 @@ enum TonemapAlgorithm {
     TONEMAP_MAX,
 };
 
-static const struct LumaCoefficients luma_coefficients[AVCOL_SPC_NB] = {
-    [AVCOL_SPC_FCC]        = { 0.30,   0.59,   0.11   },
-    [AVCOL_SPC_BT470BG]    = { 0.299,  0.587,  0.114  },
-    [AVCOL_SPC_SMPTE170M]  = { 0.299,  0.587,  0.114  },
-    [AVCOL_SPC_BT709]      = { 0.2126, 0.7152, 0.0722 },
-    [AVCOL_SPC_SMPTE240M]  = { 0.212,  0.701,  0.087  },
-    [AVCOL_SPC_BT2020_NCL] = { 0.2627, 0.6780, 0.0593 },
-    [AVCOL_SPC_BT2020_CL]  = { 0.2627, 0.6780, 0.0593 },
-};
-
 typedef struct TonemapContext {
     const AVClass *class;
 
@@ -68,7 +59,7 @@ typedef struct TonemapContext {
     double desat;
     double peak;
 
-    const struct LumaCoefficients *coeffs;
+    const AVLumaCoefficients *coeffs;
 } TonemapContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -135,7 +126,7 @@ static void tonemap(TonemapContext *s, AVFrame *out, const AVFrame *in,
 
     /* desaturate to prevent unnatural colors */
     if (s->desat > 0) {
-        float luma = s->coeffs->cr * *r_in + s->coeffs->cg * *g_in + s->coeffs->cb * *b_in;
+        float luma = av_q2d(s->coeffs->cr) * *r_in + av_q2d(s->coeffs->cg) * *g_in + av_q2d(s->coeffs->cb) * *b_in;
         float overbright = FFMAX(luma - s->desat, 1e-6) / FFMAX(luma, 1e-6);
         *r_out = MIX(*r_in, luma, overbright);
         *g_out = MIX(*g_in, luma, overbright);
@@ -249,7 +240,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     /* load original color space even if pixel format is RGB to compute overbrights */
-    s->coeffs = &luma_coefficients[in->colorspace];
+    s->coeffs = av_csp_luma_coeffs_from_avcsp(in->colorspace);
     if (s->desat > 0 && (in->colorspace == AVCOL_SPC_UNSPECIFIED || !s->coeffs)) {
         if (in->colorspace == AVCOL_SPC_UNSPECIFIED)
             av_log(s, AV_LOG_WARNING, "Missing color space information, ");
