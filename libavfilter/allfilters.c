@@ -153,6 +153,7 @@ extern const AVFilter ff_af_tiltshelf;
 extern const AVFilter ff_af_treble;
 extern const AVFilter ff_af_tremolo;
 extern const AVFilter ff_af_vibrato;
+extern const AVFilter ff_af_virtualbass;
 extern const AVFilter ff_af_volume;
 extern const AVFilter ff_af_volumedetect;
 

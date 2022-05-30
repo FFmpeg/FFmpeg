@@ -6927,6 +6927,26 @@ Depth of modulation as a percentage. Range is 0.0 - 1.0.
 Default value is 0.5.
 @end table
 
+@section virtualbass
+
+Apply audio Virtual Bass filter.
+
+This filter accepts stereo input and produce stereo with LFE (2.1) channels output.
+The newly produced LFE channel have enhanced virtual bass originally obtained from both stereo channels.
+This filter outputs front left and front right channels unchanged as available in stereo input.
+
+The filter accepts the following options:
+
+@table @option
+@item cutoff
+Set the virtual bass cutoff frequency. Default value is 250 Hz.
+Allowed range is from 100 to 500 Hz.
+
+@item strength
+Set the virtual bass strength. Allowed range is from 0.5 to 3.
+Default value is 3.
+@end table
+
 @section volume
 
 Adjust the input audio volume.

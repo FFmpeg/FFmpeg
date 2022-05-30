@@ -20,6 +20,7 @@ version 5.1:
 - tiltshelf audio filter
 - QOI image format support
 - ffprobe -o option
+- virtualbass audio filter
 
 
 version 5.0:
