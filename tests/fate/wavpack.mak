@@ -77,6 +77,10 @@ fate-wavpack-clipping: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/special/clippi
 FATE_WAVPACK_S16 += fate-wavpack-cuesheet
 fate-wavpack-cuesheet: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/special/cue_sheet.wv -f s16le -af aresample
 
+# The sample file has APE tags containing a cuesheet.
+FATE_WAVPACK_FFPROBE-$(call ALLYES, WV_DEMUXER FILE_PROTOCOL) += fate-wavpack-cuesheet-tags
+fate-wavpack-cuesheet-tags: CMD = probetags $(TARGET_SAMPLES)/wavpack/special/cue_sheet.wv
+
 FATE_WAVPACK_S16 += fate-wavpack-falsestereo
 fate-wavpack-falsestereo: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/special/false_stereo.wv -f s16le -af aresample
 
@@ -102,5 +106,6 @@ FATE_WAVPACK-$(call FILTERDEMDECENCMUX, ARESAMPLE, WV, WAVPACK, PCM_S24LE, PCM_S
 FATE_WAVPACK-$(call FILTERDEMDECENCMUX, ARESAMPLE, WV, WAVPACK, PCM_S32LE, PCM_S32LE, MD5_PROTOCOL) += $(FATE_WAVPACK_S32)
 FATE_WAVPACK-$(call FILTERDEMDECENCMUX, ARESAMPLE, WV, WAVPACK, PCM_F32LE, PCM_F32LE, MD5_PROTOCOL) += $(FATE_WAVPACK_F32)
 
+FATE_SAMPLES_FFPROBE += $(FATE_WAVPACK_FFPROBE-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_WAVPACK-yes)
-fate-wavpack: $(FATE_WAVPACK-yes)
+fate-wavpack: $(FATE_WAVPACK-yes) $(FATE_WAVPACK_FFPROBE-yes)
