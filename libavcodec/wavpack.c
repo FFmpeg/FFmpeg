@@ -1541,7 +1541,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             }
             ff_thread_release_ext_buffer(avctx, &wc->curr_frame);
         }
-        av_channel_layout_uninit(&avctx->ch_layout);
         av_channel_layout_copy(&avctx->ch_layout, &new_ch_layout);
         avctx->sample_rate         = new_samplerate;
         avctx->sample_fmt          = sample_fmt;
