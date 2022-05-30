@@ -143,7 +143,7 @@ static void find_best_state(uint8_t best_state[256][256],
     uint32_t l2tab[256];
 
     for (i = 1; i < 256; i++)
-        l2tab[i] = log2(i / 256.0) * ((-1<<31) / 8);
+        l2tab[i] = -log2(i / 256.0) * ((1U << 31) / 8);
 
     for (i = 0; i < 256; i++) {
         uint64_t best_len[256];
