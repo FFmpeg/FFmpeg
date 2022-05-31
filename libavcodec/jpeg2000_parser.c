@@ -161,21 +161,21 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             }
             m->in_codestream = 0;
         } else if (m->in_codestream) {
-          if ((state64 & 0xFFFF) == 0xFF90) { // Are we in tile part header?
-            m->read_tp = 8;
-          } else if (info_marker((state64 & 0xFFFF0000)>>16) && pc->frame_start_found && (state64 & 0xFFFF)) {
-            // Calculate number of bytes to skip to get to end of the next marker.
-            m->skip_bytes = (state64 & 0xFFFF)-1;
+            if ((state64 & 0xFFFF) == 0xFF90) { // Are we in tile part header?
+                m->read_tp = 8;
+            } else if (info_marker((state64 & 0xFFFF0000)>>16) && pc->frame_start_found && (state64 & 0xFFFF)) {
+                // Calculate number of bytes to skip to get to end of the next marker.
+                m->skip_bytes = (state64 & 0xFFFF)-1;
 
-            // If the next marker is an info marker, skip to the end of of the marker length.
-            if (i + m->skip_bytes + 1 < buf_size) {
-                uint32_t next_state = (buf[i + m->skip_bytes] << 8) | buf[i + m->skip_bytes + 1];
-                if (info_marker(next_state)) {
-                    // Skip an additional 2 bytes to get to the end of the marker length.
-                    m->skip_bytes += 2;
+                // If the next marker is an info marker, skip to the end of of the marker length.
+                if (i + m->skip_bytes + 1 < buf_size) {
+                    uint32_t next_state = (buf[i + m->skip_bytes] << 8) | buf[i + m->skip_bytes + 1];
+                    if (info_marker(next_state)) {
+                        // Skip an additional 2 bytes to get to the end of the marker length.
+                        m->skip_bytes += 2;
+                    }
                 }
             }
-          }
         }
     }
 
