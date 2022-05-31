@@ -593,6 +593,8 @@ OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o                     \
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o
 OBJS-$(CONFIG_QDMC_DECODER)            += qdmc.o
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
+OBJS-$(CONFIG_QOI_DECODER)             += qoidec.o
+OBJS-$(CONFIG_QOI_ENCODER)             += qoienc.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o
 OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
 OBJS-$(CONFIG_QTRLE_ENCODER)           += qtrleenc.o
@@ -1151,6 +1153,7 @@ OBJS-$(CONFIG_OPUS_PARSER)             += opus_parser.o opus.o opustab.o \
                                           opus_rc.o vorbis_data.o
 OBJS-$(CONFIG_PNG_PARSER)              += png_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
+OBJS-$(CONFIG_QOI_PARSER)              += qoi_parser.o
 OBJS-$(CONFIG_RV30_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_RV40_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_SBC_PARSER)              += sbc_parser.o

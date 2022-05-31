@@ -524,6 +524,7 @@ extern const AVInputFormat  ff_image_png_pipe_demuxer;
 extern const AVInputFormat  ff_image_ppm_pipe_demuxer;
 extern const AVInputFormat  ff_image_psd_pipe_demuxer;
 extern const AVInputFormat  ff_image_qdraw_pipe_demuxer;
+extern const AVInputFormat  ff_image_qoi_pipe_demuxer;
 extern const AVInputFormat  ff_image_sgi_pipe_demuxer;
 extern const AVInputFormat  ff_image_svg_pipe_demuxer;
 extern const AVInputFormat  ff_image_sunrast_pipe_demuxer;

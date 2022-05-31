@@ -18,6 +18,7 @@ version 5.1:
 - PGS subtitle frame merge bitstream filter
 - blurdetect filter
 - tiltshelf audio filter
+- QOI image format support
 
 
 version 5.0:

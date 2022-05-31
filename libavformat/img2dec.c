@@ -1131,6 +1131,23 @@ static int photocd_probe(const AVProbeData *p)
     return AVPROBE_SCORE_MAX - 1;
 }
 
+static int qoi_probe(const AVProbeData *p)
+{
+    if (memcmp(p->buf, "qoif", 4))
+        return 0;
+
+    if (AV_RB32(p->buf + 4) == 0 || AV_RB32(p->buf + 8) == 0)
+        return 0;
+
+    if (p->buf[12] != 3 && p->buf[12] != 4)
+        return 0;
+
+    if (p->buf[13] > 1)
+        return 0;
+
+    return AVPROBE_SCORE_MAX - 1;
+}
+
 static int gem_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -1208,6 +1225,7 @@ IMAGEAUTO_DEMUXER(png,       PNG)
 IMAGEAUTO_DEMUXER(ppm,       PPM)
 IMAGEAUTO_DEMUXER(psd,       PSD)
 IMAGEAUTO_DEMUXER(qdraw,     QDRAW)
+IMAGEAUTO_DEMUXER(qoi,       QOI)
 IMAGEAUTO_DEMUXER(sgi,       SGI)
 IMAGEAUTO_DEMUXER(sunrast,   SUNRAST)
 IMAGEAUTO_DEMUXER(svg,       SVG)
