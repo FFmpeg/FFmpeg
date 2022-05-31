@@ -104,6 +104,60 @@ const uint32_t maxiteration = 8096;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
+static int fuzz_video_get_buffer(AVCodecContext *ctx, AVFrame *frame)
+{
+    ptrdiff_t linesize1[4];
+    size_t size[4];
+    int linesize_align[AV_NUM_DATA_POINTERS];
+    int i, ret, w = frame->width, h = frame->height;
+
+    avcodec_align_dimensions2(ctx, &w, &h, linesize_align);
+    ret = av_image_fill_linesizes(frame->linesize, ctx->pix_fmt, w);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < 4 && frame->linesize[i]; i++)
+        linesize1[i] = frame->linesize[i] =
+            FFALIGN(frame->linesize[i], linesize_align[i]);
+    for (; i < 4; i++)
+        linesize1[i] = 0;
+
+    ret = av_image_fill_plane_sizes(size, ctx->pix_fmt, h, linesize1);
+    if (ret < 0)
+        return ret;
+
+    frame->extended_data = frame->data;
+    for (i = 0; i < 4 && size[i]; i++) {
+        frame->buf[i] = av_buffer_alloc(size[i]);
+        if (!frame->buf[i])
+            goto fail;
+        frame->data[i] = frame->buf[i]->data;
+    }
+    for (; i < AV_NUM_DATA_POINTERS; i++) {
+        frame->data[i] = NULL;
+        frame->linesize[i] = 0;
+    }
+
+    return 0;
+fail:
+    av_frame_unref(frame);
+    return AVERROR(ENOMEM);
+}
+
+static int fuzz_get_buffer2(AVCodecContext *ctx, AVFrame *frame, int flags)
+{
+    switch (ctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        return (ctx->codec->capabilities & AV_CODEC_CAP_DR1)
+               ? fuzz_video_get_buffer(ctx, frame)
+               : avcodec_default_get_buffer2(ctx, frame, flags);
+    case AVMEDIA_TYPE_AUDIO:
+        return avcodec_default_get_buffer2(ctx, frame, flags);
+    default:
+        return AVERROR(EINVAL);
+    }
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     uint64_t maxpixels_per_frame = 4096 * 4096;
     uint64_t maxpixels;
@@ -241,6 +295,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         ctx->max_pixels = maxpixels_per_frame; //To reduce false positive OOM and hangs
 
     ctx->max_samples = maxsamples_per_frame;
+    ctx->get_buffer2 = fuzz_get_buffer2;
 
     if (size > 1024) {
         GetByteContext gbc;
