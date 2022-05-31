@@ -604,7 +604,12 @@ cglobal vp9_%1%2 %+ %%szsuf, 5, 5, %8, dst, dstride, src, sstride, h
     %%pavg      m0, [dstq]
     %%pavg      m1, [dstq+d%3]
     %%pavg      m2, [dstq+d%4]
+%if %2 == 4
+    %%srcfn     m4, [dstq+d%5]
+    %%pavg      m3, m4
+%else
     %%pavg      m3, [dstq+d%5]
+%endif
 %if %2/mmsize == 8
     %%pavg      m4, [dstq+mmsize*4]
     %%pavg      m5, [dstq+mmsize*5]
