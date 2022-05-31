@@ -22,7 +22,7 @@ DCADEC_SUITE_LOSSY       = core_51_24_48_768_0        \
                            xxch_71_24_48_2046         \
 
 define FATE_DCADEC_LOSSLESS_SUITE
-FATE_DCADEC_LOSSLESS += fate-dca-$(1) fate-dca-$(1)-dmix_2 fate-dca-$(1)-dmix_6
+FATE_DCADEC_LOSSLESS_$(2) += fate-dca-$(1) fate-dca-$(1)-dmix_2 fate-dca-$(1)-dmix_6
 fate-dca-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
 fate-dca-$(1)-dmix_2: CMD = framemd5 -request_channel_layout 0x3   -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
 fate-dca-$(1)-dmix_6: CMD = framemd5 -request_channel_layout 0x60f -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
@@ -61,22 +61,24 @@ $(FATE_DCADEC_LOSSY): CMP = oneoff
 $(FATE_DCADEC_LOSSY): CMP_UNIT = f32
 $(FATE_DCADEC_LOSSY): FUZZ = 9
 
-FATE_DCA-$(call DEMDEC, DTSHD, DCA) += $(FATE_DCADEC_LOSSLESS) $(FATE_DCADEC_LOSSY)
+FATE_DCA-$(call FRAMEMD5, DTSHD, DCA, ARESAMPLE_FILTER PCM_S16LE_ENCODER) += $(FATE_DCADEC_LOSSLESS_s16le)
+FATE_DCA-$(call FRAMEMD5, DTSHD, DCA, ARESAMPLE_FILTER PCM_S24LE_ENCODER) += $(FATE_DCADEC_LOSSLESS_s24le)
+FATE_DCA-$(call FILTERDEMDECENCMUX, ARESAMPLE, DTSHD, DCA, PCM_F32LE, PCM_F32LE, PIPE_PROTOCOL) += $(FATE_DCADEC_LOSSY)
 
-FATE_DCA-$(call DEMDEC, MPEGTS, DCA) += fate-dca-core
+FATE_DCA-$(call PCM, MPEGTS, DCA, DTS_DEMUXER ARESAMPLE_FILTER) += fate-dca-core
 fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
 fate-dca-core: CMP = oneoff
 fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
 
-FATE_DCA-$(call DEMDEC, DTS, DCA) += fate-dca-xll
+FATE_DCA-$(call DEMDEC, DTS, DCA, ARESAMPLE_FILTER PCM_S24LE_ENCODER PCM_S24LE_MUXER) += fate-dca-xll
 fate-dca-xll: CMD = md5 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -f s24le -af aresample
 
-FATE_DCA-$(call DEMDEC, DTS, DCA) += fate-dts_es
+FATE_DCA-$(call PCM, DTS, DCA, ARESAMPLE_FILTER) += fate-dts_es
 fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
 fate-dts_es: CMP = oneoff
 fate-dts_es: REF = $(SAMPLES)/dts/dts_es_2.pcm
 
-FATE_DCA-$(call ALLYES, DTS_DEMUXER DTS_MUXER DCA_CORE_BSF) += fate-dca-core-bsf
+FATE_DCA-$(call DEMMUX, DTS, DTS, DCA_CORE_BSF MD5_PROTOCOL) += fate-dca-core-bsf
 fate-dca-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -c:a copy -bsf:a dca_core -fflags +bitexact -f dts
 fate-dca-core-bsf: CMP = oneline
 fate-dca-core-bsf: REF = ca22b00d8c641cd168e2f7ca8d2f340e
