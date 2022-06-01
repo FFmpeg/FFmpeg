@@ -2854,7 +2854,7 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
         hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->mode == MODE_AVIF) {
-                hdlr_type = "pict";
+                hdlr_type = (track == &mov->tracks[0]) ? "pict" : "auxv";
                 descr     = "PictureHandler";
             } else {
                 hdlr_type = "vide";
@@ -2942,57 +2942,83 @@ static int mov_write_iloc_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
     avio_wb32(pb, 0); /* Version & flags */
     avio_w8(pb, (4 << 4) + 4); /* offset_size(4) and length_size(4) */
     avio_w8(pb, 0); /* base_offset_size(4) and reserved(4) */
-    avio_wb16(pb, 1); /* item_count */
+    avio_wb16(pb, s->nb_streams); /* item_count */
 
-    avio_wb16(pb, 1); /* item_id */
-    avio_wb16(pb, 0); /* data_reference_index */
-    avio_wb16(pb, 1); /* extent_count */
-    mov->avif_extent_pos = avio_tell(pb);
-    avio_wb32(pb, 0); /* extent_offset (written later) */
-    // For animated AVIF, we simply write the first packet's size.
-    avio_wb32(pb, mov->avif_extent_length); /* extent_length */
+    for (int i = 0; i < s->nb_streams; i++) {
+        avio_wb16(pb, i + 1); /* item_id */
+        avio_wb16(pb, 0); /* data_reference_index */
+        avio_wb16(pb, 1); /* extent_count */
+        mov->avif_extent_pos[i] = avio_tell(pb);
+        avio_wb32(pb, 0); /* extent_offset (written later) */
+        // For animated AVIF, we simply write the first packet's size.
+        avio_wb32(pb, mov->avif_extent_length[i]); /* extent_length */
+    }
 
     return update_size(pb, pos);
 }
 
 static int mov_write_iinf_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
 {
-    int64_t infe_pos;
     int64_t iinf_pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "iinf");
     avio_wb32(pb, 0); /* Version & flags */
-    avio_wb16(pb, 1); /* entry_count */
+    avio_wb16(pb, s->nb_streams); /* entry_count */
 
-    infe_pos = avio_tell(pb);
-    avio_wb32(pb, 0); /* size */
-    ffio_wfourcc(pb, "infe");
-    avio_w8(pb, 0x2); /* Version */
-    avio_wb24(pb, 0); /* flags */
-    avio_wb16(pb, 1); /* item_id */
-    avio_wb16(pb, 0); /* item_protection_index */
-    avio_write(pb, "av01", 4); /* item_type */
-    avio_write(pb, "Color\0", 6); /* item_name */
-    update_size(pb, infe_pos);
+    for (int i = 0; i < s->nb_streams; i++) {
+        int64_t infe_pos = avio_tell(pb);
+        avio_wb32(pb, 0); /* size */
+        ffio_wfourcc(pb, "infe");
+        avio_w8(pb, 0x2); /* Version */
+        avio_wb24(pb, 0); /* flags */
+        avio_wb16(pb, i + 1); /* item_id */
+        avio_wb16(pb, 0); /* item_protection_index */
+        avio_write(pb, "av01", 4); /* item_type */
+        avio_write(pb, !i ? "Color\0" : "Alpha\0", 6); /* item_name */
+        update_size(pb, infe_pos);
+    }
 
     return update_size(pb, iinf_pos);
 }
 
-static int mov_write_ispe_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
+
+static int mov_write_iref_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
+{
+    int64_t auxl_pos;
+    int64_t iref_pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "iref");
+    avio_wb32(pb, 0); /* Version & flags */
+
+    auxl_pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "auxl");
+    avio_wb16(pb, 2); /* from_item_ID */
+    avio_wb16(pb, 1); /* reference_count */
+    avio_wb16(pb, 1); /* to_item_ID */
+    update_size(pb, auxl_pos);
+
+    return update_size(pb, iref_pos);
+}
+
+static int mov_write_ispe_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s,
+                              int stream_index)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "ispe");
     avio_wb32(pb, 0); /* Version & flags */
-    avio_wb32(pb, s->streams[0]->codecpar->width); /* image_width */
-    avio_wb32(pb, s->streams[0]->codecpar->height); /* image_height */
+    avio_wb32(pb, s->streams[stream_index]->codecpar->width); /* image_width */
+    avio_wb32(pb, s->streams[stream_index]->codecpar->height); /* image_height */
     return update_size(pb, pos);
 }
 
-static int mov_write_pixi_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
+static int mov_write_pixi_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s,
+                              int stream_index)
 {
     int64_t pos = avio_tell(pb);
-    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->streams[0]->codecpar->format);
+    const AVPixFmtDescriptor *pixdesc =
+        av_pix_fmt_desc_get(s->streams[stream_index]->codecpar->format);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "pixi");
     avio_wb32(pb, 0); /* Version & flags */
@@ -3003,15 +3029,30 @@ static int mov_write_pixi_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
     return update_size(pb, pos);
 }
 
+static int mov_write_auxC_tag(AVIOContext *pb)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "auxC");
+    avio_wb32(pb, 0); /* Version & flags */
+    avio_write(pb, "urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0", 44);
+    return update_size(pb, pos);
+}
+
 static int mov_write_ipco_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "ipco");
-    mov_write_ispe_tag(pb, mov, s);
-    mov_write_pixi_tag(pb, mov, s);
-    mov_write_av1c_tag(pb, &mov->tracks[0]);
-    mov_write_colr_tag(pb, &mov->tracks[0], 0);
+    for (int i = 0; i < s->nb_streams; i++) {
+        mov_write_ispe_tag(pb, mov, s, i);
+        mov_write_pixi_tag(pb, mov, s, i);
+        mov_write_av1c_tag(pb, &mov->tracks[i]);
+        if (!i)
+            mov_write_colr_tag(pb, &mov->tracks[0], 0);
+        else
+            mov_write_auxC_tag(pb);
+    }
     return update_size(pb, pos);
 }
 
@@ -3021,18 +3062,21 @@ static int mov_write_ipma_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "ipma");
     avio_wb32(pb, 0); /* Version & flags */
-    avio_wb32(pb, 1); /* entry_count */
-    avio_wb16(pb, 1); /* item_ID */
-    avio_w8(pb, 4); /* association_count */
+    avio_wb32(pb, s->nb_streams); /* entry_count */
 
-    // ispe association.
-    avio_w8(pb, 1); /* essential and property_index */
-    // pixi association.
-    avio_w8(pb, 2); /* essential and property_index */
-    // av1C association.
-    avio_w8(pb, 0x80 | 3); /* essential and property_index */
-    // colr association.
-    avio_w8(pb, 4); /* essential and property_index */
+    for (int i = 0, index = 1; i < s->nb_streams; i++) {
+        avio_wb16(pb, i + 1); /* item_ID */
+        avio_w8(pb, 4); /* association_count */
+
+        // ispe association.
+        avio_w8(pb, index++); /* essential and property_index */
+        // pixi association.
+        avio_w8(pb, index++); /* essential and property_index */
+        // av1C association.
+        avio_w8(pb, 0x80 | index++); /* essential and property_index */
+        // colr/auxC association.
+        avio_w8(pb, index++); /* essential and property_index */
+    }
     return update_size(pb, pos);
 }
 
@@ -4114,6 +4158,8 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_pitm_tag(pb, 1);
         mov_write_iloc_tag(pb, mov, s);
         mov_write_iinf_tag(pb, mov, s);
+        if (s->nb_streams > 1)
+            mov_write_iref_tag(pb, mov, s);
         mov_write_iprp_tag(pb, mov, s);
     } else {
         /* iTunes metadata tag */
@@ -6042,8 +6088,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_write(pb, reformatted_data, size);
         } else {
             size = ff_av1_filter_obus(pb, pkt->data, pkt->size);
-            if (trk->mode == MODE_AVIF && !mov->avif_extent_length) {
-                mov->avif_extent_length = size;
+            if (trk->mode == MODE_AVIF && !mov->avif_extent_length[pkt->stream_index]) {
+                mov->avif_extent_length[pkt->stream_index] = size;
             }
         }
 
@@ -6874,15 +6920,25 @@ static int mov_init(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    /* AVIF output must have exactly one video stream */
+    /* AVIF output must have at most two video streams (one for YUV and one for
+     * alpha). */
     if (mov->mode == MODE_AVIF) {
-        if (s->nb_streams > 1) {
-            av_log(s, AV_LOG_ERROR, "AVIF output requires exactly one stream\n");
+        if (s->nb_streams > 2) {
+            av_log(s, AV_LOG_ERROR, "AVIF output requires exactly one or two streams\n");
             return AVERROR(EINVAL);
         }
-        if (s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
-            av_log(s, AV_LOG_ERROR, "AVIF output requires one video stream\n");
+        if (s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+            (s->nb_streams > 1 && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)) {
+            av_log(s, AV_LOG_ERROR, "AVIF output supports only video streams\n");
             return AVERROR(EINVAL);
+        }
+        if (s->nb_streams > 1) {
+            const AVPixFmtDescriptor *pixdesc =
+                av_pix_fmt_desc_get(s->streams[1]->codecpar->format);
+            if (pixdesc->nb_components != 1) {
+                av_log(s, AV_LOG_ERROR, "Second stream for AVIF (alpha) output must have exactly one plane\n");
+                return AVERROR(EINVAL);
+            }
         }
         s->streams[0]->disposition |= AV_DISPOSITION_DEFAULT;
     }
@@ -7545,18 +7601,25 @@ static int avif_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
-    int64_t pos_backup, mdat_pos;
+    int64_t pos_backup, extent_offsets[2];
     uint8_t *buf;
-    int buf_size, moov_size;
+    int buf_size, moov_size, i;
 
     if (mov->moov_written) return 0;
 
     mov->is_animated_avif = s->streams[0]->nb_frames > 1;
+    if (mov->is_animated_avif && s->nb_streams > 1) {
+        // For animated avif with alpha channel, we need to write a tref tag
+        // with type "auxl".
+        mov->tracks[1].tref_tag = MKTAG('a', 'u', 'x', 'l');
+        mov->tracks[1].tref_id = 1;
+    }
     mov_write_identification(pb, s);
     mov_write_meta_tag(pb, mov, s);
 
     moov_size = get_moov_size(s);
-    mov->tracks[0].data_offset = avio_tell(pb) + moov_size + 8;
+    for (i = 0; i < s->nb_streams; i++)
+        mov->tracks[i].data_offset = avio_tell(pb) + moov_size + 8;
 
     if (mov->is_animated_avif) {
         int ret;
@@ -7567,19 +7630,24 @@ static int avif_write_trailer(AVFormatContext *s)
     buf_size = avio_get_dyn_buf(mov->mdat_buf, &buf);
     avio_wb32(pb, buf_size + 8);
     ffio_wfourcc(pb, "mdat");
-    mdat_pos = avio_tell(pb);
 
-    if (mdat_pos != (uint32_t)mdat_pos) {
-        av_log(s, AV_LOG_ERROR, "mdat offset does not fit in 32 bits\n");
-        return AVERROR_INVALIDDATA;
-    }
+    // The offset for the YUV planes is the starting position of mdat.
+    extent_offsets[0] = avio_tell(pb);
+    // The offset for alpha plane is YUV offset + YUV size.
+    extent_offsets[1] = extent_offsets[0] + mov->avif_extent_length[0];
 
     avio_write(pb, buf, buf_size);
 
-    // write extent offset.
+    // write extent offsets.
     pos_backup = avio_tell(pb);
-    avio_seek(pb, mov->avif_extent_pos, SEEK_SET);
-    avio_wb32(pb, mdat_pos); /* rewrite offset */
+    for (i = 0; i < s->nb_streams; i++) {
+        if (extent_offsets[i] != (uint32_t)extent_offsets[i]) {
+            av_log(s, AV_LOG_ERROR, "extent offset does not fit in 32 bits\n");
+            return AVERROR_INVALIDDATA;
+        }
+        avio_seek(pb, mov->avif_extent_pos[i], SEEK_SET);
+        avio_wb32(pb, extent_offsets[i]); /* rewrite offset */
+    }
     avio_seek(pb, pos_backup, SEEK_SET);
 
     return 0;

@@ -246,8 +246,8 @@ typedef struct MOVMuxContext {
     int empty_hdlr_name;
     int movie_timescale;
 
-    int64_t avif_extent_pos;
-    int avif_extent_length;
+    int64_t avif_extent_pos[2];  // index 0 is YUV and 1 is Alpha.
+    int avif_extent_length[2];   // index 0 is YUV and 1 is Alpha.
     int is_animated_avif;
 } MOVMuxContext;
 
