@@ -60,11 +60,6 @@ static const AVOption blockdetect_options[] = {
 
 AVFILTER_DEFINE_CLASS(blockdetect);
 
-static av_cold int blockdetect_init(AVFilterContext *ctx)
-{
-    return 0;
-}
-
 static int blockdetect_config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -284,7 +279,6 @@ const AVFilter ff_vf_blockdetect = {
     .name          = "blockdetect",
     .description   = NULL_IF_CONFIG_SMALL("Blockdetect filter."),
     .priv_size     = sizeof(BLKContext),
-    .init          = blockdetect_init,
     .uninit        = blockdetect_uninit,
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     FILTER_INPUTS(blockdetect_inputs),
