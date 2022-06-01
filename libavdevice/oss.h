@@ -30,6 +30,7 @@ typedef struct OSSAudioData {
     AVClass *class;
     int fd;
     int sample_rate;
+    int sample_size; /* in bytes ! */
     int channels;
     int frame_size; /* in bytes ! */
     enum AVCodecID codec_id;
