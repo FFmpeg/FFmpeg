@@ -546,6 +546,7 @@ Operating systems / CPU architectures
 
 Alpha                                   Falk Hueffner
 MIPS                                    Manojkumar Bhosale, Shiyou Yin
+LoongArch                               Shiyou Yin
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Lauri Kasanen
