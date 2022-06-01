@@ -257,6 +257,7 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_P216LE]      = { 1, 1 },
     [AV_PIX_FMT_P416BE]      = { 1, 1 },
     [AV_PIX_FMT_P416LE]      = { 1, 1 },
+    [AV_PIX_FMT_NV16]        = { 1, 1 },
 };
 
 int ff_shuffle_filter_coefficients(SwsContext *c, int *filterPos,
