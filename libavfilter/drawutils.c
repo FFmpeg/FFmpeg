@@ -23,9 +23,10 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
-#include "libavutil/colorspace.h"
+#include "libavutil/csp.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
+#include "colorspace.h"
 #include "drawutils.h"
 #include "formats.h"
 
@@ -76,13 +77,14 @@ int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
     return 0;
 }
 
-int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
+int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSpace csp,
+                  enum AVColorRange range, unsigned flags)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+    const AVLumaCoefficients *luma = NULL;
     const AVComponentDescriptor *c;
     unsigned i, nb_planes = 0;
     int pixelstep[MAX_PLANES] = { 0 };
-    int full_range = 0;
     int depthb = 0;
 
     if (!desc || !desc->name)
@@ -91,9 +93,17 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
         return AVERROR(ENOSYS);
     if (desc->flags & ~(AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA))
         return AVERROR(ENOSYS);
-    if (format == AV_PIX_FMT_YUVJ420P || format == AV_PIX_FMT_YUVJ422P || format == AV_PIX_FMT_YUVJ444P ||
-        format == AV_PIX_FMT_YUVJ411P || format == AV_PIX_FMT_YUVJ440P)
-        full_range = 1;
+    if (csp == AVCOL_SPC_UNSPECIFIED)
+        csp = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? AVCOL_SPC_RGB : AVCOL_SPC_SMPTE170M;
+    if (!(desc->flags & AV_PIX_FMT_FLAG_RGB) && !(luma = av_csp_luma_coeffs_from_avcsp(csp)))
+        return AVERROR(EINVAL);
+    if (range == AVCOL_RANGE_UNSPECIFIED)
+        range = (format == AV_PIX_FMT_YUVJ420P || format == AV_PIX_FMT_YUVJ422P ||
+                 format == AV_PIX_FMT_YUVJ444P || format == AV_PIX_FMT_YUVJ411P ||
+                 format == AV_PIX_FMT_YUVJ440P || csp == AVCOL_SPC_RGB)
+                ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+    if (range != AVCOL_RANGE_JPEG && range != AVCOL_RANGE_MPEG)
+        return AVERROR(EINVAL);
     for (i = 0; i < desc->nb_components; i++) {
         int db;
         c = &desc->comp[i];
@@ -130,18 +140,27 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
     draw->desc      = desc;
     draw->format    = format;
     draw->nb_planes = nb_planes;
+    draw->range     = range;
+    draw->csp       = csp;
     draw->flags     = flags;
-    draw->full_range = full_range;
+    if (luma)
+        ff_fill_rgb2yuv_table(luma, draw->rgb2yuv);
     memcpy(draw->pixelstep, pixelstep, sizeof(draw->pixelstep));
     draw->hsub[1] = draw->hsub[2] = draw->hsub_max = desc->log2_chroma_w;
     draw->vsub[1] = draw->vsub[2] = draw->vsub_max = desc->log2_chroma_h;
     return 0;
 }
 
+int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
+{
+    return ff_draw_init2(draw, format, AVCOL_SPC_UNSPECIFIED, AVCOL_RANGE_UNSPECIFIED, flags);
+}
+
 void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4])
 {
     unsigned i;
-    uint8_t tmp8[4];
+    double yuvad[4];
+    double rgbad[4];
     const AVPixFmtDescriptor *desc = draw->desc;
 
     if (rgba != color->rgba)
@@ -149,35 +168,36 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
 
     memset(color->comp, 0, sizeof(color->comp));
 
-    if (draw->desc->flags & AV_PIX_FMT_FLAG_RGB) {
-        memcpy(tmp8, rgba, sizeof(tmp8));
-    } else if (draw->nb_planes >= 2) {
-        /* assume YUV */
-        tmp8[0] = draw->full_range ? RGB_TO_Y_JPEG(rgba[0], rgba[1], rgba[2]) : RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        tmp8[1] = draw->full_range ? RGB_TO_U_JPEG(rgba[0], rgba[1], rgba[2]) : RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        tmp8[2] = draw->full_range ? RGB_TO_V_JPEG(rgba[0], rgba[1], rgba[2]) : RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        tmp8[3] = rgba[3];
-    } else if (draw->format == AV_PIX_FMT_GRAY8 || draw->format == AV_PIX_FMT_GRAY8A ||
-               draw->format == AV_PIX_FMT_GRAY16LE || draw->format == AV_PIX_FMT_YA16LE ||
-               draw->format == AV_PIX_FMT_GRAY9LE  ||
-               draw->format == AV_PIX_FMT_GRAY10LE ||
-               draw->format == AV_PIX_FMT_GRAY12LE ||
-               draw->format == AV_PIX_FMT_GRAY14LE) {
-        tmp8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        tmp8[1] = rgba[3];
-    } else {
-        av_log(NULL, AV_LOG_WARNING,
-               "Color conversion not implemented for %s\n", draw->desc->name);
-        memset(color, 128, sizeof(*color));
-        return;
+    for (int i = 0; i < 4; i++)
+        rgbad[i] = color->rgba[i] / 255.;
+
+    if (draw->desc->flags & AV_PIX_FMT_FLAG_RGB)
+        memcpy(yuvad, rgbad, sizeof(double) * 3);
+    else
+        ff_matrix_mul_3x3_vec(yuvad, rgbad, draw->rgb2yuv);
+
+    yuvad[3] = rgbad[3];
+
+    for (int i = 0; i < 3; i++) {
+        int chroma = (!(draw->desc->flags & AV_PIX_FMT_FLAG_RGB) && i > 0);
+        if (draw->range == AVCOL_RANGE_MPEG) {
+            yuvad[i] *= (chroma ? 224. : 219.) / 255.;
+            yuvad[i] += (chroma ? 128. :  16.) / 255.;
+        } else if (chroma) {
+            yuvad[i] += 0.5;
+        }
     }
 
+    // Ensure we place the alpha appropriately for gray formats
+    if (desc->nb_components <= 2)
+        yuvad[1] = yuvad[3];
+
     for (i = 0; i < desc->nb_components; i++) {
+        unsigned val = yuvad[i] * ((1 << (draw->desc->comp[i].depth + draw->desc->comp[i].shift)) - 1) + 0.5;
         if (desc->comp[i].depth > 8)
-            color->comp[desc->comp[i].plane].u16[desc->comp[i].offset / 2] = tmp8[i] <<
-                (draw->desc->comp[i].depth + draw->desc->comp[i].shift - 8);
+            color->comp[desc->comp[i].plane].u16[desc->comp[i].offset / 2] = val;
         else
-            color->comp[desc->comp[i].plane].u8[desc->comp[i].offset] = tmp8[i];
+            color->comp[desc->comp[i].plane].u8[desc->comp[i].offset] = val;
     }
 }
 
