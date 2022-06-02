@@ -304,7 +304,7 @@ static int test_cpl_parsing(void)
     }
 
     printf("%s\n", cpl->content_title_utf8);
-    printf(FF_IMF_UUID_FORMAT "\n", UID_ARG(cpl->id_uuid));
+    printf(AV_PRI_URN_UUID "\n", AV_UUID_ARG(cpl->id_uuid));
     printf("%i %i\n", cpl->edit_rate.num, cpl->edit_rate.den);
 
     printf("Marker resource count: %" PRIu32 "\n", cpl->main_markers_track->resource_count);
@@ -320,7 +320,7 @@ static int test_cpl_parsing(void)
     printf("Main image resource count: %" PRIu32 "\n", cpl->main_image_2d_track->resource_count);
     for (uint32_t i = 0; i < cpl->main_image_2d_track->resource_count; i++) {
         printf("Track file resource %" PRIu32 "\n", i);
-        printf("  " FF_IMF_UUID_FORMAT "\n", UID_ARG(cpl->main_image_2d_track->resources[i].track_file_uuid));
+        printf("  " AV_PRI_URN_UUID "\n", AV_UUID_ARG(cpl->main_image_2d_track->resources[i].track_file_uuid));
     }
 
     printf("Main audio track count: %" PRIu32 "\n", cpl->main_audio_track_count);
@@ -329,7 +329,7 @@ static int test_cpl_parsing(void)
         printf("  Main audio resource count: %" PRIu32 "\n", cpl->main_audio_tracks[i].resource_count);
         for (uint32_t j = 0; j < cpl->main_audio_tracks[i].resource_count; j++) {
             printf("  Track file resource %" PRIu32 "\n", j);
-            printf("    " FF_IMF_UUID_FORMAT "\n", UID_ARG(cpl->main_audio_tracks[i].resources[j].track_file_uuid));
+            printf("    " AV_PRI_URN_UUID "\n", AV_UUID_ARG(cpl->main_audio_tracks[i].resources[j].track_file_uuid));
         }
     }
 
@@ -363,15 +363,15 @@ static int test_bad_cpl_parsing(void)
 static int check_asset_locator_attributes(IMFAssetLocator *asset, IMFAssetLocator *expected_asset)
 {
 
-    printf("\tCompare " FF_IMF_UUID_FORMAT " to " FF_IMF_UUID_FORMAT ".\n",
-           UID_ARG(asset->uuid),
-           UID_ARG(expected_asset->uuid));
+    printf("\tCompare " AV_PRI_URN_UUID " to " AV_PRI_URN_UUID ".\n",
+           AV_UUID_ARG(asset->uuid),
+           AV_UUID_ARG(expected_asset->uuid));
 
     for (uint32_t i = 0; i < 16; ++i) {
         if (asset->uuid[i] != expected_asset->uuid[i]) {
-            printf("Invalid asset locator UUID: found " FF_IMF_UUID_FORMAT " instead of " FF_IMF_UUID_FORMAT " expected.\n",
-                   UID_ARG(asset->uuid),
-                   UID_ARG(expected_asset->uuid));
+            printf("Invalid asset locator UUID: found " AV_PRI_URN_UUID " instead of " AV_PRI_URN_UUID " expected.\n",
+                   AV_UUID_ARG(asset->uuid),
+                   AV_UUID_ARG(expected_asset->uuid));
             return 1;
         }
     }

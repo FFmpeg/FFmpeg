@@ -70,32 +70,14 @@ xmlNodePtr ff_imf_xml_get_child_element_by_name(xmlNodePtr parent, const char *n
     return NULL;
 }
 
-int ff_imf_xml_read_uuid(xmlNodePtr element, uint8_t uuid[16])
+int ff_imf_xml_read_uuid(xmlNodePtr element, AVUUID uuid)
 {
     xmlChar *element_text = NULL;
-    int scanf_ret;
     int ret = 0;
 
     element_text = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
-    scanf_ret = sscanf(element_text,
-                       FF_IMF_UUID_FORMAT,
-                       &uuid[0],
-                       &uuid[1],
-                       &uuid[2],
-                       &uuid[3],
-                       &uuid[4],
-                       &uuid[5],
-                       &uuid[6],
-                       &uuid[7],
-                       &uuid[8],
-                       &uuid[9],
-                       &uuid[10],
-                       &uuid[11],
-                       &uuid[12],
-                       &uuid[13],
-                       &uuid[14],
-                       &uuid[15]);
-    if (scanf_ret != 16) {
+    ret = av_uuid_urn_parse(element_text, uuid);
+    if (ret) {
         av_log(NULL, AV_LOG_ERROR, "Invalid UUID\n");
         ret = AVERROR_INVALIDDATA;
     }
@@ -370,7 +352,7 @@ static int fill_marker_resource(xmlNodePtr marker_resource_elem,
 static int push_marker_sequence(xmlNodePtr marker_sequence_elem, FFIMFCPL *cpl)
 {
     int ret = 0;
-    uint8_t uuid[16];
+    AVUUID uuid;
     xmlNodePtr resource_list_elem = NULL;
     xmlNodePtr resource_elem = NULL;
     xmlNodePtr track_id_elem = NULL;
@@ -388,8 +370,8 @@ static int push_marker_sequence(xmlNodePtr marker_sequence_elem, FFIMFCPL *cpl)
     }
     av_log(NULL,
            AV_LOG_DEBUG,
-           "Processing IMF CPL Marker Sequence for Virtual Track " FF_IMF_UUID_FORMAT "\n",
-           UID_ARG(uuid));
+           "Processing IMF CPL Marker Sequence for Virtual Track " AV_PRI_UUID "\n",
+           AV_UUID_ARG(uuid));
 
     /* create main marker virtual track if it does not exist */
     if (!cpl->main_markers_track) {
@@ -397,9 +379,9 @@ static int push_marker_sequence(xmlNodePtr marker_sequence_elem, FFIMFCPL *cpl)
         if (!cpl->main_markers_track)
             return AVERROR(ENOMEM);
         imf_marker_virtual_track_init(cpl->main_markers_track);
-        memcpy(cpl->main_markers_track->base.id_uuid, uuid, sizeof(uuid));
+        av_uuid_copy(cpl->main_markers_track->base.id_uuid, uuid);
 
-    } else if (memcmp(cpl->main_markers_track->base.id_uuid, uuid, sizeof(uuid)) != 0) {
+    } else if (!av_uuid_equal(cpl->main_markers_track->base.id_uuid, uuid)) {
         av_log(NULL, AV_LOG_ERROR, "Multiple marker virtual tracks were found\n");
         return AVERROR_INVALIDDATA;
     }
@@ -457,7 +439,7 @@ static int has_stereo_resources(xmlNodePtr element)
 static int push_main_audio_sequence(xmlNodePtr audio_sequence_elem, FFIMFCPL *cpl)
 {
     int ret = 0;
-    uint8_t uuid[16];
+    AVUUID uuid;
     xmlNodePtr resource_list_elem = NULL;
     xmlNodePtr resource_elem = NULL;
     xmlNodePtr track_id_elem = NULL;
@@ -476,12 +458,12 @@ static int push_main_audio_sequence(xmlNodePtr audio_sequence_elem, FFIMFCPL *cp
     }
     av_log(NULL,
            AV_LOG_DEBUG,
-           "Processing IMF CPL Audio Sequence for Virtual Track " FF_IMF_UUID_FORMAT "\n",
-           UID_ARG(uuid));
+           "Processing IMF CPL Audio Sequence for Virtual Track " AV_PRI_UUID "\n",
+           AV_UUID_ARG(uuid));
 
     /* get the main audio virtual track corresponding to the sequence */
     for (uint32_t i = 0; i < cpl->main_audio_track_count; i++) {
-        if (memcmp(cpl->main_audio_tracks[i].base.id_uuid, uuid, sizeof(uuid)) == 0) {
+        if (av_uuid_equal(cpl->main_audio_tracks[i].base.id_uuid, uuid)) {
             vt = &cpl->main_audio_tracks[i];
             break;
         }
@@ -501,7 +483,7 @@ static int push_main_audio_sequence(xmlNodePtr audio_sequence_elem, FFIMFCPL *cp
         vt = &cpl->main_audio_tracks[cpl->main_audio_track_count];
         imf_trackfile_virtual_track_init(vt);
         cpl->main_audio_track_count++;
-        memcpy(vt->base.id_uuid, uuid, sizeof(uuid));
+        av_uuid_copy(vt->base.id_uuid, uuid);
     }
 
     /* process resources */
@@ -544,7 +526,7 @@ static int push_main_audio_sequence(xmlNodePtr audio_sequence_elem, FFIMFCPL *cp
 static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL *cpl)
 {
     int ret = 0;
-    uint8_t uuid[16];
+    AVUUID uuid;
     xmlNodePtr resource_list_elem = NULL;
     xmlNodePtr resource_elem = NULL;
     xmlNodePtr track_id_elem = NULL;
@@ -573,16 +555,16 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL 
         if (!cpl->main_image_2d_track)
             return AVERROR(ENOMEM);
         imf_trackfile_virtual_track_init(cpl->main_image_2d_track);
-        memcpy(cpl->main_image_2d_track->base.id_uuid, uuid, sizeof(uuid));
+        av_uuid_copy(cpl->main_image_2d_track->base.id_uuid, uuid);
 
-    } else if (memcmp(cpl->main_image_2d_track->base.id_uuid, uuid, sizeof(uuid)) != 0) {
+    } else if (!av_uuid_equal(cpl->main_image_2d_track->base.id_uuid, uuid)) {
         av_log(NULL, AV_LOG_ERROR, "Multiple MainImage virtual tracks found\n");
         return AVERROR_INVALIDDATA;
     }
     av_log(NULL,
            AV_LOG_DEBUG,
-           "Processing IMF CPL Main Image Sequence for Virtual Track " FF_IMF_UUID_FORMAT "\n",
-           UID_ARG(uuid));
+           "Processing IMF CPL Main Image Sequence for Virtual Track " AV_PRI_UUID "\n",
+           AV_UUID_ARG(uuid));
 
     /* process resources */
     resource_list_elem = ff_imf_xml_get_child_element_by_name(image_sequence_elem, "ResourceList");
@@ -746,7 +728,7 @@ static void imf_trackfile_virtual_track_free(FFIMFTrackFileVirtualTrack *vt)
 
 static void imf_cpl_init(FFIMFCPL *cpl)
 {
-    memset(cpl->id_uuid, 0, sizeof(cpl->id_uuid));
+    av_uuid_nil(cpl->id_uuid);
     cpl->content_title_utf8 = NULL;
     cpl->edit_rate = av_make_q(0, 1);
     cpl->main_markers_track = NULL;
@@ -828,8 +810,8 @@ int ff_imf_parse_cpl(AVIOContext *in, FFIMFCPL **cpl)
                 (*cpl)->content_title_utf8);
         av_log(NULL,
                 AV_LOG_INFO,
-                "IMF CPL Id: " FF_IMF_UUID_FORMAT "\n",
-                UID_ARG((*cpl)->id_uuid));
+                "IMF CPL Id: " AV_PRI_UUID "\n",
+                AV_UUID_ARG((*cpl)->id_uuid));
     }
 
     xmlFreeDoc(doc);
