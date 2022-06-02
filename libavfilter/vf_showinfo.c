@@ -42,6 +42,7 @@
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/video_enc_params.h"
 #include "libavutil/detection_bbox.h"
+#include "libavutil/uuid.h"
 
 #include "avfilter.h"
 #include "internal.h"
@@ -421,29 +422,20 @@ static void dump_video_enc_params(AVFilterContext *ctx, const AVFrameSideData *s
 
 static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
 {
-    const int uuid_size = 16;
     const uint8_t *user_data = sd->data;
-    int i;
 
-    if (sd->size < uuid_size) {
+    if (sd->size < AV_UUID_LEN) {
         av_log(ctx, AV_LOG_ERROR, "invalid data(%"SIZE_SPECIFIER" < "
-               "UUID(%d-bytes))\n", sd->size, uuid_size);
+               "UUID(%d-bytes))\n", sd->size, AV_UUID_LEN);
         return;
     }
 
     av_log(ctx, AV_LOG_INFO, "User Data Unregistered:\n");
-    av_log(ctx, AV_LOG_INFO, "UUID=");
-    for (i = 0; i < uuid_size; i++) {
-        av_log(ctx, AV_LOG_INFO, "%02x", user_data[i]);
-        if (i == 3 || i == 5 || i == 7 || i == 9)
-            av_log(ctx, AV_LOG_INFO, "-");
-    }
-    av_log(ctx, AV_LOG_INFO, "\n");
+    av_log(ctx, AV_LOG_INFO, "UUID=" AV_PRI_UUID "\n", AV_UUID_ARG(user_data));
 
     av_log(ctx, AV_LOG_INFO, "User Data=");
-    for (; i < sd->size; i++) {
+    for (size_t i = 16; i < sd->size; i++)
         av_log(ctx, AV_LOG_INFO, "%02x", user_data[i]);
-    }
     av_log(ctx, AV_LOG_INFO, "\n");
 }
 
