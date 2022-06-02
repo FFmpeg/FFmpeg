@@ -239,14 +239,14 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     RET(ff_vk_init_compute_pipeline(vkctx, s->pl));
 
     if (s->vkctx.output_format != s->vkctx.input_format) {
-        const struct LumaCoefficients *lcoeffs;
+        const AVLumaCoefficients *lcoeffs;
         double tmp_mat[3][3];
 
         struct {
             float yuv_matrix[4][4];
         } *par;
 
-        lcoeffs = ff_get_luma_coefficients(in->colorspace);
+        lcoeffs = av_csp_luma_coeffs_from_avcsp(in->colorspace);
         if (!lcoeffs) {
             av_log(ctx, AV_LOG_ERROR, "Unsupported colorspace\n");
             return AVERROR(EINVAL);
