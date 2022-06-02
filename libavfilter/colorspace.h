@@ -29,6 +29,7 @@
 void ff_matrix_invert_3x3(const double in[3][3], double out[3][3]);
 void ff_matrix_mul_3x3(double dst[3][3],
                const double src1[3][3], const double src2[3][3]);
+void ff_matrix_mul_3x3_vec(double dst[3], const double vec[3], const double mat[3][3]);
 void ff_fill_rgb2xyz_table(const AVPrimaryCoefficients *coeffs,
                            const AVWhitepointCoefficients *wp,
                            double rgb2xyz[3][3]);

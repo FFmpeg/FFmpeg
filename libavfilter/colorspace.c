@@ -62,6 +62,17 @@ void ff_matrix_mul_3x3(double dst[3][3],
                         src2[m][1] * src1[1][n] +
                         src2[m][2] * src1[2][n];
 }
+
+void ff_matrix_mul_3x3_vec(double dst[3], const double vec[3], const double mat[3][3])
+{
+    int m;
+
+    for (m = 0; m < 3; m++)
+        dst[m] = vec[0] * mat[m][0] +
+                 vec[1] * mat[m][1] +
+                 vec[2] * mat[m][2];
+}
+
 /*
  * see e.g. http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
  */
