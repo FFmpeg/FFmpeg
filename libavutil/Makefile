@@ -263,6 +263,7 @@ TESTPROGS = adler32                                                     \
             tree                                                        \
             twofish                                                     \
             utf8                                                        \
+            uuid                                                        \
             xtea                                                        \
             tea                                                         \
 
