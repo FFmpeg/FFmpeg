@@ -47,6 +47,7 @@
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
+#include "libavutil/uuid.h"
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/hevc.h"
@@ -5956,21 +5957,21 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     MOVStreamContext *sc;
     int64_t ret;
-    uint8_t uuid[16];
-    static const uint8_t uuid_isml_manifest[] = {
+    AVUUID uuid;
+    static const AVUUID uuid_isml_manifest = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
-    static const uint8_t uuid_xmp[] = {
+    static const AVUUID uuid_xmp = {
         0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8,
         0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac
     };
-    static const uint8_t uuid_spherical[] = {
+    static const AVUUID uuid_spherical = {
         0xff, 0xcc, 0x82, 0x63, 0xf8, 0x55, 0x4a, 0x93,
         0x88, 0x14, 0x58, 0x7a, 0x02, 0x52, 0x1f, 0xdd,
     };
 
-    if (atom.size < sizeof(uuid) || atom.size >= FFMIN(INT_MAX, SIZE_MAX))
+    if (atom.size < AV_UUID_LEN || atom.size >= FFMIN(INT_MAX, SIZE_MAX))
         return AVERROR_INVALIDDATA;
 
     if (c->fc->nb_streams < 1)
@@ -5978,13 +5979,13 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st = c->fc->streams[c->fc->nb_streams - 1];
     sc = st->priv_data;
 
-    ret = ffio_read_size(pb, uuid, sizeof(uuid));
+    ret = ffio_read_size(pb, uuid, AV_UUID_LEN);
     if (ret < 0)
         return ret;
-    if (!memcmp(uuid, uuid_isml_manifest, sizeof(uuid))) {
+    if (av_uuid_equal(uuid, uuid_isml_manifest)) {
         uint8_t *buffer, *ptr;
         char *endptr;
-        size_t len = atom.size - sizeof(uuid);
+        size_t len = atom.size - AV_UUID_LEN;
 
         if (len < 4) {
             return AVERROR_INVALIDDATA;
@@ -6022,9 +6023,9 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
         av_free(buffer);
-    } else if (!memcmp(uuid, uuid_xmp, sizeof(uuid))) {
+    } else if (av_uuid_equal(uuid, uuid_xmp)) {
         uint8_t *buffer;
-        size_t len = atom.size - sizeof(uuid);
+        size_t len = atom.size - AV_UUID_LEN;
         if (c->export_xmp) {
             buffer = av_mallocz(len + 1);
             if (!buffer) {
@@ -6044,8 +6045,8 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (ret < 0)
                 return ret;
         }
-    } else if (!memcmp(uuid, uuid_spherical, sizeof(uuid))) {
-        size_t len = atom.size - sizeof(uuid);
+    } else if (av_uuid_equal(uuid, uuid_spherical)) {
+        size_t len = atom.size - AV_UUID_LEN;
         ret = mov_parse_uuid_spherical(sc, pb, len);
         if (ret < 0)
             return ret;

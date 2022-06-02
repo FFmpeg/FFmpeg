@@ -57,6 +57,7 @@
 #include "libavutil/timecode.h"
 #include "libavutil/dovi_meta.h"
 #include "libavutil/color_utils.h"
+#include "libavutil/uuid.h"
 #include "hevc.h"
 #include "rtpenc.h"
 #include "mov_chan.h"
@@ -4487,14 +4488,14 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
     int64_t pos = avio_tell(pb);
     int i;
 
-    static const uint8_t uuid[] = {
+    static const AVUUID uuid = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "uuid");
-    avio_write(pb, uuid, sizeof(uuid));
+    avio_write(pb, uuid, AV_UUID_LEN);
     avio_wb32(pb, 0);
 
     avio_printf(pb, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -4753,7 +4754,7 @@ static int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "uuid");
-    avio_write(pb, uuid, sizeof(uuid));
+    avio_write(pb, uuid, AV_UUID_LEN);
     avio_w8(pb, 1);
     avio_wb24(pb, 0);
     avio_wb64(pb, track->cluster[0].dts + track->cluster[0].cts);
@@ -4779,7 +4780,7 @@ static int mov_write_tfrf_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_seek(pb, track->frag_info[entry].tfrf_offset, SEEK_SET);
     avio_wb32(pb, size);
     ffio_wfourcc(pb, "uuid");
-    avio_write(pb, uuid, sizeof(uuid));
+    avio_write(pb, uuid, AV_UUID_LEN);
     avio_w8(pb, 1);
     avio_wb24(pb, 0);
     avio_w8(pb, n);
