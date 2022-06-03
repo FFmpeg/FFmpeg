@@ -60,6 +60,7 @@ typedef struct AC3HeaderInfo {
     uint8_t channels;
     uint16_t frame_size;
     uint64_t channel_layout;
+    int8_t ac3_bit_rate_code;
     /** @} */
 } AC3HeaderInfo;
 

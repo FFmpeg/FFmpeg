@@ -70,6 +70,7 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
         return AAC_AC3_PARSE_ERROR_BSID;
 
     hdr->num_blocks = 6;
+    hdr->ac3_bit_rate_code = -1;
 
     /* set default mix levels */
     hdr->center_mix_level   = 5;  // -4.5dB
@@ -89,6 +90,8 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
         if(frame_size_code > 37)
             return AAC_AC3_PARSE_ERROR_FRAME_SIZE;
 
+        hdr->ac3_bit_rate_code = (frame_size_code >> 1);
+
         skip_bits(gbc, 5); // skip bsid, already got it
 
         hdr->bitstream_mode = get_bits(gbc, 3);
@@ -106,7 +109,7 @@ int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
 
         hdr->sr_shift = FFMAX(hdr->bitstream_id, 8) - 8;
         hdr->sample_rate = ff_ac3_sample_rate_tab[hdr->sr_code] >> hdr->sr_shift;
-        hdr->bit_rate = (ff_ac3_bitrate_tab[frame_size_code>>1] * 1000) >> hdr->sr_shift;
+        hdr->bit_rate = (ff_ac3_bitrate_tab[hdr->ac3_bit_rate_code] * 1000) >> hdr->sr_shift;
         hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
         hdr->frame_size = ff_ac3_frame_size_tab[frame_size_code][hdr->sr_code] * 2;
         hdr->frame_type = EAC3_FRAME_TYPE_AC3_CONVERT; //EAC3_FRAME_TYPE_INDEPENDENT;
