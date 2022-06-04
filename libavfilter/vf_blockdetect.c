@@ -132,8 +132,10 @@ static float calculate_blockiness(BLKContext *s, int w, int h,
                 nonblock_count++;
             }
         }
+        if (block_count && nonblock_count) {
         temp = (block / block_count) / (nonblock / nonblock_count);
         ret = FFMAX(ret, temp);
+        }
     }
 
     // vertical blockiness (fixed height)
@@ -175,8 +177,10 @@ static float calculate_blockiness(BLKContext *s, int w, int h,
                 nonblock_count++;
             }
         }
+        if (block_count && nonblock_count) {
         temp = (block / block_count) / (nonblock / nonblock_count);
         ret = FFMAX(ret, temp);
+        }
     }
 
     // return highest value of horz||vert
