@@ -133,8 +133,8 @@ static float calculate_blockiness(BLKContext *s, int w, int h,
             }
         }
         if (block_count && nonblock_count) {
-        temp = (block / block_count) / (nonblock / nonblock_count);
-        ret = FFMAX(ret, temp);
+            temp = (block / block_count) / (nonblock / nonblock_count);
+            ret = FFMAX(ret, temp);
         }
     }
 
@@ -178,8 +178,8 @@ static float calculate_blockiness(BLKContext *s, int w, int h,
             }
         }
         if (block_count && nonblock_count) {
-        temp = (block / block_count) / (nonblock / nonblock_count);
-        ret = FFMAX(ret, temp);
+            temp = (block / block_count) / (nonblock / nonblock_count);
+            ret = FFMAX(ret, temp);
         }
     }
 
