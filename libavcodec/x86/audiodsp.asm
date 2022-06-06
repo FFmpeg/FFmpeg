@@ -23,8 +23,8 @@
 
 SECTION .text
 
-%macro SCALARPRODUCT 0
 ; int ff_scalarproduct_int16(int16_t *v1, int16_t *v2, int order)
+INIT_XMM sse2
 cglobal scalarproduct_int16, 3,3,3, v1, v2, order
     add orderd, orderd
     add v1q, orderq
@@ -42,16 +42,7 @@ cglobal scalarproduct_int16, 3,3,3, v1, v2, order
     jl .loop
     HADDD   m2, m0
     movd   eax, m2
-%if mmsize == 8
-    emms
-%endif
     RET
-%endmacro
-
-INIT_MMX mmxext
-SCALARPRODUCT
-INIT_XMM sse2
-SCALARPRODUCT
 
 
 ;-----------------------------------------------------------------------------
@@ -117,8 +108,6 @@ cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
     REP_RET
 %endmacro
 
-INIT_MMX mmx
-VECTOR_CLIP_INT32 0, 1, 0, 0
 INIT_XMM sse2
 VECTOR_CLIP_INT32 6, 1, 0, 0, _int
 VECTOR_CLIP_INT32 6, 2, 0, 1
