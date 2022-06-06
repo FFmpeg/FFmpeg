@@ -24,12 +24,8 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/ac3dsp.h"
 
-void ff_ac3_exponent_min_mmx   (uint8_t *exp, int num_reuse_blocks, int nb_coefs);
-void ff_ac3_exponent_min_mmxext(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 void ff_ac3_exponent_min_sse2  (uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 
-void ff_float_to_fixed24_3dnow(int32_t *dst, const float *src, unsigned int len);
-void ff_float_to_fixed24_sse  (int32_t *dst, const float *src, unsigned int len);
 void ff_float_to_fixed24_sse2 (int32_t *dst, const float *src, unsigned int len);
 
 int ff_ac3_compute_mantissa_size_sse2(uint16_t mant_cnt[6][16]);
@@ -41,20 +37,6 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_MMX(cpu_flags)) {
-        c->ac3_exponent_min = ff_ac3_exponent_min_mmx;
-    }
-    if (EXTERNAL_AMD3DNOW(cpu_flags)) {
-        if (!bit_exact) {
-            c->float_to_fixed24 = ff_float_to_fixed24_3dnow;
-        }
-    }
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        c->ac3_exponent_min = ff_ac3_exponent_min_mmxext;
-    }
-    if (EXTERNAL_SSE(cpu_flags)) {
-        c->float_to_fixed24 = ff_float_to_fixed24_sse;
-    }
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->ac3_exponent_min = ff_ac3_exponent_min_sse2;
         c->float_to_fixed24 = ff_float_to_fixed24_sse2;
