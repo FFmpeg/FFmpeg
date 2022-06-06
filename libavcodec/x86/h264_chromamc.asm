@@ -448,7 +448,6 @@ chroma_mc2_mmx_func avg, h264
 
 INIT_MMX 3dnow
 chroma_mc8_mmx_func avg, h264, _rnd
-chroma_mc8_mmx_func avg, vc1,  _nornd
 chroma_mc8_mmx_func avg, rv40
 chroma_mc4_mmx_func avg, h264
 chroma_mc4_mmx_func avg, rv40
