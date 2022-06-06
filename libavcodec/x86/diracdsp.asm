@@ -248,14 +248,6 @@ cglobal add_dirac_obmc%1_%2, 6,6,5, dst, src, stride, obmc, yblen
 %endm
 
 INIT_MMX
-%if ARCH_X86_64 == 0
-PUT_RECT mmx
-ADD_RECT mmx
-
-HPEL_FILTER mmx
-ADD_OBMC 32, mmx
-ADD_OBMC 16, mmx
-%endif
 ADD_OBMC 8, mmx
 
 INIT_XMM
