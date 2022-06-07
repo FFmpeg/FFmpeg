@@ -25,34 +25,6 @@
 #include "libavfilter/vf_noise.h"
 
 #if HAVE_INLINE_ASM
-static void line_noise_mmx(uint8_t *dst, const uint8_t *src,
-                           const int8_t *noise, int len, int shift)
-{
-    x86_reg mmx_len= len & (~7);
-    noise += shift;
-
-    __asm__ volatile(
-            "mov %3, %%"FF_REG_a"            \n\t"
-            "pcmpeqb %%mm7, %%mm7            \n\t"
-            "psllw $15, %%mm7                \n\t"
-            "packsswb %%mm7, %%mm7           \n\t"
-            ".p2align 4                      \n\t"
-            "1:                              \n\t"
-            "movq (%0, %%"FF_REG_a"), %%mm0  \n\t"
-            "movq (%1, %%"FF_REG_a"), %%mm1  \n\t"
-            "pxor %%mm7, %%mm0               \n\t"
-            "paddsb %%mm1, %%mm0             \n\t"
-            "pxor %%mm7, %%mm0               \n\t"
-            "movq %%mm0, (%2, %%"FF_REG_a")  \n\t"
-            "add $8, %%"FF_REG_a"            \n\t"
-            " js 1b                          \n\t"
-            :: "r" (src+mmx_len), "r" (noise+mmx_len), "r" (dst+mmx_len), "g" (-mmx_len)
-            : "%"FF_REG_a
-    );
-    if (mmx_len != len)
-        ff_line_noise_c(dst+mmx_len, src+mmx_len, noise+mmx_len, len-mmx_len, 0);
-}
-
 #if HAVE_6REGS
 static void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
                                       int len, const int8_t * const *shift)
@@ -132,7 +104,6 @@ av_cold void ff_noise_init_x86(NoiseContext *n)
     int cpu_flags = av_get_cpu_flags();
 
     if (INLINE_MMX(cpu_flags)) {
-        n->line_noise     = line_noise_mmx;
 #if HAVE_6REGS
         n->line_noise_avg = line_noise_avg_mmx;
 #endif
