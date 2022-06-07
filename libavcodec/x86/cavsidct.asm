@@ -107,68 +107,6 @@ SECTION .text
     SUMSUB_BA     w, 1, 0               ; m1 = dst3, m0 = dst4
 %endmacro
 
-INIT_MMX mmx
-cglobal cavs_idct8, 2, 4, 8, 8 * 16, out, in, cnt, tmp
-    mov           cntd, 2
-    mov           tmpq, rsp
-
-.loop_1:
-    CAVS_IDCT8_1D  inq, [pw_4]
-    psraw           m7, 3
-    psraw           m6, 3
-    psraw           m5, 3
-    psraw           m4, 3
-    psraw           m3, 3
-    psraw           m2, 3
-    psraw           m1, 3
-    psraw           m0, 3
-    mova        [tmpq], m7
-    TRANSPOSE4x4W    0, 2, 4, 6, 7
-    mova    [tmpq+1*8], m0
-    mova    [tmpq+3*8], m2
-    mova    [tmpq+5*8], m4
-    mova    [tmpq+7*8], m6
-    mova            m7, [tmpq]
-    TRANSPOSE4x4W    7, 5, 3, 1, 0
-    mova    [tmpq+0*8], m7
-    mova    [tmpq+2*8], m5
-    mova    [tmpq+4*8], m3
-    mova    [tmpq+6*8], m1
-
-    add            inq, mmsize
-    add           tmpq, 64
-    dec           cntd
-    jg .loop_1
-
-    mov           cntd, 2
-    mov           tmpq, rsp
-.loop_2:
-    CAVS_IDCT8_1D tmpq, [pw_64]
-    psraw           m7, 7
-    psraw           m6, 7
-    psraw           m5, 7
-    psraw           m4, 7
-    psraw           m3, 7
-    psraw           m2, 7
-    psraw           m1, 7
-    psraw           m0, 7
-
-    mova   [outq+0*16], m7
-    mova   [outq+1*16], m5
-    mova   [outq+2*16], m3
-    mova   [outq+3*16], m1
-    mova   [outq+4*16], m0
-    mova   [outq+5*16], m2
-    mova   [outq+6*16], m4
-    mova   [outq+7*16], m6
-
-    add           outq, mmsize
-    add           tmpq, mmsize
-    dec           cntd
-    jg .loop_2
-
-    RET
-
 INIT_XMM sse2
 cglobal cavs_idct8, 2, 2, 8 + ARCH_X86_64, 0 - 8 * 16, out, in
     CAVS_IDCT8_1D  inq, [pw_4]

@@ -36,16 +36,7 @@
 #include "config.h"
 
 
-#if HAVE_MMX_EXTERNAL
-
-void ff_cavs_idct8_mmx(int16_t *out, const int16_t *in);
-
-static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, ptrdiff_t stride)
-{
-    LOCAL_ALIGNED(16, int16_t, b2, [64]);
-    ff_cavs_idct8_mmx(b2, block);
-    ff_add_pixels_clamped_mmx(b2, dst, stride);
-}
+#if HAVE_SSE2_EXTERNAL
 
 void ff_cavs_idct8_sse2(int16_t *out, const int16_t *in);
 
@@ -56,9 +47,9 @@ static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
     ff_add_pixels_clamped_sse2(b2, dst, stride);
 }
 
-#endif /* HAVE_MMX_EXTERNAL */
+#endif /* HAVE_SSE2_EXTERNAL */
 
-#if (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE)
+#if HAVE_MMXEXT_INLINE
 
 /*****************************************************************************
  *
@@ -326,7 +317,7 @@ static void OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, const uin
 "pavgb " #temp ", " #a "          \n\t"\
 "mov" #size " " #a ", " #b "      \n\t"
 
-#endif /* (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE) */
+#endif /* HAVE_MMXEXT_INLINE */
 
 #if HAVE_MMX_EXTERNAL
 static void put_cavs_qpel8_mc00_mmx(uint8_t *dst, const uint8_t *src,
@@ -335,34 +326,10 @@ static void put_cavs_qpel8_mc00_mmx(uint8_t *dst, const uint8_t *src,
     ff_put_pixels8_mmx(dst, src, stride, 8);
 }
 
-static void avg_cavs_qpel8_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                    ptrdiff_t stride)
-{
-    ff_avg_pixels8_mmx(dst, src, stride, 8);
-}
-
 static void avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride)
 {
     ff_avg_pixels8_mmxext(dst, src, stride, 8);
-}
-
-static void put_cavs_qpel16_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                     ptrdiff_t stride)
-{
-    ff_put_pixels16_mmx(dst, src, stride, 16);
-}
-
-static void avg_cavs_qpel16_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                     ptrdiff_t stride)
-{
-    ff_avg_pixels16_mmx(dst, src, stride, 16);
-}
-
-static void avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, const uint8_t *src,
-                                        ptrdiff_t stride)
-{
-    ff_avg_pixels16_mmxext(dst, src, stride, 16);
 }
 
 static void put_cavs_qpel16_mc00_sse2(uint8_t *dst, const uint8_t *src,
@@ -382,13 +349,7 @@ static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
                                      AVCodecContext *avctx)
 {
 #if HAVE_MMX_EXTERNAL
-    c->put_cavs_qpel_pixels_tab[0][0] = put_cavs_qpel16_mc00_mmx;
     c->put_cavs_qpel_pixels_tab[1][0] = put_cavs_qpel8_mc00_mmx;
-    c->avg_cavs_qpel_pixels_tab[0][0] = avg_cavs_qpel16_mc00_mmx;
-    c->avg_cavs_qpel_pixels_tab[1][0] = avg_cavs_qpel8_mc00_mmx;
-
-    c->cavs_idct8_add = cavs_idct8_add_mmx;
-    c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;
 #endif /* HAVE_MMX_EXTERNAL */
 }
 
@@ -408,25 +369,6 @@ CAVS_MC(avg_,  8, mmxext)
 CAVS_MC(avg_, 16, mmxext)
 #endif /* HAVE_MMXEXT_INLINE */
 
-#if HAVE_AMD3DNOW_INLINE
-QPEL_CAVS(put_,       PUT_OP, 3dnow)
-QPEL_CAVS(avg_, AVG_3DNOW_OP, 3dnow)
-
-CAVS_MC(put_, 8, 3dnow)
-CAVS_MC(put_, 16,3dnow)
-CAVS_MC(avg_, 8, 3dnow)
-CAVS_MC(avg_, 16,3dnow)
-
-static av_cold void cavsdsp_init_3dnow(CAVSDSPContext *c,
-                                       AVCodecContext *avctx)
-{
-    DSPFUNC(put, 0, 16, 3dnow);
-    DSPFUNC(put, 1,  8, 3dnow);
-    DSPFUNC(avg, 0, 16, 3dnow);
-    DSPFUNC(avg, 1,  8, 3dnow);
-}
-#endif /* HAVE_AMD3DNOW_INLINE */
-
 av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
 {
     av_unused int cpu_flags = av_get_cpu_flags();
@@ -434,10 +376,6 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
     if (X86_MMX(cpu_flags))
         cavsdsp_init_mmx(c, avctx);
 
-#if HAVE_AMD3DNOW_INLINE
-    if (INLINE_AMD3DNOW(cpu_flags))
-        cavsdsp_init_3dnow(c, avctx);
-#endif /* HAVE_AMD3DNOW_INLINE */
 #if HAVE_MMXEXT_INLINE
     if (INLINE_MMXEXT(cpu_flags)) {
         DSPFUNC(put, 0, 16, mmxext);
@@ -448,7 +386,6 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
 #endif
 #if HAVE_MMX_EXTERNAL
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        c->avg_cavs_qpel_pixels_tab[0][0] = avg_cavs_qpel16_mc00_mmxext;
         c->avg_cavs_qpel_pixels_tab[1][0] = avg_cavs_qpel8_mc00_mmxext;
     }
 #endif
