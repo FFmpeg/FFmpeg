@@ -44,10 +44,10 @@ SECTION .text
     sar    %1, 10
 %endmacro
 
-%macro rv34_idct 1
-cglobal rv34_idct_%1, 1, 2, 0
+INIT_MMX mmxext
+cglobal rv34_idct_dc_noround, 1, 2, 0
     movsx   r1, word [r0]
-    IDCT_DC r1
+    IDCT_DC_NOROUND r1
     movd    m0, r1d
     pshufw  m0, m0, 0
     movq    [r0+ 0], m0
@@ -55,13 +55,6 @@ cglobal rv34_idct_%1, 1, 2, 0
     movq    [r0+16], m0
     movq    [r0+24], m0
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-%define IDCT_DC IDCT_DC_ROUND
-rv34_idct dc
-%define IDCT_DC IDCT_DC_NOROUND
-rv34_idct dc_noround
 
 ; ff_rv34_idct_dc_add_mmx(uint8_t *dst, int stride, int dc);
 %if ARCH_X86_32
