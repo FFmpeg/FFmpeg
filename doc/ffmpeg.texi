@@ -1618,12 +1618,14 @@ it may cause packet loss.
 It is useful for when flow speed of output packets is important, such as live streaming.
 @item -re (@emph{input})
 Read input at native frame rate. This is equivalent to setting @code{-readrate 1}.
-@item -vsync @var{parameter}
-Video sync method.
+@item -vsync @var{parameter} (@emph{global})
+@itemx -fps_mode[:@var{stream_specifier}] @var{parameter} (@emph{output,per-stream})
+Set video sync method / framerate mode. vsync is applied to all output video streams
+but can be overridden for a stream by setting fps_mode. vsync is deprecated and will be
+removed in the future.
 
-For compatibility reasons some of the values can be specified as numbers (shown
-in parentheses in the following table). This is deprecated and will stop working
-in the future.
+For compatibility reasons some of the values for vsync can be specified as numbers (shown
+in parentheses in the following table).
 
 @table @option
 @item passthrough (0)

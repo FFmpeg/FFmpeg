@@ -81,6 +81,7 @@ static const char *const opt_name_codec_tags[]                = {"tag", "atag", 
 static const char *const opt_name_sample_fmts[]               = {"sample_fmt", NULL};
 static const char *const opt_name_qscale[]                    = {"q", "qscale", NULL};
 static const char *const opt_name_forced_key_frames[]         = {"forced_key_frames", NULL};
+static const char *const opt_name_fps_mode[]                  = {"fps_mode", NULL};
 static const char *const opt_name_force_fps[]                 = {"force_fps", NULL};
 static const char *const opt_name_frame_aspect_ratios[]       = {"aspect", NULL};
 static const char *const opt_name_rc_overrides[]              = {"rc_override", NULL};
@@ -263,6 +264,26 @@ static AVDictionary *strip_specifiers(AVDictionary *dict)
             *p = ':';
     }
     return ret;
+}
+
+static int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global)
+{
+    if      (!av_strcasecmp(arg, "cfr"))         *vsync_var = VSYNC_CFR;
+    else if (!av_strcasecmp(arg, "vfr"))         *vsync_var = VSYNC_VFR;
+    else if (!av_strcasecmp(arg, "passthrough")) *vsync_var = VSYNC_PASSTHROUGH;
+    else if (!av_strcasecmp(arg, "drop"))        *vsync_var = VSYNC_DROP;
+    else if (!is_global && !av_strcasecmp(arg, "auto"))  *vsync_var = VSYNC_AUTO;
+    else if (!is_global) {
+        av_log(NULL, AV_LOG_FATAL, "Invalid value %s specified for fps_mode of #%d:%d.\n", arg, file_idx, st_idx);
+        exit_program(1);
+    }
+
+    if (is_global && *vsync_var == VSYNC_AUTO) {
+        video_sync_method = parse_number_or_die("vsync", arg, OPT_INT, VSYNC_AUTO, VSYNC_VFR);
+        av_log(NULL, AV_LOG_WARNING, "Passing a number to -vsync is deprecated,"
+               " use a string argument as described in the manual.\n");
+    }
+    return 0;
 }
 
 static int opt_filter_threads(void *optctx, const char *opt, const char *arg)
@@ -1905,6 +1926,10 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         MATCH_PER_STREAM_OPT(top_field_first, i, ost->top_field_first, oc, st);
 
         ost->vsync_method = video_sync_method;
+        MATCH_PER_STREAM_OPT(fps_mode, str, ost->fps_mode, oc, st);
+        if (ost->fps_mode)
+            parse_and_set_vsync(ost->fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
+
         if (ost->vsync_method == VSYNC_AUTO) {
             if (!strcmp(oc->oformat->name, "avi")) {
                 ost->vsync_method = VSYNC_VFR;
@@ -3248,16 +3273,8 @@ static int opt_audio_filters(void *optctx, const char *opt, const char *arg)
 
 static int opt_vsync(void *optctx, const char *opt, const char *arg)
 {
-    if      (!av_strcasecmp(arg, "cfr"))         video_sync_method = VSYNC_CFR;
-    else if (!av_strcasecmp(arg, "vfr"))         video_sync_method = VSYNC_VFR;
-    else if (!av_strcasecmp(arg, "passthrough")) video_sync_method = VSYNC_PASSTHROUGH;
-    else if (!av_strcasecmp(arg, "drop"))        video_sync_method = VSYNC_DROP;
-
-    if (video_sync_method == VSYNC_AUTO) {
-        video_sync_method = parse_number_or_die("vsync", arg, OPT_INT, VSYNC_AUTO, VSYNC_VFR);
-        av_log(NULL, AV_LOG_WARNING, "Passing a number to -vsync is deprecated,"
-               " use a string argument as described in the manual.\n");
-    }
+    av_log(NULL, AV_LOG_WARNING, "-vsync is deprecated. Use -fps_mode\n");
+    parse_and_set_vsync(arg, &video_sync_method, -1, -1, 1);
     return 0;
 }
 
@@ -3620,7 +3637,7 @@ const OptionDef options[] = {
         "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" "
         "with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")", "type" },
     { "vsync",          HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_vsync },
-        "video sync method", "" },
+        "set video sync method globally; deprecated, use -fps_mode", "" },
     { "frame_drop_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT,      { &frame_drop_threshold },
         "frame drop threshold", "" },
     { "async",          HAS_ARG | OPT_INT | OPT_EXPERT,              { &audio_sync_method },
@@ -3777,6 +3794,9 @@ const OptionDef options[] = {
         "force video tag/fourcc", "fourcc/tag" },
     { "qphist",       OPT_VIDEO | OPT_BOOL | OPT_EXPERT ,                        { &qp_hist },
         "show QP histogram" },
+    { "fps_mode",     OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT |
+                      OPT_SPEC | OPT_OUTPUT,                                     { .off = OFFSET(fps_mode) },
+        "set framerate mode for matching video streams; overrides vsync" },
     { "force_fps",    OPT_VIDEO | OPT_BOOL | OPT_EXPERT  | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(force_fps) },
         "force the selected framerate, disable the best supported framerate selection" },
