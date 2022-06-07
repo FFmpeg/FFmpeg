@@ -334,12 +334,7 @@ cglobal pred8x8_horizontal_10, 2, 3
 ;-----------------------------------------------------------------------------
 %macro MOV8 2-3
 ; sort of a hack, but it works
-%if mmsize==8
-    movq    [%1+0], %2
-    movq    [%1+8], %3
-%else
     movdqa    [%1], %2
-%endif
 %endmacro
 
 %macro PRED8x8_DC 1
@@ -348,17 +343,9 @@ cglobal pred8x8_dc_10, 2, 6
     pxor        m4, m4
     movq        m0, [r0+0]
     movq        m1, [r0+8]
-%if mmsize==16
     punpcklwd   m0, m1
     movhlps     m1, m0
     paddw       m0, m1
-%else
-    pshufw      m2, m0, 00001110b
-    pshufw      m3, m1, 00001110b
-    paddw       m0, m2
-    paddw       m1, m3
-    punpcklwd   m0, m1
-%endif
     %1          m2, m0, 00001110b
     paddw       m0, m2
 
@@ -389,17 +376,10 @@ cglobal pred8x8_dc_10, 2, 6
     paddw       m0, m3
     psrlw       m0, 2
     pavgw       m0, m4            ; s0+s2, s1, s3, s1+s3
-%if mmsize==16
     punpcklwd   m0, m0
     pshufd      m3, m0, 11111010b
     punpckldq   m0, m0
     SWAP         0,1
-%else
-    pshufw      m1, m0, 0x00
-    pshufw      m2, m0, 0x55
-    pshufw      m3, m0, 0xaa
-    pshufw      m4, m0, 0xff
-%endif
     MOV8   r0+r1*1, m1, m2
     MOV8   r0+r1*2, m1, m2
     MOV8   r0+r5*1, m1, m2
@@ -411,8 +391,6 @@ cglobal pred8x8_dc_10, 2, 6
     RET
 %endmacro
 
-INIT_MMX mmxext
-PRED8x8_DC pshufw
 INIT_XMM sse2
 PRED8x8_DC pshuflw
 
@@ -510,7 +488,7 @@ cglobal pred8x8_plane_10, 2, 7, 7
 ; void ff_pred8x8l_128_dc_10(pixel *src, int has_topleft, int has_topright,
 ;                            ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED8x8L_128_DC 0
+INIT_XMM sse2
 cglobal pred8x8l_128_dc_10, 4, 4
     mova      m0, [pw_512] ; (1<<(BIT_DEPTH-1))
     lea       r1, [r3*3]
@@ -524,12 +502,6 @@ cglobal pred8x8l_128_dc_10, 4, 4
     MOV8 r2+r3*2, m0, m0
     MOV8 r2+r1*1, m0, m0
     RET
-%endmacro
-
-INIT_MMX mmxext
-PRED8x8L_128_DC
-INIT_XMM sse2
-PRED8x8L_128_DC
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred8x8l_top_dc_10(pixel *src, int has_topleft, int has_topright,
@@ -1008,22 +980,14 @@ PRED8x8L_HORIZONTAL_UP
 %macro MOV16 3-5
     mova [%1+     0], %2
     mova [%1+mmsize], %3
-%if mmsize==8
-    mova [%1+    16], %4
-    mova [%1+    24], %5
-%endif
 %endmacro
 
-%macro PRED16x16_VERTICAL 0
+INIT_XMM sse2
 cglobal pred16x16_vertical_10, 2, 3
     sub   r0, r1
     mov  r2d, 8
     mova  m0, [r0+ 0]
     mova  m1, [r0+mmsize]
-%if mmsize==8
-    mova  m2, [r0+16]
-    mova  m3, [r0+24]
-%endif
 .loop:
     MOV16 r0+r1*1, m0, m1, m2, m3
     MOV16 r0+r1*2, m0, m1, m2, m3
@@ -1031,17 +995,11 @@ cglobal pred16x16_vertical_10, 2, 3
     dec   r2d
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PRED16x16_VERTICAL
-INIT_XMM sse2
-PRED16x16_VERTICAL
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_horizontal_10(pixel *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED16x16_HORIZONTAL 0
+INIT_XMM sse2
 cglobal pred16x16_horizontal_10, 2, 3
     mov   r2d, 8
 .vloop:
@@ -1055,26 +1013,16 @@ cglobal pred16x16_horizontal_10, 2, 3
     dec    r2d
     jg .vloop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PRED16x16_HORIZONTAL
-INIT_XMM sse2
-PRED16x16_HORIZONTAL
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_dc_10(pixel *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED16x16_DC 0
+INIT_XMM sse2
 cglobal pred16x16_dc_10, 2, 6
     mov        r5, r0
     sub        r0, r1
     mova       m0, [r0+0]
     paddw      m0, [r0+mmsize]
-%if mmsize==8
-    paddw      m0, [r0+16]
-    paddw      m0, [r0+24]
-%endif
     HADDW      m0, m2
 
     lea        r0, [r0+r1-2]
@@ -1101,25 +1049,15 @@ cglobal pred16x16_dc_10, 2, 6
     dec       r3d
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PRED16x16_DC
-INIT_XMM sse2
-PRED16x16_DC
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_top_dc_10(pixel *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED16x16_TOP_DC 0
+INIT_XMM sse2
 cglobal pred16x16_top_dc_10, 2, 3
     sub        r0, r1
     mova       m0, [r0+0]
     paddw      m0, [r0+mmsize]
-%if mmsize==8
-    paddw      m0, [r0+16]
-    paddw      m0, [r0+24]
-%endif
     HADDW      m0, m2
 
     SPLATW     m0, m0
@@ -1133,17 +1071,11 @@ cglobal pred16x16_top_dc_10, 2, 3
     dec       r2d
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PRED16x16_TOP_DC
-INIT_XMM sse2
-PRED16x16_TOP_DC
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_left_dc_10(pixel *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED16x16_LEFT_DC 0
+INIT_XMM sse2
 cglobal pred16x16_left_dc_10, 2, 6
     mov        r5, r0
 
@@ -1170,17 +1102,11 @@ cglobal pred16x16_left_dc_10, 2, 6
     dec       r3d
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PRED16x16_LEFT_DC
-INIT_XMM sse2
-PRED16x16_LEFT_DC
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_128_dc_10(pixel *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED16x16_128_DC 0
+INIT_XMM sse2
 cglobal pred16x16_128_dc_10, 2,3
     mova       m0, [pw_512]
     mov       r2d, 8
@@ -1191,9 +1117,3 @@ cglobal pred16x16_128_dc_10, 2,3
     dec       r2d
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PRED16x16_128_DC
-INIT_XMM sse2
-PRED16x16_128_DC
