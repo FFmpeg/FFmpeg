@@ -1553,6 +1553,9 @@ static void set_last_stream_little_endian(AVFormatContext *fc)
     st = fc->streams[fc->nb_streams-1];
 
     switch (st->codecpar->codec_id) {
+    case AV_CODEC_ID_PCM_S16BE:
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+        break;
     case AV_CODEC_ID_PCM_S24BE:
         st->codecpar->codec_id = AV_CODEC_ID_PCM_S24LE;
         break;
@@ -1576,6 +1579,24 @@ static int mov_read_enda(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "enda %d\n", little_endian);
     if (little_endian == 1)
         set_last_stream_little_endian(c->fc);
+    return 0;
+}
+
+static int mov_read_pcmc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int format_flags;
+
+    if (atom.size < 6) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty pcmC box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    avio_r8(pb);    // version
+    avio_rb24(pb);  // flags
+    format_flags = avio_r8(pb);
+    if (format_flags == 1) // indicates little-endian format. If not present, big-endian format is used
+        set_last_stream_little_endian(c->fc);
+
     return 0;
 }
 
@@ -7674,6 +7695,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('S','A','3','D'), mov_read_SA3D }, /* ambisonic audio box */
 { MKTAG('S','A','N','D'), mov_read_SAND }, /* non diegetic audio box */
 { MKTAG('i','l','o','c'), mov_read_iloc },
+{ MKTAG('p','c','m','C'), mov_read_pcmc }, /* PCM configuration box */
 { 0, NULL }
 };
 
