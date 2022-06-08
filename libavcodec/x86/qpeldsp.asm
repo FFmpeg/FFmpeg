@@ -166,8 +166,6 @@ cglobal put_no_rnd_pixels16_l2, 6,6
 
 INIT_MMX mmxext
 PUT_NO_RND_PIXELS16_l2
-INIT_MMX 3dnow
-PUT_NO_RND_PIXELS16_l2
 
 %macro MPEG4_QPEL16_H_LOWPASS 1
 cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 0, 16
