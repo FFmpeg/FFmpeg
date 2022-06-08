@@ -51,6 +51,9 @@
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
 
 #define QSV_MAX_ENC_PAYLOAD 2       // # of mfxEncodeCtrl payloads supported
+#define QSV_MAX_ENC_EXTPARAM 2
+
+#define QSV_MAX_ROI_NUM 256
 
 #define QSV_MAX_FRAME_EXT_PARAMS 4
 
@@ -83,6 +86,7 @@ typedef struct QSVFrame {
     int num_ext_params;
 
     mfxPayload *payloads[QSV_MAX_ENC_PAYLOAD]; ///< used for enc_ctrl.Payload
+    mfxExtBuffer *extparam[QSV_MAX_ENC_EXTPARAM]; ///< used for enc_ctrl.ExtParam
 
     int queued;
     int used;
