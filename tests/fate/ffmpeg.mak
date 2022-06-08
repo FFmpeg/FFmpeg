@@ -99,6 +99,14 @@ FATE_SAMPLES_FFMPEG-$(call FILTERDEMDEC, AMIX ARESAMPLE SINE, RAWVIDEO, \
 fate-shortest: tests/data/vsynth_lena.yuv
 fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -threads 1 -c:v mpeg4 -c:a ac3_fixed -shortest
 
+# test interleaving video with a sparse subtitle stream
+FATE_SAMPLES_FFMPEG-$(call ALLYES, COLOR_FILTER, VOBSUB_DEMUXER, MATROSKA_DEMUXER,, \
+                           RAWVIDEO_ENCODER, MATROSKA_MUXER, FRAMECRC_MUXER) += fate-shortest-sub
+fate-shortest-sub: CMD = enc_dec                                                                      \
+        vobsub $(TARGET_SAMPLES)/sub/vobsub.idx matroska                                              \
+        "-filter_complex 'color=s=1x1:rate=1:duration=400' -pix_fmt rgb24 -allow_raw_vfw 1 -c:s copy -c:v rawvideo"  \
+        framecrc "-map 0 -c copy -shortest"
+
 # Basic test for fix_sub_duration, which calculates duration based on the
 # following subtitle's pts.
 FATE_SAMPLES_FFMPEG-$(call FILTERDEMDECENCMUX, MOVIE, MPEGVIDEO, \

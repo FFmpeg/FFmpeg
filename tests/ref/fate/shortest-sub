@@ -1,0 +1,4 @@
+145b9b48d56f9c966bf41657f7569954 *tests/data/fate/shortest-sub.matroska
+139232 tests/data/fate/shortest-sub.matroska
+d71f5d359ef788ea689415bc1e4a90df *tests/data/fate/shortest-sub.out.framecrc
+stddev:11541.12 PSNR: 15.08 MAXDIFF:22854 bytes:     2591/    26055
