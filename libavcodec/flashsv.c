@@ -350,6 +350,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         if (err < 0)
             return err;
         s->keyframedata = avpkt->data;
+        if (s->blocks)
+            memset(s->blocks, 0, (v_blocks + !!v_part) * (h_blocks + !!h_part) *
+                                 sizeof(s->blocks[0]));
     }
     if(s->ver == 2 && !s->blocks)
         s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part) *
@@ -558,6 +561,7 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
     FlashSVContext *s = avctx->priv_data;
 
     av_buffer_unref(&s->keyframedata_buf);
+    s->keyframedata = NULL;
     av_freep(&s->blocks);
     av_freep(&s->keyframe);
     flashsv_decode_end(avctx);
