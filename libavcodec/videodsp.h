@@ -36,7 +36,6 @@ void ff_emulated_edge_mc_ ## depth(uint8_t *dst, const uint8_t *src, \
                                    int src_x, int src_y, int w, int h);
 
 EMULATED_EDGE(8)
-EMULATED_EDGE(16)
 
 typedef struct VideoDSPContext {
     /**
