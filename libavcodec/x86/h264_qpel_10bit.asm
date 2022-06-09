@@ -153,7 +153,7 @@ cglobal %1_h264_qpel%4_%2_10, %5,%6 + 2,%7
 ;cpu, put/avg, mc, 4/8, ...
 %macro cglobal_mc 6
 %assign i %3*2
-%if ARCH_X86_32 || cpuflag(sse2)
+%if cpuflag(sse2)
 MCAxA_OP %1, %2, %3, i, %4,%5,%6
 %endif
 
