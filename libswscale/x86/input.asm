@@ -133,23 +133,18 @@ SECTION .text
 ; %2 = rgb or bgr
 %macro RGB24_TO_Y_FN 2-3
 cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
-%if mmsize == 8
-    mova           m5, [%2_Ycoeff_12x4]
-    mova           m6, [%2_Ycoeff_3x56]
-%define coeff1 m5
-%define coeff2 m6
-%elif ARCH_X86_64
+%if ARCH_X86_64
     mova           m8, [%2_Ycoeff_12x4]
     mova           m9, [%2_Ycoeff_3x56]
 %define coeff1 m8
 %define coeff2 m9
-%else ; x86-32 && mmsize == 16
+%else ; x86-32
 %define coeff1 [%2_Ycoeff_12x4]
 %define coeff2 [%2_Ycoeff_3x56]
-%endif ; x86-32/64 && mmsize == 8/16
-%if (ARCH_X86_64 || mmsize == 8) && %0 == 3
+%endif ; x86-32/64
+%if ARCH_X86_64 && %0 == 3
     jmp mangle(private_prefix %+ _ %+ %3 %+ 24ToY %+ SUFFIX).body
-%else ; (ARCH_X86_64 && %0 == 3) || mmsize == 8
+%else ; ARCH_X86_64 && %0 == 3
 .body:
 %if cpuflag(ssse3)
     mova           m7, [shuf_rgb_12x4]
@@ -184,7 +179,6 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
     movd           m1, [srcq+2]           ; (byte) { R0, B1, G1, R1 }
     movd           m2, [srcq+6]           ; (byte) { B2, G2, R2, B3 }
     movd           m3, [srcq+8]           ; (byte) { R2, B3, G3, R3 }
-%if mmsize == 16 ; i.e. sse2
     punpckldq      m0, m2                 ; (byte) { B0, G0, R0, B1, B2, G2, R2, B3 }
     punpckldq      m1, m3                 ; (byte) { R0, B1, G1, R1, R2, B3, G3, R3 }
     movd           m2, [srcq+12]          ; (byte) { B4, G4, R4, B5 }
@@ -193,7 +187,6 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
     movd           m6, [srcq+20]          ; (byte) { R6, B7, G7, R7 }
     punpckldq      m2, m5                 ; (byte) { B4, G4, R4, B5, B6, G6, R6, B7 }
     punpckldq      m3, m6                 ; (byte) { R4, B5, G5, R5, R6, B7, G7, R7 }
-%endif ; mmsize == 16
     punpcklbw      m0, m7                 ; (word) { B0, G0, R0, B1, B2, G2, R2, B3 }
     punpcklbw      m1, m7                 ; (word) { R0, B1, G1, R1, R2, B3, G3, R3 }
     punpcklbw      m2, m7                 ; (word) { B4, G4, R4, B5, B6, G6, R6, B7 }
@@ -215,7 +208,7 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
     add            wq, mmsize
     jl .loop
     REP_RET
-%endif ; (ARCH_X86_64 && %0 == 3) || mmsize == 8
+%endif ; ARCH_X86_64 && %0 == 3
 %endmacro
 
 ; %1 = nr. of XMM registers
@@ -275,12 +268,10 @@ cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     movd           m1, [srcq+2]           ; (byte) { R0, B1, G1, R1 }
     movd           m4, [srcq+6]           ; (byte) { B2, G2, R2, B3 }
     movd           m5, [srcq+8]           ; (byte) { R2, B3, G3, R3 }
-%if mmsize == 16
     punpckldq      m0, m4                 ; (byte) { B0, G0, R0, B1, B2, G2, R2, B3 }
     punpckldq      m1, m5                 ; (byte) { R0, B1, G1, R1, R2, B3, G3, R3 }
     movd           m4, [srcq+12]          ; (byte) { B4, G4, R4, B5 }
     movd           m5, [srcq+14]          ; (byte) { R4, B5, G5, R5 }
-%endif ; mmsize == 16
     punpcklbw      m0, m7                 ; (word) { B0, G0, R0, B1, B2, G2, R2, B3 }
     punpcklbw      m1, m7                 ; (word) { R0, B1, G1, R1, R2, B3, G3, R3 }
 %endif ; cpuflag(ssse3)
@@ -294,12 +285,10 @@ cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     pshufb         m5, m4, shuf_rgb2      ; (word) { R4, B5, G5, R5, R6, B7, G7, R7 }
     pshufb         m4, shuf_rgb1          ; (word) { B4, G4, R4, B5, B6, G6, R6, B7 }
 %else ; !cpuflag(ssse3)
-%if mmsize == 16
     movd           m1, [srcq+18]          ; (byte) { B6, G6, R6, B7 }
     movd           m3, [srcq+20]          ; (byte) { R6, B7, G7, R7 }
     punpckldq      m4, m1                 ; (byte) { B4, G4, R4, B5, B6, G6, R6, B7 }
     punpckldq      m5, m3                 ; (byte) { R4, B5, G5, R5, R6, B7, G7, R7 }
-%endif ; mmsize == 16 && !cpuflag(ssse3)
     punpcklbw      m4, m7                 ; (word) { B4, G4, R4, B5, B6, G6, R6, B7 }
     punpcklbw      m5, m7                 ; (word) { R4, B5, G5, R5, R6, B7, G7, R7 }
 %endif ; cpuflag(ssse3)
@@ -320,13 +309,8 @@ cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     psrad          m4, 9
     packssdw       m0, m1                 ; (word) { U[0-7] }
     packssdw       m2, m4                 ; (word) { V[0-7] }
-%if mmsize == 8
     mova   [dstUq+wq], m0
     mova   [dstVq+wq], m2
-%else ; mmsize == 16
-    mova   [dstUq+wq], m0
-    mova   [dstVq+wq], m2
-%endif ; mmsize == 8/16
     add            wq, mmsize
     jl .loop
     REP_RET
@@ -341,11 +325,6 @@ RGB24_TO_Y_FN %1, bgr, rgb
 RGB24_TO_UV_FN %2, rgb
 RGB24_TO_UV_FN %2, bgr, rgb
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-RGB24_FUNCS 0, 0
-%endif
 
 INIT_XMM sse2
 RGB24_FUNCS 10, 12
@@ -483,13 +462,8 @@ cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     psrad          m1, 9
     packssdw       m0, m4                 ; (word) { U[0-7] }
     packssdw       m2, m1                 ; (word) { V[0-7] }
-%if mmsize == 8
     mova   [dstUq+wq], m0
     mova   [dstVq+wq], m2
-%else ; mmsize == 16
-    mova   [dstUq+wq], m0
-    mova   [dstVq+wq], m2
-%endif ; mmsize == 8/16
     add            wq, mmsize
     jl .loop
     sub            wq, mmsize - 1
@@ -534,11 +508,6 @@ RGB32_TO_UV_FN %2, b, g, r, a, rgba
 RGB32_TO_UV_FN %2, a, r, g, b, rgba
 RGB32_TO_UV_FN %2, a, b, g, r, rgba
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-RGB32_FUNCS 0, 0
-%endif
 
 INIT_XMM sse2
 RGB32_FUNCS 8, 12
@@ -588,25 +557,18 @@ cglobal %2ToY, 5, 5, %1, dst, unused0, unused1, src, w
     movsxd         wq, wd
 %endif
     add          dstq, wq
-%if mmsize == 16
     test         srcq, 15
-%endif
     lea          srcq, [srcq+wq*2]
 %ifidn %2, yuyv
     pcmpeqb        m2, m2                 ; (byte) { 0xff } x 16
     psrlw          m2, 8                  ; (word) { 0x00ff } x 8
 %endif ; yuyv
-%if mmsize == 16
     jnz .loop_u_start
     neg            wq
     LOOP_YUYV_TO_Y  a, %2
 .loop_u_start:
     neg            wq
     LOOP_YUYV_TO_Y  u, %2
-%else ; mmsize == 8
-    neg            wq
-    LOOP_YUYV_TO_Y  a, %2
-%endif ; mmsize == 8/16
 %endmacro
 
 ; %1 = a (aligned) or u (unaligned)
@@ -632,16 +594,9 @@ cglobal %2ToY, 5, 5, %1, dst, unused0, unused1, src, w
     packuswb       m0, m1                 ; (byte) { U0, V0, ..., U7, V7 }
     pand           m1, m0, m2             ; (word) { U0, U1, ..., U7 }
     psrlw          m0, 8                  ; (word) { V0, V1, ..., V7 }
-%if mmsize == 16
     packuswb       m1, m0                 ; (byte) { U0, ... U7, V1, ... V7 }
     movh   [dstUq+wq], m1
     movhps [dstVq+wq], m1
-%else ; mmsize == 8
-    packuswb       m1, m1                 ; (byte) { U0, ... U3 }
-    packuswb       m0, m0                 ; (byte) { V0, ... V3 }
-    movh   [dstUq+wq], m1
-    movh   [dstVq+wq], m0
-%endif ; mmsize == 8/16
     add            wq, mmsize / 2
     jl .loop_%1
     REP_RET
@@ -661,24 +616,24 @@ cglobal %2ToUV, 4, 5, %1, dstU, dstV, unused, src, w
 %endif
     add         dstUq, wq
     add         dstVq, wq
-%if mmsize == 16 && %0 == 2
+%if %0 == 2
     test         srcq, 15
 %endif
     lea          srcq, [srcq+wq*4]
     pcmpeqb        m2, m2                 ; (byte) { 0xff } x 16
     psrlw          m2, 8                  ; (word) { 0x00ff } x 8
     ; NOTE: if uyvy+avx, u/a are identical
-%if mmsize == 16 && %0 == 2
+%if %0 == 2
     jnz .loop_u_start
     neg            wq
     LOOP_YUYV_TO_UV a, %2
 .loop_u_start:
     neg            wq
     LOOP_YUYV_TO_UV u, %2
-%else ; mmsize == 8
+%else
     neg            wq
     LOOP_YUYV_TO_UV a, %2
-%endif ; mmsize == 8/16
+%endif
 %endmacro
 
 ; %1 = a (aligned) or u (unaligned)
@@ -716,34 +671,17 @@ cglobal %2ToUV, 4, 5, %1, dstU, dstV, unused, src, w
 %endif
     add         dstUq, wq
     add         dstVq, wq
-%if mmsize == 16
     test         srcq, 15
-%endif
     lea          srcq, [srcq+wq*2]
     pcmpeqb        m5, m5                 ; (byte) { 0xff } x 16
     psrlw          m5, 8                  ; (word) { 0x00ff } x 8
-%if mmsize == 16
     jnz .loop_u_start
     neg            wq
     LOOP_NVXX_TO_UV a, %2
 .loop_u_start:
     neg            wq
     LOOP_NVXX_TO_UV u, %2
-%else ; mmsize == 8
-    neg            wq
-    LOOP_NVXX_TO_UV a, %2
-%endif ; mmsize == 8/16
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-YUYV_TO_Y_FN  0, yuyv
-YUYV_TO_Y_FN  0, uyvy
-YUYV_TO_UV_FN 0, yuyv
-YUYV_TO_UV_FN 0, uyvy
-NVXX_TO_UV_FN 0, nv12
-NVXX_TO_UV_FN 0, nv21
-%endif
 
 INIT_XMM sse2
 YUYV_TO_Y_FN  3, yuyv

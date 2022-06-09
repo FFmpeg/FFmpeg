@@ -29,13 +29,8 @@
 #undef PREFETCH
 
 
-#if COMPILE_TEMPLATE_MMXEXT
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
 #define MOVNTQ2 "movntq "
-#else
-#define REAL_MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
-#define MOVNTQ2 "movq "
-#endif
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
 #define YSCALEYUV2PACKEDX_UV \
@@ -600,13 +595,8 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "cmp   "dstw", "#index"     \n\t"\
     " jb       1b               \n\t"
 
-#if COMPILE_TEMPLATE_MMXEXT
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMXEXT(dst, dstw, index)
-#else
-#undef WRITEBGR24
-#define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX(dst, dstw, index)
-#endif
 
 #if HAVE_6REGS
 static void RENAME(yuv2bgr24_X_ar)(SwsContext *c, const int16_t *lumFilter,
@@ -1478,17 +1468,13 @@ static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
     }
 
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
-    // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
-#if COMPILE_TEMPLATE_MMXEXT
-    if (c->flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
-        c->hyscale_fast = ff_hyscale_fast_mmxext;
-        c->hcscale_fast = ff_hcscale_fast_mmxext;
-    } else {
-#endif /* COMPILE_TEMPLATE_MMXEXT */
-        c->hyscale_fast = NULL;
-        c->hcscale_fast = NULL;
-#if COMPILE_TEMPLATE_MMXEXT
-    }
-#endif /* COMPILE_TEMPLATE_MMXEXT */
+        // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
+        if (c->flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
+            c->hyscale_fast = ff_hyscale_fast_mmxext;
+            c->hcscale_fast = ff_hcscale_fast_mmxext;
+        } else {
+            c->hyscale_fast = NULL;
+            c->hcscale_fast = NULL;
+        }
     }
 }

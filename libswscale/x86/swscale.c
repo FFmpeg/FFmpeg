@@ -54,14 +54,6 @@ DECLARE_ASM_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
 DECLARE_ASM_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 
 
-//MMX versions
-#if HAVE_MMX_INLINE
-#undef RENAME
-#define COMPILE_TEMPLATE_MMXEXT 0
-#define RENAME(a) a ## _mmx
-#include "swscale_template.c"
-#endif
-
 // MMXEXT versions
 #if HAVE_MMXEXT_INLINE
 #undef RENAME
@@ -269,9 +261,6 @@ void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
     SCALE_FUNCS(X4, opt); \
     SCALE_FUNCS(X8, opt)
 
-#if ARCH_X86_32
-SCALE_FUNCS_MMX(mmx);
-#endif
 SCALE_FUNCS_SSE(sse2);
 SCALE_FUNCS_SSE(ssse3);
 SCALE_FUNCS_SSE(sse4);
@@ -288,9 +277,7 @@ void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filterSize, \
     VSCALEX_FUNC(9,  opt); \
     VSCALEX_FUNC(10, opt)
 
-#if ARCH_X86_32
-VSCALEX_FUNCS(mmxext);
-#endif
+VSCALEX_FUNC(8, mmxext);
 VSCALEX_FUNCS(sse2);
 VSCALEX_FUNCS(sse4);
 VSCALEX_FUNC(16, sse4);
@@ -305,9 +292,6 @@ void ff_yuv2plane1_ ## size ## _ ## opt(const int16_t *src, uint8_t *dst, int ds
     VSCALE_FUNC(10, opt2); \
     VSCALE_FUNC(16, opt1)
 
-#if ARCH_X86_32
-VSCALE_FUNCS(mmx, mmxext);
-#endif
 VSCALE_FUNCS(sse2, sse2);
 VSCALE_FUNC(16, sse4);
 VSCALE_FUNCS(avx, avx);
@@ -337,9 +321,6 @@ void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
     INPUT_FUNC(rgb24, opt); \
     INPUT_FUNC(bgr24, opt)
 
-#if ARCH_X86_32
-INPUT_FUNCS(mmx);
-#endif
 INPUT_FUNCS(sse2);
 INPUT_FUNCS(ssse3);
 INPUT_FUNCS(avx);
@@ -470,19 +451,11 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_MMX_INLINE
-    if (INLINE_MMX(cpu_flags))
-        sws_init_swscale_mmx(c);
-#endif
 #if HAVE_MMXEXT_INLINE
     if (INLINE_MMXEXT(cpu_flags))
         sws_init_swscale_mmxext(c);
 #endif
     if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND)) {
-#if HAVE_MMX_EXTERNAL
-        if (EXTERNAL_MMX(cpu_flags))
-            c->yuv2planeX = yuv2yuvX_mmx;
-#endif
 #if HAVE_MMXEXT_EXTERNAL
         if (EXTERNAL_MMXEXT(cpu_flags))
             c->yuv2planeX = yuv2yuvX_mmxext;
@@ -496,6 +469,14 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
             c->yuv2planeX = yuv2yuvX_avx2;
 #endif
     }
+#if ARCH_X86_32 && !HAVE_ALIGNED_STACK
+    // The better yuv2planeX_8 functions need aligned stack on x86-32,
+    // so we use MMXEXT in this case if they are not available.
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        if (c->dstBpc == 8 && !c->use_mmx_vfilter)
+            c->yuv2planeX = ff_yuv2planeX_8_mmxext;
+    }
+#endif /* ARCH_X86_32 && !HAVE_ALIGNED_STACK */
 
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
     if (c->srcBpc == 8) { \
@@ -519,12 +500,6 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
                                      ff_hscale16to19_ ## filtersize ## _ ## opt1; \
     } \
 } while (0)
-#define ASSIGN_MMX_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
-    switch (filtersize) { \
-    case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
-    case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
-    default: ASSIGN_SCALE_FUNC2(hscalefn, X, opt1, opt2); break; \
-    }
 #define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case, condition_8bit) \
 switch(c->dstBpc){ \
     case 16:                          do_16_case;                          break; \
@@ -546,46 +521,6 @@ switch(c->dstBpc){ \
             if (!c->chrSrcHSubSample) \
                 c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
             break
-#if ARCH_X86_32
-    if (EXTERNAL_MMX(cpu_flags)) {
-        ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
-        ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmxext, cpu_flags & AV_CPU_FLAG_MMXEXT);
-
-        switch (c->srcFormat) {
-        case AV_PIX_FMT_YA8:
-            c->lumToYV12 = ff_yuyvToY_mmx;
-            if (c->needAlpha)
-                c->alpToYV12 = ff_uyvyToY_mmx;
-            break;
-        case AV_PIX_FMT_YUYV422:
-            c->lumToYV12 = ff_yuyvToY_mmx;
-            c->chrToYV12 = ff_yuyvToUV_mmx;
-            break;
-        case AV_PIX_FMT_UYVY422:
-            c->lumToYV12 = ff_uyvyToY_mmx;
-            c->chrToYV12 = ff_uyvyToUV_mmx;
-            break;
-        case AV_PIX_FMT_NV12:
-            c->chrToYV12 = ff_nv12ToUV_mmx;
-            break;
-        case AV_PIX_FMT_NV21:
-            c->chrToYV12 = ff_nv21ToUV_mmx;
-            break;
-        case_rgb(rgb24, RGB24, mmx);
-        case_rgb(bgr24, BGR24, mmx);
-        case_rgb(bgra,  BGRA,  mmx);
-        case_rgb(rgba,  RGBA,  mmx);
-        case_rgb(abgr,  ABGR,  mmx);
-        case_rgb(argb,  ARGB,  mmx);
-        default:
-            break;
-        }
-    }
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmxext, , 1);
-    }
-#endif /* ARCH_X86_32 */
 #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
     switch (filtersize) { \
     case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \

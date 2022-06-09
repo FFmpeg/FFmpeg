@@ -312,11 +312,9 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %endif ; %1 == 8/9/10/16
 %endmacro
 
-%if ARCH_X86_32
+%if ARCH_X86_32 && HAVE_ALIGNED_STACK == 0
 INIT_MMX mmxext
 yuv2planeX_fn  8,  0, 7
-yuv2planeX_fn  9,  0, 5
-yuv2planeX_fn 10,  0, 5
 %endif
 
 INIT_XMM sse2
@@ -407,19 +405,11 @@ cglobal yuv2plane1_%1, %3, %3, %2, src, dst, w, dither, offset
     movq            m3, [ditherq]        ; dither
     test       offsetd, offsetd
     jz              .no_rot
-%if mmsize == 16
     punpcklqdq      m3, m3
-%endif ; mmsize == 16
     PALIGNR         m3, m3, 3, m2
 .no_rot:
-%if mmsize == 8
-    mova            m2, m3
-    punpckhbw       m3, m4               ; byte->word
-    punpcklbw       m2, m4               ; byte->word
-%else
     punpcklbw       m3, m4
     mova            m2, m3
-%endif
 %elif %1 == 9
     pxor            m4, m4
     mova            m3, [pw_512]
@@ -431,35 +421,21 @@ cglobal yuv2plane1_%1, %3, %3, %2, src, dst, w, dither, offset
 %else ; %1 == 16
 %if cpuflag(sse4) ; sse4/avx
     mova            m4, [pd_4]
-%else ; mmx/sse2
+%else ; sse2
     mova            m4, [pd_4min0x40000]
     mova            m5, [minshort]
-%endif ; mmx/sse2/sse4/avx
+%endif ; sse2/sse4/avx
 %endif ; %1 == ..
 
     ; actual pixel scaling
-%if mmsize == 8
-    yuv2plane1_mainloop %1, a
-%else ; mmsize == 16
     test          dstq, 15
     jnz .unaligned
     yuv2plane1_mainloop %1, a
     REP_RET
 .unaligned:
     yuv2plane1_mainloop %1, u
-%endif ; mmsize == 8/16
     REP_RET
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-yuv2plane1_fn  8, 0, 5
-yuv2plane1_fn 16, 0, 3
-
-INIT_MMX mmxext
-yuv2plane1_fn  9, 0, 3
-yuv2plane1_fn 10, 0, 3
-%endif
 
 INIT_XMM sse2
 yuv2plane1_fn  8, 5, 5
