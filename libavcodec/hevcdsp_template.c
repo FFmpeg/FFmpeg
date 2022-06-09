@@ -313,7 +313,7 @@ static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
         offset_table[(k + sao_left_class) & 31] = sao_offset_val[k + 1];
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
-            dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
+            dst[x] = av_clip_pixel(src[x] + offset_table[(src[x] >> shift) & 31]);
         dst += stride_dst;
         src += stride_src;
     }
