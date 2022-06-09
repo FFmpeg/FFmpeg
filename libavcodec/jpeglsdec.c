@@ -478,19 +478,19 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
             for (i = 0; i < s->height; i++) {
                 switch(s->xfrm) {
                 case 1:
-                    for (x = off; x < w; x += 3) {
+                    for (x = off; x + 2 < w; x += 3) {
                         src[x  ] += src[x+1] + 128;
                         src[x+2] += src[x+1] + 128;
                     }
                     break;
                 case 2:
-                    for (x = off; x < w; x += 3) {
+                    for (x = off; x + 2 < w; x += 3) {
                         src[x  ] += src[x+1] + 128;
                         src[x+2] += ((src[x  ] + src[x+1])>>1) + 128;
                     }
                     break;
                 case 3:
-                    for (x = off; x < w; x += 3) {
+                    for (x = off; x + 2 < w; x += 3) {
                         int g = src[x+0] - ((src[x+2]+src[x+1])>>2) + 64;
                         src[x+0] = src[x+2] + g + 128;
                         src[x+2] = src[x+1] + g + 128;
@@ -498,7 +498,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                     }
                     break;
                 case 4:
-                    for (x = off; x < w; x += 3) {
+                    for (x = off; x + 2 < w; x += 3) {
                         int r    = src[x+0] - ((                       359 * (src[x+2]-128) + 490) >> 8);
                         int g    = src[x+0] - (( 88 * (src[x+1]-128) - 183 * (src[x+2]-128) +  30) >> 8);
                         int b    = src[x+0] + ((454 * (src[x+1]-128)                        + 574) >> 8);
