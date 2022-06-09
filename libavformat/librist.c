@@ -38,13 +38,6 @@
 
 // RIST_MAX_PACKET_SIZE - 28 minimum protocol overhead
 #define MAX_PAYLOAD_SIZE (10000-28)
-
-#define FF_LIBRIST_MAKE_VERSION(major, minor, patch) \
-    ((patch) + ((minor)* 0x100) + ((major) *0x10000))
-#define FF_LIBRIST_VERSION FF_LIBRIST_MAKE_VERSION(LIBRIST_API_VERSION_MAJOR, LIBRIST_API_VERSION_MINOR, LIBRIST_API_VERSION_PATCH)
-#define FF_LIBRIST_VERSION_41 FF_LIBRIST_MAKE_VERSION(4, 1, 0)
-#define FF_LIBRIST_VERSION_42 FF_LIBRIST_MAKE_VERSION(4, 2, 0)
-
 #define FIFO_SIZE_DEFAULT 8192
 
 typedef struct RISTContext {
@@ -160,24 +153,14 @@ static int librist_open(URLContext *h, const char *uri, int flags)
     if (ret < 0)
         goto err;
 
-#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
-    ret = rist_parse_address(uri, (const struct rist_peer_config **)&peer_config);
-#else
     ret = rist_parse_address2(uri, &peer_config);
-#endif
     if (ret < 0)
         goto err;
 
     if (flags & AVIO_FLAG_READ) {
-//Prior to 4.2.0 there was a bug in librist which made this call always fail.
-#if FF_LIBRIST_VERSION >= FF_LIBRIST_VERSION_42
         ret = rist_receiver_set_output_fifo_size(s->ctx, s->fifo_size);
         if (ret != 0)
             goto err;
-#else
-        if (s->fifo_size != FIFO_SIZE_DEFAULT)
-            av_log(h, AV_LOG_ERROR, "librist prior to 0.2.7 has a bug which fails setting the fifo buffer size\n");
-#endif
     }
 
     if (((s->encryption == 128 || s->encryption == 256) && !s->secret) ||
@@ -219,13 +202,8 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
     RISTContext *s = h->priv_data;
     int ret;
 
-#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
-    const struct rist_data_block *data_block;
-    ret = rist_receiver_data_read(s->ctx, &data_block, POLLING_TIME);
-#else
     struct rist_data_block *data_block;
     ret = rist_receiver_data_read2(s->ctx, &data_block, POLLING_TIME);
-#endif
 
     if (ret < 0)
         return risterr2ret(ret);
@@ -234,15 +212,10 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
         return AVERROR(EAGAIN);
 
     if (data_block->payload_len > MAX_PAYLOAD_SIZE) {
-#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
-        rist_receiver_data_block_free((struct rist_data_block**)&data_block);
-#else
         rist_receiver_data_block_free2(&data_block);
-#endif
         return AVERROR_EXTERNAL;
     }
 
-#if FF_LIBRIST_VERSION >= FF_LIBRIST_VERSION_42
     if (data_block->flags & RIST_DATA_FLAGS_OVERFLOW) {
         if (!s->overrun_nonfatal) {
             av_log(h, AV_LOG_ERROR, "Fifo buffer overrun. "
@@ -252,16 +225,11 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
             goto out_free;
         }
     }
-#endif
 
     size = data_block->payload_len;
     memcpy(buf, data_block->payload, size);
 out_free:
-#if FF_LIBRIST_VERSION < FF_LIBRIST_VERSION_41
-    rist_receiver_data_block_free((struct rist_data_block**)&data_block);
-#else
     rist_receiver_data_block_free2(&data_block);
-#endif
     return size;
 }
 
