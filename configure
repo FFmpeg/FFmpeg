@@ -6658,10 +6658,10 @@ enabled libvpx            && {
 enabled libwebp           && {
     enabled libwebp_encoder      && require_pkg_config libwebp "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
     enabled libwebp_anim_encoder && check_pkg_config libwebp_anim_encoder "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit; }
-enabled libx264           && { check_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode ||
-                               { require libx264 "stdint.h x264.h" x264_encoder_encode "-lx264 $pthreads_extralibs $libm_extralibs" &&
-                                 warn "using libx264 without pkg-config"; } } &&
-                             require_cpp_condition libx264 x264.h "X264_BUILD >= 118" &&
+enabled libx264           && check_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode &&
+                             require_cpp_condition libx264 x264.h "X264_BUILD >= 118" && {
+                             [ "$toolchain" != "msvc" ] ||
+                             require_cpp_condition libx264 x264.h "X264_BUILD >= 158"; } &&
                              check_cpp_condition libx262 x264.h "X264_MPEG2"
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
                              require_cpp_condition libx265 x265.h "X265_BUILD >= 70"
