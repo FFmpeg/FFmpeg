@@ -213,7 +213,7 @@ fallback:
     return _access(filename_utf8, mode);
 }
 
-static inline void copy_stat(struct _stati64 *crtstat, struct win32_stat *buf)
+static inline void copy_stat(struct _stat64 *crtstat, struct win32_stat *buf)
 {
     buf->st_dev   = crtstat->st_dev;
     buf->st_ino   = crtstat->st_ino;
@@ -230,7 +230,7 @@ static inline void copy_stat(struct _stati64 *crtstat, struct win32_stat *buf)
 
 static inline int win32_stat(const char *filename_utf8, struct win32_stat *buf)
 {
-    struct _stati64 crtstat = { 0 };
+    struct _stat64 crtstat = { 0 };
     wchar_t *filename_w;
     int ret;
 
@@ -250,7 +250,7 @@ static inline int win32_stat(const char *filename_utf8, struct win32_stat *buf)
 
 static inline int win32_fstat(int fd, struct win32_stat *buf)
 {
-    struct _stati64 crtstat = { 0 };
+    struct _stat64 crtstat = { 0 };
     int ret;
 
     ret = _fstat64(fd, &crtstat);
