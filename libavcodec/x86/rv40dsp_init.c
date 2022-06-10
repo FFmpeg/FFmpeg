@@ -44,15 +44,11 @@ void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,
                                   ptrdiff_t stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc8_mmxext(uint8_t *dst, uint8_t *src,
                                    ptrdiff_t stride, int h, int x, int y);
-void ff_avg_rv40_chroma_mc8_3dnow(uint8_t *dst, uint8_t *src,
-                                  ptrdiff_t stride, int h, int x, int y);
 
 void ff_put_rv40_chroma_mc4_mmx  (uint8_t *dst, uint8_t *src,
                                   ptrdiff_t stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc4_mmxext(uint8_t *dst, uint8_t *src,
                                    ptrdiff_t stride, int h, int x, int y);
-void ff_avg_rv40_chroma_mc4_3dnow(uint8_t *dst, uint8_t *src,
-                                  ptrdiff_t stride, int h, int x, int y);
 
 #define DECLARE_WEIGHT(opt) \
 void ff_rv40_weight_func_rnd_16_##opt(uint8_t *dst, uint8_t *src1, uint8_t *src2, \
@@ -63,7 +59,6 @@ void ff_rv40_weight_func_nornd_16_##opt(uint8_t *dst, uint8_t *src1, uint8_t *sr
                                         int w1, int w2, ptrdiff_t stride); \
 void ff_rv40_weight_func_nornd_8_##opt (uint8_t *dst, uint8_t *src1, uint8_t *src2, \
                                         int w1, int w2, ptrdiff_t stride);
-DECLARE_WEIGHT(mmxext)
 DECLARE_WEIGHT(sse2)
 DECLARE_WEIGHT(ssse3)
 
@@ -148,25 +143,6 @@ QPEL_MC_DECL(avg_, _ssse3)
 QPEL_MC_DECL(put_, _sse2)
 QPEL_MC_DECL(avg_, _sse2)
 
-#if ARCH_X86_32
-#undef LOOPSIZE
-#undef HCOFF
-#undef VCOFF
-#define LOOPSIZE  4
-#define HCOFF(x)  (64 * ((x) - 1))
-#define VCOFF(x)  (64 * ((x) - 1))
-
-QPEL_MC_DECL(put_, _mmx)
-
-#define ff_put_rv40_qpel_h_mmxext  ff_put_rv40_qpel_h_mmx
-#define ff_put_rv40_qpel_v_mmxext  ff_put_rv40_qpel_v_mmx
-QPEL_MC_DECL(avg_, _mmxext)
-
-#define ff_put_rv40_qpel_h_3dnow  ff_put_rv40_qpel_h_mmx
-#define ff_put_rv40_qpel_v_3dnow  ff_put_rv40_qpel_v_mmx
-QPEL_MC_DECL(avg_, _3dnow)
-#endif
-
 /** @{ */
 /** Set one function */
 #define QPEL_FUNC_SET(OP, SIZE, PH, PV, OPT)                            \
@@ -207,9 +183,6 @@ DEFINE_FN(avg, 16, ssse3)
 
 #if HAVE_MMX_INLINE
 DEFINE_FN(put, 8, mmx)
-DEFINE_FN(avg, 8, mmx)
-DEFINE_FN(put, 16, mmx)
-DEFINE_FN(avg, 16, mmx)
 #endif
 
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
@@ -218,10 +191,7 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 
 #if HAVE_MMX_INLINE
     if (INLINE_MMX(cpu_flags)) {
-        c->put_pixels_tab[0][15] = put_rv40_qpel16_mc33_mmx;
         c->put_pixels_tab[1][15] = put_rv40_qpel8_mc33_mmx;
-        c->avg_pixels_tab[0][15] = avg_rv40_qpel16_mc33_mmx;
-        c->avg_pixels_tab[1][15] = avg_rv40_qpel8_mc33_mmx;
     }
 #endif /* HAVE_MMX_INLINE */
 
@@ -229,28 +199,11 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
     if (EXTERNAL_MMX(cpu_flags)) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
-#if ARCH_X86_32
-        QPEL_MC_SET(put_, _mmx)
-#endif
-    }
-    if (EXTERNAL_AMD3DNOW(cpu_flags)) {
-        c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_3dnow;
-        c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_3dnow;
-#if ARCH_X86_32
-        QPEL_MC_SET(avg_, _3dnow)
-#endif
     }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->avg_pixels_tab[1][15]        = avg_rv40_qpel8_mc33_mmxext;
         c->avg_chroma_pixels_tab[0]     = ff_avg_rv40_chroma_mc8_mmxext;
         c->avg_chroma_pixels_tab[1]     = ff_avg_rv40_chroma_mc4_mmxext;
-        c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_mmxext;
-        c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_mmxext;
-        c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_mmxext;
-        c->rv40_weight_pixels_tab[1][1] = ff_rv40_weight_func_nornd_8_mmxext;
-#if ARCH_X86_32
-        QPEL_MC_SET(avg_, _mmxext)
-#endif
     }
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_pixels_tab[0][15]        = put_rv40_qpel16_mc33_sse2;
