@@ -608,15 +608,6 @@ pack_8ch_%2_to_%1_u_int %+ SUFFIX:
 %macro NOP_N 0-6
 %endmacro
 
-INIT_MMX mmx
-CONV int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
-CONV int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
-CONV int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
-CONV int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
-
-PACK_6CH float, float, u, 2, 2, 0, NOP_N, NOP_N
-PACK_6CH float, float, a, 2, 2, 0, NOP_N, NOP_N
-
 INIT_XMM sse
 PACK_6CH float, float, u, 2, 2, 7, NOP_N, NOP_N
 PACK_6CH float, float, a, 2, 2, 7, NOP_N, NOP_N
