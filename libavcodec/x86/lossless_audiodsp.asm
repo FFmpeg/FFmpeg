@@ -22,18 +22,14 @@
 
 SECTION .text
 
-%macro SCALARPRODUCT 0
 ; int ff_scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3,
 ;                                     int order, int mul)
+INIT_XMM sse2
 cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
     shl orderq, 1
     movd    m7, mulm
-%if mmsize == 16
     pshuflw m7, m7, 0
     punpcklqdq m7, m7
-%else
-    pshufw  m7, m7, 0
-%endif
     pxor    m6, m6
     add v1q, orderq
     add v2q, orderq
@@ -61,12 +57,6 @@ cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
     HADDD   m6, m0
     movd   eax, m6
     RET
-%endmacro
-
-INIT_MMX mmxext
-SCALARPRODUCT
-INIT_XMM sse2
-SCALARPRODUCT
 
 INIT_XMM sse4
 ; int ff_scalarproduct_and_madd_int32(int16_t *v1, int32_t *v2, int16_t *v3,
