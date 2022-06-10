@@ -2524,7 +2524,8 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
-        if (!check_output_constraints(ist, ost) || ost->encoding_needed)
+        if (!check_output_constraints(ist, ost) || ost->encoding_needed ||
+            (!pkt && no_eof))
             continue;
 
         do_streamcopy(ist, ost, pkt);
