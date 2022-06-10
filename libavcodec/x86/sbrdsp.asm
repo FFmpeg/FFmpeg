@@ -251,7 +251,7 @@ cglobal sbr_neg_odd_64, 1,2,4,z
     REP_RET
 
 ; void ff_sbr_qmf_deint_bfly_sse2(float *v, const float *src0, const float *src1)
-%macro SBR_QMF_DEINT_BFLY  0
+INIT_XMM sse2
 cglobal sbr_qmf_deint_bfly, 3,5,8, v,src0,src1,vrev,c
     mov               cq, 64*4-2*mmsize
     lea            vrevq, [vq + 64*4]
@@ -260,17 +260,10 @@ cglobal sbr_qmf_deint_bfly, 3,5,8, v,src0,src1,vrev,c
     mova              m1, [src1q]
     mova              m4, [src0q+cq+mmsize]
     mova              m5, [src1q+mmsize]
-%if cpuflag(sse2)
     pshufd            m2, m0, q0123
     pshufd            m3, m1, q0123
     pshufd            m6, m4, q0123
     pshufd            m7, m5, q0123
-%else
-    shufps            m2, m0, m0, q0123
-    shufps            m3, m1, m1, q0123
-    shufps            m6, m4, m4, q0123
-    shufps            m7, m5, m5, q0123
-%endif
     addps             m5, m2
     subps             m0, m7
     addps             m1, m6
@@ -284,13 +277,6 @@ cglobal sbr_qmf_deint_bfly, 3,5,8, v,src0,src1,vrev,c
     sub               cq, 2*mmsize
     jge            .loop
     REP_RET
-%endmacro
-
-INIT_XMM sse
-SBR_QMF_DEINT_BFLY
-
-INIT_XMM sse2
-SBR_QMF_DEINT_BFLY
 
 INIT_XMM sse2
 cglobal sbr_qmf_pre_shuffle, 1,4,6,z
