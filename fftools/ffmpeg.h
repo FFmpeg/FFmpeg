@@ -26,6 +26,7 @@
 #include <signal.h>
 
 #include "cmdutils.h"
+#include "sync_queue.h"
 
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
@@ -151,6 +152,7 @@ typedef struct OptionsContext {
     int64_t limit_filesize;
     float mux_preload;
     float mux_max_delay;
+    float shortest_buf_duration;
     int shortest;
     int bitexact;
 
@@ -484,6 +486,7 @@ typedef struct OutputStream {
     int64_t max_frames;
     AVFrame *filtered_frame;
     AVFrame *last_frame;
+    AVFrame *sq_frame;
     AVPacket *pkt;
     int64_t last_dropped;
     int64_t last_nb0_frames[3];
@@ -575,6 +578,9 @@ typedef struct OutputStream {
 
     /* frame encode sum of squared error values */
     int64_t error[4];
+
+    int sq_idx_encode;
+    int sq_idx_mux;
 } OutputStream;
 
 typedef struct Muxer Muxer;
@@ -584,6 +590,9 @@ typedef struct OutputFile {
 
     Muxer                *mux;
     const AVOutputFormat *format;
+
+    SyncQueue *sq_encode;
+    SyncQueue *sq_mux;
 
     AVFormatContext *ctx;
     int ost_index;       /* index of the first stream in output_streams */

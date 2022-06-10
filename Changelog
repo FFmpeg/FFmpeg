@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - Radiance HDR image support
 - ddagrab (Desktop Duplication) video capture filter
+- ffmpeg -shortest_buf_duration option
 
 
 version 5.1:

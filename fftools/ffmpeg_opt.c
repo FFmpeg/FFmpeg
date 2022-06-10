@@ -31,6 +31,7 @@
 #include "fopen_utf8.h"
 #include "cmdutils.h"
 #include "opt_common.h"
+#include "sync_queue.h"
 
 #include "libavformat/avformat.h"
 
@@ -236,6 +237,7 @@ static void init_options(OptionsContext *o)
     o->accurate_seek  = 1;
     o->thread_queue_size = -1;
     o->input_sync_ref = -1;
+    o->shortest_buf_duration = 10.f;
 }
 
 static int show_hwaccels(void *optctx, const char *opt, const char *arg)
@@ -2385,6 +2387,78 @@ static int init_complex_filters(void)
     return 0;
 }
 
+static int setup_sync_queues(OutputFile *of, AVFormatContext *oc, int64_t buf_size_us)
+{
+    int nb_av_enc = 0, nb_interleaved = 0;
+
+#define IS_AV_ENC(ost, type)  \
+    (ost->encoding_needed && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO))
+#define IS_INTERLEAVED(type) (type != AVMEDIA_TYPE_ATTACHMENT)
+
+    for (int i = 0; i < oc->nb_streams; i++) {
+        OutputStream *ost = output_streams[of->ost_index + i];
+        enum AVMediaType type = ost->st->codecpar->codec_type;
+
+        ost->sq_idx_encode = -1;
+        ost->sq_idx_mux    = -1;
+
+        nb_interleaved += IS_INTERLEAVED(type);
+        nb_av_enc      += IS_AV_ENC(ost, type);
+    }
+
+    if (!(nb_interleaved > 1 && of->shortest))
+        return 0;
+
+    /* if we have more than one encoded audio/video streams, then we
+     * synchronize them before encoding */
+    if (nb_av_enc > 1) {
+        of->sq_encode = sq_alloc(SYNC_QUEUE_FRAMES, buf_size_us);
+        if (!of->sq_encode)
+            return AVERROR(ENOMEM);
+
+        for (int i = 0; i < oc->nb_streams; i++) {
+            OutputStream *ost = output_streams[of->ost_index + i];
+            enum AVMediaType type = ost->st->codecpar->codec_type;
+
+            if (!IS_AV_ENC(ost, type))
+                continue;
+
+            ost->sq_idx_encode = sq_add_stream(of->sq_encode);
+            if (ost->sq_idx_encode < 0)
+                return ost->sq_idx_encode;
+
+            ost->sq_frame = av_frame_alloc();
+            if (!ost->sq_frame)
+                return AVERROR(ENOMEM);
+        }
+    }
+
+    /* if there are any additional interleaved streams, then ALL the streams
+     * are also synchronized before sending them to the muxer */
+    if (nb_interleaved > nb_av_enc) {
+        of->sq_mux = sq_alloc(SYNC_QUEUE_PACKETS, buf_size_us);
+        if (!of->sq_mux)
+            return AVERROR(ENOMEM);
+
+        for (int i = 0; i < oc->nb_streams; i++) {
+            OutputStream *ost = output_streams[of->ost_index + i];
+            enum AVMediaType type = ost->st->codecpar->codec_type;
+
+            if (!IS_INTERLEAVED(type))
+                continue;
+
+            ost->sq_idx_mux = sq_add_stream(of->sq_mux);
+            if (ost->sq_idx_mux < 0)
+                return ost->sq_idx_mux;
+        }
+    }
+
+#undef IS_AV_ENC
+#undef IS_INTERLEAVED
+
+    return 0;
+}
+
 static int open_output_file(OptionsContext *o, const char *filename)
 {
     AVFormatContext *oc;
@@ -3019,6 +3093,12 @@ loop_end:
     err = set_dispositions(of, oc);
     if (err < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error setting output stream dispositions\n");
+        exit_program(1);
+    }
+
+    err = setup_sync_queues(of, oc, o->shortest_buf_duration * AV_TIME_BASE);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error setting up output sync queues\n");
         exit_program(1);
     }
 
@@ -3739,6 +3819,8 @@ const OptionDef options[] = {
     { "shortest",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
                         OPT_OUTPUT,                                  { .off = OFFSET(shortest) },
         "finish encoding within shortest input" },
+    { "shortest_buf_duration", HAS_ARG | OPT_FLOAT | OPT_EXPERT | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(shortest_buf_duration) },
+        "maximum buffering duration (in seconds) for the -shortest option" },
     { "bitexact",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
                         OPT_OUTPUT | OPT_INPUT,                      { .off = OFFSET(bitexact) },
         "bitexact mode" },

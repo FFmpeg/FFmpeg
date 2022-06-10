@@ -104,6 +104,7 @@
 
 #include "ffmpeg.h"
 #include "cmdutils.h"
+#include "sync_queue.h"
 
 #include "libavutil/avassert.h"
 
@@ -569,6 +570,7 @@ static void ffmpeg_cleanup(int ret)
         av_bsf_free(&ost->bsf_ctx);
 
         av_frame_free(&ost->filtered_frame);
+        av_frame_free(&ost->sq_frame);
         av_frame_free(&ost->last_frame);
         av_packet_free(&ost->pkt);
         av_dict_free(&ost->encoder_opts);
@@ -691,13 +693,10 @@ static void update_benchmark(const char *fmt, ...)
 static void close_output_stream(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
-    AVRational time_base = ost->stream_copy ? ost->mux_timebase : ost->enc_ctx->time_base;
-
     ost->finished |= ENCODER_FINISHED;
-    if (of->shortest) {
-        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, time_base, AV_TIME_BASE_Q);
-        of->recording_time = FFMIN(of->recording_time, end);
-    }
+
+    if (ost->sq_idx_encode >= 0)
+        sq_send(of->sq_encode, ost->sq_idx_encode, SQFRAME(NULL));
 }
 
 /*
@@ -726,10 +725,15 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
             goto finish;
         while ((ret = av_bsf_receive_packet(ost->bsf_ctx, pkt)) >= 0)
             of_submit_packet(of, pkt, ost);
+        if (ret == AVERROR_EOF)
+            of_submit_packet(of, NULL, ost);
         if (ret == AVERROR(EAGAIN))
             ret = 0;
-    } else if (!eof)
-        of_submit_packet(of, pkt, ost);
+    } else
+        of_submit_packet(of, eof ? NULL : pkt, ost);
+
+    if (eof)
+        ost->finished |= MUXER_FINISHED;
 
 finish:
     if (ret < 0 && ret != AVERROR_EOF) {
@@ -899,6 +903,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
 
     if (frame) {
         ost->frames_encoded++;
+        ost->samples_encoded += frame->nb_samples;
 
         if (debug_ts) {
             av_log(NULL, AV_LOG_INFO, "encoder <- type:%s "
@@ -971,6 +976,52 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame)
     av_assert0(0);
 }
 
+static int submit_encode_frame(OutputFile *of, OutputStream *ost,
+                               AVFrame *frame)
+{
+    int ret;
+
+    if (ost->sq_idx_encode < 0)
+        return encode_frame(of, ost, frame);
+
+    if (frame) {
+        ret = av_frame_ref(ost->sq_frame, frame);
+        if (ret < 0)
+            return ret;
+        frame = ost->sq_frame;
+    }
+
+    ret = sq_send(of->sq_encode, ost->sq_idx_encode,
+                  SQFRAME(frame));
+    if (ret < 0) {
+        if (frame)
+            av_frame_unref(frame);
+        if (ret != AVERROR_EOF)
+            return ret;
+    }
+
+    while (1) {
+        AVFrame *enc_frame = ost->sq_frame;
+
+        ret = sq_receive(of->sq_encode, ost->sq_idx_encode,
+                               SQFRAME(enc_frame));
+        if (ret == AVERROR_EOF) {
+            enc_frame = NULL;
+        } else if (ret < 0) {
+            return (ret == AVERROR(EAGAIN)) ? 0 : ret;
+        }
+
+        ret = encode_frame(of, ost, enc_frame);
+        if (enc_frame)
+            av_frame_unref(enc_frame);
+        if (ret < 0) {
+            if (ret == AVERROR_EOF)
+                close_output_stream(ost);
+            return ret;
+        }
+    }
+}
+
 static void do_audio_out(OutputFile *of, OutputStream *ost,
                          AVFrame *frame)
 {
@@ -984,10 +1035,9 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
     if (frame->pts == AV_NOPTS_VALUE || audio_sync_method < 0)
         frame->pts = ost->sync_opts;
     ost->sync_opts = frame->pts + frame->nb_samples;
-    ost->samples_encoded += frame->nb_samples;
 
-    ret = encode_frame(of, ost, frame);
-    if (ret < 0)
+    ret = submit_encode_frame(of, ost, frame);
+    if (ret < 0 && ret != AVERROR_EOF)
         exit_program(1);
 }
 
@@ -1151,15 +1201,18 @@ static void do_video_out(OutputFile *of,
                 if (delta0 > 1.1)
                     nb0_frames = llrintf(delta0 - 0.6);
             }
+            next_picture->pkt_duration = 1;
             break;
         case VSYNC_VFR:
             if (delta <= -0.6)
                 nb_frames = 0;
             else if (delta > 0.6)
                 ost->sync_opts = llrint(sync_ipts);
+            next_picture->pkt_duration = duration;
             break;
         case VSYNC_DROP:
         case VSYNC_PASSTHROUGH:
+            next_picture->pkt_duration = duration;
             ost->sync_opts = llrint(sync_ipts);
             break;
         default:
@@ -1273,8 +1326,8 @@ static void do_video_out(OutputFile *of,
             av_log(NULL, AV_LOG_DEBUG, "Forced keyframe at time %f\n", pts_time);
         }
 
-        ret = encode_frame(of, ost, in_picture);
-        if (ret < 0)
+        ret = submit_encode_frame(of, ost, in_picture);
+        if (ret < 0 && ret != AVERROR_EOF)
             exit_program(1);
 
         ost->sync_opts++;
@@ -1284,19 +1337,6 @@ static void do_video_out(OutputFile *of,
     av_frame_unref(ost->last_frame);
     if (next_picture)
         av_frame_move_ref(ost->last_frame, next_picture);
-}
-
-static void finish_output_stream(OutputStream *ost)
-{
-    OutputFile *of = output_files[ost->file_index];
-    AVRational time_base = ost->stream_copy ? ost->mux_timebase : ost->enc_ctx->time_base;
-
-    ost->finished = ENCODER_FINISHED | MUXER_FINISHED;
-
-    if (of->shortest) {
-        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, time_base, AV_TIME_BASE_Q);
-        of->recording_time = FFMIN(of->recording_time, end);
-    }
 }
 
 /**
@@ -1766,7 +1806,7 @@ static void flush_encoders(void)
                     exit_program(1);
                 }
 
-                finish_output_stream(ost);
+                output_packet(of, ost->pkt, ost, 1);
             }
 
             init_output_stream_wrapper(ost, NULL, 1);
@@ -1775,7 +1815,7 @@ static void flush_encoders(void)
         if (enc->codec_type != AVMEDIA_TYPE_VIDEO && enc->codec_type != AVMEDIA_TYPE_AUDIO)
             continue;
 
-        ret = encode_frame(of, ost, NULL);
+        ret = submit_encode_frame(of, ost, NULL);
         if (ret != AVERROR_EOF)
             exit_program(1);
     }
@@ -3086,6 +3126,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         break;
     }
 
+    if (ost->sq_idx_encode >= 0)
+        sq_set_tb(of->sq_encode, ost->sq_idx_encode, enc_ctx->time_base);
+
     ost->mux_timebase = enc_ctx->time_base;
 
     return 0;
@@ -3094,6 +3137,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
 static int init_output_stream(OutputStream *ost, AVFrame *frame,
                               char *error, int error_len)
 {
+    OutputFile *of = output_files[ost->file_index];
     int ret = 0;
 
     if (ost->encoding_needed) {
@@ -3225,6 +3269,9 @@ static int init_output_stream(OutputStream *ost, AVFrame *frame,
     ret = init_output_bsfs(ost);
     if (ret < 0)
         return ret;
+
+    if (ost->sq_idx_mux >= 0)
+        sq_set_tb(of->sq_mux, ost->sq_idx_mux, ost->mux_timebase);
 
     ost->initialized = 1;
 
@@ -3930,8 +3977,10 @@ static int process_input(int file_index)
                 OutputStream *ost = output_streams[j];
 
                 if (ost->source_index == ifile->ist_index + i &&
-                    (ost->stream_copy || ost->enc->type == AVMEDIA_TYPE_SUBTITLE))
-                    finish_output_stream(ost);
+                    (ost->stream_copy || ost->enc->type == AVMEDIA_TYPE_SUBTITLE)) {
+                    OutputFile *of = output_files[ost->file_index];
+                    output_packet(of, ost->pkt, ost, 1);
+                }
             }
         }
 

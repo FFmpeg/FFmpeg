@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "ffmpeg.h"
+#include "sync_queue.h"
 
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
@@ -56,6 +57,8 @@ struct Muxer {
     int64_t limit_filesize;
     int64_t final_filesize;
     int header_written;
+
+    AVPacket *sq_pkt;
 };
 
 static int want_sdp = 1;
@@ -72,13 +75,14 @@ static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream,
 static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     MuxStream *ms = &of->mux->streams[ost->index];
-    AVPacket *tmp_pkt;
+    AVPacket *tmp_pkt = NULL;
     int ret;
 
     if (!av_fifo_can_write(ms->muxing_queue)) {
         size_t cur_size = av_fifo_can_read(ms->muxing_queue);
+        size_t pkt_size = pkt ? pkt->size : 0;
         unsigned int are_we_over_size =
-            (ms->muxing_queue_data_size + pkt->size) > ost->muxing_queue_data_threshold;
+            (ms->muxing_queue_data_size + pkt_size) > ost->muxing_queue_data_threshold;
         size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
         size_t new_size = FFMIN(2 * cur_size, limit);
 
@@ -93,6 +97,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
             return ret;
     }
 
+    if (pkt) {
     ret = av_packet_make_refcounted(pkt);
     if (ret < 0)
         return ret;
@@ -103,6 +108,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 
     av_packet_move_ref(tmp_pkt, pkt);
     ms->muxing_queue_data_size += tmp_pkt->size;
+    }
     av_fifo_write(ms->muxing_queue, &tmp_pkt, 1);
 
     return 0;
@@ -192,11 +198,44 @@ static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     }
 }
 
+static void submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+{
+    if (ost->sq_idx_mux >= 0) {
+        int ret = sq_send(of->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
+        if (ret < 0) {
+            if (pkt)
+                av_packet_unref(pkt);
+            if (ret == AVERROR_EOF) {
+                ost->finished |= MUXER_FINISHED;
+                return;
+            } else
+                exit_program(1);
+        }
+
+        while (1) {
+            ret = sq_receive(of->sq_mux, -1, SQPKT(of->mux->sq_pkt));
+            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
+                return;
+            else if (ret < 0)
+                exit_program(1);
+
+            write_packet(of, output_streams[of->ost_index + ret],
+                         of->mux->sq_pkt);
+        }
+    } else {
+        if (pkt)
+            write_packet(of, ost, pkt);
+        else
+            ost->finished |= MUXER_FINISHED;
+    }
+}
+
 void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
     AVStream *st = ost->st;
     int ret;
 
+    if (pkt) {
     /*
      * Audio encoders may split the packets --  #frames in != #packets out.
      * But there is no reordering, so we can limit the number of output packets
@@ -211,9 +250,10 @@ void of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         }
         ost->frame_number++;
     }
+    }
 
     if (of->mux->header_written) {
-        write_packet(of, ost, pkt);
+        submit_packet(of, ost, pkt);
     } else {
         /* the muxer is not initialized yet, buffer the packet */
         ret = queue_packet(of, ost, pkt);
@@ -321,9 +361,11 @@ int of_check_init(OutputFile *of)
             ost->mux_timebase = ost->st->time_base;
 
         while (av_fifo_read(ms->muxing_queue, &pkt, 1) >= 0) {
-            ms->muxing_queue_data_size -= pkt->size;
-            write_packet(of, ost, pkt);
-            av_packet_free(&pkt);
+            submit_packet(of, ost, pkt);
+            if (pkt) {
+                ms->muxing_queue_data_size -= pkt->size;
+                av_packet_free(&pkt);
+            }
         }
     }
 
@@ -383,6 +425,8 @@ static void mux_free(Muxer **pmux, int nb_streams)
     av_freep(&mux->streams);
     av_dict_free(&mux->opts);
 
+    av_packet_free(&mux->sq_pkt);
+
     av_freep(pmux);
 }
 
@@ -393,6 +437,9 @@ void of_close(OutputFile **pof)
 
     if (!of)
         return;
+
+    sq_free(&of->sq_encode);
+    sq_free(&of->sq_mux);
 
     s = of->ctx;
 
@@ -436,6 +483,14 @@ int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize)
 
     if (strcmp(of->format->name, "rtp"))
         want_sdp = 0;
+
+    if (of->sq_mux) {
+        mux->sq_pkt = av_packet_alloc();
+        if (!mux->sq_pkt) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
 
     /* write the header for files with no streams */
     if (of->format->flags & AVFMT_NOSTREAMS && of->ctx->nb_streams == 0) {
