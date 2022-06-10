@@ -65,9 +65,6 @@ static const struct algo fdct_tab_arch[] = {
 };
 
 static const struct algo idct_tab_arch[] = {
-#if HAVE_MMX_EXTERNAL
-    { "SIMPLE-MMX",  ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_MMX },
-#endif
 #if CONFIG_MPEG4_DECODER && HAVE_X86ASM
 #if HAVE_SSE2_EXTERNAL
     { "XVID-SSE2",   ff_xvid_idct_sse2,   FF_IDCT_PERM_SSE2,   AV_CPU_FLAG_SSE2,   1 },

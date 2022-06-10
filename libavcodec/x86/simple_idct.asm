@@ -25,6 +25,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
+%if ARCH_X86_32
 SECTION_RODATA
 
 cextern pb_80
@@ -846,26 +847,6 @@ cglobal simple_idct, 1, 2, 8, 128, block, t0
     IDCT
 RET
 
-cglobal simple_idct_put, 3, 5, 8, 128, pixels, lsize, block, lsize3, t0
-    IDCT
-    lea lsize3q, [lsizeq*3]
-    PUT_PIXELS_CLAMPED_HALF 0
-    lea pixelsq, [pixelsq+lsizeq*4]
-    PUT_PIXELS_CLAMPED_HALF 64
-RET
-
-cglobal simple_idct_add, 3, 4, 8, 128, pixels, lsize, block, t0
-    IDCT
-    pxor       m4, m4
-    ADD_PIXELS_CLAMPED 0
-    lea        pixelsq, [pixelsq+lsizeq*2]
-    ADD_PIXELS_CLAMPED 32
-    lea        pixelsq, [pixelsq+lsizeq*2]
-    ADD_PIXELS_CLAMPED 64
-    lea        pixelsq, [pixelsq+lsizeq*2]
-    ADD_PIXELS_CLAMPED 96
-RET
-
 INIT_XMM sse2
 
 cglobal simple_idct_put, 3, 5, 8, 128, pixels, lsize, block, lsize3, t0
@@ -887,3 +868,4 @@ cglobal simple_idct_add, 3, 4, 8, 128, pixels, lsize, block, t0
     lea        pixelsq, [pixelsq+lsizeq*2]
     ADD_PIXELS_CLAMPED 96
 RET
+%endif
