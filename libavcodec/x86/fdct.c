@@ -37,7 +37,7 @@
 #include "libavutil/x86/asm.h"
 #include "fdct.h"
 
-#if HAVE_MMX_INLINE
+#if HAVE_SSE2_INLINE
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -71,8 +71,6 @@ DECLARE_ALIGNED(16, static const int16_t, ocos_4_16)[8] = {
 
 DECLARE_ALIGNED(16, static const int16_t, fdct_one_corr)[8] = { X8(1) };
 
-DECLARE_ALIGNED(8, static const int32_t, fdct_r_row)[2] = {RND_FRW_ROW, RND_FRW_ROW };
-
 static const struct
 {
  DECLARE_ALIGNED(16, const int32_t, fdct_r_row_sse2)[4];
@@ -81,80 +79,6 @@ static const struct
  RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW
 }};
 //DECLARE_ALIGNED(16, static const long, fdct_r_row_sse2)[4] = {RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW};
-
-DECLARE_ALIGNED(8, static const int16_t, tab_frw_01234567)[] = {  // forward_dct coeff table
-  16384,   16384,   22725,   19266,
-  16384,   16384,   12873,    4520,
-  21407,    8867,   19266,   -4520,
-  -8867,  -21407,  -22725,  -12873,
-  16384,  -16384,   12873,  -22725,
- -16384,   16384,    4520,   19266,
-   8867,  -21407,    4520,  -12873,
-  21407,   -8867,   19266,  -22725,
-
-  22725,   22725,   31521,   26722,
-  22725,   22725,   17855,    6270,
-  29692,   12299,   26722,   -6270,
- -12299,  -29692,  -31521,  -17855,
-  22725,  -22725,   17855,  -31521,
- -22725,   22725,    6270,   26722,
-  12299,  -29692,    6270,  -17855,
-  29692,  -12299,   26722,  -31521,
-
-  21407,   21407,   29692,   25172,
-  21407,   21407,   16819,    5906,
-  27969,   11585,   25172,   -5906,
- -11585,  -27969,  -29692,  -16819,
-  21407,  -21407,   16819,  -29692,
- -21407,   21407,    5906,   25172,
-  11585,  -27969,    5906,  -16819,
-  27969,  -11585,   25172,  -29692,
-
-  19266,   19266,   26722,   22654,
-  19266,   19266,   15137,    5315,
-  25172,   10426,   22654,   -5315,
- -10426,  -25172,  -26722,  -15137,
-  19266,  -19266,   15137,  -26722,
- -19266,   19266,    5315,   22654,
-  10426,  -25172,    5315,  -15137,
-  25172,  -10426,   22654,  -26722,
-
-  16384,   16384,   22725,   19266,
-  16384,   16384,   12873,    4520,
-  21407,    8867,   19266,   -4520,
-  -8867,  -21407,  -22725,  -12873,
-  16384,  -16384,   12873,  -22725,
- -16384,   16384,    4520,   19266,
-   8867,  -21407,    4520,  -12873,
-  21407,   -8867,   19266,  -22725,
-
-  19266,   19266,   26722,   22654,
-  19266,   19266,   15137,    5315,
-  25172,   10426,   22654,   -5315,
- -10426,  -25172,  -26722,  -15137,
-  19266,  -19266,   15137,  -26722,
- -19266,   19266,    5315,   22654,
-  10426,  -25172,    5315,  -15137,
-  25172,  -10426,   22654,  -26722,
-
-  21407,   21407,   29692,   25172,
-  21407,   21407,   16819,    5906,
-  27969,   11585,   25172,   -5906,
- -11585,  -27969,  -29692,  -16819,
-  21407,  -21407,   16819,  -29692,
- -21407,   21407,    5906,   25172,
-  11585,  -27969,    5906,  -16819,
-  27969,  -11585,   25172,  -29692,
-
-  22725,   22725,   31521,   26722,
-  22725,   22725,   17855,    6270,
-  29692,   12299,   26722,   -6270,
- -12299,  -29692,  -31521,  -17855,
-  22725,  -22725,   17855,  -31521,
- -22725,   22725,    6270,   26722,
-  12299,  -29692,    6270,  -17855,
-  29692,  -12299,   26722,  -31521,
-};
 
 static const struct
 {
@@ -375,7 +299,6 @@ static av_always_inline void fdct_col_##cpu(const int16_t *in, int16_t *out, int
           "r" (out + offset), "r" (ocos_4_16)); \
 }
 
-FDCT_COL(mmx, mm, movq)
 FDCT_COL(sse2, xmm, movdqa)
 
 static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
@@ -442,148 +365,6 @@ static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
                             "%xmm4", "%xmm5", "%xmm6", "%xmm7")
     );
 }
-
-static av_always_inline void fdct_row_mmxext(const int16_t *in, int16_t *out,
-                                             const int16_t *table)
-{
-    __asm__ volatile (
-        "pshufw    $0x1B, 8(%0), %%mm5 \n\t"
-        "movq       (%0), %%mm0 \n\t"
-        "movq      %%mm0, %%mm1 \n\t"
-        "paddsw    %%mm5, %%mm0 \n\t"
-        "psubsw    %%mm5, %%mm1 \n\t"
-        "movq      %%mm0, %%mm2 \n\t"
-        "punpckldq %%mm1, %%mm0 \n\t"
-        "punpckhdq %%mm1, %%mm2 \n\t"
-        "movq       (%1), %%mm1 \n\t"
-        "movq      8(%1), %%mm3 \n\t"
-        "movq     16(%1), %%mm4 \n\t"
-        "movq     24(%1), %%mm5 \n\t"
-        "movq     32(%1), %%mm6 \n\t"
-        "movq     40(%1), %%mm7 \n\t"
-        "pmaddwd   %%mm0, %%mm1 \n\t"
-        "pmaddwd   %%mm2, %%mm3 \n\t"
-        "pmaddwd   %%mm0, %%mm4 \n\t"
-        "pmaddwd   %%mm2, %%mm5 \n\t"
-        "pmaddwd   %%mm0, %%mm6 \n\t"
-        "pmaddwd   %%mm2, %%mm7 \n\t"
-        "pmaddwd  48(%1), %%mm0 \n\t"
-        "pmaddwd  56(%1), %%mm2 \n\t"
-        "paddd     %%mm1, %%mm3 \n\t"
-        "paddd     %%mm4, %%mm5 \n\t"
-        "paddd     %%mm6, %%mm7 \n\t"
-        "paddd     %%mm0, %%mm2 \n\t"
-        "movq       (%2), %%mm0 \n\t"
-        "paddd     %%mm0, %%mm3 \n\t"
-        "paddd     %%mm0, %%mm5 \n\t"
-        "paddd     %%mm0, %%mm7 \n\t"
-        "paddd     %%mm0, %%mm2 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm3 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm5 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm7 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm2 \n\t"
-        "packssdw  %%mm5, %%mm3 \n\t"
-        "packssdw  %%mm2, %%mm7 \n\t"
-        "movq      %%mm3,  (%3) \n\t"
-        "movq      %%mm7, 8(%3) \n\t"
-        :
-        : "r" (in), "r" (table), "r" (fdct_r_row), "r" (out));
-}
-
-static av_always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
-{
-    //FIXME reorder (I do not have an old MMX-only CPU here to benchmark ...)
-    __asm__ volatile(
-        "movd     12(%0), %%mm1 \n\t"
-        "punpcklwd 8(%0), %%mm1 \n\t"
-        "movq      %%mm1, %%mm2 \n\t"
-        "psrlq     $0x20, %%mm1 \n\t"
-        "movq      0(%0), %%mm0 \n\t"
-        "punpcklwd %%mm2, %%mm1 \n\t"
-        "movq      %%mm0, %%mm5 \n\t"
-        "paddsw    %%mm1, %%mm0 \n\t"
-        "psubsw    %%mm1, %%mm5 \n\t"
-        "movq      %%mm0, %%mm2 \n\t"
-        "punpckldq %%mm5, %%mm0 \n\t"
-        "punpckhdq %%mm5, %%mm2 \n\t"
-        "movq      0(%1), %%mm1 \n\t"
-        "movq      8(%1), %%mm3 \n\t"
-        "movq     16(%1), %%mm4 \n\t"
-        "movq     24(%1), %%mm5 \n\t"
-        "movq     32(%1), %%mm6 \n\t"
-        "movq     40(%1), %%mm7 \n\t"
-        "pmaddwd   %%mm0, %%mm1 \n\t"
-        "pmaddwd   %%mm2, %%mm3 \n\t"
-        "pmaddwd   %%mm0, %%mm4 \n\t"
-        "pmaddwd   %%mm2, %%mm5 \n\t"
-        "pmaddwd   %%mm0, %%mm6 \n\t"
-        "pmaddwd   %%mm2, %%mm7 \n\t"
-        "pmaddwd  48(%1), %%mm0 \n\t"
-        "pmaddwd  56(%1), %%mm2 \n\t"
-        "paddd     %%mm1, %%mm3 \n\t"
-        "paddd     %%mm4, %%mm5 \n\t"
-        "paddd     %%mm6, %%mm7 \n\t"
-        "paddd     %%mm0, %%mm2 \n\t"
-        "movq       (%2), %%mm0 \n\t"
-        "paddd     %%mm0, %%mm3 \n\t"
-        "paddd     %%mm0, %%mm5 \n\t"
-        "paddd     %%mm0, %%mm7 \n\t"
-        "paddd     %%mm0, %%mm2 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm3 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm5 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm7 \n\t"
-        "psrad $"S(SHIFT_FRW_ROW)", %%mm2 \n\t"
-        "packssdw  %%mm5, %%mm3 \n\t"
-        "packssdw  %%mm2, %%mm7 \n\t"
-        "movq      %%mm3, 0(%3) \n\t"
-        "movq      %%mm7, 8(%3) \n\t"
-        :
-        : "r" (in), "r" (table), "r" (fdct_r_row), "r" (out));
-}
-
-void ff_fdct_mmx(int16_t *block)
-{
-    DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
-    int16_t * block1= (int16_t*)align_tmp;
-    const int16_t *table= tab_frw_01234567;
-    int i;
-
-    fdct_col_mmx(block, block1, 0);
-    fdct_col_mmx(block, block1, 4);
-
-    for(i=8;i>0;i--) {
-        fdct_row_mmx(block1, block, table);
-        block1 += 8;
-        table += 32;
-        block += 8;
-    }
-}
-
-#endif /* HAVE_MMX_INLINE */
-
-#if HAVE_MMXEXT_INLINE
-
-void ff_fdct_mmxext(int16_t *block)
-{
-    DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
-    int16_t *block1= (int16_t*)align_tmp;
-    const int16_t *table= tab_frw_01234567;
-    int i;
-
-    fdct_col_mmx(block, block1, 0);
-    fdct_col_mmx(block, block1, 4);
-
-    for(i=8;i>0;i--) {
-        fdct_row_mmxext(block1, block, table);
-        block1 += 8;
-        table += 32;
-        block += 8;
-    }
-}
-
-#endif /* HAVE_MMXEXT_INLINE */
-
-#if HAVE_SSE2_INLINE
 
 void ff_fdct_sse2(int16_t *block)
 {

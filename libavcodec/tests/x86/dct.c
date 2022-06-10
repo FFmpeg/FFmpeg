@@ -58,12 +58,6 @@ PR_WRAP(avx)
 #endif
 
 static const struct algo fdct_tab_arch[] = {
-#if HAVE_MMX_INLINE
-    { "MMX",    ff_fdct_mmx,    FF_IDCT_PERM_NONE, AV_CPU_FLAG_MMX },
-#endif
-#if HAVE_MMXEXT_INLINE
-    { "MMXEXT", ff_fdct_mmxext, FF_IDCT_PERM_NONE, AV_CPU_FLAG_MMXEXT },
-#endif
 #if HAVE_SSE2_INLINE
     { "SSE2",   ff_fdct_sse2,   FF_IDCT_PERM_NONE, AV_CPU_FLAG_SSE2 },
 #endif
