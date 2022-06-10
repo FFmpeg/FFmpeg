@@ -470,6 +470,8 @@ typedef struct OutputStream {
     int64_t first_pts;
     /* dts of the last packet sent to the muxer */
     int64_t last_mux_dts;
+    /* pts of the last frame received from the filters, in AV_TIME_BASE_Q */
+    int64_t last_filter_pts;
     // the timebase of the packets sent to the muxer
     AVRational mux_timebase;
     AVRational enc_timebase;

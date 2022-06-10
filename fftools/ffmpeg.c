@@ -1351,6 +1351,12 @@ static int reap_filters(int flush)
                 continue;
             }
 
+            if (filtered_frame->pts != AV_NOPTS_VALUE) {
+                AVRational tb = av_buffersink_get_time_base(filter);
+                ost->last_filter_pts = av_rescale_q(filtered_frame->pts, tb,
+                                                    AV_TIME_BASE_Q);
+            }
+
             switch (av_buffersink_get_type(filter)) {
             case AVMEDIA_TYPE_VIDEO:
                 if (!ost->frame_aspect_ratio.num)
@@ -3448,13 +3454,19 @@ static OutputStream *choose_output(void)
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
-        int64_t opts = ost->last_mux_dts == AV_NOPTS_VALUE ? INT64_MIN :
+        int64_t opts;
+
+        if (ost->filter && ost->last_filter_pts != AV_NOPTS_VALUE) {
+            opts = ost->last_filter_pts;
+        } else {
+            opts = ost->last_mux_dts == AV_NOPTS_VALUE ? INT64_MIN :
                        av_rescale_q(ost->last_mux_dts, ost->st->time_base,
                                     AV_TIME_BASE_Q);
-        if (ost->last_mux_dts == AV_NOPTS_VALUE)
-            av_log(NULL, AV_LOG_DEBUG,
-                "cur_dts is invalid st:%d (%d) [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
-                ost->st->index, ost->st->id, ost->initialized, ost->inputs_done, ost->finished);
+            if (ost->last_mux_dts == AV_NOPTS_VALUE)
+                av_log(NULL, AV_LOG_DEBUG,
+                    "cur_dts is invalid st:%d (%d) [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
+                    ost->st->index, ost->st->id, ost->initialized, ost->inputs_done, ost->finished);
+        }
 
         if (!ost->initialized && !ost->inputs_done)
             return ost->unavailable ? NULL : ost;
