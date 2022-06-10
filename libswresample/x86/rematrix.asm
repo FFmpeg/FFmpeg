@@ -223,12 +223,6 @@ mix_2_1_int16_u_int %+ SUFFIX:
 %endmacro
 
 
-INIT_MMX mmx
-MIX1_INT16 u
-MIX1_INT16 a
-MIX2_INT16 u
-MIX2_INT16 a
-
 INIT_XMM sse
 MIX2_FLT u
 MIX2_FLT a

@@ -28,7 +28,6 @@ mix_2_1_func_type ff_mix_2_1_a_## type ## _ ## simd;
 
 D(float, sse)
 D(float, avx)
-D(int16, mmx)
 D(int16, sse2)
 
 av_cold int swri_rematrix_init_x86(struct SwrContext *s){
@@ -43,10 +42,6 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
     s->mix_2_1_simd = NULL;
 
     if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
-        if(EXTERNAL_MMX(mm_flags)) {
-            s->mix_1_1_simd = ff_mix_1_1_a_int16_mmx;
-            s->mix_2_1_simd = ff_mix_2_1_a_int16_mmx;
-        }
         if(EXTERNAL_SSE2(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_int16_sse2;
             s->mix_2_1_simd = ff_mix_2_1_a_int16_sse2;
