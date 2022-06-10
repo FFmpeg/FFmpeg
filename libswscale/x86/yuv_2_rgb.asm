@@ -69,6 +69,9 @@ SECTION .text
     %ifidn %1, yuva
     %define parameters index, image, pu_index, pv_index, pointer_c_dither, py_2index, pa_2index
     %define GPR_num 7
+    %else
+    %define parameters index, image, pu_index, pv_index, pointer_c_dither, py_2index
+    %define GPR_num 6
     %endif
 %else
     %define parameters index, image, pu_index, pv_index, pointer_c_dither, py_2index
@@ -356,8 +359,6 @@ REP_RET
 %endmacro
 
 INIT_MMX mmx
-yuv2rgb_fn yuv,  rgb, 24
-yuv2rgb_fn yuv,  bgr, 24
 yuv2rgb_fn yuv,  rgb, 32
 yuv2rgb_fn yuv,  bgr, 32
 yuv2rgb_fn yuva, rgb, 32

@@ -44,23 +44,22 @@
 //MMX versions
 #if HAVE_MMX
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#define COMPILE_TEMPLATE_MMXEXT 0
+#define COMPILE_TEMPLATE_MMX
 #define RENAME(a) a ## _mmx
 #include "yuv2rgb_template.c"
+#undef COMPILE_TEMPLATE_MMX
 #endif /* HAVE_MMX */
 
 // MMXEXT versions
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#define COMPILE_TEMPLATE_MMXEXT 1
+#define COMPILE_TEMPLATE_MMXEXT
 #define RENAME(a) a ## _mmxext
 #include "yuv2rgb_template.c"
+#undef COMPILE_TEMPLATE_MMXEXT
 
 //SSSE3 versions
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#define COMPILE_TEMPLATE_MMXEXT 0
+#define COMPILE_TEMPLATE_SSSE3
 #define RENAME(a) a ## _ssse3
 #include "yuv2rgb_template.c"
 
@@ -127,10 +126,6 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
                     break;
                 } else
                     return yuv420_bgr32_mmx;
-            case AV_PIX_FMT_RGB24:
-                return yuv420_rgb24_mmx;
-            case AV_PIX_FMT_BGR24:
-                return yuv420_bgr24_mmx;
             case AV_PIX_FMT_RGB565:
                 return yuv420_rgb16_mmx;
             case AV_PIX_FMT_RGB555:

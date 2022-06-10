@@ -47,7 +47,7 @@ extern void RENAME(ff_yuv_420_bgr24)(x86_reg index, uint8_t *image, const uint8_
                                      const uint8_t *pv_index, const uint64_t *pointer_c_dither,
                                      const uint8_t *py_2index);
 
-#if !COMPILE_TEMPLATE_MMXEXT
+#ifndef COMPILE_TEMPLATE_MMXEXT
 extern void RENAME(ff_yuv_420_rgb15)(x86_reg index, uint8_t *image, const uint8_t *pu_index,
                                      const uint8_t *pv_index, const uint64_t *pointer_c_dither,
                                      const uint8_t *py_2index);
@@ -165,6 +165,7 @@ static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t *src[],
 }
 #endif
 
+#if !defined(COMPILE_TEMPLATE_MMX)
 static inline int RENAME(yuv420_rgb24)(SwsContext *c, const uint8_t *src[],
                                        int srcStride[],
                                        int srcSliceY, int srcSliceH,
@@ -192,4 +193,4 @@ static inline int RENAME(yuv420_bgr24)(SwsContext *c, const uint8_t *src[],
     }
     return srcSliceH;
 }
-
+#endif
