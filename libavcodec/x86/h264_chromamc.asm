@@ -446,10 +446,6 @@ chroma_mc4_mmx_func avg, h264
 chroma_mc4_mmx_func avg, rv40
 chroma_mc2_mmx_func avg, h264
 
-INIT_MMX 3dnow
-chroma_mc8_mmx_func avg, h264, _rnd
-chroma_mc4_mmx_func avg, h264
-
 %macro chroma_mc8_ssse3_func 2-3
 cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     mov          r6d, r5d
