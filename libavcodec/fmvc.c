@@ -402,20 +402,17 @@ static int decode_frame(AVCodecContext *avctx,
     PutByteContext *pb = &s->pb;
     AVFrame *frame = data;
     int ret, y, x;
+    int key_frame;
 
     if (avpkt->size < 8)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-
     bytestream2_init(gb, avpkt->data, avpkt->size);
     bytestream2_skip(gb, 2);
 
-    frame->key_frame = !!bytestream2_get_le16(gb);
-    frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    key_frame = !!bytestream2_get_le16(gb);
 
-    if (frame->key_frame) {
+    if (key_frame) {
         const uint8_t *src;
         int type, size;
         uint8_t *dst;
@@ -434,6 +431,12 @@ static int decode_frame(AVCodecContext *avctx,
             avpriv_report_missing_feature(avctx, "compression %d", type);
             return AVERROR_PATCHWELCOME;
         }
+
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+
+        frame->key_frame = 1;
+        frame->pict_type = AV_PICTURE_TYPE_I;
 
         src = s->buffer;
         dst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
@@ -511,6 +514,12 @@ static int decode_frame(AVCodecContext *avctx,
             }
             dst = &rect[block_h * s->stride];
         }
+
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+
+        frame->key_frame = 0;
+        frame->pict_type = AV_PICTURE_TYPE_P;
 
         ssrc = s->buffer;
         ddst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
