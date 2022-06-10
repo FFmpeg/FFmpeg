@@ -46,9 +46,6 @@ cglobal clear_block, 1, 1, %1, blocks
     RET
 %endmacro
 
-INIT_MMX mmx
-%define ZERO pxor
-CLEAR_BLOCK 0, 4
 INIT_XMM sse
 %define ZERO xorps
 CLEAR_BLOCK 1, 2
@@ -78,9 +75,6 @@ cglobal clear_blocks, 1, 2, %1, blocks, len
     RET
 %endmacro
 
-INIT_MMX mmx
-%define ZERO pxor
-CLEAR_BLOCKS 0
 INIT_XMM sse
 %define ZERO xorps
 CLEAR_BLOCKS 1
