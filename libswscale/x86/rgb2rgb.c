@@ -85,20 +85,11 @@ DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
 
 // Note: We have C, MMX, MMXEXT, 3DNOW versions, there is no 3DNOW + MMXEXT one.
 
-#define COMPILE_TEMPLATE_MMXEXT 0
-#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_SSE2 0
 #define COMPILE_TEMPLATE_AVX 0
 
-//MMX versions
-#undef RENAME
-#define RENAME(a) a ## _mmx
-#include "rgb2rgb_template.c"
-
 // MMXEXT versions
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#define COMPILE_TEMPLATE_MMXEXT 1
 #define RENAME(a) a ## _mmxext
 #include "rgb2rgb_template.c"
 
@@ -114,19 +105,6 @@ DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
 #undef COMPILE_TEMPLATE_AVX
 #define COMPILE_TEMPLATE_AVX 1
 #define RENAME(a) a ## _avx
-#include "rgb2rgb_template.c"
-
-//3DNOW versions
-#undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#undef COMPILE_TEMPLATE_SSE2
-#undef COMPILE_TEMPLATE_AVX
-#undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMXEXT 0
-#define COMPILE_TEMPLATE_SSE2 0
-#define COMPILE_TEMPLATE_AVX 0
-#define COMPILE_TEMPLATE_AMD3DNOW 1
-#define RENAME(a) a ## _3dnow
 #include "rgb2rgb_template.c"
 
 /*
@@ -165,10 +143,6 @@ av_cold void rgb2rgb_init_x86(void)
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_INLINE_ASM
-    if (INLINE_MMX(cpu_flags))
-        rgb2rgb_init_mmx();
-    if (INLINE_AMD3DNOW(cpu_flags))
-        rgb2rgb_init_3dnow();
     if (INLINE_MMXEXT(cpu_flags))
         rgb2rgb_init_mmxext();
     if (INLINE_SSE2(cpu_flags))
