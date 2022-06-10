@@ -97,6 +97,7 @@ av_unused STATIC void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixel
         :FF_REG_a, "memory");
 }
 
+#ifndef NO_AVG
 // avg_pixels
 // this routine is 'slightly' suboptimal but mostly unused
 av_unused STATIC void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels,
@@ -173,3 +174,4 @@ av_unused STATIC void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixel
         :"D"(block), "r"((x86_reg)line_size)
         :FF_REG_a, "memory");
 }
+#endif
