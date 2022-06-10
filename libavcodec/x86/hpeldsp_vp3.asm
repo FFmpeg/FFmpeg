@@ -23,7 +23,7 @@
 SECTION .text
 
 ; void ff_put_no_rnd_pixels8_x2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro PUT_NO_RND_PIXELS8_X2_EXACT 0
+INIT_MMX mmxext
 cglobal put_no_rnd_pixels8_x2_exact, 4,5
     lea          r4, [r2*3]
     pcmpeqb      m6, m6
@@ -61,16 +61,10 @@ cglobal put_no_rnd_pixels8_x2_exact, 4,5
     sub         r3d, 4
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PUT_NO_RND_PIXELS8_X2_EXACT
-INIT_MMX 3dnow
-PUT_NO_RND_PIXELS8_X2_EXACT
 
 
 ; void ff_put_no_rnd_pixels8_y2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro PUT_NO_RND_PIXELS8_Y2_EXACT 0
+INIT_MMX mmxext
 cglobal put_no_rnd_pixels8_y2_exact, 4,5
     lea          r4, [r2*3]
     mova         m0, [r1]
@@ -103,9 +97,3 @@ cglobal put_no_rnd_pixels8_y2_exact, 4,5
     sub         r3d, 4
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PUT_NO_RND_PIXELS8_Y2_EXACT
-INIT_MMX 3dnow
-PUT_NO_RND_PIXELS8_Y2_EXACT
