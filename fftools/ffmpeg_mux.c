@@ -41,6 +41,10 @@ typedef struct MuxStream {
      * Updated when a packet is either pushed or pulled from the queue.
      */
     size_t muxing_queue_data_size;
+
+    /* dts of the last packet sent to the muxer, in the stream timebase
+     * used for making up missing dts values */
+    int64_t last_mux_dts;
 } MuxStream;
 
 struct Muxer {
@@ -106,6 +110,7 @@ static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 
 static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
+    MuxStream *ms = &of->mux->streams[ost->index];
     AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
     int ret;
@@ -133,21 +138,21 @@ static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
                    pkt->dts, pkt->pts,
                    ost->file_index, ost->st->index);
             pkt->pts =
-            pkt->dts = pkt->pts + pkt->dts + ost->last_mux_dts + 1
-                     - FFMIN3(pkt->pts, pkt->dts, ost->last_mux_dts + 1)
-                     - FFMAX3(pkt->pts, pkt->dts, ost->last_mux_dts + 1);
+            pkt->dts = pkt->pts + pkt->dts + ms->last_mux_dts + 1
+                     - FFMIN3(pkt->pts, pkt->dts, ms->last_mux_dts + 1)
+                     - FFMAX3(pkt->pts, pkt->dts, ms->last_mux_dts + 1);
         }
         if ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO || st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) &&
             pkt->dts != AV_NOPTS_VALUE &&
-            ost->last_mux_dts != AV_NOPTS_VALUE) {
-            int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
+            ms->last_mux_dts != AV_NOPTS_VALUE) {
+            int64_t max = ms->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
             if (pkt->dts < max) {
                 int loglevel = max - pkt->dts > 2 || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
                 if (exit_on_error)
                     loglevel = AV_LOG_ERROR;
                 av_log(s, loglevel, "Non-monotonous DTS in output stream "
                        "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
-                       ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
+                       ost->file_index, ost->st->index, ms->last_mux_dts, pkt->dts);
                 if (exit_on_error) {
                     av_log(NULL, AV_LOG_FATAL, "aborting.\n");
                     exit_program(1);
@@ -161,7 +166,7 @@ static void write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
             }
         }
     }
-    ost->last_mux_dts = pkt->dts;
+    ms->last_mux_dts = pkt->dts;
 
     ost->data_size += pkt->size;
     ost->packets_written++;
@@ -423,6 +428,7 @@ int of_muxer_init(OutputFile *of, AVDictionary *opts, int64_t limit_filesize)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        ms->last_mux_dts = AV_NOPTS_VALUE;
     }
 
     mux->limit_filesize = limit_filesize;

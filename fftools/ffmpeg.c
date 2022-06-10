@@ -716,6 +716,9 @@ static void output_packet(OutputFile *of, AVPacket *pkt,
 {
     int ret = 0;
 
+    if (!eof && pkt->dts != AV_NOPTS_VALUE)
+        ost->last_mux_dts = av_rescale_q(pkt->dts, ost->mux_timebase, AV_TIME_BASE_Q);
+
     /* apply the output bitstream filters */
     if (ost->bsf_ctx) {
         ret = av_bsf_send_packet(ost->bsf_ctx, eof ? NULL : pkt);
@@ -3459,9 +3462,8 @@ static OutputStream *choose_output(void)
         if (ost->filter && ost->last_filter_pts != AV_NOPTS_VALUE) {
             opts = ost->last_filter_pts;
         } else {
-            opts = ost->last_mux_dts == AV_NOPTS_VALUE ? INT64_MIN :
-                       av_rescale_q(ost->last_mux_dts, ost->st->time_base,
-                                    AV_TIME_BASE_Q);
+            opts = ost->last_mux_dts == AV_NOPTS_VALUE ?
+                   INT64_MIN : ost->last_mux_dts;
             if (ost->last_mux_dts == AV_NOPTS_VALUE)
                 av_log(NULL, AV_LOG_DEBUG,
                     "cur_dts is invalid st:%d (%d) [init:%d i_done:%d finish:%d] (this is harmless if it occurs once at the start per stream)\n",
