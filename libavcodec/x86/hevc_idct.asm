@@ -811,7 +811,6 @@ cglobal hevc_idct_32x32_%1, 1, 6, 16, 256, coeffs
 %macro INIT_IDCT_DC 1
 INIT_MMX mmxext
 IDCT_DC_NL  4,      %1
-IDCT_DC     8,  2,  %1
 
 INIT_XMM sse2
 IDCT_DC_NL  8,      %1
