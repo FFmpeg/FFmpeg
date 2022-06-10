@@ -24,7 +24,7 @@
 
 SECTION .text
 
-%macro PROCESS_ONE_LINE 1
+INIT_XMM sse2
 cglobal process_one_line, 5, 7, 5, src, dst, contrast, brightness, w
     movd m3, contrastd
     movd m4, brightnessd
@@ -39,7 +39,7 @@ cglobal process_one_line, 5, 7, 5, src, dst, contrast, brightness, w
     pxor m1, m1
     mov scalard, wd
     and scalard, mmsize-1
-    sar wd, %1
+    sar wd, 4
     cmp wd, 1
     jl .loop1
 
@@ -80,11 +80,3 @@ cglobal process_one_line, 5, 7, 5, src, dst, contrast, brightness, w
 
     .end:
         RET
-
-%endmacro
-
-INIT_MMX mmxext
-PROCESS_ONE_LINE 3
-
-INIT_XMM sse2
-PROCESS_ONE_LINE 4
