@@ -322,11 +322,20 @@ fail:
     return ret;
 }
 
-static void fill_pred_weight_table(const HEVCContext *h,
+static void fill_pred_weight_table(AVCodecContext *avctx,
+                                   const HEVCContext *h,
                                    const SliceHeader *sh,
                                    VASliceParameterBufferHEVC *slice_param)
 {
     int i;
+#if VA_CHECK_VERSION(1, 2, 0)
+    int is_rext = avctx->profile >= FF_PROFILE_HEVC_REXT;
+#else
+    int is_rext = 0;
+    if (avctx->profile >= FF_PROFILE_HEVC_REXT)
+        av_log(avctx, AV_LOG_WARNING, "Please consider to update to VAAPI 1.2.0 "
+               "or above, which can support REXT related setting correctly.\n");
+#endif
 
     memset(slice_param->delta_luma_weight_l0,   0, sizeof(slice_param->delta_luma_weight_l0));
     memset(slice_param->delta_luma_weight_l1,   0, sizeof(slice_param->delta_luma_weight_l1));
@@ -353,21 +362,25 @@ static void fill_pred_weight_table(const HEVCContext *h,
 
     for (i = 0; i < 15 && i < sh->nb_refs[L0]; i++) {
         slice_param->delta_luma_weight_l0[i] = sh->luma_weight_l0[i] - (1 << sh->luma_log2_weight_denom);
-        slice_param->luma_offset_l0[i] = sh->luma_offset_l0[i];
         slice_param->delta_chroma_weight_l0[i][0] = sh->chroma_weight_l0[i][0] - (1 << sh->chroma_log2_weight_denom);
         slice_param->delta_chroma_weight_l0[i][1] = sh->chroma_weight_l0[i][1] - (1 << sh->chroma_log2_weight_denom);
-        slice_param->ChromaOffsetL0[i][0] = sh->chroma_offset_l0[i][0];
-        slice_param->ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
+        if (!is_rext) {
+            slice_param->luma_offset_l0[i] = sh->luma_offset_l0[i];
+            slice_param->ChromaOffsetL0[i][0] = sh->chroma_offset_l0[i][0];
+            slice_param->ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
+        }
     }
 
     if (sh->slice_type == HEVC_SLICE_B) {
         for (i = 0; i < 15 && i < sh->nb_refs[L1]; i++) {
             slice_param->delta_luma_weight_l1[i] = sh->luma_weight_l1[i] - (1 << sh->luma_log2_weight_denom);
-            slice_param->luma_offset_l1[i] = sh->luma_offset_l1[i];
             slice_param->delta_chroma_weight_l1[i][0] = sh->chroma_weight_l1[i][0] - (1 << sh->chroma_log2_weight_denom);
             slice_param->delta_chroma_weight_l1[i][1] = sh->chroma_weight_l1[i][1] - (1 << sh->chroma_log2_weight_denom);
-            slice_param->ChromaOffsetL1[i][0] = sh->chroma_offset_l1[i][0];
-            slice_param->ChromaOffsetL1[i][1] = sh->chroma_offset_l1[i][1];
+            if (!is_rext) {
+                slice_param->luma_offset_l1[i] = sh->luma_offset_l1[i];
+                slice_param->ChromaOffsetL1[i][0] = sh->chroma_offset_l1[i][0];
+                slice_param->ChromaOffsetL1[i][1] = sh->chroma_offset_l1[i][1];
+            }
         }
     }
 }
@@ -462,7 +475,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
             last_slice_param->RefPicList[list_idx][i] = get_ref_pic_index(h, rpl->ref[i]);
     }
 
-    fill_pred_weight_table(h, sh, last_slice_param);
+    fill_pred_weight_table(avctx, h, sh, last_slice_param);
 
 #if VA_CHECK_VERSION(1, 2, 0)
     if (avctx->profile == FF_PROFILE_HEVC_REXT) {
@@ -471,15 +484,25 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
                 .cu_chroma_qp_offset_enabled_flag = sh->cu_chroma_qp_offset_enabled_flag,
             },
         };
+        for (i = 0; i < 15 && i < sh->nb_refs[L0]; i++) {
+            pic->last_slice_param.rext.luma_offset_l0[i] = sh->luma_offset_l0[i];
+            pic->last_slice_param.rext.ChromaOffsetL0[i][0] = sh->chroma_offset_l0[i][0];
+            pic->last_slice_param.rext.ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
+        }
 
-        memcpy(pic->last_slice_param.rext.luma_offset_l0, pic->last_slice_param.base.luma_offset_l0,
-                                                    sizeof(pic->last_slice_param.base.luma_offset_l0));
-        memcpy(pic->last_slice_param.rext.luma_offset_l1, pic->last_slice_param.base.luma_offset_l1,
-                                                    sizeof(pic->last_slice_param.base.luma_offset_l1));
-        memcpy(pic->last_slice_param.rext.ChromaOffsetL0, pic->last_slice_param.base.ChromaOffsetL0,
-                                                    sizeof(pic->last_slice_param.base.ChromaOffsetL0));
-        memcpy(pic->last_slice_param.rext.ChromaOffsetL1, pic->last_slice_param.base.ChromaOffsetL1,
-                                                    sizeof(pic->last_slice_param.base.ChromaOffsetL1));
+        for (i = 0; i < 15 && i < sh->nb_refs[L0]; i++) {
+            pic->last_slice_param.rext.luma_offset_l0[i] = sh->luma_offset_l0[i];
+            pic->last_slice_param.rext.ChromaOffsetL0[i][0] = sh->chroma_offset_l0[i][0];
+            pic->last_slice_param.rext.ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
+        }
+
+        if (sh->slice_type == HEVC_SLICE_B) {
+            for (i = 0; i < 15 && i < sh->nb_refs[L1]; i++) {
+                pic->last_slice_param.rext.luma_offset_l1[i] = sh->luma_offset_l1[i];
+                pic->last_slice_param.rext.ChromaOffsetL1[i][0] = sh->chroma_offset_l1[i][0];
+                pic->last_slice_param.rext.ChromaOffsetL1[i][1] = sh->chroma_offset_l1[i][1];
+            }
+        }
     }
 #endif
 
