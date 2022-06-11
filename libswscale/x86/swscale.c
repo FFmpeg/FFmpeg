@@ -507,12 +507,12 @@ switch(c->dstBpc){ \
     case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
     case 8: if ((condition_8bit) && !c->use_mmx_vfilter) vscalefn = ff_yuv2planeX_8_  ## opt; break; \
     }
-#define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
+#define ASSIGN_VSCALE_FUNC(vscalefn, opt) \
     switch(c->dstBpc){ \
-    case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
-    case 10: if (!isBE(c->dstFormat) && !isSemiPlanarYUV(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
-    case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
-    case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
+    case 16: if (!isBE(c->dstFormat)) vscalefn = ff_yuv2plane1_16_ ## opt; break; \
+    case 10: if (!isBE(c->dstFormat) && !isSemiPlanarYUV(c->dstFormat)) vscalefn = ff_yuv2plane1_10_ ## opt; break; \
+    case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2plane1_9_  ## opt;  break; \
+    case 8:                           vscalefn = ff_yuv2plane1_8_  ## opt;  break; \
     default: av_assert0(c->dstBpc>8); \
     }
 #define case_rgb(x, X, opt) \
@@ -534,7 +534,7 @@ switch(c->dstBpc){ \
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse2, sse2);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse2, ,
                             HAVE_ALIGNED_STACK || ARCH_X86_64);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2, sse2, 1);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2);
 
         switch (c->srcFormat) {
         case AV_PIX_FMT_YA8:
@@ -590,7 +590,7 @@ switch(c->dstBpc){ \
     if (EXTERNAL_AVX(cpu_flags)) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx, ,
                             HAVE_ALIGNED_STACK || ARCH_X86_64);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx, avx, 1);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx);
 
         switch (c->srcFormat) {
         case AV_PIX_FMT_YUYV422:
