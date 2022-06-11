@@ -624,21 +624,21 @@ The parameters set for each target are as follows.
 @var{pal}:
 -f vcd -muxrate 1411200 -muxpreload 0.44 -packetsize 2324
 -s 352x288 -r 25
--codec:v mpeg1video -g 15 -b:v 1150k -maxrate:v 1150v -minrate:v 1150k -bufsize:v 327680
+-codec:v mpeg1video -g 15 -b:v 1150k -maxrate:v 1150k -minrate:v 1150k -bufsize:v 327680
 -ar 44100 -ac 2
 -codec:a mp2 -b:a 224k
 
 @var{ntsc}:
 -f vcd -muxrate 1411200 -muxpreload 0.44 -packetsize 2324
 -s 352x240 -r 30000/1001
--codec:v mpeg1video -g 18 -b:v 1150k -maxrate:v 1150v -minrate:v 1150k -bufsize:v 327680
+-codec:v mpeg1video -g 18 -b:v 1150k -maxrate:v 1150k -minrate:v 1150k -bufsize:v 327680
 -ar 44100 -ac 2
 -codec:a mp2 -b:a 224k
 
 @var{film}:
 -f vcd -muxrate 1411200 -muxpreload 0.44 -packetsize 2324
 -s 352x240 -r 24000/1001
--codec:v mpeg1video -g 18 -b:v 1150k -maxrate:v 1150v -minrate:v 1150k -bufsize:v 327680
+-codec:v mpeg1video -g 18 -b:v 1150k -maxrate:v 1150k -minrate:v 1150k -bufsize:v 327680
 -ar 44100 -ac 2
 -codec:a mp2 -b:a 224k
 @end example
