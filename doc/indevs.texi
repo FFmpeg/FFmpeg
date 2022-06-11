@@ -1289,7 +1289,7 @@ Specify the samplerate in Hz, by default 48kHz is used.
 Specify the channels in use, by default 2 (stereo) is set.
 
 @item frame_size
-Specify the number of bytes per frame, by default it is set to 1024.
+This option does nothing and is deprecated.
 
 @item fragment_size
 Specify the size in bytes of the minimal buffering fragment in PulseAudio, it
