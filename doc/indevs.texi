@@ -1292,8 +1292,8 @@ Specify the channels in use, by default 2 (stereo) is set.
 Specify the number of bytes per frame, by default it is set to 1024.
 
 @item fragment_size
-Specify the minimal buffering fragment in PulseAudio, it will affect the
-audio latency. By default it is unset.
+Specify the size in bytes of the minimal buffering fragment in PulseAudio, it
+will affect the audio latency. By default it is set to 50 ms amount of data.
 
 @item wallclock
 Set the initial PTS using the current time. Default is 1.

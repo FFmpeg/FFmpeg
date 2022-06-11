@@ -162,7 +162,12 @@ static av_cold int pulse_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     }
 
-    attr.fragsize = pd->fragment_size;
+    if (pd->fragment_size == -1) {
+        // 50 ms fragments/latency by default seem good enough
+        attr.fragsize = pa_frame_size(&ss) * (pd->sample_rate / 20);
+    } else {
+        attr.fragsize = pd->fragment_size;
+    }
 
     if (s->url[0] != '\0' && strcmp(s->url, "default"))
         device = s->url;
