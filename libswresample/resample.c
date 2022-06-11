@@ -497,8 +497,6 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
         }
     }
 
-    emms_c();
-
     if (c->compensation_distance) {
         c->compensation_distance -= dst_size;
         if (!c->compensation_distance) {
