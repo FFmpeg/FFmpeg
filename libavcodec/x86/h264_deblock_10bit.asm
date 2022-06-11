@@ -798,9 +798,11 @@ cglobal deblock_h_luma_intra_10, 4,7,8*(mmsize/16)
 %endmacro
 
 %if ARCH_X86_64 == 0
+%if HAVE_ALIGNED_STACK == 0
 INIT_MMX mmxext
 DEBLOCK_LUMA
 DEBLOCK_LUMA_INTRA
+%endif
 INIT_XMM sse2
 DEBLOCK_LUMA
 DEBLOCK_LUMA_INTRA
@@ -938,10 +940,6 @@ cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
     sub         r0, r1
     shl        r2d, 2
     shl        r3d, 2
-%if mmsize < 16
-    mov         r6, 16/mmsize
-.loop:
-%endif
     CHROMA_V_LOAD r5
     LOAD_AB     m4, m5, r2d, r3d
     LOAD_MASK   m0, m1, m2, m3, m4, m5, m7, m6, m4
@@ -952,16 +950,7 @@ cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
     pand        m7, m6
     DEBLOCK_P0_Q0 m1, m2, m0, m3, m7, m5, m6
     CHROMA_V_STORE
-%if mmsize < 16
-    add         r0, mmsize
-    add         r5, mmsize
-    add         r4, mmsize/4
-    dec         r6
-    jg .loop
-    REP_RET
-%else
     RET
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_deblock_v_chroma_intra_10(uint16_t *pix, int stride, int alpha,
@@ -973,24 +962,12 @@ cglobal deblock_v_chroma_intra_10, 4,6-(mmsize/16),8*(mmsize/16)
     sub         r0, r1
     shl        r2d, 2
     shl        r3d, 2
-%if mmsize < 16
-    mov         r5, 16/mmsize
-.loop:
-%endif
     CHROMA_V_LOAD r4
     LOAD_AB     m4, m5, r2d, r3d
     LOAD_MASK   m0, m1, m2, m3, m4, m5, m7, m6, m4
     CHROMA_DEBLOCK_P0_Q0_INTRA m1, m2, m0, m3, m7, m5, m6
     CHROMA_V_STORE
-%if mmsize < 16
-    add         r0, mmsize
-    add         r4, mmsize
-    dec         r5
-    jg .loop
-    REP_RET
-%else
     RET
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_deblock_h_chroma_10(uint16_t *pix, int stride, int alpha, int beta,
@@ -1002,10 +979,6 @@ cglobal deblock_h_chroma_10, 5, 7, 8, 0-2*mmsize, pix_, stride_, alpha_, beta_, 
     mov r5,       pix_q
     lea r6,      [3*stride_q]
     add r5,       r6
-%if mmsize == 8
-    mov r6d,      2
-    .loop:
-%endif
 
         CHROMA_H_LOAD r5, r6, [rsp], [rsp + mmsize]
         LOAD_AB          m4,  m5, alpha_d, beta_d
@@ -1018,13 +991,6 @@ cglobal deblock_h_chroma_10, 5, 7, 8, 0-2*mmsize, pix_, stride_, alpha_, beta_, 
         DEBLOCK_P0_Q0    m1,  m2, m0, m3, m7, m5, m6
         CHROMA_H_STORE r5, r6, [rsp], [rsp + mmsize]
 
-%if mmsize == 8
-        lea pix_q, [pix_q + 4*stride_q]
-        lea r5,    [r5 + 4*stride_q]
-        add tc0_q,  2
-        dec r6d
-    jg .loop
-%endif
 RET
 
 ;-----------------------------------------------------------------------------
@@ -1068,10 +1034,6 @@ RET
 
 %endmacro
 
-%if ARCH_X86_64 == 0
-INIT_MMX mmxext
-DEBLOCK_CHROMA
-%endif
 INIT_XMM sse2
 DEBLOCK_CHROMA
 %if HAVE_AVX_EXTERNAL
