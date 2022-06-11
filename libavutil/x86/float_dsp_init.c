@@ -56,8 +56,6 @@ void ff_vector_dmul_scalar_sse2(double *dst, const double *src,
 void ff_vector_dmul_scalar_avx(double *dst, const double *src,
                                double mul, int len);
 
-void ff_vector_fmul_window_3dnowext(float *dst, const float *src0,
-                                    const float *src1, const float *win, int len);
 void ff_vector_fmul_window_sse(float *dst, const float *src0,
                                const float *src1, const float *win, int len);
 
@@ -83,9 +81,6 @@ av_cold void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_AMD3DNOWEXT(cpu_flags)) {
-        fdsp->vector_fmul_window = ff_vector_fmul_window_3dnowext;
-    }
     if (EXTERNAL_SSE(cpu_flags)) {
         fdsp->vector_fmul = ff_vector_fmul_sse;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_sse;
