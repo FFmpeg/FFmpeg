@@ -46,6 +46,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_GSM,             MKTAG('a','g','s','m') },
     { AV_CODEC_ID_GSM_MS,          MKTAG('m','s', 0, '1') },
     { AV_CODEC_ID_ILBC,            MKTAG('i','l','b','c') },
+    { AV_CODEC_ID_FLAC,            MKTAG('f','l','a','c') },
     { AV_CODEC_ID_MACE3,           MKTAG('M','A','C','3') },
     { AV_CODEC_ID_MACE6,           MKTAG('M','A','C','6') },
     { AV_CODEC_ID_MP1,             MKTAG('.','m','p','1') },
