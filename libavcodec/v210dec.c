@@ -141,7 +141,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
         stride = aligned_width * 8 / 3;
     }
 
-    if (avpkt->size < stride * avctx->height) {
+    if (avpkt->size < (int64_t)stride * avctx->height) {
         if ((((avctx->width + 23) / 24) * 24 * 8) / 3 * avctx->height == avpkt->size) {
             stride = avpkt->size / avctx->height;
             if (!s->stride_warning_shown)
@@ -190,7 +190,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
 #define V210DEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption v210dec_options[] = {
     {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), AV_OPT_TYPE_INT,
-     {.i64 = 0}, INT_MIN, INT_MAX, V210DEC_FLAGS},
+     {.i64 = 0}, 0, INT_MAX, V210DEC_FLAGS},
     {NULL}
 };
 
