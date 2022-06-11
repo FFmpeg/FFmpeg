@@ -60,14 +60,16 @@ static int v210_decode_slice(AVCodecContext *avctx, void *arg, int jobnr, int th
     int slice_start = (avctx->height *  jobnr) / s->thread_count;
     int slice_end = (avctx->height * (jobnr+1)) / s->thread_count;
     uint8_t *psrc = td->buf + stride * slice_start;
-    uint16_t *y, *u, *v;
+    int16_t *py = (uint16_t*)frame->data[0] + slice_start * frame->linesize[0] / 2;
+    int16_t *pu = (uint16_t*)frame->data[1] + slice_start * frame->linesize[1] / 2;
+    int16_t *pv = (uint16_t*)frame->data[2] + slice_start * frame->linesize[2] / 2;
 
-    y = (uint16_t*)frame->data[0] + slice_start * frame->linesize[0] / 2;
-    u = (uint16_t*)frame->data[1] + slice_start * frame->linesize[1] / 2;
-    v = (uint16_t*)frame->data[2] + slice_start * frame->linesize[2] / 2;
     for (h = slice_start; h < slice_end; h++) {
         const uint32_t *src = (const uint32_t*)psrc;
         uint32_t val;
+        uint16_t *y = py;
+        uint16_t *u = pu;
+        uint16_t *v = pv;
 
         w = (avctx->width / 12) * 12;
         s->unpack_frame(src, y, u, v, w);
@@ -85,25 +87,40 @@ static int v210_decode_slice(AVCodecContext *avctx, void *arg, int jobnr, int th
             w += 6;
         }
 
-        if (w < avctx->width - 1) {
+        if (w++ < avctx->width) {
             READ_PIXELS(u, y, v);
 
-            val  = av_le2ne32(*src++);
-            *y++ =  val & 0x3FF;
-            if (w < avctx->width - 3) {
-                *u++ = (val >> 10) & 0x3FF;
-                *y++ = (val >> 20) & 0x3FF;
-
+            if (w++ < avctx->width) {
                 val  = av_le2ne32(*src++);
-                *v++ =  val & 0x3FF;
-                *y++ = (val >> 10) & 0x3FF;
+                *y++ =  val & 0x3FF;
+
+                if (w++ < avctx->width) {
+                    *u++ = (val >> 10) & 0x3FF;
+                    *y++ = (val >> 20) & 0x3FF;
+                    val  = av_le2ne32(*src++);
+                    *v++ =  val & 0x3FF;
+
+                    if (w++ < avctx->width) {
+                        *y++ = (val >> 10) & 0x3FF;
+
+                        if (w++ < avctx->width) {
+                            *u++ = (val >> 20) & 0x3FF;
+                            val  = av_le2ne32(*src++);
+                            *y++ =  val & 0x3FF;
+                            *v++ = (val >> 10) & 0x3FF;
+
+                            if (w++ < avctx->width)
+                                *y++ = (val >> 20) & 0x3FF;
+                        }
+                    }
+                }
             }
         }
 
         psrc += stride;
-        y += frame->linesize[0] / 2 - avctx->width + (avctx->width & 1);
-        u += frame->linesize[1] / 2 - avctx->width / 2;
-        v += frame->linesize[2] / 2 - avctx->width / 2;
+        py += frame->linesize[0] / 2;
+        pu += frame->linesize[1] / 2;
+        pv += frame->linesize[2] / 2;
     }
 
     return 0;
