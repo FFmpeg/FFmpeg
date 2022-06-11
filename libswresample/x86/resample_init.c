@@ -35,7 +35,6 @@ int ff_resample_common_##type##_##opt(ResampleContext *c, void *dst, \
 int ff_resample_linear_##type##_##opt(ResampleContext *c, void *dst, \
                                       const void *src, int sz, int upd)
 
-RESAMPLE_FUNCS(int16,  mmxext);
 RESAMPLE_FUNCS(int16,  sse2);
 RESAMPLE_FUNCS(int16,  xop);
 RESAMPLE_FUNCS(float,  sse);
@@ -52,10 +51,6 @@ av_cold void swri_resample_dsp_x86_init(ResampleContext *c)
 
     switch(c->format){
     case AV_SAMPLE_FMT_S16P:
-        if (ARCH_X86_32 && EXTERNAL_MMXEXT(mm_flags)) {
-            c->dsp.resample_linear = ff_resample_linear_int16_mmxext;
-            c->dsp.resample_common = ff_resample_common_int16_mmxext;
-        }
         if (EXTERNAL_SSE2(mm_flags)) {
             c->dsp.resample_linear = ff_resample_linear_int16_sse2;
             c->dsp.resample_common = ff_resample_common_int16_sse2;

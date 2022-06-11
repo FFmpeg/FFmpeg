@@ -594,11 +594,6 @@ INIT_XMM fma4
 RESAMPLE_FNS float, 4, 2, s, pf_1
 %endif
 
-%if ARCH_X86_32
-INIT_MMX mmxext
-RESAMPLE_FNS int16, 2, 1
-%endif
-
 INIT_XMM sse2
 RESAMPLE_FNS int16, 2, 1
 %if HAVE_XOP_EXTERNAL
