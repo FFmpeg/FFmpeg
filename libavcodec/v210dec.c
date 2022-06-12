@@ -26,6 +26,7 @@
 #include "v210dec.h"
 #include "v210dec_init.h"
 #include "libavutil/bswap.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "thread.h"
@@ -140,7 +141,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
     const uint8_t *psrc = avpkt->data;
 
     if (s->custom_stride )
-        stride = s->custom_stride;
+        stride = s->custom_stride > 0 ? s->custom_stride : 0;
     else {
         stride = v210_stride(avctx->width, 48);
         if (avpkt->size < stride * avctx->height) {
@@ -155,14 +156,21 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
                     break;
                 }
             }
+            if (align < 6 && avctx->codec_tag == MKTAG('b', 'x', 'y', '2'))
+                stride = 0;
         }
     }
 
-    if (avpkt->size < (int64_t)stride * avctx->height) {
+    if (stride == 0 && ((avctx->width & 1) || (int64_t)avctx->width * avctx->height > INT_MAX / 6)) {
+        av_log(avctx, AV_LOG_ERROR, "Strideless v210 is not supported for size %dx%d\n", avctx->width, avctx->height);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (stride  > 0 && avpkt->size < (int64_t)stride * avctx->height ||
+        stride == 0 && avpkt->size < v210_stride(avctx->width * avctx->height, 6)) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
         return AVERROR_INVALIDDATA;
     }
-    td.stride = stride;
     if (   avctx->codec_tag == MKTAG('C', '2', '1', '0')
         && avpkt->size > 64
         && AV_RN32(psrc) == AV_RN32("INFO")
@@ -181,9 +189,21 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
 
-    td.buf = (uint8_t*)psrc;
-    td.frame = pic;
-    avctx->execute2(avctx, v210_decode_slice, &td, NULL, s->thread_count);
+    if (stride) {
+        td.stride = stride;
+        td.buf = (uint8_t*)psrc;
+        td.frame = pic;
+        avctx->execute2(avctx, v210_decode_slice, &td, NULL, s->thread_count);
+    } else {
+        uint8_t *pointers[4];
+        int linesizes[4];
+        int ret = av_image_alloc(pointers, linesizes, avctx->width, avctx->height, avctx->pix_fmt, 1);
+        if (ret < 0)
+            return ret;
+        decode_row((const uint32_t *)psrc, (uint16_t *)pointers[0], (uint16_t *)pointers[1], (uint16_t *)pointers[2], avctx->width * avctx->height, s->unpack_frame);
+        av_image_copy(pic->data, pic->linesize, (const uint8_t **)pointers, linesizes, avctx->pix_fmt, avctx->width, avctx->height);
+        av_freep(&pointers[0]);
+    }
 
     if (avctx->field_order > AV_FIELD_PROGRESSIVE) {
         /* we have interlaced material flagged in container */
@@ -200,7 +220,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
 #define V210DEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption v210dec_options[] = {
     {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), AV_OPT_TYPE_INT,
-     {.i64 = 0}, 0, INT_MAX, V210DEC_FLAGS},
+     {.i64 = 0}, -1, INT_MAX, V210DEC_FLAGS},
     {NULL}
 };
 
