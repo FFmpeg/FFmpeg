@@ -53,10 +53,11 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
 {
     int i;
 
-    if (ARCH_X86)
-        if (ff_init_scantable_permutation_x86(idct_permutation,
-                                              perm_type))
-            return;
+#if ARCH_X86
+    if (ff_init_scantable_permutation_x86(idct_permutation,
+                                          perm_type))
+        return;
+#endif
 
     switch (perm_type) {
     case FF_IDCT_PERM_NONE:
@@ -238,7 +239,7 @@ static void ff_jref_idct1_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block
 
 av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
+    av_unused const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (avctx->lowres==1) {
         c->idct_put  = ff_jref_idct4_put;
@@ -303,20 +304,21 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     if (CONFIG_MPEG4_DECODER && avctx->idct_algo == FF_IDCT_XVID)
         ff_xvid_idct_init(c, avctx);
 
-    if (ARCH_AARCH64)
-        ff_idctdsp_init_aarch64(c, avctx, high_bit_depth);
-    if (ARCH_ALPHA)
-        ff_idctdsp_init_alpha(c, avctx, high_bit_depth);
-    if (ARCH_ARM)
-        ff_idctdsp_init_arm(c, avctx, high_bit_depth);
-    if (ARCH_PPC)
-        ff_idctdsp_init_ppc(c, avctx, high_bit_depth);
-    if (ARCH_X86)
-        ff_idctdsp_init_x86(c, avctx, high_bit_depth);
-    if (ARCH_MIPS)
-        ff_idctdsp_init_mips(c, avctx, high_bit_depth);
-    if (ARCH_LOONGARCH)
-        ff_idctdsp_init_loongarch(c, avctx, high_bit_depth);
+#if ARCH_AARCH64
+    ff_idctdsp_init_aarch64(c, avctx, high_bit_depth);
+#elif ARCH_ALPHA
+    ff_idctdsp_init_alpha(c, avctx, high_bit_depth);
+#elif ARCH_ARM
+    ff_idctdsp_init_arm(c, avctx, high_bit_depth);
+#elif ARCH_PPC
+    ff_idctdsp_init_ppc(c, avctx, high_bit_depth);
+#elif ARCH_X86
+    ff_idctdsp_init_x86(c, avctx, high_bit_depth);
+#elif ARCH_MIPS
+    ff_idctdsp_init_mips(c, avctx, high_bit_depth);
+#elif ARCH_LOONGARCH
+    ff_idctdsp_init_loongarch(c, avctx, high_bit_depth);
+#endif
 
     ff_init_scantable_permutation(c->idct_permutation,
                                   c->perm_type);

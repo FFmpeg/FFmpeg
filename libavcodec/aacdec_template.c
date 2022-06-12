@@ -3550,8 +3550,9 @@ static void aacdec_init(AACContext *c)
 #endif
 
 #if !USE_FIXED
-    if(ARCH_MIPS)
-        ff_aacdec_init_mips(c);
+#if ARCH_MIPS
+    ff_aacdec_init_mips(c);
+#endif
 #endif /* !USE_FIXED */
 }
 /**

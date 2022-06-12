@@ -317,8 +317,9 @@ static int config_input(AVFilterLink *inlink)
         s->dsp.filter_scale        = filter16_scale;
     }
 
-    if (ARCH_X86)
-        ff_w3fdif_init_x86(&s->dsp, depth);
+#if ARCH_X86
+    ff_w3fdif_init_x86(&s->dsp, depth);
+#endif
 
     return 0;
 }

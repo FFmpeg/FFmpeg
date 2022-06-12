@@ -235,13 +235,13 @@ static int config_props_output(AVFilterLink *outlink)
         }
     }
 
-    if (ARCH_X86) {
-        for (int i = 0; i < 4; i++) {
-            TransVtable *v = &s->vtables[i];
+#if ARCH_X86
+    for (int i = 0; i < 4; i++) {
+        TransVtable *v = &s->vtables[i];
 
-            ff_transpose_init_x86(v, s->pixsteps[i]);
-        }
+        ff_transpose_init_x86(v, s->pixsteps[i]);
     }
+#endif
 
     av_log(ctx, AV_LOG_VERBOSE,
            "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",

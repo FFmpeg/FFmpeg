@@ -83,8 +83,9 @@ static av_cold av_unused void ff_v210enc_init(V210EncContext *s)
     s->sample_factor_8  = 2;
     s->sample_factor_10 = 1;
 
-    if (ARCH_X86)
-        ff_v210enc_init_x86(s);
+#if ARCH_X86
+    ff_v210enc_init_x86(s);
+#endif
 }
 
 #endif /* AVCODEC_V210ENC_INIT_H */

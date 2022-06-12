@@ -73,6 +73,7 @@ av_cold void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, AVCodecContext *avct
     c->diff_int16           = diff_int16_c;
     c->sub_hfyu_median_pred_int16 = sub_hfyu_median_pred_int16_c;
 
-    if (ARCH_X86)
-        ff_huffyuvencdsp_init_x86(c, avctx);
+#if ARCH_X86
+    ff_huffyuvencdsp_init_x86(c, avctx);
+#endif
 }

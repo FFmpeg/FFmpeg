@@ -129,11 +129,11 @@ static av_unused void ff_nlmeans_init(NLMeansDSPContext *dsp)
     dsp->compute_safe_ssd_integral_image = compute_safe_ssd_integral_image_c;
     dsp->compute_weights_line = compute_weights_line_c;
 
-    if (ARCH_AARCH64)
-        ff_nlmeans_init_aarch64(dsp);
-
-    if (ARCH_X86)
-        ff_nlmeans_init_x86(dsp);
+#if ARCH_AARCH64
+    ff_nlmeans_init_aarch64(dsp);
+#elif ARCH_X86
+    ff_nlmeans_init_x86(dsp);
+#endif
 }
 
 #endif /* AVFILTER_NLMEANS_INIT_H */

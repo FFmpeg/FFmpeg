@@ -209,8 +209,9 @@ static int config_input(AVFilterLink *inlink)
     else
         s->dsp.maskedclamp = maskedclamp16;
 
-    if (ARCH_X86)
-        ff_maskedclamp_init_x86(&s->dsp, s->depth);
+#if ARCH_X86
+    ff_maskedclamp_init_x86(&s->dsp, s->depth);
+#endif
 
     return 0;
 }

@@ -343,8 +343,9 @@ static int config_input(AVFilterLink *inlink)
     av_opt_set_int(s->dct, "bits_per_sample", bps, 0);
     avcodec_dct_init(s->dct);
 
-    if (ARCH_X86)
-        ff_spp_init_x86(s);
+#if ARCH_X86
+    ff_spp_init_x86(s);
+#endif
 
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;

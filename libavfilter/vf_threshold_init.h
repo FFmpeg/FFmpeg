@@ -84,8 +84,9 @@ static av_unused void ff_threshold_init(ThresholdContext *s)
         s->bpc = 2;
     }
 
-    if (ARCH_X86)
-        ff_threshold_init_x86(s);
+#if ARCH_X86
+    ff_threshold_init_x86(s);
+#endif
 }
 
 #endif /* AVFILTER_THRESHOLD_INIT_H */

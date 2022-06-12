@@ -591,8 +591,9 @@ static int config_output(AVFilterLink *outlink)
     s->vsub = desc->log2_chroma_h;
 
     s->dsp.anaglyph = anaglyph;
-    if (ARCH_X86)
-        ff_stereo3d_init_x86(&s->dsp);
+#if ARCH_X86
+    ff_stereo3d_init_x86(&s->dsp);
+#endif
 
     return 0;
 }

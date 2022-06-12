@@ -51,6 +51,7 @@ av_cold void ff_exrdsp_init(ExrDSPContext *c)
     c->reorder_pixels   = reorder_pixels_scalar;
     c->predictor        = predictor_scalar;
 
-    if (ARCH_X86)
-        ff_exrdsp_init_x86(c);
+#if ARCH_X86
+    ff_exrdsp_init_x86(c);
+#endif
 }

@@ -305,8 +305,9 @@ static av_cold int init(AVFilterContext *ctx)
     n->line_noise     = ff_line_noise_c;
     n->line_noise_avg = ff_line_noise_avg_c;
 
-    if (ARCH_X86)
-        ff_noise_init_x86(n);
+#if ARCH_X86
+    ff_noise_init_x86(n);
+#endif
 
     return 0;
 }

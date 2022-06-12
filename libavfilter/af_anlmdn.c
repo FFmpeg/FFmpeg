@@ -118,8 +118,9 @@ void ff_anlmdn_init(AudioNLMDNDSPContext *dsp)
     dsp->compute_distance_ssd = compute_distance_ssd_c;
     dsp->compute_cache        = compute_cache_c;
 
-    if (ARCH_X86)
-        ff_anlmdn_init_x86(dsp);
+#if ARCH_X86
+    ff_anlmdn_init_x86(dsp);
+#endif
 }
 
 static int config_filter(AVFilterContext *ctx)

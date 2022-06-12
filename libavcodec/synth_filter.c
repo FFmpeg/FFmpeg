@@ -175,10 +175,11 @@ av_cold void ff_synth_filter_init(SynthFilterContext *c)
     c->synth_filter_fixed    = synth_filter_fixed;
     c->synth_filter_fixed_64 = synth_filter_fixed_64;
 
-    if (ARCH_AARCH64)
-        ff_synth_filter_init_aarch64(c);
-    if (ARCH_ARM)
-        ff_synth_filter_init_arm(c);
-    if (ARCH_X86)
-        ff_synth_filter_init_x86(c);
+#if ARCH_AARCH64
+    ff_synth_filter_init_aarch64(c);
+#elif ARCH_ARM
+    ff_synth_filter_init_arm(c);
+#elif ARCH_X86
+    ff_synth_filter_init_x86(c);
+#endif
 }

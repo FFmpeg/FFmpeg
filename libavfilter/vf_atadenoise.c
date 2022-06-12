@@ -433,8 +433,9 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
-    if (ARCH_X86)
-        ff_atadenoise_init_x86(&s->dsp, depth, s->algorithm, s->sigma);
+#if ARCH_X86
+    ff_atadenoise_init_x86(&s->dsp, depth, s->algorithm, s->sigma);
+#endif
 
     return 0;
 }

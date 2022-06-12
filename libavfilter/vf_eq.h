@@ -123,8 +123,9 @@ void ff_eq_init_x86(EQContext *eq);
 static av_unused void ff_eq_init(EQContext *eq)
 {
     eq->process = process_c;
-    if (ARCH_X86)
-        ff_eq_init_x86(eq);
+#if ARCH_X86
+    ff_eq_init_x86(eq);
+#endif
 }
 
 #endif /* AVFILTER_EQ_H */

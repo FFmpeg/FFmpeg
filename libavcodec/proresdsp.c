@@ -88,8 +88,9 @@ av_cold int ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    if (ARCH_X86)
-        ff_proresdsp_init_x86(dsp, avctx);
+#if ARCH_X86
+    ff_proresdsp_init_x86(dsp, avctx);
+#endif
 
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);

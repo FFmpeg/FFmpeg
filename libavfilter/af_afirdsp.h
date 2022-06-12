@@ -74,8 +74,9 @@ static av_unused void ff_afir_init(AudioFIRDSPContext *dsp)
     dsp->fcmul_add = fcmul_add_c;
     dsp->dcmul_add = dcmul_add_c;
 
-    if (ARCH_X86)
-        ff_afir_init_x86(dsp);
+#if ARCH_X86
+    ff_afir_init_x86(dsp);
+#endif
 }
 
 #endif /* AVFILTER_AFIRDSP_H */

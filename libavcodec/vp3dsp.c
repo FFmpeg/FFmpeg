@@ -455,14 +455,15 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
     c->v_loop_filter = c->v_loop_filter_unaligned = vp3_v_loop_filter_8_c;
     c->h_loop_filter = c->h_loop_filter_unaligned = vp3_h_loop_filter_8_c;
 
-    if (ARCH_ARM)
-        ff_vp3dsp_init_arm(c, flags);
-    if (ARCH_PPC)
-        ff_vp3dsp_init_ppc(c, flags);
-    if (ARCH_X86)
-        ff_vp3dsp_init_x86(c, flags);
-    if (ARCH_MIPS)
-        ff_vp3dsp_init_mips(c, flags);
+#if ARCH_ARM
+    ff_vp3dsp_init_arm(c, flags);
+#elif ARCH_PPC
+    ff_vp3dsp_init_ppc(c, flags);
+#elif ARCH_X86
+    ff_vp3dsp_init_x86(c, flags);
+#elif ARCH_MIPS
+    ff_vp3dsp_init_mips(c, flags);
+#endif
 }
 
 /*

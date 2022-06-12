@@ -590,14 +590,15 @@ void ff_sws_init_scale(SwsContext *c)
 {
     sws_init_swscale(c);
 
-    if (ARCH_PPC)
-        ff_sws_init_swscale_ppc(c);
-    if (ARCH_X86)
-        ff_sws_init_swscale_x86(c);
-    if (ARCH_AARCH64)
-        ff_sws_init_swscale_aarch64(c);
-    if (ARCH_ARM)
-        ff_sws_init_swscale_arm(c);
+#if ARCH_PPC
+    ff_sws_init_swscale_ppc(c);
+#elif ARCH_X86
+    ff_sws_init_swscale_x86(c);
+#elif ARCH_AARCH64
+    ff_sws_init_swscale_aarch64(c);
+#elif ARCH_ARM
+    ff_sws_init_swscale_arm(c);
+#endif
 }
 
 static void reset_ptr(const uint8_t *src[], enum AVPixelFormat format)

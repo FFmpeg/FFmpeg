@@ -89,13 +89,15 @@ av_cold void ff_mdct15_init_x86(MDCT15Context *s)
     if (EXTERNAL_SSE3(cpu_flags))
         s->postreindex = ff_mdct15_postreindex_sse3;
 
-    if (ARCH_X86_64 && EXTERNAL_AVX(cpu_flags)) {
+#if ARCH_X86_64
+    if (EXTERNAL_AVX(cpu_flags)) {
         s->fft15 = ff_fft15_avx;
         adjust_twiddles = 1;
     }
 
-    if (ARCH_X86_64 && EXTERNAL_AVX2_FAST(cpu_flags))
+    if (EXTERNAL_AVX2_FAST(cpu_flags))
         s->postreindex = ff_mdct15_postreindex_avx2;
+#endif
 
     if (adjust_twiddles)
         perm_twiddles(s);

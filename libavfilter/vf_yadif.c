@@ -311,8 +311,9 @@ static int config_output(AVFilterLink *outlink)
         s->filter_edges = filter_edges;
     }
 
-    if (ARCH_X86)
-        ff_yadif_init_x86(s);
+#if ARCH_X86
+    ff_yadif_init_x86(s);
+#endif
 
     return 0;
 }

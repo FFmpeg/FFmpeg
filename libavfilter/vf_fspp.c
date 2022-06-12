@@ -525,8 +525,9 @@ static int config_input(AVFilterLink *inlink)
     fspp->row_idct     = row_idct_c;
     fspp->row_fdct     = row_fdct_c;
 
-    if (ARCH_X86)
-        ff_fspp_init_x86(fspp);
+#if ARCH_X86
+    ff_fspp_init_x86(fspp);
+#endif
 
     return 0;
 }

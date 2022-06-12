@@ -207,8 +207,9 @@ static int config_input(AVFilterLink *inlink)
     s->comb = comb_c;
     s->var  = var_c;
 
-    if (ARCH_X86)
-        ff_pullup_init_x86(s);
+#if ARCH_X86
+    ff_pullup_init_x86(s);
+#endif
     return 0;
 }
 

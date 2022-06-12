@@ -54,18 +54,19 @@ static atomic_int cpu_count = ATOMIC_VAR_INIT(-1);
 
 static int get_cpu_flags(void)
 {
-    if (ARCH_MIPS)
-        return ff_get_cpu_flags_mips();
-    if (ARCH_AARCH64)
-        return ff_get_cpu_flags_aarch64();
-    if (ARCH_ARM)
-        return ff_get_cpu_flags_arm();
-    if (ARCH_PPC)
-        return ff_get_cpu_flags_ppc();
-    if (ARCH_X86)
-        return ff_get_cpu_flags_x86();
-    if (ARCH_LOONGARCH)
-        return ff_get_cpu_flags_loongarch();
+#if ARCH_MIPS
+    return ff_get_cpu_flags_mips();
+#elif ARCH_AARCH64
+    return ff_get_cpu_flags_aarch64();
+#elif ARCH_ARM
+    return ff_get_cpu_flags_arm();
+#elif ARCH_PPC
+    return ff_get_cpu_flags_ppc();
+#elif ARCH_X86
+    return ff_get_cpu_flags_x86();
+#elif ARCH_LOONGARCH
+    return ff_get_cpu_flags_loongarch();
+#endif
     return 0;
 }
 
@@ -252,18 +253,19 @@ void av_cpu_force_count(int count)
 
 size_t av_cpu_max_align(void)
 {
-    if (ARCH_MIPS)
-        return ff_get_cpu_max_align_mips();
-    if (ARCH_AARCH64)
-        return ff_get_cpu_max_align_aarch64();
-    if (ARCH_ARM)
-        return ff_get_cpu_max_align_arm();
-    if (ARCH_PPC)
-        return ff_get_cpu_max_align_ppc();
-    if (ARCH_X86)
-        return ff_get_cpu_max_align_x86();
-    if (ARCH_LOONGARCH)
-        return ff_get_cpu_max_align_loongarch();
+#if ARCH_MIPS
+    return ff_get_cpu_max_align_mips();
+#elif ARCH_AARCH64
+    return ff_get_cpu_max_align_aarch64();
+#elif ARCH_ARM
+    return ff_get_cpu_max_align_arm();
+#elif ARCH_PPC
+    return ff_get_cpu_max_align_ppc();
+#elif ARCH_X86
+    return ff_get_cpu_max_align_x86();
+#elif ARCH_LOONGARCH
+    return ff_get_cpu_max_align_loongarch();
+#endif
 
     return 8;
 }

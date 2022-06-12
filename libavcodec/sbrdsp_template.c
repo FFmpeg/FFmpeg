@@ -92,13 +92,14 @@ av_cold void AAC_RENAME(ff_sbrdsp_init)(SBRDSPContext *s)
     s->hf_apply_noise[3] = sbr_hf_apply_noise_3;
 
 #if !USE_FIXED
-    if (ARCH_ARM)
-        ff_sbrdsp_init_arm(s);
-    if (ARCH_AARCH64)
-        ff_sbrdsp_init_aarch64(s);
-    if (ARCH_X86)
-        ff_sbrdsp_init_x86(s);
-    if (ARCH_MIPS)
-        ff_sbrdsp_init_mips(s);
+#if ARCH_ARM
+    ff_sbrdsp_init_arm(s);
+#elif ARCH_AARCH64
+    ff_sbrdsp_init_aarch64(s);
+#elif ARCH_X86
+    ff_sbrdsp_init_x86(s);
+#elif ARCH_MIPS
+    ff_sbrdsp_init_mips(s);
+#endif
 #endif /* !USE_FIXED */
 }

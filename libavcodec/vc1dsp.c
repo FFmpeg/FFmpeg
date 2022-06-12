@@ -1033,16 +1033,17 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->startcode_find_candidate = ff_startcode_find_candidate_c;
     dsp->vc1_unescape_buffer      = vc1_unescape_buffer;
 
-    if (ARCH_AARCH64)
-        ff_vc1dsp_init_aarch64(dsp);
-    if (ARCH_ARM)
-        ff_vc1dsp_init_arm(dsp);
-    if (ARCH_PPC)
-        ff_vc1dsp_init_ppc(dsp);
-    if (ARCH_X86)
-        ff_vc1dsp_init_x86(dsp);
-    if (ARCH_MIPS)
-        ff_vc1dsp_init_mips(dsp);
-    if (ARCH_LOONGARCH)
-        ff_vc1dsp_init_loongarch(dsp);
+#if ARCH_AARCH64
+    ff_vc1dsp_init_aarch64(dsp);
+#elif ARCH_ARM
+    ff_vc1dsp_init_arm(dsp);
+#elif ARCH_PPC
+    ff_vc1dsp_init_ppc(dsp);
+#elif ARCH_X86
+    ff_vc1dsp_init_x86(dsp);
+#elif ARCH_MIPS
+    ff_vc1dsp_init_mips(dsp);
+#elif ARCH_LOONGARCH
+    ff_vc1dsp_init_loongarch(dsp);
+#endif
 }

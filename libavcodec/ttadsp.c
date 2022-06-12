@@ -56,6 +56,7 @@ av_cold void ff_ttadsp_init(TTADSPContext *c)
 {
     c->filter_process = tta_filter_process_c;
 
-    if (ARCH_X86)
-        ff_ttadsp_init_x86(c);
+#if ARCH_X86
+    ff_ttadsp_init_x86(c);
+#endif
 }
