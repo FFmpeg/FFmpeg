@@ -163,13 +163,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     } else if (av_get_frame_filename2(filename, sizeof(filename), s->url,
                                       img->img_number,
-                                      AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
-               img->img_number > img->start_img_number) {
-        av_log(s, AV_LOG_ERROR,
-               "Could not get frame filename number %d from pattern '%s'. "
-               "Use '-frames:v 1' for a single image, or '-update' option, or use a pattern such as %%03d within the filename.\n",
-               img->img_number, s->url);
-        return AVERROR(EINVAL);
+                                      AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+        if (img->img_number == img->start_img_number) {
+            av_log(s, AV_LOG_WARNING, "The specified filename '%s' does not contain an image sequence pattern or a pattern is invalid.\n", s->url);
+            av_log(s, AV_LOG_WARNING,
+                   "Use a pattern such as %%03d for an image sequence or "
+                   "use the -update option (with -frames:v 1 if needed) to write a single image.\n");
+            av_strlcpy(filename, s->url, sizeof(filename));
+        } else {
+            av_log(s, AV_LOG_ERROR, "Cannot write more than one file with the same name. Are you missing the -update option or a sequence pattern?\n");
+            return AVERROR(EINVAL);
+        }
     }
     for (i = 0; i < 4; i++) {
         av_dict_copy(&options, img->protocol_opts, 0);
