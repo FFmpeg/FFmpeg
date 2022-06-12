@@ -126,6 +126,11 @@ static int v210_decode_slice(AVCodecContext *avctx, void *arg, int jobnr, int th
     return 0;
 }
 
+static int v210_stride(int width, int align) {
+    int aligned_width = ((width + align - 1) / align) * align;
+    return aligned_width * 8 / 3;
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
                         int *got_frame, AVPacket *avpkt)
 {
@@ -137,20 +142,25 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
     if (s->custom_stride )
         stride = s->custom_stride;
     else {
-        int aligned_width = ((avctx->width + 47) / 48) * 48;
-        stride = aligned_width * 8 / 3;
+        stride = v210_stride(avctx->width, 48);
+        if (avpkt->size < stride * avctx->height) {
+            int align;
+            for (align = 24; align >= 6; align >>= 1) {
+                int small_stride = v210_stride(avctx->width, align);
+                if (avpkt->size == small_stride * avctx->height) {
+                    stride = small_stride;
+                    if (!s->stride_warning_shown)
+                        av_log(avctx, AV_LOG_WARNING, "Broken v210 with too small padding (%d byte) detected\n", align * 8 / 3);
+                    s->stride_warning_shown = 1;
+                    break;
+                }
+            }
+        }
     }
 
     if (avpkt->size < (int64_t)stride * avctx->height) {
-        if ((((avctx->width + 23) / 24) * 24 * 8) / 3 * avctx->height == avpkt->size) {
-            stride = avpkt->size / avctx->height;
-            if (!s->stride_warning_shown)
-                av_log(avctx, AV_LOG_WARNING, "Broken v210 with too small padding (64 byte) detected\n");
-            s->stride_warning_shown = 1;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "packet too small\n");
-            return AVERROR_INVALIDDATA;
-        }
+        av_log(avctx, AV_LOG_ERROR, "packet too small\n");
+        return AVERROR_INVALIDDATA;
     }
     td.stride = stride;
     if (   avctx->codec_tag == MKTAG('C', '2', '1', '0')
