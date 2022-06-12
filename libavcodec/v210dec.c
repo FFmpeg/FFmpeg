@@ -54,7 +54,7 @@ static void decode_row(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *
                        void (*unpack_frame)(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *v, int width))
 {
     uint32_t val;
-    int w = (width / 12) * 12;
+    int w = (FFMAX(0, width - 12) / 12) * 12;
 
     unpack_frame(src, y, u, v, w);
 
@@ -63,7 +63,7 @@ static void decode_row(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *
     v += w >> 1;
     src += (w << 1) / 3;
 
-    if (w < width - 5) {
+    while (w < width - 5) {
         READ_PIXELS(u, y, v);
         READ_PIXELS(y, u, y);
         READ_PIXELS(v, y, u);
