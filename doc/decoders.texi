@@ -168,6 +168,21 @@ A :-separate list of hexadecimal plugin UIDs to load in an internal session
 
 @end table
 
+@section v210
+
+Uncompressed 4:2:2 10-bit decoder.
+
+@subsection Options
+
+@table @option
+
+@item custom_stride
+Set the line size of the v210 data in bytes. The default value is 0
+(autodetect). You can use the special -1 value for a strideless v210 as seen in
+BOXX files.
+
+@end table
+
 @c man end VIDEO DECODERS
 
 @chapter Audio Decoders
