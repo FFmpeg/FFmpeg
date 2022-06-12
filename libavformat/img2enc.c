@@ -36,6 +36,7 @@
 
 typedef struct VideoMuxData {
     const AVClass *class;  /**< Class for private options. */
+    int start_img_number;
     int img_number;
     int split_planes;       /**< use independent file for each Y, U, V plane */
     char tmp[4][1024];
@@ -69,6 +70,7 @@ static int write_header(AVFormatContext *s)
                              &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
                              && desc->nb_components >= 3;
     }
+    img->img_number = img->start_img_number;
 
     return 0;
 }
@@ -162,7 +164,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (av_get_frame_filename2(filename, sizeof(filename), s->url,
                                       img->img_number,
                                       AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
-               img->img_number > 1) {
+               img->img_number > img->start_img_number) {
         av_log(s, AV_LOG_ERROR,
                "Could not get frame filename number %d from pattern '%s'. "
                "Use '-frames:v 1' for a single image, or '-update' option, or use a pattern such as %%03d within the filename.\n",
@@ -246,7 +248,7 @@ static int query_codec(enum AVCodecID id, int std_compliance)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
-    { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
+    { "start_number", "set first number in the sequence", OFFSET(start_img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { "frame_pts",    "use current frame pts for filename", OFFSET(frame_pts),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
