@@ -45,7 +45,6 @@ SECTION .text
     jnz .%1_y_loop
 %endmacro
 
-%macro vvar_fn 0
 ; .----. <- zero
 ; |    |    <- top is copied from first line in body of source
 ; |----| <- start_y
@@ -53,6 +52,7 @@ SECTION .text
 ; |----| <- end_y
 ; |    |    <- bottom is copied from last line in body of source
 ; '----' <- bh
+INIT_XMM sse
 %if ARCH_X86_64
 cglobal emu_edge_vvar, 7, 8, 1, dst, dst_stride, src, src_stride, \
                                 start_y, end_y, bh, w
@@ -81,15 +81,6 @@ cglobal emu_edge_vvar, 1, 6, 1, dst, src, start_y, end_y, bh, w
     V_COPY_ROW   bottom, bhq                    ;   v_copy_row(bottom, bh)
 .end:                                           ; }
     RET
-%endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-vvar_fn
-%endif
-
-INIT_XMM sse
-vvar_fn
 
 %macro hvar_fn 0
 cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
@@ -105,11 +96,7 @@ cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
     imul             wd, 0x01010101             ;   w *= 0x01010101
     movd             m0, wd
     mov              wq, n_wordsq               ;   initialize w
-%if cpuflag(sse2)
     pshufd           m0, m0, q0000              ;   splat
-%else ; mmx
-    punpckldq        m0, m0                     ;   splat
-%endif ; mmx/sse
 %endif ; avx2
 .x_loop:                                        ;   do {
     movu    [dstq+wq*2], m0                     ;     write($reg, $mmsize)
@@ -122,11 +109,6 @@ cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
     jnz .y_loop
     RET
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-hvar_fn
-%endif
 
 INIT_XMM sse2
 hvar_fn
@@ -338,9 +320,6 @@ cglobal emu_edge_vfix %+ %%n, 1, 5, 1, dst, src, start_y, end_y, bh
 
 INIT_MMX mmx
 VERTICAL_EXTEND 1, 15
-%if ARCH_X86_32
-VERTICAL_EXTEND 16, 22
-%endif
 
 INIT_XMM sse
 VERTICAL_EXTEND 16, 22
@@ -438,9 +417,6 @@ cglobal emu_edge_hfix %+ %%n, 4, 5, 1, dst, dst_stride, start_x, bh, val
 
 INIT_MMX mmx
 H_EXTEND 2, 14
-%if ARCH_X86_32
-H_EXTEND 16, 22
-%endif
 
 INIT_XMM sse2
 H_EXTEND 16, 22
@@ -450,19 +426,11 @@ INIT_XMM avx2
 H_EXTEND 8, 22
 %endif
 
-%macro PREFETCH_FN 1
+INIT_MMX mmxext
 cglobal prefetch, 3, 3, 0, buf, stride, h
 .loop:
-    %1      [bufq]
+    prefetcht0 [bufq]
     add      bufq, strideq
     dec        hd
     jg .loop
     REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PREFETCH_FN prefetcht0
-%if ARCH_X86_32
-INIT_MMX 3dnow
-PREFETCH_FN prefetch
-%endif
