@@ -520,6 +520,12 @@ int64_t avio_size(AVIOContext *s);
 int avio_feof(AVIOContext *s);
 
 /**
+ * Writes a formatted string to the context taking a va_list.
+ * @return number of bytes written, < 0 on error.
+ */
+int avio_vprintf(AVIOContext *s, const char *fmt, va_list ap);
+
+/**
  * Writes a formatted string to the context.
  * @return number of bytes written, < 0 on error.
  */
