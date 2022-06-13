@@ -118,7 +118,7 @@ static VLC huffman_vlc[4][4];
 #define IMC_VLC_BITS 9
 #define VLC_TABLES_SIZE 9512
 
-static VLC_TYPE vlc_tables[VLC_TABLES_SIZE][2];
+static VLCElem vlc_tables[VLC_TABLES_SIZE];
 
 static inline double freq2bark(double freq)
 {

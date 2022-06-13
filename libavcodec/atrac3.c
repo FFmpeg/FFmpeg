@@ -122,7 +122,7 @@ typedef struct ATRAC3Context {
 } ATRAC3Context;
 
 static DECLARE_ALIGNED(32, float, mdct_window)[MDCT_SIZE];
-static VLC_TYPE atrac3_vlc_table[7 * 1 << ATRAC3_VLC_BITS][2];
+static VLCElem atrac3_vlc_table[7 * 1 << ATRAC3_VLC_BITS];
 static VLC   spectral_coeff_tab[7];
 
 /**
@@ -852,7 +852,7 @@ static int atrac3al_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 static av_cold void atrac3_init_static_data(void)
 {
-    VLC_TYPE (*table)[2] = atrac3_vlc_table;
+    VLCElem *table = atrac3_vlc_table;
     const uint8_t (*hufftabs)[2] = atrac3_hufftabs;
     int i;
 

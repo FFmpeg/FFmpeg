@@ -99,8 +99,8 @@ static VLC ccitt_vlc[2], ccitt_group3_2d_vlc;
 
 static av_cold void ccitt_unpack_init(void)
 {
-    static VLC_TYPE code_table1[528][2];
-    static VLC_TYPE code_table2[648][2];
+    static VLCElem code_table1[528];
+    static VLCElem code_table2[648];
     int i;
 
     ccitt_vlc[0].table = code_table1;

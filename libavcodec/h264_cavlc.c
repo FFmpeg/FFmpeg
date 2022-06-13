@@ -235,35 +235,35 @@ static const uint8_t run_bits[7][16]={
 };
 
 static VLC coeff_token_vlc[4];
-static VLC_TYPE coeff_token_vlc_tables[520+332+280+256][2];
+static VLCElem coeff_token_vlc_tables[520+332+280+256];
 static const int coeff_token_vlc_tables_size[4]={520,332,280,256};
 
 static VLC chroma_dc_coeff_token_vlc;
-static VLC_TYPE chroma_dc_coeff_token_vlc_table[256][2];
+static VLCElem chroma_dc_coeff_token_vlc_table[256];
 static const int chroma_dc_coeff_token_vlc_table_size = 256;
 
 static VLC chroma422_dc_coeff_token_vlc;
-static VLC_TYPE chroma422_dc_coeff_token_vlc_table[8192][2];
+static VLCElem chroma422_dc_coeff_token_vlc_table[8192];
 static const int chroma422_dc_coeff_token_vlc_table_size = 8192;
 
 static VLC total_zeros_vlc[15+1];
-static VLC_TYPE total_zeros_vlc_tables[15][512][2];
+static VLCElem total_zeros_vlc_tables[15][512];
 static const int total_zeros_vlc_tables_size = 512;
 
 static VLC chroma_dc_total_zeros_vlc[3+1];
-static VLC_TYPE chroma_dc_total_zeros_vlc_tables[3][8][2];
+static VLCElem chroma_dc_total_zeros_vlc_tables[3][8];
 static const int chroma_dc_total_zeros_vlc_tables_size = 8;
 
 static VLC chroma422_dc_total_zeros_vlc[7+1];
-static VLC_TYPE chroma422_dc_total_zeros_vlc_tables[7][32][2];
+static VLCElem chroma422_dc_total_zeros_vlc_tables[7][32];
 static const int chroma422_dc_total_zeros_vlc_tables_size = 32;
 
 static VLC run_vlc[6+1];
-static VLC_TYPE run_vlc_tables[6][8][2];
+static VLCElem run_vlc_tables[6][8];
 static const int run_vlc_tables_size = 8;
 
 static VLC run7_vlc;
-static VLC_TYPE run7_vlc_table[96][2];
+static VLCElem run7_vlc_table[96];
 static const int run7_vlc_table_size = 96;
 
 #define LEVEL_TAB_BITS 8

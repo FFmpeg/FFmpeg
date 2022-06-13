@@ -3588,7 +3588,7 @@ static av_cold void mpeg4_init_static(void)
                                  0, 0, 528);
 
     for (unsigned i = 0, offset = 0; i < 12; i++) {
-        static VLC_TYPE vlc_buf[6498][2];
+        static VLCElem vlc_buf[6498];
 
         studio_intra_tab[i].table           = &vlc_buf[offset];
         studio_intra_tab[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;

@@ -100,7 +100,7 @@ static VLC vec_entry_vlc[2];
 static av_cold void mss4_init_vlc(VLC *vlc, unsigned *offset,
                                   const uint8_t *lens, const uint8_t *syms)
 {
-    static VLC_TYPE vlc_buf[2146][2];
+    static VLCElem vlc_buf[2146];
     uint8_t  bits[MAX_ENTRIES];
     int i, j;
     int idx = 0;

@@ -308,8 +308,8 @@ av_cold int ff_cfhd_init_vlcs(CFHDContext *s)
     if (ret < 0)
         return ret;
     for (i = 0; i < s->vlc_9.table_size; i++) {
-        int code = s->vlc_9.table[i][0];
-        int len  = s->vlc_9.table[i][1];
+        int code = s->vlc_9.table[i].sym;
+        int len  = s->vlc_9.table[i].len;
         int level, run;
 
         if (len < 0) { // more bits needed
@@ -351,8 +351,8 @@ av_cold int ff_cfhd_init_vlcs(CFHDContext *s)
     av_assert0(s->vlc_18.table_size == 4572);
 
     for (i = 0; i < s->vlc_18.table_size; i++) {
-        int code = s->vlc_18.table[i][0];
-        int len  = s->vlc_18.table[i][1];
+        int code = s->vlc_18.table[i].sym;
+        int len  = s->vlc_18.table[i].len;
         int level, run;
 
         if (len < 0) { // more bits needed

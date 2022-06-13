@@ -340,7 +340,7 @@ static av_cold void rv10_build_vlc(VLC *vlc, const uint16_t len_count[15],
 
 static av_cold void rv10_init_static(void)
 {
-    static VLC_TYPE table[1472 + 992][2];
+    static VLCElem table[1472 + 992];
 
     rv_dc_lum.table             = table;
     rv_dc_lum.table_allocated   = 1472;
@@ -349,8 +349,8 @@ static av_cold void rv10_init_static(void)
     for (int i = 0; i < 1 << (DC_VLC_BITS - 7 /* Length of skip prefix */); i++) {
         /* All codes beginning with 0x7F have the same length and value.
          * Modifying the table directly saves us the useless subtables. */
-        rv_dc_lum.table[(0x7F << (DC_VLC_BITS - 7)) + i][0] = 255;
-        rv_dc_lum.table[(0x7F << (DC_VLC_BITS - 7)) + i][1] = 18;
+        rv_dc_lum.table[(0x7F << (DC_VLC_BITS - 7)) + i].sym = 255;
+        rv_dc_lum.table[(0x7F << (DC_VLC_BITS - 7)) + i].len = 18;
     }
     rv_dc_chrom.table           = &table[1472];
     rv_dc_chrom.table_allocated = 992;
@@ -358,8 +358,8 @@ static av_cold void rv10_init_static(void)
                    rv_sym_run_len, FF_ARRAY_ELEMS(rv_sym_run_len) - 2);
     for (int i = 0; i < 1 << (DC_VLC_BITS - 9 /* Length of skip prefix */); i++) {
         /* Same as above. */
-        rv_dc_chrom.table[(0x1FE << (DC_VLC_BITS - 9)) + i][0] = 255;
-        rv_dc_chrom.table[(0x1FE << (DC_VLC_BITS - 9)) + i][1] = 18;
+        rv_dc_chrom.table[(0x1FE << (DC_VLC_BITS - 9)) + i].sym = 255;
+        rv_dc_chrom.table[(0x1FE << (DC_VLC_BITS - 9)) + i].len = 18;
     }
     ff_h263_decode_init_vlc();
 }

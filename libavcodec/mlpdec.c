@@ -220,7 +220,7 @@ static VLC huff_vlc[3];
 static av_cold void init_static(void)
 {
     for (int i = 0; i < 3; i++) {
-        static VLC_TYPE vlc_buf[3 * VLC_STATIC_SIZE][2];
+        static VLCElem vlc_buf[3 * VLC_STATIC_SIZE];
         huff_vlc[i].table           = &vlc_buf[i * VLC_STATIC_SIZE];
         huff_vlc[i].table_allocated = VLC_STATIC_SIZE;
         init_vlc(&huff_vlc[i], VLC_BITS, 18,

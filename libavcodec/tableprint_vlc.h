@@ -39,22 +39,21 @@
 #include "libavutil/reverse.c"
 #include "vlc.c"
 
-#define REPLACE_DEFINE2(type) write_##type##_array
-#define REPLACE_DEFINE(type) REPLACE_DEFINE2(type)
-static void write_VLC_TYPE_array(const VLC_TYPE *p, int s) {
-    REPLACE_DEFINE(VLC_TYPE)(p, s);
-}
+// The following will have to be modified if VLCBaseType changes.
+WRITE_1D_FUNC_ARGV(VLCElem, 3, "{ .sym =%5" PRId16 ", .len =%2"PRIi16 " }",
+                   data[i].sym, data[i].len)
 
-WRITE_2D_FUNC(VLC_TYPE)
-
-static void write_vlc_type(const VLC *vlc, VLC_TYPE (*base_table)[2], const char *base_table_name)
+static void write_vlc_type(const VLC *vlc, const VLCElem *base_table, const char *base_table_name)
 {
     printf("    .bits = %i,\n", vlc->bits);
     // Unfortunately need to cast away const currently
-    printf("    .table = (VLC_TYPE (*)[2])(%s + 0x%x),\n", base_table_name, (int)(vlc->table - base_table));
+    printf("    .table = (VLCElem *)(%s + 0x%x),\n", base_table_name, (int)(vlc->table - base_table));
     printf("    .table_size = 0x%x,\n", vlc->table_size);
     printf("    .table_allocated = 0x%x,\n", vlc->table_allocated);
 }
+
+#define WRITE_VLC_TABLE(prefix, name)                   \
+    WRITE_ARRAY(prefix, VLCElem, name)
 
 #define WRITE_VLC_TYPE(prefix, name, base_table)        \
     do {                                                \

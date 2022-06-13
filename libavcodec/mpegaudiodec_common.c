@@ -65,10 +65,10 @@ const uint8_t ff_lsf_nsf_table[6][3][4] = {
 
 /* mpegaudio layer 3 huffman tables */
 VLC ff_huff_vlc[16];
-static VLC_TYPE huff_vlc_tables[128 + 128 + 128 + 130 + 128 + 154 + 166 + 142 +
-                                204 + 190 + 170 + 542 + 460 + 662 + 414][2];
+static VLCElem huff_vlc_tables[128 + 128 + 128 + 130 + 128 + 154 + 166 + 142 +
+                               204 + 190 + 170 + 542 + 460 + 662 + 414];
 VLC ff_huff_quad_vlc[2];
-static VLC_TYPE  huff_quad_vlc_tables[64 + 16][2];
+static VLCElem huff_quad_vlc_tables[64 + 16];
 
 static const uint8_t mpa_hufflens[] = {
     /* Huffman table 1 - 4 entries */

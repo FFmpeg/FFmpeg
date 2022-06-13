@@ -1584,7 +1584,7 @@ static const uint16_t vlc_offs[] = {
 
 static av_cold void vc1_init_static(void)
 {
-    static VLC_TYPE vlc_table[32372][2];
+    static VLCElem vlc_table[32372];
 
     INIT_VLC_STATIC(&ff_vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
                     ff_vc1_bfraction_bits,  1, 1,

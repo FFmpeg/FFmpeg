@@ -109,7 +109,7 @@ static VLC vlc_tab_type30;
 static VLC vlc_tab_type34;
 static VLC vlc_tab_fft_tone_offset[5];
 
-static VLC_TYPE qdm2_table[3838][2];
+static VLCElem qdm2_table[3838];
 
 static av_cold void build_vlc(VLC *vlc, int nb_bits, int nb_codes,
                               unsigned *offset, const uint8_t tab[][2])

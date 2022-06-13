@@ -78,7 +78,7 @@ static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSCom
                         int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
 { \
     int b, num = ps->nr_ ## PAR ## _par; \
-    VLC_TYPE (*vlc_table)[2] = vlc_ps[table_idx].table; \
+    const VLCElem *vlc_table = vlc_ps[table_idx].table; \
     if (dt) { \
         int e_prev = e ? e - 1 : ps->num_env_old - 1; \
         e_prev = FFMAX(e_prev, 0); \

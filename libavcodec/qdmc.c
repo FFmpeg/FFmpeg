@@ -169,7 +169,7 @@ static av_cold void qdmc_init_static_data(void)
     int i;
 
     for (unsigned i = 0, offset = 0; i < FF_ARRAY_ELEMS(vtable); i++) {
-        static VLC_TYPE vlc_buffer[13698][2];
+        static VLCElem vlc_buffer[13698];
         vtable[i].table           = &vlc_buffer[offset];
         vtable[i].table_allocated = FF_ARRAY_ELEMS(vlc_buffer) - offset;
         ff_init_vlc_from_lengths(&vtable[i], huff_bits[i], huff_sizes[i],

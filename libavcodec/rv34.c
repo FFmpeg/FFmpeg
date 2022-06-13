@@ -81,7 +81,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type);
  * @{
  */
 
-static VLC_TYPE table_data[117592][2];
+static VLCElem table_data[117592];
 
 /**
  * Generate VLC from codeword lengths.

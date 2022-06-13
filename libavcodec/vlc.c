@@ -65,13 +65,13 @@ static int alloc_table(VLC *vlc, int size, int use_static)
         if (use_static)
             abort(); // cannot do anything, init_vlc() is used with too little memory
         vlc->table_allocated += (1 << vlc->bits);
-        vlc->table = av_realloc_f(vlc->table, vlc->table_allocated, sizeof(VLC_TYPE) * 2);
+        vlc->table = av_realloc_f(vlc->table, vlc->table_allocated, sizeof(*vlc->table));
         if (!vlc->table) {
             vlc->table_allocated = 0;
             vlc->table_size = 0;
             return AVERROR(ENOMEM);
         }
-        memset(vlc->table + vlc->table_allocated - (1 << vlc->bits), 0, sizeof(VLC_TYPE) * 2 << vlc->bits);
+        memset(vlc->table + vlc->table_allocated - (1 << vlc->bits), 0, sizeof(*vlc->table) << vlc->bits);
     }
     return index;
 }
@@ -88,7 +88,7 @@ static av_always_inline uint32_t bitswap_32(uint32_t x)
 
 typedef struct VLCcode {
     uint8_t bits;
-    VLC_TYPE symbol;
+    VLCBaseType symbol;
     /** codeword, with the first bit-to-be-read in the msb
      * (even if intended for a little-endian bitstream reader) */
     uint32_t code;
@@ -138,7 +138,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
                        VLCcode *codes, int flags)
 {
     int table_size, table_index;
-    VLC_TYPE (*table)[2];
+    VLCElem *table;
 
     if (table_nb_bits > 30)
        return AVERROR(EINVAL);
@@ -166,15 +166,15 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
                 inc = 1 << n;
             }
             for (int k = 0; k < nb; k++) {
-                int   bits = table[j][1];
-                int oldsym = table[j][0];
+                int   bits = table[j].len;
+                int oldsym = table[j].sym;
                 ff_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
                 if ((bits || oldsym) && (bits != n || oldsym != symbol)) {
                     av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                     return AVERROR_INVALIDDATA;
                 }
-                table[j][1] = n; //bits
-                table[j][0] = symbol;
+                table[j].len = n;
+                table[j].sym = symbol;
                 j += inc;
             }
         } else {
@@ -200,7 +200,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             }
             subtable_bits = FFMIN(subtable_bits, table_nb_bits);
             j = (flags & INIT_VLC_OUTPUT_LE) ? bitswap_32(code_prefix) >> (32 - table_nb_bits) : code_prefix;
-            table[j][1] = -subtable_bits;
+            table[j].len = -subtable_bits;
             ff_dlog(NULL, "%4x: n=%d (subtable)\n",
                     j, codes[i].bits + table_nb_bits);
             index = build_table(vlc, subtable_bits, k-i, codes+i, flags);
@@ -208,8 +208,8 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
                 return index;
             /* note: realloc has been done, so reload tables */
             table = &vlc->table[table_index];
-            table[j][0] = index; //code
-            if (table[j][0] != index) {
+            table[j].sym = index;
+            if (table[j].sym != index) {
                 avpriv_request_sample(NULL, "strange codes");
                 return AVERROR_PATCHWELCOME;
             }
@@ -218,8 +218,8 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     }
 
     for (int i = 0; i < table_size; i++) {
-        if (table[i][1] == 0) //bits
-            table[i][0] = -1; //codes
+        if (table[i].len == 0)
+            table[i].sym = -1;
     }
 
     return table_index;

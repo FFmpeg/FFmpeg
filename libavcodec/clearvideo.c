@@ -84,7 +84,7 @@ typedef struct CLVContext {
 
 static VLC        dc_vlc, ac_vlc;
 static LevelCodes lev[4 + 3 + 3]; // 0..3: Y, 4..6: U, 7..9: V
-static VLC_TYPE   vlc_buf[16716][2];
+static VLCElem    vlc_buf[16716];
 
 static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
                                int ac_quant)

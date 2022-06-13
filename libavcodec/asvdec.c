@@ -78,7 +78,7 @@ static inline int asv1_get_level(GetBitContext *gb)
 }
 
 // get_vlc2() is big-endian in this file
-static inline int asv2_get_vlc2(GetBitContext *gb, VLC_TYPE (*table)[2], int bits)
+static inline int asv2_get_vlc2(GetBitContext *gb, const VLCElem *table, int bits)
 {
     unsigned int index;
     int code, n;
@@ -87,8 +87,8 @@ static inline int asv2_get_vlc2(GetBitContext *gb, VLC_TYPE (*table)[2], int bit
     UPDATE_CACHE_LE(re, gb);
 
     index = SHOW_UBITS_LE(re, gb, bits);
-    code  = table[index][0];
-    n     = table[index][1];
+    code  = table[index].sym;
+    n     = table[index].len;
     LAST_SKIP_BITS(re, gb, n);
 
     CLOSE_READER(re, gb);

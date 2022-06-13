@@ -1314,7 +1314,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 static av_cold void bink_init_vlcs(void)
 {
     for (int i = 0, offset = 0; i < 16; i++) {
-        static VLC_TYPE table[976][2];
+        static VLCElem table[976];
         const int maxbits = bink_tree_lens[i][15];
         bink_trees[i].table           = table + offset;
         bink_trees[i].table_allocated = 1 << maxbits;

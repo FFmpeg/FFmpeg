@@ -250,7 +250,7 @@ static void idct(int16_t block[64])
 
 static av_cold void init_vlcs(void)
 {
-    static VLC_TYPE table[2][4][32][2];
+    static VLCElem table[2][4][32];
     int i, j;
 
     for (i = 0; i < 2; i++) {

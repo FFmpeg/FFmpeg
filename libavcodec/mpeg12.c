@@ -66,14 +66,14 @@ static const uint8_t table_mb_btype[11][2] = {
 av_cold void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags)
 {
     int i;
-    VLC_TYPE table[680][2] = {{0}};
+    VLCElem table[680] = { 0 };
     VLC vlc = { .table = table, .table_allocated = static_size };
     av_assert0(static_size <= FF_ARRAY_ELEMS(table));
     init_vlc(&vlc, TEX_VLC_BITS, rl->n + 2, &rl->table_vlc[0][1], 4, 2, &rl->table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | flags);
 
     for (i = 0; i < vlc.table_size; i++) {
-        int code = vlc.table[i][0];
-        int len  = vlc.table[i][1];
+        int code = vlc.table[i].sym;
+        int len  = vlc.table[i].len;
         int level, run;
 
         if (len == 0) { // illegal code

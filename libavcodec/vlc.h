@@ -21,11 +21,16 @@
 
 #include <stdint.h>
 
-#define VLC_TYPE int16_t
+// When changing this, be sure to also update tableprint_vlc.h accordingly.
+typedef int16_t VLCBaseType;
+
+typedef struct VLCElem {
+    VLCBaseType sym, len;
+} VLCElem;
 
 typedef struct VLC {
     int bits;
-    VLC_TYPE (*table)[2]; ///< code, bits
+    VLCElem *table;
     int table_size, table_allocated;
 } VLC;
 
@@ -98,7 +103,7 @@ void ff_free_vlc(VLC *vlc);
 #define INIT_CUSTOM_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,      \
                                       h, i, j, flags, static_size)         \
     do {                                                                   \
-        static VLC_TYPE table[static_size][2];                             \
+        static VLCElem table[static_size];                                 \
         (vlc)->table           = table;                                    \
         (vlc)->table_allocated = static_size;                              \
         ff_init_vlc_sparse(vlc, bits, a, b, c, d, e, f, g, h, i, j,        \
@@ -127,7 +132,7 @@ void ff_free_vlc(VLC *vlc);
                                      symbols, symbols_wrap, symbols_size,  \
                                      offset, flags, static_size)           \
     do {                                                                   \
-        static VLC_TYPE table[static_size][2];                             \
+        static VLCElem table[static_size];                                 \
         (vlc)->table           = table;                                    \
         (vlc)->table_allocated = static_size;                              \
         ff_init_vlc_from_lengths(vlc, bits, nb_codes, lens, len_wrap,      \

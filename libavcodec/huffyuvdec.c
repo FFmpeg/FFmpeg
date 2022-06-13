@@ -566,24 +566,24 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 /** Subset of GET_VLC for use in hand-roller VLC code */
 #define VLC_INTERN(dst, table, gb, name, bits, max_depth)   \
-    code = table[index][0];                                 \
-    n    = table[index][1];                                 \
+    code = table[index].sym;                                \
+    n    = table[index].len;                                \
     if (max_depth > 1 && n < 0) {                           \
         LAST_SKIP_BITS(name, gb, bits);                     \
         UPDATE_CACHE(name, gb);                             \
                                                             \
         nb_bits = -n;                                       \
         index   = SHOW_UBITS(name, gb, nb_bits) + code;     \
-        code    = table[index][0];                          \
-        n       = table[index][1];                          \
+        code    = table[index].sym;                         \
+        n       = table[index].len;                         \
         if (max_depth > 2 && n < 0) {                       \
             LAST_SKIP_BITS(name, gb, nb_bits);              \
             UPDATE_CACHE(name, gb);                         \
                                                             \
             nb_bits = -n;                                   \
             index   = SHOW_UBITS(name, gb, nb_bits) + code; \
-            code    = table[index][0];                      \
-            n       = table[index][1];                      \
+            code    = table[index].sym;                     \
+            n       = table[index].len;                     \
         }                                                   \
     }                                                       \
     dst = code;                                             \
@@ -594,7 +594,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                      bits, max_depth, OP)                           \
     do {                                                            \
         unsigned int index = SHOW_UBITS(name, gb, bits);            \
-        int          code, n = dtable[index][1];                    \
+        int          code, n = dtable[index].len;                   \
                                                                     \
         if (n<=0) {                                                 \
             int nb_bits;                                            \
@@ -604,7 +604,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
             index = SHOW_UBITS(name, gb, bits);                     \
             VLC_INTERN(dst1, table2, gb, name, bits, max_depth);    \
         } else {                                                    \
-            code = dtable[index][0];                                \
+            code = dtable[index].sym;                               \
             OP(dst0, dst1, code);                                   \
             LAST_SKIP_BITS(name, gb, n);                            \
         }                                                           \
@@ -752,10 +752,10 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count,
 
         UPDATE_CACHE(re, &s->gb);
         index = SHOW_UBITS(re, &s->gb, VLC_BITS);
-        n     = s->vlc[4].table[index][1];
+        n     = s->vlc[4].table[index].len;
 
         if (n>0) {
-            code  = s->vlc[4].table[index][0];
+            code  = s->vlc[4].table[index].sym;
             *(uint32_t *) &s->temp[0][4 * i] = s->pix_bgr_map[code];
             LAST_SKIP_BITS(re, &s->gb, n);
         } else {

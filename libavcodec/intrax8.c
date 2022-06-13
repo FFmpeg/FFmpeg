@@ -52,7 +52,7 @@ static VLC j_orient_vlc[2][4]; // [quant], [select]
 static av_cold void x8_init_vlc(VLC *vlc, int nb_bits, int nb_codes,
                                 int *offset, const uint8_t table[][2])
 {
-    static VLC_TYPE vlc_buf[VLC_BUFFER_SIZE][2];
+    static VLCElem vlc_buf[VLC_BUFFER_SIZE];
 
     vlc->table           = &vlc_buf[*offset];
     vlc->table_allocated = VLC_BUFFER_SIZE - *offset;

@@ -811,7 +811,7 @@ static int read_sbr_envelope(AACContext *ac, SpectralBandReplication *sbr, GetBi
 {
     int bits;
     int i, j, k;
-    VLC_TYPE (*t_huff)[2], (*f_huff)[2];
+    const VLCElem *t_huff, *f_huff;
     int t_lav, f_lav;
     const int delta = (ch == 1 && sbr->bs_coupling == 1) + 1;
     const int odd = sbr->n[1] & 1;
@@ -899,7 +899,7 @@ static int read_sbr_noise(AACContext *ac, SpectralBandReplication *sbr, GetBitCo
                            SBRData *ch_data, int ch)
 {
     int i, j;
-    VLC_TYPE (*t_huff)[2], (*f_huff)[2];
+    const VLCElem *t_huff, *f_huff;
     int t_lav, f_lav;
     int delta = (ch == 1 && sbr->bs_coupling == 1) + 1;
 

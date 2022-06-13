@@ -777,7 +777,7 @@ static av_cold void svq1_static_init(void)
     for (int i = 0, offset = 0; i < 6; i++) {
         static const uint8_t sizes[2][6] = { { 14, 10, 14, 18, 16, 18 },
                                              { 10, 10, 14, 14, 14, 16 } };
-        static VLC_TYPE table[168][2];
+        static VLCElem table[168];
         svq1_intra_multistage[i].table           = &table[offset];
         svq1_intra_multistage[i].table_allocated = sizes[0][i];
         offset                                  += sizes[0][i];

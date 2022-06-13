@@ -31,7 +31,7 @@
 #include "atrac3plus.h"
 #include "atrac3plus_data.h"
 
-static VLC_TYPE tables_data[154276][2];
+static VLCElem tables_data[154276];
 static VLC wl_vlc_tabs[4];
 static VLC sf_vlc_tabs[8];
 static VLC ct_vlc_tabs[4];

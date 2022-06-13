@@ -42,7 +42,7 @@ int main(void)
 
     qdm2_init_vlc();
 
-    WRITE_2D_ARRAY("static const", VLC_TYPE, qdm2_table);
+    WRITE_VLC_TABLE("static const", qdm2_table);
     WRITE_VLC_TYPE("static const", vlc_tab_level, qdm2_table);
     WRITE_VLC_TYPE("static const", vlc_tab_diff, qdm2_table);
     WRITE_VLC_TYPE("static const", vlc_tab_run, qdm2_table);

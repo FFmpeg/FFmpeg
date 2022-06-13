@@ -1221,8 +1221,8 @@ static void aacdec_init(AACContext *ac);
 
 static av_cold void aac_static_table_init(void)
 {
-    static VLC_TYPE vlc_buf[304 + 270 + 550 + 300 + 328 +
-                            294 + 306 + 268 + 510 + 366 + 462][2];
+    static VLCElem vlc_buf[304 + 270 + 550 + 300 + 328 +
+                           294 + 306 + 268 + 510 + 366 + 462];
     for (unsigned i = 0, offset = 0; i < 11; i++) {
         vlc_spectral[i].table           = &vlc_buf[offset];
         vlc_spectral[i].table_allocated = FF_ARRAY_ELEMS(vlc_buf) - offset;
@@ -1821,7 +1821,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 #if !USE_FIXED
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
 #endif /* !USE_FIXED */
-                VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cbt_m1].table;
+                const VLCElem *vlc_tab = vlc_spectral[cbt_m1].table;
                 OPEN_READER(re, gb);
 
                 switch (cbt_m1 >> 1) {
