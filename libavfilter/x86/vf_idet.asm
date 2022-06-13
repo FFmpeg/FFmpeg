@@ -25,60 +25,6 @@
 
 SECTION .text
 
-; Implementation that does 8-bytes at a time using single-word operations.
-%macro IDET_FILTER_LINE 1
-INIT_MMX %1
-cglobal idet_filter_line, 4, 5, 0, a, b, c, width, index
-    xor       indexq, indexq
-%define   m_zero m2
-%define   m_sum  m5
-    pxor      m_sum, m_sum
-    pxor      m_zero, m_zero
-
-.loop:
-    movu      m0, [aq + indexq*1]
-    punpckhbw m1, m0, m_zero
-    punpcklbw m0, m_zero
-
-    movu      m3, [cq + indexq*1]
-    punpckhbw m4, m3, m_zero
-    punpcklbw m3, m_zero
-
-    paddsw    m1, m4
-    paddsw    m0, m3
-
-    movu      m3, [bq + indexq*1]
-    punpckhbw m4, m3, m_zero
-    punpcklbw m3, m_zero
-
-    paddw     m4, m4
-    paddw     m3, m3
-    psubsw    m1, m4
-    psubsw    m0, m3
-
-    ABS2      m1, m0, m4, m3
-
-    paddw     m0, m1
-    punpckhwd m1, m0, m_zero
-    punpcklwd m0, m_zero
-
-    paddd     m0, m1
-    paddd     m_sum, m0
-
-    add       indexq, 0x8
-    CMP       widthd, indexd
-    jg        .loop
-
-    HADDD     m_sum, m0
-    movd      eax, m_sum
-    RET
-%endmacro
-
-%if ARCH_X86_32
-IDET_FILTER_LINE mmxext
-IDET_FILTER_LINE mmx
-%endif
-
 ;******************************************************************************
 ; 16bit implementation that does 4/8-pixels at a time
 
@@ -128,10 +74,6 @@ cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
 
 INIT_XMM sse2
 IDET_FILTER_LINE_16BIT 8
-%if ARCH_X86_32
-INIT_MMX mmx
-IDET_FILTER_LINE_16BIT 4
-%endif
 
 ;******************************************************************************
 ; SSE2 8-bit implementation that does 16-bytes at a time:
