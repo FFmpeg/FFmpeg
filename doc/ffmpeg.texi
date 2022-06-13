@@ -518,6 +518,21 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 Like the @code{-ss} option but relative to the "end of file". That is negative
 values are earlier in the file, 0 is at EOF.
 
+@item -isync @var{input_index} (@emph{input})
+Assign an input as a sync source.
+
+This will take the difference between the start times of the target and reference inputs and
+offset the timestamps of the target file by that difference. The source timestamps of the two
+inputs should derive from the same clock source for expected results. If @code{copyts} is set
+then @code{start_at_zero} must also be set. If either of the inputs has no starting timestamp
+then no sync adjustment is made.
+
+Acceptable values are those that refer to a valid ffmpeg input index. If the sync reference is
+the target index itself or @var{-1}, then no adjustment is made to target timestamps. A sync
+reference may not itself be synced to any other input.
+
+Default value is @var{-1}.
+
 @item -itsoffset @var{offset} (@emph{input})
 Set the input time offset.
 

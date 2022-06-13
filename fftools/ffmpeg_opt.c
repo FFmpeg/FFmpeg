@@ -235,6 +235,7 @@ static void init_options(OptionsContext *o)
     o->chapters_input_file = INT_MAX;
     o->accurate_seek  = 1;
     o->thread_queue_size = -1;
+    o->input_sync_ref = -1;
 }
 
 static int show_hwaccels(void *optctx, const char *opt, const char *arg)
@@ -284,6 +285,58 @@ static int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, in
         av_log(NULL, AV_LOG_WARNING, "Passing a number to -vsync is deprecated,"
                " use a string argument as described in the manual.\n");
     }
+    return 0;
+}
+
+static int apply_sync_offsets(void)
+{
+    for (int i = 0; i < nb_input_files; i++) {
+        InputFile *ref, *self = input_files[i];
+        int64_t adjustment;
+        int64_t self_start_time, ref_start_time, self_seek_start, ref_seek_start;
+        int start_times_set = 1;
+
+        if (self->input_sync_ref == -1 || self->input_sync_ref == i) continue;
+        if (self->input_sync_ref >= nb_input_files || self->input_sync_ref < -1) {
+            av_log(NULL, AV_LOG_FATAL, "-isync for input %d references non-existent input %d.\n", i, self->input_sync_ref);
+            exit_program(1);
+        }
+
+        if (copy_ts && !start_at_zero) {
+            av_log(NULL, AV_LOG_FATAL, "Use of -isync requires that start_at_zero be set if copyts is set.\n");
+            exit_program(1);
+        }
+
+        ref = input_files[self->input_sync_ref];
+        if (ref->input_sync_ref != -1 && ref->input_sync_ref != self->input_sync_ref) {
+            av_log(NULL, AV_LOG_ERROR, "-isync for input %d references a resynced input %d. Sync not set.\n", i, self->input_sync_ref);
+            continue;
+        }
+
+        if (self->ctx->start_time_realtime != AV_NOPTS_VALUE && ref->ctx->start_time_realtime != AV_NOPTS_VALUE) {
+            self_start_time = self->ctx->start_time_realtime;
+            ref_start_time  =  ref->ctx->start_time_realtime;
+        } else if (self->ctx->start_time != AV_NOPTS_VALUE && ref->ctx->start_time != AV_NOPTS_VALUE) {
+            self_start_time = self->ctx->start_time;
+            ref_start_time  =  ref->ctx->start_time;
+        } else {
+            start_times_set = 0;
+        }
+
+        if (start_times_set) {
+            self_seek_start = self->start_time == AV_NOPTS_VALUE ? 0 : self->start_time;
+            ref_seek_start  =  ref->start_time == AV_NOPTS_VALUE ? 0 :  ref->start_time;
+
+            adjustment = (self_start_time - ref_start_time) + !copy_ts*(self_seek_start - ref_seek_start) + ref->input_ts_offset;
+
+            self->ts_offset += adjustment;
+
+            av_log(NULL, AV_LOG_INFO, "Adjusted ts offset for Input #%d by %"PRId64" us to sync with Input #%d.\n", i, adjustment, self->input_sync_ref);
+        } else {
+            av_log(NULL, AV_LOG_INFO, "Unable to identify start times for Inputs #%d and %d both. No sync adjustment made.\n", i, self->input_sync_ref);
+        }
+    }
+
     return 0;
 }
 
@@ -1305,6 +1358,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
     f->recording_time = o->recording_time;
+    f->input_sync_ref = o->input_sync_ref;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
     f->nb_streams = ic->nb_streams;
@@ -3489,6 +3543,8 @@ int ffmpeg_parse_options(int argc, char **argv)
         goto fail;
     }
 
+    apply_sync_offsets();
+
     /* create the complex filtergraphs */
     ret = init_complex_filters();
     if (ret < 0) {
@@ -3603,6 +3659,9 @@ const OptionDef options[] = {
     { "accurate_seek",  OPT_BOOL | OPT_OFFSET | OPT_EXPERT |
                         OPT_INPUT,                                   { .off = OFFSET(accurate_seek) },
         "enable/disable accurate seeking with -ss" },
+    { "isync",          HAS_ARG | OPT_INT | OPT_OFFSET |
+                        OPT_EXPERT | OPT_INPUT,                      { .off = OFFSET(input_sync_ref) },
+        "Indicate the input index for sync reference", "sync ref" },
     { "itsoffset",      HAS_ARG | OPT_TIME | OPT_OFFSET |
                         OPT_EXPERT | OPT_INPUT,                      { .off = OFFSET(input_ts_offset) },
         "set the input ts offset", "time_off" },

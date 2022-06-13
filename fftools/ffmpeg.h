@@ -118,6 +118,7 @@ typedef struct OptionsContext {
     float readrate;
     int accurate_seek;
     int thread_queue_size;
+    int input_sync_ref;
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
@@ -410,6 +411,7 @@ typedef struct InputFile {
                              at the moment when looping happens */
     AVRational time_base; /* time base of the duration */
     int64_t input_ts_offset;
+    int input_sync_ref;
 
     int64_t ts_offset;
     int64_t last_ts;
