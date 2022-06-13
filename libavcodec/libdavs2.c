@@ -25,6 +25,7 @@
 #include "libavutil/cpu.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "avs2.h"
 #include "davs2.h"
 
 typedef struct DAVS2Context {
@@ -85,7 +86,8 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic, int *g
          */
         avctx->has_b_frames = FFMAX(avctx->has_b_frames, !headerset->low_delay);
 
-        avctx->framerate = av_d2q(headerset->frame_rate,4096);
+        if (headerset->frame_rate_id < 16)
+            avctx->framerate = ff_avs2_frame_rate_tab[headerset->frame_rate_id];
         *got_frame = 0;
         return 0;
     }
