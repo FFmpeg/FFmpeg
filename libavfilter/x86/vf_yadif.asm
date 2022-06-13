@@ -133,12 +133,8 @@ SECTION .text
     psubusb      m2, m3
     psubusb      m3, m4
     pmaxub       m2, m3
-%if mmsize == 16
     mova         m3, m2
     psrldq       m3, 2
-%else
-    pshufw       m3, m2, q0021
-%endif
     punpcklbw    m2, m7
     punpcklbw    m3, m7
     paddw        m0, m2
@@ -237,7 +233,3 @@ INIT_XMM ssse3
 YADIF
 INIT_XMM sse2
 YADIF
-%if ARCH_X86_32
-INIT_MMX mmxext
-YADIF
-%endif
