@@ -545,12 +545,13 @@ static const AVClass writer_class = {
     .child_next = writer_child_next,
 };
 
-static void writer_close(WriterContext **wctx)
+static int writer_close(WriterContext **wctx)
 {
     int i;
+    int ret = 0;
 
     if (!*wctx)
-        return;
+        return -1;
 
     if ((*wctx)->writer->uninit)
         (*wctx)->writer->uninit(*wctx);
@@ -562,9 +563,10 @@ static void writer_close(WriterContext **wctx)
     av_opt_free(*wctx);
     if ((*wctx)->avio) {
         avio_flush((*wctx)->avio);
-        avio_close((*wctx)->avio);
+        ret = avio_close((*wctx)->avio);
     }
     av_freep(wctx);
+    return ret;
 }
 
 static void bprint_bytes(AVBPrint *bp, const uint8_t *ubuf, size_t ubuf_size)
@@ -4145,7 +4147,9 @@ int main(int argc, char **argv)
         }
 
         writer_print_section_footer(wctx);
-        writer_close(&wctx);
+        ret = writer_close(&wctx);
+        if (ret < 0)
+            av_log(NULL, AV_LOG_ERROR, "Writing output failed: %s\n", av_err2str(ret));
     }
 
 end:
