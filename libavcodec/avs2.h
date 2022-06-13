@@ -36,6 +36,6 @@ enum {
 };
 
 #define AVS2_ISPIC(x)  ((x) == AVS2_INTRA_PIC_START_CODE || (x) == AVS2_INTER_PIC_START_CODE)
-#define AVS2_ISUNIT(x) ((x) == AVS2_SEQ_START_CODE || (x) == AVS2_SEQ_END_CODE || (x) == AVS2_USER_DATA_START_CODE || AVS2_ISPIC(x))
+#define AVS2_ISUNIT(x) ((x) == AVS2_SEQ_START_CODE || AVS2_ISPIC(x))
 
 #endif
