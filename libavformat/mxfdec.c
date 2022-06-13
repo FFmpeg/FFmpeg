@@ -2118,24 +2118,6 @@ static int mxf_is_intra_only(MXFDescriptor *descriptor)
                             &descriptor->essence_codec_ul)->id     != AV_CODEC_ID_NONE;
 }
 
-static int mxf_uid_to_str(UID uid, char **str)
-{
-    int i;
-    char *p;
-    p = *str = av_mallocz(sizeof(UID) * 2 + 4 + 1);
-    if (!p)
-        return AVERROR(ENOMEM);
-    for (i = 0; i < sizeof(UID); i++) {
-        snprintf(p, 2 + 1, "%.2x", uid[i]);
-        p += 2;
-        if (i == 3 || i == 5 || i == 7 || i == 9) {
-            snprintf(p, 1 + 1, "-");
-            p++;
-        }
-    }
-    return 0;
-}
-
 static int mxf_umid_to_str(UID ul, UID uid, char **str)
 {
     int i;
@@ -3088,10 +3070,10 @@ static int64_t mxf_timestamp_to_int64(uint64_t timestamp)
 } while (0)
 
 #define SET_UID_METADATA(pb, name, var, str) do { \
+    char uuid_str[2 * AV_UUID_LEN + 4 + 1]; \
     avio_read(pb, var, 16); \
-    if ((ret = mxf_uid_to_str(var, &str)) < 0) \
-        return ret; \
-    av_dict_set(&s->metadata, name, str, AV_DICT_DONT_STRDUP_VAL); \
+    av_uuid_unparse(uid, uuid_str); \
+    av_dict_set(&s->metadata, name, uuid_str, 0); \
 } while (0)
 
 #define SET_TS_METADATA(pb, name, var, str) do { \
