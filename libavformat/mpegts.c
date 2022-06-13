@@ -2870,16 +2870,8 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
                     break;
             }
             if (i == ts->nb_prg && ts->nb_prg > 0) {
-                int types = 0;
-                for (i = 0; i < ts->stream->nb_streams; i++) {
-                    AVStream *st = ts->stream->streams[i];
-                    if (st->codecpar->codec_type >= 0)
-                        types |= 1<<st->codecpar->codec_type;
-                }
-                if ((types & (1<<AVMEDIA_TYPE_AUDIO) && types & (1<<AVMEDIA_TYPE_VIDEO)) || pos > 100000) {
-                    av_log(ts->stream, AV_LOG_DEBUG, "All programs have pmt, headers found\n");
-                    ts->stream->ctx_flags &= ~AVFMTCTX_NOHEADER;
-                }
+                av_log(ts->stream, AV_LOG_DEBUG, "All programs have pmt, headers found\n");
+                ts->stream->ctx_flags &= ~AVFMTCTX_NOHEADER;
             }
         }
 
