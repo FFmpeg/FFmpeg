@@ -35,7 +35,7 @@ static inline FILE *fopen_utf8(const char *path_utf8, const char *mode)
     FILE *f;
 
     /* convert UTF-8 to wide chars */
-    if (utf8towchar(path_utf8, &path_w)) /* This sets errno on error. */
+    if (get_extended_win32_path(path_utf8, &path_w)) /* This sets errno on error. */
         return NULL;
     if (!path_w)
         goto fallback;
