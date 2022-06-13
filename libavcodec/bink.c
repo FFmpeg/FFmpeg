@@ -1086,7 +1086,7 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
         for (bx = 0; bx < bw; bx++, dst += 8, prev += 8) {
             blk = get_value(c, BINK_SRC_BLOCK_TYPES);
             // 16x16 block type on odd line means part of the already decoded block, so skip it
-            if ((by & 1) && blk == SCALED_BLOCK) {
+            if (((by & 1) || (bx & 1)) && blk == SCALED_BLOCK) {
                 bx++;
                 dst  += 8;
                 prev += 8;
