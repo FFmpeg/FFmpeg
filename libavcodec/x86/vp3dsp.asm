@@ -571,40 +571,25 @@ cglobal vp3_idct_put, 3, 4, 9
     mova          m1, [r2+mmsize*2+%%i]
     mova          m2, [r2+mmsize*4+%%i]
     mova          m3, [r2+mmsize*6+%%i]
-%if mmsize == 8
-    packsswb      m0, [r2+mmsize*8+%%i]
-    packsswb      m1, [r2+mmsize*10+%%i]
-    packsswb      m2, [r2+mmsize*12+%%i]
-    packsswb      m3, [r2+mmsize*14+%%i]
-%else
     packsswb      m0, [r2+mmsize*1+%%i]
     packsswb      m1, [r2+mmsize*3+%%i]
     packsswb      m2, [r2+mmsize*5+%%i]
     packsswb      m3, [r2+mmsize*7+%%i]
-%endif
     paddb         m0, m4
     paddb         m1, m4
     paddb         m2, m4
     paddb         m3, m4
     movq   [r0     ], m0
-%if mmsize == 8
-    movq   [r0+r1  ], m1
-    movq   [r0+r1*2], m2
-    movq   [r0+r3  ], m3
-%else
     movhps [r0+r1  ], m0
     movq   [r0+r1*2], m1
     movhps [r0+r3  ], m1
-%endif
 %if %%i == 0
     lea           r0, [r0+r1*4]
 %endif
-%if mmsize == 16
     movq   [r0     ], m2
     movhps [r0+r1  ], m2
     movq   [r0+r1*2], m3
     movhps [r0+r3  ], m3
-%endif
 %assign %%i %%i+8
 %endrep
 
@@ -621,7 +606,6 @@ cglobal vp3_idct_add, 3, 4, 9
 
     lea           r3, [r1*3]
     pxor          m4, m4
-%if mmsize == 16
 %assign %%i 0
 %rep 2
     movq          m0, [r0]
@@ -647,47 +631,6 @@ cglobal vp3_idct_add, 3, 4, 9
 %endif
 %assign %%i %%i+64
 %endrep
-%else
-%assign %%i 0
-%rep 2
-    movq          m0, [r0]
-    movq          m1, [r0+r1]
-    movq          m2, [r0+r1*2]
-    movq          m3, [r0+r3]
-    movq          m5, m0
-    movq          m6, m1
-    movq          m7, m2
-    punpcklbw     m0, m4
-    punpcklbw     m1, m4
-    punpcklbw     m2, m4
-    punpckhbw     m5, m4
-    punpckhbw     m6, m4
-    punpckhbw     m7, m4
-    paddsw        m0, [r2+ 0+%%i]
-    paddsw        m1, [r2+16+%%i]
-    paddsw        m2, [r2+32+%%i]
-    paddsw        m5, [r2+64+%%i]
-    paddsw        m6, [r2+80+%%i]
-    paddsw        m7, [r2+96+%%i]
-    packuswb      m0, m5
-    movq          m5, m3
-    punpcklbw     m3, m4
-    punpckhbw     m5, m4
-    packuswb      m1, m6
-    paddsw        m3, [r2+48+%%i]
-    paddsw        m5, [r2+112+%%i]
-    packuswb      m2, m7
-    packuswb      m3, m5
-    movq   [r0     ], m0
-    movq   [r0+r1  ], m1
-    movq   [r0+r1*2], m2
-    movq   [r0+r3  ], m3
-%if %%i == 0
-    lea           r0, [r0+r1*4]
-%endif
-%assign %%i %%i+8
-%endrep
-%endif
 %assign %%i 0
 %rep 128/mmsize
     mova    [r2+%%i], m4
@@ -695,11 +638,6 @@ cglobal vp3_idct_add, 3, 4, 9
 %endrep
     RET
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-vp3_idct_funcs
-%endif
 
 INIT_XMM sse2
 vp3_idct_funcs
