@@ -19,12 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avs2.h"
 #include "parser.h"
-
-#define AVS2_SLICE_MAX_START_CODE 0x000001AF
-
-#define AVS2_ISPIC(x)  ((x) == 0xB3 || (x) == 0xB6)
-#define AVS2_ISUNIT(x) ((x) == 0xB0 || (x) == 0xB1 || (x) == 0xB2 || AVS2_ISPIC(x))
 
 static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 {
