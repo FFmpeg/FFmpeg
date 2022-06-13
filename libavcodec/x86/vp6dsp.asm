@@ -114,18 +114,13 @@ SECTION .text
 %endif ; mmsize == 8/16
 %endmacro
 
-%macro vp6_filter_diag4 0
 ; void ff_vp6_filter_diag4_<opt>(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 ;                                const int16_t h_weight[4], const int16_t v_weights[4])
+INIT_XMM sse2
 cglobal vp6_filter_diag4, 5, 7, 8
     mov          r5, rsp         ; backup stack pointer
     and         rsp, ~(mmsize-1) ; align stack
-%if mmsize == 16
     sub         rsp, 8*11
-%else
-    sub         rsp, 8*15
-    movq         m6, [pw_64]
-%endif
 
     sub          r1, r2
 
@@ -156,12 +151,3 @@ cglobal vp6_filter_diag4, 5, 7, 8
 
     mov         rsp, r5          ; restore stack pointer
     RET
-%endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-vp6_filter_diag4
-%endif
-
-INIT_XMM sse2
-vp6_filter_diag4
