@@ -20,32 +20,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_AVS2_H
-#define AVCODEC_AVS2_H
+#include "avs2.h"
 
-#include "libavutil/rational.h"
-
-#define AVS2_SLICE_MAX_START_CODE    0x000001AF
-
-enum {
-    AVS2_SEQ_START_CODE         = 0xB0,
-    AVS2_SEQ_END_CODE           = 0xB1,
-    AVS2_USER_DATA_START_CODE   = 0xB2,
-    AVS2_INTRA_PIC_START_CODE   = 0xB3,
-    // reserved                 = 0xB4,
-    AVS2_EXTENSION_START_CODE   = 0xB5,
-    AVS2_INTER_PIC_START_CODE   = 0xB6,
+const AVRational ff_avs2_frame_rate_tab[16] = {
+    { 0    , 0   }, // forbid
+    { 24000, 1001},
+    { 24   , 1   },
+    { 25   , 1   },
+    { 30000, 1001},
+    { 30   , 1   },
+    { 50   , 1   },
+    { 60000, 1001},
+    { 60   , 1   },
+    { 100  , 1   },
+    { 120  , 1   },
+    { 200  , 1   },
+    { 240  , 1   },
+    { 300  , 1   },
+    { 0    , 0   }, // reserved
+    { 0    , 0   }  // reserved
 };
-
-#define AVS2_ISPIC(x)  ((x) == AVS2_INTRA_PIC_START_CODE || (x) == AVS2_INTER_PIC_START_CODE)
-#define AVS2_ISUNIT(x) ((x) == AVS2_SEQ_START_CODE || AVS2_ISPIC(x))
-
-enum AVS2Profile {
-    AVS2_PROFILE_MAIN_PIC   = 0x12,
-    AVS2_PROFILE_MAIN       = 0x20,
-    AVS2_PROFILE_MAIN10     = 0x22,
-};
-
-extern const AVRational ff_avs2_frame_rate_tab[16];
-
-#endif
