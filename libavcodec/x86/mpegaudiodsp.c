@@ -34,9 +34,6 @@ static void imdct36_blocks_ ## CPU(float *out, float *buf, float *in, int count,
 void ff_imdct36_float_ ## CPU(float *out, float *buf, float *in, float *win);
 
 #if HAVE_X86ASM
-#if ARCH_X86_32
-DECL(sse)
-#endif
 DECL(sse2)
 DECL(sse3)
 DECL(ssse3)
@@ -230,9 +227,6 @@ static void imdct36_blocks_ ## CPU1(float *out, float *buf, float *in,      \
 }
 
 #if HAVE_SSE
-#if ARCH_X86_32
-DECL_IMDCT_BLOCKS(sse,sse)
-#endif
 DECL_IMDCT_BLOCKS(sse2,sse)
 DECL_IMDCT_BLOCKS(sse3,sse)
 DECL_IMDCT_BLOCKS(ssse3,sse)
@@ -271,11 +265,6 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 
 #if HAVE_X86ASM
 #if HAVE_SSE
-#if ARCH_X86_32
-    if (EXTERNAL_SSE(cpu_flags)) {
-        s->imdct36_blocks_float = imdct36_blocks_sse;
-    }
-#endif
     if (EXTERNAL_SSE2(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse2;
     }

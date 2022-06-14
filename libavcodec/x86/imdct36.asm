@@ -373,11 +373,6 @@ cglobal imdct36_float, 4,4,9, out, buf, in, win
     RET
 %endmacro
 
-%if ARCH_X86_32
-INIT_XMM sse
-DEFINE_IMDCT
-%endif
-
 INIT_XMM sse2
 DEFINE_IMDCT
 
