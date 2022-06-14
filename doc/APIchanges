@@ -18,6 +18,16 @@ API changes, most recent first:
   Add avio_vprintf(), similar to avio_printf() but allow to use it
   from within a function taking a variable argument list as input.
 
+2022-06-12 - xxxxxxxxx - lavu 57.27.100 - uuid.h
+  Add UUID handling functions.
+  Add av_uuid_parse(), av_uuid_urn_parse(), av_uuid_parse_range(),
+  av_uuid_parse_range(), av_uuid_equal(), av_uuid_copy(), and av_uuid_nil().
+
+2022-06-01 - xxxxxxxxx - lavu 57.26.100 - csp.h
+  Add public API for colorspace structs.
+  Add av_csp_luma_coeffs_from_avcsp(), av_csp_primaries_desc_from_id(),
+  and av_csp_primaries_id_from_desc().
+
 2022-05-23 - xxxxxxxxx - lavu 57.25.100 - avutil.h
   Deprecate av_fopen_utf8() without replacement.
 
