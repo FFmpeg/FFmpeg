@@ -387,7 +387,7 @@ INIT_XMM
 %endif
 
 
-; void ff_dct32_float_sse(FFTSample *out, const FFTSample *in)
+; void ff_dct32_float(FFTSample *out, const FFTSample *in)
 %macro DCT32_FUNC 0
 cglobal dct32_float, 2, 3, 16, out, in, tmp
     ; pass 1
@@ -474,18 +474,8 @@ cglobal dct32_float, 2, 3, 16, out, in, tmp
 %endmacro
 
 %macro LOAD_INV 2
-%if cpuflag(sse2)
     pshufd      %1, %2, 0x1b
-%elif cpuflag(sse)
-    movaps      %1, %2
-    shufps      %1, %1, 0x1b
-%endif
 %endmacro
-
-%if ARCH_X86_32
-INIT_XMM sse
-DCT32_FUNC
-%endif
 
 INIT_XMM sse2
 DCT32_FUNC
