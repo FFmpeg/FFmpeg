@@ -115,7 +115,7 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
                               synth_buf, synth_buf2, window, out, off, scale
 %define scale m0
 %if ARCH_X86_32 || WIN64
-%if cpuflag(sse2) && notcpuflag(avx)
+%if notcpuflag(avx)
     movd       scale, scalem
     SPLATD        m0
 %else
@@ -234,10 +234,6 @@ cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
     RET
 %endmacro
 
-%if ARCH_X86_32
-INIT_XMM sse
-SYNTH_FILTER
-%endif
 INIT_XMM sse2
 SYNTH_FILTER
 INIT_YMM avx

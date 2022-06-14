@@ -43,9 +43,6 @@ static void synth_filter_##opt(FFTContext *imdct,                              \
 }                                                                              \
 
 #if HAVE_X86ASM
-#if ARCH_X86_32
-SYNTH_FILTER_FUNC(sse)
-#endif
 SYNTH_FILTER_FUNC(sse2)
 SYNTH_FILTER_FUNC(avx)
 SYNTH_FILTER_FUNC(fma3)
@@ -56,11 +53,6 @@ av_cold void ff_synth_filter_init_x86(SynthFilterContext *s)
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
-#if ARCH_X86_32
-    if (EXTERNAL_SSE(cpu_flags)) {
-        s->synth_filter_float = synth_filter_sse;
-    }
-#endif
     if (EXTERNAL_SSE2(cpu_flags)) {
         s->synth_filter_float = synth_filter_sse2;
     }
