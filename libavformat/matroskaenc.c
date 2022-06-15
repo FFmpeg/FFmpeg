@@ -2104,7 +2104,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     create_new_ids = mkv_new_chapter_ids_needed(s);
 
     for (unsigned i = 0; i < s->nb_chapters; i++) {
-        const AVChapter *c   = s->chapters[i];
+        AVChapter *const c   = s->chapters[i];
         int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
         const AVDictionaryEntry *t;
@@ -2132,11 +2132,15 @@ static int mkv_write_chapters(AVFormatContext *s)
         if (ret < 0)
             goto fail;
 
-        if (tags && mkv_check_tag(c->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID)) {
-            ret = mkv_write_tag(mkv, c->metadata, tags, NULL,
-                                MATROSKA_ID_TAGTARGETS_CHAPTERUID, uid);
-            if (ret < 0)
-                goto fail;
+        if (tags) {
+            ff_metadata_conv(&c->metadata, ff_mkv_metadata_conv, NULL);
+
+            if (mkv_check_tag(c->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID)) {
+                ret = mkv_write_tag(mkv, c->metadata, tags, NULL,
+                                    MATROSKA_ID_TAGTARGETS_CHAPTERUID, uid);
+                if (ret < 0)
+                    goto fail;
+            }
         }
     }
     end_ebml_master(dyn_cp, editionentry);
