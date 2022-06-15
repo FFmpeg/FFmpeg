@@ -1,5 +1,5 @@
-4e6253c1f5f96ff64ae855dea426547d *tests/data/fate/matroska-mpegts-remux.matroska
-6509 tests/data/fate/matroska-mpegts-remux.matroska
+acaf3ebe07afe9815e0a984921d3ab87 *tests/data/fate/matroska-mpegts-remux.matroska
+6494 tests/data/fate/matroska-mpegts-remux.matroska
 #tb 0: 1/1000
 #media_type 0: audio
 #codec_id 0: ac3

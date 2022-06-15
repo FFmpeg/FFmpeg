@@ -1,5 +1,5 @@
-58147987d42f32d105d96b24b0755257 *tests/data/fate/matroska-vp8-alpha-remux.matroska
-235018 tests/data/fate/matroska-vp8-alpha-remux.matroska
+fd4f24bf776a2f84e01b0aa7fdfece38 *tests/data/fate/matroska-vp8-alpha-remux.matroska
+235011 tests/data/fate/matroska-vp8-alpha-remux.matroska
 #tb 0: 1/1000
 #media_type 0: video
 #codec_id 0: vp8

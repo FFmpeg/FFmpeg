@@ -1,5 +1,5 @@
-8620a6614f149fc49ab7f4552373943e *tests/data/fate/webm-webvtt-remux.webm
-6556 tests/data/fate/webm-webvtt-remux.webm
+0b43695bf27bbe48ea44e969d8908e1f *tests/data/fate/webm-webvtt-remux.webm
+6528 tests/data/fate/webm-webvtt-remux.webm
 #tb 0: 1/1000
 #media_type 0: subtitle
 #codec_id 0: webvtt

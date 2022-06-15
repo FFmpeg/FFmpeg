@@ -1,5 +1,5 @@
-e675d3a76a4720f3e65bf56ec6041fe1 *tests/data/fate/matroska-dvbsub-remux.matroska
-39025 tests/data/fate/matroska-dvbsub-remux.matroska
+77d210dc36d7a01988d159b3c902524c *tests/data/fate/matroska-dvbsub-remux.matroska
+39010 tests/data/fate/matroska-dvbsub-remux.matroska
 #extradata 0:        5, 0x00bb0064
 #extradata 1:        5, 0x00bb0064
 #tb 0: 1/1000
