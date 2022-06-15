@@ -222,7 +222,8 @@ typedef struct MatroskaMuxContext {
      * to write the length field of EBML Masters.
      * Every user has to reset the buffer after using it and
      * different uses may not overlap. It is currently used in
-     * mkv_write_tag(). */
+     * mkv_write_tag(), in mkv_assemble_cues() as well as in
+     * mkv_update_codecprivate() and mkv_write_track(). */
     AVIOContext        *tmp_bc;
 
     AVPacket           *cur_audio_pkt;
@@ -941,17 +942,10 @@ static int mkv_add_cuepoint(MatroskaMuxContext *mkv, int stream, int64_t ts,
     return 0;
 }
 
-static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp,
+static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp, AVIOContext *cuepoint,
                              const mkv_cues *cues, mkv_track *tracks, int num_tracks,
                              uint64_t offset)
 {
-    AVIOContext *cuepoint;
-    int ret;
-
-    ret = avio_open_dyn_buf(&cuepoint);
-    if (ret < 0)
-        return ret;
-
     for (mkv_cuepoint *entry = cues->entries, *end = entry + cues->num_entries;
          entry < end;) {
         uint64_t pts = entry->pts;
@@ -981,14 +975,13 @@ static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp,
             end_ebml_master(cuepoint, track_positions);
         } while (++entry < end && entry->pts == pts);
         size = avio_get_dyn_buf(cuepoint, &buf);
-        if ((ret = cuepoint->error) < 0)
-            break;
+        if (cuepoint->error < 0)
+            return cuepoint->error;
         put_ebml_binary(dyn_cp, MATROSKA_ID_POINTENTRY, buf, size);
         ffio_reset_dyn_buf(cuepoint);
     }
-    ffio_free_dyn_buf(&cuepoint);
 
-    return ret;
+    return 0;
 }
 
 static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb,
@@ -2964,7 +2957,7 @@ redo_cues:
         if (ret < 0)
             return ret;
 
-        ret = mkv_assemble_cues(s->streams, cues, &mkv->cues,
+        ret = mkv_assemble_cues(s->streams, cues, mkv->tmp_bc, &mkv->cues,
                                 mkv->tracks, s->nb_streams, offset);
         if (ret < 0) {
             ffio_free_dyn_buf(&cues);
