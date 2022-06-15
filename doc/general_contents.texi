@@ -785,6 +785,8 @@ following image formats are supported:
     @tab Photoshop
 @item PTX          @tab   @tab X
     @tab V.Flash PTX format
+@item QOI          @tab X @tab X
+    @tab Quite OK Image format
 @item SGI          @tab X @tab X
     @tab SGI RGB image format
 @item Sun Rasterfile  @tab X @tab X
