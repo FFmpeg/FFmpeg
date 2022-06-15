@@ -348,7 +348,7 @@ av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
         c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_sse;
     }
 
-    if (EXTERNAL_SSE2(cpu_flags) || EXTERNAL_SSE2_SLOW(cpu_flags)) {
+    if (EXTERNAL_SSE2_SLOW(cpu_flags)) {
         VP8_LUMA_MC_FUNC(0, 16, sse2);
         VP8_MC_FUNC(1, 8, sse2);
         VP8_BILINEAR_MC_FUNC(0, 16, sse2);
@@ -418,7 +418,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext *c)
         c->vp8_luma_dc_wht                      = ff_vp8_luma_dc_wht_sse;
     }
 
-    if (EXTERNAL_SSE2(cpu_flags) || EXTERNAL_SSE2_SLOW(cpu_flags)) {
+    if (EXTERNAL_SSE2_SLOW(cpu_flags)) {
         c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_sse2;
 
         c->vp8_v_loop_filter16y_inner = ff_vp8_v_loop_filter16y_inner_sse2;
