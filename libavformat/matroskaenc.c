@@ -1963,7 +1963,7 @@ static int mkv_write_tag(MatroskaMuxContext *mkv, const AVDictionary *m,
     const AVDictionaryEntry *t = NULL;
     AVIOContext *const tmp_bc = mkv->tmp_bc;
     uint8_t *buf;
-    int ret, size;
+    int ret = 0, size, tag_written = 0;
 
     mkv_write_tag_targets(mkv, tmp_bc, elementid, uid);
 
@@ -1972,10 +1972,13 @@ static int mkv_write_tag(MatroskaMuxContext *mkv, const AVDictionary *m,
             ret = mkv_write_simpletag(tmp_bc, t);
             if (ret < 0)
                 goto end;
+            tag_written = 1;
         }
     }
     if (reserved_size)
         put_ebml_void(tmp_bc, reserved_size);
+    else if (!tag_written)
+        goto end;
 
     size = avio_get_dyn_buf(tmp_bc, &buf);
     if (tmp_bc->error) {
@@ -1994,17 +1997,6 @@ end:
     return ret;
 }
 
-static int mkv_check_tag(const AVDictionary *m, uint32_t elementid)
-{
-    const AVDictionaryEntry *t = NULL;
-
-    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
-        if (mkv_check_tag_name(t->key, elementid))
-            return 1;
-
-    return 0;
-}
-
 static int mkv_write_tags(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -2014,20 +2006,15 @@ static int mkv_write_tags(AVFormatContext *s)
 
     ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
 
-    if (mkv_check_tag(s->metadata, 0)) {
-        ret = mkv_write_tag(mkv, s->metadata, &mkv->tags.bc, 0, 0, 0);
-        if (ret < 0)
-            return ret;
-    }
+    ret = mkv_write_tag(mkv, s->metadata, &mkv->tags.bc, 0, 0, 0);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < s->nb_streams; i++) {
         const AVStream *st = s->streams[i];
         mkv_track *track = &mkv->tracks[i];
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
-            continue;
-
-        if (!seekable && !mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID))
             continue;
 
         ret = mkv_write_tag(mkv, st->metadata, &mkv->tags.bc,
@@ -2045,9 +2032,6 @@ static int mkv_write_tags(AVFormatContext *s)
             const AVStream     *st = s->streams[i];
 
             if (st->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
-                continue;
-
-            if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID))
                 continue;
 
             ret = mkv_write_tag(mkv, st->metadata, &mkv->tags.bc, 0,
@@ -2134,12 +2118,10 @@ static int mkv_write_chapters(AVFormatContext *s)
         if (tags) {
             ff_metadata_conv(&c->metadata, ff_mkv_metadata_conv, NULL);
 
-            if (mkv_check_tag(c->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID)) {
-                ret = mkv_write_tag(mkv, c->metadata, tags, 0,
-                                    MATROSKA_ID_TAGTARGETS_CHAPTERUID, uid);
-                if (ret < 0)
-                    goto fail;
-            }
+            ret = mkv_write_tag(mkv, c->metadata, tags, 0,
+                                MATROSKA_ID_TAGTARGETS_CHAPTERUID, uid);
+            if (ret < 0)
+                goto fail;
         }
     }
     end_ebml_master(dyn_cp, editionentry);
