@@ -45,6 +45,7 @@
 #include "libavutil/imgutils.h"
 
 #define ZIMG_ALIGNMENT 64
+#define MIN_TILESIZE 64
 #define MAX_THREADS 64
 
 static const char *const var_names[] = {
@@ -234,7 +235,7 @@ static void slice_params(ZScaleContext *s, int out_h, int in_h)
 {
     int slice_size;
 
-    slice_size = (out_h + s->nb_threads - 1) / s->nb_threads;
+    slice_size = (out_h + (s->nb_threads / 2)) / s->nb_threads;
     if (slice_size % 2)
         slice_size += 1;
     s->out_slice_start[0] = 0;
@@ -829,7 +830,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         link->dst->inputs[0]->w      = in->width;
         link->dst->inputs[0]->h      = in->height;
 
-        s->nb_threads = av_clip(FFMIN(ff_filter_get_nb_threads(ctx), FFMIN(link->h, outlink->h) / 8), 1, MAX_THREADS);
+        s->nb_threads = av_clip(FFMIN(ff_filter_get_nb_threads(ctx), FFMIN(link->h, outlink->h) / MIN_TILESIZE), 1, MAX_THREADS);
         s->in_colorspace = in->colorspace;
         s->in_trc = in->color_trc;
         s->in_primaries = in->color_primaries;
