@@ -175,4 +175,10 @@ enum {
     AV1_RESTORE_SWITCHABLE = 3,
 };
 
+// Sequence Headers are actually unbounded because one can use
+// an arbitrary number of leading zeroes when encoding via uvlc.
+// The following estimate is based around using the lowest number
+// of bits for uvlc encoding.
+#define AV1_SANE_SEQUENCE_HEADER_MAX_BITS           3138
+
 #endif /* AVCODEC_AV1_H */
