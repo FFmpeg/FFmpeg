@@ -444,15 +444,25 @@ static void ebml_writer_close_master(EbmlWriter *writer)
     av_assert2(writer->current_master_element < writer->nb_elements);
     elem = &writer->elements[writer->current_master_element];
     av_assert2(elem->type == EBML_MASTER);
+    av_assert2(elem->priv.master.nb_elements < 0); /* means unset */
     elem->priv.master.nb_elements = writer->nb_elements - writer->current_master_element - 1;
+    av_assert2(elem->priv.master.containing_master < 0 ||
+               elem->priv.master.containing_master < writer->current_master_element);
     writer->current_master_element = elem->priv.master.containing_master;
 }
 
 static void ebml_writer_close_or_discard_master(EbmlWriter *writer)
 {
     av_assert2(writer->nb_elements > 0);
+    av_assert2(0 <= writer->current_master_element);
+    av_assert2(writer->current_master_element < writer->nb_elements);
     if (writer->current_master_element == writer->nb_elements - 1) {
+        const EbmlElement *const elem = &writer->elements[writer->nb_elements - 1];
         /* The master element has no children. Discard it. */
+        av_assert2(elem->type == EBML_MASTER);
+        av_assert2(elem->priv.master.containing_master < 0 ||
+                   elem->priv.master.containing_master < writer->current_master_element);
+        writer->current_master_element = elem->priv.master.containing_master;
         writer->nb_elements--;
         return;
     }
