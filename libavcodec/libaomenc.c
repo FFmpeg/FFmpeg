@@ -199,6 +199,9 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_ENABLE_SMOOTH_INTERINTRA] = "AV1E_SET_ENABLE_SMOOTH_INTERINTRA",
     [AV1E_SET_ENABLE_REF_FRAME_MVS]     = "AV1E_SET_ENABLE_REF_FRAME_MVS",
 #endif
+#ifdef AOM_CTRL_AV1E_GET_NUM_OPERATING_POINTS
+    [AV1E_GET_NUM_OPERATING_POINTS]     = "AV1E_GET_NUM_OPERATING_POINTS",
+#endif
 #ifdef AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX
     [AV1E_GET_SEQ_LEVEL_IDX]            = "AV1E_GET_SEQ_LEVEL_IDX",
 #endif
@@ -330,7 +333,8 @@ static av_cold int codecctl_int(AVCodecContext *avctx,
     return 0;
 }
 
-#if defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
+#if defined(AOM_CTRL_AV1E_GET_NUM_OPERATING_POINTS) && \
+    defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
     defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
 static av_cold int codecctl_intp(AVCodecContext *avctx,
 #ifdef UENUM1BYTE
@@ -364,16 +368,20 @@ static av_cold int aom_free(AVCodecContext *avctx)
 {
     AOMContext *ctx = avctx->priv_data;
 
-#if defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
+#if defined(AOM_CTRL_AV1E_GET_NUM_OPERATING_POINTS) && \
+    defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
     defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
     if (!(avctx->flags & AV_CODEC_FLAG_PASS1)) {
-        int levels[32] = { 0 };
-        int target_levels[32] = { 0 };
+        int num_operating_points;
+        int levels[32];
+        int target_levels[32];
 
-        if (!codecctl_intp(avctx, AV1E_GET_SEQ_LEVEL_IDX, levels) &&
+        if (!codecctl_intp(avctx, AV1E_GET_NUM_OPERATING_POINTS,
+                           &num_operating_points) &&
+            !codecctl_intp(avctx, AV1E_GET_SEQ_LEVEL_IDX, levels) &&
             !codecctl_intp(avctx, AV1E_GET_TARGET_SEQ_LEVEL_IDX,
                            target_levels)) {
-            for (int i = 0; i < 32; i++) {
+            for (int i = 0; i < num_operating_points; i++) {
                 if (levels[i] > target_levels[i]) {
                     // Warn when the target level was not met
                     av_log(avctx, AV_LOG_WARNING,
