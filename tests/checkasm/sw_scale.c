@@ -75,11 +75,11 @@ static void check_yuv2yuvX(void)
                       int dstW, const uint8_t *dither, int offset);
 
     const int16_t **src;
-    LOCAL_ALIGNED_8(int16_t, src_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);
-    LOCAL_ALIGNED_8(int16_t, filter_coeff, [LARGEST_FILTER]);
-    LOCAL_ALIGNED_8(uint8_t, dst0, [LARGEST_INPUT_SIZE]);
-    LOCAL_ALIGNED_8(uint8_t, dst1, [LARGEST_INPUT_SIZE]);
-    LOCAL_ALIGNED_8(uint8_t, dither, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(int16_t, src_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(int16_t, filter_coeff, [LARGEST_FILTER]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, dither, [LARGEST_INPUT_SIZE]);
     union VFilterData{
         const int16_t *src;
         uint16_t coeff[8];
