@@ -1220,7 +1220,7 @@ static int mf_init(AVCodecContext *avctx)
 
 #define OFFSET(x) offsetof(MFContext, x)
 
-#define MF_ENCODER(MEDIATYPE, NAME, ID, OPTS, EXTRA) \
+#define MF_ENCODER(MEDIATYPE, NAME, ID, OPTS, FMTS, CAPS) \
     static const AVClass ff_ ## NAME ## _mf_encoder_class = {                  \
         .class_name = #NAME "_mf",                                             \
         .item_name  = av_default_item_name,                                    \
@@ -1237,9 +1237,8 @@ static int mf_init(AVCodecContext *avctx)
         .init           = mf_init,                                             \
         .close          = mf_close,                                            \
         FF_CODEC_RECEIVE_PACKET_CB(mf_receive_packet),                         \
-        EXTRA                                                                  \
-        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
-                          AV_CODEC_CAP_DR1,                                    \
+        FMTS                                                                   \
+        CAPS                                                                   \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |                       \
                           FF_CODEC_CAP_INIT_CLEANUP,                           \
     };
@@ -1247,10 +1246,13 @@ static int mf_init(AVCodecContext *avctx)
 #define AFMTS \
         .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,    \
                                                          AV_SAMPLE_FMT_NONE },
+#define ACAPS \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
+                          AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
 
-MF_ENCODER(AUDIO, aac,         AAC, NULL, AFMTS);
-MF_ENCODER(AUDIO, ac3,         AC3, NULL, AFMTS);
-MF_ENCODER(AUDIO, mp3,         MP3, NULL, AFMTS);
+MF_ENCODER(AUDIO, aac,         AAC, NULL, AFMTS, ACAPS);
+MF_ENCODER(AUDIO, ac3,         AC3, NULL, AFMTS, ACAPS);
+MF_ENCODER(AUDIO, mp3,         MP3, NULL, AFMTS, ACAPS);
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption venc_opts[] = {
@@ -1283,6 +1285,9 @@ static const AVOption venc_opts[] = {
         .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,       \
                                                         AV_PIX_FMT_YUV420P,    \
                                                         AV_PIX_FMT_NONE },
+#define VCAPS \
+        .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
+                          AV_CODEC_CAP_DR1,
 
-MF_ENCODER(VIDEO, h264,        H264, venc_opts, VFMTS);
-MF_ENCODER(VIDEO, hevc,        HEVC, venc_opts, VFMTS);
+MF_ENCODER(VIDEO, h264,        H264, venc_opts, VFMTS, VCAPS);
+MF_ENCODER(VIDEO, hevc,        HEVC, venc_opts, VFMTS, VCAPS);
