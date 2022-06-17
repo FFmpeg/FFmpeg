@@ -56,6 +56,7 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/stereo3d.h"
 
+#include "libavcodec/av1.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 
@@ -1117,7 +1118,7 @@ static int mkv_assemble_native_codecprivate(AVFormatContext *s, AVIOContext *dyn
             return ff_isom_write_av1c(dyn_cp, extradata,
                                       extradata_size, 1);
         else
-            *size_to_reserve = 4;
+            *size_to_reserve = (AV1_SANE_SEQUENCE_HEADER_MAX_BITS + 7) / 8 + 100;
         break;
 #if CONFIG_MATROSKA_MUXER
     case AV_CODEC_ID_FLAC:
@@ -1263,7 +1264,7 @@ static void mkv_put_codecprivate(AVIOContext *pb, unsigned max_payload_size,
 static int mkv_update_codecprivate(AVFormatContext *s, MatroskaMuxContext *mkv,
                                    uint8_t *side_data, int side_data_size,
                                    AVCodecParameters *par, AVIOContext *pb,
-                                   mkv_track *track)
+                                   mkv_track *track, unsigned alternative_size)
 {
     AVIOContext *const dyn_bc = mkv->tmp_bc;
     uint8_t *codecpriv;
@@ -1275,9 +1276,12 @@ static int mkv_update_codecprivate(AVFormatContext *s, MatroskaMuxContext *mkv,
                                     &codecpriv, &codecpriv_size, &max_payload_size);
     if (ret < 0)
         goto fail;
-    if (codecpriv_size > track->codecpriv_size) {
+    if (codecpriv_size > track->codecpriv_size && !alternative_size) {
         ret = AVERROR(ENOSPC);
         goto fail;
+    } else if (codecpriv_size > track->codecpriv_size) {
+        av_assert1(alternative_size < track->codecpriv_size);
+        codecpriv_size = alternative_size;
     }
     avio_seek(pb, track->codecpriv_offset, SEEK_SET);
     mkv_put_codecprivate(pb, track->codecpriv_size,
@@ -2702,7 +2706,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
             if (!output_sample_rate)
                 output_sample_rate = track->sample_rate; // Space is already reserved, so it's this or a void element.
             ret = mkv_update_codecprivate(s, mkv, side_data, side_data_size,
-                                          par, mkv->track.bc, track);
+                                          par, mkv->track.bc, track, 0);
             if (ret < 0)
                 return ret;
             avio_seek(mkv->track.bc, track->sample_rate_offset, SEEK_SET);
@@ -2722,7 +2726,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
                 return AVERROR(EINVAL);
             }
             ret = mkv_update_codecprivate(s, mkv, side_data, side_data_size,
-                                          par, mkv->track.bc, track);
+                                          par, mkv->track.bc, track, 0);
             if (ret < 0)
                 return ret;
         }
@@ -2732,27 +2736,12 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
     //        See https://bugs.chromium.org/p/aomedia/issues/detail?id=2012
     case AV_CODEC_ID_AV1:
         if (side_data_size && mkv->track.bc && !par->extradata_size) {
-            AVIOContext *dyn_cp;
-            uint8_t *codecpriv;
-            int codecpriv_size;
-            ret = avio_open_dyn_buf(&dyn_cp);
+            // If the reserved space doesn't suffice, only write
+            // the first four bytes of the av1C.
+            ret = mkv_update_codecprivate(s, mkv, side_data, side_data_size,
+                                          par, mkv->track.bc, track, 4);
             if (ret < 0)
                 return ret;
-            ff_isom_write_av1c(dyn_cp, side_data, side_data_size, 1);
-            codecpriv_size = avio_get_dyn_buf(dyn_cp, &codecpriv);
-            if ((ret = dyn_cp->error) < 0 ||
-                !codecpriv_size && (ret = AVERROR_INVALIDDATA)) {
-                ffio_free_dyn_buf(&dyn_cp);
-                return ret;
-            }
-            avio_seek(mkv->track.bc, track->codecpriv_offset, SEEK_SET);
-            // Do not write the OBUs as we don't have space saved for them
-            put_ebml_binary(mkv->track.bc, MATROSKA_ID_CODECPRIVATE, codecpriv, 4);
-            ffio_free_dyn_buf(&dyn_cp);
-            ret = ff_alloc_extradata(par, side_data_size);
-            if (ret < 0)
-                return ret;
-            memcpy(par->extradata, side_data, side_data_size);
         } else if (!par->extradata_size)
             return AVERROR_INVALIDDATA;
         break;
