@@ -184,7 +184,8 @@ typedef struct mkv_track {
     int64_t         last_timestamp;
     int64_t         duration;
     int64_t         duration_offset;
-    int64_t         codecpriv_offset;
+    int             codecpriv_offset;
+    unsigned        codecpriv_size;     ///< size reserved for CodecPrivate excluding header+length field
     int64_t         ts_offset;
     /* This callback will be called twice: First with a NULL AVIOContext
      * to return the size of the (Simple)Block's data via size
@@ -1116,7 +1117,7 @@ static int mkv_assemble_native_codecprivate(AVFormatContext *s, AVIOContext *dyn
             return ff_isom_write_av1c(dyn_cp, extradata,
                                       extradata_size, 1);
         else
-            *size_to_reserve = 4 + 3;
+            *size_to_reserve = 4;
         break;
 #if CONFIG_MATROSKA_MUXER
     case AV_CODEC_ID_FLAC:
@@ -1143,7 +1144,7 @@ static int mkv_assemble_native_codecprivate(AVFormatContext *s, AVIOContext *dyn
         if (extradata_size)
             avio_write(dyn_cp, extradata, extradata_size);
         else
-            *size_to_reserve = 4 + MAX_PCE_SIZE + 2;
+            *size_to_reserve = MAX_PCE_SIZE;
         break;
 #endif
     default:
@@ -1162,17 +1163,16 @@ static int mkv_assemble_codecprivate(AVFormatContext *s, AVIOContext *dyn_cp,
                                      const uint8_t *extradata, int extradata_size,
                                      int native_id, int qt_id,
                                      uint8_t **codecpriv, int *codecpriv_size,
-                                     unsigned *size_to_reserve)
+                                     unsigned *max_payload_size)
 {
     MatroskaMuxContext av_unused *const mkv = s->priv_data;
+    unsigned size_to_reserve = 0;
     int ret;
-
-    *size_to_reserve = 0;
 
     if (native_id) {
         ret = mkv_assemble_native_codecprivate(s, dyn_cp, par,
                                                extradata, extradata_size,
-                                               size_to_reserve);
+                                               &size_to_reserve);
         if (ret < 0)
             return ret;
 #if CONFIG_MATROSKA_MUXER
@@ -1226,31 +1226,72 @@ static int mkv_assemble_codecprivate(AVFormatContext *s, AVIOContext *dyn_cp,
     *codecpriv_size = avio_get_dyn_buf(dyn_cp, codecpriv);
     if (dyn_cp->error < 0)
         return dyn_cp->error;
+    *max_payload_size = *codecpriv_size + size_to_reserve;
+
     return 0;
 }
 
-static int mkv_write_codecprivate(AVFormatContext *s, MatroskaMuxContext *mkv,
-                                  AVCodecParameters *par,
-                                  const uint8_t *extradata, int extradata_size,
-                                  int native_id, int qt_id, AVIOContext *pb)
+static void mkv_put_codecprivate(AVIOContext *pb, unsigned max_payload_size,
+                                 const uint8_t *codecpriv, unsigned codecpriv_size)
+{
+    unsigned total_codecpriv_size = 0, total_size;
+
+    av_assert1(codecpriv_size <= max_payload_size);
+
+    if (!max_payload_size)
+        return;
+
+    total_size = 2 + ebml_length_size(max_payload_size) + max_payload_size;
+
+    if (codecpriv_size) {
+        unsigned length_size = ebml_length_size(codecpriv_size);
+
+        total_codecpriv_size = 2U + length_size + codecpriv_size;
+        if (total_codecpriv_size + 1 == total_size) {
+            /* It is impossible to add one byte of padding via an EBML Void. */
+            length_size++;
+            total_codecpriv_size++;
+        }
+        put_ebml_id(pb, MATROSKA_ID_CODECPRIVATE);
+        put_ebml_length(pb, codecpriv_size, length_size);
+        avio_write(pb, codecpriv, codecpriv_size);
+    }
+    if (total_codecpriv_size < total_size)
+        put_ebml_void(pb, total_size - total_codecpriv_size);
+}
+
+static int mkv_update_codecprivate(AVFormatContext *s, MatroskaMuxContext *mkv,
+                                   uint8_t *side_data, int side_data_size,
+                                   AVCodecParameters *par, AVIOContext *pb,
+                                   mkv_track *track)
 {
     AVIOContext *const dyn_bc = mkv->tmp_bc;
     uint8_t *codecpriv;
-    unsigned size_to_reserve;
+    unsigned max_payload_size;
     int ret, codecpriv_size;
 
-    ret = mkv_assemble_codecprivate(s, dyn_bc, par, extradata, extradata_size,
-                                    native_id, qt_id,
-                                    &codecpriv, &codecpriv_size, &size_to_reserve);
+    ret = mkv_assemble_codecprivate(s, dyn_bc, par,
+                                    side_data, side_data_size, 1, 0,
+                                    &codecpriv, &codecpriv_size, &max_payload_size);
     if (ret < 0)
-        goto end;
-    if (codecpriv_size)
-        put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codecpriv, codecpriv_size);
-    if (size_to_reserve)
-        put_ebml_void(pb, size_to_reserve);
-end:
+        goto fail;
+    if (codecpriv_size > track->codecpriv_size) {
+        ret = AVERROR(ENOSPC);
+        goto fail;
+    }
+    avio_seek(pb, track->codecpriv_offset, SEEK_SET);
+    mkv_put_codecprivate(pb, track->codecpriv_size,
+                         codecpriv, codecpriv_size);
+
+    if (!par->extradata_size) {
+        ret = ff_alloc_extradata(par, side_data_size);
+        if (ret < 0)
+            goto fail;
+        memcpy(par->extradata, side_data, side_data_size);
+    }
+fail:
     ffio_reset_dyn_buf(dyn_bc);
-    return 0;
+    return ret;
 }
 
 #define MAX_VIDEO_COLOR_ELEMS 20
@@ -1862,16 +1903,24 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (!IS_WEBM(mkv) || par->codec_id != AV_CODEC_ID_WEBVTT) {
+        uint8_t *codecpriv;
+        int codecpriv_size, max_payload_size;
         track->codecpriv_offset = avio_tell(pb);
-        ret = mkv_write_codecprivate(s, mkv, par, par->extradata, par->extradata_size,
-                                     native_id, qt_id, pb);
+        ret = mkv_assemble_codecprivate(s, mkv->tmp_bc, par,
+                                        par->extradata, par->extradata_size,
+                                        native_id, qt_id,
+                                        &codecpriv, &codecpriv_size, &max_payload_size);
         if (ret < 0)
-            return ret;
+            goto fail;
+        mkv_put_codecprivate(pb, max_payload_size, codecpriv, codecpriv_size);
+        track->codecpriv_size = max_payload_size;
     }
 
     end_ebml_master(pb, track_master);
+fail:
+    ffio_reset_dyn_buf(mkv->tmp_bc);
 
-    return 0;
+    return ret;
 }
 
 static int mkv_write_tracks(AVFormatContext *s)
@@ -2645,23 +2694,17 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
 #if CONFIG_MATROSKA_MUXER
     case AV_CODEC_ID_AAC:
         if (side_data_size && mkv->track.bc) {
-            int filler, output_sample_rate = 0;
+            int output_sample_rate = 0;
             ret = get_aac_sample_rates(s, mkv, side_data, side_data_size,
                                        &track->sample_rate, &output_sample_rate);
             if (ret < 0)
                 return ret;
             if (!output_sample_rate)
                 output_sample_rate = track->sample_rate; // Space is already reserved, so it's this or a void element.
-            ret = ff_alloc_extradata(par, side_data_size);
+            ret = mkv_update_codecprivate(s, mkv, side_data, side_data_size,
+                                          par, mkv->track.bc, track);
             if (ret < 0)
                 return ret;
-            memcpy(par->extradata, side_data, side_data_size);
-            avio_seek(mkv->track.bc, track->codecpriv_offset, SEEK_SET);
-            mkv_write_codecprivate(s, mkv, par, side_data, side_data_size,
-                                   1, 0, mkv->track.bc);
-            filler = MAX_PCE_SIZE + 2 + 4 - (avio_tell(mkv->track.bc) - track->codecpriv_offset);
-            if (filler)
-                put_ebml_void(mkv->track.bc, filler);
             avio_seek(mkv->track.bc, track->sample_rate_offset, SEEK_SET);
             put_ebml_float(mkv->track.bc, MATROSKA_ID_AUDIOSAMPLINGFREQ, track->sample_rate);
             put_ebml_float(mkv->track.bc, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, output_sample_rate);
@@ -2678,9 +2721,10 @@ static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
                        pkt->stream_index);
                 return AVERROR(EINVAL);
             }
-            avio_seek(mkv->track.bc, track->codecpriv_offset, SEEK_SET);
-            mkv_write_codecprivate(s, mkv, par, side_data, side_data_size,
-                                   1, 0, mkv->track.bc);
+            ret = mkv_update_codecprivate(s, mkv, side_data, side_data_size,
+                                          par, mkv->track.bc, track);
+            if (ret < 0)
+                return ret;
         }
         break;
 #endif
