@@ -74,48 +74,6 @@ struct Muxer {
 
 static int want_sdp = 1;
 
-static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
-{
-    MuxStream *ms = &of->mux->streams[ost->index];
-    AVPacket *tmp_pkt = NULL;
-    int ret;
-
-    if (!av_fifo_can_write(ms->muxing_queue)) {
-        size_t cur_size = av_fifo_can_read(ms->muxing_queue);
-        size_t pkt_size = pkt ? pkt->size : 0;
-        unsigned int are_we_over_size =
-            (ms->muxing_queue_data_size + pkt_size) > ost->muxing_queue_data_threshold;
-        size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
-        size_t new_size = FFMIN(2 * cur_size, limit);
-
-        if (new_size <= cur_size) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Too many packets buffered for output stream %d:%d.\n",
-                   ost->file_index, ost->st->index);
-            return AVERROR(ENOSPC);
-        }
-        ret = av_fifo_grow2(ms->muxing_queue, new_size - cur_size);
-        if (ret < 0)
-            return ret;
-    }
-
-    if (pkt) {
-        ret = av_packet_make_refcounted(pkt);
-        if (ret < 0)
-            return ret;
-
-        tmp_pkt = av_packet_alloc();
-        if (!tmp_pkt)
-            return AVERROR(ENOMEM);
-
-        av_packet_move_ref(tmp_pkt, pkt);
-        ms->muxing_queue_data_size += tmp_pkt->size;
-    }
-    av_fifo_write(ms->muxing_queue, &tmp_pkt, 1);
-
-    return 0;
-}
-
 static int64_t filesize(AVIOContext *pb)
 {
     int64_t ret = -1;
@@ -289,62 +247,6 @@ finish:
     return (void*)(intptr_t)ret;
 }
 
-static int print_sdp(void)
-{
-    char sdp[16384];
-    int i;
-    int j, ret;
-    AVIOContext *sdp_pb;
-    AVFormatContext **avc;
-
-    for (i = 0; i < nb_output_files; i++) {
-        if (!output_files[i]->mux->header_written)
-            return 0;
-    }
-
-    avc = av_malloc_array(nb_output_files, sizeof(*avc));
-    if (!avc)
-        return AVERROR(ENOMEM);
-    for (i = 0, j = 0; i < nb_output_files; i++) {
-        if (!strcmp(output_files[i]->format->name, "rtp")) {
-            avc[j] = output_files[i]->mux->fc;
-            j++;
-        }
-    }
-
-    if (!j) {
-        av_log(NULL, AV_LOG_ERROR, "No output streams in the SDP.\n");
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
-
-    ret = av_sdp_create(avc, j, sdp, sizeof(sdp));
-    if (ret < 0)
-        goto fail;
-
-    if (!sdp_filename) {
-        printf("SDP:\n%s\n", sdp);
-        fflush(stdout);
-    } else {
-        ret = avio_open2(&sdp_pb, sdp_filename, AVIO_FLAG_WRITE, &int_cb, NULL);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", sdp_filename);
-            goto fail;
-        }
-
-        avio_print(sdp_pb, sdp);
-        avio_closep(&sdp_pb);
-        av_freep(&sdp_filename);
-    }
-
-    // SDP successfully written, allow muxer threads to start
-    ret = 1;
-
-fail:
-    av_freep(&avc);
-    return ret;
-}
-
 static int submit_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
     Muxer *mux = of->mux;
@@ -366,6 +268,48 @@ finish:
     ost->finished |= MUXER_FINISHED;
     tq_send_finish(mux->tq, ost->index);
     return ret == AVERROR_EOF ? 0 : ret;
+}
+
+static int queue_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
+{
+    MuxStream *ms = &of->mux->streams[ost->index];
+    AVPacket *tmp_pkt = NULL;
+    int ret;
+
+    if (!av_fifo_can_write(ms->muxing_queue)) {
+        size_t cur_size = av_fifo_can_read(ms->muxing_queue);
+        size_t pkt_size = pkt ? pkt->size : 0;
+        unsigned int are_we_over_size =
+            (ms->muxing_queue_data_size + pkt_size) > ost->muxing_queue_data_threshold;
+        size_t limit    = are_we_over_size ? ost->max_muxing_queue_size : SIZE_MAX;
+        size_t new_size = FFMIN(2 * cur_size, limit);
+
+        if (new_size <= cur_size) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Too many packets buffered for output stream %d:%d.\n",
+                   ost->file_index, ost->st->index);
+            return AVERROR(ENOSPC);
+        }
+        ret = av_fifo_grow2(ms->muxing_queue, new_size - cur_size);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (pkt) {
+        ret = av_packet_make_refcounted(pkt);
+        if (ret < 0)
+            return ret;
+
+        tmp_pkt = av_packet_alloc();
+        if (!tmp_pkt)
+            return AVERROR(ENOMEM);
+
+        av_packet_move_ref(tmp_pkt, pkt);
+        ms->muxing_queue_data_size += tmp_pkt->size;
+    }
+    av_fifo_write(ms->muxing_queue, &tmp_pkt, 1);
+
+    return 0;
 }
 
 int of_submit_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
@@ -454,6 +398,62 @@ static int thread_start(OutputFile *of)
     }
 
     return 0;
+}
+
+static int print_sdp(void)
+{
+    char sdp[16384];
+    int i;
+    int j, ret;
+    AVIOContext *sdp_pb;
+    AVFormatContext **avc;
+
+    for (i = 0; i < nb_output_files; i++) {
+        if (!output_files[i]->mux->header_written)
+            return 0;
+    }
+
+    avc = av_malloc_array(nb_output_files, sizeof(*avc));
+    if (!avc)
+        return AVERROR(ENOMEM);
+    for (i = 0, j = 0; i < nb_output_files; i++) {
+        if (!strcmp(output_files[i]->format->name, "rtp")) {
+            avc[j] = output_files[i]->mux->fc;
+            j++;
+        }
+    }
+
+    if (!j) {
+        av_log(NULL, AV_LOG_ERROR, "No output streams in the SDP.\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    ret = av_sdp_create(avc, j, sdp, sizeof(sdp));
+    if (ret < 0)
+        goto fail;
+
+    if (!sdp_filename) {
+        printf("SDP:\n%s\n", sdp);
+        fflush(stdout);
+    } else {
+        ret = avio_open2(&sdp_pb, sdp_filename, AVIO_FLAG_WRITE, &int_cb, NULL);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Failed to open sdp file '%s'\n", sdp_filename);
+            goto fail;
+        }
+
+        avio_print(sdp_pb, sdp);
+        avio_closep(&sdp_pb);
+        av_freep(&sdp_filename);
+    }
+
+    // SDP successfully written, allow muxer threads to start
+    ret = 1;
+
+fail:
+    av_freep(&avc);
+    return ret;
 }
 
 /* open the muxer when all the streams are initialized */
