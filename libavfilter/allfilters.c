@@ -546,6 +546,7 @@ extern const AVFilter ff_vsrc_yuvtestsrc;
 extern const AVFilter ff_vsink_nullsink;
 
 /* multimedia filters */
+extern const AVFilter ff_avf_a3dscope;
 extern const AVFilter ff_avf_abitscope;
 extern const AVFilter ff_avf_adrawgraph;
 extern const AVFilter ff_avf_agraphmonitor;

@@ -27232,6 +27232,61 @@ tools.
 
 Below is a description of the currently available multimedia filters.
 
+@section a3dscope
+
+Convert input audio to 3d scope video output.
+
+The filter accepts the following options:
+
+@table @option
+@item rate, r
+Set frame rate, expressed as number of frames per second. Default
+value is "25".
+
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{hd720}.
+
+@item fov
+Set the camera field of view. Default is 90 degrees.
+Allowed range is from 40 to 150.
+
+@item roll
+Set the camera roll.
+
+@item pitch
+Set the camera pitch.
+
+@item yaw
+Set the camera yaw.
+
+@item xzoom
+Set the camera zoom on X-axis.
+
+@item yzoom
+Set the camera zoom on Y-axis.
+
+@item zzoom
+Set the camera zoom on Z-axis.
+
+@item xpos
+Set the camera position on X-axis.
+
+@item ypos
+Set the camera position on Y-axis.
+
+@item zpos
+Set the camera position on Z-axis.
+
+@item length
+Set the length of displayed audio waves in number of frames.
+@end table
+
+@subsection Commands
+
+Filter supports the some above options as @ref{commands}.
+
 @section abitscope
 
 Convert input audio to a video output, displaying the audio bit scope.
