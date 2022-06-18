@@ -6499,9 +6499,12 @@ static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVSt
         return AVERROR_INVALIDDATA;
     }
 
-    *sample = av_encryption_info_clone(sc->cenc.default_encrypted_sample);
-    if (!*sample)
-        return AVERROR(ENOMEM);
+    if (sc->cenc.per_sample_iv_size || use_subsamples) {
+        *sample = av_encryption_info_clone(sc->cenc.default_encrypted_sample);
+        if (!*sample)
+            return AVERROR(ENOMEM);
+    } else
+        *sample = NULL;
 
     if (sc->cenc.per_sample_iv_size != 0) {
         if ((ret = ffio_read_size(pb, (*sample)->iv, sc->cenc.per_sample_iv_size)) < 0) {
@@ -7420,6 +7423,8 @@ static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPa
         } else if (encrypted_index >= 0 && encrypted_index < encryption_index->nb_encrypted_samples) {
             // Per-sample setting override.
             encrypted_sample = encryption_index->encrypted_samples[encrypted_index];
+            if (!encrypted_sample)
+                encrypted_sample = sc->cenc.default_encrypted_sample;
         } else {
             av_log(mov->fc, AV_LOG_ERROR, "Incorrect number of samples in encryption info\n");
             return AVERROR_INVALIDDATA;
