@@ -52,7 +52,7 @@ static const enum AVPixelFormat *get_compliance_normal_pix_fmts(const AVCodec *c
     }
 }
 
-static enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx,
+static enum AVPixelFormat choose_pixel_fmt(AVCodecContext *enc_ctx,
                                     const AVCodec *codec, enum AVPixelFormat target)
 {
     if (codec && codec->pix_fmts) {
@@ -102,7 +102,7 @@ static const char *choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint)
         return av_get_pix_fmt_name(ost->enc_ctx->pix_fmt);
     }
     if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-        return av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc_ctx, ost->enc, ost->enc_ctx->pix_fmt));
+        return av_get_pix_fmt_name(choose_pixel_fmt(ost->enc_ctx, ost->enc, ost->enc_ctx->pix_fmt));
     } else if (ost->enc && ost->enc->pix_fmts) {
         const enum AVPixelFormat *p;
 
