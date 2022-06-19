@@ -157,7 +157,6 @@ float audio_drift_threshold = 0.1;
 float dts_delta_threshold   = 10;
 float dts_error_threshold   = 3600*30;
 
-int audio_volume      = 256;
 int audio_sync_method = 0;
 enum VideoSyncMethod video_sync_method = VSYNC_AUTO;
 float frame_drop_threshold = 0;
@@ -4029,8 +4028,6 @@ const OptionDef options[] = {
     { "atag",           OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_PERFILE |
                         OPT_OUTPUT,                                                { .func_arg = opt_old2new },
         "force audio tag/fourcc", "fourcc/tag" },
-    { "vol",            OPT_AUDIO | HAS_ARG  | OPT_INT,                            { &audio_volume },
-        "change audio volume (256=normal)" , "volume" },
     { "sample_fmt",     OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_SPEC |
                         OPT_STRING | OPT_INPUT | OPT_OUTPUT,                       { .off = OFFSET(sample_fmts) },
         "set sample format", "format" },

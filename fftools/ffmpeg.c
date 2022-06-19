@@ -2840,10 +2840,6 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
     switch (par_dst->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        if (audio_volume != 256) {
-            av_log(NULL, AV_LOG_FATAL, "-acodec copy and -vol are incompatible (frames are not decoded)\n");
-            exit_program(1);
-        }
         if((par_dst->block_align == 1 || par_dst->block_align == 1152 || par_dst->block_align == 576) && par_dst->codec_id == AV_CODEC_ID_MP3)
             par_dst->block_align= 0;
         if(par_dst->codec_id == AV_CODEC_ID_AC3)
