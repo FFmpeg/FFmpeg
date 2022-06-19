@@ -219,7 +219,9 @@ static void uninit_options(OptionsContext *o)
     for (i = 0; i < o->nb_stream_maps; i++)
         av_freep(&o->stream_maps[i].linklabel);
     av_freep(&o->stream_maps);
+#if FFMPEG_OPT_MAP_CHANNEL
     av_freep(&o->audio_channel_maps);
+#endif
     av_freep(&o->streamid_map);
     av_freep(&o->attachments);
 }
@@ -534,6 +536,7 @@ static int opt_attach(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+#if FFMPEG_OPT_MAP_CHANNEL
 static int opt_map_channel(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -542,6 +545,12 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     AudioChannelMap *m;
     char *allow_unused;
     char *mapchan;
+
+    av_log(NULL, AV_LOG_WARNING,
+           "The -%s option is deprecated and will be removed. "
+           "It can be replaced by the 'pan' filter, or in some cases by "
+           "combinations of 'channelsplit', 'channelmap', 'amerge' filters.\n", opt);
+
     mapchan = av_strdup(arg);
     if (!mapchan)
         return AVERROR(ENOMEM);
@@ -610,6 +619,7 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     av_free(mapchan);
     return 0;
 }
+#endif
 
 static int opt_sdp_file(void *optctx, const char *opt, const char *arg)
 {
@@ -2061,7 +2071,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
 static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
 {
-    int n;
     AVStream *st;
     OutputStream *ost;
 
@@ -2121,8 +2130,9 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
         if (!ost->avfilter)
             exit_program(1);
 
+#if FFMPEG_OPT_MAP_CHANNEL
         /* check for channel mapping for this audio stream */
-        for (n = 0; n < o->nb_audio_channel_maps; n++) {
+        for (int n = 0; n < o->nb_audio_channel_maps; n++) {
             AudioChannelMap *map = &o->audio_channel_maps[n];
             if ((map->ofile_idx   == -1 || ost->file_index == map->ofile_idx) &&
                 (map->ostream_idx == -1 || ost->st->index  == map->ostream_idx)) {
@@ -2149,6 +2159,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
                 }
             }
         }
+#endif
     }
 
     if (ost->stream_copy)
@@ -3759,8 +3770,10 @@ const OptionDef options[] = {
                         OPT_OUTPUT,                                  { .func_arg = opt_map },
         "set input stream mapping",
         "[-]input_file_id[:stream_specifier][,sync_file_id[:stream_specifier]]" },
+#if FFMPEG_OPT_MAP_CHANNEL
     { "map_channel",    HAS_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT, { .func_arg = opt_map_channel },
-        "map an audio channel from one stream to another", "file.stream.channel[:syncfile.syncstream]" },
+        "map an audio channel from one stream to another (deprecated)", "file.stream.channel[:syncfile.syncstream]" },
+#endif
     { "map_metadata",   HAS_ARG | OPT_STRING | OPT_SPEC |
                         OPT_OUTPUT,                                  { .off       = OFFSET(metadata_map) },
         "set metadata information of outfile from infile",

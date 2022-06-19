@@ -51,6 +51,7 @@
 
 // deprecated features
 #define FFMPEG_OPT_PSNR 1
+#define FFMPEG_OPT_MAP_CHANNEL 1
 
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
@@ -85,10 +86,12 @@ typedef struct StreamMap {
     char *linklabel;       /* name of an output link, for mapping lavfi outputs */
 } StreamMap;
 
+#if FFMPEG_OPT_MAP_CHANNEL
 typedef struct {
     int  file_idx,  stream_idx,  channel_idx; // input
     int ofile_idx, ostream_idx;               // output
 } AudioChannelMap;
+#endif
 
 typedef struct OptionsContext {
     OptionGroup *g;
@@ -141,8 +144,10 @@ typedef struct OptionsContext {
     /* output options */
     StreamMap *stream_maps;
     int     nb_stream_maps;
+#if FFMPEG_OPT_MAP_CHANNEL
     AudioChannelMap *audio_channel_maps; /* one info entry per -map_channel */
     int           nb_audio_channel_maps; /* number of (valid) -map_channel settings */
+#endif
     int metadata_global_manual;
     int metadata_streams_manual;
     int metadata_chapters_manual;
@@ -516,8 +521,10 @@ typedef struct OutputStream {
     int dropped_keyframe;
 
     /* audio only */
+#if FFMPEG_OPT_MAP_CHANNEL
     int *audio_channels_map;             /* list of the channels id to pick from the source stream */
     int audio_channels_mapped;           /* number of channels in audio_channels_map */
+#endif
 
     char *logfile_prefix;
     FILE *logfile;

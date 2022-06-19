@@ -1492,6 +1492,10 @@ Allow input streams with unknown type to be copied instead of failing if copying
 such streams is attempted.
 
 @item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][?][:@var{output_file_id}.@var{stream_specifier}]
+This option is deprecated and will be removed. It can be replaced by the
+@var{pan} filter. In some cases it may be easier to use some combination of the
+@var{channelsplit}, @var{channelmap}, or @var{amerge} filters.
+
 Map an audio channel from a given input to an output. If
 @var{output_file_id}.@var{stream_specifier} is not set, the audio channel will
 be mapped on all the audio streams.

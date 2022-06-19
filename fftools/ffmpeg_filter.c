@@ -560,6 +560,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     pad_idx = 0;                                                            \
 } while (0)
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_UNLIMITED);
+#if FFMPEG_OPT_MAP_CHANNEL
     if (ost->audio_channels_mapped) {
         AVChannelLayout mapped_layout = { 0 };
         int i;
@@ -572,6 +573,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         AUTO_INSERT_FILTER("-map_channel", "pan", args.str);
         av_bprint_clear(&args);
     }
+#endif
 
     if (codec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
         av_channel_layout_default(&codec->ch_layout, codec->ch_layout.nb_channels);
