@@ -385,12 +385,8 @@ typedef struct InputStream {
     char  *hwaccel_device;
     enum AVPixelFormat hwaccel_output_format;
 
-    /* hwaccel context */
-    void  *hwaccel_ctx;
-    void (*hwaccel_uninit)(AVCodecContext *s);
     int  (*hwaccel_retrieve_data)(AVCodecContext *s, AVFrame *frame);
     enum AVPixelFormat hwaccel_pix_fmt;
-    enum AVPixelFormat hwaccel_retrieved_pix_fmt;
 
     /* stats */
     // combined size of all the packets read
@@ -492,8 +488,6 @@ typedef struct OutputStream {
     AVPacket *pkt;
     int64_t last_dropped;
     int64_t last_nb0_frames[3];
-
-    void  *hwaccel_ctx;
 
     /* video only */
     AVRational frame_rate;

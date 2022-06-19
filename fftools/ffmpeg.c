@@ -2275,7 +2275,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
         if (err < 0)
             goto fail;
     }
-    ist->hwaccel_retrieved_pix_fmt = decoded_frame->format;
 
     best_effort_timestamp= decoded_frame->best_effort_timestamp;
     *duration_pts = decoded_frame->duration;
@@ -4428,8 +4427,6 @@ static int transcode(void)
         ist = input_streams[i];
         if (ist->decoding_needed) {
             avcodec_close(ist->dec_ctx);
-            if (ist->hwaccel_uninit)
-                ist->hwaccel_uninit(ist->dec_ctx);
         }
     }
 
