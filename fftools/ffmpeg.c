@@ -3344,13 +3344,8 @@ static int transcode_init(void)
 
     /* init input streams */
     for (i = 0; i < nb_input_streams; i++)
-        if ((ret = init_input_stream(i, error, sizeof(error))) < 0) {
-            for (i = 0; i < nb_output_streams; i++) {
-                ost = output_streams[i];
-                avcodec_close(ost->enc_ctx);
-            }
+        if ((ret = init_input_stream(i, error, sizeof(error))) < 0)
             goto dump_format;
-        }
 
     /*
      * initialize stream copy and subtitle/data streams.
