@@ -1462,7 +1462,8 @@ static void print_final_stats(int64_t total_size)
         }
         extra_size += par->extradata_size;
         data_size  += ost->data_size;
-        if (   (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
+        if (ost->enc_ctx &&
+            (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
             != AV_CODEC_FLAG_PASS1)
             pass1_used = 0;
     }
@@ -1630,7 +1631,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                     av_bprintf(&buf, "%X", av_log2(qp_histogram[j] + 1));
             }
 
-            if ((enc->flags & AV_CODEC_FLAG_PSNR) && (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
+            if (enc && (enc->flags & AV_CODEC_FLAG_PSNR) &&
+                (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;
@@ -3139,6 +3141,9 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
         break;
     }
 
+    if (ost->bitexact)
+        enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+
     if (ost->sq_idx_encode >= 0)
         sq_set_tb(of->sq_encode, ost->sq_idx_encode, enc_ctx->time_base);
 
@@ -3635,7 +3640,8 @@ static int check_keyboard_interaction(int64_t cur_time)
         }
         for(i=0;i<nb_output_streams;i++) {
             OutputStream *ost = output_streams[i];
-            ost->enc_ctx->debug = debug;
+            if (ost->enc_ctx)
+                ost->enc_ctx->debug = debug;
         }
         if(debug) av_log_set_level(AV_LOG_DEBUG);
         fprintf(stderr,"debug=%d\n", debug);

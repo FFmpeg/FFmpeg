@@ -1568,12 +1568,14 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         exit_program(1);
     }
 
-    ost->enc_ctx = avcodec_alloc_context3(ost->enc);
-    if (!ost->enc_ctx) {
-        av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
-        exit_program(1);
+    if (ost->enc) {
+        ost->enc_ctx = avcodec_alloc_context3(ost->enc);
+        if (!ost->enc_ctx) {
+            av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
+            exit_program(1);
+        }
+        ost->enc_ctx->codec_type = type;
     }
-    ost->enc_ctx->codec_type = type;
 
     ost->filtered_frame = av_frame_alloc();
     if (!ost->filtered_frame)
@@ -1622,9 +1624,8 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
 
     if (o->bitexact) {
-        ost->enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
         ost->bitexact        = 1;
-    } else {
+    } else if (ost->enc_ctx) {
         ost->bitexact        = check_opt_bitexact(ost->enc_ctx, ost->encoder_opts, "flags",
                                                   AV_CODEC_FLAG_BITEXACT);
     }
@@ -1678,12 +1679,13 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         uint32_t tag = strtol(codec_tag, &next, 0);
         if (*next)
             tag = AV_RL32(codec_tag);
-        ost->st->codecpar->codec_tag =
-        ost->enc_ctx->codec_tag = tag;
+        ost->st->codecpar->codec_tag = tag;
+        if (ost->enc_ctx)
+            ost->enc_ctx->codec_tag = tag;
     }
 
     MATCH_PER_STREAM_OPT(qscale, dbl, qscale, oc, st);
-    if (qscale >= 0) {
+    if (ost->enc_ctx && qscale >= 0) {
         ost->enc_ctx->flags |= AV_CODEC_FLAG_QSCALE;
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
     }
@@ -1700,7 +1702,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     MATCH_PER_STREAM_OPT(bits_per_raw_sample, i, ost->bits_per_raw_sample,
                          oc, st);
 
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER)
+    if (oc->oformat->flags & AVFMT_GLOBALHEADER && ost->enc_ctx)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     av_dict_copy(&ost->sws_dict, o->g->sws_dict, 0);
@@ -1802,12 +1804,10 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 {
     AVStream *st;
     OutputStream *ost;
-    AVCodecContext *video_enc;
     char *frame_rate = NULL, *max_frame_rate = NULL, *frame_aspect_ratio = NULL;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO, source_index);
     st  = ost->st;
-    video_enc = ost->enc_ctx;
 
     MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
     if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
@@ -1845,6 +1845,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
     MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
 
     if (!ost->stream_copy) {
+        AVCodecContext *video_enc = ost->enc_ctx;
         const char *p = NULL;
         char *frame_size = NULL;
         char *frame_pix_fmt = NULL;
@@ -2045,18 +2046,16 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
     int n;
     AVStream *st;
     OutputStream *ost;
-    AVCodecContext *audio_enc;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_AUDIO, source_index);
     st  = ost->st;
 
-    audio_enc = ost->enc_ctx;
-    audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
 
     MATCH_PER_STREAM_OPT(filter_scripts, str, ost->filters_script, oc, st);
     MATCH_PER_STREAM_OPT(filters,        str, ost->filters,        oc, st);
 
     if (!ost->stream_copy) {
+        AVCodecContext *audio_enc = ost->enc_ctx;
         int channels = 0;
         char *layout = NULL;
         char *sample_fmt = NULL;
@@ -2178,15 +2177,12 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc,
 {
     AVStream *st;
     OutputStream *ost;
-    AVCodecContext *subtitle_enc;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_SUBTITLE, source_index);
     st  = ost->st;
-    subtitle_enc = ost->enc_ctx;
-
-    subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
 
     if (!ost->stream_copy) {
+        AVCodecContext *subtitle_enc = ost->enc_ctx;
         char *frame_size = NULL;
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, oc, st);
