@@ -862,6 +862,25 @@ static const AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVSt
         return avcodec_find_decoder(st->codecpar->codec_id);
 }
 
+static int guess_input_channel_layout(InputStream *ist)
+{
+    AVCodecContext *dec = ist->dec_ctx;
+
+    if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
+        char layout_name[256];
+
+        if (dec->ch_layout.nb_channels > ist->guess_layout_max)
+            return 0;
+        av_channel_layout_default(&dec->ch_layout, dec->ch_layout.nb_channels);
+        if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+            return 0;
+        av_channel_layout_describe(&dec->ch_layout, layout_name, sizeof(layout_name));
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Input Stream "
+               "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
+    }
+    return 1;
+}
+
 /* Add all the streams from the given input file to the global
  * list of input streams. */
 static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
