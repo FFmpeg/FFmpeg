@@ -481,7 +481,6 @@ typedef struct OutputStream {
     AVBSFContext            *bsf_ctx;
 
     AVCodecContext *enc_ctx;
-    AVCodecParameters *ref_par; /* associated input codec parameters with encoders options applied */
     const AVCodec *enc;
     int64_t max_frames;
     AVFrame *filtered_frame;

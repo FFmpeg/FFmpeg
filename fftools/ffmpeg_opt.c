@@ -1573,12 +1573,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     }
     ost->enc_ctx->codec_type = type;
 
-    ost->ref_par = avcodec_parameters_alloc();
-    if (!ost->ref_par) {
-        av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding parameters.\n");
-        exit_program(1);
-    }
-
     ost->filtered_frame = av_frame_alloc();
     if (!ost->filtered_frame)
         exit_program(1);

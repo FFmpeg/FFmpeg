@@ -587,7 +587,6 @@ static void ffmpeg_cleanup(int ret)
         if (ost->enc_ctx)
             av_freep(&ost->enc_ctx->stats_in);
         avcodec_free_context(&ost->enc_ctx);
-        avcodec_parameters_free(&ost->ref_par);
 
         av_freep(&output_streams[i]);
     }
@@ -2757,11 +2756,10 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
     InputStream *ist = get_input_stream(ost);
-    AVCodecParameters *par_dst = ost->st->codecpar;
-    AVCodecParameters *par_src = ost->ref_par;
+    AVCodecParameters *par = ost->st->codecpar;
     AVRational sar;
     int i, ret;
-    uint32_t codec_tag = par_dst->codec_tag;
+    uint32_t codec_tag = par->codec_tag;
 
     av_assert0(ist && !ost->filter);
 
@@ -2774,7 +2772,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
         return ret;
     }
 
-    ret = avcodec_parameters_from_context(par_src, ost->enc_ctx);
+    ret = avcodec_parameters_from_context(par, ost->enc_ctx);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL,
                "Error getting reference codec parameters.\n");
@@ -2784,16 +2782,12 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     if (!codec_tag) {
         unsigned int codec_tag_tmp;
         if (!of->format->codec_tag ||
-            av_codec_get_id (of->format->codec_tag, par_src->codec_tag) == par_src->codec_id ||
-            !av_codec_get_tag2(of->format->codec_tag, par_src->codec_id, &codec_tag_tmp))
-            codec_tag = par_src->codec_tag;
+            av_codec_get_id (of->format->codec_tag, par->codec_tag) == par->codec_id ||
+            !av_codec_get_tag2(of->format->codec_tag, par->codec_id, &codec_tag_tmp))
+            codec_tag = par->codec_tag;
     }
 
-    ret = avcodec_parameters_copy(par_dst, par_src);
-    if (ret < 0)
-        return ret;
-
-    par_dst->codec_tag = codec_tag;
+    par->codec_tag = codec_tag;
 
     if (!ost->frame_rate.num)
         ost->frame_rate = ist->framerate;
@@ -2838,26 +2832,27 @@ static int init_output_stream_streamcopy(OutputStream *ost)
             av_display_rotation_set((int32_t *)sd, -ost->rotate_override_value);
     }
 
-    switch (par_dst->codec_type) {
+    switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        if((par_dst->block_align == 1 || par_dst->block_align == 1152 || par_dst->block_align == 576) && par_dst->codec_id == AV_CODEC_ID_MP3)
-            par_dst->block_align= 0;
-        if(par_dst->codec_id == AV_CODEC_ID_AC3)
-            par_dst->block_align= 0;
+        if ((par->block_align == 1 || par->block_align == 1152 || par->block_align == 576) &&
+            par->codec_id == AV_CODEC_ID_MP3)
+            par->block_align = 0;
+        if (par->codec_id == AV_CODEC_ID_AC3)
+            par->block_align = 0;
         break;
     case AVMEDIA_TYPE_VIDEO:
         if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
             sar =
                 av_mul_q(ost->frame_aspect_ratio,
-                         (AVRational){ par_dst->height, par_dst->width });
+                         (AVRational){ par->height, par->width });
             av_log(NULL, AV_LOG_WARNING, "Overriding aspect ratio "
                    "with stream copy may produce invalid files\n");
             }
         else if (ist->st->sample_aspect_ratio.num)
             sar = ist->st->sample_aspect_ratio;
         else
-            sar = par_src->sample_aspect_ratio;
-        ost->st->sample_aspect_ratio = par_dst->sample_aspect_ratio = sar;
+            sar = par->sample_aspect_ratio;
+        ost->st->sample_aspect_ratio = par->sample_aspect_ratio = sar;
         ost->st->avg_frame_rate = ist->st->avg_frame_rate;
         ost->st->r_frame_rate = ist->st->r_frame_rate;
         break;
