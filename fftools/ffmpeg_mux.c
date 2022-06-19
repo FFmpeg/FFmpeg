@@ -201,7 +201,7 @@ static int write_packet(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "muxer <- type:%s "
                 "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s size:%d\n",
-                av_get_media_type_string(ost->enc_ctx->codec_type),
+                av_get_media_type_string(st->codecpar->codec_type),
                 av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
                 av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
                 av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ost->st->time_base),

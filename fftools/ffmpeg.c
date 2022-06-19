@@ -1454,13 +1454,14 @@ static void print_final_stats(int64_t total_size)
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
-        switch (ost->enc_ctx->codec_type) {
+        AVCodecParameters *par = ost->st->codecpar;
+        switch (par->codec_type) {
             case AVMEDIA_TYPE_VIDEO: video_size += ost->data_size; break;
             case AVMEDIA_TYPE_AUDIO: audio_size += ost->data_size; break;
             case AVMEDIA_TYPE_SUBTITLE: subtitle_size += ost->data_size; break;
             default:                 other_size += ost->data_size; break;
         }
-        extra_size += ost->enc_ctx->extradata_size;
+        extra_size += par->extradata_size;
         data_size  += ost->data_size;
         if (   (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
             != AV_CODEC_FLAG_PASS1)
@@ -1526,7 +1527,7 @@ static void print_final_stats(int64_t total_size)
 
         for (j = 0; j < of->nb_streams; j++) {
             OutputStream *ost = output_streams[of->ost_index + j];
-            enum AVMediaType type = ost->enc_ctx->codec_type;
+            enum AVMediaType type = ost->st->codecpar->codec_type;
 
             total_size    += ost->data_size;
             total_packets += atomic_load(&ost->packets_written);
@@ -1603,12 +1604,12 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         if (!ost->stream_copy)
             q = ost->quality / (float) FF_QP2LAMBDA;
 
-        if (vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (vid && ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             av_bprintf(&buf, "q=%2.1f ", q);
             av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",
                        ost->file_index, ost->index, q);
         }
-        if (!vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (!vid && ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             float fps;
             uint64_t frame_number = atomic_load(&ost->packets_written);
 
@@ -3362,8 +3363,8 @@ static int transcode_init(void)
      */
     for (i = 0; i < nb_output_streams; i++) {
         if (!output_streams[i]->stream_copy &&
-            (output_streams[i]->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-             output_streams[i]->enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO))
+            (output_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+             output_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
             continue;
 
         ret = init_output_stream_wrapper(output_streams[i], NULL, 0);
