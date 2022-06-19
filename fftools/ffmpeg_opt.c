@@ -183,7 +183,9 @@ int64_t stats_period = 500000;
 
 static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
+#if FFMPEG_OPT_PSNR
 static int do_psnr            = 0;
+#endif
 static int input_stream_potentially_available = 0;
 static int ignore_unknown_streams = 0;
 static int copy_unknown_streams = 0;
@@ -1926,8 +1928,12 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         }
         video_enc->rc_override_count = i;
 
-        if (do_psnr)
+#if FFMPEG_OPT_PSNR
+        if (do_psnr) {
+            av_log(NULL, AV_LOG_WARNING, "The -psnr option is deprecated, use -flags +psnr\n");
             video_enc->flags|= AV_CODEC_FLAG_PSNR;
+        }
+#endif
 
         /* two pass mode */
         MATCH_PER_STREAM_OPT(pass, i, do_pass, oc, st);
@@ -3942,8 +3948,10 @@ const OptionDef options[] = {
     { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
+#if FFMPEG_OPT_PSNR
     { "psnr",         OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &do_psnr },
-        "calculate PSNR of compressed frames" },
+        "calculate PSNR of compressed frames (deprecated, use -flags +psnr)" },
+#endif
     { "vstats",       OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_vstats },
         "dump video coding statistics to file" },
     { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { .func_arg = opt_vstats_file },

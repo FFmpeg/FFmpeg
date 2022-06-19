@@ -992,7 +992,8 @@ to keep the interlaced format for minimum losses.
 The alternative is to deinterlace the input stream by use of a filter
 such as @code{yadif} or @code{bwdif}, but deinterlacing introduces losses.
 @item -psnr
-Calculate PSNR of compressed frames.
+Calculate PSNR of compressed frames. This option is deprecated, pass the
+PSNR flag to the encoder instead, using @code{-flags +psnr}.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}

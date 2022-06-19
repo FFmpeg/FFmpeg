@@ -49,6 +49,9 @@
 
 #include "libswresample/swresample.h"
 
+// deprecated features
+#define FFMPEG_OPT_PSNR 1
+
 enum VideoSyncMethod {
     VSYNC_AUTO = -1,
     VSYNC_PASSTHROUGH,
