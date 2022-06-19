@@ -2757,22 +2757,29 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     OutputFile *of = output_files[ost->file_index];
     InputStream *ist = get_input_stream(ost);
     AVCodecParameters *par = ost->st->codecpar;
+    AVCodecContext *codec_ctx;
     AVRational sar;
     int i, ret;
     uint32_t codec_tag = par->codec_tag;
 
     av_assert0(ist && !ost->filter);
 
-    ret = avcodec_parameters_to_context(ost->enc_ctx, ist->st->codecpar);
+    codec_ctx = avcodec_alloc_context3(NULL);
+    if (!codec_ctx)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_parameters_to_context(codec_ctx, ist->st->codecpar);
     if (ret >= 0)
-        ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+        ret = av_opt_set_dict(codec_ctx, &ost->encoder_opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL,
                "Error setting up codec context options.\n");
+        avcodec_free_context(&codec_ctx);
         return ret;
     }
 
-    ret = avcodec_parameters_from_context(par, ost->enc_ctx);
+    ret = avcodec_parameters_from_context(par, codec_ctx);
+    avcodec_free_context(&codec_ctx);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL,
                "Error getting reference codec parameters.\n");
