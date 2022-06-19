@@ -463,6 +463,8 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, int64_t m
                 goto invalid;
             if (current_array == &times && (d <= INT64_MIN / 1000 || d >= INT64_MAX / 1000))
                 goto invalid;
+            if (avio_feof(ioc))
+                goto invalid;
             current_array[0][i] = d;
         }
         if (times && filepositions) {
