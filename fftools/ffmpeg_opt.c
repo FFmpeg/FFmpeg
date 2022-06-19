@@ -1574,7 +1574,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
             av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
             exit_program(1);
         }
-        ost->enc_ctx->codec_type = type;
     }
 
     ost->filtered_frame = av_frame_alloc();
