@@ -2621,15 +2621,15 @@ static void map_auto_subtitle(OutputFile *of, AVFormatContext *oc,
 static void map_auto_data(OutputFile *of, AVFormatContext *oc,
                           OptionsContext *o)
 {
-        /* Data only if codec id match */
-            enum AVCodecID codec_id = av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_DATA);
-            for (int i = 0; codec_id != AV_CODEC_ID_NONE && i < nb_input_streams; i++) {
-                if (input_streams[i]->user_set_discard == AVDISCARD_ALL)
-                    continue;
-                if (input_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_DATA
-                    && input_streams[i]->st->codecpar->codec_id == codec_id )
-                    new_data_stream(o, oc, i);
-            }
+    /* Data only if codec id match */
+    enum AVCodecID codec_id = av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_DATA);
+    for (int i = 0; codec_id != AV_CODEC_ID_NONE && i < nb_input_streams; i++) {
+        if (input_streams[i]->user_set_discard == AVDISCARD_ALL)
+            continue;
+        if (input_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_DATA
+            && input_streams[i]->st->codecpar->codec_id == codec_id )
+            new_data_stream(o, oc, i);
+    }
 }
 
 static int open_output_file(OptionsContext *o, const char *filename)
