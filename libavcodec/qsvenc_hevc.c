@@ -287,7 +287,7 @@ static const FFCodecDefault qsv_enc_defaults[] = {
     { "refs",      "0"     },
     // same as the x264 default
     { "g",         "248"   },
-    { "bf",        "8"     },
+    { "bf",        "-1"    },
     { "qmin",      "-1"    },
     { "qmax",      "-1"    },
     { "trellis",   "-1"    },
