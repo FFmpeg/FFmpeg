@@ -2272,6 +2272,7 @@ SYSTEM_FUNCS="
     fcntl
     getaddrinfo
     getauxval
+    getenv
     gethrtime
     getopt
     GetModuleHandle

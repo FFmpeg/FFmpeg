@@ -20,6 +20,8 @@
 #define AVUTIL_WCHAR_FILENAME_H
 
 #ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "mem.h"
 
@@ -39,6 +41,57 @@ static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
     }
     MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, *filename_w, num_chars);
     return 0;
+}
+
+av_warn_unused_result
+static inline int wchartocp(unsigned int code_page, const wchar_t *filename_w,
+                            char **filename)
+{
+    DWORD flags = code_page == CP_UTF8 ? WC_ERR_INVALID_CHARS : 0;
+    int num_chars = WideCharToMultiByte(code_page, flags, filename_w, -1,
+                                        NULL, 0, NULL, NULL);
+    if (num_chars <= 0) {
+        *filename = NULL;
+        return 0;
+    }
+    *filename = av_malloc_array(num_chars, sizeof *filename);
+    if (!*filename) {
+        errno = ENOMEM;
+        return -1;
+    }
+    WideCharToMultiByte(code_page, flags, filename_w, -1,
+                        *filename, num_chars, NULL, NULL);
+    return 0;
+}
+
+av_warn_unused_result
+static inline int wchartoutf8(const wchar_t *filename_w, char **filename)
+{
+    return wchartocp(CP_UTF8, filename_w, filename);
+}
+
+av_warn_unused_result
+static inline int wchartoansi(const wchar_t *filename_w, char **filename)
+{
+    return wchartocp(CP_ACP, filename_w, filename);
+}
+
+av_warn_unused_result
+static inline int utf8toansi(const char *filename_utf8, char **filename)
+{
+    wchar_t *filename_w = NULL;
+    int ret = -1;
+    if (utf8towchar(filename_utf8, &filename_w))
+        return -1;
+
+    if (!filename_w) {
+        *filename = NULL;
+        return 0;
+    }
+
+    ret = wchartoansi(filename_w, filename);
+    av_free(filename_w);
+    return ret;
 }
 
 /**
