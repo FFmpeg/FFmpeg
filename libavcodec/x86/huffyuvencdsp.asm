@@ -36,25 +36,16 @@ SECTION .text
 
 %macro DIFF_INT16 0
 cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
-%if mmsize > 8
     test src1q, mmsize-1
     jnz .unaligned
     test src2q, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
-%endif
     INT16_LOOP a, sub
-%if mmsize > 8
 .unaligned:
     INT16_LOOP u, sub
-%endif
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-DIFF_INT16
-%endif
 
 INIT_XMM sse2
 DIFF_INT16
