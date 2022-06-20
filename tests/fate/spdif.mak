@@ -24,6 +24,9 @@ fate-spdif-dca-master-core: CMD = md5 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_
 FATE_SPDIF-$(call DEMMUX, EAC3, SPDIF) += fate-spdif-eac3
 fate-spdif-eac3: CMD = md5 -i $(TARGET_SAMPLES)/eac3/csi_miami_stereo_128_spx.eac3 -c copy -f spdif
 
+FATE_SPDIF_REMUX-$(call ALLYES, EAC3_DEMUXER EAC3_DECODER SPDIF_MUXER SPDIF_DEMUXER) += fate-spdif-eac3-remux
+fate-spdif-eac3-remux: CMD = transcode eac3 $(TARGET_SAMPLES)/eac3/csi_miami_stereo_128_spx.eac3 spdif "-c copy" "-c copy"
+
 FATE_SPDIF-$(call DEMMUX, MLP, SPDIF) += fate-spdif-mlp
 fate-spdif-mlp: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.mlp -c copy -f spdif
 
