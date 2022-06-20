@@ -840,25 +840,6 @@ cglobal put_vp8_pixels8, 5, 5, 0, dst, dststride, src, srcstride, height
     jg .nextrow
     REP_RET
 
-%if ARCH_X86_32
-INIT_MMX mmx
-cglobal put_vp8_pixels16, 5, 5, 0, dst, dststride, src, srcstride, height
-.nextrow:
-    movq    mm0, [srcq+srcstrideq*0+0]
-    movq    mm1, [srcq+srcstrideq*0+8]
-    movq    mm2, [srcq+srcstrideq*1+0]
-    movq    mm3, [srcq+srcstrideq*1+8]
-    lea    srcq, [srcq+srcstrideq*2]
-    movq [dstq+dststrideq*0+0], mm0
-    movq [dstq+dststrideq*0+8], mm1
-    movq [dstq+dststrideq*1+0], mm2
-    movq [dstq+dststrideq*1+8], mm3
-    lea    dstq, [dstq+dststrideq*2]
-    sub heightd, 2
-    jg .nextrow
-    REP_RET
-%endif
-
 INIT_XMM sse
 cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
 .nextrow:
@@ -894,32 +875,6 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
     %4 [dst2q+%3], m4
     %4 [dst2q+strideq+%3], m5
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-cglobal vp8_idct_dc_add, 3, 3, 0, dst, block, stride
-    ; load data
-    movd       m0, [blockq]
-
-    ; calculate DC
-    paddw      m0, [pw_4]
-    pxor       m1, m1
-    psraw      m0, 3
-    movd [blockq], m1
-    psubw      m1, m0
-    packuswb   m0, m0
-    packuswb   m1, m1
-    punpcklbw  m0, m0
-    punpcklbw  m1, m1
-    punpcklwd  m0, m0
-    punpcklwd  m1, m1
-
-    ; add DC
-    DEFINE_ARGS dst1, dst2, stride
-    lea     dst2q, [dst1q+strideq*2]
-    ADD_DC     m0, m1, 0, movh
-    RET
-%endif
 
 %macro VP8_IDCT_DC_ADD 0
 cglobal vp8_idct_dc_add, 3, 3, 6, dst, block, stride
@@ -970,44 +925,6 @@ VP8_IDCT_DC_ADD
 ;-----------------------------------------------------------------------------
 ; void ff_vp8_idct_dc_add4y_<opt>(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
-
-%if ARCH_X86_32
-INIT_MMX mmx
-cglobal vp8_idct_dc_add4y, 3, 3, 0, dst, block, stride
-    ; load data
-    movd      m0, [blockq+32*0] ; A
-    movd      m1, [blockq+32*2] ; C
-    punpcklwd m0, [blockq+32*1] ; A B
-    punpcklwd m1, [blockq+32*3] ; C D
-    punpckldq m0, m1        ; A B C D
-    pxor      m6, m6
-
-    ; calculate DC
-    paddw     m0, [pw_4]
-    movd [blockq+32*0], m6
-    movd [blockq+32*1], m6
-    movd [blockq+32*2], m6
-    movd [blockq+32*3], m6
-    psraw     m0, 3
-    psubw     m6, m0
-    packuswb  m0, m0
-    packuswb  m6, m6
-    punpcklbw m0, m0 ; AABBCCDD
-    punpcklbw m6, m6 ; AABBCCDD
-    movq      m1, m0
-    movq      m7, m6
-    punpcklbw m0, m0 ; AAAABBBB
-    punpckhbw m1, m1 ; CCCCDDDD
-    punpcklbw m6, m6 ; AAAABBBB
-    punpckhbw m7, m7 ; CCCCDDDD
-
-    ; add DC
-    DEFINE_ARGS dst1, dst2, stride
-    lea    dst2q, [dst1q+strideq*2]
-    ADD_DC    m0, m6, 0, mova
-    ADD_DC    m1, m7, 8, mova
-    RET
-%endif
 
 INIT_XMM sse2
 cglobal vp8_idct_dc_add4y, 3, 3, 6, dst, block, stride
@@ -1117,7 +1034,7 @@ cglobal vp8_idct_dc_add4uv, 3, 3, 0, dst, block, stride
     SWAP                 %4,  %3
 %endmacro
 
-%macro VP8_IDCT_ADD 0
+INIT_MMX sse
 cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
     ; load block data
     movq         m0, [blockq+ 0]
@@ -1126,17 +1043,9 @@ cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
     movq         m3, [blockq+24]
     movq         m6, [pw_20091]
     movq         m7, [pw_17734]
-%if cpuflag(sse)
     xorps      xmm0, xmm0
     movaps [blockq+ 0], xmm0
     movaps [blockq+16], xmm0
-%else
-    pxor         m4, m4
-    movq [blockq+ 0], m4
-    movq [blockq+ 8], m4
-    movq [blockq+16], m4
-    movq [blockq+24], m4
-%endif
 
     ; actual IDCT
     VP8_IDCT_TRANSFORM4x4_1D 0, 1, 2, 3, 4, 5
@@ -1153,14 +1062,6 @@ cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
     STORE_DIFFx2 m2, m3, m6, m7, m4, 3, dst2q, strideq
 
     RET
-%endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-VP8_IDCT_ADD
-%endif
-INIT_MMX sse
-VP8_IDCT_ADD
 
 ;-----------------------------------------------------------------------------
 ; void ff_vp8_luma_dc_wht(int16_t block[4][4][16], int16_t dc[16])
@@ -1193,23 +1094,15 @@ VP8_IDCT_ADD
     SWAP %1, %4, %3
 %endmacro
 
-%macro VP8_DC_WHT 0
+INIT_MMX sse
 cglobal vp8_luma_dc_wht, 2, 3, 0, block, dc1, dc2
     movq          m0, [dc1q]
     movq          m1, [dc1q+8]
     movq          m2, [dc1q+16]
     movq          m3, [dc1q+24]
-%if cpuflag(sse)
     xorps      xmm0, xmm0
     movaps [dc1q+ 0], xmm0
     movaps [dc1q+16], xmm0
-%else
-    pxor         m4, m4
-    movq  [dc1q+ 0], m4
-    movq  [dc1q+ 8], m4
-    movq  [dc1q+16], m4
-    movq  [dc1q+24], m4
-%endif
     HADAMARD4_1D  0, 1, 2, 3
     TRANSPOSE4x4W 0, 1, 2, 3, 4
     paddw         m0, [pw_3]
@@ -1221,11 +1114,3 @@ cglobal vp8_luma_dc_wht, 2, 3, 0, block, dc1, dc2
     SCATTER_WHT   0, 1, 0
     SCATTER_WHT   2, 3, 2
     RET
-%endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-VP8_DC_WHT
-%endif
-INIT_MMX sse
-VP8_DC_WHT

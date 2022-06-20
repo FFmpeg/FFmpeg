@@ -112,9 +112,6 @@ void ff_put_vp8_bilinear8_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
 void ff_put_vp8_pixels8_mmx (uint8_t *dst, ptrdiff_t dststride,
                              uint8_t *src, ptrdiff_t srcstride,
                              int height, int mx, int my);
-void ff_put_vp8_pixels16_mmx(uint8_t *dst, ptrdiff_t dststride,
-                             uint8_t *src, ptrdiff_t srcstride,
-                             int height, int mx, int my);
 void ff_put_vp8_pixels16_sse(uint8_t *dst, ptrdiff_t dststride,
                              uint8_t *src, ptrdiff_t srcstride,
                              int height, int mx, int my);
@@ -140,19 +137,6 @@ static void ff_put_vp8_ ## FILTERTYPE ## 8_ ## TAPTYPE ## _ ## OPT( \
         dst + 4, dststride, src + 4, srcstride, height, mx, my); \
 }
 
-#if ARCH_X86_32
-TAP_W8 (mmxext, epel, h4)
-TAP_W8 (mmxext, epel, h6)
-TAP_W16(mmxext, epel, h6)
-TAP_W8 (mmxext, epel, v4)
-TAP_W8 (mmxext, epel, v6)
-TAP_W16(mmxext, epel, v6)
-TAP_W8 (mmxext, bilinear, h)
-TAP_W16(mmxext, bilinear, h)
-TAP_W8 (mmxext, bilinear, v)
-TAP_W16(mmxext, bilinear, v)
-#endif
-
 TAP_W16(sse2,  epel, h6)
 TAP_W16(sse2,  epel, v6)
 TAP_W16(sse2,  bilinear, h)
@@ -177,16 +161,8 @@ static void ff_put_vp8_epel ## SIZE ## _h ## TAPNUMX ## v ## TAPNUMY ## _ ## OPT
         dst, dststride, tmpptr, SIZE,      height,               mx, my); \
 }
 
-#if ARCH_X86_32
-#define HVTAPMMX(x, y) \
-HVTAP(mmxext, 8, x, y,  4,  8) \
-HVTAP(mmxext, 8, x, y,  8, 16)
-
-HVTAP(mmxext, 8, 6, 6, 16, 16)
-#else
 #define HVTAPMMX(x, y) \
 HVTAP(mmxext, 8, x, y,  4,  8)
-#endif
 
 HVTAPMMX(4, 4)
 HVTAPMMX(4, 6)
@@ -221,31 +197,21 @@ static void ff_put_vp8_bilinear ## SIZE ## _hv_ ## OPT( \
 }
 
 HVBILIN(mmxext,  8,  4,  8)
-#if ARCH_X86_32
-HVBILIN(mmxext,  8,  8, 16)
-HVBILIN(mmxext,  8, 16, 16)
-#endif
 HVBILIN(sse2,  8,  8, 16)
 HVBILIN(sse2,  8, 16, 16)
 HVBILIN(ssse3, 8,  4,  8)
 HVBILIN(ssse3, 8,  8, 16)
 HVBILIN(ssse3, 8, 16, 16)
 
-void ff_vp8_idct_dc_add_mmx(uint8_t *dst, int16_t block[16],
-                            ptrdiff_t stride);
 void ff_vp8_idct_dc_add_sse2(uint8_t *dst, int16_t block[16],
                              ptrdiff_t stride);
 void ff_vp8_idct_dc_add_sse4(uint8_t *dst, int16_t block[16],
                              ptrdiff_t stride);
-void ff_vp8_idct_dc_add4y_mmx(uint8_t *dst, int16_t block[4][16],
-                               ptrdiff_t stride);
 void ff_vp8_idct_dc_add4y_sse2(uint8_t *dst, int16_t block[4][16],
                                ptrdiff_t stride);
 void ff_vp8_idct_dc_add4uv_mmx(uint8_t *dst, int16_t block[2][16],
                                ptrdiff_t stride);
-void ff_vp8_luma_dc_wht_mmx(int16_t block[4][4][16], int16_t dc[16]);
 void ff_vp8_luma_dc_wht_sse(int16_t block[4][4][16], int16_t dc[16]);
-void ff_vp8_idct_add_mmx(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 void ff_vp8_idct_add_sse(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 
 #define DECLARE_LOOP_FILTER(NAME)                                       \
@@ -284,8 +250,6 @@ void ff_vp8_h_loop_filter8uv_mbedge_ ## NAME(uint8_t *dstU,             \
                                              ptrdiff_t s,               \
                                              int e, int i, int hvt);
 
-DECLARE_LOOP_FILTER(mmx)
-DECLARE_LOOP_FILTER(mmxext)
 DECLARE_LOOP_FILTER(sse2)
 DECLARE_LOOP_FILTER(ssse3)
 DECLARE_LOOP_FILTER(sse4)
@@ -322,10 +286,6 @@ av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
-#if ARCH_X86_32
-        c->put_vp8_epel_pixels_tab[0][0][0]     =
-        c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_mmx;
-#endif
         c->put_vp8_epel_pixels_tab[1][0][0]     =
         c->put_vp8_bilinear_pixels_tab[1][0][0] = ff_put_vp8_pixels8_mmx;
     }
@@ -335,12 +295,6 @@ av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         VP8_MC_FUNC(2, 4, mmxext);
         VP8_BILINEAR_MC_FUNC(2, 4, mmxext);
-#if ARCH_X86_32
-        VP8_LUMA_MC_FUNC(0, 16, mmxext);
-        VP8_MC_FUNC(1, 8, mmxext);
-        VP8_BILINEAR_MC_FUNC(0, 16, mmxext);
-        VP8_BILINEAR_MC_FUNC(1,  8, mmxext);
-#endif
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
@@ -373,44 +327,6 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext *c)
 
     if (EXTERNAL_MMX(cpu_flags)) {
         c->vp8_idct_dc_add4uv = ff_vp8_idct_dc_add4uv_mmx;
-#if ARCH_X86_32
-        c->vp8_idct_dc_add    = ff_vp8_idct_dc_add_mmx;
-        c->vp8_idct_dc_add4y  = ff_vp8_idct_dc_add4y_mmx;
-        c->vp8_idct_add       = ff_vp8_idct_add_mmx;
-        c->vp8_luma_dc_wht    = ff_vp8_luma_dc_wht_mmx;
-
-        c->vp8_v_loop_filter_simple = ff_vp8_v_loop_filter_simple_mmx;
-        c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_mmx;
-
-        c->vp8_v_loop_filter16y_inner = ff_vp8_v_loop_filter16y_inner_mmx;
-        c->vp8_h_loop_filter16y_inner = ff_vp8_h_loop_filter16y_inner_mmx;
-        c->vp8_v_loop_filter8uv_inner = ff_vp8_v_loop_filter8uv_inner_mmx;
-        c->vp8_h_loop_filter8uv_inner = ff_vp8_h_loop_filter8uv_inner_mmx;
-
-        c->vp8_v_loop_filter16y       = ff_vp8_v_loop_filter16y_mbedge_mmx;
-        c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_mmx;
-        c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_mmx;
-        c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_mmx;
-#endif
-    }
-
-    /* note that 4-tap width=16 functions are missing because w=16
-     * is only used for luma, and luma is always a copy or sixtap. */
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-#if ARCH_X86_32
-        c->vp8_v_loop_filter_simple   = ff_vp8_v_loop_filter_simple_mmxext;
-        c->vp8_h_loop_filter_simple   = ff_vp8_h_loop_filter_simple_mmxext;
-
-        c->vp8_v_loop_filter16y_inner = ff_vp8_v_loop_filter16y_inner_mmxext;
-        c->vp8_h_loop_filter16y_inner = ff_vp8_h_loop_filter16y_inner_mmxext;
-        c->vp8_v_loop_filter8uv_inner = ff_vp8_v_loop_filter8uv_inner_mmxext;
-        c->vp8_h_loop_filter8uv_inner = ff_vp8_h_loop_filter8uv_inner_mmxext;
-
-        c->vp8_v_loop_filter16y       = ff_vp8_v_loop_filter16y_mbedge_mmxext;
-        c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_mmxext;
-        c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_mmxext;
-        c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_mmxext;
-#endif
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
