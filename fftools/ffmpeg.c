@@ -1495,7 +1495,7 @@ static void print_final_stats(int64_t total_size)
 
         for (j = 0; j < f->nb_streams; j++) {
             InputStream *ist = input_streams[f->ist_index + j];
-            enum AVMediaType type = ist->dec_ctx->codec_type;
+            enum AVMediaType type = ist->st->codecpar->codec_type;
 
             total_size    += ist->data_size;
             total_packets += ist->nb_packets;
@@ -1915,11 +1915,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     if (pkt->dts == AV_NOPTS_VALUE) {
         opkt->dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ost->mux_timebase);
     } else if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int duration = av_get_audio_frame_duration(ist->dec_ctx, pkt->size);
+        int duration = av_get_audio_frame_duration2(ist->st->codecpar, pkt->size);
         if(!duration)
-            duration = ist->dec_ctx->frame_size;
+            duration = ist->st->codecpar->frame_size;
         opkt->dts = av_rescale_delta(ist->st->time_base, pkt->dts,
-                                    (AVRational){1, ist->dec_ctx->sample_rate}, duration,
+                                    (AVRational){1, ist->st->codecpar->sample_rate}, duration,
                                     &ist->filter_in_rescale_delta_last, ost->mux_timebase);
         /* dts will be set immediately afterwards to what pts is now */
         opkt->pts = opkt->dts - ost_tb_start_time;
@@ -2394,6 +2394,7 @@ static int send_filter_eof(InputStream *ist)
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eof)
 {
+    const AVCodecParameters *par = ist->st->codecpar;
     int ret = 0, i;
     int repeating = 0;
     int eof_reached = 0;
@@ -2426,7 +2427,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     if (pkt && pkt->dts != AV_NOPTS_VALUE) {
         ist->next_dts = ist->dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-        if (ist->dec_ctx->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
+        if (par->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
             ist->next_pts = ist->pts = ist->dts;
     }
 
@@ -2440,7 +2441,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         ist->pts = ist->next_pts;
         ist->dts = ist->next_dts;
 
-        switch (ist->dec_ctx->codec_type) {
+        switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ret = decode_audio    (ist, repeating ? NULL : avpkt, &got_output,
                                    &decode_failed);
@@ -2537,12 +2538,12 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     /* handle stream copy */
     if (!ist->decoding_needed && pkt) {
         ist->dts = ist->next_dts;
-        switch (ist->dec_ctx->codec_type) {
+        switch (par->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             av_assert1(pkt->duration >= 0);
-            if (ist->dec_ctx->sample_rate) {
-                ist->next_dts += ((int64_t)AV_TIME_BASE * ist->dec_ctx->frame_size) /
-                                  ist->dec_ctx->sample_rate;
+            if (par->sample_rate) {
+                ist->next_dts += ((int64_t)AV_TIME_BASE * par->frame_size) /
+                                  par->sample_rate;
             } else {
                 ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
             }
@@ -4000,7 +4001,8 @@ static int process_input(int file_index)
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
-               ifile->ist_index + pkt->stream_index, av_get_media_type_string(ist->dec_ctx->codec_type),
+               ifile->ist_index + pkt->stream_index,
+               av_get_media_type_string(ist->st->codecpar->codec_type),
                av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &AV_TIME_BASE_Q),
                av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &AV_TIME_BASE_Q),
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base),
@@ -4076,8 +4078,8 @@ static int process_input(int file_index)
         pkt->dts *= ist->ts_scale;
 
     pkt_dts = av_rescale_q_rnd(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-    if ((ist->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-         ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
+    if ((ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+         ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) &&
         pkt_dts != AV_NOPTS_VALUE && ist->next_dts == AV_NOPTS_VALUE && !copy_ts
         && (is->iformat->flags & AVFMT_TS_DISCONT) && ifile->last_ts != AV_NOPTS_VALUE) {
         int64_t delta   = pkt_dts - ifile->last_ts;
@@ -4114,8 +4116,8 @@ static int process_input(int file_index)
             disable_discontinuity_correction = 0;
     }
 
-    if ((ist->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-         ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
+    if ((ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+         ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) &&
          pkt_dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
         !disable_discontinuity_correction) {
         int64_t delta   = pkt_dts - ist->next_dts;
@@ -4128,7 +4130,7 @@ static int process_input(int file_index)
                        "timestamp discontinuity for stream #%d:%d "
                        "(id=%d, type=%s): %"PRId64", new offset= %"PRId64"\n",
                        ist->file_index, ist->st->index, ist->st->id,
-                       av_get_media_type_string(ist->dec_ctx->codec_type),
+                       av_get_media_type_string(ist->st->codecpar->codec_type),
                        delta, ifile->ts_offset);
                 pkt->dts -= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
                 if (pkt->pts != AV_NOPTS_VALUE)
@@ -4157,7 +4159,8 @@ static int process_input(int file_index)
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",
-               ifile->ist_index + pkt->stream_index, av_get_media_type_string(ist->dec_ctx->codec_type),
+               ifile->ist_index + pkt->stream_index,
+               av_get_media_type_string(ist->st->codecpar->codec_type),
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ist->st->time_base),
                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ist->st->time_base),
                av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ist->st->time_base),
