@@ -44,6 +44,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/getenv_utf8.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
@@ -1402,8 +1403,10 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
 {
     int i, ret = -1;
     char filename[1000];
-    const char *base[3] = { getenv("AVCONV_DATADIR"),
-                            getenv("HOME"),
+    char *env_avconv_datadir = getenv_utf8("AVCONV_DATADIR");
+    char *env_home = getenv_utf8("HOME");
+    const char *base[3] = { env_avconv_datadir,
+                            env_home,
                             AVCONV_DATADIR,
                             };
 
@@ -1421,6 +1424,8 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
             ret = avio_open2(s, filename, AVIO_FLAG_READ, &int_cb, NULL);
         }
     }
+    freeenv_utf8(env_home);
+    freeenv_utf8(env_avconv_datadir);
     return ret;
 }
 

@@ -39,6 +39,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
+#include "libavutil/getenv_utf8.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/libm.h"
@@ -47,9 +48,11 @@
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "cmdutils.h"
+#include "fopen_utf8.h"
 #include "opt_common.h"
 #ifdef _WIN32
 #include <windows.h>
+#include "compat/w32dlfcn.h"
 #endif
 
 AVDictionary *sws_dict;
@@ -465,7 +468,7 @@ static void check_options(const OptionDef *po)
 void parse_loglevel(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "loglevel");
-    const char *env;
+    char *env;
 
     check_options(options);
 
@@ -474,7 +477,8 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
     if (idx && argv[idx + 1])
         opt_loglevel(NULL, "loglevel", argv[idx + 1]);
     idx = locate_option(argc, argv, options, "report");
-    if ((env = getenv("FFREPORT")) || idx) {
+    env = getenv_utf8("FFREPORT");
+    if (env || idx) {
         FILE *report_file = NULL;
         init_report(env, &report_file);
         if (report_file) {
@@ -487,6 +491,7 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
             fflush(report_file);
         }
     }
+    freeenv_utf8(env);
     idx = locate_option(argc, argv, options, "hide_banner");
     if (idx)
         hide_banner = 1;
@@ -812,28 +817,45 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 {
     FILE *f = NULL;
     int i;
-    const char *base[3] = { getenv("FFMPEG_DATADIR"),
-                            getenv("HOME"),
+#if HAVE_GETMODULEHANDLE && defined(_WIN32)
+    char *datadir = NULL;
+#endif
+    char *env_home = getenv_utf8("HOME");
+    char *env_ffmpeg_datadir = getenv_utf8("FFMPEG_DATADIR");
+    const char *base[3] = { env_home,
+                            env_ffmpeg_datadir,
                             FFMPEG_DATADIR, };
 
     if (is_path) {
         av_strlcpy(filename, preset_name, filename_size);
-        f = fopen(filename, "r");
+        f = fopen_utf8(filename, "r");
     } else {
 #if HAVE_GETMODULEHANDLE && defined(_WIN32)
-        char datadir[MAX_PATH], *ls;
+        wchar_t *datadir_w = get_module_filename(NULL);
         base[2] = NULL;
 
-        if (GetModuleFileNameA(GetModuleHandleA(NULL), datadir, sizeof(datadir) - 1))
+        if (wchartoutf8(datadir_w, &datadir))
+            datadir = NULL;
+        av_free(datadir_w);
+
+        if (datadir)
         {
-            for (ls = datadir; ls < datadir + strlen(datadir); ls++)
+            char *ls;
+            for (ls = datadir; *ls; ls++)
                 if (*ls == '\\') *ls = '/';
 
             if (ls = strrchr(datadir, '/'))
             {
-                *ls = 0;
-                strncat(datadir, "/ffpresets",  sizeof(datadir) - 1 - strlen(datadir));
-                base[2] = datadir;
+                ptrdiff_t datadir_len = ls - datadir;
+                size_t desired_size = datadir_len + strlen("/ffpresets") + 1;
+                char *new_datadir = av_realloc_array(
+                    datadir, desired_size, sizeof *datadir);
+                if (new_datadir) {
+                    datadir = new_datadir;
+                    datadir[datadir_len] = 0;
+                    strncat(datadir, "/ffpresets",  desired_size - 1 - datadir_len);
+                    base[2] = datadir;
+                }
             }
         }
 #endif
@@ -842,17 +864,22 @@ FILE *get_preset_file(char *filename, size_t filename_size,
                 continue;
             snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i],
                      i != 1 ? "" : "/.ffmpeg", preset_name);
-            f = fopen(filename, "r");
+            f = fopen_utf8(filename, "r");
             if (!f && codec_name) {
                 snprintf(filename, filename_size,
                          "%s%s/%s-%s.ffpreset",
                          base[i], i != 1 ? "" : "/.ffmpeg", codec_name,
                          preset_name);
-                f = fopen(filename, "r");
+                f = fopen_utf8(filename, "r");
             }
         }
     }
 
+#if HAVE_GETMODULEHANDLE && defined(_WIN32)
+    av_free(datadir);
+#endif
+    freeenv_utf8(env_ffmpeg_datadir);
+    freeenv_utf8(env_home);
     return f;
 }
 
