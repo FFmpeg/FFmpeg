@@ -134,9 +134,6 @@ static void horizontal_compose_haar1i##ext(uint8_t *_b, uint8_t *_tmp, int w)\
 \
 
 #if HAVE_X86ASM
-#if !ARCH_X86_64
-COMPOSE_VERTICAL(_mmx, 4)
-#endif
 COMPOSE_VERTICAL(_sse2, 8)
 
 
@@ -162,34 +159,6 @@ void ff_spatial_idwt_init_x86(DWTContext *d, enum dwt_type type)
 {
 #if HAVE_X86ASM
   int mm_flags = av_get_cpu_flags();
-
-#if !ARCH_X86_64
-    if (!(mm_flags & AV_CPU_FLAG_MMX))
-        return;
-
-    switch (type) {
-    case DWT_DIRAC_DD9_7:
-        d->vertical_compose_l0 = (void*)vertical_compose53iL0_mmx;
-        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_mmx;
-        break;
-    case DWT_DIRAC_LEGALL5_3:
-        d->vertical_compose_l0 = (void*)vertical_compose53iL0_mmx;
-        d->vertical_compose_h0 = (void*)vertical_compose_dirac53iH0_mmx;
-        break;
-    case DWT_DIRAC_DD13_7:
-        d->vertical_compose_l0 = (void*)vertical_compose_dd137iL0_mmx;
-        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_mmx;
-        break;
-    case DWT_DIRAC_HAAR0:
-        d->vertical_compose   = (void*)vertical_compose_haar_mmx;
-        d->horizontal_compose = horizontal_compose_haar0i_mmx;
-        break;
-    case DWT_DIRAC_HAAR1:
-        d->vertical_compose   = (void*)vertical_compose_haar_mmx;
-        d->horizontal_compose = horizontal_compose_haar1i_mmx;
-        break;
-    }
-#endif
 
     if (!(mm_flags & AV_CPU_FLAG_SSE2))
         return;

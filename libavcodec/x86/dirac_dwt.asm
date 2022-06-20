@@ -293,14 +293,6 @@ cglobal horizontal_compose_dd97i_ssse3, 3,6,8, b, tmp, w, x, w2, b_w2
     REP_RET
 
 
-%if ARCH_X86_64 == 0
-INIT_MMX
-COMPOSE_VERTICAL mmx
-HAAR_HORIZONTAL mmx, 0
-HAAR_HORIZONTAL mmx, 1
-%endif
-
-;;INIT_XMM
 INIT_XMM
 COMPOSE_VERTICAL sse2
 HAAR_HORIZONTAL sse2, 0
