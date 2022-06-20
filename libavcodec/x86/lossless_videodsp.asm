@@ -38,11 +38,11 @@ pb_zzzzzzzz67676767: db -1,-1,-1,-1,-1,-1,-1,-1, 6, 7, 6, 7, 6, 7, 6, 7
 SECTION .text
 
 ;------------------------------------------------------------------------------
-; void ff_add_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
-;                                const uint8_t *diff, int w,
-;                                int *left, int *left_top)
+; void ff_add_median_pred(uint8_t *dst, const uint8_t *top,
+;                         const uint8_t *diff, int w,
+;                         int *left, int *left_top)
 ;------------------------------------------------------------------------------
-%macro MEDIAN_PRED 0
+INIT_XMM sse2
 cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     movu    m0, [topq]
     mova    m2, m0
@@ -100,14 +100,6 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     movzx   r2d, byte [topq-1]
     mov [left_topq], r2d
     RET
-%endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmxext
-MEDIAN_PRED
-%endif
-INIT_XMM sse2
-MEDIAN_PRED
 
 
 %macro ADD_LEFT_LOOP 2 ; %1 = dst_is_aligned, %2 = src_is_aligned
@@ -240,10 +232,6 @@ cglobal add_bytes, 3,4,2, dst, src, w, size
     REP_RET
 %endmacro
 
-%if ARCH_X86_32
-INIT_MMX mmx
-ADD_BYTES
-%endif
 INIT_XMM sse2
 ADD_BYTES
 
