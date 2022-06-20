@@ -32,23 +32,14 @@ SECTION .text
 
 %macro ADD_INT16 0
 cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
-%if mmsize > 8
     test srcq, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
-%endif
     INT16_LOOP a, add
-%if mmsize > 8
 .unaligned:
     INT16_LOOP u, add
-%endif
 %endmacro
-
-%if ARCH_X86_32
-INIT_MMX mmx
-ADD_INT16
-%endif
 
 INIT_XMM sse2
 ADD_INT16
@@ -60,7 +51,7 @@ ADD_INT16
 
 ; void add_hfyu_left_pred_bgr32(uint8_t *dst, const uint8_t *src,
 ;                               intptr_t w, uint8_t *left)
-%macro LEFT_BGR32 0
+INIT_XMM sse2
 cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
     shl           wq, 2
     movd          m0, [leftq]
@@ -71,17 +62,12 @@ cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
 .loop:
     movu          m1, [srcq+wq]
     mova          m2, m1
-%if mmsize == 8
-    punpckhdq     m0, m0
-%endif
     LSHIFT        m1, 4
     paddb         m1, m2
-%if mmsize == 16
     pshufd        m0, m0, q3333
     mova          m2, m1
     LSHIFT        m1, 8
     paddb         m1, m2
-%endif
     paddb         m0, m1
     movu   [dstq+wq], m0
     add           wq, mmsize
@@ -89,14 +75,7 @@ cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
     movd          m0, [dstq-4]
     movd     [leftq], m0
     REP_RET
-%endmacro
 
-%if ARCH_X86_32
-INIT_MMX mmx
-LEFT_BGR32
-%endif
-INIT_XMM sse2
-LEFT_BGR32
 
 ; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int mask, int w, int *left, int *left_top)
 INIT_MMX mmxext
