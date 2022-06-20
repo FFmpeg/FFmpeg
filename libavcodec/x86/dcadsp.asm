@@ -42,22 +42,13 @@ cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks
     cvtdq2ps  m5, [lfeq   ]
     shufps    m7, m4, m4, q0123
     shufps    m6, m5, m5, q0123
-%elif cpuflag(sse2)
+%else
     movu      m4, [lfeq+16]
     movu      m5, [lfeq   ]
     cvtdq2ps  m4, m4
     cvtdq2ps  m5, m5
     pshufd    m7, m4, q0123
     pshufd    m6, m5, q0123
-%else
-    cvtpi2ps  m4, [lfeq+16]
-    cvtpi2ps  m0, [lfeq+24]
-    cvtpi2ps  m5, [lfeq   ]
-    cvtpi2ps  m1, [lfeq+8 ]
-    shufps    m4, m0, q1010
-    shufps    m5, m1, q1010
-    shufps    m7, m4, m4, q0123
-    shufps    m6, m5, m5, q0123
 %endif
 
 .inner_loop:
@@ -206,10 +197,6 @@ cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks
     RET
 %endmacro
 
-%if ARCH_X86_32
-INIT_XMM sse
-LFE_FIR0_FLOAT
-%endif
 INIT_XMM sse2
 LFE_FIR0_FLOAT
 %if HAVE_AVX_EXTERNAL
@@ -235,7 +222,7 @@ cglobal lfe_fir1_float, 4, 6, 10, samples, lfe, coeff, nblocks, cnt1, cnt2
 %if cpuflag(avx)
     cvtdq2ps  m4, [lfeq]
     shufps    m5, m4, m4, q0123
-%elif cpuflag(sse2)
+%else
     movu      m4, [lfeq]
     cvtdq2ps  m4, m4
     pshufd    m5, m4, q0123
