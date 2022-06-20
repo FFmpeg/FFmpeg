@@ -2583,36 +2583,38 @@ static void map_auto_audio(OutputFile *of, AVFormatContext *oc,
 static void map_auto_subtitle(OutputFile *of, AVFormatContext *oc,
                               OptionsContext *o)
 {
-        char *subtitle_codec_name = NULL;
+    char *subtitle_codec_name = NULL;
+
         /* subtitles: pick first */
-        MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, oc, "s");
-        if ((avcodec_find_encoder(oc->oformat->subtitle_codec) || subtitle_codec_name)) {
-            for (int i = 0; i < nb_input_streams; i++)
-                if (input_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-                    AVCodecDescriptor const *input_descriptor =
-                        avcodec_descriptor_get(input_streams[i]->st->codecpar->codec_id);
-                    AVCodecDescriptor const *output_descriptor = NULL;
-                    AVCodec const *output_codec =
-                        avcodec_find_encoder(oc->oformat->subtitle_codec);
-                    int input_props = 0, output_props = 0;
-                    if (input_streams[i]->user_set_discard == AVDISCARD_ALL)
-                        continue;
-                    if (output_codec)
-                        output_descriptor = avcodec_descriptor_get(output_codec->id);
-                    if (input_descriptor)
-                        input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
-                    if (output_descriptor)
-                        output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
-                    if (subtitle_codec_name ||
-                        input_props & output_props ||
-                        // Map dvb teletext which has neither property to any output subtitle encoder
-                        input_descriptor && output_descriptor &&
-                        (!input_descriptor->props ||
-                         !output_descriptor->props)) {
-                        new_subtitle_stream(o, oc, i);
-                        break;
-                    }
-                }
+    MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, oc, "s");
+    if (!avcodec_find_encoder(oc->oformat->subtitle_codec) && !subtitle_codec_name)
+        return;
+
+    for (int i = 0; i < nb_input_streams; i++)
+        if (input_streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            AVCodecDescriptor const *input_descriptor =
+                avcodec_descriptor_get(input_streams[i]->st->codecpar->codec_id);
+            AVCodecDescriptor const *output_descriptor = NULL;
+            AVCodec const *output_codec =
+                avcodec_find_encoder(oc->oformat->subtitle_codec);
+            int input_props = 0, output_props = 0;
+            if (input_streams[i]->user_set_discard == AVDISCARD_ALL)
+                continue;
+            if (output_codec)
+                output_descriptor = avcodec_descriptor_get(output_codec->id);
+            if (input_descriptor)
+                input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+            if (output_descriptor)
+                output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+            if (subtitle_codec_name ||
+                input_props & output_props ||
+                // Map dvb teletext which has neither property to any output subtitle encoder
+                input_descriptor && output_descriptor &&
+                (!input_descriptor->props ||
+                 !output_descriptor->props)) {
+                new_subtitle_stream(o, oc, i);
+                break;
+            }
         }
 }
 
