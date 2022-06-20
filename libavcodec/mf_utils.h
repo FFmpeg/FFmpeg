@@ -29,6 +29,7 @@
 // mf*.h headers below indirectly include strmif.h.)
 #include <icodecapi.h>
 #else
+#define NO_DSHOW_STRSAFE
 #include <dshow.h>
 // Older versions of mingw-w64 need codecapi.h explicitly included, while newer
 // ones include it implicitly from dshow.h (via uuids.h).
