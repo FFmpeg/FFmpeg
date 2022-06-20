@@ -259,7 +259,7 @@ void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub)
         num_rects = 0;
     }
     if (sub2video_get_blank_frame(ist) < 0) {
-        av_log(ist->dec_ctx, AV_LOG_ERROR,
+        av_log(NULL, AV_LOG_ERROR,
                "Impossible to get a blank canvas.\n");
         return;
     }
@@ -2324,7 +2324,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
             end = av_rescale(subtitle.pts - ist->prev_sub.subtitle.pts,
                              1000, AV_TIME_BASE);
             if (end < ist->prev_sub.subtitle.end_display_time) {
-                av_log(ist->dec_ctx, AV_LOG_DEBUG,
+                av_log(NULL, AV_LOG_DEBUG,
                        "Subtitle duration reduced from %"PRId32" to %d%s\n",
                        ist->prev_sub.subtitle.end_display_time, end,
                        end <= 0 ? ", dropping it" : "");
