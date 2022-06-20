@@ -2545,38 +2545,39 @@ static void map_auto_audio(OutputFile *of, AVFormatContext *oc,
                            OptionsContext *o)
 {
     InputStream *ist;
+    int best_score = 0, idx = -1;
 
         /* audio: most channels */
-        if (av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_AUDIO) != AV_CODEC_ID_NONE) {
-            int best_score = 0, idx = -1;
-            for (int j = 0; j < nb_input_files; j++) {
-                InputFile *ifile = input_files[j];
-                int file_best_score = 0, file_best_idx = -1;
-                for (int i = 0; i < ifile->nb_streams; i++) {
-                    int score;
-                    ist = input_streams[ifile->ist_index + i];
-                    score = ist->st->codecpar->ch_layout.nb_channels
-                            + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
-                            + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
-                    if (ist->user_set_discard == AVDISCARD_ALL)
-                        continue;
-                    if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                        score > file_best_score) {
-                        file_best_score = score;
-                        file_best_idx = ifile->ist_index + i;
-                    }
-                }
-                if (file_best_idx >= 0) {
-                    file_best_score -= 5000000*!!(input_streams[file_best_idx]->st->disposition & AV_DISPOSITION_DEFAULT);
-                    if (file_best_score > best_score) {
-                        best_score = file_best_score;
-                        idx = file_best_idx;
-                    }
-               }
+    if (av_guess_codec(oc->oformat, NULL, oc->url, NULL, AVMEDIA_TYPE_AUDIO) == AV_CODEC_ID_NONE)
+        return;
+
+    for (int j = 0; j < nb_input_files; j++) {
+        InputFile *ifile = input_files[j];
+        int file_best_score = 0, file_best_idx = -1;
+        for (int i = 0; i < ifile->nb_streams; i++) {
+            int score;
+            ist = input_streams[ifile->ist_index + i];
+            score = ist->st->codecpar->ch_layout.nb_channels
+                    + 100000000 * !!(ist->st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS)
+                    + 5000000*!!(ist->st->disposition & AV_DISPOSITION_DEFAULT);
+            if (ist->user_set_discard == AVDISCARD_ALL)
+                continue;
+            if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                score > file_best_score) {
+                file_best_score = score;
+                file_best_idx = ifile->ist_index + i;
             }
-            if (idx >= 0)
-                new_audio_stream(o, oc, idx);
         }
+        if (file_best_idx >= 0) {
+            file_best_score -= 5000000*!!(input_streams[file_best_idx]->st->disposition & AV_DISPOSITION_DEFAULT);
+            if (file_best_score > best_score) {
+                best_score = file_best_score;
+                idx = file_best_idx;
+            }
+       }
+    }
+    if (idx >= 0)
+        new_audio_stream(o, oc, idx);
 }
 
 static int open_output_file(OptionsContext *o, const char *filename)
