@@ -26,6 +26,7 @@
 #include "url.h"
 #include "tls.h"
 #include "libavutil/avstring.h"
+#include "libavutil/getenv_utf8.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
@@ -60,6 +61,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     char buf[200], opts[50] = "";
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
+    char *env_http_proxy, *env_no_proxy;
     int use_proxy;
 
     set_options(c, uri);
@@ -89,9 +91,13 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     if (!c->host && !(c->host = av_strdup(c->underlying_host)))
         return AVERROR(ENOMEM);
 
-    proxy_path = c->http_proxy ? c->http_proxy : getenv("http_proxy");
-    use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), c->underlying_host) &&
+    env_http_proxy = getenv_utf8("http_proxy");
+    proxy_path = c->http_proxy ? c->http_proxy : env_http_proxy;
+
+    env_no_proxy = getenv_utf8("no_proxy");
+    use_proxy = !ff_http_match_no_proxy(env_no_proxy, c->underlying_host) &&
                 proxy_path && av_strstart(proxy_path, "http://", NULL);
+    freeenv_utf8(env_no_proxy);
 
     if (use_proxy) {
         char proxy_host[200], proxy_auth[200], dest[200];
@@ -104,6 +110,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
                     proxy_port, "/%s", dest);
     }
 
+    freeenv_utf8(env_http_proxy);
     return ffurl_open_whitelist(&c->tcp, buf, AVIO_FLAG_READ_WRITE,
                                 &parent->interrupt_callback, options,
                                 parent->protocol_whitelist, parent->protocol_blacklist, parent);

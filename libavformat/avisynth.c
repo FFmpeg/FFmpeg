@@ -34,6 +34,7 @@
 /* Platform-specific directives. */
 #ifdef _WIN32
   #include "compat/w32dlfcn.h"
+  #include "libavutil/wchar_filename.h"
   #undef EXTERN_C
   #define AVISYNTH_LIB "avisynth"
 #else
@@ -56,6 +57,7 @@ typedef struct AviSynthLibrary {
 #define AVSC_DECLARE_FUNC(name) name ## _func name
     AVSC_DECLARE_FUNC(avs_bit_blt);
     AVSC_DECLARE_FUNC(avs_clip_get_error);
+    AVSC_DECLARE_FUNC(avs_check_version);
     AVSC_DECLARE_FUNC(avs_create_script_environment);
     AVSC_DECLARE_FUNC(avs_delete_script_environment);
     AVSC_DECLARE_FUNC(avs_get_audio);
@@ -137,6 +139,7 @@ static av_cold int avisynth_load_library(void)
 
     LOAD_AVS_FUNC(avs_bit_blt, 0);
     LOAD_AVS_FUNC(avs_clip_get_error, 0);
+    LOAD_AVS_FUNC(avs_check_version, 0);
     LOAD_AVS_FUNC(avs_create_script_environment, 0);
     LOAD_AVS_FUNC(avs_delete_script_environment, 0);
     LOAD_AVS_FUNC(avs_get_audio, 0);
@@ -807,26 +810,38 @@ static int avisynth_create_stream(AVFormatContext *s)
 static int avisynth_open_file(AVFormatContext *s)
 {
     AviSynthContext *avs = s->priv_data;
-    AVS_Value arg, val;
+    AVS_Value val;
     int ret;
-#ifdef _WIN32
-    char filename_ansi[MAX_PATH * 4];
-    wchar_t filename_wc[MAX_PATH * 4];
-#endif
 
     if (ret = avisynth_context_create(s))
         return ret;
 
+    if (!avs_library.avs_check_version(avs->env, 7)) {
+        AVS_Value args[] = {
+            avs_new_value_string(s->url),
+            avs_new_value_bool(1) // filename is in UTF-8
+        };
+        val = avs_library.avs_invoke(avs->env, "Import",
+                                     avs_new_value_array(args, 2), 0);
+    } else {
+        AVS_Value arg;
 #ifdef _WIN32
-    /* Convert UTF-8 to ANSI code page */
-    MultiByteToWideChar(CP_UTF8, 0, s->url, -1, filename_wc, MAX_PATH * 4);
-    WideCharToMultiByte(CP_THREAD_ACP, 0, filename_wc, -1, filename_ansi,
-                        MAX_PATH * 4, NULL, NULL);
-    arg = avs_new_value_string(filename_ansi);
+        char *filename_ansi;
+        /* Convert UTF-8 to ANSI code page */
+        if (utf8toansi(s->url, &filename_ansi)) {
+            ret = AVERROR_UNKNOWN;
+            goto fail;
+        }
+        arg = avs_new_value_string(filename_ansi);
 #else
-    arg = avs_new_value_string(s->url);
+        arg = avs_new_value_string(s->url);
 #endif
-    val = avs_library.avs_invoke(avs->env, "Import", arg, 0);
+        val = avs_library.avs_invoke(avs->env, "Import", arg, 0);
+#ifdef _WIN32
+        av_free(filename_ansi);
+#endif
+    }
+
     if (avs_is_error(val)) {
         av_log(s, AV_LOG_ERROR, "%s\n", avs_as_error(val));
         ret = AVERROR_UNKNOWN;
