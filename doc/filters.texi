@@ -12376,8 +12376,8 @@ Specify the search radius for best edge matching. Default value is 2.
 Allowed range is from 0 to 15.
 
 @item ecost
-Specify the edge cost for edge matching. Default value is 0.03125.
-Allowed range is from 0 to 1.
+Specify the edge cost for edge matching. Default value is 1.0.
+Allowed range is from 0 to 9.
 
 @item mcost
 Specify the middle cost for edge matching. Default value is 0.5.
