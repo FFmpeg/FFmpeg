@@ -23,6 +23,7 @@
 #include "libavutil/tx.h"
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "codec_internal.h"
 #include "get_bits.h"
 #include "internal.h"
@@ -106,7 +107,7 @@ static inline unsigned ceil2(unsigned a, unsigned b)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     HCAContext *c = avctx->priv_data;
-    GetBitContext *gb = &c->gb;
+    GetByteContext gb0, *const gb = &gb0;
     int8_t r[16] = { 0 };
     float scale = 1.f / 8.f;
     unsigned b, chunk;
@@ -118,41 +119,42 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > 16)
         return AVERROR(EINVAL);
 
-    ret = init_get_bits8(gb, avctx->extradata, avctx->extradata_size);
-    if (ret < 0)
-        return ret;
-    skip_bits_long(gb, 32);
-    version = get_bits(gb, 16);
-    skip_bits_long(gb, 16);
+    if (avctx->extradata_size < 36)
+        return AVERROR_INVALIDDATA;
+    bytestream2_init(gb, avctx->extradata, avctx->extradata_size);
+
+    bytestream2_skipu(gb, 4);
+    version = bytestream2_get_be16(gb);
+    bytestream2_skipu(gb, 2);
 
     c->ath_type = version >= 0x200 ? 0 : 1;
 
-    if (get_bits_long(gb, 32) != MKBETAG('f', 'm', 't', 0))
+    if (bytestream2_get_be32u(gb) != MKBETAG('f', 'm', 't', 0))
         return AVERROR_INVALIDDATA;
-    skip_bits_long(gb, 32);
-    skip_bits_long(gb, 32);
-    skip_bits_long(gb, 32);
+    bytestream2_skipu(gb, 4);
+    bytestream2_skipu(gb, 4);
+    bytestream2_skipu(gb, 4);
 
-    chunk = get_bits_long(gb, 32);
+    chunk = bytestream2_get_be32u(gb);
     if (chunk == MKBETAG('c', 'o', 'm', 'p')) {
-        skip_bits_long(gb, 16);
-        skip_bits_long(gb, 8);
-        skip_bits_long(gb, 8);
-        c->track_count = get_bits(gb, 8);
-        c->channel_config = get_bits(gb, 8);
-        c->total_band_count = get_bits(gb, 8);
-        c->base_band_count = get_bits(gb, 8);
-        c->stereo_band_count = get_bits(gb, 8);
-        c->bands_per_hfr_group = get_bits(gb, 8);
+        bytestream2_skipu(gb, 2);
+        bytestream2_skipu(gb, 1);
+        bytestream2_skipu(gb, 1);
+        c->track_count         = bytestream2_get_byteu(gb);
+        c->channel_config      = bytestream2_get_byteu(gb);
+        c->total_band_count    = bytestream2_get_byteu(gb);
+        c->base_band_count     = bytestream2_get_byteu(gb);
+        c->stereo_band_count   = bytestream2_get_byte (gb);
+        c->bands_per_hfr_group = bytestream2_get_byte (gb);
     } else if (chunk == MKBETAG('d', 'e', 'c', 0)) {
-        skip_bits_long(gb, 16);
-        skip_bits_long(gb, 8);
-        skip_bits_long(gb, 8);
-        c->total_band_count = get_bits(gb, 8) + 1;
-        c->base_band_count = get_bits(gb, 8) + 1;
-        c->track_count = get_bits(gb, 4);
-        c->channel_config = get_bits(gb, 4);
-        if (!get_bits(gb, 8))
+        bytestream2_skipu(gb, 2);
+        bytestream2_skipu(gb, 1);
+        bytestream2_skipu(gb, 1);
+        c->total_band_count = bytestream2_get_byteu(gb) + 1;
+        c->base_band_count  = bytestream2_get_byteu(gb) + 1;
+        c->track_count      = bytestream2_peek_byteu(gb) >> 4;
+        c->channel_config   = bytestream2_get_byteu(gb) & 0xF;
+        if (!bytestream2_get_byteu(gb))
             c->base_band_count = c->total_band_count;
         c->stereo_band_count = c->total_band_count - c->base_band_count;
         c->bands_per_hfr_group = 0;
@@ -163,24 +165,20 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
 
 
-    while (get_bits_left(gb) >= 32) {
-        chunk = get_bits_long(gb, 32);
+    while (bytestream2_get_bytes_left(gb) >= 4) {
+        chunk = bytestream2_get_be32u(gb);
         if (chunk == MKBETAG('v', 'b', 'r', 0)) {
-            skip_bits_long(gb, 16);
-            skip_bits_long(gb, 16);
+            bytestream2_skip(gb, 2 + 2);
         } else if (chunk == MKBETAG('a', 't', 'h', 0)) {
-            c->ath_type = get_bits(gb, 16);
+            c->ath_type = bytestream2_get_be16(gb);
         } else if (chunk == MKBETAG('r', 'v', 'a', 0)) {
-            skip_bits_long(gb, 32);
+            bytestream2_skip(gb, 4);
         } else if (chunk == MKBETAG('c', 'o', 'm', 'm')) {
-            skip_bits_long(gb, get_bits(gb, 8) * 8);
+            bytestream2_skip(gb, bytestream2_get_byte(gb) * 8);
         } else if (chunk == MKBETAG('c', 'i', 'p', 'h')) {
-            skip_bits_long(gb, 16);
+            bytestream2_skip(gb, 2);
         } else if (chunk == MKBETAG('l', 'o', 'o', 'p')) {
-            skip_bits_long(gb, 32);
-            skip_bits_long(gb, 32);
-            skip_bits_long(gb, 16);
-            skip_bits_long(gb, 16);
+            bytestream2_skip(gb, 4 + 4 + 2 + 2);
         } else if (chunk == MKBETAG('p', 'a', 'd', 0)) {
             break;
         } else {
