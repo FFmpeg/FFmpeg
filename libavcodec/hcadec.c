@@ -43,8 +43,6 @@ typedef struct ChannelContext {
 } ChannelContext;
 
 typedef struct HCAContext {
-    GetBitContext gb;
-
     const AVCRC *crc_table;
 
     ChannelContext ch[16];
@@ -299,10 +297,9 @@ static void reconstruct_hfr(HCAContext *s, ChannelContext *ch,
     ch->imdct_in[127] = 0;
 }
 
-static void dequantize_coefficients(HCAContext *c, ChannelContext *ch)
+static void dequantize_coefficients(HCAContext *c, ChannelContext *ch,
+                                    GetBitContext *gb)
 {
-    GetBitContext *gb = &c->gb;
-
     for (int i = 0; i < ch->count; i++) {
         unsigned scale = ch->scale[i];
         int nb_bits = max_bits_table[scale];
@@ -326,11 +323,11 @@ static void dequantize_coefficients(HCAContext *c, ChannelContext *ch)
 }
 
 static void unpack(HCAContext *c, ChannelContext *ch,
+                   GetBitContext *gb,
                    unsigned hfr_group_count,
                    int packed_noise_level,
                    const uint8_t *ath)
 {
-    GetBitContext *gb = &c->gb;
     int delta_bits = get_bits(gb, 3);
 
     if (delta_bits > 5) {
@@ -390,7 +387,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 {
     HCAContext *c = avctx->priv_data;
     int ch, ret, packed_noise_level;
-    GetBitContext *gb = &c->gb;
+    GetBitContext gb0, *const gb = &gb0;
     float **samples;
 
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
@@ -412,11 +409,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     packed_noise_level = (get_bits(gb, 9) << 8) - get_bits(gb, 7);
 
     for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
-        unpack(c, &c->ch[ch], c->hfr_group_count, packed_noise_level, c->ath);
+        unpack(c, &c->ch[ch], gb, c->hfr_group_count, packed_noise_level, c->ath);
 
     for (int i = 0; i < 8; i++) {
         for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
-            dequantize_coefficients(c, &c->ch[ch]);
+            dequantize_coefficients(c, &c->ch[ch], gb);
         for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++)
             reconstruct_hfr(c, &c->ch[ch], c->hfr_group_count, c->bands_per_hfr_group,
                             c->stereo_band_count + c->base_band_count, c->total_band_count);
