@@ -659,7 +659,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
     // Backup context in case an alternate header is detected
     memcpy(&backup, gb, sizeof(backup));
     memcpy(&backup_vui, vui, sizeof(backup_vui));
-    if (get_bits_left(gb) >= 68 && show_bits_long(gb, 21) == 0x100000) {
+    if (get_bits_left(gb) >= 68 && show_bits(gb, 21) == 0x100000) {
         vui->default_display_window_flag = 0;
         av_log(avctx, AV_LOG_WARNING, "Invalid default display window\n");
     } else
