@@ -374,6 +374,14 @@ static int mov_write_ac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *trac
         return AVERROR(EINVAL);
     }
 
+    if (info->substream[0].bsid > 8) {
+        av_log(s, AV_LOG_ERROR,
+               "RealAudio AC-3/DolbyNet with bsid %d is not defined by the "
+               "ISOBMFF specification in ETSI TS 102 366!\n",
+               info->substream[0].bsid);
+        return AVERROR(EINVAL);
+    }
+
     if (info->ac3_bit_rate_code < 0) {
         av_log(s, AV_LOG_ERROR,
                "No valid AC3 bit rate code for data rate of %d!\n",
