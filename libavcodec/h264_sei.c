@@ -33,6 +33,7 @@
 #include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "atsc_a53.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
 #include "h264_ps.h"
@@ -70,8 +71,10 @@ int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,
                                        void *logctx)
 {
     GetBitContext gb;
+    av_unused int ret;
 
-    init_get_bits(&gb, h->payload, h->payload_size_bits);
+    ret = init_get_bits8(&gb, h->payload, h->payload_size_bytes);
+    av_assert1(ret >= 0);
 
     if (sps->nal_hrd_parameters_present_flag ||
         sps->vcl_hrd_parameters_present_flag) {
@@ -133,44 +136,36 @@ int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,
     return 0;
 }
 
-static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
+static int decode_picture_timing(H264SEIPictureTiming *h, GetByteContext *gb,
                                  void *logctx)
 {
-    int index     = get_bits_count(gb);
-    int size_bits = get_bits_left(gb);
-    int size      = (size_bits + 7) / 8;
+    int size = bytestream2_get_bytes_left(gb);
 
-    if (index & 7) {
-        av_log(logctx, AV_LOG_ERROR, "Unaligned SEI payload\n");
-        return AVERROR_INVALIDDATA;
-    }
     if (size > sizeof(h->payload)) {
         av_log(logctx, AV_LOG_ERROR, "Picture timing SEI payload too large\n");
         return AVERROR_INVALIDDATA;
     }
-    memcpy(h->payload, gb->buffer + index / 8, size);
+    bytestream2_get_bufferu(gb, h->payload, size);
 
-    h->payload_size_bits = size_bits;
+    h->payload_size_bytes = size;
 
     h->present = 1;
     return 0;
 }
 
-static int decode_registered_user_data_afd(H264SEIAFD *h, GetBitContext *gb, int size)
+static int decode_registered_user_data_afd(H264SEIAFD *h, GetByteContext *gb)
 {
     int flag;
 
-    if (size-- < 1)
+    if (bytestream2_get_bytes_left(gb) <= 0)
         return AVERROR_INVALIDDATA;
-    skip_bits(gb, 1);               // 0
-    flag = get_bits(gb, 1);         // active_format_flag
-    skip_bits(gb, 6);               // reserved
+
+    flag = !!(bytestream2_get_byteu(gb) & 0x40); // active_format_flag
 
     if (flag) {
-        if (size-- < 1)
+        if (bytestream2_get_bytes_left(gb) <= 0)
             return AVERROR_INVALIDDATA;
-        skip_bits(gb, 4);           // reserved
-        h->active_format_description = get_bits(gb, 4);
+        h->active_format_description = bytestream2_get_byteu(gb) & 0xF;
         h->present                   = 1;
     }
 
@@ -178,31 +173,26 @@ static int decode_registered_user_data_afd(H264SEIAFD *h, GetBitContext *gb, int
 }
 
 static int decode_registered_user_data_closed_caption(H264SEIA53Caption *h,
-                                                     GetBitContext *gb, void *logctx,
-                                                     int size)
+                                                      GetByteContext *gb)
 {
-    if (size < 3)
-        return AVERROR(EINVAL);
-
-    return ff_parse_a53_cc(&h->buf_ref, gb->buffer + get_bits_count(gb) / 8, size);
+    return ff_parse_a53_cc(&h->buf_ref, gb->buffer,
+                           bytestream2_get_bytes_left(gb));
 }
 
-static int decode_registered_user_data(H264SEIContext *h, GetBitContext *gb,
-                                       void *logctx, int size)
+static int decode_registered_user_data(H264SEIContext *h, GetByteContext *gb,
+                                       void *logctx)
 {
     int country_code, provider_code;
 
-    if (size < 3)
+    if (bytestream2_get_bytes_left(gb) < 3)
         return AVERROR_INVALIDDATA;
-    size -= 3;
 
-    country_code = get_bits(gb, 8); // itu_t_t35_country_code
+    country_code = bytestream2_get_byteu(gb); // itu_t_t35_country_code
     if (country_code == 0xFF) {
-        if (size < 1)
+        if (bytestream2_get_bytes_left(gb) < 3)
             return AVERROR_INVALIDDATA;
 
-        skip_bits(gb, 8);           // itu_t_t35_country_code_extension_byte
-        size--;
+        bytestream2_skipu(gb, 1);  // itu_t_t35_country_code_extension_byte
     }
 
     if (country_code != 0xB5) { // usa_country_code
@@ -213,23 +203,21 @@ static int decode_registered_user_data(H264SEIContext *h, GetBitContext *gb,
     }
 
     /* itu_t_t35_payload_byte follows */
-    provider_code = get_bits(gb, 16);
+    provider_code = bytestream2_get_be16u(gb);
 
     switch (provider_code) {
     case 0x31: { // atsc_provider_code
         uint32_t user_identifier;
 
-        if (size < 4)
+        if (bytestream2_get_bytes_left(gb) < 4)
             return AVERROR_INVALIDDATA;
-        size -= 4;
 
-        user_identifier = get_bits_long(gb, 32);
+        user_identifier = bytestream2_get_be32u(gb);
         switch (user_identifier) {
         case MKBETAG('D', 'T', 'G', '1'):       // afd_data
-            return decode_registered_user_data_afd(&h->afd, gb, size);
+            return decode_registered_user_data_afd(&h->afd, gb);
         case MKBETAG('G', 'A', '9', '4'):       // closed captions
-            return decode_registered_user_data_closed_caption(&h->a53_caption, gb,
-                                                              logctx, size);
+            return decode_registered_user_data_closed_caption(&h->a53_caption, gb);
         default:
             av_log(logctx, AV_LOG_VERBOSE,
                    "Unsupported User Data Registered ITU-T T35 SEI message (atsc user_identifier = 0x%04x)\n",
@@ -248,11 +236,11 @@ static int decode_registered_user_data(H264SEIContext *h, GetBitContext *gb,
     return 0;
 }
 
-static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *gb,
-                                         void *logctx, int size)
+static int decode_unregistered_user_data(H264SEIUnregistered *h, GetByteContext *gb,
+                                         void *logctx)
 {
     uint8_t *user_data;
-    int e, build, i;
+    int e, build, size = bytestream2_get_bytes_left(gb);
     AVBufferRef *buf_ref, **tmp;
 
     if (size < 16 || size >= INT_MAX - 1)
@@ -268,10 +256,8 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
         return AVERROR(ENOMEM);
     user_data = buf_ref->data;
 
-    for (i = 0; i < size; i++)
-        user_data[i] = get_bits(gb, 8);
-
-    user_data[i] = 0;
+    bytestream2_get_bufferu(gb, user_data, size);
+    user_data[size] = 0;
     buf_ref->size = size;
     h->buf_ref[h->nb_buf_ref++] = buf_ref;
 
@@ -384,36 +370,36 @@ static int decode_display_orientation(H264SEIDisplayOrientation *h,
     return 0;
 }
 
-static int decode_green_metadata(H264SEIGreenMetaData *h, GetBitContext *gb)
+static int decode_green_metadata(H264SEIGreenMetaData *h, GetByteContext *gb)
 {
-    h->green_metadata_type = get_bits(gb, 8);
+    h->green_metadata_type = bytestream2_get_byte(gb);
 
     if (h->green_metadata_type == 0) {
-        h->period_type = get_bits(gb, 8);
+        h->period_type = bytestream2_get_byte(gb);
 
         if (h->period_type == 2)
-            h->num_seconds = get_bits(gb, 16);
+            h->num_seconds = bytestream2_get_be16(gb);
         else if (h->period_type == 3)
-            h->num_pictures = get_bits(gb, 16);
+            h->num_pictures = bytestream2_get_be16(gb);
 
-        h->percent_non_zero_macroblocks            = get_bits(gb, 8);
-        h->percent_intra_coded_macroblocks         = get_bits(gb, 8);
-        h->percent_six_tap_filtering               = get_bits(gb, 8);
-        h->percent_alpha_point_deblocking_instance = get_bits(gb, 8);
+        h->percent_non_zero_macroblocks            = bytestream2_get_byte(gb);
+        h->percent_intra_coded_macroblocks         = bytestream2_get_byte(gb);
+        h->percent_six_tap_filtering               = bytestream2_get_byte(gb);
+        h->percent_alpha_point_deblocking_instance = bytestream2_get_byte(gb);
 
     } else if (h->green_metadata_type == 1) {
-        h->xsd_metric_type  = get_bits(gb, 8);
-        h->xsd_metric_value = get_bits(gb, 16);
+        h->xsd_metric_type  = bytestream2_get_byte(gb);
+        h->xsd_metric_value = bytestream2_get_be16(gb);
     }
 
     return 0;
 }
 
 static int decode_alternative_transfer(H264SEIAlternativeTransfer *h,
-                                       GetBitContext *gb)
+                                       GetByteContext *gb)
 {
     h->present = 1;
-    h->preferred_transfer_characteristics = get_bits(gb, 8);
+    h->preferred_transfer_characteristics = bytestream2_get_byte(gb);
     return 0;
 }
 
@@ -463,45 +449,52 @@ static int decode_film_grain_characteristics(H264SEIFilmGrainCharacteristics *h,
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const H264ParamSets *ps, void *logctx)
 {
+    GetByteContext gbyte;
     int master_ret = 0;
 
-    while (get_bits_left(gb) > 16 && show_bits(gb, 16)) {
+    av_assert1((get_bits_count(gb) % 8) == 0);
+    bytestream2_init(&gbyte, gb->buffer + get_bits_count(gb) / 8,
+                     get_bits_left(gb) / 8);
+
+    while (bytestream2_get_bytes_left(&gbyte) > 2 && bytestream2_peek_ne16(&gbyte)) {
+        GetByteContext gbyte_payload;
         GetBitContext gb_payload;
         int type = 0;
         unsigned size = 0;
         int ret  = 0;
 
         do {
-            if (get_bits_left(gb) < 8)
+            if (bytestream2_get_bytes_left(&gbyte) <= 0)
                 return AVERROR_INVALIDDATA;
-            type += show_bits(gb, 8);
-        } while (get_bits(gb, 8) == 255);
+            type += bytestream2_peek_byteu(&gbyte);
+        } while (bytestream2_get_byteu(&gbyte) == 255);
 
         do {
-            if (get_bits_left(gb) < 8)
+            if (bytestream2_get_bytes_left(&gbyte) <= 0)
                 return AVERROR_INVALIDDATA;
-            size += show_bits(gb, 8);
-        } while (get_bits(gb, 8) == 255);
+            size += bytestream2_peek_byteu(&gbyte);
+        } while (bytestream2_get_byteu(&gbyte) == 255);
 
-        if (size > get_bits_left(gb) / 8) {
+        if (size > bytestream2_get_bytes_left(&gbyte)) {
             av_log(logctx, AV_LOG_ERROR, "SEI type %d size %d truncated at %d\n",
-                   type, 8*size, get_bits_left(gb));
+                   type, size, bytestream2_get_bytes_left(&gbyte));
             return AVERROR_INVALIDDATA;
         }
 
-        ret = init_get_bits8(&gb_payload, gb->buffer + get_bits_count(gb) / 8, size);
+        bytestream2_init (&gbyte_payload, gbyte.buffer, size);
+        ret = init_get_bits8(&gb_payload, gbyte.buffer, size);
         if (ret < 0)
             return ret;
 
         switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
-            ret = decode_picture_timing(&h->picture_timing, &gb_payload, logctx);
+            ret = decode_picture_timing(&h->picture_timing, &gbyte_payload, logctx);
             break;
         case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
-            ret = decode_registered_user_data(h, &gb_payload, logctx, size);
+            ret = decode_registered_user_data(h, &gbyte_payload, logctx);
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
-            ret = decode_unregistered_user_data(&h->unregistered, &gb_payload, logctx, size);
+            ret = decode_unregistered_user_data(&h->unregistered, &gbyte_payload, logctx);
             break;
         case SEI_TYPE_RECOVERY_POINT:
             ret = decode_recovery_point(&h->recovery_point, &gb_payload, logctx);
@@ -516,10 +509,10 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             ret = decode_display_orientation(&h->display_orientation, &gb_payload);
             break;
         case SEI_TYPE_GREEN_METADATA:
-            ret = decode_green_metadata(&h->green_metadata, &gb_payload);
+            ret = decode_green_metadata(&h->green_metadata, &gbyte_payload);
             break;
         case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
-            ret = decode_alternative_transfer(&h->alternative_transfer, &gb_payload);
+            ret = decode_alternative_transfer(&h->alternative_transfer, &gbyte_payload);
             break;
         case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
             ret = decode_film_grain_characteristics(&h->film_grain_characteristics, &gb_payload);
@@ -537,7 +530,7 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                    type, -get_bits_left(&gb_payload));
         }
 
-        skip_bits_long(gb, 8 * size);
+        bytestream2_skipu(&gbyte, size);
     }
 
     return master_ret;

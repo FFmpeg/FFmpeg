@@ -66,7 +66,7 @@ typedef struct H264SEITimeCode {
 typedef struct H264SEIPictureTiming {
     // maximum size of pic_timing according to the spec should be 274 bits
     uint8_t payload[40];
-    int     payload_size_bits;
+    int     payload_size_bytes;
 
     int present;
     H264_SEI_PicStructType pic_struct;
