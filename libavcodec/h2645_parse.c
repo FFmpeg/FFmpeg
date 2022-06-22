@@ -259,10 +259,10 @@ static const char *h264_nal_unit_name(int nal_type)
     return h264_nal_type_name[nal_type];
 }
 
-static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
+static int get_bit_length(H2645NAL *nal, int min_size, int skip_trailing_zeros)
 {
     int size = nal->size;
-    int v;
+    int trailing_padding = 0;
 
     while (skip_trailing_zeros && size > 0 && nal->data[size - 1] == 0)
         size--;
@@ -270,18 +270,23 @@ static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
     if (!size)
         return 0;
 
-    v = nal->data[size - 1];
+    if (size <= min_size) {
+        if (nal->size < min_size)
+            return AVERROR_INVALIDDATA;
+        size = min_size;
+    } else {
+        int v = nal->data[size - 1];
+        /* remove the stop bit and following trailing zeros,
+         * or nothing for damaged bitstreams */
+        if (v)
+            trailing_padding = ff_ctz(v) + 1;
+    }
 
     if (size > INT_MAX / 8)
         return AVERROR(ERANGE);
     size *= 8;
 
-    /* remove the stop bit and following trailing zeros,
-     * or nothing for damaged bitstreams */
-    if (v)
-        size -= ff_ctz(v) + 1;
-
-    return size;
+    return size - trailing_padding;
 }
 
 /**
@@ -491,7 +496,8 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             bytestream2_peek_be32(&bc) == 0x000001E0)
             skip_trailing_zeros = 0;
 
-        nal->size_bits = get_bit_length(nal, skip_trailing_zeros);
+        nal->size_bits = get_bit_length(nal, 1 + (codec_id == AV_CODEC_ID_HEVC),
+                                        skip_trailing_zeros);
 
         if (nal->size <= 0 || nal->size_bits <= 0)
             continue;
