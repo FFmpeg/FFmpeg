@@ -549,12 +549,6 @@ static int decode_nal_sei_message(GetByteContext *gb, void *logctx, HEVCSEI *s,
     }
 }
 
-static int more_rbsp_data(GetByteContext *gb)
-{
-    return bytestream2_get_bytes_left(gb) > 0 &&
-           bytestream2_peek_byteu(gb) != 0x80;
-}
-
 int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
                            const HEVCParamSets *ps, int type)
 {
@@ -569,7 +563,7 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
         ret = decode_nal_sei_message(&gbyte, logctx, s, ps, type);
         if (ret < 0)
             return ret;
-    } while (more_rbsp_data(&gbyte));
+    } while (bytestream2_get_bytes_left(&gbyte) > 0);
     return 1;
 }
 
