@@ -373,6 +373,9 @@ It accepts the following options:
 @item live_start_index
 segment index to start live streams at (negative values are from the end).
 
+@item prefer_x_start
+prefer to use #EXT-X-START if it's in playlist instead of live_start_index.
+
 @item allowed_extensions
 ',' separated list of file extensions that hls is allowed to access.
 
