@@ -3333,6 +3333,16 @@ Forcing I frames as IDR frames.
 For encoders set this flag to ON to reduce power consumption and GPU usage.
 @end table
 
+@subsection Runtime Options
+Following options can be used durning qsv encoding.
+
+@table @option
+@item @var{qsv_config_qp}
+Supported in h264_qsv and hevc_qsv.
+This option can be set in per-frame metadata. QP parameter can be dynamically
+changed when encoding in CQP mode.
+@end table
+
 @subsection H264 options
 These options are used by h264_qsv
 
