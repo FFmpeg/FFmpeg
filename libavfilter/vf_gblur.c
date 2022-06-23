@@ -280,17 +280,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                 width * sizeof(float), height);
         } else if (s->depth == 8) {
             for (y = 0; y < height; y++) {
-                for (x = 0; x < width; x++) {
-                    dst[x] = bptr[x];
-                }
+                for (x = 0; x < width; x++)
+                    dst[x] = lrintf(bptr[x]);
                 bptr += width;
                 dst += out->linesize[plane];
             }
         } else {
             for (y = 0; y < height; y++) {
-                for (x = 0; x < width; x++) {
-                    dst16[x] = bptr[x];
-                }
+                for (x = 0; x < width; x++)
+                    dst16[x] = lrintf(bptr[x]);
                 bptr += width;
                 dst16 += out->linesize[plane] / 2;
             }
