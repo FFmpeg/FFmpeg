@@ -36,14 +36,14 @@
         }                                       \
     } while (0)
 
-#define randomize_buffers2(buf, size)             \
+#define randomize_buffers2(buf, size, mask)       \
     do {                                          \
         int j;                                    \
         for (j = 0; j < size; j++)                \
-            AV_WN16A(buf + j * 2, rnd() & 0x3FF); \
+            AV_WN16A(buf + j * 2, rnd() & mask); \
     } while (0)
 
-static void compare_add_res(int size, ptrdiff_t stride, int overflow_test)
+static void compare_add_res(int size, ptrdiff_t stride, int overflow_test, int mask)
 {
     LOCAL_ALIGNED_32(int16_t, res0, [32 * 32]);
     LOCAL_ALIGNED_32(int16_t, res1, [32 * 32]);
@@ -53,7 +53,7 @@ static void compare_add_res(int size, ptrdiff_t stride, int overflow_test)
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *res, ptrdiff_t stride);
 
     randomize_buffers(res0, size);
-    randomize_buffers2(dst0, size);
+    randomize_buffers2(dst0, size, mask);
     if (overflow_test)
         res0[0] = 0x8000;
     memcpy(res1, res0, sizeof(*res0) * size);
@@ -69,6 +69,7 @@ static void compare_add_res(int size, ptrdiff_t stride, int overflow_test)
 static void check_add_res(HEVCDSPContext h, int bit_depth)
 {
     int i;
+    int mask = bit_depth == 8 ? 0xFFFF : bit_depth == 10 ? 0x03FF : 0x07FF;
 
     for (i = 2; i <= 5; i++) {
         int block_size = 1 << i;
@@ -76,9 +77,9 @@ static void check_add_res(HEVCDSPContext h, int bit_depth)
         ptrdiff_t stride = block_size << (bit_depth > 8);
 
         if (check_func(h.add_residual[i - 2], "hevc_add_res_%dx%d_%d", block_size, block_size, bit_depth)) {
-            compare_add_res(size, stride, 0);
+            compare_add_res(size, stride, 0, mask);
             // overflow test for res = -32768
-            compare_add_res(size, stride, 1);
+            compare_add_res(size, stride, 1, mask);
         }
     }
 }
@@ -87,7 +88,7 @@ void checkasm_check_hevc_add_res(void)
 {
     int bit_depth;
 
-    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+    for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         HEVCDSPContext h;
 
         ff_hevc_dsp_init(&h, bit_depth);
