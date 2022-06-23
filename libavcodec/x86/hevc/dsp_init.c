@@ -92,15 +92,15 @@ IDCT_FUNCS(avx)
     const uint8_t *vf = ff_hevc_ ## f ## _filters[my];
 
 #define FW_PUT(p, a, b, depth, opt) \
-void ff_hevc_put_hevc_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,   \
-                                                    int height, intptr_t mx, intptr_t my,int width)          \
+void ff_hevc_put_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,        \
+                                               int height, intptr_t mx, intptr_t my,int width)               \
 {                                                                                                            \
     DECL_HV_FILTER(p)                                                                                        \
     ff_h2656_put_ ## b ## _ ## depth ## _##opt(dst, 2 * MAX_PB_SIZE, src, srcstride, height, hf, vf, width); \
 }
 
 #define FW_PUT_UNI(p, a, b, depth, opt) \
-void ff_hevc_put_hevc_uni_ ## a ## _ ## depth ## _##opt(uint8_t *dst, ptrdiff_t dststride,                   \
+void ff_hevc_put_uni_ ## a ## _ ## depth ## _##opt(uint8_t *dst, ptrdiff_t dststride,                        \
                                                         const uint8_t *src, ptrdiff_t srcstride,             \
                                                         int height, intptr_t mx, intptr_t my, int width)     \
 {                                                                                                            \
@@ -190,36 +190,36 @@ FW_QPEL_HV(16, 10, avx2)
 #endif
 
 #define mc_rep_func(name, bitd, step, W, opt) \
-void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst,                                                 \
-                                                 const uint8_t *_src, ptrdiff_t _srcstride, int height,         \
-                                                intptr_t mx, intptr_t my, int width)                            \
+void ff_hevc_put_##name##W##_##bitd##_##opt(int16_t *_dst,                                                      \
+                                            const uint8_t *_src, ptrdiff_t _srcstride, int height,              \
+                                            intptr_t mx, intptr_t my, int width)                                \
 {                                                                                                               \
     int i;                                                                                                      \
     int16_t *dst;                                                                                               \
     for (i = 0; i < W; i += step) {                                                                             \
         const uint8_t *src  = _src + (i * ((bitd + 7) / 8));                                                    \
         dst = _dst + i;                                                                                         \
-        ff_hevc_put_hevc_##name##step##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);            \
+        ff_hevc_put_##name##step##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);                 \
     }                                                                                                           \
 }
 #define mc_rep_uni_func(name, bitd, step, W, opt) \
-void ff_hevc_put_hevc_uni_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride,                        \
-                                                     const uint8_t *_src, ptrdiff_t _srcstride, int height,     \
-                                                    intptr_t mx, intptr_t my, int width)                        \
+void ff_hevc_put_uni_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride,                             \
+                                                const uint8_t *_src, ptrdiff_t _srcstride, int height,          \
+                                                intptr_t mx, intptr_t my, int width)                            \
 {                                                                                                               \
     int i;                                                                                                      \
     uint8_t *dst;                                                                                               \
     for (i = 0; i < W; i += step) {                                                                             \
         const uint8_t *src = _src + (i * ((bitd + 7) / 8));                                                     \
         dst = _dst + (i * ((bitd + 7) / 8));                                                                    \
-        ff_hevc_put_hevc_uni_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride,                     \
-                                                          height, mx, my, width);                               \
+        ff_hevc_put_uni_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride,                          \
+                                                      height, mx, my, width);                                   \
     }                                                                                                           \
 }
 #define mc_rep_bi_func(name, bitd, step, W, opt) \
-void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const uint8_t *_src,    \
-                                                    ptrdiff_t _srcstride, const int16_t *_src2,                 \
-                                                   int height, intptr_t mx, intptr_t my, int width)             \
+void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const uint8_t *_src,         \
+                                               ptrdiff_t _srcstride, const int16_t *_src2,                      \
+                                               int height, intptr_t mx, intptr_t my, int width)                 \
 {                                                                                                               \
     int i;                                                                                                      \
     uint8_t  *dst;                                                                                              \
@@ -227,8 +227,8 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
         const uint8_t *src  = _src + (i * ((bitd + 7) / 8));                                                    \
         const int16_t *src2 = _src2 + i;                                                                        \
         dst  = _dst + (i * ((bitd + 7) / 8));                                                                   \
-        ff_hevc_put_hevc_bi_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2,                \
-                                                          height, mx, my, width);                               \
+        ff_hevc_put_bi_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, src2,                     \
+                                                     height, mx, my, width);                                    \
     }                                                                                                           \
 }
 
@@ -238,33 +238,33 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
     mc_rep_bi_func(name, bitd, step, W, opt)
 
 #define mc_rep_func2(name, bitd, step1, step2, W, opt) \
-void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *dst,                                                  \
-                                                 const uint8_t *src, ptrdiff_t _srcstride, int height,          \
-                                                 intptr_t mx, intptr_t my, int width)                           \
+void ff_hevc_put_##name##W##_##bitd##_##opt(int16_t *dst,                                                       \
+                                            const uint8_t *src, ptrdiff_t _srcstride, int height,               \
+                                            intptr_t mx, intptr_t my, int width)                                \
 {                                                                                                               \
-    ff_hevc_put_hevc_##name##step1##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);               \
-    ff_hevc_put_hevc_##name##step2##_##bitd##_##opt(dst + step1, src + (step1 * ((bitd + 7) / 8)),              \
-                                                    _srcstride, height, mx, my, width);                         \
+    ff_hevc_put_##name##step1##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);                    \
+    ff_hevc_put_##name##step2##_##bitd##_##opt(dst + step1, src + (step1 * ((bitd + 7) / 8)),                   \
+                                               _srcstride, height, mx, my, width);                              \
 }
 #define mc_rep_uni_func2(name, bitd, step1, step2, W, opt) \
-void ff_hevc_put_hevc_uni_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride,                         \
-                                                     const uint8_t *src, ptrdiff_t _srcstride, int height,      \
-                                                     intptr_t mx, intptr_t my, int width)                       \
+void ff_hevc_put_uni_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride,                              \
+                                                const uint8_t *src, ptrdiff_t _srcstride, int height,           \
+                                                intptr_t mx, intptr_t my, int width)                            \
 {                                                                                                               \
-    ff_hevc_put_hevc_uni_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, height, mx, my, width);\
-    ff_hevc_put_hevc_uni_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,            \
-                                                        src + (step1 * ((bitd + 7) / 8)), _srcstride,           \
-                                                        height, mx, my, width);                                 \
+    ff_hevc_put_uni_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, height, mx, my, width);     \
+    ff_hevc_put_uni_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,                 \
+                                                   src + (step1 * ((bitd + 7) / 8)), _srcstride,                \
+                                                   height, mx, my, width);                                      \
 }
 #define mc_rep_bi_func2(name, bitd, step1, step2, W, opt) \
-void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,      \
-                                                    ptrdiff_t _srcstride, const int16_t *src2,                  \
-                                                    int height, intptr_t mx, intptr_t my, int width)            \
+void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,           \
+                                               ptrdiff_t _srcstride, const int16_t *src2,                       \
+                                               int height, intptr_t mx, intptr_t my, int width)                 \
 {                                                                                                               \
-    ff_hevc_put_hevc_bi_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, src2, height, mx, my, width);\
-    ff_hevc_put_hevc_bi_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,             \
-                                                       src + (step1 * ((bitd + 7) / 8)), _srcstride,            \
-                                                       src2 + step1, height, mx, my, width);                    \
+    ff_hevc_put_bi_##name##step1##_##bitd##_##opt(dst, dststride, src, _srcstride, src2, height, mx, my, width);\
+    ff_hevc_put_bi_##name##step2##_##bitd##_##opt(dst + (step1 * ((bitd + 7) / 8)), dststride,                  \
+                                                  src + (step1 * ((bitd + 7) / 8)), _srcstride,                 \
+                                                  src2 + step1, height, mx, my, width);                         \
 }
 
 #define mc_rep_funcs2(name, bitd, step1, step2, W, opt) \
@@ -275,34 +275,34 @@ void ff_hevc_put_hevc_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dsts
 #if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
 #define mc_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)                                       \
-void ff_hevc_put_hevc_##name##width1##_10_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,      \
-                                                 int height, intptr_t mx, intptr_t my, int width)             \
+void ff_hevc_put_##name##width1##_10_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,           \
+                                            int height, intptr_t mx, intptr_t my, int width)                  \
                                                                                                               \
 {                                                                                                             \
-    ff_hevc_put_hevc_##name##width2##_10_##opt1(dst, src, _srcstride, height, mx, my, width);                 \
-    ff_hevc_put_hevc_##name##width3##_10_##opt2(dst+ width2, src+ width4, _srcstride, height, mx, my, width); \
+    ff_hevc_put_##name##width2##_10_##opt1(dst, src, _srcstride, height, mx, my, width);                      \
+    ff_hevc_put_##name##width3##_10_##opt2(dst+ width2, src+ width4, _srcstride, height, mx, my, width);      \
 }
 
 #define mc_bi_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)                                    \
-void ff_hevc_put_hevc_bi_##name##width1##_10_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,    \
-                                                    ptrdiff_t _srcstride, const int16_t *src2,                \
-                                                    int height, intptr_t mx, intptr_t my, int width)          \
+void ff_hevc_put_bi_##name##width1##_10_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,         \
+                                               ptrdiff_t _srcstride, const int16_t *src2,                     \
+                                               int height, intptr_t mx, intptr_t my, int width)               \
 {                                                                                                             \
-    ff_hevc_put_hevc_bi_##name##width2##_10_##opt1(dst, dststride, src, _srcstride, src2,                     \
-                                                   height, mx, my, width);                                    \
-    ff_hevc_put_hevc_bi_##name##width3##_10_##opt2(dst+width4, dststride, src+width4, _srcstride, src2+width2,\
-                                                   height, mx, my, width);                                    \
+    ff_hevc_put_bi_##name##width2##_10_##opt1(dst, dststride, src, _srcstride, src2,                          \
+                                              height, mx, my, width);                                         \
+    ff_hevc_put_bi_##name##width3##_10_##opt2(dst+width4, dststride, src+width4, _srcstride, src2+width2,     \
+                                              height, mx, my, width);                                         \
 }
 
 #define mc_uni_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)                                   \
-void ff_hevc_put_hevc_uni_##name##width1##_10_##opt1(uint8_t *dst, ptrdiff_t dststride,                       \
-                                                     const uint8_t *src, ptrdiff_t _srcstride, int height,    \
-                                                     intptr_t mx, intptr_t my, int width)                     \
+void ff_hevc_put_uni_##name##width1##_10_##opt1(uint8_t *dst, ptrdiff_t dststride,                            \
+                                                const uint8_t *src, ptrdiff_t _srcstride, int height,         \
+                                                intptr_t mx, intptr_t my, int width)                          \
 {                                                                                                             \
-    ff_hevc_put_hevc_uni_##name##width2##_10_##opt1(dst, dststride, src, _srcstride,                          \
-                                                      height, mx, my, width);                                 \
-    ff_hevc_put_hevc_uni_##name##width3##_10_##opt2(dst+width4, dststride, src+width4, _srcstride,            \
-                                                      height, mx, my, width);                                 \
+    ff_hevc_put_uni_##name##width2##_10_##opt1(dst, dststride, src, _srcstride,                               \
+                                               height, mx, my, width);                                        \
+    ff_hevc_put_uni_##name##width3##_10_##opt2(dst+width4, dststride, src+width4, _srcstride,                 \
+                                               height, mx, my, width);                                        \
 }
 
 #define mc_rep_mixs_10(name, width1, width2, width3, opt1, opt2, width4)   \
@@ -311,34 +311,34 @@ mc_bi_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)         \
 mc_uni_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)
 
 #define mc_rep_mix_8(name, width1, width2, width3, opt1, opt2)                                                \
-void ff_hevc_put_hevc_##name##width1##_8_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,       \
-                                                int height, intptr_t mx, intptr_t my, int width)              \
+void ff_hevc_put_##name##width1##_8_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,            \
+                                           int height, intptr_t mx, intptr_t my, int width)                   \
                                                                                                               \
 {                                                                                                             \
-    ff_hevc_put_hevc_##name##width2##_8_##opt1(dst, src, _srcstride, height, mx, my, width);                  \
-    ff_hevc_put_hevc_##name##width3##_8_##opt2(dst+ width2, src+ width2, _srcstride, height, mx, my, width);  \
+    ff_hevc_put_##name##width2##_8_##opt1(dst, src, _srcstride, height, mx, my, width);                       \
+    ff_hevc_put_##name##width3##_8_##opt2(dst+ width2, src+ width2, _srcstride, height, mx, my, width);       \
 }
 
 #define mc_bi_rep_mix_8(name, width1, width2, width3, opt1, opt2)                                             \
-void ff_hevc_put_hevc_bi_##name##width1##_8_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,     \
-                                                   ptrdiff_t _srcstride, const int16_t *src2,                 \
-                                                   int height, intptr_t mx, intptr_t my, int width)           \
+void ff_hevc_put_bi_##name##width1##_8_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,          \
+                                              ptrdiff_t _srcstride, const int16_t *src2,                      \
+                                              int height, intptr_t mx, intptr_t my, int width)                \
 {                                                                                                             \
-    ff_hevc_put_hevc_bi_##name##width2##_8_##opt1(dst, dststride, src, _srcstride,                            \
-                                                  src2, height, mx, my, width);                               \
-    ff_hevc_put_hevc_bi_##name##width3##_8_##opt2(dst+width2, dststride, src+width2, _srcstride,              \
-                                                  src2+width2, height, mx, my, width);                        \
+    ff_hevc_put_bi_##name##width2##_8_##opt1(dst, dststride, src, _srcstride,                                 \
+                                             src2, height, mx, my, width);                                    \
+    ff_hevc_put_bi_##name##width3##_8_##opt2(dst+width2, dststride, src+width2, _srcstride,                   \
+                                             src2+width2, height, mx, my, width);                             \
 }
 
 #define mc_uni_rep_mix_8(name, width1, width2, width3, opt1, opt2)                                            \
-void ff_hevc_put_hevc_uni_##name##width1##_8_##opt1(uint8_t *dst, ptrdiff_t dststride,                        \
-                                                    const uint8_t *src, ptrdiff_t _srcstride, int height,     \
-                                                    intptr_t mx, intptr_t my, int width)                      \
+void ff_hevc_put_uni_##name##width1##_8_##opt1(uint8_t *dst, ptrdiff_t dststride,                             \
+                                               const uint8_t *src, ptrdiff_t _srcstride, int height,          \
+                                               intptr_t mx, intptr_t my, int width)                           \
 {                                                                                                             \
-    ff_hevc_put_hevc_uni_##name##width2##_8_##opt1(dst, dststride, src, _srcstride,                           \
-                                                   height, mx, my, width);                                    \
-    ff_hevc_put_hevc_uni_##name##width3##_8_##opt2(dst+width2, dststride, src+width2, _srcstride,             \
-                                                   height, mx, my, width);                                    \
+    ff_hevc_put_uni_##name##width2##_8_##opt1(dst, dststride, src, _srcstride,                                \
+                                              height, mx, my, width);                                         \
+    ff_hevc_put_uni_##name##width3##_8_##opt2(dst+width2, dststride, src+width2, _srcstride,                  \
+                                              height, mx, my, width);                                         \
 }
 
 #define mc_rep_mixs_8(name, width1, width2, width3, opt1, opt2)   \
@@ -536,16 +536,16 @@ mc_rep_funcs(qpel_hv,12,  8, 16, sse4)
 mc_rep_funcs(qpel_hv,12,  4, 12, sse4)
 
 #define mc_rep_uni_w(bitd, step, W, opt) \
-void ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const int16_t *_src, \
-                                               int height, int denom,  int _wx, int _ox)                                \
+void ff_hevc_put_uni_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const int16_t *_src, \
+                                           int height, int denom,  int _wx, int _ox)                \
 {                                                                                                                       \
     int i;                                                                                                              \
     uint8_t *dst;                                                                                                       \
     for (i = 0; i < W; i += step) {                                                                                     \
         const int16_t *src = _src + i;                                                                                  \
         dst= _dst + (i * ((bitd + 7) / 8));                                                                             \
-        ff_hevc_put_hevc_uni_w##step##_##bitd##_##opt(dst, dststride, src,                                   \
-                                                     height, denom, _wx, _ox);                                          \
+        ff_hevc_put_uni_w##step##_##bitd##_##opt(dst, dststride, src,                               \
+                                                 height, denom, _wx, _ox);                          \
     }                                                                                                                   \
 }
 
@@ -571,9 +571,9 @@ mc_rep_uni_w(12, 8, 48, sse4)
 mc_rep_uni_w(12, 8, 64, sse4)
 
 #define mc_rep_bi_w(bitd, step, W, opt) \
-void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const int16_t *_src, \
-                                               const int16_t *_src2, int height,                                        \
-                                              int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)                      \
+void ff_hevc_put_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const int16_t *_src, \
+                                          const int16_t *_src2, int height,                        \
+                                          int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)     \
 {                                                                                                                       \
     int i;                                                                                                              \
     uint8_t *dst;                                                                                                       \
@@ -581,8 +581,8 @@ void ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststrid
         const int16_t *src  = _src  + i;                                                                                \
         const int16_t *src2 = _src2 + i;                                                                                \
         dst  = _dst  + (i * ((bitd + 7) / 8));                                                                          \
-        ff_hevc_put_hevc_bi_w##step##_##bitd##_##opt(dst, dststride, src, src2,                             \
-                                                     height, denom, _wx0, _wx1, _ox0, _ox1);                             \
+        ff_hevc_put_bi_w##step##_##bitd##_##opt(dst, dststride, src, src2,                         \
+                                                height, denom, _wx0, _wx1, _ox0, _ox1);            \
     }                                                                                                                   \
 }
 
@@ -608,15 +608,15 @@ mc_rep_bi_w(12, 8, 48, sse4)
 mc_rep_bi_w(12, 8, 64, sse4)
 
 #define mc_uni_w_func(name, bitd, W, opt) \
-void ff_hevc_put_hevc_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,         \
-                                                       const uint8_t *_src, ptrdiff_t _srcstride,   \
-                                                      int height, int denom,                        \
-                                                      int _wx, int _ox,                             \
-                                                      intptr_t mx, intptr_t my, int width)          \
+void ff_hevc_put_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,              \
+                                                  const uint8_t *_src, ptrdiff_t _srcstride,        \
+                                                  int height, int denom,                            \
+                                                  int _wx, int _ox,                                 \
+                                                  intptr_t mx, intptr_t my, int width)              \
 {                                                                                                   \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                            \
-    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);     \
-    ff_hevc_put_hevc_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, height, denom, _wx, _ox);\
+    ff_hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);          \
+    ff_hevc_put_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, height, denom, _wx, _ox);         \
 }
 
 #define mc_uni_w_funcs(name, bitd, opt)      \
@@ -666,17 +666,17 @@ mc_uni_w_funcs(qpel_v, 12, sse4)
 mc_uni_w_funcs(qpel_hv, 12, sse4)
 
 #define mc_bi_w_func(name, bitd, W, opt) \
-void ff_hevc_put_hevc_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,           \
-                                                      const uint8_t *_src, ptrdiff_t _srcstride,     \
-                                                      const int16_t *_src2,                          \
-                                                     int height, int denom,                          \
-                                                     int _wx0, int _wx1, int _ox0, int _ox1,         \
-                                                     intptr_t mx, intptr_t my, int width)            \
+void ff_hevc_put_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,                \
+                                                 const uint8_t *_src, ptrdiff_t _srcstride,          \
+                                                 const int16_t *_src2,                               \
+                                                 int height, int denom,                              \
+                                                 int _wx0, int _wx1, int _ox0, int _ox1,             \
+                                                 intptr_t mx, intptr_t my, int width)                \
 {                                                                                                    \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                             \
-    ff_hevc_put_hevc_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);      \
-    ff_hevc_put_hevc_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, _src2,                         \
-                                              height, denom, _wx0, _wx1, _ox0, _ox1);                \
+    ff_hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);           \
+    ff_hevc_put_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, _src2,                              \
+                                         height, denom, _wx0, _wx1, _ox0, _ox1);                     \
 }
 
 #define mc_bi_w_funcs(name, bitd, opt)      \
@@ -882,89 +882,89 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_avx2;
             if (ARCH_X86_64) {
-                c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_avx2;
-                c->put_hevc_epel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_8_avx2;
-                c->put_hevc_epel[9][0][0] = ff_hevc_put_hevc_pel_pixels64_8_avx2;
+                c->put_hevc_epel[7][0][0] = ff_hevc_put_pel_pixels32_8_avx2;
+                c->put_hevc_epel[8][0][0] = ff_hevc_put_pel_pixels48_8_avx2;
+                c->put_hevc_epel[9][0][0] = ff_hevc_put_pel_pixels64_8_avx2;
 
-                c->put_hevc_qpel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_avx2;
-                c->put_hevc_qpel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_8_avx2;
-                c->put_hevc_qpel[9][0][0] = ff_hevc_put_hevc_pel_pixels64_8_avx2;
+                c->put_hevc_qpel[7][0][0] = ff_hevc_put_pel_pixels32_8_avx2;
+                c->put_hevc_qpel[8][0][0] = ff_hevc_put_pel_pixels48_8_avx2;
+                c->put_hevc_qpel[9][0][0] = ff_hevc_put_pel_pixels64_8_avx2;
 
-                c->put_hevc_epel_uni[7][0][0] = ff_hevc_put_hevc_uni_pel_pixels32_8_avx2;
-                c->put_hevc_epel_uni[8][0][0] = ff_hevc_put_hevc_uni_pel_pixels48_8_avx2;
-                c->put_hevc_epel_uni[9][0][0] = ff_hevc_put_hevc_uni_pel_pixels64_8_avx2;
+                c->put_hevc_epel_uni[7][0][0] = ff_hevc_put_uni_pel_pixels32_8_avx2;
+                c->put_hevc_epel_uni[8][0][0] = ff_hevc_put_uni_pel_pixels48_8_avx2;
+                c->put_hevc_epel_uni[9][0][0] = ff_hevc_put_uni_pel_pixels64_8_avx2;
 
-                c->put_hevc_qpel_uni[7][0][0] = ff_hevc_put_hevc_uni_pel_pixels32_8_avx2;
-                c->put_hevc_qpel_uni[8][0][0] = ff_hevc_put_hevc_uni_pel_pixels48_8_avx2;
-                c->put_hevc_qpel_uni[9][0][0] = ff_hevc_put_hevc_uni_pel_pixels64_8_avx2;
+                c->put_hevc_qpel_uni[7][0][0] = ff_hevc_put_uni_pel_pixels32_8_avx2;
+                c->put_hevc_qpel_uni[8][0][0] = ff_hevc_put_uni_pel_pixels48_8_avx2;
+                c->put_hevc_qpel_uni[9][0][0] = ff_hevc_put_uni_pel_pixels64_8_avx2;
 
-                c->put_hevc_qpel_bi[7][0][0] = ff_hevc_put_hevc_bi_pel_pixels32_8_avx2;
-                c->put_hevc_qpel_bi[8][0][0] = ff_hevc_put_hevc_bi_pel_pixels48_8_avx2;
-                c->put_hevc_qpel_bi[9][0][0] = ff_hevc_put_hevc_bi_pel_pixels64_8_avx2;
+                c->put_hevc_qpel_bi[7][0][0] = ff_hevc_put_bi_pel_pixels32_8_avx2;
+                c->put_hevc_qpel_bi[8][0][0] = ff_hevc_put_bi_pel_pixels48_8_avx2;
+                c->put_hevc_qpel_bi[9][0][0] = ff_hevc_put_bi_pel_pixels64_8_avx2;
 
-                c->put_hevc_epel_bi[7][0][0] = ff_hevc_put_hevc_bi_pel_pixels32_8_avx2;
-                c->put_hevc_epel_bi[8][0][0] = ff_hevc_put_hevc_bi_pel_pixels48_8_avx2;
-                c->put_hevc_epel_bi[9][0][0] = ff_hevc_put_hevc_bi_pel_pixels64_8_avx2;
+                c->put_hevc_epel_bi[7][0][0] = ff_hevc_put_bi_pel_pixels32_8_avx2;
+                c->put_hevc_epel_bi[8][0][0] = ff_hevc_put_bi_pel_pixels48_8_avx2;
+                c->put_hevc_epel_bi[9][0][0] = ff_hevc_put_bi_pel_pixels64_8_avx2;
 
-                c->put_hevc_epel[7][0][1] = ff_hevc_put_hevc_epel_h32_8_avx2;
-                c->put_hevc_epel[8][0][1] = ff_hevc_put_hevc_epel_h48_8_avx2;
-                c->put_hevc_epel[9][0][1] = ff_hevc_put_hevc_epel_h64_8_avx2;
+                c->put_hevc_epel[7][0][1] = ff_hevc_put_epel_h32_8_avx2;
+                c->put_hevc_epel[8][0][1] = ff_hevc_put_epel_h48_8_avx2;
+                c->put_hevc_epel[9][0][1] = ff_hevc_put_epel_h64_8_avx2;
 
-                c->put_hevc_epel_uni[7][0][1] = ff_hevc_put_hevc_uni_epel_h32_8_avx2;
-                c->put_hevc_epel_uni[8][0][1] = ff_hevc_put_hevc_uni_epel_h48_8_avx2;
-                c->put_hevc_epel_uni[9][0][1] = ff_hevc_put_hevc_uni_epel_h64_8_avx2;
+                c->put_hevc_epel_uni[7][0][1] = ff_hevc_put_uni_epel_h32_8_avx2;
+                c->put_hevc_epel_uni[8][0][1] = ff_hevc_put_uni_epel_h48_8_avx2;
+                c->put_hevc_epel_uni[9][0][1] = ff_hevc_put_uni_epel_h64_8_avx2;
 
-                c->put_hevc_epel_bi[7][0][1] = ff_hevc_put_hevc_bi_epel_h32_8_avx2;
-                c->put_hevc_epel_bi[8][0][1] = ff_hevc_put_hevc_bi_epel_h48_8_avx2;
-                c->put_hevc_epel_bi[9][0][1] = ff_hevc_put_hevc_bi_epel_h64_8_avx2;
+                c->put_hevc_epel_bi[7][0][1] = ff_hevc_put_bi_epel_h32_8_avx2;
+                c->put_hevc_epel_bi[8][0][1] = ff_hevc_put_bi_epel_h48_8_avx2;
+                c->put_hevc_epel_bi[9][0][1] = ff_hevc_put_bi_epel_h64_8_avx2;
 
-                c->put_hevc_epel[7][1][0] = ff_hevc_put_hevc_epel_v32_8_avx2;
-                c->put_hevc_epel[8][1][0] = ff_hevc_put_hevc_epel_v48_8_avx2;
-                c->put_hevc_epel[9][1][0] = ff_hevc_put_hevc_epel_v64_8_avx2;
+                c->put_hevc_epel[7][1][0] = ff_hevc_put_epel_v32_8_avx2;
+                c->put_hevc_epel[8][1][0] = ff_hevc_put_epel_v48_8_avx2;
+                c->put_hevc_epel[9][1][0] = ff_hevc_put_epel_v64_8_avx2;
 
-                c->put_hevc_epel_uni[7][1][0] = ff_hevc_put_hevc_uni_epel_v32_8_avx2;
-                c->put_hevc_epel_uni[8][1][0] = ff_hevc_put_hevc_uni_epel_v48_8_avx2;
-                c->put_hevc_epel_uni[9][1][0] = ff_hevc_put_hevc_uni_epel_v64_8_avx2;
+                c->put_hevc_epel_uni[7][1][0] = ff_hevc_put_uni_epel_v32_8_avx2;
+                c->put_hevc_epel_uni[8][1][0] = ff_hevc_put_uni_epel_v48_8_avx2;
+                c->put_hevc_epel_uni[9][1][0] = ff_hevc_put_uni_epel_v64_8_avx2;
 
-                c->put_hevc_epel_bi[7][1][0] = ff_hevc_put_hevc_bi_epel_v32_8_avx2;
-                c->put_hevc_epel_bi[8][1][0] = ff_hevc_put_hevc_bi_epel_v48_8_avx2;
-                c->put_hevc_epel_bi[9][1][0] = ff_hevc_put_hevc_bi_epel_v64_8_avx2;
+                c->put_hevc_epel_bi[7][1][0] = ff_hevc_put_bi_epel_v32_8_avx2;
+                c->put_hevc_epel_bi[8][1][0] = ff_hevc_put_bi_epel_v48_8_avx2;
+                c->put_hevc_epel_bi[9][1][0] = ff_hevc_put_bi_epel_v64_8_avx2;
 
-                c->put_hevc_epel[7][1][1] = ff_hevc_put_hevc_epel_hv32_8_avx2;
-                c->put_hevc_epel[8][1][1] = ff_hevc_put_hevc_epel_hv48_8_avx2;
-                c->put_hevc_epel[9][1][1] = ff_hevc_put_hevc_epel_hv64_8_avx2;
+                c->put_hevc_epel[7][1][1] = ff_hevc_put_epel_hv32_8_avx2;
+                c->put_hevc_epel[8][1][1] = ff_hevc_put_epel_hv48_8_avx2;
+                c->put_hevc_epel[9][1][1] = ff_hevc_put_epel_hv64_8_avx2;
 
-                c->put_hevc_epel_uni[7][1][1] = ff_hevc_put_hevc_uni_epel_hv32_8_avx2;
-                c->put_hevc_epel_uni[8][1][1] = ff_hevc_put_hevc_uni_epel_hv48_8_avx2;
-                c->put_hevc_epel_uni[9][1][1] = ff_hevc_put_hevc_uni_epel_hv64_8_avx2;
+                c->put_hevc_epel_uni[7][1][1] = ff_hevc_put_uni_epel_hv32_8_avx2;
+                c->put_hevc_epel_uni[8][1][1] = ff_hevc_put_uni_epel_hv48_8_avx2;
+                c->put_hevc_epel_uni[9][1][1] = ff_hevc_put_uni_epel_hv64_8_avx2;
 
-                c->put_hevc_epel_bi[7][1][1] = ff_hevc_put_hevc_bi_epel_hv32_8_avx2;
-                c->put_hevc_epel_bi[8][1][1] = ff_hevc_put_hevc_bi_epel_hv48_8_avx2;
-                c->put_hevc_epel_bi[9][1][1] = ff_hevc_put_hevc_bi_epel_hv64_8_avx2;
+                c->put_hevc_epel_bi[7][1][1] = ff_hevc_put_bi_epel_hv32_8_avx2;
+                c->put_hevc_epel_bi[8][1][1] = ff_hevc_put_bi_epel_hv48_8_avx2;
+                c->put_hevc_epel_bi[9][1][1] = ff_hevc_put_bi_epel_hv64_8_avx2;
 
-                c->put_hevc_qpel[7][0][1] = ff_hevc_put_hevc_qpel_h32_8_avx2;
-                c->put_hevc_qpel[8][0][1] = ff_hevc_put_hevc_qpel_h48_8_avx2;
-                c->put_hevc_qpel[9][0][1] = ff_hevc_put_hevc_qpel_h64_8_avx2;
+                c->put_hevc_qpel[7][0][1] = ff_hevc_put_qpel_h32_8_avx2;
+                c->put_hevc_qpel[8][0][1] = ff_hevc_put_qpel_h48_8_avx2;
+                c->put_hevc_qpel[9][0][1] = ff_hevc_put_qpel_h64_8_avx2;
 
-                c->put_hevc_qpel[7][1][0] = ff_hevc_put_hevc_qpel_v32_8_avx2;
-                c->put_hevc_qpel[8][1][0] = ff_hevc_put_hevc_qpel_v48_8_avx2;
-                c->put_hevc_qpel[9][1][0] = ff_hevc_put_hevc_qpel_v64_8_avx2;
+                c->put_hevc_qpel[7][1][0] = ff_hevc_put_qpel_v32_8_avx2;
+                c->put_hevc_qpel[8][1][0] = ff_hevc_put_qpel_v48_8_avx2;
+                c->put_hevc_qpel[9][1][0] = ff_hevc_put_qpel_v64_8_avx2;
 
-                c->put_hevc_qpel_uni[7][0][1] = ff_hevc_put_hevc_uni_qpel_h32_8_avx2;
-                c->put_hevc_qpel_uni[8][0][1] = ff_hevc_put_hevc_uni_qpel_h48_8_avx2;
-                c->put_hevc_qpel_uni[9][0][1] = ff_hevc_put_hevc_uni_qpel_h64_8_avx2;
+                c->put_hevc_qpel_uni[7][0][1] = ff_hevc_put_uni_qpel_h32_8_avx2;
+                c->put_hevc_qpel_uni[8][0][1] = ff_hevc_put_uni_qpel_h48_8_avx2;
+                c->put_hevc_qpel_uni[9][0][1] = ff_hevc_put_uni_qpel_h64_8_avx2;
 
-                c->put_hevc_qpel_uni[7][1][0] = ff_hevc_put_hevc_uni_qpel_v32_8_avx2;
-                c->put_hevc_qpel_uni[8][1][0] = ff_hevc_put_hevc_uni_qpel_v48_8_avx2;
-                c->put_hevc_qpel_uni[9][1][0] = ff_hevc_put_hevc_uni_qpel_v64_8_avx2;
+                c->put_hevc_qpel_uni[7][1][0] = ff_hevc_put_uni_qpel_v32_8_avx2;
+                c->put_hevc_qpel_uni[8][1][0] = ff_hevc_put_uni_qpel_v48_8_avx2;
+                c->put_hevc_qpel_uni[9][1][0] = ff_hevc_put_uni_qpel_v64_8_avx2;
 
-                c->put_hevc_qpel_bi[7][0][1] = ff_hevc_put_hevc_bi_qpel_h32_8_avx2;
-                c->put_hevc_qpel_bi[8][0][1] = ff_hevc_put_hevc_bi_qpel_h48_8_avx2;
-                c->put_hevc_qpel_bi[9][0][1] = ff_hevc_put_hevc_bi_qpel_h64_8_avx2;
+                c->put_hevc_qpel_bi[7][0][1] = ff_hevc_put_bi_qpel_h32_8_avx2;
+                c->put_hevc_qpel_bi[8][0][1] = ff_hevc_put_bi_qpel_h48_8_avx2;
+                c->put_hevc_qpel_bi[9][0][1] = ff_hevc_put_bi_qpel_h64_8_avx2;
 
-                c->put_hevc_qpel_bi[7][1][0] = ff_hevc_put_hevc_bi_qpel_v32_8_avx2;
-                c->put_hevc_qpel_bi[8][1][0] = ff_hevc_put_hevc_bi_qpel_v48_8_avx2;
-                c->put_hevc_qpel_bi[9][1][0] = ff_hevc_put_hevc_bi_qpel_v64_8_avx2;
+                c->put_hevc_qpel_bi[7][1][0] = ff_hevc_put_bi_qpel_v32_8_avx2;
+                c->put_hevc_qpel_bi[8][1][0] = ff_hevc_put_bi_qpel_v48_8_avx2;
+                c->put_hevc_qpel_bi[9][1][0] = ff_hevc_put_bi_qpel_v64_8_avx2;
             }
             SAO_BAND_INIT(8, avx2);
 
@@ -975,12 +975,12 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->add_residual[3] = ff_hevc_add_residual_32_8_avx2;
         }
         if (EXTERNAL_AVX512ICL(cpu_flags) && ARCH_X86_64) {
-            c->put_hevc_qpel[1][0][1] = ff_hevc_put_hevc_qpel_h4_8_avx512icl;
-            c->put_hevc_qpel[3][0][1] = ff_hevc_put_hevc_qpel_h8_8_avx512icl;
-            c->put_hevc_qpel[5][0][1] = ff_hevc_put_hevc_qpel_h16_8_avx512icl;
-            c->put_hevc_qpel[7][0][1] = ff_hevc_put_hevc_qpel_h32_8_avx512icl;
-            c->put_hevc_qpel[9][0][1] = ff_hevc_put_hevc_qpel_h64_8_avx512icl;
-            c->put_hevc_qpel[3][1][1] = ff_hevc_put_hevc_qpel_hv8_8_avx512icl;
+            c->put_hevc_qpel[1][0][1] = ff_hevc_put_qpel_h4_8_avx512icl;
+            c->put_hevc_qpel[3][0][1] = ff_hevc_put_qpel_h8_8_avx512icl;
+            c->put_hevc_qpel[5][0][1] = ff_hevc_put_qpel_h16_8_avx512icl;
+            c->put_hevc_qpel[7][0][1] = ff_hevc_put_qpel_h32_8_avx512icl;
+            c->put_hevc_qpel[9][0][1] = ff_hevc_put_qpel_h64_8_avx512icl;
+            c->put_hevc_qpel[3][1][1] = ff_hevc_put_qpel_hv8_8_avx512icl;
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -1049,148 +1049,148 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_10_avx2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_10_avx2;
             if (ARCH_X86_64) {
-                c->put_hevc_epel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_10_avx2;
-                c->put_hevc_epel[6][0][0] = ff_hevc_put_hevc_pel_pixels24_10_avx2;
-                c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_10_avx2;
-                c->put_hevc_epel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_10_avx2;
-                c->put_hevc_epel[9][0][0] = ff_hevc_put_hevc_pel_pixels64_10_avx2;
+                c->put_hevc_epel[5][0][0] = ff_hevc_put_pel_pixels16_10_avx2;
+                c->put_hevc_epel[6][0][0] = ff_hevc_put_pel_pixels24_10_avx2;
+                c->put_hevc_epel[7][0][0] = ff_hevc_put_pel_pixels32_10_avx2;
+                c->put_hevc_epel[8][0][0] = ff_hevc_put_pel_pixels48_10_avx2;
+                c->put_hevc_epel[9][0][0] = ff_hevc_put_pel_pixels64_10_avx2;
 
-                c->put_hevc_qpel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_10_avx2;
-                c->put_hevc_qpel[6][0][0] = ff_hevc_put_hevc_pel_pixels24_10_avx2;
-                c->put_hevc_qpel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_10_avx2;
-                c->put_hevc_qpel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_10_avx2;
-                c->put_hevc_qpel[9][0][0] = ff_hevc_put_hevc_pel_pixels64_10_avx2;
+                c->put_hevc_qpel[5][0][0] = ff_hevc_put_pel_pixels16_10_avx2;
+                c->put_hevc_qpel[6][0][0] = ff_hevc_put_pel_pixels24_10_avx2;
+                c->put_hevc_qpel[7][0][0] = ff_hevc_put_pel_pixels32_10_avx2;
+                c->put_hevc_qpel[8][0][0] = ff_hevc_put_pel_pixels48_10_avx2;
+                c->put_hevc_qpel[9][0][0] = ff_hevc_put_pel_pixels64_10_avx2;
 
-                c->put_hevc_epel_uni[5][0][0] = ff_hevc_put_hevc_uni_pel_pixels32_8_avx2;
-                c->put_hevc_epel_uni[6][0][0] = ff_hevc_put_hevc_uni_pel_pixels48_8_avx2;
-                c->put_hevc_epel_uni[7][0][0] = ff_hevc_put_hevc_uni_pel_pixels64_8_avx2;
-                c->put_hevc_epel_uni[8][0][0] = ff_hevc_put_hevc_uni_pel_pixels96_8_avx2;
-                c->put_hevc_epel_uni[9][0][0] = ff_hevc_put_hevc_uni_pel_pixels128_8_avx2;
+                c->put_hevc_epel_uni[5][0][0] = ff_hevc_put_uni_pel_pixels32_8_avx2;
+                c->put_hevc_epel_uni[6][0][0] = ff_hevc_put_uni_pel_pixels48_8_avx2;
+                c->put_hevc_epel_uni[7][0][0] = ff_hevc_put_uni_pel_pixels64_8_avx2;
+                c->put_hevc_epel_uni[8][0][0] = ff_hevc_put_uni_pel_pixels96_8_avx2;
+                c->put_hevc_epel_uni[9][0][0] = ff_hevc_put_uni_pel_pixels128_8_avx2;
 
-                c->put_hevc_qpel_uni[5][0][0] = ff_hevc_put_hevc_uni_pel_pixels32_8_avx2;
-                c->put_hevc_qpel_uni[6][0][0] = ff_hevc_put_hevc_uni_pel_pixels48_8_avx2;
-                c->put_hevc_qpel_uni[7][0][0] = ff_hevc_put_hevc_uni_pel_pixels64_8_avx2;
-                c->put_hevc_qpel_uni[8][0][0] = ff_hevc_put_hevc_uni_pel_pixels96_8_avx2;
-                c->put_hevc_qpel_uni[9][0][0] = ff_hevc_put_hevc_uni_pel_pixels128_8_avx2;
+                c->put_hevc_qpel_uni[5][0][0] = ff_hevc_put_uni_pel_pixels32_8_avx2;
+                c->put_hevc_qpel_uni[6][0][0] = ff_hevc_put_uni_pel_pixels48_8_avx2;
+                c->put_hevc_qpel_uni[7][0][0] = ff_hevc_put_uni_pel_pixels64_8_avx2;
+                c->put_hevc_qpel_uni[8][0][0] = ff_hevc_put_uni_pel_pixels96_8_avx2;
+                c->put_hevc_qpel_uni[9][0][0] = ff_hevc_put_uni_pel_pixels128_8_avx2;
 
-                c->put_hevc_epel_bi[5][0][0] = ff_hevc_put_hevc_bi_pel_pixels16_10_avx2;
-                c->put_hevc_epel_bi[6][0][0] = ff_hevc_put_hevc_bi_pel_pixels24_10_avx2;
-                c->put_hevc_epel_bi[7][0][0] = ff_hevc_put_hevc_bi_pel_pixels32_10_avx2;
-                c->put_hevc_epel_bi[8][0][0] = ff_hevc_put_hevc_bi_pel_pixels48_10_avx2;
-                c->put_hevc_epel_bi[9][0][0] = ff_hevc_put_hevc_bi_pel_pixels64_10_avx2;
-                c->put_hevc_qpel_bi[5][0][0] = ff_hevc_put_hevc_bi_pel_pixels16_10_avx2;
-                c->put_hevc_qpel_bi[6][0][0] = ff_hevc_put_hevc_bi_pel_pixels24_10_avx2;
-                c->put_hevc_qpel_bi[7][0][0] = ff_hevc_put_hevc_bi_pel_pixels32_10_avx2;
-                c->put_hevc_qpel_bi[8][0][0] = ff_hevc_put_hevc_bi_pel_pixels48_10_avx2;
-                c->put_hevc_qpel_bi[9][0][0] = ff_hevc_put_hevc_bi_pel_pixels64_10_avx2;
+                c->put_hevc_epel_bi[5][0][0] = ff_hevc_put_bi_pel_pixels16_10_avx2;
+                c->put_hevc_epel_bi[6][0][0] = ff_hevc_put_bi_pel_pixels24_10_avx2;
+                c->put_hevc_epel_bi[7][0][0] = ff_hevc_put_bi_pel_pixels32_10_avx2;
+                c->put_hevc_epel_bi[8][0][0] = ff_hevc_put_bi_pel_pixels48_10_avx2;
+                c->put_hevc_epel_bi[9][0][0] = ff_hevc_put_bi_pel_pixels64_10_avx2;
+                c->put_hevc_qpel_bi[5][0][0] = ff_hevc_put_bi_pel_pixels16_10_avx2;
+                c->put_hevc_qpel_bi[6][0][0] = ff_hevc_put_bi_pel_pixels24_10_avx2;
+                c->put_hevc_qpel_bi[7][0][0] = ff_hevc_put_bi_pel_pixels32_10_avx2;
+                c->put_hevc_qpel_bi[8][0][0] = ff_hevc_put_bi_pel_pixels48_10_avx2;
+                c->put_hevc_qpel_bi[9][0][0] = ff_hevc_put_bi_pel_pixels64_10_avx2;
 
-                c->put_hevc_epel[5][0][1] = ff_hevc_put_hevc_epel_h16_10_avx2;
-                c->put_hevc_epel[6][0][1] = ff_hevc_put_hevc_epel_h24_10_avx2;
-                c->put_hevc_epel[7][0][1] = ff_hevc_put_hevc_epel_h32_10_avx2;
-                c->put_hevc_epel[8][0][1] = ff_hevc_put_hevc_epel_h48_10_avx2;
-                c->put_hevc_epel[9][0][1] = ff_hevc_put_hevc_epel_h64_10_avx2;
+                c->put_hevc_epel[5][0][1] = ff_hevc_put_epel_h16_10_avx2;
+                c->put_hevc_epel[6][0][1] = ff_hevc_put_epel_h24_10_avx2;
+                c->put_hevc_epel[7][0][1] = ff_hevc_put_epel_h32_10_avx2;
+                c->put_hevc_epel[8][0][1] = ff_hevc_put_epel_h48_10_avx2;
+                c->put_hevc_epel[9][0][1] = ff_hevc_put_epel_h64_10_avx2;
 
-                c->put_hevc_epel_uni[5][0][1] = ff_hevc_put_hevc_uni_epel_h16_10_avx2;
-                c->put_hevc_epel_uni[6][0][1] = ff_hevc_put_hevc_uni_epel_h24_10_avx2;
-                c->put_hevc_epel_uni[7][0][1] = ff_hevc_put_hevc_uni_epel_h32_10_avx2;
-                c->put_hevc_epel_uni[8][0][1] = ff_hevc_put_hevc_uni_epel_h48_10_avx2;
-                c->put_hevc_epel_uni[9][0][1] = ff_hevc_put_hevc_uni_epel_h64_10_avx2;
+                c->put_hevc_epel_uni[5][0][1] = ff_hevc_put_uni_epel_h16_10_avx2;
+                c->put_hevc_epel_uni[6][0][1] = ff_hevc_put_uni_epel_h24_10_avx2;
+                c->put_hevc_epel_uni[7][0][1] = ff_hevc_put_uni_epel_h32_10_avx2;
+                c->put_hevc_epel_uni[8][0][1] = ff_hevc_put_uni_epel_h48_10_avx2;
+                c->put_hevc_epel_uni[9][0][1] = ff_hevc_put_uni_epel_h64_10_avx2;
 
-                c->put_hevc_epel_bi[5][0][1] = ff_hevc_put_hevc_bi_epel_h16_10_avx2;
-                c->put_hevc_epel_bi[6][0][1] = ff_hevc_put_hevc_bi_epel_h24_10_avx2;
-                c->put_hevc_epel_bi[7][0][1] = ff_hevc_put_hevc_bi_epel_h32_10_avx2;
-                c->put_hevc_epel_bi[8][0][1] = ff_hevc_put_hevc_bi_epel_h48_10_avx2;
-                c->put_hevc_epel_bi[9][0][1] = ff_hevc_put_hevc_bi_epel_h64_10_avx2;
+                c->put_hevc_epel_bi[5][0][1] = ff_hevc_put_bi_epel_h16_10_avx2;
+                c->put_hevc_epel_bi[6][0][1] = ff_hevc_put_bi_epel_h24_10_avx2;
+                c->put_hevc_epel_bi[7][0][1] = ff_hevc_put_bi_epel_h32_10_avx2;
+                c->put_hevc_epel_bi[8][0][1] = ff_hevc_put_bi_epel_h48_10_avx2;
+                c->put_hevc_epel_bi[9][0][1] = ff_hevc_put_bi_epel_h64_10_avx2;
 
-                c->put_hevc_epel[5][1][0] = ff_hevc_put_hevc_epel_v16_10_avx2;
-                c->put_hevc_epel[6][1][0] = ff_hevc_put_hevc_epel_v24_10_avx2;
-                c->put_hevc_epel[7][1][0] = ff_hevc_put_hevc_epel_v32_10_avx2;
-                c->put_hevc_epel[8][1][0] = ff_hevc_put_hevc_epel_v48_10_avx2;
-                c->put_hevc_epel[9][1][0] = ff_hevc_put_hevc_epel_v64_10_avx2;
+                c->put_hevc_epel[5][1][0] = ff_hevc_put_epel_v16_10_avx2;
+                c->put_hevc_epel[6][1][0] = ff_hevc_put_epel_v24_10_avx2;
+                c->put_hevc_epel[7][1][0] = ff_hevc_put_epel_v32_10_avx2;
+                c->put_hevc_epel[8][1][0] = ff_hevc_put_epel_v48_10_avx2;
+                c->put_hevc_epel[9][1][0] = ff_hevc_put_epel_v64_10_avx2;
 
-                c->put_hevc_epel_uni[5][1][0] = ff_hevc_put_hevc_uni_epel_v16_10_avx2;
-                c->put_hevc_epel_uni[6][1][0] = ff_hevc_put_hevc_uni_epel_v24_10_avx2;
-                c->put_hevc_epel_uni[7][1][0] = ff_hevc_put_hevc_uni_epel_v32_10_avx2;
-                c->put_hevc_epel_uni[8][1][0] = ff_hevc_put_hevc_uni_epel_v48_10_avx2;
-                c->put_hevc_epel_uni[9][1][0] = ff_hevc_put_hevc_uni_epel_v64_10_avx2;
+                c->put_hevc_epel_uni[5][1][0] = ff_hevc_put_uni_epel_v16_10_avx2;
+                c->put_hevc_epel_uni[6][1][0] = ff_hevc_put_uni_epel_v24_10_avx2;
+                c->put_hevc_epel_uni[7][1][0] = ff_hevc_put_uni_epel_v32_10_avx2;
+                c->put_hevc_epel_uni[8][1][0] = ff_hevc_put_uni_epel_v48_10_avx2;
+                c->put_hevc_epel_uni[9][1][0] = ff_hevc_put_uni_epel_v64_10_avx2;
 
-                c->put_hevc_epel_bi[5][1][0] = ff_hevc_put_hevc_bi_epel_v16_10_avx2;
-                c->put_hevc_epel_bi[6][1][0] = ff_hevc_put_hevc_bi_epel_v24_10_avx2;
-                c->put_hevc_epel_bi[7][1][0] = ff_hevc_put_hevc_bi_epel_v32_10_avx2;
-                c->put_hevc_epel_bi[8][1][0] = ff_hevc_put_hevc_bi_epel_v48_10_avx2;
-                c->put_hevc_epel_bi[9][1][0] = ff_hevc_put_hevc_bi_epel_v64_10_avx2;
+                c->put_hevc_epel_bi[5][1][0] = ff_hevc_put_bi_epel_v16_10_avx2;
+                c->put_hevc_epel_bi[6][1][0] = ff_hevc_put_bi_epel_v24_10_avx2;
+                c->put_hevc_epel_bi[7][1][0] = ff_hevc_put_bi_epel_v32_10_avx2;
+                c->put_hevc_epel_bi[8][1][0] = ff_hevc_put_bi_epel_v48_10_avx2;
+                c->put_hevc_epel_bi[9][1][0] = ff_hevc_put_bi_epel_v64_10_avx2;
 
-                c->put_hevc_epel[5][1][1] = ff_hevc_put_hevc_epel_hv16_10_avx2;
-                c->put_hevc_epel[6][1][1] = ff_hevc_put_hevc_epel_hv24_10_avx2;
-                c->put_hevc_epel[7][1][1] = ff_hevc_put_hevc_epel_hv32_10_avx2;
-                c->put_hevc_epel[8][1][1] = ff_hevc_put_hevc_epel_hv48_10_avx2;
-                c->put_hevc_epel[9][1][1] = ff_hevc_put_hevc_epel_hv64_10_avx2;
+                c->put_hevc_epel[5][1][1] = ff_hevc_put_epel_hv16_10_avx2;
+                c->put_hevc_epel[6][1][1] = ff_hevc_put_epel_hv24_10_avx2;
+                c->put_hevc_epel[7][1][1] = ff_hevc_put_epel_hv32_10_avx2;
+                c->put_hevc_epel[8][1][1] = ff_hevc_put_epel_hv48_10_avx2;
+                c->put_hevc_epel[9][1][1] = ff_hevc_put_epel_hv64_10_avx2;
 
-                c->put_hevc_epel_uni[5][1][1] = ff_hevc_put_hevc_uni_epel_hv16_10_avx2;
-                c->put_hevc_epel_uni[6][1][1] = ff_hevc_put_hevc_uni_epel_hv24_10_avx2;
-                c->put_hevc_epel_uni[7][1][1] = ff_hevc_put_hevc_uni_epel_hv32_10_avx2;
-                c->put_hevc_epel_uni[8][1][1] = ff_hevc_put_hevc_uni_epel_hv48_10_avx2;
-                c->put_hevc_epel_uni[9][1][1] = ff_hevc_put_hevc_uni_epel_hv64_10_avx2;
+                c->put_hevc_epel_uni[5][1][1] = ff_hevc_put_uni_epel_hv16_10_avx2;
+                c->put_hevc_epel_uni[6][1][1] = ff_hevc_put_uni_epel_hv24_10_avx2;
+                c->put_hevc_epel_uni[7][1][1] = ff_hevc_put_uni_epel_hv32_10_avx2;
+                c->put_hevc_epel_uni[8][1][1] = ff_hevc_put_uni_epel_hv48_10_avx2;
+                c->put_hevc_epel_uni[9][1][1] = ff_hevc_put_uni_epel_hv64_10_avx2;
 
-                c->put_hevc_epel_bi[5][1][1] = ff_hevc_put_hevc_bi_epel_hv16_10_avx2;
-                c->put_hevc_epel_bi[6][1][1] = ff_hevc_put_hevc_bi_epel_hv24_10_avx2;
-                c->put_hevc_epel_bi[7][1][1] = ff_hevc_put_hevc_bi_epel_hv32_10_avx2;
-                c->put_hevc_epel_bi[8][1][1] = ff_hevc_put_hevc_bi_epel_hv48_10_avx2;
-                c->put_hevc_epel_bi[9][1][1] = ff_hevc_put_hevc_bi_epel_hv64_10_avx2;
+                c->put_hevc_epel_bi[5][1][1] = ff_hevc_put_bi_epel_hv16_10_avx2;
+                c->put_hevc_epel_bi[6][1][1] = ff_hevc_put_bi_epel_hv24_10_avx2;
+                c->put_hevc_epel_bi[7][1][1] = ff_hevc_put_bi_epel_hv32_10_avx2;
+                c->put_hevc_epel_bi[8][1][1] = ff_hevc_put_bi_epel_hv48_10_avx2;
+                c->put_hevc_epel_bi[9][1][1] = ff_hevc_put_bi_epel_hv64_10_avx2;
 
-                c->put_hevc_qpel[5][0][1] = ff_hevc_put_hevc_qpel_h16_10_avx2;
-                c->put_hevc_qpel[6][0][1] = ff_hevc_put_hevc_qpel_h24_10_avx2;
-                c->put_hevc_qpel[7][0][1] = ff_hevc_put_hevc_qpel_h32_10_avx2;
-                c->put_hevc_qpel[8][0][1] = ff_hevc_put_hevc_qpel_h48_10_avx2;
-                c->put_hevc_qpel[9][0][1] = ff_hevc_put_hevc_qpel_h64_10_avx2;
+                c->put_hevc_qpel[5][0][1] = ff_hevc_put_qpel_h16_10_avx2;
+                c->put_hevc_qpel[6][0][1] = ff_hevc_put_qpel_h24_10_avx2;
+                c->put_hevc_qpel[7][0][1] = ff_hevc_put_qpel_h32_10_avx2;
+                c->put_hevc_qpel[8][0][1] = ff_hevc_put_qpel_h48_10_avx2;
+                c->put_hevc_qpel[9][0][1] = ff_hevc_put_qpel_h64_10_avx2;
 
-                c->put_hevc_qpel_uni[5][0][1] = ff_hevc_put_hevc_uni_qpel_h16_10_avx2;
-                c->put_hevc_qpel_uni[6][0][1] = ff_hevc_put_hevc_uni_qpel_h24_10_avx2;
-                c->put_hevc_qpel_uni[7][0][1] = ff_hevc_put_hevc_uni_qpel_h32_10_avx2;
-                c->put_hevc_qpel_uni[8][0][1] = ff_hevc_put_hevc_uni_qpel_h48_10_avx2;
-                c->put_hevc_qpel_uni[9][0][1] = ff_hevc_put_hevc_uni_qpel_h64_10_avx2;
+                c->put_hevc_qpel_uni[5][0][1] = ff_hevc_put_uni_qpel_h16_10_avx2;
+                c->put_hevc_qpel_uni[6][0][1] = ff_hevc_put_uni_qpel_h24_10_avx2;
+                c->put_hevc_qpel_uni[7][0][1] = ff_hevc_put_uni_qpel_h32_10_avx2;
+                c->put_hevc_qpel_uni[8][0][1] = ff_hevc_put_uni_qpel_h48_10_avx2;
+                c->put_hevc_qpel_uni[9][0][1] = ff_hevc_put_uni_qpel_h64_10_avx2;
 
-                c->put_hevc_qpel_bi[5][0][1] = ff_hevc_put_hevc_bi_qpel_h16_10_avx2;
-                c->put_hevc_qpel_bi[6][0][1] = ff_hevc_put_hevc_bi_qpel_h24_10_avx2;
-                c->put_hevc_qpel_bi[7][0][1] = ff_hevc_put_hevc_bi_qpel_h32_10_avx2;
-                c->put_hevc_qpel_bi[8][0][1] = ff_hevc_put_hevc_bi_qpel_h48_10_avx2;
-                c->put_hevc_qpel_bi[9][0][1] = ff_hevc_put_hevc_bi_qpel_h64_10_avx2;
+                c->put_hevc_qpel_bi[5][0][1] = ff_hevc_put_bi_qpel_h16_10_avx2;
+                c->put_hevc_qpel_bi[6][0][1] = ff_hevc_put_bi_qpel_h24_10_avx2;
+                c->put_hevc_qpel_bi[7][0][1] = ff_hevc_put_bi_qpel_h32_10_avx2;
+                c->put_hevc_qpel_bi[8][0][1] = ff_hevc_put_bi_qpel_h48_10_avx2;
+                c->put_hevc_qpel_bi[9][0][1] = ff_hevc_put_bi_qpel_h64_10_avx2;
 
-                c->put_hevc_qpel[5][1][0] = ff_hevc_put_hevc_qpel_v16_10_avx2;
-                c->put_hevc_qpel[6][1][0] = ff_hevc_put_hevc_qpel_v24_10_avx2;
-                c->put_hevc_qpel[7][1][0] = ff_hevc_put_hevc_qpel_v32_10_avx2;
-                c->put_hevc_qpel[8][1][0] = ff_hevc_put_hevc_qpel_v48_10_avx2;
-                c->put_hevc_qpel[9][1][0] = ff_hevc_put_hevc_qpel_v64_10_avx2;
+                c->put_hevc_qpel[5][1][0] = ff_hevc_put_qpel_v16_10_avx2;
+                c->put_hevc_qpel[6][1][0] = ff_hevc_put_qpel_v24_10_avx2;
+                c->put_hevc_qpel[7][1][0] = ff_hevc_put_qpel_v32_10_avx2;
+                c->put_hevc_qpel[8][1][0] = ff_hevc_put_qpel_v48_10_avx2;
+                c->put_hevc_qpel[9][1][0] = ff_hevc_put_qpel_v64_10_avx2;
 
-                c->put_hevc_qpel_uni[5][1][0] = ff_hevc_put_hevc_uni_qpel_v16_10_avx2;
-                c->put_hevc_qpel_uni[6][1][0] = ff_hevc_put_hevc_uni_qpel_v24_10_avx2;
-                c->put_hevc_qpel_uni[7][1][0] = ff_hevc_put_hevc_uni_qpel_v32_10_avx2;
-                c->put_hevc_qpel_uni[8][1][0] = ff_hevc_put_hevc_uni_qpel_v48_10_avx2;
-                c->put_hevc_qpel_uni[9][1][0] = ff_hevc_put_hevc_uni_qpel_v64_10_avx2;
+                c->put_hevc_qpel_uni[5][1][0] = ff_hevc_put_uni_qpel_v16_10_avx2;
+                c->put_hevc_qpel_uni[6][1][0] = ff_hevc_put_uni_qpel_v24_10_avx2;
+                c->put_hevc_qpel_uni[7][1][0] = ff_hevc_put_uni_qpel_v32_10_avx2;
+                c->put_hevc_qpel_uni[8][1][0] = ff_hevc_put_uni_qpel_v48_10_avx2;
+                c->put_hevc_qpel_uni[9][1][0] = ff_hevc_put_uni_qpel_v64_10_avx2;
 
-                c->put_hevc_qpel_bi[5][1][0] = ff_hevc_put_hevc_bi_qpel_v16_10_avx2;
-                c->put_hevc_qpel_bi[6][1][0] = ff_hevc_put_hevc_bi_qpel_v24_10_avx2;
-                c->put_hevc_qpel_bi[7][1][0] = ff_hevc_put_hevc_bi_qpel_v32_10_avx2;
-                c->put_hevc_qpel_bi[8][1][0] = ff_hevc_put_hevc_bi_qpel_v48_10_avx2;
-                c->put_hevc_qpel_bi[9][1][0] = ff_hevc_put_hevc_bi_qpel_v64_10_avx2;
+                c->put_hevc_qpel_bi[5][1][0] = ff_hevc_put_bi_qpel_v16_10_avx2;
+                c->put_hevc_qpel_bi[6][1][0] = ff_hevc_put_bi_qpel_v24_10_avx2;
+                c->put_hevc_qpel_bi[7][1][0] = ff_hevc_put_bi_qpel_v32_10_avx2;
+                c->put_hevc_qpel_bi[8][1][0] = ff_hevc_put_bi_qpel_v48_10_avx2;
+                c->put_hevc_qpel_bi[9][1][0] = ff_hevc_put_bi_qpel_v64_10_avx2;
 
-                c->put_hevc_qpel[5][1][1] = ff_hevc_put_hevc_qpel_hv16_10_avx2;
-                c->put_hevc_qpel[6][1][1] = ff_hevc_put_hevc_qpel_hv24_10_avx2;
-                c->put_hevc_qpel[7][1][1] = ff_hevc_put_hevc_qpel_hv32_10_avx2;
-                c->put_hevc_qpel[8][1][1] = ff_hevc_put_hevc_qpel_hv48_10_avx2;
-                c->put_hevc_qpel[9][1][1] = ff_hevc_put_hevc_qpel_hv64_10_avx2;
+                c->put_hevc_qpel[5][1][1] = ff_hevc_put_qpel_hv16_10_avx2;
+                c->put_hevc_qpel[6][1][1] = ff_hevc_put_qpel_hv24_10_avx2;
+                c->put_hevc_qpel[7][1][1] = ff_hevc_put_qpel_hv32_10_avx2;
+                c->put_hevc_qpel[8][1][1] = ff_hevc_put_qpel_hv48_10_avx2;
+                c->put_hevc_qpel[9][1][1] = ff_hevc_put_qpel_hv64_10_avx2;
 
-                c->put_hevc_qpel_uni[5][1][1] = ff_hevc_put_hevc_uni_qpel_hv16_10_avx2;
-                c->put_hevc_qpel_uni[6][1][1] = ff_hevc_put_hevc_uni_qpel_hv24_10_avx2;
-                c->put_hevc_qpel_uni[7][1][1] = ff_hevc_put_hevc_uni_qpel_hv32_10_avx2;
-                c->put_hevc_qpel_uni[8][1][1] = ff_hevc_put_hevc_uni_qpel_hv48_10_avx2;
-                c->put_hevc_qpel_uni[9][1][1] = ff_hevc_put_hevc_uni_qpel_hv64_10_avx2;
+                c->put_hevc_qpel_uni[5][1][1] = ff_hevc_put_uni_qpel_hv16_10_avx2;
+                c->put_hevc_qpel_uni[6][1][1] = ff_hevc_put_uni_qpel_hv24_10_avx2;
+                c->put_hevc_qpel_uni[7][1][1] = ff_hevc_put_uni_qpel_hv32_10_avx2;
+                c->put_hevc_qpel_uni[8][1][1] = ff_hevc_put_uni_qpel_hv48_10_avx2;
+                c->put_hevc_qpel_uni[9][1][1] = ff_hevc_put_uni_qpel_hv64_10_avx2;
 
-                c->put_hevc_qpel_bi[5][1][1] = ff_hevc_put_hevc_bi_qpel_hv16_10_avx2;
-                c->put_hevc_qpel_bi[6][1][1] = ff_hevc_put_hevc_bi_qpel_hv24_10_avx2;
-                c->put_hevc_qpel_bi[7][1][1] = ff_hevc_put_hevc_bi_qpel_hv32_10_avx2;
-                c->put_hevc_qpel_bi[8][1][1] = ff_hevc_put_hevc_bi_qpel_hv48_10_avx2;
-                c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_bi_qpel_hv64_10_avx2;
+                c->put_hevc_qpel_bi[5][1][1] = ff_hevc_put_bi_qpel_hv16_10_avx2;
+                c->put_hevc_qpel_bi[6][1][1] = ff_hevc_put_bi_qpel_hv24_10_avx2;
+                c->put_hevc_qpel_bi[7][1][1] = ff_hevc_put_bi_qpel_hv32_10_avx2;
+                c->put_hevc_qpel_bi[8][1][1] = ff_hevc_put_bi_qpel_hv48_10_avx2;
+                c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_bi_qpel_hv64_10_avx2;
             }
             SAO_BAND_INIT(10, avx2);
             SAO_EDGE_INIT(10, avx2);

@@ -716,7 +716,7 @@ SECTION .text
 ; ******************************
 
 %macro HEVC_BI_PEL_PIXELS 2
-cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstride, src2, height
+cglobal hevc_put_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstride, src2, height
     pxor              m2, m2
     movdqa            m5, [pw_bi_%2]
 .loop:
@@ -748,7 +748,7 @@ cglobal hevc_put_hevc_bi_pel_pixels%1_%2, 6, 6, 6, dst, dststride, src, srcstrid
 %define XMM_REGS  8
 %endif
 
-cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, XMM_REGS, dst, dststride, src, srcstride, src2, height, mx, rfilter
+cglobal hevc_put_bi_epel_h%1_%2, 7, 8, XMM_REGS, dst, dststride, src, srcstride, src2, height, mx, rfilter
 %assign %%stride ((%2 + 7)/8)
     movdqa            m6, [pw_bi_%2]
     EPEL_FILTER       %2, mx, m4, m5, rfilter
@@ -771,7 +771,7 @@ cglobal hevc_put_hevc_bi_epel_h%1_%2, 7, 8, XMM_REGS, dst, dststride, src, srcst
 ;                      int height, int mx, int my, int width)
 ; ******************************
 
-cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 8, XMM_REGS, dst, dststride, src, srcstride, src2, height, r3src, my
+cglobal hevc_put_bi_epel_v%1_%2, 6, 8, XMM_REGS, dst, dststride, src, srcstride, src2, height, r3src, my
     movifnidn        myd, mym
     movdqa            m6, [pw_bi_%2]
     sub             srcq, srcstrideq
@@ -800,7 +800,7 @@ cglobal hevc_put_hevc_bi_epel_v%1_%2, 6, 8, XMM_REGS, dst, dststride, src, srcst
 
 %macro HEVC_PUT_HEVC_EPEL_HV 2
 
-cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 9, 16, dst, dststride, src, srcstride, src2, height, mx, my, r3src
+cglobal hevc_put_bi_epel_hv%1_%2, 8, 9, 16, dst, dststride, src, srcstride, src2, height, mx, my, r3src
 %assign %%stride ((%2 + 7)/8)
     sub             srcq, srcstrideq
     EPEL_HV_FILTER    %2
@@ -882,7 +882,7 @@ cglobal hevc_put_hevc_bi_epel_hv%1_%2, 8, 9, 16, dst, dststride, src, srcstride,
 
 %macro HEVC_PUT_HEVC_QPEL 2
 
-cglobal hevc_put_hevc_bi_qpel_h%1_%2, 7, 8, 16 , dst, dststride, src, srcstride, src2, height, mx, rfilter
+cglobal hevc_put_bi_qpel_h%1_%2, 7, 8, 16 , dst, dststride, src, srcstride, src2, height, mx, rfilter
     movdqa            m9, [pw_bi_%2]
     QPEL_FILTER       %2, mx
 .loop:
@@ -909,7 +909,7 @@ cglobal hevc_put_hevc_bi_qpel_h%1_%2, 7, 8, 16 , dst, dststride, src, srcstride,
 ; ******************************
 
 
-cglobal hevc_put_hevc_bi_qpel_v%1_%2, 6, 10, 16, dst, dststride, src, srcstride, src2, height, r3src, my, rfilter
+cglobal hevc_put_bi_qpel_v%1_%2, 6, 10, 16, dst, dststride, src, srcstride, src2, height, r3src, my, rfilter
     movifnidn        myd, mym
     movdqa            m9, [pw_bi_%2]
     lea           r3srcq, [srcstrideq*3]
@@ -939,7 +939,7 @@ cglobal hevc_put_hevc_bi_qpel_v%1_%2, 6, 10, 16, dst, dststride, src, srcstride,
 ; ******************************
 %macro HEVC_PUT_HEVC_QPEL_HV 2
 
-cglobal hevc_put_hevc_bi_qpel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride, src2, height, mx, my, r3src, rfilter
+cglobal hevc_put_bi_qpel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride, src2, height, mx, my, r3src, rfilter
 %if cpuflag(avx2)
 %assign %%shift  4
 %else
@@ -1025,11 +1025,11 @@ cglobal hevc_put_hevc_bi_qpel_hv%1_%2, 8, 10, 16, dst, dststride, src, srcstride
 
 %macro WEIGHTING_FUNCS 2
 %if WIN64 || ARCH_X86_32
-cglobal hevc_put_hevc_uni_w%1_%2, 4, 5, 7, dst, dststride, src, height, denom, wx, ox
+cglobal hevc_put_uni_w%1_%2, 4, 5, 7, dst, dststride, src, height, denom, wx, ox
     mov             r4d, denomm
 %define SHIFT  r4d
 %else
-cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, height, denom, wx, ox
+cglobal hevc_put_uni_w%1_%2, 6, 6, 7, dst, dststride, src, height, denom, wx, ox
 %define SHIFT  denomd
 %endif
     lea           SHIFT, [SHIFT+14-%2]          ; shift = 14 - bitd + denom
@@ -1090,7 +1090,7 @@ cglobal hevc_put_hevc_uni_w%1_%2, 6, 6, 7, dst, dststride, src, height, denom, w
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_hevc_bi_w%1_%2, 4, 6, 10, dst, dststride, src, src2, height, denom, wx0, wx1, ox0, ox1
+cglobal hevc_put_bi_w%1_%2, 4, 6, 10, dst, dststride, src, src2, height, denom, wx0, wx1, ox0, ox1
     movifnidn        r5d, denomm
 %if %1 <= 4
     pxor              m1, m1
@@ -1329,7 +1329,7 @@ HEVC_PUT_HEVC_QPEL_HV 16, 10
 %endmacro
 
 %macro HEVC_PUT_HEVC_QPEL_AVX512ICL 2
-cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 8, dst, src, srcstride, height, mx, tmp
+cglobal hevc_put_qpel_h%1_%2, 5, 6, 8, dst, src, srcstride, height, mx, tmp
     QPEL_FILTER_H   %1, mx, 0, 1, tmp
     QPEL_LOAD_SHUF   2, 3
 .loop:
@@ -1355,7 +1355,7 @@ cglobal hevc_put_hevc_qpel_h%1_%2, 5, 6, 8, dst, src, srcstride, height, mx, tmp
 %endmacro
 
 %macro HEVC_PUT_HEVC_QPEL_HV_AVX512ICL 2
-cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 7, 27, dst, src, srcstride, height, mx, my, tmp
+cglobal hevc_put_qpel_hv%1_%2, 6, 7, 27, dst, src, srcstride, height, mx, my, tmp
 %assign %%shift 6
 %assign %%extra 7
     QPEL_FILTER_H    %1, mx, 0, 1, tmp
