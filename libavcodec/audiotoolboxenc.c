@@ -554,11 +554,13 @@ static int ffat_encode(AVCodecContext *avctx, AVPacket *avpkt,
                                      avctx->frame_size,
                            &avpkt->pts,
                            &avpkt->duration);
+        ret = 0;
     } else if (ret && ret != 1) {
-        av_log(avctx, AV_LOG_WARNING, "Encode error: %i\n", ret);
+        av_log(avctx, AV_LOG_ERROR, "Encode error: %i\n", ret);
+        ret = AVERROR_EXTERNAL;
     }
 
-    return 0;
+    return ret;
 }
 
 static av_cold void ffat_encode_flush(AVCodecContext *avctx)
