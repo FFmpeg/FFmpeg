@@ -84,12 +84,12 @@ static void uavs3d_output_callback(uavs3d_io_frm_t *dec_frame) {
     frm->coded_picture_number   = dec_frame->dtr;
     frm->display_picture_number = dec_frame->ptr;
 
-    if (dec_frame->type < 0 || dec_frame->type >= 4) {
+    if (dec_frame->type < 0 || dec_frame->type >= FF_ARRAY_ELEMS(ff_avs3_image_type)) {
         av_log(NULL, AV_LOG_WARNING, "Error frame type in uavs3d: %d.\n", dec_frame->type);
+    } else {
+        frm->pict_type = ff_avs3_image_type[dec_frame->type];
+        frm->key_frame = (frm->pict_type == AV_PICTURE_TYPE_I);
     }
-
-    frm->pict_type = ff_avs3_image_type[dec_frame->type];
-    frm->key_frame = (frm->pict_type == AV_PICTURE_TYPE_I);
 
     for (i = 0; i < 3; i++) {
         frm_out.width [i] = dec_frame->width[i];
