@@ -953,6 +953,16 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         extradata_size = avctx->extradata_size;
     }
 
+    // Check first bit to determine whether it's AV1CodecConfigurationRecord.
+    // Skip first 4 bytes of AV1CodecConfigurationRecord to keep configOBUs
+    // only, otherwise cuvidParseVideoData report unknown error.
+    if (avctx->codec->id == AV_CODEC_ID_AV1 &&
+            extradata_size > 4 &&
+            extradata[0] & 0x80) {
+        extradata += 4;
+        extradata_size -= 4;
+    }
+
     ctx->cuparse_ext = av_mallocz(sizeof(*ctx->cuparse_ext)
             + FFMAX(extradata_size - (int)sizeof(ctx->cuparse_ext->raw_seqhdr_data), 0));
     if (!ctx->cuparse_ext) {
