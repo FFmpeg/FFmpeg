@@ -653,21 +653,23 @@ error:
 static av_cold int cuvid_decode_end(AVCodecContext *avctx)
 {
     CuvidContext *ctx = avctx->priv_data;
-    AVHWDeviceContext *device_ctx = (AVHWDeviceContext *)ctx->hwdevice->data;
-    AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
-    CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
+    AVHWDeviceContext *device_ctx = ctx->hwdevice ? (AVHWDeviceContext *)ctx->hwdevice->data : NULL;
+    AVCUDADeviceContext *device_hwctx = device_ctx ? device_ctx->hwctx : NULL;
+    CUcontext dummy, cuda_ctx = device_hwctx ? device_hwctx->cuda_ctx : NULL;
 
     av_fifo_freep(&ctx->frame_queue);
 
-    ctx->cudl->cuCtxPushCurrent(cuda_ctx);
+    if (cuda_ctx) {
+        ctx->cudl->cuCtxPushCurrent(cuda_ctx);
 
-    if (ctx->cuparser)
-        ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
+        if (ctx->cuparser)
+            ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
 
-    if (ctx->cudecoder)
-        ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
+        if (ctx->cudecoder)
+            ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
 
-    ctx->cudl->cuCtxPopCurrent(&dummy);
+        ctx->cudl->cuCtxPopCurrent(&dummy);
+    }
 
     ctx->cudl = NULL;
 
