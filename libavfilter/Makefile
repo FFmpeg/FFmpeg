@@ -13,6 +13,7 @@ OBJS = allfilters.o                                                     \
        avfiltergraph.o                                                  \
        buffersink.o                                                     \
        buffersrc.o                                                      \
+       colorspace.o                                                     \
        drawutils.o                                                      \
        fifo.o                                                           \
        formats.o                                                        \
@@ -225,7 +226,7 @@ OBJS-$(CONFIG_COLORHOLD_FILTER)              += vf_colorkey.o
 OBJS-$(CONFIG_COLORLEVELS_FILTER)            += vf_colorlevels.o
 OBJS-$(CONFIG_COLORMAP_FILTER)               += vf_colormap.o
 OBJS-$(CONFIG_COLORMATRIX_FILTER)            += vf_colormatrix.o
-OBJS-$(CONFIG_COLORSPACE_FILTER)             += vf_colorspace.o colorspace.o colorspacedsp.o
+OBJS-$(CONFIG_COLORSPACE_FILTER)             += vf_colorspace.o colorspacedsp.o
 OBJS-$(CONFIG_COLORTEMPERATURE_FILTER)       += vf_colortemperature.o
 OBJS-$(CONFIG_CONVOLUTION_FILTER)            += vf_convolution.o
 OBJS-$(CONFIG_CONVOLUTION_OPENCL_FILTER)     += vf_convolution_opencl.o opencl.o \
@@ -327,8 +328,8 @@ OBJS-$(CONFIG_HWMAP_FILTER)                  += vf_hwmap.o
 OBJS-$(CONFIG_HWUPLOAD_CUDA_FILTER)          += vf_hwupload_cuda.o
 OBJS-$(CONFIG_HWUPLOAD_FILTER)               += vf_hwupload.o
 OBJS-$(CONFIG_HYSTERESIS_FILTER)             += vf_hysteresis.o framesync.o
-OBJS-$(CONFIG_ICCDETECT_FILTER)              += vf_iccdetect.o fflcms2.o colorspace.o
-OBJS-$(CONFIG_ICCGEN_FILTER)                 += vf_iccgen.o fflcms2.o colorspace.o
+OBJS-$(CONFIG_ICCDETECT_FILTER)              += vf_iccdetect.o fflcms2.o
+OBJS-$(CONFIG_ICCGEN_FILTER)                 += vf_iccgen.o fflcms2.o
 OBJS-$(CONFIG_IDENTITY_FILTER)               += vf_identity.o
 OBJS-$(CONFIG_IDET_FILTER)                   += vf_idet.o
 OBJS-$(CONFIG_IL_FILTER)                     += vf_il.o
@@ -492,8 +493,8 @@ OBJS-$(CONFIG_TLUT2_FILTER)                  += vf_lut2.o framesync.o
 OBJS-$(CONFIG_TMEDIAN_FILTER)                += vf_xmedian.o framesync.o
 OBJS-$(CONFIG_TMIDEQUALIZER_FILTER)          += vf_tmidequalizer.o
 OBJS-$(CONFIG_TMIX_FILTER)                   += vf_mix.o framesync.o
-OBJS-$(CONFIG_TONEMAP_FILTER)                += vf_tonemap.o colorspace.o
-OBJS-$(CONFIG_TONEMAP_OPENCL_FILTER)         += vf_tonemap_opencl.o colorspace.o opencl.o \
+OBJS-$(CONFIG_TONEMAP_FILTER)                += vf_tonemap.o
+OBJS-$(CONFIG_TONEMAP_OPENCL_FILTER)         += vf_tonemap_opencl.o opencl.o \
                                                 opencl/tonemap.o opencl/colorspace_common.o
 OBJS-$(CONFIG_TONEMAP_VAAPI_FILTER)          += vf_tonemap_vaapi.o vaapi_vpp.o
 OBJS-$(CONFIG_TPAD_FILTER)                   += vf_tpad.o
