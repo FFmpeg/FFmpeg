@@ -1914,6 +1914,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     end_ebml_master(pb, track_master);
+    ret = 0;
 fail:
     ffio_reset_dyn_buf(mkv->tmp_bc);
 
