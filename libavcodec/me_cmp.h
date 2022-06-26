@@ -80,6 +80,7 @@ typedef struct MECmpContext {
 } MECmpContext;
 
 void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx);
+void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_alpha(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_arm(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx);

@@ -1061,7 +1061,9 @@ av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
     ff_dsputil_init_dwt(c);
 #endif
 
-#if ARCH_ALPHA
+#if ARCH_AARCH64
+    ff_me_cmp_init_aarch64(c, avctx);
+#elif ARCH_ALPHA
     ff_me_cmp_init_alpha(c, avctx);
 #elif ARCH_ARM
     ff_me_cmp_init_arm(c, avctx);

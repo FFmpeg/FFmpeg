@@ -135,6 +135,9 @@ static const struct {
     #if CONFIG_LLVIDENCDSP
         { "llviddspenc", checkasm_check_llviddspenc },
     #endif
+    #if CONFIG_ME_CMP
+        { "motion", checkasm_check_motion },
+    #endif
     #if CONFIG_OPUS_DECODER
         { "opusdsp", checkasm_check_opusdsp },
     #endif
