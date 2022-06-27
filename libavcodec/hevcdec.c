@@ -384,16 +384,16 @@ static int export_stream_params_from_sei(HEVCContext *s)
 {
     AVCodecContext *avctx = s->avctx;
 
-    if (s->sei.a53_caption.buf_ref)
+    if (s->sei.common.a53_caption.buf_ref)
         s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
 
-    if (s->sei.alternative_transfer.present &&
-        av_color_transfer_name(s->sei.alternative_transfer.preferred_transfer_characteristics) &&
-        s->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
-        avctx->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
+    if (s->sei.common.alternative_transfer.present &&
+        av_color_transfer_name(s->sei.common.alternative_transfer.preferred_transfer_characteristics) &&
+        s->sei.common.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
+        avctx->color_trc = s->sei.common.alternative_transfer.preferred_transfer_characteristics;
     }
 
-    if (s->sei.film_grain_characteristics.present)
+    if (s->sei.common.film_grain_characteristics.present)
         avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
 
     return 0;
@@ -2726,18 +2726,18 @@ static int set_side_data(HEVCContext *s)
     AVFrame *out = s->ref->frame;
     int ret;
 
-    if (s->sei.frame_packing.present &&
-        s->sei.frame_packing.arrangement_type >= 3 &&
-        s->sei.frame_packing.arrangement_type <= 5 &&
-        s->sei.frame_packing.content_interpretation_type > 0 &&
-        s->sei.frame_packing.content_interpretation_type < 3) {
+    if (s->sei.common.frame_packing.present &&
+        s->sei.common.frame_packing.arrangement_type >= 3 &&
+        s->sei.common.frame_packing.arrangement_type <= 5 &&
+        s->sei.common.frame_packing.content_interpretation_type > 0 &&
+        s->sei.common.frame_packing.content_interpretation_type < 3) {
         AVStereo3D *stereo = av_stereo3d_create_side_data(out);
         if (!stereo)
             return AVERROR(ENOMEM);
 
-        switch (s->sei.frame_packing.arrangement_type) {
+        switch (s->sei.common.frame_packing.arrangement_type) {
         case 3:
-            if (s->sei.frame_packing.quincunx_subsampling)
+            if (s->sei.common.frame_packing.quincunx_sampling_flag)
                 stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
             else
                 stereo->type = AV_STEREO3D_SIDEBYSIDE;
@@ -2750,21 +2750,21 @@ static int set_side_data(HEVCContext *s)
             break;
         }
 
-        if (s->sei.frame_packing.content_interpretation_type == 2)
+        if (s->sei.common.frame_packing.content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
 
-        if (s->sei.frame_packing.arrangement_type == 5) {
-            if (s->sei.frame_packing.current_frame_is_frame0_flag)
+        if (s->sei.common.frame_packing.arrangement_type == 5) {
+            if (s->sei.common.frame_packing.current_frame_is_frame0_flag)
                 stereo->view = AV_STEREO3D_VIEW_LEFT;
             else
                 stereo->view = AV_STEREO3D_VIEW_RIGHT;
         }
     }
 
-    if (s->sei.display_orientation.present &&
-        (s->sei.display_orientation.anticlockwise_rotation ||
-         s->sei.display_orientation.hflip || s->sei.display_orientation.vflip)) {
-        double angle = s->sei.display_orientation.anticlockwise_rotation * 360 / (double) (1 << 16);
+    if (s->sei.common.display_orientation.present &&
+        (s->sei.common.display_orientation.anticlockwise_rotation ||
+         s->sei.common.display_orientation.hflip || s->sei.common.display_orientation.vflip)) {
+        double angle = s->sei.common.display_orientation.anticlockwise_rotation * 360 / (double) (1 << 16);
         AVFrameSideData *rotation = av_frame_new_side_data(out,
                                                            AV_FRAME_DATA_DISPLAYMATRIX,
                                                            sizeof(int32_t) * 9);
@@ -2779,12 +2779,12 @@ static int set_side_data(HEVCContext *s)
          * an arbitatry axis and O(phi) is the proper rotation by phi)
          * we can create display matrices as desired by negating
          * the degree once for every flip applied. */
-        angle = -angle * (1 - 2 * !!s->sei.display_orientation.hflip)
-                       * (1 - 2 * !!s->sei.display_orientation.vflip);
+        angle = -angle * (1 - 2 * !!s->sei.common.display_orientation.hflip)
+                       * (1 - 2 * !!s->sei.common.display_orientation.vflip);
         av_display_rotation_set((int32_t *)rotation->data, angle);
         av_display_matrix_flip((int32_t *)rotation->data,
-                               s->sei.display_orientation.hflip,
-                               s->sei.display_orientation.vflip);
+                               s->sei.common.display_orientation.hflip,
+                               s->sei.common.display_orientation.vflip);
     }
 
     // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
@@ -2856,8 +2856,8 @@ static int set_side_data(HEVCContext *s)
                metadata->MaxCLL, metadata->MaxFALL);
     }
 
-    if (s->sei.a53_caption.buf_ref) {
-        HEVCSEIA53Caption *a53 = &s->sei.a53_caption;
+    if (s->sei.common.a53_caption.buf_ref) {
+        H2645SEIA53Caption *a53 = &s->sei.common.a53_caption;
 
         AVFrameSideData *sd = av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_A53_CC, a53->buf_ref);
         if (!sd)
@@ -2865,8 +2865,8 @@ static int set_side_data(HEVCContext *s)
         a53->buf_ref = NULL;
     }
 
-    for (int i = 0; i < s->sei.unregistered.nb_buf_ref; i++) {
-        HEVCSEIUnregistered *unreg = &s->sei.unregistered;
+    for (int i = 0; i < s->sei.common.unregistered.nb_buf_ref; i++) {
+        H2645SEIUnregistered *unreg = &s->sei.common.unregistered;
 
         if (unreg->buf_ref[i]) {
             AVFrameSideData *sd = av_frame_new_side_data_from_buf(out,
@@ -2877,7 +2877,7 @@ static int set_side_data(HEVCContext *s)
             unreg->buf_ref[i] = NULL;
         }
     }
-    s->sei.unregistered.nb_buf_ref = 0;
+    s->sei.common.unregistered.nb_buf_ref = 0;
 
     if (s->sei.timecode.present) {
         uint32_t *tc_sd;
@@ -2905,8 +2905,8 @@ static int set_side_data(HEVCContext *s)
         s->sei.timecode.num_clock_ts = 0;
     }
 
-    if (s->sei.film_grain_characteristics.present) {
-        HEVCSEIFilmGrainCharacteristics *fgc = &s->sei.film_grain_characteristics;
+    if (s->sei.common.film_grain_characteristics.present) {
+        H2645SEIFilmGrainCharacteristics *fgc = &s->sei.common.film_grain_characteristics;
         AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(out);
         if (!fgp)
             return AVERROR(ENOMEM);
@@ -2960,8 +2960,8 @@ static int set_side_data(HEVCContext *s)
         fgc->present = fgc->persistence_flag;
     }
 
-    if (s->sei.dynamic_hdr_plus.info) {
-        AVBufferRef *info_ref = av_buffer_ref(s->sei.dynamic_hdr_plus.info);
+    if (s->sei.common.dynamic_hdr_plus.info) {
+        AVBufferRef *info_ref = av_buffer_ref(s->sei.common.dynamic_hdr_plus.info);
         if (!info_ref)
             return AVERROR(ENOMEM);
 
@@ -2982,8 +2982,8 @@ static int set_side_data(HEVCContext *s)
     if ((ret = ff_dovi_attach_side_data(&s->dovi_ctx, out)) < 0)
         return ret;
 
-    if (s->sei.dynamic_hdr_vivid.info) {
-        AVBufferRef *info_ref = av_buffer_ref(s->sei.dynamic_hdr_vivid.info);
+    if (s->sei.common.dynamic_hdr_vivid.info) {
+        AVBufferRef *info_ref = av_buffer_ref(s->sei.common.dynamic_hdr_vivid.info);
         if (!info_ref)
             return AVERROR(ENOMEM);
 
@@ -3029,7 +3029,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->ref->frame->key_frame = IS_IRAP(s);
 
-    s->ref->needs_fg = s->sei.film_grain_characteristics.present &&
+    s->ref->needs_fg = s->sei.common.film_grain_characteristics.present &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
 
@@ -3729,30 +3729,32 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         s->max_ra = INT_MAX;
     }
 
-    ret = av_buffer_replace(&s->sei.a53_caption.buf_ref, s0->sei.a53_caption.buf_ref);
+    ret = av_buffer_replace(&s->sei.common.a53_caption.buf_ref,
+                            s0->sei.common.a53_caption.buf_ref);
     if (ret < 0)
         return ret;
 
-    for (i = 0; i < s->sei.unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&s->sei.unregistered.buf_ref[i]);
-    s->sei.unregistered.nb_buf_ref = 0;
+    for (unsigned i = 0; i < s->sei.common.unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&s->sei.common.unregistered.buf_ref[i]);
+    s->sei.common.unregistered.nb_buf_ref = 0;
 
-    if (s0->sei.unregistered.nb_buf_ref) {
-        ret = av_reallocp_array(&s->sei.unregistered.buf_ref,
-                                s0->sei.unregistered.nb_buf_ref,
-                                sizeof(*s->sei.unregistered.buf_ref));
+    if (s0->sei.common.unregistered.nb_buf_ref) {
+        ret = av_reallocp_array(&s->sei.common.unregistered.buf_ref,
+                                s0->sei.common.unregistered.nb_buf_ref,
+                                sizeof(*s->sei.common.unregistered.buf_ref));
         if (ret < 0)
             return ret;
 
-        for (i = 0; i < s0->sei.unregistered.nb_buf_ref; i++) {
-            s->sei.unregistered.buf_ref[i] = av_buffer_ref(s0->sei.unregistered.buf_ref[i]);
-            if (!s->sei.unregistered.buf_ref[i])
+        for (unsigned i = 0; i < s0->sei.common.unregistered.nb_buf_ref; i++) {
+            s->sei.common.unregistered.buf_ref[i] = av_buffer_ref(s0->sei.common.unregistered.buf_ref[i]);
+            if (!s->sei.common.unregistered.buf_ref[i])
                 return AVERROR(ENOMEM);
-            s->sei.unregistered.nb_buf_ref++;
+            s->sei.common.unregistered.nb_buf_ref++;
         }
     }
 
-    ret = av_buffer_replace(&s->sei.dynamic_hdr_plus.info, s0->sei.dynamic_hdr_plus.info);
+    ret = av_buffer_replace(&s->sei.common.dynamic_hdr_plus.info,
+                            s0->sei.common.dynamic_hdr_plus.info);
     if (ret < 0)
         return ret;
 
@@ -3764,15 +3766,16 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     if (ret < 0)
         return ret;
 
-    ret = av_buffer_replace(&s->sei.dynamic_hdr_vivid.info, s0->sei.dynamic_hdr_vivid.info);
+    ret = av_buffer_replace(&s->sei.common.dynamic_hdr_vivid.info,
+                            s0->sei.common.dynamic_hdr_vivid.info);
     if (ret < 0)
         return ret;
 
-    s->sei.frame_packing        = s0->sei.frame_packing;
-    s->sei.display_orientation  = s0->sei.display_orientation;
+    s->sei.common.frame_packing        = s0->sei.common.frame_packing;
+    s->sei.common.display_orientation  = s0->sei.common.display_orientation;
+    s->sei.common.alternative_transfer = s0->sei.common.alternative_transfer;
     s->sei.mastering_display    = s0->sei.mastering_display;
     s->sei.content_light        = s0->sei.content_light;
-    s->sei.alternative_transfer = s0->sei.alternative_transfer;
 
     ret = export_stream_params_from_sei(s);
     if (ret < 0)

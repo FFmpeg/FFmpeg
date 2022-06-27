@@ -20,6 +20,7 @@
 #define AVCODEC_H264_SEI_H
 
 #include "get_bits.h"
+#include "h2645_sei.h"
 #include "h264_ps.h"
 #include "sei.h"
 
@@ -99,21 +100,6 @@ typedef struct H264SEIPictureTiming {
     int timecode_cnt;
 } H264SEIPictureTiming;
 
-typedef struct H264SEIAFD {
-    int present;
-    uint8_t active_format_description;
-} H264SEIAFD;
-
-typedef struct H264SEIA53Caption {
-    AVBufferRef *buf_ref;
-} H264SEIA53Caption;
-
-typedef struct H264SEIUnregistered {
-    int x264_build;
-    AVBufferRef **buf_ref;
-    int nb_buf_ref;
-} H264SEIUnregistered;
-
 typedef struct H264SEIRecoveryPoint {
     /**
      * recovery_frame_cnt
@@ -130,23 +116,6 @@ typedef struct H264SEIBufferingPeriod {
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 } H264SEIBufferingPeriod;
 
-typedef struct H264SEIFramePacking {
-    int present;
-    int arrangement_id;
-    int arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received
-    H264_SEI_FpaType arrangement_type;
-    int arrangement_repetition_period;
-    int content_interpretation_type;
-    int quincunx_sampling_flag;
-    int current_frame_is_frame0_flag;
-} H264SEIFramePacking;
-
-typedef struct H264SEIDisplayOrientation {
-    int present;
-    int anticlockwise_rotation;
-    int hflip, vflip;
-} H264SEIDisplayOrientation;
-
 typedef struct H264SEIGreenMetaData {
     uint8_t green_metadata_type;
     uint8_t period_type;
@@ -160,44 +129,12 @@ typedef struct H264SEIGreenMetaData {
     uint16_t xsd_metric_value;
 } H264SEIGreenMetaData;
 
-typedef struct H264SEIAlternativeTransfer {
-    int present;
-    int preferred_transfer_characteristics;
-} H264SEIAlternativeTransfer;
-
-typedef struct H264SEIFilmGrainCharacteristics {
-    int present;
-    int model_id;
-    int separate_colour_description_present_flag;
-    int bit_depth_luma;
-    int bit_depth_chroma;
-    int full_range;
-    int color_primaries;
-    int transfer_characteristics;
-    int matrix_coeffs;
-    int blending_mode_id;
-    int log2_scale_factor;
-    int comp_model_present_flag[3];
-    uint16_t num_intensity_intervals[3];
-    uint8_t num_model_values[3];
-    uint8_t intensity_interval_lower_bound[3][256];
-    uint8_t intensity_interval_upper_bound[3][256];
-    int16_t comp_model_value[3][256][6];
-    int repetition_period;
-} H264SEIFilmGrainCharacteristics;
-
 typedef struct H264SEIContext {
+    H2645SEI common;
     H264SEIPictureTiming picture_timing;
-    H264SEIAFD afd;
-    H264SEIA53Caption a53_caption;
-    H264SEIUnregistered unregistered;
     H264SEIRecoveryPoint recovery_point;
     H264SEIBufferingPeriod buffering_period;
-    H264SEIFramePacking frame_packing;
-    H264SEIDisplayOrientation display_orientation;
     H264SEIGreenMetaData green_metadata;
-    H264SEIAlternativeTransfer alternative_transfer;
-    H264SEIFilmGrainCharacteristics film_grain_characteristics;
 } H264SEIContext;
 
 struct H264ParamSets;
@@ -213,7 +150,7 @@ void ff_h264_sei_uninit(H264SEIContext *h);
 /**
  * Get stereo_mode string from the h264 frame_packing_arrangement
  */
-const char *ff_h264_sei_stereo_mode(const H264SEIFramePacking *h);
+const char *ff_h264_sei_stereo_mode(const H2645SEIFramePacking *h);
 
 /**
  * Parse the contents of a picture timing message given an active SPS.

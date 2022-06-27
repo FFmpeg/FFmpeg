@@ -296,8 +296,8 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->recovery_frame        = -1;
     h->frame_recovered       = 0;
     h->poc.prev_frame_num    = -1;
-    h->sei.frame_packing.arrangement_cancel_flag = -1;
-    h->sei.unregistered.x264_build = -1;
+    h->sei.common.frame_packing.arrangement_cancel_flag = -1;
+    h->sei.common.unregistered.x264_build = -1;
 
     h->next_outputed_poc = INT_MIN;
     for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
@@ -852,7 +852,7 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     if (srcp->needs_fg && (ret = av_frame_copy_props(dst, srcp->f)) < 0)
         return ret;
 
-    av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(&h->sei.frame_packing), 0);
+    av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(&h->sei.common.frame_packing), 0);
 
     if (srcp->sei_recovery_frame_cnt == 0)
         dst->key_frame = 1;

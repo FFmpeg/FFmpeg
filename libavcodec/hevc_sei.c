@@ -22,10 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "atsc_a53.h"
 #include "bytestream.h"
-#include "dynamic_hdr10_plus.h"
-#include "dynamic_hdr_vivid.h"
 #include "golomb.h"
 #include "hevc_ps.h"
 #include "hevc_sei.h"
@@ -98,38 +95,6 @@ static int decode_nal_sei_content_light_info(HEVCSEIContentLight *s,
     return  0;
 }
 
-static int decode_nal_sei_frame_packing_arrangement(HEVCSEIFramePacking *s, GetBitContext *gb)
-{
-    get_ue_golomb_long(gb);             // frame_packing_arrangement_id
-    s->present = !get_bits1(gb);
-
-    if (s->present) {
-        s->arrangement_type               = get_bits(gb, 7);
-        s->quincunx_subsampling           = get_bits1(gb);
-        s->content_interpretation_type    = get_bits(gb, 6);
-
-        // spatial_flipping_flag, frame0_flipped_flag, field_views_flag
-        skip_bits(gb, 3);
-        s->current_frame_is_frame0_flag = get_bits1(gb);
-    }
-    return 0;
-}
-
-static int decode_nal_sei_display_orientation(HEVCSEIDisplayOrientation *s, GetBitContext *gb)
-{
-    s->present = !get_bits1(gb);
-
-    if (s->present) {
-        s->hflip = get_bits1(gb);     // hor_flip
-        s->vflip = get_bits1(gb);     // ver_flip
-
-        s->anticlockwise_rotation = get_bits(gb, 16);
-        // skip_bits1(gb);     // display_orientation_persistence_flag
-    }
-
-    return 0;
-}
-
 static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb,
                                      const HEVCParamSets *ps, void *logctx)
 {
@@ -161,182 +126,6 @@ static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb,
     return 0;
 }
 
-static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s,
-                                                      GetByteContext *gb)
-{
-    int ret;
-
-    ret = ff_parse_a53_cc(&s->buf_ref, gb->buffer,
-                          bytestream2_get_bytes_left(gb));
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
-static int decode_nal_sei_user_data_unregistered(HEVCSEIUnregistered *s,
-                                                 GetByteContext *gb)
-{
-    AVBufferRef *buf_ref, **tmp;
-    int size = bytestream2_get_bytes_left(gb);
-
-    if (size < 16 || size >= INT_MAX - 1)
-       return AVERROR_INVALIDDATA;
-
-    tmp = av_realloc_array(s->buf_ref, s->nb_buf_ref + 1, sizeof(*s->buf_ref));
-    if (!tmp)
-        return AVERROR(ENOMEM);
-    s->buf_ref = tmp;
-
-    buf_ref = av_buffer_alloc(size + 1);
-    if (!buf_ref)
-        return AVERROR(ENOMEM);
-
-    bytestream2_get_bufferu(gb, buf_ref->data, size);
-    buf_ref->data[size] = 0;
-    buf_ref->size = size;
-    s->buf_ref[s->nb_buf_ref++] = buf_ref;
-
-    return 0;
-}
-
-static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s,
-                                                        GetByteContext *gb)
-{
-    size_t meta_size;
-    int err;
-    AVDynamicHDRPlus *metadata = av_dynamic_hdr_plus_alloc(&meta_size);
-    if (!metadata)
-        return AVERROR(ENOMEM);
-
-    err = ff_parse_itu_t_t35_to_dynamic_hdr10_plus(metadata, gb->buffer,
-                                                   bytestream2_get_bytes_left(gb));
-    if (err < 0) {
-        av_free(metadata);
-        return err;
-    }
-
-    av_buffer_unref(&s->info);
-    s->info = av_buffer_create((uint8_t *)metadata, meta_size, NULL, NULL, 0);
-    if (!s->info) {
-        av_free(metadata);
-        return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
-static int decode_registered_user_data_dynamic_hdr_vivid(HEVCSEIDynamicHDRVivid *s,
-                                                         GetByteContext *gb)
-{
-    size_t meta_size;
-    int err;
-    AVDynamicHDRVivid *metadata = av_dynamic_hdr_vivid_alloc(&meta_size);
-    if (!metadata)
-        return AVERROR(ENOMEM);
-
-    err = ff_parse_itu_t_t35_to_dynamic_hdr_vivid(metadata,
-                                                  gb->buffer, bytestream2_get_bytes_left(gb));
-    if (err < 0) {
-        av_free(metadata);
-        return err;
-    }
-
-    av_buffer_unref(&s->info);
-    s->info = av_buffer_create((uint8_t *)metadata, meta_size, NULL, NULL, 0);
-    if (!s->info) {
-        av_free(metadata);
-        return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
-static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetByteContext *gb,
-                                                         void *logctx)
-{
-    int country_code, provider_code;
-
-    if (bytestream2_get_bytes_left(gb) < 3)
-        return AVERROR_INVALIDDATA;
-
-    country_code = bytestream2_get_byteu(gb);
-    if (country_code == 0xFF) {
-        if (bytestream2_get_bytes_left(gb) < 3)
-            return AVERROR_INVALIDDATA;
-
-        bytestream2_skipu(gb, 1);
-    }
-
-    if (country_code != 0xB5 && country_code != 0x26) { // usa_country_code and cn_country_code
-        av_log(logctx, AV_LOG_VERBOSE,
-               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = 0x%x)\n",
-               country_code);
-        return 0;
-    }
-
-    provider_code = bytestream2_get_be16u(gb);
-
-    switch (provider_code) {
-    case 0x04: { // cuva_provider_code
-        const uint16_t cuva_provider_oriented_code = 0x0005;
-        uint16_t provider_oriented_code;
-
-        if (bytestream2_get_bytes_left(gb) < 2)
-            return AVERROR_INVALIDDATA;
-
-        provider_oriented_code = bytestream2_get_be16u(gb);
-        if (provider_oriented_code == cuva_provider_oriented_code) {
-            return decode_registered_user_data_dynamic_hdr_vivid(&s->dynamic_hdr_vivid, gb);
-        }
-        break;
-    }
-    case 0x3C: { // smpte_provider_code
-        // A/341 Amendment - 2094-40
-        const uint16_t smpte2094_40_provider_oriented_code = 0x0001;
-        const uint8_t smpte2094_40_application_identifier = 0x04;
-        uint16_t provider_oriented_code;
-        uint8_t application_identifier;
-
-        if (bytestream2_get_bytes_left(gb) < 3)
-            return AVERROR_INVALIDDATA;
-
-        provider_oriented_code = bytestream2_get_be16u(gb);
-        application_identifier = bytestream2_get_byteu(gb);
-        if (provider_oriented_code == smpte2094_40_provider_oriented_code &&
-            application_identifier == smpte2094_40_application_identifier) {
-            return decode_registered_user_data_dynamic_hdr_plus(&s->dynamic_hdr_plus, gb);
-        }
-        break;
-    }
-    case 0x31: { // atsc_provider_code
-        uint32_t user_identifier;
-
-        if (bytestream2_get_bytes_left(gb) < 4)
-            return AVERROR_INVALIDDATA;
-
-        user_identifier = bytestream2_get_be32u(gb);
-        switch (user_identifier) {
-        case MKBETAG('G', 'A', '9', '4'):
-            return decode_registered_user_data_closed_caption(&s->a53_caption, gb);
-        default:
-            av_log(logctx, AV_LOG_VERBOSE,
-                   "Unsupported User Data Registered ITU-T T35 SEI message (atsc user_identifier = 0x%04x)\n",
-                   user_identifier);
-            break;
-        }
-        break;
-    }
-    default:
-        av_log(logctx, AV_LOG_VERBOSE,
-               "Unsupported User Data Registered ITU-T T35 SEI message (provider_code = %d)\n",
-               provider_code);
-        break;
-    }
-
-    return 0;
-}
-
 static int decode_nal_sei_active_parameter_sets(HEVCSEI *s, GetBitContext *gb, void *logctx)
 {
     int num_sps_ids_minus1;
@@ -358,18 +147,6 @@ static int decode_nal_sei_active_parameter_sets(HEVCSEI *s, GetBitContext *gb, v
         return AVERROR_INVALIDDATA;
     }
     s->active_seq_parameter_set_id = active_seq_parameter_set_id;
-
-    return 0;
-}
-
-static int decode_nal_sei_alternative_transfer(HEVCSEIAlternativeTransfer *s,
-                                               GetByteContext *gb)
-{
-    if (bytestream2_get_bytes_left(gb) < 1)
-        return AVERROR_INVALIDDATA;
-
-    s->present = 1;
-    s->preferred_transfer_characteristics = bytestream2_get_byteu(gb);
 
     return 0;
 }
@@ -420,49 +197,6 @@ static int decode_nal_sei_timecode(HEVCSEITimeCode *s, GetBitContext *gb)
     return 0;
 }
 
-static int decode_film_grain_characteristics(HEVCSEIFilmGrainCharacteristics *h,
-                                             GetBitContext *gb)
-{
-    h->present = !get_bits1(gb); // film_grain_characteristics_cancel_flag
-
-    if (h->present) {
-        memset(h, 0, sizeof(*h));
-        h->model_id = get_bits(gb, 2);
-        h->separate_colour_description_present_flag = get_bits1(gb);
-        if (h->separate_colour_description_present_flag) {
-            h->bit_depth_luma = get_bits(gb, 3) + 8;
-            h->bit_depth_chroma = get_bits(gb, 3) + 8;
-            h->full_range = get_bits1(gb);
-            h->color_primaries = get_bits(gb, 8);
-            h->transfer_characteristics = get_bits(gb, 8);
-            h->matrix_coeffs = get_bits(gb, 8);
-        }
-        h->blending_mode_id = get_bits(gb, 2);
-        h->log2_scale_factor = get_bits(gb, 4);
-        for (int c = 0; c < 3; c++)
-            h->comp_model_present_flag[c] = get_bits1(gb);
-        for (int c = 0; c < 3; c++) {
-            if (h->comp_model_present_flag[c]) {
-                h->num_intensity_intervals[c] = get_bits(gb, 8) + 1;
-                h->num_model_values[c] = get_bits(gb, 3) + 1;
-                if (h->num_model_values[c] > 6)
-                    return AVERROR_INVALIDDATA;
-                for (int i = 0; i < h->num_intensity_intervals[c]; i++) {
-                    h->intensity_interval_lower_bound[c][i] = get_bits(gb, 8);
-                    h->intensity_interval_upper_bound[c][i] = get_bits(gb, 8);
-                    for (int j = 0; j < h->num_model_values[c]; j++)
-                        h->comp_model_value[c][i][j] = get_se_golomb_long(gb);
-                }
-            }
-        }
-        h->persistence_flag = get_bits1(gb);
-
-        h->present = 1;
-    }
-
-    return 0;
-}
-
 static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
                                  void *logctx, HEVCSEI *s,
                                  const HEVCParamSets *ps, int type)
@@ -470,10 +204,6 @@ static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
     switch (type) {
     case 256:  // Mismatched value from HM 8.1
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gbyte);
-    case SEI_TYPE_FRAME_PACKING_ARRANGEMENT:
-        return decode_nal_sei_frame_packing_arrangement(&s->frame_packing, gb);
-    case SEI_TYPE_DISPLAY_ORIENTATION:
-        return decode_nal_sei_display_orientation(&s->display_orientation, gb);
     case SEI_TYPE_PIC_TIMING:
         return decode_nal_sei_pic_timing(s, gb, ps, logctx);
     case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
@@ -482,19 +212,15 @@ static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
         return decode_nal_sei_content_light_info(&s->content_light, gbyte);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
-    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
-        return decode_nal_sei_user_data_registered_itu_t_t35(s, gbyte, logctx);
-    case SEI_TYPE_USER_DATA_UNREGISTERED:
-        return decode_nal_sei_user_data_unregistered(&s->unregistered, gbyte);
-    case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
-        return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gbyte);
     case SEI_TYPE_TIME_CODE:
         return decode_nal_sei_timecode(&s->timecode, gb);
-    case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
-        return decode_film_grain_characteristics(&s->film_grain_characteristics, gb);
-    default:
-        av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
-        return 0;
+    default: {
+        int ret = ff_h2645_sei_message_decode(&s->common, type, AV_CODEC_ID_HEVC,
+                                              gb, gbyte, logctx);
+        if (ret == FF_H2645_SEI_MESSAGE_UNHANDLED)
+            av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
+        return ret;
+    }
     }
 }
 
@@ -569,12 +295,12 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
 
 void ff_hevc_reset_sei(HEVCSEI *s)
 {
-    av_buffer_unref(&s->a53_caption.buf_ref);
+    av_buffer_unref(&s->common.a53_caption.buf_ref);
 
-    for (int i = 0; i < s->unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&s->unregistered.buf_ref[i]);
-    s->unregistered.nb_buf_ref = 0;
-    av_freep(&s->unregistered.buf_ref);
-    av_buffer_unref(&s->dynamic_hdr_plus.info);
-    av_buffer_unref(&s->dynamic_hdr_vivid.info);
+    for (int i = 0; i < s->common.unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&s->common.unregistered.buf_ref[i]);
+    s->common.unregistered.nb_buf_ref = 0;
+    av_freep(&s->common.unregistered.buf_ref);
+    av_buffer_unref(&s->common.dynamic_hdr_plus.info);
+    av_buffer_unref(&s->common.dynamic_hdr_vivid.info);
 }

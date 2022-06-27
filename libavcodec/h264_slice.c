@@ -434,29 +434,30 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->frame_recovered       = h1->frame_recovered;
 
-    ret = av_buffer_replace(&h->sei.a53_caption.buf_ref, h1->sei.a53_caption.buf_ref);
+    ret = av_buffer_replace(&h->sei.common.a53_caption.buf_ref,
+                            h1->sei.common.a53_caption.buf_ref);
     if (ret < 0)
         return ret;
 
-    for (i = 0; i < h->sei.unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&h->sei.unregistered.buf_ref[i]);
-    h->sei.unregistered.nb_buf_ref = 0;
+    for (unsigned i = 0; i < h->sei.common.unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&h->sei.common.unregistered.buf_ref[i]);
+    h->sei.common.unregistered.nb_buf_ref = 0;
 
-    if (h1->sei.unregistered.nb_buf_ref) {
-        ret = av_reallocp_array(&h->sei.unregistered.buf_ref,
-                                h1->sei.unregistered.nb_buf_ref,
-                                sizeof(*h->sei.unregistered.buf_ref));
+    if (h1->sei.common.unregistered.nb_buf_ref) {
+        ret = av_reallocp_array(&h->sei.common.unregistered.buf_ref,
+                                h1->sei.common.unregistered.nb_buf_ref,
+                                sizeof(*h->sei.common.unregistered.buf_ref));
         if (ret < 0)
             return ret;
 
-        for (i = 0; i < h1->sei.unregistered.nb_buf_ref; i++) {
-            h->sei.unregistered.buf_ref[i] = av_buffer_ref(h1->sei.unregistered.buf_ref[i]);
-            if (!h->sei.unregistered.buf_ref[i])
+        for (unsigned i = 0; i < h1->sei.common.unregistered.nb_buf_ref; i++) {
+            h->sei.common.unregistered.buf_ref[i] = av_buffer_ref(h1->sei.common.unregistered.buf_ref[i]);
+            if (!h->sei.common.unregistered.buf_ref[i])
                 return AVERROR(ENOMEM);
-            h->sei.unregistered.nb_buf_ref++;
+            h->sei.common.unregistered.nb_buf_ref++;
         }
     }
-    h->sei.unregistered.x264_build = h1->sei.unregistered.x264_build;
+    h->sei.common.unregistered.x264_build = h1->sei.common.unregistered.x264_build;
 
     if (!h->cur_pic_ptr)
         return 0;
@@ -529,7 +530,7 @@ static int h264_frame_start(H264Context *h)
     pic->f->crop_top    = h->crop_top;
     pic->f->crop_bottom = h->crop_bottom;
 
-    pic->needs_fg = h->sei.film_grain_characteristics.present && !h->avctx->hwaccel &&
+    pic->needs_fg = h->sei.common.film_grain_characteristics.present && !h->avctx->hwaccel &&
         !(h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
 
     if ((ret = alloc_picture(h, pic)) < 0)
@@ -580,8 +581,8 @@ static int h264_frame_start(H264Context *h)
 
     h->mb_aff_frame = h->ps.sps->mb_aff && (h->picture_structure == PICT_FRAME);
 
-    if (h->sei.unregistered.x264_build >= 0)
-        h->x264_build = h->sei.unregistered.x264_build;
+    if (h->sei.common.unregistered.x264_build >= 0)
+        h->x264_build = h->sei.common.unregistered.x264_build;
 
     assert(h->cur_pic_ptr->long_ref == 0);
 
@@ -1115,10 +1116,10 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
             }
         }
 
-        if (h->sei.alternative_transfer.present &&
-            av_color_transfer_name(h->sei.alternative_transfer.preferred_transfer_characteristics) &&
-            h->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
-            h->avctx->color_trc = h->sei.alternative_transfer.preferred_transfer_characteristics;
+        if (h->sei.common.alternative_transfer.present &&
+            av_color_transfer_name(h->sei.common.alternative_transfer.preferred_transfer_characteristics) &&
+            h->sei.common.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
+            h->avctx->color_trc = h->sei.common.alternative_transfer.preferred_transfer_characteristics;
         }
     }
     h->avctx->chroma_sample_location = sps->chroma_location;
@@ -1244,11 +1245,11 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.frame_packing.present &&
-        h->sei.frame_packing.arrangement_type <= 6 &&
-        h->sei.frame_packing.content_interpretation_type > 0 &&
-        h->sei.frame_packing.content_interpretation_type < 3) {
-        H264SEIFramePacking *fp = &h->sei.frame_packing;
+    if (h->sei.common.frame_packing.present &&
+        h->sei.common.frame_packing.arrangement_type <= 6 &&
+        h->sei.common.frame_packing.content_interpretation_type > 0 &&
+        h->sei.common.frame_packing.content_interpretation_type < 3) {
+        H2645SEIFramePacking *fp = &h->sei.common.frame_packing;
         AVStereo3D *stereo = av_stereo3d_create_side_data(out);
         if (stereo) {
         switch (fp->arrangement_type) {
@@ -1290,11 +1291,11 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.display_orientation.present &&
-        (h->sei.display_orientation.anticlockwise_rotation ||
-         h->sei.display_orientation.hflip ||
-         h->sei.display_orientation.vflip)) {
-        H264SEIDisplayOrientation *o = &h->sei.display_orientation;
+    if (h->sei.common.display_orientation.present &&
+        (h->sei.common.display_orientation.anticlockwise_rotation ||
+         h->sei.common.display_orientation.hflip ||
+         h->sei.common.display_orientation.vflip)) {
+        H2645SEIDisplayOrientation *o = &h->sei.common.display_orientation;
         double angle = o->anticlockwise_rotation * 360 / (double) (1 << 16);
         AVFrameSideData *rotation = av_frame_new_side_data(out,
                                                            AV_FRAME_DATA_DISPLAYMATRIX,
@@ -1315,18 +1316,18 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.afd.present) {
+    if (h->sei.common.afd.present) {
         AVFrameSideData *sd = av_frame_new_side_data(out, AV_FRAME_DATA_AFD,
                                                      sizeof(uint8_t));
 
         if (sd) {
-            *sd->data = h->sei.afd.active_format_description;
-            h->sei.afd.present = 0;
+            *sd->data = h->sei.common.afd.active_format_description;
+            h->sei.common.afd.present = 0;
         }
     }
 
-    if (h->sei.a53_caption.buf_ref) {
-        H264SEIA53Caption *a53 = &h->sei.a53_caption;
+    if (h->sei.common.a53_caption.buf_ref) {
+        H2645SEIA53Caption *a53 = &h->sei.common.a53_caption;
 
         AVFrameSideData *sd = av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_A53_CC, a53->buf_ref);
         if (!sd)
@@ -1336,8 +1337,8 @@ static int h264_export_frame_props(H264Context *h)
         h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
-    for (int i = 0; i < h->sei.unregistered.nb_buf_ref; i++) {
-        H264SEIUnregistered *unreg = &h->sei.unregistered;
+    for (int i = 0; i < h->sei.common.unregistered.nb_buf_ref; i++) {
+        H2645SEIUnregistered *unreg = &h->sei.common.unregistered;
 
         if (unreg->buf_ref[i]) {
             AVFrameSideData *sd = av_frame_new_side_data_from_buf(out,
@@ -1348,10 +1349,10 @@ static int h264_export_frame_props(H264Context *h)
             unreg->buf_ref[i] = NULL;
         }
     }
-    h->sei.unregistered.nb_buf_ref = 0;
+    h->sei.common.unregistered.nb_buf_ref = 0;
 
-    if (h->sei.film_grain_characteristics.present) {
-        H264SEIFilmGrainCharacteristics *fgc = &h->sei.film_grain_characteristics;
+    if (h->sei.common.film_grain_characteristics.present) {
+        H2645SEIFilmGrainCharacteristics *fgc = &h->sei.common.film_grain_characteristics;
         AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(out);
         if (!fgp)
             return AVERROR(ENOMEM);

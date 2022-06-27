@@ -274,8 +274,8 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
     ff_h264_sei_uninit(&p->sei);
-    p->sei.frame_packing.arrangement_cancel_flag = -1;
-    p->sei.unregistered.x264_build = -1;
+    p->sei.common.frame_packing.arrangement_cancel_flag = -1;
+    p->sei.common.unregistered.x264_build = -1;
 
     if (!buf_size)
         return 0;
@@ -565,7 +565,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             if (sps->timing_info_present_flag) {
                 int64_t den = sps->time_scale;
-                if (p->sei.unregistered.x264_build < 44U)
+                if (p->sei.common.unregistered.x264_build < 44U)
                     den *= 2;
                 av_reduce(&avctx->framerate.den, &avctx->framerate.num,
                           sps->num_units_in_tick * avctx->ticks_per_frame, den, 1 << 30);

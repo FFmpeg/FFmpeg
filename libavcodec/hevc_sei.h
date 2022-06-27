@@ -27,6 +27,7 @@
 
 #include "get_bits.h"
 #include "hevc.h"
+#include "h2645_sei.h"
 #include "sei.h"
 
 
@@ -48,24 +49,9 @@ typedef struct HEVCSEIFramePacking {
     int current_frame_is_frame0_flag;
 } HEVCSEIFramePacking;
 
-typedef struct HEVCSEIDisplayOrientation {
-    int present;
-    int anticlockwise_rotation;
-    int hflip, vflip;
-} HEVCSEIDisplayOrientation;
-
 typedef struct HEVCSEIPictureTiming {
     int picture_struct;
 } HEVCSEIPictureTiming;
-
-typedef struct HEVCSEIA53Caption {
-    AVBufferRef *buf_ref;
-} HEVCSEIA53Caption;
-
-typedef struct HEVCSEIUnregistered {
-    AVBufferRef **buf_ref;
-    int nb_buf_ref;
-} HEVCSEIUnregistered;
 
 typedef struct HEVCSEIMasteringDisplay {
     int present;
@@ -74,14 +60,6 @@ typedef struct HEVCSEIMasteringDisplay {
     uint32_t max_luminance;
     uint32_t min_luminance;
 } HEVCSEIMasteringDisplay;
-
-typedef struct HEVCSEIDynamicHDRPlus {
-    AVBufferRef *info;
-} HEVCSEIDynamicHDRPlus;
-
-typedef struct HEVCSEIDynamicHDRVivid {
-    AVBufferRef *info;
-} HEVCSEIDynamicHDRVivid;
 
 typedef struct HEVCSEIContentLight {
     int present;
@@ -114,42 +92,14 @@ typedef struct HEVCSEITimeCode {
     int32_t  time_offset_value[3];
 } HEVCSEITimeCode;
 
-typedef struct HEVCSEIFilmGrainCharacteristics {
-    int present;
-    int model_id;
-    int separate_colour_description_present_flag;
-    int bit_depth_luma;
-    int bit_depth_chroma;
-    int full_range;
-    int color_primaries;
-    int transfer_characteristics;
-    int matrix_coeffs;
-    int blending_mode_id;
-    int log2_scale_factor;
-    int comp_model_present_flag[3];
-    uint16_t num_intensity_intervals[3];
-    uint8_t num_model_values[3];
-    uint8_t intensity_interval_lower_bound[3][256];
-    uint8_t intensity_interval_upper_bound[3][256];
-    int16_t comp_model_value[3][256][6];
-    int persistence_flag;
-} HEVCSEIFilmGrainCharacteristics;
-
 typedef struct HEVCSEI {
+    H2645SEI common;
     HEVCSEIPictureHash picture_hash;
-    HEVCSEIFramePacking frame_packing;
-    HEVCSEIDisplayOrientation display_orientation;
     HEVCSEIPictureTiming picture_timing;
-    HEVCSEIA53Caption a53_caption;
-    HEVCSEIUnregistered unregistered;
     HEVCSEIMasteringDisplay mastering_display;
-    HEVCSEIDynamicHDRPlus dynamic_hdr_plus;
-    HEVCSEIDynamicHDRVivid dynamic_hdr_vivid;
     HEVCSEIContentLight content_light;
     int active_seq_parameter_set_id;
-    HEVCSEIAlternativeTransfer alternative_transfer;
     HEVCSEITimeCode timecode;
-    HEVCSEIFilmGrainCharacteristics film_grain_characteristics;
 } HEVCSEI;
 
 struct HEVCParamSets;
