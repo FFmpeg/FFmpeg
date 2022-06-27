@@ -2635,6 +2635,9 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             vs->start_pos += vs->size;
             if (hls->key_info_file || hls->encrypt)
                 ret = hls_start(s, vs);
+            if (hls->segment_type == SEGMENT_TYPE_MPEGTS && oc->oformat->priv_class && oc->priv_data) {
+                av_opt_set(oc->priv_data, "mpegts_flags", "resend_headers", 0);
+            }
         } else if (hls->max_seg_size > 0) {
             if (vs->size + vs->start_pos >= hls->max_seg_size) {
                 vs->sequence++;
