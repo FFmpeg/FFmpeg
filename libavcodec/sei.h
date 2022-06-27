@@ -26,7 +26,7 @@
 // The content of the payload data depends on the standard, though
 // many generic parts have the same interpretation everywhere (such as
 // mastering-display-colour-volume and user-data-unregistered).
-enum {
+enum SEIType {
     SEI_TYPE_BUFFERING_PERIOD                            = 0,
     SEI_TYPE_PIC_TIMING                                  = 1,
     SEI_TYPE_PAN_SCAN_RECT                               = 2,
