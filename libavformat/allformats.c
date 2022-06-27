@@ -20,6 +20,9 @@
  */
 
 #include <stdatomic.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "libavformat/internal.h"
 #include "avformat.h"
 

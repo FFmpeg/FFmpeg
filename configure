@@ -2450,7 +2450,9 @@ CONFIG_EXTRA="
     h264parse
     h264pred
     h264qpel
+    h264_sei
     hevcparse
+    hevc_sei
     hpeldsp
     huffman
     huffyuvdsp
@@ -2722,7 +2724,9 @@ faandct_select="fdctdsp"
 faanidct_deps="faan"
 faanidct_select="idctdsp"
 h264dsp_select="startcode"
-hevcparse_select="atsc_a53 golomb"
+h264_sei_select="atsc_a53 golomb"
+hevcparse_select="golomb"
+hevc_sei_select="atsc_a53 golomb"
 frame_thread_encoder_deps="encoders threads"
 inflate_wrapper_deps="zlib"
 intrax8_select="blockdsp wmv2dsp"
@@ -2820,12 +2824,12 @@ h263_encoder_select="h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="atsc_a53 cabac golomb h264chroma h264dsp h264parse h264pred h264qpel videodsp"
+h264_decoder_select="cabac golomb h264chroma h264dsp h264parse h264pred h264qpel h264_sei videodsp"
 h264_decoder_suggest="error_resilience"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
 hap_encoder_select="texturedspenc"
-hevc_decoder_select="atsc_a53 bswapdsp cabac dovi_rpu golomb hevcparse videodsp"
+hevc_decoder_select="bswapdsp cabac dovi_rpu golomb hevcparse hevc_sei videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llvidencdsp"
 hymt_decoder_select="huffyuv_decoder"
@@ -3253,8 +3257,8 @@ av1_qsv_encoder_deps="libvpl"
 # parsers
 aac_parser_select="adts_header mpeg4audio"
 av1_parser_select="cbs_av1"
-h264_parser_select="atsc_a53 golomb h264dsp h264parse"
-hevc_parser_select="hevcparse"
+h264_parser_select="golomb h264dsp h264parse h264_sei"
+hevc_parser_select="hevcparse hevc_sei"
 mpegaudio_parser_select="mpegaudioheader"
 mpeg4video_parser_select="h263dsp mpegvideodec qpeldsp"
 vc1_parser_select="vc1dsp"
