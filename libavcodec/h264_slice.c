@@ -434,29 +434,10 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->frame_recovered       = h1->frame_recovered;
 
-    ret = av_buffer_replace(&h->sei.common.a53_caption.buf_ref,
-                            h1->sei.common.a53_caption.buf_ref);
+    ret = ff_h264_sei_ctx_replace(&h->sei, &h1->sei);
     if (ret < 0)
         return ret;
 
-    for (unsigned i = 0; i < h->sei.common.unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&h->sei.common.unregistered.buf_ref[i]);
-    h->sei.common.unregistered.nb_buf_ref = 0;
-
-    if (h1->sei.common.unregistered.nb_buf_ref) {
-        ret = av_reallocp_array(&h->sei.common.unregistered.buf_ref,
-                                h1->sei.common.unregistered.nb_buf_ref,
-                                sizeof(*h->sei.common.unregistered.buf_ref));
-        if (ret < 0)
-            return ret;
-
-        for (unsigned i = 0; i < h1->sei.common.unregistered.nb_buf_ref; i++) {
-            h->sei.common.unregistered.buf_ref[i] = av_buffer_ref(h1->sei.common.unregistered.buf_ref[i]);
-            if (!h->sei.common.unregistered.buf_ref[i])
-                return AVERROR(ENOMEM);
-            h->sei.common.unregistered.nb_buf_ref++;
-        }
-    }
     h->sei.common.unregistered.x264_build = h1->sei.common.unregistered.x264_build;
 
     if (!h->cur_pic_ptr)

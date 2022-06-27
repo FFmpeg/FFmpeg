@@ -3729,29 +3729,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         s->max_ra = INT_MAX;
     }
 
-    ret = av_buffer_replace(&s->sei.common.a53_caption.buf_ref,
-                            s0->sei.common.a53_caption.buf_ref);
+    ret = ff_h2645_sei_ctx_replace(&s->sei.common, &s0->sei.common);
     if (ret < 0)
         return ret;
-
-    for (unsigned i = 0; i < s->sei.common.unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&s->sei.common.unregistered.buf_ref[i]);
-    s->sei.common.unregistered.nb_buf_ref = 0;
-
-    if (s0->sei.common.unregistered.nb_buf_ref) {
-        ret = av_reallocp_array(&s->sei.common.unregistered.buf_ref,
-                                s0->sei.common.unregistered.nb_buf_ref,
-                                sizeof(*s->sei.common.unregistered.buf_ref));
-        if (ret < 0)
-            return ret;
-
-        for (unsigned i = 0; i < s0->sei.common.unregistered.nb_buf_ref; i++) {
-            s->sei.common.unregistered.buf_ref[i] = av_buffer_ref(s0->sei.common.unregistered.buf_ref[i]);
-            if (!s->sei.common.unregistered.buf_ref[i])
-                return AVERROR(ENOMEM);
-            s->sei.common.unregistered.nb_buf_ref++;
-        }
-    }
 
     ret = av_buffer_replace(&s->sei.common.dynamic_hdr_plus.info,
                             s0->sei.common.dynamic_hdr_plus.info);

@@ -389,3 +389,32 @@ int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
         return FF_H2645_SEI_MESSAGE_UNHANDLED;
     }
 }
+
+int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
+{
+    int ret = av_buffer_replace(&dst->a53_caption.buf_ref,
+                                 src->a53_caption.buf_ref);
+    if (ret < 0)
+        return ret;
+
+    for (unsigned i = 0; i < dst->unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&dst->unregistered.buf_ref[i]);
+    dst->unregistered.nb_buf_ref = 0;
+
+    if (src->unregistered.nb_buf_ref) {
+        ret = av_reallocp_array(&dst->unregistered.buf_ref,
+                                src->unregistered.nb_buf_ref,
+                                sizeof(*dst->unregistered.buf_ref));
+        if (ret < 0)
+            return ret;
+
+        for (unsigned i = 0; i < src->unregistered.nb_buf_ref; i++) {
+            dst->unregistered.buf_ref[i] = av_buffer_ref(src->unregistered.buf_ref[i]);
+            if (!dst->unregistered.buf_ref[i])
+                return AVERROR(ENOMEM);
+            dst->unregistered.nb_buf_ref++;
+        }
+    }
+
+    return 0;
+}
