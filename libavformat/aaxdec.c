@@ -262,6 +262,8 @@ static int aax_read_header(AVFormatContext *s)
 
                 start = avio_rb32(pb);
                 size  = avio_rb32(pb);
+                if (!size)
+                    return AVERROR_INVALIDDATA;
                 a->segments[r].start = start + a->data_offset;
                 a->segments[r].end   = a->segments[r].start + size;
             } else {
