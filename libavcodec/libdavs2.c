@@ -177,6 +177,7 @@ static av_cold int davs2_end(AVCodecContext *avctx)
 
     /* close the decoder */
     if (cad->decoder) {
+        davs2_flush(avctx);
         davs2_decoder_close(cad->decoder);
         cad->decoder = NULL;
     }
