@@ -331,6 +331,12 @@ typedef struct RcOverride{
  * Do not reset ASS ReadOrder field on flush (subtitles decoding)
  */
 #define AV_CODEC_FLAG2_RO_FLUSH_NOOP  (1 << 30)
+/**
+ * Generate/parse ICC profiles on encode/decode, as appropriate for the type of
+ * file. No effect on codecs which cannot contain embedded ICC profiles, or
+ * when compiled without support for lcms2.
+ */
+#define AV_CODEC_FLAG2_ICC_PROFILES   (1U << 31)
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)

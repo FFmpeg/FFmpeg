@@ -14,6 +14,11 @@ libavutil:     2021-04-27
 
 API changes, most recent first:
 
+2022-07-xx - xxxxxxxxx - lavc 59.40.100 - avcodec.h
+  Add the AV_CODEC_FLAG2_ICC_PROFILES flag to AVCodecContext, to enable
+  automatic reading and writing of embedded ICC profiles in image files.
+  The "flags2" option now supports the corresponding flag "icc_profiles".
+
 2022-07-xx - xxxxxxxxxx - lavu 57.30.100 - frame.h
   Add AVFrame.duration, deprecate AVFrame.pkt_duration.
 

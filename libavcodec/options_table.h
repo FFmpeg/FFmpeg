@@ -83,6 +83,7 @@ static const AVOption avcodec_options[] = {
 {"export_mvs", "export motion vectors through frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_EXPORT_MVS}, INT_MIN, INT_MAX, V|D, "flags2"},
 {"skip_manual", "do not skip samples and export skip information as frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_SKIP_MANUAL}, INT_MIN, INT_MAX, A|D, "flags2"},
 {"ass_ro_flush_noop", "do not reset ASS ReadOrder field on flush", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_RO_FLUSH_NOOP}, INT_MIN, INT_MAX, S|D, "flags2"},
+{"icc_profiles", "generate/parse embedded ICC profiles from/to colorimetry tags", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_ICC_PROFILES}, INT_MIN, INT_MAX, S|D, "flags2"},
 {"export_side_data", "Export metadata as side data", OFFSET(export_side_data), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT}, 0, UINT_MAX, A|V|S|D|E, "export_side_data"},
 {"mvs", "export motion vectors through frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_EXPORT_DATA_MVS}, INT_MIN, INT_MAX, V|D, "export_side_data"},
 {"prft", "export Producer Reference Time through packet side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_EXPORT_DATA_PRFT}, INT_MIN, INT_MAX, A|V|S|E, "export_side_data"},
