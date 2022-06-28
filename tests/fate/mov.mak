@@ -17,6 +17,10 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-bbi-elst-starts-b \
            fate-mov-neg-firstpts-discard-frames \
            fate-mov-stream-shorter-than-movie \
+# FIXME: Uncomment these two lines once the test files are uploaded to the fate
+# server.
+#           fate-mov-avif-demux-still-image-1-item \
+#           fate-mov-avif-demux-still-image-multiple-items \
 
 FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-neg-firstpts-discard-vorbis \
@@ -137,6 +141,15 @@ fate-mov-cover-image: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTun
 FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, TTML SUBRIP, MP4 MOV, SRT_DEMUXER TTML_MUXER) += fate-mov-mp4-ttml-stpp fate-mov-mp4-ttml-dfxp
 fate-mov-mp4-ttml-stpp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000" "-map 0 -c copy" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"
 fate-mov-mp4-ttml-dfxp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000 -tag:s dfxp -strict unofficial" "-map 0 -c copy" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"
+
+# FIXME: Uncomment these two tests once the test files are uploaded to the fate
+# server.
+# avif demuxing - still image with 1 item.
+#fate-mov-avif-demux-still-image-1-item: CMD = framemd5 -i $(TARGET_SAMPLES)/avif/still_image.avif -c:v copy
+
+# avif demuxing - still image with multiple items. only the primary item will be
+# parsed.
+#fate-mov-avif-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/avif/still_image_exif.avif -c:v copy
 
 # Resulting remux should have:
 # 1. first audio stream with AV_DISPOSITION_HEARING_IMPAIRED

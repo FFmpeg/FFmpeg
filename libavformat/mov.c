@@ -7470,6 +7470,13 @@ static int rb_size(AVIOContext *pb, uint64_t* value, int size)
     return size;
 }
 
+static int mov_read_pitm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    avio_rb32(pb);  // version & flags.
+    c->primary_item_id = avio_rb16(pb);
+    return atom.size;
+}
+
 static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int version, offset_size, length_size, base_offset_size, index_size;
@@ -7526,34 +7533,25 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_PATCHWELCOME;
     }
     item_count = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
-    if (item_count > 1) {
-        // For still AVIF images, we only support one item. Second item will
-        // generally be found for AVIF images with alpha channel. We don't
-        // support them as of now.
-        av_log(c->fc, AV_LOG_ERROR, "iloc: item_count > 1 not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    }
 
     // Populate the necessary fields used by mov_build_index.
-    sc->stsc_count = item_count;
-    sc->stsc_data = av_malloc_array(item_count, sizeof(*sc->stsc_data));
+    sc->stsc_count = 1;
+    sc->stsc_data = av_malloc_array(1, sizeof(*sc->stsc_data));
     if (!sc->stsc_data)
         return AVERROR(ENOMEM);
     sc->stsc_data[0].first = 1;
     sc->stsc_data[0].count = 1;
     sc->stsc_data[0].id = 1;
-    sc->chunk_count = item_count;
-    sc->chunk_offsets =
-        av_malloc_array(item_count, sizeof(*sc->chunk_offsets));
+    sc->chunk_count = 1;
+    sc->chunk_offsets = av_malloc_array(1, sizeof(*sc->chunk_offsets));
     if (!sc->chunk_offsets)
         return AVERROR(ENOMEM);
-    sc->sample_count = item_count;
-    sc->sample_sizes =
-        av_malloc_array(item_count, sizeof(*sc->sample_sizes));
+    sc->sample_count = 1;
+    sc->sample_sizes = av_malloc_array(1, sizeof(*sc->sample_sizes));
     if (!sc->sample_sizes)
         return AVERROR(ENOMEM);
-    sc->stts_count = item_count;
-    sc->stts_data = av_malloc_array(item_count, sizeof(*sc->stts_data));
+    sc->stts_count = 1;
+    sc->stts_data = av_malloc_array(1, sizeof(*sc->stts_data));
     if (!sc->stts_data)
         return AVERROR(ENOMEM);
     sc->stts_data[0].count = 1;
@@ -7561,7 +7559,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->stts_data[0].duration = 0;
 
     for (int i = 0; i < item_count; i++) {
-        (version < 2) ? avio_rb16(pb) : avio_rb32(pb);  // item_id;
+        int item_id = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
         if (version > 0)
             avio_rb16(pb);  // construction_method.
         avio_rb16(pb);  // data_reference_index.
@@ -7577,8 +7575,10 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (rb_size(pb, &extent_offset, offset_size) < 0 ||
                 rb_size(pb, &extent_length, length_size) < 0)
                 return AVERROR_INVALIDDATA;
-            sc->sample_sizes[0] = extent_length;
-            sc->chunk_offsets[0] = base_offset + extent_offset;
+            if (item_id == c->primary_item_id) {
+                sc->sample_sizes[0] = extent_length;
+                sc->chunk_offsets[0] = base_offset + extent_offset;
+            }
         }
     }
 
@@ -7696,6 +7696,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('S','A','N','D'), mov_read_SAND }, /* non diegetic audio box */
 { MKTAG('i','l','o','c'), mov_read_iloc },
 { MKTAG('p','c','m','C'), mov_read_pcmc }, /* PCM configuration box */
+{ MKTAG('p','i','t','m'), mov_read_pitm },
 { 0, NULL }
 };
 
