@@ -154,7 +154,6 @@ static void fweight_row##name(const uint8_t *ssrc, uint8_t *ddst,           \
        unsigned ldiff, rdiff;                                               \
        float sum = srcx;                                                    \
        float wsum = 1.f;                                                    \
-       int l = 0, r = 0;                                                    \
        int srcjx, srcix;                                                    \
                                                                             \
        for (int j = mid - 1, i = mid + 1; j >= 0 && i < size; j--, i++) {   \
@@ -165,7 +164,6 @@ static void fweight_row##name(const uint8_t *ssrc, uint8_t *ddst,           \
            if (ldiff > thra ||                                              \
                lsumdiff > thrb)                                             \
                break;                                                       \
-           l++;                                                             \
            sum += srcjx * weights[j];                                       \
            wsum += weights[j];                                              \
                                                                             \
@@ -176,7 +174,6 @@ static void fweight_row##name(const uint8_t *ssrc, uint8_t *ddst,           \
            if (rdiff > thra ||                                              \
                rsumdiff > thrb)                                             \
                break;                                                       \
-           r++;                                                             \
            sum += srcix * weights[i];                                       \
            wsum += weights[i];                                              \
        }                                                                    \
@@ -205,7 +202,6 @@ static void fweight_row##name##_serial(const uint8_t *ssrc, uint8_t *ddst,  \
        unsigned ldiff, rdiff;                                               \
        float sum = srcx;                                                    \
        float wsum = 1.f;                                                    \
-       int l = 0, r = 0;                                                    \
        int srcjx, srcix;                                                    \
                                                                             \
        for (int j = mid - 1; j >= 0; j--) {                                 \
@@ -216,7 +212,6 @@ static void fweight_row##name##_serial(const uint8_t *ssrc, uint8_t *ddst,  \
            if (ldiff > thra ||                                              \
                lsumdiff > thrb)                                             \
                break;                                                       \
-           l++;                                                             \
            sum += srcjx * weights[j];                                       \
            wsum += weights[j];                                              \
        }                                                                    \
@@ -229,7 +224,6 @@ static void fweight_row##name##_serial(const uint8_t *ssrc, uint8_t *ddst,  \
            if (rdiff > thra ||                                              \
                rsumdiff > thrb)                                             \
                break;                                                       \
-           r++;                                                             \
            sum += srcix * weights[i];                                       \
            wsum += weights[i];                                              \
        }                                                                    \
