@@ -1727,7 +1727,8 @@ const FFCodec ff_apng_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
-                      FF_CODEC_CAP_ALLOCATE_PROGRESS,
+                      FF_CODEC_CAP_ALLOCATE_PROGRESS |
+                      FF_CODEC_CAP_ICC_PROFILES,
 };
 #endif
 
@@ -1744,6 +1745,7 @@ const FFCodec ff_png_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
-                      FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP,
+                      FF_CODEC_CAP_ALLOCATE_PROGRESS | FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_ICC_PROFILES,
 };
 #endif

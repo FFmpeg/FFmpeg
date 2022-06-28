@@ -3027,7 +3027,9 @@ const FFCodec ff_mjpeg_decoder = {
     .p.priv_class   = &mjpegdec_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
-                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM | FF_CODEC_CAP_SETS_PKT_DTS,
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
+                      FF_CODEC_CAP_SETS_PKT_DTS |
+                      FF_CODEC_CAP_ICC_PROFILES,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_MJPEG_NVDEC_HWACCEL
                         HWACCEL_NVDEC(mjpeg),

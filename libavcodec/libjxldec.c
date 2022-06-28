@@ -456,6 +456,7 @@ const FFCodec ff_libjxl_decoder = {
     .close            = libjxl_decode_close,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
-                        FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP,
+                        FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
+                        FF_CODEC_CAP_ICC_PROFILES,
     .p.wrapper_name   = "libjxl",
 };

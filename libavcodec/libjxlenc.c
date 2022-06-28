@@ -469,7 +469,8 @@ const FFCodec ff_libjxl_encoder = {
     .close            = libjxl_encode_close,
     .p.capabilities   = AV_CODEC_CAP_OTHER_THREADS,
     .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
-                        FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP,
+                        FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
+                        FF_CODEC_CAP_ICC_PROFILES,
     .p.pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64,
