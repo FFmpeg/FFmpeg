@@ -288,13 +288,11 @@ static void tag_tree_code(Jpeg2000EncoderContext *s, Jpeg2000TgtNode *node, int 
 /** update the value in node */
 static void tag_tree_update(Jpeg2000TgtNode *node)
 {
-    int lev = 0;
     while (node->parent){
         if (node->parent->val <= node->val)
             break;
         node->parent->val = node->val;
         node = node->parent;
-        lev++;
     }
 }
 
