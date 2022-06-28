@@ -34,12 +34,11 @@
 static int av_always_inline mlp_thd_probe(const AVProbeData *p, uint32_t sync)
 {
     const uint8_t *buf, *last_buf = p->buf, *end = p->buf + p->buf_size;
-    int frames = 0, valid = 0, size = 0;
+    int valid = 0, size = 0;
     int nsubframes = 0;
 
     for (buf = p->buf; buf + 8 <= end; buf++) {
         if (AV_RB32(buf + 4) == sync) {
-            frames++;
             if (last_buf + size == buf) {
                 valid += 1 + nsubframes / 8;
             }
