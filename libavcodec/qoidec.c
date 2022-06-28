@@ -69,10 +69,9 @@ static int qoi_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     dst = p->data[0];
     len = width * height * channels;
-    for (int n = 0, off_x = 0, off_y = 0; n < len; n += channels, off_x++) {
+    for (int n = 0, off_x = 0; n < len; n += channels, off_x++) {
         if (off_x >= width) {
             off_x = 0;
-            off_y++;
             dst += p->linesize[0];
         }
         if (run > 0) {
