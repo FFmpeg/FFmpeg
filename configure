@@ -3814,7 +3814,7 @@ swresample_suggest="libm libsoxr stdatomic"
 swscale_deps="avutil"
 swscale_suggest="libm stdatomic"
 
-avcodec_extralibs="pthreads_extralibs iconv_extralibs dxva2_extralibs"
+avcodec_extralibs="pthreads_extralibs iconv_extralibs dxva2_extralibs lcms2_extralibs"
 avfilter_extralibs="pthreads_extralibs"
 avutil_extralibs="d3d11va_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
 

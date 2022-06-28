@@ -479,6 +479,10 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_channel_layout_uninit(&avci->initial_ch_layout);
 
+#if CONFIG_LCMS2
+        ff_icc_context_uninit(&avci->icc);
+#endif
+
         av_freep(&avctx->internal);
     }
 

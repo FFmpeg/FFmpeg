@@ -49,6 +49,10 @@
 #include "internal.h"
 #include "thread.h"
 
+#if CONFIG_LCMS2
+# include "fflcms2.h"
+#endif
+
 static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     int ret;
