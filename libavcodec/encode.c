@@ -339,6 +339,7 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
                     return ret;
 
                 avctx->internal->last_audio_frame = 1;
+                return 0;
             } else if (src->nb_samples > avctx->frame_size) {
                 av_log(avctx, AV_LOG_ERROR, "nb_samples (%d) != frame_size (%d)\n", src->nb_samples, avctx->frame_size);
                 return AVERROR(EINVAL);
@@ -346,11 +347,9 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
         }
     }
 
-    if (!dst->data[0]) {
-        ret = av_frame_ref(dst, src);
-        if (ret < 0)
-             return ret;
-    }
+    ret = av_frame_ref(dst, src);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
