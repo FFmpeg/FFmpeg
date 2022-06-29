@@ -1145,6 +1145,7 @@ static int h264_export_frame_props(H264Context *h)
     const SPS *sps = h->ps.sps;
     H264Picture *cur = h->cur_pic_ptr;
     AVFrame *out = cur->f;
+    int ret;
 
     out->interlaced_frame = 0;
     out->repeat_pict      = 0;
@@ -1272,31 +1273,6 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.common.display_orientation.present &&
-        (h->sei.common.display_orientation.anticlockwise_rotation ||
-         h->sei.common.display_orientation.hflip ||
-         h->sei.common.display_orientation.vflip)) {
-        H2645SEIDisplayOrientation *o = &h->sei.common.display_orientation;
-        double angle = o->anticlockwise_rotation * 360 / (double) (1 << 16);
-        AVFrameSideData *rotation = av_frame_new_side_data(out,
-                                                           AV_FRAME_DATA_DISPLAYMATRIX,
-                                                           sizeof(int32_t) * 9);
-        if (rotation) {
-            /* av_display_rotation_set() expects the angle in the clockwise
-             * direction, hence the first minus.
-             * The below code applies the flips after the rotation, yet
-             * the H.2645 specs require flipping to be applied first.
-             * Because of R O(phi) = O(-phi) R (where R is flipping around
-             * an arbitatry axis and O(phi) is the proper rotation by phi)
-             * we can create display matrices as desired by negating
-             * the degree once for every flip applied. */
-            angle = -angle * (1 - 2 * !!o->hflip) * (1 - 2 * !!o->vflip);
-            av_display_rotation_set((int32_t *)rotation->data, angle);
-            av_display_matrix_flip((int32_t *)rotation->data,
-                                   o->hflip, o->vflip);
-        }
-    }
-
     if (h->sei.common.afd.present) {
         AVFrameSideData *sd = av_frame_new_side_data(out, AV_FRAME_DATA_AFD,
                                                      sizeof(uint8_t));
@@ -1307,30 +1283,9 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.common.a53_caption.buf_ref) {
-        H2645SEIA53Caption *a53 = &h->sei.common.a53_caption;
-
-        AVFrameSideData *sd = av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_A53_CC, a53->buf_ref);
-        if (!sd)
-            av_buffer_unref(&a53->buf_ref);
-        a53->buf_ref = NULL;
-
-        h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
-    }
-
-    for (int i = 0; i < h->sei.common.unregistered.nb_buf_ref; i++) {
-        H2645SEIUnregistered *unreg = &h->sei.common.unregistered;
-
-        if (unreg->buf_ref[i]) {
-            AVFrameSideData *sd = av_frame_new_side_data_from_buf(out,
-                    AV_FRAME_DATA_SEI_UNREGISTERED,
-                    unreg->buf_ref[i]);
-            if (!sd)
-                av_buffer_unref(&unreg->buf_ref[i]);
-            unreg->buf_ref[i] = NULL;
-        }
-    }
-    h->sei.common.unregistered.nb_buf_ref = 0;
+    ret = ff_h2645_sei_to_frame(out, &h->sei.common, AV_CODEC_ID_H264, h->avctx);
+    if (ret < 0)
+        return ret;
 
     if (h->sei.common.film_grain_characteristics.present) {
         H2645SEIFilmGrainCharacteristics *fgc = &h->sei.common.film_grain_characteristics;

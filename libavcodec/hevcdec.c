@@ -2761,32 +2761,6 @@ static int set_side_data(HEVCContext *s)
         }
     }
 
-    if (s->sei.common.display_orientation.present &&
-        (s->sei.common.display_orientation.anticlockwise_rotation ||
-         s->sei.common.display_orientation.hflip || s->sei.common.display_orientation.vflip)) {
-        double angle = s->sei.common.display_orientation.anticlockwise_rotation * 360 / (double) (1 << 16);
-        AVFrameSideData *rotation = av_frame_new_side_data(out,
-                                                           AV_FRAME_DATA_DISPLAYMATRIX,
-                                                           sizeof(int32_t) * 9);
-        if (!rotation)
-            return AVERROR(ENOMEM);
-
-        /* av_display_rotation_set() expects the angle in the clockwise
-         * direction, hence the first minus.
-         * The below code applies the flips after the rotation, yet
-         * the H.2645 specs require flipping to be applied first.
-         * Because of R O(phi) = O(-phi) R (where R is flipping around
-         * an arbitatry axis and O(phi) is the proper rotation by phi)
-         * we can create display matrices as desired by negating
-         * the degree once for every flip applied. */
-        angle = -angle * (1 - 2 * !!s->sei.common.display_orientation.hflip)
-                       * (1 - 2 * !!s->sei.common.display_orientation.vflip);
-        av_display_rotation_set((int32_t *)rotation->data, angle);
-        av_display_matrix_flip((int32_t *)rotation->data,
-                               s->sei.common.display_orientation.hflip,
-                               s->sei.common.display_orientation.vflip);
-    }
-
     // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
     // so the side data persists for the entire coded video sequence.
     if (s->sei.mastering_display.present > 0 &&
@@ -2856,28 +2830,9 @@ static int set_side_data(HEVCContext *s)
                metadata->MaxCLL, metadata->MaxFALL);
     }
 
-    if (s->sei.common.a53_caption.buf_ref) {
-        H2645SEIA53Caption *a53 = &s->sei.common.a53_caption;
-
-        AVFrameSideData *sd = av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_A53_CC, a53->buf_ref);
-        if (!sd)
-            av_buffer_unref(&a53->buf_ref);
-        a53->buf_ref = NULL;
-    }
-
-    for (int i = 0; i < s->sei.common.unregistered.nb_buf_ref; i++) {
-        H2645SEIUnregistered *unreg = &s->sei.common.unregistered;
-
-        if (unreg->buf_ref[i]) {
-            AVFrameSideData *sd = av_frame_new_side_data_from_buf(out,
-                    AV_FRAME_DATA_SEI_UNREGISTERED,
-                    unreg->buf_ref[i]);
-            if (!sd)
-                av_buffer_unref(&unreg->buf_ref[i]);
-            unreg->buf_ref[i] = NULL;
-        }
-    }
-    s->sei.common.unregistered.nb_buf_ref = 0;
+    ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, NULL);
+    if (ret < 0)
+        return ret;
 
     if (s->sei.timecode.present) {
         uint32_t *tc_sd;
