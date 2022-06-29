@@ -139,13 +139,13 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             g += p->linesize[0] / 4;
         }
     } else {
-    ptr      = p->data[0];
-    linesize = p->linesize[0];
-    for (i = 0; i < h; i++) {
-        memcpy(bytestream, ptr, n);
-        bytestream += n;
-        ptr        += linesize;
-    }
+        ptr      = p->data[0];
+        linesize = p->linesize[0];
+        for (i = 0; i < h; i++) {
+            memcpy(bytestream, ptr, n);
+            bytestream += n;
+            ptr        += linesize;
+        }
     }
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUV420P || avctx->pix_fmt == AV_PIX_FMT_YUV420P16BE) {
