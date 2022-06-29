@@ -563,7 +563,6 @@ typedef struct HEVCContext {
     // type of the first VCL NAL of the current frame
     enum HEVCNALUnitType first_nal_type;
 
-    uint8_t context_initialized;
     int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;

@@ -3679,7 +3679,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     ff_bswapdsp_init(&s->bdsp);
 
     s->dovi_ctx.logctx = avctx;
-    s->context_initialized = 1;
     s->eos = 0;
 
     ff_hevc_reset_sei(&s->sei);
@@ -3698,12 +3697,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     HEVCContext *s  = dst->priv_data;
     HEVCContext *s0 = src->priv_data;
     int i, ret;
-
-    if (!s->context_initialized) {
-        ret = hevc_init_context(dst);
-        if (ret < 0)
-            return ret;
-    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         ff_hevc_unref_frame(s, &s->DPB[i], ~0);
