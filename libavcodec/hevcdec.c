@@ -2662,6 +2662,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
             res = AVERROR(ENOMEM);
             goto error;
         }
+        s->HEVClcList[i]->logctx = s->avctx;
+        s->HEVClcList[i]->parent = s->sList[i];
     }
 
     offset = (lc->gb.index >> 3);
@@ -3643,6 +3645,8 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->sList = av_mallocz(sizeof(HEVCContext*) * s->threads_number);
     if (!s->HEVClc || !s->HEVClcList || !s->sList)
         return AVERROR(ENOMEM);
+    s->HEVClc->parent = s;
+    s->HEVClc->logctx = avctx;
     s->HEVClcList[0] = s->HEVClc;
     s->sList[0] = s;
 

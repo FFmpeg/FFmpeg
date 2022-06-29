@@ -428,6 +428,9 @@ typedef struct HEVCLocalContext {
 
     uint8_t first_qp_group;
 
+    void *logctx;
+    const struct HEVCContext *parent;
+
     GetBitContext gb;
     CABACContext cc;
 
