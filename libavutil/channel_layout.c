@@ -757,6 +757,10 @@ int av_channel_layout_describe_bprint(const AVChannelLayout *channel_layout,
             if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM &&
                 channel_layout->u.map[i].name[0])
                 av_bprintf(bp, "@%s", channel_layout->u.map[i].name);
+
+            if (!av_bprint_is_complete(bp))
+                return AVERROR(ENOMEM);
+
         }
         if (channel_layout->nb_channels) {
             av_bprintf(bp, ")");
