@@ -2662,8 +2662,6 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
             res = AVERROR(ENOMEM);
             goto error;
         }
-        memcpy(s->sList[i], s, sizeof(HEVCContext));
-        s->sList[i]->HEVClc = s->HEVClcList[i];
     }
 
     offset = (lc->gb.index >> 3);
@@ -2702,10 +2700,10 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     s->data = data;
 
     for (i = 1; i < s->threads_number; i++) {
-        s->sList[i]->HEVClc->first_qp_group = 1;
-        s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
         memcpy(s->sList[i], s, sizeof(HEVCContext));
         s->sList[i]->HEVClc = s->HEVClcList[i];
+        s->sList[i]->HEVClc->first_qp_group = 1;
+        s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
     }
 
     atomic_store(&s->wpp_err, 0);
