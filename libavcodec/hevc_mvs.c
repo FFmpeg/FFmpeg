@@ -40,10 +40,10 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
     { 3, 2, },
 };
 
-void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
+void ff_hevc_set_neighbour_available(HEVCLocalContext *lc, int x0, int y0,
                                      int nPbW, int nPbH)
 {
-    HEVCLocalContext *lc = s->HEVClc;
+    const HEVCContext *const s = lc->parent;
     int x0b = av_mod_uintp2(x0, s->ps.sps->log2_ctb_size);
     int y0b = av_mod_uintp2(y0, s->ps.sps->log2_ctb_size);
 
@@ -62,7 +62,7 @@ void ff_hevc_set_neighbour_available(HEVCContext *s, int x0, int y0,
 /*
  * 6.4.1 Derivation process for z-scan order block availability
  */
-static av_always_inline int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
+static av_always_inline int z_scan_block_avail(const HEVCContext *s, int xCurr, int yCurr,
                               int xN, int yN)
 {
 #define MIN_TB_ADDR_ZS(x, y)                                            \
@@ -84,7 +84,7 @@ static av_always_inline int z_scan_block_avail(HEVCContext *s, int xCurr, int yC
 }
 
 //check if the two luma locations belong to the same motion estimation region
-static av_always_inline int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
+static av_always_inline int is_diff_mer(const HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->ps.pps->log2_parallel_merge_level;
 
@@ -161,11 +161,11 @@ static int check_mvset(Mv *mvLXCol, const Mv *mvCol,
                 refPicList_col, L ## l, temp_col.ref_idx[l])
 
 // derive the motion vectors section 8.5.3.1.8
-static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
+static int derive_temporal_colocated_mvs(const HEVCContext *s, MvField temp_col,
                                          int refIdxLx, Mv *mvLXCol, int X,
                                          int colPic, const RefPicList *refPicList_col)
 {
-    RefPicList *refPicList = s->ref->refPicList;
+    const RefPicList *refPicList = s->ref->refPicList;
 
     if (temp_col.pred_flag == PF_INTRA)
         return 0;
@@ -216,11 +216,11 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
 /*
  * 8.5.3.1.7  temporal luma motion vector prediction
  */
-static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
+static int temporal_luma_motion_vector(const HEVCContext *s, int x0, int y0,
                                        int nPbW, int nPbH, int refIdxLx,
                                        Mv *mvLXCol, int X)
 {
-    MvField *tab_mvf;
+    const MvField *tab_mvf;
     MvField temp_col;
     int x, y, x_pu, y_pu;
     int min_pu_width = s->ps.sps->min_pu_width;
@@ -283,16 +283,16 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 /*
  * 8.5.3.1.2  Derivation process for spatial merging candidates
  */
-static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
+static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCContext *s,
+                                            int x0, int y0,
                                             int nPbW, int nPbH,
                                             int log2_cb_size,
                                             int singleMCLFlag, int part_idx,
                                             int merge_idx,
                                             struct MvField mergecandlist[])
 {
-    HEVCLocalContext *lc   = s->HEVClc;
-    RefPicList *refPicList = s->ref->refPicList;
-    MvField *tab_mvf       = s->ref->tab_mvf;
+    const RefPicList *refPicList = s->ref->refPicList;
+    const MvField *tab_mvf       = s->ref->tab_mvf;
 
     const int min_pu_width = s->ps.sps->min_pu_width;
 
@@ -477,16 +477,16 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 /*
  * 8.5.3.1.1 Derivation process of luma Mvs for merge mode
  */
-void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
+void ff_hevc_luma_mv_merge_mode(HEVCLocalContext *lc, int x0, int y0, int nPbW,
                                 int nPbH, int log2_cb_size, int part_idx,
                                 int merge_idx, MvField *mv)
 {
+    const HEVCContext *const s = lc->parent;
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
     MvField mergecand_list[MRG_MAX_NUM_CANDS];
     int nPbW2 = nPbW;
     int nPbH2 = nPbH;
-    HEVCLocalContext *lc = s->HEVClc;
 
     if (s->ps.pps->log2_parallel_merge_level > 2 && nCS == 8) {
         singleMCLFlag = 1;
@@ -497,8 +497,8 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
         part_idx      = 0;
     }
 
-    ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
-    derive_spatial_merge_candidates(s, x0, y0, nPbW, nPbH, log2_cb_size,
+    ff_hevc_set_neighbour_available(lc, x0, y0, nPbW, nPbH);
+    derive_spatial_merge_candidates(lc, s, x0, y0, nPbW, nPbH, log2_cb_size,
                                     singleMCLFlag, part_idx,
                                     merge_idx, mergecand_list);
 
@@ -510,12 +510,12 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
     *mv = mergecand_list[merge_idx];
 }
 
-static av_always_inline void dist_scale(HEVCContext *s, Mv *mv,
+static av_always_inline void dist_scale(const HEVCContext *s, Mv *mv,
                                         int min_pu_width, int x, int y,
                                         int elist, int ref_idx_curr, int ref_idx)
 {
-    RefPicList *refPicList = s->ref->refPicList;
-    MvField *tab_mvf       = s->ref->tab_mvf;
+    const RefPicList *refPicList = s->ref->refPicList;
+    const MvField *tab_mvf       = s->ref->tab_mvf;
     int ref_pic_elist      = refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]];
     int ref_pic_curr       = refPicList[ref_idx_curr].list[ref_idx];
 
@@ -527,13 +527,13 @@ static av_always_inline void dist_scale(HEVCContext *s, Mv *mv,
     }
 }
 
-static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
+static int mv_mp_mode_mx(const HEVCContext *s, int x, int y, int pred_flag_index,
                          Mv *mv, int ref_idx_curr, int ref_idx)
 {
-    MvField *tab_mvf = s->ref->tab_mvf;
+    const MvField *tab_mvf = s->ref->tab_mvf;
     int min_pu_width = s->ps.sps->min_pu_width;
 
-    RefPicList *refPicList = s->ref->refPicList;
+    const RefPicList *refPicList = s->ref->refPicList;
 
     if (((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) &&
         refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
@@ -543,13 +543,13 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
     return 0;
 }
 
-static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
+static int mv_mp_mode_mx_lt(const HEVCContext *s, int x, int y, int pred_flag_index,
                             Mv *mv, int ref_idx_curr, int ref_idx)
 {
-    MvField *tab_mvf = s->ref->tab_mvf;
+    const MvField *tab_mvf = s->ref->tab_mvf;
     int min_pu_width = s->ps.sps->min_pu_width;
 
-    RefPicList *refPicList = s->ref->refPicList;
+    const RefPicList *refPicList = s->ref->refPicList;
 
     if ((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) {
         int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];
@@ -580,13 +580,13 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
                      (y ## v) >> s->ps.sps->log2_min_pu_size,      \
                      pred, &mx, ref_idx_curr, ref_idx)
 
-void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
+void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, int x0, int y0, int nPbW,
                               int nPbH, int log2_cb_size, int part_idx,
                               int merge_idx, MvField *mv,
                               int mvp_lx_flag, int LX)
 {
-    HEVCLocalContext *lc = s->HEVClc;
-    MvField *tab_mvf = s->ref->tab_mvf;
+    const HEVCContext *const s = lc->parent;
+    const MvField *const tab_mvf = s->ref->tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 1;
     int availableFlagLXB0 = 1;
