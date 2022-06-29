@@ -1138,7 +1138,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                 return AVERROR_INVALIDDATA;
             }
 
-            ff_hevc_set_qPy(s, cb_xBase, cb_yBase, log2_cb_size);
+            ff_hevc_set_qPy(lc, cb_xBase, cb_yBase, log2_cb_size);
         }
 
         if (s->sh.cu_chroma_qp_offset_enabled_flag && cbf_chroma &&
@@ -1432,7 +1432,7 @@ do {                                                                            
                 }
         }
         if (!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_trafo_size);
+            ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_trafo_size);
             if (s->ps.pps->transquant_bypass_enable_flag &&
                 lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_trafo_size);
@@ -1461,7 +1461,7 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     int ret;
 
     if (!s->sh.disable_deblocking_filter_flag)
-        ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+        ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_cb_size);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -2225,7 +2225,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
         intra_prediction_unit_default_value(s, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
-            ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+            ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_cb_size);
     } else {
         int pcm_flag = 0;
 
@@ -2313,13 +2313,13 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
                     return ret;
             } else {
                 if (!s->sh.disable_deblocking_filter_flag)
-                    ff_hevc_deblocking_boundary_strengths(s, x0, y0, log2_cb_size);
+                    ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_cb_size);
             }
         }
     }
 
     if (s->ps.pps->cu_qp_delta_enabled_flag && lc->tu.is_cu_qp_delta_coded == 0)
-        ff_hevc_set_qPy(s, x0, y0, log2_cb_size);
+        ff_hevc_set_qPy(lc, x0, y0, log2_cb_size);
 
     x = y_cb * min_cb_width + x_cb;
     for (y = 0; y < length; y++) {
@@ -2474,6 +2474,7 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
 static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 {
     HEVCContext *s  = avctxt->priv_data;
+    HEVCLocalContext *const lc = s->HEVClc;
     int ctb_size    = 1 << s->ps.sps->log2_ctb_size;
     int more_data   = 1;
     int x_ctb       = 0;
@@ -2522,12 +2523,12 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
 
         ctb_addr_ts++;
         ff_hevc_save_states(s, ctb_addr_ts);
-        ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+        ff_hevc_hls_filters(lc, x_ctb, y_ctb, ctb_size);
     }
 
     if (x_ctb + ctb_size >= s->ps.sps->width &&
         y_ctb + ctb_size >= s->ps.sps->height)
-        ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
+        ff_hevc_hls_filter(lc, x_ctb, y_ctb, ctb_size);
 
     return ctb_addr_ts;
 }
@@ -2594,7 +2595,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
         ff_hevc_save_states(s, ctb_addr_ts);
         ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
-        ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
+        ff_hevc_hls_filters(lc, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->ps.sps->width && ctb_row != s->sh.num_entry_point_offsets) {
             atomic_store(&s1->wpp_err, 1);
@@ -2603,7 +2604,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         }
 
         if ((x_ctb+ctb_size) >= s->ps.sps->width && (y_ctb+ctb_size) >= s->ps.sps->height ) {
-            ff_hevc_hls_filter(s, x_ctb, y_ctb, ctb_size);
+            ff_hevc_hls_filter(lc, x_ctb, y_ctb, ctb_size);
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }

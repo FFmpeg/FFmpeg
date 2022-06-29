@@ -676,16 +676,16 @@ void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, int x0, int y0,
                               int nPbW, int nPbH, int log2_cb_size,
                               int part_idx, int merge_idx,
                               MvField *mv, int mvp_lx_flag, int LX);
-void ff_hevc_set_qPy(HEVCContext *s, int xBase, int yBase,
+void ff_hevc_hls_filter(HEVCLocalContext *lc, int x, int y, int ctb_size);
+void ff_hevc_hls_filters(HEVCLocalContext *lc, int x_ctb, int y_ctb, int ctb_size);
+void ff_hevc_set_qPy(HEVCLocalContext *lc, int xBase, int yBase,
                      int log2_cb_size);
-void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
+void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, int x0, int y0,
                                            int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s);
 int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s);
-void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size);
-void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx);

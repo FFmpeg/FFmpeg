@@ -44,7 +44,7 @@ static const uint8_t betatable[52] = {
     38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64                      // QP 38...51
 };
 
-static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
+static int chroma_tc(const HEVCContext *s, int qp_y, int c_idx, int tc_offset)
 {
     static const int qp_c[] = {
         29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37
@@ -73,9 +73,9 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
     return tctable[idxt];
 }
 
-static int get_qPy_pred(HEVCContext *s, int xBase, int yBase, int log2_cb_size)
+static int get_qPy_pred(HEVCLocalContext *lc, const HEVCContext *s,
+                        int xBase, int yBase, int log2_cb_size)
 {
-    HEVCLocalContext *lc     = s->HEVClc;
     int ctb_size_mask        = (1 << s->ps.sps->log2_ctb_size) - 1;
     int MinCuQpDeltaSizeMask = (1 << (s->ps.sps->log2_ctb_size -
                                       s->ps.pps->diff_cu_qp_delta_depth)) - 1;
@@ -116,19 +116,20 @@ static int get_qPy_pred(HEVCContext *s, int xBase, int yBase, int log2_cb_size)
     return (qPy_a + qPy_b + 1) >> 1;
 }
 
-void ff_hevc_set_qPy(HEVCContext *s, int xBase, int yBase, int log2_cb_size)
+void ff_hevc_set_qPy(HEVCLocalContext *lc, int xBase, int yBase, int log2_cb_size)
 {
-    int qp_y = get_qPy_pred(s, xBase, yBase, log2_cb_size);
+    const HEVCContext *const s = lc->parent;
+    int qp_y = get_qPy_pred(lc, s, xBase, yBase, log2_cb_size);
 
-    if (s->HEVClc->tu.cu_qp_delta != 0) {
+    if (lc->tu.cu_qp_delta != 0) {
         int off = s->ps.sps->qp_bd_offset;
-        s->HEVClc->qp_y = FFUMOD(qp_y + s->HEVClc->tu.cu_qp_delta + 52 + 2 * off,
+        lc->qp_y = FFUMOD(qp_y + lc->tu.cu_qp_delta + 52 + 2 * off,
                                  52 + off) - off;
     } else
-        s->HEVClc->qp_y = qp_y;
+        lc->qp_y = qp_y;
 }
 
-static int get_qPy(HEVCContext *s, int xC, int yC)
+static int get_qPy(const HEVCContext *s, int xC, int yC)
 {
     int log2_min_cb_size  = s->ps.sps->log2_min_cb_size;
     int x                 = xC >> log2_min_cb_size;
@@ -197,7 +198,7 @@ static void copy_vert(uint8_t *dst, const uint8_t *src,
     }
 }
 
-static void copy_CTB_to_hv(HEVCContext *s, const uint8_t *src,
+static void copy_CTB_to_hv(const HEVCContext *s, const uint8_t *src,
                            ptrdiff_t stride_src, int x, int y, int width, int height,
                            int c_idx, int x_ctb, int y_ctb)
 {
@@ -217,7 +218,7 @@ static void copy_CTB_to_hv(HEVCContext *s, const uint8_t *src,
     copy_vert(s->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 1) * h + y) << sh), src + ((width - 1) << sh), sh, height, 1 << sh, stride_src);
 }
 
-static void restore_tqb_pixels(HEVCContext *s,
+static void restore_tqb_pixels(const HEVCContext *s,
                                uint8_t *src1, const uint8_t *dst1,
                                ptrdiff_t stride_src, ptrdiff_t stride_dst,
                                int x0, int y0, int width, int height, int c_idx)
@@ -252,10 +253,9 @@ static void restore_tqb_pixels(HEVCContext *s,
 
 #define CTB(tab, x, y) ((tab)[(y) * s->ps.sps->ctb_width + (x)])
 
-static void sao_filter_CTB(HEVCContext *s, int x, int y)
+static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCContext *s, int x, int y)
 {
     static const uint8_t sao_tab[8] = { 0, 1, 2, 2, 3, 3, 4, 4 };
-    HEVCLocalContext *lc = s->HEVClc;
     int c_idx;
     int edges[4];  // 0 left 1 top 2 right 3 bottom
     int x_ctb                = x >> s->ps.sps->log2_ctb_size;
@@ -461,7 +461,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
     }
 }
 
-static int get_pcm(HEVCContext *s, int x, int y)
+static int get_pcm(const HEVCContext *s, int x, int y)
 {
     int log2_min_pu_size = s->ps.sps->log2_min_pu_size;
     int x_pu, y_pu;
@@ -482,7 +482,7 @@ static int get_pcm(HEVCContext *s, int x, int y)
                     (tc_offset & -2),                                   \
                     0, MAX_QP + DEFAULT_INTRA_TC_OFFSET)]
 
-static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
+static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
 {
     uint8_t *src;
     int x, y;
@@ -720,11 +720,11 @@ static int boundary_strength(const HEVCContext *s, const MvField *curr, const Mv
     return 1;
 }
 
-void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
+void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, int x0, int y0,
                                            int log2_trafo_size)
 {
-    HEVCLocalContext *lc = s->HEVClc;
-    MvField *tab_mvf     = s->ref->tab_mvf;
+    const HEVCContext *s = lc->parent;
+    const MvField *tab_mvf = s->ref->tab_mvf;
     int log2_min_pu_size = s->ps.sps->log2_min_pu_size;
     int log2_min_tu_size = s->ps.sps->log2_min_tb_size;
     int min_pu_width     = s->ps.sps->min_pu_width;
@@ -756,8 +756,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int x_pu = (x0 + i) >> log2_min_pu_size;
                 int x_tu = (x0 + i) >> log2_min_tu_size;
-                MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
-                MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+                const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+                const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
                 uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
 
@@ -794,8 +794,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int y_pu      = (y0 + i) >> log2_min_pu_size;
                 int y_tu      = (y0 + i) >> log2_min_tu_size;
-                MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
-                MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
+                const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
+                const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
                 uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
                 uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
 
@@ -810,7 +810,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
     }
 
     if (log2_trafo_size > log2_min_pu_size && !is_intra) {
-        RefPicList *rpl = s->ref->refPicList;
+        const RefPicList *rpl = s->ref->refPicList;
 
         // bs for TU internal horizontal PU boundaries
         for (j = 8; j < (1 << log2_trafo_size); j += 8) {
@@ -819,8 +819,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 
             for (i = 0; i < (1 << log2_trafo_size); i += 4) {
                 int x_pu = (x0 + i) >> log2_min_pu_size;
-                MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
-                MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+                const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+                const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
 
                 bs = boundary_strength(s, curr, top, rpl);
                 s->horizontal_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
@@ -834,8 +834,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
             for (i = 8; i < (1 << log2_trafo_size); i += 8) {
                 int xp_pu = (x0 + i - 1) >> log2_min_pu_size;
                 int xq_pu = (x0 + i)     >> log2_min_pu_size;
-                MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
-                MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
+                const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
+                const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
                 bs = boundary_strength(s, curr, left, rpl);
                 s->vertical_bs[((x0 + i) + (y0 + j) * s->bs_width) >> 2] = bs;
@@ -848,8 +848,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 #undef CB
 #undef CR
 
-void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
+void ff_hevc_hls_filter(HEVCLocalContext *lc, int x, int y, int ctb_size)
 {
+    const HEVCContext *const s = lc->parent;
     int x_end = x >= s->ps.sps->width  - ctb_size;
     int skip = 0;
     if (s->avctx->skip_loop_filter >= AVDISCARD_ALL ||
@@ -867,16 +868,16 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
     if (s->ps.sps->sao_enabled && !skip) {
         int y_end = y >= s->ps.sps->height - ctb_size;
         if (y && x)
-            sao_filter_CTB(s, x - ctb_size, y - ctb_size);
+            sao_filter_CTB(lc, s, x - ctb_size, y - ctb_size);
         if (x && y_end)
-            sao_filter_CTB(s, x - ctb_size, y);
+            sao_filter_CTB(lc, s, x - ctb_size, y);
         if (y && x_end) {
-            sao_filter_CTB(s, x, y - ctb_size);
+            sao_filter_CTB(lc, s, x, y - ctb_size);
             if (s->threads_type & FF_THREAD_FRAME )
                 ff_thread_report_progress(&s->ref->tf, y, 0);
         }
         if (x_end && y_end) {
-            sao_filter_CTB(s, x , y);
+            sao_filter_CTB(lc, s, x , y);
             if (s->threads_type & FF_THREAD_FRAME )
                 ff_thread_report_progress(&s->ref->tf, y + ctb_size, 0);
         }
@@ -884,14 +885,14 @@ void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
         ff_thread_report_progress(&s->ref->tf, y + ctb_size - 4, 0);
 }
 
-void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
+void ff_hevc_hls_filters(HEVCLocalContext *lc, int x_ctb, int y_ctb, int ctb_size)
 {
-    int x_end = x_ctb >= s->ps.sps->width  - ctb_size;
-    int y_end = y_ctb >= s->ps.sps->height - ctb_size;
+    int x_end = x_ctb >= lc->parent->ps.sps->width  - ctb_size;
+    int y_end = y_ctb >= lc->parent->ps.sps->height - ctb_size;
     if (y_ctb && x_ctb)
-        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size, ctb_size);
+        ff_hevc_hls_filter(lc, x_ctb - ctb_size, y_ctb - ctb_size, ctb_size);
     if (y_ctb && x_end)
-        ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size, ctb_size);
+        ff_hevc_hls_filter(lc, x_ctb, y_ctb - ctb_size, ctb_size);
     if (x_ctb && y_end)
-        ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb, ctb_size);
+        ff_hevc_hls_filter(lc, x_ctb - ctb_size, y_ctb, ctb_size);
 }
