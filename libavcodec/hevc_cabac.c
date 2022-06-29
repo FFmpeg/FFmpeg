@@ -1282,7 +1282,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             int scf_offset = 0;
             if (s->ps.sps->transform_skip_context_enabled_flag &&
                 (transform_skip_flag || lc->cu.cu_transquant_bypass_flag)) {
-                ctx_idx_map_p = (uint8_t*) &ctx_idx_map[4 * 16];
+                ctx_idx_map_p = &ctx_idx_map[4 * 16];
                 if (c_idx == 0) {
                     scf_offset = 40;
                 } else {
@@ -1292,9 +1292,9 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 if (c_idx != 0)
                     scf_offset = 27;
                 if (log2_trafo_size == 2) {
-                    ctx_idx_map_p = (uint8_t*) &ctx_idx_map[0];
+                    ctx_idx_map_p = &ctx_idx_map[0];
                 } else {
-                    ctx_idx_map_p = (uint8_t*) &ctx_idx_map[(prev_sig + 1) << 4];
+                    ctx_idx_map_p = &ctx_idx_map[(prev_sig + 1) << 4];
                     if (c_idx == 0) {
                         if ((x_cg > 0 || y_cg > 0))
                             scf_offset += 3;
