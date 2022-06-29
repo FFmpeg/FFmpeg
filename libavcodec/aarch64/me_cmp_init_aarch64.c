@@ -35,5 +35,7 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
     if (have_neon(cpu_flags)) {
         c->pix_abs[0][0] = ff_pix_abs16_neon;
         c->pix_abs[0][3] = ff_pix_abs16_xy2_neon;
+
+        c->sad[0] = ff_pix_abs16_neon;
     }
 }
