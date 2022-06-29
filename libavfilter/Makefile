@@ -420,6 +420,8 @@ OBJS-$(CONFIG_READEIA608_FILTER)             += vf_readeia608.o
 OBJS-$(CONFIG_READVITC_FILTER)               += vf_readvitc.o
 OBJS-$(CONFIG_REALTIME_FILTER)               += f_realtime.o
 OBJS-$(CONFIG_REMAP_FILTER)                  += vf_remap.o framesync.o
+OBJS-$(CONFIG_REMAP_OPENCL_FILTER)           += vf_remap_opencl.o framesync.o opencl.o \
+                                                opencl/remap.o
 OBJS-$(CONFIG_REMOVEGRAIN_FILTER)            += vf_removegrain.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
 OBJS-$(CONFIG_REPEATFIELDS_FILTER)           += vf_repeatfields.o

@@ -399,6 +399,7 @@ extern const AVFilter ff_vf_readeia608;
 extern const AVFilter ff_vf_readvitc;
 extern const AVFilter ff_vf_realtime;
 extern const AVFilter ff_vf_remap;
+extern const AVFilter ff_vf_remap_opencl;
 extern const AVFilter ff_vf_removegrain;
 extern const AVFilter ff_vf_removelogo;
 extern const AVFilter ff_vf_repeatfields;

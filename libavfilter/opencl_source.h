@@ -28,6 +28,7 @@ extern const char *ff_opencl_source_neighbor;
 extern const char *ff_opencl_source_nlmeans;
 extern const char *ff_opencl_source_overlay;
 extern const char *ff_opencl_source_pad;
+extern const char *ff_opencl_source_remap;
 extern const char *ff_opencl_source_tonemap;
 extern const char *ff_opencl_source_transpose;
 extern const char *ff_opencl_source_unsharp;

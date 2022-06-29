@@ -25701,6 +25701,30 @@ __kernel void blend_images(__write_only image2d_t dst,
 
 @end itemize
 
+@section remap_opencl
+
+Remap pixels using 2nd: Xmap and 3rd: Ymap input video stream.
+
+Destination pixel at position (X, Y) will be picked from source (x, y) position
+where x = Xmap(X, Y) and y = Ymap(X, Y). If mapping values are out of range, zero
+value for pixel will be used for destination pixel.
+
+Xmap and Ymap input video streams must be of same dimensions. Output video stream
+will have Xmap/Ymap video stream dimensions.
+Xmap and Ymap input video streams are 32bit float pixel format, single channel.
+
+@table @option
+@item interp
+Specify interpolation used for remapping of pixels.
+Allowed values are @code{near} and @code{linear}.
+Default value is @code{linear}.
+
+@item fill
+Specify the color of the unmapped pixels. For the syntax of this option,
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils
+manual,ffmpeg-utils}. Default color is @code{black}.
+@end table
+
 @section roberts_opencl
 Apply the Roberts cross operator (@url{https://en.wikipedia.org/wiki/Roberts_cross}) to input video stream.
 

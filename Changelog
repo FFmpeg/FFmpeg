@@ -23,6 +23,7 @@ version 5.1:
 - virtualbass audio filter
 - VDPAU AV1 hwaccel
 - PHM image format support
+- remap_opencl filter
 
 
 version 5.0:
