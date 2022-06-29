@@ -25,10 +25,8 @@
 #include "cbs_h264.h"
 #include "cbs_h265.h"
 #include "h264.h"
-#include "h264_sei.h"
 #include "h2645_parse.h"
 #include "hevc.h"
-#include "hevc_sei.h"
 
 
 static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
