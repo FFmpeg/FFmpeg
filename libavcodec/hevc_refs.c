@@ -55,13 +55,14 @@ void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
     }
 }
 
-RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *ref, int x0, int y0)
+const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+                                       const HEVCFrame *ref, int x0, int y0)
 {
     int x_cb         = x0 >> s->ps.sps->log2_ctb_size;
     int y_cb         = y0 >> s->ps.sps->log2_ctb_size;
     int pic_width_cb = s->ps.sps->ctb_width;
     int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
-    return (RefPicList *)ref->rpl_tab[ctb_addr_ts];
+    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
 }
 
 void ff_hevc_clear_refs(HEVCContext *s)

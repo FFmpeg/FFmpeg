@@ -645,8 +645,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     }
 }
 
-static int boundary_strength(HEVCContext *s, MvField *curr, MvField *neigh,
-                             RefPicList *neigh_refPicList)
+static int boundary_strength(const HEVCContext *s, const MvField *curr, const MvField *neigh,
+                             const RefPicList *neigh_refPicList)
 {
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
@@ -734,9 +734,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         boundary_upper = 0;
 
     if (boundary_upper) {
-        RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
-                              ff_hevc_get_ref_list(s, s->ref, x0, y0 - 1) :
-                              s->ref->refPicList;
+        const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
+                                    ff_hevc_get_ref_list(s, s->ref, x0, y0 - 1) :
+                                    s->ref->refPicList;
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
         int yq_pu =  y0      >> log2_min_pu_size;
         int yp_tu = (y0 - 1) >> log2_min_tu_size;
@@ -772,9 +772,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
         boundary_left = 0;
 
     if (boundary_left) {
-        RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
-                               ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0) :
-                               s->ref->refPicList;
+        const RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
+                                     ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0) :
+                                     s->ref->refPicList;
         int xp_pu = (x0 - 1) >> log2_min_pu_size;
         int xq_pu =  x0      >> log2_min_pu_size;
         int xp_tu = (x0 - 1) >> log2_min_tu_size;

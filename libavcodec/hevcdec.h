@@ -584,8 +584,8 @@ void ff_hevc_clear_refs(HEVCContext *s);
  */
 void ff_hevc_flush_dpb(HEVCContext *s);
 
-RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *frame,
-                                 int x0, int y0);
+const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s, const HEVCFrame *frame,
+                                       int x0, int y0);
 
 /**
  * Construct the reference picture sets for the current frame.

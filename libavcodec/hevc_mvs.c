@@ -113,7 +113,7 @@ static av_always_inline int compare_mv_ref_idx(struct MvField A, struct MvField 
     return 0;
 }
 
-static av_always_inline void mv_scale(Mv *dst, Mv *src, int td, int tb)
+static av_always_inline void mv_scale(Mv *dst, const Mv *src, int td, int tb)
 {
     int tx, scale_factor;
 
@@ -127,10 +127,10 @@ static av_always_inline void mv_scale(Mv *dst, Mv *src, int td, int tb)
                            (scale_factor * src->y < 0)) >> 8);
 }
 
-static int check_mvset(Mv *mvLXCol, Mv *mvCol,
+static int check_mvset(Mv *mvLXCol, const Mv *mvCol,
                        int colPic, int poc,
-                       RefPicList *refPicList, int X, int refIdxLx,
-                       RefPicList *refPicList_col, int listCol, int refidxCol)
+                       const RefPicList *refPicList, int X, int refIdxLx,
+                       const RefPicList *refPicList_col, int listCol, int refidxCol)
 {
     int cur_lt = refPicList[X].isLongTerm[refIdxLx];
     int col_lt = refPicList_col[listCol].isLongTerm[refidxCol];
@@ -163,7 +163,7 @@ static int check_mvset(Mv *mvLXCol, Mv *mvCol,
 // derive the motion vectors section 8.5.3.1.8
 static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
                                          int refIdxLx, Mv *mvLXCol, int X,
-                                         int colPic, RefPicList *refPicList_col)
+                                         int colPic, const RefPicList *refPicList_col)
 {
     RefPicList *refPicList = s->ref->refPicList;
 
