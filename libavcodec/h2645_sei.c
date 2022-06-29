@@ -28,6 +28,7 @@
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 
 #include "atsc_a53.h"
 #include "avcodec.h"
@@ -419,10 +420,73 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
     return 0;
 }
 
+static int is_frame_packing_type_valid(SEIFpaType type, enum AVCodecID codec_id)
+{
+    if (IS_H264(codec_id))
+        return type <= SEI_FPA_H264_TYPE_2D &&
+               type >= SEI_FPA_H264_TYPE_CHECKERBOARD;
+    else
+        return type <= SEI_FPA_TYPE_INTERLEAVE_TEMPORAL &&
+               type >= SEI_FPA_TYPE_SIDE_BY_SIDE;
+}
+
 int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
                           enum AVCodecID codec_id,
                           AVCodecContext *avctx)
 {
+    H2645SEIFramePacking *fp = &sei->frame_packing;
+
+    if (fp->present &&
+        is_frame_packing_type_valid(fp->arrangement_type, codec_id) &&
+        fp->content_interpretation_type > 0 &&
+        fp->content_interpretation_type < 3) {
+        AVStereo3D *stereo = av_stereo3d_create_side_data(frame);
+
+        if (!stereo)
+            return AVERROR(ENOMEM);
+
+        switch (fp->arrangement_type) {
+#if CONFIG_H264_SEI
+        case SEI_FPA_H264_TYPE_CHECKERBOARD:
+            stereo->type = AV_STEREO3D_CHECKERBOARD;
+            break;
+        case SEI_FPA_H264_TYPE_INTERLEAVE_COLUMN:
+            stereo->type = AV_STEREO3D_COLUMNS;
+            break;
+        case SEI_FPA_H264_TYPE_INTERLEAVE_ROW:
+            stereo->type = AV_STEREO3D_LINES;
+            break;
+#endif
+        case SEI_FPA_TYPE_SIDE_BY_SIDE:
+            if (fp->quincunx_sampling_flag)
+                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
+            else
+                stereo->type = AV_STEREO3D_SIDEBYSIDE;
+            break;
+        case SEI_FPA_TYPE_TOP_BOTTOM:
+            stereo->type = AV_STEREO3D_TOPBOTTOM;
+            break;
+        case SEI_FPA_TYPE_INTERLEAVE_TEMPORAL:
+            stereo->type = AV_STEREO3D_FRAMESEQUENCE;
+            break;
+#if CONFIG_H264_SEI
+        case SEI_FPA_H264_TYPE_2D:
+            stereo->type = AV_STEREO3D_2D;
+            break;
+#endif
+        }
+
+        if (fp->content_interpretation_type == 2)
+            stereo->flags = AV_STEREO3D_FLAG_INVERT;
+
+        if (fp->arrangement_type == SEI_FPA_TYPE_INTERLEAVE_TEMPORAL) {
+            if (fp->current_frame_is_frame0_flag)
+                stereo->view = AV_STEREO3D_VIEW_LEFT;
+            else
+                stereo->view = AV_STEREO3D_VIEW_RIGHT;
+        }
+    }
+
     if (sei->display_orientation.present &&
         (sei->display_orientation.anticlockwise_rotation ||
          sei->display_orientation.hflip ||

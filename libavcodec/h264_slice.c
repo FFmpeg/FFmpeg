@@ -31,7 +31,6 @@
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 #include "internal.h"
 #include "cabac.h"
@@ -1224,52 +1223,6 @@ static int h264_export_frame_props(H264Context *h)
         } else {
             /* Most likely progressive */
             out->top_field_first = 0;
-        }
-    }
-
-    if (h->sei.common.frame_packing.present &&
-        h->sei.common.frame_packing.arrangement_type <= 6 &&
-        h->sei.common.frame_packing.content_interpretation_type > 0 &&
-        h->sei.common.frame_packing.content_interpretation_type < 3) {
-        H2645SEIFramePacking *fp = &h->sei.common.frame_packing;
-        AVStereo3D *stereo = av_stereo3d_create_side_data(out);
-        if (stereo) {
-        switch (fp->arrangement_type) {
-        case SEI_FPA_H264_TYPE_CHECKERBOARD:
-            stereo->type = AV_STEREO3D_CHECKERBOARD;
-            break;
-        case SEI_FPA_H264_TYPE_INTERLEAVE_COLUMN:
-            stereo->type = AV_STEREO3D_COLUMNS;
-            break;
-        case SEI_FPA_H264_TYPE_INTERLEAVE_ROW:
-            stereo->type = AV_STEREO3D_LINES;
-            break;
-        case SEI_FPA_TYPE_SIDE_BY_SIDE:
-            if (fp->quincunx_sampling_flag)
-                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
-            else
-                stereo->type = AV_STEREO3D_SIDEBYSIDE;
-            break;
-        case SEI_FPA_TYPE_TOP_BOTTOM:
-            stereo->type = AV_STEREO3D_TOPBOTTOM;
-            break;
-        case SEI_FPA_TYPE_INTERLEAVE_TEMPORAL:
-            stereo->type = AV_STEREO3D_FRAMESEQUENCE;
-            break;
-        case SEI_FPA_H264_TYPE_2D:
-            stereo->type = AV_STEREO3D_2D;
-            break;
-        }
-
-        if (fp->content_interpretation_type == 2)
-            stereo->flags = AV_STEREO3D_FLAG_INVERT;
-
-        if (fp->arrangement_type == SEI_FPA_TYPE_INTERLEAVE_TEMPORAL) {
-            if (fp->current_frame_is_frame0_flag)
-                stereo->view = AV_STEREO3D_VIEW_LEFT;
-            else
-                stereo->view = AV_STEREO3D_VIEW_RIGHT;
-        }
         }
     }
 

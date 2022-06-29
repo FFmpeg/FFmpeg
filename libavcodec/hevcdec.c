@@ -35,7 +35,6 @@
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 
 #include "bswapdsp.h"
@@ -2725,41 +2724,6 @@ static int set_side_data(HEVCContext *s)
 {
     AVFrame *out = s->ref->frame;
     int ret;
-
-    if (s->sei.common.frame_packing.present &&
-        s->sei.common.frame_packing.arrangement_type >= 3 &&
-        s->sei.common.frame_packing.arrangement_type <= 5 &&
-        s->sei.common.frame_packing.content_interpretation_type > 0 &&
-        s->sei.common.frame_packing.content_interpretation_type < 3) {
-        AVStereo3D *stereo = av_stereo3d_create_side_data(out);
-        if (!stereo)
-            return AVERROR(ENOMEM);
-
-        switch (s->sei.common.frame_packing.arrangement_type) {
-        case 3:
-            if (s->sei.common.frame_packing.quincunx_sampling_flag)
-                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
-            else
-                stereo->type = AV_STEREO3D_SIDEBYSIDE;
-            break;
-        case 4:
-            stereo->type = AV_STEREO3D_TOPBOTTOM;
-            break;
-        case 5:
-            stereo->type = AV_STEREO3D_FRAMESEQUENCE;
-            break;
-        }
-
-        if (s->sei.common.frame_packing.content_interpretation_type == 2)
-            stereo->flags = AV_STEREO3D_FLAG_INVERT;
-
-        if (s->sei.common.frame_packing.arrangement_type == 5) {
-            if (s->sei.common.frame_packing.current_frame_is_frame0_flag)
-                stereo->view = AV_STEREO3D_VIEW_LEFT;
-            else
-                stereo->view = AV_STEREO3D_VIEW_RIGHT;
-        }
-    }
 
     // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
     // so the side data persists for the entire coded video sequence.
