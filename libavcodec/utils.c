@@ -958,6 +958,11 @@ int ff_thread_can_start_frame(AVCodecContext *avctx)
     return 1;
 }
 
+int ff_slice_thread_init_progress(AVCodecContext *avctx)
+{
+    return 0;
+}
+
 int ff_alloc_entries(AVCodecContext *avctx, int count)
 {
     return 0;
