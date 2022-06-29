@@ -24381,8 +24381,26 @@ the output video frame will be filled. Similarly, videos can overlap each
 other if their position doesn't leave enough space for the full frame of
 adjoining videos.
 
-For 2 inputs, a default layout of @code{0_0|w0_0} is set. In all other cases,
-a layout must be set by the user.
+For 2 inputs, a default layout of @code{0_0|w0_0} (equivalent to
+@code{grid=2x1}) is set. In all other cases, a layout or a grid must be set by
+the user. Either @code{grid} or @code{layout} can be specified at a time.
+Specifying both will result in an error.
+
+@item grid
+Specify a fixed size grid of inputs.
+This option is used to create a fixed size grid of the input streams. Set the
+grid size in the form @code{COLUMNSxROWS}. There must be @code{ROWS * COLUMNS}
+input streams and they will be arranged as a grid with @code{ROWS} rows and
+@code{COLUMNS} columns. When using this option, each input stream within a row
+must have the same height and all the rows must have the same width.
+
+If @code{grid} is set, then @code{inputs} option is ignored and is implicitly
+set to @code{ROWS * COLUMNS}.
+
+For 2 inputs, a default grid of @code{2x1} (equivalent to
+@code{layout=0_0|w0_0}) is set. In all other cases, a layout or a grid must be
+set by the user. Either @code{grid} or @code{layout} can be specified at a time.
+Specifying both will result in an error.
 
 @item shortest
 If set to 1, force the output to terminate when the shortest input
