@@ -57,7 +57,7 @@ typedef struct H2645SEIFramePacking {
     int present;
     int arrangement_id;
     int arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received (currently H.264 only)
-    int arrangement_type;
+    SEIFpaType arrangement_type;
     int arrangement_repetition_period;
     int content_interpretation_type;
     int quincunx_sampling_flag;

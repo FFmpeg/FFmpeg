@@ -40,19 +40,6 @@ typedef enum {
     H264_SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
 } H264_SEI_PicStructType;
 
-/**
- * frame_packing_arrangement types
- */
-typedef enum {
-    H264_SEI_FPA_TYPE_CHECKERBOARD        = 0,
-    H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
-    H264_SEI_FPA_TYPE_INTERLEAVE_ROW      = 2,
-    H264_SEI_FPA_TYPE_SIDE_BY_SIDE        = 3,
-    H264_SEI_FPA_TYPE_TOP_BOTTOM          = 4,
-    H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
-    H264_SEI_FPA_TYPE_2D                  = 6,
-} H264_SEI_FpaType;
-
 typedef struct H264SEITimeCode {
     /* When not continuously receiving full timecodes, we have to reference
        the previous timecode received */
