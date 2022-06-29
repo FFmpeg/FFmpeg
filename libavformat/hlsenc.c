@@ -1550,7 +1550,11 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     double *prog_date_time_p = (hls->flags & HLS_PROGRAM_DATE_TIME) ? &prog_date_time : NULL;
     int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
 
-    hls->version = 3;
+    hls->version = 2;
+    if (!(hls->flags & HLS_ROUND_DURATIONS)) {
+        hls->version = 3;
+    }
+
     if (byterange_mode) {
         hls->version = 4;
         sequence = 0;

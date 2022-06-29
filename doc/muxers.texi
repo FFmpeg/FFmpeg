@@ -1060,6 +1060,8 @@ and remove the @code{#EXT-X-ENDLIST} from the old segment list.
 @item round_durations
 Round the duration info in the playlist file segment info to integer
 values, instead of using floating point.
+If there are no other features requiring higher HLS versions be used,
+then this will allow ffmpeg to output a HLS version 2 m3u8.
 
 @item discont_start
 Add the @code{#EXT-X-DISCONTINUITY} tag to the playlist, before the
