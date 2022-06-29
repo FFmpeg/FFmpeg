@@ -85,18 +85,25 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         c  = 'F';
         n  = avctx->width * 4;
         break;
+    case AV_PIX_FMT_GRAYF32:
+        c  = 'f';
+        n  = avctx->width * 4;
+        break;
     default:
         return -1;
     }
     snprintf(bytestream, bytestream_end - bytestream,
              "P%c\n%d %d\n", c, avctx->width, h1);
     bytestream += strlen(bytestream);
-    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32)
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32 ||
+        avctx->pix_fmt == AV_PIX_FMT_GRAYF32)
         snprintf(bytestream, bytestream_end - bytestream,
-                 "%f\n", avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE ? 1.f: -1.f);
+                 "%f\n", (avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE ||
+                          avctx->pix_fmt == AV_PIX_FMT_GRAYF32BE) ? 1.f: -1.f);
     bytestream += strlen(bytestream);
     if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE &&
-        avctx->pix_fmt != AV_PIX_FMT_GBRPF32) {
+        avctx->pix_fmt != AV_PIX_FMT_GBRPF32 &&
+        avctx->pix_fmt != AV_PIX_FMT_GRAYF32) {
         int maxdepth = (1 << av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth) - 1;
         snprintf(bytestream, bytestream_end - bytestream,
                  "%d\n", maxdepth);
@@ -119,6 +126,17 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             r += p->linesize[2] / 4;
             g += p->linesize[0] / 4;
             b += p->linesize[1] / 4;
+        }
+    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAYF32) {
+        const float *g = (const float *)p->data[0];
+
+        for (int i = 0; i < avctx->height; i++) {
+            for (int j = 0; j < avctx->width; j++) {
+                AV_WN32(bytestream, av_float2int(g[j]));
+                bytestream += 4;
+            }
+
+            g += p->linesize[0] / 4;
         }
     } else {
     ptr      = p->data[0];
@@ -218,6 +236,7 @@ const FFCodec ff_pfm_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_GBRPF32,
+                                                    AV_PIX_FMT_GRAYF32,
                                                     AV_PIX_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
