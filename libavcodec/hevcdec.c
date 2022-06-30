@@ -2544,21 +2544,19 @@ static int hls_slice_data(HEVCContext *s)
     s->avctx->execute(s->avctx, hls_decode_entry, arg, ret , 1, sizeof(int));
     return ret[0];
 }
-static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int job, int self_id)
+static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
+                                int job, int self_id)
 {
-    HEVCContext *s1  = avctxt->priv_data, *s;
-    HEVCLocalContext *lc;
+    HEVCLocalContext *lc = ((HEVCLocalContext**)hevc_lclist)[self_id];
+    const HEVCContext *const s = lc->parent;
+    HEVCContext *s1  = avctxt->priv_data;
     int ctb_size    = 1<< s1->ps.sps->log2_ctb_size;
     int more_data   = 1;
-    int *ctb_row_p    = input_ctb_row;
-    int ctb_row = ctb_row_p[job];
+    int ctb_row = job;
     int ctb_addr_rs = s1->sh.slice_ctb_addr_rs + ctb_row * ((s1->ps.sps->width + ctb_size - 1) >> s1->ps.sps->log2_ctb_size);
     int ctb_addr_ts = s1->ps.pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     int thread = ctb_row % s1->threads_number;
     int ret;
-
-    s = s1->sList[self_id];
-    lc = s->HEVClc;
 
     if(ctb_row) {
         ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
@@ -2631,16 +2629,12 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     int length          = nal->size;
     HEVCLocalContext *lc = s->HEVClc;
     int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
-    int *arg = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
     int64_t offset;
     int64_t startheader, cmpt = 0;
     int i, j, res = 0;
 
-    if (!ret || !arg) {
-        av_free(ret);
-        av_free(arg);
+    if (!ret)
         return AVERROR(ENOMEM);
-    }
 
     if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * s->ps.sps->ctb_width >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
         av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
@@ -2714,18 +2708,16 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     ff_reset_entries(s->avctx);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
-        arg[i] = i;
         ret[i] = 0;
     }
 
     if (s->ps.pps->entropy_coding_sync_enabled_flag)
-        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, arg, ret, s->sh.num_entry_point_offsets + 1);
+        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, s->HEVClcList, ret, s->sh.num_entry_point_offsets + 1);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
         res += ret[i];
 error:
     av_free(ret);
-    av_free(arg);
     return res;
 }
 
