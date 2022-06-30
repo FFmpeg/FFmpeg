@@ -822,8 +822,8 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 #endif
     char *env_home = getenv_utf8("HOME");
     char *env_ffmpeg_datadir = getenv_utf8("FFMPEG_DATADIR");
-    const char *base[3] = { env_home,
-                            env_ffmpeg_datadir,
+    const char *base[3] = { env_ffmpeg_datadir,
+                            env_home,   /* index=1(HOME) is special: search in a .ffmpeg subfolder */
                             FFMPEG_DATADIR, };
 
     if (is_path) {
