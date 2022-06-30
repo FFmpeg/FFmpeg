@@ -242,9 +242,11 @@ int ff_slice_thread_allocz_entries(AVCodecContext *avctx, int count)
     if (avctx->active_thread_type & FF_THREAD_SLICE)  {
         SliceThreadContext *p = avctx->internal->thread_ctx;
 
-        if (p->entries) {
-            av_freep(&p->entries);
+        if (p->entries_count == count) {
+            memset(p->entries, 0, p->entries_count * sizeof(*p->entries));
+            return 0;
         }
+        av_freep(&p->entries);
 
         p->entries       = av_calloc(count, sizeof(*p->entries));
         if (!p->entries) {
