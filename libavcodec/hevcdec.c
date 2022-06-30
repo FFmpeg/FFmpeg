@@ -2632,31 +2632,25 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     const uint8_t *data = nal->data;
     int length          = nal->size;
     HEVCLocalContext *lc = s->HEVClc;
-    int *ret = av_malloc_array(s->sh.num_entry_point_offsets + 1, sizeof(int));
+    int *ret;
     int64_t offset;
     int64_t startheader, cmpt = 0;
     int i, j, res = 0;
-
-    if (!ret)
-        return AVERROR(ENOMEM);
 
     if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * s->ps.sps->ctb_width >= s->ps.sps->ctb_width * s->ps.sps->ctb_height) {
         av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
             s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
             s->ps.sps->ctb_width, s->ps.sps->ctb_height
         );
-        res = AVERROR_INVALIDDATA;
-        goto error;
+        return AVERROR_INVALIDDATA;
     }
 
     for (i = 1; i < s->threads_number; i++) {
         if (s->HEVClcList[i])
             continue;
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
-        if (!s->HEVClcList[i]) {
-            res = AVERROR(ENOMEM);
-            goto error;
-        }
+        if (!s->HEVClcList[i])
+            return AVERROR(ENOMEM);
         s->HEVClcList[i]->logctx = s->avctx;
         s->HEVClcList[i]->parent = s;
     }
@@ -2687,8 +2681,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
         if (length < offset) {
             av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
-            res = AVERROR_INVALIDDATA;
-            goto error;
+            return AVERROR_INVALIDDATA;
         }
         s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
         s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
@@ -2704,18 +2697,18 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     atomic_store(&s->wpp_err, 0);
     res = ff_slice_thread_allocz_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
     if (res < 0)
-        goto error;
+        return res;
 
-    for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
-        ret[i] = 0;
-    }
+    ret = av_calloc(s->sh.num_entry_point_offsets + 1, sizeof(*ret));
+    if (!ret)
+        return AVERROR(ENOMEM);
 
     if (s->ps.pps->entropy_coding_sync_enabled_flag)
         s->avctx->execute2(s->avctx, hls_decode_entry_wpp, s->HEVClcList, ret, s->sh.num_entry_point_offsets + 1);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
         res += ret[i];
-error:
+
     av_free(ret);
     return res;
 }
