@@ -2702,10 +2702,9 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     }
 
     atomic_store(&s->wpp_err, 0);
-    res = ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+    res = ff_slice_thread_allocz_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
     if (res < 0)
         goto error;
-    ff_reset_entries(s->avctx);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
         ret[i] = 0;
