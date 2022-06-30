@@ -18,7 +18,8 @@
 
 /**
  * @file
- * a very simple circular buffer FIFO implementation
+ * @ingroup lavu_fifo
+ * A generic FIFO API
  */
 
 #ifndef AVUTIL_FIFO_H
@@ -29,6 +30,14 @@
 
 #include "attributes.h"
 #include "version.h"
+
+/**
+ * @defgroup lavu_fifo AVFifo
+ * @ingroup lavu_data
+ *
+ * @{
+ * A generic FIFO API
+ */
 
 typedef struct AVFifo AVFifo;
 
@@ -422,5 +431,9 @@ static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
 }
 #endif
 #endif
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_FIFO_H */
