@@ -54,8 +54,10 @@ enum ExrPixelType {
 
 static const char abgr_chlist[4] = { 'A', 'B', 'G', 'R' };
 static const char bgr_chlist[4] = { 'B', 'G', 'R', 'A' };
+static const char y_chlist[4] = { 'Y' };
 static const uint8_t gbra_order[4] = { 3, 1, 0, 2 };
 static const uint8_t gbr_order[4] = { 1, 0, 2, 0 };
+static const uint8_t y_order[4] = { 0 };
 
 typedef struct EXRScanlineData {
     uint8_t *compressed_data;
@@ -105,6 +107,11 @@ static int encode_init(AVCodecContext *avctx)
         s->planes = 4;
         s->ch_names = abgr_chlist;
         s->ch_order = gbra_order;
+        break;
+    case AV_PIX_FMT_GRAYF32:
+        s->planes = 1;
+        s->ch_names = y_chlist;
+        s->ch_order = y_order;
         break;
     default:
         av_assert0(0);
@@ -546,6 +553,7 @@ const FFCodec ff_exr_encoder = {
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_close,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
+                                                 AV_PIX_FMT_GRAYF32,
                                                  AV_PIX_FMT_GBRPF32,
                                                  AV_PIX_FMT_GBRAPF32,
                                                  AV_PIX_FMT_NONE },
