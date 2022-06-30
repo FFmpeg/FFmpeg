@@ -604,38 +604,38 @@ int ff_hevc_frame_rps(HEVCContext *s);
  */
 int ff_hevc_slice_rpl(HEVCContext *s);
 
-void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
-int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
-int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
-int ff_hevc_sao_type_idx_decode(HEVCContext *s);
-int ff_hevc_sao_band_position_decode(HEVCContext *s);
-int ff_hevc_sao_offset_abs_decode(HEVCContext *s);
-int ff_hevc_sao_offset_sign_decode(HEVCContext *s);
-int ff_hevc_sao_eo_class_decode(HEVCContext *s);
-int ff_hevc_end_of_slice_flag_decode(HEVCContext *s);
-int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s);
-int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0,
+void ff_hevc_save_states(HEVCLocalContext *lc, int ctb_addr_ts);
+int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts);
+int ff_hevc_sao_merge_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_sao_type_idx_decode(HEVCLocalContext *lc);
+int ff_hevc_sao_band_position_decode(HEVCLocalContext *lc);
+int ff_hevc_sao_offset_abs_decode(HEVCLocalContext *lc);
+int ff_hevc_sao_offset_sign_decode(HEVCLocalContext *lc);
+int ff_hevc_sao_eo_class_decode(HEVCLocalContext *lc);
+int ff_hevc_end_of_slice_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_cu_transquant_bypass_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, int x0, int y0,
                              int x_cb, int y_cb);
-int ff_hevc_pred_mode_decode(HEVCContext *s);
-int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth,
+int ff_hevc_pred_mode_decode(HEVCLocalContext *lc);
+int ff_hevc_split_coding_unit_flag_decode(HEVCLocalContext *lc, int ct_depth,
                                           int x0, int y0);
-int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size);
-int ff_hevc_pcm_flag_decode(HEVCContext *s);
-int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCContext *s);
-int ff_hevc_mpm_idx_decode(HEVCContext *s);
-int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s);
-int ff_hevc_merge_idx_decode(HEVCContext *s);
-int ff_hevc_merge_flag_decode(HEVCContext *s);
-int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH);
-int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx);
-int ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
-int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
-int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
-int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
-int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
-int ff_hevc_log2_res_scale_abs(HEVCContext *s, int idx);
-int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx);
+int ff_hevc_part_mode_decode(HEVCLocalContext *lc, int log2_cb_size);
+int ff_hevc_pcm_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_mpm_idx_decode(HEVCLocalContext *lc);
+int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCLocalContext *lc);
+int ff_hevc_intra_chroma_pred_mode_decode(HEVCLocalContext *lc);
+int ff_hevc_merge_idx_decode(HEVCLocalContext *lc);
+int ff_hevc_merge_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_inter_pred_idc_decode(HEVCLocalContext *lc, int nPbW, int nPbH);
+int ff_hevc_ref_idx_lx_decode(HEVCLocalContext *lc, int num_ref_idx_lx);
+int ff_hevc_mvp_lx_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_no_residual_syntax_flag_decode(HEVCLocalContext *lc);
+int ff_hevc_split_transform_flag_decode(HEVCLocalContext *lc, int log2_trafo_size);
+int ff_hevc_cbf_cb_cr_decode(HEVCLocalContext *lc, int trafo_depth);
+int ff_hevc_cbf_luma_decode(HEVCLocalContext *lc, int trafo_depth);
+int ff_hevc_log2_res_scale_abs(HEVCLocalContext *lc, int idx);
+int ff_hevc_res_scale_sign_flag(HEVCLocalContext *lc, int idx);
 
 /**
  * Get the number of candidate references for the current frame.
@@ -686,15 +686,15 @@ void ff_hevc_set_qPy(HEVCLocalContext *lc, int xBase, int yBase,
                      int log2_cb_size);
 void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, int x0, int y0,
                                            int log2_trafo_size);
-int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
-int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
-int ff_hevc_cu_chroma_qp_offset_flag(HEVCContext *s);
-int ff_hevc_cu_chroma_qp_offset_idx(HEVCContext *s);
-void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
+int ff_hevc_cu_qp_delta_sign_flag(HEVCLocalContext *lc);
+int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc);
+int ff_hevc_cu_chroma_qp_offset_flag(HEVCLocalContext *lc);
+int ff_hevc_cu_chroma_qp_offset_idx(HEVCLocalContext *lc);
+void ff_hevc_hls_residual_coding(HEVCLocalContext *lc, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx);
 
-void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
+void ff_hevc_hls_mvd_coding(HEVCLocalContext *lc, int x0, int y0, int log2_cb_size);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
