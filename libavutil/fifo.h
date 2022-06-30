@@ -124,8 +124,11 @@ int av_fifo_grow2(AVFifo *f, size_t inc);
 /**
  * Write data into a FIFO.
  *
- * In case nb_elems > av_fifo_can_write(f), nothing is written and an error
+ * In case nb_elems > av_fifo_can_write(f) and the AV_FIFO_FLAG_AUTO_GROW flag
+ * was not specified at FIFO creation, nothing is written and an error
  * is returned.
+ *
+ * Calling function is guaranteed to succeed if nb_elems <= av_fifo_can_write(f).
  *
  * @param f the FIFO buffer
  * @param buf Data to be written. nb_elems * av_fifo_elem_size(f) bytes will be
