@@ -2549,13 +2549,12 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
 {
     HEVCLocalContext *lc = ((HEVCLocalContext**)hevc_lclist)[self_id];
     const HEVCContext *const s = lc->parent;
-    HEVCContext *s1  = avctxt->priv_data;
-    int ctb_size    = 1<< s1->ps.sps->log2_ctb_size;
+    int ctb_size    = 1 << s->ps.sps->log2_ctb_size;
     int more_data   = 1;
     int ctb_row = job;
-    int ctb_addr_rs = s1->sh.slice_ctb_addr_rs + ctb_row * ((s1->ps.sps->width + ctb_size - 1) >> s1->ps.sps->log2_ctb_size);
-    int ctb_addr_ts = s1->ps.pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-    int thread = ctb_row % s1->threads_number;
+    int ctb_addr_rs = s->sh.slice_ctb_addr_rs + ctb_row * ((s->ps.sps->width + ctb_size - 1) >> s->ps.sps->log2_ctb_size);
+    int ctb_addr_ts = s->ps.pps->ctb_addr_rs_to_ts[ctb_addr_rs];
+    int thread = ctb_row % s->threads_number;
     int ret;
 
     if(ctb_row) {
@@ -2573,7 +2572,10 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
 
         ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
 
-        if (atomic_load(&s1->wpp_err)) {
+        /* atomic_load's prototype requires a pointer to non-const atomic variable
+         * (due to implementations via mutexes, where reads involve writes).
+         * Of course, casting const away here is nevertheless safe. */
+        if (atomic_load((atomic_int*)&s->wpp_err)) {
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
             return 0;
         }
@@ -2596,7 +2598,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
         ff_hevc_hls_filters(lc, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->ps.sps->width && ctb_row != s->sh.num_entry_point_offsets) {
-            atomic_store(&s1->wpp_err, 1);
+            /* Casting const away here is safe, because it is an atomic operation. */
+            atomic_store((atomic_int*)&s->wpp_err, 1);
             ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return 0;
         }
@@ -2618,7 +2621,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
     return 0;
 error:
     s->tab_slice_address[ctb_addr_rs] = -1;
-    atomic_store(&s1->wpp_err, 1);
+    /* Casting const away here is safe, because it is an atomic operation. */
+    atomic_store((atomic_int*)&s->wpp_err, 1);
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
     return ret;
 }
@@ -2648,18 +2652,15 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     ff_alloc_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
 
     for (i = 1; i < s->threads_number; i++) {
-        if (s->sList[i] && s->HEVClcList[i])
+        if (s->HEVClcList[i])
             continue;
-        av_freep(&s->sList[i]);
-        av_freep(&s->HEVClcList[i]);
-        s->sList[i] = av_malloc(sizeof(HEVCContext));
         s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
-        if (!s->sList[i] || !s->HEVClcList[i]) {
+        if (!s->HEVClcList[i]) {
             res = AVERROR(ENOMEM);
             goto error;
         }
         s->HEVClcList[i]->logctx = s->avctx;
-        s->HEVClcList[i]->parent = s->sList[i];
+        s->HEVClcList[i]->parent = s;
     }
 
     offset = (lc->gb.index >> 3);
@@ -2698,10 +2699,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     s->data = data;
 
     for (i = 1; i < s->threads_number; i++) {
-        memcpy(s->sList[i], s, sizeof(HEVCContext));
-        s->sList[i]->HEVClc = s->HEVClcList[i];
-        s->sList[i]->HEVClc->first_qp_group = 1;
-        s->sList[i]->HEVClc->qp_y = s->sList[0]->HEVClc->qp_y;
+        s->HEVClcList[i]->first_qp_group = 1;
+        s->HEVClcList[i]->qp_y = s->HEVClc->qp_y;
     }
 
     atomic_store(&s->wpp_err, 0);
@@ -3610,15 +3609,13 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
 
-    if (s->HEVClcList && s->sList) {
+    if (s->HEVClcList) {
         for (i = 1; i < s->threads_number; i++) {
             av_freep(&s->HEVClcList[i]);
-            av_freep(&s->sList[i]);
         }
     }
     av_freep(&s->HEVClc);
     av_freep(&s->HEVClcList);
-    av_freep(&s->sList);
 
     ff_h2645_packet_uninit(&s->pkt);
 
@@ -3636,13 +3633,11 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
     s->HEVClcList = av_mallocz(sizeof(HEVCLocalContext*) * s->threads_number);
-    s->sList = av_mallocz(sizeof(HEVCContext*) * s->threads_number);
-    if (!s->HEVClc || !s->HEVClcList || !s->sList)
+    if (!s->HEVClc || !s->HEVClcList)
         return AVERROR(ENOMEM);
     s->HEVClc->parent = s;
     s->HEVClc->logctx = avctx;
     s->HEVClcList[0] = s->HEVClc;
-    s->sList[0] = s;
 
     s->cabac = av_malloc(sizeof(*s->cabac));
     if (!s->cabac)
