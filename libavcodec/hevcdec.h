@@ -226,6 +226,11 @@ enum ScanType {
     SCAN_VERT,
 };
 
+typedef struct HEVCCABACState {
+    uint8_t state[HEVC_CONTEXTS];
+    uint8_t stat_coeff[HEVC_STAT_COEFFS];
+} HEVCCABACState;
+
 typedef struct LongTermRPS {
     int     poc[32];
     uint8_t poc_msb_present[32];
@@ -482,8 +487,7 @@ typedef struct HEVCContext {
     int                 width;
     int                 height;
 
-    uint8_t *cabac_state;
-    uint8_t stat_coeff[HEVC_STAT_COEFFS];
+    HEVCCABACState *cabac;
 
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
@@ -601,7 +605,7 @@ int ff_hevc_frame_rps(HEVCContext *s);
 int ff_hevc_slice_rpl(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
-int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts, int thread);
+int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
 int ff_hevc_sao_band_position_decode(HEVCContext *s);
