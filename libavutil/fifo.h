@@ -97,7 +97,13 @@ void av_fifo_auto_grow_limit(AVFifo *f, size_t max_elems);
 size_t av_fifo_can_read(const AVFifo *f);
 
 /**
- * @return number of elements that can be written into the given FIFO.
+ * @return Number of elements that can be written into the given FIFO without
+ *         growing it.
+ *
+ *         In other words, this number of elements or less is guaranteed to fit
+ *         into the FIFO. More data may be written when the
+ *         AV_FIFO_FLAG_AUTO_GROW flag was specified at FIFO creation, but this
+ *         may involve memory allocation, which can fail.
  */
 size_t av_fifo_can_write(const AVFifo *f);
 
