@@ -26,10 +26,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct HEVCContext;
+struct HEVCLocalContext;
 
 typedef struct HEVCPredContext {
-    void (*intra_pred[4])(struct HEVCContext *s, int x0, int y0, int c_idx);
+    void (*intra_pred[4])(struct HEVCLocalContext *lc, int x0, int y0, int c_idx);
 
     void (*pred_planar[4])(uint8_t *src, const uint8_t *top,
                            const uint8_t *left, ptrdiff_t stride);

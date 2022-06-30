@@ -1903,10 +1903,10 @@ void ff_pred_intra_pred_angular_3_msa(uint8_t *dst,
     }
 }
 
-void ff_intra_pred_8_16x16_msa(HEVCContext *s, int x0, int y0, int c_idx)
+void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
 {
     v16u8 vec0;
-    HEVCLocalContext *lc = s->HEVClc;
+    const HEVCContext *const s = lc->parent;
     int i;
     int hshift = s->ps.sps->hshift[c_idx];
     int vshift = s->ps.sps->vshift[c_idx];
@@ -2416,14 +2416,14 @@ void ff_intra_pred_8_16x16_msa(HEVCContext *s, int x0, int y0, int c_idx)
     }
 }
 
-void ff_intra_pred_8_32x32_msa(HEVCContext *s, int x0, int y0, int c_idx)
+void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
 {
     v16u8 vec0, vec1;
     v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     v8i16 res0, res1, res2, res3;
     v8i16 mul_val0 = { 63, 62, 61, 60, 59, 58, 57, 56 };
     v8i16 mul_val1 = { 1, 2, 3, 4, 5, 6, 7, 8 };
-    HEVCLocalContext *lc = s->HEVClc;
+    const HEVCContext *const s = lc->parent;
     int i;
     int hshift = s->ps.sps->hshift[c_idx];
     int vshift = s->ps.sps->vshift[c_idx];
