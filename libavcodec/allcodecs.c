@@ -254,6 +254,8 @@ extern const FFCodec ff_pgm_decoder;
 extern const FFCodec ff_pgmyuv_encoder;
 extern const FFCodec ff_pgmyuv_decoder;
 extern const FFCodec ff_pgx_decoder;
+extern const FFCodec ff_phm_encoder;
+extern const FFCodec ff_phm_decoder;
 extern const FFCodec ff_photocd_decoder;
 extern const FFCodec ff_pictor_decoder;
 extern const FFCodec ff_pixlet_decoder;

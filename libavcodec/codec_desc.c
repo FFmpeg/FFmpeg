@@ -1886,6 +1886,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("QOI (Quite OK Image)"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_PHM,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "phm",
+        .long_name = NULL_IF_CONFIG_SMALL("PHM (Portable HalfFloatMap) image"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* various PCM "codecs" */
     {

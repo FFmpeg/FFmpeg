@@ -775,6 +775,8 @@ following image formats are supported:
     @tab PGM with U and V components in YUV 4:2:0
 @item PGX          @tab   @tab X
     @tab PGX file decoder
+@item PHM          @tab X @tab X
+    @tab Portable HalfFloatMap image
 @item PIC          @tab @tab X
     @tab Pictor/PC Paint
 @item PNG          @tab X @tab X

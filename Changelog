@@ -22,6 +22,7 @@ version 5.1:
 - ffprobe -o option
 - virtualbass audio filter
 - VDPAU AV1 hwaccel
+- PHM image format support
 
 
 version 5.0:

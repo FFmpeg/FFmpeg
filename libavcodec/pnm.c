@@ -73,18 +73,27 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         (s->bytestream[1] < '1' ||
          s->bytestream[1] > '7' &&
          s->bytestream[1] != 'f' &&
-         s->bytestream[1] != 'F')) {
+         s->bytestream[1] != 'F' &&
+         s->bytestream[1] != 'H' &&
+         s->bytestream[1] != 'h')) {
         s->bytestream += s->bytestream_end > s->bytestream;
         s->bytestream += s->bytestream_end > s->bytestream;
         return AVERROR_INVALIDDATA;
     }
     pnm_get(s, buf1, sizeof(buf1));
     s->type= buf1[1]-'0';
+    s->half = 0;
 
     if (buf1[1] == 'F') {
         avctx->pix_fmt = AV_PIX_FMT_GBRPF32;
     } else if (buf1[1] == 'f') {
         avctx->pix_fmt = AV_PIX_FMT_GRAYF32;
+    } else if (buf1[1] == 'H') {
+        avctx->pix_fmt = AV_PIX_FMT_GBRPF32;
+        s->half = 1;
+    } else if (buf1[1] == 'h') {
+        avctx->pix_fmt = AV_PIX_FMT_GRAYF32;
+        s->half = 1;
     } else if (s->type==1 || s->type==4) {
         avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
     } else if (s->type==2 || s->type==5) {
