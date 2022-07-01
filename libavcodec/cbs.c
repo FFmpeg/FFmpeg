@@ -73,8 +73,8 @@ const enum AVCodecID ff_cbs_all_codec_ids[] = {
     AV_CODEC_ID_NONE
 };
 
-int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
-                enum AVCodecID codec_id, void *log_ctx)
+av_cold int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
+                        enum AVCodecID codec_id, void *log_ctx)
 {
     CodedBitstreamContext *ctx;
     const CodedBitstreamType *type;
@@ -118,13 +118,13 @@ int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
     return 0;
 }
 
-void ff_cbs_flush(CodedBitstreamContext *ctx)
+av_cold void ff_cbs_flush(CodedBitstreamContext *ctx)
 {
     if (ctx->codec->flush)
         ctx->codec->flush(ctx);
 }
 
-void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
+av_cold void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
 {
     CodedBitstreamContext *ctx = *ctx_ptr;
 
@@ -168,7 +168,7 @@ void ff_cbs_fragment_reset(CodedBitstreamFragment *frag)
     frag->data_bit_padding = 0;
 }
 
-void ff_cbs_fragment_free(CodedBitstreamFragment *frag)
+av_cold void ff_cbs_fragment_free(CodedBitstreamFragment *frag)
 {
     ff_cbs_fragment_reset(frag);
 
