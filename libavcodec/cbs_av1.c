@@ -412,9 +412,8 @@ static int cbs_av1_read_subexp(CodedBitstreamContext *ctx, GetBitContext *gbc,
     }
 
     if (len < max_len) {
-        err = ff_cbs_read_unsigned(ctx, gbc, range_bits,
-                                   "subexp_bits", NULL, &value,
-                                   0, MAX_UINT_BITS(range_bits));
+        err = ff_cbs_read_simple_unsigned(ctx, gbc, range_bits,
+                                          "subexp_bits", &value);
         if (err < 0)
             return err;
 
@@ -476,10 +475,9 @@ static int cbs_av1_write_subexp(CodedBitstreamContext *ctx, PutBitContext *pbc,
         return err;
 
     if (len < max_len) {
-        err = ff_cbs_write_unsigned(ctx, pbc, range_bits,
-                                    "subexp_bits", NULL,
-                                    value - range_offset,
-                                    0, MAX_UINT_BITS(range_bits));
+        err = ff_cbs_write_simple_unsigned(ctx, pbc, range_bits,
+                                           "subexp_bits",
+                                           value - range_offset);
         if (err < 0)
             return err;
 
@@ -546,8 +544,6 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
-#define fb(width, name) \
-        xf(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define fc(width, name, range_min, range_max) \
         xf(width, name, current->name, range_min, range_max, 0, )
 #define flag(name) fb(1, name)
@@ -572,6 +568,13 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #define READ
 #define READWRITE read
 #define RWContext GetBitContext
+
+#define fb(width, name) do { \
+        uint32_t value; \
+        CHECK(ff_cbs_read_simple_unsigned(ctx, rw, width, \
+                                          #name, &value)); \
+        current->name = value; \
+    } while (0)
 
 #define xf(width, name, var, range_min, range_max, subs, ...) do { \
         uint32_t value; \
@@ -645,6 +648,7 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #undef READ
 #undef READWRITE
 #undef RWContext
+#undef fb
 #undef xf
 #undef xsu
 #undef uvlc
@@ -660,6 +664,11 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #define WRITE
 #define READWRITE write
 #define RWContext PutBitContext
+
+#define fb(width, name) do { \
+        CHECK(ff_cbs_write_simple_unsigned(ctx, rw, width, #name, \
+                                           current->name)); \
+    } while (0)
 
 #define xf(width, name, var, range_min, range_max, subs, ...) do { \
         CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
@@ -723,6 +732,7 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #undef WRITE
 #undef READWRITE
 #undef RWContext
+#undef fb
 #undef xf
 #undef xsu
 #undef uvlc

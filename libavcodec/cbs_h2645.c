@@ -264,8 +264,6 @@ static int cbs_h265_payload_extension_present(GetBitContext *gbc, uint32_t paylo
 
 #define u(width, name, range_min, range_max) \
         xu(width, name, current->name, range_min, range_max, 0, )
-#define ub(width, name) \
-        xu(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define flag(name) ub(1, name)
 #define ue(name, range_min, range_max) \
         xue(name, current->name, range_min, range_max, 0, )
@@ -301,6 +299,12 @@ static int cbs_h265_payload_extension_present(GetBitContext *gbc, uint32_t paylo
 #define READWRITE read
 #define RWContext GetBitContext
 
+#define ub(width, name) do { \
+        uint32_t value; \
+        CHECK(ff_cbs_read_simple_unsigned(ctx, rw, width, #name, \
+                                          &value)); \
+        current->name = value; \
+    } while (0)
 #define xu(width, name, var, range_min, range_max, subs, ...) do { \
         uint32_t value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
@@ -379,6 +383,7 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef READ
 #undef READWRITE
 #undef RWContext
+#undef ub
 #undef xu
 #undef xi
 #undef xue
@@ -394,6 +399,11 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #define READWRITE write
 #define RWContext PutBitContext
 
+#define ub(width, name) do { \
+        uint32_t value = current->name; \
+        CHECK(ff_cbs_write_simple_unsigned(ctx, rw, width, #name, \
+                                           value)); \
+    } while (0)
 #define xu(width, name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = var; \
         CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
@@ -461,6 +471,7 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef WRITE
 #undef READWRITE
 #undef RWContext
+#undef ub
 #undef xu
 #undef xi
 #undef xue

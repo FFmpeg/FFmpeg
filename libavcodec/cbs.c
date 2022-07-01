@@ -546,10 +546,13 @@ void ff_cbs_trace_syntax_element(CodedBitstreamContext *ctx, int position,
            position, name, pad, bits, value);
 }
 
-int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
-                         int width, const char *name,
-                         const int *subscripts, uint32_t *write_to,
-                         uint32_t range_min, uint32_t range_max)
+static av_always_inline int cbs_read_unsigned(CodedBitstreamContext *ctx,
+                                              GetBitContext *gbc,
+                                              int width, const char *name,
+                                              const int *subscripts,
+                                              uint32_t *write_to,
+                                              uint32_t range_min,
+                                              uint32_t range_max)
 {
     uint32_t value;
     int position;
@@ -589,6 +592,22 @@ int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
     return 0;
 }
 
+int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
+                         int width, const char *name,
+                         const int *subscripts, uint32_t *write_to,
+                         uint32_t range_min, uint32_t range_max)
+{
+    return cbs_read_unsigned(ctx, gbc, width, name, subscripts,
+                             write_to, range_min, range_max);
+}
+
+int ff_cbs_read_simple_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
+                                int width, const char *name, uint32_t *write_to)
+{
+    return cbs_read_unsigned(ctx, gbc, width, name, NULL,
+                             write_to, 0, UINT32_MAX);
+}
+
 int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
                           int width, const char *name,
                           const int *subscripts, uint32_t value,
@@ -623,6 +642,13 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
         put_bits32(pbc, value);
 
     return 0;
+}
+
+int ff_cbs_write_simple_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
+                                 int width, const char *name, uint32_t value)
+{
+    return ff_cbs_write_unsigned(ctx, pbc, width, name, NULL,
+                                 value, 0, MAX_UINT_BITS(width));
 }
 
 int ff_cbs_read_signed(CodedBitstreamContext *ctx, GetBitContext *gbc,

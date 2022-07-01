@@ -163,17 +163,26 @@ void ff_cbs_trace_syntax_element(CodedBitstreamContext *ctx, int position,
 
 
 // Helper functions for read/write of common bitstream elements, including
-// generation of trace output.
+// generation of trace output. The simple functions are equivalent to
+// their non-simple counterparts except that their range is unrestricted
+// (i.e. only limited by the amount of bits used) and they lack
+// the ability to use subscripts.
 
 int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
                          int width, const char *name,
                          const int *subscripts, uint32_t *write_to,
                          uint32_t range_min, uint32_t range_max);
 
+int ff_cbs_read_simple_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
+                                int width, const char *name, uint32_t *write_to);
+
 int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
                           int width, const char *name,
                           const int *subscripts, uint32_t value,
                           uint32_t range_min, uint32_t range_max);
+
+int ff_cbs_write_simple_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
+                                 int width, const char *name, uint32_t value);
 
 int ff_cbs_read_signed(CodedBitstreamContext *ctx, GetBitContext *gbc,
                        int width, const char *name,

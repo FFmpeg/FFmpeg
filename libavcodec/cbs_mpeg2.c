@@ -40,8 +40,6 @@
 
 #define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
 
-#define ui(width, name) \
-        xui(width, name, current->name, 0, MAX_UINT_BITS(width), 0, )
 #define uir(width, name) \
         xui(width, name, current->name, 1, MAX_UINT_BITS(width), 0, )
 #define uis(width, name, subs, ...) \
@@ -65,6 +63,12 @@
 #define READWRITE read
 #define RWContext GetBitContext
 
+#define ui(width, name) do { \
+        uint32_t value; \
+        CHECK(ff_cbs_read_simple_unsigned(ctx, rw, width, #name, \
+                                          &value)); \
+        current->name = value; \
+    } while (0)
 #define xuia(width, string, var, range_min, range_max, subs, ...) do { \
         uint32_t value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, string, \
@@ -95,6 +99,7 @@
 #undef READ
 #undef READWRITE
 #undef RWContext
+#undef ui
 #undef xuia
 #undef xsi
 #undef nextbits
@@ -104,6 +109,11 @@
 #define WRITE
 #define READWRITE write
 #define RWContext PutBitContext
+
+#define ui(width, name) do { \
+        CHECK(ff_cbs_write_simple_unsigned(ctx, rw, width, #name, \
+                                           current->name)); \
+    } while (0)
 
 #define xuia(width, string, var, range_min, range_max, subs, ...) do { \
         CHECK(ff_cbs_write_unsigned(ctx, rw, width, string, \
@@ -134,6 +144,7 @@
 #undef WRITE
 #undef READWRITE
 #undef RWContext
+#undef ui
 #undef xuia
 #undef xsi
 #undef nextbits
