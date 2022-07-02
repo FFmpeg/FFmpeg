@@ -145,8 +145,8 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
         } else if (aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h264_pixel_aspect)) {
             sps->sar = ff_h264_pixel_aspect[aspect_ratio_idc];
         } else {
-            av_log(logctx, AV_LOG_ERROR, "illegal aspect ratio\n");
-            return AVERROR_INVALIDDATA;
+            av_log(logctx, AV_LOG_WARNING, "Unknown SAR index: %u.\n",
+                   aspect_ratio_idc);
         }
     } else {
         sps->sar.num =
