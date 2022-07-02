@@ -88,7 +88,8 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         n  = avctx->width * 2;
         h1 = (h * 3) / 2;
         break;
-    case AV_PIX_FMT_GBRPF32:
+    case AV_PIX_FMT_GBRPF32BE:
+    case AV_PIX_FMT_GBRPF32LE:
         if (avctx->codec_id == AV_CODEC_ID_PFM) {
         c  = 'F';
         n  = avctx->width * 4;
@@ -97,7 +98,8 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             n  = avctx->width * 2;
         }
         break;
-    case AV_PIX_FMT_GRAYF32:
+    case AV_PIX_FMT_GRAYF32BE:
+    case AV_PIX_FMT_GRAYF32LE:
         if (avctx->codec_id == AV_CODEC_ID_PFM) {
         c  = 'f';
         n  = avctx->width * 4;
@@ -112,22 +114,27 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     snprintf(bytestream, bytestream_end - bytestream,
              "P%c\n%d %d\n", c, avctx->width, h1);
     bytestream += strlen(bytestream);
-    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32 ||
-        avctx->pix_fmt == AV_PIX_FMT_GRAYF32)
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32LE ||
+        avctx->pix_fmt == AV_PIX_FMT_GRAYF32LE ||
+        avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE ||
+        avctx->pix_fmt == AV_PIX_FMT_GRAYF32BE)
         snprintf(bytestream, bytestream_end - bytestream,
                  "%f\n", (avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE ||
                           avctx->pix_fmt == AV_PIX_FMT_GRAYF32BE) ? 1.f: -1.f);
     bytestream += strlen(bytestream);
     if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE &&
-        avctx->pix_fmt != AV_PIX_FMT_GBRPF32 &&
-        avctx->pix_fmt != AV_PIX_FMT_GRAYF32) {
+        avctx->pix_fmt != AV_PIX_FMT_GBRPF32LE &&
+        avctx->pix_fmt != AV_PIX_FMT_GRAYF32LE &&
+        avctx->pix_fmt != AV_PIX_FMT_GBRPF32BE &&
+        avctx->pix_fmt != AV_PIX_FMT_GRAYF32BE) {
         int maxdepth = (1 << av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth) - 1;
         snprintf(bytestream, bytestream_end - bytestream,
                  "%d\n", maxdepth);
         bytestream += strlen(bytestream);
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_GBRPF32 && c == 'F') {
+    if ((avctx->pix_fmt == AV_PIX_FMT_GBRPF32LE ||
+         avctx->pix_fmt == AV_PIX_FMT_GBRPF32BE) && c == 'F') {
         float *r = (float *)p->data[2];
         float *g = (float *)p->data[0];
         float *b = (float *)p->data[1];
@@ -144,7 +151,8 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             g += p->linesize[0] / 4;
             b += p->linesize[1] / 4;
         }
-    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAYF32 && c == 'f') {
+    } else if ((avctx->pix_fmt == AV_PIX_FMT_GRAYF32LE ||
+                avctx->pix_fmt == AV_PIX_FMT_GRAYF32BE) && c == 'f') {
         const float *g = (const float *)p->data[0];
 
         for (int i = 0; i < avctx->height; i++) {
@@ -280,8 +288,10 @@ const FFCodec ff_pfm_encoder = {
     .p.id           = AV_CODEC_ID_PFM,
     .p.capabilities = AV_CODEC_CAP_DR1,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_GBRPF32,
-                                                    AV_PIX_FMT_GRAYF32,
+    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_GBRPF32LE,
+                                                    AV_PIX_FMT_GRAYF32LE,
+                                                    AV_PIX_FMT_GBRPF32BE,
+                                                    AV_PIX_FMT_GRAYF32BE,
                                                     AV_PIX_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
