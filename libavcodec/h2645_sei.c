@@ -95,7 +95,7 @@ static int decode_registered_user_data_dynamic_hdr_vivid(HEVCSEIDynamicHDRVivid 
 }
 #endif
 
-static int decode_registered_user_data_afd(H264SEIAFD *h, GetByteContext *gb)
+static int decode_registered_user_data_afd(H2645SEIAFD *h, GetByteContext *gb)
 {
     int flag;
 
@@ -157,13 +157,10 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         user_identifier = bytestream2_get_be32u(gb);
         switch (user_identifier) {
         case MKBETAG('D', 'T', 'G', '1'):       // afd_data
-            if (!IS_H264(codec_id))
-                goto unsupported;
             return decode_registered_user_data_afd(&h->afd, gb);
         case MKBETAG('G', 'A', '9', '4'):       // closed captions
             return decode_registered_user_data_closed_caption(&h->a53_caption, gb);
         default:
-        unsupported:
             av_log(logctx, AV_LOG_VERBOSE,
                    "Unsupported User Data Registered ITU-T T35 SEI message (atsc user_identifier = 0x%04x)\n",
                    user_identifier);
@@ -536,6 +533,16 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
         }
     }
     sei->unregistered.nb_buf_ref = 0;
+
+    if (sei->afd.present) {
+        AVFrameSideData *sd = av_frame_new_side_data(frame, AV_FRAME_DATA_AFD,
+                                                     sizeof(uint8_t));
+
+        if (sd) {
+            *sd->data = sei->afd.active_format_description;
+            sei->afd.present = 0;
+        }
+    }
 
     return 0;
 }

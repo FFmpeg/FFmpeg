@@ -1226,16 +1226,6 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.common.afd.present) {
-        AVFrameSideData *sd = av_frame_new_side_data(out, AV_FRAME_DATA_AFD,
-                                                     sizeof(uint8_t));
-
-        if (sd) {
-            *sd->data = h->sei.common.afd.active_format_description;
-            h->sei.common.afd.present = 0;
-        }
-    }
-
     ret = ff_h2645_sei_to_frame(out, &h->sei.common, AV_CODEC_ID_H264, h->avctx);
     if (ret < 0)
         return ret;

@@ -34,10 +34,10 @@ typedef struct H2645SEIA53Caption {
     AVBufferRef *buf_ref;
 } H2645SEIA53Caption;
 
-typedef struct H264SEIAFD {
+typedef struct H2645SEIAFD {
     int present;
     uint8_t active_format_description;
-} H264SEIAFD;
+} H2645SEIAFD;
 
 typedef struct HEVCSEIDynamicHDRPlus {
     AVBufferRef *info;
@@ -99,7 +99,7 @@ typedef struct H2645SEIFilmGrainCharacteristics {
 
 typedef struct H2645SEI {
     H2645SEIA53Caption a53_caption;
-    H264SEIAFD afd;                              //< H.264 only
+    H2645SEIAFD afd;
     HEVCSEIDynamicHDRPlus  dynamic_hdr_plus;     //< HEVC only
     HEVCSEIDynamicHDRVivid dynamic_hdr_vivid;    //< HEVC only
     H2645SEIUnregistered unregistered;
