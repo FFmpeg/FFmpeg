@@ -181,7 +181,11 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
     /* chroma_location_info_present_flag */
     if (get_bits1(gb)) {
         /* chroma_sample_location_type_top_field */
-        sps->chroma_location = get_ue_golomb_31(gb) + 1;
+        sps->chroma_location = get_ue_golomb_31(gb);
+        if (sps->chroma_location <= 5U)
+            sps->chroma_location++;
+        else
+            sps->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
         get_ue_golomb_31(gb);  /* chroma_sample_location_type_bottom_field */
     } else
         sps->chroma_location = AVCHROMA_LOC_LEFT;
