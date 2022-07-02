@@ -327,7 +327,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
          !h->ps.sps                                            ||
          h->ps.sps->bit_depth_luma    != h1->ps.sps->bit_depth_luma    ||
          h->ps.sps->chroma_format_idc != h1->ps.sps->chroma_format_idc ||
-         h->ps.sps->colorspace        != h1->ps.sps->colorspace)) {
+         h->ps.sps->vui.matrix_coeffs != h1->ps.sps->vui.matrix_coeffs)) {
         need_reinit = 1;
     }
 
@@ -937,7 +937,7 @@ static int h264_slice_header_init(H264Context *h)
         goto fail;
     }
 
-    ff_set_sar(h->avctx, sps->sar);
+    ff_set_sar(h->avctx, sps->vui.sar);
     av_pix_fmt_get_chroma_sub_sample(h->avctx->pix_fmt,
                                      &h->chroma_x_shift, &h->chroma_y_shift);
 
@@ -1062,7 +1062,7 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
         || (non_j_pixfmt(h->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h, 0))))
         must_reinit = 1;
 
-    if (first_slice && av_cmp_q(sps->sar, h->avctx->sample_aspect_ratio))
+    if (first_slice && av_cmp_q(sps->vui.sar, h->avctx->sample_aspect_ratio))
         must_reinit = 1;
 
     if (!h->setup_finished) {
@@ -1084,15 +1084,15 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
 
         init_dimensions(h);
 
-        if (sps->video_signal_type_present_flag) {
-            h->avctx->color_range = sps->full_range > 0 ? AVCOL_RANGE_JPEG
-                                                        : AVCOL_RANGE_MPEG;
-            if (sps->colour_description_present_flag) {
-                if (h->avctx->colorspace != sps->colorspace)
+        if (sps->vui.video_signal_type_present_flag) {
+            h->avctx->color_range = sps->vui.video_full_range_flag > 0 ? AVCOL_RANGE_JPEG
+                                                                       : AVCOL_RANGE_MPEG;
+            if (sps->vui.colour_description_present_flag) {
+                if (h->avctx->colorspace != sps->vui.matrix_coeffs)
                     needs_reinit = 1;
-                h->avctx->color_primaries = sps->color_primaries;
-                h->avctx->color_trc       = sps->color_trc;
-                h->avctx->colorspace      = sps->colorspace;
+                h->avctx->color_primaries = sps->vui.colour_primaries;
+                h->avctx->color_trc       = sps->vui.transfer_characteristics;
+                h->avctx->colorspace      = sps->vui.matrix_coeffs;
             }
         }
 
@@ -1102,7 +1102,7 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
             h->avctx->color_trc = h->sei.common.alternative_transfer.preferred_transfer_characteristics;
         }
     }
-    h->avctx->chroma_sample_location = sps->chroma_location;
+    h->avctx->chroma_sample_location = sps->vui.chroma_location;
 
     if (!h->context_initialized || must_reinit || needs_reinit) {
         int flush_changes = h->context_initialized;
@@ -1250,14 +1250,14 @@ static int h264_export_frame_props(H264Context *h)
         } else {
             fgp->codec.h274.bit_depth_luma = sps->bit_depth_luma;
             fgp->codec.h274.bit_depth_chroma = sps->bit_depth_chroma;
-            if (sps->video_signal_type_present_flag)
-                fgp->codec.h274.color_range = sps->full_range + 1;
+            if (sps->vui.video_signal_type_present_flag)
+                fgp->codec.h274.color_range = sps->vui.video_full_range_flag + 1;
             else
                 fgp->codec.h274.color_range = AVCOL_RANGE_UNSPECIFIED;
-            if (sps->colour_description_present_flag) {
-                fgp->codec.h274.color_primaries = sps->color_primaries;
-                fgp->codec.h274.color_trc = sps->color_trc;
-                fgp->codec.h274.color_space = sps->colorspace;
+            if (sps->vui.colour_description_present_flag) {
+                fgp->codec.h274.color_primaries = sps->vui.colour_primaries;
+                fgp->codec.h274.color_trc       = sps->vui.transfer_characteristics;
+                fgp->codec.h274.color_space     = sps->vui.matrix_coeffs;
             } else {
                 fgp->codec.h274.color_primaries = AVCOL_PRI_UNSPECIFIED;
                 fgp->codec.h274.color_trc = AVCOL_TRC_UNSPECIFIED;

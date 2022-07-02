@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "h264.h"
+#include "h2645_vui.h"
 
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
@@ -70,14 +71,7 @@ typedef struct SPS {
     unsigned int crop_top;             ///< frame_cropping_rect_top_offset
     unsigned int crop_bottom;          ///< frame_cropping_rect_bottom_offset
     int vui_parameters_present_flag;
-    AVRational sar;
-    int video_signal_type_present_flag;
-    int full_range;
-    int colour_description_present_flag;
-    enum AVColorPrimaries color_primaries;
-    enum AVColorTransferCharacteristic color_trc;
-    enum AVColorSpace colorspace;
-    enum AVChromaLocation chroma_location;
+    H2645VUI vui;
 
     int timing_info_present_flag;
     uint32_t num_units_in_tick;

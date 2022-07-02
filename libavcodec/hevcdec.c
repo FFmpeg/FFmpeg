@@ -339,18 +339,18 @@ static void export_stream_params(HEVCContext *s, const HEVCSPS *sps)
     avctx->profile             = sps->ptl.general_ptl.profile_idc;
     avctx->level               = sps->ptl.general_ptl.level_idc;
 
-    ff_set_sar(avctx, sps->vui.sar);
+    ff_set_sar(avctx, sps->vui.common.sar);
 
-    if (sps->vui.video_signal_type_present_flag)
-        avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
-                                                            : AVCOL_RANGE_MPEG;
+    if (sps->vui.common.video_signal_type_present_flag)
+        avctx->color_range = sps->vui.common.video_full_range_flag ? AVCOL_RANGE_JPEG
+                                                                   : AVCOL_RANGE_MPEG;
     else
         avctx->color_range = AVCOL_RANGE_MPEG;
 
-    if (sps->vui.colour_description_present_flag) {
-        avctx->color_primaries = sps->vui.colour_primaries;
-        avctx->color_trc       = sps->vui.transfer_characteristic;
-        avctx->colorspace      = sps->vui.matrix_coeffs;
+    if (sps->vui.common.colour_description_present_flag) {
+        avctx->color_primaries = sps->vui.common.colour_primaries;
+        avctx->color_trc       = sps->vui.common.transfer_characteristics;
+        avctx->colorspace      = sps->vui.common.matrix_coeffs;
     } else {
         avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
         avctx->color_trc       = AVCOL_TRC_UNSPECIFIED;
@@ -359,9 +359,9 @@ static void export_stream_params(HEVCContext *s, const HEVCSPS *sps)
 
     avctx->chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     if (sps->chroma_format_idc == 1) {
-        if (sps->vui.chroma_loc_info_present_flag) {
-            if (sps->vui.chroma_sample_loc_type_top_field <= 5)
-                avctx->chroma_sample_location = sps->vui.chroma_sample_loc_type_top_field + 1;
+        if (sps->vui.common.chroma_loc_info_present_flag) {
+            if (sps->vui.common.chroma_sample_loc_type_top_field <= 5)
+                avctx->chroma_sample_location = sps->vui.common.chroma_sample_loc_type_top_field + 1;
         } else
             avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
     }
@@ -2846,14 +2846,14 @@ static int set_side_data(HEVCContext *s)
             const VUI *vui = &sps->vui;
             fgp->codec.h274.bit_depth_luma = sps->bit_depth;
             fgp->codec.h274.bit_depth_chroma = sps->bit_depth_chroma;
-            if (vui->video_signal_type_present_flag)
-                fgp->codec.h274.color_range = vui->video_full_range_flag + 1;
+            if (vui->common.video_signal_type_present_flag)
+                fgp->codec.h274.color_range = vui->common.video_full_range_flag + 1;
             else
                 fgp->codec.h274.color_range = AVCOL_RANGE_UNSPECIFIED;
-            if (vui->colour_description_present_flag) {
-                fgp->codec.h274.color_primaries = vui->colour_primaries;
-                fgp->codec.h274.color_trc = vui->transfer_characteristic;
-                fgp->codec.h274.color_space = vui->matrix_coeffs;
+            if (vui->common.colour_description_present_flag) {
+                fgp->codec.h274.color_primaries = vui->common.colour_primaries;
+                fgp->codec.h274.color_trc       = vui->common.transfer_characteristics;
+                fgp->codec.h274.color_space     = vui->common.matrix_coeffs;
             } else {
                 fgp->codec.h274.color_primaries = AVCOL_PRI_UNSPECIFIED;
                 fgp->codec.h274.color_trc = AVCOL_TRC_UNSPECIFIED;
