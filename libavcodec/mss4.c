@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/thread.h"
+#include "libavutil/imgutils.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -476,6 +477,9 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                width, height);
         return AVERROR_INVALIDDATA;
     }
+    if (av_image_check_size2(width, height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx) < 0)
+        return AVERROR_INVALIDDATA;
+
     if (quality < 1 || quality > 100) {
         av_log(avctx, AV_LOG_ERROR, "Invalid quality setting %d\n", quality);
         return AVERROR_INVALIDDATA;
