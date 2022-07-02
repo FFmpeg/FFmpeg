@@ -765,7 +765,9 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
                                              AVFrame *frame)
 {
     double float_pts = AV_NOPTS_VALUE; // this is identical to frame.pts but with higher precision
+    int64_t orig_pts = AV_NOPTS_VALUE;
     AVCodecContext *enc = ost->enc_ctx;
+    AVRational filter_tb = (AVRational){ -1, -1 };
     if (!frame || frame->pts == AV_NOPTS_VALUE ||
         !enc || !ost->filter || !ost->filter->graph->graph)
         goto early_exit;
@@ -774,9 +776,10 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
         AVFilterContext *filter = ost->filter->filter;
 
         int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
-        AVRational filter_tb = av_buffersink_get_time_base(filter);
         AVRational tb = enc->time_base;
         int extra_bits = av_clip(29 - av_log2(tb.den), 0, 16);
+        filter_tb = av_buffersink_get_time_base(filter);
+        orig_pts = frame->pts;
 
         tb.den <<= extra_bits;
         float_pts =
@@ -794,9 +797,14 @@ static double adjust_frame_pts_to_encoder_tb(OutputFile *of, OutputStream *ost,
 early_exit:
 
     if (debug_ts) {
+        av_log(NULL, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
+               frame ? av_ts2str(orig_pts) : "NULL",
+               frame ? av_ts2timestr(orig_pts, &filter_tb) : "NULL",
+               filter_tb.num, filter_tb.den);
+
         av_log(NULL, AV_LOG_INFO, "filter -> pts:%s pts_time:%s exact:%f time_base:%d/%d\n",
                frame ? av_ts2str(frame->pts) : "NULL",
-               frame ? av_ts2timestr(frame->pts, &enc->time_base) : "NULL",
+               (enc && frame) ? av_ts2timestr(frame->pts, &enc->time_base) : "NULL",
                float_pts,
                enc ? enc->time_base.num : -1,
                enc ? enc->time_base.den : -1);
