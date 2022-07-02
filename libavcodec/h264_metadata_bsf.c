@@ -625,7 +625,7 @@ static const AVOption h264_metadata_options[] = {
 
     { "chroma_sample_loc_type", "Set chroma sample location type (figure E-1)",
         OFFSET(chroma_sample_loc_type), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 6, FLAGS },
+        { .i64 = -1 }, -1, 5, FLAGS },
 
     { "tick_rate", "Set VUI tick rate (time_scale / num_units_in_tick)",
         OFFSET(tick_rate), AV_OPT_TYPE_RATIONAL,
