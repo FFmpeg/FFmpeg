@@ -361,6 +361,9 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (avctx->ch_layout.nb_channels == 0)
+        return AVERROR_INVALIDDATA;
+
     ctx->cur_frame_length = sconf->frame_length;
 
     // read channel config
