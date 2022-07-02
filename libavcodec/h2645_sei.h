@@ -132,4 +132,6 @@ int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
 
 int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src);
 
+void ff_h2645_sei_reset(H2645SEI *s);
+
 #endif /* AVCODEC_H2645_SEI_H */

@@ -117,8 +117,11 @@ static inline int ff_hevc_sei_ctx_replace(HEVCSEI *dst, const HEVCSEI *src)
  * e.g. Caption data that was extracted during NAL
  * parsing.
  *
- * @param s HEVCContext.
+ * @param sei HEVCSEI.
  */
-void ff_hevc_reset_sei(HEVCSEI *s);
+static inline void ff_hevc_reset_sei(HEVCSEI *sei)
+{
+    ff_h2645_sei_reset(&sei->common);
+}
 
 #endif /* AVCODEC_HEVC_SEI_H */

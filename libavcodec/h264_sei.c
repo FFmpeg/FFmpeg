@@ -59,11 +59,7 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->common.display_orientation.present = 0;
     h->common.afd.present                 =  0;
 
-    av_buffer_unref(&h->common.a53_caption.buf_ref);
-    for (int i = 0; i < h->common.unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&h->common.unregistered.buf_ref[i]);
-    h->common.unregistered.nb_buf_ref = 0;
-    av_freep(&h->common.unregistered.buf_ref);
+    ff_h2645_sei_reset(&h->common);
 }
 
 int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,

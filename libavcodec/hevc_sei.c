@@ -292,15 +292,3 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
     } while (bytestream2_get_bytes_left(&gbyte) > 0);
     return 1;
 }
-
-void ff_hevc_reset_sei(HEVCSEI *s)
-{
-    av_buffer_unref(&s->common.a53_caption.buf_ref);
-
-    for (int i = 0; i < s->common.unregistered.nb_buf_ref; i++)
-        av_buffer_unref(&s->common.unregistered.buf_ref[i]);
-    s->common.unregistered.nb_buf_ref = 0;
-    av_freep(&s->common.unregistered.buf_ref);
-    av_buffer_unref(&s->common.dynamic_hdr_plus.info);
-    av_buffer_unref(&s->common.dynamic_hdr_vivid.info);
-}

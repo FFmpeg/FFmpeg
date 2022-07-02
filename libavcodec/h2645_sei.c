@@ -418,3 +418,15 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
 
     return 0;
 }
+
+void ff_h2645_sei_reset(H2645SEI *s)
+{
+    av_buffer_unref(&s->a53_caption.buf_ref);
+
+    for (unsigned i = 0; i < s->unregistered.nb_buf_ref; i++)
+        av_buffer_unref(&s->unregistered.buf_ref[i]);
+    s->unregistered.nb_buf_ref = 0;
+    av_freep(&s->unregistered.buf_ref);
+    av_buffer_unref(&s->dynamic_hdr_plus.info);
+    av_buffer_unref(&s->dynamic_hdr_vivid.info);
+}
