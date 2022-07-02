@@ -429,7 +429,9 @@ static int is_frame_packing_type_valid(SEIFpaType type, enum AVCodecID codec_id)
 
 int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
                           enum AVCodecID codec_id,
-                          AVCodecContext *avctx)
+                          AVCodecContext *avctx, const H2645VUI *vui,
+                          unsigned bit_depth_luma, unsigned bit_depth_chroma,
+                          int seed)
 {
     H2645SEIFramePacking *fp = &sei->frame_packing;
 
@@ -542,6 +544,69 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
             *sd->data = sei->afd.active_format_description;
             sei->afd.present = 0;
         }
+    }
+
+    if (sei->film_grain_characteristics.present) {
+        H2645SEIFilmGrainCharacteristics *fgc = &sei->film_grain_characteristics;
+        AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(frame);
+        AVFilmGrainH274Params *h274;
+
+        if (!fgp)
+            return AVERROR(ENOMEM);
+
+        fgp->type = AV_FILM_GRAIN_PARAMS_H274;
+        h274      = &fgp->codec.h274;
+
+        fgp->seed = seed;
+
+        h274->model_id = fgc->model_id;
+        if (fgc->separate_colour_description_present_flag) {
+            h274->bit_depth_luma   = fgc->bit_depth_luma;
+            h274->bit_depth_chroma = fgc->bit_depth_chroma;
+            h274->color_range      = fgc->full_range + 1;
+            h274->color_primaries  = fgc->color_primaries;
+            h274->color_trc        = fgc->transfer_characteristics;
+            h274->color_space      = fgc->matrix_coeffs;
+        } else {
+            h274->bit_depth_luma   = bit_depth_luma;
+            h274->bit_depth_chroma = bit_depth_chroma;
+            if (vui->video_signal_type_present_flag)
+                h274->color_range = vui->video_full_range_flag + 1;
+            else
+                h274->color_range = AVCOL_RANGE_UNSPECIFIED;
+            if (vui->colour_description_present_flag) {
+                h274->color_primaries = vui->colour_primaries;
+                h274->color_trc       = vui->transfer_characteristics;
+                h274->color_space     = vui->matrix_coeffs;
+            } else {
+                h274->color_primaries = AVCOL_PRI_UNSPECIFIED;
+                h274->color_trc       = AVCOL_TRC_UNSPECIFIED;
+                h274->color_space     = AVCOL_SPC_UNSPECIFIED;
+            }
+        }
+        h274->blending_mode_id  = fgc->blending_mode_id;
+        h274->log2_scale_factor = fgc->log2_scale_factor;
+
+        memcpy(&h274->component_model_present, &fgc->comp_model_present_flag,
+               sizeof(h274->component_model_present));
+        memcpy(&h274->num_intensity_intervals, &fgc->num_intensity_intervals,
+               sizeof(h274->num_intensity_intervals));
+        memcpy(&h274->num_model_values, &fgc->num_model_values,
+               sizeof(h274->num_model_values));
+        memcpy(&h274->intensity_interval_lower_bound, &fgc->intensity_interval_lower_bound,
+               sizeof(h274->intensity_interval_lower_bound));
+        memcpy(&h274->intensity_interval_upper_bound, &fgc->intensity_interval_upper_bound,
+               sizeof(h274->intensity_interval_upper_bound));
+        memcpy(&h274->comp_model_value, &fgc->comp_model_value,
+               sizeof(h274->comp_model_value));
+
+        if (IS_H264(codec_id))
+            fgc->present = !!fgc->repetition_period;
+        else
+            fgc->present = fgc->persistence_flag;
+
+        if (avctx)
+            avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
     }
 
     return 0;

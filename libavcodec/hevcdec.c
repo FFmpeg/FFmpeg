@@ -2794,7 +2794,10 @@ static int set_side_data(HEVCContext *s)
                metadata->MaxCLL, metadata->MaxFALL);
     }
 
-    ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, NULL);
+    ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, NULL,
+                                &s->ps.sps->vui.common,
+                                s->ps.sps->bit_depth, s->ps.sps->bit_depth_chroma,
+                                s->ref->poc /* no poc_offset in HEVC */);
     if (ret < 0)
         return ret;
 
@@ -2822,61 +2825,6 @@ static int set_side_data(HEVCContext *s)
         }
 
         s->sei.timecode.num_clock_ts = 0;
-    }
-
-    if (s->sei.common.film_grain_characteristics.present) {
-        H2645SEIFilmGrainCharacteristics *fgc = &s->sei.common.film_grain_characteristics;
-        AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(out);
-        if (!fgp)
-            return AVERROR(ENOMEM);
-
-        fgp->type = AV_FILM_GRAIN_PARAMS_H274;
-        fgp->seed = s->ref->poc; /* no poc_offset in HEVC */
-
-        fgp->codec.h274.model_id = fgc->model_id;
-        if (fgc->separate_colour_description_present_flag) {
-            fgp->codec.h274.bit_depth_luma = fgc->bit_depth_luma;
-            fgp->codec.h274.bit_depth_chroma = fgc->bit_depth_chroma;
-            fgp->codec.h274.color_range = fgc->full_range + 1;
-            fgp->codec.h274.color_primaries = fgc->color_primaries;
-            fgp->codec.h274.color_trc = fgc->transfer_characteristics;
-            fgp->codec.h274.color_space = fgc->matrix_coeffs;
-        } else {
-            const HEVCSPS *sps = s->ps.sps;
-            const VUI *vui = &sps->vui;
-            fgp->codec.h274.bit_depth_luma = sps->bit_depth;
-            fgp->codec.h274.bit_depth_chroma = sps->bit_depth_chroma;
-            if (vui->common.video_signal_type_present_flag)
-                fgp->codec.h274.color_range = vui->common.video_full_range_flag + 1;
-            else
-                fgp->codec.h274.color_range = AVCOL_RANGE_UNSPECIFIED;
-            if (vui->common.colour_description_present_flag) {
-                fgp->codec.h274.color_primaries = vui->common.colour_primaries;
-                fgp->codec.h274.color_trc       = vui->common.transfer_characteristics;
-                fgp->codec.h274.color_space     = vui->common.matrix_coeffs;
-            } else {
-                fgp->codec.h274.color_primaries = AVCOL_PRI_UNSPECIFIED;
-                fgp->codec.h274.color_trc = AVCOL_TRC_UNSPECIFIED;
-                fgp->codec.h274.color_space = AVCOL_SPC_UNSPECIFIED;
-            }
-        }
-        fgp->codec.h274.blending_mode_id = fgc->blending_mode_id;
-        fgp->codec.h274.log2_scale_factor = fgc->log2_scale_factor;
-
-        memcpy(&fgp->codec.h274.component_model_present, &fgc->comp_model_present_flag,
-               sizeof(fgp->codec.h274.component_model_present));
-        memcpy(&fgp->codec.h274.num_intensity_intervals, &fgc->num_intensity_intervals,
-               sizeof(fgp->codec.h274.num_intensity_intervals));
-        memcpy(&fgp->codec.h274.num_model_values, &fgc->num_model_values,
-               sizeof(fgp->codec.h274.num_model_values));
-        memcpy(&fgp->codec.h274.intensity_interval_lower_bound, &fgc->intensity_interval_lower_bound,
-               sizeof(fgp->codec.h274.intensity_interval_lower_bound));
-        memcpy(&fgp->codec.h274.intensity_interval_upper_bound, &fgc->intensity_interval_upper_bound,
-               sizeof(fgp->codec.h274.intensity_interval_upper_bound));
-        memcpy(&fgp->codec.h274.comp_model_value, &fgc->comp_model_value,
-               sizeof(fgp->codec.h274.comp_model_value));
-
-        fgc->present = fgc->persistence_flag;
     }
 
     if (s->sei.common.dynamic_hdr_plus.info) {

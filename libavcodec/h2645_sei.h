@@ -28,6 +28,7 @@
 #include "bytestream.h"
 #include "codec_id.h"
 #include "get_bits.h"
+#include "h2645_vui.h"
 #include "sei.h"
 
 typedef struct H2645SEIA53Caption {
@@ -136,6 +137,8 @@ void ff_h2645_sei_reset(H2645SEI *s);
 
 int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
                           enum AVCodecID codec_id,
-                          AVCodecContext *avctx);
+                          AVCodecContext *avctx, const H2645VUI *vui,
+                          unsigned bit_depth_luma, unsigned bit_depth_chroma,
+                          int seed);
 
 #endif /* AVCODEC_H2645_SEI_H */
