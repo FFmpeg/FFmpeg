@@ -2361,6 +2361,8 @@ static void print_pkt_side_data(WriterContext *w,
             if (do_show_data)
                 writer_print_data(w, "data", sd->data, sd->size);
             writer_print_data_hash(w, "data_hash", sd->data, sd->size);
+        } else if (sd->type == AV_PKT_DATA_AFD && sd->size > 0) {
+            print_int("active_format", *sd->data);
         }
         writer_print_section_footer(w);
     }
@@ -2633,6 +2635,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
                 print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+            } else if (sd->type == AV_FRAME_DATA_AFD && sd->size > 0) {
+                print_int("active_format", *sd->data);
             } else if (sd->type == AV_FRAME_DATA_GOP_TIMECODE && sd->size >= 8) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
