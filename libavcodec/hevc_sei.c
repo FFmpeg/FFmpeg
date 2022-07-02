@@ -550,7 +550,7 @@ static int decode_nal_sei_message(GetByteContext *gb, void *logctx, HEVCSEI *s,
 }
 
 int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
-                           const HEVCParamSets *ps, int type)
+                           const HEVCParamSets *ps, enum HEVCNALUnitType type)
 {
     GetByteContext gbyte;
     int ret;
