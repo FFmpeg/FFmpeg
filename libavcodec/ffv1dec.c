@@ -879,6 +879,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         p->key_frame = 0;
     }
 
+    if (f->ac != AC_GOLOMB_RICE) {
+        if (buf_size < avctx->width * avctx->height / (128*8))
+            return AVERROR_INVALIDDATA;
+    } else {
+        if (buf_size < avctx->height / 8)
+            return AVERROR_INVALIDDATA;
+    }
+
     ret = ff_thread_get_ext_buffer(avctx, &f->picture, AV_GET_BUFFER_FLAG_REF);
     if (ret < 0)
         return ret;
