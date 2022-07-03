@@ -185,6 +185,9 @@ static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
          || (unsigned)fs->slice_y + (uint64_t)fs->slice_height > f->height)
         return -1;
 
+    if (fs->ac == AC_GOLOMB_RICE && fs->slice_width >= (1<<23))
+        return AVERROR_INVALIDDATA;
+
     for (i = 0; i < f->plane_count; i++) {
         PlaneContext * const p = &fs->plane[i];
         int idx = get_symbol(c, state, 0);
