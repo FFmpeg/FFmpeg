@@ -126,6 +126,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
+    if (avctx->width <= 1)
+        return AVERROR_INVALIDDATA;
+
     avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
     ff_thread_once(&init_static_once, wnv1_init_static);
