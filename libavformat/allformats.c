@@ -508,6 +508,7 @@ extern const AVInputFormat  ff_image_dpx_pipe_demuxer;
 extern const AVInputFormat  ff_image_exr_pipe_demuxer;
 extern const AVInputFormat  ff_image_gem_pipe_demuxer;
 extern const AVInputFormat  ff_image_gif_pipe_demuxer;
+extern const AVInputFormat  ff_image_hdr_pipe_demuxer;
 extern const AVInputFormat  ff_image_j2k_pipe_demuxer;
 extern const AVInputFormat  ff_image_jpeg_pipe_demuxer;
 extern const AVInputFormat  ff_image_jpegls_pipe_demuxer;

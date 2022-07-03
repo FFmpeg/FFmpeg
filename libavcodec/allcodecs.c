@@ -469,6 +469,8 @@ extern const FFCodec ff_gsm_decoder;
 extern const FFCodec ff_gsm_ms_decoder;
 extern const FFCodec ff_hca_decoder;
 extern const FFCodec ff_hcom_decoder;
+extern const FFCodec ff_hdr_encoder;
+extern const FFCodec ff_hdr_decoder;
 extern const FFCodec ff_iac_decoder;
 extern const FFCodec ff_ilbc_decoder;
 extern const FFCodec ff_imc_decoder;

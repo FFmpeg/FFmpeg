@@ -1070,6 +1070,13 @@ static int pam_probe(const AVProbeData *p)
     return pnm_magic_check(p, 7) ? pnm_probe(p) : 0;
 }
 
+static int hdr_probe(const AVProbeData *p)
+{
+    if (!memcmp(p->buf, "#?RADIANCE\n", 11))
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
 static int xbm_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, "/* XBM X10 format */", 20))
@@ -1221,6 +1228,7 @@ IMAGEAUTO_DEMUXER(dpx,       DPX)
 IMAGEAUTO_DEMUXER(exr,       EXR)
 IMAGEAUTO_DEMUXER(gem,       GEM)
 IMAGEAUTO_DEMUXER(gif,       GIF)
+IMAGEAUTO_DEMUXER(hdr,       RADIANCE_HDR)
 IMAGEAUTO_DEMUXER_EXT(j2k,   JPEG2000, J2K)
 IMAGEAUTO_DEMUXER_EXT(jpeg,  MJPEG, JPEG)
 IMAGEAUTO_DEMUXER(jpegls,    JPEGLS)
