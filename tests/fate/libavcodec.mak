@@ -3,6 +3,16 @@ fate-avpacket: libavcodec/tests/avpacket$(EXESUF)
 fate-avpacket: CMD = run libavcodec/tests/avpacket$(EXESUF)
 fate-avpacket: CMP = null
 
+FATE_LIBAVCODEC-yes += fate-bitstream-be
+fate-bitstream-be: libavcodec/tests/bitstream_be$(EXESUF)
+fate-bitstream-be: CMD = run libavcodec/tests/bitstream_be$(EXESUF)
+fate-bitstream-be: CMP = null
+
+FATE_LIBAVCODEC-yes += fate-bitstream-le
+fate-bitstream-le: libavcodec/tests/bitstream_le$(EXESUF)
+fate-bitstream-le: CMD = run libavcodec/tests/bitstream_le$(EXESUF)
+fate-bitstream-le: CMP = null
+
 FATE_LIBAVCODEC-$(CONFIG_CABAC) += fate-cabac
 fate-cabac: libavcodec/tests/cabac$(EXESUF)
 fate-cabac: CMD = run libavcodec/tests/cabac$(EXESUF)
