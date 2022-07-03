@@ -426,6 +426,10 @@ static int avi_write_header(AVFormatContext *s)
         avio_wl32(pb, -1); /* quality */
         avio_wl32(pb, au_ssize); /* sample size */
         avio_wl32(pb, 0);
+        if (par->width > 65535 || par->height > 65535) {
+            av_log(s, AV_LOG_ERROR, "%dx%d dimensions are too big\n", par->width, par->height);
+            return AVERROR(EINVAL);
+        }
         avio_wl16(pb, par->width);
         avio_wl16(pb, par->height);
         ff_end_tag(pb, strh);
