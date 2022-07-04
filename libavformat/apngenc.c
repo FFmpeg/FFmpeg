@@ -159,6 +159,7 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
             avio_write(io_context, apng->prev_packet->data, apng->prev_packet->size);
         }
     } else {
+        const uint8_t *data, *data_end;
         uint8_t *existing_fcTL_chunk;
 
         if (apng->frame_number == 0) {
@@ -178,6 +179,8 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
             }
         }
 
+        data     = apng->prev_packet->data;
+        data_end = data + apng->prev_packet->size;
         existing_fcTL_chunk = apng_find_chunk(MKBETAG('f', 'c', 'T', 'L'), apng->prev_packet->data, apng->prev_packet->size);
         if (existing_fcTL_chunk) {
             AVRational delay;
@@ -190,6 +193,8 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
             delay.den = AV_RB16(existing_fcTL_chunk + 22);
 
             if (delay.num == 0 && delay.den == 0) {
+                uint8_t new_fcTL_chunk[APNG_FCTL_CHUNK_SIZE];
+
                 if (packet) {
                     int64_t delay_num_raw = (packet->dts - apng->prev_packet->dts) * codec_stream->time_base.num;
                     int64_t delay_den_raw = codec_stream->time_base.den;
@@ -205,16 +210,20 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
                     delay = apng->prev_delay;
                 }
 
+                avio_write(io_context, data, (existing_fcTL_chunk - 8) - data);
+                data = existing_fcTL_chunk + APNG_FCTL_CHUNK_SIZE + 4 /* CRC-32 */;
                 // Update frame control header with new delay
-                AV_WB16(existing_fcTL_chunk + 20, delay.num);
-                AV_WB16(existing_fcTL_chunk + 22, delay.den);
-                AV_WB32(existing_fcTL_chunk + 26, ~av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), ~0U, existing_fcTL_chunk - 4, 26 + 4));
+                memcpy(new_fcTL_chunk, existing_fcTL_chunk, sizeof(new_fcTL_chunk));
+                AV_WB16(new_fcTL_chunk + 20, delay.num);
+                AV_WB16(new_fcTL_chunk + 22, delay.den);
+                apng_write_chunk(io_context, MKBETAG('f', 'c', 'T', 'L'),
+                                 new_fcTL_chunk, sizeof(new_fcTL_chunk));
             }
             apng->prev_delay = delay;
         }
 
         // Write frame data
-        avio_write(io_context, apng->prev_packet->data, apng->prev_packet->size);
+        avio_write(io_context, data, data_end - data);
     }
     ++apng->frame_number;
 
