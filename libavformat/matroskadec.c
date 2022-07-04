@@ -2950,10 +2950,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->codecpar->codec_tag   = fourcc;
             st->codecpar->sample_rate = track->audio.out_samplerate;
             // channel layout may be already set by codec private checks above
-            if (st->codecpar->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
-                !st->codecpar->ch_layout.u.mask)
+            if (!av_channel_layout_check(&st->codecpar->ch_layout)) {
                 st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-            st->codecpar->ch_layout.nb_channels = track->audio.channels;
+                st->codecpar->ch_layout.nb_channels = track->audio.channels;
+            }
             if (!st->codecpar->bits_per_coded_sample)
                 st->codecpar->bits_per_coded_sample = track->audio.bitdepth;
             if (st->codecpar->codec_id == AV_CODEC_ID_MP3 ||
