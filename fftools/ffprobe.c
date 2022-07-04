@@ -901,7 +901,7 @@ static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts, in
 }
 
 static void writer_print_data(WriterContext *wctx, const char *name,
-                              uint8_t *data, int size)
+                              const uint8_t *data, int size)
 {
     AVBPrint bp;
     int offset = 0, l, i;
@@ -929,7 +929,7 @@ static void writer_print_data(WriterContext *wctx, const char *name,
 }
 
 static void writer_print_data_hash(WriterContext *wctx, const char *name,
-                                   uint8_t *data, int size)
+                                   const uint8_t *data, int size)
 {
     char *p, buf[AV_HASH_MAX_SIZE * 2 + 64] = { 0 };
 
