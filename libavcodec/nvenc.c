@@ -51,7 +51,11 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_P016,      // Truncated to 10bits
     AV_PIX_FMT_YUV444P16, // Truncated to 10bits
     AV_PIX_FMT_0RGB32,
+    AV_PIX_FMT_RGB32,
     AV_PIX_FMT_0BGR32,
+    AV_PIX_FMT_BGR32,
+    AV_PIX_FMT_X2RGB10,
+    AV_PIX_FMT_X2BGR10,
     AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GBRP16,    // Truncated to 10bits
     AV_PIX_FMT_CUDA,
@@ -1510,9 +1514,15 @@ static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_YUV444P16:
         return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
     case AV_PIX_FMT_0RGB32:
+    case AV_PIX_FMT_RGB32:
         return NV_ENC_BUFFER_FORMAT_ARGB;
     case AV_PIX_FMT_0BGR32:
+    case AV_PIX_FMT_BGR32:
         return NV_ENC_BUFFER_FORMAT_ABGR;
+    case AV_PIX_FMT_X2RGB10:
+        return NV_ENC_BUFFER_FORMAT_ARGB10;
+    case AV_PIX_FMT_X2BGR10:
+        return NV_ENC_BUFFER_FORMAT_ABGR10;
     default:
         return NV_ENC_BUFFER_FORMAT_UNDEFINED;
     }
