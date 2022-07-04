@@ -1145,7 +1145,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
     int stream_index = pkt->stream_index;
     int size         = pkt->size;
-    uint8_t *buf     = pkt->data;
+    const uint8_t *buf = pkt->data;
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st      = ctx->streams[stream_index];
     StreamInfo *stream = st->priv_data;

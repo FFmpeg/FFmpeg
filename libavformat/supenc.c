@@ -27,7 +27,7 @@
 
 static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    uint8_t *data = pkt->data;
+    const uint8_t *data = pkt->data;
     size_t size = pkt->size;
     uint32_t pts = 0, dts = 0;
 
