@@ -321,7 +321,7 @@ static int libjxl_color_encoding_event(AVCodecContext *avctx, AVFrame *frame)
 static int libjxl_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *avpkt)
 {
     LibJxlDecodeContext *ctx = avctx->priv_data;
-    uint8_t *buf = avpkt->data;
+    const uint8_t *buf = avpkt->data;
     size_t remaining = avpkt->size;
     JxlDecoderStatus jret;
     int ret;

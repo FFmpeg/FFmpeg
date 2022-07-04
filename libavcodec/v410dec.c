@@ -28,7 +28,7 @@
 
 typedef struct ThreadData {
     AVFrame *frame;
-    uint8_t *buf;
+    const uint8_t *buf;
     int stride;
 } ThreadData;
 
@@ -89,7 +89,7 @@ static int v410_decode_frame(AVCodecContext *avctx, AVFrame *pic,
                              int *got_frame, AVPacket *avpkt)
 {
     ThreadData td;
-    uint8_t *src = avpkt->data;
+    const uint8_t *src = avpkt->data;
     int ret;
     int thread_count = av_clip(avctx->thread_count, 1, avctx->height/4);
 

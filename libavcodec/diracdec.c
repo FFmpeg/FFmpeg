@@ -2264,7 +2264,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, AVFrame *picture,
                               int *got_frame, AVPacket *pkt)
 {
     DiracContext *s     = avctx->priv_data;
-    uint8_t *buf        = pkt->data;
+    const uint8_t *buf  = pkt->data;
     int buf_size        = pkt->size;
     int i, buf_idx      = 0;
     int ret;

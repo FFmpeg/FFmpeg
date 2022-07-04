@@ -108,7 +108,7 @@ static int msrle_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (avctx->height * istride == avpkt->size) { /* assume uncompressed */
         int linesize = av_image_get_linesize(avctx->pix_fmt, avctx->width, 0);
         uint8_t *ptr = s->frame->data[0];
-        uint8_t *buf = avpkt->data + (avctx->height-1)*istride;
+        const uint8_t *buf = avpkt->data + (avctx->height-1)*istride;
         int i, j;
 
         if (linesize < 0)

@@ -32,7 +32,7 @@
 
 typedef struct FICThreadContext {
     DECLARE_ALIGNED(16, int16_t, block)[64];
-    uint8_t *src;
+    const uint8_t *src;
     int slice_h;
     int src_size;
     int y_off;
@@ -174,7 +174,7 @@ static int fic_decode_slice(AVCodecContext *avctx, void *tdata)
     FICContext *ctx        = avctx->priv_data;
     FICThreadContext *tctx = tdata;
     GetBitContext gb;
-    uint8_t *src = tctx->src;
+    const uint8_t *src = tctx->src;
     int slice_h  = tctx->slice_h;
     int src_size = tctx->src_size;
     int y_off    = tctx->y_off;
@@ -271,14 +271,14 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                             int *got_frame, AVPacket *avpkt)
 {
     FICContext *ctx = avctx->priv_data;
-    uint8_t *src = avpkt->data;
+    const uint8_t *src = avpkt->data;
     int ret;
     int slice, nslices;
     int msize;
     int tsize;
     int cur_x, cur_y;
     int skip_cursor = ctx->skip_cursor;
-    uint8_t *sdata;
+    const uint8_t *sdata;
 
     if ((ret = ff_reget_buffer(avctx, ctx->frame, 0)) < 0)
         return ret;
