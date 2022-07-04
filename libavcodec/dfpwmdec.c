@@ -38,7 +38,8 @@ typedef struct {
 // DFPWM codec from https://github.com/ChenThread/dfpwm/blob/master/1a/
 // Licensed in the public domain
 
-static void au_decompress(DFPWMState *state, int fs, int len, uint8_t *outbuf, uint8_t *inbuf)
+static void au_decompress(DFPWMState *state, int fs, int len,
+                          uint8_t *outbuf, const uint8_t *inbuf)
 {
     unsigned d;
     for (int i = 0; i < len; i++) {

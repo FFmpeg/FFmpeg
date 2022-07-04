@@ -200,7 +200,7 @@ typedef struct WebPContext {
     int has_alpha;                      /* has a separate alpha chunk */
     enum AlphaCompression alpha_compression; /* compression type for alpha chunk */
     enum AlphaFilter alpha_filter;      /* filtering method for alpha chunk */
-    uint8_t *alpha_data;                /* alpha chunk data */
+    const uint8_t *alpha_data;          /* alpha chunk data */
     int alpha_data_size;                /* alpha chunk data size */
     int has_exif;                       /* set after an EXIF chunk has been processed */
     int has_iccp;                       /* set after an ICCP chunk has been processed */
@@ -1084,7 +1084,7 @@ static void update_canvas_size(AVCodecContext *avctx, int w, int h)
 }
 
 static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
-                                     int *got_frame, uint8_t *data_start,
+                                     int *got_frame, const uint8_t *data_start,
                                      unsigned int data_size, int is_alpha_chunk)
 {
     WebPContext *s = avctx->priv_data;
@@ -1240,7 +1240,7 @@ static void alpha_inverse_prediction(AVFrame *frame, enum AlphaFilter m)
 }
 
 static int vp8_lossy_decode_alpha(AVCodecContext *avctx, AVFrame *p,
-                                  uint8_t *data_start,
+                                  const uint8_t *data_start,
                                   unsigned int data_size)
 {
     WebPContext *s = avctx->priv_data;

@@ -135,7 +135,7 @@ static int libcodec2_decode(AVCodecContext *avctx, AVFrame *frame,
 {
     LibCodec2Context *c2 = avctx->priv_data;
     int ret, nframes, i;
-    uint8_t *input;
+    const uint8_t *input;
     int16_t *output;
 
     nframes           = pkt->size / avctx->block_align;

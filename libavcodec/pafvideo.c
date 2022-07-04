@@ -159,7 +159,7 @@ static void set_src_position(PAFVideoDecContext *c,
     *pend = c->frame[page] + c->frame_size;
 }
 
-static int decode_0(PAFVideoDecContext *c, uint8_t *pkt, uint8_t code)
+static int decode_0(PAFVideoDecContext *c, const uint8_t *pkt, uint8_t code)
 {
     uint32_t opcode_size, offset;
     uint8_t *dst, *dend, mask = 0, color = 0;

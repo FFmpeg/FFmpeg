@@ -199,7 +199,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
 }
 
 static int decode_frame(AVCodecContext *avctx, vpx_codec_ctx_t *decoder,
-                        uint8_t *data, uint32_t data_sz)
+                        const uint8_t *data, uint32_t data_sz)
 {
     if (vpx_codec_decode(decoder, data, data_sz, NULL, 0) != VPX_CODEC_OK) {
         const char *error  = vpx_codec_error(decoder);

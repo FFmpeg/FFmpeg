@@ -198,7 +198,7 @@ static int read_low_coeffs(AVCodecContext *avctx, int16_t *dst, int size,
     return get_bits_count(bc) >> 3;
 }
 
-static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst,
+static int read_high_coeffs(AVCodecContext *avctx, const uint8_t *src, int16_t *dst,
                             int size, int c, int a, int d,
                             int width, ptrdiff_t stride)
 {
@@ -313,7 +313,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst,
     return get_bits_count(bc) >> 3;
 }
 
-static int read_highpass(AVCodecContext *avctx, uint8_t *ptr,
+static int read_highpass(AVCodecContext *avctx, const uint8_t *ptr,
                          int plane, AVFrame *frame)
 {
     PixletContext *ctx = avctx->priv_data;

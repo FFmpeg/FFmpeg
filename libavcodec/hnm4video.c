@@ -64,7 +64,7 @@ static int getbit(GetByteContext *gb, uint32_t *bitbuf, int *bits)
     return ret;
 }
 
-static void unpack_intraframe(AVCodecContext *avctx, uint8_t *src,
+static void unpack_intraframe(AVCodecContext *avctx, const uint8_t *src,
                               uint32_t size)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
@@ -147,7 +147,7 @@ static void copy_processed_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-static int decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t size)
+static int decode_interframe_v4(AVCodecContext *avctx, const uint8_t *src, uint32_t size)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
     GetByteContext gb;
@@ -276,7 +276,7 @@ static int decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t si
     return 0;
 }
 
-static void decode_interframe_v4a(AVCodecContext *avctx, uint8_t *src,
+static void decode_interframe_v4a(AVCodecContext *avctx, const uint8_t *src,
                                   uint32_t size)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
@@ -355,7 +355,7 @@ static void decode_interframe_v4a(AVCodecContext *avctx, uint8_t *src,
     }
 }
 
-static void hnm_update_palette(AVCodecContext *avctx, uint8_t *src,
+static void hnm_update_palette(AVCodecContext *avctx, const uint8_t *src,
                                uint32_t size)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;

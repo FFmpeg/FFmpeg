@@ -54,8 +54,8 @@ static int cpia_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     CpiaContext* const cpia = avctx->priv_data;
     int i,j,ret;
 
-    uint8_t* const header = avpkt->data;
-    uint8_t* src;
+    const uint8_t *const header = avpkt->data;
+    const uint8_t *src;
     int src_size;
     uint16_t linelength;
     uint8_t skip;
