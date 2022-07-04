@@ -1749,7 +1749,7 @@ Default value is 0.
 @item -bitexact (@emph{input/output})
 Enable bitexact mode for (de)muxer and (de/en)coder
 @item -shortest (@emph{output})
-Finish encoding when the shortest input stream ends.
+Finish encoding when the shortest output stream ends.
 @item -dts_delta_threshold
 Timestamp discontinuity delta threshold.
 @item -dts_error_threshold @var{seconds}
