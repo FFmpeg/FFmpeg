@@ -988,7 +988,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         // to have the image data write to the correct place in the buffer
         fctl_chunk.sequence_number = s->sequence_number;
         ++s->sequence_number;
-        s->bytestream += 26 + 12;
+        s->bytestream += APNG_FCTL_CHUNK_SIZE + 12;
 
         ret = apng_encode_frame(avctx, pict, &fctl_chunk, &s->last_frame_fctl);
         if (ret < 0)
@@ -1002,7 +1002,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
 
     if (s->last_frame) {
         uint8_t* last_fctl_chunk_start = pkt->data;
-        uint8_t buf[26];
+        uint8_t buf[APNG_FCTL_CHUNK_SIZE];
         if (!s->extra_data_updated) {
             uint8_t *side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, s->extra_data_size);
             if (!side_data)
@@ -1020,7 +1020,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         AV_WB16(buf + 22, s->last_frame_fctl.delay_den);
         buf[24] = s->last_frame_fctl.dispose_op;
         buf[25] = s->last_frame_fctl.blend_op;
-        png_write_chunk(&last_fctl_chunk_start, MKTAG('f', 'c', 'T', 'L'), buf, 26);
+        png_write_chunk(&last_fctl_chunk_start, MKTAG('f', 'c', 'T', 'L'), buf, sizeof(buf));
 
         *got_packet = 1;
     }

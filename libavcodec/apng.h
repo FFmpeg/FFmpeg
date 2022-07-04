@@ -38,4 +38,7 @@ enum {
     APNG_BLEND_OP_OVER   = 1,
 };
 
+/* Only the payload data, not including length, fourcc and CRC-32. */
+#define APNG_FCTL_CHUNK_SIZE    26
+
 #endif /* AVCODEC_APNG_H */

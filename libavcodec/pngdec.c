@@ -972,7 +972,7 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
     uint32_t sequence_number;
     int cur_w, cur_h, x_offset, y_offset, dispose_op, blend_op;
 
-    if (bytestream2_get_bytes_left(gb) != 26)
+    if (bytestream2_get_bytes_left(gb) != APNG_FCTL_CHUNK_SIZE)
         return AVERROR_INVALIDDATA;
 
     if (!(s->hdr_state & PNG_IHDR)) {
