@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavcodec/apng.h"
 #include "libavcodec/png.h"
 
 typedef struct APNGMuxContext {
@@ -180,6 +181,9 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
         existing_fcTL_chunk = apng_find_chunk(MKBETAG('f', 'c', 'T', 'L'), apng->prev_packet->data, apng->prev_packet->size);
         if (existing_fcTL_chunk) {
             AVRational delay;
+
+            if (AV_RB32(existing_fcTL_chunk) != APNG_FCTL_CHUNK_SIZE)
+                return AVERROR_INVALIDDATA;
 
             existing_fcTL_chunk += 8;
             delay.num = AV_RB16(existing_fcTL_chunk + 20);
