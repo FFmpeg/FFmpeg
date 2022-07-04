@@ -1040,7 +1040,7 @@ static int parse_band_data(DCAXllDecoder *s)
     return 0;
 }
 
-static int parse_frame(DCAXllDecoder *s, uint8_t *data, int size, DCAExssAsset *asset)
+static int parse_frame(DCAXllDecoder *s, const uint8_t *data, int size, DCAExssAsset *asset)
 {
     int ret;
 
@@ -1067,7 +1067,7 @@ static void clear_pbr(DCAXllDecoder *s)
     s->pbr_delay = 0;
 }
 
-static int copy_to_pbr(DCAXllDecoder *s, uint8_t *data, int size, int delay)
+static int copy_to_pbr(DCAXllDecoder *s, const uint8_t *data, int size, int delay)
 {
     if (size > DCA_XLL_PBR_BUFFER_MAX)
         return AVERROR(ENOSPC);
@@ -1081,7 +1081,7 @@ static int copy_to_pbr(DCAXllDecoder *s, uint8_t *data, int size, int delay)
     return 0;
 }
 
-static int parse_frame_no_pbr(DCAXllDecoder *s, uint8_t *data, int size, DCAExssAsset *asset)
+static int parse_frame_no_pbr(DCAXllDecoder *s, const uint8_t *data, int size, DCAExssAsset *asset)
 {
     int ret = parse_frame(s, data, size, asset);
 
@@ -1119,7 +1119,7 @@ static int parse_frame_no_pbr(DCAXllDecoder *s, uint8_t *data, int size, DCAExss
     return 0;
 }
 
-static int parse_frame_pbr(DCAXllDecoder *s, uint8_t *data, int size, DCAExssAsset *asset)
+static int parse_frame_pbr(DCAXllDecoder *s, const uint8_t *data, int size, DCAExssAsset *asset)
 {
     int ret;
 
@@ -1160,7 +1160,7 @@ fail:
     return ret;
 }
 
-int ff_dca_xll_parse(DCAXllDecoder *s, uint8_t *data, DCAExssAsset *asset)
+int ff_dca_xll_parse(DCAXllDecoder *s, const uint8_t *data, DCAExssAsset *asset)
 {
     int ret;
 

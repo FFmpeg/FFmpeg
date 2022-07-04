@@ -151,7 +151,7 @@ static int dcadec_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     DCAContext *s = avctx->priv_data;
-    uint8_t *input = avpkt->data;
+    const uint8_t *input = avpkt->data;
     int input_size = avpkt->size;
     int i, ret, prev_packet = s->packet;
     uint32_t mrk;

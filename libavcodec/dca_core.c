@@ -1797,7 +1797,7 @@ static int parse_optional_info(DCACoreDecoder *s)
     return 0;
 }
 
-int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size)
+int ff_dca_core_parse(DCACoreDecoder *s, const uint8_t *data, int size)
 {
     int ret;
 
@@ -1830,7 +1830,7 @@ int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size)
     return 0;
 }
 
-int ff_dca_core_parse_exss(DCACoreDecoder *s, uint8_t *data, DCAExssAsset *asset)
+int ff_dca_core_parse_exss(DCACoreDecoder *s, const uint8_t *data, DCAExssAsset *asset)
 {
     AVCodecContext *avctx = s->avctx;
     DCAContext *dca = avctx->priv_data;

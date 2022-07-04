@@ -139,7 +139,7 @@ typedef struct DCAXllDecoder {
     int32_t *output_samples[DCA_SPEAKER_COUNT];
 } DCAXllDecoder;
 
-int ff_dca_xll_parse(DCAXllDecoder *s, uint8_t *data, DCAExssAsset *asset);
+int ff_dca_xll_parse(DCAXllDecoder *s, const uint8_t *data, DCAExssAsset *asset);
 int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame);
 av_cold void ff_dca_xll_flush(DCAXllDecoder *s);
 av_cold void ff_dca_xll_close(DCAXllDecoder *s);

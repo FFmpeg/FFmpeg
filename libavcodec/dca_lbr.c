@@ -1156,7 +1156,7 @@ static int parse_decoder_init(DCALbrDecoder *s, GetByteContext *gb)
     return 0;
 }
 
-int ff_dca_lbr_parse(DCALbrDecoder *s, uint8_t *data, DCAExssAsset *asset)
+int ff_dca_lbr_parse(DCALbrDecoder *s, const uint8_t *data, DCAExssAsset *asset)
 {
     struct {
         LBRChunk    lfe;
