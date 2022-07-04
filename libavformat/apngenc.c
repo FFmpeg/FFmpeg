@@ -50,7 +50,7 @@ typedef struct APNGMuxContext {
 static uint8_t *apng_find_chunk(uint32_t tag, uint8_t *buf, size_t length)
 {
     size_t b;
-    for (b = 0; b < length; b += AV_RB32(buf + b) + 12)
+    for (b = 0; AV_RB32(buf + b) + 12ULL <= length - b; b += AV_RB32(buf + b) + 12ULL)
         if (AV_RB32(&buf[b + 4]) == tag)
             return &buf[b];
     return NULL;
