@@ -6513,6 +6513,9 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             } else if (trk->par->codec_id == AV_CODEC_ID_RAWVIDEO &&
                        (trk->par->format == AV_PIX_FMT_GRAY8 ||
                        trk->par->format == AV_PIX_FMT_MONOBLACK)) {
+                ret = av_packet_make_writable(pkt);
+                if (ret < 0)
+                    goto fail;
                 for (i = 0; i < pkt->size; i++)
                     pkt->data[i] = ~pkt->data[i];
             }
