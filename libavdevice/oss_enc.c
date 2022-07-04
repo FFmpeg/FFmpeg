@@ -55,9 +55,9 @@ static int audio_write_header(AVFormatContext *s1)
 static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     OSSAudioData *s = s1->priv_data;
+    const uint8_t *buf = pkt->data;
     int len, ret;
     int size= pkt->size;
-    uint8_t *buf= pkt->data;
 
     while (size > 0) {
         len = FFMIN(OSS_AUDIO_BLOCK_SIZE - s->buffer_ptr, size);

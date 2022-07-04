@@ -54,7 +54,7 @@ static int gif_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int gif_parse_packet(AVFormatContext *s, uint8_t *data, int size)
+static int gif_parse_packet(AVFormatContext *s, const uint8_t *data, int size)
 {
     GetByteContext gb;
     int x;

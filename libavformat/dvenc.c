@@ -245,7 +245,7 @@ static void dv_inject_metadata(DVMuxContext *c, uint8_t* frame)
 
 static int dv_assemble_frame(AVFormatContext *s,
                              DVMuxContext *c, AVStream* st,
-                             uint8_t* data, int data_size, uint8_t** frame)
+                             const uint8_t *data, int data_size, uint8_t **frame)
 {
     int i, reqasize;
 

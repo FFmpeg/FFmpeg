@@ -63,7 +63,7 @@ typedef struct IEC61937Context {
     uint8_t *buffer;                ///< allocated buffer, used for swap bytes
     int buffer_size;                ///< size of allocated buffer
 
-    uint8_t *out_buf;               ///< pointer to the outgoing data before byte-swapping
+    const uint8_t *out_buf;         ///< pointer to the outgoing data before byte-swapping
     int out_bytes;                  ///< amount of outgoing bytes
 
     int use_preamble;               ///< preamble enabled (disabled for exactly pre-padded DTS)
@@ -657,7 +657,7 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
         av_fast_malloc(&ctx->buffer, &ctx->buffer_size, ctx->out_bytes + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!ctx->buffer)
             return AVERROR(ENOMEM);
-        ff_spdif_bswap_buf16((uint16_t *)ctx->buffer, (uint16_t *)ctx->out_buf, ctx->out_bytes >> 1);
+        ff_spdif_bswap_buf16((uint16_t *)ctx->buffer, (const uint16_t *)ctx->out_buf, ctx->out_bytes >> 1);
         avio_write(s->pb, ctx->buffer, ctx->out_bytes & ~1);
     }
 

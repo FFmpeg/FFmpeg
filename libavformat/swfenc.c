@@ -481,8 +481,8 @@ static int swf_write_video(AVFormatContext *s,
     return 0;
 }
 
-static int swf_write_audio(AVFormatContext *s,
-                           AVCodecParameters *par, uint8_t *buf, int size)
+static int swf_write_audio(AVFormatContext *s, AVCodecParameters *par,
+                           const uint8_t *buf, int size)
 {
     SWFEncContext *swf = s->priv_data;
 

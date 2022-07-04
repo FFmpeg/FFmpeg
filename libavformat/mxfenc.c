@@ -2139,7 +2139,7 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    uint8_t *vs_pack, *vsc_pack;
+    const uint8_t *vs_pack, *vsc_pack;
     int apt, ul_index, stype, pal;
 
     if (mxf->header_written)

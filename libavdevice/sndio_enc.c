@@ -46,7 +46,7 @@ static av_cold int audio_write_header(AVFormatContext *s1)
 static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     SndioData *s = s1->priv_data;
-    uint8_t *buf= pkt->data;
+    const uint8_t *buf = pkt->data;
     int size = pkt->size;
     int len, ret;
 

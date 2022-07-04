@@ -62,7 +62,7 @@ typedef struct MOVIentry {
 } MOVIentry;
 
 typedef struct HintSample {
-    uint8_t *data;
+    const uint8_t *data;
     int size;
     int sample_number;
     int offset;

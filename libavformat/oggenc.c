@@ -197,13 +197,13 @@ static int ogg_buffer_page(AVFormatContext *s, OGGStreamContext *oggstream)
 }
 
 static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
-                           uint8_t *data, unsigned size, int64_t granule,
+                           const uint8_t *data, unsigned size, int64_t granule,
                            int header)
 {
     OGGStreamContext *oggstream = st->priv_data;
     OGGContext *ogg = s->priv_data;
     int total_segments = size / 255 + 1;
-    uint8_t *p = data;
+    const uint8_t *p = data;
     int i, segments, len, flush = 0;
 
     // Handles VFR by flushing page because this frame needs to have a timestamp

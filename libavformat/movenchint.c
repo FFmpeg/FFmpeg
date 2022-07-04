@@ -96,7 +96,7 @@ static void sample_queue_free(HintSampleQueue *queue)
  * not copied. sample_queue_retain should be called before pkt->data
  * is reused/freed.
  */
-static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
+static void sample_queue_push(HintSampleQueue *queue, const uint8_t *data, int size,
                               int sample)
 {
     /* No need to keep track of smaller samples, since describing them

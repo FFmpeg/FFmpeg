@@ -100,7 +100,8 @@ static av_cold int fbdev_write_header(AVFormatContext *h)
 static int fbdev_write_packet(AVFormatContext *h, AVPacket *pkt)
 {
     FBDevContext *fbdev = h->priv_data;
-    uint8_t *pin, *pout;
+    const uint8_t *pin;
+    uint8_t *pout;
     enum AVPixelFormat fb_pix_fmt;
     int disp_height;
     int bytes_to_copy;
