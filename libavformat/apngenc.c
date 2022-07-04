@@ -48,7 +48,8 @@ typedef struct APNGMuxContext {
     int extra_data_size;
 } APNGMuxContext;
 
-static uint8_t *apng_find_chunk(uint32_t tag, uint8_t *buf, size_t length)
+static const uint8_t *apng_find_chunk(uint32_t tag, const uint8_t *buf,
+                                      size_t length)
 {
     size_t b;
     for (b = 0; AV_RB32(buf + b) + 12ULL <= length - b; b += AV_RB32(buf + b) + 12ULL)
@@ -134,15 +135,15 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
     }
 
     if (apng->frame_number == 0 && !packet) {
-        uint8_t *existing_acTL_chunk;
-        uint8_t *existing_fcTL_chunk;
+        const uint8_t *existing_acTL_chunk;
+        const uint8_t *existing_fcTL_chunk;
 
         av_log(format_context, AV_LOG_INFO, "Only a single frame so saving as a normal PNG.\n");
 
         // Write normal PNG headers without acTL chunk
         existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), apng->extra_data, apng->extra_data_size);
         if (existing_acTL_chunk) {
-            uint8_t *chunk_after_acTL = existing_acTL_chunk + AV_RB32(existing_acTL_chunk) + 12;
+            const uint8_t *chunk_after_acTL = existing_acTL_chunk + AV_RB32(existing_acTL_chunk) + 12;
             avio_write(io_context, apng->extra_data, existing_acTL_chunk - apng->extra_data);
             avio_write(io_context, chunk_after_acTL, apng->extra_data + apng->extra_data_size - chunk_after_acTL);
         } else {
@@ -152,7 +153,7 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
         // Write frame data without fcTL chunk
         existing_fcTL_chunk = apng_find_chunk(MKBETAG('f', 'c', 'T', 'L'), apng->prev_packet->data, apng->prev_packet->size);
         if (existing_fcTL_chunk) {
-            uint8_t *chunk_after_fcTL = existing_fcTL_chunk + AV_RB32(existing_fcTL_chunk) + 12;
+            const uint8_t *chunk_after_fcTL = existing_fcTL_chunk + AV_RB32(existing_fcTL_chunk) + 12;
             avio_write(io_context, apng->prev_packet->data, existing_fcTL_chunk - apng->prev_packet->data);
             avio_write(io_context, chunk_after_fcTL, apng->prev_packet->data + apng->prev_packet->size - chunk_after_fcTL);
         } else {
@@ -160,10 +161,10 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
         }
     } else {
         const uint8_t *data, *data_end;
-        uint8_t *existing_fcTL_chunk;
+        const uint8_t *existing_fcTL_chunk;
 
         if (apng->frame_number == 0) {
-            uint8_t *existing_acTL_chunk;
+            const uint8_t *existing_acTL_chunk;
 
             // Write normal PNG headers
             avio_write(io_context, apng->extra_data, apng->extra_data_size);
