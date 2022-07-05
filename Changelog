@@ -24,6 +24,7 @@ version 5.1:
 - VDPAU AV1 hwaccel
 - PHM image format support
 - remap_opencl filter
+- added chromakey_cuda filter
 
 
 version 5.0:

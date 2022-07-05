@@ -195,6 +195,7 @@ extern const AVFilter ff_vf_cas;
 extern const AVFilter ff_vf_chromaber_vulkan;
 extern const AVFilter ff_vf_chromahold;
 extern const AVFilter ff_vf_chromakey;
+extern const AVFilter ff_vf_chromakey_cuda;
 extern const AVFilter ff_vf_chromanr;
 extern const AVFilter ff_vf_chromashift;
 extern const AVFilter ff_vf_ciescope;
