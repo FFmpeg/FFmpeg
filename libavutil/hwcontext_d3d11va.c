@@ -166,6 +166,17 @@ static AVBufferRef *wrap_texture_buf(AVHWFramesContext *ctx, ID3D11Texture2D *te
         return NULL;
     }
 
+    if (s->nb_surfaces <= s->nb_surfaces_used) {
+        frames_hwctx->texture_infos = av_realloc_f(frames_hwctx->texture_infos,
+                                                   s->nb_surfaces_used + 1,
+                                                   sizeof(*frames_hwctx->texture_infos));
+        if (!frames_hwctx->texture_infos) {
+            ID3D11Texture2D_Release(tex);
+            return NULL;
+        }
+        s->nb_surfaces = s->nb_surfaces_used + 1;
+    }
+
     frames_hwctx->texture_infos[s->nb_surfaces_used].texture = tex;
     frames_hwctx->texture_infos[s->nb_surfaces_used].index = index;
     s->nb_surfaces_used++;
@@ -284,7 +295,7 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
         }
     }
 
-    hwctx->texture_infos = av_calloc(ctx->initial_pool_size, sizeof(*hwctx->texture_infos));
+    hwctx->texture_infos = av_realloc_f(NULL, ctx->initial_pool_size, sizeof(*hwctx->texture_infos));
     if (!hwctx->texture_infos)
         return AVERROR(ENOMEM);
     s->nb_surfaces = ctx->initial_pool_size;
