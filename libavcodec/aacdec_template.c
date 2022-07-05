@@ -701,14 +701,15 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 
         av_log(ac->avctx, AV_LOG_DEBUG, "stereo with SCE\n");
 
-        if (set_default_channel_config(ac, ac->avctx, layout_map,
-                                       &layout_map_tags, 1) < 0)
-            return NULL;
+        layout_map_tags = 2;
+        layout_map[0][0] = layout_map[1][0] = TYPE_SCE;
+        layout_map[0][2] = layout_map[1][2] = AAC_CHANNEL_FRONT;
+        layout_map[0][1] = 0;
+        layout_map[1][1] = 1;
         if (output_configure(ac, layout_map, layout_map_tags,
                              OC_TRIAL_FRAME, 1) < 0)
             return NULL;
 
-        ac->oc[1].m4ac.chan_config = 1;
         if (ac->oc[1].m4ac.sbr)
             ac->oc[1].m4ac.ps = -1;
     }
@@ -786,8 +787,10 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             type == TYPE_CPE) {
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][0];
-        } else if (ac->oc[1].m4ac.chan_config == 2) {
-            return NULL;
+        } else if (ac->tags_mapped == 1 && ac->oc[1].m4ac.chan_config == 2 &&
+            type == TYPE_SCE) {
+            ac->tags_mapped++;
+            return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][1];
         }
     case 1:
         if (!ac->tags_mapped && type == TYPE_SCE) {
