@@ -397,6 +397,7 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     D3D11_TEXTURE2D_DESC desc;
     D3D11_MAPPED_SUBRESOURCE map;
     HRESULT hr;
+    int res;
 
     if (frame->hw_frames_ctx->data != (uint8_t *)ctx || other->format != ctx->sw_format)
         return AVERROR(EINVAL);
@@ -405,7 +406,7 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
 
     if (!s->staging_texture) {
         ID3D11Texture2D_GetDesc((ID3D11Texture2D *)texture, &desc);
-        int res = d3d11va_create_staging_texture(ctx, desc.Format);
+        res = d3d11va_create_staging_texture(ctx, desc.Format);
         if (res < 0)
             return res;
     }
