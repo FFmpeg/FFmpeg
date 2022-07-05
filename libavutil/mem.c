@@ -510,6 +510,8 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
         return ptr;
 
     max_size = atomic_load_explicit(&max_alloc_size, memory_order_relaxed);
+    /* *size is an unsigned, so the real maximum is <= UINT_MAX. */
+    max_size = FFMIN(max_size, UINT_MAX);
 
     if (min_size > max_size) {
         *size = 0;
@@ -542,6 +544,8 @@ static inline void fast_malloc(void *ptr, unsigned int *size, size_t min_size, i
     }
 
     max_size = atomic_load_explicit(&max_alloc_size, memory_order_relaxed);
+    /* *size is an unsigned, so the real maximum is <= UINT_MAX. */
+    max_size = FFMIN(max_size, UINT_MAX);
 
     if (min_size > max_size) {
         av_freep(ptr);
