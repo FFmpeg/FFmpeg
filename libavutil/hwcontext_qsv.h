@@ -34,6 +34,17 @@
  */
 typedef struct AVQSVDeviceContext {
     mfxSession session;
+    /**
+     * The mfxLoader handle used for mfxSession creation
+     *
+     * This field is only available for oneVPL user. For non-oneVPL user, this
+     * field must be set to NULL.
+     *
+     * Filled by the user before calling av_hwdevice_ctx_init() and should be
+     * cast to mfxLoader handle. Deallocating the AVHWDeviceContext will always
+     * release this interface.
+     */
+    void *loader;
 } AVQSVDeviceContext;
 
 /**
