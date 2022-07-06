@@ -200,6 +200,8 @@ static int decode_main_header(NUTContext *nut)
     int tmp_stream, tmp_mul, tmp_pts, tmp_size, tmp_res, tmp_head_idx;
 
     length = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
+    if (length == (uint64_t)-1)
+        return AVERROR_INVALIDDATA;
     end = length + avio_tell(bc);
 
     nut->version = ffio_read_varlen(bc);
