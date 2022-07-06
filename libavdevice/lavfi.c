@@ -287,6 +287,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     for (i = 0; i < lavfi->nb_sinks; i++) {
         AVFilterContext *sink = lavfi->sinks[lavfi->stream_sink_map[i]];
         AVRational time_base = av_buffersink_get_time_base(sink);
+        AVRational frame_rate = av_buffersink_get_frame_rate(sink);
         AVStream *st = avctx->streams[i];
         AVCodecParameters *const par = st->codecpar;
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
@@ -299,6 +300,10 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             avctx->probesize = FFMAX(avctx->probesize, sizeof(AVFrame) * 30);
             st ->sample_aspect_ratio =
             par->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink);
+            if (frame_rate.num > 0 && frame_rate.den > 0) {
+                st->avg_frame_rate = frame_rate;
+                st->r_frame_rate   = frame_rate;
+            }
         } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             par->sample_rate = av_buffersink_get_sample_rate(sink);
             ret = av_buffersink_get_ch_layout(sink, &par->ch_layout);
