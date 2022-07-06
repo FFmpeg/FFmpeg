@@ -91,7 +91,7 @@ typedef struct EXRContext {
     uint8_t shifttable[512];
 } EXRContext;
 
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
 
@@ -139,7 +139,7 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_close(AVCodecContext *avctx)
+static av_cold int encode_close(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
 
