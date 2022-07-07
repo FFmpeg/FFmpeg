@@ -149,12 +149,6 @@ static av_cold int init(AVFilterContext *ctx)
 {
     ZScaleContext *s = ctx->priv;
     int ret;
-    int i;
-    for (i = 0; i < MAX_THREADS; i++) {
-        s->tmp[i] = NULL;
-        s->graph[i] = NULL;
-        s->alpha_graph[i] = NULL;
-    }
     zimg_image_format_default(&s->src_format, ZIMG_API_VERSION);
     zimg_image_format_default(&s->dst_format, ZIMG_API_VERSION);
     zimg_image_format_default(&s->src_format_tmp, ZIMG_API_VERSION);
