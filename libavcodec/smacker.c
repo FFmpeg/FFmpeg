@@ -676,25 +676,25 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
         if (vlc[0       ].table || vlc[         1].table ||
             vlc[2*stereo].table || vlc[2*stereo+1].table) {
-        for(; i < unp_size ; i++) {
-            unsigned idx = 2 * (i & stereo);
-            if (get_bits_left(&gb) < 0) {
-                ret = AVERROR_INVALIDDATA;
-                goto error;
+            for(; i < unp_size ; i++) {
+                unsigned idx = 2 * (i & stereo);
+                if (get_bits_left(&gb) < 0) {
+                    ret = AVERROR_INVALIDDATA;
+                    goto error;
+                }
+                if (vlc[idx].table)
+                    res = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
+                else
+                    res = values[idx];
+                val  = res;
+                if (vlc[++idx].table)
+                    res = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
+                else
+                    res = values[idx];
+                val |= res << 8;
+                pred[idx / 2] += val;
+                *samples++ = pred[idx / 2];
             }
-            if (vlc[idx].table)
-                res = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
-            else
-                res = values[idx];
-            val  = res;
-            if (vlc[++idx].table)
-                res = get_vlc2(&gb, vlc[idx].table, SMKTREE_BITS, 3);
-            else
-                res = values[idx];
-            val |= res << 8;
-            pred[idx / 2] += val;
-            *samples++ = pred[idx / 2];
-        }
         } else if (stereo) {
             val  = 256*values[1] + values[0];
             val2 = 256*values[3] + values[2];
