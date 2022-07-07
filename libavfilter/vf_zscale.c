@@ -227,22 +227,12 @@ static int query_formats(AVFilterContext *ctx)
 
 static void slice_params(ZScaleContext *s, int out_h, int in_h)
 {
-    int slice_size;
-
-    slice_size = (out_h + (s->nb_threads / 2)) / s->nb_threads;
-    if (slice_size % 2)
-        slice_size += 1;
     s->out_slice_start[0] = 0;
-    s->out_slice_end[0] = FFMIN(out_h, slice_size);
-    for (int i = 1; i < s->nb_threads - 1; i++) {
-        s->out_slice_start[i] = s->out_slice_end[i-1];
-        s->out_slice_end[i] = s->out_slice_start[i] + slice_size;
+    for (int i = 1; i < s->nb_threads; i++) {
+        int slice_end = out_h * i / s->nb_threads;
+        s->out_slice_end[i - 1] = s->out_slice_start[i] = FFALIGN(slice_end, 2);
     }
-
-    if (s->nb_threads > 1) {
-        s->out_slice_start[s->nb_threads - 1] = s->out_slice_end[s->nb_threads - 2];
-        s->out_slice_end[s->nb_threads - 1] = out_h;
-    }
+    s->out_slice_end[s->nb_threads - 1] = out_h;
 
     for (int i = 0; i < s->nb_threads; i++) {
         s->in_slice_start[i] = s->out_slice_start[i] * in_h / (double)out_h;
