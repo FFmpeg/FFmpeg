@@ -837,7 +837,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->first_time = 0;
 
         s->params.dither_type = s->dither;
-        s->params.cpu_type = ZIMG_CPU_AUTO;
+        s->params.cpu_type = ZIMG_CPU_AUTO_64B;
         s->params.resample_filter = s->filter;
         s->params.resample_filter_uv = s->filter;
         s->params.nominal_peak_luminance = s->nominal_peak_luminance;
@@ -851,7 +851,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             zimg_graph_builder_params_default(&s->alpha_params, ZIMG_API_VERSION);
 
             s->alpha_params.dither_type = s->dither;
-            s->alpha_params.cpu_type = ZIMG_CPU_AUTO;
+            s->alpha_params.cpu_type = ZIMG_CPU_AUTO_64B;
             s->alpha_params.resample_filter = s->filter;
 
             s->alpha_src_format.width = in->width;
