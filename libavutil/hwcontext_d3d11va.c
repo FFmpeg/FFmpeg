@@ -287,6 +287,10 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
             av_log(ctx, AV_LOG_ERROR, "User-provided texture has mismatching parameters\n");
             return AVERROR(EINVAL);
         }
+
+        ctx->initial_pool_size = texDesc2.ArraySize;
+        hwctx->BindFlags = texDesc2.BindFlags;
+        hwctx->MiscFlags = texDesc2.MiscFlags;
     } else if (!(texDesc.BindFlags & D3D11_BIND_RENDER_TARGET) && texDesc.ArraySize > 0) {
         hr = ID3D11Device_CreateTexture2D(device_hwctx->device, &texDesc, NULL, &hwctx->texture);
         if (FAILED(hr)) {
