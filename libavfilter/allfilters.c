@@ -524,6 +524,7 @@ extern const AVFilter ff_vsrc_color;
 extern const AVFilter ff_vsrc_colorchart;
 extern const AVFilter ff_vsrc_colorspectrum;
 extern const AVFilter ff_vsrc_coreimagesrc;
+extern const AVFilter ff_vsrc_ddagrab;
 extern const AVFilter ff_vsrc_frei0r_src;
 extern const AVFilter ff_vsrc_gradients;
 extern const AVFilter ff_vsrc_haldclutsrc;
