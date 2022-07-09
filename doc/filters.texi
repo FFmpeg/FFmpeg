@@ -24265,6 +24265,8 @@ Set one of available transition effects:
 @item squeezeh
 @item squeezev
 @item zoomin
+@item fadefast
+@item fadeslow
 @end table
 Default transition effect is fade.
 
