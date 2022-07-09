@@ -366,7 +366,8 @@ const FFCodec ff_libvpx_vp8_decoder = {
     .init           = vp8_init,
     .close          = vpx_free,
     FF_CODEC_DECODE_CB(vpx_decode),
-    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                      FF_CODEC_CAP_AUTO_THREADS,
 };
 #endif /* CONFIG_LIBVPX_VP8_DECODER */
 
@@ -389,7 +390,8 @@ FFCodec ff_libvpx_vp9_decoder = {
     .init           = vp9_init,
     .close          = vpx_free,
     FF_CODEC_DECODE_CB(vpx_decode),
-    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                      FF_CODEC_CAP_AUTO_THREADS,
     .init_static_data = ff_vp9_init_static,
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */

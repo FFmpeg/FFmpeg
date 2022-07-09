@@ -819,6 +819,7 @@ const FFCodec ff_libzvbi_teletext_decoder = {
     .p.capabilities = AV_CODEC_CAP_DELAY,
     .p.priv_class   = &teletext_class,
     .p.wrapper_name = "libzvbi",
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(TeletextContext),
     .init      = teletext_init_decoder,
     .close     = teletext_close_decoder,

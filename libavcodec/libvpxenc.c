@@ -1951,7 +1951,8 @@ const FFCodec ff_libvpx_vp8_encoder = {
     .init           = vp8_init,
     FF_CODEC_ENCODE_CB(vpx_encode),
     .close          = vpx_free,
-    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                      FF_CODEC_CAP_AUTO_THREADS,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE },
     .p.priv_class   = &class_vp8,
     .defaults       = defaults,
@@ -1986,7 +1987,8 @@ FFCodec ff_libvpx_vp9_encoder = {
     .init           = vp9_init,
     FF_CODEC_ENCODE_CB(vpx_encode),
     .close          = vpx_free,
-    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                      FF_CODEC_CAP_AUTO_THREADS,
     .defaults       = defaults,
     .init_static_data = ff_vp9_init_static,
 };

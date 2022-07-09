@@ -1442,7 +1442,8 @@ FFCodec ff_libaom_av1_encoder = {
     .init           = av1_init,
     FF_CODEC_ENCODE_CB(aom_encode),
     .close          = aom_free,
-    .caps_internal  = FF_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                      FF_CODEC_CAP_AUTO_THREADS,
     .defaults       = defaults,
     .init_static_data = av1_init_static,
 };

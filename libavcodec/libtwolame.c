@@ -214,6 +214,7 @@ const FFCodec ff_libtwolame_encoder = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_MP2,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(TWOLAMEContext),
     .init           = twolame_encode_init,
     FF_CODEC_ENCODE_CB(twolame_encode_frame),

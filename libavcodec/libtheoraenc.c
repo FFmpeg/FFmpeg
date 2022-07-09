@@ -374,6 +374,7 @@ const FFCodec ff_libtheora_encoder = {
     .p.id           = AV_CODEC_ID_THEORA,
     .p.capabilities = AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_DELAY /* for statsfile summary */,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(TheoraContext),
     .init           = encode_init,
     .close          = encode_close,

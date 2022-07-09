@@ -578,6 +578,7 @@ static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
         .hw_configs     = rkmpp_hw_configs, \
         .bsfs           = BSFS, \
         .p.wrapper_name = "rkmpp", \
+        .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
     };
 
 RKMPP_DEC(h264,  AV_CODEC_ID_H264,          "h264_mp4toannexb")

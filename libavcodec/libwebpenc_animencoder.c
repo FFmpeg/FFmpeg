@@ -138,6 +138,7 @@ const FFCodec ff_libwebp_anim_encoder = {
     .p.pix_fmts     = ff_libwebpenc_pix_fmts,
     .p.priv_class   = &ff_libwebpenc_class,
     .p.wrapper_name = "libwebp",
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(LibWebPAnimContext),
     .defaults       = ff_libwebp_defaults,
     .init           = libwebp_anim_encode_init,

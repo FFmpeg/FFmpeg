@@ -148,6 +148,7 @@ const FFCodec ff_libvo_amrwbenc_encoder = {
     .p.id           = AV_CODEC_ID_AMR_WB,
     .p.priv_class   = &amrwb_class,
     .p.wrapper_name = "libvo_amrwbenc",
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_encode_init,
     FF_CODEC_ENCODE_CB(amr_wb_encode_frame),

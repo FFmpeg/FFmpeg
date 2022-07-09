@@ -480,6 +480,7 @@ const FFCodec ff_libfdk_aac_encoder = {
     .p.long_name           = NULL_IF_CONFIG_SMALL("Fraunhofer FDK AAC"),
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_AAC,
+    .caps_internal         = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size        = sizeof(AACContext),
     .init                  = aac_encode_init,
     FF_CODEC_ENCODE_CB(aac_encode_frame),

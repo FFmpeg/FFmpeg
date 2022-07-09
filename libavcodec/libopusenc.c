@@ -588,6 +588,7 @@ const FFCodec ff_libopus_encoder = {
     .p.long_name     = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_OPUS,
+    .caps_internal   = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size  = sizeof(LibopusEncContext),
     .init            = libopus_encode_init,
     FF_CODEC_ENCODE_CB(libopus_encode),

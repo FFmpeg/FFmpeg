@@ -757,5 +757,6 @@ FFCodec ff_libx265_encoder = {
     .close            = libx265_encode_close,
     .priv_data_size   = sizeof(libx265Context),
     .defaults         = x265_defaults,
-    .caps_internal    = FF_CODEC_CAP_AUTO_THREADS,
+    .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                        FF_CODEC_CAP_AUTO_THREADS,
 };

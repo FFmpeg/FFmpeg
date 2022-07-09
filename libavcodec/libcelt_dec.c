@@ -134,6 +134,7 @@ const FFCodec ff_libcelt_decoder = {
     .p.id           = AV_CODEC_ID_CELT,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.wrapper_name = "libcelt",
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size = sizeof(struct libcelt_context),
     .init           = libcelt_dec_init,
     .close          = libcelt_dec_close,

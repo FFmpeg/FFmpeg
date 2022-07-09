@@ -96,4 +96,5 @@ const FFCodec ff_mjpeg_qsv_encoder = {
     .defaults       = qsv_enc_defaults,
     .p.wrapper_name = "qsv",
     .hw_configs     = ff_qsv_enc_hw_configs,
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
 };

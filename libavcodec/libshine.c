@@ -137,6 +137,7 @@ const FFCodec ff_libshine_encoder = {
     .p.type                = AVMEDIA_TYPE_AUDIO,
     .p.id                  = AV_CODEC_ID_MP3,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+    .caps_internal         = FF_CODEC_CAP_NOT_INIT_THREADSAFE,
     .priv_data_size        = sizeof(SHINEContext),
     .init                  = libshine_encode_init,
     FF_CODEC_ENCODE_CB(libshine_encode_frame),
