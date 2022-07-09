@@ -237,6 +237,12 @@ typedef struct MXFMCASubDescriptor {
     char *language;
 } MXFMCASubDescriptor;
 
+typedef struct MXFFFV1SubDescriptor {
+    MXFMetadataSet meta;
+    uint8_t *extradata;
+    int extradata_size;
+} MXFFFV1SubDescriptor;
+
 typedef struct MXFIndexTableSegment {
     MXFMetadataSet meta;
     int edit_unit_byte_count;
@@ -337,6 +343,7 @@ static const uint8_t mxf_crypto_source_container_ul[]      = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
 static const uint8_t mxf_encrypted_essence_container[]     = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0b,0x01,0x00 };
 static const uint8_t mxf_sony_mpeg4_extradata[]            = { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0e,0x06,0x06,0x02,0x02,0x01,0x00,0x00 };
+static const uint8_t mxf_ffv1_extradata[]                  = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0e,0x04,0x01,0x06,0x0c,0x01,0x00,0x00,0x00 }; // FFV1InitializationMetadata
 static const uint8_t mxf_avid_project_name[]               = { 0xa5,0xfb,0x7b,0x25,0xf6,0x15,0x94,0xb9,0x62,0xfc,0x37,0x17,0x49,0x2d,0x42,0xbf };
 static const uint8_t mxf_jp2k_rsiz[]                       = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0a,0x04,0x01,0x06,0x03,0x01,0x00,0x00,0x00 };
 static const uint8_t mxf_indirect_value_utf16le[]          = { 0x4c,0x00,0x02,0x10,0x01,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
@@ -376,6 +383,9 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
         av_freep(&((MXFDescriptor *)*ctx)->coll);
         av_freep(&((MXFDescriptor *)*ctx)->file_descriptors_refs);
         av_freep(&((MXFDescriptor *)*ctx)->sub_descriptors_refs);
+        break;
+    case FFV1SubDescriptor:
+        av_freep(&((MXFFFV1SubDescriptor *)*ctx)->extradata);
         break;
     case AudioChannelLabelSubDescriptor:
     case SoundfieldGroupLabelSubDescriptor:
@@ -1473,6 +1483,25 @@ static int mxf_read_mca_sub_descriptor(void *arg, AVIOContext *pb, int tag, int 
     return 0;
 }
 
+static int mxf_read_ffv1_sub_descriptor(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
+{
+    MXFFFV1SubDescriptor *ffv1_sub_descriptor = arg;
+
+    if (IS_KLV_KEY(uid, mxf_ffv1_extradata) && size <= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE ) {
+        if (ffv1_sub_descriptor->extradata)
+            av_log(NULL, AV_LOG_WARNING, "Duplicate ffv1_extradata\n");
+        av_free(ffv1_sub_descriptor->extradata);
+        ffv1_sub_descriptor->extradata_size = 0;
+        ffv1_sub_descriptor->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!ffv1_sub_descriptor->extradata)
+            return AVERROR(ENOMEM);
+        ffv1_sub_descriptor->extradata_size = size;
+        avio_read(pb, ffv1_sub_descriptor->extradata, size);
+    }
+
+    return 0;
+}
+
 static int mxf_read_indirect_value(void *arg, AVIOContext *pb, int size)
 {
     MXFTaggedValue *tagged_value = arg;
@@ -1554,6 +1583,7 @@ static const MXFCodecUL mxf_picture_essence_container_uls[] = {
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x02,0x0d,0x01,0x03,0x01,0x02,0x1c,0x01,0x00 }, 14,     AV_CODEC_ID_PRORES, NULL, 14 }, /* ProRes */
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x02,0x0d,0x01,0x03,0x01,0x02,0x04,0x60,0x01 }, 14, AV_CODEC_ID_MPEG2VIDEO, NULL, 15 }, /* MPEG-ES */
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x01,0x04,0x01 }, 14, AV_CODEC_ID_MPEG2VIDEO, NULL, 15, D10D11Wrap }, /* SMPTE D-10 mapping */
+    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0d,0x0d,0x01,0x03,0x01,0x02,0x23,0x01,0x00 }, 14,       AV_CODEC_ID_FFV1, NULL, 14 },
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x02,0x41,0x01 }, 14,    AV_CODEC_ID_DVVIDEO, NULL, 15 }, /* DV 625 25mbps */
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x05,0x00,0x00 }, 14,   AV_CODEC_ID_RAWVIDEO, NULL, 15, RawVWrap }, /* uncompressed picture */
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0a,0x0e,0x0f,0x03,0x01,0x02,0x20,0x01,0x01 }, 15,     AV_CODEC_ID_HQ_HQA },
@@ -2444,6 +2474,21 @@ static MXFMCASubDescriptor *find_mca_link_id(MXFContext *mxf, enum MXFMetadataSe
     return NULL;
 }
 
+static void parse_ffv1_sub_descriptor(MXFContext *mxf, MXFTrack *source_track, MXFDescriptor *descriptor, AVStream *st)
+{
+    for (int i = 0; i < descriptor->sub_descriptors_count; i++) {
+        MXFFFV1SubDescriptor *ffv1_sub_descriptor = mxf_resolve_strong_ref(mxf, &descriptor->sub_descriptors_refs[i], FFV1SubDescriptor);
+        if (ffv1_sub_descriptor == NULL)
+            continue;
+
+        descriptor->extradata      = ffv1_sub_descriptor->extradata;
+        descriptor->extradata_size = ffv1_sub_descriptor->extradata_size;
+        ffv1_sub_descriptor->extradata = NULL;
+        ffv1_sub_descriptor->extradata_size = 0;
+        break;
+    }
+}
+
 static int parse_mca_labels(MXFContext *mxf, MXFTrack *source_track, MXFDescriptor *descriptor, AVStream *st)
 {
     uint64_t routing[FF_SANE_NB_CHANNELS] = {0};
@@ -2972,6 +3017,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codecpar->codec_id = AV_CODEC_ID_EIA_608;
             }
         }
+        if (!descriptor->extradata)
+            parse_ffv1_sub_descriptor(mxf, source_track, descriptor, st);
         if (descriptor->extradata) {
             if (!ff_alloc_extradata(st->codecpar, descriptor->extradata_size)) {
                 memcpy(st->codecpar->extradata, descriptor->extradata, descriptor->extradata_size);
@@ -3159,6 +3206,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x6b,0x00 }, mxf_read_mca_sub_descriptor, sizeof(MXFMCASubDescriptor), AudioChannelLabelSubDescriptor },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x6c,0x00 }, mxf_read_mca_sub_descriptor, sizeof(MXFMCASubDescriptor), SoundfieldGroupLabelSubDescriptor },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x6d,0x00 }, mxf_read_mca_sub_descriptor, sizeof(MXFMCASubDescriptor), GroupOfSoundfieldGroupsLabelSubDescriptor },
+    { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x81,0x03 }, mxf_read_ffv1_sub_descriptor, sizeof(MXFFFV1SubDescriptor), FFV1SubDescriptor },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Static Track */
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Generic Track */
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x14,0x00 }, mxf_read_timecode_component, sizeof(MXFTimecodeComponent), TimecodeComponent },
