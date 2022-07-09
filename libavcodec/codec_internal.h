@@ -25,17 +25,12 @@
 #include "codec.h"
 
 /**
- * The codec does not modify any global variables in the init function,
- * allowing to call the init function without locking any global mutexes.
- */
-#define FF_CODEC_CAP_INIT_THREADSAFE        (1 << 0)
-/**
  * The codec is not known to be init-threadsafe (i.e. it might be unsafe
  * to initialize this codec and another codec concurrently, typically because
  * the codec calls external APIs that are not known to be thread-safe).
  * Therefore calling the codec's init function needs to be guarded with a lock.
  */
-#define FF_CODEC_CAP_NOT_INIT_THREADSAFE    (1 << 9)
+#define FF_CODEC_CAP_NOT_INIT_THREADSAFE    (1 << 0)
 /**
  * The codec allows calling the close function for deallocation even if
  * the init function returned a failure. Without this capability flag, a

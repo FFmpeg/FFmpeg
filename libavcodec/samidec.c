@@ -190,5 +190,4 @@ const FFCodec ff_sami_decoder = {
     .close          = sami_close,
     FF_CODEC_DECODE_SUB_CB(sami_decode_frame),
     .flush          = sami_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

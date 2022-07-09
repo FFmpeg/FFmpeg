@@ -391,6 +391,5 @@ const FFCodec ff_hq_hqa_decoder = {
     FF_CODEC_DECODE_CB(hq_hqa_decode_frame),
     .close          = hq_hqa_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

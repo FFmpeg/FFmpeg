@@ -700,5 +700,4 @@ const FFCodec ff_pgssub_decoder = {
     .close          = close_decoder,
     FF_CODEC_DECODE_SUB_CB(decode),
     .p.priv_class   = &pgsdec_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

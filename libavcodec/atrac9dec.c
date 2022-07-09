@@ -997,6 +997,6 @@ const FFCodec ff_atrac9_decoder = {
     .close          = atrac9_decode_close,
     FF_CODEC_DECODE_CB(atrac9_decode_frame),
     .flush          = atrac9_decode_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .p.capabilities = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };

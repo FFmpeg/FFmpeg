@@ -2296,7 +2296,6 @@ const FFCodec ff_ ## name_ ## _decoder = {                  \
     .init           = adpcm_decode_init,                    \
     FF_CODEC_DECODE_CB(adpcm_decode_frame),                 \
     .flush          = adpcm_flush,                          \
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,         \
 };
 #define ADPCM_DECODER_2(enabled, codec_id, name, sample_fmts, long_name) \
     ADPCM_DECODER_ ## enabled(codec_id, name, sample_fmts, long_name)

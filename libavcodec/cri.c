@@ -432,6 +432,6 @@ const FFCodec ff_cri_decoder = {
     FF_CODEC_DECODE_CB(cri_decode_frame),
     .close          = cri_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .p.long_name    = NULL_IF_CONFIG_SMALL("Cintel RAW"),
 };

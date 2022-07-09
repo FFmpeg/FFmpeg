@@ -135,5 +135,4 @@ const FFCodec ff_ra_144_decoder = {
     .init           = ra144_decode_init,
     FF_CODEC_DECODE_CB(ra144_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

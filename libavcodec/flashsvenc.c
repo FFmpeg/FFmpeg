@@ -267,5 +267,4 @@ const FFCodec ff_flashsv_encoder = {
     FF_CODEC_ENCODE_CB(flashsv_encode_frame),
     .close          = flashsv_encode_end,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -127,5 +127,4 @@ const FFCodec ff_dvaudio_decoder = {
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(DVAudioContext),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

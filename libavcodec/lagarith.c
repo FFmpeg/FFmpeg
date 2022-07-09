@@ -737,5 +737,4 @@ const FFCodec ff_lagarith_decoder = {
     .init           = lag_decode_init,
     FF_CODEC_DECODE_CB(lag_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

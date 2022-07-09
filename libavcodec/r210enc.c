@@ -100,7 +100,6 @@ const FFCodec ff_r210_encoder = {
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts     = pix_fmt,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_R10K_ENCODER
@@ -113,7 +112,6 @@ const FFCodec ff_r10k_encoder = {
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts     = pix_fmt,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_AVRP_ENCODER
@@ -126,6 +124,5 @@ const FFCodec ff_avrp_encoder = {
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts     = pix_fmt,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

@@ -2008,6 +2008,6 @@ const FFCodec ff_wmavoice_decoder = {
     .close            = wmavoice_decode_end,
     FF_CODEC_DECODE_CB(wmavoice_decode_packet),
     .p.capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .flush            = wmavoice_flush,
 };

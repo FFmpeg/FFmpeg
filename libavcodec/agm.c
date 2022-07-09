@@ -1296,7 +1296,6 @@ const FFCodec ff_agm_decoder = {
     .close            = decode_close,
     FF_CODEC_DECODE_CB(decode_frame),
     .flush            = decode_flush,
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
-                        FF_CODEC_CAP_INIT_CLEANUP |
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_EXPORTS_CROPPING,
 };

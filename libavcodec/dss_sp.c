@@ -781,5 +781,4 @@ const FFCodec ff_dss_sp_decoder = {
     .init           = dss_sp_decode_init,
     FF_CODEC_DECODE_CB(dss_sp_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -1221,5 +1221,4 @@ const FFCodec ff_dvvideo_encoder = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
     .p.priv_class   = &dvvideo_encode_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

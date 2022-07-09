@@ -125,7 +125,6 @@ const FFCodec ff_ ## name_ ## _decoder = { \
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS, \
     .p.sample_fmts = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP, \
                                                    AV_SAMPLE_FMT_NONE }, \
-    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE, \
 };
 
 DSD_DECODER(DSD_LSBF, dsd_lsbf, "DSD (Direct Stream Digital), least significant bit first")

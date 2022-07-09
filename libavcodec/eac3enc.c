@@ -269,6 +269,6 @@ const FFCodec ff_eac3_encoder = {
 #endif
     .p.ch_layouts    = ff_ac3_ch_layouts,
     .defaults        = ff_ac3_enc_defaults,
-    .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
 };
 FF_ENABLE_DEPRECATION_WARNINGS

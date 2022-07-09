@@ -89,5 +89,4 @@ const FFCodec ff_rawvideo_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .init           = raw_encode_init,
     FF_CODEC_ENCODE_CB(raw_encode),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

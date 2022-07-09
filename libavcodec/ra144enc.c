@@ -553,5 +553,4 @@ const FFCodec ff_ra_144_encoder = {
     .p.channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 #endif
     .p.ch_layouts   = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

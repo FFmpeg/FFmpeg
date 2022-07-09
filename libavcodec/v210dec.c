@@ -243,5 +243,4 @@ const FFCodec ff_v210_decoder = {
                       AV_CODEC_CAP_SLICE_THREADS |
                       AV_CODEC_CAP_FRAME_THREADS,
     .p.priv_class   = &v210dec_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

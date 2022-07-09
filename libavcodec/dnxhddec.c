@@ -736,5 +736,4 @@ const FFCodec ff_dnxhd_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

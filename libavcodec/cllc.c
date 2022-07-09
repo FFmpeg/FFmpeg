@@ -501,5 +501,4 @@ const FFCodec ff_cllc_decoder = {
     FF_CODEC_DECODE_CB(cllc_decode_frame),
     .close          = cllc_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

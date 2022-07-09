@@ -166,7 +166,7 @@ const FFCodec ff_libopenh264_decoder = {
     FF_CODEC_DECODE_CB(svc_decode_frame),
     .close          = svc_decode_close,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_THREADSAFE |
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .bsfs           = "h264_mp4toannexb",
     .p.wrapper_name = "libopenh264",

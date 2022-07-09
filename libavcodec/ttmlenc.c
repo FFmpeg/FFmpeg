@@ -392,5 +392,5 @@ const FFCodec ff_ttml_encoder = {
     .init           = ttml_encode_init,
     FF_CODEC_ENCODE_SUB_CB(ttml_encode_frame),
     .close          = ttml_encode_close,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

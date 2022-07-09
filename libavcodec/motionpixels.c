@@ -355,5 +355,5 @@ const FFCodec ff_motionpixels_decoder = {
     .close          = mp_decode_end,
     FF_CODEC_DECODE_CB(mp_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

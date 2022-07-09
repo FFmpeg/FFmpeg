@@ -505,5 +505,4 @@ const FFCodec ff_aic_decoder = {
     .close          = aic_decode_close,
     FF_CODEC_DECODE_CB(aic_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

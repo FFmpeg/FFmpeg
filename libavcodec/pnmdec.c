@@ -513,6 +513,5 @@ const FFCodec ff_phm_decoder = {
     .priv_data_size = sizeof(PNMContext),
     .init           = phm_dec_init,
     FF_CODEC_DECODE_CB(pnm_decode_frame),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

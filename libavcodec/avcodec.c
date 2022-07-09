@@ -72,13 +72,13 @@ static AVMutex codec_mutex = AV_MUTEX_INITIALIZER;
 
 static void lock_avcodec(const FFCodec *codec)
 {
-    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
+    if (codec->caps_internal & FF_CODEC_CAP_NOT_INIT_THREADSAFE && codec->init)
         ff_mutex_lock(&codec_mutex);
 }
 
 static void unlock_avcodec(const FFCodec *codec)
 {
-    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
+    if (codec->caps_internal & FF_CODEC_CAP_NOT_INIT_THREADSAFE && codec->init)
         ff_mutex_unlock(&codec_mutex);
 }
 

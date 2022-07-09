@@ -222,5 +222,4 @@ const FFCodec ff_sunrast_encoder = {
                                                   AV_PIX_FMT_GRAY8,
                                                   AV_PIX_FMT_MONOWHITE,
                                                   AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

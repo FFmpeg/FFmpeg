@@ -193,6 +193,5 @@ const FFCodec ff_screenpresso_decoder = {
     .close          = screenpresso_close,
     .priv_data_size = sizeof(ScreenpressoContext),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

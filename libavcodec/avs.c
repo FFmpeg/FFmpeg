@@ -185,5 +185,4 @@ const FFCodec ff_avs_decoder = {
     FF_CODEC_DECODE_CB(avs_decode_frame),
     .close          = avs_decode_end,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

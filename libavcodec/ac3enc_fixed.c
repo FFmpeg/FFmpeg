@@ -133,7 +133,7 @@ const FFCodec ff_ac3_fixed_encoder = {
     .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },
     .p.priv_class    = &ff_ac3enc_class,
-    .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
     .p.supported_samplerates = ff_ac3_sample_rate_tab,
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts = ff_ac3_channel_layouts,

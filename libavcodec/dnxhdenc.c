@@ -1374,5 +1374,5 @@ const FFCodec ff_dnxhd_encoder = {
     .p.priv_class   = &dnxhd_class,
     .defaults       = dnxhd_defaults,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

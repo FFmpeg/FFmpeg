@@ -90,7 +90,6 @@ const FFCodec ff_text_decoder = {
     .init           = ff_ass_subtitle_header_default,
     .p.priv_class   = &textsub_decoder_class,
     .flush          = text_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -114,7 +113,6 @@ const FFCodec ff_vplayer_decoder = {
     .init           = linebreak_init,
     .p.priv_class   = &textsub_decoder_class,
     .flush          = text_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -129,7 +127,6 @@ const FFCodec ff_stl_decoder = {
     .init           = linebreak_init,
     .p.priv_class   = &textsub_decoder_class,
     .flush          = text_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -144,7 +141,6 @@ const FFCodec ff_pjs_decoder = {
     .init           = linebreak_init,
     .p.priv_class   = &textsub_decoder_class,
     .flush          = text_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -159,7 +155,6 @@ const FFCodec ff_subviewer1_decoder = {
     .init           = linebreak_init,
     .p.priv_class   = &textsub_decoder_class,
     .flush          = text_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 

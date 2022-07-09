@@ -295,5 +295,4 @@ const FFCodec ff_sgi_decoder = {
     FF_CODEC_DECODE_CB(decode_frame),
     .init           = sgi_decode_init,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

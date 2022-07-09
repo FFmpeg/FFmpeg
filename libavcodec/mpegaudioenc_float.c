@@ -46,5 +46,4 @@ const FFCodec ff_mp2_encoder = {
                                                         AV_CHANNEL_LAYOUT_STEREO,
                                                         { 0 } },
     .defaults              = mp2_defaults,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 };

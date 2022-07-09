@@ -251,5 +251,4 @@ const FFCodec ff_idcin_decoder = {
     FF_CODEC_DECODE_CB(idcin_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .defaults       = idcin_defaults,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

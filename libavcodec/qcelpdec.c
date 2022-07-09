@@ -799,5 +799,4 @@ const FFCodec ff_qcelp_decoder = {
     FF_CODEC_DECODE_CB(qcelp_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(QCELPContext),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

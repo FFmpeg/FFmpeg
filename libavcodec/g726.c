@@ -413,7 +413,6 @@ const FFCodec ff_adpcm_g726_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .p.priv_class   = &g726_class,
     .defaults       = defaults,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -431,7 +430,6 @@ const FFCodec ff_adpcm_g726le_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .p.priv_class   = &g726_class,
     .defaults       = defaults,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -512,7 +510,6 @@ const FFCodec ff_adpcm_g726_decoder = {
     FF_CODEC_DECODE_CB(g726_decode_frame),
     .flush          = g726_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -527,6 +524,5 @@ const FFCodec ff_adpcm_g726le_decoder = {
     .flush          = g726_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .p.long_name    = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

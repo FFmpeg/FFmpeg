@@ -1250,7 +1250,7 @@ const FFCodec ff_dca_encoder = {
     .init                  = encode_init,
     .close                 = encode_close,
     FF_CODEC_ENCODE_CB(encode_frame),
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP,
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
     .p.supported_samplerates = sample_rates,

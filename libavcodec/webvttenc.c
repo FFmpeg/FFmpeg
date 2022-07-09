@@ -220,5 +220,4 @@ const FFCodec ff_webvtt_encoder = {
     .init           = webvtt_encode_init,
     FF_CODEC_ENCODE_SUB_CB(webvtt_encode_frame),
     .close          = webvtt_encode_close,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

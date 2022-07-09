@@ -956,5 +956,4 @@ const FFCodec ff_tak_decoder = {
                                                         AV_SAMPLE_FMT_S16P,
                                                         AV_SAMPLE_FMT_S32P,
                                                         AV_SAMPLE_FMT_NONE },
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };

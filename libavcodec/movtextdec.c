@@ -602,5 +602,4 @@ const FFCodec ff_movtext_decoder = {
     FF_CODEC_DECODE_SUB_CB(mov_text_decode_frame),
     .close        = mov_text_decode_close,
     .flush        = mov_text_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

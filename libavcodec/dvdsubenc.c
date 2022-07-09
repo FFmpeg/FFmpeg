@@ -509,5 +509,4 @@ const FFCodec ff_dvdsub_encoder = {
     FF_CODEC_ENCODE_SUB_CB(dvdsub_encode),
     .p.priv_class   = &dvdsubenc_class,
     .priv_data_size = sizeof(DVDSubtitleContext),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

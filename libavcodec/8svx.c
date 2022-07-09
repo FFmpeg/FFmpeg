@@ -199,7 +199,6 @@ const FFCodec ff_eightsvx_fib_decoder = {
   .p.capabilities = AV_CODEC_CAP_DR1,
   .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
-  .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_EIGHTSVX_EXP_DECODER
@@ -215,6 +214,5 @@ const FFCodec ff_eightsvx_exp_decoder = {
   .p.capabilities = AV_CODEC_CAP_DR1,
   .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
-  .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

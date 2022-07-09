@@ -939,5 +939,4 @@ const FFCodec ff_evrc_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .priv_data_size = sizeof(EVRCContext),
     .p.priv_class   = &evrcdec_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -733,6 +733,5 @@ const FFCodec ff_speedhq_decoder = {
     .init           = speedhq_decode_init,
     FF_CODEC_DECODE_CB(speedhq_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif /* CONFIG_SPEEDHQ_DECODER */

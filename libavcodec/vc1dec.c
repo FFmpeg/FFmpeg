@@ -1212,7 +1212,6 @@ const FFCodec ff_vc1_decoder = {
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .flush          = ff_mpeg_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .p.pix_fmts     = vc1_hwaccel_pixfmt_list_420,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_VC1_DXVA2_HWACCEL
@@ -1250,7 +1249,6 @@ const FFCodec ff_wmv3_decoder = {
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .flush          = ff_mpeg_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .p.pix_fmts     = vc1_hwaccel_pixfmt_list_420,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_WMV3_DXVA2_HWACCEL
@@ -1288,7 +1286,6 @@ const FFCodec ff_wmv3image_decoder = {
     .close          = ff_vc1_decode_end,
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush          = vc1_sprite_flush,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
@@ -1308,7 +1305,6 @@ const FFCodec ff_vc1image_decoder = {
     .close          = ff_vc1_decode_end,
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush          = vc1_sprite_flush,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,

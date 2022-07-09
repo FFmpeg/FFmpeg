@@ -491,5 +491,4 @@ const FFCodec ff_rawvideo_decoder = {
     FF_CODEC_DECODE_CB(raw_decode),
     .p.priv_class   = &rawdec_class,
     .p.capabilities = AV_CODEC_CAP_PARAM_CHANGE,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

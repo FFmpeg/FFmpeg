@@ -255,7 +255,6 @@ const FFCodec ff_aptx_encoder = {
     .init                  = ff_aptx_init,
     FF_CODEC_ENCODE_CB(aptx_encode_frame),
     .close                 = aptx_close,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_STEREO, 0},
 #endif
@@ -277,7 +276,6 @@ const FFCodec ff_aptx_hd_encoder = {
     .init                  = ff_aptx_init,
     FF_CODEC_ENCODE_CB(aptx_encode_frame),
     .close                 = aptx_close,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_STEREO, 0},
 #endif

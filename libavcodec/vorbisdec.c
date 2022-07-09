@@ -1895,7 +1895,7 @@ const FFCodec ff_vorbis_decoder = {
     FF_CODEC_DECODE_CB(vorbis_decode_frame),
     .flush           = vorbis_decode_flush,
     .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts = ff_vorbis_channel_layouts,
 #endif

@@ -103,7 +103,7 @@ const FFCodec ff_sp5x_decoder = {
     FF_CODEC_RECEIVE_FRAME_CB(ff_mjpeg_receive_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
@@ -119,7 +119,7 @@ const FFCodec ff_amv_decoder = {
     FF_CODEC_RECEIVE_FRAME_CB(ff_mjpeg_receive_frame),
     .p.max_lowres   = 3,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif

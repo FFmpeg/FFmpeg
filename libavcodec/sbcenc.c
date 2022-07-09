@@ -352,7 +352,6 @@ const FFCodec ff_sbc_encoder = {
     .priv_data_size        = sizeof(SBCEncContext),
     .init                  = sbc_encode_init,
     FF_CODEC_ENCODE_CB(sbc_encode_frame),
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 #if FF_API_OLD_CHANNEL_LAYOUT
     .p.channel_layouts     = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO, 0},

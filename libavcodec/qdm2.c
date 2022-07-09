@@ -1879,5 +1879,4 @@ const FFCodec ff_qdm2_decoder = {
     .close            = qdm2_decode_close,
     FF_CODEC_DECODE_CB(qdm2_decode_frame),
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };

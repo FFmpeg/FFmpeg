@@ -717,5 +717,4 @@ const FFCodec ff_dds_decoder = {
     FF_CODEC_DECODE_CB(dds_decode),
     .priv_data_size = sizeof(DDSContext),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE
 };

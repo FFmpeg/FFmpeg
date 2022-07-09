@@ -227,5 +227,4 @@ const FFCodec ff_rl2_decoder = {
     .close          = rl2_decode_end,
     FF_CODEC_DECODE_CB(rl2_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

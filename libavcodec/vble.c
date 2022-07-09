@@ -211,5 +211,4 @@ const FFCodec ff_vble_decoder = {
     .close          = vble_decode_close,
     FF_CODEC_DECODE_CB(vble_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

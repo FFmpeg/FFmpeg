@@ -182,5 +182,4 @@ const FFCodec ff_vbn_decoder = {
     FF_CODEC_DECODE_CB(vbn_decode_frame),
     .priv_data_size = sizeof(VBNContext),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE
 };

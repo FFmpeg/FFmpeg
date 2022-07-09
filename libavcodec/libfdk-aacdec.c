@@ -492,7 +492,6 @@ const FFCodec ff_libfdk_aac_decoder = {
 #endif
     ,
     .p.priv_class   = &fdk_aac_dec_class,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .p.wrapper_name = "libfdk",
 };

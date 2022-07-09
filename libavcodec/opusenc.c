@@ -736,7 +736,7 @@ const FFCodec ff_opus_encoder = {
     .init           = opus_encode_init,
     FF_CODEC_ENCODE_CB(opus_encode_frame),
     .close          = opus_encode_end,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .p.capabilities = AV_CODEC_CAP_EXPERIMENTAL | AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .p.supported_samplerates = (const int []){ 48000, 0 },
 #if FF_API_OLD_CHANNEL_LAYOUT

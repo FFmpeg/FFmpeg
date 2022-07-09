@@ -335,7 +335,7 @@ const FFCodec ff_libkvazaar_encoder = {
     FF_CODEC_ENCODE_CB(libkvazaar_encode),
     .close            = libkvazaar_close,
 
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_AUTO_THREADS,
 
     .p.wrapper_name   = "libkvazaar",

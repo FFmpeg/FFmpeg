@@ -2949,7 +2949,6 @@ const FFCodec ff_vp7_decoder = {
     .close                 = ff_vp8_decode_free,
     FF_CODEC_DECODE_CB(vp7_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush                 = vp8_decode_flush,
 };
 #endif /* CONFIG_VP7_DECODER */
@@ -2966,8 +2965,7 @@ const FFCodec ff_vp8_decoder = {
     FF_CODEC_DECODE_CB(ff_vp8_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                              AV_CODEC_CAP_SLICE_THREADS,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE |
-                             FF_CODEC_CAP_ALLOCATE_PROGRESS,
+    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
     .flush                 = vp8_decode_flush,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {

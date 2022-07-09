@@ -454,5 +454,4 @@ const FFCodec ff_cdtoons_decoder = {
     FF_CODEC_DECODE_CB(cdtoons_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .flush          = cdtoons_flush,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

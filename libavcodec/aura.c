@@ -104,5 +104,4 @@ const FFCodec ff_aura2_decoder = {
     .init           = aura_decode_init,
     FF_CODEC_DECODE_CB(aura_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

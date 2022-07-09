@@ -2224,7 +2224,7 @@ const FFCodec ff_mlp_encoder = {
     .p.channel_layouts      = ff_mlp_channel_layouts,
 #endif
     .p.ch_layouts           = ff_mlp_ch_layouts,
-    .caps_internal          = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
 #if CONFIG_TRUEHD_ENCODER
@@ -2249,6 +2249,6 @@ const FFCodec ff_truehd_encoder = {
                                   AV_CHANNEL_LAYOUT_5POINT1_BACK,
                                   { 0 }
                               },
-    .caps_internal          = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

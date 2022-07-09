@@ -2582,5 +2582,4 @@ const FFCodec ff_jpeg2000_decoder = {
     .p.priv_class     = &jpeg2000_class,
     .p.max_lowres     = 5,
     .p.profiles       = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE,
 };

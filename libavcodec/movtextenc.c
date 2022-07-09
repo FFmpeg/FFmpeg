@@ -709,5 +709,5 @@ const FFCodec ff_movtext_encoder = {
     .init           = mov_text_encode_init,
     FF_CODEC_ENCODE_SUB_CB(mov_text_encode_frame),
     .close          = mov_text_encode_close,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

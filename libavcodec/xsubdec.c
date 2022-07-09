@@ -161,5 +161,4 @@ const FFCodec ff_xsub_decoder = {
     .p.id      = AV_CODEC_ID_XSUB,
     .init      = decode_init,
     FF_CODEC_DECODE_SUB_CB(decode_frame),
-    .caps_internal = FF_CODEC_CAP_INIT_THREADSAFE,
 };

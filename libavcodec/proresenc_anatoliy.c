@@ -953,7 +953,7 @@ const FFCodec ff_prores_aw_encoder = {
     .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
     .p.priv_class   = &prores_enc_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 const FFCodec ff_prores_encoder = {
@@ -969,5 +969,5 @@ const FFCodec ff_prores_encoder = {
     .p.capabilities = AV_CODEC_CAP_FRAME_THREADS,
     .p.priv_class   = &prores_enc_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

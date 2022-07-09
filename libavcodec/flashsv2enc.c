@@ -920,5 +920,5 @@ const FFCodec ff_flashsv2_encoder = {
     FF_CODEC_ENCODE_CB(flashsv2_encode_frame),
     .close          = flashsv2_encode_end,
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
