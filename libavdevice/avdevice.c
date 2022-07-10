@@ -75,9 +75,11 @@ int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
         ret = s->oformat->get_device_list(s, *device_list);
     else
         ret = s->iformat->get_device_list(s, *device_list);
-    if (ret < 0)
+    if (ret < 0) {
         avdevice_free_list_devices(device_list);
-    return ret;
+        return ret;
+    }
+    return (*device_list)->nb_devices;
 }
 
 static int list_devices_for_context(AVFormatContext *s, AVDictionary *options,
