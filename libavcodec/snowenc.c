@@ -892,34 +892,23 @@ static int encode_subband(SnowContext *s, SubBand *b, const IDWTELEM *src, const
 //    encode_subband_dzr(s, b, src, parent, stride, orientation);
 }
 
-static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int p[3], int intra, uint8_t (*obmc_edged)[MB_SIZE * 2], int *best_rd){
+static av_always_inline int check_block_intra(SnowContext *s, int mb_x, int mb_y, int p[3],
+                                              uint8_t (*obmc_edged)[MB_SIZE * 2], int *best_rd)
+{
     const int b_stride= s->b_width << s->block_max_depth;
     BlockNode *block= &s->block[mb_x + mb_y * b_stride];
     BlockNode backup= *block;
-    unsigned value;
-    int rd, index;
+    int rd;
 
     av_assert2(mb_x>=0 && mb_y>=0);
     av_assert2(mb_x<b_stride);
 
-    if(intra){
-        block->color[0] = p[0];
-        block->color[1] = p[1];
-        block->color[2] = p[2];
-        block->type |= BLOCK_INTRA;
-    }else{
-        index= (p[0] + 31*p[1]) & (ME_CACHE_SIZE-1);
-        value= s->me_cache_generation + (p[0]>>10) + (p[1]<<6) + (block->ref<<12);
-        if(s->me_cache[index] == value)
-            return 0;
-        s->me_cache[index]= value;
+    block->color[0] = p[0];
+    block->color[1] = p[1];
+    block->color[2] = p[2];
+    block->type |= BLOCK_INTRA;
 
-        block->mx= p[0];
-        block->my= p[1];
-        block->type &= ~BLOCK_INTRA;
-    }
-
-    rd= get_block_rd(s, mb_x, mb_y, 0, obmc_edged) + s->intra_penalty * !!intra;
+    rd = get_block_rd(s, mb_x, mb_y, 0, obmc_edged) + s->intra_penalty;
 
 //FIXME chroma
     if(rd < *best_rd){
@@ -934,8 +923,35 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
 /* special case for int[2] args we discard afterwards,
  * fixes compilation problem with gcc 2.95 */
 static av_always_inline int check_block_inter(SnowContext *s, int mb_x, int mb_y, int p0, int p1, uint8_t (*obmc_edged)[MB_SIZE * 2], int *best_rd){
-    int p[2] = {p0, p1};
-    return check_block(s, mb_x, mb_y, p, 0, obmc_edged, best_rd);
+    const int b_stride = s->b_width << s->block_max_depth;
+    BlockNode *block = &s->block[mb_x + mb_y * b_stride];
+    BlockNode backup = *block;
+    unsigned value;
+    int rd, index;
+
+    av_assert2(mb_x >= 0 && mb_y >= 0);
+    av_assert2(mb_x < b_stride);
+
+    index = (p0 + 31 * p1) & (ME_CACHE_SIZE-1);
+    value = s->me_cache_generation + (p0 >> 10) + (p1 << 6) + (block->ref << 12);
+    if (s->me_cache[index] == value)
+        return 0;
+    s->me_cache[index] = value;
+
+    block->mx = p0;
+    block->my = p1;
+    block->type &= ~BLOCK_INTRA;
+
+    rd = get_block_rd(s, mb_x, mb_y, 0, obmc_edged);
+
+//FIXME chroma
+    if (rd < *best_rd) {
+        *best_rd = rd;
+        return 1;
+    } else {
+        *block   = backup;
+        return 0;
+    }
 }
 
 static av_always_inline int check_4block_inter(SnowContext *s, int mb_x, int mb_y, int p0, int p1, int ref, int *best_rd){
@@ -1092,7 +1108,7 @@ static void iterative_me(SnowContext *s){
                 // get previous score (cannot be cached due to OBMC)
                 if(pass > 0 && (block->type&BLOCK_INTRA)){
                     int color0[3]= {block->color[0], block->color[1], block->color[2]};
-                    check_block(s, mb_x, mb_y, color0, 1, obmc_edged, &best_rd);
+                    check_block_intra(s, mb_x, mb_y, color0, obmc_edged, &best_rd);
                 }else
                     check_block_inter(s, mb_x, mb_y, block->mx, block->my, obmc_edged, &best_rd);
 
@@ -1150,7 +1166,7 @@ static void iterative_me(SnowContext *s){
                 }
                 best_rd= ref_rd;
                 *block= ref_b;
-                check_block(s, mb_x, mb_y, color, 1, obmc_edged, &best_rd);
+                check_block_intra(s, mb_x, mb_y, color, obmc_edged, &best_rd);
                 //FIXME RD style color selection
                 if(!same_block(block, &backup)){
                     if(tb ) tb ->type &= ~BLOCK_OPT;
