@@ -146,8 +146,8 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 for (int i = 2; i; i--) {
                     bytestream2_put_be16(&pb, src32[0] >> 16);
                     bytestream2_put_be16(&pb, src32[1] >> 16);
-                    bytestream2_put_byte(&pb, (*src32++) >> 24);
-                    bytestream2_put_byte(&pb, (*src32++) >> 24);
+                    bytestream2_put_byte(&pb, (uint8_t)((*src32++) >> 8));
+                    bytestream2_put_byte(&pb, (uint8_t)((*src32++) >> 8));
                 }
             } while (--blocks);
         } else {
@@ -157,10 +157,10 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     bytestream2_put_be16(&pb, src32[1] >> 16);
                     bytestream2_put_be16(&pb, src32[2] >> 16);
                     bytestream2_put_be16(&pb, src32[3] >> 16);
-                    bytestream2_put_byte(&pb, (*src32++) >> 24);
-                    bytestream2_put_byte(&pb, (*src32++) >> 24);
-                    bytestream2_put_byte(&pb, (*src32++) >> 24);
-                    bytestream2_put_byte(&pb, (*src32++) >> 24);
+                    bytestream2_put_byte(&pb, (uint8_t)((*src32++) >> 8));
+                    bytestream2_put_byte(&pb, (uint8_t)((*src32++) >> 8));
+                    bytestream2_put_byte(&pb, (uint8_t)((*src32++) >> 8));
+                    bytestream2_put_byte(&pb, (uint8_t)((*src32++) >> 8));
                 }
             } while (--blocks);
         }
