@@ -31,8 +31,6 @@ typedef struct PCMDVDContext {
     int block_size;          // Size of a block of samples in bytes
     int samples_per_block;   // Number of samples per channel per block
     int groups_per_block;    // Number of 20/24-bit sample groups per block
-    uint8_t *extra_samples;  // Pointer to leftover samples from a frame
-    int extra_sample_count;  // Number of leftover samples in the buffer
 } PCMDVDContext;
 
 static av_cold int pcm_dvd_encode_init(AVCodecContext *avctx)
